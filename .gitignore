@@ -1,0 +1,27 @@
+# Compiled source #
+###################
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+*.lo
+
+# Figures
+###################
+*.png
+*.eps
+
+# ROOT files
+###################
+*.root
+*.pcm
+
+# Directories
+###################
+*/fig_png/*
+*/fig_C/*
+*/.deps/*
+*/.libs/*
+m4/*
