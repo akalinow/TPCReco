@@ -43,7 +43,8 @@ set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 #Framework packages
 add_subdirectory(DataFormats)
 add_subdirectory(Utilities)
-add_subdirectory(ToyMC)
+add_subdirectory(GrawToROOT)
+#add_subdirectory(ToyMC)
 
 # Now comes everything we need, to create a package
 # there are a lot more variables you can set, and some

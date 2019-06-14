@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Revision id="1">
+	<Header>
+		<Field id="headerSize">
+			<value>22</value>
+			<offset unit="Bytes">8</offset>
+			<size unit="Bytes">2</size>
+		</Field>
+		<Field id="itemSize">
+			<value>0</value>
+			<offset>10</offset>
+			<size>2</size>
+		</Field>
+		<Field id="itemCount">
+			<offset>12</offset>
+			<size>4</size>
+		</Field>
+		<!-- Minimum event time of the collected frames -->
+		<Field id="eventTime">
+			<offset>16</offset>
+			<size>6</size>
+		</Field>
+		<!-- Width of time window -->
+		<Field id="deltaT">
+			<offset>22</offset>
+			<size>2</size>
+		</Field>
+	</Header>
+</Revision>

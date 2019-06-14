@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Compact format without channel index and bucket index -->
+<Revision id="5">
+	<Header>
+		<Field id="metaType">
+			<BitField id="P2BLCK">
+				<value>8</value>
+			</BitField>
+		</Field>
+		<Field id="headerSize">
+			<value>1</value>
+			<offset unit="Bytes">8</offset>
+			<size unit="Bytes">2</size>
+		</Field>
+		<Field id="itemSize">
+			<value>2</value>
+			<offset>10</offset>
+			<size>2</size>
+		</Field>
+		<Field id="itemCount">
+			<offset>12</offset>
+			<size>4</size>
+		</Field>
+		<Field id="eventTime">
+			<offset>16</offset>
+			<size>6</size>
+		</Field>
+		<Field id="eventIdx">
+			<offset>22</offset>
+			<size>4</size>
+		</Field>
+		<Field id="coboIdx">
+			<offset>26</offset>
+		</Field>
+		<Field id="asadIdx">
+			<offset>27</offset>
+		</Field>
+		<Field id="readOffset">
+			<offset>28</offset>
+			<size>2</size>
+		</Field>
+		<Field id="status">
+			<offset>30</offset>
+		</Field>
+		<Field id="hitPat_0">
+			<offset>31</offset>
+			<size>9</size>
+		</Field>
+		<Field id="hitPat_1">
+			<offset>40</offset>
+			<size>9</size>
+		</Field>
+		<Field id="hitPat_2">
+			<offset>49</offset>
+			<size>9</size>
+		</Field>
+		<Field id="hitPat_3">
+			<offset>58</offset>
+			<size>9</size>
+		</Field>
+		<Field id="multip_0">
+			<offset>67</offset>
+			<size>2</size>
+		</Field>
+		<Field id="multip_1">
+			<offset>69</offset>
+			<size>2</size>
+		</Field>
+		<Field id="multip_2">
+			<offset>71</offset>
+			<size>2</size>
+		</Field>
+		<Field id="multip_3">
+			<offset>73</offset>
+			<size>2</size>
+		</Field>
+		<!-- Output of the sliding window at the time of the event trigger. -->
+		<Field id="windowOut">
+			<offset>75</offset>
+			<size>4</size>
+		</Field>
+		<!-- Last cell index read by AGET #0. -->
+		<Field id="lastCell_0">
+			<size>2</size>
+			<offset>79</offset>
+		</Field>
+		<!-- Last cell index read by AGET #1. -->
+		<Field id="lastCell_1">
+			<size>2</size>
+			<offset>81</offset>
+		</Field>
+		<!-- Last cell index read by AGET #2. -->
+		<Field id="lastCell_2">
+			<size>2</size>
+			<offset>83</offset>
+		</Field>
+		<!-- Last cell index read by AGET #3. -->
+		<Field id="lastCell_3">
+			<size>2</size>
+			<offset>85</offset>
+		</Field>
+	</Header>
+	<Item id="*">
+		<Field>
+			<BitField id="agetIdx">
+				<width unit="bit">2</width>
+				<offset unit="bit">14</offset>
+			</BitField>
+			<BitField id="sample">
+				<offset>0</offset>
+				<width>12</width>
+			</BitField>
+			<size unit="Byte">2</size>
+		</Field>
+	</Item>
+</Revision>

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MFM>
+	<Frame id="*">
+		<typeCode range="[0, 16777215]">0</typeCode>
+		<Revision id="*">
+			<Header>
+				<Field id="*">
+					<offset unit="Bytes">0</offset>
+					<size unit="Bytes">1</size>
+					<BitField id="*">
+						<width unit="bit">1</width>
+						<offset unit="bit">0</offset>
+					</BitField>
+				</Field>
+				<Field id="metaType">
+					<BitField id="ISLEND">
+						<offset>7</offset>
+						<value>0</value>
+					</BitField>
+					<BitField id="ISBLOB">
+						<offset>6</offset>
+						<value>0</value>
+					</BitField>
+					<BitField id="P2BLCK">
+						<width>4</width>
+						<value>0</value>
+					</BitField>
+				</Field>
+				<Field id="frameSize">
+					<offset>1</offset>
+					<size>3</size>
+				</Field>
+				<Field id="dataSource">
+					<offset>4</offset>
+				</Field>
+				<Field id="frameType">
+					<offset>5</offset>
+					<size>2</size>
+				</Field>
+				<Field id="revision">
+					<offset>7</offset>
+				</Field>
+			</Header>
+			<Item id="*">
+				<Field id="*">
+					<offset unit="Bytes">0</offset>
+					<size unit="Byte">1</size>
+					<BitField id="*">
+						<width unit="bit">1</width>
+						<offset unit="bit">0</offset>
+					</BitField>
+				</Field>
+			</Item>
+		</Revision>
+	</Frame>
+	<Frame id="CoBo">
+		<typeCode>1</typeCode>
+		<Revision id="0" include="CoboFormats-Rev-0.xcfg" />
+		<Revision id="1" include="CoboFormats-Rev-1.xcfg" />
+		<Revision id="2" include="CoboFormats-Rev-2.xcfg" />
+		<!-- Addition of the "windowOut" header field. -->
+		<Revision id="3" include="CoboFormats-Rev-3.xcfg" />
+		<!-- Addition of the AGET last read cell indices in the header.-->
+		<Revision id="4" include="CoboFormats-Rev-4.xcfg" />
+		<!-- Block size of 256 Bytes -->
+		<Revision id="5" include="CoboFormats-Rev-5.xcfg" />
+	</Frame>
+	<Frame id="CoBoCompact">
+		<typeCode>2</typeCode>
+		<!-- Compact format without channel index and bucket index -->
+		<Revision id="5" include="CoboFormats-Rev-5-Compact.xcfg" />
+	</Frame>
+	<Frame id="MergedByEventId">
+		<typeCode>65281</typeCode>
+		<Revision id="1" include="MergedDataFormats-ByEventId-Rev-1.xcfg" />
+	</Frame>
+	<Frame id="MergedByEventTime">
+		<typeCode>65282</typeCode>
+		<Revision id="1" include="MergedDataFormats-ByEventTime-Rev-1.xcfg" />
+	</Frame>
+</MFM>
