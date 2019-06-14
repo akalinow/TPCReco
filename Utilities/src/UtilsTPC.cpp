@@ -200,6 +200,7 @@ void plot_MCevent(const char *input_fname1,  // input ROOT file name for reading
   //  const char *option="GLBOX1";  // sphere size prop. to <bin content>
   //  h3->SetFillColor(kRed);  // valid for GLBOX, GLBOX1 only
 
+  option = "box";
   h3->Draw(option);
   //  h3->DrawCopy(option);
 
@@ -234,6 +235,9 @@ void plot_MCevent(const char *input_fname1,  // input ROOT file name for reading
   // gStyle->SetPalette(1);
   // c0->Draw();
   c0->Print(Form("%s__input_TH3D%s.root",prefix.c_str(),suffix.c_str()));
+
+
+  return;
   
   if(animation_flag) { // creates multiple PNG files for different viewing angles
 

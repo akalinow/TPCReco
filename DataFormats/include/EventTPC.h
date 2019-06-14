@@ -145,6 +145,7 @@ class EventTPC {
  public:
   EventTPC(Long64_t evt_id=-1, GeometryTPC *g=NULL); // contructor needs a pointer to the existing TPC geometry
 
+  void SetGeoPtr(GeometryTPC *g) { geo_ptr = g; }
   // helper methods for inserting data points
   // they return TRUE on success and FALSE on error
   bool AddValByStrip(StripTPC* strip, int time_cell, double val);                      // valid range [0-511]

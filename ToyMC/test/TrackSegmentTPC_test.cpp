@@ -120,30 +120,15 @@ int main(int argc, char *argv[]) {
   std::cout << "Method-1 CHI2: " << t->GetChi2(spread, 1) << "\n";
   std::cout << "Method-2 CHI2: " << t->GetChi2(spread, 2) << "\n\n";
 
-  
-  // plot cluster
-  gStyle->SetPalette(kBird);
-  gStyle->SetOptStat(0);
   const double ratio=(zmax-zmin)/(xmax-xmin);
   const int sx = (int)((float)500*(1+0.1+0.2));
   const int sy = (int)((float)500*ratio*(1+0.1+0.05));
-  std::cout << sx << " " << sy << std::endl;
-  TCanvas *c = new TCanvas("c","c", 2, 78, sx, sy);
-  c->cd();
-  
+  std::cout << "sx: "<<sx << " sy: " << sy << std::endl;
+  std::cout<<"h2: "<<h2<<std::endl;
+
+  TCanvas *c1 = new TCanvas("c1","c", 2, 78, sx, sy);
   h2->Draw("COLZ");
-
-  gPad->Update();
-  gPad->Modified();
-  gPad->SetLogx(false);
-  gPad->SetLogy(false);
-  gPad->SetLogz(false);
-  gPad->SetRightMargin(0.2);
-  gPad->SetLeftMargin(0.1);
-  gPad->SetBottomMargin(0.1);
-  gPad->SetTopMargin(0.05);
-  gPad->Update();
-
+ 
   // superimpose track segment candidate 
   TLine *seg=new TLine( t->GetStartPoint().X(), t->GetStartPoint().Y(),
 		       t->GetEndPoint().X(), t->GetEndPoint().Y() );
@@ -151,14 +136,8 @@ int main(int argc, char *argv[]) {
   seg->SetLineColor(kRed);
   seg->Draw();
 
-  c->Update();
-  c->Modified();
+  c1->Print("track.pdf");
 
-  c->Print("track.pdf");
-
-
-  
-  std::this_thread::sleep_for( std::chrono::seconds(3) ); // allows to exit properly TApplication
-
+  std::cout<<"Here"<<std::endl;
   return 0;
 }

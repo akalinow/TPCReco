@@ -78,7 +78,7 @@ class GeometryTPC {
 
  public:
 
-  //  inline GeometryTPC() { ; }  // empty constructor for required by TObject
+  GeometryTPC() { ; }  // empty constructor for required by TObject
   //  virtual ~GeometryTPC();
   
   // Setter methods 
@@ -190,10 +190,7 @@ class StripTPC {
 
  public:
 
-  //  StripTPC() { ; } // empty constructor required by TObject
-  //  virtual ~StripTPC();
-
-  // StripTPC();
+  StripTPC(){};
   StripTPC(int direction, int number, int cobo_index, int asad_index, int aget_index, int aget_channel, int aget_channel_raw, 
 	   TVector2 unit_vector, TVector2 offset_vector_in_mm, double length_in_mm, GeometryTPC *geo_ptr);
 
