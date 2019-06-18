@@ -33,22 +33,28 @@ if(EXISTS ${GET_VERSION_DIR})
   # The data is just added to the executable, because in some IDEs (QtCreator) 
   # files are invisible when they are not explicitly part of the project.
   #
-  add_executable(grawToROOT test/test1.cpp)
+  add_executable(grawToEventTPC bin/grawToEventTPC.cpp)
+  add_executable(test1 test/test1.cpp)
   # Compiler flags.
   #
-  target_compile_options(grawToROOT PUBLIC ${CMAKE_ROOT_CFLAGS} -Wno-deprecated-declarations)
+  target_compile_options(grawToEventTPC PUBLIC ${CMAKE_ROOT_CFLAGS} -Wno-deprecated-declarations)
+  target_compile_options(test1 PUBLIC ${CMAKE_ROOT_CFLAGS})
 
   # Linker flags
   #
-  target_link_libraries(grawToROOT PUBLIC DataFormats Utilities libget-root.so libcobo-frame-graw2frame.so libMultiFrame.so)
+  target_link_libraries(grawToEventTPC PUBLIC DataFormats Utilities libget-root.so libcobo-frame-graw2frame.so libMultiFrame.so)
+  target_link_libraries(test1 PUBLIC DataFormats)
 
   # All install commands get the same destination. this allows us to use paths
   # relative to the executable.
-  set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib ${GET_VERSION_DIR}/lib)
+  set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib:${GET_VERSION_DIR}/lib)
+  MESSAGE( STATUS "CMAKE_INSTALL_RPATH " ${CMAKE_INSTALL_RPATH})
 
-  install(TARGETS grawToROOT RUNTIME DESTINATION bin)
+  install(TARGETS grawToEventTPC RUNTIME DESTINATION bin)
+  install(TARGETS test1 RUNTIME DESTINATION bin)
   install(DIRECTORY DESTINATION results)
-
+  install(FILES $<1:${PROJECT_SOURCE_DIR}/${MODULE_NAME}/python/> DESTINATION python)
+  
   else()
     MESSAGE( WARNING "No GET software found. " ${MODULE_NAME} " will not be build.")
 

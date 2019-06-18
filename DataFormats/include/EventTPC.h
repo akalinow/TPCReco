@@ -122,7 +122,7 @@ class SigClusterTPC {
 class EventTPC {
   //  friend class SigClusterTPC;
  private:
-  Long64_t event_id;
+  Long64_t event_id, run_id;
   GeometryTPC *geo_ptr; // pointer to the existing TPC geometry
   std::map<MultiKey3, double, multikey3_less> chargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
   std::map<MultiKey2, double, multikey2_less> maxChargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024])
@@ -143,9 +143,15 @@ class EventTPC {
   double glb_tot_charge;
 
  public:
-  EventTPC(Long64_t evt_id=-1, GeometryTPC *g=NULL); // contructor needs a pointer to the existing TPC geometry
+  EventTPC();
 
-  void SetGeoPtr(GeometryTPC *g) { geo_ptr = g; }
+  ~EventTPC(){};
+  
+
+  void SetGeoPtr(GeometryTPC *g);
+
+  void SetEventId(Long64_t aId) { aId = event_id; };
+  void SetRunId(Long64_t aId) { aId = run_id; };
   // helper methods for inserting data points
   // they return TRUE on success and FALSE on error
   bool AddValByStrip(StripTPC* strip, int time_cell, double val);                      // valid range [0-511]
@@ -166,6 +172,7 @@ class EventTPC {
 
   inline GeometryTPC* GetGeoPtr() { return geo_ptr; }
   inline Long64_t GetEventId() { return event_id; }
+  inline Long64_t GetRunId() { return run_id; }
   inline bool IsOK() { return initOK; }
   inline int GetTimeRebin() { return time_rebin; }       
   bool SetTimeRebin(int rebin); // HAS NO EFFECT YET !!!!

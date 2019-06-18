@@ -21,7 +21,7 @@ MESSAGE( STATUS "ROOT_USE_FILE:             " ${ROOT_USE_FILE})
 ###############################################################################
 ## packaging ##################################################################
 ###############################################################################
-set(CMAKE_INSTALL_PREFIX "./") # install in the current directory
+set(CMAKE_INSTALL_PREFIX "$ENV{PWD}") # install in the current directory
 MESSAGE( STATUS "CMAKE_INSTALL_PREFIX:         " ${CMAKE_INSTALL_PREFIX} )
 
 # This is basically a repeat of the file copy instruction that copies the
@@ -44,7 +44,7 @@ set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 add_subdirectory(DataFormats)
 add_subdirectory(Utilities)
 add_subdirectory(GrawToROOT)
-#add_subdirectory(ToyMC)
+add_subdirectory(ToyMC)
 
 # Now comes everything we need, to create a package
 # there are a lot more variables you can set, and some

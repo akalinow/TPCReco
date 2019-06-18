@@ -69,8 +69,8 @@ int main(int argc, char *argv[]) {
   hWZProjection->Draw("colz");
   c1->Print("WVProjection.png");
 
-  unsigned int eventId = 0;
-  EventTPC evt(eventId, &myGeometry);
+  EventTPC evt;
+  evt.SetGeoPtr(&myGeometry);
 
   int strip_number, time_cell;
   double value;

@@ -464,10 +464,8 @@ double SigClusterTPC::GetTotalChargeByTimeCell(int time_cell) { // charge integr
 
 /* ============= TPC EVENT CLASS ===========*/
 
-EventTPC::EventTPC(Long64_t evt_id, GeometryTPC *g)
-  : event_id(evt_id),
-    geo_ptr(g),
-    initOK(false), 
+EventTPC::EventTPC()
+  : geo_ptr(0), initOK(false), 
     time_rebin( 1 ), 
     glb_max_charge( 0.0 ),
     glb_max_charge_timing( -1 ),
@@ -484,10 +482,13 @@ EventTPC::EventTPC(Long64_t evt_id, GeometryTPC *g)
   totalChargeMap2.clear();  // 2-key map: strip_dir, time_cell
   totalChargeMap3.clear();  // 1-key map: time_cell
   maxChargeMap.clear();    // 2-key map: strip_dir, strip_number 
-  chargeMap.clear();       // 3-key map: strip_dir, strip_number, time_cell
-  if(geo_ptr && geo_ptr->IsOK()) initOK=true;
-  
+  chargeMap.clear();       // 3-key map: strip_dir, strip_number, time_cell  
 }
+
+void EventTPC::SetGeoPtr(GeometryTPC *g) {
+    geo_ptr = g;
+    if(geo_ptr && geo_ptr->IsOK()) initOK=true;
+  }
 
 bool EventTPC::SetTimeRebin(int rebin) {
   if(rebin<1) return false;
