@@ -27,7 +27,7 @@ include_directories(${PROJECT_SOURCE_DIR}/Utilities/include)
 #add_executable(UtilsTPC_test test/UtilsTPC_test.cpp)
 add_executable(GeometryTPC_test test/GeometryTPC_test.cpp)
 add_executable(TrackSegmentTPC_test test/TrackSegmentTPC_test.cpp)
-add_executable(test2 test/test1.cpp)
+add_executable(test2 test/test2.cpp)
 # Compiler flags.
 #
 #target_compile_options(UtilsTPC_test PUBLIC ${CMAKE_ROOT_CFLAGS})
