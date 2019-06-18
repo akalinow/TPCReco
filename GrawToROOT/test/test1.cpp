@@ -15,8 +15,8 @@ int main(int argc, char *argv[]) {
 
   ///Initialize projections
   std::string geomFileName = "resources/geometry_mini_eTPC.dat";
-  GeometryTPC myGeometry(geomFileName.c_str());
-
+  std::shared_ptr<GeometryTPC> myGeometryPtr = std::make_shared<GeometryTPC>(geomFileName.c_str());
+  
   std::string dataFileName = "resources/EventTPC_1.root";
   TFile aFile(dataFileName.c_str(),"READ");
   TTree *aTree = (TTree*)aFile.Get("TPCData");
@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
 
   TCanvas *c1 = new TCanvas("c1","c1", 900, 800);
 
-  aEvent->SetGeoPtr(&myGeometry);
+  aEvent->SetGeoPtr(myGeometryPtr);
   
   aEvent->GetStripVsTime(DIR_U)->Draw("colz");
   c1->Print("results/UZProjection.png");

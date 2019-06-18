@@ -1,6 +1,7 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
+#include <memory>
 
 #include "UtilsTPC.h"
 #include "GeometryTPC.h"
@@ -31,15 +32,15 @@ int main(int argc, char *argv[]) {
 
   ///Initialize projections
   fileName = "resources/geometry_mini_eTPC_rot90deg.dat";
-  GeometryTPC myGeometry(fileName.c_str());
-  UVWprojector myUVWProjector(&myGeometry, 100, 25, 25); //  100, 100, 100);
+  std::shared_ptr<GeometryTPC> myGeometryPtr = std::make_shared<GeometryTPC>(fileName.c_str());
+  UVWprojector myUVWProjector(myGeometryPtr.get(), 100, 25, 25); //  100, 100, 100);
 
-  myGeometry.SetDebug(false);
+  myGeometryPtr->SetDebug(false);
   myUVWProjector.SetDebug(false);
   myUVWProjector.SetEvent3D(*hData3D_scaled);  
   std::cout << myUVWProjector.GetAreaNpoints() << std::endl;
-  std::cout << myGeometry.GetTH2PolyPartitionX() << std::endl;
-  std::cout << myGeometry.GetTH2PolyPartitionY() << std::endl;
+  std::cout << myGeometryPtr->GetTH2PolyPartitionX() << std::endl;
+  std::cout << myGeometryPtr->GetTH2PolyPartitionY() << std::endl;
   std::cout << ", integral=" << myUVWProjector.GetEventIntegral() << std::endl;
 
   TCanvas *c1 = new TCanvas("c1","c1", 900, 800);
@@ -70,7 +71,7 @@ int main(int argc, char *argv[]) {
   c1->Print("WVProjection.png");
 
   EventTPC evt;
-  evt.SetGeoPtr(&myGeometry);
+  evt.SetGeoPtr(myGeometryPtr);
 
   int strip_number, time_cell;
   double value;
@@ -108,7 +109,7 @@ int main(int argc, char *argv[]) {
   persistent_event = 0;
   aTree2->SetBranchAddress("Event", &persistent_event);
   aTree2->GetEntry(0);
-  persistent_event->SetGeoPtr(&myGeometry);
+  persistent_event->SetGeoPtr(myGeometryPtr);
   persistent_event->GetStripVsTime(DIR_U)->Draw("colz");
   c1->Print("UZProjection_fromPersistentEventTPC.png");
 

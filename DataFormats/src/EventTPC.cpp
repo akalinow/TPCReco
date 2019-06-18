@@ -465,7 +465,7 @@ double SigClusterTPC::GetTotalChargeByTimeCell(int time_cell) { // charge integr
 /* ============= TPC EVENT CLASS ===========*/
 
 EventTPC::EventTPC()
-  : geo_ptr(0), initOK(false), 
+  : myGeometryPtr(0), initOK(false), 
     time_rebin( 1 ), 
     glb_max_charge( 0.0 ),
     glb_max_charge_timing( -1 ),
@@ -485,9 +485,9 @@ EventTPC::EventTPC()
   chargeMap.clear();       // 3-key map: strip_dir, strip_number, time_cell  
 }
 
-void EventTPC::SetGeoPtr(GeometryTPC *g) {
-    geo_ptr = g;
-    if(geo_ptr && geo_ptr->IsOK()) initOK=true;
+void EventTPC::SetGeoPtr(std::shared_ptr<GeometryTPC> aPtr) {
+  myGeometryPtr = aPtr;
+  if(myGeometryPtr && myGeometryPtr->IsOK()) initOK=true;
   }
 
 bool EventTPC::SetTimeRebin(int rebin) {
@@ -497,7 +497,7 @@ bool EventTPC::SetTimeRebin(int rebin) {
 }
 
 bool EventTPC::AddValByStrip(int strip_dir, int strip_number, int time_cell, double val) {  // valid range [0-2][1-1024][0-511]
-  if(!IsOK() || time_cell<0 || time_cell>=geo_ptr->GetAgetNtimecells() || strip_number<1 || strip_number>geo_ptr->GetDirNstrips(strip_dir)) return false;
+  if(!IsOK() || time_cell<0 || time_cell>=myGeometryPtr->GetAgetNtimecells() || strip_number<1 || strip_number>myGeometryPtr->GetDirNstrips(strip_dir)) return false;
   switch(strip_dir) {
   case DIR_U:
   case DIR_V:
@@ -578,7 +578,7 @@ bool EventTPC::AddValByStrip(int strip_dir, int strip_number, int time_cell, dou
       if( new_val > glb_max_charge ) {
 	glb_max_charge=new_val;
 	glb_max_charge_timing=time_cell;
-	glb_max_charge_channel=geo_ptr->Global_strip2normal(strip_dir, strip_number);
+	glb_max_charge_channel=myGeometryPtr->Global_strip2normal(strip_dir, strip_number);
 	}
     }
 
@@ -594,21 +594,21 @@ bool EventTPC::AddValByStrip(StripTPC *strip, int time_cell, double val) {  // v
   return false;
 }
 bool EventTPC::AddValByGlobalChannel(int glb_channel_idx, int time_cell, double val) {  // valid range [0-1023][0-511]
-  return AddValByStrip(geo_ptr->GetStripByGlobal(glb_channel_idx), time_cell, val);
+  return AddValByStrip(myGeometryPtr->GetStripByGlobal(glb_channel_idx), time_cell, val);
 }
 bool EventTPC::AddValByGlobalChannel_raw(int glb_raw_channel_idx, int time_cell, double val) {  // valid range [0-1023+4*N][0-511]
-  return AddValByStrip(geo_ptr->GetStripByGlobal_raw(glb_raw_channel_idx), time_cell, val);
+  return AddValByStrip(myGeometryPtr->GetStripByGlobal_raw(glb_raw_channel_idx), time_cell, val);
 }
 bool EventTPC::AddValByAgetChannel(int cobo_idx, int asad_idx, int aget_idx, int channel_idx, int time_cell, double val) {  // valid range [0-1][0-3][0-3][0-63][0-511]
-  return AddValByStrip(geo_ptr->GetStripByAget(cobo_idx, asad_idx, aget_idx, channel_idx), time_cell, val);
+  return AddValByStrip(myGeometryPtr->GetStripByAget(cobo_idx, asad_idx, aget_idx, channel_idx), time_cell, val);
 }
 bool EventTPC::AddValByAgetChannel_raw(int cobo_idx, int asad_idx, int aget_idx, int raw_channel_idx, int time_cell, double val) {  // valid range [0-1][0-3][0-3][0-67][0-511]
-  return AddValByStrip(geo_ptr->GetStripByAget_raw(cobo_idx, asad_idx, aget_idx, raw_channel_idx), time_cell, val);
+  return AddValByStrip(myGeometryPtr->GetStripByAget_raw(cobo_idx, asad_idx, aget_idx, raw_channel_idx), time_cell, val);
 }
 
 double EventTPC::GetValByStrip(int strip_dir, int strip_number, int time_cell/*, bool &result*/) {  // valid range [0-2][1-1024][0-511]
   //result=false;
-  if(!IsOK() || time_cell<0 || time_cell>=512 || strip_number<1 || strip_number>geo_ptr->GetDirNstrips(strip_dir)) {
+  if(!IsOK() || time_cell<0 || time_cell>=512 || strip_number<1 || strip_number>myGeometryPtr->GetDirNstrips(strip_dir)) {
     return 0.0;
   }
   switch(strip_dir) {
@@ -635,19 +635,19 @@ double EventTPC::GetValByStrip(StripTPC *strip, int time_cell/*, bool &result*/)
 }
 
 double EventTPC::GetValByGlobalChannel(int glb_channel_idx, int time_cell/*, bool &result*/) {  // valid range [0-1023][0-511]
-  return GetValByStrip(geo_ptr->GetStripByGlobal(glb_channel_idx), time_cell); //, result);
+  return GetValByStrip(myGeometryPtr->GetStripByGlobal(glb_channel_idx), time_cell); //, result);
 }
 
 double EventTPC::GetValByGlobalChannel_raw(int glb_raw_channel_idx, int time_cell/*, bool &result*/) {  // valid range [0-1023+4*N][0-511]
-  return GetValByStrip(geo_ptr->GetStripByGlobal_raw(glb_raw_channel_idx), time_cell); //, result);
+  return GetValByStrip(myGeometryPtr->GetStripByGlobal_raw(glb_raw_channel_idx), time_cell); //, result);
 }
 
 double EventTPC::GetValByAgetChannel(int cobo_idx, int asad_idx, int aget_idx, int channel_idx, int time_cell/*, bool &result*/) {  // valid range [0-1][0-3][0-3][0-63][0-511]
-  return GetValByStrip(geo_ptr->GetStripByAget(cobo_idx, asad_idx, aget_idx, channel_idx), time_cell); //, result);
+  return GetValByStrip(myGeometryPtr->GetStripByAget(cobo_idx, asad_idx, aget_idx, channel_idx), time_cell); //, result);
 }
 
 double EventTPC::GetValByAgetChannel_raw(int cobo_idx, int asad_idx, int aget_idx, int raw_channel_idx, int time_cell/*, bool &result*/) {  // valid range [0-1][0-3][0-3][0-67][0-511]
-  return GetValByStrip(geo_ptr->GetStripByAget(cobo_idx, asad_idx, aget_idx, raw_channel_idx), time_cell); //, result);
+  return GetValByStrip(myGeometryPtr->GetStripByAget(cobo_idx, asad_idx, aget_idx, raw_channel_idx), time_cell); //, result);
 }
 
 double EventTPC::GetMaxCharge(int strip_dir, int strip_number) { // maximal charge from single strip of a given direction 
@@ -809,9 +809,9 @@ SigClusterTPC EventTPC::GetOneCluster(double thr, int delta_strips, int delta_ti
     const int strip_num = (*it2).key2;
     const int time_cell = (*it2).key3;
     const int strip_range[2] = { MAXIMUM(1, strip_num - delta_strips), 
-				 MINIMUM(geo_ptr->GetDirNstrips(strip_dir), strip_num + delta_strips) };
+				 MINIMUM(myGeometryPtr->GetDirNstrips(strip_dir), strip_num + delta_strips) };
     const int timecell_range[2] = { MAXIMUM(0, time_cell - delta_timecells), 
-				    MINIMUM(geo_ptr->GetAgetNtimecells()-1, time_cell + delta_timecells) };
+				    MINIMUM(myGeometryPtr->GetAgetNtimecells()-1, time_cell + delta_timecells) };
     for(int icell=timecell_range[0]; icell<=timecell_range[1]; icell++) {
       for(int istrip=strip_range[0]; istrip<=strip_range[1]; istrip++) {
 	if(icell==time_cell && istrip==strip_num) continue; // exclude existing seed hits
@@ -844,12 +844,12 @@ TH1D *EventTPC::GetStripProjection(SigClusterTPC &cluster, int strip_dir) {  // 
   case DIR_V:
   case DIR_W: {
     if(cluster.GetNhits(strip_dir)<1) break;
-    h = new TH1D( Form("hclust_%spro_evt%lld", geo_ptr->GetDirName(strip_dir), event_id), 
+    h = new TH1D( Form("hclust_%spro_evt%lld", myGeometryPtr->GetDirName(strip_dir), event_id), 
 		  Form("Event-%lld: Clustered hits from %s strips integrated over time;%s strip no.;Charge/strip [arb.u.]", 
-		       event_id, geo_ptr->GetDirName(strip_dir), geo_ptr->GetDirName(strip_dir)),
-		  geo_ptr->GetDirNstrips(strip_dir),
+		       event_id, myGeometryPtr->GetDirName(strip_dir), myGeometryPtr->GetDirName(strip_dir)),
+		  myGeometryPtr->GetDirNstrips(strip_dir),
 		  1.0 - 0.5,
-		  1.*geo_ptr->GetDirNstrips(strip_dir)+0.5 );
+		  1.*myGeometryPtr->GetDirNstrips(strip_dir)+0.5 );
     // fill new histogram
     if(h) {
       //bool res;
@@ -872,17 +872,17 @@ TH1D *EventTPC::GetStripProjection(int strip_dir) {  // whole event, valid range
   case DIR_U:
   case DIR_V:
   case DIR_W: {
-    h = new TH1D( Form("hraw_%spro_evt%lld", geo_ptr->GetDirName(strip_dir), event_id), 
+    h = new TH1D( Form("hraw_%spro_evt%lld", myGeometryPtr->GetDirName(strip_dir), event_id), 
                   Form("Event-%lld: Raw signals from %s strips integrated over time;%s strip no.;Charge/strip [arb.u.]", 
-                       event_id, geo_ptr->GetDirName(strip_dir), geo_ptr->GetDirName(strip_dir)),
-                  geo_ptr->GetDirNstrips(strip_dir),
+                       event_id, myGeometryPtr->GetDirName(strip_dir), myGeometryPtr->GetDirName(strip_dir)),
+                  myGeometryPtr->GetDirNstrips(strip_dir),
                   1.0 - 0.5,
-                  1.*geo_ptr->GetDirNstrips(strip_dir)+0.5 );
+                  1.*myGeometryPtr->GetDirNstrips(strip_dir)+0.5 );
     // fill new histogram
     if(h) {
       //bool res;
-      for(int strip_num=1; strip_num<=geo_ptr->GetDirNstrips(strip_dir); strip_num++) {
-        for(int icell=0; icell<geo_ptr->GetAgetNtimecells(); icell++) {
+      for(int strip_num=1; strip_num<=myGeometryPtr->GetDirNstrips(strip_dir); strip_num++) {
+        for(int icell=0; icell<myGeometryPtr->GetAgetNtimecells(); icell++) {
           double val = GetValByStrip(strip_dir, strip_num, icell);
           if(val!=0.0) h->Fill(1.*strip_num, val);
         }
@@ -901,12 +901,12 @@ TH1D *EventTPC::GetTimeProjection(SigClusterTPC &cluster, int strip_dir) {  // v
   case DIR_V:
   case DIR_W: {
     if(cluster.GetNhits(strip_dir)<1) break;
-    h = new TH1D( Form("hclust_%stime_evt%lld", geo_ptr->GetDirName(strip_dir), event_id),
+    h = new TH1D( Form("hclust_%stime_evt%lld", myGeometryPtr->GetDirName(strip_dir), event_id),
 		  Form("Event-%lld: Clustered hits from %s strips;Time bin [arb.u.];Charge/bin [arb.u.]", 
-		       event_id, geo_ptr->GetDirName(strip_dir)),
-		  geo_ptr->GetAgetNtimecells(),
+		       event_id, myGeometryPtr->GetDirName(strip_dir)),
+		  myGeometryPtr->GetAgetNtimecells(),
 		  0.0-0.5, 
-		  1.*geo_ptr->GetAgetNtimecells()-0.5 ); // ends at 511.5 (cells numbered from 0 to 511)
+		  1.*myGeometryPtr->GetAgetNtimecells()-0.5 ); // ends at 511.5 (cells numbered from 0 to 511)
     // fill new histogram
     if(h) {
       //bool res;
@@ -928,9 +928,9 @@ TH1D *EventTPC::GetTimeProjection(SigClusterTPC &cluster) {  // all strips
   if(!IsOK() || !cluster.IsOK() || cluster.GetNhits()==0 ) return h;
   h = new TH1D( Form("hclust_time_evt%lld", event_id),
 	        Form("Event-%lld: Clustered hits from all strips;Time bin [arb.u.];Charge/bin [arb.u.]", event_id), 
-		geo_ptr->GetAgetNtimecells(),
+		myGeometryPtr->GetAgetNtimecells(),
 		0.0-0.5, 
-		1.*geo_ptr->GetAgetNtimecells()-0.5 ); // ends at 511.5 (cells numbered from 0 to 511)
+		1.*myGeometryPtr->GetAgetNtimecells()-0.5 ); // ends at 511.5 (cells numbered from 0 to 511)
   // fill new histogram
   if(h) {
     //bool res;
@@ -953,17 +953,17 @@ TH1D *EventTPC::GetTimeProjection() {  // whole event, all strips
   if(!IsOK()) return h;
   h = new TH1D( Form("hraw_time_evt%lld", event_id),
 	        Form("Event-%lld: Raw signals from all strips;Time bin [arb.u.];Charge/bin [arb.u.]", event_id), 
-		geo_ptr->GetAgetNtimecells(),
+		myGeometryPtr->GetAgetNtimecells(),
 		0.0-0.5, 
-		1.*geo_ptr->GetAgetNtimecells()-0.5 ); // ends at 511.5 (cells numbered from 0 to 511)
+		1.*myGeometryPtr->GetAgetNtimecells()-0.5 ); // ends at 511.5 (cells numbered from 0 to 511)
   // fill new histogram
   if(h) {
     int counter=0;
-    for(int icobo=0; icobo<geo_ptr->GetCoboNboards(); icobo++) {
-      for(int iasad=0; iasad<geo_ptr->GetAsadNboards(icobo); iasad++) {
-	for(int ichan=0; ichan<geo_ptr->GetAgetNchannels()*geo_ptr->GetAgetNchips(); ichan++) {
+    for(int icobo=0; icobo<myGeometryPtr->GetCoboNboards(); icobo++) {
+      for(int iasad=0; iasad<myGeometryPtr->GetAsadNboards(icobo); iasad++) {
+	for(int ichan=0; ichan<myGeometryPtr->GetAgetNchannels()*myGeometryPtr->GetAgetNchips(); ichan++) {
 	  counter++;
-	  for(int icell=0; icell<=geo_ptr->GetAgetNtimecells(); icell++) {
+	  for(int icell=0; icell<=myGeometryPtr->GetAgetNtimecells(); icell++) {
 	    double val = GetValByGlobalChannel(counter, icell);
 	    if(val!=0.0) h->Fill(1.*icell, val); 
 	  }
@@ -982,15 +982,15 @@ TH2D *EventTPC::GetStripVsTime(SigClusterTPC &cluster, int strip_dir) {  // vali
   case DIR_V:
   case DIR_W: {
     if( cluster.GetNhits(strip_dir)<1 ) break;
-    h = new TH2D( Form("hclust_%s_vs_time_evt%lld", geo_ptr->GetDirName(strip_dir), event_id),
+    h = new TH2D( Form("hclust_%s_vs_time_evt%lld", myGeometryPtr->GetDirName(strip_dir), event_id),
 		  Form("Event-%lld: Clustered hits from %s strips;Time bin [arb.u.];%s strip no.;Charge/bin [arb.u.]",
-		       event_id, geo_ptr->GetDirName(strip_dir), geo_ptr->GetDirName(strip_dir)),
-		  geo_ptr->GetAgetNtimecells(),
+		       event_id, myGeometryPtr->GetDirName(strip_dir), myGeometryPtr->GetDirName(strip_dir)),
+		  myGeometryPtr->GetAgetNtimecells(),
 		  0.0-0.5, 
-		  1.*geo_ptr->GetAgetNtimecells()-0.5, // ends at 511.5 (cells numbered from 0 to 511)
-		  geo_ptr->GetDirNstrips(strip_dir),
+		  1.*myGeometryPtr->GetAgetNtimecells()-0.5, // ends at 511.5 (cells numbered from 0 to 511)
+		  myGeometryPtr->GetDirNstrips(strip_dir),
 		  1.0-0.5,
-		  1.*geo_ptr->GetDirNstrips(strip_dir)+0.5 );
+		  1.*myGeometryPtr->GetDirNstrips(strip_dir)+0.5 );
 
     // debug
     //    std::cout << Form(">>>>>>>> EventTPC::GetStripVsTime: BOOKING: h = %p, h.entries=%ld", h, 
@@ -1035,19 +1035,19 @@ TH2D *EventTPC::GetStripVsTime(int strip_dir) {  // valid range [0-2]
   case DIR_U:
   case DIR_V:
   case DIR_W: {
-    h = new TH2D( Form("hraw_%s_vs_time_evt%lld", geo_ptr->GetDirName(strip_dir), event_id),
+    h = new TH2D( Form("hraw_%s_vs_time_evt%lld", myGeometryPtr->GetDirName(strip_dir), event_id),
 		  Form("Event-%lld: Raw signals from %s strips;Time bin [arb.u.];%s strip no.;Charge/bin [arb.u.]",
-		       event_id, geo_ptr->GetDirName(strip_dir), geo_ptr->GetDirName(strip_dir)),
-		  geo_ptr->GetAgetNtimecells(),
+		       event_id, myGeometryPtr->GetDirName(strip_dir), myGeometryPtr->GetDirName(strip_dir)),
+		  myGeometryPtr->GetAgetNtimecells(),
 		  0.0-0.5, 
-		  1.*geo_ptr->GetAgetNtimecells()-0.5, // ends at 511.5 (cells numbered from 0 to 511)
-		  geo_ptr->GetDirNstrips(strip_dir),
+		  1.*myGeometryPtr->GetAgetNtimecells()-0.5, // ends at 511.5 (cells numbered from 0 to 511)
+		  myGeometryPtr->GetDirNstrips(strip_dir),
 		  1.0-0.5,
-		  1.*geo_ptr->GetDirNstrips(strip_dir)+0.5 );
+		  1.*myGeometryPtr->GetDirNstrips(strip_dir)+0.5 );
     // fill new histogram
     if(h) {
-      for(int strip_num=1; strip_num<=geo_ptr->GetDirNstrips(strip_dir); strip_num++) {
-	for(int icell=0; icell<geo_ptr->GetAgetNtimecells(); icell++) {
+      for(int strip_num=1; strip_num<=myGeometryPtr->GetDirNstrips(strip_dir); strip_num++) {
+	for(int icell=0; icell<myGeometryPtr->GetAgetNtimecells(); icell++) {
 	  double val = GetValByStrip(strip_dir, strip_num, icell);
 	  if(val!=0.0) h->Fill(1.*icell, 1.*strip_num, val); 
 	}
@@ -1096,17 +1096,17 @@ std::vector<TH2D*> EventTPC::Get2D(SigClusterTPC &cluster, double radius, int re
    
     // loop over hits and confirm matching in space
     for(int i0=0; i0<(int)hits[0].size(); i0++) {
-      StripTPC *strip0 = geo_ptr->GetStripByDir(DIR_U, hits[0].at(i0));
+      StripTPC *strip0 = myGeometryPtr->GetStripByDir(DIR_U, hits[0].at(i0));
       for(int i1=0; i1<(int)hits[1].size(); i1++) {
-	StripTPC *strip1 = geo_ptr->GetStripByDir(DIR_V, hits[1].at(i1));
+	StripTPC *strip1 = myGeometryPtr->GetStripByDir(DIR_V, hits[1].at(i1));
 	for(int i2=0; i2<(int)hits[2].size(); i2++) {
-	  StripTPC *strip2 = geo_ptr->GetStripByDir(DIR_W, hits[2].at(i2));
+	  StripTPC *strip2 = myGeometryPtr->GetStripByDir(DIR_W, hits[2].at(i2));
 
 	  //	  std::cout << Form(">>>> Checking triplet: time_cell=%d: U=%d / V=%d / W=%d",
 	  //			    icell, hits[0].at(i0), hits[1].at(i1), hits[2].at(i2)) << std::endl;
 
 	  TVector2 pos;
-	  if( geo_ptr->MatchCrossPoint( strip0, strip1, strip2, radius, pos )) {
+	  if( myGeometryPtr->MatchCrossPoint( strip0, strip1, strip2, radius, pos )) {
 	    (n_match[DIR_U])[hits[0].at(i0)]++;
 	    (n_match[DIR_V])[hits[1].at(i1)]++;
 	    (n_match[DIR_W])[hits[2].at(i2)]++;
@@ -1121,19 +1121,19 @@ std::vector<TH2D*> EventTPC::Get2D(SigClusterTPC &cluster, double radius, int re
     //    std::cout << Form(">>>> Number of matches: time_cell=%d, triplets=%d", icell, (int)hitPos.size()) << std::endl;
     if(hitPos.size()<1) continue;
 
-    const Double_t zfactor=geo_ptr->GetVdrift()*10.0/geo_ptr->GetSamplingRate(); // [mm] : [vdrift]=cm/us, [rate]=MHz=1E6/s=1/us
-    const Double_t zoffset=0.0; // geo_ptr->GetDriftCageZmin()-geo_ptr->GetVdrift()*10.0*geo_ptr->GetTriggerDelay(); // [mm]
+    const Double_t zfactor=myGeometryPtr->GetVdrift()*10.0/myGeometryPtr->GetSamplingRate(); // [mm] : [vdrift]=cm/us, [rate]=MHz=1E6/s=1/us
+    const Double_t zoffset=0.0; // myGeometryPtr->GetDriftCageZmin()-myGeometryPtr->GetVdrift()*10.0*myGeometryPtr->GetTriggerDelay(); // [mm]
 
     // book histograms before first fill
     if(h1==NULL && h2==NULL && h3==NULL) {
 
       StripTPC* s[6] = {
-	geo_ptr->GetStripByDir(DIR_U, 1),
-	geo_ptr->GetStripByDir(DIR_U, geo_ptr->GetDirNstrips(DIR_U)),
-	geo_ptr->GetStripByDir(DIR_V, 1),
-	geo_ptr->GetStripByDir(DIR_V, geo_ptr->GetDirNstrips(DIR_V)),
-	geo_ptr->GetStripByDir(DIR_W, 1),
-	geo_ptr->GetStripByDir(DIR_W, geo_ptr->GetDirNstrips(DIR_W))
+	myGeometryPtr->GetStripByDir(DIR_U, 1),
+	myGeometryPtr->GetStripByDir(DIR_U, myGeometryPtr->GetDirNstrips(DIR_U)),
+	myGeometryPtr->GetStripByDir(DIR_V, 1),
+	myGeometryPtr->GetStripByDir(DIR_V, myGeometryPtr->GetDirNstrips(DIR_V)),
+	myGeometryPtr->GetStripByDir(DIR_W, 1),
+	myGeometryPtr->GetStripByDir(DIR_W, myGeometryPtr->GetDirNstrips(DIR_W))
       };
 
       double xmin=1E30;
@@ -1146,7 +1146,7 @@ std::vector<TH2D*> EventTPC::Get2D(SigClusterTPC &cluster, double radius, int re
       for(int i=0; i<6; i++) {
 	if(!s[i]) continue;
 	double x, y;
-	TVector2 vec=s[i]->Offset()+geo_ptr->GetReferencePoint();
+	TVector2 vec=s[i]->Offset()+myGeometryPtr->GetReferencePoint();
 	x=vec.X();
 	y=vec.Y();
 	if(x>xmax) xmax=x;
@@ -1159,15 +1159,15 @@ std::vector<TH2D*> EventTPC::Get2D(SigClusterTPC &cluster, double radius, int re
 	if(y>ymax) ymax=y;
 	if(y<ymin) ymin=y;
       }
-      xmin-=geo_ptr->GetStripPitch()*0.3;
-      xmax+=geo_ptr->GetStripPitch()*0.7;
-      ymin-=geo_ptr->GetPadPitch()*0.3;
-      ymax+=geo_ptr->GetPadPitch()*0.7;
+      xmin-=myGeometryPtr->GetStripPitch()*0.3;
+      xmax+=myGeometryPtr->GetStripPitch()*0.7;
+      ymin-=myGeometryPtr->GetPadPitch()*0.3;
+      ymax+=myGeometryPtr->GetPadPitch()*0.7;
       //zmin-=5;
       //zmax+=5;
       
-      int nx = (int)( (xmax-xmin)/geo_ptr->GetStripPitch()-1 );
-      int ny = (int)( (ymax-ymin)/geo_ptr->GetPadPitch()-1 );
+      int nx = (int)( (xmax-xmin)/myGeometryPtr->GetStripPitch()-1 );
+      int ny = (int)( (ymax-ymin)/myGeometryPtr->GetPadPitch()-1 );
       int nz = (int)( zmax-zmin );
 
       zmin = zmin*zfactor + zoffset; // [mm]
@@ -1329,17 +1329,17 @@ TH3F *EventTPC::Get3D(SigClusterTPC &cluster, double radius, int rebin_space, in
    
     // loop over hits and confirm matching in space
     for(int i0=0; i0<(int)hits[0].size(); i0++) {
-      StripTPC *strip0 = geo_ptr->GetStripByDir(DIR_U, hits[0].at(i0));
+      StripTPC *strip0 = myGeometryPtr->GetStripByDir(DIR_U, hits[0].at(i0));
       for(int i1=0; i1<(int)hits[1].size(); i1++) {
-	StripTPC *strip1 = geo_ptr->GetStripByDir(DIR_V, hits[1].at(i1));
+	StripTPC *strip1 = myGeometryPtr->GetStripByDir(DIR_V, hits[1].at(i1));
 	for(int i2=0; i2<(int)hits[2].size(); i2++) {
-	  StripTPC *strip2 = geo_ptr->GetStripByDir(DIR_W, hits[2].at(i2));
+	  StripTPC *strip2 = myGeometryPtr->GetStripByDir(DIR_W, hits[2].at(i2));
 
 	  //	  std::cout << Form(">>>> Checking triplet: time_cell=%d: U=%d / V=%d / W=%d",
 	  //			    icell, hits[0].at(i0), hits[1].at(i1), hits[2].at(i2)) << std::endl;
 
 	  TVector2 pos;
-	  if( geo_ptr->MatchCrossPoint( strip0, strip1, strip2, radius, pos )) {
+	  if( myGeometryPtr->MatchCrossPoint( strip0, strip1, strip2, radius, pos )) {
 	    (n_match[DIR_U])[hits[0].at(i0)]++;
 	    (n_match[DIR_V])[hits[1].at(i1)]++;
 	    (n_match[DIR_W])[hits[2].at(i2)]++;
@@ -1354,19 +1354,19 @@ TH3F *EventTPC::Get3D(SigClusterTPC &cluster, double radius, int rebin_space, in
     //    std::cout << Form(">>>> Number of matches: time_cell=%d, triplets=%d", icell, (int)hitPos.size()) << std::endl;
     if(hitPos.size()<1) continue;
 
-    const Double_t zfactor=geo_ptr->GetVdrift()*10.0/geo_ptr->GetSamplingRate(); // [mm] : [vdrift]=cm/us, [rate]=MHz=1E6/s=1/us
-    const Double_t zoffset=0.0; // geo_ptr->GetDriftCageZmin()-geo_ptr->GetVdrift()*10.0*geo_ptr->GetTriggerDelay(); // [mm]
+    const Double_t zfactor=myGeometryPtr->GetVdrift()*10.0/myGeometryPtr->GetSamplingRate(); // [mm] : [vdrift]=cm/us, [rate]=MHz=1E6/s=1/us
+    const Double_t zoffset=0.0; // myGeometryPtr->GetDriftCageZmin()-myGeometryPtr->GetVdrift()*10.0*myGeometryPtr->GetTriggerDelay(); // [mm]
 
     // book 3D histogram before first fill
     if(h==NULL) {
 
       StripTPC* s[6] = {
-	geo_ptr->GetStripByDir(DIR_U, 1),
-	geo_ptr->GetStripByDir(DIR_U, geo_ptr->GetDirNstrips(DIR_U)),
-	geo_ptr->GetStripByDir(DIR_V, 1),
-	geo_ptr->GetStripByDir(DIR_V, geo_ptr->GetDirNstrips(DIR_V)),
-	geo_ptr->GetStripByDir(DIR_W, 1),
-	geo_ptr->GetStripByDir(DIR_W, geo_ptr->GetDirNstrips(DIR_W))
+	myGeometryPtr->GetStripByDir(DIR_U, 1),
+	myGeometryPtr->GetStripByDir(DIR_U, myGeometryPtr->GetDirNstrips(DIR_U)),
+	myGeometryPtr->GetStripByDir(DIR_V, 1),
+	myGeometryPtr->GetStripByDir(DIR_V, myGeometryPtr->GetDirNstrips(DIR_V)),
+	myGeometryPtr->GetStripByDir(DIR_W, 1),
+	myGeometryPtr->GetStripByDir(DIR_W, myGeometryPtr->GetDirNstrips(DIR_W))
       };
 
       double xmin=1E30;
@@ -1379,7 +1379,7 @@ TH3F *EventTPC::Get3D(SigClusterTPC &cluster, double radius, int rebin_space, in
       for(int i=0; i<6; i++) {
 	if(!s[i]) continue;
 	double x, y;
-	TVector2 vec=s[i]->Offset()+geo_ptr->GetReferencePoint();
+	TVector2 vec=s[i]->Offset()+myGeometryPtr->GetReferencePoint();
 	x=vec.X();
 	y=vec.Y();
 	if(x>xmax) xmax=x;
@@ -1398,13 +1398,13 @@ TH3F *EventTPC::Get3D(SigClusterTPC &cluster, double radius, int rebin_space, in
 	if(s[i]->Offset().Y()<ymin) ymin=s[i]->Offset().Y();
 	*/
       }
-      xmin-=geo_ptr->GetStripPitch()*0.3;
-      xmax+=geo_ptr->GetStripPitch()*0.7;
-      ymin-=geo_ptr->GetPadPitch()*0.3;
-      ymax+=geo_ptr->GetPadPitch()*0.7;
+      xmin-=myGeometryPtr->GetStripPitch()*0.3;
+      xmax+=myGeometryPtr->GetStripPitch()*0.7;
+      ymin-=myGeometryPtr->GetPadPitch()*0.3;
+      ymax+=myGeometryPtr->GetPadPitch()*0.7;
       
-      int nx = (int)( (xmax-xmin)/geo_ptr->GetStripPitch()-1 );
-      int ny = (int)( (ymax-ymin)/geo_ptr->GetPadPitch()-1 );
+      int nx = (int)( (xmax-xmin)/myGeometryPtr->GetStripPitch()-1 );
+      int ny = (int)( (ymax-ymin)/myGeometryPtr->GetPadPitch()-1 );
       int nz = (int)( zmax-zmin );
 
       zmin = zmin*zfactor + zoffset; // [mm]
@@ -1522,12 +1522,12 @@ TH2D *EventTPC::GetXY_TestUV(TH2D *h) { // test (unphysical) histogram
 
   if(h==NULL) {
     StripTPC* s[6] = {
-      geo_ptr->GetStripByDir(DIR_U, 1),
-      geo_ptr->GetStripByDir(DIR_U, geo_ptr->GetDirNstrips(DIR_U)),
-      geo_ptr->GetStripByDir(DIR_V, 1),
-      geo_ptr->GetStripByDir(DIR_V, geo_ptr->GetDirNstrips(DIR_V)),
-      geo_ptr->GetStripByDir(DIR_W, 1),
-      geo_ptr->GetStripByDir(DIR_W, geo_ptr->GetDirNstrips(DIR_W))
+      myGeometryPtr->GetStripByDir(DIR_U, 1),
+      myGeometryPtr->GetStripByDir(DIR_U, myGeometryPtr->GetDirNstrips(DIR_U)),
+      myGeometryPtr->GetStripByDir(DIR_V, 1),
+      myGeometryPtr->GetStripByDir(DIR_V, myGeometryPtr->GetDirNstrips(DIR_V)),
+      myGeometryPtr->GetStripByDir(DIR_W, 1),
+      myGeometryPtr->GetStripByDir(DIR_W, myGeometryPtr->GetDirNstrips(DIR_W))
     };
     double xmin=1E30;
     double xmax=-1E30;
@@ -1540,13 +1540,13 @@ TH2D *EventTPC::GetXY_TestUV(TH2D *h) { // test (unphysical) histogram
       if(s[i]->Offset().Y()>ymax) ymax=s[i]->Offset().Y();
       if(s[i]->Offset().Y()<ymin) ymin=s[i]->Offset().Y();
     }
-    xmin-=geo_ptr->GetStripPitch()*0.3;
-    xmax+=geo_ptr->GetStripPitch()*0.7;
-    ymin-=geo_ptr->GetPadPitch()*0.3;
-    ymax+=geo_ptr->GetPadPitch()*0.7;
+    xmin-=myGeometryPtr->GetStripPitch()*0.3;
+    xmax+=myGeometryPtr->GetStripPitch()*0.7;
+    ymin-=myGeometryPtr->GetPadPitch()*0.3;
+    ymax+=myGeometryPtr->GetPadPitch()*0.7;
     
-    int nx = (int)( (xmax-xmin)/geo_ptr->GetStripPitch()-1 );
-    int ny = (int)( (ymax-ymin)/geo_ptr->GetPadPitch()-1 );
+    int nx = (int)( (xmax-xmin)/myGeometryPtr->GetStripPitch()-1 );
+    int ny = (int)( (ymax-ymin)/myGeometryPtr->GetPadPitch()-1 );
     
     std::cout << Form(">>>> U-V correlation test histogram: range=[%lf, %lf] x [%lf, %lf], nx=%d, ny=%d",
 		      xmin, xmax, ymin, ymax, nx, ny) << std::endl;
@@ -1557,12 +1557,12 @@ TH2D *EventTPC::GetXY_TestUV(TH2D *h) { // test (unphysical) histogram
   }
 
   // loop over all strip numbers and check hits strip intersection
-  for(int i0=1; i0<=geo_ptr->GetDirNstrips(DIR_U); i0++) {
-    StripTPC *strip0 = geo_ptr->GetStripByDir(DIR_U, i0);
-    for(int i1=1; i1<(int)geo_ptr->GetDirNstrips(DIR_V); i1++) {
-      StripTPC *strip1 = geo_ptr->GetStripByDir(DIR_V, i1);
+  for(int i0=1; i0<=myGeometryPtr->GetDirNstrips(DIR_U); i0++) {
+    StripTPC *strip0 = myGeometryPtr->GetStripByDir(DIR_U, i0);
+    for(int i1=1; i1<(int)myGeometryPtr->GetDirNstrips(DIR_V); i1++) {
+      StripTPC *strip1 = myGeometryPtr->GetStripByDir(DIR_V, i1);
       TVector2 pos;
-      if( geo_ptr->GetCrossPoint( strip0, strip1, pos) ) {
+      if( myGeometryPtr->GetCrossPoint( strip0, strip1, pos) ) {
     	h->SetBinContent( h->FindBin( pos.X(), pos.Y() ), 1.*i0);
       }
     }
@@ -1580,12 +1580,12 @@ TH2D *EventTPC::GetXY_TestVW(TH2D *h) { // test (unphysical) histogram
 
   if(h==NULL) {
     StripTPC* s[6] = {
-      geo_ptr->GetStripByDir(DIR_U, 1),
-      geo_ptr->GetStripByDir(DIR_U, geo_ptr->GetDirNstrips(DIR_U)),
-      geo_ptr->GetStripByDir(DIR_V, 1),
-      geo_ptr->GetStripByDir(DIR_V, geo_ptr->GetDirNstrips(DIR_V)),
-      geo_ptr->GetStripByDir(DIR_W, 1),
-      geo_ptr->GetStripByDir(DIR_W, geo_ptr->GetDirNstrips(DIR_W))
+      myGeometryPtr->GetStripByDir(DIR_U, 1),
+      myGeometryPtr->GetStripByDir(DIR_U, myGeometryPtr->GetDirNstrips(DIR_U)),
+      myGeometryPtr->GetStripByDir(DIR_V, 1),
+      myGeometryPtr->GetStripByDir(DIR_V, myGeometryPtr->GetDirNstrips(DIR_V)),
+      myGeometryPtr->GetStripByDir(DIR_W, 1),
+      myGeometryPtr->GetStripByDir(DIR_W, myGeometryPtr->GetDirNstrips(DIR_W))
     };
     double xmin=1E30;
     double xmax=-1E30;
@@ -1598,13 +1598,13 @@ TH2D *EventTPC::GetXY_TestVW(TH2D *h) { // test (unphysical) histogram
       if(s[i]->Offset().Y()>ymax) ymax=s[i]->Offset().Y();
       if(s[i]->Offset().Y()<ymin) ymin=s[i]->Offset().Y();
     }
-    xmin-=geo_ptr->GetStripPitch()*0.3;
-    xmax+=geo_ptr->GetStripPitch()*0.7;
-    ymin-=geo_ptr->GetPadPitch()*0.3;
-    ymax+=geo_ptr->GetPadPitch()*0.7;
+    xmin-=myGeometryPtr->GetStripPitch()*0.3;
+    xmax+=myGeometryPtr->GetStripPitch()*0.7;
+    ymin-=myGeometryPtr->GetPadPitch()*0.3;
+    ymax+=myGeometryPtr->GetPadPitch()*0.7;
     
-    int nx = (int)( (xmax-xmin)/geo_ptr->GetStripPitch()-1 );
-    int ny = (int)( (ymax-ymin)/geo_ptr->GetPadPitch()-1 );
+    int nx = (int)( (xmax-xmin)/myGeometryPtr->GetStripPitch()-1 );
+    int ny = (int)( (ymax-ymin)/myGeometryPtr->GetPadPitch()-1 );
     
     std::cout << Form(">>>> V-W correlation test histogram: range=[%lf, %lf] x [%lf, %lf], nx=%d, ny=%d",
 		      xmin, xmax, ymin, ymax, nx, ny) << std::endl;
@@ -1615,12 +1615,12 @@ TH2D *EventTPC::GetXY_TestVW(TH2D *h) { // test (unphysical) histogram
   }
 
   // loop over all strip numbers and check hits strip intersection
-  for(int i0=1; i0<(int)geo_ptr->GetDirNstrips(DIR_V); i0++) {
-    StripTPC *strip0 = geo_ptr->GetStripByDir(DIR_V, i0);
-    for(int i1=1; i1<(int)geo_ptr->GetDirNstrips(DIR_W); i1++) {
-      StripTPC *strip1 = geo_ptr->GetStripByDir(DIR_W, i1);
+  for(int i0=1; i0<(int)myGeometryPtr->GetDirNstrips(DIR_V); i0++) {
+    StripTPC *strip0 = myGeometryPtr->GetStripByDir(DIR_V, i0);
+    for(int i1=1; i1<(int)myGeometryPtr->GetDirNstrips(DIR_W); i1++) {
+      StripTPC *strip1 = myGeometryPtr->GetStripByDir(DIR_W, i1);
       TVector2 pos;
-      if( geo_ptr->GetCrossPoint( strip0, strip1, pos) ) {
+      if( myGeometryPtr->GetCrossPoint( strip0, strip1, pos) ) {
 	h->SetBinContent( h->FindBin( pos.X(), pos.Y() ), 1.*i0);
       }
     }
@@ -1636,12 +1636,12 @@ TH2D *EventTPC::GetXY_TestWU(TH2D *h) { // test (unphysical) histogram
 
   if(h==NULL) {
     StripTPC* s[6] = {
-      geo_ptr->GetStripByDir(DIR_U, 1),
-      geo_ptr->GetStripByDir(DIR_U, geo_ptr->GetDirNstrips(DIR_U)),
-      geo_ptr->GetStripByDir(DIR_V, 1),
-      geo_ptr->GetStripByDir(DIR_V, geo_ptr->GetDirNstrips(DIR_V)),
-      geo_ptr->GetStripByDir(DIR_W, 1),
-      geo_ptr->GetStripByDir(DIR_W, geo_ptr->GetDirNstrips(DIR_W))
+      myGeometryPtr->GetStripByDir(DIR_U, 1),
+      myGeometryPtr->GetStripByDir(DIR_U, myGeometryPtr->GetDirNstrips(DIR_U)),
+      myGeometryPtr->GetStripByDir(DIR_V, 1),
+      myGeometryPtr->GetStripByDir(DIR_V, myGeometryPtr->GetDirNstrips(DIR_V)),
+      myGeometryPtr->GetStripByDir(DIR_W, 1),
+      myGeometryPtr->GetStripByDir(DIR_W, myGeometryPtr->GetDirNstrips(DIR_W))
     };
     double xmin=1E30;
     double xmax=-1E30;
@@ -1654,13 +1654,13 @@ TH2D *EventTPC::GetXY_TestWU(TH2D *h) { // test (unphysical) histogram
       if(s[i]->Offset().Y()>ymax) ymax=s[i]->Offset().Y();
       if(s[i]->Offset().Y()<ymin) ymin=s[i]->Offset().Y();
     }
-    xmin-=geo_ptr->GetStripPitch()*0.3;
-    xmax+=geo_ptr->GetStripPitch()*0.7;
-    ymin-=geo_ptr->GetPadPitch()*0.3;
-    ymax+=geo_ptr->GetPadPitch()*0.7;
+    xmin-=myGeometryPtr->GetStripPitch()*0.3;
+    xmax+=myGeometryPtr->GetStripPitch()*0.7;
+    ymin-=myGeometryPtr->GetPadPitch()*0.3;
+    ymax+=myGeometryPtr->GetPadPitch()*0.7;
     
-    int nx = (int)( (xmax-xmin)/geo_ptr->GetStripPitch()-1 );
-    int ny = (int)( (ymax-ymin)/geo_ptr->GetPadPitch()-1 );
+    int nx = (int)( (xmax-xmin)/myGeometryPtr->GetStripPitch()-1 );
+    int ny = (int)( (ymax-ymin)/myGeometryPtr->GetPadPitch()-1 );
     
     std::cout << Form(">>>> W-U correlation test histogram: range=[%lf, %lf] x [%lf, %lf], nx=%d, ny=%d",
     		      xmin, xmax, ymin, ymax, nx, ny) << std::endl;
@@ -1671,12 +1671,12 @@ TH2D *EventTPC::GetXY_TestWU(TH2D *h) { // test (unphysical) histogram
   }
 
   // loop over all strip numbers and check hits strip intersection
-  for(int i0=1; i0<(int)geo_ptr->GetDirNstrips(DIR_W); i0++) {
-    StripTPC *strip0 = geo_ptr->GetStripByDir(DIR_W, i0);
-    for(int i1=1; i1<(int)geo_ptr->GetDirNstrips(DIR_U); i1++) {
-      StripTPC *strip1 = geo_ptr->GetStripByDir(DIR_U, i1);
+  for(int i0=1; i0<(int)myGeometryPtr->GetDirNstrips(DIR_W); i0++) {
+    StripTPC *strip0 = myGeometryPtr->GetStripByDir(DIR_W, i0);
+    for(int i1=1; i1<(int)myGeometryPtr->GetDirNstrips(DIR_U); i1++) {
+      StripTPC *strip1 = myGeometryPtr->GetStripByDir(DIR_U, i1);
       TVector2 pos;
-      if( geo_ptr->GetCrossPoint( strip0, strip1, pos) ) {
+      if( myGeometryPtr->GetCrossPoint( strip0, strip1, pos) ) {
 	h->SetBinContent( h->FindBin( pos.X(), pos.Y() ), 1.*i0);
       }
     }

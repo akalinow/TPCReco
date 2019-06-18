@@ -8,6 +8,7 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <memory>
 
 #include "TH1D.h"
 #include "TH2D.h"
@@ -123,7 +124,8 @@ class EventTPC {
   //  friend class SigClusterTPC;
  private:
   Long64_t event_id, run_id;
-  GeometryTPC *geo_ptr; // pointer to the existing TPC geometry
+  std::shared_ptr<GeometryTPC> myGeometryPtr;
+  
   std::map<MultiKey3, double, multikey3_less> chargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
   std::map<MultiKey2, double, multikey2_less> maxChargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024])
   std::map<MultiKey2, double, multikey2_less> totalChargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024])
@@ -147,11 +149,9 @@ class EventTPC {
 
   ~EventTPC(){};
   
-
-  void SetGeoPtr(GeometryTPC *g);
-
-  void SetEventId(Long64_t aId) { aId = event_id; };
-  void SetRunId(Long64_t aId) { aId = run_id; };
+  void SetGeoPtr(std::shared_ptr<GeometryTPC> aPtr);
+  void SetEventId(Long64_t aId) { event_id = aId; };
+  void SetRunId(Long64_t aId) { run_id =  aId; };
   // helper methods for inserting data points
   // they return TRUE on success and FALSE on error
   bool AddValByStrip(StripTPC* strip, int time_cell, double val);                      // valid range [0-511]
@@ -170,7 +170,7 @@ class EventTPC {
   double GetValByAgetChannel(int cobo_idx, int asad_idx, int aget_idx, int channel_idx, int time_cell/*, bool &result*/); // valid range [0-1][0-3][0-3][0-63][0-511]
   double GetValByAgetChannel_raw(int cobo_idx, int asad_idx, int aget_idx, int raw_channel_idx, int time_cell/*, bool &result*/); // valid range [0-1][0-3][0-3][0-67][0-511]
 
-  inline GeometryTPC* GetGeoPtr() { return geo_ptr; }
+  inline GeometryTPC * GetGeoPtr() { return myGeometryPtr.get(); }
   inline Long64_t GetEventId() { return event_id; }
   inline Long64_t GetRunId() { return run_id; }
   inline bool IsOK() { return initOK; }

@@ -30,6 +30,8 @@ if(EXISTS ${GET_VERSION_DIR})
   ###############################################################################
   ## target definitions #########################################################
   ###############################################################################
+  add_library(${MODULE_NAME} SHARED ${sources})
+  target_link_libraries(${MODULE_NAME} ${ROOT_LIBRARIES})
   # The data is just added to the executable, because in some IDEs (QtCreator) 
   # files are invisible when they are not explicitly part of the project.
   #
@@ -37,12 +39,13 @@ if(EXISTS ${GET_VERSION_DIR})
   add_executable(test1 test/test1.cpp)
   # Compiler flags.
   #
-  target_compile_options(grawToEventTPC PUBLIC ${CMAKE_ROOT_CFLAGS} -Wno-deprecated-declarations)
+  target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
+  target_compile_options(grawToEventTPC PUBLIC ${CMAKE_ROOT_CFLAGS} -Wno-deprecated-declarations -DUTL_LOG_LEVEL=10)
   target_compile_options(test1 PUBLIC ${CMAKE_ROOT_CFLAGS})
 
   # Linker flags
   #
-  target_link_libraries(grawToEventTPC PUBLIC DataFormats Utilities libget-root.so libcobo-frame-graw2frame.so libMultiFrame.so)
+  target_link_libraries(grawToEventTPC PUBLIC DataFormats Utilities GrawToROOT libget-root.so libcobo-frame-graw2frame.so libMultiFrame.so)
   target_link_libraries(test1 PUBLIC DataFormats)
 
   # All install commands get the same destination. this allows us to use paths
@@ -50,6 +53,7 @@ if(EXISTS ${GET_VERSION_DIR})
   set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib:${GET_VERSION_DIR}/lib)
   MESSAGE( STATUS "CMAKE_INSTALL_RPATH " ${CMAKE_INSTALL_RPATH})
 
+  install(TARGETS ${MODULE_NAME} LIBRARY DESTINATION lib)
   install(TARGETS grawToEventTPC RUNTIME DESTINATION bin)
   install(TARGETS test1 RUNTIME DESTINATION bin)
   install(DIRECTORY DESTINATION results)
