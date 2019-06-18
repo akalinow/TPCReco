@@ -36,17 +36,17 @@ if(EXISTS ${GET_VERSION_DIR})
   # files are invisible when they are not explicitly part of the project.
   #
   add_executable(grawToEventTPC bin/grawToEventTPC.cpp)
-  add_executable(test1 test/test1.cpp)
+  add_executable(testEventTPCread test/testEventTPCread.cpp)
   # Compiler flags.
   #
   target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
   target_compile_options(grawToEventTPC PUBLIC ${CMAKE_ROOT_CFLAGS} -Wno-deprecated-declarations -DUTL_LOG_LEVEL=10)
-  target_compile_options(test1 PUBLIC ${CMAKE_ROOT_CFLAGS})
+  target_compile_options(testEventTPCread PUBLIC ${CMAKE_ROOT_CFLAGS})
 
   # Linker flags
   #
   target_link_libraries(grawToEventTPC PUBLIC DataFormats Utilities GrawToROOT libget-root.so libcobo-frame-graw2frame.so libMultiFrame.so)
-  target_link_libraries(test1 PUBLIC DataFormats)
+  target_link_libraries(testEventTPCread PUBLIC DataFormats)
 
   # All install commands get the same destination. this allows us to use paths
   # relative to the executable.
@@ -55,7 +55,7 @@ if(EXISTS ${GET_VERSION_DIR})
 
   install(TARGETS ${MODULE_NAME} LIBRARY DESTINATION lib)
   install(TARGETS grawToEventTPC RUNTIME DESTINATION bin)
-  install(TARGETS test1 RUNTIME DESTINATION bin)
+  install(TARGETS testEventTPCread RUNTIME DESTINATION bin)
   install(DIRECTORY DESTINATION results)
   install(FILES $<1:${PROJECT_SOURCE_DIR}/${MODULE_NAME}/python/> DESTINATION python)
   
