@@ -57,7 +57,7 @@ if(EXISTS ${GET_VERSION_DIR})
   install(TARGETS grawToEventTPC RUNTIME DESTINATION bin)
   install(TARGETS testEventTPCread RUNTIME DESTINATION bin)
   install(DIRECTORY DESTINATION results)
-  install(FILES $<1:${PROJECT_SOURCE_DIR}/${MODULE_NAME}/python/> DESTINATION python)
+  install(PROGRAMS $<1:${PROJECT_SOURCE_DIR}/${MODULE_NAME}/python/> DESTINATION python)
   
   else()
     MESSAGE( WARNING "No GET software found. " ${MODULE_NAME} " will not be build.")

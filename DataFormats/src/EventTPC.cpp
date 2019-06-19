@@ -464,13 +464,19 @@ double SigClusterTPC::GetTotalChargeByTimeCell(int time_cell) { // charge integr
 
 /* ============= TPC EVENT CLASS ===========*/
 
-EventTPC::EventTPC()
-  : myGeometryPtr(0), initOK(false), 
-    time_rebin( 1 ), 
-    glb_max_charge( 0.0 ),
-    glb_max_charge_timing( -1 ),
-    glb_max_charge_channel( -1 ),
-    glb_tot_charge( 0.0 ) {
+EventTPC::EventTPC(){ Clear(); }
+
+
+void EventTPC::Clear(){
+
+  SetGeoPtr(0);
+  initOK = false;
+
+  time_rebin = 1;
+  glb_max_charge = 0.0;
+  glb_max_charge_timing = -1;
+  glb_max_charge_channel = -1;
+  glb_tot_charge = 0.0;
 
   for(int idir=0; idir<3; idir++) {
     max_charge[idir]=0.0;
@@ -482,8 +488,9 @@ EventTPC::EventTPC()
   totalChargeMap2.clear();  // 2-key map: strip_dir, time_cell
   totalChargeMap3.clear();  // 1-key map: time_cell
   maxChargeMap.clear();    // 2-key map: strip_dir, strip_number 
-  chargeMap.clear();       // 3-key map: strip_dir, strip_number, time_cell  
+  chargeMap.clear();  
 }
+
 
 void EventTPC::SetGeoPtr(std::shared_ptr<GeometryTPC> aPtr) {
   myGeometryPtr = aPtr;

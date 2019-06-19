@@ -15,7 +15,7 @@ Each .graw file is converted into a .root file with a run number assigned.
 
 ```
 cd resources
-python ../python/convertGrawToEventTPC.py
+../python/convertGrawToEventTPC.py
 ```
 
 Read an event (resources/EventTPC_1.root ) in EventTPC format, and plot the three projections.

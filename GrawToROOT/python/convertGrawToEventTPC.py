@@ -22,5 +22,8 @@ for aTimestamp, aFile in grawFileList.items():
     runId += 1
         
     arguments = geometryFile+" "+aFile+" "+str(runId)
-    print(aFile, aTimestamp, arguments)    
+    print(aFile, aTimestamp, arguments)
+    
     os.system(command+" "+arguments)
+    if runId==1:
+        break

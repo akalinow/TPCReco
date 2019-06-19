@@ -148,6 +148,8 @@ class EventTPC {
   EventTPC();
 
   ~EventTPC(){};
+
+  void Clear();
   
   void SetGeoPtr(std::shared_ptr<GeometryTPC> aPtr);
   void SetEventId(Long64_t aId) { event_id = aId; };
