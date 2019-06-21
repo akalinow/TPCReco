@@ -135,7 +135,7 @@ class TrackSegment2D {
  public:
 
   // Setter methods
-  
+  TrackSegment2D();  
   TrackSegment2D(const TVector2 p1, const TVector2 p2, const unsigned int nbins=5);
   TrackSegment2D(const double x1, const double y1, const double x2, const double y2, const unsigned int nbins=5);
   inline void SetStartPoint(TVector2 p1) { start_point=p1; Update(); }

@@ -21,6 +21,7 @@
 #define EVENTTPC_DEFAULT_STRIP_REBIN 2  // number of strips to rebin [1-1024] 
 #define EVENTTPC_DEFAULT_TIME_REBIN  5  // number of time cells to rebin [1-512]
 
+class TrackSegment3D;
 class EventTPC;
 
 // Space-time mask for signal clusters defined as a class
@@ -150,6 +151,8 @@ class EventTPC {
   ~EventTPC(){};
 
   void Clear();
+
+  TrackSegment3D FindTrack(SigClusterTPC & aCluster);
   
   void SetGeoPtr(std::shared_ptr<GeometryTPC> aPtr);
   void SetEventId(Long64_t aId) { event_id = aId; };
@@ -208,7 +211,7 @@ class EventTPC {
 			   int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN, 
 			   int method=EVENTTPC_DEFAULT_RECO_METHOD);  
 
-  TH3F *Get3D(SigClusterTPC &cluster, double radius,                       // clustered hits only, 3D view
+  TH3D *Get3D(SigClusterTPC &cluster, double radius,                       // clustered hits only, 3D view
 	      int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN, 
 	      int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN, 
 	      int method=EVENTTPC_DEFAULT_RECO_METHOD);  

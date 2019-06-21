@@ -72,10 +72,9 @@ class GeometryTPC {
   
   bool Load(const char *fname);                 // loads geometry from TXT config file
   bool InitTH2Poly();                           // define bins for the underlying TH2Poly histogram
-  inline TH2Poly *GetTH2Poly() { return tp; }   // returns pointer to the underlying TH2Poly
-  void SetTH2PolyStrip(int ibin, StripTPC *s);  // maps TH2Poly bin to a given StripTPC object
-  StripTPC *GetTH2PolyStrip(int ibin);          // returns pointer to StripTPC object corresponding to TH2Poly bin 
 
+  void SetTH2PolyStrip(int ibin, StripTPC *s);  // maps TH2Poly bin to a given StripTPC object
+  
  public:
 
   GeometryTPC() { ; }  // empty constructor for required by TObject
@@ -90,6 +89,9 @@ class GeometryTPC {
   inline void SetDebug(bool flag) { _debug = flag; }
 
   // Getter methods
+
+  inline TH2Poly *GetTH2Poly() { return tp; }   // returns pointer to the underlying TH2Poly
+  StripTPC *GetTH2PolyStrip(int ibin);          // returns pointer to StripTPC object corresponding to TH2Poly bin 
   
   inline bool IsOK() { return initOK; }
   int GetDirNstrips(int dir);

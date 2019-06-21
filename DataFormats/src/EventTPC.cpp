@@ -16,6 +16,7 @@
 
 #include "GeometryTPC.h"
 #include "EventTPC.h"
+#include "TrackSegmentTPC.h"
 
 /* ============= SPACE-TIME CLUSTER CLASS ===========*/
 
@@ -824,6 +825,7 @@ SigClusterTPC EventTPC::GetOneCluster(double thr, int delta_strips, int delta_ti
 	if(icell==time_cell && istrip==strip_num) continue; // exclude existing seed hits
 	MultiKey3 mkey3(strip_dir, istrip, icell);
 	if(chargeMap.find(mkey3)==chargeMap.end()) continue; // exclude non-existing space-time coordinates
+	if(chargeMap.find(mkey3)->second<0) continue; // exclude negative values (due to pedestal subtraction)
 	// add new space-time point
 	if(find_if(oldList.begin(), oldList.end(), mkey3)==oldList.end()) {
 	  cluster.AddByStrip( strip_dir, istrip, icell );
@@ -1074,6 +1076,7 @@ std::vector<TH2D*> EventTPC::Get2D(SigClusterTPC &cluster, double radius, int re
   TH2D *h3 = NULL;
   std::vector<TH2D*> hvec;
   hvec.resize(0);
+  bool err_flag = false;
 
   if(!IsOK() || !cluster.IsOK() || 
      cluster.GetNhits(DIR_U)<1 || cluster.GetNhits(DIR_V)<1 || cluster.GetNhits(DIR_W)<1 ) return hvec;
@@ -1128,9 +1131,6 @@ std::vector<TH2D*> EventTPC::Get2D(SigClusterTPC &cluster, double radius, int re
     //    std::cout << Form(">>>> Number of matches: time_cell=%d, triplets=%d", icell, (int)hitPos.size()) << std::endl;
     if(hitPos.size()<1) continue;
 
-    const Double_t zfactor=myGeometryPtr->GetVdrift()*10.0/myGeometryPtr->GetSamplingRate(); // [mm] : [vdrift]=cm/us, [rate]=MHz=1E6/s=1/us
-    const Double_t zoffset=0.0; // myGeometryPtr->GetDriftCageZmin()-myGeometryPtr->GetVdrift()*10.0*myGeometryPtr->GetTriggerDelay(); // [mm]
-
     // book histograms before first fill
     if(h1==NULL && h2==NULL && h3==NULL) {
 
@@ -1177,8 +1177,8 @@ std::vector<TH2D*> EventTPC::Get2D(SigClusterTPC &cluster, double radius, int re
       int ny = (int)( (ymax-ymin)/myGeometryPtr->GetPadPitch()-1 );
       int nz = (int)( zmax-zmin );
 
-      zmin = zmin*zfactor + zoffset; // [mm]
-      zmax = zmax*zfactor + zoffset; // [mm]
+      zmin = myGeometryPtr->Timecell2pos(zmin, err_flag);
+      zmax = myGeometryPtr->Timecell2pos(zmax, err_flag);
 
       // rebin in space
       if(rebin_space>1) {
@@ -1286,7 +1286,7 @@ std::vector<TH2D*> EventTPC::Get2D(SigClusterTPC &cluster, double radius, int re
 
 	}; // end of switch (method)...
 	
-	Double_t z=icell*zfactor+zoffset;	
+	Double_t z=myGeometryPtr->Timecell2pos(icell, err_flag);
 	h1->Fill( (it->second).X(), (it->second).Y(), val );
 	h2->Fill( (it->second).X(), z, val );
 	h3->Fill( (it->second).Y(), z, val );
@@ -1304,9 +1304,10 @@ std::vector<TH2D*> EventTPC::Get2D(SigClusterTPC &cluster, double radius, int re
 
 
 // get 3D histogram of clustered hits
-TH3F *EventTPC::Get3D(SigClusterTPC &cluster, double radius, int rebin_space, int rebin_time, int method) {
+TH3D *EventTPC::Get3D(SigClusterTPC &cluster, double radius, int rebin_space, int rebin_time, int method) {
 
-  TH3F *h = NULL;
+  TH3D *h = NULL;
+  bool err_flag = false;
 
   if(!IsOK() || !cluster.IsOK() || 
      cluster.GetNhits(DIR_U)<1 || cluster.GetNhits(DIR_V)<1 || cluster.GetNhits(DIR_W)<1 ) return h;
@@ -1361,9 +1362,6 @@ TH3F *EventTPC::Get3D(SigClusterTPC &cluster, double radius, int rebin_space, in
     //    std::cout << Form(">>>> Number of matches: time_cell=%d, triplets=%d", icell, (int)hitPos.size()) << std::endl;
     if(hitPos.size()<1) continue;
 
-    const Double_t zfactor=myGeometryPtr->GetVdrift()*10.0/myGeometryPtr->GetSamplingRate(); // [mm] : [vdrift]=cm/us, [rate]=MHz=1E6/s=1/us
-    const Double_t zoffset=0.0; // myGeometryPtr->GetDriftCageZmin()-myGeometryPtr->GetVdrift()*10.0*myGeometryPtr->GetTriggerDelay(); // [mm]
-
     // book 3D histogram before first fill
     if(h==NULL) {
 
@@ -1414,8 +1412,8 @@ TH3F *EventTPC::Get3D(SigClusterTPC &cluster, double radius, int rebin_space, in
       int ny = (int)( (ymax-ymin)/myGeometryPtr->GetPadPitch()-1 );
       int nz = (int)( zmax-zmin );
 
-      zmin = zmin*zfactor + zoffset; // [mm]
-      zmax = zmax*zfactor + zoffset; // [mm]
+      zmin = myGeometryPtr->Timecell2pos(zmin, err_flag);
+      zmax = myGeometryPtr->Timecell2pos(zmax, err_flag);
 
       // rebin in space
       if(rebin_space>1) {
@@ -1431,7 +1429,7 @@ TH3F *EventTPC::Get3D(SigClusterTPC &cluster, double radius, int rebin_space, in
       std::cout << Form(">>>> XYZ histogram: range=[%lf, %lf] x [%lf, %lf] x [%lf, %lf], nx=%d, ny=%d, nz=%d",
 			xmin, xmax, ymin, ymax, zmin, zmax, nx, ny, nz) << std::endl;
 
-      h = new TH3F( Form("hreco3D_evt%lld", event_id),
+      h = new TH3D( Form("hreco3D_evt%lld", event_id),
 		    Form("Event-%lld: 3D reco in XYZ;X [mm];Y [mm];Z [mm]", event_id),
 		    nx, xmin, xmax, ny, ymin, ymax, nz, zmin, zmax );
     }
@@ -1509,7 +1507,7 @@ TH3F *EventTPC::Get3D(SigClusterTPC &cluster, double radius, int rebin_space, in
 	  
 	}; // end of switch (method)...
 
-	Double_t z=icell*zfactor+zoffset;
+	Double_t z=myGeometryPtr->Timecell2pos(icell, err_flag);
 	h->Fill( (it->second).X(), (it->second).Y(), z, val );
 
       }
@@ -1691,4 +1689,142 @@ TH2D *EventTPC::GetXY_TestWU(TH2D *h) { // test (unphysical) histogram
 
   return h;
 }
+/////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////
+TrackSegment3D EventTPC::FindTrack(SigClusterTPC & aCluster){
 
+  bool err_flag = false;
+  ///Find tracks length on each projection.
+  std::map<double, int> trackLengthPerProjection;
+  for(int aDir=DIR_U;aDir<=DIR_W;++aDir){      
+    double timeLength  = aCluster.GetMaxTime(aDir) - aCluster.GetMinTime(aDir);
+    double stripLength  = aCluster.GetMaxStrip(aDir) - aCluster.GetMinStrip(aDir);
+    double length2D = sqrt(std::pow(timeLength, 2) + std::pow(stripLength, 2));
+    //if(aDir==0) length2D = 0;
+    trackLengthPerProjection[-length2D] = aDir;
+    std::cout<<" aCluster.GetMaxTime(aDir): "<<aCluster.GetMaxTime(aDir)
+	     <<" aCluster.GetMinTime(aDir): "<<aCluster.GetMinTime(aDir)
+	     <<" delta = "<<timeLength
+	     <<" aCluster.GetMaxStrip(aDir): "<<aCluster.GetMaxStrip(aDir)
+	     <<" aCluster.GetMinStrip(aDir): "<<aCluster.GetMinStrip(aDir)
+	     <<" delta = "<<stripLength
+	     <<std::endl;
+    std::cout<<"direction: "<<aDir<<" length: "<<length2D<<std::endl;
+  }
+  
+  StripTPC *strip1min = 0, *strip1max = 0;
+  StripTPC *strip2min = 0, *strip2max = 0;
+  double startZ = -999, endZ = -999;
+
+  int startTime = 0;
+  int endTime = 9999;
+  for(auto aItem: trackLengthPerProjection){
+    int aDir = aItem.second;
+    int aStripMinTime = aCluster.GetMinTime(aDir);
+    int aStripMaxTime = aCluster.GetMaxTime(aDir);
+    if(aStripMinTime>startTime) startTime = aStripMinTime;
+    if(aStripMaxTime<endTime) endTime = aStripMaxTime;
+  }
+
+  for(auto aItem: trackLengthPerProjection){
+    int aDir = aItem.second;
+    int aStripMinTime = aCluster.GetMinTime(aDir);
+    int aStripMaxTime = aCluster.GetMaxTime(aDir);
+
+    std::cout<<"aDir: "<<aDir<<std::endl;
+	
+    startZ = myGeometryPtr->Timecell2pos(startTime, err_flag);
+    endZ = myGeometryPtr->Timecell2pos(endTime, err_flag);
+
+    std::vector<int> hitsMinTime = aCluster.hitListByTimeDir[MultiKey2(startTime, aDir)];
+    std::vector<int> hitsMaxTime = aCluster.hitListByTimeDir[MultiKey2(endTime, aDir)];
+
+    if(!hitsMinTime.size() || !hitsMaxTime.size()) return TrackSegment3D(TVector3(), TVector3());
+
+    std::cout <<"direction: "<<aDir
+	      <<" minTime: "<<aStripMinTime
+	      <<" #hits: "<<hitsMinTime.size()
+      	      <<" maxTime: "<<aStripMaxTime
+	      <<" #hits: "<<hitsMaxTime.size()
+	      <<std::endl;
+
+    if(!strip1min){
+      strip1min = myGeometryPtr->GetStripByDir(aDir, hitsMinTime[0]);
+      strip1max = myGeometryPtr->GetStripByDir(aDir, hitsMaxTime[0]);
+    }
+    else if(!strip2min){
+      strip2min = myGeometryPtr->GetStripByDir(aDir, hitsMinTime[0]);
+      strip2max = myGeometryPtr->GetStripByDir(aDir, hitsMaxTime[0]);
+    }
+    else break;
+  }
+  
+  TVector2 start2DPoint, end2DPoint;
+  std::cout<<"dir: "<<trackLengthPerProjection.begin()->second<<" min/max strip:"<<strip1min->Num()<<" "<<strip1max->Num()<<std::endl;
+  std::cout<<"dir: "<<(++trackLengthPerProjection.begin())->second<<" min/max strip:"<<strip2min->Num()<<" "<<strip2max->Num()<<std::endl;
+
+  myGeometryPtr->GetCrossPoint(strip2min, strip1min, start2DPoint);
+  myGeometryPtr->GetCrossPoint(strip2max, strip1max, end2DPoint);
+
+  TVector3 testEnd3DPoint, testStart3DPoint;
+  TVector3 start3DPoint(start2DPoint.X(), start2DPoint.Y(), startZ);
+  TVector3 end3DPoint(end2DPoint.X(), end2DPoint.Y(), endZ);
+
+  TVector3 bestStart3DPoint = start3DPoint;
+  TVector3 bestEnd3DPoint = end3DPoint;
+  
+  TrackSegment3D aSegmentSeed(bestStart3DPoint, bestEnd3DPoint);
+  aSegmentSeed.SetComparisonCluster(aCluster);
+  std::cout<<"Seed: "<<std::endl;
+  //start3DPoint.Print();
+  //end3DPoint.Print();
+  std::cout<<"lenght: "<<aSegmentSeed.GetLength()
+	   <<" chi2: "<<aSegmentSeed.GetClusterDistance()
+  	   <<std::endl;
+
+  int nPointsXY = 2;
+  int nPointsZ = 2;
+  double delta = 0.1;
+  double bestChi2 = 9999.0;
+  double chi2 = 9999.0;
+  
+  for( int iStepStartX=-nPointsXY;iStepStartX<nPointsXY;++iStepStartX){
+    for( int iStepStartY=-nPointsXY;iStepStartY<nPointsXY;++iStepStartY){
+      for( int iStepStartZ=-nPointsZ;iStepStartZ<nPointsZ;++iStepStartZ){
+
+	for( int iStepEndX=-nPointsXY;iStepEndX<nPointsXY;++iStepEndX){
+	  for( int iStepEndY=-nPointsXY;iStepEndY<nPointsXY;++iStepEndY){
+	    for( int iStepEndZ=-nPointsZ;iStepEndZ<nPointsZ;++iStepEndZ){
+
+	      testStart3DPoint = start3DPoint + TVector3(delta*iStepStartX, delta*iStepStartY, delta*iStepStartZ);	
+	      testEnd3DPoint = end3DPoint + TVector3(delta*iStepEndX, delta*iStepEndY, delta*iStepEndZ);
+	      
+	      TrackSegment3D aSegment(testStart3DPoint, testEnd3DPoint);
+	      aSegment.SetComparisonCluster(aCluster);
+	      chi2 = aSegment.GetClusterDistance();
+	      
+	      if(chi2>0 && chi2<bestChi2){
+		bestChi2 = chi2;
+		bestStart3DPoint = testStart3DPoint;
+		bestEnd3DPoint = testEnd3DPoint;
+		std::cout<<"best chi2: "<<chi2<<"\r";
+	      }		
+	    }
+	  }
+	}
+      }
+    }
+  }
+  std::cout<<std::endl;
+  
+  TrackSegment3D aSegment(bestStart3DPoint, bestEnd3DPoint);
+  aSegment.SetComparisonCluster(aCluster);
+  std::cout<<"Fit: "<<std::endl;
+  std::cout<<"lenght: "<<aSegment.GetLength()
+	   <<" chi2: "<<aSegment.GetClusterDistance()
+	   <<std::endl;
+  
+  return aSegment;
+}
+/////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////

@@ -297,7 +297,7 @@ bool GeometryTPC::Load(const char *fname) {
     pitch_unit_vec[DIR_U] = -1.0*( strip_unit_vec[DIR_W] + strip_unit_vec[DIR_V] ).Unit();
     pitch_unit_vec[DIR_V] =      ( strip_unit_vec[DIR_U] + strip_unit_vec[DIR_W] ).Unit();
     pitch_unit_vec[DIR_W] =      ( strip_unit_vec[DIR_V] - strip_unit_vec[DIR_U] ).Unit();
-        
+
     bool found=false;
     f.seekg (0, f.beg);
     while ( getline (f,line) )

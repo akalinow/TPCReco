@@ -322,6 +322,7 @@ bool UVWprojector::InitTimeMapping() {
   const double time_zmin = geo_ptr->Timecell2pos(0.0, err_flag); // Z-position of the lower boundary of time cell no. 0]
   const double time_zmax = time_zmin + time_nbins*time_dz; // electronics limit
 
+
   for(int ibin=0; ibin<=time_nbins; ibin++) {
     time_bins.push_back(time_zmin + ibin*time_dz);
   }

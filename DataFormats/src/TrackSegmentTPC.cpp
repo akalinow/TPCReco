@@ -23,7 +23,6 @@
 #include "TrackSegmentTPC.h"
 
 /* ============= 3D TRACK SEGMENT CLASS ===========*/
-
 TrackSegment3D::TrackSegment3D(const TVector3 p1,
 			       const TVector3 p2,
 			       const int nbins) :
@@ -101,26 +100,21 @@ bool TrackSegment3D::SetComparisonCluster(SigClusterTPC &cluster) { // cluster =
 
   // create UZ, VZ, WZ projections of the parent 3D track segment
   
-  std::map<int, TrackSegment2D*> trkMap; // 1-key map: strip_dir [0-2]
-  trkMap[DIR_U] = new TrackSegment2D( GetTrack2D(geo_ptr, DIR_U) );
-  trkMap[DIR_V] = new TrackSegment2D( GetTrack2D(geo_ptr, DIR_V) );
-  trkMap[DIR_W] = new TrackSegment2D( GetTrack2D(geo_ptr, DIR_W) );
-
+  std::map<int, TrackSegment2D> trkMap; // 1-key map: strip_dir [0-2]
+  trkMap[DIR_U] = TrackSegment2D( GetTrack2D(geo_ptr, DIR_U) );
+  trkMap[DIR_V] = TrackSegment2D( GetTrack2D(geo_ptr, DIR_V) );
+  trkMap[DIR_W] = TrackSegment2D( GetTrack2D(geo_ptr, DIR_W) );
+  
   // Loop over 2D cluster hits and update statistics
-  std::map<int, TrackSegment2D*>::iterator it;
-  for(it=trkMap.begin(); it!=trkMap.end(); it++) {
-
-    if(!it->second) continue;
-    it->second->SetCluster(cluster, it->first); // DIR=it->first
-    sum_distance += it->second->GetChi2();
-    std::vector<double> clust_charge_proj( it->second->GetChargeProjectionData() );
-    for(unsigned int i=0; i<clust_charge_proj.size(); i++) {
-      if(i<charge_proj_nbins) charge_proj[i] += clust_charge_proj[i];
-    }
+  for(auto it=trkMap.begin(); it!=trkMap.end(); it++) {
+    it->second.SetCluster(cluster, it->first); // DIR=it->first
+    sum_distance += it->second.GetChi2();
+    //std::vector<double> clust_charge_proj( it->second.GetChargeProjectionData() );
+    //for(unsigned int i=0; i<clust_charge_proj.size(); i++) {
+    //if(i<charge_proj_nbins) charge_proj[i] += clust_charge_proj[i];
+    //}
   } // end of for(it=...
-
-  // clear map and destroy temporary TrackSegment2D objects  
-  trkMap.clear();
+  
   return true;
 }
 
@@ -211,6 +205,12 @@ TrackSegment2D TrackSegment3D::GetTrack2D(GeometryTPC *geo_ptr, int dir) {
 
 
 /* ============= 2D TRACK SEGMENT CLASS ===========*/
+TrackSegment2D::TrackSegment2D(){
+
+  cluster_hits.clear();
+  Update();
+  
+}
 
 TrackSegment2D::TrackSegment2D(const TVector2 p1,
 			       const TVector2 p2,
@@ -356,7 +356,7 @@ void TrackSegment2D::UpdateChi2() {
     // TVector2: HIT position relative to the START point
     const TVector2 hit_vec(hit_pos-start_point); 
     
-    // distance from the START point to the HIT projection on the track segment
+    // distance from the START point to the HIT projection parallel to the track segment
     const double proj_dist = hit_vec*unit_vec;
     
     // HIT weight
