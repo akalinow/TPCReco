@@ -21,21 +21,17 @@
 #include "GeometryTPC.h"
 #include "EventTPC.h"
 #include "TrackSegmentTPC.h"
+#include "SigClusterTPC.h"
 
 /* ============= 3D TRACK SEGMENT CLASS ===========*/
-TrackSegment3D::TrackSegment3D(const TVector3 p1,
-			       const TVector3 p2,
-			       const int nbins) :
-  start_point(p1),
-  end_point(p2),
+TrackSegment3D::TrackSegment3D(const TVector3 & p1,
+			       const TVector3 & p2,
+			       const int nbins) :  
   charge_proj_nbins(1),
-  sum_distance(0.0)
-{
-  length = (start_point-end_point).Mag(); // mm
-  if(length>0.0) unit_vec = (end_point-start_point).Unit();
-  else           unit_vec = TVector3(0., 0., 0.); // zero-length vector
-  if(nbins>1) charge_proj_nbins = nbins;
-  ResetStat();
+  sum_distance(0.0){
+
+  SetStartEndPoints(p1, p2);
+  
 }
 
 // resets accummulated statistics
@@ -44,6 +40,18 @@ void TrackSegment3D::ResetStat() {
   charge_proj.clear();
   charge_proj.resize(charge_proj_nbins, 0.0); // initialize elements with zeros
   
+}
+
+void TrackSegment3D::SetStartEndPoints(const TVector3 & p1, const TVector3 & p2){
+
+  start_point = p1;
+  end_point = p2;
+  sum_distance = 0.0;
+  length = (start_point-end_point).Mag(); // mm
+  if(length>0.0) unit_vec = (end_point-start_point).Unit();
+  else           unit_vec = TVector3(0., 0., 0.); // zero-length vector
+  ResetStat();
+
 }
 
 void TrackSegment3D::AddHit3D(TVector3 hit_pos, double hit_charge) {
@@ -101,9 +109,9 @@ bool TrackSegment3D::SetComparisonCluster(SigClusterTPC &cluster) { // cluster =
   // create UZ, VZ, WZ projections of the parent 3D track segment
   
   std::map<int, TrackSegment2D> trkMap; // 1-key map: strip_dir [0-2]
-  trkMap[DIR_U] = TrackSegment2D( GetTrack2D(geo_ptr, DIR_U) );
-  trkMap[DIR_V] = TrackSegment2D( GetTrack2D(geo_ptr, DIR_V) );
-  trkMap[DIR_W] = TrackSegment2D( GetTrack2D(geo_ptr, DIR_W) );
+  trkMap[DIR_U] = GetTrack2D(geo_ptr, DIR_U);
+  trkMap[DIR_V] = GetTrack2D(geo_ptr, DIR_V);
+  trkMap[DIR_W] = GetTrack2D(geo_ptr, DIR_W);
   
   // Loop over 2D cluster hits and update statistics
   for(auto it=trkMap.begin(); it!=trkMap.end(); it++) {

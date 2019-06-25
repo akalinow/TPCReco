@@ -60,7 +60,9 @@ class TrackSegment3D {
 
   // Setter methods
   
-  TrackSegment3D(const TVector3 p1, const TVector3 p2, const int nbins=5);
+  TrackSegment3D(const TVector3 & p1, const TVector3 & p2, const int nbins=5);
+
+  void SetStartEndPoints(const TVector3 & p1, const TVector3 & p2);
 
   // Getter methods
   

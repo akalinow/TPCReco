@@ -8,6 +8,7 @@
 #include "UVWprojector.h"
 #include "EventTPC.h"
 #include "TrackSegmentTPC.h"
+#include "SigClusterTPC.h"
 
 #include "TApplication.h"
 #include "TFile.h"
@@ -47,7 +48,7 @@ TPolyLine3D getPolyLine(TrackSegment3D & aTrackSegment){
   return aTrackPolyLine;
 }
 
-TLine get2DLine(TrackSegment3D & aTrackSegment, int aDir, std::shared_ptr<GeometryTPC> myGeometryPtr){
+std::tuple<double, double, double, double> get2DLine(TrackSegment3D & aTrackSegment, int aDir, std::shared_ptr<GeometryTPC> myGeometryPtr){
 
   TVector3 aStart = aTrackSegment.GetStartPoint();
   TVector3 aEnd = aTrackSegment.GetEndPoint();
@@ -60,10 +61,10 @@ TLine get2DLine(TrackSegment3D & aTrackSegment, int aDir, std::shared_ptr<Geomet
   TVector2 referencePoint = myGeometryPtr->GetReferencePoint();
   TVector2 start2D(aStart.X(), aStart.Y());
   TVector2 end2D(aEnd.X(), aEnd.Y());
-
+  
   start2D -= referencePoint;
   end2D -= referencePoint;
-
+  
   int offset = 1;
   if(aDir==0){
     start2D += 2*referencePoint;
@@ -78,16 +79,8 @@ TLine get2DLine(TrackSegment3D & aTrackSegment, int aDir, std::shared_ptr<Geomet
   
   int startY = myGeometryPtr->Cartesian2posUVW(start2D, aDir, err_flag)*directionScale + offset;
   int endY = myGeometryPtr->Cartesian2posUVW(end2D, aDir, err_flag)*directionScale + offset;
-
-  std::cout<<" dir: "<<aDir
-	   <<" start (X, Y): "<<startX<<" "<<startY
-	   <<" end (X, Y): "<<endX<<" "<<endY
-	   <<std::endl;
-  TLine aLine(startX, startY, endX, endY);
-  aLine.SetLineWidth(2);
-  aLine.SetLineColor(2);
 	      
-  return aLine;
+  return std::make_tuple(startX, startY, endX, endY);
 }
 ///////////////////////////////////////////////
 ///////////////////////////////////////////////
@@ -136,7 +129,15 @@ int main(int argc, char *argv[]) {
   TTree *aTree = (TTree*)aFile.Get("TPCData");
   unsigned int nEvents = aTree->GetEntries();
 
-  nEvents = 10;
+  double chargeThreshold = 0;
+  int delta_timecells = 1;
+  int delta_strips = 1;
+  double radius = 2.0;
+  int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN;
+  int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN; 
+  int method=EVENTTPC_DEFAULT_RECO_METHOD;
+
+  nEvents = 15;
   std::cout<<"Number of events: "<<nEvents<<std::endl;
 
   EventTPC *aEvent = 0;
@@ -150,46 +151,57 @@ int main(int argc, char *argv[]) {
     aTree->GetEntry(iEvent);
     aEvent->SetGeoPtr(myGeometryPtr);
 
-    double eventMaxCharge = aEvent->GetMaxCharge();
-    /*
+    double eventMaxCharge = aEvent->GetMaxCharge();    
     std::cout<<"eventMaxCharge: "<<eventMaxCharge<<std::endl;
-    if(eventMaxCharge<200){
+    if(eventMaxCharge<100){
       std::cout<<"Empty event. Skipping."<<std::endl;
       continue;
-      }*/
+    }
+    chargeThreshold = 0.2*eventMaxCharge;
+                   
+    SigClusterTPC aCluster = aEvent->GetOneCluster(chargeThreshold, delta_strips, delta_timecells);
+    TrackSegment3D aTrackSegment = aEvent->FindTrack(aCluster);
+    TLine aLine;
+    aLine.SetLineWidth(2);
+    aLine.SetLineColor(2);
+    double startX, startY, endX, endY;
+
+    int aDir = DIR_V;
+    TH2D *hProjection = aEvent->GetStripVsTime(aCluster, aDir);
+    double rho = sqrt(500*500 + 92*92);
+    double theta = 0.0;
+    TH2D *hAccumulator = new TH2D("hAccumulator","",100,0,M_PI/2.0, 100, 0, rho);
+    for(int iBinX=1;iBinX<hProjection->GetNbinsX();++iBinX){
+      for(int iBinY=1;iBinY<hProjection->GetNbinsY();++iBinY){      
+	int charge = hProjection->GetBinContent(iBinX, iBinY);
+	if(charge<10) continue;
+	for(int iBinTheta=1;iBinTheta<hAccumulator->GetNbinsX();++iBinTheta){
+	  theta = hAccumulator->GetXaxis()->GetBinCenter(iBinTheta);
+	  rho = iBinX*cos(theta) + iBinY*sin(theta);
+	  hAccumulator->Fill(theta, rho, charge);
+	}
+      }
+    }
+    hAccumulator->Draw("colz");
+    canvas->Update();
+    app.Run(kTRUE);
 
     canvas->cd(1);
     canvas->GetPad(1)->Clear();
     canvas->GetPad(1)->Update();
-            
-    double chargeThreshold = 0.2*eventMaxCharge;
-    int delta_timecells = 1;
-    int delta_strips = 1;
-    double radius = 2.0;
-    int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN;
-    int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN; 
-    int method=EVENTTPC_DEFAULT_RECO_METHOD;
-    
-    SigClusterTPC aCluster = aEvent->GetOneCluster(chargeThreshold, delta_strips, delta_timecells);
-    TrackSegment3D aTrackSegment = aEvent->FindTrack(aCluster);
 
-    canvas->cd(2);
-    gPad->cd(1);
-    aEvent->GetStripVsTime(aCluster, DIR_U)->Draw("colz");
-    TLine aLine_U = get2DLine(aTrackSegment, DIR_U, myGeometryPtr);
-
-    aLine_U.Draw();
-    canvas->cd(2);
-    gPad->cd(2);
-    aEvent->GetStripVsTime(aCluster, DIR_V)->Draw("colz");
-    TLine aLine_V = get2DLine(aTrackSegment, DIR_V, myGeometryPtr);
-    aLine_V.Draw();
-    canvas->cd(2);
-    gPad->cd(3);
-    aEvent->GetStripVsTime(aCluster, DIR_W)->Draw("colz");
-    TLine aLine_W = get2DLine(aTrackSegment, DIR_W, myGeometryPtr);
-    aLine_W.Draw();
-    gPad->Update();
+    for(int aDir=DIR_U;aDir<=DIR_W;++aDir){
+      canvas->cd(2);
+      gPad->cd(1+aDir);
+      TH2D *hProj = aEvent->GetStripVsTime(aCluster, aDir);
+      if(hProj){
+	std::tie(startX, startY, endX, endY) = get2DLine(aTrackSegment, aDir, myGeometryPtr);
+	hProj->Draw("colz");
+	aLine.DrawLine(startX, startY, endX, endY);
+      }
+    }
+    canvas->Update();
+	    
 
     canvas->cd(1);
     TH3D *h3D = aEvent->Get3D(aCluster,  radius, rebin_space, rebin_time, method);
