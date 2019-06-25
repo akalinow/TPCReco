@@ -168,7 +168,7 @@ bool EventTPC::AddValByAgetChannel_raw(int cobo_idx, int asad_idx, int aget_idx,
   return AddValByStrip(myGeometryPtr->GetStripByAget_raw(cobo_idx, asad_idx, aget_idx, raw_channel_idx), time_cell, val);
 }
 
-double EventTPC::GetValByStrip(int strip_dir, int strip_number, int time_cell/*, bool &result*/) {  // valid range [0-2][1-1024][0-511]
+double EventTPC::GetValByStrip(int strip_dir, int strip_number, int time_cell/*, bool &result*/){  // valid range [0-2][1-1024][0-511]
   //result=false;
   if(!IsOK() || time_cell<0 || time_cell>=512 || strip_number<1 || strip_number>myGeometryPtr->GetDirNstrips(strip_dir)) {
     return 0.0;
@@ -537,88 +537,52 @@ TH1D *EventTPC::GetTimeProjection() {  // whole event, all strips
   return h;
 }
 
-TH2D *EventTPC::GetStripVsTime(SigClusterTPC &cluster, int strip_dir) {  // valid range [0-2]
-  TH2D *h = NULL;
-  if(!IsOK() || !cluster.IsOK()) return h;
-  switch(strip_dir) {
-  case DIR_U:
-  case DIR_V:
-  case DIR_W: {
-    if( cluster.GetNhits(strip_dir)<1 ) break;
-    h = new TH2D( Form("hclust_%s_vs_time_evt%lld", myGeometryPtr->GetDirName(strip_dir), event_id),
-		  Form("Event-%lld: Clustered hits from %s strips;Time bin [arb.u.];%s strip no.;Charge/bin [arb.u.]",
-		       event_id, myGeometryPtr->GetDirName(strip_dir), myGeometryPtr->GetDirName(strip_dir)),
-		  myGeometryPtr->GetAgetNtimecells(),
-		  0.0-0.5, 
-		  1.*myGeometryPtr->GetAgetNtimecells()-0.5, // ends at 511.5 (cells numbered from 0 to 511)
-		  myGeometryPtr->GetDirNstrips(strip_dir),
-		  1.0-0.5,
-		  1.*myGeometryPtr->GetDirNstrips(strip_dir)+0.5 );
+TH2D* EventTPC::GetStripVsTime(SigClusterTPC &cluster, int strip_dir){  
 
-    // debug
-    //    std::cout << Form(">>>>>>>> EventTPC::GetStripVsTime: BOOKING: h = %p, h.entries=%ld", h, 
-    //		 (long)(h ? h->GetEntries() : 0) ) << std::endl;
-    //    std::cout << Form(">>>>>>>> EventTPC::GetStripVsTime: CLUSTER: [%d, %d] x [%d, %d], max=%lf (evt.max=%lf)",
-    //		 cluster.GetMinStrip(strip_dir), cluster.GetMaxStrip(strip_dir),
-    //		 cluster.GetMinTime(strip_dir), cluster.GetMaxTime(strip_dir),
-    //		 cluster.GetMaxCharge(strip_dir),
-    //		 GetMaxCharge(strip_dir) ) << std::endl;
-    // debug
+  if(!IsOK() || !cluster.IsOK()) return 0;
 
-    // fill new histogram
-    if(h) {
-      for(int strip_num=cluster.GetMinStrip(strip_dir); strip_num<=cluster.GetMaxStrip(strip_dir); strip_num++) {
-	for(int icell=cluster.GetMinTime(strip_dir); icell<=cluster.GetMaxTime(strip_dir); icell++) {
-	  if( cluster.CheckByStrip(strip_dir, strip_num, icell) ) {
-	    h->Fill(1.*icell, 1.*strip_num, GetValByStrip(strip_dir, strip_num, icell));
-	  //	    std::cout << Form(">>>>>>>> EventTPC::GetStripVsTime: fill [cell=%d, strip=%d]", icell, strip_num) << std::endl;
-	  }
-	  // debug
-	  //	  double val = GetValByStrip(strip_dir, strip_num, icell);
-	  //	  h->Fill(1.*icell, 1.*strip_num, val);
-	  // debug
-	}
+  TH2D* result = new TH2D( Form("hclust_%s_vs_time_evt%lld", myGeometryPtr->GetDirName(strip_dir), event_id),
+					 Form("Event-%lld: Clustered hits from %s strips;Time bin [arb.u.];%s strip no.;Charge/bin [arb.u.]",
+					      event_id, myGeometryPtr->GetDirName(strip_dir), myGeometryPtr->GetDirName(strip_dir)),
+					 myGeometryPtr->GetAgetNtimecells(),
+					 0.0-0.5, 
+					 1.*myGeometryPtr->GetAgetNtimecells()-0.5, // ends at 511.5 (cells numbered from 0 to 511)
+					 myGeometryPtr->GetDirNstrips(strip_dir),
+					 1.0-0.5,
+			   1.*myGeometryPtr->GetDirNstrips(strip_dir)+0.5 );
+
+  for(int strip_num=cluster.GetMinStrip(strip_dir); strip_num<=cluster.GetMaxStrip(strip_dir); strip_num++) {
+    for(int icell=cluster.GetMinTime(strip_dir); icell<=cluster.GetMaxTime(strip_dir); icell++) {
+      if( cluster.CheckByStrip(strip_dir, strip_num, icell) ) {
+	result->Fill(1.*icell, 1.*strip_num, GetValByStrip(strip_dir, strip_num, icell));
       }
     }
   }
-  };
 
-  // debug
-  //  std::cout << Form(">>>>>>>> EventTPC::GetStripVsTime: END: h = %p, h.entries=%ld", h, 
-  //	       (long)(h ? h->GetEntries() : 0) ) << std::endl;
-  // debug
-
-  return h;
+  return result;
 }
 
-TH2D *EventTPC::GetStripVsTime(int strip_dir) {  // valid range [0-2]
-  TH2D *h = NULL;
-  if(!IsOK()) return h;
-  switch(strip_dir) {
-  case DIR_U:
-  case DIR_V:
-  case DIR_W: {
-    h = new TH2D( Form("hraw_%s_vs_time_evt%lld", myGeometryPtr->GetDirName(strip_dir), event_id),
-		  Form("Event-%lld: Raw signals from %s strips;Time bin [arb.u.];%s strip no.;Charge/bin [arb.u.]",
-		       event_id, myGeometryPtr->GetDirName(strip_dir), myGeometryPtr->GetDirName(strip_dir)),
-		  myGeometryPtr->GetAgetNtimecells(),
-		  0.0-0.5, 
-		  1.*myGeometryPtr->GetAgetNtimecells()-0.5, // ends at 511.5 (cells numbered from 0 to 511)
-		  myGeometryPtr->GetDirNstrips(strip_dir),
-		  1.0-0.5,
-		  1.*myGeometryPtr->GetDirNstrips(strip_dir)+0.5 );
-    // fill new histogram
-    if(h) {
-      for(int strip_num=1; strip_num<=myGeometryPtr->GetDirNstrips(strip_dir); strip_num++) {
-	for(int icell=0; icell<myGeometryPtr->GetAgetNtimecells(); icell++) {
-	  double val = GetValByStrip(strip_dir, strip_num, icell);
-	  if(val!=0.0) h->Fill(1.*icell, 1.*strip_num, val); 
-	}
-      }
+std::shared_ptr<TH2D> EventTPC::GetStripVsTime(int strip_dir){  // valid range [0-2]
+
+  if(!IsOK()) return std::shared_ptr<TH2D>();
+
+  std::shared_ptr<TH2D> result(new TH2D( Form("hraw_%s_vs_time_evt%lld", myGeometryPtr->GetDirName(strip_dir), event_id),
+					 Form("Event-%lld: Raw signals from %s strips;Time bin [arb.u.];%s strip no.;Charge/bin [arb.u.]",
+					      event_id, myGeometryPtr->GetDirName(strip_dir), myGeometryPtr->GetDirName(strip_dir)),
+					 myGeometryPtr->GetAgetNtimecells(),
+					 0.0-0.5, 
+					 1.*myGeometryPtr->GetAgetNtimecells()-0.5, // ends at 511.5 (cells numbered from 0 to 511)
+					 myGeometryPtr->GetDirNstrips(strip_dir),
+					 1.0-0.5,
+					 1.*myGeometryPtr->GetDirNstrips(strip_dir)+0.5 ));
+  // fill new histogram
+  for(int strip_num=1; strip_num<=myGeometryPtr->GetDirNstrips(strip_dir); strip_num++) {
+    for(int icell=0; icell<myGeometryPtr->GetAgetNtimecells(); icell++) {
+      double val = GetValByStrip(strip_dir, strip_num, icell);
+      result->Fill(1.*icell, 1.*strip_num, val); 
     }
   }
-  };
-  return h;
+  return result;
 }
 
 // get three projections on: XY, XZ, YZ planes

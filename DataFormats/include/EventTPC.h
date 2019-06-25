@@ -79,11 +79,11 @@ class EventTPC {
   double GetValByAgetChannel(int cobo_idx, int asad_idx, int aget_idx, int channel_idx, int time_cell/*, bool &result*/); // valid range [0-1][0-3][0-3][0-63][0-511]
   double GetValByAgetChannel_raw(int cobo_idx, int asad_idx, int aget_idx, int raw_channel_idx, int time_cell/*, bool &result*/); // valid range [0-1][0-3][0-3][0-67][0-511]
 
-  inline GeometryTPC * GetGeoPtr() { return myGeometryPtr.get(); }
-  inline Long64_t GetEventId() { return event_id; }
-  inline Long64_t GetRunId() { return run_id; }
-  inline bool IsOK() { return initOK; }
-  inline int GetTimeRebin() { return time_rebin; }       
+  inline GeometryTPC * GetGeoPtr() const { return myGeometryPtr.get(); }
+  inline Long64_t GetEventId() const { return event_id; }
+  inline Long64_t GetRunId() const { return run_id; }
+  inline bool IsOK() const { return initOK; }
+  inline int GetTimeRebin() const { return time_rebin; }       
   bool SetTimeRebin(int rebin); // HAS NO EFFECT YET !!!!
 
   double GetMaxCharge();                   // maximal charge from all strips
@@ -107,8 +107,10 @@ class EventTPC {
   TH1D *GetStripProjection(int strip_dir);                            // whole,event, valid dir range [0-2]
   TH1D *GetTimeProjection();                                          // whole event, all strip dirs
 
+  std::shared_ptr<TH2D> GetStripVsTime(int strip_dir);
+  
   TH2D *GetStripVsTime(SigClusterTPC &cluster, int strip_dir);        // clustered hits only, valid dir range [0-2]
-  TH2D *GetStripVsTime(int strip_dir);                                // whole event, all strip dirs
+  //TH2D *GetStripVsTime(int strip_dir);                                // whole event, all strip dirs
 
   std::vector<TH2D*> Get2D(SigClusterTPC &cluster, double radius,          // clustered hits only,
 			   int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN,   // projections on: XY, XZ, YZ planes
