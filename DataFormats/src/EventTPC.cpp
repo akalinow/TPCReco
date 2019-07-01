@@ -537,20 +537,20 @@ TH1D *EventTPC::GetTimeProjection() {  // whole event, all strips
   return h;
 }
 
-TH2D* EventTPC::GetStripVsTime(SigClusterTPC &cluster, int strip_dir){  
+std::shared_ptr<TH2D> EventTPC::GetStripVsTime(SigClusterTPC &cluster, int strip_dir){  
 
   if(!IsOK() || !cluster.IsOK()) return 0;
 
-  TH2D* result = new TH2D( Form("hclust_%s_vs_time_evt%lld", myGeometryPtr->GetDirName(strip_dir), event_id),
-					 Form("Event-%lld: Clustered hits from %s strips;Time bin [arb.u.];%s strip no.;Charge/bin [arb.u.]",
-					      event_id, myGeometryPtr->GetDirName(strip_dir), myGeometryPtr->GetDirName(strip_dir)),
-					 myGeometryPtr->GetAgetNtimecells(),
-					 0.0-0.5, 
-					 1.*myGeometryPtr->GetAgetNtimecells()-0.5, // ends at 511.5 (cells numbered from 0 to 511)
-					 myGeometryPtr->GetDirNstrips(strip_dir),
-					 1.0-0.5,
-			   1.*myGeometryPtr->GetDirNstrips(strip_dir)+0.5 );
-
+  std::shared_ptr<TH2D>result(new TH2D( Form("hclust_%s_vs_time_evt%lld", myGeometryPtr->GetDirName(strip_dir), event_id),
+					Form("Event-%lld: Clustered hits from %s strips;Time bin [arb.u.];%s strip no.;Charge/bin [arb.u.]",
+					     event_id, myGeometryPtr->GetDirName(strip_dir), myGeometryPtr->GetDirName(strip_dir)),
+					myGeometryPtr->GetAgetNtimecells(),
+					0.0-0.5, 
+					1.*myGeometryPtr->GetAgetNtimecells()-0.5, // ends at 511.5 (cells numbered from 0 to 511)
+					myGeometryPtr->GetDirNstrips(strip_dir),
+					1.0-0.5,
+					1.*myGeometryPtr->GetDirNstrips(strip_dir)+0.5 ));
+  
   for(int strip_num=cluster.GetMinStrip(strip_dir); strip_num<=cluster.GetMaxStrip(strip_dir); strip_num++) {
     for(int icell=cluster.GetMinTime(strip_dir); icell<=cluster.GetMaxTime(strip_dir); icell++) {
       if( cluster.CheckByStrip(strip_dir, strip_num, icell) ) {
@@ -558,7 +558,7 @@ TH2D* EventTPC::GetStripVsTime(SigClusterTPC &cluster, int strip_dir){
       }
     }
   }
-
+  
   return result;
 }
 
@@ -1081,6 +1081,7 @@ TH2D *EventTPC::GetXY_TestUV(TH2D *h) { // test (unphysical) histogram
 
   // loop over all strip numbers and check hits strip intersection
   for(int i0=1; i0<=myGeometryPtr->GetDirNstrips(DIR_U); i0++) {
+    if(i0!=1) continue;
     StripTPC *strip0 = myGeometryPtr->GetStripByDir(DIR_U, i0);
     for(int i1=1; i1<(int)myGeometryPtr->GetDirNstrips(DIR_V); i1++) {
       StripTPC *strip1 = myGeometryPtr->GetStripByDir(DIR_V, i1);
@@ -1139,6 +1140,7 @@ TH2D *EventTPC::GetXY_TestVW(TH2D *h) { // test (unphysical) histogram
 
   // loop over all strip numbers and check hits strip intersection
   for(int i0=1; i0<(int)myGeometryPtr->GetDirNstrips(DIR_V); i0++) {
+    if(i0!=1) continue;
     StripTPC *strip0 = myGeometryPtr->GetStripByDir(DIR_V, i0);
     for(int i1=1; i1<(int)myGeometryPtr->GetDirNstrips(DIR_W); i1++) {
       StripTPC *strip1 = myGeometryPtr->GetStripByDir(DIR_W, i1);
@@ -1197,6 +1199,7 @@ TH2D *EventTPC::GetXY_TestWU(TH2D *h) { // test (unphysical) histogram
   for(int i0=1; i0<(int)myGeometryPtr->GetDirNstrips(DIR_W); i0++) {
     StripTPC *strip0 = myGeometryPtr->GetStripByDir(DIR_W, i0);
     for(int i1=1; i1<(int)myGeometryPtr->GetDirNstrips(DIR_U); i1++) {
+      if(i1!=1) continue;
       StripTPC *strip1 = myGeometryPtr->GetStripByDir(DIR_U, i1);
       TVector2 pos;
       if( myGeometryPtr->GetCrossPoint( strip0, strip1, pos) ) {
@@ -1206,147 +1209,6 @@ TH2D *EventTPC::GetXY_TestWU(TH2D *h) { // test (unphysical) histogram
   }
 
   return h;
-}
-/////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////
-TrackSegment3D EventTPC::FindTrack(SigClusterTPC & aCluster){
-
-  bool err_flag = false;
-  ///Find tracks length on each projection.
-  std::map<double, int> trackLengthPerProjection;
-  for(int aDir=DIR_U;aDir<=DIR_W;++aDir){      
-    double timeLength  = aCluster.GetMaxTime(aDir) - aCluster.GetMinTime(aDir);
-    double stripLength  = aCluster.GetMaxStrip(aDir) - aCluster.GetMinStrip(aDir);
-    double length2D = sqrt(std::pow(timeLength, 2) + std::pow(stripLength, 2));
-    trackLengthPerProjection[-length2D] = aDir;
-    std::cout<<" aCluster.GetMaxTime(aDir): "<<aCluster.GetMaxTime(aDir)
-	     <<" aCluster.GetMinTime(aDir): "<<aCluster.GetMinTime(aDir)
-	     <<" delta = "<<timeLength
-	     <<" aCluster.GetMaxStrip(aDir): "<<aCluster.GetMaxStrip(aDir)
-	     <<" aCluster.GetMinStrip(aDir): "<<aCluster.GetMinStrip(aDir)
-	     <<" delta = "<<stripLength
-	     <<std::endl;
-    std::cout<<"direction: "<<aDir<<" length: "<<length2D<<std::endl;
-  }
-  
-  StripTPC *strip1min = 0, *strip1max = 0;
-  StripTPC *strip2min = 0, *strip2max = 0;
-  double startZ = -999, endZ = -999;
-
-  int startTime = 0;
-  int endTime = 9999;
-  for(auto aItem: trackLengthPerProjection){
-    int aDir = aItem.second;
-    int aStripMinTime = aCluster.GetMinTime(aDir);
-    int aStripMaxTime = aCluster.GetMaxTime(aDir);
-    if(aStripMinTime>startTime) startTime = aStripMinTime;
-    if(aStripMaxTime<endTime) endTime = aStripMaxTime;
-  }
-
-  for(auto aItem: trackLengthPerProjection){
-    int aDir = aItem.second;
-    int aStripMinTime = aCluster.GetMinTime(aDir);
-    int aStripMaxTime = aCluster.GetMaxTime(aDir);
-
-    std::cout<<"aDir: "<<aDir<<std::endl;
-	
-    startZ = myGeometryPtr->Timecell2pos(startTime, err_flag);
-    endZ = myGeometryPtr->Timecell2pos(endTime, err_flag);
-
-    std::vector<int> hitsMinTime = aCluster.hitListByTimeDir[MultiKey2(startTime, aDir)];
-    std::vector<int> hitsMaxTime = aCluster.hitListByTimeDir[MultiKey2(endTime, aDir)];
-
-    if(!hitsMinTime.size() || !hitsMaxTime.size()) return TrackSegment3D(TVector3(), TVector3());
-
-    std::cout <<"direction: "<<aDir
-	      <<" minTime: "<<aStripMinTime
-	      <<" #hits: "<<hitsMinTime.size()
-      	      <<" maxTime: "<<aStripMaxTime
-	      <<" #hits: "<<hitsMaxTime.size()
-	      <<std::endl;
-
-    if(!strip1min){
-      strip1min = myGeometryPtr->GetStripByDir(aDir, hitsMinTime[0]);
-      strip1max = myGeometryPtr->GetStripByDir(aDir, hitsMaxTime[0]);
-    }
-    else if(!strip2min){
-      strip2min = myGeometryPtr->GetStripByDir(aDir, hitsMinTime[0]);
-      strip2max = myGeometryPtr->GetStripByDir(aDir, hitsMaxTime[0]);
-    }
-    else break;
-  }
-  
-  TVector2 start2DPoint, end2DPoint;
-  std::cout<<"dir: "<<trackLengthPerProjection.begin()->second<<" min/max strip:"<<strip1min->Num()<<" "<<strip1max->Num()<<std::endl;
-  std::cout<<"dir: "<<(++trackLengthPerProjection.begin())->second<<" min/max strip:"<<strip2min->Num()<<" "<<strip2max->Num()<<std::endl;
-
-  myGeometryPtr->GetCrossPoint(strip2min, strip1min, start2DPoint);
-  myGeometryPtr->GetCrossPoint(strip2max, strip1max, end2DPoint);
-
-  TVector3 testEnd3DPoint, testStart3DPoint;
-  TVector3 start3DPoint(start2DPoint.X(), start2DPoint.Y(), startZ);
-  TVector3 end3DPoint(end2DPoint.X(), end2DPoint.Y(), endZ);
-
-  TVector3 bestStart3DPoint = start3DPoint;
-  TVector3 bestEnd3DPoint = end3DPoint;
-  
-  TrackSegment3D aSegmentSeed(bestStart3DPoint, bestEnd3DPoint);
-  aSegmentSeed.SetComparisonCluster(aCluster);
-  std::cout<<"Seed: "<<std::endl;
-  //start3DPoint.Print();
-  //end3DPoint.Print();
-  std::cout<<"lenght: "<<aSegmentSeed.GetLength()
-	   <<" chi2: "<<aSegmentSeed.GetClusterDistance()
-  	   <<std::endl;
-
-  int nPointsXY = 5;
-  int nPointsZ = 5;
-  //double delta = 0.1;
-  double bestChi2 = 9999.0;
-  double chi2 = 9999.0;
-
-  TVector3 deltaX(0.1,0,0);
-  TVector3 deltaY(0,0.1,0);
-  TVector3 deltaZ(0,0,0.1);
-  
-  for( int iStepStartX=-nPointsXY;iStepStartX<nPointsXY;++iStepStartX){
-    std::cout<<"iStepStartX: "<<iStepStartX<<std::endl;
-    for( int iStepStartY=-nPointsXY;iStepStartY<nPointsXY;++iStepStartY){
-      for( int iStepStartZ=-nPointsZ;iStepStartZ<nPointsZ;++iStepStartZ){
-
-	for( int iStepEndX=-nPointsXY;iStepEndX<nPointsXY;++iStepEndX){
-	  for( int iStepEndY=-nPointsXY;iStepEndY<nPointsXY;++iStepEndY){
-	    for( int iStepEndZ=-nPointsZ;iStepEndZ<nPointsZ;++iStepEndZ){
-
-	      testStart3DPoint = start3DPoint + iStepStartX*deltaX + iStepStartY*deltaY + iStepStartZ*deltaX;	      
-	      testEnd3DPoint = end3DPoint + iStepEndX*deltaX + iStepEndY*deltaY + iStepEndZ*deltaX;
-	      
-	      TrackSegment3D aSegment(testStart3DPoint, testEnd3DPoint);
-	      aSegment.SetComparisonCluster(aCluster);
-	      chi2 = aSegment.GetClusterDistance();
-	      
-	      if(chi2>0 && chi2<bestChi2){
-		bestChi2 = chi2;
-		bestStart3DPoint = testStart3DPoint;
-		bestEnd3DPoint = testEnd3DPoint;
-		std::cout<<"best chi2: "<<chi2<<"\r";
-	      }		
-	    }
-	  }
-	}
-      }
-    }
-  }
-  std::cout<<std::endl;
-  
-  TrackSegment3D aSegment(bestStart3DPoint, bestEnd3DPoint);
-  aSegment.SetComparisonCluster(aCluster);
-  std::cout<<"Fit: "<<std::endl;
-  std::cout<<"lenght: "<<aSegment.GetLength()
-	   <<" chi2: "<<aSegment.GetClusterDistance()
-	   <<std::endl;
-  
-  return aSegment;
 }
 /////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////

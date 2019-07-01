@@ -11,5 +11,5 @@ make install -j 4
 ## Run instructions:
 
 ```
-./bin/UtilsTPC_test
+./bin/tpcGUI config/config_GUI.json
 ```

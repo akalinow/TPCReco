@@ -69,8 +69,14 @@ void EntryDialog::updateEventNumbers(unsigned int nTotalEvents,
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void EntryDialog::updateFileName(const std::string & fileName){
- 
-  fileNameLabel->SetText(fileName.c_str());  
+
+  std::string fileNameWithBreaks = fileName;
+  unsigned int lineLength = 40;
+  for(unsigned int iPos=lineLength;iPos<lineLength*5;iPos+=lineLength)
+  if(fileName.size()>iPos){
+    fileNameWithBreaks.insert(iPos,"\n");
+  }
+  fileNameLabel->SetText(fileNameWithBreaks.c_str());  
   fileInfoFrame->Layout();
 }
 /////////////////////////////////////////////////////////

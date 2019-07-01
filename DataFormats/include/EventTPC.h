@@ -56,8 +56,6 @@ class EventTPC {
 
   void Clear();
 
-  TrackSegment3D FindTrack(SigClusterTPC & aCluster);
-  
   void SetGeoPtr(std::shared_ptr<GeometryTPC> aPtr);
   void SetEventId(Long64_t aId) { event_id = aId; };
   void SetRunId(Long64_t aId) { run_id =  aId; };
@@ -106,11 +104,9 @@ class EventTPC {
   TH1D *GetTimeProjection(SigClusterTPC &cluster);                    // clustered hits only, all strip dirs
   TH1D *GetStripProjection(int strip_dir);                            // whole,event, valid dir range [0-2]
   TH1D *GetTimeProjection();                                          // whole event, all strip dirs
-
-  std::shared_ptr<TH2D> GetStripVsTime(int strip_dir);
   
-  TH2D *GetStripVsTime(SigClusterTPC &cluster, int strip_dir);        // clustered hits only, valid dir range [0-2]
-  //TH2D *GetStripVsTime(int strip_dir);                                // whole event, all strip dirs
+  std::shared_ptr<TH2D> GetStripVsTime(SigClusterTPC &cluster, int strip_dir);        // clustered hits only, valid dir range [0-2]
+  std::shared_ptr<TH2D> GetStripVsTime(int strip_dir);                               // whole event, all strip dirs
 
   std::vector<TH2D*> Get2D(SigClusterTPC &cluster, double radius,          // clustered hits only,
 			   int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN,   // projections on: XY, XZ, YZ planes

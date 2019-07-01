@@ -1,6 +1,8 @@
 #include <iostream>
 #include "GeometryTPC.h"
 
+#include "TCanvas.h"
+
 int main(int argc, char *argv[]) {
 
   std::cout << "main: argc=" << argc << std::endl;
@@ -33,16 +35,9 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  int idir = 0;
-  TVector2 aPoint(106, 110);
+  TCanvas *c1 = new TCanvas();
+  g->GetTH2Poly()->Draw();
+  c1->Print("test.root");
 
-  double directionScale = g->GetDirNstrips(idir)/std::abs(2*g->Strip2posUVW(idir, 1, err_flag));
-  //aPoint -= g->GetReferencePoint();
-  std::cout << "Projection of point : ";
-  aPoint.Print();
-  std::cout<<" to direction " << g->GetDirName(idir) 
-	   << " strip number: " << g->Cartesian2posUVW(aPoint, idir, err_flag)*directionScale
-	   <<std::endl;
-  
   return 0;
 }

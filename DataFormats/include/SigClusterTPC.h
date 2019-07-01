@@ -58,6 +58,9 @@ class SigClusterTPC {
   std::map<int, double> totalChargeMap3; // key=TIME_CELL [0-511]
 
  public:
+
+  SigClusterTPC() {}; //default contructor 
+  
   SigClusterTPC(EventTPC *e); // constructor needs a pointer to the existing event
   inline std::vector<MultiKey3> GetHitList() { return hitList; } // list of ALL hits, value=key(STRIP_DIR [0-2], STRIP_NUM [1-1024], REBIN_TIME_CELL [0-511])
   std::vector<MultiKey2> GetHitListByDir(int strip_dir); // list of SELECTED hits corresponding to a given STRIP_DIR[0-2], value=key(REBIN_TIME_CELL [0-511], STRIP_NUM [1-1024])

@@ -7,9 +7,12 @@
 #include <SelectionBox.h>
 
 #include <TStyle.h>
-#include <TH2D.h>
 #include <TFrame.h>
 #include <TVirtualX.h>
+
+#include <TH2D.h>
+#include <TH3D.h>
+#include <TLatex.h>
 
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -35,15 +38,21 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h)
   MapWindow();
   SetWindowName("TPC GUI");
 
+  //TEST ---
+  std::string fileName = "/scratch_local/akalinow/ELITPC/TPCReco/build/resources/EventTPC_1.root";
   myDataManager.loadGeometry("/home/akalinow/scratch/ELITPC/TPCReco/build/resources/geometry_mini_eTPC.dat");
-  myDataManager.loadDataFile("/scratch_local/akalinow/ELITPC/TPCReco/build/resources/EventTPC_1.root");//TEST
+  myDataManager.loadDataFile(fileName);
+  fEntryDialog->updateFileName(fileName);
   myDataManager.loadEvent(0);
-  EventTPC* aEvent = myDataManager.getCurrentEvent();
-  myHistoManager.setEvent(aEvent);
-  fEntryDialog->updateEventNumbers(myDataManager.numberOfEvents(),
-				   myDataManager.currentEventNumber());
-  //Update();
 
+  fCanvas->Clear();
+  fCanvas->Divide(3,3);
+  TText aMessage(0.2, 0.5,"Waiting for data.");
+  for(int iPad=1;iPad<=9;++iPad){
+    fCanvas->cd(iPad);
+    aMessage.DrawText(0.2, 0.5,"Waiting for data.");
+  }
+  //////
  }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -160,12 +169,49 @@ void MainFrame::CloseWindow(){
 /////////////////////////////////////////////////////////
 void MainFrame::Update(){
 
+  myHistoManager.setEvent(myDataManager.getCurrentEvent());
+  fEntryDialog->updateEventNumbers(myDataManager.numberOfEvents(),
+				   myDataManager.currentEventNumber());
+  
   fCanvas->Clear();
   fCanvas->Divide(3,3);
+  fCanvas->cd(1);
+
+  for(int aDir=0;aDir<3;++aDir){
+    myHistoManager.getHoughAccumulator(aDir);
+  }
+  
   for(int aDir=0;aDir<3;++aDir){
     fCanvas->cd(aDir+1);  
-    myHistoManager.getStripVsTime(aDir)->DrawClone("colz");
+    myHistoManager.getRawStripVsTime(aDir)->DrawClone("colz");
+    fCanvas->cd(aDir+1+3);  
+    myHistoManager.getFilteredStripVsTime(aDir)->DrawClone("colz");
+    fCanvas->cd(aDir+1+3+3);  
+    myHistoManager.getHoughAccumulator(aDir)->DrawClone("colz");
+    fCanvas->cd(aDir+1+3);  
+    myHistoManager.getTrackSeed(aDir).DrawClone();
+
+    myHistoManager.getLineProjection(aDir).DrawClone();
+    //myHistoManager.getHoughAccumulator(aDir, 1);
+    //myHistoManager.getTrackSeed(aDir).DrawClone();
+    
   }
+  /*
+  TVirtualPad *aPad = fCanvas->cd(7);
+  TText aMessage(0.2, 0.5,"Calculating 3D scence");
+  aMessage.DrawClone();
+  aPad->Update();
+  TH3D *h3DReco =  myHistoManager.get3DReconstruction();
+  if(h3DReco){
+    aPad->Clear();
+    h3DReco->DrawClone("box2z");
+  }
+  else {
+    aPad->Clear();  
+    aMessage.DrawText(0.2, 0.5, "3D scene not available.");
+  }
+  aPad->Update();
+  */  
   fCanvas->Update();  
 }
 /////////////////////////////////////////////////////////
@@ -212,8 +258,6 @@ void MainFrame::HandleMenu(Int_t id){
       if(fi.fFilename) fileName.append(fi.fFilename);
       myDataManager.loadDataFile(fileName);
       fEntryDialog->updateFileName(fileName);
-      fEntryDialog->updateEventNumbers(myDataManager.numberOfEvents(),
-				       myDataManager.currentEventNumber());
       Update();
     }
     break;
@@ -231,19 +275,13 @@ void MainFrame::HandleMenu(Int_t id){
     break;
   case M_NEXT_EVENT:
     {
-      EventTPC* aEvent = myDataManager.getNextEvent();
-      myHistoManager.setEvent(aEvent);
-      fEntryDialog->updateEventNumbers(myDataManager.numberOfEvents(),
-				       myDataManager.currentEventNumber());
+     myDataManager.getNextEvent();      
       Update();
     }
     break;
   case M_PREVIOUS_EVENT:
     {
-      EventTPC* aEvent = myDataManager.getPreviousEvent();
-      myHistoManager.setEvent(aEvent);
-      fEntryDialog->updateEventNumbers(myDataManager.numberOfEvents(),
-				       myDataManager.currentEventNumber());
+      myDataManager.getPreviousEvent();
       Update();
     }
     break;
