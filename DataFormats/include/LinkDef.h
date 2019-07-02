@@ -5,7 +5,7 @@
 #pragma link C++ nestedclasses;
 
 #pragma link C++ class EventTPC+;
-#pragma link C++ class GeometryTPC+;
+//#pragma link C++ class GeometryTPC+;
 #pragma link C++ class StripTPC+;
 
 #endif

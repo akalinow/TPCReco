@@ -186,12 +186,12 @@ void MainFrame::Update(){
     myHistoManager.getRawStripVsTime(aDir)->DrawClone("colz");
     fCanvas->cd(aDir+1+3);  
     myHistoManager.getFilteredStripVsTime(aDir)->DrawClone("colz");
-    fCanvas->cd(aDir+1+3+3);  
-    myHistoManager.getHoughAccumulator(aDir)->DrawClone("colz");
-    fCanvas->cd(aDir+1+3);  
-    myHistoManager.getTrackSeed(aDir).DrawClone();
+    myHistoManager.getTrack2D(aDir).DrawClone();
+    myHistoManager.getTrack3DProjection(aDir).DrawClone();
+    fCanvas->cd(aDir+1+3+3);
+    myHistoManager.getHoughAccumulator(aDir).DrawClone("colz");
 
-    myHistoManager.getLineProjection(aDir).DrawClone();
+    //myHistoManager.getLineProjection(aDir).DrawClone();
     //myHistoManager.getHoughAccumulator(aDir, 1);
     //myHistoManager.getTrackSeed(aDir).DrawClone();
     

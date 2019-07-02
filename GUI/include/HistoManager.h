@@ -6,6 +6,7 @@
 #include <memory>
 
 #include "SigClusterTPC.h"
+#include "TrackBuilder.h"
 
 #include "TSpectrum2.h"
 #include "TVector2.h"
@@ -34,22 +35,25 @@ public:
 
   TH3D* get3DReconstruction();
 
-  TH2D* getHoughAccumulator(int aDir, int iPeak=0);
+  const TH2D & getHoughAccumulator(int aDir, int iPeak=0);
 
-  TLine getTrackSeed(int aDir);
+  TLine getTrack2D(int aDir);
 
-  TLine getLineProjection(int aDir);
+  TLine getTrack3DProjection(int aDir);
    
 private:
     
   EventTPC *myEvent;
   SigClusterTPC aCluster;
   TH3D *h3DReco;
+  TrackBuilder myTkBuilder;
+
+  std::vector<int> stripOffset = {-71, 0, -55};  
+  //#### Angles of U/V/W unit vectors wrt X-axis [deg]
+  //#ANGLES: 90.0 -30.0 30.0
+  std::vector<double> phiPitchDirection = {M_PI, -M_PI/6.0 + M_PI/2.0, M_PI/6.0 - M_PI/2.0};
   
   std::shared_ptr<GeometryTPC> myGeometryPtr;
-
-  TSpectrum2 peakFinder;
-  std::vector<TVector2> seedBias, seedTangent;
 
 };
 #endif

@@ -34,6 +34,9 @@ void HistoManager::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
 void HistoManager::setEvent(EventTPC* aEvent){
 
   myEvent = aEvent;
+
+  myTkBuilder.setEvent(aEvent);
+  myTkBuilder.reconstruct();
   
   double eventMaxCharge = aEvent->GetMaxCharge();
   double chargeThreshold = 0.1*eventMaxCharge;
@@ -41,9 +44,6 @@ void HistoManager::setEvent(EventTPC* aEvent){
   int delta_strips = 1;
 
   aCluster = aEvent->GetOneCluster(chargeThreshold, delta_strips, delta_timecells);
-
-  seedBias.resize(3);
-  seedTangent.resize(3);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -82,154 +82,62 @@ TH3D* HistoManager::get3DReconstruction(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TH2D* HistoManager::getHoughAccumulator(int aDir, int iPeak){
+const TH2D & HistoManager::getHoughAccumulator(int aDir, int iPeak){
 
-  std::shared_ptr<TH2D> hProjection = myEvent->GetStripVsTime(aDir);
+  return myTkBuilder.getHoughtTransform(aDir);
 
-  double maxX = hProjection->GetXaxis()->GetXmax();
-  double maxY = hProjection->GetYaxis()->GetXmax();
-  double rho = sqrt(2.0);
-  double theta = 0.0;
-  TH2D *hAccumulator = new TH2D("hAccumulator","",100,-M_PI,M_PI, 100, 0, rho);
-     
-    for(int iBinX=0;iBinX<hProjection->GetNbinsX();++iBinX){
-      for(int iBinY=0;iBinY<hProjection->GetNbinsY();++iBinY){      
-	int charge = hProjection->GetBinContent(iBinX, iBinY);
-	if(charge<10) continue;
-	for(int iBinTheta=1;iBinTheta<hAccumulator->GetNbinsX();++iBinTheta){
-	  theta = hAccumulator->GetXaxis()->GetBinCenter(iBinTheta);
-	  rho = iBinX/maxX*cos(theta) + iBinY/maxY*sin(theta);
-	  hAccumulator->Fill(theta, rho, std::pow(charge, 1));
-	}
-      }
-    }
-
-    ///Find peaks
-    std::cout<<"Looking for peaks in Hough accumulator"<<std::endl;
-
-    int iBinX = 0, iBinY = 0, iBinZ=0;
-    hAccumulator->GetMaximumBin(iBinX, iBinY, iBinZ);
-    for(int aPeak=0;aPeak<iPeak;++aPeak){
-      hAccumulator->SetBinContent(iBinX, iBinY, 0,0);
-      hAccumulator->GetMaximumBin(iBinX, iBinY, iBinZ);
-    }
-    
-    std::cout<<"Maximum location: "
-	     <<" X: "<<hAccumulator->GetXaxis()->GetBinCenter(iBinX)
-	     <<" Y: "<<hAccumulator->GetYaxis()->GetBinCenter(iBinY)
-	     <<std::endl;
-    double seedTheta = hAccumulator->GetXaxis()->GetBinCenter(iBinX);
-    double rhoNormalised = hAccumulator->GetYaxis()->GetBinCenter(iBinY);
-    double aX = rhoNormalised*cos(seedTheta)*maxX;
-    double aY = rhoNormalised*sin(seedTheta)*maxY;
-    seedBias[aDir].SetX(aX);
-    seedBias[aDir].SetY(aY);
-
-    aX = -rhoNormalised*sin(seedTheta)*maxX;
-    aY = rhoNormalised*cos(seedTheta)*maxY;
-    double norm = sqrt(aX*aX + aY*aY);
-    seedTangent[aDir].SetX(aX/norm);
-    seedTangent[aDir].SetY(aY/norm);
-    ///Set tengent direcion along time arrow
-    if(seedTangent[aDir].X()<0) seedTangent[aDir] *= -1;
-    seedTangent[aDir] /= seedTangent[aDir].X();
-
-    ///Move seed bias so lambda=0 correspond to t=0
-    ///so biases from different projections can be compared
-    ///FIX ME: seedTangent.X()==0!!
-    double lambda = -seedBias[aDir].X()/seedTangent[aDir].X();
-    seedBias[aDir] += lambda*seedTangent[aDir];
-
-    std::cout<<__FUNCTION__<<" bias: ";
-    seedBias[aDir].Print();
-    
-
-    //peakFinder.Search(hAccumulator,2,"col",0.5);
-    std::cout<<"Done."<<std::endl;
-    return hAccumulator;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TLine HistoManager::getTrackSeed(int aDir){
+TLine HistoManager::getTrack2D(int aDir){
 
-  double lambda = 0;  
-  double x1 = (seedBias[aDir]+lambda*seedTangent[aDir]).X();
-  double y1 = (seedBias[aDir]+lambda*seedTangent[aDir]).Y();
+  const Track3D & aTrack2DProjection = myTkBuilder.getTrack2D(aDir);
+  const TVector3 & bias = aTrack2DProjection.getBias();
+  const TVector3 & tangent = aTrack2DProjection.getTangent();
+  double lambdaMax = aTrack2DProjection.getLength();
 
-  lambda = 250;
-  double x2 = (seedBias[aDir]+lambda*seedTangent[aDir]).X();
-  double y2 = (seedBias[aDir]+lambda*seedTangent[aDir]).Y();
+  double xBegin = (bias+tangent).X();
+  double yBegin = (bias+tangent).Y();
+
+  double xEnd = (bias+lambdaMax*tangent).X();
+  double yEnd = (bias+lambdaMax*tangent).Y();
   
-  TLine aTrackLine(x1,y1, x2, y2);
+  TLine aTrackLine(xBegin, yBegin, xEnd, yEnd);
   aTrackLine.SetLineColor(2);
   aTrackLine.SetLineWidth(2);
-
-  std::cout<<"Direction: "<<aDir<<" b: ";
-  seedBias[aDir].Print();
-  std::cout<<"t: ";
-  seedTangent[aDir].Print();
 
   return aTrackLine;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TLine HistoManager::getLineProjection(int aDir){
+TLine HistoManager::getTrack3DProjection(int aDir){
 
-  std::vector<int> stripOffset = {-71, 0, -55};
-  
-  //#### Angles of U/V/W unit vectors wrt X-axis [deg]
-  //#ANGLES: 90.0 -30.0 30.0
-  std::vector<double> phiPitchDirection = {M_PI, -M_PI/6.0 + M_PI/2.0, M_PI/6.0 - M_PI/2.0};
   TVector3 stripPitchDirection(cos(phiPitchDirection[aDir]),
 			       sin(phiPitchDirection[aDir]), 0);
-
-
-  double bZ = seedBias[0].X();
-  double bX = (seedBias[0].Y() + stripOffset[0])*cos(phiPitchDirection[0]);
-  double bY = (seedBias[1].Y()+stripOffset[1] -bX*cos(phiPitchDirection[1]))/sin(phiPitchDirection[1]);
-  bY += (seedBias[2].Y()+stripOffset[2]-bX*cos(phiPitchDirection[2]))/sin(phiPitchDirection[2]);
-  bY /=2.0;
-
-  TVector3 b(bX, bY, bZ);
-
-  double tZ = seedTangent[0].X();
-  double tX = -seedTangent[0].Y();
-  double tY = (seedTangent[1].Y() - tX*cos(phiPitchDirection[1]))/sin(phiPitchDirection[1]);
-  tY += (seedTangent[2].Y() - tX*cos(phiPitchDirection[2]))/sin(phiPitchDirection[2]);
-  tY /= 2.0;
-
-  TVector3 t(tX, tY, tZ);
-  std::cout<<"3D b: ";
-  b.Print();
-  std::cout<<"t: ";
-  t.Print();
-  std::cout<<std::endl;
-
+  
+  const Track3D & aTrack3D = myTkBuilder.getTrack3D();
+  const TVector3 & bias = aTrack3D.getBias();
+  const TVector3 & tangent = aTrack3D.getTangent();
+  double lambdaMax = aTrack3D.getLength();
+  
   double lambda = 0;
   TVector3 aPointOnLine;
 
   lambda = 0;
-  aPointOnLine = b + lambda*t;
-  double x1 = aPointOnLine.Z();
-  double y1 = aPointOnLine*stripPitchDirection - stripOffset[aDir];
+  aPointOnLine = bias + lambda*tangent;
+  double xStart = aPointOnLine.Z();
+  double yStart = aPointOnLine*stripPitchDirection - stripOffset[aDir];
 
-  lambda = 2000;
-  aPointOnLine = b + lambda*t;
-  double x2 = aPointOnLine.Z();
-  double y2 = aPointOnLine*stripPitchDirection - stripOffset[aDir];
+  lambda = lambdaMax;
+  aPointOnLine = bias + lambda*tangent;
+  double xEnd = aPointOnLine.Z();
+  double yEnd = aPointOnLine*stripPitchDirection - stripOffset[aDir];
 
-  TLine aLineProjection(x1, y1, x2, y2);
-  aLineProjection.SetLineColor(4);
-  aLineProjection.SetLineWidth(2);
+  TLine aProjection(xStart, yStart, xEnd, yEnd);
+  aProjection.SetLineColor(4);
+  aProjection.SetLineWidth(2);
 
-  std::cout<<"direction: "<<aDir
-           <<" (x1, y1): "<<x1<<", "<<y1
-	   <<" (x2, y2): "<<x2<<", "<<y2
-	   <<std::endl;
-    
-
-  return aLineProjection;
-  
+  return aProjection;  
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
