@@ -102,7 +102,7 @@ int main(int argc, char *argv[]) {
     myEvent.SetGeoPtr(0);
 
     ///Skip empty events
-    if(skipEmptyEvents && myEvent->GetMaxCharge()<100) continue;
+    if(skipEmptyEvents && myEvent.GetMaxCharge()<100) continue;
     /////////////////////
     aTree.Fill();
   }

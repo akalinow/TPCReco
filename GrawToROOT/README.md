@@ -1,5 +1,12 @@
 ## Installation instructions:
 
+Before compilig setup the GET environment.
+At the daqula2 node use afollowing command:
+
+```
+source /opt/soft/GetSoftware_20170928/thisGET.sh
+```
+
 ```
 git clone ssh://git@dracula.hep.fuw.edu.pl:8822/akalinowski/TPCReco.git
 cd TPCReco
