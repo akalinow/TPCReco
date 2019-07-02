@@ -1,5 +1,6 @@
 #include <cstdlib>
 #include <iostream>
+#include <tuple>
 
 #include "TCanvas.h"
 #include "TH2D.h"
@@ -92,15 +93,20 @@ const TH2D & HistoManager::getHoughAccumulator(int aDir, int iPeak){
 TLine HistoManager::getTrack2D(int aDir){
 
   const Track3D & aTrack2DProjection = myTkBuilder.getTrack2D(aDir);
-  const TVector3 & bias = aTrack2DProjection.getBias();
+  const TVector3 & bias = aTrack2DProjection.getBiasAtX0();
   const TVector3 & tangent = aTrack2DProjection.getTangent();
-  double lambdaMax = aTrack2DProjection.getLength();
 
-  double xBegin = (bias+tangent).X();
-  double yBegin = (bias+tangent).Y();
+  double startTime = 0.0, endTime = 0.0;
+  std::tie(startTime, endTime) = myTkBuilder.findTrackStartEndTime(aDir);
 
-  double xEnd = (bias+lambdaMax*tangent).X();
-  double yEnd = (bias+lambdaMax*tangent).Y();
+
+  double lambda = startTime;
+  double xBegin = (bias+lambda*tangent).X();
+  double yBegin = (bias+lambda*tangent).Y();
+
+  lambda = endTime;
+  double xEnd = (bias+lambda*tangent).X();
+  double yEnd = (bias+lambda*tangent).Y();
   
   TLine aTrackLine(xBegin, yBegin, xEnd, yEnd);
   aTrackLine.SetLineColor(2);
@@ -116,19 +122,21 @@ TLine HistoManager::getTrack3DProjection(int aDir){
 			       sin(phiPitchDirection[aDir]), 0);
   
   const Track3D & aTrack3D = myTkBuilder.getTrack3D();
-  const TVector3 & bias = aTrack3D.getBias();
+  const TVector3 & bias = aTrack3D.getBiasAtZ0();
   const TVector3 & tangent = aTrack3D.getTangent();
-  double lambdaMax = aTrack3D.getLength();
+
+  double startTime = 0.0, endTime = 0.0;
+  std::tie(startTime, endTime) = myTkBuilder.findTrackStartEndTime(aDir);
   
-  double lambda = 0;
+  double lambda = startTime;
   TVector3 aPointOnLine;
 
-  lambda = 0;
+  lambda = startTime;
   aPointOnLine = bias + lambda*tangent;
   double xStart = aPointOnLine.Z();
   double yStart = aPointOnLine*stripPitchDirection - stripOffset[aDir];
 
-  lambda = lambdaMax;
+  lambda = endTime;
   aPointOnLine = bias + lambda*tangent;
   double xEnd = aPointOnLine.Z();
   double yEnd = aPointOnLine*stripPitchDirection - stripOffset[aDir];
@@ -141,4 +149,76 @@ TLine HistoManager::getTrack3DProjection(int aDir){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+TH1D HistoManager::getChargeAlong2DTrack(int aDir){
 
+  std::shared_ptr<TH2D> hProjection = myEvent->GetStripVsTime(aDir);
+  const Track3D & aTrack2DProjection = myTkBuilder.getTrack2D(aDir);
+  const TVector3 & bias = aTrack2DProjection.getBiasAtX0();
+  const TVector3 & tangent = aTrack2DProjection.getTangent();
+
+  //TH2D hCharge("hCharge","",100,0,500, 20, -2, 2);
+  TH1D hCharge("hCharge","",125,0,500);
+
+  double x=0, y=0;
+  double charge = 0.0;
+  double lambda = 0.0;
+  double value = 0.0;
+  //int sign = 0.0;
+  TVector3 aPoint;
+  TVector3 d;
+  
+  for(int iBinX=1;iBinX<hProjection->GetNbinsX();++iBinX){
+    for(int iBinY=1;iBinY<hProjection->GetNbinsY();++iBinY){
+      x = hProjection->GetXaxis()->GetBinCenter(iBinX);
+      y = hProjection->GetYaxis()->GetBinCenter(iBinY);
+      charge = hProjection->GetBinContent(iBinX, iBinY);
+      if(charge<10) charge = 0.0;
+      aPoint.SetXYZ(x, y, 0.0);
+      lambda = (aPoint - bias)*tangent/tangent.Mag2();      
+      d = aPoint - bias - lambda*tangent;
+      if(d.Mag()>1) continue;
+      //sign = -1 + 2*(tangent.Cross(d).Z()>0);
+      value = charge/(d.Mag() + 0.001);
+      //value = charge*d.Mag()*sign;
+      hCharge.Fill(lambda, value);
+    }
+  }
+
+  hCharge.Smooth();
+  TH1D *hDerivative = (TH1D*)hCharge.Clone("hDerivative");
+  hDerivative->Reset();
+  
+  for(int iBinX=2; iBinX<hCharge.GetNbinsX();++iBinX){
+    value = hCharge.GetBinContent(iBinX+1) - hCharge.GetBinContent(iBinX-1);
+    hDerivative->SetBinContent(iBinX, value);
+  }
+
+  double start = 0.0;
+  hDerivative->Scale(1.0/hDerivative->GetMaximum());
+  for(int iBinX=1; iBinX<hCharge.GetNbinsX();++iBinX){
+    value = hDerivative->GetBinContent(iBinX);
+    if(value>0.2){
+      start = hDerivative->GetBinCenter(iBinX);
+      break;
+    }		    
+  }
+
+  double end = 0.0;
+  hDerivative->Scale(1.0/hDerivative->GetMaximum());
+  for(int iBinX=hCharge.GetNbinsX(); iBinX>1;--iBinX){
+    value = hDerivative->GetBinContent(iBinX);
+    if(value<-0.2){
+      end = hDerivative->GetBinCenter(iBinX);
+      break;
+    }		    
+  }
+
+  std::cout<<"start: "<<start
+	   <<" end: "<<end
+	   <<std::endl;
+  
+  //return hCharge;
+  return *hDerivative;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////

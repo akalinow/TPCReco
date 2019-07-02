@@ -127,22 +127,14 @@ Track3D TrackBuilder::findTrack2D(int iDir, int iPeak) const{
 
   aX = -rho*sin(theta);
   aY = rho*cos(theta);
-  double norm = sqrt(aX*aX + aY*aY);
-  aX /= norm;
-  aY /= norm;
   aTangent.SetXYZ(aX, aY, 0.0);
   
-  ///Set tangent direction along time arrow
+  ///Set tangent direction along time arrow.
   if(aTangent.X()<0) aTangent *= -1;
+  ///Normalize to X=1, so vector components can be compared between projections.
   //FIX ME: aTangent.X()!=0 !!!
   aTangent *= 1.0/aTangent.X();
   
-  ///Move seed bias so lambda=0 correspond to t=0
-  ///so biases from different projections can be compared
-  ///FIX ME: seedTangent.X()==0 !!!
-  double lambda = -aBias.X()/aTangent.X();
-  aBias += lambda*aTangent;
-
   Track3D a2DSeed(aTangent, aBias, 500);
 
   return a2DSeed;
@@ -153,10 +145,10 @@ Track3D TrackBuilder::buildTrack3D() const{
 
   myTrack2DProjections[0].getTangent();
 
-  double bZ = myTrack2DProjections[0].getBias().X();  
-  double bX = (myTrack2DProjections[0].getBias().Y() + stripOffset[0])*cos(phiPitchDirection[0]);
-  double bY_fromV = (myTrack2DProjections[1].getBias().Y()+stripOffset[1] -bX*cos(phiPitchDirection[1]))/sin(phiPitchDirection[1]);
-  double bY_fromW = (myTrack2DProjections[2].getBias().Y()+stripOffset[2] -bX*cos(phiPitchDirection[2]))/sin(phiPitchDirection[2]);
+  double bZ = myTrack2DProjections[0].getBiasAtX0().X();  
+  double bX = (myTrack2DProjections[0].getBiasAtX0().Y() + stripOffset[0])*cos(phiPitchDirection[0]);
+  double bY_fromV = (myTrack2DProjections[1].getBiasAtX0().Y()+stripOffset[1] -bX*cos(phiPitchDirection[1]))/sin(phiPitchDirection[1]);
+  double bY_fromW = (myTrack2DProjections[2].getBiasAtX0().Y()+stripOffset[2] -bX*cos(phiPitchDirection[2]))/sin(phiPitchDirection[2]);
   double bY = (bY_fromV + bY_fromW)/2.0;
   TVector3 aBias(bX, bY, bZ);
 
@@ -166,10 +158,79 @@ Track3D TrackBuilder::buildTrack3D() const{
   double tY_fromW = (myTrack2DProjections[2].getTangent().Y() - tX*cos(phiPitchDirection[2]))/sin(phiPitchDirection[2]);
   double tY = (tY_fromV + tY_fromW)/2.0;
   TVector3 aTangent(tX, tY, tZ);
+  if(aTangent.Z()<0) aTangent *= -1;
+  ///Normalize to X=1, so vector components can be compared between projections.
+  //FIX ME: aTangent.X()!=0 !!!
+  aTangent *= 1.0/aTangent.Z();
 
   Track3D a3DSeed(aTangent, aBias, 500);
 
   return a3DSeed;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::tuple<double, double> TrackBuilder::findTrackStartEndTime(int aDir){
+
+  std::shared_ptr<TH2D> hProjection = myEvent->GetStripVsTime(aDir);
+  const Track3D & aTrack2DProjection = getTrack2D(aDir);
+  const TVector3 & bias = aTrack2DProjection.getBiasAtX0();
+  const TVector3 & tangent = aTrack2DProjection.getTangent();
+
+  TH1D hCharge("hCharge","",125,0,500);
+
+  double x=0, y=0;
+  double charge = 0.0;
+  double lambda = 0.0;
+  double value = 0.0;
+  //int sign = 0.0;
+  TVector3 aPoint;
+  TVector3 d;
+  
+  for(int iBinX=1;iBinX<hProjection->GetNbinsX();++iBinX){
+    for(int iBinY=1;iBinY<hProjection->GetNbinsY();++iBinY){
+      x = hProjection->GetXaxis()->GetBinCenter(iBinX);
+      y = hProjection->GetYaxis()->GetBinCenter(iBinY);
+      charge = hProjection->GetBinContent(iBinX, iBinY);
+      if(charge<10) charge = 0.0;
+      aPoint.SetXYZ(x, y, 0.0);
+      lambda = (aPoint - bias)*tangent/tangent.Mag2();      
+      d = aPoint - bias - lambda*tangent;
+      if(d.Mag()>1) continue;
+      value = charge/(d.Mag() + 0.001);
+      hCharge.Fill(lambda, value);
+    }
+  }
+
+  hCharge.Smooth();
+  TH1D *hDerivative = (TH1D*)hCharge.Clone("hDerivative");
+  hDerivative->Reset();
+  
+  for(int iBinX=2; iBinX<hCharge.GetNbinsX();++iBinX){
+    value = hCharge.GetBinContent(iBinX+1) - hCharge.GetBinContent(iBinX-1);
+    hDerivative->SetBinContent(iBinX, value);
+  }
+
+  double start = 0.0;
+  hDerivative->Scale(1.0/hDerivative->GetMaximum());
+  for(int iBinX=1; iBinX<hCharge.GetNbinsX();++iBinX){
+    value = hDerivative->GetBinContent(iBinX);
+    if(value>0.2){
+      start = hDerivative->GetBinCenter(iBinX);
+      break;
+    }		    
+  }
+
+  double end = 0.0;
+  hDerivative->Scale(1.0/hDerivative->GetMaximum());
+  for(int iBinX=hCharge.GetNbinsX(); iBinX>1;--iBinX){
+    value = hDerivative->GetBinContent(iBinX);
+    if(value<-0.2){
+      end = hDerivative->GetBinCenter(iBinX);
+      break;
+    }		    
+  }
+
+  return std::make_tuple(start, end);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

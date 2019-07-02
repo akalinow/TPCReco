@@ -8,9 +8,8 @@
 #include "SigClusterTPC.h"
 #include "TrackBuilder.h"
 
-#include "TSpectrum2.h"
-#include "TVector2.h"
 #include "TLine.h"
+#include "TGraph.h"
 
 class TH2D;
 class TH3D;
@@ -40,6 +39,8 @@ public:
   TLine getTrack2D(int aDir);
 
   TLine getTrack3DProjection(int aDir);
+
+  TH1D getChargeAlong2DTrack(int aDir);
    
 private:
     

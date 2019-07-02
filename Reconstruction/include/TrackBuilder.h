@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include <memory>
-
+#include <tuple>
 
 #include "Track3D.h"
 
@@ -32,6 +32,8 @@ public:
 
   const Track3D & getTrack3D() const;
 
+  std::tuple<double, double> findTrackStartEndTime(int aDir);
+
 private:
 
   void fillHoughAccumulator(int iDir);
@@ -39,7 +41,6 @@ private:
   Track3D findTrack2D(int iDir, int iPeak) const;
 
   Track3D buildTrack3D() const;
-  
     
   EventTPC *myEvent;  
   std::shared_ptr<GeometryTPC> myGeometryPtr;
