@@ -72,6 +72,13 @@ std::shared_ptr<TH2D> HistoManager::getFilteredStripVsTime(int aDir){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+std::shared_ptr<TH2D> HistoManager::getRecHitStripVsTime(int aDir){
+
+  return std::shared_ptr<TH2D>(new TH2D(myTkBuilder.getRecHits2D(aDir)));//FIX ME avoid object copying
+
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 TH3D* HistoManager::get3DReconstruction(){
 
   double radius = 2.0;
@@ -90,15 +97,13 @@ const TH2D & HistoManager::getHoughAccumulator(int aDir, int iPeak){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TLine HistoManager::getTrack2D(int aDir){
+TLine HistoManager::getTrack2D(int aDir, int iTrack){
 
-  const Track3D & aTrack2DProjection = myTkBuilder.getTrack2D(aDir);
+  const Track3D & aTrack2DProjection = myTkBuilder.getTrack2D(aDir, iTrack);
   const TVector3 & bias = aTrack2DProjection.getBiasAtX0();
   const TVector3 & tangent = aTrack2DProjection.getTangent();
 
-  double startTime = 0.0, endTime = 0.0;
-  std::tie(startTime, endTime) = myTkBuilder.findTrackStartEndTime(aDir);
-
+  double startTime = 0.0, endTime = 300.0;
 
   double lambda = startTime;
   double xBegin = (bias+lambda*tangent).X();
@@ -126,7 +131,6 @@ TLine HistoManager::getTrack3DProjection(int aDir){
   const TVector3 & tangent = aTrack3D.getTangent();
 
   double startTime = 0.0, endTime = 0.0;
-  std::tie(startTime, endTime) = myTkBuilder.findTrackStartEndTime(aDir);
   
   double lambda = startTime;
   TVector3 aPointOnLine;
@@ -163,7 +167,7 @@ TH1D HistoManager::getChargeAlong2DTrack(int aDir){
   double charge = 0.0;
   double lambda = 0.0;
   double value = 0.0;
-  //int sign = 0.0;
+  int sign = 0.0;
   TVector3 aPoint;
   TVector3 d;
   
@@ -177,48 +181,16 @@ TH1D HistoManager::getChargeAlong2DTrack(int aDir){
       lambda = (aPoint - bias)*tangent/tangent.Mag2();      
       d = aPoint - bias - lambda*tangent;
       if(d.Mag()>1) continue;
-      //sign = -1 + 2*(tangent.Cross(d).Z()>0);
-      value = charge/(d.Mag() + 0.001);
-      //value = charge*d.Mag()*sign;
+      sign = -1 + 2*(tangent.Cross(d).Z()>0);
+      //value = charge/(d.Mag() + 0.001);
+      value = charge*d.Mag()*sign;
       hCharge.Fill(lambda, value);
     }
   }
 
-  hCharge.Smooth();
-  TH1D *hDerivative = (TH1D*)hCharge.Clone("hDerivative");
-  hDerivative->Reset();
+  //hCharge.Smooth();
+  return hCharge;
   
-  for(int iBinX=2; iBinX<hCharge.GetNbinsX();++iBinX){
-    value = hCharge.GetBinContent(iBinX+1) - hCharge.GetBinContent(iBinX-1);
-    hDerivative->SetBinContent(iBinX, value);
-  }
-
-  double start = 0.0;
-  hDerivative->Scale(1.0/hDerivative->GetMaximum());
-  for(int iBinX=1; iBinX<hCharge.GetNbinsX();++iBinX){
-    value = hDerivative->GetBinContent(iBinX);
-    if(value>0.2){
-      start = hDerivative->GetBinCenter(iBinX);
-      break;
-    }		    
-  }
-
-  double end = 0.0;
-  hDerivative->Scale(1.0/hDerivative->GetMaximum());
-  for(int iBinX=hCharge.GetNbinsX(); iBinX>1;--iBinX){
-    value = hDerivative->GetBinContent(iBinX);
-    if(value<-0.2){
-      end = hDerivative->GetBinCenter(iBinX);
-      break;
-    }		    
-  }
-
-  std::cout<<"start: "<<start
-	   <<" end: "<<end
-	   <<std::endl;
-  
-  //return hCharge;
-  return *hDerivative;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

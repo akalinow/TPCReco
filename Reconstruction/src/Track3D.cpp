@@ -2,7 +2,7 @@
 
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-Track3D::Track3D(const TVector3 & aT, const TVector3 & aB, double aLenght){
+Track3D::Track3D(const TVector3 & aT, const TVector3 & aB, double aLenght, int aProj){
   
     myTangent = aT;
     myTangentUnit = aT.Unit();
@@ -17,6 +17,8 @@ Track3D::Track3D(const TVector3 & aT, const TVector3 & aB, double aLenght){
 
     lambda = -myBias.Z()/myTangent.Z();
     myBiasAtZ0 = myBias + lambda*myTangent;
+
+    myProjection = aProj;
 
     myLenght = aLenght;
 }

@@ -56,6 +56,7 @@ void DataManager::loadEvent(unsigned int iEvent){
   currentEvent->SetGeoPtr(0);
   myTree->GetEntry(iEvent);
   currentEvent->SetGeoPtr(myGeometryPtr);
+  myCurrentEntry = iEvent;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -67,10 +68,8 @@ EventTPC* DataManager::getCurrentEvent() const{
 /////////////////////////////////////////////////////////
 EventTPC* DataManager::getNextEvent(){
 
-  unsigned int eventNumberTmp = currentEventNumber();
-
-  if(eventNumberTmp<nEvents-1){
-    loadEvent(++eventNumberTmp);
+  if(myCurrentEntry<nEvents){
+    loadEvent(++myCurrentEntry);
   }
 
   return currentEvent;
@@ -79,10 +78,8 @@ EventTPC* DataManager::getNextEvent(){
 /////////////////////////////////////////////////////////
 EventTPC* DataManager::getPreviousEvent(){
 
-  unsigned int eventNumberTmp = currentEventNumber();
-
-  if(eventNumberTmp>0){
-    loadEvent(--eventNumberTmp);
+  if(myCurrentEntry>0){
+    loadEvent(--myCurrentEntry);
   }
 
   return currentEvent;

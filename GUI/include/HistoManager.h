@@ -32,11 +32,13 @@ public:
 
   std::shared_ptr<TH2D> getFilteredStripVsTime(int aDir);
 
+  std::shared_ptr<TH2D> getRecHitStripVsTime(int aDir);
+
   TH3D* get3DReconstruction();
 
   const TH2D & getHoughAccumulator(int aDir, int iPeak=0);
 
-  TLine getTrack2D(int aDir);
+  TLine getTrack2D(int aDir, int iTrack);
 
   TLine getTrack3DProjection(int aDir);
 

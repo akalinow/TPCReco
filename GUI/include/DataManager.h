@@ -42,6 +42,7 @@ private:
   TTree *myTree;
 
   unsigned int nEvents;
+  unsigned int myCurrentEntry;
 
   EventTPC *currentEvent;
   std::shared_ptr<GeometryTPC> myGeometryPtr;

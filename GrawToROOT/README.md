@@ -26,8 +26,10 @@ cd resources
 ```
 
 Read an event (resources/EventTPC_1.root ) in EventTPC format, and plot the three projections.
-Requires geometry definition in resources/geometry_mini_eTPC.dat.
+Requires geometry definition in resources/geometry_mini_eTPC.dat. The plots will be saved to
+the results directory.
 
 ```
+cd ../
 ./bin/testEventTPCread
 ```

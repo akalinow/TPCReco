@@ -14,10 +14,8 @@
 #include "TVector2.h"
 #include "TH2Poly.h"
 #include "MultiKey.h"
+#include "CommonDefinitions.h"
 
-#define DIR_U    0    // U-direction channel index
-#define DIR_V    1    // V-direction channel index
-#define DIR_W    2    // W-direction channel index
 #define FPN_CH   3    // FPN channel type index
 #define ERROR    -1   // error result indicator                                                                         
 #define MINIMUM(A,B) ((A)<(B) ? (A) : (B))

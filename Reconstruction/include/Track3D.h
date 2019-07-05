@@ -6,6 +6,7 @@
 #include <memory>
 
 #include "TVector3.h"
+#include "CommonDefinitions.h"
 
 class Track3D{
 
@@ -13,13 +14,15 @@ public:
 
   Track3D(){};
 
-  Track3D(const TVector3 & aT, const TVector3 & aB, double aLenght);
+  Track3D(const TVector3 & aT, const TVector3 & aB, double aLenght, int aProj=DIR_U);
 
   ~Track3D() {};
 
   void setTangent(const TVector3 & aT) { myTangent = aT;}
 
   void setBias(const TVector3 & aB) { myBias = aB;}
+
+  void setProjection(int aProj) { myProjection = aProj;}
 
   void setLength(double aLenght) { myLenght = aLenght;}
 
@@ -45,6 +48,8 @@ public:
 
 private:
 
+  int myProjection;
+
   TVector3 myTangent, myTangentUnit;
   
   TVector3 myBias, myBiasAtX0, myBiasAtY0, myBiasAtZ0;
@@ -52,5 +57,9 @@ private:
   double myLenght;
   
 };
+
+
+typedef std::vector<Track3D> TrackCollection;
+
 #endif
 
