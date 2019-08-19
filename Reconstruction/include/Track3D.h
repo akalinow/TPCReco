@@ -26,6 +26,8 @@ public:
 
   void setLength(double aLenght) { myLenght = aLenght;}
 
+  void setStartEnd(double start, double end);
+
   //Tangential vector with X=1.0
   const TVector3 & getTangent() const { return myTangent;}
 
@@ -46,6 +48,10 @@ public:
 
   double getLength() const { return myLenght;}
 
+  double getStartTime() const { return startTime;}
+
+  double getEndTime() const { return endTime;}
+
 private:
 
   int myProjection;
@@ -55,6 +61,7 @@ private:
   TVector3 myBias, myBiasAtX0, myBiasAtY0, myBiasAtZ0;
   
   double myLenght;
+  double startTime, endTime;
   
 };
 

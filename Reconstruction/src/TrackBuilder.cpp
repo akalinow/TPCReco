@@ -86,6 +86,11 @@ void TrackBuilder::makeRecHits(int iDir){
   std::shared_ptr<TH2D> hRawHits = myEvent->GetStripVsTime(iDir);
   TH2D & hRecHits = myRecHits[iDir];
   hRecHits.Reset();
+  std::string tmpTitle(hRecHits.GetTitle());
+  if(tmpTitle.find("Event")!=std::string::npos){
+    tmpTitle.replace(tmpTitle.find("Event"), 20,"Rec hits"); 
+    hRecHits.SetTitle(tmpTitle.c_str());
+  }
 
   int maxBin;
   double maxValue;
@@ -124,7 +129,8 @@ void TrackBuilder::makeRecHits(int iDir){
     pdfMean1 = timeResponseShape->GetParameter(1);
     pdfMean2 = timeResponseShape->GetParameter(4);
     
-    if(windowChargeSum<10) continue;
+    if(windowChargeSum<100) continue;
+    if(pdfNorm1+pdfNorm2<100) continue;
     if(pdfNorm1<20 && pdfNorm2<20) continue;  
     double y = hRawHits->GetYaxis()->GetBinCenter(iBinY);
     hRecHits.Fill(pdfMean1, y, pdfNorm1);
@@ -151,7 +157,6 @@ const TH2D & TrackBuilder::getHoughtTransform(int iDir) const{
 const Track3D & TrackBuilder::getTrack2D(int iDir, int iTrack) const{
 
   return my2DTracks[iDir][iTrack];
-  //return myTrack2DProjections[iDir];
   
 }
 /////////////////////////////////////////////////////////
@@ -205,12 +210,12 @@ void TrackBuilder::fillHoughAccumulator(int iDir){
 /////////////////////////////////////////////////////////
 TrackCollection TrackBuilder::findTrack2DCollection(int iDir){
 
-TrackCollection aTrackCollection;
-for(int iPeak=0;iPeak<1;++iPeak){
-  Track3D aTrack = findTrack2D(iDir, iPeak);
-  aTrackCollection.push_back(aTrack);
- }
-return aTrackCollection;
+  TrackCollection aTrackCollection;
+  for(int iPeak=0;iPeak<1;++iPeak){
+    Track3D aTrack = findTrack2D(iDir, iPeak);
+    aTrackCollection.push_back(aTrack);
+  }
+  return aTrackCollection;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -250,7 +255,9 @@ Track3D TrackBuilder::findTrack2D(int iDir, int iPeak) const{
 
   Track3D a2DSeed(aTangent, aBias, 500, iDir);
   double trackStart=0.0, trackEnd=0.0;
-  std::tie(trackStart, trackEnd) = findTrackStartEnd(a2DSeed, myRecHits[iDir]); 
+  std::cout<<"iDir: "<<iDir<<std::endl;
+  std::tie(trackStart, trackEnd) = findTrackStartEnd(a2DSeed, myRecHits[iDir]);
+  a2DSeed.setStartEnd(trackStart, trackEnd);
   		    
   return a2DSeed;
 }
@@ -258,24 +265,29 @@ Track3D TrackBuilder::findTrack2D(int iDir, int iPeak) const{
 /////////////////////////////////////////////////////////
 Track3D TrackBuilder::buildTrack3D() const{
 
-  myTrack2DProjections[0].getTangent();
-
-  double bZ = myTrack2DProjections[0].getBiasAtX0().X();  
-  double bX = (myTrack2DProjections[0].getBiasAtX0().Y() + stripOffset[0])*cos(phiPitchDirection[0]);
-  double bY_fromV = (myTrack2DProjections[1].getBiasAtX0().Y()+stripOffset[1] -bX*cos(phiPitchDirection[1]))/sin(phiPitchDirection[1]);
-  double bY_fromW = (myTrack2DProjections[2].getBiasAtX0().Y()+stripOffset[2] -bX*cos(phiPitchDirection[2]))/sin(phiPitchDirection[2]);
+  int iTrack2DSeed = 0;
+  const Track3D & segmentU = my2DTracks[DIR_U][iTrack2DSeed];
+  const Track3D & segmentV = my2DTracks[DIR_V][iTrack2DSeed];
+  const Track3D & segmentW = my2DTracks[DIR_W][iTrack2DSeed];
+  
+  double bZ = segmentU.getBiasAtX0().X();  
+  double bX = (segmentU.getBiasAtX0().Y() + stripOffset[DIR_U])*cos(phiPitchDirection[DIR_U]);
+  double bY_fromV = (segmentV.getBiasAtX0().Y()+stripOffset[DIR_V] - bX*cos(phiPitchDirection[DIR_V]))/sin(phiPitchDirection[DIR_V]);
+  double bY_fromW = (segmentW.getBiasAtX0().Y()+stripOffset[DIR_W] - bX*cos(phiPitchDirection[DIR_W]))/sin(phiPitchDirection[DIR_W]);  
   double bY = (bY_fromV + bY_fromW)/2.0;
   TVector3 aBias(bX, bY, bZ);
 
-  double tZ = myTrack2DProjections[0].getTangent().X();
-  double tX = myTrack2DProjections[0].getTangent().Y()*cos(phiPitchDirection[0]);
-  double tY_fromV = (myTrack2DProjections[1].getTangent().Y() - tX*cos(phiPitchDirection[1]))/sin(phiPitchDirection[1]);
-  double tY_fromW = (myTrack2DProjections[2].getTangent().Y() - tX*cos(phiPitchDirection[2]))/sin(phiPitchDirection[2]);
+  double tZ = segmentU.getTangent().X();
+  double tX = segmentU.getTangent().Y()*cos(phiPitchDirection[DIR_U]);
+  double tY_fromV = (segmentV.getTangent().Y() - tX*cos(phiPitchDirection[DIR_V]))/sin(phiPitchDirection[DIR_V]);
+  double tY_fromW = (segmentW.getTangent().Y() - tX*cos(phiPitchDirection[DIR_W]))/sin(phiPitchDirection[DIR_W]);
   double tY = (tY_fromV + tY_fromW)/2.0;
   TVector3 aTangent(tX, tY, tZ);
   if(aTangent.Z()<0) aTangent *= -1;
-  ///Normalize to X=1, so vector components can be compared between projections.
-  //FIX ME: aTangent.X()!=0 !!!
+  ///Z is the time direction
+  ///Normalize to Z=1, so vector components can be compared between projections.
+  ///FIX ME: aTangent.Z()!=0 !!!
+  ///Use dynamic selection of normalised direction? Choose direction with longest projection?
   aTangent *= 1.0/aTangent.Z();
 
   Track3D a3DSeed(aTangent, aBias, 500);
@@ -286,7 +298,7 @@ Track3D TrackBuilder::buildTrack3D() const{
 /////////////////////////////////////////////////////////
 std::tuple<double, double> TrackBuilder::findTrackStartEnd(const Track3D & aTrack2D, const TH2D  & aHits) const{
 
-  const TVector3 & bias = aTrack2D.getBias();
+  const TVector3 & bias = aTrack2D.getBiasAtX0();
   const TVector3 & tangent = aTrack2D.getTangent();
 
   TH1D hCharge("hCharge","",125,0,500);
@@ -295,7 +307,6 @@ std::tuple<double, double> TrackBuilder::findTrackStartEnd(const Track3D & aTrac
   double charge = 0.0;
   double lambda = 0.0;
   double value = 0.0;
-  //int sign = 0.0;
   TVector3 aPoint;
   TVector3 d;
   
@@ -304,42 +315,22 @@ std::tuple<double, double> TrackBuilder::findTrackStartEnd(const Track3D & aTrac
       x = aHits.GetXaxis()->GetBinCenter(iBinX);
       y = aHits.GetYaxis()->GetBinCenter(iBinY);
       charge = aHits.GetBinContent(iBinX, iBinY);
-      if(charge<10) charge = 0.0;
+      if(charge<100) continue;//FIX ME move to configuration
       aPoint.SetXYZ(x, y, 0.0);
       lambda = (aPoint - bias)*tangent/tangent.Mag2();      
       d = aPoint - bias - lambda*tangent;
-      if(d.Mag()>1) continue;
-      value = charge/(d.Mag() + 0.001);
+      if(d.Mag()>10) continue;//FIX ME move to configuration
+      value = (charge>0)*d.Mag();
       hCharge.Fill(lambda, value);
     }
   }
 
-  TH1D *hDerivative = (TH1D*)hCharge.Clone("hDerivative");
-  hDerivative->Reset();
-  
-  for(int iBinX=2; iBinX<hCharge.GetNbinsX();++iBinX){
-    value = hCharge.GetBinContent(iBinX+1) - hCharge.GetBinContent(iBinX-1);
-    hDerivative->SetBinContent(iBinX, value);
-  }
-
-  double start = 0.0;
-  hDerivative->Scale(1.0/hDerivative->GetMaximum());
-  for(int iBinX=1; iBinX<hCharge.GetNbinsX();++iBinX){
-    value = hDerivative->GetBinContent(iBinX);
-    if(value>0.2){
-      start = hDerivative->GetBinCenter(iBinX);
-      break;
-    }		    
-  }
-
+  double start = -999;
   double end = 0.0;
-  hDerivative->Scale(1.0/hDerivative->GetMaximum());
-  for(int iBinX=hCharge.GetNbinsX(); iBinX>1;--iBinX){
-    value = hDerivative->GetBinContent(iBinX);
-    if(value<-0.2){
-      end = hDerivative->GetBinCenter(iBinX);
-      break;
-    }		    
+  for(int iBinX=1; iBinX<hCharge.GetNbinsX();++iBinX){
+    value = hCharge.GetBinContent(iBinX);
+    if(start<0 && value) start = hCharge.GetBinCenter(iBinX);
+    if(start>0 && value) end = hCharge.GetBinCenter(iBinX);
   }
 
   return std::make_tuple(start, end);

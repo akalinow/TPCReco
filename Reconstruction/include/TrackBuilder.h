@@ -68,9 +68,7 @@ private:
   std::vector<TH2D> myAccumulators;
   std::vector<TH2D> myRecHits;
   std::vector<TrackCollection> my2DTracks;
-
- 
-  std::vector<Track3D> myTrack2DProjections;
+  
   Track3D myTrack3DSeed;
 
   std::shared_ptr<TF1> timeResponseShape;

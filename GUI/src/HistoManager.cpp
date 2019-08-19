@@ -103,7 +103,8 @@ TLine HistoManager::getTrack2D(int aDir, int iTrack){
   const TVector3 & bias = aTrack2DProjection.getBiasAtX0();
   const TVector3 & tangent = aTrack2DProjection.getTangent();
 
-  double startTime = 0.0, endTime = 300.0;
+  double startTime = aTrack2DProjection.getStartTime();
+  double endTime = aTrack2DProjection.getEndTime();
 
   double lambda = startTime;
   double xBegin = (bias+lambda*tangent).X();
@@ -130,7 +131,7 @@ TLine HistoManager::getTrack3DProjection(int aDir){
   const TVector3 & bias = aTrack3D.getBiasAtZ0();
   const TVector3 & tangent = aTrack3D.getTangent();
 
-  double startTime = 0.0, endTime = 0.0;
+  double startTime = 0.0, endTime = 300.0;
   
   double lambda = startTime;
   TVector3 aPointOnLine;
@@ -149,19 +150,28 @@ TLine HistoManager::getTrack3DProjection(int aDir){
   aProjection.SetLineColor(4);
   aProjection.SetLineWidth(2);
 
+  std::cout<<" aDir: "<<aDir
+	   <<" xStart: "<<xStart
+	   <<" xEnd: "<<xEnd
+	   <<" yStart: "<<yStart
+	   <<" yEnd: "<<yEnd
+	   <<std::endl;
+
   return aProjection;  
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 TH1D HistoManager::getChargeAlong2DTrack(int aDir){
 
-  std::shared_ptr<TH2D> hProjection = myEvent->GetStripVsTime(aDir);
+  //std::shared_ptr<TH2D> hProjection = myEvent->GetStripVsTime(aDir);
+  std::shared_ptr<TH2D> hProjection = getRecHitStripVsTime(aDir);
   const Track3D & aTrack2DProjection = myTkBuilder.getTrack2D(aDir);
   const TVector3 & bias = aTrack2DProjection.getBiasAtX0();
   const TVector3 & tangent = aTrack2DProjection.getTangent();
 
-  //TH2D hCharge("hCharge","",100,0,500, 20, -2, 2);
-  TH1D hCharge("hCharge","",125,0,500);
+  TH1D hCharge("hCharge","Charge along track segment [arb. units]",20,
+	       aTrack2DProjection.getStartTime(),
+	       aTrack2DProjection.getEndTime());
 
   double x=0, y=0;
   double charge = 0.0;
@@ -176,14 +186,16 @@ TH1D HistoManager::getChargeAlong2DTrack(int aDir){
       x = hProjection->GetXaxis()->GetBinCenter(iBinX);
       y = hProjection->GetYaxis()->GetBinCenter(iBinY);
       charge = hProjection->GetBinContent(iBinX, iBinY);
-      if(charge<10) charge = 0.0;
+      if(charge<100) continue;
       aPoint.SetXYZ(x, y, 0.0);
       lambda = (aPoint - bias)*tangent/tangent.Mag2();      
       d = aPoint - bias - lambda*tangent;
-      if(d.Mag()>1) continue;
+      if(d.Mag()>5) continue;
       sign = -1 + 2*(tangent.Cross(d).Z()>0);
-      //value = charge/(d.Mag() + 0.001);
-      value = charge*d.Mag()*sign;
+      //value = sign*sign/(d.Mag() + 0.001);
+      //value = charge*d.Mag()*sign*sign;
+      value = charge*sign*sign;
+      //value = d.Mag();
       hCharge.Fill(lambda, value);
     }
   }
