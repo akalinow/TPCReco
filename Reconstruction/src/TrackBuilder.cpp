@@ -59,8 +59,6 @@ void TrackBuilder::setEvent(EventTPC* aEvent){
       myAccumulators[iDir] = hAccumulator;
 
       std::shared_ptr<TH2D> hRawHits = myEvent->GetStripVsTime(iDir);
-      std::shared_ptr<TH2D> hRecHits = std::shared_ptr<TH2D>(new TH2D(*hRawHits.get()));
-      hRecHits->Reset();
       myRecHits[iDir] = *hRawHits;
     }
     myHistoInitialized = true;
@@ -77,6 +75,7 @@ void TrackBuilder::reconstruct(){
   }
 
   myTrack3DSeed = buildTrack3D();
+  fitTrack3D(myTrack3DSeed);
   
 }
 /////////////////////////////////////////////////////////
@@ -128,10 +127,13 @@ void TrackBuilder::makeRecHits(int iDir){
 
     pdfMean1 = timeResponseShape->GetParameter(1);
     pdfMean2 = timeResponseShape->GetParameter(4);
-    
+
+    //FIX ME optimize this, and move to configuretion
     if(windowChargeSum<100) continue;
     if(pdfNorm1+pdfNorm2<100) continue;
-    if(pdfNorm1<20 && pdfNorm2<20) continue;  
+    if(pdfNorm1<20 && pdfNorm2<20) continue;
+    /////
+    
     double y = hRawHits->GetYaxis()->GetBinCenter(iBinY);
     hRecHits.Fill(pdfMean1, y, pdfNorm1);
     hRecHits.Fill(pdfMean2, y, pdfNorm2);
@@ -190,7 +192,7 @@ void TrackBuilder::fillHoughAccumulator(int iDir){
   double theta = 0.0, rho = 0.0;
   double x = 0.0, y=0.0;
   int charge = 0;
-  int chargeTreshold = maxCharge*0.02;//FIX ME move to configuarable
+  int chargeTreshold = maxCharge*0.02;//FIX ME optimize and move to configuarable
   for(int iBinX=0;iBinX<hRecHits.GetNbinsX();++iBinX){
     for(int iBinY=0;iBinY<hRecHits.GetNbinsY();++iBinY){
       x = hRecHits.GetXaxis()->GetBinCenter(iBinX);
@@ -200,7 +202,7 @@ void TrackBuilder::fillHoughAccumulator(int iDir){
       for(int iBinTheta=1;iBinTheta<myAccumulators[iDir].GetNbinsX();++iBinTheta){
 	theta = myAccumulators[iDir].GetXaxis()->GetBinCenter(iBinTheta);
 	rho = x*cos(theta) + y*sin(theta);
-	charge = 1.0;
+	charge = 1.0; //FIX me study is how to include charge. 
 	myAccumulators[iDir].Fill(theta, rho, charge);
       }
     }
@@ -253,13 +255,27 @@ Track3D TrackBuilder::findTrack2D(int iDir, int iPeak) const{
   //FIX ME: aTangent.X()!=0 !!!
   aTangent *= 1.0/aTangent.X();
 
-  Track3D a2DSeed(aTangent, aBias, 500, iDir);
+  Track3D a2DSeed(aTangent, aBias, iDir);
   double trackStart=0.0, trackEnd=0.0;
   std::cout<<"iDir: "<<iDir<<std::endl;
   std::tie(trackStart, trackEnd) = findTrackStartEnd(a2DSeed, myRecHits[iDir]);
   a2DSeed.setStartEnd(trackStart, trackEnd);
   		    
   return a2DSeed;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+Track3D TrackBuilder::fitTrack3D(const Track3D & aTrack) const{
+  /*
+  double chi2 = 0.0;
+  for(int iDir=DIR_U;iDir<=DIR_W;++iDir){
+    const Track3D & aTrack2DProjection = aTrack.get2DProjection(iDir);
+    std::shared_ptr<TH2D> aRecHits = std::make_shared<TH2D>(&myRecHits[iDir]);
+    chi2 += aTrack2DProjection.get2DProjectionRecHitChi2(aRecHits);    
+  }
+  std::cout<<"chi2: "<<chi2<<std::endl;
+  */
+  return Track3D();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -290,7 +306,10 @@ Track3D TrackBuilder::buildTrack3D() const{
   ///Use dynamic selection of normalised direction? Choose direction with longest projection?
   aTangent *= 1.0/aTangent.Z();
 
-  Track3D a3DSeed(aTangent, aBias, 500);
+  Track3D a3DSeed(aTangent, aBias, DIR_3D);
+  double startTime = 1/3.0*(segmentU.getStartTime() + segmentV.getStartTime() + segmentW.getStartTime());
+  double endTime = 1/3.0*(segmentU.getEndTime() + segmentV.getEndTime() + segmentW.getEndTime());
+  a3DSeed.setStartEnd(startTime, endTime);
 
   return a3DSeed;
 }
@@ -319,7 +338,7 @@ std::tuple<double, double> TrackBuilder::findTrackStartEnd(const Track3D & aTrac
       aPoint.SetXYZ(x, y, 0.0);
       lambda = (aPoint - bias)*tangent/tangent.Mag2();      
       d = aPoint - bias - lambda*tangent;
-      if(d.Mag()>10) continue;//FIX ME move to configuration
+      if(d.Mag()>15) continue;//FIX ME move to configuration
       value = (charge>0)*d.Mag();
       hCharge.Fill(lambda, value);
     }

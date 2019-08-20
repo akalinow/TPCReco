@@ -11,6 +11,8 @@
 #include "TLine.h"
 #include "TGraph.h"
 
+#include "CommonDefinitions.h"
+
 class TH2D;
 class TH3D;
 
@@ -40,8 +42,6 @@ public:
 
   TLine getTrack2D(int aDir, int iTrack);
 
-  TLine getTrack3DProjection(int aDir);
-
   TH1D getChargeAlong2DTrack(int aDir);
    
 private:
@@ -50,11 +50,6 @@ private:
   SigClusterTPC aCluster;
   TH3D *h3DReco;
   TrackBuilder myTkBuilder;
-
-  std::vector<int> stripOffset = {-71, 0, -55};  
-  //#### Angles of U/V/W unit vectors wrt X-axis [deg]
-  //#ANGLES: 90.0 -30.0 30.0
-  std::vector<double> phiPitchDirection = {M_PI, -M_PI/6.0 + M_PI/2.0, M_PI/6.0 - M_PI/2.0};
   
   std::shared_ptr<GeometryTPC> myGeometryPtr;
 

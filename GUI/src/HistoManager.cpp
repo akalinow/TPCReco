@@ -99,18 +99,18 @@ const TH2D & HistoManager::getHoughAccumulator(int aDir, int iPeak){
 /////////////////////////////////////////////////////////
 TLine HistoManager::getTrack2D(int aDir, int iTrack){
 
-  const Track3D & aTrack2DProjection = myTkBuilder.getTrack2D(aDir, iTrack);
-  const TVector3 & bias = aTrack2DProjection.getBiasAtX0();
-  const TVector3 & tangent = aTrack2DProjection.getTangent();
+  //const Track3D & aTrack2DProjection = myTkBuilder.getTrack2D(aDir, iTrack);
 
-  double startTime = aTrack2DProjection.getStartTime();
-  double endTime = aTrack2DProjection.getEndTime();
+  const Track3D & aTrack3D = myTkBuilder.getTrack3D();
+  const Track3D & aTrack2DProjection = aTrack3D.get2DProjection(aDir);
+  
+  const TVector3 & bias = aTrack2DProjection.getBiasAtStart();
+  const TVector3 & tangent = aTrack2DProjection.getTangentUnit();
 
-  double lambda = startTime;
-  double xBegin = (bias+lambda*tangent).X();
-  double yBegin = (bias+lambda*tangent).Y();
+  double xBegin = bias.X();
+  double yBegin = bias.Y();
 
-  lambda = endTime;
+  double lambda = aTrack2DProjection.getLength();
   double xEnd = (bias+lambda*tangent).X();
   double yEnd = (bias+lambda*tangent).Y();
   
@@ -122,56 +122,16 @@ TLine HistoManager::getTrack2D(int aDir, int iTrack){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TLine HistoManager::getTrack3DProjection(int aDir){
-
-  TVector3 stripPitchDirection(cos(phiPitchDirection[aDir]),
-			       sin(phiPitchDirection[aDir]), 0);
-  
-  const Track3D & aTrack3D = myTkBuilder.getTrack3D();
-  const TVector3 & bias = aTrack3D.getBiasAtZ0();
-  const TVector3 & tangent = aTrack3D.getTangent();
-
-  double startTime = 0.0, endTime = 300.0;
-  
-  double lambda = startTime;
-  TVector3 aPointOnLine;
-
-  lambda = startTime;
-  aPointOnLine = bias + lambda*tangent;
-  double xStart = aPointOnLine.Z();
-  double yStart = aPointOnLine*stripPitchDirection - stripOffset[aDir];
-
-  lambda = endTime;
-  aPointOnLine = bias + lambda*tangent;
-  double xEnd = aPointOnLine.Z();
-  double yEnd = aPointOnLine*stripPitchDirection - stripOffset[aDir];
-
-  TLine aProjection(xStart, yStart, xEnd, yEnd);
-  aProjection.SetLineColor(4);
-  aProjection.SetLineWidth(2);
-
-  std::cout<<" aDir: "<<aDir
-	   <<" xStart: "<<xStart
-	   <<" xEnd: "<<xEnd
-	   <<" yStart: "<<yStart
-	   <<" yEnd: "<<yEnd
-	   <<std::endl;
-
-  return aProjection;  
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
 TH1D HistoManager::getChargeAlong2DTrack(int aDir){
 
-  //std::shared_ptr<TH2D> hProjection = myEvent->GetStripVsTime(aDir);
-  std::shared_ptr<TH2D> hProjection = getRecHitStripVsTime(aDir);
+  std::shared_ptr<TH2D> hProjection = myEvent->GetStripVsTime(aDir);
+  //std::shared_ptr<TH2D> hProjection = getRecHitStripVsTime(aDir);
   const Track3D & aTrack2DProjection = myTkBuilder.getTrack2D(aDir);
-  const TVector3 & bias = aTrack2DProjection.getBiasAtX0();
-  const TVector3 & tangent = aTrack2DProjection.getTangent();
+  const TVector3 & bias = aTrack2DProjection.getBiasAtStart();
+  const TVector3 & tangent = aTrack2DProjection.getTangentUnit();
 
-  TH1D hCharge("hCharge","Charge along track segment [arb. units]",20,
-	       aTrack2DProjection.getStartTime(),
-	       aTrack2DProjection.getEndTime());
+  TH1D hCharge("hCharge","Charge along track segment [arb. units]",10, 0,
+	       aTrack2DProjection.getLength());
 
   double x=0, y=0;
   double charge = 0.0;
@@ -180,13 +140,13 @@ TH1D HistoManager::getChargeAlong2DTrack(int aDir){
   int sign = 0.0;
   TVector3 aPoint;
   TVector3 d;
-  
-  for(int iBinX=1;iBinX<hProjection->GetNbinsX();++iBinX){
+
+   for(int iBinX=1;iBinX<hProjection->GetNbinsX();++iBinX){
     for(int iBinY=1;iBinY<hProjection->GetNbinsY();++iBinY){
       x = hProjection->GetXaxis()->GetBinCenter(iBinX);
       y = hProjection->GetYaxis()->GetBinCenter(iBinY);
       charge = hProjection->GetBinContent(iBinX, iBinY);
-      if(charge<100) continue;
+      if(charge<0) continue;
       aPoint.SetXYZ(x, y, 0.0);
       lambda = (aPoint - bias)*tangent/tangent.Mag2();      
       d = aPoint - bias - lambda*tangent;
@@ -195,7 +155,7 @@ TH1D HistoManager::getChargeAlong2DTrack(int aDir){
       //value = sign*sign/(d.Mag() + 0.001);
       //value = charge*d.Mag()*sign*sign;
       value = charge*sign*sign;
-      //value = d.Mag();
+      value = charge*d.Mag2();
       hCharge.Fill(lambda, value);
     }
   }

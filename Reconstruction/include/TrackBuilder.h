@@ -47,6 +47,8 @@ private:
 
   Track3D findTrack2D(int iDir, int iPeak) const;
 
+  Track3D fitTrack3D(const Track3D & aTrack) const;
+
   std::tuple<double, double> findTrackStartEnd(const Track3D & aTrack2D, const TH2D  & aHits) const;
 
   TrackCollection findTrack2DCollection(int iDir);
@@ -55,12 +57,6 @@ private:
     
   EventTPC *myEvent;  
   std::shared_ptr<GeometryTPC> myGeometryPtr;
-
-  std::vector<int> stripOffset = {-71, 0, -55};
-  
-  //#### Angles of U/V/W unit vectors wrt X-axis [deg]
-  //#ANGLES: 90.0 -30.0 30.0
-  std::vector<double> phiPitchDirection = {M_PI, -M_PI/6.0 + M_PI/2.0, M_PI/6.0 - M_PI/2.0};
 
   bool myHistoInitialized;
   int nAccumulatorRhoBins, nAccumulatorPhiBins;

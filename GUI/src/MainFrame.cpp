@@ -45,7 +45,7 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h)
   myDataManager.loadGeometry("/home/akalinow/scratch/ELITPC/TPCReco/build/resources/geometry_mini_eTPC.dat");
   myDataManager.loadDataFile(fileName);
   fEntryDialog->updateFileName(fileName);
-  myDataManager.loadEvent(9);
+  myDataManager.loadEvent(0);
 
   fCanvas->Clear();
   fCanvas->Divide(3,3);
@@ -198,16 +198,12 @@ void MainFrame::Update(){
     std::shared_ptr<TH2D> aPtr = myHistoManager.getRecHitStripVsTime(aDir);
     aPtr->DrawClone("colz");
     myHistoManager.getTrack2D(aDir, 0).DrawClone();
-    //myHistoManager.getTrack3DProjection(aDir).DrawClone();
     //myHistoManager.getTrack2D(aDir, 1).DrawClone();
     //myHistoManager.getTrack3DProjection(aDir).DrawClone();
     fCanvas->cd(aDir+1+3+3);
     //myHistoManager.getHoughAccumulator(aDir).DrawClone("colz");
     myHistoManager.getChargeAlong2DTrack(aDir).DrawClone("hist");
-    //myHistoManager.getTrack3DProjection(aDir).DrawClone();
     //myHistoManager.getHoughAccumulator(aDir, 1);
-    //myHistoManager.getTrackSeed(aDir).DrawClone();
-    
   }
   /*
   TVirtualPad *aPad = fCanvas->cd(7);
