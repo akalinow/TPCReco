@@ -12,7 +12,8 @@ enum projection{
 		DIR_3D=3    // 3D reconstruction
 };
 
-const std::vector<int> stripOffset = {-71, 0, -55};
+//const std::vector<int> stripOffset = {-71, 0, -55};//strip/time bin units
+const std::vector<int> stripOffset = {0, 0, 0};/// mm units
   
 //#### Angles of U/V/W unit vectors wrt X-axis [deg]
 //#ANGLES: 90.0 -30.0 30.0

@@ -102,7 +102,8 @@ TLine HistoManager::getTrack2D(int aDir, int iTrack){
 
   //const Track3D & aTrack2DProjection = myTkBuilder.getTrack2D(aDir, iTrack);
 
-  const Track3D & aTrack3D = myTkBuilder.getTrack3D();
+  //const Track3D & aTrack3D = myTkBuilder.getTrack3DSeed();
+  const Track3D & aTrack3D = myTkBuilder.getTrack3DFitted();
   const Track3D & aTrack2DProjection = aTrack3D.get2DProjection(aDir);
   
   const TVector3 & bias = aTrack2DProjection.getBiasAtStart();

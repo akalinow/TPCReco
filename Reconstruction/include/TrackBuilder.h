@@ -6,7 +6,8 @@
 #include <memory>
 #include <tuple>
 
-#include "Track3D.h"
+#include "TrackSegment2D.h"
+#include "TrackSegment3D.h"
 
 class TH2D;
 class TF1;
@@ -33,13 +34,11 @@ public:
 
   const TH2D & getHoughtTransform(int iDir) const;
   
-  const Track3D & getTrack2D(int iDir, unsigned int iTrack=0) const;
+  const TrackSegment2D & getTrackSegment2DSeed(int iDir) const;
 
-  const Track3D & getTrack3D() const;
+  const Track3D & getTrackSegment3DSeed() const;
 
-  std::tuple<double, double> findTrackStartEndTime(int aDir);
-
-
+  const Track3D & getTrack3DFitted() const;
 
 private:
 
@@ -66,9 +65,10 @@ private:
 
   std::vector<TH2D> myAccumulators;
   std::vector<TH2D> myRecHits;
-  std::vector<TrackCollection> my2DTracks;
+  std::vector<TrackSegment2DCollection> my2DSeeds;
   
-  Track3D myTrack3DSeed, dummyTrack;
+  TrackSegment3D myTrack3DSeed, dummyTrack;
+  TrackSegment3D myTrack3DFitted;
 
   std::shared_ptr<TF1> timeResponseShape;
   

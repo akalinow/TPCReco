@@ -5,7 +5,11 @@
 #include "TProfile.h"
 #include "TObjArray.h"
 #include "TF1.h"
-#include "TGraph2D.h"
+
+#include <TPolyLine3D.h>
+#include <Fit/Fitter.h>
+#include <Math/Functor.h>
+#include <Math/Vector3D.h>
 
 #include "GeometryTPC.h"
 #include "EventTPC.h"
@@ -80,7 +84,7 @@ void TrackBuilder::reconstruct(){
   }
 
   myTrack3DSeed = buildTrack3D();
-  fitTrack3D(myTrack3DSeed);
+  myTrack3DFitted = fitTrack3D(myTrack3DSeed);
   
 }
 /////////////////////////////////////////////////////////
@@ -177,9 +181,16 @@ const Track3D & TrackBuilder::getTrack2D(int iDir, unsigned int iTrack) const{
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-const Track3D & TrackBuilder::getTrack3D() const{
+const Track3D & TrackBuilder::getTrack3DSeed() const{
 
   return myTrack3DSeed;
+  
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+const Track3D & TrackBuilder::getTrack3DFitted() const{
+
+  return myTrack3DFitted;
   
 }
 /////////////////////////////////////////////////////////
@@ -268,26 +279,11 @@ Track3D TrackBuilder::findTrack2D(int iDir, int iPeak) const{
   aTangent *= 1.0/aTangent.X();
 
   Track3D a2DSeed(aTangent, aBias, iDir);
-  double trackStart=0.0, trackEnd=0.0;
-  std::cout<<"iDir: "<<iDir<<std::endl;
-  std::tie(trackStart, trackEnd) = findTrackStartEnd(a2DSeed, myRecHits[iDir]);
+  double trackStart= 0.0, trackEnd=999.0;
+  //std::tie(trackStart, trackEnd) = findTrackStartEnd(a2DSeed, myRecHits[iDir]);
   a2DSeed.setStartEnd(trackStart, trackEnd);
   		    
   return a2DSeed;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-Track3D TrackBuilder::fitTrack3D(const Track3D & aTrack) const{
-  /*
-  double chi2 = 0.0;
-  for(int iDir=DIR_U;iDir<=DIR_W;++iDir){
-    const Track3D & aTrack2DProjection = aTrack.get2DProjection(iDir);
-    std::shared_ptr<TH2D> aRecHits = std::make_shared<TH2D>(&myRecHits[iDir]);
-    chi2 += aTrack2DProjection.get2DProjectionRecHitChi2(aRecHits);    
-  }
-  std::cout<<"chi2: "<<chi2<<std::endl;
-  */
-  return Track3D();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -311,19 +307,73 @@ Track3D TrackBuilder::buildTrack3D() const{
   double tY_fromW = (segmentW.getTangent().Y() - tX*cos(phiPitchDirection[DIR_W]))/sin(phiPitchDirection[DIR_W]);
   double tY = (tY_fromV + tY_fromW)/2.0;
   TVector3 aTangent(tX, tY, tZ);
-  if(aTangent.Z()<0) aTangent *= -1;
-  ///Z is the time direction
-  ///Normalize to Z=1, so vector components can be compared between projections.
-  ///FIX ME: aTangent.Z()!=0 !!!
-  ///Use dynamic selection of normalised direction? Choose direction with longest projection?
-  aTangent *= 1.0/aTangent.Z();
+
+  ///Set bias perpendicular to tangent.
+  aTangent = aTangent.Unit();
+  if(aTangent.Theta()>M_PI/2.0) aTangent*=-1;
+  aBias = aBias - aBias.Dot(aTangent)*aTangent;
 
   Track3D a3DSeed(aTangent, aBias, DIR_3D);
   double startTime = 1/3.0*(segmentU.getStartTime() + segmentV.getStartTime() + segmentW.getStartTime());
   double endTime = 1/3.0*(segmentU.getEndTime() + segmentV.getEndTime() + segmentW.getEndTime());
   a3DSeed.setStartEnd(startTime, endTime);
+  a3DSeed.setRecHits(myRecHits);
 
   return a3DSeed;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+Track3D TrackBuilder::fitTrack3D(const Track3D & aTrack) const{
+
+  Track3D fittedCandidate = aTrack;
+
+  double tangentTheta = aTrack.getTangentUnit().Theta();
+  double tangentPhi = aTrack.getTangentUnit().Phi();
+
+  TVector3 perpPlaneBaseUnitA, perpPlaneBaseUnitB;    
+  perpPlaneBaseUnitA.SetMagThetaPhi(1.0, M_PI/2.0 + tangentTheta, tangentPhi);
+  perpPlaneBaseUnitB.SetMagThetaPhi(1.0, M_PI/2.0, M_PI/2.0 + tangentPhi);
+  
+  double biasA = aTrack.getBias().Dot(perpPlaneBaseUnitA);
+  double biasB = aTrack.getBias().Dot(perpPlaneBaseUnitB);
+
+  std::cout<<"tangentTheta: "<<tangentTheta
+	   <<" tangentPhi: "<<tangentPhi
+	   <<" bias A: "<<biasA
+	   <<" bias B: "<<biasB
+	   <<std::endl;
+
+  std::vector<double> params = {tangentTheta, tangentPhi, biasA, biasB};
+
+  fittedCandidate.getRecHitChi2();
+  std::cout<<"Seed chi2: "<<fittedCandidate(params.data())<<std::endl;
+
+  int nParams = params.size();
+  ROOT::Fit::Fitter fitter;
+  ROOT::Math::Functor fcn(aTrack, nParams);  
+  fitter.SetFCN(fcn, params.data());
+  // set step sizes different than default ones (0.3 times parameter values)
+  for (int iPar = 0; iPar < nParams; ++iPar){
+    fitter.Config().ParSettings(iPar).SetStepSize(0.01);
+ 
+  }
+  fitter.Config().ParSettings(0).SetLimits(0, M_PI);
+  fitter.Config().ParSettings(1).SetLimits(-M_PI, M_PI);
+  fitter.Config().ParSettings(2).SetLimits(-100, 100);
+  fitter.Config().ParSettings(3).SetLimits(-100, 100);
+  bool ok = fitter.FitFCN();
+  if (!ok) {
+      Error(__FUNCTION__, "Track3D Fit failed");
+      return fittedCandidate;
+   }
+
+   const ROOT::Fit::FitResult & result = fitter.Result();
+
+   std::cout << "Total final distance square " << result.MinFcnValue() << std::endl;
+   result.Print(std::cout);
+
+  
+  return fittedCandidate;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
