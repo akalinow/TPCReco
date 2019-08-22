@@ -40,12 +40,19 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h)
   SetWindowName("TPC GUI");
 
   //TEST ---
-  std::string fileName = "/scratch_local/akalinow/ELITPC/TPCReco/build/resources/EventTPC_1.root";
-  fileName = "/scratch_local/akalinow/ELITPC/TPCReco/build/EventTPC_1.root";
-  myDataManager.loadGeometry("/home/akalinow/scratch/ELITPC/TPCReco/build/resources/geometry_mini_eTPC.dat");
-  myDataManager.loadDataFile(fileName);
-  fEntryDialog->updateFileName(fileName);
-  myDataManager.loadEvent(0);
+  std::string dataFileName = "/scratch_local/akalinow/ELITPC/TPCReco/build/resources/EventTPC_1.root";
+  std::string geometryFileName = "/home/akalinow/scratch/ELITPC/TPCReco/build/resources/geometry_mini_eTPC.dat";
+
+  dataFileName = "/scratch_local/akalinow/ELITPC/TPCReco/build/EventTPC_1.root";
+  geometryFileName = "/scratch_local/akalinow/ELITPC/TPCReco/build/EventTPC_1.root";
+
+  dataFileName = "/home/akalinow/scratch/ELITPC/data/neutrons/EventTPC_2018-06-19T15:13:33.941.root";
+  geometryFileName = "/home/akalinow/scratch/ELITPC/data/neutrons/geometry_mini_eTPC_2018-06-19T15:13:33.941.dat";
+
+  myDataManager.loadGeometry(geometryFileName);  
+  myDataManager.loadDataFile(dataFileName);
+  fEntryDialog->updateFileName(dataFileName);
+  myDataManager.loadEvent(2);
 
   fCanvas->Clear();
   fCanvas->Divide(3,3);
@@ -189,23 +196,21 @@ void MainFrame::Update(){
   for(int aDir=0;aDir<3;++aDir){
     fCanvas->cd(aDir+1);
     
-    myHistoManager.getRawStripVsTime(aDir)->DrawClone("colz");
-    //myHistoManager.getTrack2D(aDir, 0).DrawClone();
+    //myHistoManager.getRawStripVsTime(aDir)->DrawClone("colz");
+    myHistoManager.getCartesianProjection(aDir)->DrawClone("colz");
     
-    fCanvas->cd(aDir+1+3);  
+    fCanvas->cd(aDir+1+3);
     //myHistoManager.getFilteredStripVsTime(aDir)->DrawClone("colz");
-
     std::shared_ptr<TH2D> aPtr = myHistoManager.getRecHitStripVsTime(aDir);
     aPtr->DrawClone("colz");
     myHistoManager.getTrack2D(aDir, 0).DrawClone();
     //myHistoManager.getTrack2D(aDir, 1).DrawClone();
     //myHistoManager.getTrack3DProjection(aDir).DrawClone();
     fCanvas->cd(aDir+1+3+3);
-    //myHistoManager.getHoughAccumulator(aDir).DrawClone("colz");
-    myHistoManager.getChargeAlong2DTrack(aDir).DrawClone("hist");
-    //myHistoManager.getHoughAccumulator(aDir, 1);
+    myHistoManager.getHoughAccumulator(aDir).DrawClone("colz");
+    //myHistoManager.getChargeAlong2DTrack(aDir).DrawClone("hist");
   }
-  /*
+  /*  
   TVirtualPad *aPad = fCanvas->cd(7);
   TText aMessage(0.2, 0.5,"Calculating 3D scence");
   aMessage.DrawClone();
@@ -218,9 +223,9 @@ void MainFrame::Update(){
   else {
     aPad->Clear();  
     aMessage.DrawText(0.2, 0.5, "3D scene not available.");
-  }
-  aPad->Update();
-  */  
+  }  
+  aPad->Update();  
+  */
   fCanvas->Update();  
 }
 /////////////////////////////////////////////////////////

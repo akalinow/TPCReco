@@ -399,7 +399,7 @@ SigClusterTPC EventTPC::GetOneCluster(double thr, int delta_strips, int delta_ti
   return cluster;
 }
 
-TH1D *EventTPC::GetStripProjection(SigClusterTPC &cluster, int strip_dir) {  // valid range [0-2]
+TH1D *EventTPC::GetStripProjection(const SigClusterTPC &cluster, int strip_dir) {  // valid range [0-2]
   TH1D *h = NULL;
   if(!IsOK() || !cluster.IsOK()) return h;
   switch(strip_dir) {
@@ -456,7 +456,7 @@ TH1D *EventTPC::GetStripProjection(int strip_dir) {  // whole event, valid range
   return h;
 }
 
-TH1D *EventTPC::GetTimeProjection(SigClusterTPC &cluster, int strip_dir) {  // valid range [0-2]
+TH1D *EventTPC::GetTimeProjection(const SigClusterTPC &cluster, int strip_dir) {  // valid range [0-2]
   TH1D *h = NULL;
   if(!IsOK() || !cluster.IsOK()) return h;
   switch(strip_dir) {
@@ -486,7 +486,7 @@ TH1D *EventTPC::GetTimeProjection(SigClusterTPC &cluster, int strip_dir) {  // v
   return h;
 }
 
-TH1D *EventTPC::GetTimeProjection(SigClusterTPC &cluster) {  // all strips
+TH1D *EventTPC::GetTimeProjection(const SigClusterTPC &cluster) {  // all strips
   TH1D *h = NULL;
   if(!IsOK() || !cluster.IsOK() || cluster.GetNhits()==0 ) return h;
   h = new TH1D( Form("hclust_time_evt%lld", event_id),
@@ -537,7 +537,7 @@ TH1D *EventTPC::GetTimeProjection() {  // whole event, all strips
   return h;
 }
 
-std::shared_ptr<TH2D> EventTPC::GetStripVsTime(SigClusterTPC &cluster, int strip_dir){  
+std::shared_ptr<TH2D> EventTPC::GetStripVsTime(const SigClusterTPC &cluster, int strip_dir){  
 
   if(!IsOK() || !cluster.IsOK()) return 0;
 
@@ -585,8 +585,50 @@ std::shared_ptr<TH2D> EventTPC::GetStripVsTime(int strip_dir){  // valid range [
   return result;
 }
 
+std::shared_ptr<TH2D> EventTPC::GetStripVsTimeInMM(const SigClusterTPC &cluster, int strip_dir){  // valid range [0-2]
+
+  if(!IsOK()) return std::shared_ptr<TH2D>();
+
+  bool err_flag;
+  double zmin=0.0-0.5;  // time_cell_min;
+  double zmax=511.+0.5; // time_cell_max;  
+  double minTimeInMM = myGeometryPtr->Timecell2pos(zmin, err_flag);
+  double maxTimeInMM = myGeometryPtr->Timecell2pos(zmax, err_flag);
+
+  StripTPC *firstStrip = myGeometryPtr->GetStripByDir(strip_dir, 1);
+  StripTPC *lastStrip = myGeometryPtr->GetStripByDir(strip_dir, myGeometryPtr->GetDirNstrips(strip_dir));
+
+  double minStripInMM = (firstStrip->Offset() + myGeometryPtr->GetReferencePoint())*myGeometryPtr->GetStripPitchVector(strip_dir);
+  double maxStripInMM = (lastStrip->Offset() + myGeometryPtr->GetReferencePoint())*myGeometryPtr->GetStripPitchVector(strip_dir);
+
+  if(minStripInMM>maxStripInMM){
+    std::swap(minStripInMM, maxStripInMM);
+  }
+
+  std::shared_ptr<TH2D> result(new TH2D( Form("hraw_%s_vs_time_evt%lld", myGeometryPtr->GetDirName(strip_dir), event_id),
+					 Form("Event-%lld: Raw signals from %s strips;Time direction [mm];%s strip direction [mm];Charge/bin [arb.u.]",
+					 event_id, myGeometryPtr->GetDirName(strip_dir), myGeometryPtr->GetDirName(strip_dir)),
+					 myGeometryPtr->GetAgetNtimecells(), minTimeInMM, maxTimeInMM, 
+					 myGeometryPtr->GetDirNstrips(strip_dir), minStripInMM, maxStripInMM));
+  // fill new histogram
+  double x = 0.0, y = 0.0;
+
+  for(int strip_num=cluster.GetMinStrip(strip_dir); strip_num<=cluster.GetMaxStrip(strip_dir); strip_num++) {
+    for(int icell=cluster.GetMinTime(strip_dir); icell<=cluster.GetMaxTime(strip_dir); icell++) {
+      if( cluster.CheckByStrip(strip_dir, strip_num, icell) ) {
+	double val = GetValByStrip(strip_dir, strip_num, icell);
+	x =  myGeometryPtr->Timecell2pos(icell, err_flag);      
+	y =  (strip_num-0.5)*myGeometryPtr->GetStripPitch() +
+	  (firstStrip->Offset() + myGeometryPtr->GetReferencePoint())*myGeometryPtr->GetStripPitchVector(strip_dir);
+	result->Fill(x, y, val);
+      }
+    }
+  }
+    return result;
+}
+
 // get three projections on: XY, XZ, YZ planes
-std::vector<TH2D*> EventTPC::Get2D(SigClusterTPC &cluster, double radius, int rebin_space, int rebin_time, int method) { 
+std::vector<TH2D*> EventTPC::Get2D(const SigClusterTPC &cluster, double radius, int rebin_space, int rebin_time, int method) { 
 
   //  const bool rebin_flag=false;
   TH2D *h1 = NULL;
@@ -606,12 +648,20 @@ std::vector<TH2D*> EventTPC::Get2D(SigClusterTPC &cluster, double radius, int re
   //  std::cout << Form(">>>> EventId = %lld", event_id) << std::endl;
   //  std::cout << Form(">>>> Time cell range = [%d, %d]", time_cell_min, time_cell_max) << std::endl;
 
-  for(int icell=time_cell_min; icell<=time_cell_max; icell++) {
+  const std::map<MultiKey2, std::vector<int>, multikey2_less> & hitListByTimeDir = cluster.GetHitListByTimeDir();
 
+  
+  for(int icell=time_cell_min; icell<=time_cell_max; icell++) {
     std::vector<int> hits[3] = {
-      cluster.hitListByTimeDir[MultiKey2(icell, DIR_U)],
-      cluster.hitListByTimeDir[MultiKey2(icell, DIR_V)],
-      cluster.hitListByTimeDir[MultiKey2(icell, DIR_W)] };
+				hitListByTimeDir.find(MultiKey2(icell, DIR_U))->second,
+				hitListByTimeDir.find(MultiKey2(icell, DIR_V))->second,
+				hitListByTimeDir.find(MultiKey2(icell, DIR_W))->second};
+				/*
+    std::vector<int> hits[3] = {
+				cluster.GetHitListByTimeDir()[MultiKey2(icell, DIR_U)],
+				cluster.GetHitListByTimeDir()[MultiKey2(icell, DIR_V)],
+				cluster.GetHitListByTimeDir()[MultiKey2(icell, DIR_W)] };
+				*/
 
     //   std::cout << Form(">>>> Number of hits: time cell=%d: U=%d / V=%d / W=%d",
     //		      icell, (int)hits[DIR_U].size(), (int)hits[DIR_V].size(), (int)hits[DIR_W].size()) << std::endl;
@@ -652,44 +702,11 @@ std::vector<TH2D*> EventTPC::Get2D(SigClusterTPC &cluster, double radius, int re
     // book histograms before first fill
     if(h1==NULL && h2==NULL && h3==NULL) {
 
-      StripTPC* s[6] = {
-	myGeometryPtr->GetStripByDir(DIR_U, 1),
-	myGeometryPtr->GetStripByDir(DIR_U, myGeometryPtr->GetDirNstrips(DIR_U)),
-	myGeometryPtr->GetStripByDir(DIR_V, 1),
-	myGeometryPtr->GetStripByDir(DIR_V, myGeometryPtr->GetDirNstrips(DIR_V)),
-	myGeometryPtr->GetStripByDir(DIR_W, 1),
-	myGeometryPtr->GetStripByDir(DIR_W, myGeometryPtr->GetDirNstrips(DIR_W))
-      };
-
-      double xmin=1E30;
-      double xmax=-1E30;
-      double ymin=1E30;
-      double ymax=-1E30;
+      double xmin, xmax, ymin, ymax;
+      std::tie(xmin, xmax, ymin, ymax) = myGeometryPtr->rangeXY();
+      
       double zmin=0.0-0.5;  // time_cell_min;
       double zmax=511.+0.5; // time_cell_max;
-
-      for(int i=0; i<6; i++) {
-	if(!s[i]) continue;
-	double x, y;
-	TVector2 vec=s[i]->Offset()+myGeometryPtr->GetReferencePoint();
-	x=vec.X();
-	y=vec.Y();
-	if(x>xmax) xmax=x;
-	if(x<xmin) xmin=x;
-	if(y>ymax) ymax=y;
-	if(y<ymin) ymin=y;
-	vec = vec + s[i]->Unit()*s[i]->Length();
-	if(x>xmax) xmax=x;
-	if(x<xmin) xmin=x;
-	if(y>ymax) ymax=y;
-	if(y<ymin) ymin=y;
-      }
-      xmin-=myGeometryPtr->GetStripPitch()*0.3;
-      xmax+=myGeometryPtr->GetStripPitch()*0.7;
-      ymin-=myGeometryPtr->GetPadPitch()*0.3;
-      ymax+=myGeometryPtr->GetPadPitch()*0.7;
-      //zmin-=5;
-      //zmax+=5;
       
       int nx = (int)( (xmax-xmin)/myGeometryPtr->GetStripPitch()-1 );
       int ny = (int)( (ymax-ymin)/myGeometryPtr->GetPadPitch()-1 );
@@ -822,7 +839,7 @@ std::vector<TH2D*> EventTPC::Get2D(SigClusterTPC &cluster, double radius, int re
 
 
 // get 3D histogram of clustered hits
-TH3D *EventTPC::Get3D(SigClusterTPC &cluster, double radius, int rebin_space, int rebin_time, int method) {
+TH3D *EventTPC::Get3D(const SigClusterTPC &cluster, double radius, int rebin_space, int rebin_time, int method) {
 
   TH3D *h = NULL;
   bool err_flag = false;
@@ -837,12 +854,13 @@ TH3D *EventTPC::Get3D(SigClusterTPC &cluster, double radius, int rebin_space, in
   //  std::cout << Form(">>>> EventId = %lld", event_id) << std::endl;
   //  std::cout << Form(">>>> Time cell range = [%d, %d]", time_cell_min, time_cell_max) << std::endl;
 
+  const std::map<MultiKey2, std::vector<int>, multikey2_less> & hitListByTimeDir = cluster.GetHitListByTimeDir();
+  
   for(int icell=time_cell_min; icell<=time_cell_max; icell++) {
-
     std::vector<int> hits[3] = {
-      cluster.hitListByTimeDir[MultiKey2(icell, DIR_U)],
-      cluster.hitListByTimeDir[MultiKey2(icell, DIR_V)],
-      cluster.hitListByTimeDir[MultiKey2(icell, DIR_W)] };
+				hitListByTimeDir.find(MultiKey2(icell, DIR_U))->second,
+				hitListByTimeDir.find(MultiKey2(icell, DIR_V))->second,
+				hitListByTimeDir.find(MultiKey2(icell, DIR_W))->second};
 
     //   std::cout << Form(">>>> Number of hits: time cell=%d: U=%d / V=%d / W=%d",
     //		      icell, (int)hits[DIR_U].size(), (int)hits[DIR_V].size(), (int)hits[DIR_W].size()) << std::endl;

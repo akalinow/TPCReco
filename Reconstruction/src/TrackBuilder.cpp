@@ -18,8 +18,8 @@ TrackBuilder::TrackBuilder() {
 
   myEvent = 0;
 
-  nAccumulatorRhoBins = 100;//FIX ME move to configuarable
-  nAccumulatorPhiBins = 100;//FIX ME move to configuarable
+  nAccumulatorRhoBins = 200;//FIX ME move to configuarable
+  nAccumulatorPhiBins = 200;//FIX ME move to configuarable
 
   myHistoInitialized = false;
   myAccumulators.resize(3);
@@ -45,20 +45,25 @@ void TrackBuilder::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
 void TrackBuilder::setEvent(EventTPC* aEvent){
 
   myEvent = aEvent;
+  double eventMaxCharge = myEvent->GetMaxCharge();
+  double chargeThreshold = 0.2*eventMaxCharge;
+  int delta_timecells = 2;
+  int delta_strips = 2;
+
+  myCluster = myEvent->GetOneCluster(chargeThreshold, delta_strips, delta_timecells);
+
+
   std::string hName, hTitle;
- 
   if(!myHistoInitialized){     
     for(int iDir = 0; iDir<3;++iDir){
-      std::shared_ptr<TH2D> hProjection = myEvent->GetStripVsTime(iDir);
-      double maxX = hProjection->GetXaxis()->GetXmax();
-      double maxY = hProjection->GetYaxis()->GetXmax();
+      std::shared_ptr<TH2D> hRawHits = myEvent->GetStripVsTimeInMM(getCluster(), iDir);
+      double maxX = hRawHits->GetXaxis()->GetXmax();
+      double maxY = hRawHits->GetYaxis()->GetXmax();
       double rho = sqrt( maxX*maxX + maxY*maxY);
       hName = "hAccumulator_"+std::to_string(iDir);
       hTitle = "Hough accumulator for direction: "+std::to_string(iDir)+";#theta;#rho";
       TH2D hAccumulator(hName.c_str(), hTitle.c_str(), nAccumulatorPhiBins, -M_PI, M_PI, nAccumulatorRhoBins, 0, rho);   
       myAccumulators[iDir] = hAccumulator;
-
-      std::shared_ptr<TH2D> hRawHits = myEvent->GetStripVsTime(iDir);
       myRecHits[iDir] = *hRawHits;
     }
     myHistoInitialized = true;
@@ -82,7 +87,7 @@ void TrackBuilder::reconstruct(){
 /////////////////////////////////////////////////////////
 void TrackBuilder::makeRecHits(int iDir){ 
 
-  std::shared_ptr<TH2D> hRawHits = myEvent->GetStripVsTime(iDir);
+  std::shared_ptr<TH2D> hRawHits = myEvent->GetStripVsTimeInMM(getCluster(), iDir);
   TH2D & hRecHits = myRecHits[iDir];
   hRecHits.Reset();
   std::string tmpTitle(hRecHits.GetTitle());
@@ -91,10 +96,15 @@ void TrackBuilder::makeRecHits(int iDir){
     hRecHits.SetTitle(tmpTitle.c_str());
   }
 
+  ///TEST
+  //hRecHits = *hRawHits;
+  //return;
+  ///////
+
   int maxBin;
   double maxValue;
   double firstPeakPos;
-  double windowChargeSum;
+  //double windowChargeSum;
   double pdfMean1, pdfMean2;
   double pdfNorm1, pdfNorm2;
 
@@ -103,24 +113,27 @@ void TrackBuilder::makeRecHits(int iDir){
     hProj = hRawHits->ProjectionX("hProj",iBinY, iBinY);
     maxBin = hProj->GetMaximumBin();
     maxValue = hProj->GetMaximum();
+
+    if(maxValue<1) continue;
+    
     firstPeakPos = hProj->GetBinCenter(maxBin);
   
-    timeResponseShape->SetParameters(maxValue, firstPeakPos, 5,
-				     maxValue, firstPeakPos, 5);
+    timeResponseShape->SetParameters(maxValue, firstPeakPos, 2.5,
+				     maxValue, firstPeakPos, 2.5);
 
     timeResponseShape->SetParLimits(0,0, maxValue*200);
-    timeResponseShape->SetParLimits(1,firstPeakPos-100, firstPeakPos+100);   
-    timeResponseShape->SetParLimits(2,3,15);
+    timeResponseShape->SetParLimits(1,firstPeakPos-5, firstPeakPos+5);   
+    timeResponseShape->SetParLimits(2,0.5,5);
 
     timeResponseShape->SetParLimits(3, 0, maxValue*200);
-    timeResponseShape->SetParLimits(4, firstPeakPos-100, firstPeakPos+100);   
-    timeResponseShape->SetParLimits(5, 3,15);
+    timeResponseShape->SetParLimits(4, firstPeakPos-30, firstPeakPos+30);   
+    timeResponseShape->SetParLimits(5,0.5,5);
     
-    timeResponseShape->SetRange(firstPeakPos-150, firstPeakPos+150);
+    timeResponseShape->SetRange(firstPeakPos-50, firstPeakPos+50);
 
     hProj->Fit(timeResponseShape.get(), "QRB");
 
-    windowChargeSum = hProj->Integral(maxBin-20, maxBin+20);
+    //windowChargeSum = hProj->Integral(maxBin-50, maxBin+50);
 
     pdfNorm1 = timeResponseShape->GetParameter(0);
     pdfNorm2 = timeResponseShape->GetParameter(3);
@@ -128,10 +141,9 @@ void TrackBuilder::makeRecHits(int iDir){
     pdfMean1 = timeResponseShape->GetParameter(1);
     pdfMean2 = timeResponseShape->GetParameter(4);
 
-    //FIX ME optimize this, and move to configuretion
-    if(windowChargeSum<100) continue;
-    if(pdfNorm1+pdfNorm2<100) continue;
-    if(pdfNorm1<20 && pdfNorm2<20) continue;
+    //FIX ME optimize this, and move to configuretion    
+    //if(pdfNorm1+pdfNorm2<0.6*maxBin) continue;
+    //if(pdfNorm1<0.05*maxBin && pdfNorm2<0.05*maxBin) continue;    
     /////
     
     double y = hRawHits->GetYaxis()->GetBinCenter(iBinY);
@@ -156,9 +168,11 @@ const TH2D & TrackBuilder::getHoughtTransform(int iDir) const{
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-const Track3D & TrackBuilder::getTrack2D(int iDir, int iTrack) const{
+const Track3D & TrackBuilder::getTrack2D(int iDir, unsigned int iTrack) const{
 
-  return my2DTracks[iDir][iTrack];
+  if(my2DTracks[iDir].size()<iTrack) return dummyTrack;
+  
+  return my2DTracks[iDir].at(iTrack);
   
 }
 /////////////////////////////////////////////////////////
@@ -187,18 +201,16 @@ void TrackBuilder::fillHoughAccumulator(int iDir){
   myAccumulators[iDir].Reset();
   
   const TH2D & hRecHits  = getRecHits2D(iDir);
-  double maxCharge = hRecHits.GetMaximum();
-  
+
   double theta = 0.0, rho = 0.0;
   double x = 0.0, y=0.0;
   int charge = 0;
-  int chargeTreshold = maxCharge*0.02;//FIX ME optimize and move to configuarable
   for(int iBinX=0;iBinX<hRecHits.GetNbinsX();++iBinX){
     for(int iBinY=0;iBinY<hRecHits.GetNbinsY();++iBinY){
       x = hRecHits.GetXaxis()->GetBinCenter(iBinX);
       y = hRecHits.GetYaxis()->GetBinCenter(iBinY);
       charge = hRecHits.GetBinContent(iBinX, iBinY);
-      if(charge<chargeTreshold) continue;            
+      if(charge<1) continue;
       for(int iBinTheta=1;iBinTheta<myAccumulators[iDir].GetNbinsX();++iBinTheta){
 	theta = myAccumulators[iDir].GetXaxis()->GetBinCenter(iBinTheta);
 	rho = x*cos(theta) + y*sin(theta);
@@ -213,7 +225,7 @@ void TrackBuilder::fillHoughAccumulator(int iDir){
 TrackCollection TrackBuilder::findTrack2DCollection(int iDir){
 
   TrackCollection aTrackCollection;
-  for(int iPeak=0;iPeak<1;++iPeak){
+  for(int iPeak=0;iPeak<2;++iPeak){
     Track3D aTrack = findTrack2D(iDir, iPeak);
     aTrackCollection.push_back(aTrack);
   }

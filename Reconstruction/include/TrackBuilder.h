@@ -27,11 +27,13 @@ public:
 
   void reconstruct();
 
+  const SigClusterTPC & getCluster() const { return myCluster;}
+
   const TH2D & getRecHits2D(int iDir) const;
 
   const TH2D & getHoughtTransform(int iDir) const;
   
-  const Track3D & getTrack2D(int iDir, int iTrack=0) const;
+  const Track3D & getTrack2D(int iDir, unsigned int iTrack=0) const;
 
   const Track3D & getTrack3D() const;
 
@@ -55,7 +57,8 @@ private:
 
   Track3D buildTrack3D() const;
     
-  EventTPC *myEvent;  
+  EventTPC *myEvent;
+  SigClusterTPC myCluster;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
 
   bool myHistoInitialized;
@@ -65,7 +68,7 @@ private:
   std::vector<TH2D> myRecHits;
   std::vector<TrackCollection> my2DTracks;
   
-  Track3D myTrack3DSeed;
+  Track3D myTrack3DSeed, dummyTrack;
 
   std::shared_ptr<TF1> timeResponseShape;
   

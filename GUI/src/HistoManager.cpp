@@ -39,12 +39,13 @@ void HistoManager::setEvent(EventTPC* aEvent){
   myTkBuilder.setEvent(aEvent);
   myTkBuilder.reconstruct();
   
-  double eventMaxCharge = aEvent->GetMaxCharge();
-  double chargeThreshold = 0.1*eventMaxCharge;
-  int delta_timecells = 1;
-  int delta_strips = 1;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::shared_ptr<TH2D> HistoManager::getCartesianProjection(int aDir){
 
-  aCluster = aEvent->GetOneCluster(chargeThreshold, delta_strips, delta_timecells);
+  return myEvent->GetStripVsTimeInMM(myTkBuilder.getCluster(), aDir);
+  
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -68,7 +69,7 @@ std::shared_ptr<TH2D> HistoManager::getRawStripVsTime(int aDir){
 /////////////////////////////////////////////////////////
 std::shared_ptr<TH2D> HistoManager::getFilteredStripVsTime(int aDir){
 
-  return myEvent->GetStripVsTime(aCluster, aDir);
+  return myEvent->GetStripVsTime(myTkBuilder.getCluster(), aDir);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -85,7 +86,7 @@ TH3D* HistoManager::get3DReconstruction(){
   int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN;
   int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN; 
   int method=EVENTTPC_DEFAULT_RECO_METHOD;
-  h3DReco = myEvent->Get3D(aCluster,  radius, rebin_space, rebin_time, method);
+  h3DReco = myEvent->Get3D(myTkBuilder.getCluster(),  radius, rebin_space, rebin_time, method);
   return h3DReco;
 }
 /////////////////////////////////////////////////////////

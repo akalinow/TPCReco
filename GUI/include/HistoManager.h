@@ -32,6 +32,8 @@ public:
 
   std::shared_ptr<TH2D> getRawStripVsTime(int aDir);
 
+  std::shared_ptr<TH2D> getCartesianProjection(int aDir);
+
   std::shared_ptr<TH2D> getFilteredStripVsTime(int aDir);
 
   std::shared_ptr<TH2D> getRecHitStripVsTime(int aDir);
@@ -47,7 +49,8 @@ public:
 private:
     
   EventTPC *myEvent;
-  SigClusterTPC aCluster;
+
+  std::vector<TH2D*> projectionsInCartesianCoords;
   TH3D *h3DReco;
   TrackBuilder myTkBuilder;
   
