@@ -5,9 +5,9 @@
 import os, commands
 
 
-path = "/home/akalinow/data/"
+path = "/home/akalinow/data/neutrons/"
 command = "../bin/grawToEventTPC"
-geometryFile = "geometry_mini_eTPC.dat"
+geometryFile = path+"geometry_mini_eTPC.dat"
 
 grawFileList = {}
 
@@ -20,10 +20,13 @@ for root, dirs, files in os.walk(path):
 runId = 0
 for aTimestamp, aFile in grawFileList.items():
     runId += 1
+
+    geometryVersion = aTimestamp[:-5]
+    geometryFile = path+"geometry_mini_eTPC_"+geometryVersion+".dat"
         
-    arguments = geometryFile+" "+aFile+" "+str(runId)
+    arguments = geometryFile+" "+aFile+" "+aTimestamp
     print(aFile, aTimestamp, arguments)
-    
+
     os.system(command+" "+arguments)
     if runId==1:
         break

@@ -18,18 +18,28 @@ make install -j 4
 Convert all graw files in the directory hardcoded in the convertGrawToEventTPC.py file
 to ROOT EventTPC format. Since the GET software nees a lots of config files the command has to
 issued from a directory containing the config files. (To be fixed in some distant future.)
-Each .graw file is converted into a .root file with a run number assigned.
-
+Each .graw file is converted into a .root file with the same timestamp and file fragment number.
+Conversion requires a geometry file witg the same time stamp as data files (without file fragment number).
+IMPORTANT: Update the path to data location
 ```
 cd resources
 ../python/convertGrawToEventTPC.py
 ```
 
-Read an event (resources/EventTPC_1.root ) in EventTPC format, and plot the three projections.
-Requires geometry definition in resources/geometry_mini_eTPC.dat. The plots will be saved to
-the results directory.
-
+Read an event in EventTPC format, and fill an example histogram.
+Requires geometry definition in resources/geometry_mini_eTPC.dat.
+The plot will be saved to current directory.
+IMPORTANT: Update the data file name and geometry location.
 ```
 cd ../
 ./bin/testEventTPCread
+```
+
+Read all events in may all files from a single run (single timestamp), and fill an example histogram.
+Requires geometry definition in resources/geometry_mini_eTPC.dat.
+The plot will be saved to current directory.
+IMPORTANT: Update the data file name and geometry location.
+```
+cd ../
+./bin/testEventTPCreadTChain
 ```

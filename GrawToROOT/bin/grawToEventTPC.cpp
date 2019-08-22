@@ -23,12 +23,12 @@ int main(int argc, char *argv[]) {
 
   int minSignalCell = 51;
   int maxSignalCell = 500;
-  bool skipEmptyEvents = true;
+  bool skipEmptyEvents = false;
   
   ///Load TPC geometry
   std::string geomFileName = "geometry_mini_eTPC.dat";
   std::string dataFileName =  "/data/edaq/CoBo_2018-05-11T14:23:14.736_0000.graw";
-  long runId = 0;
+  std::string timestamp = "";
   if(argc>3){
     geomFileName = std::string(argv[1]);
     std::cout<<"geomFileName: "<<geomFileName<<std::endl;
@@ -36,8 +36,8 @@ int main(int argc, char *argv[]) {
     dataFileName = std::string(argv[2]);
     std::cout<<"dataFileName: "<<dataFileName<<std::endl;
 
-    runId = std::stoi(argv[3]);
-    std::cout<<"runNumber: "<<runId<<std::endl;
+    timestamp = std::string(argv[3]);
+    std::cout<<"timestamp: "<<timestamp<<std::endl;
   }
   std::shared_ptr<GeometryTPC> myGeometryPtr = std::make_shared<GeometryTPC>(geomFileName.c_str());
 
@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
   myPedestalCalculator.SetGeometryAndInitialize(myGeometryPtr);
 
   ///Create ROOT Tree
-  std::string rootFileName = "EventTPC_"+std::to_string(runId)+".root";
+  std::string rootFileName = "EventTPC_"+timestamp+".root";
   
   TFile aFile(rootFileName.c_str(),"RECREATE");
   TTree aTree("TPCData","");
@@ -61,8 +61,8 @@ int main(int argc, char *argv[]) {
   TGrawFile f(dataFileName.c_str());
   long lastevent=f.GetGrawFramesNumber();
 
-  myEvent.SetRunId(runId);
-      
+  myEvent.SetRunId(0);
+
   for(long eventId = 0;eventId<lastevent;++eventId){
     myEvent.Clear();
     myEvent.SetGeoPtr(myGeometryPtr);
