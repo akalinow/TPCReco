@@ -617,9 +617,8 @@ std::shared_ptr<TH2D> EventTPC::GetStripVsTimeInMM(const SigClusterTPC &cluster,
     for(int icell=cluster.GetMinTime(strip_dir); icell<=cluster.GetMaxTime(strip_dir); icell++) {
       if( cluster.CheckByStrip(strip_dir, strip_num, icell) ) {
 	double val = GetValByStrip(strip_dir, strip_num, icell);
-	x =  myGeometryPtr->Timecell2pos(icell, err_flag);      
-	y =  (strip_num-0.5)*myGeometryPtr->GetStripPitch() +
-	  (firstStrip->Offset() + myGeometryPtr->GetReferencePoint())*myGeometryPtr->GetStripPitchVector(strip_dir);
+	x = myGeometryPtr->Timecell2pos(icell, err_flag);      
+	y = myGeometryPtr->Strip2posUVW(strip_dir, strip_num, err_flag);	
 	result->Fill(x, y, val);
       }
     }

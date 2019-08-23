@@ -200,17 +200,15 @@ void MainFrame::Update(){
     myHistoManager.getCartesianProjection(aDir)->DrawClone("colz");
     
     fCanvas->cd(aDir+1+3);
-    //myHistoManager.getFilteredStripVsTime(aDir)->DrawClone("colz");
     std::shared_ptr<TH2D> aPtr = myHistoManager.getRecHitStripVsTime(aDir);
     aPtr->DrawClone("colz");
-    myHistoManager.getTrack2D(aDir, 0).DrawClone();
-    //myHistoManager.getTrack2D(aDir, 1).DrawClone();
-    //myHistoManager.getTrack3DProjection(aDir).DrawClone();
+    myHistoManager.get2DLine(aDir, 0).DrawClone();
+
     fCanvas->cd(aDir+1+3+3);
     myHistoManager.getHoughAccumulator(aDir).DrawClone("colz");
     //myHistoManager.getChargeAlong2DTrack(aDir).DrawClone("hist");
   }
-  /*  
+  /*
   TVirtualPad *aPad = fCanvas->cd(7);
   TText aMessage(0.2, 0.5,"Calculating 3D scence");
   aMessage.DrawClone();

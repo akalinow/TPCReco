@@ -7,11 +7,11 @@
 void TrackSegment2D::setBiasTangent(const TVector3 & aBias, const TVector3 & aTangent){
 
   myBias = aBias;
-  myTangent = aTangent;
+  myTangent = aTangent.Unit();
 
   double lambda = 100;
   myStart = myBias;
-  myEvent = myStart + lambda*myTangent;
+  myEnd = myStart + lambda*myTangent;
   
   initialize();
 }
@@ -20,7 +20,7 @@ void TrackSegment2D::setBiasTangent(const TVector3 & aBias, const TVector3 & aTa
 void TrackSegment2D::setStartEnd(const TVector3 & aStart, const TVector3 & aEnd){
 
   myStart = aStart;
-  myEvent = aEnd;
+  myEnd = aEnd;
 
   myTangent = (myEnd - myStart).Unit();
   myBias = myStart;
@@ -29,29 +29,44 @@ void TrackSegment2D::setStartEnd(const TVector3 & aStart, const TVector3 & aEnd)
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void initialize(){
+void TrackSegment2D::initialize(){
+
+  //myTangent = myTangent.Unit();
+  //if(myTangent.Theta()>M_PI/2.0) myTangent*=-1;
+  //myBias = myBias - myBias.Dot(myTangent)*myTangent;
   
-    double lambda = -myBias.X()/myTangent.X();
-    myBiasAtT0 = myBias + lambda*myTangent;
+  double lambda = -myBias.X()/myTangent.X();
+  myBiasAtT0 = myBias + lambda*myTangent;
+  
+  lambda = -myBias.Y()/myTangent.Y();
+  myBiasAtWire0 = myBias + lambda*myTangent;
 
-    lambda = -myBias.Y()/myTangent.Y();
-    myBiasAtWire0 = myBias + lambda*myTangent;
-
-    myLenght = (myEnd - myStart).Mag();
-
+  ///Set tangent direction along time arrow with unit time component.
+  ///So vector components can be compared between projections.
+  myTangentWithT1 = myTangent;
+  if(myTangentWithT1.X()<0) myTangentWithT1 *= -1;
+  if(std::abs(myTangentWithT1.X())>1E-5){
+    myTangentWithT1 *= 1.0/myTangentWithT1.X();
+  }
+  else myTangentWithT1 *=0.0;
+  
+  myLenght = (myEnd - myStart).Mag();  
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-double TrackSegment2D::get2DRecHitChi2(const TH2D & hRecHits) const {
+double TrackSegment2D::getRecHitChi2(const TH2D & hRecHits) const {
 
-  TVector3 aPoint, d;
+  TVector3 aPoint;
+  TVector3 transverseComponent;
   double chi2 = 0.0;
+  double longitudinalChi2 = 0.0;
   double maxCharge = 0;
   int pointCount = 0;
 
   const TVector3 & bias = getBias();
   const TVector3 & tangent = getTangent();
-  const TH2D & hRecHits = getRecHits();
+
+  const TVector3 & start = getStart();
 
   double lambda = 0.0;
   double x = 0.0, y = 0.0;
@@ -61,10 +76,26 @@ double TrackSegment2D::get2DRecHitChi2(const TH2D & hRecHits) const {
       x = hRecHits.GetXaxis()->GetBinCenter(iBinX);
       y = hRecHits.GetYaxis()->GetBinCenter(iBinY);
       charge = hRecHits.GetBinContent(iBinX, iBinY);
+      
+      if(charge<1.0) continue;
+      if(charge>0.0) charge = 1.0;//TEST
+      
       aPoint.SetXYZ(x, y, 0.0);
-      lambda = (aPoint - bias)*tangent/tangent.Mag2();      
-      d = aPoint - bias - lambda*tangent;
-      chi2 += d.Mag2()*charge;
+      lambda = (aPoint - start)*tangent/tangent.Mag();      
+      transverseComponent = aPoint - bias - lambda*tangent;
+
+      if(lambda>0 && lambda<getLength()) longitudinalChi2 = 0.0;
+      else longitudinalChi2 = std::pow(lambda, 2);
+      /*
+      std::cout<<"x: "<<x<<" y: "<<y
+	       <<" transverse chi2: "<<transverseComponent.Mag2()*charge
+	       <<" longitudinal chi2: "<<longitudinalChi2
+	       <<std::endl;
+      */
+      //longitudinalChi2 = 0.0;
+      chi2 += longitudinalChi2*charge;      
+      chi2 += transverseComponent.Mag2()*charge;
+
       ++pointCount;
       if(charge>maxCharge) maxCharge = charge;
     }

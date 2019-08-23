@@ -7,7 +7,6 @@
 #include "TF1.h"
 
 #include <TPolyLine3D.h>
-#include <Fit/Fitter.h>
 #include <Math/Functor.h>
 #include <Math/Vector3D.h>
 
@@ -27,7 +26,7 @@ TrackBuilder::TrackBuilder() {
 
   myHistoInitialized = false;
   myAccumulators.resize(3);
-  my2DTracks.resize(3);
+  my2DSeeds.resize(3);
   myRecHits.resize(3);
 
   timeResponseShape = std::make_shared<TF1>("timeResponseShape","gausn(0) + gausn(3)");
@@ -80,10 +79,10 @@ void TrackBuilder::reconstruct(){
   for(int iDir=DIR_U;iDir<DIR_3D;++iDir){
     makeRecHits(iDir);
     fillHoughAccumulator(iDir);
-    my2DTracks[iDir] = findTrack2DCollection(iDir);    
+    my2DSeeds[iDir] = findSegment2DCollection(iDir);    
   }
 
-  myTrack3DSeed = buildTrack3D();
+  myTrack3DSeed = buildSegment3D();
   myTrack3DFitted = fitTrack3D(myTrack3DSeed);
   
 }
@@ -137,8 +136,6 @@ void TrackBuilder::makeRecHits(int iDir){
 
     hProj->Fit(timeResponseShape.get(), "QRB");
 
-    //windowChargeSum = hProj->Integral(maxBin-50, maxBin+50);
-
     pdfNorm1 = timeResponseShape->GetParameter(0);
     pdfNorm2 = timeResponseShape->GetParameter(3);
 
@@ -172,38 +169,22 @@ const TH2D & TrackBuilder::getHoughtTransform(int iDir) const{
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-const Track3D & TrackBuilder::getTrack2D(int iDir, unsigned int iTrack) const{
+const TrackSegment2D & TrackBuilder::getSegment2D(int iDir, unsigned int iTrack) const{
 
-  if(my2DTracks[iDir].size()<iTrack) return dummyTrack;
-  
-  return my2DTracks[iDir].at(iTrack);
-  
+  if(my2DSeeds[iDir].size()<iTrack) return dummySegment2D;  
+  return my2DSeeds[iDir].at(iTrack);  
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-const Track3D & TrackBuilder::getTrack3DSeed() const{
+const TrackSegment3D & TrackBuilder::getSegment3DSeed() const{
 
-  return myTrack3DSeed;
-  
+  return myTrack3DSeed; 
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-const Track3D & TrackBuilder::getTrack3DFitted() const{
+const TrackSegment3D & TrackBuilder::getSegment3DFitted() const{
 
   return myTrack3DFitted;
-  
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-TVector3 getGradient(std::shared_ptr<TH2D> aHisto, int iBinX, int iBinY){
-
-  if(iBinX==1 || iBinY==1) return TVector3(0,0,0);
-
-  double dX = aHisto->GetBinContent(iBinX, iBinY) - aHisto->GetBinContent(iBinX-1, iBinY);
-  double dY = aHisto->GetBinContent(iBinX, iBinY) - aHisto->GetBinContent(iBinX, iBinY-1);
-  double dZ = 0.0;
-  
-  return TVector3(dX, dY, dZ);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -233,18 +214,18 @@ void TrackBuilder::fillHoughAccumulator(int iDir){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TrackCollection TrackBuilder::findTrack2DCollection(int iDir){
+TrackSegment2DCollection TrackBuilder::findSegment2DCollection(int iDir){
 
-  TrackCollection aTrackCollection;
+  TrackSegment2DCollection aTrackCollection;
   for(int iPeak=0;iPeak<2;++iPeak){
-    Track3D aTrack = findTrack2D(iDir, iPeak);
-    aTrackCollection.push_back(aTrack);
+    TrackSegment2D aTrackSegment = findSegment2D(iDir, iPeak);
+    aTrackCollection.push_back(aTrackSegment);
   }
   return aTrackCollection;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-Track3D TrackBuilder::findTrack2D(int iDir, int iPeak) const{
+TrackSegment2D TrackBuilder::findSegment2D(int iDir, int iPeak) const{
   
   int iBinX = 0, iBinY = 0, iBinZ=0;
   int margin = 5;
@@ -272,63 +253,90 @@ Track3D TrackBuilder::findTrack2D(int iDir, int iPeak) const{
   aY = rho*cos(theta);
   aTangent.SetXYZ(aX, aY, 0.0);
   
-  ///Set tangent direction along time arrow.
-  if(aTangent.X()<0) aTangent *= -1;
-  ///Normalize to X=1, so vector components can be compared between projections.
-  //FIX ME: aTangent.X()!=0 !!!
-  aTangent *= 1.0/aTangent.X();
-
-  Track3D a2DSeed(aTangent, aBias, iDir);
-  double trackStart= 0.0, trackEnd=999.0;
-  //std::tie(trackStart, trackEnd) = findTrackStartEnd(a2DSeed, myRecHits[iDir]);
-  a2DSeed.setStartEnd(trackStart, trackEnd);
-  		    
-  return a2DSeed;
+  TrackSegment2D aSegment2D(iDir);
+  aSegment2D.setBiasTangent(aBias, aTangent);  		    
+  return aSegment2D;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-Track3D TrackBuilder::buildTrack3D() const{
+TrackSegment3D TrackBuilder::buildSegment3D() const{
 
   int iTrack2DSeed = 0;
-  const Track3D & segmentU = my2DTracks[DIR_U][iTrack2DSeed];
-  const Track3D & segmentV = my2DTracks[DIR_V][iTrack2DSeed];
-  const Track3D & segmentW = my2DTracks[DIR_W][iTrack2DSeed];
+  const TrackSegment2D & segmentU = my2DSeeds[DIR_U][iTrack2DSeed];
+  const TrackSegment2D & segmentV = my2DSeeds[DIR_V][iTrack2DSeed];
+  const TrackSegment2D & segmentW = my2DSeeds[DIR_W][iTrack2DSeed];
   
-  double bZ = segmentU.getBiasAtX0().X();  
-  double bX = (segmentU.getBiasAtX0().Y() + stripOffset[DIR_U])*cos(phiPitchDirection[DIR_U]);
-  double bY_fromV = (segmentV.getBiasAtX0().Y()+stripOffset[DIR_V] - bX*cos(phiPitchDirection[DIR_V]))/sin(phiPitchDirection[DIR_V]);
-  double bY_fromW = (segmentW.getBiasAtX0().Y()+stripOffset[DIR_W] - bX*cos(phiPitchDirection[DIR_W]))/sin(phiPitchDirection[DIR_W]);  
+  double bZ = segmentU.getBiasAtT0().X();  
+  double bX = (segmentU.getBiasAtT0().Y())*cos(phiPitchDirection[DIR_U]);
+  double bY_fromV = (segmentV.getBiasAtT0().Y() - bX*cos(phiPitchDirection[DIR_V]))/sin(phiPitchDirection[DIR_V]);
+  double bY_fromW = (segmentW.getBiasAtT0().Y() - bX*cos(phiPitchDirection[DIR_W]))/sin(phiPitchDirection[DIR_W]);  
   double bY = (bY_fromV + bY_fromW)/2.0;
   TVector3 aBias(bX, bY, bZ);
 
-  double tZ = segmentU.getTangent().X();
-  double tX = segmentU.getTangent().Y()*cos(phiPitchDirection[DIR_U]);
-  double tY_fromV = (segmentV.getTangent().Y() - tX*cos(phiPitchDirection[DIR_V]))/sin(phiPitchDirection[DIR_V]);
-  double tY_fromW = (segmentW.getTangent().Y() - tX*cos(phiPitchDirection[DIR_W]))/sin(phiPitchDirection[DIR_W]);
+  double tZ = segmentU.getTangentWithT1().X();
+  double tX = segmentU.getTangentWithT1().Y()*cos(phiPitchDirection[DIR_U]);
+  double tY_fromV = (segmentV.getTangentWithT1().Y() - tX*cos(phiPitchDirection[DIR_V]))/sin(phiPitchDirection[DIR_V]);
+  double tY_fromW = (segmentW.getTangentWithT1().Y() - tX*cos(phiPitchDirection[DIR_W]))/sin(phiPitchDirection[DIR_W]);
   double tY = (tY_fromV + tY_fromW)/2.0;
   TVector3 aTangent(tX, tY, tZ);
 
-  ///Set bias perpendicular to tangent.
-  aTangent = aTangent.Unit();
-  if(aTangent.Theta()>M_PI/2.0) aTangent*=-1;
-  aBias = aBias - aBias.Dot(aTangent)*aTangent;
-
-  Track3D a3DSeed(aTangent, aBias, DIR_3D);
-  double startTime = 1/3.0*(segmentU.getStartTime() + segmentV.getStartTime() + segmentW.getStartTime());
-  double endTime = 1/3.0*(segmentU.getEndTime() + segmentV.getEndTime() + segmentW.getEndTime());
-  a3DSeed.setStartEnd(startTime, endTime);
+  TrackSegment3D a3DSeed;
+  a3DSeed.setBiasTangent(aBias, aTangent);
   a3DSeed.setRecHits(myRecHits);
 
   return a3DSeed;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-Track3D TrackBuilder::fitTrack3D(const Track3D & aTrack) const{
+TrackSegment3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrack) const{
 
-  Track3D fittedCandidate = aTrack;
+  TrackSegment3D fittedCandidate = aTrack;
+  
+  std::vector<double> params = {aTrack.getStart().X(),
+				aTrack.getStart().Y(),
+				aTrack.getStart().Z(),
+				///
+				aTrack.getEnd().X(),
+				aTrack.getEnd().Y(),
+				aTrack.getEnd().Z()};
 
-  double tangentTheta = aTrack.getTangentUnit().Theta();
-  double tangentPhi = aTrack.getTangentUnit().Phi();
+  std::cout<<"Seed chi2: "<<fittedCandidate(params.data())<<std::endl;
+
+  int nParams = params.size();
+  ROOT::Fit::Fitter fitter;
+  ROOT::Math::Functor fcn(aTrack, nParams);  
+  fitter.SetFCN(fcn, params.data());
+
+  for (int iPar = 0; iPar < nParams; ++iPar){
+    fitter.Config().ParSettings(iPar).SetStepSize(0.1);
+    fitter.Config().ParSettings(iPar).SetLimits(-100, 100);
+  }
+			        
+  bool ok = fitter.FitFCN();
+  if (!ok) {
+      Error(__FUNCTION__, "Track3D Fit failed");
+      return fittedCandidate;
+   }
+
+  const ROOT::Fit::FitResult & result = fitter.Result();
+  for (int iPar = 0; iPar < nParams; ++iPar){
+    params[iPar] = result.Parameter(iPar);
+  }  
+  std::cout <<" Fitted chi2 "<<fittedCandidate(params.data())<<std::endl;  
+  std::cout <<" result.MinFcnValue() " << result.MinFcnValue() << std::endl;
+  //result.Print(std::cout);
+
+
+  return fittedCandidate;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+
+
+
+/*				
+  double tangentTheta = aTrack.getTangent().Theta();
+  double tangentPhi = aTrack.getTangent().Phi();
 
   TVector3 perpPlaneBaseUnitA, perpPlaneBaseUnitB;    
   perpPlaneBaseUnitA.SetMagThetaPhi(1.0, M_PI/2.0 + tangentTheta, tangentPhi);
@@ -344,12 +352,9 @@ Track3D TrackBuilder::fitTrack3D(const Track3D & aTrack) const{
 	   <<std::endl;
 
   std::vector<double> params = {tangentTheta, tangentPhi, biasA, biasB};
-
-  fittedCandidate.getRecHitChi2();
-  std::cout<<"Seed chi2: "<<fittedCandidate(params.data())<<std::endl;
-
   int nParams = params.size();
-  ROOT::Fit::Fitter fitter;
+  
+
   ROOT::Math::Functor fcn(aTrack, nParams);  
   fitter.SetFCN(fcn, params.data());
   // set step sizes different than default ones (0.3 times parameter values)
@@ -361,60 +366,4 @@ Track3D TrackBuilder::fitTrack3D(const Track3D & aTrack) const{
   fitter.Config().ParSettings(1).SetLimits(-M_PI, M_PI);
   fitter.Config().ParSettings(2).SetLimits(-100, 100);
   fitter.Config().ParSettings(3).SetLimits(-100, 100);
-  bool ok = fitter.FitFCN();
-  if (!ok) {
-      Error(__FUNCTION__, "Track3D Fit failed");
-      return fittedCandidate;
-   }
-
-   const ROOT::Fit::FitResult & result = fitter.Result();
-
-   std::cout << "Total final distance square " << result.MinFcnValue() << std::endl;
-   result.Print(std::cout);
-
-  
-  return fittedCandidate;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-std::tuple<double, double> TrackBuilder::findTrackStartEnd(const Track3D & aTrack2D, const TH2D  & aHits) const{
-
-  const TVector3 & bias = aTrack2D.getBiasAtX0();
-  const TVector3 & tangent = aTrack2D.getTangent();
-
-  TH1D hCharge("hCharge","",125,0,500);
-
-  double x=0, y=0;
-  double charge = 0.0;
-  double lambda = 0.0;
-  double value = 0.0;
-  TVector3 aPoint;
-  TVector3 d;
-  
-  for(int iBinX=1;iBinX<aHits.GetNbinsX();++iBinX){
-    for(int iBinY=1;iBinY<aHits.GetNbinsY();++iBinY){
-      x = aHits.GetXaxis()->GetBinCenter(iBinX);
-      y = aHits.GetYaxis()->GetBinCenter(iBinY);
-      charge = aHits.GetBinContent(iBinX, iBinY);
-      if(charge<100) continue;//FIX ME move to configuration
-      aPoint.SetXYZ(x, y, 0.0);
-      lambda = (aPoint - bias)*tangent/tangent.Mag2();      
-      d = aPoint - bias - lambda*tangent;
-      if(d.Mag()>15) continue;//FIX ME move to configuration
-      value = (charge>0)*d.Mag();
-      hCharge.Fill(lambda, value);
-    }
-  }
-
-  double start = -999;
-  double end = 0.0;
-  for(int iBinX=1; iBinX<hCharge.GetNbinsX();++iBinX){
-    value = hCharge.GetBinContent(iBinX);
-    if(start<0 && value) start = hCharge.GetBinCenter(iBinX);
-    if(start>0 && value) end = hCharge.GetBinCenter(iBinX);
-  }
-
-  return std::make_tuple(start, end);
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
+  */

@@ -42,10 +42,8 @@ public:
 
   const TH2D & getHoughAccumulator(int aDir, int iPeak=0);
 
-  TLine getTrack2D(int aDir, int iTrack);
+  TLine get2DLine(int aDir, int iTrack);
 
-  TH1D getChargeAlong2DTrack(int aDir);
-   
 private:
     
   EventTPC *myEvent;

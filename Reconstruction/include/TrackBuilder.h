@@ -6,6 +6,8 @@
 #include <memory>
 #include <tuple>
 
+#include <Fit/Fitter.h>
+
 #include "TrackSegment2D.h"
 #include "TrackSegment3D.h"
 
@@ -34,11 +36,11 @@ public:
 
   const TH2D & getHoughtTransform(int iDir) const;
   
-  const TrackSegment2D & getTrackSegment2DSeed(int iDir) const;
+  const TrackSegment2D & getSegment2D(int iDir, unsigned int iTrack=0) const;
+  
+  const TrackSegment3D & getSegment3DSeed() const;
 
-  const Track3D & getTrackSegment3DSeed() const;
-
-  const Track3D & getTrack3DFitted() const;
+  const TrackSegment3D & getSegment3DFitted() const;
 
 private:
 
@@ -46,15 +48,15 @@ private:
  
   void fillHoughAccumulator(int iDir);
 
-  Track3D findTrack2D(int iDir, int iPeak) const;
+  TrackSegment2DCollection findSegment2DCollection(int iDir);
+  
+  TrackSegment2D findSegment2D(int iDir, int iPeak) const;
+  
+  TrackSegment3D buildSegment3D() const;
 
-  Track3D fitTrack3D(const Track3D & aTrack) const;
+  
+  TrackSegment3D fitTrack3D(const TrackSegment3D & aTrack) const;
 
-  std::tuple<double, double> findTrackStartEnd(const Track3D & aTrack2D, const TH2D  & aHits) const;
-
-  TrackCollection findTrack2DCollection(int iDir);
-
-  Track3D buildTrack3D() const;
     
   EventTPC *myEvent;
   SigClusterTPC myCluster;
@@ -66,11 +68,15 @@ private:
   std::vector<TH2D> myAccumulators;
   std::vector<TH2D> myRecHits;
   std::vector<TrackSegment2DCollection> my2DSeeds;
+
+  TrackSegment2D dummySegment2D;
   
-  TrackSegment3D myTrack3DSeed, dummyTrack;
+  TrackSegment3D myTrack3DSeed, dummySegment3D;
   TrackSegment3D myTrack3DFitted;
 
   std::shared_ptr<TF1> timeResponseShape;
+
+
   
 };
 #endif

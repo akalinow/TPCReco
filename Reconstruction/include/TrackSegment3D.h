@@ -7,6 +7,8 @@
 
 #include "TVector3.h"
 #include "TH2D.h"
+
+#include "TrackSegment2D.h"
 #include "CommonDefinitions.h"
 
 class TrackSegment3D{
@@ -24,7 +26,7 @@ public:
   void setRecHits(const std::vector<TH2D> & aRecHits) {myRecHits = aRecHits;}
 
   ///Unit tangential vector along segment.
-  const TVector3 & getTangent() const { return myTangentUnit;}
+  const TVector3 & getTangent() const { return myTangent;}
 
   ///Bias vector perpendicular to tangent.
   const TVector3 & getBias() const { return myBias;}
@@ -49,17 +51,19 @@ public:
 
   double getLength() const { return myLenght;}
 
+  ///Return sum of chi2 for all projections.
+  double getRecHitChi2() const;
+
   ///Operator needed for fitting.
   double operator() (const double *par);
 
 private:
 
+  TVector3 getPointOn2DProjection(double lambda, int strip_dir) const;
+
   ///Calculate vector for different parametrisations.
   void initialize();
-
-  ///Return sum of chi2 for all projections.
-  double getRecHitChi2() const;
-
+ 
   TVector3 myTangent, myBias;
   TVector3 myBiasAtX0, myBiasAtY0, myBiasAtZ0;
   TVector3 myStart, myEnd;
