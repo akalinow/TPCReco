@@ -29,6 +29,26 @@ void TrackSegment3D::setStartEnd(const TVector3 & aStart, const TVector3 & aEnd)
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+void TrackSegment3D::setRecHits(const std::vector<TH2D> & aRecHits){
+
+  myRecHits.clear();
+  
+  double x=-999.0, y=-999.0, charge=-999.0;
+  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+    const TH2D & hRecHits = aRecHits[strip_dir];
+    myRecHits.push_back(Hit2DCollection{});
+    for(int iBinX=1;iBinX<hRecHits.GetNbinsX();++iBinX){
+      for(int iBinY=1;iBinY<hRecHits.GetNbinsY();++iBinY){
+	charge = hRecHits.GetBinContent(iBinX, iBinY);
+	x = hRecHits.GetXaxis()->GetBinCenter(iBinX);
+	y = hRecHits.GetYaxis()->GetBinCenter(iBinY);
+	if(charge>0.0) myRecHits.back().push_back(Hit2D(x, y, charge));
+      }
+    }  
+  }
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 void TrackSegment3D::initialize(){
 
   //myTangent = myTangent.Unit();
@@ -79,13 +99,14 @@ TrackSegment2D TrackSegment3D::get2DProjection(int strip_dir) const{
 double TrackSegment3D::getRecHitChi2() const {
 
   double chi2 = 0.0;
-  double projectionChi2 = 0.0;
+  //#pragma omp parallel for reduction(+: chi2)
   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
-    const TrackSegment2D & aTrack2DProjection = get2DProjection(strip_dir);
-    const TH2D & aRecHits = myRecHits[strip_dir];
-    projectionChi2 = aTrack2DProjection.getRecHitChi2(aRecHits);    
-    chi2 += projectionChi2;    
+    //if(strip_dir!=DIR_V) continue;//TEST
+    TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir);
+    const Hit2DCollection & aRecHits = myRecHits[strip_dir];
+    chi2 += aTrack2DProjection.getRecHitChi2(aRecHits);    
   }
+  
   return chi2;
 }
 /////////////////////////////////////////////////////////
@@ -93,9 +114,7 @@ double TrackSegment3D::getRecHitChi2() const {
 double TrackSegment3D::operator() (const double *par) {
 
   //TVector3 start(par[0], par[1], par[2]);
-  TVector3 start = getStart();
-
-  
+  TVector3 start = getStart(); 
   TVector3 end(par[3], par[4], par[5]);  
   setStartEnd(start, end);
   return getRecHitChi2();

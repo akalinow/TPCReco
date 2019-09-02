@@ -198,11 +198,14 @@ void MainFrame::Update(){
     
     //myHistoManager.getRawStripVsTime(aDir)->DrawClone("colz");
     myHistoManager.getCartesianProjection(aDir)->DrawClone("colz");
+    myHistoManager.get2DLine(aDir, 0).DrawClone();
+    myHistoManager.get2DLine(aDir, 1).DrawClone();
     
     fCanvas->cd(aDir+1+3);
     std::shared_ptr<TH2D> aPtr = myHistoManager.getRecHitStripVsTime(aDir);
     aPtr->DrawClone("colz");
     myHistoManager.get2DLine(aDir, 0).DrawClone();
+    myHistoManager.get2DLine(aDir, 1).DrawClone();
 
     fCanvas->cd(aDir+1+3+3);
     myHistoManager.getHoughAccumulator(aDir).DrawClone("colz");

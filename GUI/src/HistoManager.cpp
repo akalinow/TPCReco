@@ -103,7 +103,7 @@ TLine HistoManager::get2DLine(int aDir, int iTrack){
   //const TrackSegment2D & aTrack2DProjection = myTkBuilder.getSegment2D(aDir, iTrack);
 
   //const TrackSegment3D & aTrack3D = myTkBuilder.getSegment3DSeed();
-  const TrackSegment3D & aTrack3D = myTkBuilder.getSegment3DFitted();
+  const TrackSegment3D & aTrack3D = myTkBuilder.getSegment3DFitted(iTrack);
   const TrackSegment2D & aTrack2DProjection = aTrack3D.get2DProjection(aDir);
   
   const TVector3 & start = aTrack2DProjection.getStart();
@@ -126,7 +126,7 @@ TLine HistoManager::get2DLine(int aDir, int iTrack){
   double yEnd =  end.Y();
   
   TLine aTrackLine(xBegin, yBegin, xEnd, yEnd);
-  aTrackLine.SetLineColor(2);
+  aTrackLine.SetLineColor(2+iTrack);
   aTrackLine.SetLineWidth(2);
 
   return aTrackLine;

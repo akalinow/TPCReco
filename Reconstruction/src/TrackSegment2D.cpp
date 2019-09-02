@@ -54,7 +54,7 @@ void TrackSegment2D::initialize(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-double TrackSegment2D::getRecHitChi2(const TH2D & hRecHits) const {
+double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
 
   TVector3 aPoint;
   TVector3 transverseComponent;
@@ -71,35 +71,37 @@ double TrackSegment2D::getRecHitChi2(const TH2D & hRecHits) const {
   double lambda = 0.0;
   double x = 0.0, y = 0.0;
   double charge = 0.0;
-  for(int iBinX=1;iBinX<hRecHits.GetNbinsX();++iBinX){
-    for(int iBinY=1;iBinY<hRecHits.GetNbinsY();++iBinY){
-      x = hRecHits.GetXaxis()->GetBinCenter(iBinX);
-      y = hRecHits.GetYaxis()->GetBinCenter(iBinY);
-      charge = hRecHits.GetBinContent(iBinX, iBinY);
-      
-      if(charge<1.0) continue;
-      if(charge>0.0) charge = 1.0;//TEST
-      
-      aPoint.SetXYZ(x, y, 0.0);
-      lambda = (aPoint - start)*tangent/tangent.Mag();      
-      transverseComponent = aPoint - bias - lambda*tangent;
 
-      if(lambda>0 && lambda<getLength()) longitudinalChi2 = 0.0;
-      else longitudinalChi2 = std::pow(lambda, 2);
-      /*
-      std::cout<<"x: "<<x<<" y: "<<y
-	       <<" transverse chi2: "<<transverseComponent.Mag2()*charge
-	       <<" longitudinal chi2: "<<longitudinalChi2
-	       <<std::endl;
-      */
-      //longitudinalChi2 = 0.0;
-      chi2 += longitudinalChi2*charge;      
-      chi2 += transverseComponent.Mag2()*charge;
-
-      ++pointCount;
-      if(charge>maxCharge) maxCharge = charge;
-    }
+  for(const auto aHit:aRecHits){
+    x = aHit.getPosTime();
+    y = aHit.getPosUVW();
+    charge = aHit.getCharge();
+    charge = 1.0;//TEST
+    ++pointCount;
+      
+    aPoint.SetXYZ(x, y, 0.0);
+    
+    lambda = (aPoint - start)*tangent/tangent.Mag();      
+    transverseComponent = aPoint - bias - lambda*tangent;
+      
+    if(lambda>0 && lambda<getLength()) longitudinalChi2 = 0.0;
+    else longitudinalChi2 = std::pow(lambda, 2);
+    /*
+    std::cout<<"x: "<<x<<" y: "<<y<<" charge: "<<charge
+	     <<" lambda: "<<lambda
+	     <<" length: "<<getLength()
+	     <<" transverse chi2: "<<transverseComponent.Mag2()*charge
+	     <<" longitudinal chi2: "<<longitudinalChi2
+	     <<std::endl;
+    */
+    longitudinalChi2 = 0.0;
+    if(std::abs(lambda)>getLength()) continue;//TEST
+    chi2 += longitudinalChi2*charge;      
+    chi2 += transverseComponent.Mag2()*charge;
+    ++pointCount;
+    if(charge>maxCharge) maxCharge = charge;   
   }
+  if(!pointCount) return 1E9;
   return chi2/pointCount;
 }
 /////////////////////////////////////////////////////////

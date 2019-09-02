@@ -40,7 +40,7 @@ public:
   
   const TrackSegment3D & getSegment3DSeed() const;
 
-  const TrackSegment3D & getSegment3DFitted() const;
+  const TrackSegment3D & getSegment3DFitted(unsigned int iSegment) const;
 
 private:
 
@@ -72,7 +72,7 @@ private:
   TrackSegment2D dummySegment2D;
   
   TrackSegment3D myTrack3DSeed, dummySegment3D;
-  TrackSegment3D myTrack3DFitted;
+  TrackSegment3DCollection myTrack3DSegmentsFitted;
 
   std::shared_ptr<TF1> timeResponseShape;
 

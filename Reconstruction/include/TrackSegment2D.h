@@ -6,7 +6,7 @@
 #include <memory>
 
 #include "TVector3.h"
-#include "TH2D.h"
+#include "Hit2D.h"
 #include "CommonDefinitions.h"
 
 class TrackSegment2D{
@@ -21,7 +21,9 @@ public:
 
   void setStartEnd(const TVector3 & aStart, const TVector3 & aEnd);
 
-  void setRecHits(const TH2D & aRecHits) {myRecHits = aRecHits;}
+  void setRecHits(const Hit2DCollection & aRecHits) {myRecHits = aRecHits;}
+
+  int getStripDir() const {return myStripDir;}
 
   ///Unit tangential vector along segment.
   const TVector3 & getTangent() const { return myTangent;}
@@ -47,10 +49,10 @@ public:
   double getLength() const { return myLenght;}
 
   ///Rec hits assigned to this projection.
-  const TH2D & getRecHits() const {return myRecHits;}
+  const Hit2DCollection & getRecHits() const {return myRecHits;}
 
   ///Return rec hits chi2.
-  double getRecHitChi2(const TH2D & hRecHits) const;
+  double getRecHitChi2(const Hit2DCollection & aRecHits) const;
 
 private:
 
@@ -65,7 +67,7 @@ private:
   TVector3 myBiasAtT0, myBiasAtWire0;
   TVector3 myTangentWithT1;
 
-  TH2D myRecHits;
+  Hit2DCollection myRecHits;
     
 };
 

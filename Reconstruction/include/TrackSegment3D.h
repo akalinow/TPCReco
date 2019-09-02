@@ -8,6 +8,7 @@
 #include "TVector3.h"
 #include "TH2D.h"
 
+#include "Hit2D.h"
 #include "TrackSegment2D.h"
 #include "CommonDefinitions.h"
 
@@ -23,7 +24,7 @@ public:
 
   void setStartEnd(const TVector3 & aStart, const TVector3 & aEnd);
 
-  void setRecHits(const std::vector<TH2D> & aRecHits) {myRecHits = aRecHits;}
+  void setRecHits(const std::vector<TH2D> & aRecHits);
 
   ///Unit tangential vector along segment.
   const TVector3 & getTangent() const { return myTangent;}
@@ -69,7 +70,9 @@ private:
   TVector3 myStart, myEnd;
   double myLenght;
 
-  std::vector<TH2D> myRecHits;
+  std::vector<Hit2DCollection> myRecHits;
+
+  
   
 };
 
