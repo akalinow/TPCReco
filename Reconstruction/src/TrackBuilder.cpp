@@ -5,6 +5,7 @@
 #include "TProfile.h"
 #include "TObjArray.h"
 #include "TF1.h"
+#include "TFitResult.h"
 
 #include <TPolyLine3D.h>
 #include <Math/Functor.h>
@@ -51,7 +52,7 @@ void TrackBuilder::setEvent(EventTPC* aEvent){
   myEvent = aEvent;
   double eventMaxCharge = myEvent->GetMaxCharge();
   double chargeThreshold = 0.2*eventMaxCharge;
-  int delta_timecells = 2;
+  int delta_timecells = 10;
   int delta_strips = 2;
 
   myCluster = myEvent->GetOneCluster(chargeThreshold, delta_strips, delta_timecells);
@@ -84,14 +85,17 @@ void TrackBuilder::reconstruct(){
   }
 
   myTrack3DSeed = buildSegment3D();
+
+
+  myTrack3DSegmentsFitted.clear();
   myTrack3DSegmentsFitted.push_back(fitTrack3D(myTrack3DSeed));
 
-  return;
-  
+
+  return;//TEST
   myTrack3DSeed = myTrack3DSegmentsFitted.back();
     
   myTrack3DSeed.setStartEnd(myTrack3DSeed.getEnd(),
-			    myTrack3DSeed.getEnd() + 5*myTrack3DSeed.getTangent());
+			    myTrack3DSeed.getEnd() + 10*myTrack3DSeed.getTangent());
 
   myTrack3DSegmentsFitted.push_back(fitTrack3D(myTrack3DSeed)); 
 }
@@ -113,49 +117,83 @@ void TrackBuilder::makeRecHits(int iDir){
   //return;
   ///////
 
-  int maxBin;
-  double maxValue;
-  double firstPeakPos;
-  //double windowChargeSum;
-  double pdfMean1, pdfMean2;
-  double pdfNorm1, pdfNorm2;
-
   TH1D *hProj;
+  double hitWirePos = -999.0;
+  double hitTimePos = -999.0;
+  double hitTimePosError = -999.0;
+  double hitCharge = -999.0;
   for(int iBinY=1;iBinY<hRecHits.GetNbinsY();++iBinY){
     hProj = hRawHits->ProjectionX("hProj",iBinY, iBinY);
-    maxBin = hProj->GetMaximumBin();
-    maxValue = hProj->GetMaximum();
+    TF1 timeResponseShape = fitTimeWindow(hProj);
 
-    if(maxValue<1) continue;
-    
-    firstPeakPos = hProj->GetBinCenter(maxBin);
-  
-    timeResponseShape->SetParameters(maxValue, firstPeakPos, 2.5,
-				     maxValue, firstPeakPos, 2.5);
-
-    timeResponseShape->SetParLimits(0,0, maxValue*200);
-    timeResponseShape->SetParLimits(1,firstPeakPos-5, firstPeakPos+5);   
-    timeResponseShape->SetParLimits(2,0.5,5);
-
-    timeResponseShape->SetParLimits(3, 0, maxValue*200);
-    timeResponseShape->SetParLimits(4, firstPeakPos-30, firstPeakPos+30);   
-    timeResponseShape->SetParLimits(5,0.5,5);
-    
-    timeResponseShape->SetRange(firstPeakPos-50, firstPeakPos+50);
-
-    hProj->Fit(timeResponseShape.get(), "QRB");
-
-    pdfNorm1 = timeResponseShape->GetParameter(0);
-    pdfNorm2 = timeResponseShape->GetParameter(3);
-
-    pdfMean1 = timeResponseShape->GetParameter(1);
-    pdfMean2 = timeResponseShape->GetParameter(4);
-    
-    double y = hRawHits->GetYaxis()->GetBinCenter(iBinY);
-    hRecHits.Fill(pdfMean1, y, pdfNorm1);
-    hRecHits.Fill(pdfMean2, y, pdfNorm2);
+    hitWirePos = hRawHits->GetYaxis()->GetBinCenter(iBinY);
+    for(int iSet=0;iSet<timeResponseShape.GetNpar();iSet+=3){
+      hitTimePos = timeResponseShape.GetParameter(iSet+1);
+      hitTimePosError = timeResponseShape.GetParameter(iSet+2);
+      hitCharge = timeResponseShape.GetParameter(iSet);
+      hitCharge *= sqrt(2.0)*M_PI*hitTimePosError;//the gausian fits are made without normalisation factor
+      hRecHits.Fill(hitTimePos, hitWirePos, hitCharge);
+    }
     delete hProj;
   }
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+TF1 TrackBuilder::fitTimeWindow(TH1D* hProj){
+
+   TFitResultPtr fitResult;
+   TF1 timeResponseShape;
+   TF1 bestTimeResponseShape;
+   double bestChi2OverNDF = 1E10;
+
+   int maxBin = hProj->GetMaximumBin();
+   double maxValue = hProj->GetMaximum();
+   double maxPos = hProj->GetBinCenter(maxBin);
+   if(maxValue<1) return bestTimeResponseShape;
+
+   std::string formula = "";
+   for(int iComponent=0;iComponent<3;++iComponent){
+     if(iComponent==0){
+       formula = "gaus("+std::to_string(3*iComponent)+")";
+     }
+     else{
+       formula += "+gaus("+std::to_string(3*iComponent)+")";
+
+     }
+     TF1 timeResponseShape("timeResponseShape",formula.c_str());        
+     timeResponseShape.SetRange(maxPos-25, maxPos+25);  
+   
+     for(int iSet=0;iSet<timeResponseShape.GetNpar();iSet+=3){
+       timeResponseShape.SetParameter(iSet, maxValue*2);
+       timeResponseShape.SetParameter(iSet+1, maxPos);
+       timeResponseShape.SetParameter(iSet+2, 2.0);
+       ///     
+       timeResponseShape.SetParLimits(iSet, 0.1*maxValue, maxValue*2);
+       timeResponseShape.SetParLimits(iSet+1, maxPos-15, maxPos+15);   
+       timeResponseShape.SetParLimits(iSet+2, 0.5, 8);
+     }   
+     fitResult = hProj->Fit(&timeResponseShape, "QRBSW");   
+
+     double chi2 = 0.0;
+     double x = 0.0;
+     for(int iBinX=1;iBinX<hProj->GetNbinsX();++iBinX){
+       x = hProj->GetBinCenter(iBinX);
+       chi2 += std::pow(hProj->GetBinContent(iBinX) - timeResponseShape.Eval(x), 2);
+     }
+     /*
+     std::cout<<"nComponents: "<<iComponent+1
+	      <<" histogram chi2: "<<chi2
+	      <<" ndf: "<<fitResult->Ndf()
+	      <<" NFreeParameters: "<<fitResult->NFreeParameters()
+	      <<" chi2/ndf: "<<chi2/fitResult->Ndf()
+	      <<std::endl;
+     */
+     if(fitResult->Ndf() && chi2/fitResult->Ndf() < bestChi2OverNDF){
+       bestChi2OverNDF = chi2/fitResult->Ndf();
+       timeResponseShape.Copy(bestTimeResponseShape);
+     }
+   }
+   return bestTimeResponseShape;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -309,36 +347,40 @@ TrackSegment3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrack) const{
   int nParams = params.size();
   ROOT::Fit::Fitter fitter;
   //fitter.Config().MinimizerOptions().SetMinimizerType("Minuit2");
-  //fitter.Config().MinimizerOptions().SetMaxFunctionCalls(15E3);
-  //fitter.Config().MinimizerOptions().SetTolerance(10.0);
+  fitter.Config().MinimizerOptions().SetMinimizerType("GSLSimAn");
+  fitter.Config().MinimizerOptions().SetMaxFunctionCalls(1E4);
+  fitter.Config().MinimizerOptions().SetMaxIterations(1E4);
+  fitter.Config().MinimizerOptions().SetTolerance(1E-2);
   //fitter.Config().MinimizerOptions().Print(std::cout);
   ROOT::Math::Functor fcn(aTrack, nParams);
 
   double minChi2Length = 999;
 
   TVector3 aTangent = fittedCandidate.getTangent();
-  for(int iStep=0;iStep<30;++iStep){
+  for(int iStep=0;iStep<1;++iStep){
 
-    aTangent = fittedCandidate.getTangent();    
-    params = {fittedCandidate.getStart().X(),
-	      fittedCandidate.getStart().Y(),
-	      fittedCandidate.getStart().Z(),
-	      ///
-	      (fittedCandidate.getEnd()+aTangent).X(),
-	      (fittedCandidate.getEnd()+aTangent).Y(),
-	      (fittedCandidate.getEnd()+aTangent).Z()};
+    if(iStep>0){
+      aTangent = fittedCandidate.getTangent();    
+      params = {fittedCandidate.getStart().X(),
+		fittedCandidate.getStart().Y(),
+		fittedCandidate.getStart().Z(),
+		///
+		(fittedCandidate.getEnd()+aTangent).X(),
+		(fittedCandidate.getEnd()+aTangent).Y(),
+		(fittedCandidate.getEnd()+aTangent).Z()};
+    }
     
     fitter.SetFCN(fcn, params.data());
     
     for (int iPar = 0; iPar < nParams; ++iPar){
-      fitter.Config().ParSettings(iPar).SetStepSize(1);
+      fitter.Config().ParSettings(iPar).SetStepSize(0.5);
       fitter.Config().ParSettings(iPar).SetLimits(-100, 100);
     }			        
     bool ok = fitter.FitFCN();
 
     if (!ok) {
       Error(__FUNCTION__, "Track3D Fit failed");
-      fitter.Result().Print(std::cout);
+      //fitter.Result().Print(std::cout);
       //TEST return fittedCandidate;
     }    
     const ROOT::Fit::FitResult & result = fitter.Result();
@@ -355,8 +397,7 @@ TrackSegment3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrack) const{
       minChi2Length =  result.MinFcnValue();
       fittedCandidateTmp =  fittedCandidate;
     }
-  }
-
+  }  
   return fittedCandidateTmp;
 }
 /////////////////////////////////////////////////////////

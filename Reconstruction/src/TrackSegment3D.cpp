@@ -8,8 +8,9 @@ void TrackSegment3D::setBiasTangent(const TVector3 & aBias, const TVector3 & aTa
 
   myBias = aBias;
   myTangent = aTangent.Unit();
+  if(aTangent.Z()<0) myTangent *= -1;
 
-  double lambda = 10;
+  double lambda = 30;
   myStart = myBias;
   myEnd = myStart + lambda*myTangent;
   
@@ -32,17 +33,17 @@ void TrackSegment3D::setStartEnd(const TVector3 & aStart, const TVector3 & aEnd)
 void TrackSegment3D::setRecHits(const std::vector<TH2D> & aRecHits){
 
   myRecHits.clear();
+  myRecHits.resize(3);
   
   double x=-999.0, y=-999.0, charge=-999.0;
   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
     const TH2D & hRecHits = aRecHits[strip_dir];
-    myRecHits.push_back(Hit2DCollection{});
     for(int iBinX=1;iBinX<hRecHits.GetNbinsX();++iBinX){
       for(int iBinY=1;iBinY<hRecHits.GetNbinsY();++iBinY){
 	charge = hRecHits.GetBinContent(iBinX, iBinY);
 	x = hRecHits.GetXaxis()->GetBinCenter(iBinX);
 	y = hRecHits.GetYaxis()->GetBinCenter(iBinY);
-	if(charge>0.0) myRecHits.back().push_back(Hit2D(x, y, charge));
+	if(charge>0.0) myRecHits.at(strip_dir).push_back(Hit2D(x, y, charge));
       }
     }  
   }

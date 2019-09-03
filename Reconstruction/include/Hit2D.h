@@ -10,16 +10,16 @@ class Hit2D {
 
 public:
 
-  Hit2D(double aPosTime, double aPosUVW, double aCharge) : posUVW(aPosUVW), posTime(aPosTime), charge(aCharge) { }
+  Hit2D(double aPosTime, double aPosWire, double aCharge) : posWire(aPosWire), posTime(aPosTime), charge(aCharge) { }
 
-  double getPosUVW() const { return posUVW;}
+  double getPosWire() const { return posWire;}
 
   double getPosTime() const { return posTime;}
 
   double getCharge() const {return charge;}
   
 private:
-  double posUVW, posTime;
+  double posWire, posTime;
   double charge;
 
 };

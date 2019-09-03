@@ -109,6 +109,7 @@ TLine HistoManager::get2DLine(int aDir, int iTrack){
   const TVector3 & start = aTrack2DProjection.getStart();
   const TVector3 & end = aTrack2DProjection.getEnd();
 
+  /*
   if(aDir==DIR_U){
 
     aTrack3D.getStart().Print();
@@ -117,7 +118,7 @@ TLine HistoManager::get2DLine(int aDir, int iTrack){
     
     start.Print();
     end.Print();
-  }
+    }*/
 
   double xBegin = start.X();
   double yBegin = start.Y();

@@ -45,6 +45,8 @@ public:
 private:
 
   void makeRecHits(int iDir);
+
+  TF1 fitTimeWindow(TH1D* hProj);
  
   void fillHoughAccumulator(int iDir);
 
@@ -53,7 +55,6 @@ private:
   TrackSegment2D findSegment2D(int iDir, int iPeak) const;
   
   TrackSegment3D buildSegment3D() const;
-
   
   TrackSegment3D fitTrack3D(const TrackSegment3D & aTrack) const;
 

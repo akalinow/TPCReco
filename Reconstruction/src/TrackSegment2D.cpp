@@ -74,11 +74,7 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
 
   for(const auto aHit:aRecHits){
     x = aHit.getPosTime();
-    y = aHit.getPosUVW();
-    charge = aHit.getCharge();
-    charge = 1.0;//TEST
-    ++pointCount;
-      
+    y = aHit.getPosWire();
     aPoint.SetXYZ(x, y, 0.0);
     
     lambda = (aPoint - start)*tangent/tangent.Mag();      
@@ -96,13 +92,20 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
     */
     longitudinalChi2 = 0.0;
     if(std::abs(lambda)>getLength()) continue;//TEST
+    charge = aHit.getCharge();
+    charge = 1.0;//TEST
+    ++pointCount;      
+    
     chi2 += longitudinalChi2*charge;      
     chi2 += transverseComponent.Mag2()*charge;
-    ++pointCount;
-    if(charge>maxCharge) maxCharge = charge;   
+    if(charge>maxCharge) maxCharge = charge;	
   }
   if(!pointCount) return 1E9;
-  return chi2/pointCount;
+
+  chi2 /= maxCharge;
+  chi2 /= pointCount;
+  
+  return chi2;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
