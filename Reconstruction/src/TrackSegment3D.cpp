@@ -4,13 +4,20 @@
 
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+TrackSegment3D::TrackSegment3D(){
+
+  myRecHits.clear();
+  myRecHits.resize(3);
+
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 void TrackSegment3D::setBiasTangent(const TVector3 & aBias, const TVector3 & aTangent){
 
   myBias = aBias;
   myTangent = aTangent.Unit();
-  if(aTangent.Z()<0) myTangent *= -1;
 
-  double lambda = 30;
+  double lambda = 150;
   myStart = myBias;
   myEnd = myStart + lambda*myTangent;
   
@@ -52,10 +59,6 @@ void TrackSegment3D::setRecHits(const std::vector<TH2D> & aRecHits){
 /////////////////////////////////////////////////////////
 void TrackSegment3D::initialize(){
 
-  //myTangent = myTangent.Unit();
-  //if(myTangent.Theta()>M_PI/2.0) myTangent*=-1;
-  //myBias = myBias - myBias.Dot(myTangent)*myTangent;
-  
   double lambda = -myBias.X()/myTangent.X();
   myBiasAtX0 = myBias + lambda*myTangent;
 
@@ -69,14 +72,26 @@ void TrackSegment3D::initialize(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+std::vector<double> TrackSegment3D::getStartEndXYZ() const{
+
+  std::vector<double> coordinates(6);
+  double *data = coordinates.data();
+
+  getStart().GetXYZ(data);
+  getEnd().GetXYZ(data+3);
+
+  return coordinates;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 TVector3 TrackSegment3D::getPointOn2DProjection(double lambda, int strip_dir) const{
 
   TVector3 stripPitchDirection(cos(phiPitchDirection[strip_dir]),
 			       sin(phiPitchDirection[strip_dir]), 0);
 
-  const TVector3 & bias = getBias();
+  const TVector3 & start = getStart();
   const TVector3 & tangent = getTangent();
-  TVector3 aPointOnLine = bias + lambda*tangent;
+  TVector3 aPointOnLine = start + lambda*tangent;
 
   double projectionTime = aPointOnLine.Z();
   double projectionWire = aPointOnLine*stripPitchDirection;
@@ -104,18 +119,16 @@ double TrackSegment3D::getRecHitChi2() const {
   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
     //if(strip_dir!=DIR_V) continue;//TEST
     TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir);
-    const Hit2DCollection & aRecHits = myRecHits[strip_dir];
+    const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
     chi2 += aTrack2DProjection.getRecHitChi2(aRecHits);    
-  }
-  
+  }  
   return chi2;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 double TrackSegment3D::operator() (const double *par) {
 
-  //TVector3 start(par[0], par[1], par[2]);
-  TVector3 start = getStart(); 
+  TVector3 start(par[0], par[1], par[2]);
   TVector3 end(par[3], par[4], par[5]);  
   setStartEnd(start, end);
   return getRecHitChi2();

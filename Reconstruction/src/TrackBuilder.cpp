@@ -33,6 +33,13 @@ TrackBuilder::TrackBuilder() {
 
   timeResponseShape = std::make_shared<TF1>("timeResponseShape","gausn(0) + gausn(3)");
 
+  //fitter.Config().MinimizerOptions().SetMinimizerType("Minuit2");
+  fitter.Config().MinimizerOptions().SetMinimizerType("GSLSimAn");
+  fitter.Config().MinimizerOptions().SetMaxFunctionCalls(1E4);
+  fitter.Config().MinimizerOptions().SetMaxIterations(1E4);
+  fitter.Config().MinimizerOptions().SetTolerance(1E-2);
+  //fitter.Config().MinimizerOptions().Print(std::cout);
+
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -85,19 +92,7 @@ void TrackBuilder::reconstruct(){
   }
 
   myTrack3DSeed = buildSegment3D();
-
-
-  myTrack3DSegmentsFitted.clear();
-  myTrack3DSegmentsFitted.push_back(fitTrack3D(myTrack3DSeed));
-
-
-  return;//TEST
-  myTrack3DSeed = myTrack3DSegmentsFitted.back();
-    
-  myTrack3DSeed.setStartEnd(myTrack3DSeed.getEnd(),
-			    myTrack3DSeed.getEnd() + 10*myTrack3DSeed.getTangent());
-
-  myTrack3DSegmentsFitted.push_back(fitTrack3D(myTrack3DSeed)); 
+  myFittedTrack = fitTrack3D(myTrack3DSeed);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -224,10 +219,9 @@ const TrackSegment3D & TrackBuilder::getSegment3DSeed() const{
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-const TrackSegment3D & TrackBuilder::getSegment3DFitted(unsigned int iSegment) const{
+const Track3D & TrackBuilder::getTrack3D(unsigned int iSegment) const{
 
-  if(myTrack3DSegmentsFitted.size()>iSegment) return myTrack3DSegmentsFitted.at(iSegment);
-  else return dummySegment3D;
+  return myFittedTrack;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -331,74 +325,59 @@ TrackSegment3D TrackBuilder::buildSegment3D() const{
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TrackSegment3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrack) const{
+Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
 
-  TrackSegment3D fittedCandidate = aTrack;
-  TrackSegment3D fittedCandidateTmp = aTrack;
-  
-  std::vector<double> params = {aTrack.getStart().X(),
-				aTrack.getStart().Y(),
-				aTrack.getStart().Z(),
-				///
-				aTrack.getEnd().X(),
-				aTrack.getEnd().Y(),
-				aTrack.getEnd().Z()};
+  Track3D aTrackCandidate;
+  aTrackCandidate.addSegment(aTrackSegment);
 
-  int nParams = params.size();
-  ROOT::Fit::Fitter fitter;
-  //fitter.Config().MinimizerOptions().SetMinimizerType("Minuit2");
-  fitter.Config().MinimizerOptions().SetMinimizerType("GSLSimAn");
-  fitter.Config().MinimizerOptions().SetMaxFunctionCalls(1E4);
-  fitter.Config().MinimizerOptions().SetMaxIterations(1E4);
-  fitter.Config().MinimizerOptions().SetTolerance(1E-2);
-  //fitter.Config().MinimizerOptions().Print(std::cout);
-  ROOT::Math::Functor fcn(aTrack, nParams);
+  Track3D aBestCandidate;
 
-  double minChi2Length = 999;
-
-  TVector3 aTangent = fittedCandidate.getTangent();
-  for(int iStep=0;iStep<1;++iStep){
+  double minChi2 = 999;
+  for(unsigned int iStep=0;iStep<2;++iStep){
+    
+    std::cout<<__FUNCTION__<<" iStep: "<<iStep<<std::endl;      
 
     if(iStep>0){
-      aTangent = fittedCandidate.getTangent();    
-      params = {fittedCandidate.getStart().X(),
-		fittedCandidate.getStart().Y(),
-		fittedCandidate.getStart().Z(),
-		///
-		(fittedCandidate.getEnd()+aTangent).X(),
-		(fittedCandidate.getEnd()+aTangent).Y(),
-		(fittedCandidate.getEnd()+aTangent).Z()};
+      int iSegment = 0;
+      aTrackCandidate.splitSegment(iSegment);
     }
-    
+
+    std::vector<double> params = aTrackCandidate.getSegmentsStartEndXYZ();
+    ////
+    std::cout<<"Pre-fit chi2: "<<aTrackCandidate(params.data())<<std::endl;
+    std::cout<<"\t Params: "<<std::endl;
+    for(auto & aItem: params) std::cout<<aItem<<" ";
+    std::cout<<std::endl;
+    //return aTrackCandidate;
+    //continue;
+    ////
+    int nParams = params.size();  
+    ROOT::Math::Functor fcn(aTrackCandidate, nParams);
     fitter.SetFCN(fcn, params.data());
-    
+
     for (int iPar = 0; iPar < nParams; ++iPar){
       fitter.Config().ParSettings(iPar).SetStepSize(0.5);
-      fitter.Config().ParSettings(iPar).SetLimits(-100, 100);
-    }			        
-    bool ok = fitter.FitFCN();
-
-    if (!ok) {
+      fitter.Config().ParSettings(iPar).SetLimits(-200, 200);
+    }
+    bool fitStatus = fitter.FitFCN();
+    if (!fitStatus) {
       Error(__FUNCTION__, "Track3D Fit failed");
       //fitter.Result().Print(std::cout);
       //TEST return fittedCandidate;
     }    
     const ROOT::Fit::FitResult & result = fitter.Result();
-    for (int iPar = 0; iPar < nParams; ++iPar){
-      params[iPar] = result.Parameter(iPar);
-    }
-    fittedCandidate(params.data());
-    std::cout <<" result.MinFcnValue() " << result.MinFcnValue() 
-	      <<" fittedCandidate.getLength(): "<<fittedCandidate.getLength()
-	      <<std::endl;
-    //result.Print(std::cout);
-  
-    if(result.MinFcnValue()<minChi2Length){
-      minChi2Length =  result.MinFcnValue();
-      fittedCandidateTmp =  fittedCandidate;
-    }
-  }  
-  return fittedCandidateTmp;
+    aTrackCandidate(result.GetParams());
+    std::cout<<"Post-fit chi2: "<<aTrackCandidate(result.GetParams())<<std::endl;
+    params = aTrackCandidate.getSegmentsStartEndXYZ();
+    std::cout<<"'\t Params: "<<std::endl;
+    for(auto & aItem: params) std::cout<<aItem<<" ";
+    std::cout<<std::endl;
+    if(result.MinFcnValue()<minChi2){
+      minChi2 =  result.MinFcnValue();
+      aBestCandidate = aTrackCandidate;
+    }    
+  }
+  return aBestCandidate;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

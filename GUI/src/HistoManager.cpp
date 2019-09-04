@@ -98,13 +98,15 @@ const TH2D & HistoManager::getHoughAccumulator(int aDir, int iPeak){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TLine HistoManager::get2DLine(int aDir, int iTrack){
+TLine HistoManager::get2DLine(int aDir, unsigned int iTrackSegment){
 
   //const TrackSegment2D & aTrack2DProjection = myTkBuilder.getSegment2D(aDir, iTrack);
-
   //const TrackSegment3D & aTrack3D = myTkBuilder.getSegment3DSeed();
-  const TrackSegment3D & aTrack3D = myTkBuilder.getSegment3DFitted(iTrack);
-  const TrackSegment2D & aTrack2DProjection = aTrack3D.get2DProjection(aDir);
+
+  const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
+  if(iTrackSegment>=aTrack3D.getSegments().size()) return TLine{};
+  const TrackSegment3D & aTrackSegment3D = aTrack3D.getSegments().at(iTrackSegment);  
+  const TrackSegment2D & aTrack2DProjection = aTrackSegment3D.get2DProjection(aDir);
   
   const TVector3 & start = aTrack2DProjection.getStart();
   const TVector3 & end = aTrack2DProjection.getEnd();
@@ -127,7 +129,7 @@ TLine HistoManager::get2DLine(int aDir, int iTrack){
   double yEnd =  end.Y();
   
   TLine aTrackLine(xBegin, yBegin, xEnd, yEnd);
-  aTrackLine.SetLineColor(2+iTrack);
+  aTrackLine.SetLineColor(2+iTrackSegment);
   aTrackLine.SetLineWidth(2);
 
   return aTrackLine;

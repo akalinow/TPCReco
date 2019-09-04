@@ -42,7 +42,7 @@ public:
 
   const TH2D & getHoughAccumulator(int aDir, int iPeak=0);
 
-  TLine get2DLine(int aDir, int iTrack);
+  TLine get2DLine(int aDir, unsigned int iTrackSegment);
 
 private:
     

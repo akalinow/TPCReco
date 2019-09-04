@@ -16,7 +16,7 @@ class TrackSegment3D{
 
 public:
 
-  TrackSegment3D(){};
+  TrackSegment3D();
 
   ~TrackSegment3D(){};
 
@@ -25,6 +25,8 @@ public:
   void setStartEnd(const TVector3 & aStart, const TVector3 & aEnd);
 
   void setRecHits(const std::vector<TH2D> & aRecHits);
+
+  void setRecHits(const std::vector<Hit2DCollection> & aRecHits) {myRecHits = aRecHits;}
 
   ///Unit tangential vector along segment.
   const TVector3 & getTangent() const { return myTangent;}
@@ -47,10 +49,16 @@ public:
   ///Bias vector at the end of the segment.
   const TVector3 & getEnd() const { return myEnd;}
 
+  ///Return packed cartesian coordinates of the segment start/end points.
+  std::vector<double> getStartEndXYZ() const;
+
   ///Return given 2D projection 
   TrackSegment2D get2DProjection(int iDir) const;
 
+  ///Return the full lenght of the segment.
   double getLength() const { return myLenght;}
+
+  const std::vector<Hit2DCollection> & getRecHits() const { return myRecHits;}
 
   ///Return sum of chi2 for all projections.
   double getRecHitChi2() const;

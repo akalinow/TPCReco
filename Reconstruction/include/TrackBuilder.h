@@ -10,6 +10,7 @@
 
 #include "TrackSegment2D.h"
 #include "TrackSegment3D.h"
+#include "Track3D.h"
 
 class TH2D;
 class TF1;
@@ -40,7 +41,7 @@ public:
   
   const TrackSegment3D & getSegment3DSeed() const;
 
-  const TrackSegment3D & getSegment3DFitted(unsigned int iSegment) const;
+  const Track3D & getTrack3D(unsigned int iSegment) const;
 
 private:
 
@@ -56,7 +57,7 @@ private:
   
   TrackSegment3D buildSegment3D() const;
   
-  TrackSegment3D fitTrack3D(const TrackSegment3D & aTrack) const;
+  Track3D fitTrack3D(const TrackSegment3D & aTrackSeedSegment) const;
 
     
   EventTPC *myEvent;
@@ -73,11 +74,12 @@ private:
   TrackSegment2D dummySegment2D;
   
   TrackSegment3D myTrack3DSeed, dummySegment3D;
-  TrackSegment3DCollection myTrack3DSegmentsFitted;
+
+  Track3D myFittedTrack;
 
   std::shared_ptr<TF1> timeResponseShape;
 
-
+  mutable ROOT::Fit::Fitter fitter;
   
 };
 #endif
