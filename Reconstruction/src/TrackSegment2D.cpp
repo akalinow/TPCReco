@@ -98,7 +98,7 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
     longitudinalChi2 = 0.0;
     
     charge = aHit.getCharge();
-    charge = 1.0;//TEST
+    //charge = 1.0;//TEST
     ++pointCount;      
     
     chi2 += longitudinalChi2*charge;      
@@ -110,8 +110,7 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
   }
   if(!pointCount){
     //std::cout<<__FUNCTION__<<" pointCount: "<<pointCount<<std::endl;
-    return 0.0;
-    return dummyChi2;
+    return -1E-10;
   }
 
   chi2 /= maxCharge;

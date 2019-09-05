@@ -79,8 +79,6 @@ private:
   double myLenght;
 
   std::vector<Hit2DCollection> myRecHits;
-
-  
   
 };
 

@@ -58,7 +58,7 @@ void TrackBuilder::setEvent(EventTPC* aEvent){
 
   myEvent = aEvent;
   double eventMaxCharge = myEvent->GetMaxCharge();
-  double chargeThreshold = 0.2*eventMaxCharge;
+  double chargeThreshold = 0.15*eventMaxCharge;
   int delta_timecells = 10;
   int delta_strips = 2;
 
@@ -333,14 +333,9 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
   Track3D aBestCandidate;
 
   double minChi2 = 999;
-  for(unsigned int iStep=0;iStep<2;++iStep){
+  for(unsigned int iStep=0;iStep<10;++iStep){
     
     std::cout<<__FUNCTION__<<" iStep: "<<iStep<<std::endl;      
-
-    if(iStep>0){
-      int iSegment = 0;
-      aTrackCandidate.splitSegment(iSegment);
-    }
 
     std::vector<double> params = aTrackCandidate.getSegmentsStartEndXYZ();
     ////
@@ -375,8 +370,11 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
     if(result.MinFcnValue()<minChi2){
       minChi2 =  result.MinFcnValue();
       aBestCandidate = aTrackCandidate;
-    }    
+    }
+    aTrackCandidate.splitWorseChi2Segment();    
   }
+
+  aBestCandidate.removeEmptySegments();
   return aBestCandidate;
 }
 /////////////////////////////////////////////////////////

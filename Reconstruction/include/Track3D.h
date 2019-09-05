@@ -24,7 +24,9 @@ public:
 
   double getLength() const { return myLenght;}
 
-  void splitSegment(unsigned int iSegment);
+  void splitWorseChi2Segment();
+
+  void removeEmptySegments();
 
   ///Operator needed for fitting.
   double operator() (const double *par);
@@ -32,7 +34,7 @@ public:
 private:
 
   double myLenght;
-
+  std::vector<double> segmentChi2;
   TrackSegment3DCollection mySegments;
   
 };
