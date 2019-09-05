@@ -40,6 +40,13 @@ TrackBuilder::TrackBuilder() {
   fitter.Config().MinimizerOptions().SetTolerance(1E-2);
   //fitter.Config().MinimizerOptions().Print(std::cout);
 
+  ///An offset used for filling the Hough transformation.
+  ///to avoid having very small rho parameters, as
+  ///orignally manty track traverse close to X=0, Time=0
+  ///point.
+  aHoughOffest.SetX(20.0);
+  aHoughOffest.SetY(40.0);
+  aHoughOffest.SetZ(0.0);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -63,7 +70,6 @@ void TrackBuilder::setEvent(EventTPC* aEvent){
   int delta_strips = 2;
 
   myCluster = myEvent->GetOneCluster(chargeThreshold, delta_strips, delta_timecells);
-
 
   std::string hName, hTitle;
   if(!myHistoInitialized){     
@@ -236,8 +242,8 @@ void TrackBuilder::fillHoughAccumulator(int iDir){
   int charge = 0;
   for(int iBinX=0;iBinX<hRecHits.GetNbinsX();++iBinX){
     for(int iBinY=0;iBinY<hRecHits.GetNbinsY();++iBinY){
-      x = hRecHits.GetXaxis()->GetBinCenter(iBinX);
-      y = hRecHits.GetYaxis()->GetBinCenter(iBinY);
+      x = hRecHits.GetXaxis()->GetBinCenter(iBinX) + aHoughOffest.X();
+      y = hRecHits.GetYaxis()->GetBinCenter(iBinY) + aHoughOffest.Y();
       charge = hRecHits.GetBinContent(iBinX, iBinY);
       if(charge<1) continue;
       for(int iBinTheta=1;iBinTheta<myAccumulators[iDir].GetNbinsX();++iBinTheta){
@@ -286,6 +292,9 @@ TrackSegment2D TrackBuilder::findSegment2D(int iDir, int iPeak) const{
   double aX = rho*cos(theta);
   double aY = rho*sin(theta);
   aBias.SetXYZ(aX, aY, 0.0);
+
+  aBias -= aHoughOffest.Dot(aBias.Unit())*aBias.Unit();
+  
   aX = -rho*sin(theta);
   aY = rho*cos(theta);
   aTangent.SetXYZ(aX, aY, 0.0);
@@ -329,49 +338,49 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
 
   Track3D aTrackCandidate;
   aTrackCandidate.addSegment(aTrackSegment);
-
   Track3D aBestCandidate;
 
-  double minChi2 = 999;
+  double minChi2 = 1E10;
   for(unsigned int iStep=0;iStep<10;++iStep){
     
     std::cout<<__FUNCTION__<<" iStep: "<<iStep<<std::endl;      
 
     std::vector<double> params = aTrackCandidate.getSegmentsStartEndXYZ();
+    int nParams = params.size();  
     ////
-    std::cout<<"Pre-fit chi2: "<<aTrackCandidate(params.data())<<std::endl;
-    std::cout<<"\t Params: "<<std::endl;
-    for(auto & aItem: params) std::cout<<aItem<<" ";
-    std::cout<<std::endl;
+    std::cout<<"Pre-fit: "<<std::endl; 
+    std::cout<<aTrackCandidate<<std::endl;
     //return aTrackCandidate;
     //continue;
     ////
-    int nParams = params.size();  
+
     ROOT::Math::Functor fcn(aTrackCandidate, nParams);
     fitter.SetFCN(fcn, params.data());
 
     for (int iPar = 0; iPar < nParams; ++iPar){
-      fitter.Config().ParSettings(iPar).SetStepSize(0.5);
-      fitter.Config().ParSettings(iPar).SetLimits(-200, 200);
+      fitter.Config().ParSettings(iPar).SetStepSize(0.01);
+      fitter.Config().ParSettings(iPar).SetLimits(-300, 300);
     }
     bool fitStatus = fitter.FitFCN();
     if (!fitStatus) {
       Error(__FUNCTION__, "Track3D Fit failed");
-      //fitter.Result().Print(std::cout);
-      //TEST return fittedCandidate;
+      fitter.Result().Print(std::cout);
+      return aTrackCandidate;
     }    
     const ROOT::Fit::FitResult & result = fitter.Result();
     aTrackCandidate(result.GetParams());
-    std::cout<<"Post-fit chi2: "<<aTrackCandidate(result.GetParams())<<std::endl;
-    params = aTrackCandidate.getSegmentsStartEndXYZ();
-    std::cout<<"'\t Params: "<<std::endl;
-    for(auto & aItem: params) std::cout<<aItem<<" ";
-    std::cout<<std::endl;
+
+    std::cout<<"Post-fit: "<<std::endl; 
+    std::cout<<aTrackCandidate<<std::endl;
+    std::cout<<" result.MinFcnValue(): "<<result.MinFcnValue()<<std::endl;
+    
     if(result.MinFcnValue()<minChi2){
       minChi2 =  result.MinFcnValue();
       aBestCandidate = aTrackCandidate;
     }
-    aTrackCandidate.splitWorseChi2Segment();    
+    aTrackCandidate.removeEmptySegments();
+    aTrackCandidate.extend();
+    aTrackCandidate.splitWorseChi2Segment();
   }
 
   aBestCandidate.removeEmptySegments();

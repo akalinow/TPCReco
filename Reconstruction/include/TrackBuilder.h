@@ -67,6 +67,7 @@ private:
   bool myHistoInitialized;
   int nAccumulatorRhoBins, nAccumulatorPhiBins;
 
+  TVector3 aHoughOffest;
   std::vector<TH2D> myAccumulators;
   std::vector<TH2D> myRecHits;
   std::vector<TrackSegment2DCollection> my2DSeeds;

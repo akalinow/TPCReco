@@ -9,6 +9,7 @@ TrackSegment3D::TrackSegment3D(){
   myRecHits.clear();
   myRecHits.resize(3);
 
+  myProjectionsChi2.resize(3);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -17,7 +18,7 @@ void TrackSegment3D::setBiasTangent(const TVector3 & aBias, const TVector3 & aTa
   myBias = aBias;
   myTangent = aTangent.Unit();
 
-  double lambda = 150;
+  double lambda = 60;
   myStart = myBias;
   myEnd = myStart + lambda*myTangent;
   
@@ -54,6 +55,8 @@ void TrackSegment3D::setRecHits(const std::vector<TH2D> & aRecHits){
       }
     }  
   }
+
+  calculateRecHitChi2();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -69,6 +72,8 @@ void TrackSegment3D::initialize(){
   myBiasAtZ0 = myBias + lambda*myTangent;
 
   myLenght = (myEnd - myStart).Mag();
+
+  calculateRecHitChi2();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -92,7 +97,6 @@ TVector3 TrackSegment3D::getPointOn2DProjection(double lambda, int strip_dir) co
   const TVector3 & start = getStart();
   const TVector3 & tangent = getTangent();
   TVector3 aPointOnLine = start + lambda*tangent;
-
   double projectionTime = aPointOnLine.Z();
   double projectionWire = aPointOnLine*stripPitchDirection;
 
@@ -112,17 +116,22 @@ TrackSegment2D TrackSegment3D::get2DProjection(int strip_dir) const{
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-double TrackSegment3D::getRecHitChi2() const {
+double TrackSegment3D::getRecHitChi2() const{
 
   double chi2 = 0.0;
-  //#pragma omp parallel for reduction(+: chi2)
+  std::for_each(myProjectionsChi2.begin(), myProjectionsChi2.end(), [&](auto aItem){chi2 += aItem;});
+  return chi2;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void TrackSegment3D::calculateRecHitChi2(){
+
+  //#pragma omp parallel for
   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
-    //if(strip_dir!=DIR_V) continue;//TEST
     TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir);
     const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
-    chi2 += aTrack2DProjection.getRecHitChi2(aRecHits);    
+    myProjectionsChi2[strip_dir] = aTrack2DProjection.getRecHitChi2(aRecHits);    
   }  
-  return chi2;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

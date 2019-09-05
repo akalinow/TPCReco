@@ -10,6 +10,7 @@
 
 #include "TLine.h"
 #include "TGraph.h"
+#include "TH2Poly.h"
 
 #include "CommonDefinitions.h"
 
@@ -30,6 +31,8 @@ public:
 
   void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);
 
+  TH2Poly *getDetectorLayout() const;
+
   std::shared_ptr<TH2D> getRawStripVsTime(int aDir);
 
   std::shared_ptr<TH2D> getCartesianProjection(int aDir);
@@ -43,6 +46,10 @@ public:
   const TH2D & getHoughAccumulator(int aDir, int iPeak=0);
 
   TLine get2DLine(int aDir, unsigned int iTrackSegment);
+
+  void drawTrack3DProjectionTimeStrip(int strip_dir, TVirtualPad *aPad);
+
+  void drawTrack3DProjectionXY(TVirtualPad *aPad);
 
 private:
     

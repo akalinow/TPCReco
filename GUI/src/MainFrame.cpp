@@ -53,6 +53,7 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h)
   myDataManager.loadDataFile(dataFileName);
   fEntryDialog->updateFileName(dataFileName);
   myDataManager.loadEvent(2);
+  myHistoManager.setGeometry(myDataManager.getGeometry());
 
   fCanvas->Clear();
   fCanvas->Divide(3,3);
@@ -188,35 +189,35 @@ void MainFrame::Update(){
   fCanvas->Divide(3,3);
   fCanvas->cd(1);
 
-  for(int aDir=0;aDir<3;++aDir){
-    myHistoManager.getHoughAccumulator(aDir);
+  for(int strip_dir=0;strip_dir<3;++strip_dir){
+    myHistoManager.getHoughAccumulator(strip_dir);
   }
 
   //myHistoManager.getRawStripVsTime(DIR_U)->SaveAs("histo.root");
   //myHistoManager.getCartesianProjection(DIR_U)->SaveAs("histo.root");
   
-  for(int aDir=0;aDir<3;++aDir){
-    fCanvas->cd(aDir+1);
+  for(int strip_dir=0;strip_dir<3;++strip_dir){
+    TVirtualPad *aPad = fCanvas->cd(strip_dir+1);
     
-    //myHistoManager.getRawStripVsTime(aDir)->DrawClone("colz");
-    myHistoManager.getCartesianProjection(aDir)->DrawClone("colz");
-    //myHistoManager.get2DLine(aDir, 0).DrawClone();
-    //myHistoManager.get2DLine(aDir, 1).DrawClone();
+    //myHistoManager.getRawStripVsTime(strip_dir)->DrawClone("colz");
+    myHistoManager.getCartesianProjection(strip_dir)->DrawClone("colz");
     
-    fCanvas->cd(aDir+1+3);
-    std::shared_ptr<TH2D> aPtr = myHistoManager.getRecHitStripVsTime(aDir);
+    aPad = fCanvas->cd(strip_dir+1+3);
+    std::shared_ptr<TH2D> aPtr = myHistoManager.getRecHitStripVsTime(strip_dir);
     aPtr->DrawClone("colz");
-    for(unsigned int iTrackSegment=0;iTrackSegment<4;++iTrackSegment){
-      myHistoManager.get2DLine(aDir, iTrackSegment).DrawClone();
-    }
 
-
-    fCanvas->cd(aDir+1+3+3);
-    myHistoManager.getHoughAccumulator(aDir).DrawClone("colz");
-    //myHistoManager.getChargeAlong2DTrack(aDir).DrawClone("hist");
+    myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad);
+    
+    aPad = fCanvas->cd(strip_dir+1+3+3);
+    myHistoManager.getHoughAccumulator(strip_dir).DrawClone("colz");
+    //myHistoManager.getChargeAlong2DTrack(strip_dir).DrawClone("hist");
   }
-  /*
+  
   TVirtualPad *aPad = fCanvas->cd(7);
+  myHistoManager.getDetectorLayout()->Draw("colz 0");
+  myHistoManager.drawTrack3DProjectionXY(aPad);
+  aPad->Update(); 
+  /*
   TText aMessage(0.2, 0.5,"Calculating 3D scence");
   aMessage.DrawClone();
   aPad->Update();
@@ -230,8 +231,8 @@ void MainFrame::Update(){
     aMessage.DrawText(0.2, 0.5, "3D scene not available.");
   }  
   aPad->Update();  
-  */
   fCanvas->Update();  
+  */
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

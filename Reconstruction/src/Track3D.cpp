@@ -8,13 +8,14 @@
 void Track3D::addSegment(const TrackSegment3D & aSegment3D){
 
   mySegments.push_back(aSegment3D);
+  updateChi2();
   
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void Track3D::initialize(){
 
-  myLenght = 0.0;
+  myLenght = 0.0;  
   for(auto &aSegment: mySegments){
     myLenght += aSegment.getLength();
   }
@@ -37,21 +38,26 @@ std::vector<double> Track3D::getSegmentsStartEndXYZ() const{
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+double Track3D::getChi2() const{
+
+  double chi2 = 0.0;
+  std::for_each(segmentChi2.begin(), segmentChi2.end(), [&](auto aItem){chi2 += aItem;});
+  return chi2;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 void Track3D::splitWorseChi2Segment(){
 
   if(!segmentChi2.size()) return;
 
   double maxChi2 = 0.0;
-  unsigned int worseChi2Segment = -1;
+  unsigned int worseChi2Segment = 0;
   for(unsigned int iSegment=0;iSegment<mySegments.size();++iSegment){
-    std::cout<<__FUNCTION__<<" segment chi2: "<<segmentChi2[iSegment]<<std::endl;
     if(segmentChi2[iSegment]>maxChi2){
       maxChi2 = segmentChi2[iSegment];
       worseChi2Segment = iSegment;
     }
   }
-
-  std::cout<<__FUNCTION__<<" worse chi2 segment: "<<worseChi2Segment<<std::endl;
 
   TrackSegment3D & aSegment = mySegments.at(worseChi2Segment);
   TVector3 aStep = aSegment.getLength()/2.0*aSegment.getTangent();
@@ -61,6 +67,38 @@ void Track3D::splitWorseChi2Segment(){
   aNewSegment.setStartEnd(aSegment.getEnd(), aSegment.getEnd() + aStep);
 
   mySegments.insert(mySegments.begin()+worseChi2Segment+1, aNewSegment);
+
+  updateChi2();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void Track3D::updateChi2(){
+
+ segmentChi2.clear();
+  for(auto aItem: mySegments){
+    segmentChi2.push_back(aItem.getRecHitChi2());
+  }    
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void Track3D::extend(){
+
+  if(!mySegments.size()) return;
+
+  TrackSegment3D aSegment = mySegments.front();
+  TVector3 aStart = aSegment.getStart() - 100*aSegment.getTangent();
+  TVector3 aEnd = aSegment.getStart();
+  
+  aSegment.setStartEnd(aStart, aEnd);
+  mySegments.insert(mySegments.begin(), aSegment);
+
+  aSegment = mySegments.back();
+  aStart = aSegment.getEnd();
+  aEnd = aSegment.getEnd() + 100*aSegment.getTangent();  
+  aSegment.setStartEnd(aStart, aEnd);
+  mySegments.insert(mySegments.end(), aSegment);
+
+  updateChi2();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -69,11 +107,13 @@ void Track3D::removeEmptySegments(){
   auto modifiedEnd = std::remove_if(mySegments.begin(), mySegments.end(), [](auto aItem){
 									    std::vector<double> segmentParameters = aItem.getStartEndXYZ();
 									    double segmentChi2 = aItem(segmentParameters.data());
-									    return segmentChi2<0;
+									    return segmentChi2<1.0;
 									  });
 
   unsigned int newSize = modifiedEnd - mySegments.begin();
   mySegments.resize(newSize);
+
+  updateChi2();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -81,15 +121,35 @@ double Track3D::operator() (const double *par) {
 
   double result = 0.0;
   double tmpChi2 = 0.0;
-  segmentChi2.clear();
   
   for(unsigned int iSegment=0;iSegment<mySegments.size();++iSegment){
     const double *segmentParameters = par+3*iSegment;
     tmpChi2 = mySegments.at(iSegment)(segmentParameters);
-    segmentChi2.push_back(tmpChi2);
     result += tmpChi2;
   }
+  updateChi2();
+  
   return result;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::ostream & operator << (std::ostream &out, const Track3D &aTrack){
+
+  out << "number of segments: "<<aTrack.getSegments().size()<<std::endl;
+  if(!aTrack.getSegments().size()) return out;
+
+  std::cout<<"\t Path: node [chi2]: ";
+  for(auto aSegment: aTrack.getSegments()){
+    const TVector3 & start = aSegment.getStart();    
+    out<<"("<<start.X()<<", "<<start.Y()<<", "<<start.Z()<<")"
+       <<"["<<aSegment.getRecHitChi2()<<"]"
+       <<" -> ";
+  }  
+  const TVector3 & end = aTrack.getSegments().back().getEnd();  
+  out<<"("<<end.X()<<", "<<end.Y()<<", "<<end.Z()<<") "<<std::endl;
+
+  std::cout<<"\t Total track chi2: "<<aTrack.getChi2();  
+  return out;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

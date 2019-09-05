@@ -49,6 +49,20 @@ std::shared_ptr<TH2D> HistoManager::getCartesianProjection(int aDir){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+TH2Poly * HistoManager::getDetectorLayout() const{
+
+  if(!myGeometryPtr) return 0;
+
+
+  TH2Poly* aPtr = (TH2Poly*)myGeometryPtr->GetTH2Poly()->Clone();
+  int nBins = aPtr->GetNumberOfBins(); 
+  for(int iBin=1;iBin<nBins;iBin+=nBins/50){
+    aPtr->SetBinContent(iBin, 1.0);
+  }  
+  return aPtr;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 std::shared_ptr<TH2D> HistoManager::getRawStripVsTime(int aDir){
 
   std::shared_ptr<TH2D> hProjection = myEvent->GetStripVsTime(aDir);
@@ -98,18 +112,41 @@ const TH2D & HistoManager::getHoughAccumulator(int aDir, int iPeak){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TLine HistoManager::get2DLine(int aDir, unsigned int iTrackSegment){
+void HistoManager::drawTrack3DProjectionXY(TVirtualPad *aPad){
 
-  //const TrackSegment2D & aTrack2DProjection = myTkBuilder.getSegment2D(aDir, iTrack);
-  //const TrackSegment3D & aTrack3D = myTkBuilder.getSegment3DSeed();
-
+  aPad->cd();
   const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
-  if(iTrackSegment>=aTrack3D.getSegments().size()) return TLine{};
-  const TrackSegment3D & aTrackSegment3D = aTrack3D.getSegments().at(iTrackSegment);  
-  const TrackSegment2D & aTrack2DProjection = aTrackSegment3D.get2DProjection(aDir);
+
+  int iSegment = 0;
+  TLine aSegment2DLine;
+  aSegment2DLine.SetLineWidth(2);
+  for(const auto & aItem: aTrack3D.getSegments()){
+    const TVector3 & start = aItem.getStart();
+    const TVector3 & end = aItem.getEnd();
+    aSegment2DLine.SetLineColor(2+iSegment);
+    aSegment2DLine.DrawLine(start.X(), start.Y(),  end.X(),  end.Y());	
+    ++iSegment;
+  }
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void HistoManager::drawTrack3DProjectionTimeStrip(int strip_dir, TVirtualPad *aPad){
+
+  aPad->cd();
+  const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
+
+  int iSegment = 0;
+  TLine aSegment2DLine;
+  aSegment2DLine.SetLineWidth(2);
+  for(const auto & aItem: aTrack3D.getSegments()){
+    const TrackSegment2D & aSegment2DProjection = aItem.get2DProjection(strip_dir);
+    const TVector3 & start = aSegment2DProjection.getStart();
+    const TVector3 & end = aSegment2DProjection.getEnd();
+    aSegment2DLine.SetLineColor(2+iSegment);
+    aSegment2DLine.DrawLine(start.X(), start.Y(),  end.X(),  end.Y());	
+    ++iSegment;
+  }
   
-  const TVector3 & start = aTrack2DProjection.getStart();
-  const TVector3 & end = aTrack2DProjection.getEnd();
 
   /*
   if(aDir==DIR_U){
@@ -121,18 +158,6 @@ TLine HistoManager::get2DLine(int aDir, unsigned int iTrackSegment){
     start.Print();
     end.Print();
     }*/
-
-  double xBegin = start.X();
-  double yBegin = start.Y();
-
-  double xEnd =  end.X();
-  double yEnd =  end.Y();
-  
-  TLine aTrackLine(xBegin, yBegin, xEnd, yEnd);
-  aTrackLine.SetLineColor(2+iTrackSegment);
-  aTrackLine.SetLineWidth(2);
-
-  return aTrackLine;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

@@ -60,9 +60,8 @@ public:
 
   const std::vector<Hit2DCollection> & getRecHits() const { return myRecHits;}
 
-  ///Return sum of chi2 for all projections.
   double getRecHitChi2() const;
-
+  
   ///Operator needed for fitting.
   double operator() (const double *par);
 
@@ -72,6 +71,9 @@ private:
 
   ///Calculate vector for different parametrisations.
   void initialize();
+
+  ///Calculate and store chi2 for all projections.
+  void calculateRecHitChi2();
  
   TVector3 myTangent, myBias;
   TVector3 myBiasAtX0, myBiasAtY0, myBiasAtZ0;
@@ -79,6 +81,7 @@ private:
   double myLenght;
 
   std::vector<Hit2DCollection> myRecHits;
+  std::vector<double> myProjectionsChi2;
   
 };
 

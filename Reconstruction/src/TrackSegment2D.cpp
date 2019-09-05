@@ -46,7 +46,7 @@ void TrackSegment2D::initialize(){
   }
   else myTangentWithT1 *=0.0;
   
-  myLenght = (myEnd - myStart).Mag();  
+  myLenght = (myEnd - myStart).Mag();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -56,7 +56,6 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
   TVector3 transverseComponent;
   double chi2 = 0.0;
   double dummyChi2 = 1E9;
-  double longitudinalChi2 = 0.0;
   double maxCharge = 0;
   int pointCount = 0;
 
@@ -65,16 +64,17 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
   const TVector3 & start = getStart();
 
   if(tangent.Mag()<1E-3){
+    std::cout<<__FUNCTION__<<" Null tangent: ";
     tangent.Print();
+    std::cout<<" for direction: "<<getStripDir()<<std::endl;
+    getStart().Print();
+    getEnd().Print();
     return dummyChi2;
   }
   
   double lambda = 0.0;
   double x = 0.0, y = 0.0;
   double charge = 0.0;
-
-  double minLambda = 999.0;
-  double maxLambda = -999.0;
 
   for(const auto aHit:aRecHits){
     x = aHit.getPosTime();
@@ -92,28 +92,17 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
     */    
     if(lambda<0 || lambda>getLength()) continue;
     transverseComponent = aPoint - bias - lambda*tangent;
-      
-    if(lambda>0 && lambda<getLength()) longitudinalChi2 = 0.0;
-    else longitudinalChi2 = std::pow(lambda, 2);   
-    longitudinalChi2 = 0.0;
-    
+          
     charge = aHit.getCharge();
-    //charge = 1.0;//TEST
     ++pointCount;      
     
-    chi2 += longitudinalChi2*charge;      
     chi2 += transverseComponent.Mag2()*charge;
     
     if(charge>maxCharge) maxCharge = charge;
-    if(lambda<minLambda) minLambda = lambda;
-    if(lambda>maxLambda) maxLambda = lambda;
   }
-  if(!pointCount){
-    //std::cout<<__FUNCTION__<<" pointCount: "<<pointCount<<std::endl;
-    return -1E-10;
-  }
+  if(!pointCount) return 0.0*dummyChi2;
 
-  chi2 /= maxCharge;
+  //chi2 /= maxCharge;
   chi2 /= pointCount;
   /*
   std::cout<<" minLambda/length: "<<minLambda/getLength()

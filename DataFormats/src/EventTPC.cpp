@@ -617,7 +617,7 @@ std::shared_ptr<TH2D> EventTPC::GetStripVsTimeInMM(const SigClusterTPC &cluster,
     for(int icell=cluster.GetMinTime(strip_dir); icell<=cluster.GetMaxTime(strip_dir); icell++) {
       if( cluster.CheckByStrip(strip_dir, strip_num, icell) ) {
 	double val = GetValByStrip(strip_dir, strip_num, icell);
-	x = myGeometryPtr->Timecell2pos(icell, err_flag) + 40;//TEST + 40      
+	x = myGeometryPtr->Timecell2pos(icell, err_flag);
 	y = myGeometryPtr->Strip2posUVW(strip_dir, strip_num, err_flag);	
 	result->Fill(x, y, val);
       }
@@ -850,8 +850,8 @@ TH3D *EventTPC::Get3D(const SigClusterTPC &cluster, double radius, int rebin_spa
   const int time_cell_min = MAXIMUM( cluster.min_time[DIR_U], MAXIMUM( cluster.min_time[DIR_V], cluster.min_time[DIR_W] ));
   const int time_cell_max = MINIMUM( cluster.max_time[DIR_U], MINIMUM( cluster.max_time[DIR_V], cluster.max_time[DIR_W] ));
 
-  //  std::cout << Form(">>>> EventId = %lld", event_id) << std::endl;
-  //  std::cout << Form(">>>> Time cell range = [%d, %d]", time_cell_min, time_cell_max) << std::endl;
+  //std::cout << Form(">>>> EventId = %lld", event_id) << std::endl;
+  //std::cout << Form(">>>> Time cell range = [%d, %d]", time_cell_min, time_cell_max) << std::endl;
 
   const std::map<MultiKey2, std::vector<int>, multikey2_less> & hitListByTimeDir = cluster.GetHitListByTimeDir();
   
@@ -968,7 +968,7 @@ TH3D *EventTPC::Get3D(const SigClusterTPC &cluster, double radius, int rebin_spa
 		    Form("Event-%lld: 3D reco in XYZ;X [mm];Y [mm];Z [mm]", event_id),
 		    nx, xmin, xmax, ny, ymin, ymax, nz, zmin, zmax );
     }
-
+    
     // needed for method #2 only:
     // loop over matched hits and update fraction map
     std::map<MultiKey3, double, multikey3_less> fraction[3]; // for U,V,W local charge projections
@@ -1048,7 +1048,6 @@ TH3D *EventTPC::Get3D(const SigClusterTPC &cluster, double radius, int rebin_spa
       }
     }
   }
-
   return h;
 
 }
