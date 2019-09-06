@@ -78,8 +78,6 @@ private:
 
   Track3D myFittedTrack;
 
-  std::shared_ptr<TF1> timeResponseShape;
-
   mutable ROOT::Fit::Fitter fitter;
   
 };

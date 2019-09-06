@@ -48,6 +48,7 @@ double Track3D::getChi2() const{
 /////////////////////////////////////////////////////////
 void Track3D::splitWorseChi2Segment(){
 
+  updateChi2();
   if(!segmentChi2.size()) return;
 
   double maxChi2 = 0.0;
@@ -60,11 +61,11 @@ void Track3D::splitWorseChi2Segment(){
   }
 
   TrackSegment3D & aSegment = mySegments.at(worseChi2Segment);
-  TVector3 aStep = aSegment.getLength()/2.0*aSegment.getTangent();
-  aSegment.setStartEnd(aSegment.getStart(), aSegment.getStart() + aStep);
+  TVector3 aStep = aSegment.getLength()*aSegment.getTangent();
+  aSegment.setStartEnd(aSegment.getStart(), aSegment.getStart() + 0.7*aStep);
 
   TrackSegment3D aNewSegment = mySegments.at(worseChi2Segment);
-  aNewSegment.setStartEnd(aSegment.getEnd(), aSegment.getEnd() + aStep);
+  aNewSegment.setStartEnd(aSegment.getEnd(), aSegment.getEnd() + 0.3*aStep);
 
   mySegments.insert(mySegments.begin()+worseChi2Segment+1, aNewSegment);
 
@@ -107,7 +108,7 @@ void Track3D::removeEmptySegments(){
   auto modifiedEnd = std::remove_if(mySegments.begin(), mySegments.end(), [](auto aItem){
 									    std::vector<double> segmentParameters = aItem.getStartEndXYZ();
 									    double segmentChi2 = aItem(segmentParameters.data());
-									    return segmentChi2<1.0;
+									    return segmentChi2<1E-5;
 									  });
 
   unsigned int newSize = modifiedEnd - mySegments.begin();

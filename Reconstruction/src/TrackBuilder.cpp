@@ -31,9 +31,6 @@ TrackBuilder::TrackBuilder() {
   my2DSeeds.resize(3);
   myRecHits.resize(3);
 
-  timeResponseShape = std::make_shared<TF1>("timeResponseShape","gausn(0) + gausn(3)");
-
-  //fitter.Config().MinimizerOptions().SetMinimizerType("Minuit2");
   fitter.Config().MinimizerOptions().SetMinimizerType("GSLSimAn");
   fitter.Config().MinimizerOptions().SetMaxFunctionCalls(1E4);
   fitter.Config().MinimizerOptions().SetMaxIterations(1E4);
@@ -341,7 +338,7 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
   Track3D aBestCandidate;
 
   double minChi2 = 1E10;
-  for(unsigned int iStep=0;iStep<10;++iStep){
+  for(unsigned int iStep=0;iStep<2;++iStep){
     
     std::cout<<__FUNCTION__<<" iStep: "<<iStep<<std::endl;      
 
@@ -359,7 +356,7 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
 
     for (int iPar = 0; iPar < nParams; ++iPar){
       fitter.Config().ParSettings(iPar).SetStepSize(0.01);
-      fitter.Config().ParSettings(iPar).SetLimits(-300, 300);
+      fitter.Config().ParSettings(iPar).SetLimits(-50, 50);
     }
     bool fitStatus = fitter.FitFCN();
     if (!fitStatus) {
@@ -379,8 +376,8 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
       aBestCandidate = aTrackCandidate;
     }
     aTrackCandidate.removeEmptySegments();
-    aTrackCandidate.extend();
     aTrackCandidate.splitWorseChi2Segment();
+    //aTrackCandidate.extend();
   }
 
   aBestCandidate.removeEmptySegments();

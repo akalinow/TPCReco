@@ -79,36 +79,33 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
   for(const auto aHit:aRecHits){
     x = aHit.getPosTime();
     y = aHit.getPosWire();
+    charge = aHit.getCharge();
     aPoint.SetXYZ(x, y, 0.0);    
-    lambda = (aPoint - start)*tangent/tangent.Mag();
+    lambda = (aPoint - start)*tangent/tangent.Mag();        
+    if(lambda<0 || lambda>getLength()) continue;
+    transverseComponent = aPoint - bias - lambda*tangent;
+
+    ++pointCount;
     /*
     std::cout<<"x: "<<x<<" y: "<<y<<" charge: "<<charge
 	     <<" lambda: "<<lambda
 	     <<" length: "<<getLength()
 	     <<" transverse chi2: "<<transverseComponent.Mag2()*charge
-	     <<" longitudinal chi2: "<<longitudinalChi2
 	     <<" pointCount: "<<pointCount
+	     <<" maxCharge: "<<maxCharge
 	     <<std::endl;
-    */    
-    if(lambda<0 || lambda>getLength()) continue;
-    transverseComponent = aPoint - bias - lambda*tangent;
-          
-    charge = aHit.getCharge();
-    ++pointCount;      
-    
+    */
     chi2 += transverseComponent.Mag2()*charge;
     
     if(charge>maxCharge) maxCharge = charge;
+    maxCharge +=charge;
   }
   if(!pointCount) return 0.0*dummyChi2;
 
-  //chi2 /= maxCharge;
-  chi2 /= pointCount;
+  chi2 /= maxCharge;
+  //chi2 /= pointCount;
   /*
-  std::cout<<" minLambda/length: "<<minLambda/getLength()
-	   <<" maxLambda/length: "<<maxLambda/getLength()
-	   <<" length: "<<getLength()
-	   <<" pointCount: "<<pointCount
+  std::cout<<" pointCount: "<<pointCount
 	   <<" maxCharge: "<<maxCharge
 	   <<" chi2: "<<chi2
 	   <<std::endl;
