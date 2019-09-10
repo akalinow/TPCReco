@@ -216,7 +216,9 @@ void MainFrame::Update(){
   TVirtualPad *aPad = fCanvas->cd(7);
   myHistoManager.getDetectorLayout()->Draw("colz 0");
   myHistoManager.drawTrack3DProjectionXY(aPad);
-  aPad->Update(); 
+
+  aPad = fCanvas->cd(8);
+  myHistoManager.drawChargeAlongTrack3D(aPad);
   /*
   TText aMessage(0.2, 0.5,"Calculating 3D scence");
   aMessage.DrawClone();
@@ -230,9 +232,9 @@ void MainFrame::Update(){
     aPad->Clear();  
     aMessage.DrawText(0.2, 0.5, "3D scene not available.");
   }  
-  aPad->Update();  
-  fCanvas->Update();  
   */
+  //aPad->Update();  
+  fCanvas->Update();    
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

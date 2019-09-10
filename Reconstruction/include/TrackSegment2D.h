@@ -48,6 +48,8 @@ public:
 
   double getLength() const { return myLenght;}
 
+  double getIntegratedCharge(double lambda, const Hit2DCollection & aRecHits) const;
+
   ///Rec hits assigned to this projection.
   const Hit2DCollection & getRecHits() const {return myRecHits;}
 

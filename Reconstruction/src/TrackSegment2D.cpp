@@ -50,11 +50,39 @@ void TrackSegment2D::initialize(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+double TrackSegment2D::getIntegratedCharge(double lambdaCut, const Hit2DCollection & aRecHits) const{
+
+  const TVector3 & bias = getBias();
+  const TVector3 & tangent = getTangent();
+  const TVector3 & start = getStart();
+  TVector3 transverseComponent;
+
+  double lambda = 0.0;
+  double x = 0.0, y = 0.0;
+  double totalCharge = 0.0;
+  double radiusCut = 2.0;//FIXME put into confoguration
+  TVector3 aPoint;
+  
+  for(const auto aHit:aRecHits){
+    x = aHit.getPosTime();
+    y = aHit.getPosWire();
+    aPoint.SetXYZ(x, y, 0.0);    
+    lambda = (aPoint - start)*tangent/tangent.Mag();
+    if(lambda<0 || lambda>getLength() || lambda>lambdaCut) continue;
+
+    transverseComponent = aPoint - bias - lambda*tangent;
+    if(transverseComponent.Mag()<radiusCut) totalCharge += aHit.getCharge();
+  }
+  return totalCharge;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
 
   TVector3 aPoint;
   TVector3 transverseComponent;
   double chi2 = 0.0;
+  double longitudinalChi2Component = 0.0;
   double dummyChi2 = 1E9;
   double maxCharge = 0;
   int pointCount = 0;
@@ -82,8 +110,19 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
     charge = aHit.getCharge();
     aPoint.SetXYZ(x, y, 0.0);    
     lambda = (aPoint - start)*tangent/tangent.Mag();        
-    if(lambda<0 || lambda>getLength()) continue;
+    
     transverseComponent = aPoint - bias - lambda*tangent;
+    longitudinalChi2Component = std::min(lambda, getLength()-lambda);
+    if(lambda<0 || lambda>getLength()) continue;
+    
+    if(longitudinalChi2Component>0) longitudinalChi2Component = 0.0;
+    longitudinalChi2Component*=longitudinalChi2Component;
+    /*
+    std::cout<<"lambda: "<<lambda
+	     <<" getLength(): "<<getLength()
+	     <<" longitudinalChi2Component: "<<longitudinalChi2Component
+	     <<std::endl;
+    */
 
     ++pointCount;
     /*
@@ -96,8 +135,9 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
 	     <<std::endl;
     */
     chi2 += transverseComponent.Mag2()*charge;
+    //chi2 += longitudinalChi2Component*charge;
     
-    if(charge>maxCharge) maxCharge = charge;
+    //if(charge>maxCharge) maxCharge = charge;
     maxCharge +=charge;
   }
   if(!pointCount) return 0.0*dummyChi2;

@@ -6,11 +6,7 @@
 #include "TObjArray.h"
 #include "TF1.h"
 #include "TFitResult.h"
-
-#include <TPolyLine3D.h>
-#include <Math/Functor.h>
-#include <Math/Vector3D.h>
-#include <Math/Minimizer.h>
+#include "Math/Functor.h"
 
 #include "GeometryTPC.h"
 #include "EventTPC.h"
@@ -335,10 +331,21 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
 
   Track3D aTrackCandidate;
   aTrackCandidate.addSegment(aTrackSegment);
+  aTrackCandidate.extendToWholeChamber();
+  aTrackCandidate.shrinkToHits();
+  //aTrackCandidate.splitWorseChi2Segment(0.615);
+
+  double bestSplit = fitTrackSplitPoint(aTrackCandidate);
+  std::cout<<" chi2 from split: "<<aTrackCandidate.chi2FromSplitPoint(&bestSplit)<<std::endl;
+  aTrackCandidate.splitWorseChi2Segment(bestSplit);
+  std::cout<<aTrackCandidate<<std::endl;  
+  //return aTrackCandidate;
+
+  
   Track3D aBestCandidate;
 
   double minChi2 = 1E10;
-  for(unsigned int iStep=0;iStep<2;++iStep){
+  for(unsigned int iStep=0;iStep<1;++iStep){
     
     std::cout<<__FUNCTION__<<" iStep: "<<iStep<<std::endl;      
 
@@ -351,12 +358,12 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
     //continue;
     ////
 
-    ROOT::Math::Functor fcn(aTrackCandidate, nParams);
+    ROOT::Math::Functor fcn(&aTrackCandidate, &Track3D::chi2FromNodesList, nParams);
     fitter.SetFCN(fcn, params.data());
 
     for (int iPar = 0; iPar < nParams; ++iPar){
       fitter.Config().ParSettings(iPar).SetStepSize(0.01);
-      fitter.Config().ParSettings(iPar).SetLimits(-50, 50);
+      fitter.Config().ParSettings(iPar).SetLimits(-100, 100);
     }
     bool fitStatus = fitter.FitFCN();
     if (!fitStatus) {
@@ -375,9 +382,7 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
       minChi2 =  result.MinFcnValue();
       aBestCandidate = aTrackCandidate;
     }
-    aTrackCandidate.removeEmptySegments();
-    aTrackCandidate.splitWorseChi2Segment();
-    //aTrackCandidate.extend();
+    aTrackCandidate.removeEmptySegments();   
   }
 
   aBestCandidate.removeEmptySegments();
@@ -385,7 +390,56 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+double TrackBuilder::fitTrackSplitPoint(const Track3D& aTrack) const{
 
+  Track3D aTrackCandidate = aTrack;
+  double currentBestChi2 = aTrackCandidate.getChi2();
+  double bestSplit = -1.0;
+
+  int nSplitSteps = 400;
+  double splitStep = 1.0/nSplitSteps;
+  for(int iSplitStep=1; iSplitStep<nSplitSteps;++iSplitStep){
+
+    std::cout<<"iSplitStep: "<<iSplitStep<<std::endl;
+    
+    aTrackCandidate = aTrack;
+    aTrackCandidate.splitWorseChi2Segment(splitStep*iSplitStep);
+
+    std::vector<double> params = aTrackCandidate.getSegmentsStartEndXYZ();
+    int nParams = params.size();  
+    ////
+    //std::cout<<"Split "<<splitStep*iSplitStep<<" Pre-fit: "<<std::endl; 
+    //std::cout<<aTrackCandidate<<std::endl;
+    ////
+
+    ROOT::Math::Functor fcn(&aTrackCandidate, &Track3D::chi2FromNodesList, nParams);
+    fitter.SetFCN(fcn, params.data());
+
+    for (int iPar = 0; iPar < nParams; ++iPar){
+      fitter.Config().ParSettings(iPar).SetStepSize(0.01);
+      fitter.Config().ParSettings(iPar).SetLimits(-100, 100);
+    }
+    bool fitStatus = fitter.FitFCN();
+    if (!fitStatus) {
+      Error(__FUNCTION__, "Track3D Fit failed");
+      fitter.Result().Print(std::cout);
+      return -1.0;
+    }    
+    const ROOT::Fit::FitResult & result = fitter.Result();
+    if(result.MinFcnValue()<currentBestChi2){
+      currentBestChi2 = result.MinFcnValue();
+      bestSplit = splitStep*iSplitStep;
+      std::cout<<aTrackCandidate<<std::endl;    
+    }
+    //aTrackCandidate(result.GetParams());
+    //std::cout<<"Split Post-fit: "<<std::endl; 
+    //std::cout<<aTrackCandidate<<std::endl;    
+  }
+  std::cout<<" currentBestChi2: "<<currentBestChi2<<" bestSplit: "<<bestSplit<<std::endl;
+  return bestSplit;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 
 
 /*				

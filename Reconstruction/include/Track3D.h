@@ -1,6 +1,8 @@
 #ifndef _Track3D_H_
 #define _Track3D_H_
 
+#include "TGraph.h"
+
 #include <vector>
 
 #include "TrackSegment3D.h"
@@ -14,8 +16,6 @@ public:
 
   ~Track3D(){};
 
-  void initialize();
-
   void addSegment(const TrackSegment3D & aSegment3D);
 
   const TrackSegment3DCollection & getSegments() const { return mySegments;}
@@ -24,24 +24,43 @@ public:
 
   double getLength() const { return myLenght;}
 
+  double getSegmentLambda(double lambda) const;
+
+  double getIntegratedCharge(double lambda) const;
+
+  const TGraph & getChargeProfile() const { return myChargeProfile;}
+
   double getChi2() const;
 
-  void splitWorseChi2Segment();
+  void splitWorseChi2Segment(double lenghtFraction);
 
-  void extend();
+  void extendToWholeChamber();
+
+  ///Shrink track to actual hits range.
+  void shrinkToHits();
 
   void removeEmptySegments();
 
   ///Operator needed for fitting.
   double operator() (const double *par);
 
+  double chi2FromNodesList(const double *par);
+
+  double chi2FromSplitPoint(const double *par);
+  
+
 private:
 
+  void update();
+
   void updateChi2();
+
+  void updateChargeProfile();
 
   double myLenght, myChi2;
   std::vector<double> segmentChi2;
   TrackSegment3DCollection mySegments;
+  TGraph myChargeProfile;
   
 };
 

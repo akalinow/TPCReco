@@ -18,7 +18,7 @@ void TrackSegment3D::setBiasTangent(const TVector3 & aBias, const TVector3 & aTa
   myBias = aBias;
   myTangent = aTangent.Unit();
 
-  double lambda = 60;
+  double lambda = 30;//FIXME what value shouldbe here?
   myStart = myBias;
   myEnd = myStart + lambda*myTangent;
   
@@ -104,15 +104,27 @@ TVector3 TrackSegment3D::getPointOn2DProjection(double lambda, int strip_dir) co
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TrackSegment2D TrackSegment3D::get2DProjection(int strip_dir) const{
+TrackSegment2D TrackSegment3D::get2DProjection(int strip_dir, double lambdaStart, double lambdaEnd) const{
   
-  TVector3 start = getPointOn2DProjection(0, strip_dir);
-  TVector3 end = getPointOn2DProjection(getLength(), strip_dir);
+  TVector3 start = getPointOn2DProjection(lambdaStart, strip_dir);
+  TVector3 end = getPointOn2DProjection(lambdaEnd, strip_dir);
 
   TrackSegment2D a2DProjection(strip_dir);
   a2DProjection.setStartEnd(start, end);
 
   return a2DProjection;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+double TrackSegment3D::getIntegratedCharge(double lambdaCut) const{
+
+  double charge = 0.0;
+  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+    TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, lambdaCut);
+    const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
+    charge += aTrack2DProjection.getIntegratedCharge(lambdaCut, aRecHits);    
+  } 
+  return charge;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -128,7 +140,7 @@ void TrackSegment3D::calculateRecHitChi2(){
 
   //#pragma omp parallel for
   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
-    TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir);
+    TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, getLength());
     const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
     myProjectionsChi2[strip_dir] = aTrack2DProjection.getRecHitChi2(aRecHits);    
   }  

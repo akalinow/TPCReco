@@ -52,11 +52,14 @@ public:
   ///Return packed cartesian coordinates of the segment start/end points.
   std::vector<double> getStartEndXYZ() const;
 
-  ///Return given 2D projection 
-  TrackSegment2D get2DProjection(int iDir) const;
+  ///Return 2D projection for strip_dir corresponding to start and end
+  ///along the 3D segment.
+  TrackSegment2D get2DProjection(int strip_dir, double start, double end) const;
 
   ///Return the full lenght of the segment.
   double getLength() const { return myLenght;}
+
+  double getIntegratedCharge(double lambda) const;
 
   const std::vector<Hit2DCollection> & getRecHits() const { return myRecHits;}
 

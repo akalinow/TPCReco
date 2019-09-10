@@ -139,7 +139,7 @@ void HistoManager::drawTrack3DProjectionTimeStrip(int strip_dir, TVirtualPad *aP
   TLine aSegment2DLine;
   aSegment2DLine.SetLineWidth(2);
   for(const auto & aItem: aTrack3D.getSegments()){
-    const TrackSegment2D & aSegment2DProjection = aItem.get2DProjection(strip_dir);
+    const TrackSegment2D & aSegment2DProjection = aItem.get2DProjection(strip_dir, 0, aItem.getLength());
     const TVector3 & start = aSegment2DProjection.getStart();
     const TVector3 & end = aSegment2DProjection.getEnd();
     aSegment2DLine.SetLineColor(2+iSegment);
@@ -158,6 +158,19 @@ void HistoManager::drawTrack3DProjectionTimeStrip(int strip_dir, TVirtualPad *aP
     start.Print();
     end.Print();
     }*/
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
+
+  const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
+
+  aPad->cd();
+  TGraph aGr = aTrack3D.getChargeProfile();
+  aGr.SetTitle("Charge distribution along track.;d[track length];charge[arbitrary units]");
+  aGr.SetLineWidth(2);
+  aGr.SetLineColor(2);
+  aGr.DrawClone("AL");
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
