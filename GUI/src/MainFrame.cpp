@@ -52,7 +52,7 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h)
   myDataManager.loadGeometry(geometryFileName);  
   myDataManager.loadDataFile(dataFileName);
   fEntryDialog->updateFileName(dataFileName);
-  myDataManager.loadEvent(2);
+  myDataManager.loadEvent(4);
   myHistoManager.setGeometry(myDataManager.getGeometry());
 
   fCanvas->Clear();
@@ -197,43 +197,40 @@ void MainFrame::Update(){
   //myHistoManager.getCartesianProjection(DIR_U)->SaveAs("histo.root");
   
   for(int strip_dir=0;strip_dir<3;++strip_dir){
+    ///First row
     TVirtualPad *aPad = fCanvas->cd(strip_dir+1);
-    
-    //myHistoManager.getRawStripVsTime(strip_dir)->DrawClone("colz");
     myHistoManager.getCartesianProjection(strip_dir)->DrawClone("colz");
-    
+    ///Second row
     aPad = fCanvas->cd(strip_dir+1+3);
-    std::shared_ptr<TH2D> aPtr = myHistoManager.getRecHitStripVsTime(strip_dir);
-    aPtr->DrawClone("colz");
-
+    myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("colz");
     myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad);
-    
+    ///Third row.
     aPad = fCanvas->cd(strip_dir+1+3+3);
     myHistoManager.getHoughAccumulator(strip_dir).DrawClone("colz");
-    //myHistoManager.getChargeAlong2DTrack(strip_dir).DrawClone("hist");
   }
-  
+
+  //Third row again.
   TVirtualPad *aPad = fCanvas->cd(7);
   myHistoManager.getDetectorLayout()->Draw("colz 0");
   myHistoManager.drawTrack3DProjectionXY(aPad);
 
   aPad = fCanvas->cd(8);
   myHistoManager.drawChargeAlongTrack3D(aPad);
-  /*
-  TText aMessage(0.2, 0.5,"Calculating 3D scence");
-  aMessage.DrawClone();
-  aPad->Update();
+  
+  aPad = fCanvas->cd(9);
+  //aPad->Update();
   TH3D *h3DReco =  myHistoManager.get3DReconstruction();
   if(h3DReco){
     aPad->Clear();
     h3DReco->DrawClone("box2z");
+    myHistoManager.drawTrack3D(aPad);
   }
   else {
-    aPad->Clear();  
+    aPad->Clear();
+    TText aMessage(0.2, 0.5,"Calculating 3D scence");
     aMessage.DrawText(0.2, 0.5, "3D scene not available.");
-  }  
-  */
-  //aPad->Update();  
+  } 
+  
   fCanvas->Update();    
 }
 /////////////////////////////////////////////////////////

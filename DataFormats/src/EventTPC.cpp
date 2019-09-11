@@ -1008,7 +1008,7 @@ TH3D *EventTPC::Get3D(const SigClusterTPC &cluster, double radius, int rebin_spa
       fraction[DIR_V].insert(std::pair<MultiKey3, double>(it1->first, q[DIR_V] / qtot[DIR_V] ));
       fraction[DIR_W].insert(std::pair<MultiKey3, double>(it1->first, q[DIR_W] / qtot[DIR_W] ));
     }
-
+    
     // loop over matched hits and fill histograms
     if(h) {
 
@@ -1019,7 +1019,7 @@ TH3D *EventTPC::Get3D(const SigClusterTPC &cluster, double radius, int rebin_spa
 
 	switch (method) {
 
-	case 0: // mehtod #1 - divide charge equally 
+	case 0: // mehtod #1 - divide charge equally
 	  val = 
 	    GetValByStrip(DIR_U, (it->first).key1, icell) / n_match[0].at((it->first).key1) +
 	    GetValByStrip(DIR_V, (it->first).key2, icell) / n_match[1].at((it->first).key2) +
@@ -1028,6 +1028,18 @@ TH3D *EventTPC::Get3D(const SigClusterTPC &cluster, double radius, int rebin_spa
 
 	case 1: // method #2 - divide charge according to charge-fraction in two other directions
 
+	  std::cout<<"Here"<<std::endl;
+	  std::cout<<fraction[DIR_U].size()
+		   <<" "<<fraction[DIR_V].size()
+		   <<" "<<fraction[DIR_W].size()
+		   <<std::endl;
+	    
+	  std::cout<<"it->first: "
+		   <<"(it->first).key1: "<<(it->first).key1
+	    	   <<"(it->first).key2: "<<(it->first).key2
+	    	   <<"(it->first).key3: "<<(it->first).key3
+		   <<std::endl;
+	  
 	  val = 
 	    GetValByStrip(DIR_U, 
 			  (it->first).key1, icell)*0.5*( fraction[DIR_V].at(it->first) + fraction[DIR_W].at(it->first) ) +

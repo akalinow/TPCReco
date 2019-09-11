@@ -60,7 +60,7 @@ void TrackBuilder::setEvent(EventTPC* aEvent){
   double eventMaxCharge = myEvent->GetMaxCharge();
   double chargeThreshold = 0.15*eventMaxCharge;
   int delta_timecells = 10;
-  int delta_strips = 2;
+  int delta_strips = 1;
 
   myCluster = myEvent->GetOneCluster(chargeThreshold, delta_strips, delta_timecells);
 
@@ -333,19 +333,20 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
   aTrackCandidate.addSegment(aTrackSegment);
   aTrackCandidate.extendToWholeChamber();
   aTrackCandidate.shrinkToHits();
+  aTrackCandidate.splitWorseChi2Segment(0.5);
   //aTrackCandidate.splitWorseChi2Segment(0.615);
-
+  /*
   double bestSplit = fitTrackSplitPoint(aTrackCandidate);
   std::cout<<" chi2 from split: "<<aTrackCandidate.chi2FromSplitPoint(&bestSplit)<<std::endl;
   aTrackCandidate.splitWorseChi2Segment(bestSplit);
   std::cout<<aTrackCandidate<<std::endl;  
   //return aTrackCandidate;
-
+  */
   
   Track3D aBestCandidate;
 
   double minChi2 = 1E10;
-  for(unsigned int iStep=0;iStep<1;++iStep){
+  for(unsigned int iStep=0;iStep<2;++iStep){
     
     std::cout<<__FUNCTION__<<" iStep: "<<iStep<<std::endl;      
 
@@ -362,7 +363,7 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
     fitter.SetFCN(fcn, params.data());
 
     for (int iPar = 0; iPar < nParams; ++iPar){
-      fitter.Config().ParSettings(iPar).SetStepSize(0.01);
+      fitter.Config().ParSettings(iPar).SetStepSize(0.1);
       fitter.Config().ParSettings(iPar).SetLimits(-100, 100);
     }
     bool fitStatus = fitter.FitFCN();
@@ -382,7 +383,10 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
       minChi2 =  result.MinFcnValue();
       aBestCandidate = aTrackCandidate;
     }
-    aTrackCandidate.removeEmptySegments();   
+    aTrackCandidate.removeEmptySegments();
+    //aTrackCandidate.extendToWholeChamber();
+    //aTrackCandidate.shrinkToHits();
+    aTrackCandidate.splitWorseChi2Segment(0.5);
   }
 
   aBestCandidate.removeEmptySegments();

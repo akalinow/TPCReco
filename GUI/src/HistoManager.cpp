@@ -7,6 +7,8 @@
 #include "TH3D.h"
 #include "TSpectrum2.h"
 #include "TVector3.h"
+#include "TPolyLine3D.h"
+#include "TView.h"
 
 #include "GeometryTPC.h"
 #include "EventTPC.h"
@@ -112,6 +114,32 @@ const TH2D & HistoManager::getHoughAccumulator(int aDir, int iPeak){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+void HistoManager::drawTrack3D(TVirtualPad *aPad){
+
+  aPad->cd();
+  const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
+  const TrackSegment3DCollection & trackSegments = aTrack3D.getSegments();
+  if(!trackSegments.size()) return;
+  
+  TPolyLine3D aPolyLine;
+  aPolyLine.SetLineWidth(2);
+  aPolyLine.SetLineColor(2);
+
+  aPolyLine.SetPoint(0,
+		     trackSegments.front().getStart().X(),
+		     trackSegments.front().getStart().Y(),
+		     trackSegments.front().getStart().Z());
+  
+   for(auto aSegment: trackSegments){
+     aPolyLine.SetPoint(aPolyLine.GetN(),
+			aSegment.getEnd().X(),
+			aSegment.getEnd().Y(),
+			aSegment.getEnd().Z());     
+   }
+   aPolyLine.DrawClone();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 void HistoManager::drawTrack3DProjectionXY(TVirtualPad *aPad){
 
   aPad->cd();
@@ -138,6 +166,9 @@ void HistoManager::drawTrack3DProjectionTimeStrip(int strip_dir, TVirtualPad *aP
   int iSegment = 0;
   TLine aSegment2DLine;
   aSegment2DLine.SetLineWidth(2);
+  double minX = 999.0, minY = 999.0;
+  double maxX = -999.0, maxY = -999.0;
+
   for(const auto & aItem: aTrack3D.getSegments()){
     const TrackSegment2D & aSegment2DProjection = aItem.get2DProjection(strip_dir, 0, aItem.getLength());
     const TVector3 & start = aSegment2DProjection.getStart();
@@ -145,19 +176,27 @@ void HistoManager::drawTrack3DProjectionTimeStrip(int strip_dir, TVirtualPad *aP
     aSegment2DLine.SetLineColor(2+iSegment);
     aSegment2DLine.DrawLine(start.X(), start.Y(),  end.X(),  end.Y());	
     ++iSegment;
-  }
-  
-
-  /*
-  if(aDir==DIR_U){
-
-    aTrack3D.getStart().Print();
-    //aTrack3D.getBias().Print();
-    aTrack3D.getEnd().Print();
     
-    start.Print();
-    end.Print();
-    }*/
+    if(start.X()<minX) minX = start.X();
+    if(end.X()<minX) minX = start.X();
+    if(end.X()<minX) minX = end.X();
+    if(end.X()<minX) minX = end.X();
+
+    if(start.X()>maxX) maxX = start.X();
+    if(end.X()>maxX) maxX = start.X();
+    if(end.X()>maxX) maxX = end.X();
+    if(end.X()>maxX) maxX = end.X();   
+  }
+  minX -=5;
+  maxX +=5;
+  minY -=5;
+  maxY +=5;
+
+  TH2D *hFrame = (TH2D*)aPad->GetListOfPrimitives()->At(0);
+  if(hFrame){
+    hFrame->GetXaxis()->SetRangeUser(minX, maxX);
+    hFrame->GetYaxis()->SetRangeUser(minY, maxY);
+  }
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

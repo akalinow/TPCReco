@@ -62,16 +62,19 @@ void Track3D::updateChargeProfile(){
   myChargeProfile.Set(0);
   if(getLength()<1.0) return;//FIXME threshold
     
-  int nSteps = 50;//FIXME number of points
-  double h = getLength()/nSteps;
+  double h = 2; // [mm] FIXME optimize
+  int nSteps =  getLength()/h;
   double lambdaCut = 0.0;
   double derivative = 0.0;
+
+  myChargeProfile.SetPoint(0, 0, 0);
   for(int iStep=1;iStep<=nSteps;++iStep){
     lambdaCut = iStep*h;
     derivative = getIntegratedCharge(lambdaCut + h) - getIntegratedCharge(lambdaCut - h);
     derivative /= 2.0*h;
     myChargeProfile.SetPoint(myChargeProfile.GetN(),  lambdaCut, derivative);
   }
+  myChargeProfile.SetPoint(myChargeProfile.GetN(), getLength(), 0);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

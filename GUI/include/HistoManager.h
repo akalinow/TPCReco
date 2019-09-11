@@ -47,6 +47,8 @@ public:
 
   TLine get2DLine(int aDir, unsigned int iTrackSegment);
 
+  void drawTrack3D(TVirtualPad *aPad);
+
   void drawTrack3DProjectionTimeStrip(int strip_dir, TVirtualPad *aPad);
 
   void drawTrack3DProjectionXY(TVirtualPad *aPad);
