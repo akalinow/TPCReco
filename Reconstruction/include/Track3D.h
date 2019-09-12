@@ -41,9 +41,6 @@ public:
 
   void removeEmptySegments();
 
-  ///Operator needed for fitting.
-  double operator() (const double *par);
-
   double chi2FromNodesList(const double *par);
 
   double chi2FromSplitPoint(const double *par);

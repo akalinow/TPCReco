@@ -60,7 +60,7 @@ double TrackSegment2D::getIntegratedCharge(double lambdaCut, const Hit2DCollecti
   double lambda = 0.0;
   double x = 0.0, y = 0.0;
   double totalCharge = 0.0;
-  double radiusCut = 2.0;//FIXME put into confoguration
+  double radiusCut = 2.0;//FIXME put into configuration
   TVector3 aPoint;
   
   for(const auto aHit:aRecHits){

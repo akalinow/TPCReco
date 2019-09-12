@@ -52,7 +52,7 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h)
   myDataManager.loadGeometry(geometryFileName);  
   myDataManager.loadDataFile(dataFileName);
   fEntryDialog->updateFileName(dataFileName);
-  myDataManager.loadEvent(4);
+  myDataManager.loadEvent(2);
   myHistoManager.setGeometry(myDataManager.getGeometry());
 
   fCanvas->Clear();
@@ -205,20 +205,15 @@ void MainFrame::Update(){
     myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("colz");
     myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad);
     ///Third row.
-    aPad = fCanvas->cd(strip_dir+1+3+3);
-    myHistoManager.getHoughAccumulator(strip_dir).DrawClone("colz");
+    //aPad = fCanvas->cd(strip_dir+1+3+3);
+    //myHistoManager.getHoughAccumulator(strip_dir).DrawClone("colz");
   }
-
+  //fCanvas->Update();    
+  //return;
+  
   //Third row again.
   TVirtualPad *aPad = fCanvas->cd(7);
-  myHistoManager.getDetectorLayout()->Draw("colz 0");
-  myHistoManager.drawTrack3DProjectionXY(aPad);
 
-  aPad = fCanvas->cd(8);
-  myHistoManager.drawChargeAlongTrack3D(aPad);
-  
-  aPad = fCanvas->cd(9);
-  //aPad->Update();
   TH3D *h3DReco =  myHistoManager.get3DReconstruction();
   if(h3DReco){
     aPad->Clear();
@@ -229,7 +224,16 @@ void MainFrame::Update(){
     aPad->Clear();
     TText aMessage(0.2, 0.5,"Calculating 3D scence");
     aMessage.DrawText(0.2, 0.5, "3D scene not available.");
-  } 
+  }
+
+  aPad = fCanvas->cd(8);
+  TH2D *h2D =   myHistoManager.get2DReconstruction(DIR_XY);
+  if(h2D) h2D->Draw("colz");
+  else myHistoManager.getDetectorLayout()->Draw("colz 0"); 
+  myHistoManager.drawTrack3DProjectionXY(aPad);
+
+  aPad = fCanvas->cd(9);
+  myHistoManager.drawChargeAlongTrack3D(aPad);
   
   fCanvas->Update();    
 }

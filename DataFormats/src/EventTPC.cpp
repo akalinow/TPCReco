@@ -173,6 +173,7 @@ double EventTPC::GetValByStrip(int strip_dir, int strip_number, int time_cell/*,
   if(!IsOK() || time_cell<0 || time_cell>=512 || strip_number<1 || strip_number>myGeometryPtr->GetDirNstrips(strip_dir)) {
     return 0.0;
   }
+
   switch(strip_dir) {
   case DIR_U:
   case DIR_V:
@@ -180,8 +181,8 @@ double EventTPC::GetValByStrip(int strip_dir, int strip_number, int time_cell/*,
     MultiKey3 mkey(strip_dir, strip_number, time_cell);
 
     // check if hit is unique
-    std::map<MultiKey3, double, multikey3_less>::iterator it;
-    if( (it=chargeMap.find(mkey))==chargeMap.end() ) {
+    std::map<MultiKey3, double, multikey3_less>::iterator it = chargeMap.find(mkey);
+    if(it==chargeMap.end()){
       return 0.0;
     }
     //result=true;
@@ -610,6 +611,7 @@ std::shared_ptr<TH2D> EventTPC::GetStripVsTimeInMM(const SigClusterTPC &cluster,
 					 event_id, myGeometryPtr->GetDirName(strip_dir), myGeometryPtr->GetDirName(strip_dir)),
 					 myGeometryPtr->GetAgetNtimecells(), minTimeInMM, maxTimeInMM, 
 					 myGeometryPtr->GetDirNstrips(strip_dir), minStripInMM, maxStripInMM));
+
   // fill new histogram
   double x = 0.0, y = 0.0;
 
@@ -651,6 +653,12 @@ std::vector<TH2D*> EventTPC::Get2D(const SigClusterTPC &cluster, double radius, 
 
   
   for(int icell=time_cell_min; icell<=time_cell_max; icell++) {
+
+
+    if((hitListByTimeDir.find(MultiKey2(icell, DIR_U))==hitListByTimeDir.end()) ||
+       (hitListByTimeDir.find(MultiKey2(icell, DIR_V))==hitListByTimeDir.end()) ||
+       (hitListByTimeDir.find(MultiKey2(icell, DIR_W))==hitListByTimeDir.end())) continue;
+    
     std::vector<int> hits[3] = {
 				hitListByTimeDir.find(MultiKey2(icell, DIR_U))->second,
 				hitListByTimeDir.find(MultiKey2(icell, DIR_V))->second,
@@ -856,6 +864,11 @@ TH3D *EventTPC::Get3D(const SigClusterTPC &cluster, double radius, int rebin_spa
   const std::map<MultiKey2, std::vector<int>, multikey2_less> & hitListByTimeDir = cluster.GetHitListByTimeDir();
   
   for(int icell=time_cell_min; icell<=time_cell_max; icell++) {
+
+    if((hitListByTimeDir.find(MultiKey2(icell, DIR_U))==hitListByTimeDir.end()) ||
+       (hitListByTimeDir.find(MultiKey2(icell, DIR_V))==hitListByTimeDir.end()) ||
+       (hitListByTimeDir.find(MultiKey2(icell, DIR_W))==hitListByTimeDir.end())) continue;
+    
     std::vector<int> hits[3] = {
 				hitListByTimeDir.find(MultiKey2(icell, DIR_U))->second,
 				hitListByTimeDir.find(MultiKey2(icell, DIR_V))->second,
@@ -869,7 +882,7 @@ TH3D *EventTPC::Get3D(const SigClusterTPC &cluster, double radius, int rebin_spa
     
     std::map<int, int> n_match[3]; // map of number of matched points for each strip, key=STRIP_NUM [1-1024]
     std::map<MultiKey3, TVector2, multikey3_less> hitPos; // key=(STRIP_NUM_U, STRIP_NUM_V, STRIP_NUM_W), value=(X [mm],Y [mm])
-   
+
     // loop over hits and confirm matching in space
     for(int i0=0; i0<(int)hits[0].size(); i0++) {
       StripTPC *strip0 = myGeometryPtr->GetStripByDir(DIR_U, hits[0].at(i0));
@@ -1027,19 +1040,6 @@ TH3D *EventTPC::Get3D(const SigClusterTPC &cluster, double radius, int rebin_spa
 	  break;
 
 	case 1: // method #2 - divide charge according to charge-fraction in two other directions
-
-	  std::cout<<"Here"<<std::endl;
-	  std::cout<<fraction[DIR_U].size()
-		   <<" "<<fraction[DIR_V].size()
-		   <<" "<<fraction[DIR_W].size()
-		   <<std::endl;
-	    
-	  std::cout<<"it->first: "
-		   <<"(it->first).key1: "<<(it->first).key1
-	    	   <<"(it->first).key2: "<<(it->first).key2
-	    	   <<"(it->first).key3: "<<(it->first).key3
-		   <<std::endl;
-	  
 	  val = 
 	    GetValByStrip(DIR_U, 
 			  (it->first).key1, icell)*0.5*( fraction[DIR_V].at(it->first) + fraction[DIR_W].at(it->first) ) +
@@ -1051,17 +1051,13 @@ TH3D *EventTPC::Get3D(const SigClusterTPC &cluster, double radius, int rebin_spa
 	  
 	default: 
 	  val=0.0;
-	  
 	}; // end of switch (method)...
-
 	Double_t z=myGeometryPtr->Timecell2pos(icell, err_flag);
 	h->Fill( (it->second).X(), (it->second).Y(), z, val );
-
       }
     }
   }
   return h;
-
 }
 
 

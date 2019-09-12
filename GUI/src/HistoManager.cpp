@@ -44,9 +44,9 @@ void HistoManager::setEvent(EventTPC* aEvent){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<TH2D> HistoManager::getCartesianProjection(int aDir){
+std::shared_ptr<TH2D> HistoManager::getCartesianProjection(int strip_dir){
 
-  return myEvent->GetStripVsTimeInMM(myTkBuilder.getCluster(), aDir);
+  return myEvent->GetStripVsTimeInMM(myTkBuilder.getCluster(), strip_dir);
   
 }
 /////////////////////////////////////////////////////////
@@ -54,7 +54,6 @@ std::shared_ptr<TH2D> HistoManager::getCartesianProjection(int aDir){
 TH2Poly * HistoManager::getDetectorLayout() const{
 
   if(!myGeometryPtr) return 0;
-
 
   TH2Poly* aPtr = (TH2Poly*)myGeometryPtr->GetTH2Poly()->Clone();
   int nBins = aPtr->GetNumberOfBins(); 
@@ -65,9 +64,9 @@ TH2Poly * HistoManager::getDetectorLayout() const{
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<TH2D> HistoManager::getRawStripVsTime(int aDir){
+std::shared_ptr<TH2D> HistoManager::getRawStripVsTime(int strip_dir){
 
-  std::shared_ptr<TH2D> hProjection = myEvent->GetStripVsTime(aDir);
+  std::shared_ptr<TH2D> hProjection = myEvent->GetStripVsTime(strip_dir);
   double varianceX = hProjection->GetCovariance(1, 1);
   double varianceY = hProjection->GetCovariance(2, 2);
   double varianceXY = hProjection->GetCovariance(1, 2);
@@ -75,7 +74,7 @@ std::shared_ptr<TH2D> HistoManager::getRawStripVsTime(int aDir){
   std::vector<int> nStrips = {72, 92, 92};
   
   std::cout<<" varianceX*12: "<<varianceX*12/450/450
-	   <<" varianceY*12: "<<varianceY*12/nStrips[aDir]/nStrips[aDir]
+	   <<" varianceY*12: "<<varianceY*12/nStrips[strip_dir]/nStrips[strip_dir]
 	   <<" varianceXY: "<<varianceXY
 	   <<std::endl;
   
@@ -83,15 +82,15 @@ std::shared_ptr<TH2D> HistoManager::getRawStripVsTime(int aDir){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<TH2D> HistoManager::getFilteredStripVsTime(int aDir){
+std::shared_ptr<TH2D> HistoManager::getFilteredStripVsTime(int strip_dir){
 
-  return myEvent->GetStripVsTime(myTkBuilder.getCluster(), aDir);
+  return myEvent->GetStripVsTime(myTkBuilder.getCluster(), strip_dir);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<TH2D> HistoManager::getRecHitStripVsTime(int aDir){
+std::shared_ptr<TH2D> HistoManager::getRecHitStripVsTime(int strip_dir){
 
-  return std::shared_ptr<TH2D>(new TH2D(myTkBuilder.getRecHits2D(aDir)));//FIX ME avoid object copying
+  return std::shared_ptr<TH2D>(new TH2D(myTkBuilder.getRecHits2D(strip_dir)));//FIX ME avoid object copying
 
 }
 /////////////////////////////////////////////////////////
@@ -107,9 +106,27 @@ TH3D* HistoManager::get3DReconstruction(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-const TH2D & HistoManager::getHoughAccumulator(int aDir, int iPeak){
+TH2D* HistoManager::get2DReconstruction(int strip_dir){
 
-  return myTkBuilder.getHoughtTransform(aDir);
+  double radius = 2.0;
+  int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN;
+  int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN; 
+  int method=EVENTTPC_DEFAULT_RECO_METHOD;
+  std::vector<TH2D*> h2DVector = myEvent->Get2D(myTkBuilder.getCluster(),  radius, rebin_space, rebin_time, method);
+  if(!h2DVector.size()) return 0;
+  int index = 0;
+  
+  if(strip_dir==DIR_XY) index = 0;
+  if(strip_dir==DIR_XZ) index = 1;
+  if(strip_dir==DIR_YZ) index = 2;
+   
+  return h2DVector[index];
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+const TH2D & HistoManager::getHoughAccumulator(int strip_dir, int iPeak){
+
+  return myTkBuilder.getHoughtTransform(strip_dir);
 
 }
 /////////////////////////////////////////////////////////

@@ -59,6 +59,8 @@ private:
   
   Track3D fitTrack3D(const TrackSegment3D & aTrackSeedSegment) const;
 
+  Track3D fitTrackNodes(const Track3D & aTrack) const;
+
   double fitTrackSplitPoint(const Track3D& aTrackCandidate) const;
 
     

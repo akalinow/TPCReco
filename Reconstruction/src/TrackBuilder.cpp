@@ -84,7 +84,7 @@ void TrackBuilder::setEvent(EventTPC* aEvent){
 /////////////////////////////////////////////////////////
 void TrackBuilder::reconstruct(){
 
-  for(int iDir=DIR_U;iDir<DIR_3D;++iDir){
+  for(int iDir=DIR_U;iDir<=DIR_W;++iDir){
     makeRecHits(iDir);
     fillHoughAccumulator(iDir);
     my2DSeeds[iDir] = findSegment2DCollection(iDir);    
@@ -92,6 +92,7 @@ void TrackBuilder::reconstruct(){
 
   myTrack3DSeed = buildSegment3D();
   myFittedTrack = fitTrack3D(myTrack3DSeed);
+
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -331,35 +332,101 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
 
   Track3D aTrackCandidate;
   aTrackCandidate.addSegment(aTrackSegment);
-  aTrackCandidate.extendToWholeChamber();
-  aTrackCandidate.shrinkToHits();
-  aTrackCandidate.splitWorseChi2Segment(0.5);
-  //aTrackCandidate.splitWorseChi2Segment(0.615);
-  /*
+
+  aTrackCandidate = fitTrackNodes(aTrackCandidate);
   double bestSplit = fitTrackSplitPoint(aTrackCandidate);
-  std::cout<<" chi2 from split: "<<aTrackCandidate.chi2FromSplitPoint(&bestSplit)<<std::endl;
   aTrackCandidate.splitWorseChi2Segment(bestSplit);
-  std::cout<<aTrackCandidate<<std::endl;  
-  //return aTrackCandidate;
-  */
-  
-  Track3D aBestCandidate;
+  aTrackCandidate = fitTrackNodes(aTrackCandidate);
+
+  bestSplit = fitTrackSplitPoint(aTrackCandidate);
+  aTrackCandidate.splitWorseChi2Segment(bestSplit);
+  aTrackCandidate = fitTrackNodes(aTrackCandidate);
+
+  return aTrackCandidate;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+Track3D TrackBuilder::fitTrackNodes(const Track3D & aTrack) const{
+
+  Track3D aTrackCandidate = aTrack;
+  std::vector<double> bestParams = aTrackCandidate.getSegmentsStartEndXYZ();
+  std::vector<double> params = aTrackCandidate.getSegmentsStartEndXYZ();
+  int nParams = params.size();
+
+  ROOT::Math::Functor fcn(&aTrackCandidate, &Track3D::chi2FromNodesList, nParams);
+  fitter.SetFCN(fcn, params.data());
+
+  for (int iPar = 0; iPar < nParams; ++iPar){
+    fitter.Config().ParSettings(iPar).SetStepSize(0.1);
+    fitter.Config().ParSettings(iPar).SetLimits(-100, 100);
+  }
 
   double minChi2 = 1E10;
   for(unsigned int iStep=0;iStep<2;++iStep){
     
-    std::cout<<__FUNCTION__<<" iStep: "<<iStep<<std::endl;      
+    std::cout<<__FUNCTION__<<" iStep: "<<iStep<<std::endl;
 
-    std::vector<double> params = aTrackCandidate.getSegmentsStartEndXYZ();
-    int nParams = params.size();  
+    aTrackCandidate.extendToWholeChamber();
+    aTrackCandidate.shrinkToHits();
+
+    params = aTrackCandidate.getSegmentsStartEndXYZ();
+  
     ////
     std::cout<<"Pre-fit: "<<std::endl; 
     std::cout<<aTrackCandidate<<std::endl;
     //return aTrackCandidate;
     //continue;
     ////
+    
+    bool fitStatus = fitter.FitFCN();
+    if (!fitStatus) {
+      Error(__FUNCTION__, "Track3D Fit failed");
+      fitter.Result().Print(std::cout);
+      return aTrack;
+    }    
+    const ROOT::Fit::FitResult & result = fitter.Result();
+    aTrackCandidate.chi2FromNodesList(result.GetParams());
+    aTrackCandidate.removeEmptySegments();
+    aTrackCandidate.extendToWholeChamber();
+    aTrackCandidate.shrinkToHits();
 
-    ROOT::Math::Functor fcn(&aTrackCandidate, &Track3D::chi2FromNodesList, nParams);
+    std::cout<<"Post-fit: "<<std::endl;
+    std::cout<<" result.MinFcnValue(): "<<result.MinFcnValue()<<std::endl;
+    std::cout<<aTrackCandidate<<std::endl;
+    
+    if(aTrackCandidate.getChi2()<minChi2){
+      minChi2 =  aTrackCandidate.getChi2();
+      bestParams = aTrackCandidate.getSegmentsStartEndXYZ();
+    }
+  }
+  aTrackCandidate.chi2FromNodesList(bestParams.data());
+  return aTrackCandidate;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+double TrackBuilder::fitTrackSplitPoint(const Track3D& aTrack) const{
+
+  Track3D aTrackCandidate = aTrack;
+  double currentBestChi2 = aTrackCandidate.getChi2();
+  aTrackCandidate.splitWorseChi2Segment(0.5);
+
+  std::vector<double> params0 = aTrackCandidate.getSegmentsStartEndXYZ();
+  std::vector<double> params = params0;
+  int nParams = params.size();
+  ROOT::Math::Functor fcn(&aTrackCandidate, &Track3D::chi2FromNodesList, nParams);
+
+  double bestSplit = -1.0;
+  int nSplitSteps = 10;
+  double splitStep = 1.0/nSplitSteps;
+
+  for(int iSplitStep=1; iSplitStep<nSplitSteps;++iSplitStep){
+    aTrackCandidate.chi2FromNodesList(params0.data());
+    //aTrackCandidate.splitWorseChi2Segment(splitStep*iSplitStep);
+    params = aTrackCandidate.getSegmentsStartEndXYZ();
+    ////
+    std::cout<<"Split "<<splitStep*iSplitStep<<" Pre-fit: "<<std::endl; 
+    std::cout<<aTrackCandidate<<std::endl;
+    ////
     fitter.SetFCN(fcn, params.data());
 
     for (int iPar = 0; iPar < nParams; ++iPar){
@@ -370,70 +437,20 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
     if (!fitStatus) {
       Error(__FUNCTION__, "Track3D Fit failed");
       fitter.Result().Print(std::cout);
-      return aTrackCandidate;
-    }    
-    const ROOT::Fit::FitResult & result = fitter.Result();
-    aTrackCandidate(result.GetParams());
-
-    std::cout<<"Post-fit: "<<std::endl; 
-    std::cout<<aTrackCandidate<<std::endl;
-    std::cout<<" result.MinFcnValue(): "<<result.MinFcnValue()<<std::endl;
-    
-    if(result.MinFcnValue()<minChi2){
-      minChi2 =  result.MinFcnValue();
-      aBestCandidate = aTrackCandidate;
-    }
-    aTrackCandidate.removeEmptySegments();
-    //aTrackCandidate.extendToWholeChamber();
-    //aTrackCandidate.shrinkToHits();
-    aTrackCandidate.splitWorseChi2Segment(0.5);
-  }
-
-  aBestCandidate.removeEmptySegments();
-  return aBestCandidate;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-double TrackBuilder::fitTrackSplitPoint(const Track3D& aTrack) const{
-
-  Track3D aTrackCandidate = aTrack;
-  double currentBestChi2 = aTrackCandidate.getChi2();
-  double bestSplit = -1.0;
-
-  int nSplitSteps = 400;
-  double splitStep = 1.0/nSplitSteps;
-  for(int iSplitStep=1; iSplitStep<nSplitSteps;++iSplitStep){
-
-    std::cout<<"iSplitStep: "<<iSplitStep<<std::endl;
-    
-    aTrackCandidate = aTrack;
-    aTrackCandidate.splitWorseChi2Segment(splitStep*iSplitStep);
-
-    std::vector<double> params = aTrackCandidate.getSegmentsStartEndXYZ();
-    int nParams = params.size();  
-    ////
-    //std::cout<<"Split "<<splitStep*iSplitStep<<" Pre-fit: "<<std::endl; 
-    //std::cout<<aTrackCandidate<<std::endl;
-    ////
-
-    ROOT::Math::Functor fcn(&aTrackCandidate, &Track3D::chi2FromNodesList, nParams);
-    fitter.SetFCN(fcn, params.data());
-
-    for (int iPar = 0; iPar < nParams; ++iPar){
-      fitter.Config().ParSettings(iPar).SetStepSize(0.01);
-      fitter.Config().ParSettings(iPar).SetLimits(-100, 100);
-    }
-    bool fitStatus = fitter.FitFCN();
-    if (!fitStatus) {
-      Error(__FUNCTION__, "Track3D Fit failed");
-      fitter.Result().Print(std::cout);
       return -1.0;
     }    
     const ROOT::Fit::FitResult & result = fitter.Result();
-    if(result.MinFcnValue()<currentBestChi2){
-      currentBestChi2 = result.MinFcnValue();
+    aTrackCandidate.chi2FromNodesList(result.GetParams());
+    aTrackCandidate.removeEmptySegments();
+    aTrackCandidate.extendToWholeChamber();
+    aTrackCandidate.shrinkToHits();
+    
+    if(aTrackCandidate.getChi2()<currentBestChi2){
+      currentBestChi2 = aTrackCandidate.getChi2();
       bestSplit = splitStep*iSplitStep;
-      std::cout<<aTrackCandidate<<std::endl;    
+      std::cout<<"Better split: "<<bestSplit<<" chi2: "<<currentBestChi2<<std::endl;
+      std::cout<<aTrackCandidate<<std::endl;
+      std::cout<<"-----"<<std::endl;
     }
     //aTrackCandidate(result.GetParams());
     //std::cout<<"Split Post-fit: "<<std::endl; 

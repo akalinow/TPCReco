@@ -33,19 +33,21 @@ public:
 
   TH2Poly *getDetectorLayout() const;
 
-  std::shared_ptr<TH2D> getRawStripVsTime(int aDir);
+  std::shared_ptr<TH2D> getRawStripVsTime(int strip_dir);
 
-  std::shared_ptr<TH2D> getCartesianProjection(int aDir);
+  std::shared_ptr<TH2D> getCartesianProjection(int strip_dir);
 
-  std::shared_ptr<TH2D> getFilteredStripVsTime(int aDir);
+  std::shared_ptr<TH2D> getFilteredStripVsTime(int strip_dir);
 
-  std::shared_ptr<TH2D> getRecHitStripVsTime(int aDir);
+  std::shared_ptr<TH2D> getRecHitStripVsTime(int strip_dir);
 
   TH3D* get3DReconstruction();
 
-  const TH2D & getHoughAccumulator(int aDir, int iPeak=0);
+  TH2D* get2DReconstruction(int strip_dir);
 
-  TLine get2DLine(int aDir, unsigned int iTrackSegment);
+  const TH2D & getHoughAccumulator(int strip_dir, int iPeak=0);
+
+  TLine get2DLine(int strip_dir, unsigned int iTrackSegment);
 
   void drawTrack3D(TVirtualPad *aPad);
 

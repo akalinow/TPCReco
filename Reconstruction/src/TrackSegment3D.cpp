@@ -38,6 +38,14 @@ void TrackSegment3D::setStartEnd(const TVector3 & aStart, const TVector3 & aEnd)
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+void TrackSegment3D::setStartEnd(const double *par){
+
+  TVector3 start(par[0], par[1], par[2]);
+  TVector3 end(par[3], par[4], par[5]);  
+  setStartEnd(start, end);
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 void TrackSegment3D::setRecHits(const std::vector<TH2D> & aRecHits){
 
   myRecHits.clear();
@@ -174,6 +182,20 @@ double TrackSegment3D::operator() (const double *par) {
   
   return getRecHitChi2();
   */
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::ostream & operator << (std::ostream &out, const TrackSegment3D &aSegment){
+
+  const TVector3 & start = aSegment.getStart();
+  const TVector3 & end = aSegment.getEnd();
+  
+  out<<"("<<start.X()<<", "<<start.Y()<<", "<<start.Z()<<")"
+       <<" -> "
+     <<"("<<end.X()<<", "<<end.Y()<<", "<<end.Z()<<") "
+     <<"["<<aSegment.getRecHitChi2()<<"]";
+
+  return out;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

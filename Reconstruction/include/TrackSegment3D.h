@@ -24,6 +24,8 @@ public:
 
   void setStartEnd(const TVector3 & aStart, const TVector3 & aEnd);
 
+  void setStartEnd(const double *par);
+
   void setRecHits(const std::vector<TH2D> & aRecHits);
 
   void setRecHits(const std::vector<Hit2DCollection> & aRecHits) {myRecHits = aRecHits;}
@@ -88,6 +90,7 @@ private:
   
 };
 
+std::ostream & operator << (std::ostream &out, const TrackSegment3D &aSegment);
 
 typedef std::vector<TrackSegment3D> TrackSegment3DCollection;
 
