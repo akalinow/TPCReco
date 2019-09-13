@@ -20,25 +20,6 @@
 MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h)
       : TGMainFrame(p, w, h){
 
-  fSelectionBox = 0;
-  fArrow = 0;
-  fLine = 0;
-
-  SetCleanup(kDeepCleanup);
-  SetWMPosition(500,0);
-  SetWMSize(1200,700);
-  
-  AddTopMenu();
-  SetTheFrame();
-  AddHistoCanvas();
-  AddButtons();
-  AddNumbersDialog();
-
-  MapSubwindows();
-  Resize();
-  MapWindow();
-  SetWindowName("TPC GUI");
-
   //TEST ---
   std::string dataFileName = "/scratch_local/akalinow/ELITPC/TPCReco/build/resources/EventTPC_1.root";
   std::string geometryFileName = "/home/akalinow/scratch/ELITPC/TPCReco/build/resources/geometry_mini_eTPC.dat";
@@ -51,11 +32,33 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h)
 
   myDataManager.loadGeometry(geometryFileName);  
   myDataManager.loadDataFile(dataFileName);
-  fEntryDialog->updateFileName(dataFileName);
-  //myDataManager.loadEventId(10);
-  myDataManager.loadTreeEntry(0);
+  myDataManager.loadEventId(10);
+  //myDataManager.loadTreeEntry(0);
   myHistoManager.setGeometry(myDataManager.getGeometry());
+  ////////////////////
 
+  fSelectionBox = 0;
+  fArrow = 0;
+  fLine = 0;
+
+  SetCleanup(kDeepCleanup);
+  SetWMPosition(500,0);
+  SetWMSize(1200,700);
+  
+  AddTopMenu();
+  SetTheFrame();
+  AddHistoCanvas();
+  AddButtons();
+  AddGoToEventDialog(4);
+  AddNumbersDialog();
+
+  MapSubwindows();
+  Resize();
+  MapWindow();
+  SetWindowName("TPC GUI");
+
+  fEntryDialog->updateFileName(dataFileName);
+  
   fCanvas->Clear();
   fCanvas->Divide(3,3);
   TText aMessage(0.2, 0.5,"Waiting for data.");
@@ -105,7 +108,7 @@ void MainFrame::AddTopMenu(){
 void MainFrame::SetTheFrame(){
 
    fFrame = new TGCompositeFrame(this,400,400,kSunkenFrame);
-   TGTableLayout* tlo = new TGTableLayout(fFrame, 6, 12, 1);
+   TGTableLayout* tlo = new TGTableLayout(fFrame, 12, 12, 1);
    fFrame->SetLayoutManager(tlo);
    fFrameLayout = new TGLayoutHints(kLHintsTop|kLHintsLeft|
                                           kLHintsExpandX|kLHintsExpandY);
@@ -117,7 +120,7 @@ void MainFrame::AddHistoCanvas(){
 
     // The Canvas
    TRootEmbeddedCanvas* embeddedCanvas = new TRootEmbeddedCanvas("Histograms",fFrame,700,700);
-   fTCanvasLayout = new TGTableLayoutHints(0,8,0,6,
+   fTCanvasLayout = new TGTableLayoutHints(0, 8, 0, 12,
                                  kLHintsExpandX|kLHintsExpandY |
                                  kLHintsShrinkX|kLHintsShrinkY |
                                  kLHintsFillX|kLHintsFillY);
@@ -132,35 +135,58 @@ void MainFrame::AddHistoCanvas(){
 /////////////////////////////////////////////////////////
 void MainFrame::AddButtons(){
 
-  std::vector<std::string> button_names = {"Next event", "Previous event", "Exit"};
+  int iColumn = 8;
+  int iRow = 0;
+
+  std::vector<std::string> button_names = {"Next event", "Previous event",  "Exit"};
 
   std::vector<std::string> tooltips =     {"Load the next event.",
 					   "Load the previous event.",
-					   "Close the application"};
+					   "Close the application"
+					   };
 
-  std::vector<unsigned int> button_id = {M_NEXT_EVENT, M_PREVIOUS_EVENT,  M_FILE_EXIT};
+  std::vector<unsigned int> button_id = {M_NEXT_EVENT, M_PREVIOUS_EVENT, M_FILE_EXIT};
 
   for (unsigned int iButton = 0; iButton < button_names.size(); ++iButton) {
     TGTextButton* button = new TGTextButton(fFrame,
 					    button_names[iButton].c_str(),
 					    button_id[iButton]);
-    
-    TGTableLayoutHints *tloh = new TGTableLayoutHints(8,9, iButton, iButton+1,
-						      kLHintsExpandX|kLHintsExpandY |
-						      kLHintsShrinkX|kLHintsShrinkY |
-						      kLHintsFillX|kLHintsFillY);
+
+    iRow = iButton;
+    TGTableLayoutHints *tloh = new TGTableLayoutHints(iColumn, iColumn+1, iRow, iRow+1,
+						     kLHintsFillX | kLHintsFillY);
+
     fFrame->AddFrame(button,tloh);
-    button->Resize(50, button->GetDefaultHeight());
     button->Connect("Clicked()","MainFrame",this,"DoButton()");
     button->SetToolTipText(tooltips[iButton].c_str());
    }
  }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+void MainFrame::AddGoToEventDialog(int iRow){
+
+  fGframe = new TGGroupFrame(this, "Go to event");
+  fEventIdEntry = new TGNumberEntryField(fGframe, M_GOTO_EVENT, 0,
+					 TGNumberFormat::kNESInteger,
+					 TGNumberFormat::kNEANonNegative,
+					 TGNumberFormat::kNELLimitMinMax,
+					 0, myDataManager.numberOfEvents());
+  fEventIdEntry->Connect("ReturnPressed()", "MainFrame", this, "DoButton()");
+  fEventIdEntry->SetToolTipText("Jump to given event id.");  
+
+  int iColumn = 8;
+  TGTableLayoutHints *tloh = new TGTableLayoutHints(iColumn, iColumn+1, iRow, iRow+1,
+						    kLHintsFillX | kLHintsFillY,
+						    0, 0, 5, 2);  
+  fFrame->AddFrame(fGframe, tloh);
+  fGframe->AddFrame(fEventIdEntry, new TGLayoutHints(kLHintsExpandX, 0, 0, 0, 0));
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 void MainFrame::AddNumbersDialog(){
 
   fEntryDialog = new EntryDialog(fFrame, this);
-  TGTableLayoutHints *tloh = new TGTableLayoutHints(9,12,0,2,
+  TGTableLayoutHints *tloh = new TGTableLayoutHints(9,12,0,4,
 						    kLHintsExpandX|kLHintsExpandY |
 						    kLHintsShrinkX|kLHintsShrinkY |
 						    kLHintsFillX|kLHintsFillY);
@@ -206,11 +232,11 @@ void MainFrame::Update(){
     myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("colz");
     myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad);
     ///Third row.
-    //aPad = fCanvas->cd(strip_dir+1+3+3);
-    //myHistoManager.getHoughAccumulator(strip_dir).DrawClone("colz");
+    aPad = fCanvas->cd(strip_dir+1+3+3);
+    myHistoManager.getHoughAccumulator(strip_dir).DrawClone("colz");
   }
-  //fCanvas->Update();    
-  //return;
+  fCanvas->Update();    
+  return;
   
   //Third row again.
   TVirtualPad *aPad = fCanvas->cd(7);
@@ -306,6 +332,14 @@ void MainFrame::HandleMenu(Int_t id){
   case M_PREVIOUS_EVENT:
     {
       myDataManager.getPreviousEvent();
+      Update();
+    }
+    break;
+  case M_GOTO_EVENT:
+    {
+      int eventId = fEventIdEntry->GetIntNumber();
+      std::cout<<"M_GOTO_EVENT eventId: "<<eventId<<std::endl;
+      myDataManager.loadEventId(eventId);
       Update();
     }
     break;

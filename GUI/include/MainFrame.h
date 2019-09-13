@@ -9,6 +9,7 @@
 #include <TGMenu.h>
 #include <TRootEmbeddedCanvas.h>
 #include <TGFileDialog.h>
+#include <TGNumberEntry.h>
 
 #include <RQ_OBJECT.h>
 #include <TCanvas.h>
@@ -37,7 +38,7 @@ enum ETestCommandIdentifiers {
 
    M_NEXT_EVENT,
    M_PREVIOUS_EVENT,
-   M_SELECTED_EVENT,
+   M_GOTO_EVENT,
 
 };
 /////////////////////////////////////////////////////////
@@ -66,12 +67,12 @@ private:
   DataManager myDataManager;
   HistoManager myHistoManager;
   
-
-   void AddTopMenu();
-   void SetTheFrame();
-   void AddHistoCanvas();
-   void AddButtons();
-   void AddNumbersDialog();
+  void AddTopMenu();
+  void SetTheFrame();
+  void AddHistoCanvas();
+  void AddButtons();
+  void AddNumbersDialog();
+  void AddGoToEventDialog(int iRow);
 
    void SetCursorTheme();
 
@@ -89,8 +90,12 @@ private:
 
    TGTransientFrame *fLegendMain;
 
-   EntryDialog *fEntryDialog;
-   SelectionBox *fSelectionBox;
+  TGNumberEntryField *fEventIdEntry;
+  TGGroupFrame        *fGframe;
+  
+  EntryDialog *fEntryDialog;
+  SelectionBox *fSelectionBox;
+  
 
    TArrow *fArrow;
    TLine *fLine;

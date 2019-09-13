@@ -330,11 +330,13 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
 
   aTrackCandidate = fitTrackNodes(aTrackCandidate);
   if(aTrackCandidate.getLength()<1.0) return aTrackCandidate;//FIX me move threshold to configuration
-  
+
   double bestSplit = fitTrackSplitPoint(aTrackCandidate);
   aTrackCandidate.splitWorseChi2Segment(bestSplit);
   aTrackCandidate = fitTrackNodes(aTrackCandidate);
 
+  return aTrackCandidate;//TEST
+    
   bestSplit = fitTrackSplitPoint(aTrackCandidate);
   aTrackCandidate.splitWorseChi2Segment(bestSplit);
   aTrackCandidate = fitTrackNodes(aTrackCandidate);
