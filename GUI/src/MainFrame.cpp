@@ -9,6 +9,7 @@
 #include <TStyle.h>
 #include <TFrame.h>
 #include <TVirtualX.h>
+#include <TImage.h>
 
 #include <TH2D.h>
 #include <TH3D.h>
@@ -32,8 +33,8 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h)
 
   myDataManager.loadGeometry(geometryFileName);  
   myDataManager.loadDataFile(dataFileName);
-  myDataManager.loadEventId(10);
-  //myDataManager.loadTreeEntry(0);
+  //myDataManager.loadEventId(10);
+  myDataManager.loadTreeEntry(0);
   myHistoManager.setGeometry(myDataManager.getGeometry());
   ////////////////////
 
@@ -51,6 +52,7 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h)
   AddButtons();
   AddGoToEventDialog(4);
   AddNumbersDialog();
+  AddLogos();
 
   MapSubwindows();
   Resize();
@@ -107,12 +109,13 @@ void MainFrame::AddTopMenu(){
 /////////////////////////////////////////////////////////
 void MainFrame::SetTheFrame(){
 
-   fFrame = new TGCompositeFrame(this,400,400,kSunkenFrame);
-   TGTableLayout* tlo = new TGTableLayout(fFrame, 12, 12, 1);
-   fFrame->SetLayoutManager(tlo);
-   fFrameLayout = new TGLayoutHints(kLHintsTop|kLHintsLeft|
-                                          kLHintsExpandX|kLHintsExpandY);
-   AddFrame(fFrame,fFrameLayout);
+  int nRows = 12, nColumns = 12;
+  fFrame = new TGCompositeFrame(this,400,400,kSunkenFrame);
+  TGTableLayout* tlo = new TGTableLayout(fFrame, nRows, nColumns, 1);
+  fFrame->SetLayoutManager(tlo);
+  fFrameLayout = new TGLayoutHints(kLHintsTop|kLHintsLeft|
+				   kLHintsExpandX|kLHintsExpandY);
+  AddFrame(fFrame,fFrameLayout);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -120,10 +123,10 @@ void MainFrame::AddHistoCanvas(){
 
     // The Canvas
    TRootEmbeddedCanvas* embeddedCanvas = new TRootEmbeddedCanvas("Histograms",fFrame,700,700);
-   fTCanvasLayout = new TGTableLayoutHints(0, 8, 0, 12,
-                                 kLHintsExpandX|kLHintsExpandY |
-                                 kLHintsShrinkX|kLHintsShrinkY |
-                                 kLHintsFillX|kLHintsFillY);
+   UInt_t attach_left=0, attach_right=8;
+   UInt_t attach_top=0,  attach_bottom=12;
+   fTCanvasLayout = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
+   					   kLHintsFillX|kLHintsFillY);
    fFrame->AddFrame(embeddedCanvas, fTCanvasLayout);
 
    fCanvas = embeddedCanvas->GetCanvas();
@@ -135,26 +138,21 @@ void MainFrame::AddHistoCanvas(){
 /////////////////////////////////////////////////////////
 void MainFrame::AddButtons(){
 
-  int iColumn = 8;
-  int iRow = 0;
-
   std::vector<std::string> button_names = {"Next event", "Previous event",  "Exit"};
-
   std::vector<std::string> tooltips =     {"Load the next event.",
 					   "Load the previous event.",
-					   "Close the application"
-					   };
-
+					   "Close the application"};
   std::vector<unsigned int> button_id = {M_NEXT_EVENT, M_PREVIOUS_EVENT, M_FILE_EXIT};
 
+  UInt_t attach_left=8, attach_right=9;
   for (unsigned int iButton = 0; iButton < button_names.size(); ++iButton) {
     TGTextButton* button = new TGTextButton(fFrame,
 					    button_names[iButton].c_str(),
 					    button_id[iButton]);
 
-    iRow = iButton;
-    TGTableLayoutHints *tloh = new TGTableLayoutHints(iColumn, iColumn+1, iRow, iRow+1,
-						     kLHintsFillX | kLHintsFillY);
+    UInt_t attach_top=iButton,  attach_bottom=iButton+1;
+    TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
+						      kLHintsFillX | kLHintsFillY);
 
     fFrame->AddFrame(button,tloh);
     button->Connect("Clicked()","MainFrame",this,"DoButton()");
@@ -163,7 +161,7 @@ void MainFrame::AddButtons(){
  }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void MainFrame::AddGoToEventDialog(int iRow){
+void MainFrame::AddGoToEventDialog(int attach_top){
 
   fGframe = new TGGroupFrame(this, "Go to event");
   fEventIdEntry = new TGNumberEntryField(fGframe, M_GOTO_EVENT, 0,
@@ -174,8 +172,9 @@ void MainFrame::AddGoToEventDialog(int iRow){
   fEventIdEntry->Connect("ReturnPressed()", "MainFrame", this, "DoButton()");
   fEventIdEntry->SetToolTipText("Jump to given event id.");  
 
-  int iColumn = 8;
-  TGTableLayoutHints *tloh = new TGTableLayoutHints(iColumn, iColumn+1, iRow, iRow+1,
+  UInt_t attach_left=8, attach_right=9;
+  UInt_t attach_bottom=attach_top+1;
+  TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 						    kLHintsFillX | kLHintsFillY,
 						    0, 0, 5, 2);  
   fFrame->AddFrame(fGframe, tloh);
@@ -186,14 +185,55 @@ void MainFrame::AddGoToEventDialog(int iRow){
 void MainFrame::AddNumbersDialog(){
 
   fEntryDialog = new EntryDialog(fFrame, this);
-  TGTableLayoutHints *tloh = new TGTableLayoutHints(9,12,0,4,
-						    kLHintsExpandX|kLHintsExpandY |
-						    kLHintsShrinkX|kLHintsShrinkY |
+
+  UInt_t attach_left=9, attach_right=12;
+  UInt_t attach_top=0,  attach_bottom=3;
+  TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
+						    kLHintsShrinkX|kLHintsShrinkY|
 						    kLHintsFillX|kLHintsFillY);
   fEntryDialog->initialize();  
-  fFrame->AddFrame(fEntryDialog,tloh);
+  fFrame->AddFrame(fEntryDialog, tloh);
 
  }
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void MainFrame::AddLogos(){
+
+  //return;
+  std::string filePath = "resources/FUW_znak.png";
+  TImage *img = TImage::Open(filePath.c_str());
+  if(!img) return;
+  double ratio = img->GetWidth()/img->GetHeight();
+  double height = 80;
+  double width = ratio*height;
+  img->Scale(width, height);
+  ///FIXME clean up the ipic at the application closure.
+  const TGPicture *ipic=(TGPicture *)gClient->GetPicturePool()->GetPicture("FUW_znak", img->GetPixmap(), img->GetMask());
+  delete img;
+  TGIcon *icon = new TGIcon(fFrame, ipic, width, height);
+
+  UInt_t attach_left=9, attach_right=10;
+  UInt_t attach_top=10,  attach_bottom=12;
+  TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom);
+  fFrame->AddFrame(icon, tloh);
+
+
+  filePath = "resources/ELITEPC_znak.png";
+  img = TImage::Open(filePath.c_str());
+  if(!img) return;
+  ratio = img->GetWidth()/img->GetHeight();
+  height = 100;
+  width = ratio*height;
+  img->Scale(width, height);
+  ///FIXME clean up the ipic at the application closure.
+  ipic=(TGPicture *)gClient->GetPicturePool()->GetPicture("FUW_znak", img->GetPixmap(), img->GetMask());
+  delete img;
+  icon = new TGIcon(fFrame, ipic, width, height);
+
+  attach_left=11, attach_right=12;
+  tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom, 0, 0, 0, -20);
+  fFrame->AddFrame(icon, tloh);
+}
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MainFrame::CloseWindow(){
@@ -235,8 +275,8 @@ void MainFrame::Update(){
     aPad = fCanvas->cd(strip_dir+1+3+3);
     myHistoManager.getHoughAccumulator(strip_dir).DrawClone("colz");
   }
-  fCanvas->Update();    
-  return;
+  //fCanvas->Update();    
+  //return;
   
   //Third row again.
   TVirtualPad *aPad = fCanvas->cd(7);

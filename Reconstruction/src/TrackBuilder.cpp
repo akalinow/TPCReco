@@ -335,12 +335,9 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
   aTrackCandidate.splitWorseChi2Segment(bestSplit);
   aTrackCandidate = fitTrackNodes(aTrackCandidate);
 
-  return aTrackCandidate;//TEST
-    
   bestSplit = fitTrackSplitPoint(aTrackCandidate);
   aTrackCandidate.splitWorseChi2Segment(bestSplit);
   aTrackCandidate = fitTrackNodes(aTrackCandidate);
-
   return aTrackCandidate;
 }
 /////////////////////////////////////////////////////////

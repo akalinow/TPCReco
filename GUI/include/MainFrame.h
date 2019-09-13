@@ -10,6 +10,8 @@
 #include <TRootEmbeddedCanvas.h>
 #include <TGFileDialog.h>
 #include <TGNumberEntry.h>
+#include <TGIcon.h>
+#include <TGPicture.h>
 
 #include <RQ_OBJECT.h>
 #include <TCanvas.h>
@@ -72,7 +74,8 @@ private:
   void AddHistoCanvas();
   void AddButtons();
   void AddNumbersDialog();
-  void AddGoToEventDialog(int iRow);
+  void AddGoToEventDialog(int attach_left);
+  void AddLogos();
 
    void SetCursorTheme();
 
