@@ -52,7 +52,8 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h)
   myDataManager.loadGeometry(geometryFileName);  
   myDataManager.loadDataFile(dataFileName);
   fEntryDialog->updateFileName(dataFileName);
-  myDataManager.loadEvent(2);
+  //myDataManager.loadEventId(10);
+  myDataManager.loadTreeEntry(0);
   myHistoManager.setGeometry(myDataManager.getGeometry());
 
   fCanvas->Clear();

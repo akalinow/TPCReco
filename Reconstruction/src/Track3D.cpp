@@ -144,20 +144,24 @@ void Track3D::extendToWholeChamber(){
 /////////////////////////////////////////////////////////
 void Track3D::shrinkToHits(){
 
+  std::cout<<__FUNCTION__<<" begin"<<std::endl;
+
   double lambdaStart = 0.0;
   double lambdaEnd = getLength();
+  if(getLength()<1.0) return;//FIXME move to configuration  
   double minChargeCut = 100.0;//FIXME move to configuration and (dynamically?) optimize
   double charge = 0.0;
   double h = 2.0;//FIXME move to configuration.
-  while(charge<minChargeCut){
+  while(charge<minChargeCut && lambdaStart<getLength()){
     lambdaStart +=h;
     charge = getChargeProfile().Eval(lambdaStart);  
   }
   charge = 0.0;
-  while(charge<minChargeCut){
+  while(charge<minChargeCut && lambdaEnd>0.0){
     lambdaEnd -=h;
     charge = getChargeProfile().Eval(lambdaEnd);  
   }
+  if(lambdaEnd<0) lambdaEnd = 0.0;
 
   TrackSegment3D & aFirstSegment = mySegments.front();
   TrackSegment3D & aLastSegment = mySegments.back();
@@ -167,7 +171,7 @@ void Track3D::shrinkToHits(){
   
   aFirstSegment.setStartEnd(aStart, aFirstSegment.getEnd());
   aLastSegment.setStartEnd(aLastSegment.getStart(), aEnd);
-  
+
   update();
 }
 /////////////////////////////////////////////////////////

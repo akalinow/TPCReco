@@ -41,22 +41,34 @@ void DataManager::loadDataFile(const std::string & fileName){
   myTree = (TTree*)myFile->Get(treeName.c_str());
   myTree->SetBranchAddress("Event", &currentEvent);
   nEvents = myTree->GetEntries();
-  loadEvent(0);
+  loadTreeEntry(0);
 
   std::cout<<"File: "<<fileName<<" loaded."<<std::endl;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void DataManager::loadEvent(unsigned int iEvent){
+void DataManager::loadTreeEntry(unsigned int iEntry){
 
   if(!myTree){
     std::cerr<<"ROOT tree not available!"<<std::endl;
     return;
   }
+  if(myTree->GetEntries()<=iEntry) return;
+  
   currentEvent->SetGeoPtr(0);
-  myTree->GetEntry(iEvent);
+  myTree->GetEntry(iEntry);
   currentEvent->SetGeoPtr(myGeometryPtr);
-  myCurrentEntry = iEvent;
+  myCurrentEntry = iEntry;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void DataManager::loadEventId(unsigned int iEvent){
+
+  int iEntry = 0;
+  while(currentEventNumber()!=iEvent){  
+    loadTreeEntry(iEntry);
+    ++iEntry;
+  }
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -69,7 +81,7 @@ EventTPC* DataManager::getCurrentEvent() const{
 EventTPC* DataManager::getNextEvent(){
 
   if(myCurrentEntry<nEvents){
-    loadEvent(++myCurrentEntry);
+    loadTreeEntry(++myCurrentEntry);
   }
 
   return currentEvent;
@@ -79,7 +91,7 @@ EventTPC* DataManager::getNextEvent(){
 EventTPC* DataManager::getPreviousEvent(){
 
   if(myCurrentEntry>0){
-    loadEvent(--myCurrentEntry);
+    loadTreeEntry(--myCurrentEntry);
   }
 
   return currentEvent;

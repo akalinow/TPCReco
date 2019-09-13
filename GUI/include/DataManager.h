@@ -22,7 +22,9 @@ public:
 
   void loadDataFile(const std::string & fileName);
 
-  void loadEvent(unsigned int iEvent);
+  void loadTreeEntry(unsigned int iEntry);
+
+  void loadEventId(unsigned int iEvent);
 
   EventTPC* getCurrentEvent() const;
   

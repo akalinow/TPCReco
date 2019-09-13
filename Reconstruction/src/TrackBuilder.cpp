@@ -107,11 +107,6 @@ void TrackBuilder::makeRecHits(int iDir){
     hRecHits.SetTitle(tmpTitle.c_str());
   }
 
-  ///TEST
-  //hRecHits = *hRawHits;
-  //return;
-  ///////
-
   TH1D *hProj;
   double hitWirePos = -999.0;
   double hitTimePos = -999.0;
@@ -243,7 +238,7 @@ void TrackBuilder::fillHoughAccumulator(int iDir){
       for(int iBinTheta=1;iBinTheta<myAccumulators[iDir].GetNbinsX();++iBinTheta){
 	theta = myAccumulators[iDir].GetXaxis()->GetBinCenter(iBinTheta);
 	rho = x*cos(theta) + y*sin(theta);
-	charge = 1.0; //FIX me study is how to include charge. 
+	charge = 1.0; //FIX me study how to include the charge. 
 	myAccumulators[iDir].Fill(theta, rho, charge);
       }
     }
@@ -334,6 +329,8 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
   aTrackCandidate.addSegment(aTrackSegment);
 
   aTrackCandidate = fitTrackNodes(aTrackCandidate);
+  if(aTrackCandidate.getLength()<1.0) return aTrackCandidate;//FIX me move threshold to configuration
+  
   double bestSplit = fitTrackSplitPoint(aTrackCandidate);
   aTrackCandidate.splitWorseChi2Segment(bestSplit);
   aTrackCandidate = fitTrackNodes(aTrackCandidate);

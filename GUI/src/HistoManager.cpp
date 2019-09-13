@@ -148,7 +148,7 @@ void HistoManager::drawTrack3D(TVirtualPad *aPad){
 		     trackSegments.front().getStart().Z());
   
    for(auto aSegment: trackSegments){
-     aPolyLine.SetPoint(aPolyLine.GetN(),
+     aPolyLine.SetPoint(aPolyLine.GetLastPoint()+1,
 			aSegment.getEnd().X(),
 			aSegment.getEnd().Y(),
 			aSegment.getEnd().Z());     
@@ -185,6 +185,7 @@ void HistoManager::drawTrack3DProjectionTimeStrip(int strip_dir, TVirtualPad *aP
   aSegment2DLine.SetLineWidth(2);
   double minX = 999.0, minY = 999.0;
   double maxX = -999.0, maxY = -999.0;
+  double tmp = 0.0;
 
   for(const auto & aItem: aTrack3D.getSegments()){
     const TrackSegment2D & aSegment2DProjection = aItem.get2DProjection(strip_dir, 0, aItem.getLength());
@@ -194,15 +195,17 @@ void HistoManager::drawTrack3DProjectionTimeStrip(int strip_dir, TVirtualPad *aP
     aSegment2DLine.DrawLine(start.X(), start.Y(),  end.X(),  end.Y());	
     ++iSegment;
     
-    if(start.X()<minX) minX = start.X();
-    if(end.X()<minX) minX = start.X();
-    if(end.X()<minX) minX = end.X();
-    if(end.X()<minX) minX = end.X();
+    tmp = std::min(start.Y(), end.Y());
+    minY = std::min(minY, tmp);
 
-    if(start.X()>maxX) maxX = start.X();
-    if(end.X()>maxX) maxX = start.X();
-    if(end.X()>maxX) maxX = end.X();
-    if(end.X()>maxX) maxX = end.X();   
+    tmp = std::max(start.Y(), end.Y());
+    maxY = std::max(maxY, tmp);
+
+    tmp = std::min(start.X(), end.X());
+    minX = std::min(minX, tmp);
+
+    tmp = std::max(start.X(), end.X());
+    maxX = std::max(maxX, tmp);   
   }
   minX -=5;
   maxX +=5;
