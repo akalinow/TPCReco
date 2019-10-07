@@ -52,55 +52,78 @@ void TrackSegment2D::initialize(){
 /////////////////////////////////////////////////////////
 double TrackSegment2D::getIntegratedCharge(double lambdaCut, const Hit2DCollection & aRecHits) const{
 
-  const TVector3 & bias = getBias();
-  const TVector3 & tangent = getTangent();
-  const TVector3 & start = getStart();
-  TVector3 transverseComponent;
-
-  double lambda = 0.0;
   double x = 0.0, y = 0.0;
   double totalCharge = 0.0;
   double radiusCut = 2.0;//FIXME put into configuration
+  double distance = 0.0;
   TVector3 aPoint;
   
   for(const auto aHit:aRecHits){
     x = aHit.getPosTime();
     y = aHit.getPosWire();
     aPoint.SetXYZ(x, y, 0.0);    
-    lambda = (aPoint - start)*tangent/tangent.Mag();
-    if(lambda<0 || lambda>getLength() || lambda>lambdaCut) continue;
-
-    transverseComponent = aPoint - bias - lambda*tangent;
-    if(transverseComponent.Mag()<radiusCut) totalCharge += aHit.getCharge();
+    distance = getPointTransverseDistance(aPoint);
+    if(distance>0 && distance<radiusCut) totalCharge += aHit.getCharge();
   }
   return totalCharge;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
+double TrackSegment2D::getIntegratedHitDistance(double lambdaCut, const Hit2DCollection & aRecHits) const{
 
+  double x = 0.0, y = 0.0;
+  double totalCharge = 0.0;
+  double distance = 0.0;
+  double sum = 0.0;
   TVector3 aPoint;
-  TVector3 transverseComponent;
-  double chi2 = 0.0;
-  double longitudinalChi2Component = 0.0;
-  double dummyChi2 = 1E9;
-  double maxCharge = 0;
-  int pointCount = 0;
+  
+  for(const auto aHit:aRecHits){
+    x = aHit.getPosTime();
+    y = aHit.getPosWire();
+    aPoint.SetXYZ(x, y, 0.0);    
+    distance = getPointTransverseDistance(aPoint);
+    if(distance>0){
+      sum += distance*aHit.getCharge();
+      totalCharge += aHit.getCharge();
+    }
+  }
+  //FIXME divide by total segment charge, not total charge up to lambda
+  return sum;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+double TrackSegment2D::getPointTransverseDistance(const TVector3 & aPoint) const{
 
   const TVector3 & bias = getBias();
   const TVector3 & tangent = getTangent();
   const TVector3 & start = getStart();
 
-  if(tangent.Mag()<1E-3){
+  double lambda = (aPoint - start)*tangent/tangent.Mag();
+  if(lambda<0 || lambda>getLength()) return -999;
+  TVector3 transverseComponent = aPoint - bias - lambda*tangent;
+  return transverseComponent.Mag();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
+
+  double dummyChi2 = 1E9;
+
+  if(getTangent().Mag()<1E-3){
     std::cout<<__FUNCTION__<<" Null tangent: ";
-    tangent.Print();
+    getTangent().Print();
     std::cout<<" for direction: "<<getStripDir()<<std::endl;
     getStart().Print();
     getEnd().Print();
     return dummyChi2;
   }
+
+  TVector3 aPoint;
+  double chi2 = 0.0;
+  double chargeSum = 0.0;
+  double distance = 0.0;
+  int pointCount = 0;
   
-  double lambda = 0.0;
   double x = 0.0, y = 0.0;
   double charge = 0.0;
 
@@ -108,48 +131,16 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
     x = aHit.getPosTime();
     y = aHit.getPosWire();
     charge = aHit.getCharge();
-    aPoint.SetXYZ(x, y, 0.0);    
-    lambda = (aPoint - start)*tangent/tangent.Mag();        
-    
-    transverseComponent = aPoint - bias - lambda*tangent;
-    longitudinalChi2Component = std::min(lambda, getLength()-lambda);
-    if(lambda<0 || lambda>getLength()) continue;
-    
-    if(longitudinalChi2Component>0) longitudinalChi2Component = 0.0;
-    longitudinalChi2Component*=longitudinalChi2Component;
-    /*
-    std::cout<<"lambda: "<<lambda
-	     <<" getLength(): "<<getLength()
-	     <<" longitudinalChi2Component: "<<longitudinalChi2Component
-	     <<std::endl;
-    */
-
-    ++pointCount;
-    /*
-    std::cout<<"x: "<<x<<" y: "<<y<<" charge: "<<charge
-	     <<" lambda: "<<lambda
-	     <<" length: "<<getLength()
-	     <<" transverse chi2: "<<transverseComponent.Mag2()*charge
-	     <<" pointCount: "<<pointCount
-	     <<" maxCharge: "<<maxCharge
-	     <<std::endl;
-    */
-    chi2 += transverseComponent.Mag2()*charge;
-    //chi2 += longitudinalChi2Component*charge;
-    
-    //if(charge>maxCharge) maxCharge = charge;
-    maxCharge +=charge;
+    aPoint.SetXYZ(x, y, 0.0);
+    distance = getPointTransverseDistance(aPoint);
+    if(distance<0) continue;    
+    ++pointCount;    
+    chi2 += std::pow(distance, 2)*charge;
+    chargeSum +=charge;
   }
-  if(!pointCount) return 0.0*dummyChi2;
+  if(!pointCount) return dummyChi2;
 
-  chi2 /= maxCharge;
-  //chi2 /= pointCount;
-  /*
-  std::cout<<" pointCount: "<<pointCount
-	   <<" maxCharge: "<<maxCharge
-	   <<" chi2: "<<chi2
-	   <<std::endl;
-  */
+  chi2 /= chargeSum;
   return chi2;
 }
 /////////////////////////////////////////////////////////

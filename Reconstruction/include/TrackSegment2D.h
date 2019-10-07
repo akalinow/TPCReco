@@ -23,7 +23,11 @@ public:
 
   void setRecHits(const Hit2DCollection & aRecHits) {myRecHits = aRecHits;}
 
+  void setNAccumulatorHits(int nHits){nAccumulatorHits = nHits;}
+
   int getStripDir() const {return myStripDir;}
+
+  int getNAccumulatorHits() const { return nAccumulatorHits;}
 
   ///Unit tangential vector along segment.
   const TVector3 & getTangent() const { return myTangent;}
@@ -50,6 +54,8 @@ public:
 
   double getIntegratedCharge(double lambda, const Hit2DCollection & aRecHits) const;
 
+  double getIntegratedHitDistance(double lambdaCut, const Hit2DCollection & aRecHits) const;
+
   ///Rec hits assigned to this projection.
   const Hit2DCollection & getRecHits() const {return myRecHits;}
 
@@ -61,6 +67,9 @@ private:
   ///Calculate vector for different parametrisations.
   void initialize();
 
+  ///Calculate transvere distance from point to the segment.
+  double getPointTransverseDistance(const TVector3 & aPoint) const;
+
   int myStripDir;
   double myLenght;
 
@@ -70,6 +79,8 @@ private:
   TVector3 myTangentWithT1;
 
   Hit2DCollection myRecHits;
+
+  int nAccumulatorHits{0};
     
 };
 

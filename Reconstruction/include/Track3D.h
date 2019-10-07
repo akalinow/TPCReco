@@ -28,7 +28,11 @@ public:
 
   double getIntegratedCharge(double lambda) const;
 
+  double getIntegratedHitDistance(double lambda) const;
+
   const TGraph & getChargeProfile() const { return myChargeProfile;}
+
+  const TGraph & getHitDistanceProfile() const { return myHitDistanceProfile;}
 
   double getChi2() const;
 
@@ -44,7 +48,8 @@ public:
   double chi2FromNodesList(const double *par);
 
   double chi2FromSplitPoint(const double *par);
-  
+
+  void splitSegment(unsigned int iSegment,  double lengthFraction);
 
 private:
 
@@ -54,10 +59,13 @@ private:
 
   void updateChargeProfile();
 
+  void updateHitDistanceProfile();
+
   double myLenght, myChi2;
   std::vector<double> segmentChi2;
   TrackSegment3DCollection mySegments;
   TGraph myChargeProfile;
+  TGraph myHitDistanceProfile;
   
 };
 

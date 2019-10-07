@@ -208,9 +208,12 @@ void HistoManager::drawTrack3DProjectionTimeStrip(int strip_dir, TVirtualPad *aP
     maxX = std::max(maxX, tmp);   
   }
   minX -=5;
-  maxX +=5;
   minY -=5;
-  maxY +=5;
+  
+  double delta = std::max( std::abs(maxX - minX),
+			   std::abs(maxY - minY));
+  maxX = minX + delta;
+  maxY = minY + delta;
 
   TH2D *hFrame = (TH2D*)aPad->GetListOfPrimitives()->At(0);
   if(hFrame){
@@ -226,6 +229,7 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
 
   aPad->cd();
   TGraph aGr = aTrack3D.getChargeProfile();
+  //TGraph aGr = aTrack3D.getHitDistanceProfile();
   aGr.SetTitle("Charge distribution along track.;d[track length];charge[arbitrary units]");
   aGr.SetLineWidth(2);
   aGr.SetLineColor(2);

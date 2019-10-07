@@ -124,6 +124,18 @@ TrackSegment2D TrackSegment3D::get2DProjection(int strip_dir, double lambdaStart
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+double TrackSegment3D::getIntegratedHitDistance(double lambdaCut) const{
+
+  double sum = 0.0;
+  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+    TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, lambdaCut);
+    const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
+    sum += aTrack2DProjection.getIntegratedHitDistance(lambdaCut, aRecHits);    
+  } 
+  return sum;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 double TrackSegment3D::getIntegratedCharge(double lambdaCut) const{
 
   double charge = 0.0;
@@ -150,7 +162,8 @@ void TrackSegment3D::calculateRecHitChi2(){
   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
     TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, getLength());
     const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
-    myProjectionsChi2[strip_dir] = aTrack2DProjection.getRecHitChi2(aRecHits);    
+    myProjectionsChi2[strip_dir] = aTrack2DProjection.getRecHitChi2(aRecHits);
+    //break;//TEST
   }  
 }
 /////////////////////////////////////////////////////////

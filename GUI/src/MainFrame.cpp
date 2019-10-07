@@ -31,6 +31,9 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h)
   dataFileName = "/home/akalinow/scratch/ELITPC/data/neutrons/EventTPC_2018-06-19T15:13:33.941.root";
   geometryFileName = "/home/akalinow/scratch/ELITPC/data/neutrons/geometry_mini_eTPC_2018-06-19T15:13:33.941.dat";
 
+  //dataFileName = "/home/akalinow/scratch/ELITPC/data/neutrons/ROOT/EventTPC_2018-06-19T15:13:33.941_0008.root";
+  
+
   myDataManager.loadGeometry(geometryFileName);  
   myDataManager.loadDataFile(dataFileName);
   //myDataManager.loadEventId(10);
@@ -260,7 +263,10 @@ void MainFrame::Update(){
     myHistoManager.getHoughAccumulator(strip_dir);
   }
 
-  //myHistoManager.getRawStripVsTime(DIR_U)->SaveAs("histo.root");
+  myHistoManager.getRawStripVsTime(DIR_U)->SaveAs("histoRaw.root");
+  myHistoManager.getCartesianProjection(DIR_U)->SaveAs("histoThreshold.root");
+  myHistoManager.getRecHitStripVsTime(DIR_U)->SaveAs("histoRecHit.root");
+  
   //myHistoManager.getCartesianProjection(DIR_U)->SaveAs("histo.root");
   
   for(int strip_dir=0;strip_dir<3;++strip_dir){
@@ -269,14 +275,15 @@ void MainFrame::Update(){
     myHistoManager.getCartesianProjection(strip_dir)->DrawClone("colz");
     ///Second row
     aPad = fCanvas->cd(strip_dir+1+3);
-    myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("colz");
+    myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("colz");    
     myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad);
     ///Third row.
     aPad = fCanvas->cd(strip_dir+1+3+3);
     myHistoManager.getHoughAccumulator(strip_dir).DrawClone("colz");
-  }
-  //fCanvas->Update();    
-  //return;
+    //myHistoManager.drawChargeAlongTrack3D(aPad);
+  }  
+  //fCanvas->Update();    //TEST
+  //return;//TEST
   
   //Third row again.
   TVirtualPad *aPad = fCanvas->cd(7);

@@ -63,6 +63,8 @@ public:
 
   double getIntegratedCharge(double lambda) const;
 
+  double getIntegratedHitDistance(double lambda) const;
+
   const std::vector<Hit2DCollection> & getRecHits() const { return myRecHits;}
 
   double getRecHitChi2() const;
