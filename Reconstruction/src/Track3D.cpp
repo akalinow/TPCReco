@@ -18,7 +18,7 @@ void Track3D::addSegment(const TrackSegment3D & aSegment3D){
 /////////////////////////////////////////////////////////
 void Track3D::update(){
 
-  myLenght = 0.0;  
+  myLenght = 0.0;
   for(auto &aSegment: mySegments){
     myLenght += aSegment.getLength();
   }
@@ -120,55 +120,106 @@ void Track3D::updateHitDistanceProfile(){
 double Track3D::getChi2() const{
 
   double chi2 = 0.0;
+  chi2 += getSegmentsChi2();
+  chi2 += getNodesChi2();
+
+  return chi2;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+double Track3D::getSegmentsChi2() const{
+
+  double chi2 = 0.0;
   std::for_each(segmentChi2.begin(), segmentChi2.end(), [&](auto aItem){chi2 += aItem;});
+  return chi2;
 
-//TEST
-  /*
-  if(mySegments.size()>1){
-    TVector3 node3D = mySegments.front().getEnd();
-    TVector3 lowerEdge3D = mySegments.front().getTangent();
-    TVector3 upperEdge3D = mySegments.back().getTangent();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+double Track3D::getNodesChi2() const{
 
-    int strip_dir = 0;
-    TVector3 stripPitchDirection(cos(phiPitchDirection[strip_dir]),
-				 sin(phiPitchDirection[strip_dir]), 0);
+  double chi2 = 0.0;
+  std::for_each(nodeHitsChi2.begin(), nodeHitsChi2.end(), [&](auto aItem){chi2 += aItem;});
+  std::for_each(nodeAngleChi2.begin(), nodeAngleChi2.end(), [&](auto aItem){chi2 += aItem;});
+  return chi2;
+
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void Track3D::updateNodesChi2(int strip_dir){
+
+  if(!mySegments.size()) return;
+
+  TVector3 stripPitchDirection(cos(phiPitchDirection[strip_dir]),
+			       sin(phiPitchDirection[strip_dir]), 0);
+  TVector3 aPoint;
+
+  double charge = 0.0;
+  double sum = 0.0;
+  double nodeChi2 = 0.0;
+  unsigned int iNode = 0;
+ 
+  for(auto aSegment = mySegments.begin(); aSegment!=(mySegments.end()-1);++aSegment){
+
+    sum = 0.0;
+    nodeChi2 = 0.0;
+    
+    TVector3 node3D = aSegment->getEnd();
+    TVector3 formerTangent3D = aSegment->getTangent();
+    TVector3 latterTangent3D = (aSegment+1)->getTangent();    
 
     TVector3 node2D(node3D.Z(), node3D*stripPitchDirection, 0.0);
-    TVector3 lowerEdge2D(-lowerEdge3D*stripPitchDirection, lowerEdge3D.Z(), 0.0);    
-    TVector3 upperEdge2D(-upperEdge3D*stripPitchDirection, upperEdge3D.Z(), 0.0);
+    TVector3 formerTransverse2D(-formerTangent3D*stripPitchDirection, formerTangent3D.Z(), 0.0);    
+    TVector3 latterTransverse2D(-latterTangent3D*stripPitchDirection, latterTangent3D.Z(), 0.0);
+    double deltaPhi = ROOT::Math::VectorUtil::DeltaPhi(formerTransverse2D, latterTransverse2D);
 
-    TVector3 aPoint;
-    double x = 0.0, y = 0.0;
-    double charge = 0.0;
-    double sum = 0.0;
-    double nodeChi2 = 0.0;
+    nodeAngleChi2[iNode] = 0.1*(std::pow(deltaPhi,2));
+    
+
+    if(ROOT::Math::VectorUtil::DeltaPhi(formerTransverse2D, latterTransverse2D)<0) std::swap(formerTransverse2D, latterTransverse2D);
+
     for(const auto aHit:mySegments.front().getRecHits().at(strip_dir)){
-      x = aHit.getPosTime();
-      y = aHit.getPosWire();
       charge = aHit.getCharge();
-      aPoint.SetXYZ(x, y, 0.0);
+      aPoint.SetXYZ(aHit.getPosTime(), aHit.getPosWire(), 0.0);
       aPoint -= node2D;
-      double deltaHit = std::abs(ROOT::Math::VectorUtil::DeltaPhi(aPoint, upperEdge2D)) +
-	std::abs(ROOT::Math::VectorUtil::DeltaPhi(aPoint, lowerEdge2D));
-      double deltaCorner = std::abs(ROOT::Math::VectorUtil::DeltaPhi(upperEdge2D, lowerEdge2D));
-      bool isInCorner = std::abs(deltaHit - deltaCorner)<1E-3;
-      if(isInCorner){	
-	(aPoint+node2D).Print();
-	std::cout<<"deltaCorner: "<<deltaCorner
-		 <<" deltaHit: "<<deltaHit
-		 <<std::endl;	
+      double deltaHit = ROOT::Math::VectorUtil::DeltaPhi(formerTransverse2D, aPoint);//DeltaPhi(a, b) = b - a 
+      double nodeOpeningAngle = ROOT::Math::VectorUtil::DeltaPhi(formerTransverse2D, latterTransverse2D);      
+      bool belongsToNode = deltaHit < nodeOpeningAngle && deltaHit>0.0;
+      if(belongsToNode){
 	nodeChi2 += aPoint.Mag2()*charge;
 	sum += charge;
       }
     }
-    if(sum>1) nodeChi2 /= sum;
-    chi2 += nodeChi2;
+    if(sum>0.0) nodeHitsChi2[iNode] += nodeChi2/sum;
+    ++iNode;
   }
-*/
-  //////////////////////
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void Track3D::updateChi2(){
 
+  segmentChi2.clear();
+  for(auto aItem: mySegments){
+    segmentChi2.push_back(aItem.getRecHitChi2());
+  }
+
+  nodeHitsChi2.clear();
+  if(mySegments.size()) nodeHitsChi2.resize(mySegments.size()-1);
+
+  nodeAngleChi2.clear();
+  if(mySegments.size()) nodeAngleChi2.resize(mySegments.size()-1);
   
-  return chi2;
+  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+    updateNodesChi2(strip_dir);
+  }
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+double Track3D::getNodeChi2(unsigned int iNode) const{
+
+  if(iNode>=nodeHitsChi2.size()) return 0.0;
+  else return nodeHitsChi2.at(iNode);
+  //else return nodeAngleChi2.at(iNode);//FIX ME AK print both hits and angle chi2
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -201,15 +252,6 @@ void Track3D::splitSegment(unsigned int iSegment, double lenghtFraction){
   mySegments.insert(mySegments.begin()+iSegment+1, aNewSegment);
   
   update();
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void Track3D::updateChi2(){
-
- segmentChi2.clear();
-  for(auto aItem: mySegments){
-    segmentChi2.push_back(aItem.getRecHitChi2());
-  }  
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -286,7 +328,6 @@ void Track3D::removeEmptySegments(){
 
   unsigned int newSize = modifiedEnd - mySegments.begin();
   mySegments.resize(newSize);
-
   update();
 }
 /////////////////////////////////////////////////////////
@@ -321,6 +362,15 @@ std::ostream & operator << (std::ostream &out, const Track3D &aTrack){
   std::cout<<"\t Path: start->end [chi2]: "<<std::endl;
   for(auto aSegment: aTrack.getSegments()) out<<"\t \t"<<aSegment<<std::endl;
 
+  std::cout<<"\t Nodes: node [chi2]: "<<std::endl;
+  for(unsigned int iSegment = 0;iSegment<(aTrack.getSegments().size()-1);++iSegment){
+    out<<"\t \t ("
+       <<aTrack.getSegments().at(iSegment).getEnd().X()<<", "
+       <<aTrack.getSegments().at(iSegment).getEnd().Y()<<", "
+       <<aTrack.getSegments().at(iSegment).getEnd().Z()<<") "      
+       <<"["<<aTrack.getNodeChi2(iSegment)<<"]"
+       <<std::endl;
+  }
   std::cout<<"\t Total track chi2: "<<aTrack.getChi2();  
   return out;
 }

@@ -28,10 +28,10 @@ TrackBuilder::TrackBuilder() {
   myRecHits.resize(3);
 
   fitter.Config().MinimizerOptions().SetMinimizerType("GSLSimAn");
-  fitter.Config().MinimizerOptions().SetMaxFunctionCalls(1E4);
-  fitter.Config().MinimizerOptions().SetMaxIterations(1E4);
+  fitter.Config().MinimizerOptions().SetMaxFunctionCalls(1E6);
+  fitter.Config().MinimizerOptions().SetMaxIterations(1E6);
   fitter.Config().MinimizerOptions().SetTolerance(1E-2);
-  //fitter.Config().MinimizerOptions().Print(std::cout);
+  fitter.Config().MinimizerOptions().Print(std::cout);
 
   ///An offset used for filling the Hough transformation.
   ///to avoid having very small rho parameters, as
@@ -59,7 +59,7 @@ void TrackBuilder::setEvent(EventTPC* aEvent){
   myEvent = aEvent;
   double eventMaxCharge = myEvent->GetMaxCharge();
   double chargeThreshold = 0.15*eventMaxCharge;
-  int delta_timecells = 10;
+  int delta_timecells = 15;
   int delta_strips = 1;
 
   myCluster = myEvent->GetOneCluster(chargeThreshold, delta_strips, delta_timecells);
@@ -119,8 +119,8 @@ void TrackBuilder::makeRecHits(int iDir){
       hitTimePos = timeResponseShape.GetParameter(iSet+1);
       hitTimePosError = timeResponseShape.GetParameter(iSet+2);
       hitCharge = timeResponseShape.GetParameter(iSet);
-      hitCharge *= sqrt(2.0)*M_PI*hitTimePosError;//the gausian fits are made without normalisation factor
-      hRecHits.Fill(hitTimePos, hitWirePos, hitCharge);
+      hitCharge *= sqrt(2.0)*M_PI*hitTimePosError;//the gausian fits are made without the normalisation factor
+      if(hitCharge>50) hRecHits.Fill(hitTimePos, hitWirePos, hitCharge);//FIXME optimize, use dynamic threshold?
     }
     delete hProj;
   }
@@ -137,7 +137,8 @@ TF1 TrackBuilder::fitTimeWindow(TH1D* hProj){
    int maxBin = hProj->GetMaximumBin();
    double maxValue = hProj->GetMaximum();
    double maxPos = hProj->GetBinCenter(maxBin);
-   if(maxValue<1) return bestTimeResponseShape;
+   double windowIntegral = hProj->Integral(maxBin-25, maxBin+25);
+   if(maxValue<25 || windowIntegral<50) return bestTimeResponseShape;//FIXME how to choose the thresholds?
 
    std::string formula = "";
    for(int iComponent=0;iComponent<3;++iComponent){
@@ -149,8 +150,7 @@ TF1 TrackBuilder::fitTimeWindow(TH1D* hProj){
 
      }
      TF1 timeResponseShape("timeResponseShape",formula.c_str());        
-     timeResponseShape.SetRange(maxPos-25, maxPos+25);  
-   
+     timeResponseShape.SetRange(maxPos-25, maxPos+25);   
      for(int iSet=0;iSet<timeResponseShape.GetNpar();iSet+=3){
        timeResponseShape.SetParameter(iSet, maxValue*2);
        timeResponseShape.SetParameter(iSet+1, maxPos);
@@ -355,10 +355,9 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
     }
   }
   std::cout<<"bestSplit: "<<bestSplit<<std::endl;
-  //aTrackCandidate.splitWorseChi2Segment(bestSplit);
-  std::cout<<aTrackCandidate<<std::endl;
-
-  for(int iSplit = 0;iSplit<2;++iSplit){
+  aTrackCandidate.splitWorseChi2Segment(bestSplit);
+  
+  for(int iSplit = 0;iSplit<0;++iSplit){
     unsigned int nSegments = aTrackCandidate.getSegments().size();
     for(unsigned int iSegment=0;iSegment<nSegments;iSegment+=2){
       aTrackCandidate.splitSegment(iSegment, 0.5);
@@ -366,9 +365,10 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
     }
   }
   
+  
   aTrackCandidate = fitTrackNodes(aTrackCandidate);
   return aTrackCandidate;//TEST
-  
+  /*
   if(aTrackCandidate.getLength()<1.0) return aTrackCandidate;//FIX me move threshold to configuration
 
   bestSplit = fitTrackSplitPoint(aTrackCandidate);
@@ -380,6 +380,7 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
   aTrackCandidate = fitTrackNodes(aTrackCandidate);
   
   return aTrackCandidate;
+  */
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -420,7 +421,7 @@ Track3D TrackBuilder::fitTrackNodes(const Track3D & aTrack) const{
       Error(__FUNCTION__, "Track3D Fit failed");
       fitter.Result().Print(std::cout);
       return aTrack;
-    }    
+    }
     const ROOT::Fit::FitResult & result = fitter.Result();
     aTrackCandidate.chi2FromNodesList(result.GetParams());
     aTrackCandidate.removeEmptySegments();

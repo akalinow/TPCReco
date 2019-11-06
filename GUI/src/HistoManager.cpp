@@ -175,6 +175,20 @@ void HistoManager::drawTrack3DProjectionXY(TVirtualPad *aPad){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+void HistoManager::drawTrack2DSeed(int strip_dir, TVirtualPad *aPad){
+
+  const TrackSegment2D & aSegment2D = myTkBuilder.getSegment2D(strip_dir);
+  const TVector3 & start = aSegment2D.getStart();
+  const TVector3 & end = aSegment2D.getEnd();
+
+  TLine aSegment2DLine;
+  aSegment2DLine.SetLineWidth(2);
+  aSegment2DLine.SetLineColor(2);
+  aPad->cd();
+  aSegment2DLine.DrawLine(start.X(), start.Y(),  end.X(),  end.Y());	  
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 void HistoManager::drawTrack3DProjectionTimeStrip(int strip_dir, TVirtualPad *aPad){
 
   aPad->cd();

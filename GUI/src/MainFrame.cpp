@@ -31,9 +31,8 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h)
   dataFileName = "/home/akalinow/scratch/ELITPC/data/neutrons/EventTPC_2018-06-19T15:13:33.941.root";
   geometryFileName = "/home/akalinow/scratch/ELITPC/data/neutrons/geometry_mini_eTPC_2018-06-19T15:13:33.941.dat";
 
-  //dataFileName = "/home/akalinow/scratch/ELITPC/data/neutrons/ROOT/EventTPC_2018-06-19T15:13:33.941_0008.root";
+  //dataFileName = "/home/akalinow/scratch/ELITPC/data/neutrons/ROOT/EventTPC_2018-06-20T10:35:30.853_0004.root";
   
-
   myDataManager.loadGeometry(geometryFileName);  
   myDataManager.loadDataFile(dataFileName);
   //myDataManager.loadEventId(10);
@@ -47,7 +46,7 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h)
 
   SetCleanup(kDeepCleanup);
   SetWMPosition(500,0);
-  SetWMSize(1200,700);
+  SetWMSize(1500,1000);
   
   AddTopMenu();
   SetTheFrame();
@@ -125,7 +124,7 @@ void MainFrame::SetTheFrame(){
 void MainFrame::AddHistoCanvas(){
 
     // The Canvas
-   TRootEmbeddedCanvas* embeddedCanvas = new TRootEmbeddedCanvas("Histograms",fFrame,700,700);
+   TRootEmbeddedCanvas* embeddedCanvas = new TRootEmbeddedCanvas("Histograms",fFrame,1000,1000);
    UInt_t attach_left=0, attach_right=8;
    UInt_t attach_top=0,  attach_bottom=12;
    fTCanvasLayout = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
@@ -263,9 +262,10 @@ void MainFrame::Update(){
     myHistoManager.getHoughAccumulator(strip_dir);
   }
 
-  myHistoManager.getRawStripVsTime(DIR_U)->SaveAs("histoRaw.root");
-  myHistoManager.getCartesianProjection(DIR_U)->SaveAs("histoThreshold.root");
-  myHistoManager.getRecHitStripVsTime(DIR_U)->SaveAs("histoRecHit.root");
+  int strip_dir = DIR_W;
+  myHistoManager.getRawStripVsTime(strip_dir)->SaveAs("histoRaw.root");
+  myHistoManager.getCartesianProjection(strip_dir)->SaveAs("histoThreshold.root");
+  myHistoManager.getRecHitStripVsTime(strip_dir)->SaveAs("histoRecHit.root");
   
   //myHistoManager.getCartesianProjection(DIR_U)->SaveAs("histo.root");
   
@@ -275,12 +275,16 @@ void MainFrame::Update(){
     myHistoManager.getCartesianProjection(strip_dir)->DrawClone("colz");
     ///Second row
     aPad = fCanvas->cd(strip_dir+1+3);
-    myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("colz");    
-    myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad);
+    myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("colz");
+    myHistoManager.getRecHitStripVsTime(strip_dir)->SaveAs(TString::Format("RecHits_%d.root", strip_dir));
+    //myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad);
+    //myHistoManager.drawTrack2DSeed(strip_dir, aPad);
+    
     ///Third row.
     aPad = fCanvas->cd(strip_dir+1+3+3);
-    myHistoManager.getHoughAccumulator(strip_dir).DrawClone("colz");
-    //myHistoManager.drawChargeAlongTrack3D(aPad);
+    //myHistoManager.getHoughAccumulator(strip_dir).DrawClone("colz");
+    //myHistoManager.getHoughAccumulator(strip_dir).SaveAs(TString::Format("HoughAccumulator_%d.root", strip_dir));
+    myHistoManager.drawChargeAlongTrack3D(aPad);
   }  
   //fCanvas->Update();    //TEST
   //return;//TEST

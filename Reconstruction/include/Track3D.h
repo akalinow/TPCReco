@@ -49,6 +49,8 @@ public:
 
   double chi2FromSplitPoint(const double *par);
 
+  double getNodeChi2(unsigned int iNode) const;
+
   void splitSegment(unsigned int iSegment,  double lengthFraction);
 
 private:
@@ -57,12 +59,21 @@ private:
 
   void updateChi2();
 
+  void updateNodesChi2(int strip_dir);
+
   void updateChargeProfile();
 
   void updateHitDistanceProfile();
 
+  double getSegmentsChi2() const;
+
+  double getNodesChi2() const;
+
   double myLenght, myChi2;
   std::vector<double> segmentChi2;
+  std::vector<double> nodeHitsChi2;
+  std::vector<double> nodeAngleChi2;
+  
   TrackSegment3DCollection mySegments;
   TGraph myChargeProfile;
   TGraph myHitDistanceProfile;

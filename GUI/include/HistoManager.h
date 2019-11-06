@@ -47,7 +47,7 @@ public:
 
   const TH2D & getHoughAccumulator(int strip_dir, int iPeak=0);
 
-  TLine get2DLine(int strip_dir, unsigned int iTrackSegment);
+  void drawTrack2DSeed(int strip_dir, TVirtualPad *aPad);
 
   void drawTrack3D(TVirtualPad *aPad);
 

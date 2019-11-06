@@ -163,7 +163,6 @@ void TrackSegment3D::calculateRecHitChi2(){
     TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, getLength());
     const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
     myProjectionsChi2[strip_dir] = aTrack2DProjection.getRecHitChi2(aRecHits);
-    //break;//TEST
   }  
 }
 /////////////////////////////////////////////////////////
