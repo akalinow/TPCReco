@@ -20,7 +20,10 @@ include_directories(${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include)
 ## target definitions #########################################################
 ###############################################################################
 # ROOT dictionary for persistens classes
-ROOT_GENERATE_DICTIONARY(G__${MODULE_NAME} include/EventTPC.h include/GeometryTPC.h LINKDEF ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/LinkDef.h)
+ROOT_GENERATE_DICTIONARY(G__${MODULE_NAME}
+  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/EventTPC.h
+  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/GeometryTPC.h  
+  LINKDEF ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/LinkDef.h)
 
 # The data is just added to the executable, because in some IDEs (QtCreator) 
 # files are invisible when they are not explicitly part of the project.

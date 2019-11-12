@@ -9,6 +9,7 @@
 #include <TStyle.h>
 #include <TFrame.h>
 #include <TVirtualX.h>
+#include <TImage.h>
 
 #include <TH2D.h>
 #include <TH3D.h>
@@ -20,33 +21,40 @@
 MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h)
       : TGMainFrame(p, w, h){
 
+  //TEST ---
+  std::string dataFileName = "/home/akalinow/scratch/ELITPC/data/neutrons/EventTPC_2018-06-19T15:13:33.941.root"; 
+  std::string geometryFileName = "/home/akalinow/scratch/ELITPC/data/neutrons/geometry_mini_eTPC_2018-06-19T15:13:33.941.dat"; 
+  //dataFileName = "/home/akalinow/scratch/ELITPC/data/neutrons/ROOT/EventTPC_2018-06-20T10:35:30.853_0004.root";
+  
+  myDataManager.loadGeometry(geometryFileName);  
+  myDataManager.loadDataFile(dataFileName);
+  myDataManager.loadTreeEntry(0);
+  myHistoManager.setGeometry(myDataManager.getGeometry());
+  ////////////////////
+
   fSelectionBox = 0;
   fArrow = 0;
   fLine = 0;
 
   SetCleanup(kDeepCleanup);
   SetWMPosition(500,0);
-  SetWMSize(1200,700);
+  SetWMSize(1500,1000);
   
   AddTopMenu();
   SetTheFrame();
   AddHistoCanvas();
   AddButtons();
+  AddGoToEventDialog(4);
   AddNumbersDialog();
+  AddLogos();
 
   MapSubwindows();
   Resize();
   MapWindow();
   SetWindowName("TPC GUI");
 
-  //TEST ---
-  std::string fileName = "/scratch_local/akalinow/ELITPC/TPCReco/build/resources/EventTPC_1.root";
-  fileName = "/scratch_local/akalinow/ELITPC/TPCReco/build/EventTPC_1.root";
-  myDataManager.loadGeometry("/home/akalinow/scratch/ELITPC/TPCReco/build/resources/geometry_mini_eTPC.dat");
-  myDataManager.loadDataFile(fileName);
-  fEntryDialog->updateFileName(fileName);
-  myDataManager.loadEvent(0);
-
+  fEntryDialog->updateFileName(dataFileName);
+  
   fCanvas->Clear();
   fCanvas->Divide(3,3);
   TText aMessage(0.2, 0.5,"Waiting for data.");
@@ -95,69 +103,131 @@ void MainFrame::AddTopMenu(){
 /////////////////////////////////////////////////////////
 void MainFrame::SetTheFrame(){
 
-   fFrame = new TGCompositeFrame(this,400,400,kSunkenFrame);
-   TGTableLayout* tlo = new TGTableLayout(fFrame, 6, 12, 1);
-   fFrame->SetLayoutManager(tlo);
-   fFrameLayout = new TGLayoutHints(kLHintsTop|kLHintsLeft|
-                                          kLHintsExpandX|kLHintsExpandY);
-   AddFrame(fFrame,fFrameLayout);
+  int nRows = 12, nColumns = 12;
+  fFrame = new TGCompositeFrame(this,400,400,kSunkenFrame);
+  TGTableLayout* tlo = new TGTableLayout(fFrame, nRows, nColumns, 1);
+  fFrame->SetLayoutManager(tlo);
+  fFrameLayout = new TGLayoutHints(kLHintsTop|kLHintsLeft|
+				   kLHintsExpandX|kLHintsExpandY);
+  AddFrame(fFrame,fFrameLayout);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MainFrame::AddHistoCanvas(){
 
     // The Canvas
-   TRootEmbeddedCanvas* embeddedCanvas = new TRootEmbeddedCanvas("Histograms",fFrame,700,700);
-   fTCanvasLayout = new TGTableLayoutHints(0,8,0,6,
-                                 kLHintsExpandX|kLHintsExpandY |
-                                 kLHintsShrinkX|kLHintsShrinkY |
-                                 kLHintsFillX|kLHintsFillY);
+   TRootEmbeddedCanvas* embeddedCanvas = new TRootEmbeddedCanvas("Histograms",fFrame,1000,1000);
+   UInt_t attach_left=0, attach_right=8;
+   UInt_t attach_top=0,  attach_bottom=12;
+   fTCanvasLayout = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
+   					   kLHintsFillX|kLHintsFillY);
    fFrame->AddFrame(embeddedCanvas, fTCanvasLayout);
 
    fCanvas = embeddedCanvas->GetCanvas();
    fCanvas->MoveOpaque(kFALSE);
    gStyle->SetOptStat(0);
+   gStyle->SetPalette(55);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MainFrame::AddButtons(){
 
-  std::vector<std::string> button_names = {"Next event", "Previous event", "Exit"};
-
+  std::vector<std::string> button_names = {"Next event", "Previous event",  "Exit"};
   std::vector<std::string> tooltips =     {"Load the next event.",
 					   "Load the previous event.",
 					   "Close the application"};
+  std::vector<unsigned int> button_id = {M_NEXT_EVENT, M_PREVIOUS_EVENT, M_FILE_EXIT};
 
-  std::vector<unsigned int> button_id = {M_NEXT_EVENT, M_PREVIOUS_EVENT,  M_FILE_EXIT};
-
+  UInt_t attach_left=8, attach_right=9;
   for (unsigned int iButton = 0; iButton < button_names.size(); ++iButton) {
     TGTextButton* button = new TGTextButton(fFrame,
 					    button_names[iButton].c_str(),
 					    button_id[iButton]);
-    
-    TGTableLayoutHints *tloh = new TGTableLayoutHints(8,9, iButton, iButton+1,
-						      kLHintsExpandX|kLHintsExpandY |
-						      kLHintsShrinkX|kLHintsShrinkY |
-						      kLHintsFillX|kLHintsFillY);
+
+    UInt_t attach_top=iButton,  attach_bottom=iButton+1;
+    TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
+						      kLHintsFillX | kLHintsFillY);
+
     fFrame->AddFrame(button,tloh);
-    button->Resize(50, button->GetDefaultHeight());
     button->Connect("Clicked()","MainFrame",this,"DoButton()");
     button->SetToolTipText(tooltips[iButton].c_str());
    }
  }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+void MainFrame::AddGoToEventDialog(int attach_top){
+
+  fGframe = new TGGroupFrame(this, "Go to event");
+  fEventIdEntry = new TGNumberEntryField(fGframe, M_GOTO_EVENT, 0,
+					 TGNumberFormat::kNESInteger,
+					 TGNumberFormat::kNEANonNegative,
+					 TGNumberFormat::kNELLimitMinMax,
+					 0, myDataManager.numberOfEvents());
+  fEventIdEntry->Connect("ReturnPressed()", "MainFrame", this, "DoButton()");
+  fEventIdEntry->SetToolTipText("Jump to given event id.");  
+
+  UInt_t attach_left=8, attach_right=9;
+  UInt_t attach_bottom=attach_top+1;
+  TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
+						    kLHintsFillX | kLHintsFillY,
+						    0, 0, 5, 2);  
+  fFrame->AddFrame(fGframe, tloh);
+  fGframe->AddFrame(fEventIdEntry, new TGLayoutHints(kLHintsExpandX, 0, 0, 0, 0));
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 void MainFrame::AddNumbersDialog(){
 
   fEntryDialog = new EntryDialog(fFrame, this);
-  TGTableLayoutHints *tloh = new TGTableLayoutHints(9,12,0,2,
-						    kLHintsExpandX|kLHintsExpandY |
-						    kLHintsShrinkX|kLHintsShrinkY |
+
+  UInt_t attach_left=9, attach_right=12;
+  UInt_t attach_top=0,  attach_bottom=3;
+  TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
+						    kLHintsShrinkX|kLHintsShrinkY|
 						    kLHintsFillX|kLHintsFillY);
   fEntryDialog->initialize();  
-  fFrame->AddFrame(fEntryDialog,tloh);
+  fFrame->AddFrame(fEntryDialog, tloh);
 
  }
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void MainFrame::AddLogos(){
+
+  //return;
+  std::string filePath = "resources/FUW_znak.png";
+  TImage *img = TImage::Open(filePath.c_str());
+  if(!img) return;
+  double ratio = img->GetWidth()/img->GetHeight();
+  double height = 80;
+  double width = ratio*height;
+  img->Scale(width, height);
+  ///FIXME clean up the ipic at the application closure.
+  const TGPicture *ipic=(TGPicture *)gClient->GetPicturePool()->GetPicture("FUW_znak", img->GetPixmap(), img->GetMask());
+  delete img;
+  TGIcon *icon = new TGIcon(fFrame, ipic, width, height);
+
+  UInt_t attach_left=9, attach_right=10;
+  UInt_t attach_top=10,  attach_bottom=12;
+  TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom);
+  fFrame->AddFrame(icon, tloh);
+
+
+  filePath = "resources/ELITEPC_znak.png";
+  img = TImage::Open(filePath.c_str());
+  if(!img) return;
+  ratio = img->GetWidth()/img->GetHeight();
+  height = 100;
+  width = ratio*height;
+  img->Scale(width, height);
+  ///FIXME clean up the ipic at the application closure.
+  ipic=(TGPicture *)gClient->GetPicturePool()->GetPicture("FUW_znak", img->GetPixmap(), img->GetMask());
+  delete img;
+  icon = new TGIcon(fFrame, ipic, width, height);
+
+  attach_left=11, attach_right=12;
+  tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom, 0, 0, 0, -20);
+  fFrame->AddFrame(icon, tloh);
+}
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MainFrame::CloseWindow(){
@@ -180,48 +250,62 @@ void MainFrame::Update(){
   fCanvas->Divide(3,3);
   fCanvas->cd(1);
 
-  for(int aDir=0;aDir<3;++aDir){
-    myHistoManager.getHoughAccumulator(aDir);
+  for(int strip_dir=0;strip_dir<3;++strip_dir){
+    myHistoManager.getHoughAccumulator(strip_dir);
   }
 
-  //myHistoManager.getRawStripVsTime(DIR_U)->SaveAs("histo.root");
+  int strip_dir = DIR_W;
+  myHistoManager.getRawStripVsTime(strip_dir)->SaveAs("histoRaw.root");
+  myHistoManager.getCartesianProjection(strip_dir)->SaveAs("histoThreshold.root");
+  myHistoManager.getRecHitStripVsTime(strip_dir)->SaveAs("histoRecHit.root");
   
-  for(int aDir=0;aDir<3;++aDir){
-    fCanvas->cd(aDir+1);
+  //myHistoManager.getCartesianProjection(DIR_U)->SaveAs("histo.root");
+  
+  for(int strip_dir=0;strip_dir<3;++strip_dir){
+    ///First row
+    TVirtualPad *aPad = fCanvas->cd(strip_dir+1);
+    myHistoManager.getCartesianProjection(strip_dir)->DrawClone("colz");
+    ///Second row
+    aPad = fCanvas->cd(strip_dir+1+3);
+    myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("colz");
+    myHistoManager.getRecHitStripVsTime(strip_dir)->SaveAs(TString::Format("RecHits_%d.root", strip_dir));
+    myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad);
+    //myHistoManager.drawTrack2DSeed(strip_dir, aPad);
     
-    myHistoManager.getRawStripVsTime(aDir)->DrawClone("colz");
-    //myHistoManager.getTrack2D(aDir, 0).DrawClone();
-    
-    fCanvas->cd(aDir+1+3);  
-    //myHistoManager.getFilteredStripVsTime(aDir)->DrawClone("colz");
-
-    std::shared_ptr<TH2D> aPtr = myHistoManager.getRecHitStripVsTime(aDir);
-    aPtr->DrawClone("colz");
-    myHistoManager.getTrack2D(aDir, 0).DrawClone();
-    //myHistoManager.getTrack2D(aDir, 1).DrawClone();
-    //myHistoManager.getTrack3DProjection(aDir).DrawClone();
-    fCanvas->cd(aDir+1+3+3);
-    //myHistoManager.getHoughAccumulator(aDir).DrawClone("colz");
-    myHistoManager.getChargeAlong2DTrack(aDir).DrawClone("hist");
-    //myHistoManager.getHoughAccumulator(aDir, 1);
-  }
-  /*
+    ///Third row.
+    aPad = fCanvas->cd(strip_dir+1+3+3);
+    //myHistoManager.getHoughAccumulator(strip_dir).DrawClone("colz");
+    //myHistoManager.getHoughAccumulator(strip_dir).SaveAs(TString::Format("HoughAccumulator_%d.root", strip_dir));
+    myHistoManager.drawChargeAlongTrack3D(aPad);
+  }  
+  //fCanvas->Update();    //TEST
+  //return;//TEST
+  
+  //Third row again.
   TVirtualPad *aPad = fCanvas->cd(7);
-  TText aMessage(0.2, 0.5,"Calculating 3D scence");
-  aMessage.DrawClone();
-  aPad->Update();
+
   TH3D *h3DReco =  myHistoManager.get3DReconstruction();
   if(h3DReco){
     aPad->Clear();
     h3DReco->DrawClone("box2z");
+    myHistoManager.drawTrack3D(aPad);
   }
   else {
-    aPad->Clear();  
+    aPad->Clear();
+    TText aMessage(0.2, 0.5,"Calculating 3D scence");
     aMessage.DrawText(0.2, 0.5, "3D scene not available.");
   }
-  aPad->Update();
-  */  
-  fCanvas->Update();  
+
+  aPad = fCanvas->cd(8);
+  TH2D *h2D =   myHistoManager.get2DReconstruction(DIR_XY);
+  if(h2D) h2D->Draw("colz");
+  else myHistoManager.getDetectorLayout()->Draw("colz 0"); 
+  myHistoManager.drawTrack3DProjectionXY(aPad);
+
+  aPad = fCanvas->cd(9);
+  myHistoManager.drawChargeAlongTrack3D(aPad);
+  
+  fCanvas->Update();    
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -291,6 +375,14 @@ void MainFrame::HandleMenu(Int_t id){
   case M_PREVIOUS_EVENT:
     {
       myDataManager.getPreviousEvent();
+      Update();
+    }
+    break;
+  case M_GOTO_EVENT:
+    {
+      int eventId = fEventIdEntry->GetIntNumber();
+      std::cout<<"M_GOTO_EVENT eventId: "<<eventId<<std::endl;
+      myDataManager.loadEventId(eventId);
       Update();
     }
     break;

@@ -24,7 +24,10 @@ find_package(ROOT REQUIRED COMPONENTS RIO GenVector Gui)
 ## target definitions #########################################################
 ###############################################################################
 # ROOT dictionary for persistens classes
-ROOT_GENERATE_DICTIONARY(G__${MODULE_NAME} include/MainFrame.h include/ScrollFrame.h include/SelectionBox.h LINKDEF include/RootDictLinkDef.h)
+ROOT_GENERATE_DICTIONARY(G__${MODULE_NAME} ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/MainFrame.h
+  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/ScrollFrame.h
+  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/SelectionBox.h
+  LINKDEF ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/RootDictLinkDef.h)
 
 # The data is just added to the executable, because in some IDEs (QtCreator) 
 # files are invisible when they are not explicitly part of the project.

@@ -51,14 +51,18 @@ SigClusterTPC::SigClusterTPC(EventTPC *e)
 
 // list of SELECTED hits corresponding to a given STRIP_DIR[0-2],
 // return value=key(REBIN_TIME_CELL [0-511], STRIP_NUM [1-1024])
-std::vector<MultiKey2> SigClusterTPC::GetHitListByDir(int strip_dir) {
+std::vector<MultiKey2> SigClusterTPC::GetHitListByDir(int strip_dir) const{
   switch(strip_dir) {
   case DIR_U:
   case DIR_V:
-  case DIR_W: return hitListByDir[strip_dir];
+  case DIR_W: return hitListByDir.find(strip_dir)->second;
   };
   std::vector<MultiKey2> empty;
   return empty;
+}
+
+ const std::map<MultiKey2, std::vector<int>, multikey2_less> & SigClusterTPC::GetHitListByTimeDir() const{
+  return hitListByTimeDir;
 }
 
 bool SigClusterTPC::AddByStrip(int strip_dir, int strip_number, int time_cell) {  // valid range [0-2][1-1024][0-511]
@@ -190,49 +194,40 @@ bool SigClusterTPC::AddByAgetChannel_raw(int cobo_idx, int asad_idx, int aget_id
   return AddByStrip(evt_ptr->GetGeoPtr()->GetStripByAget_raw(cobo_idx, asad_idx, aget_idx, raw_channel_idx), time_cell);
 }
 
-/* OLD, SLOWER IMPLEMENTATION
-bool SigClusterTPC::CheckByStrip(int strip_dir, int strip_number, int time_cell) {  // valid range [0-2][1-1024][0-511]
+bool SigClusterTPC::CheckByStrip(int strip_dir, int strip_number, int time_cell) const{  // valid range [0-2][1-1024][0-511]
   if(!IsOK() || time_cell<0 || time_cell>=512 || strip_number<1 || strip_number>evt_ptr->GetGeoPtr()->GetDirNstrips(strip_dir)) return false;
   switch(strip_dir) {
   case DIR_U:
   case DIR_V:
-  case DIR_W: return find_if(hitList.begin(), hitList.end(), MultiKey3(strip_dir, strip_number, time_cell))!=hitList.end();
-  };
-  return false;  
-}
-*/
-bool SigClusterTPC::CheckByStrip(int strip_dir, int strip_number, int time_cell) {  // valid range [0-2][1-1024][0-511]
-  if(!IsOK() || time_cell<0 || time_cell>=512 || strip_number<1 || strip_number>evt_ptr->GetGeoPtr()->GetDirNstrips(strip_dir)) return false;
-  switch(strip_dir) {
-  case DIR_U:
-  case DIR_V:
-  case DIR_W: return find_if(hitListByDir[strip_dir].begin(), hitListByDir[strip_dir].end(), MultiKey2(time_cell, strip_number))!=hitListByDir[strip_dir].end();
+  case DIR_W: return find_if(hitListByDir.find(strip_dir)->second.begin(),
+			     hitListByDir.find(strip_dir)->second.end(),
+			     MultiKey2(time_cell, strip_number))!=hitListByDir.find(strip_dir)->second.end();
   };
   return false;  
 }
 
-bool SigClusterTPC::CheckByStrip(StripTPC *strip, int time_cell) {  // valid range [0-511]
+bool SigClusterTPC::CheckByStrip(StripTPC *strip, int time_cell) const{  // valid range [0-511]
   if(strip) return CheckByStrip(strip->Dir(), strip->Num(), time_cell);
   return false;
 }
 
-bool SigClusterTPC::CheckByGlobalChannel(int glb_channel_idx, int time_cell) {  // valid range [0-1023][0-511]
+bool SigClusterTPC::CheckByGlobalChannel(int glb_channel_idx, int time_cell) const{  // valid range [0-1023][0-511]
   return CheckByStrip(evt_ptr->GetGeoPtr()->GetStripByGlobal(glb_channel_idx), time_cell);
 }
 
-bool SigClusterTPC::CheckByGlobalChannel_raw(int glb_raw_channel_idx, int time_cell) {  // valid range [0-(1023+ASAD_N[0]*4+...)][0-511]
+bool SigClusterTPC::CheckByGlobalChannel_raw(int glb_raw_channel_idx, int time_cell) const{  // valid range [0-(1023+ASAD_N[0]*4+...)][0-511]
   return CheckByStrip(evt_ptr->GetGeoPtr()->GetStripByGlobal_raw(glb_raw_channel_idx), time_cell);
 }
 
-bool SigClusterTPC::CheckByAgetChannel(int cobo_idx, int asad_idx, int aget_idx, int channel_idx, int time_cell) {  // valid range [0-1][0-3][0-3][0-63][0-511]
+bool SigClusterTPC::CheckByAgetChannel(int cobo_idx, int asad_idx, int aget_idx, int channel_idx, int time_cell) const{  // valid range [0-1][0-3][0-3][0-63][0-511]
   return CheckByStrip(evt_ptr->GetGeoPtr()->GetStripByAget(cobo_idx, asad_idx, aget_idx, channel_idx), time_cell);
 }
 
-bool SigClusterTPC::CheckByAgetChannel_raw(int cobo_idx, int asad_idx, int aget_idx, int raw_channel_idx, int time_cell) {  // valid range [0-1][0-3][0-3][0-67][0-511]
+bool SigClusterTPC::CheckByAgetChannel_raw(int cobo_idx, int asad_idx, int aget_idx, int raw_channel_idx, int time_cell) const{  // valid range [0-1][0-3][0-3][0-67][0-511]
   return CheckByStrip(evt_ptr->GetGeoPtr()->GetStripByAget_raw(cobo_idx, asad_idx, aget_idx, raw_channel_idx), time_cell);
 }
 
-long SigClusterTPC::GetNhitsByStrip(int strip_dir, int strip_num) {   // # of hits in a given strip
+long SigClusterTPC::GetNhitsByStrip(int strip_dir, int strip_num) const{   // # of hits in a given strip
   if(!IsOK() || strip_num<1 || strip_num>evt_ptr->GetGeoPtr()->GetDirNstrips(strip_dir)) return ERROR;
   switch(strip_dir) {
   case DIR_U: 
@@ -241,16 +236,16 @@ long SigClusterTPC::GetNhitsByStrip(int strip_dir, int strip_num) {   // # of hi
     MultiKey2 mkey(strip_dir, strip_num);
 
     // check if hit exists
-    std::map<MultiKey2, int, multikey2_less>::iterator it;
-    if( (it=nhitsMap.find(mkey))!=nhitsMap.end() ) {
+    std::map<MultiKey2, int, multikey2_less>::const_iterator it = nhitsMap.find(mkey);
+    if(it!=nhitsMap.end()) {
       return it->second;
     }
-    return 0;
+    else return 0;
   };
   return ERROR;
 }
 
-long SigClusterTPC::GetNhits(int strip_dir) {   // # of hits in a given direction
+long SigClusterTPC::GetNhits(int strip_dir) const{   // # of hits in a given direction
   if(!IsOK()) return ERROR;
   switch(strip_dir) {
   case DIR_U: 
@@ -260,12 +255,12 @@ long SigClusterTPC::GetNhits(int strip_dir) {   // # of hits in a given directio
   return ERROR;
 }
 
-long SigClusterTPC::GetNhits() {  // global # of hits
+long SigClusterTPC::GetNhits() const{  // global # of hits
   if(!IsOK()) return ERROR;
   return nhits[DIR_U]+nhits[DIR_V]+nhits[DIR_W];
 }
 
-int SigClusterTPC::GetMultiplicity(int strip_dir) {  // # of strips with hits in a given direction
+int SigClusterTPC::GetMultiplicity(int strip_dir) const{  // # of strips with hits in a given direction
   if(!IsOK()) return ERROR;
   switch(strip_dir) {
   case DIR_U: 
@@ -275,12 +270,12 @@ int SigClusterTPC::GetMultiplicity(int strip_dir) {  // # of strips with hits in
   return ERROR;
 }
 
-int SigClusterTPC::GetMultiplicity() {  // global # of strips with hits from all strips
+int SigClusterTPC::GetMultiplicity() const{  // global # of strips with hits from all strips
   if(!IsOK()) return ERROR;
   return nstrips[DIR_U]+nstrips[DIR_V]+nstrips[DIR_W];
 }  
 
-int SigClusterTPC::GetMinStrip(int strip_dir) {  // minimal strip number in a given direction
+int SigClusterTPC::GetMinStrip(int strip_dir) const{  // minimal strip number in a given direction
   if(!IsOK()) return ERROR;
   switch(strip_dir) {
   case DIR_U: 
@@ -290,7 +285,7 @@ int SigClusterTPC::GetMinStrip(int strip_dir) {  // minimal strip number in a gi
   return ERROR;
 }
 
-int SigClusterTPC::GetMaxStrip(int strip_dir) { // maximal strip number in a given direction
+int SigClusterTPC::GetMaxStrip(int strip_dir) const{ // maximal strip number in a given direction
   if(!IsOK()) return ERROR;
   switch(strip_dir) {
   case DIR_U: 
@@ -300,7 +295,7 @@ int SigClusterTPC::GetMaxStrip(int strip_dir) { // maximal strip number in a giv
   return ERROR;
 }
 
-int SigClusterTPC::GetMinTime(int strip_dir) {  // minimal time cell in a given direction
+int SigClusterTPC::GetMinTime(int strip_dir) const{  // minimal time cell in a given direction
   if(!IsOK()) return ERROR;
   switch(strip_dir) {
   case DIR_U: 
@@ -310,7 +305,7 @@ int SigClusterTPC::GetMinTime(int strip_dir) {  // minimal time cell in a given 
   return ERROR;
 }
 
-int SigClusterTPC::GetMaxTime(int strip_dir) {  // maximal time cell in a given direction
+int SigClusterTPC::GetMaxTime(int strip_dir) const{  // maximal time cell in a given direction
   if(!IsOK()) return ERROR;
   switch(strip_dir) {
   case DIR_U: 
@@ -320,17 +315,17 @@ int SigClusterTPC::GetMaxTime(int strip_dir) {  // maximal time cell in a given 
   return ERROR;
 }
 
-int SigClusterTPC::GetMinTime() {  // minimal time cell from all strips
+int SigClusterTPC::GetMinTime() const{  // minimal time cell from all strips
   if(!IsOK()) return ERROR;
   return glb_min_time;
 }
 
-int SigClusterTPC::GetMaxTime() {  // maximal time cell from all cluster hits
+int SigClusterTPC::GetMaxTime() const{  // maximal time cell from all cluster hits
   if(!IsOK()) return ERROR;
   return glb_max_time;
 }
 
-double SigClusterTPC::GetMaxCharge(int strip_dir, int strip_number) { // maximal charge from cluster hits in a given strip (if any)
+double SigClusterTPC::GetMaxCharge(int strip_dir, int strip_number) const{ // maximal charge from cluster hits in a given strip (if any)
   if(!IsOK()) return 0.0;
   switch(strip_dir) {
   case DIR_U:
@@ -339,16 +334,16 @@ double SigClusterTPC::GetMaxCharge(int strip_dir, int strip_number) { // maximal
     MultiKey2 mkey(strip_dir, strip_number);
 
     // check if hit is unique
-    std::map<MultiKey2, double, multikey2_less>::iterator it;
-    if( (it=maxChargeMap.find(mkey))==maxChargeMap.end() ) {
-      return 0.0;
+    std::map<MultiKey2, double, multikey2_less>::const_iterator it = maxChargeMap.find(mkey);
+    if(it!=maxChargeMap.end()) {
+      return it->second;
     }
-    return it->second;
+    else return 0.0;
   };
   return 0.0;    
 }
 
-double SigClusterTPC::GetMaxCharge(int strip_dir) {  // maximal charge from all cluster hits in a given direction
+double SigClusterTPC::GetMaxCharge(int strip_dir) const{  // maximal charge from all cluster hits in a given direction
   if(!IsOK()) return 0.0;
   switch(strip_dir) {
   case DIR_U:
@@ -358,12 +353,12 @@ double SigClusterTPC::GetMaxCharge(int strip_dir) {  // maximal charge from all 
   return 0.0;    
 }
 
-double SigClusterTPC::GetMaxCharge() {  // maximal charge from all cluster hits
+double SigClusterTPC::GetMaxCharge() const{  // maximal charge from all cluster hits
   if(!IsOK()) return 0.0;
   return glb_max_charge;
 }
 
-int SigClusterTPC::GetMaxChargeTime(int strip_dir) {  // arrival time of the maximal charge from cluster hits in a given direction
+int SigClusterTPC::GetMaxChargeTime(int strip_dir) const{  // arrival time of the maximal charge from cluster hits in a given direction
   if(!IsOK()) return ERROR;
   switch(strip_dir) {
   case DIR_U:
@@ -373,7 +368,7 @@ int SigClusterTPC::GetMaxChargeTime(int strip_dir) {  // arrival time of the max
   return ERROR;
 }
 
-int SigClusterTPC::GetMaxChargeStrip(int strip_dir) {  // strip number with the maximal charge from cluster hits in a given direction
+int SigClusterTPC::GetMaxChargeStrip(int strip_dir) const{  // strip number with the maximal charge from cluster hits in a given direction
   if(!IsOK()) return ERROR;
   switch(strip_dir) {
   case DIR_U:
@@ -383,17 +378,17 @@ int SigClusterTPC::GetMaxChargeStrip(int strip_dir) {  // strip number with the 
   return ERROR;
 }
 
-int SigClusterTPC::GetMaxChargeTime() {  // arrival time of the maximal charge from all cluster hits
+int SigClusterTPC::GetMaxChargeTime() const{  // arrival time of the maximal charge from all cluster hits
   if(!IsOK()) return ERROR;
   return glb_max_charge_timing;
 }
 
-int SigClusterTPC::GetMaxChargeChannel() {  // global channel number with the maximal charge from cluster hits
+int SigClusterTPC::GetMaxChargeChannel() const{  // global channel number with the maximal charge from cluster hits
   if(!IsOK()) return ERROR;
   return glb_max_charge_channel;
 }
 
-double SigClusterTPC::GetTotalCharge(int strip_dir, int strip_number) { // charge integral from cluster hits in a given strip (if any)
+double SigClusterTPC::GetTotalCharge(int strip_dir, int strip_number) const{ // charge integral from cluster hits in a given strip (if any)
   if(!IsOK()) return 0.0;
   switch(strip_dir) {
   case DIR_U:
@@ -402,16 +397,16 @@ double SigClusterTPC::GetTotalCharge(int strip_dir, int strip_number) { // charg
     MultiKey2 mkey(strip_dir, strip_number);
 
     // check if hit is unique
-    std::map<MultiKey2, double, multikey2_less>::iterator it;
-    if( (it=totalChargeMap.find(mkey))==totalChargeMap.end() ) {
-      return 0.0;
+    std::map<MultiKey2, double, multikey2_less>::const_iterator it = totalChargeMap.find(mkey);
+    if(it!=totalChargeMap.end()) {
+      return it->second;
     }
-    return it->second;
+    else return 0.0;
   };
   return 0.0;    
 }
 
-double SigClusterTPC::GetTotalCharge(int strip_dir) {  // charge integral from all cluster hits in a given direction
+double SigClusterTPC::GetTotalCharge(int strip_dir) const{  // charge integral from all cluster hits in a given direction
   if(!IsOK()) return 0.0;
   switch(strip_dir) {
   case DIR_U:
@@ -421,12 +416,12 @@ double SigClusterTPC::GetTotalCharge(int strip_dir) {  // charge integral from a
   return 0.0;    
 }
 
-double SigClusterTPC::GetTotalCharge() {   // charge integral from all cluster hits
+double SigClusterTPC::GetTotalCharge() const{   // charge integral from all cluster hits
   if(!IsOK()) return 0.0;
   return glb_tot_charge;
 }
 
-double SigClusterTPC::GetTotalChargeByTimeCell(int strip_dir, int time_cell) { // charge integral from a single time cell from all cluster hits in a given direction
+double SigClusterTPC::GetTotalChargeByTimeCell(int strip_dir, int time_cell) const{ // charge integral from a single time cell from all cluster hits in a given direction
   if(!IsOK() || time_cell<0 || time_cell>=512) {
     return 0.0;
   }
@@ -437,22 +432,24 @@ double SigClusterTPC::GetTotalChargeByTimeCell(int strip_dir, int time_cell) { /
     MultiKey2 mkey(strip_dir, time_cell);
 
     // check if time slice is unique
-    std::map<MultiKey2, double, multikey2_less>::iterator it;
-    if( (it=totalChargeMap2.find(mkey))!=totalChargeMap2.end() ) {
+    std::map<MultiKey2, double, multikey2_less>::const_iterator it = totalChargeMap2.find(mkey);
+    if(it!=totalChargeMap2.end() ) {
       return it->second;
     }
+    else return 0.0;
   };
   return 0.0;
 }
 
-double SigClusterTPC::GetTotalChargeByTimeCell(int time_cell) { // charge integral from a single time cell from all cluster hits
+double SigClusterTPC::GetTotalChargeByTimeCell(int time_cell) const{ // charge integral from a single time cell from all cluster hits
   if(!IsOK()) return 0.0;
   
   // check if time slice is unique
-  std::map<int, double>::iterator it;
-  if( (it=totalChargeMap3.find(time_cell))!=totalChargeMap3.end() ) {
+  std::map<int, double>::const_iterator it = totalChargeMap3.find(time_cell);
+  if(it!=totalChargeMap3.end()){
     return it->second;
   }
+  else return 0.0;
   return 0.0;
 }
 
