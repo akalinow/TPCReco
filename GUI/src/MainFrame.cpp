@@ -22,20 +22,12 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h)
       : TGMainFrame(p, w, h){
 
   //TEST ---
-  std::string dataFileName = "/scratch_local/akalinow/ELITPC/TPCReco/build/resources/EventTPC_1.root";
-  std::string geometryFileName = "/home/akalinow/scratch/ELITPC/TPCReco/build/resources/geometry_mini_eTPC.dat";
-
-  dataFileName = "/scratch_local/akalinow/ELITPC/TPCReco/build/EventTPC_1.root";
-  geometryFileName = "/scratch_local/akalinow/ELITPC/TPCReco/build/EventTPC_1.root";
-
-  dataFileName = "/home/akalinow/scratch/ELITPC/data/neutrons/EventTPC_2018-06-19T15:13:33.941.root";
-  geometryFileName = "/home/akalinow/scratch/ELITPC/data/neutrons/geometry_mini_eTPC_2018-06-19T15:13:33.941.dat";
-
+  std::string dataFileName = "/home/akalinow/scratch/ELITPC/data/neutrons/EventTPC_2018-06-19T15:13:33.941.root"; 
+  std::string geometryFileName = "/home/akalinow/scratch/ELITPC/data/neutrons/geometry_mini_eTPC_2018-06-19T15:13:33.941.dat"; 
   //dataFileName = "/home/akalinow/scratch/ELITPC/data/neutrons/ROOT/EventTPC_2018-06-20T10:35:30.853_0004.root";
   
   myDataManager.loadGeometry(geometryFileName);  
   myDataManager.loadDataFile(dataFileName);
-  //myDataManager.loadEventId(10);
   myDataManager.loadTreeEntry(0);
   myHistoManager.setGeometry(myDataManager.getGeometry());
   ////////////////////
@@ -277,7 +269,7 @@ void MainFrame::Update(){
     aPad = fCanvas->cd(strip_dir+1+3);
     myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("colz");
     myHistoManager.getRecHitStripVsTime(strip_dir)->SaveAs(TString::Format("RecHits_%d.root", strip_dir));
-    //myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad);
+    myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad);
     //myHistoManager.drawTrack2DSeed(strip_dir, aPad);
     
     ///Third row.
