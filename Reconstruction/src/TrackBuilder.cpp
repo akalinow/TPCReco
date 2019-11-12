@@ -5,7 +5,8 @@
 #include "TProfile.h"
 #include "TObjArray.h"
 #include "TF1.h"
-#include "TGraph2D.h"
+#include "TFitResult.h"
+#include "Math/Functor.h"
 
 #include "GeometryTPC.h"
 #include "EventTPC.h"
@@ -23,11 +24,22 @@ TrackBuilder::TrackBuilder() {
 
   myHistoInitialized = false;
   myAccumulators.resize(3);
-  my2DTracks.resize(3);
+  my2DSeeds.resize(3);
   myRecHits.resize(3);
 
-  timeResponseShape = std::make_shared<TF1>("timeResponseShape","gausn(0) + gausn(3)");
+  fitter.Config().MinimizerOptions().SetMinimizerType("GSLSimAn");
+  fitter.Config().MinimizerOptions().SetMaxFunctionCalls(1E6);
+  fitter.Config().MinimizerOptions().SetMaxIterations(1E6);
+  fitter.Config().MinimizerOptions().SetTolerance(1E-2);
+  fitter.Config().MinimizerOptions().Print(std::cout);
 
+  ///An offset used for filling the Hough transformation.
+  ///to avoid having very small rho parameters, as
+  ///orignally manty track traverse close to X=0, Time=0
+  ///point.
+  aHoughOffest.SetX(20.0);
+  aHoughOffest.SetY(40.0);
+  aHoughOffest.SetZ(0.0);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -45,20 +57,24 @@ void TrackBuilder::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
 void TrackBuilder::setEvent(EventTPC* aEvent){
 
   myEvent = aEvent;
+  double eventMaxCharge = myEvent->GetMaxCharge();
+  double chargeThreshold = 0.15*eventMaxCharge;
+  int delta_timecells = 15;
+  int delta_strips = 1;
+
+  myCluster = myEvent->GetOneCluster(chargeThreshold, delta_strips, delta_timecells);
+
   std::string hName, hTitle;
- 
   if(!myHistoInitialized){     
     for(int iDir = 0; iDir<3;++iDir){
-      std::shared_ptr<TH2D> hProjection = myEvent->GetStripVsTime(iDir);
-      double maxX = hProjection->GetXaxis()->GetXmax();
-      double maxY = hProjection->GetYaxis()->GetXmax();
+      std::shared_ptr<TH2D> hRawHits = myEvent->GetStripVsTimeInMM(getCluster(), iDir);
+      double maxX = hRawHits->GetXaxis()->GetXmax();
+      double maxY = hRawHits->GetYaxis()->GetXmax();
       double rho = sqrt( maxX*maxX + maxY*maxY);
       hName = "hAccumulator_"+std::to_string(iDir);
       hTitle = "Hough accumulator for direction: "+std::to_string(iDir)+";#theta;#rho";
       TH2D hAccumulator(hName.c_str(), hTitle.c_str(), nAccumulatorPhiBins, -M_PI, M_PI, nAccumulatorRhoBins, 0, rho);   
       myAccumulators[iDir] = hAccumulator;
-
-      std::shared_ptr<TH2D> hRawHits = myEvent->GetStripVsTime(iDir);
       myRecHits[iDir] = *hRawHits;
     }
     myHistoInitialized = true;
@@ -68,21 +84,19 @@ void TrackBuilder::setEvent(EventTPC* aEvent){
 /////////////////////////////////////////////////////////
 void TrackBuilder::reconstruct(){
 
-  for(int iDir=DIR_U;iDir<DIR_3D;++iDir){
+  for(int iDir=DIR_U;iDir<=DIR_W;++iDir){
     makeRecHits(iDir);
     fillHoughAccumulator(iDir);
-    my2DTracks[iDir] = findTrack2DCollection(iDir);    
+    my2DSeeds[iDir] = findSegment2DCollection(iDir);    
   }
-
-  myTrack3DSeed = buildTrack3D();
-  fitTrack3D(myTrack3DSeed);
-  
+  myTrack3DSeed = buildSegment3D();
+  myFittedTrack = fitTrack3D(myTrack3DSeed);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void TrackBuilder::makeRecHits(int iDir){ 
 
-  std::shared_ptr<TH2D> hRawHits = myEvent->GetStripVsTime(iDir);
+  std::shared_ptr<TH2D> hRawHits = myEvent->GetStripVsTimeInMM(getCluster(), iDir);
   TH2D & hRecHits = myRecHits[iDir];
   hRecHits.Reset();
   std::string tmpTitle(hRecHits.GetTitle());
@@ -91,54 +105,83 @@ void TrackBuilder::makeRecHits(int iDir){
     hRecHits.SetTitle(tmpTitle.c_str());
   }
 
-  int maxBin;
-  double maxValue;
-  double firstPeakPos;
-  double windowChargeSum;
-  double pdfMean1, pdfMean2;
-  double pdfNorm1, pdfNorm2;
-
   TH1D *hProj;
+  double hitWirePos = -999.0;
+  double hitTimePos = -999.0;
+  double hitTimePosError = -999.0;
+  double hitCharge = -999.0;
   for(int iBinY=1;iBinY<hRecHits.GetNbinsY();++iBinY){
     hProj = hRawHits->ProjectionX("hProj",iBinY, iBinY);
-    maxBin = hProj->GetMaximumBin();
-    maxValue = hProj->GetMaximum();
-    firstPeakPos = hProj->GetBinCenter(maxBin);
-  
-    timeResponseShape->SetParameters(maxValue, firstPeakPos, 5,
-				     maxValue, firstPeakPos, 5);
+    TF1 timeResponseShape = fitTimeWindow(hProj);
 
-    timeResponseShape->SetParLimits(0,0, maxValue*200);
-    timeResponseShape->SetParLimits(1,firstPeakPos-100, firstPeakPos+100);   
-    timeResponseShape->SetParLimits(2,3,15);
-
-    timeResponseShape->SetParLimits(3, 0, maxValue*200);
-    timeResponseShape->SetParLimits(4, firstPeakPos-100, firstPeakPos+100);   
-    timeResponseShape->SetParLimits(5, 3,15);
-    
-    timeResponseShape->SetRange(firstPeakPos-150, firstPeakPos+150);
-
-    hProj->Fit(timeResponseShape.get(), "QRB");
-
-    windowChargeSum = hProj->Integral(maxBin-20, maxBin+20);
-
-    pdfNorm1 = timeResponseShape->GetParameter(0);
-    pdfNorm2 = timeResponseShape->GetParameter(3);
-
-    pdfMean1 = timeResponseShape->GetParameter(1);
-    pdfMean2 = timeResponseShape->GetParameter(4);
-
-    //FIX ME optimize this, and move to configuretion
-    if(windowChargeSum<100) continue;
-    if(pdfNorm1+pdfNorm2<100) continue;
-    if(pdfNorm1<20 && pdfNorm2<20) continue;
-    /////
-    
-    double y = hRawHits->GetYaxis()->GetBinCenter(iBinY);
-    hRecHits.Fill(pdfMean1, y, pdfNorm1);
-    hRecHits.Fill(pdfMean2, y, pdfNorm2);
+    hitWirePos = hRawHits->GetYaxis()->GetBinCenter(iBinY);
+    for(int iSet=0;iSet<timeResponseShape.GetNpar();iSet+=3){
+      hitTimePos = timeResponseShape.GetParameter(iSet+1);
+      hitTimePosError = timeResponseShape.GetParameter(iSet+2);
+      hitCharge = timeResponseShape.GetParameter(iSet);
+      hitCharge *= sqrt(2.0)*M_PI*hitTimePosError;//the gausian fits are made without the normalisation factor
+      if(hitCharge>50) hRecHits.Fill(hitTimePos, hitWirePos, hitCharge);//FIXME optimize, use dynamic threshold?
+    }
     delete hProj;
   }
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+TF1 TrackBuilder::fitTimeWindow(TH1D* hProj){
+
+   TFitResultPtr fitResult;
+   TF1 timeResponseShape;
+   TF1 bestTimeResponseShape;
+   double bestChi2OverNDF = 1E10;
+
+   int maxBin = hProj->GetMaximumBin();
+   double maxValue = hProj->GetMaximum();
+   double maxPos = hProj->GetBinCenter(maxBin);
+   double windowIntegral = hProj->Integral(maxBin-25, maxBin+25);
+   if(maxValue<25 || windowIntegral<50) return bestTimeResponseShape;//FIXME how to choose the thresholds?
+
+   std::string formula = "";
+   for(int iComponent=0;iComponent<3;++iComponent){
+     if(iComponent==0){
+       formula = "gaus("+std::to_string(3*iComponent)+")";
+     }
+     else{
+       formula += "+gaus("+std::to_string(3*iComponent)+")";
+
+     }
+     TF1 timeResponseShape("timeResponseShape",formula.c_str());        
+     timeResponseShape.SetRange(maxPos-25, maxPos+25);   
+     for(int iSet=0;iSet<timeResponseShape.GetNpar();iSet+=3){
+       timeResponseShape.SetParameter(iSet, maxValue*2);
+       timeResponseShape.SetParameter(iSet+1, maxPos);
+       timeResponseShape.SetParameter(iSet+2, 2.0);
+       ///     
+       timeResponseShape.SetParLimits(iSet, 0.1*maxValue, maxValue*2);
+       timeResponseShape.SetParLimits(iSet+1, maxPos-15, maxPos+15);   
+       timeResponseShape.SetParLimits(iSet+2, 0.5, 8);
+     }   
+     fitResult = hProj->Fit(&timeResponseShape, "QRBSW");   
+
+     double chi2 = 0.0;
+     double x = 0.0;
+     for(int iBinX=1;iBinX<hProj->GetNbinsX();++iBinX){
+       x = hProj->GetBinCenter(iBinX);
+       chi2 += std::pow(hProj->GetBinContent(iBinX) - timeResponseShape.Eval(x), 2);
+     }
+     /*
+     std::cout<<"nComponents: "<<iComponent+1
+	      <<" histogram chi2: "<<chi2
+	      <<" ndf: "<<fitResult->Ndf()
+	      <<" NFreeParameters: "<<fitResult->NFreeParameters()
+	      <<" chi2/ndf: "<<chi2/fitResult->Ndf()
+	      <<std::endl;
+     */
+     if(fitResult->Ndf() && chi2/fitResult->Ndf() < bestChi2OverNDF){
+       bestChi2OverNDF = chi2/fitResult->Ndf();
+       timeResponseShape.Copy(bestTimeResponseShape);
+     }
+   }
+   return bestTimeResponseShape;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -156,29 +199,22 @@ const TH2D & TrackBuilder::getHoughtTransform(int iDir) const{
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-const Track3D & TrackBuilder::getTrack2D(int iDir, int iTrack) const{
+const TrackSegment2D & TrackBuilder::getSegment2D(int iDir, unsigned int iTrack) const{
 
-  return my2DTracks[iDir][iTrack];
-  
+  if(my2DSeeds[iDir].size()<iTrack) return dummySegment2D;  
+  return my2DSeeds[iDir].at(iTrack);  
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-const Track3D & TrackBuilder::getTrack3D() const{
+const TrackSegment3D & TrackBuilder::getSegment3DSeed() const{
 
-  return myTrack3DSeed;
-  
+  return myTrack3DSeed; 
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TVector3 getGradient(std::shared_ptr<TH2D> aHisto, int iBinX, int iBinY){
+const Track3D & TrackBuilder::getTrack3D(unsigned int iSegment) const{
 
-  if(iBinX==1 || iBinY==1) return TVector3(0,0,0);
-
-  double dX = aHisto->GetBinContent(iBinX, iBinY) - aHisto->GetBinContent(iBinX-1, iBinY);
-  double dY = aHisto->GetBinContent(iBinX, iBinY) - aHisto->GetBinContent(iBinX, iBinY-1);
-  double dZ = 0.0;
-  
-  return TVector3(dX, dY, dZ);
+  return myFittedTrack;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -187,22 +223,20 @@ void TrackBuilder::fillHoughAccumulator(int iDir){
   myAccumulators[iDir].Reset();
   
   const TH2D & hRecHits  = getRecHits2D(iDir);
-  double maxCharge = hRecHits.GetMaximum();
-  
+
   double theta = 0.0, rho = 0.0;
   double x = 0.0, y=0.0;
   int charge = 0;
-  int chargeTreshold = maxCharge*0.02;//FIX ME optimize and move to configuarable
-  for(int iBinX=0;iBinX<hRecHits.GetNbinsX();++iBinX){
-    for(int iBinY=0;iBinY<hRecHits.GetNbinsY();++iBinY){
-      x = hRecHits.GetXaxis()->GetBinCenter(iBinX);
-      y = hRecHits.GetYaxis()->GetBinCenter(iBinY);
+  for(int iBinX=1;iBinX<hRecHits.GetNbinsX();++iBinX){
+    for(int iBinY=1;iBinY<hRecHits.GetNbinsY();++iBinY){
+      x = hRecHits.GetXaxis()->GetBinCenter(iBinX) + aHoughOffest.X();
+      y = hRecHits.GetYaxis()->GetBinCenter(iBinY) + aHoughOffest.Y();
       charge = hRecHits.GetBinContent(iBinX, iBinY);
-      if(charge<chargeTreshold) continue;            
+      if(charge<1) continue;
       for(int iBinTheta=1;iBinTheta<myAccumulators[iDir].GetNbinsX();++iBinTheta){
 	theta = myAccumulators[iDir].GetXaxis()->GetBinCenter(iBinTheta);
 	rho = x*cos(theta) + y*sin(theta);
-	charge = 1.0; //FIX me study is how to include charge. 
+	charge = 1.0; //FIX me study how to include the charge. 
 	myAccumulators[iDir].Fill(theta, rho, charge);
       }
     }
@@ -210,18 +244,18 @@ void TrackBuilder::fillHoughAccumulator(int iDir){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TrackCollection TrackBuilder::findTrack2DCollection(int iDir){
+TrackSegment2DCollection TrackBuilder::findSegment2DCollection(int iDir){
 
-  TrackCollection aTrackCollection;
-  for(int iPeak=0;iPeak<1;++iPeak){
-    Track3D aTrack = findTrack2D(iDir, iPeak);
-    aTrackCollection.push_back(aTrack);
+  TrackSegment2DCollection aTrackCollection;
+  for(int iPeak=0;iPeak<2;++iPeak){
+    TrackSegment2D aTrackSegment = findSegment2D(iDir, iPeak);
+    aTrackCollection.push_back(aTrackSegment);
   }
   return aTrackCollection;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-Track3D TrackBuilder::findTrack2D(int iDir, int iPeak) const{
+TrackSegment2D TrackBuilder::findSegment2D(int iDir, int iPeak) const{
   
   int iBinX = 0, iBinY = 0, iBinZ=0;
   int margin = 5;
@@ -240,119 +274,263 @@ Track3D TrackBuilder::findTrack2D(int iDir, int iPeak) const{
   delete hAccumulator_Clone;
   
   TVector3 aTangent, aBias;
+  int nHits = hAccumulator.GetBinContent(iBinX, iBinY);
   double theta = hAccumulator.GetXaxis()->GetBinCenter(iBinX);
   double rho = hAccumulator.GetYaxis()->GetBinCenter(iBinY);
   double aX = rho*cos(theta);
   double aY = rho*sin(theta);
   aBias.SetXYZ(aX, aY, 0.0);
+
+  aBias -= aHoughOffest.Dot(aBias.Unit())*aBias.Unit();
+  
   aX = -rho*sin(theta);
   aY = rho*cos(theta);
   aTangent.SetXYZ(aX, aY, 0.0);
   
-  ///Set tangent direction along time arrow.
-  if(aTangent.X()<0) aTangent *= -1;
-  ///Normalize to X=1, so vector components can be compared between projections.
-  //FIX ME: aTangent.X()!=0 !!!
-  aTangent *= 1.0/aTangent.X();
-
-  Track3D a2DSeed(aTangent, aBias, iDir);
-  double trackStart=0.0, trackEnd=0.0;
-  std::cout<<"iDir: "<<iDir<<std::endl;
-  std::tie(trackStart, trackEnd) = findTrackStartEnd(a2DSeed, myRecHits[iDir]);
-  a2DSeed.setStartEnd(trackStart, trackEnd);
-  		    
-  return a2DSeed;
+  TrackSegment2D aSegment2D(iDir);
+  aSegment2D.setBiasTangent(aBias, aTangent);
+  aSegment2D.setNAccumulatorHits(nHits);
+  return aSegment2D;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-Track3D TrackBuilder::fitTrack3D(const Track3D & aTrack) const{
-  /*
-  double chi2 = 0.0;
-  for(int iDir=DIR_U;iDir<=DIR_W;++iDir){
-    const Track3D & aTrack2DProjection = aTrack.get2DProjection(iDir);
-    std::shared_ptr<TH2D> aRecHits = std::make_shared<TH2D>(&myRecHits[iDir]);
-    chi2 += aTrack2DProjection.get2DProjectionRecHitChi2(aRecHits);    
-  }
-  std::cout<<"chi2: "<<chi2<<std::endl;
-  */
-  return Track3D();
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-Track3D TrackBuilder::buildTrack3D() const{
+TrackSegment3D TrackBuilder::buildSegment3D() const{
 
   int iTrack2DSeed = 0;
-  const Track3D & segmentU = my2DTracks[DIR_U][iTrack2DSeed];
-  const Track3D & segmentV = my2DTracks[DIR_V][iTrack2DSeed];
-  const Track3D & segmentW = my2DTracks[DIR_W][iTrack2DSeed];
+  const TrackSegment2D & segmentU = my2DSeeds[DIR_U][iTrack2DSeed];
+  const TrackSegment2D & segmentV = my2DSeeds[DIR_V][iTrack2DSeed];
+  const TrackSegment2D & segmentW = my2DSeeds[DIR_W][iTrack2DSeed];
+
+  int nHits_U = segmentU.getNAccumulatorHits();
+  int nHits_V = segmentV.getNAccumulatorHits();
+  int nHits_W = segmentW.getNAccumulatorHits();
   
-  double bZ = segmentU.getBiasAtX0().X();  
-  double bX = (segmentU.getBiasAtX0().Y() + stripOffset[DIR_U])*cos(phiPitchDirection[DIR_U]);
-  double bY_fromV = (segmentV.getBiasAtX0().Y()+stripOffset[DIR_V] - bX*cos(phiPitchDirection[DIR_V]))/sin(phiPitchDirection[DIR_V]);
-  double bY_fromW = (segmentW.getBiasAtX0().Y()+stripOffset[DIR_W] - bX*cos(phiPitchDirection[DIR_W]))/sin(phiPitchDirection[DIR_W]);  
-  double bY = (bY_fromV + bY_fromW)/2.0;
+  double bZ_fromU = segmentU.getBiasAtT0().X();
+  double bZ_fromV = segmentV.getBiasAtT0().X();
+  double bZ_fromW = segmentW.getBiasAtT0().X();
+  double bZ = (bZ_fromU*nHits_U + bZ_fromV*nHits_V + bZ_fromW*nHits_W)/(nHits_U+nHits_V+nHits_W);
+  
+  double bX_fromU = (segmentU.getBiasAtT0().Y())*cos(phiPitchDirection[DIR_U]);
+  double bY_fromV = (segmentV.getBiasAtT0().Y() - bX_fromU*cos(phiPitchDirection[DIR_V]))/sin(phiPitchDirection[DIR_V]);
+  double bY_fromW = (segmentW.getBiasAtT0().Y() - bX_fromU*cos(phiPitchDirection[DIR_W]))/sin(phiPitchDirection[DIR_W]);  
+  double bY = (bY_fromV*nHits_V + bY_fromW*nHits_W)/(nHits_V+nHits_W);
+  double bX = bX_fromU;
   TVector3 aBias(bX, bY, bZ);
 
-  double tZ = segmentU.getTangent().X();
-  double tX = segmentU.getTangent().Y()*cos(phiPitchDirection[DIR_U]);
-  double tY_fromV = (segmentV.getTangent().Y() - tX*cos(phiPitchDirection[DIR_V]))/sin(phiPitchDirection[DIR_V]);
-  double tY_fromW = (segmentW.getTangent().Y() - tX*cos(phiPitchDirection[DIR_W]))/sin(phiPitchDirection[DIR_W]);
-  double tY = (tY_fromV + tY_fromW)/2.0;
-  TVector3 aTangent(tX, tY, tZ);
-  if(aTangent.Z()<0) aTangent *= -1;
-  ///Z is the time direction
-  ///Normalize to Z=1, so vector components can be compared between projections.
-  ///FIX ME: aTangent.Z()!=0 !!!
-  ///Use dynamic selection of normalised direction? Choose direction with longest projection?
-  aTangent *= 1.0/aTangent.Z();
+  double tZ_fromU = segmentU.getTangentWithT1().X();
+  double tZ_fromV = segmentV.getTangentWithT1().X();
+  double tZ_fromW = segmentW.getTangentWithT1().X();
+  double tZ = (tZ_fromU*nHits_U + tZ_fromV*nHits_V + tZ_fromW*nHits_W)/(nHits_U+nHits_V+nHits_W);
 
-  Track3D a3DSeed(aTangent, aBias, DIR_3D);
-  double startTime = 1/3.0*(segmentU.getStartTime() + segmentV.getStartTime() + segmentW.getStartTime());
-  double endTime = 1/3.0*(segmentU.getEndTime() + segmentV.getEndTime() + segmentW.getEndTime());
-  a3DSeed.setStartEnd(startTime, endTime);
+  double tX_fromU = segmentU.getTangentWithT1().Y()*cos(phiPitchDirection[DIR_U]);
+  double tY_fromV = (segmentV.getTangentWithT1().Y() - tX_fromU*cos(phiPitchDirection[DIR_V]))/sin(phiPitchDirection[DIR_V]);
+  double tY_fromW = (segmentW.getTangentWithT1().Y() - tX_fromU*cos(phiPitchDirection[DIR_W]))/sin(phiPitchDirection[DIR_W]);
+  double tY = (tY_fromV*nHits_V + tY_fromW*nHits_W)/(nHits_V+nHits_W);
+  double tX = tX_fromU;
+  TVector3 aTangent(tX, tY, tZ);
+
+  TrackSegment3D a3DSeed;
+  a3DSeed.setBiasTangent(aBias, aTangent);
+  a3DSeed.setRecHits(myRecHits);
 
   return a3DSeed;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::tuple<double, double> TrackBuilder::findTrackStartEnd(const Track3D & aTrack2D, const TH2D  & aHits) const{
+Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
 
-  const TVector3 & bias = aTrack2D.getBiasAtX0();
-  const TVector3 & tangent = aTrack2D.getTangent();
-
-  TH1D hCharge("hCharge","",125,0,500);
-
-  double x=0, y=0;
-  double charge = 0.0;
-  double lambda = 0.0;
-  double value = 0.0;
-  TVector3 aPoint;
-  TVector3 d;
+  Track3D aTrackCandidate;
+  aTrackCandidate.addSegment(aTrackSegment);
+  aTrackCandidate = fitTrackNodes(aTrackCandidate);
   
-  for(int iBinX=1;iBinX<aHits.GetNbinsX();++iBinX){
-    for(int iBinY=1;iBinY<aHits.GetNbinsY();++iBinY){
-      x = aHits.GetXaxis()->GetBinCenter(iBinX);
-      y = aHits.GetYaxis()->GetBinCenter(iBinY);
-      charge = aHits.GetBinContent(iBinX, iBinY);
-      if(charge<100) continue;//FIX ME move to configuration
-      aPoint.SetXYZ(x, y, 0.0);
-      lambda = (aPoint - bias)*tangent/tangent.Mag2();      
-      d = aPoint - bias - lambda*tangent;
-      if(d.Mag()>15) continue;//FIX ME move to configuration
-      value = (charge>0)*d.Mag();
-      hCharge.Fill(lambda, value);
+  TGraph aGraph = aTrackCandidate.getHitDistanceProfile();
+  double maxValue = 0.0;
+  double bestSplit = 0.5;
+  int nDivisions = 200;
+  for(int iDivision=1;iDivision<nDivisions;++iDivision){
+    double val = aGraph.Eval((double)iDivision/nDivisions*aTrackCandidate.getLength());
+    if(val>maxValue){
+      maxValue = val;
+      bestSplit = (double)iDivision/nDivisions;
     }
   }
-
-  double start = -999;
-  double end = 0.0;
-  for(int iBinX=1; iBinX<hCharge.GetNbinsX();++iBinX){
-    value = hCharge.GetBinContent(iBinX);
-    if(start<0 && value) start = hCharge.GetBinCenter(iBinX);
-    if(start>0 && value) end = hCharge.GetBinCenter(iBinX);
+  std::cout<<"bestSplit: "<<bestSplit<<std::endl;
+  aTrackCandidate.splitWorseChi2Segment(bestSplit);
+  
+  for(int iSplit = 0;iSplit<0;++iSplit){
+    unsigned int nSegments = aTrackCandidate.getSegments().size();
+    for(unsigned int iSegment=0;iSegment<nSegments;iSegment+=2){
+      aTrackCandidate.splitSegment(iSegment, 0.5);
+      nSegments = aTrackCandidate.getSegments().size();
+    }
   }
+  
+  
+  aTrackCandidate = fitTrackNodes(aTrackCandidate);
+  return aTrackCandidate;//TEST
+  /*
+  if(aTrackCandidate.getLength()<1.0) return aTrackCandidate;//FIX me move threshold to configuration
 
-  return std::make_tuple(start, end);
+  bestSplit = fitTrackSplitPoint(aTrackCandidate);
+  aTrackCandidate.splitWorseChi2Segment(bestSplit);
+  aTrackCandidate = fitTrackNodes(aTrackCandidate);
+  
+  bestSplit = fitTrackSplitPoint(aTrackCandidate);
+  aTrackCandidate.splitWorseChi2Segment(bestSplit);
+  aTrackCandidate = fitTrackNodes(aTrackCandidate);
+  
+  return aTrackCandidate;
+  */
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+Track3D TrackBuilder::fitTrackNodes(const Track3D & aTrack) const{
+
+  Track3D aTrackCandidate = aTrack;
+  std::vector<double> bestParams = aTrackCandidate.getSegmentsStartEndXYZ();
+  std::vector<double> params = aTrackCandidate.getSegmentsStartEndXYZ();
+  int nParams = params.size();
+
+  ROOT::Math::Functor fcn(&aTrackCandidate, &Track3D::chi2FromNodesList, nParams);
+  fitter.SetFCN(fcn, params.data());
+
+  for (int iPar = 0; iPar < nParams; ++iPar){
+    fitter.Config().ParSettings(iPar).SetStepSize(0.1);
+    fitter.Config().ParSettings(iPar).SetLimits(-100, 100);
+  }
+
+  double minChi2 = 1E10;
+  for(unsigned int iStep=0;iStep<1;++iStep){
+    
+    std::cout<<__FUNCTION__<<" iStep: "<<iStep<<std::endl;
+
+    aTrackCandidate.extendToWholeChamber();
+    aTrackCandidate.shrinkToHits();
+
+    params = aTrackCandidate.getSegmentsStartEndXYZ();
+  
+    ////
+    std::cout<<"Pre-fit: "<<std::endl; 
+    std::cout<<aTrackCandidate<<std::endl;
+    //return aTrackCandidate;
+    //continue;
+    ////
+    
+    bool fitStatus = fitter.FitFCN();
+    if (!fitStatus) {
+      Error(__FUNCTION__, "Track3D Fit failed");
+      fitter.Result().Print(std::cout);
+      return aTrack;
+    }
+    const ROOT::Fit::FitResult & result = fitter.Result();
+    aTrackCandidate.chi2FromNodesList(result.GetParams());
+    aTrackCandidate.removeEmptySegments();
+    aTrackCandidate.extendToWholeChamber();
+    aTrackCandidate.shrinkToHits();
+
+    std::cout<<"Post-fit: "<<std::endl;
+    aTrackCandidate.removeEmptySegments();
+    std::cout<<aTrackCandidate<<std::endl;
+    
+    if(aTrackCandidate.getChi2()<minChi2){
+      minChi2 =  aTrackCandidate.getChi2();
+      bestParams = aTrackCandidate.getSegmentsStartEndXYZ();
+    }
+  }
+  aTrackCandidate.chi2FromNodesList(bestParams.data());
+  return aTrackCandidate;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+double TrackBuilder::fitTrackSplitPoint(const Track3D& aTrack) const{
+
+  Track3D aTrackCandidate = aTrack;
+  double currentBestChi2 = aTrackCandidate.getChi2();
+  aTrackCandidate.splitWorseChi2Segment(0.5);
+
+  std::vector<double> params0 = aTrackCandidate.getSegmentsStartEndXYZ();
+  std::vector<double> params = params0;
+  int nParams = params.size();
+  ROOT::Math::Functor fcn(&aTrackCandidate, &Track3D::chi2FromNodesList, nParams);
+
+  double bestSplit = -1.0;
+  int nSplitSteps = 20;
+  double splitStep = 1.0/nSplitSteps;
+
+  for(int iSplitStep=1; iSplitStep<nSplitSteps;++iSplitStep){
+    aTrackCandidate.chi2FromNodesList(params0.data());
+    //aTrackCandidate.splitWorseChi2Segment(splitStep*iSplitStep);
+    params = aTrackCandidate.getSegmentsStartEndXYZ();
+    ////
+    std::cout<<"Split "<<splitStep*iSplitStep<<" Pre-fit: "<<std::endl; 
+    std::cout<<aTrackCandidate<<std::endl;
+    ////
+    fitter.SetFCN(fcn, params.data());
+
+    for (int iPar = 0; iPar < nParams; ++iPar){
+      fitter.Config().ParSettings(iPar).SetStepSize(0.1);
+      fitter.Config().ParSettings(iPar).SetLimits(-100, 100);
+    }
+    bool fitStatus = fitter.FitFCN();
+    if (!fitStatus) {
+      Error(__FUNCTION__, "Track3D Fit failed");
+      fitter.Result().Print(std::cout);
+      return -1.0;
+    }    
+    const ROOT::Fit::FitResult & result = fitter.Result();
+    aTrackCandidate.chi2FromNodesList(result.GetParams());
+    aTrackCandidate.removeEmptySegments();
+    aTrackCandidate.extendToWholeChamber();
+    aTrackCandidate.shrinkToHits();
+    
+    if(aTrackCandidate.getChi2()<currentBestChi2){
+      currentBestChi2 = aTrackCandidate.getChi2();
+      bestSplit = splitStep*iSplitStep;
+      std::cout<<"Better split: "<<bestSplit<<" chi2: "<<currentBestChi2<<std::endl;
+      std::cout<<aTrackCandidate<<std::endl;
+      std::cout<<"-----"<<std::endl;
+    }
+    //aTrackCandidate(result.GetParams());
+    //std::cout<<"Split Post-fit: "<<std::endl; 
+    //std::cout<<aTrackCandidate<<std::endl;    
+  }
+  std::cout<<" currentBestChi2: "<<currentBestChi2<<" bestSplit: "<<bestSplit<<std::endl;
+  return bestSplit;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+
+
+/*				
+  double tangentTheta = aTrack.getTangent().Theta();
+  double tangentPhi = aTrack.getTangent().Phi();
+
+  TVector3 perpPlaneBaseUnitA, perpPlaneBaseUnitB;    
+  perpPlaneBaseUnitA.SetMagThetaPhi(1.0, M_PI/2.0 + tangentTheta, tangentPhi);
+  perpPlaneBaseUnitB.SetMagThetaPhi(1.0, M_PI/2.0, M_PI/2.0 + tangentPhi);
+  
+  double biasA = aTrack.getBias().Dot(perpPlaneBaseUnitA);
+  double biasB = aTrack.getBias().Dot(perpPlaneBaseUnitB);
+
+  std::cout<<"tangentTheta: "<<tangentTheta
+	   <<" tangentPhi: "<<tangentPhi
+	   <<" bias A: "<<biasA
+	   <<" bias B: "<<biasB
+	   <<std::endl;
+
+  std::vector<double> params = {tangentTheta, tangentPhi, biasA, biasB};
+  int nParams = params.size();
+  
+
+  ROOT::Math::Functor fcn(aTrack, nParams);  
+  fitter.SetFCN(fcn, params.data());
+  // set step sizes different than default ones (0.3 times parameter values)
+  for (int iPar = 0; iPar < nParams; ++iPar){
+    fitter.Config().ParSettings(iPar).SetStepSize(0.01);
+ 
+  }
+  fitter.Config().ParSettings(0).SetLimits(0, M_PI);
+  fitter.Config().ParSettings(1).SetLimits(-M_PI, M_PI);
+  fitter.Config().ParSettings(2).SetLimits(-100, 100);
+  fitter.Config().ParSettings(3).SetLimits(-100, 100);
+  */

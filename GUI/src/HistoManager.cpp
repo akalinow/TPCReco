@@ -7,6 +7,8 @@
 #include "TH3D.h"
 #include "TSpectrum2.h"
 #include "TVector3.h"
+#include "TPolyLine3D.h"
+#include "TView.h"
 
 #include "GeometryTPC.h"
 #include "EventTPC.h"
@@ -39,18 +41,32 @@ void HistoManager::setEvent(EventTPC* aEvent){
   myTkBuilder.setEvent(aEvent);
   myTkBuilder.reconstruct();
   
-  double eventMaxCharge = aEvent->GetMaxCharge();
-  double chargeThreshold = 0.1*eventMaxCharge;
-  int delta_timecells = 1;
-  int delta_strips = 1;
-
-  aCluster = aEvent->GetOneCluster(chargeThreshold, delta_strips, delta_timecells);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<TH2D> HistoManager::getRawStripVsTime(int aDir){
+std::shared_ptr<TH2D> HistoManager::getCartesianProjection(int strip_dir){
 
-  std::shared_ptr<TH2D> hProjection = myEvent->GetStripVsTime(aDir);
+  return myEvent->GetStripVsTimeInMM(myTkBuilder.getCluster(), strip_dir);
+  
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+TH2Poly * HistoManager::getDetectorLayout() const{
+
+  if(!myGeometryPtr) return 0;
+
+  TH2Poly* aPtr = (TH2Poly*)myGeometryPtr->GetTH2Poly()->Clone();
+  int nBins = aPtr->GetNumberOfBins(); 
+  for(int iBin=1;iBin<nBins;iBin+=nBins/50){
+    aPtr->SetBinContent(iBin, 1.0);
+  }  
+  return aPtr;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::shared_ptr<TH2D> HistoManager::getRawStripVsTime(int strip_dir){
+
+  std::shared_ptr<TH2D> hProjection = myEvent->GetStripVsTime(strip_dir);
   double varianceX = hProjection->GetCovariance(1, 1);
   double varianceY = hProjection->GetCovariance(2, 2);
   double varianceXY = hProjection->GetCovariance(1, 2);
@@ -58,7 +74,7 @@ std::shared_ptr<TH2D> HistoManager::getRawStripVsTime(int aDir){
   std::vector<int> nStrips = {72, 92, 92};
   
   std::cout<<" varianceX*12: "<<varianceX*12/450/450
-	   <<" varianceY*12: "<<varianceY*12/nStrips[aDir]/nStrips[aDir]
+	   <<" varianceY*12: "<<varianceY*12/nStrips[strip_dir]/nStrips[strip_dir]
 	   <<" varianceXY: "<<varianceXY
 	   <<std::endl;
   
@@ -66,15 +82,15 @@ std::shared_ptr<TH2D> HistoManager::getRawStripVsTime(int aDir){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<TH2D> HistoManager::getFilteredStripVsTime(int aDir){
+std::shared_ptr<TH2D> HistoManager::getFilteredStripVsTime(int strip_dir){
 
-  return myEvent->GetStripVsTime(aCluster, aDir);
+  return myEvent->GetStripVsTime(myTkBuilder.getCluster(), strip_dir);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<TH2D> HistoManager::getRecHitStripVsTime(int aDir){
+std::shared_ptr<TH2D> HistoManager::getRecHitStripVsTime(int strip_dir){
 
-  return std::shared_ptr<TH2D>(new TH2D(myTkBuilder.getRecHits2D(aDir)));//FIX ME avoid object copying
+  return std::shared_ptr<TH2D>(new TH2D(myTkBuilder.getRecHits2D(strip_dir)));//FIX ME avoid object copying
 
 }
 /////////////////////////////////////////////////////////
@@ -85,84 +101,153 @@ TH3D* HistoManager::get3DReconstruction(){
   int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN;
   int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN; 
   int method=EVENTTPC_DEFAULT_RECO_METHOD;
-  h3DReco = myEvent->Get3D(aCluster,  radius, rebin_space, rebin_time, method);
+  h3DReco = myEvent->Get3D(myTkBuilder.getCluster(),  radius, rebin_space, rebin_time, method);
   return h3DReco;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-const TH2D & HistoManager::getHoughAccumulator(int aDir, int iPeak){
+TH2D* HistoManager::get2DReconstruction(int strip_dir){
 
-  return myTkBuilder.getHoughtTransform(aDir);
+  double radius = 2.0;
+  int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN;
+  int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN; 
+  int method=EVENTTPC_DEFAULT_RECO_METHOD;
+  std::vector<TH2D*> h2DVector = myEvent->Get2D(myTkBuilder.getCluster(),  radius, rebin_space, rebin_time, method);
+  if(!h2DVector.size()) return 0;
+  int index = 0;
+  
+  if(strip_dir==DIR_XY) index = 0;
+  if(strip_dir==DIR_XZ) index = 1;
+  if(strip_dir==DIR_YZ) index = 2;
+   
+  return h2DVector[index];
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+const TH2D & HistoManager::getHoughAccumulator(int strip_dir, int iPeak){
+
+  return myTkBuilder.getHoughtTransform(strip_dir);
 
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TLine HistoManager::getTrack2D(int aDir, int iTrack){
+void HistoManager::drawTrack3D(TVirtualPad *aPad){
 
-  //const Track3D & aTrack2DProjection = myTkBuilder.getTrack2D(aDir, iTrack);
-
-  const Track3D & aTrack3D = myTkBuilder.getTrack3D();
-  const Track3D & aTrack2DProjection = aTrack3D.get2DProjection(aDir);
+  aPad->cd();
+  const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
+  const TrackSegment3DCollection & trackSegments = aTrack3D.getSegments();
+  if(!trackSegments.size()) return;
   
-  const TVector3 & bias = aTrack2DProjection.getBiasAtStart();
-  const TVector3 & tangent = aTrack2DProjection.getTangentUnit();
+  TPolyLine3D aPolyLine;
+  aPolyLine.SetLineWidth(2);
+  aPolyLine.SetLineColor(2);
 
-  double xBegin = bias.X();
-  double yBegin = bias.Y();
-
-  double lambda = aTrack2DProjection.getLength();
-  double xEnd = (bias+lambda*tangent).X();
-  double yEnd = (bias+lambda*tangent).Y();
+  aPolyLine.SetPoint(0,
+		     trackSegments.front().getStart().X(),
+		     trackSegments.front().getStart().Y(),
+		     trackSegments.front().getStart().Z());
   
-  TLine aTrackLine(xBegin, yBegin, xEnd, yEnd);
-  aTrackLine.SetLineColor(2);
-  aTrackLine.SetLineWidth(2);
-
-  return aTrackLine;
+   for(auto aSegment: trackSegments){
+     aPolyLine.SetPoint(aPolyLine.GetLastPoint()+1,
+			aSegment.getEnd().X(),
+			aSegment.getEnd().Y(),
+			aSegment.getEnd().Z());     
+   }
+   aPolyLine.DrawClone();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TH1D HistoManager::getChargeAlong2DTrack(int aDir){
+void HistoManager::drawTrack3DProjectionXY(TVirtualPad *aPad){
 
-  std::shared_ptr<TH2D> hProjection = myEvent->GetStripVsTime(aDir);
-  //std::shared_ptr<TH2D> hProjection = getRecHitStripVsTime(aDir);
-  const Track3D & aTrack2DProjection = myTkBuilder.getTrack2D(aDir);
-  const TVector3 & bias = aTrack2DProjection.getBiasAtStart();
-  const TVector3 & tangent = aTrack2DProjection.getTangentUnit();
+  aPad->cd();
+  const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
 
-  TH1D hCharge("hCharge","Charge along track segment [arb. units]",10, 0,
-	       aTrack2DProjection.getLength());
-
-  double x=0, y=0;
-  double charge = 0.0;
-  double lambda = 0.0;
-  double value = 0.0;
-  int sign = 0.0;
-  TVector3 aPoint;
-  TVector3 d;
-
-   for(int iBinX=1;iBinX<hProjection->GetNbinsX();++iBinX){
-    for(int iBinY=1;iBinY<hProjection->GetNbinsY();++iBinY){
-      x = hProjection->GetXaxis()->GetBinCenter(iBinX);
-      y = hProjection->GetYaxis()->GetBinCenter(iBinY);
-      charge = hProjection->GetBinContent(iBinX, iBinY);
-      if(charge<0) continue;
-      aPoint.SetXYZ(x, y, 0.0);
-      lambda = (aPoint - bias)*tangent/tangent.Mag2();      
-      d = aPoint - bias - lambda*tangent;
-      if(d.Mag()>5) continue;
-      sign = -1 + 2*(tangent.Cross(d).Z()>0);
-      //value = sign*sign/(d.Mag() + 0.001);
-      //value = charge*d.Mag()*sign*sign;
-      value = charge*sign*sign;
-      value = charge*d.Mag2();
-      hCharge.Fill(lambda, value);
-    }
+  int iSegment = 0;
+  TLine aSegment2DLine;
+  aSegment2DLine.SetLineWidth(2);
+  for(const auto & aItem: aTrack3D.getSegments()){
+    const TVector3 & start = aItem.getStart();
+    const TVector3 & end = aItem.getEnd();
+    aSegment2DLine.SetLineColor(2+iSegment);
+    aSegment2DLine.DrawLine(start.X(), start.Y(),  end.X(),  end.Y());	
+    ++iSegment;
   }
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void HistoManager::drawTrack2DSeed(int strip_dir, TVirtualPad *aPad){
 
-  //hCharge.Smooth();
-  return hCharge;
+  const TrackSegment2D & aSegment2D = myTkBuilder.getSegment2D(strip_dir);
+  const TVector3 & start = aSegment2D.getStart();
+  const TVector3 & end = aSegment2D.getEnd();
+
+  TLine aSegment2DLine;
+  aSegment2DLine.SetLineWidth(2);
+  aSegment2DLine.SetLineColor(2);
+  aPad->cd();
+  aSegment2DLine.DrawLine(start.X(), start.Y(),  end.X(),  end.Y());	  
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void HistoManager::drawTrack3DProjectionTimeStrip(int strip_dir, TVirtualPad *aPad){
+
+  aPad->cd();
+  const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
+
+  int iSegment = 0;
+  TLine aSegment2DLine;
+  aSegment2DLine.SetLineWidth(2);
+  double minX = 999.0, minY = 999.0;
+  double maxX = -999.0, maxY = -999.0;
+  double tmp = 0.0;
+
+  for(const auto & aItem: aTrack3D.getSegments()){
+    const TrackSegment2D & aSegment2DProjection = aItem.get2DProjection(strip_dir, 0, aItem.getLength());
+    const TVector3 & start = aSegment2DProjection.getStart();
+    const TVector3 & end = aSegment2DProjection.getEnd();
+    aSegment2DLine.SetLineColor(2+iSegment);
+    aSegment2DLine.DrawLine(start.X(), start.Y(),  end.X(),  end.Y());	
+    ++iSegment;
+    
+    tmp = std::min(start.Y(), end.Y());
+    minY = std::min(minY, tmp);
+
+    tmp = std::max(start.Y(), end.Y());
+    maxY = std::max(maxY, tmp);
+
+    tmp = std::min(start.X(), end.X());
+    minX = std::min(minX, tmp);
+
+    tmp = std::max(start.X(), end.X());
+    maxX = std::max(maxX, tmp);   
+  }
+  minX -=5;
+  minY -=5;
   
+  double delta = std::max( std::abs(maxX - minX),
+			   std::abs(maxY - minY));
+  maxX = minX + delta;
+  maxY = minY + delta;
+
+  TH2D *hFrame = (TH2D*)aPad->GetListOfPrimitives()->At(0);
+  if(hFrame){
+    hFrame->GetXaxis()->SetRangeUser(minX, maxX);
+    hFrame->GetYaxis()->SetRangeUser(minY, maxY);
+  }
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
+
+  const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
+
+  aPad->cd();
+  TGraph aGr = aTrack3D.getChargeProfile();
+  //TGraph aGr = aTrack3D.getHitDistanceProfile();
+  aGr.SetTitle("Charge distribution along track.;d[track length];charge[arbitrary units]");
+  aGr.SetLineWidth(2);
+  aGr.SetLineColor(2);
+  aGr.DrawClone("AL");
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

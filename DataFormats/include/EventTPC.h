@@ -99,21 +99,22 @@ class EventTPC {
 
   SigClusterTPC GetOneCluster(double thr, int delta_strips, int delta_timecells); // applies clustering threshold to all space-time data points 
   
-  TH1D *GetStripProjection(SigClusterTPC &cluster, int strip_dir);    // clustered hits only, valid dir range [0-2]
-  TH1D *GetTimeProjection(SigClusterTPC &cluster, int strip_dir);     // clustered hits only, valid dir range [0-2]
-  TH1D *GetTimeProjection(SigClusterTPC &cluster);                    // clustered hits only, all strip dirs
+  TH1D *GetStripProjection(const SigClusterTPC &cluster, int strip_dir);    // clustered hits only, valid dir range [0-2]
+  TH1D *GetTimeProjection(const SigClusterTPC &cluster, int strip_dir);     // clustered hits only, valid dir range [0-2]
+  TH1D *GetTimeProjection(const SigClusterTPC &cluster);                    // clustered hits only, all strip dirs
   TH1D *GetStripProjection(int strip_dir);                            // whole,event, valid dir range [0-2]
   TH1D *GetTimeProjection();                                          // whole event, all strip dirs
   
-  std::shared_ptr<TH2D> GetStripVsTime(SigClusterTPC &cluster, int strip_dir);        // clustered hits only, valid dir range [0-2]
+  std::shared_ptr<TH2D> GetStripVsTime(const SigClusterTPC &cluster, int strip_dir);        // clustered hits only, valid dir range [0-2]
   std::shared_ptr<TH2D> GetStripVsTime(int strip_dir);                               // whole event, all strip dirs
+  std::shared_ptr<TH2D> GetStripVsTimeInMM(const SigClusterTPC &cluster, int strip_dir);  // valid range [0-2]
 
-  std::vector<TH2D*> Get2D(SigClusterTPC &cluster, double radius,          // clustered hits only,
+  std::vector<TH2D*> Get2D(const SigClusterTPC &cluster, double radius,          // clustered hits only,
 			   int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN,   // projections on: XY, XZ, YZ planes
 			   int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN, 
 			   int method=EVENTTPC_DEFAULT_RECO_METHOD);  
 
-  TH3D *Get3D(SigClusterTPC &cluster, double radius,                       // clustered hits only, 3D view
+  TH3D *Get3D(const SigClusterTPC &cluster, double radius,                       // clustered hits only, 3D view
 	      int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN, 
 	      int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN, 
 	      int method=EVENTTPC_DEFAULT_RECO_METHOD);  

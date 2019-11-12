@@ -1039,6 +1039,46 @@ double GeometryTPC::Pos2timecell(double z, bool &err_flag) {
   return position_in_cells;
 }
 
+std::tuple<double, double, double, double> GeometryTPC::rangeXY(){
+
+  StripTPC* s[6] = {
+		    GetStripByDir(DIR_U, 1),
+		    GetStripByDir(DIR_U, GetDirNstrips(DIR_U)),
+		    GetStripByDir(DIR_V, 1),
+		    GetStripByDir(DIR_V, GetDirNstrips(DIR_V)),
+		    GetStripByDir(DIR_W, 1),
+		    GetStripByDir(DIR_W, GetDirNstrips(DIR_W))
+  };
+
+  double xmin=1E30;
+  double xmax=-1E30;
+  double ymin=1E30;
+  double ymax=-1E30;
+
+  for(int i=0; i<6; i++) {
+    if(!s[i]) continue;
+    double x, y;
+    TVector2 vec=s[i]->Offset() + GetReferencePoint();
+    x=vec.X();
+    y=vec.Y();
+    if(x>xmax) xmax=x;
+    if(x<xmin) xmin=x;
+    if(y>ymax) ymax=y;
+    if(y<ymin) ymin=y;
+    vec = vec + s[i]->Unit()*s[i]->Length();
+    if(x>xmax) xmax=x;
+    if(x<xmin) xmin=x;
+    if(y>ymax) ymax=y;
+    if(y<ymin) ymin=y;
+  }
+  xmin-=GetStripPitch()*0.3;
+  xmax+=GetStripPitch()*0.7;
+  ymin-=GetPadPitch()*0.3;
+  ymax+=GetPadPitch()*0.7;
+
+  return std::tuple<double, double, double, double>(xmin, xmax, ymin, ymax);
+}
+
   
 //ClassImp(StripTPC)
 //ClassImp(GeometryTPC)

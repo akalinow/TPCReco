@@ -6,6 +6,10 @@
 #include <memory>
 #include <tuple>
 
+#include <Fit/Fitter.h>
+
+#include "TrackSegment2D.h"
+#include "TrackSegment3D.h"
 #include "Track3D.h"
 
 class TH2D;
@@ -27,47 +31,58 @@ public:
 
   void reconstruct();
 
+  const SigClusterTPC & getCluster() const { return myCluster;}
+
   const TH2D & getRecHits2D(int iDir) const;
 
   const TH2D & getHoughtTransform(int iDir) const;
   
-  const Track3D & getTrack2D(int iDir, int iTrack=0) const;
+  const TrackSegment2D & getSegment2D(int iDir, unsigned int iTrack=0) const;
+  
+  const TrackSegment3D & getSegment3DSeed() const;
 
-  const Track3D & getTrack3D() const;
-
-  std::tuple<double, double> findTrackStartEndTime(int aDir);
-
-
+  const Track3D & getTrack3D(unsigned int iSegment) const;
 
 private:
 
   void makeRecHits(int iDir);
+
+  TF1 fitTimeWindow(TH1D* hProj);
  
   void fillHoughAccumulator(int iDir);
 
-  Track3D findTrack2D(int iDir, int iPeak) const;
+  TrackSegment2DCollection findSegment2DCollection(int iDir);
+  
+  TrackSegment2D findSegment2D(int iDir, int iPeak) const;
+  
+  TrackSegment3D buildSegment3D() const;
+  
+  Track3D fitTrack3D(const TrackSegment3D & aTrackSeedSegment) const;
 
-  Track3D fitTrack3D(const Track3D & aTrack) const;
+  Track3D fitTrackNodes(const Track3D & aTrack) const;
 
-  std::tuple<double, double> findTrackStartEnd(const Track3D & aTrack2D, const TH2D  & aHits) const;
+  double fitTrackSplitPoint(const Track3D& aTrackCandidate) const;
 
-  TrackCollection findTrack2DCollection(int iDir);
-
-  Track3D buildTrack3D() const;
     
-  EventTPC *myEvent;  
+  EventTPC *myEvent;
+  SigClusterTPC myCluster;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
 
   bool myHistoInitialized;
   int nAccumulatorRhoBins, nAccumulatorPhiBins;
 
+  TVector3 aHoughOffest;
   std::vector<TH2D> myAccumulators;
   std::vector<TH2D> myRecHits;
-  std::vector<TrackCollection> my2DTracks;
-  
-  Track3D myTrack3DSeed;
+  std::vector<TrackSegment2DCollection> my2DSeeds;
 
-  std::shared_ptr<TF1> timeResponseShape;
+  TrackSegment2D dummySegment2D;
+  
+  TrackSegment3D myTrack3DSeed, dummySegment3D;
+
+  Track3D myFittedTrack;
+
+  mutable ROOT::Fit::Fitter fitter;
   
 };
 #endif

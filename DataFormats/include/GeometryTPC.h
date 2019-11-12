@@ -163,6 +163,8 @@ class GeometryTPC {
   
   double Timecell2pos(double position_in_cells, bool &err_flag); // [mm] output: position along Z-axis
   double Pos2timecell(double z, bool &err_flag); // output: time-cell number, valid range [0-511]
+
+  std::tuple<double, double, double, double> rangeXY(); //min/max X Y cartesian coordinates covered by strips in any direction
   
   //  ClassDef(GeometryTPC,1)
 };
