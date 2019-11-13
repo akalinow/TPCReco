@@ -49,7 +49,9 @@ public:
 
   double chi2FromSplitPoint(const double *par);
 
-  double getNodeChi2(unsigned int iNode) const;
+  double getNodeHitsChi2(unsigned int iNode) const;
+
+  double getNodeAngleChi2(unsigned int iNode) const;
 
   void splitSegment(unsigned int iSegment,  double lengthFraction);
 

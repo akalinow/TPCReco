@@ -131,6 +131,7 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
     x = aHit.getPosTime();
     y = aHit.getPosWire();
     charge = aHit.getCharge();
+    //charge = 1.0;
     aPoint.SetXYZ(x, y, 0.0);
     distance = getPointTransverseDistance(aPoint);
     if(distance<0) continue;    

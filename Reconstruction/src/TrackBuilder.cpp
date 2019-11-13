@@ -28,14 +28,15 @@ TrackBuilder::TrackBuilder() {
   myRecHits.resize(3);
 
   fitter.Config().MinimizerOptions().SetMinimizerType("GSLSimAn");
-  fitter.Config().MinimizerOptions().SetMaxFunctionCalls(1E6);
-  fitter.Config().MinimizerOptions().SetMaxIterations(1E6);
-  fitter.Config().MinimizerOptions().SetTolerance(1E-2);
+  //fitter.Config().MinimizerOptions().SetMinimizerType("Minuit2");
+  fitter.Config().MinimizerOptions().SetMaxFunctionCalls(1E4);
+  fitter.Config().MinimizerOptions().SetMaxIterations(1E4);
+  fitter.Config().MinimizerOptions().SetTolerance(1E-3);
   fitter.Config().MinimizerOptions().Print(std::cout);
 
   ///An offset used for filling the Hough transformation.
   ///to avoid having very small rho parameters, as
-  ///orignally manty track traverse close to X=0, Time=0
+  ///orignally many tracks traverse close to X=0, Time=0
   ///point.
   aHoughOffest.SetX(20.0);
   aHoughOffest.SetY(40.0);
@@ -60,7 +61,7 @@ void TrackBuilder::setEvent(EventTPC* aEvent){
   double eventMaxCharge = myEvent->GetMaxCharge();
   double chargeThreshold = 0.15*eventMaxCharge;
   int delta_timecells = 15;
-  int delta_strips = 1;
+  int delta_strips = 2;
 
   myCluster = myEvent->GetOneCluster(chargeThreshold, delta_strips, delta_timecells);
 
@@ -120,10 +121,20 @@ void TrackBuilder::makeRecHits(int iDir){
       hitTimePosError = timeResponseShape.GetParameter(iSet+2);
       hitCharge = timeResponseShape.GetParameter(iSet);
       hitCharge *= sqrt(2.0)*M_PI*hitTimePosError;//the gausian fits are made without the normalisation factor
-      if(hitCharge>50) hRecHits.Fill(hitTimePos, hitWirePos, hitCharge);//FIXME optimize, use dynamic threshold?
-    }
+      hRecHits.Fill(hitTimePos, hitWirePos, hitCharge);
+    }      
     delete hProj;
   }
+  double maxCharge = hRecHits.GetMaximum();
+  double threshold = 0.1*maxCharge;
+
+  std::cout<<"maxCharge: "<<maxCharge<<std::endl;
+    
+    for(int iBin=0;iBin<hRecHits.GetNcells();++iBin){
+      if(hRecHits.GetBinContent(iBin)<threshold){
+	hRecHits.SetBinContent(iBin, 0.0);
+      }
+    }
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -357,14 +368,8 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
   std::cout<<"bestSplit: "<<bestSplit<<std::endl;
   aTrackCandidate.splitWorseChi2Segment(bestSplit);
   
-  for(int iSplit = 0;iSplit<0;++iSplit){
-    unsigned int nSegments = aTrackCandidate.getSegments().size();
-    for(unsigned int iSegment=0;iSegment<nSegments;iSegment+=2){
-      aTrackCandidate.splitSegment(iSegment, 0.5);
-      nSegments = aTrackCandidate.getSegments().size();
-    }
-  }
-  
+  std::cout<<"after split: "<<std::endl;
+  std::cout<<aTrackCandidate<<std::endl;
   
   aTrackCandidate = fitTrackNodes(aTrackCandidate);
   return aTrackCandidate;//TEST
@@ -390,31 +395,29 @@ Track3D TrackBuilder::fitTrackNodes(const Track3D & aTrack) const{
   std::vector<double> bestParams = aTrackCandidate.getSegmentsStartEndXYZ();
   std::vector<double> params = aTrackCandidate.getSegmentsStartEndXYZ();
   int nParams = params.size();
-
+  
   ROOT::Math::Functor fcn(&aTrackCandidate, &Track3D::chi2FromNodesList, nParams);
   fitter.SetFCN(fcn, params.data());
 
-  for (int iPar = 0; iPar < nParams; ++iPar){
-    fitter.Config().ParSettings(iPar).SetStepSize(0.1);
-    fitter.Config().ParSettings(iPar).SetLimits(-100, 100);
-  }
+  fitter.Config().MinimizerOptions().SetPrintLevel(10);
 
   double minChi2 = 1E10;
-  for(unsigned int iStep=0;iStep<1;++iStep){
+  for(unsigned int iStep=1;iStep<2;++iStep){
     
     std::cout<<__FUNCTION__<<" iStep: "<<iStep<<std::endl;
-
+    
     aTrackCandidate.extendToWholeChamber();
     aTrackCandidate.shrinkToHits();
-
     params = aTrackCandidate.getSegmentsStartEndXYZ();
-  
-    ////
+    
+    for (int iPar = 0; iPar < nParams; ++iPar){
+      fitter.Config().ParSettings(iPar).SetValue(params[iPar]);
+      fitter.Config().ParSettings(iPar).SetStepSize(1.0/(2*iStep));
+      fitter.Config().ParSettings(iPar).SetLimits(params[iPar]-20.0/iStep, params[iPar]+20.0/iStep);
+    }  
+
     std::cout<<"Pre-fit: "<<std::endl; 
     std::cout<<aTrackCandidate<<std::endl;
-    //return aTrackCandidate;
-    //continue;
-    ////
     
     bool fitStatus = fitter.FitFCN();
     if (!fitStatus) {

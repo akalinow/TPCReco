@@ -38,7 +38,8 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h)
 
   SetCleanup(kDeepCleanup);
   SetWMPosition(500,0);
-  SetWMSize(1500,1000);
+  //SetWMSize(1500,1000);
+  SetWMSize(1200,800);
   
   AddTopMenu();
   SetTheFrame();
@@ -254,13 +255,6 @@ void MainFrame::Update(){
     myHistoManager.getHoughAccumulator(strip_dir);
   }
 
-  int strip_dir = DIR_W;
-  myHistoManager.getRawStripVsTime(strip_dir)->SaveAs("histoRaw.root");
-  myHistoManager.getCartesianProjection(strip_dir)->SaveAs("histoThreshold.root");
-  myHistoManager.getRecHitStripVsTime(strip_dir)->SaveAs("histoRecHit.root");
-  
-  //myHistoManager.getCartesianProjection(DIR_U)->SaveAs("histo.root");
-  
   for(int strip_dir=0;strip_dir<3;++strip_dir){
     ///First row
     TVirtualPad *aPad = fCanvas->cd(strip_dir+1);
@@ -269,6 +263,7 @@ void MainFrame::Update(){
     aPad = fCanvas->cd(strip_dir+1+3);
     myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("colz");
     myHistoManager.getRecHitStripVsTime(strip_dir)->SaveAs(TString::Format("RecHits_%d.root", strip_dir));
+    myHistoManager.getRawStripVsTime(strip_dir)->SaveAs(TString::Format("RawHits_%d.root", strip_dir));
     myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad);
     //myHistoManager.drawTrack2DSeed(strip_dir, aPad);
     
