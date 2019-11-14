@@ -22,8 +22,8 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h)
       : TGMainFrame(p, w, h){
 
   //TEST ---
-  std::string dataFileName = "/home/akalinow/scratch/ELITPC/data/neutrons/EventTPC_2018-06-19T15:13:33.941.root"; 
-  std::string geometryFileName = "/home/akalinow/scratch/ELITPC/data/neutrons/geometry_mini_eTPC_2018-06-19T15:13:33.941.dat"; 
+  std::string dataFileName = "/scratch/akalinow/ELITPC/data/neutrons/EventTPC_2018-06-19T15:13:33.941.root"; 
+  std::string geometryFileName = "/scratch/akalinow/ELITPC/data/neutrons/geometry_mini_eTPC_2018-06-19T15:13:33.941.dat"; 
   //dataFileName = "/home/akalinow/scratch/ELITPC/data/neutrons/ROOT/EventTPC_2018-06-20T10:35:30.853_0004.root";
   
   myDataManager.loadGeometry(geometryFileName);  
