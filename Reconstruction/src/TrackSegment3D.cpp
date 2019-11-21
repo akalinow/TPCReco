@@ -184,8 +184,8 @@ double TrackSegment3D::operator() (const double *par) {
 
   TVector3 perpPlaneBaseUnitA, perpPlaneBaseUnitB;
     
-  perpPlaneBaseUnitA.SetMagThetaPhi(1.0, pi()/2.0 + tangentTheta, tangentPhi);
-  perpPlaneBaseUnitB.SetMagThetaPhi(1.0, pi()/2.0, pi()/2.0 + tangentPhi);
+  perpPlaneBaseUnitA.SetMagThetaPhi(1.0, M_PI/2.0 + tangentTheta, tangentPhi);
+  perpPlaneBaseUnitB.SetMagThetaPhi(1.0, M_PI/2.0, M_PI/2.0 + tangentPhi);
   
   TVector3 aBias = perpPlaneBaseUnitA*biasComponentA + perpPlaneBaseUnitB*biasComponentB;
   TVector3 aTangent;

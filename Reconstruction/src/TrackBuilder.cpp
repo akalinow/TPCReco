@@ -73,7 +73,7 @@ void TrackBuilder::setEvent(EventTPC* aEvent){
       double rho = sqrt( maxX*maxX + maxY*maxY);
       hName = "hAccumulator_"+std::to_string(iDir);
       hTitle = "Hough accumulator for direction: "+std::to_string(iDir)+";#theta;#rho";
-      TH2D hAccumulator(hName.c_str(), hTitle.c_str(), nAccumulatorPhiBins, -pi(), pi(), nAccumulatorRhoBins, 0, rho);   
+      TH2D hAccumulator(hName.c_str(), hTitle.c_str(), nAccumulatorPhiBins, -M_PI, M_PI, nAccumulatorRhoBins, 0, rho);   
       myAccumulators[iDir] = hAccumulator;
       myRecHits[iDir] = *hRawHits;
     }
@@ -119,7 +119,7 @@ void TrackBuilder::makeRecHits(int iDir){
       hitTimePos = timeResponseShape.GetParameter(iSet+1);
       hitTimePosError = timeResponseShape.GetParameter(iSet+2);
       hitCharge = timeResponseShape.GetParameter(iSet);
-      hitCharge *= sqrt(2.0)*pi()*hitTimePosError;//the gausian fits are made without the normalisation factor
+      hitCharge *= sqrt(2.0)*M_PI*hitTimePosError;//the gausian fits are made without the normalisation factor
       if(hitCharge>50) hRecHits.Fill(hitTimePos, hitWirePos, hitCharge);//FIXME optimize, use dynamic threshold?
     }
     delete hProj;
@@ -506,8 +506,8 @@ double TrackBuilder::fitTrackSplitPoint(const Track3D& aTrack) const{
   double tangentPhi = aTrack.getTangent().Phi();
 
   TVector3 perpPlaneBaseUnitA, perpPlaneBaseUnitB;    
-  perpPlaneBaseUnitA.SetMagThetaPhi(1.0, pi()/2.0 + tangentTheta, tangentPhi);
-  perpPlaneBaseUnitB.SetMagThetaPhi(1.0, pi()/2.0, pi()/2.0 + tangentPhi);
+  perpPlaneBaseUnitA.SetMagThetaPhi(1.0, M_PI/2.0 + tangentTheta, tangentPhi);
+  perpPlaneBaseUnitB.SetMagThetaPhi(1.0, M_PI/2.0, M_PI/2.0 + tangentPhi);
   
   double biasA = aTrack.getBias().Dot(perpPlaneBaseUnitA);
   double biasB = aTrack.getBias().Dot(perpPlaneBaseUnitB);
@@ -529,8 +529,8 @@ double TrackBuilder::fitTrackSplitPoint(const Track3D& aTrack) const{
     fitter.Config().ParSettings(iPar).SetStepSize(0.01);
  
   }
-  fitter.Config().ParSettings(0).SetLimits(0, pi());
-  fitter.Config().ParSettings(1).SetLimits(-pi(), pi());
+  fitter.Config().ParSettings(0).SetLimits(0, M_PI);
+  fitter.Config().ParSettings(1).SetLimits(-M_PI, M_PI);
   fitter.Config().ParSettings(2).SetLimits(-100, 100);
   fitter.Config().ParSettings(3).SetLimits(-100, 100);
   */
