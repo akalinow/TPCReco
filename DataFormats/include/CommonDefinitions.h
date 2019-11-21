@@ -1,9 +1,11 @@
 #ifndef __CommonDefinitions_h__
 #define __CommonDefinitions_h__
-
+#include <cmath>
 //#define DIR_U    0    // U-direction channel index
 //#define DIR_V    1    // V-direction channel index
 //#define DIR_W    2    // W-direction channel index
+
+constexpr double pi() { return 4 * atan(1); }
 
 enum projection{
 		DIR_U=0,    // U-direction channel index
@@ -20,6 +22,6 @@ const std::vector<int> stripOffset = {0, 0, 0};/// mm units
   
 //#### Angles of U/V/W unit vectors wrt X-axis [deg]
 //#ANGLES: 90.0 -30.0 30.0
-const std::vector<double> phiPitchDirection = {M_PI, -M_PI/6.0 + M_PI/2.0, M_PI/6.0 - M_PI/2.0};
+const std::vector<double> phiPitchDirection = {pi(), -pi()/6.0 + pi()/2.0, pi()/6.0 - pi()/2.0};
 
 #endif
