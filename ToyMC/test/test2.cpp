@@ -170,7 +170,7 @@ int main(int argc, char *argv[]) {
     TH2D *hProjection = aEvent->GetStripVsTime(aCluster, aDir);
     double rho = sqrt(500*500 + 92*92);
     double theta = 0.0;
-    TH2D *hAccumulator = new TH2D("hAccumulator","",100,0,M_PI/2.0, 100, 0, rho);
+    TH2D *hAccumulator = new TH2D("hAccumulator","",100,0,pi()/2.0, 100, 0, rho);
     for(int iBinX=1;iBinX<hProjection->GetNbinsX();++iBinX){
       for(int iBinY=1;iBinY<hProjection->GetNbinsY();++iBinY){      
 	int charge = hProjection->GetBinContent(iBinX, iBinY);
