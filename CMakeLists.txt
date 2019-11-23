@@ -34,7 +34,7 @@ else()
   MESSAGE( STATUS "RESOURCES dir already exists in the installation dir" )
 endif()
 
-set( CMAKE_CXX_FLAGS "${ROOT_CXX_FLAGS} -Wall -Werror -O3 -std=c++14 -fopenmp")
+set( CMAKE_CXX_FLAGS "${ROOT_CXX_FLAGS} -Wall -O3 -std=c++17 -fopenmp")
 
 #Set RPATH to install dir, so user do not have to set the LD_LIBRARY_PATH
 set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
