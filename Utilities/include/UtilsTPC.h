@@ -32,7 +32,7 @@ void plot_MCevent(const char *input_fname1="resources/bkg.root",  // input ROOT 
 		  const char *titleX="X [mm]",
 		  const char *titleY="Y [mm]",
 		  const char *titleZ="Z [mm]",
-		  const char *titleVAL="dE/dV [arb.u.]",     // NULL=no title change
+		  const char *titleVAL="dE/dV [arb.u.]",     // nullptr=no title change
 		  double phi0=-50,                           // TView parameter [deg]
 		  double theta0=25.0,                        // TView parameter [deg]
 		  double color_power=0.8  );

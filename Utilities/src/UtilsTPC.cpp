@@ -25,8 +25,8 @@ bool plot_UVW_TH2poly(TH2Poly *h, const char *canvas_print_fname) { return true;
 
 void plot_MCevent(const char *input_fname1,  // input ROOT file name for reading (required)
 		  const char *input_hname1,  // input TH3F/TH3D histogram to be plotted (required)
-		  const char *input_fname2,  // input ROOT file name for reading (optional, NULL=none)
-		  const char *input_hname2,  // input TH3F/TH3D histogram to be plotted (optional, NULL=none)
+		  const char *input_fname2,  // input ROOT file name for reading (optional, nullptr=none)
+		  const char *input_hname2,  // input TH3F/TH3D histogram to be plotted (optional, nullptr=none)
 		  const char *output_fname,  // prefix for output files with path (optional)
 		  const char *geom_fname,    // GeometryTPC config file (required)
 		  bool color_scale_flag,     // plot vertical color scale for TH3F/TH3D values (default=false)
@@ -36,7 +36,7 @@ void plot_MCevent(const char *input_fname1,  // input ROOT file name for reading
 		  const char *titleX,
 		  const char *titleY,
 		  const char *titleZ,
-		  const char *titleVAL,     // NULL=no title change
+		  const char *titleVAL,     // nullptr=no title change
 		  double phi0,              // TView parameter [deg]
 		  double theta0,            // TView parameter [deg]
 		  double color_power) {     // color TransferFunction power parameter: val^power, where power>0, 0<val<1 
@@ -166,7 +166,7 @@ void plot_MCevent(const char *input_fname1,  // input ROOT file name for reading
   // Associate color transfer functions with TH3F histograms
   //
   TList *lf = h3->GetListOfFunctions();
-  TF1 *tf=NULL;
+  TF1 *tf=nullptr;
   if(lf) {
     lf->Clear(); // remove all previous functions just in case
     // function with 2 parameters (range of hist values)
@@ -343,7 +343,7 @@ void plot_MCevent(const char *input_fname1,  // input ROOT file name for reading
   //  TH2Poly *tp1 = (TH2Poly*) p->DrawTH2Poly("COL2Z");
   TH2Poly *tp1 = p->GetStripProfile_TH2Poly();
   if(!tp1) {
-    std::cerr << "ERROR: Strip profile TH2Poly is NULL !!!" << std::endl; 
+    std::cerr << "ERROR: Strip profile TH2Poly is nullptr !!!" << std::endl; 
     return;
   }
   tp1->Draw("COLZ");
@@ -417,7 +417,7 @@ void plot_MCevent(const char *input_fname1,  // input ROOT file name for reading
     //    ts2[i] = (TH2D*) p->DrawStripVsTime(i, "COL2Z");
     ts2[i] = p->GetStripVsTime_TH2D(i);
     if(!ts2[i]) {
-      std::cerr << "ERROR: Strip vs time TH2D[" << i << "] is NULL !!!" << std::endl;
+      std::cerr << "ERROR: Strip vs time TH2D[" << i << "] is nullptr !!!" << std::endl;
       return;
     }
     ts2[i]->Draw("COL2Z");
@@ -509,7 +509,7 @@ void plot_MCevent(const char *input_fname1,  // input ROOT file name for reading
     //    ts3[i] = (TH2D*) p->DrawStripVsTime(i, "LEGO2 FB");
     ts3[i] = p->GetStripVsTime_TH2D(i);
     if(!ts3[i]) {
-      std::cerr << "ERROR: Strip vs time TH2D[" << i << "] is NULL !!!" << std::endl;
+      std::cerr << "ERROR: Strip vs time TH2D[" << i << "] is nullptr !!!" << std::endl;
       return;
     }
     ts3[i]->Draw("LEGO2 FB");
@@ -707,7 +707,7 @@ void plot_MCevent(const char *input_fname1,  // input ROOT file name for reading
     //    ts[i] = (TH1D*) p->DrawStripProfile(i);
     ts[i] = p->GetStripProfile_TH1D(i);
     if(!ts[i]) {
-      std::cerr << "ERROR: Strip profile TH1D[" << i << "] is NULL !!!" << std::endl;
+      std::cerr << "ERROR: Strip profile TH1D[" << i << "] is nullptr !!!" << std::endl;
       return;
     }
     ts[i]->Draw("HIST");
@@ -772,14 +772,14 @@ void plot_MCevent(const char *input_fname1,  // input ROOT file name for reading
 //
 TH3D* load_TH3D(const char *input_fname, const char* input_hname) {
 
-  TFile *fin = NULL;
+  TFile *fin = nullptr;
   if(input_fname) fin = new TFile(input_fname,"OLD");
-  if(!fin) return NULL;
+  if(!fin) return nullptr;
   fin->cd();
   fin->ls();
 
   TH3D *h3_orig = (TH3D*)(fin->Get(input_hname));  // also works with TH3F
-  if(!h3_orig || h3_orig->GetDimension()!=3) return NULL;  
+  if(!h3_orig || h3_orig->GetDimension()!=3) return nullptr;  
 
   TH3D *h3 = (TH3D*)(h3_orig->Clone(Form("%s_copy", h3_orig->GetName()))); // new TH3D(*h3_orig);
 
@@ -824,7 +824,7 @@ bool compare_TH3D_bins(TH3D *h1, TH3D *h2) {
 //
 TH3D* rescale_TH3D_axes(TH3D *h3_orig, double convert_to_mm_factor) {
 
-  TH3D *h3_scaled = NULL;
+  TH3D *h3_scaled = nullptr;
   if(convert_to_mm_factor!=1.0) {
 
     std::cout << h3_orig->GetNbinsX() << " " 
@@ -875,7 +875,7 @@ TH3D* rescale_TH3D_axes(TH3D *h3_orig, double convert_to_mm_factor) {
 bool add_to_TH3D(TH3D *h1, TH3D *h2, double weight) {
 
   if(!h1) return false; // first histogram is required
-  if(weight==0.0 || h2==NULL) return true; // nothing to be changed!
+  if(weight==0.0 || h2==nullptr) return true; // nothing to be changed!
   if(!compare_TH3D_bins(h1, h2)) return false; // different bin widths
   
   if(h1->Add(h2, weight)) { // same ranges 

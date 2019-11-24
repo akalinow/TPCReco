@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <algorithm>
 
 #include "TVector3.h"
 #include "TH2D.h"
@@ -56,7 +57,7 @@ public:
 
   ///Return 2D projection for strip_dir corresponding to start and end
   ///along the 3D segment.
-  TrackSegment2D get2DProjection(int strip_dir, double start, double end) const;
+  TrackSegment2D get2DProjection(projection strip_dir, double start, double end) const;
 
   ///Return the full lenght of the segment.
   double getLength() const { return myLenght;}
@@ -74,7 +75,7 @@ public:
 
 private:
 
-  TVector3 getPointOn2DProjection(double lambda, int strip_dir) const;
+  TVector3 getPointOn2DProjection(double lambda, projection strip_dir) const;
 
   ///Calculate vector for different parametrisations.
   void initialize();

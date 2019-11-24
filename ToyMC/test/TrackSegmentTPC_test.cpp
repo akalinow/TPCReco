@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
   const double theta  = 30.0;  // deg - angle wrt X-axis
   const double spread = 3.0;   // mm  - gaussian spread around track segment
 
-  const double Deg2Rad = TMath::Pi()/180.;
+  const double Deg2Rad = pi/180.;
   const TVector2 vec=length*TVector2( TMath::Cos(theta*Deg2Rad), TMath::Sin(theta*Deg2Rad) );
 
   const double trk_x1 = xmin+30.0;        // mm

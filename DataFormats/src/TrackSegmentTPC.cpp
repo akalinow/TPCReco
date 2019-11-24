@@ -2,6 +2,7 @@
 #include <vector>
 #include <map>
 #include <iterator>
+#include <memory>
 /*
 #include <cstdlib>
 #include <cstdio>
@@ -104,7 +105,7 @@ bool TrackSegment3D::SetComparisonCluster(SigClusterTPC &cluster) { // cluster =
   // sanity checks
   if(!cluster.IsOK()) return false;
   GeometryTPC* geo_ptr = cluster.GetEvtPtr()->GetGeoPtr();
-  if(!geo_ptr || !geo_ptr->IsOK()) return false;
+  if(geo_ptr == nullptr || !geo_ptr->IsOK()) return false;
 
   // create UZ, VZ, WZ projections of the parent 3D track segment
   
@@ -114,10 +115,10 @@ bool TrackSegment3D::SetComparisonCluster(SigClusterTPC &cluster) { // cluster =
   trkMap[DIR_W] = GetTrack2D(geo_ptr, DIR_W);
   
   // Loop over 2D cluster hits and update statistics
-  for(auto it=trkMap.begin(); it!=trkMap.end(); it++) {
-    it->second.SetCluster(cluster, it->first); // DIR=it->first
-    sum_distance += it->second.GetChi2();
-    //std::vector<double> clust_charge_proj( it->second.GetChargeProjectionData() );
+  for(auto&& it: trkMap) {
+    it.second.SetCluster(cluster, it.first); // DIR=it.first
+    sum_distance += it.second.GetChi2();
+    //std::vector<double> clust_charge_proj( it.second.GetChargeProjectionData() );
     //for(unsigned int i=0; i<clust_charge_proj.size(); i++) {
     //if(i<charge_proj_nbins) charge_proj[i] += clust_charge_proj[i];
     //}
@@ -169,7 +170,7 @@ std::vector<double> TrackSegment3D::GetClusterProjectionVec() {
 // 1D projection of the current comparison cluster on this track segment
 TH1D *TrackSegment3D::GetClusterProjection() {
 
-  if( length==0.0 ) return NULL;
+  if( length==0.0 ) return nullptr;
   TH1D *h1 = new TH1D("h_track_charge", "Charge along the track segment;Length [mm];Charge/bin [arb.u.]",
 		      charge_proj_nbins, 0.0, length);
   for(unsigned int i=0; i<charge_proj_nbins; i++) {
@@ -188,7 +189,7 @@ double TrackSegment3D::GetClusterCharge() {
 }
 
 // project 3D track segment onto U-Z, V-Z or W-Z plane
-TrackSegment2D TrackSegment3D::GetTrack2D(GeometryTPC *geo_ptr, int dir) {
+TrackSegment2D TrackSegment3D::GetTrack2D(GeometryTPC *geo_ptr, projection dir) {
 
   static TrackSegment2D empty(TVector2(), TVector2(), 0); // empty track
 
@@ -196,11 +197,8 @@ TrackSegment2D TrackSegment3D::GetTrack2D(GeometryTPC *geo_ptr, int dir) {
   if(!geo_ptr || !(geo_ptr->IsOK())) return empty;
 
   // project START and STOP points
-  switch(dir) {
-  case DIR_U:
-  case DIR_V:
-  case DIR_W:
-    bool err_flag;
+  if(IsDIR_UVW(dir)) {
+	  bool err_flag;
     return
       TrackSegment2D( TVector2( geo_ptr->Cartesian2posUVW(start_point.X(), start_point.Y(), dir, err_flag), // U or V or W position [mm]
 				start_point.Z() ), // Z position [mm]
@@ -307,7 +305,7 @@ double TrackSegment2D::GetChi2(double expected_resolution, // mm
   // observable:     H(x) = x*(L-x)
   // expected value: E(H) = (L^2)/6
   // variance:       V(H) = (L^4)/180 = Sigma(H)^2 
-  sum1_resolution2 = length * length * length * length / 180.;
+  sum1_resolution2 = std::pow(length,4) / 180.;
 
   // debug
   if(_debug) {
@@ -355,11 +353,10 @@ void TrackSegment2D::UpdateChi2() {
 
   ResetChi2();
   
-  std::vector< Hit2D >::const_iterator it;
-  for(it=cluster_hits.cbegin(); it!=cluster_hits.cend(); it++) {
+  for(auto&& it: cluster_hits) {
       
     // TVector2: HIT position
-    const TVector2 hit_pos( (*it).hit_x, (*it).hit_y );
+    const TVector2 hit_pos( it.hit_x, it.hit_y );
     
     // TVector2: HIT position relative to the START point
     const TVector2 hit_vec(hit_pos-start_point); 
@@ -368,7 +365,7 @@ void TrackSegment2D::UpdateChi2() {
     const double proj_dist = hit_vec*unit_vec;
     
     // HIT weight
-    const double weight = fabs( (*it).hit_charge );
+    const double weight = fabs( it.hit_charge );
     
     //
     // Calculate partial sums for METHOD 0:
@@ -381,7 +378,7 @@ void TrackSegment2D::UpdateChi2() {
     if(proj_dist<0.0) {
       sum0_val2      += hit_vec.Mod2() * weight;
       sum0_weight    += weight;
-      charge_proj[0] += (*it).hit_charge;
+      charge_proj[0] += it.hit_charge;
     } else {
       // CASE 2: 
       // - outside hit, but closer to the END point:  [1]======[2]---x
@@ -389,15 +386,15 @@ void TrackSegment2D::UpdateChi2() {
       if(proj_dist>length) {      
 	sum0_val2   += (hit_vec-unit_vec*length).Mod2() * weight;
 	sum0_weight += weight;
-	charge_proj[charge_proj_nbins-1] += (*it).hit_charge;
+	charge_proj[charge_proj_nbins-1] += it.hit_charge;
       } else {
 	// CASE 3: 
 	// - inside hit, between START and END points:  [1]===x==[2]
 	// - charge-weighted square of the DISTANCE from the straight line defined by START and STOP points
 	sum0_val2   += (hit_vec.Mod2()-proj_dist*proj_dist) * weight;
 	sum0_weight += weight; 
-	if(length==0.0) charge_proj[0] += (*it).hit_charge;
-	else            charge_proj[ (unsigned int)((proj_dist/length)*(charge_proj_nbins-0.5)) ] += (*it).hit_charge;
+	if(length==0.0) charge_proj[0] += it.hit_charge;
+	else            charge_proj[ (unsigned int)((proj_dist/length)*(charge_proj_nbins-0.5)) ] += it.hit_charge;
       }
     }
 
@@ -441,26 +438,24 @@ bool TrackSegment2D::SetCluster(SigClusterTPC &cluster, int dir) { // cluster = 
   // clear caches
   ResetChi2();
   ResetChargeProjection();
-  
   // sanity checks
   if(!cluster.IsOK()) return false;
   GeometryTPC* geo_ptr = cluster.GetEvtPtr()->GetGeoPtr();
-  if(!geo_ptr || !geo_ptr->IsOK()) return false;
+  if(geo_ptr != nullptr || !geo_ptr->IsOK()) return false;
 
   // Loop over 2D cluster hits and update statistics
   // key=(TIME_CELL [0-511], STRIP_NUM [1-1024])
-  std::vector<MultiKey2> cluster_hits=cluster.GetHitListByDir(dir); 
-  std::vector<MultiKey2>::iterator it;
+  std::vector<MultiKey2> cluster_hits=cluster.GetHitListByDir(static_cast<projection>(dir));
   bool err_flag;
 
-  for(it=cluster_hits.begin(); it!=cluster_hits.end(); it++) {
+  for(auto&& it : cluster_hits) {
 
     const double uvw_proj =
-      geo_ptr->Strip2posUVW(dir, (*it).key2, err_flag); // U/V/W [mm]
+      geo_ptr->Strip2posUVW(dir, it.key2, err_flag); // U/V/W [mm]
     const double z =
-      geo_ptr->Timecell2pos( ((*it).key1+0.5), err_flag); // Z [mm] - middle of the time cell
+      geo_ptr->Timecell2pos( (it.key1+0.5), err_flag); // Z [mm] - middle of the time cell
     const double val =
-      cluster.GetEvtPtr()->GetValByStrip(dir, (*it).key2, (*it).key1);
+      cluster.GetEvtPtr()->GetValByStrip(static_cast<projection>(dir), it.key2, it.key1);
 
     AddHit2D( uvw_proj, z, val);
     
@@ -526,14 +521,13 @@ void TrackSegment2D::ResetChargeProjection() {
 // triggers update of 1D projection of the current comparison cluster on this track segment
 void TrackSegment2D::UpdateChargeProjection() {
   charge_OK = false;
-  std::vector< Hit2D >::const_iterator it;
-  for(it=cluster_hits.cbegin(); it!=cluster_hits.cend(); it++) {
+  for(auto&& it : cluster_hits) {
     unsigned int index = 0;
-    if(length>0) index = (int) (((TVector2( (*it).hit_x, (*it).hit_y )-start_point)*unit_vec)/length*charge_proj_nbins);
+    if(length>0) index = (int) (((TVector2( it.hit_x, it.hit_y )-start_point)*unit_vec)/length*charge_proj_nbins);
     if(index<0) index=0;
     else if(index>=charge_proj_nbins) index=charge_proj_nbins;
-    charge_proj[index] += (*it).hit_charge;
-    charge_proj_total += (*it).hit_charge;
+    charge_proj[index] += it.hit_charge;
+    charge_proj_total += it.hit_charge;
   }
   charge_OK = true;
 }
@@ -555,7 +549,7 @@ std::vector<double> TrackSegment2D::GetChargeProjectionData() {
 // Calculates 1D projection of the current comparison cluster on this track segment
 // Return value: pointer to a new TH1D histogram.
 // Any underflows (overflows) are stored in the first (last) bin.
-// When length=0 returns NULL.
+// When length=0 returns nullptr.
 TH1D *TrackSegment2D::GetChargeProjection() {
 
   // try to use cached data if possible
@@ -563,7 +557,7 @@ TH1D *TrackSegment2D::GetChargeProjection() {
     UpdateChargeProjection();
   }
 
-  if( length==0.0 ) return NULL;
+  if( length==0.0 ) return nullptr;
   TH1D *h1 = new TH1D("h_dEdx", "Charge along the track segment;Length [mm];Charge/bin [arb.u.]",
 		      charge_proj_nbins, 0.0, length);
   for(unsigned int index=0; index<charge_proj_nbins; index++) {

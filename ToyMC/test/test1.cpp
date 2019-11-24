@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
   TCanvas *c1 = new TCanvas("c1","c1", 900, 800);
   TH2Poly *tp1 = myUVWProjector.GetStripProfile_TH2Poly();
   if(!tp1) {
-    std::cerr << "ERROR: Strip profile TH2Poly is NULL !!!" << std::endl; 
+    std::cerr << "ERROR: Strip profile TH2Poly is nullptr !!!" << std::endl; 
     return -1;
   }
   tp1->Draw("COLZ");

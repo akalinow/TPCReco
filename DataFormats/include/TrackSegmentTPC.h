@@ -77,7 +77,7 @@ class TrackSegment3D {
   std::vector<double> GetClusterProjectionVec(); // binned 1D charge distribution along the track
   double GetClusterCharge();     // ADC units
 
-  TrackSegment2D GetTrack2D(GeometryTPC *geo_ptr, int dir); // project 3D track segment onto U-Z, V-Z or W-Z plane
+  TrackSegment2D GetTrack2D(GeometryTPC *geo_ptr, projection dir); // project 3D track segment onto U-Z, V-Z or W-Z plane
   
 };
 
