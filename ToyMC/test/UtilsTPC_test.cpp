@@ -15,7 +15,7 @@ int main(int argc, char *argv[]) {
 
   plot_MCevent("resources/bkg_1e7gammas_8.3MeV__1mm_bins.root",
 	      "Edep-hist", 
-	      NULL, NULL, 
+	      nullptr, nullptr, 
 	      "results/plot_MCevent",
 	      "resources/geometry_mini_eTPC_rot90deg.dat", 
 	       false, false) ; // true);

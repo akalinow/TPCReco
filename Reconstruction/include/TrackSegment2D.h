@@ -13,7 +13,7 @@ class TrackSegment2D{
 
 public:
 
-  TrackSegment2D(int strip_dir = DIR_U){ myStripDir = strip_dir;};
+  TrackSegment2D(projection strip_dir = DIR_U){ myStripDir = strip_dir;};
 
   ~TrackSegment2D() {};
 

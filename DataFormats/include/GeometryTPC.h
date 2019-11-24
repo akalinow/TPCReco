@@ -5,10 +5,11 @@
 // VERSION: 05 May 2018
 
 #include <cstdlib>
-#include <cstddef> // for NULL
+#include <cstddef> // for nullptr
 #include <vector>
 #include <map>
 #include <string>
+#include <algorithm>
 
 #include "TROOT.h"
 #include "TVector2.h"
@@ -17,9 +18,7 @@
 #include "CommonDefinitions.h"
 
 #define FPN_CH   3    // FPN channel type index
-#define ERROR    -1   // error result indicator                                                                         
-#define MINIMUM(A,B) ((A)<(B) ? (A) : (B))
-#define MAXIMUM(A,B) ((A)>(B) ? (A) : (B))
+#define ERROR    -1   // error result indicator
 #define NUM_TOLERANCE 1e-6
 
 class StripTPC;
@@ -92,7 +91,7 @@ class GeometryTPC {
   StripTPC *GetTH2PolyStrip(int ibin);          // returns pointer to StripTPC object corresponding to TH2Poly bin 
   
   inline bool IsOK() { return initOK; }
-  int GetDirNstrips(int dir);
+  int GetDirNstrips(projection dir);
   int GetDirNstrips(std::string name);
   int GetDirNstrips(const char *name);
   int GetDirNstrips(StripTPC *s);
@@ -113,7 +112,7 @@ class GeometryTPC {
   int GetDirIndex_raw(int global_raw_channel_idx);
   int GetDirIndex_raw(int COBO_idx, int ASAD_idx, int AGET_idx, int raw_channel_idx);
 
-  const char* GetDirName(int dir);
+  const char* GetDirName(projection dir);
   const char* GetStripName(StripTPC *s);
 
   StripTPC *GetStripByAget(int COBO_idx, int ASAD_idx, int AGET_idx, int channel_idx);         // valid range [0-1][0-3][0-3][0-63]
@@ -121,6 +120,7 @@ class GeometryTPC {
   StripTPC *GetStripByAget_raw(int COBO_idx, int ASAD_idx, int AGET_idx, int raw_channel_idx); // valid range [0-1][0-3][0-3][0-67]
   StripTPC *GetStripByGlobal_raw(int global_raw_channel_idx);                                  // valid range [0-(1023+4*ASAD_N*COBO_N)]
   StripTPC *GetStripByDir(int dir, int num);                                                   // valid range [0-2][1-1024]
+  std::shared_ptr<StripTPC*[]> GetStrips();
 
   // various helper functions for calculating local/global normal/raw channel index
   int Aget_normal2raw(int channel_idx);                      // valid range [0-63]
@@ -149,8 +149,8 @@ class GeometryTPC {
   inline double GetVdrift() { return vdrift; } // [cm/us]
   inline double GetSamplingRate() { return sampling_rate; } // [MHz]
   inline TVector2 GetReferencePoint() { return reference_point; } // XY ([mm],[mm])
-  TVector2 GetStripUnitVector(int dir); // XY ([mm],[mm])
-  TVector2 GetStripPitchVector(int dir); // XY ([mm],[mm])
+  TVector2 GetStripUnitVector(projection dir); // XY ([mm],[mm])
+  TVector2 GetStripPitchVector(projection dir); // XY ([mm],[mm])
   inline double GetTriggerDelay() { return trigger_delay; } // [us]
   inline double GetDriftCageZmin() { return drift_zmin; } // [mm]
   inline double GetDriftCageZmax() { return drift_zmax; } // [mm]
@@ -159,7 +159,7 @@ class GeometryTPC {
   double Strip2posUVW(StripTPC *strip, bool &err_flag); // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of the central line of the (existing) strip on the strip pitch axis for a strip given direction
 
   double Cartesian2posUVW(double x, double y, int dir, bool &err_flag); // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of a given (X,Y) point on the strip pitch axis for a given direction
-  double Cartesian2posUVW(TVector2 pos, int dir, bool &err_flag); // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of a given (X,Y) point on the strip pitch axis for a given direction
+  double Cartesian2posUVW(TVector2 pos, projection dir, bool &err_flag); // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of a given (X,Y) point on the strip pitch axis for a given direction
   
   double Timecell2pos(double position_in_cells, bool &err_flag); // [mm] output: position along Z-axis
   double Pos2timecell(double z, bool &err_flag); // output: time-cell number, valid range [0-511]

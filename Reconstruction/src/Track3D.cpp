@@ -146,7 +146,7 @@ double Track3D::getNodesChi2() const{
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void Track3D::updateNodesChi2(int strip_dir){
+void Track3D::updateNodesChi2(projection strip_dir){
 
   if(!mySegments.size()) return;
 
@@ -209,7 +209,7 @@ void Track3D::updateChi2(){
   nodeAngleChi2.clear();
   if(mySegments.size()) nodeAngleChi2.resize(mySegments.size()-1);
   
-  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+  for (auto&& strip_dir : std::vector<projection>{DIR_U,DIR_V,DIR_W}) {
     updateNodesChi2(strip_dir);
   }
 }

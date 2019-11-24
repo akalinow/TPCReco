@@ -2,7 +2,7 @@
 // VERSION: 11 Feb 2018
 
 #include <cstdlib>
-#include <cstddef>  // for: NULL
+#include <cstddef>  // for: nullptr
 #include <iostream> // for: cout, cerr, endl
 #include <vector>
 #include <map>
@@ -31,7 +31,7 @@ UVWprojector::UVWprojector(GeometryTPC *geo, int n, int nx, int ny)
     isOK_AreaMapping(false),    
     isOK_TimeMapping(false), 
     geo_ptr(geo),
-    input_hist(NULL),
+    input_hist(nullptr),
     is_input_2D(false),
     _debug(false)
 { 
@@ -180,7 +180,7 @@ bool UVWprojector::InitAreaMapping() {
   fAreaFractionMap.clear();
 
   // sanity checks
-  TH2Poly *tp=NULL;
+  TH2Poly *tp=nullptr;
   if( area_npoints<1 || !h2 || !geo_ptr || !(geo_ptr->IsOK()) || !(tp=geo_ptr->GetTH2Poly())) {
 
     // DEBUG
@@ -454,8 +454,8 @@ TH1D * UVWprojector::GetStripProfile_TH1D(int dir) {
   dir = dir % 3; // valid range [0-2]
 
   // sanity checks
-  //  if(!isOK_TH2Poly || !isOK_AreaMapping || !input_hist || dir<0) return NULL;
-  if(!geo_ptr || !(geo_ptr->IsOK()) || !isOK_AreaMapping || !input_hist || dir<0) return NULL;
+  //  if(!isOK_TH2Poly || !isOK_AreaMapping || !input_hist || dir<0) return nullptr;
+  if(!geo_ptr || !(geo_ptr->IsOK()) || !isOK_AreaMapping || !input_hist || dir<0) return nullptr;
 
   // create a 2D clone with same X-Y binning
   TH2D *h2 = (TH2D*)input_hist;
@@ -466,7 +466,7 @@ TH1D * UVWprojector::GetStripProfile_TH1D(int dir) {
   const double ymax = h2->GetYaxis()->GetXmax();  // maximal Y-position [mm]
   const int nybins = h2->GetNbinsY(); // number of bins along Y-axis   
   // sanity checks
-  if(xmin>=xmax || ymin>=ymax || nxbins<=0 || nybins<=0) return NULL;
+  if(xmin>=xmax || ymin>=ymax || nxbins<=0 || nybins<=0) return nullptr;
   TH2D *h2temp = new TH2D("h2temp","",
 			  nxbins, xmin, xmax,
 			  nybins, ymin, ymax);
@@ -474,7 +474,7 @@ TH1D * UVWprojector::GetStripProfile_TH1D(int dir) {
   // Project TH3D (with clipping along Z-axis) to TH2D for 3D event case
   if(!is_input_2D) {
     // sanity checks
-    if(!isOK_TimeMapping) return NULL;
+    if(!isOK_TimeMapping) return nullptr;
 
     // 3D histogram to be sliced/projected
     TH3D *h3 = (TH3D*)input_hist;
@@ -482,7 +482,7 @@ TH1D * UVWprojector::GetStripProfile_TH1D(int dir) {
     const double zmax = h3->GetZaxis()->GetXmax();  // Z-position [mm] farthest from readout PCB
     const int nzbins = h3->GetNbinsZ(); // number of bins along Z-axis   
     // sanity checks
-    if(zmin>=zmax || nzbins<=0) return NULL;
+    if(zmin>=zmax || nzbins<=0) return nullptr;
 
     // loop over all Z-slices
     std::map<int, BinFracMap>::const_iterator it;
@@ -592,7 +592,7 @@ TH2D* UVWprojector::GetStripVsTime_TH2D(int dir) {
   dir = dir % 3; // valid range [0-2]
 
   // sanity checks
-  if(is_input_2D || !geo_ptr || !(geo_ptr->IsOK()) || !isOK_TimeMapping || !isOK_AreaMapping || !input_hist || dir<0) return NULL;
+  if(is_input_2D || !geo_ptr || !(geo_ptr->IsOK()) || !isOK_TimeMapping || !isOK_AreaMapping || !input_hist || dir<0) return nullptr;
 
   // create a 2D clone with same X-Y binning
   TH2D *h2 = (TH2D*)input_hist;
@@ -604,7 +604,7 @@ TH2D* UVWprojector::GetStripVsTime_TH2D(int dir) {
   const int nybins = h2->GetNbinsY(); // number of bins along Y-axis   
 
   // sanity checks
-  if(xmin>=xmax || ymin>=ymax || nxbins<=0 || nybins<=0) return NULL;
+  if(xmin>=xmax || ymin>=ymax || nxbins<=0 || nybins<=0) return nullptr;
 
   // Project TH3D (with clipping along Z-axis) to TH2D for 3D event case
 
@@ -615,7 +615,7 @@ TH2D* UVWprojector::GetStripVsTime_TH2D(int dir) {
   const int nzbins = h3->GetNbinsZ(); // number of bins along Z-axis   
 
   // sanity checks
-  if(zmin>=zmax || nzbins<=0) return NULL;
+  if(zmin>=zmax || nzbins<=0) return nullptr;
   
   // Create TH2D with strip numbers for a given direction
   TH2D *newth2 = new TH2D(Form("h_strips%s_vs_time", geo_ptr->GetDirName(dir)),
@@ -699,7 +699,7 @@ TH2D* UVWprojector::GetStripVsTime_TH2D(int dir) {
 TH2Poly* UVWprojector::GetStripProfile_TH2Poly() {
   
   // sanity checks
-  TH2Poly *tp=NULL;
+  TH2Poly *tp=nullptr;
   if(!geo_ptr || !(geo_ptr->IsOK()) || !(tp=geo_ptr->GetTH2Poly()) || !isOK_AreaMapping || !input_hist) { 
 
     // DEBUG
@@ -709,7 +709,7 @@ TH2Poly* UVWprojector::GetStripProfile_TH2Poly() {
     }
     // DEBUG
 
-    return NULL;
+    return nullptr;
   }
 
   // DEBUG
@@ -739,7 +739,7 @@ TH2Poly* UVWprojector::GetStripProfile_TH2Poly() {
     }
     // DEBUG
 
-    return NULL;
+    return nullptr;
   }
   TH2D *h2temp = new TH2D("h2temp","",
 			  nxbins, xmin, xmax,
@@ -757,7 +757,7 @@ TH2Poly* UVWprojector::GetStripProfile_TH2Poly() {
       }
       // DEBUG
 
-      return NULL;
+      return nullptr;
     }
 
     // 3D histogram to be sliced/projected
@@ -775,7 +775,7 @@ TH2Poly* UVWprojector::GetStripProfile_TH2Poly() {
       }
       // DEBUG
 
-      return NULL;
+      return nullptr;
     }
 
     // loop over all Z-slices

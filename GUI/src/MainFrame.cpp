@@ -1,7 +1,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
-
+#include <atomic>
 #include <TApplication.h>
 #include <MainFrame.h>
 #include <SelectionBox.h>
@@ -250,18 +250,18 @@ void MainFrame::Update(){
   fCanvas->Divide(3,3);
   fCanvas->cd(1);
 
-  for(int strip_dir=0;strip_dir<3;++strip_dir){
+  for(projection strip_dir=0;strip_dir<3;++strip_dir){
     myHistoManager.getHoughAccumulator(strip_dir);
   }
 
-  int strip_dir = DIR_W;
+  projection strip_dir = DIR_W;
   myHistoManager.getRawStripVsTime(strip_dir)->SaveAs("histoRaw.root");
   myHistoManager.getCartesianProjection(strip_dir)->SaveAs("histoThreshold.root");
   myHistoManager.getRecHitStripVsTime(strip_dir)->SaveAs("histoRecHit.root");
   
   //myHistoManager.getCartesianProjection(DIR_U)->SaveAs("histo.root");
   
-  for(int strip_dir=0;strip_dir<3;++strip_dir){
+  for(projection strip_dir=0;strip_dir<3;++strip_dir){
     ///First row
     TVirtualPad *aPad = fCanvas->cd(strip_dir+1);
     myHistoManager.getCartesianProjection(strip_dir)->DrawClone("colz");
@@ -377,7 +377,7 @@ void MainFrame::HandleMenu(Int_t id){
       myDataManager.getPreviousEvent();
       Update();
     }
-    break;
+     break;
   case M_GOTO_EVENT:
     {
       int eventId = fEventIdEntry->GetIntNumber();
@@ -396,8 +396,7 @@ void MainFrame::HandleMenu(Int_t id){
 /////////////////////////////////////////////////////////
 void MainFrame::DoButton(){
  TGButton* button = (TGButton*)gTQSender;
-   UInt_t button_id = button->WidgetId();
-
+ UInt_t button_id = button->WidgetId();
    HandleMenu(button_id);
  }
 ////////////////////////////////////////////////////////

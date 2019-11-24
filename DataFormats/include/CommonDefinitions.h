@@ -1,7 +1,7 @@
 #ifndef __CommonDefinitions_h__
 #define __CommonDefinitions_h__
 #include <cmath>
-constexpr double pi() { return 4 * atan(1); }
+const double pi = 4 * atan(1);
 //#define DIR_U    0    // U-direction channel index
 //#define DIR_V    1    // V-direction channel index
 //#define DIR_W    2    // W-direction channel index
@@ -16,11 +16,15 @@ enum projection{
 		DIR_3D=6    // 3D reconstruction
 };
 
+inline bool IsDIR_UVW(projection DIR_) {
+	return DIR_ == DIR_U || DIR_ == DIR_V || DIR_ == DIR_W;
+}
+
 //const std::vector<int> stripOffset = {-71, 0, -55};//strip/time bin units
 const std::vector<int> stripOffset = {0, 0, 0};/// mm units
   
 //#### Angles of U/V/W unit vectors wrt X-axis [deg]
 //#ANGLES: 90.0 -30.0 30.0
-const std::vector<double> phiPitchDirection = {pi(), -pi()/6.0 + pi()/2.0, pi()/6.0 - pi()/2.0};
+const std::vector<double> phiPitchDirection = {pi, -pi/6.0 + pi/2.0, pi/6.0 - pi/2.0};
 
 #endif

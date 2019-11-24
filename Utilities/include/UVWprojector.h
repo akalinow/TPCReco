@@ -5,7 +5,7 @@
 // VERSION: 05 May 2018
 
 #include <cstdlib>
-#include <cstddef> // for: NULL
+#include <cstddef> // for: nullptr
 #include <vector>
 #include <map>
 
@@ -23,7 +23,7 @@ class UVWprojector {
  public:
   
   // empty constructor is required by TObject
-  //  inline UVWprojector() { UVWprojector(NULL,0,0,0); } 
+  //  inline UVWprojector() { UVWprojector(nullptr,0,0,0); } 
   virtual ~UVWprojector();
   
   // Setter methods 
@@ -40,7 +40,7 @@ class UVWprojector {
   TH2Poly *GetStripProfile_TH2Poly();     // Get TH2Poly of time-integrated strip projection (ALL STRIPS)
   TH2D    *GetStripVsTime_TH2D(int dir);  // Get TH2D of strip vs time projection (SELECTED DIRECTION)  
   inline int GetAreaNpoints() { return area_npoints; }
-  inline double GetEventIntegral() { return (input_hist==NULL ? 0.0 : input_hist->Integral()); }
+  inline double GetEventIntegral() { return (input_hist==nullptr ? 0.0 : input_hist->Integral()); }
   
   // Nested helper class definitions
   struct BinFracMap {
