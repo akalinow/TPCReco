@@ -286,7 +286,7 @@ void Track3D::shrinkToHits(){
   double lambdaStart = 0.0;
   double lambdaEnd = getLength();
   if(getLength()<1.0) return;//FIXME move to configuration  
-  double minChargeCut = 100.0;//FIXME move to configuration and (dynamically?) optimize
+  double minChargeCut = 10.0;//FIXME move to configuration and (dynamically?) optimize
   double charge = 0.0;
   double h = 2.0;//FIXME move to configuration.
   while(charge<minChargeCut && lambdaStart<getLength()){

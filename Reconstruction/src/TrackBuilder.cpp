@@ -33,6 +33,7 @@ TrackBuilder::TrackBuilder() {
   fitter.Config().MinimizerOptions().SetMaxIterations(1E4);
   fitter.Config().MinimizerOptions().SetTolerance(1E-3);
   fitter.Config().MinimizerOptions().Print(std::cout);
+  fitter.Config().MinimizerOptions().SetPrintLevel(0);
 
   ///An offset used for filling the Hough transformation.
   ///to avoid having very small rho parameters, as
@@ -102,7 +103,7 @@ void TrackBuilder::makeRecHits(int iDir){
   hRecHits.Reset();
   std::string tmpTitle(hRecHits.GetTitle());
   if(tmpTitle.find("Event")!=std::string::npos){
-    tmpTitle.replace(tmpTitle.find("Event"), 20,"Rec hits"); 
+    tmpTitle.replace(tmpTitle.find("Event"), 21,"Rec hits"); 
     hRecHits.SetTitle(tmpTitle.c_str());
   }
 
@@ -126,15 +127,13 @@ void TrackBuilder::makeRecHits(int iDir){
     delete hProj;
   }
   double maxCharge = hRecHits.GetMaximum();
-  double threshold = 0.1*maxCharge;
+  double threshold = 0.1*maxCharge;//FIX ME optimize threshold
 
-  std::cout<<"maxCharge: "<<maxCharge<<std::endl;
-    
-    for(int iBin=0;iBin<hRecHits.GetNcells();++iBin){
-      if(hRecHits.GetBinContent(iBin)<threshold){
-	hRecHits.SetBinContent(iBin, 0.0);
-      }
+  for(int iBin=0;iBin<hRecHits.GetNcells();++iBin){
+    if(hRecHits.GetBinContent(iBin)<threshold){
+      hRecHits.SetBinContent(iBin, 0.0);
     }
+  }
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -145,10 +144,14 @@ TF1 TrackBuilder::fitTimeWindow(TH1D* hProj){
    TF1 bestTimeResponseShape;
    double bestChi2OverNDF = 1E10;
 
+   double sampling_rate = myGeometryPtr->GetSamplingRate();
+   double vdrift = myGeometryPtr->GetVdrift()*10.0;
+   double timeBinToCartesianScale = 1.0/sampling_rate*vdrift;
+
    int maxBin = hProj->GetMaximumBin();
    double maxValue = hProj->GetMaximum();
    double maxPos = hProj->GetBinCenter(maxBin);
-   double windowIntegral = hProj->Integral(maxBin-25, maxBin+25);
+   double windowIntegral = hProj->Integral(maxBin-25*timeBinToCartesianScale, maxBin+25*timeBinToCartesianScale);
    if(maxValue<25 || windowIntegral<50) return bestTimeResponseShape;//FIXME how to choose the thresholds?
 
    std::string formula = "";
@@ -161,15 +164,15 @@ TF1 TrackBuilder::fitTimeWindow(TH1D* hProj){
 
      }
      TF1 timeResponseShape("timeResponseShape",formula.c_str());        
-     timeResponseShape.SetRange(maxPos-25, maxPos+25);   
+     timeResponseShape.SetRange(maxPos-25*timeBinToCartesianScale, maxPos+25*timeBinToCartesianScale);   
      for(int iSet=0;iSet<timeResponseShape.GetNpar();iSet+=3){
        timeResponseShape.SetParameter(iSet, maxValue*2);
        timeResponseShape.SetParameter(iSet+1, maxPos);
-       timeResponseShape.SetParameter(iSet+2, 2.0);
+       timeResponseShape.SetParameter(iSet+2, 2.0*timeBinToCartesianScale);
        ///     
        timeResponseShape.SetParLimits(iSet, 0.1*maxValue, maxValue*2);
-       timeResponseShape.SetParLimits(iSet+1, maxPos-15, maxPos+15);   
-       timeResponseShape.SetParLimits(iSet+2, 0.5, 8);
+       timeResponseShape.SetParLimits(iSet+1, maxPos-15*timeBinToCartesianScale, maxPos+15*timeBinToCartesianScale);   
+       timeResponseShape.SetParLimits(iSet+2, 0.5*timeBinToCartesianScale, 8*timeBinToCartesianScale);
      }   
      fitResult = hProj->Fit(&timeResponseShape, "QRBSW");   
 
@@ -315,29 +318,31 @@ TrackSegment3D TrackBuilder::buildSegment3D() const{
   int nHits_U = segmentU.getNAccumulatorHits();
   int nHits_V = segmentV.getNAccumulatorHits();
   int nHits_W = segmentW.getNAccumulatorHits();
+
+  double bX_fromU = (segmentU.getBiasAtT0().Y())*cos(phiPitchDirection[DIR_U]);
+  double bX = bX_fromU;
   
+  double bY_fromV = (segmentV.getBiasAtT0().Y() - bX_fromU*cos(phiPitchDirection[DIR_V]))/sin(phiPitchDirection[DIR_V]);
+  double bY_fromW = (segmentW.getBiasAtT0().Y() - bX_fromU*cos(phiPitchDirection[DIR_W]))/sin(phiPitchDirection[DIR_W]);  
+  double bY = (bY_fromV*nHits_V + bY_fromW*nHits_W)/(nHits_V+nHits_W);
+
   double bZ_fromU = segmentU.getBiasAtT0().X();
   double bZ_fromV = segmentV.getBiasAtT0().X();
   double bZ_fromW = segmentW.getBiasAtT0().X();
   double bZ = (bZ_fromU*nHits_U + bZ_fromV*nHits_V + bZ_fromW*nHits_W)/(nHits_U+nHits_V+nHits_W);
-  
-  double bX_fromU = (segmentU.getBiasAtT0().Y())*cos(phiPitchDirection[DIR_U]);
-  double bY_fromV = (segmentV.getBiasAtT0().Y() - bX_fromU*cos(phiPitchDirection[DIR_V]))/sin(phiPitchDirection[DIR_V]);
-  double bY_fromW = (segmentW.getBiasAtT0().Y() - bX_fromU*cos(phiPitchDirection[DIR_W]))/sin(phiPitchDirection[DIR_W]);  
-  double bY = (bY_fromV*nHits_V + bY_fromW*nHits_W)/(nHits_V+nHits_W);
-  double bX = bX_fromU;
   TVector3 aBias(bX, bY, bZ);
 
+  double tX_fromU = segmentU.getTangentWithT1().Y()*cos(phiPitchDirection[DIR_U]);
+  double tX = tX_fromU;
+
+  double tY_fromV = (segmentV.getTangentWithT1().Y() - tX_fromU*cos(phiPitchDirection[DIR_V]))/sin(phiPitchDirection[DIR_V]);
+  double tY_fromW = (segmentW.getTangentWithT1().Y() - tX_fromU*cos(phiPitchDirection[DIR_W]))/sin(phiPitchDirection[DIR_W]);
+  double tY = (tY_fromV*nHits_V + tY_fromW*nHits_W)/(nHits_V+nHits_W);
+  
   double tZ_fromU = segmentU.getTangentWithT1().X();
   double tZ_fromV = segmentV.getTangentWithT1().X();
   double tZ_fromW = segmentW.getTangentWithT1().X();
   double tZ = (tZ_fromU*nHits_U + tZ_fromV*nHits_V + tZ_fromW*nHits_W)/(nHits_U+nHits_V+nHits_W);
-
-  double tX_fromU = segmentU.getTangentWithT1().Y()*cos(phiPitchDirection[DIR_U]);
-  double tY_fromV = (segmentV.getTangentWithT1().Y() - tX_fromU*cos(phiPitchDirection[DIR_V]))/sin(phiPitchDirection[DIR_V]);
-  double tY_fromW = (segmentW.getTangentWithT1().Y() - tX_fromU*cos(phiPitchDirection[DIR_W]))/sin(phiPitchDirection[DIR_W]);
-  double tY = (tY_fromV*nHits_V + tY_fromW*nHits_W)/(nHits_V+nHits_W);
-  double tX = tX_fromU;
   TVector3 aTangent(tX, tY, tZ);
 
   TrackSegment3D a3DSeed;
@@ -372,7 +377,7 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
   std::cout<<aTrackCandidate<<std::endl;
   
   aTrackCandidate = fitTrackNodes(aTrackCandidate);
-  return aTrackCandidate;//TEST
+  return aTrackCandidate;
   /*
   if(aTrackCandidate.getLength()<1.0) return aTrackCandidate;//FIX me move threshold to configuration
 
@@ -398,8 +403,6 @@ Track3D TrackBuilder::fitTrackNodes(const Track3D & aTrack) const{
   
   ROOT::Math::Functor fcn(&aTrackCandidate, &Track3D::chi2FromNodesList, nParams);
   fitter.SetFCN(fcn, params.data());
-
-  fitter.Config().MinimizerOptions().SetPrintLevel(10);
 
   double minChi2 = 1E10;
   for(unsigned int iStep=1;iStep<2;++iStep){
@@ -432,7 +435,6 @@ Track3D TrackBuilder::fitTrackNodes(const Track3D & aTrack) const{
     aTrackCandidate.shrinkToHits();
 
     std::cout<<"Post-fit: "<<std::endl;
-    aTrackCandidate.removeEmptySegments();
     std::cout<<aTrackCandidate<<std::endl;
     
     if(aTrackCandidate.getChi2()<minChi2){

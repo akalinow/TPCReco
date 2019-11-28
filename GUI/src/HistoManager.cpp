@@ -31,6 +31,7 @@ HistoManager::~HistoManager() {
 void HistoManager::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
   
   myGeometryPtr = aGeometryPtr;
+  myTkBuilder.setGeometry(aGeometryPtr);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -183,7 +184,7 @@ void HistoManager::drawTrack2DSeed(int strip_dir, TVirtualPad *aPad){
 
   TLine aSegment2DLine;
   aSegment2DLine.SetLineWidth(2);
-  aSegment2DLine.SetLineColor(2);
+  aSegment2DLine.SetLineColor(9);
   aPad->cd();
   aSegment2DLine.DrawLine(start.X(), start.Y(),  end.X(),  end.Y());	  
 }

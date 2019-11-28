@@ -263,7 +263,7 @@ void MainFrame::Update(){
     aPad = fCanvas->cd(strip_dir+1+3);
     myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("colz");
     myHistoManager.getRecHitStripVsTime(strip_dir)->SaveAs(TString::Format("RecHits_%d.root", strip_dir));
-    myHistoManager.getRawStripVsTime(strip_dir)->SaveAs(TString::Format("RawHits_%d.root", strip_dir));
+    myHistoManager.getCartesianProjection(strip_dir)->SaveAs(TString::Format("RawHits_%d.root", strip_dir));
     myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad);
     //myHistoManager.drawTrack2DSeed(strip_dir, aPad);
     
