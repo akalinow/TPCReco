@@ -139,7 +139,7 @@ double TrackSegment3D::getIntegratedHitDistance(double lambdaCut) const{
 double TrackSegment3D::getIntegratedCharge(double lambdaCut) const{
 
   double charge = 0.0;
-  for (auto&& strip_dir : std::vector<projection>{DIR_U,DIR_V,DIR_W}) {
+  for (auto&& strip_dir : std::vector<projection>{projection::DIR_U,projection::DIR_V,projection::DIR_W}) {
     TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, lambdaCut);
     const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
     charge += aTrack2DProjection.getIntegratedCharge(lambdaCut, aRecHits);    

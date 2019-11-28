@@ -78,22 +78,22 @@ int main(int argc, char *argv[]) {
     int COBO_idx = 0;
     int ASAD_idx = 0;
     
-    for (Int_t agetId = 0; agetId < myGeometryPtr->GetAgetNchips(); ++agetId){
+    for (int32_t agetId = 0; agetId < myGeometryPtr->GetAgetNchips(); ++agetId){
 	// loop over normal channels and update channel mask for clustering
-	for (Int_t chanId = 0; chanId < myGeometryPtr->GetAgetNchannels(); ++chanId){
+	for (int32_t chanId = 0; chanId < myGeometryPtr->GetAgetNchannels(); ++chanId){
 	  int iChannelGlobal     = myGeometryPtr->Global_normal2normal(COBO_idx, ASAD_idx, agetId, chanId);// 0-255 (without FPN)
 	    
 	    GET::GDataChannel* channel = dataFrame.SearchChannel(agetId, myGeometryPtr->Aget_normal2raw(chanId));
 	    if (!channel) continue;
 	    
-	    for (Int_t i = 0; i < channel->fNsamples; ++i){
+	    for (int32_t i = 0; i < channel->fNsamples; ++i){
 		GET::GDataSample* sample = (GET::GDataSample*) channel->fSamples.At(i);
 		// skip cells outside signal time-window
-		Int_t icell = sample->fBuckIdx;
+		int32_t icell = sample->fBuckIdx;
 		if(icell<2 || icell>509 || icell<minSignalCell || icell>maxSignalCell) continue;
 		
-		Double_t rawVal  = sample->fValue;		
-		Double_t corrVal = rawVal - myPedestalCalculator.GetPedestalCorrection(iChannelGlobal, agetId, icell);
+		double rawVal  = sample->fValue;		
+		double corrVal = rawVal - myPedestalCalculator.GetPedestalCorrection(iChannelGlobal, agetId, icell);
 		myEvent.AddValByAgetChannel(COBO_idx, ASAD_idx, agetId, chanId, icell, corrVal);
 		
 	      } // end of loop over time buckets	    

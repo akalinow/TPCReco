@@ -6,11 +6,19 @@
 
 //#include <cstdlib>
 #include <vector>
+#include <iostream>
+#include <map>
+#include <iterator>
+#include <memory>
+#include <algorithm>
 
-#include "TH1D.h"
-#include "TH3F.h"
-#include "TVector3.h"
+#include "root/include/TH1D.h"
+#include "root/include/TH3F.h"
+#include "root/include/TVector3.h"
+#include "root/include/TVector2.h"
 #include "EventTPC.h"
+#include "SigClusterTPC.h"
+#include "GeometryTPC.h"
 
 #define TRACKSEGMENTTPC_DEFAULT_FIT_SIGMA  1.5 // default expected position resolution [mm] for CHI2 definition (used in: 0,2)
 #define TRACKSEGMENTTPC_DEFAULT_FIT_METHOD 2   // 0 = sum of "perpendicular" distances 
@@ -154,7 +162,7 @@ class TrackSegment2D {
   inline TVector2 GetEndPoint() { return end_point; }      // (mm,mm)
   inline double GetLength() { return length; } // mm
   inline TVector2 GetUnitVector() { return unit_vec; }
-  bool SetCluster(SigClusterTPC &cluster, int dir); // cluster = UVW clustered data for a given direction DIR
+  bool SetCluster(SigClusterTPC &cluster, projection dir); // cluster = UVW clustered data for a given direction DIR
   bool SetCluster(TH2D *h2); // cluster = 2D distribution (mm,mm,charge)
   double GetChi2(double expected_resolution=TRACKSEGMENTTPC_DEFAULT_FIT_SIGMA, // mm
                  int method=TRACKSEGMENTTPC_DEFAULT_FIT_METHOD);

@@ -1,6 +1,6 @@
 #ifndef __MULTIKEY_H__
 
-#include<functional>
+#include <functional>
 
 // Allows to define multi-keyword maps.
 // VERSION: 11 Feb 2018

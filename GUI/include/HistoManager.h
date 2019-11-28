@@ -8,9 +8,9 @@
 #include "SigClusterTPC.h"
 #include "TrackBuilder.h"
 
-#include "TLine.h"
-#include "TGraph.h"
-#include "TH2Poly.h"
+#include "root/include/TLine.h"
+#include "root/include/TGraph.h"
+#include "root/include/TH2Poly.h"
 
 #include "CommonDefinitions.h"
 

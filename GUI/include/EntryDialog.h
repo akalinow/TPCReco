@@ -1,9 +1,9 @@
 #ifndef EntryDialog_H
 #define EntryDialog_H
 
-#include <TGFrame.h>
-#include <TGLayout.h>
-#include <TGLabel.h>
+#include <root/include/TGFrame.h>
+#include <root/include/TGLayout.h>
+#include <root/include/TGLabel.h>
 
 class MainFrame;
 
@@ -16,7 +16,7 @@ public:
 
    virtual ~EntryDialog();
 
-   virtual Bool_t ProcessMessage(Long_t msg, Long_t parm1, Long_t);
+   virtual bool ProcessMessage(int64_t msg, int64_t parm1, int64_t);
 
   void updateFileName(const std::string & fileName);
 

@@ -5,15 +5,14 @@
 // VERSION: 05 May 2018
 
 #include <cstdlib>
-#include <cstddef> // for: nullptr
 #include <vector>
 #include <map>
 
-#include "TROOT.h"
-#include "TH3D.h"
-#include "TH2D.h"
-#include "TH1.h"
-#include "TH2Poly.h"
+#include "root/include/TROOT.h"
+#include "root/include/TH3D.h"
+#include "root/include/TH2D.h"
+#include "root/include/TH1.h"
+#include "root/include/TH2Poly.h"
 
 #include "GeometryTPC.h"
 
@@ -36,9 +35,9 @@ class UVWprojector {
 
   // Getter methods
   
-  TH1D    *GetStripProfile_TH1D(int dir); // Get TH1D of time-integrated strip projection (SELECTED DIRECTION)
+  TH1D    *GetStripProfile_TH1D(projection dir); // Get TH1D of time-integrated strip projection (SELECTED DIRECTION)
   TH2Poly *GetStripProfile_TH2Poly();     // Get TH2Poly of time-integrated strip projection (ALL STRIPS)
-  TH2D    *GetStripVsTime_TH2D(int dir);  // Get TH2D of strip vs time projection (SELECTED DIRECTION)  
+  TH2D    *GetStripVsTime_TH2D(projection dir);  // Get TH2D of strip vs time projection (SELECTED DIRECTION)  
   inline int GetAreaNpoints() { return area_npoints; }
   inline double GetEventIntegral() { return (input_hist==nullptr ? 0.0 : input_hist->Integral()); }
   
@@ -53,8 +52,8 @@ class UVWprojector {
 
   bool InitAreaMapping();
   bool InitTimeMapping();
-  virtual void AddBinContent(Int_t bin, Double_t val);
-  virtual void SetBinContent(Int_t bin, Double_t val);
+  virtual void AddBinContent(int32_t bin, double val);
+  virtual void SetBinContent(int32_t bin, double val);
 		  
   // Getter methods
 

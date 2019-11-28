@@ -10,12 +10,22 @@
 #include <map>
 #include <string>
 #include <memory>
+#include <cstdio>
+#include <iostream>
+#include <sstream>
+#include <map>
+#include <iterator>
+#include <fstream>
+#include <utility>
+#include <algorithm> // for find_if
 
-#include "TH1D.h"
-#include "TH2D.h"
-#include "TH3F.h"
+#include "root/include/TH1D.h"
+#include "root/include/TH2D.h"
+#include "root/include/TH3F.h"
 
 #include "GeometryTPC.h"
+#include "TrackSegmentTPC.h"
+#include "SigClusterTPC.h"
 
 enum class strips {UV,VW,WU};
 
@@ -30,7 +40,7 @@ class SigClusterTPC;
 class EventTPC {
   //  friend class SigClusterTPC;
  private:
-  Long64_t event_id, run_id;
+  int64_t event_id, run_id;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
   
   std::map<MultiKey3, double, multikey3_less> chargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
@@ -59,8 +69,8 @@ class EventTPC {
   void Clear();
 
   void SetGeoPtr(std::shared_ptr<GeometryTPC> aPtr);
-  void SetEventId(Long64_t aId) { event_id = aId; };
-  void SetRunId(Long64_t aId) { run_id =  aId; };
+  void SetEventId(int64_t aId) { event_id = aId; };
+  void SetRunId(int64_t aId) { run_id =  aId; };
   // helper methods for inserting data points
   // they return TRUE on success and FALSE on error
   bool AddValByStrip(StripTPC* strip, int time_cell, double val);                      // valid range [0-511]
@@ -80,8 +90,8 @@ class EventTPC {
   double GetValByAgetChannel_raw(int cobo_idx, int asad_idx, int aget_idx, int raw_channel_idx, int time_cell/*, bool &result*/); // valid range [0-1][0-3][0-3][0-67][0-511]
 
   inline GeometryTPC * GetGeoPtr() const { return myGeometryPtr.get(); }
-  inline Long64_t GetEventId() const { return event_id; }
-  inline Long64_t GetRunId() const { return run_id; }
+  inline int64_t GetEventId() const { return event_id; }
+  inline int64_t GetRunId() const { return run_id; }
   inline bool IsOK() const { return initOK; }
   inline int GetTimeRebin() const { return time_rebin; }       
   bool SetTimeRebin(int rebin); // HAS NO EFFECT YET !!!!

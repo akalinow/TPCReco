@@ -1,9 +1,9 @@
 #ifndef ScrollFrame_H
 #define ScrollFrame_H
 
-#include <RQ_OBJECT.h>
-#include <TGFrame.h>
-#include <TGCanvas.h>
+#include <root/include/RQ_OBJECT.h>
+#include <root/include/TGFrame.h>
+#include <root/include/TGCanvas.h>
 
 
 class ScrollFrame {

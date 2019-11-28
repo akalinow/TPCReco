@@ -9,9 +9,18 @@
 #include <map>
 #include <string>
 #include <memory>
+#include <cstdio>
+#include <iostream>
+#include <sstream>
+#include <map>
+#include <iterator>
+#include <fstream>
+#include <utility>
+#include <algorithm> // for find_if
 
 #include "MultiKey.h"
 #include "GeometryTPC.h"
+#include "EventTPC.h"
 
 class EventTPC;
 

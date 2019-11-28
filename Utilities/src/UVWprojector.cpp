@@ -7,16 +7,16 @@
 #include <vector>
 #include <map>
 
-#include "TROOT.h"
-#include "TGraph.h"
-#include "TH2.h"
-#include "TH2D.h"
-#include "TH3D.h"
-#include "TH2Poly.h"
-#include "TVector2.h"
-#include "TRandom3.h"
-#include "TMath.h"
-#include "TPad.h"
+#include "root/include/TROOT.h"
+#include "root/include/TGraph.h"
+#include "root/include/TH2.h"
+#include "root/include/TH2D.h"
+#include "root/include/TH3D.h"
+#include "root/include/TH2Poly.h"
+#include "root/include/TVector2.h"
+#include "root/include/TRandom3.h"
+#include "root/include/TMath.h"
+#include "root/include/TPad.h"
 
 #include "MultiKey.h"
 #include "GeometryTPC.h"
@@ -138,7 +138,7 @@ void UVWprojector::SetEvent2D(TH2D &h2) {
   // DEBUG
 }
 
-void UVWprojector::AddBinContent(Int_t bin, Double_t w) {
+void UVWprojector::AddBinContent(int32_t bin, double w) {
 
   // sanity checks
   if(!geo_ptr || !(geo_ptr->IsOK())) return;
@@ -147,7 +147,7 @@ void UVWprojector::AddBinContent(Int_t bin, Double_t w) {
   if (bin<0) { tp->SetBinContent(bin, tp->GetBinContent(bin)+w); return; }
 
   ((TH2PolyBin*) tp->GetBins()->At(bin-1))->SetContent( ((TH2PolyBin*) tp->GetBins()->At(bin-1))->GetContent() + w ); 
-  Double_t st[7];
+  double st[7];
   tp->GetStats(st);
   st[0] += w; //fTsumw   = fTsumw + w;
   //fTsumwx  = fTsumwx + w*x;
@@ -160,7 +160,7 @@ void UVWprojector::AddBinContent(Int_t bin, Double_t w) {
   tp->SetBinContentChanged(kTRUE);
 }
 
-void UVWprojector::SetBinContent(Int_t bin, Double_t w) {
+void UVWprojector::SetBinContent(int32_t bin, double w) {
   
   // sanity checks
 
@@ -449,13 +449,13 @@ bool UVWprojector::InitTimeMapping() {
 // Getter methods
 
 // Get TH1D of time-integrated strip projection for 3D or 2D event (SELECTED DIRECTION)
-TH1D * UVWprojector::GetStripProfile_TH1D(int dir) {
+TH1D * UVWprojector::GetStripProfile_TH1D(projection dir) {
 
-  dir = dir % 3; // valid range [0-2]
+  dir = projection(int(dir) % 3); // valid range [0-2]
 
   // sanity checks
   //  if(!isOK_TH2Poly || !isOK_AreaMapping || !input_hist || dir<0) return nullptr;
-  if(!geo_ptr || !(geo_ptr->IsOK()) || !isOK_AreaMapping || !input_hist || dir<0) return nullptr;
+  if(!geo_ptr || !(geo_ptr->IsOK()) || !isOK_AreaMapping || !input_hist || int(dir)<0) return nullptr;
 
   // create a 2D clone with same X-Y binning
   TH2D *h2 = (TH2D*)input_hist;
@@ -562,7 +562,7 @@ TH1D * UVWprojector::GetStripProfile_TH1D(int dir) {
       int iy = (it->first).key2;
       int ibin = it2->first;       // TH2Poly
       StripTPC *s = geo_ptr->GetTH2PolyStrip(ibin);
-      if( s && s->Dir()==dir ) {
+      if( s && projection(s->Dir())==dir ) {
 	int strip_num = s->Num(); // valid range [1-1024] 
 	double weight = it2->second;
 	if(weight<=0.0) continue;
@@ -571,7 +571,7 @@ TH1D * UVWprojector::GetStripProfile_TH1D(int dir) {
 	// DEBUG
 	if(_debug) {
 	  double v = h2temp->GetBinContent(ix, iy)*weight;
-	  if(v!=0.0) std::cout << "Strip DIR=" << dir 
+	  if(v!=0.0) std::cout << "Strip DIR=" << int(dir) 
 			  << ", NUM=" << strip_num 
 			  << ": adding VAL=" << v
 			  << " (ix=" << ix
@@ -587,12 +587,12 @@ TH1D * UVWprojector::GetStripProfile_TH1D(int dir) {
 }
 
 // Get TH2D of strip vs time projection for 3D event (SELECTED DIRECTION)
-TH2D* UVWprojector::GetStripVsTime_TH2D(int dir) {
+TH2D* UVWprojector::GetStripVsTime_TH2D(projection dir) {
 
-  dir = dir % 3; // valid range [0-2]
+  dir = projection(int(dir) % 3); // valid range [0-2]
 
   // sanity checks
-  if(is_input_2D || !geo_ptr || !(geo_ptr->IsOK()) || !isOK_TimeMapping || !isOK_AreaMapping || !input_hist || dir<0) return nullptr;
+  if(is_input_2D || !geo_ptr || !(geo_ptr->IsOK()) || !isOK_TimeMapping || !isOK_AreaMapping || !input_hist || int(dir)<0) return nullptr;
 
   // create a 2D clone with same X-Y binning
   TH2D *h2 = (TH2D*)input_hist;
@@ -663,7 +663,7 @@ TH2D* UVWprojector::GetStripVsTime_TH2D(int dir) {
 	  int ibin = it4->first;       // TH2Poly bin index
 	  
 	  StripTPC *s = geo_ptr->GetTH2PolyStrip(ibin);
-	  if( s && s->Dir()==dir ) { 
+	  if( s && projection(s->Dir())==dir ) { 
 
 	    //////////// DEBUG 
 	    //	    std::cout << "BREAKPOINT: ibin=" << ibin << std::endl << std::flush;
@@ -679,7 +679,7 @@ TH2D* UVWprojector::GetStripVsTime_TH2D(int dir) {
 	    // DEBUG
 	    if(_debug) {
 	      double v = h3->GetBinContent(ix, iy, iz)*weight*weightT;
-	      if(v!=0.0) std::cout << "Strip DIR=" << dir 
+	      if(v!=0.0) std::cout << "Strip DIR=" << int(dir) 
 			      << ", NUM=" << strip_num 
 			      << ": adding VAL=" << v
 			      << " (ix=" << ix

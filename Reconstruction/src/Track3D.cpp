@@ -209,7 +209,7 @@ void Track3D::updateChi2(){
   nodeAngleChi2.clear();
   if(mySegments.size()) nodeAngleChi2.resize(mySegments.size()-1);
   
-  for (auto&& strip_dir : std::vector<projection>{DIR_U,DIR_V,DIR_W}) {
+  for (auto&& strip_dir : std::vector<projection>{projection::DIR_U,projection::DIR_V,projection::DIR_W}) {
     updateNodesChi2(strip_dir);
   }
 }

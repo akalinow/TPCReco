@@ -1,28 +1,4 @@
-#include <iostream>
-#include <vector>
-#include <map>
-#include <iterator>
-#include <memory>
-/*
-#include <cstdlib>
-#include <cstdio>
-#include <string>
-#include <sstream>
-#include <fstream>
-#include <utility>
-#include <algorithm> // for find_if
-#include "TMath.h"
-*/
-
-#include "TH1D.h"
-#include "TH3F.h"
-#include "TVector2.h"
-#include "TVector3.h"
-
-#include "GeometryTPC.h"
-#include "EventTPC.h"
 #include "TrackSegmentTPC.h"
-#include "SigClusterTPC.h"
 
 /* ============= 3D TRACK SEGMENT CLASS ===========*/
 TrackSegment3D::TrackSegment3D(const TVector3 & p1,
@@ -109,11 +85,10 @@ bool TrackSegment3D::SetComparisonCluster(SigClusterTPC &cluster) { // cluster =
 
   // create UZ, VZ, WZ projections of the parent 3D track segment
   
-  std::map<int, TrackSegment2D> trkMap; // 1-key map: strip_dir [0-2]
-  trkMap[DIR_U] = GetTrack2D(geo_ptr, DIR_U);
-  trkMap[DIR_V] = GetTrack2D(geo_ptr, DIR_V);
-  trkMap[DIR_W] = GetTrack2D(geo_ptr, DIR_W);
-  
+  std::map<projection, TrackSegment2D> trkMap; // 1-key map: strip_dir [0-2]
+  for (auto&& strip_dir : std::vector<projection>{ projection::DIR_U,projection::DIR_V,projection::DIR_W }) {
+	  trkMap[strip_dir] = GetTrack2D(geo_ptr, strip_dir);
+  }
   // Loop over 2D cluster hits and update statistics
   for(auto&& it: trkMap) {
     it.second.SetCluster(cluster, it.first); // DIR=it.first
@@ -145,19 +120,19 @@ bool TrackSegment3D::SetComparisonCluster(TH3F *h3) { // XYZ histogram in mm x m
   const double dz = (h3->GetZaxis()->GetXmax() - zmin)/h3->GetNbinsZ();
 
   // Loop over histogram cells and update statistics
-  for(Int_t ix=1; ix<=h3->GetNbinsX(); ix++) {
+  for(int32_t ix=1; ix<=h3->GetNbinsX(); ix++) {
     const double x = xmin + (ix-0.5)*dx; // X center of the cell
-    for(Int_t iy=1; iy<=h3->GetNbinsY(); iy++) {
+    for(int32_t iy=1; iy<=h3->GetNbinsY(); iy++) {
       const double y = ymin + (iy-0.5)*dy; // Y center of the cell
-      for(Int_t iz=1; iz<=h3->GetNbinsZ(); iz++) {	
+      for(int32_t iz=1; iz<=h3->GetNbinsZ(); iz++) {	
 	const double z = zmin + (iz-0.5)*dz; // Z center of the cell
 	const double val = h3->GetBinContent(ix, iy, iz);
 
 	AddHit3D(x, y, z, val); 
 
-      } // end of for(Int_t iz=... 
-    } // end of for(Int_t iy=... 
-  } // end of for(Int_t ix=... 
+      } // end of for(int32_t iz=... 
+    } // end of for(int32_t iy=... 
+  } // end of for(int32_t ix=... 
     
   return true;
 }
@@ -430,7 +405,7 @@ void TrackSegment2D::AddHit2D(TVector2 hit_pos, double hit_charge) {
 }
 
 // Sets the current comparison cluster from UVW(t) clustered data
-bool TrackSegment2D::SetCluster(SigClusterTPC &cluster, int dir) { // cluster = UVW clustered data
+bool TrackSegment2D::SetCluster(SigClusterTPC &cluster, projection dir) { // cluster = UVW clustered data
   
   // clear list of hits
   cluster_hits.clear();
@@ -445,7 +420,7 @@ bool TrackSegment2D::SetCluster(SigClusterTPC &cluster, int dir) { // cluster = 
 
   // Loop over 2D cluster hits and update statistics
   // key=(TIME_CELL [0-511], STRIP_NUM [1-1024])
-  std::vector<MultiKey2> cluster_hits=cluster.GetHitListByDir(static_cast<projection>(dir));
+  auto cluster_hits = cluster.GetHitListByDir(static_cast<projection>(dir));
   bool err_flag;
 
   for(auto&& it : cluster_hits) {
@@ -484,52 +459,53 @@ bool TrackSegment2D::SetCluster(TH2D *h2) { // XY histogram in mm x mm
   const double dy = (h2->GetYaxis()->GetXmax() - ymin)/h2->GetNbinsY();
 
   // Loop over histogram cells and update statistics
-  for(Int_t ix=1; ix<=h2->GetNbinsX(); ix++) {
+  for(int32_t ix=1; ix<=h2->GetNbinsX(); ix++) {
     const double x = xmin + (ix-0.5)*dx; // X center of the cell
-    for(Int_t iy=1; iy<=h2->GetNbinsY(); iy++) {	
+    for(int32_t iy=1; iy<=h2->GetNbinsY(); iy++) {	
       const double y = ymin + (iy-0.5)*dy; // Y center of the cell
       const double val = h2->GetBinContent(ix, iy);
       
       AddHit2D(x, y, val); 
       
-    } // end of for(Int_t iy=... 
-  } // end of for(Int_t ix=... 
+    } // end of for(int32_t iy=... 
+  } // end of for(int32_t ix=... 
   
   return true;
 }
 
 // resets CHI2 cache
 void TrackSegment2D::ResetChi2() {
-  chi2_OK = false;
   sum0_weight = 0.0;
   sum0_val2 = 0.0;
   sum0_resolution2 = 0.0;
   sum1_weight = 0.0;
   sum1_val2 = 0.0;
   sum1_resolution2 = 0.0;
+  chi2_OK = false;
 }
 
 // resets charge projection cache
 void TrackSegment2D::ResetChargeProjection() {
-  charge_OK = false;
-  if(charge_proj_nbins<1) charge_proj_nbins = 1;
+  charge_proj_nbins = std::max<unsigned>(charge_proj_nbins, 1);
   charge_proj.clear();
   charge_proj.resize(charge_proj_nbins, 0.0); // initialize elements with zeros
   charge_proj_total=0.0;
+  charge_OK = false;
 }
 
 // triggers update of 1D projection of the current comparison cluster on this track segment
 void TrackSegment2D::UpdateChargeProjection() {
-  charge_OK = false;
-  for(auto&& it : cluster_hits) {
-    unsigned int index = 0;
-    if(length>0) index = (int) (((TVector2( it.hit_x, it.hit_y )-start_point)*unit_vec)/length*charge_proj_nbins);
-    if(index<0) index=0;
-    else if(index>=charge_proj_nbins) index=charge_proj_nbins;
-    charge_proj[index] += it.hit_charge;
-    charge_proj_total += it.hit_charge;
-  }
-  charge_OK = true;
+	if (!charge_OK) {
+		for (auto&& it : cluster_hits) {
+			unsigned int index = 0;
+			if (length > 0) index = (int)(((TVector2(it.hit_x, it.hit_y) - start_point) * unit_vec) / length * charge_proj_nbins);
+			if (index < 0) index = 0;
+			else if (index >= charge_proj_nbins) index = charge_proj_nbins;
+			charge_proj[index] += it.hit_charge;
+			charge_proj_total += it.hit_charge;
+		}
+		charge_OK = true;
+	}
 }
 
 // Calculates 1D projection of the current comparison cluster on this track segment
@@ -539,9 +515,7 @@ void TrackSegment2D::UpdateChargeProjection() {
 std::vector<double> TrackSegment2D::GetChargeProjectionData() {
 
   // try to use cached data if possible
-  if(!charge_OK) {
-    UpdateChargeProjection();
-  }
+	UpdateChargeProjection();
 
   return charge_proj;
 }
@@ -553,9 +527,7 @@ std::vector<double> TrackSegment2D::GetChargeProjectionData() {
 TH1D *TrackSegment2D::GetChargeProjection() {
 
   // try to use cached data if possible
-  if(!charge_OK) {
-    UpdateChargeProjection();
-  }
+	UpdateChargeProjection();
 
   if( length==0.0 ) return nullptr;
   TH1D *h1 = new TH1D("h_dEdx", "Charge along the track segment;Length [mm];Charge/bin [arb.u.]",
@@ -570,9 +542,7 @@ TH1D *TrackSegment2D::GetChargeProjection() {
 double TrackSegment2D::GetCharge() {
 
   // try to use cached data if possible
-  if(!charge_OK) {
-    UpdateChargeProjection();
-  }
+	UpdateChargeProjection();
 
   return charge_proj_total;
 }

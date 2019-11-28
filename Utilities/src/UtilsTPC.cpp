@@ -1,17 +1,17 @@
-#include "TROOT.h"
-#include "TStyle.h"
-#include "TFile.h"
-#include "TCanvas.h"
-#include "TH1D.h"
-#include "TH2F.h"
-#include "TH2D.h"
-#include "TH3D.h"
-#include "TPaletteAxis.h"
-#include "TList.h"
-#include "TF1.h"
-#include "TGraph.h"
-#include "TMultiGraph.h"
-#include "TColor.h"
+#include "root/include/TROOT.h"
+#include "root/include/TStyle.h"
+#include "root/include/TFile.h"
+#include "root/include/TCanvas.h"
+#include "root/include/TH1D.h"
+#include "root/include/TH2F.h"
+#include "root/include/TH2D.h"
+#include "root/include/TH3D.h"
+#include "root/include/TPaletteAxis.h"
+#include "root/include/TList.h"
+#include "root/include/TF1.h"
+#include "root/include/TGraph.h"
+#include "root/include/TMultiGraph.h"
+#include "root/include/TColor.h"
 
 #include "MultiKey.h"
 #include "GeometryTPC.h"
@@ -19,24 +19,24 @@
 #include "UtilsTPC.h"
 
 // helper plot functions
-bool plot_TH3D(TH3D *h, const char *canvas_print_fname) { return true; }
-bool plot_UVW_TH2D(TH2D *h, const char *canvas_print_fname) { return true; }
-bool plot_UVW_TH2poly(TH2Poly *h, const char *canvas_print_fname) { return true; }
+bool plot_TH3D(TH3D *h, std::string canvas_print_fname) { return true; }
+bool plot_UVW_TH2D(TH2D *h, std::string canvas_print_fname) { return true; }
+bool plot_UVW_TH2poly(TH2Poly *h, std::string canvas_print_fname) { return true; }
 
-void plot_MCevent(const char *input_fname1,  // input ROOT file name for reading (required)
-		  const char *input_hname1,  // input TH3F/TH3D histogram to be plotted (required)
-		  const char *input_fname2,  // input ROOT file name for reading (optional, nullptr=none)
-		  const char *input_hname2,  // input TH3F/TH3D histogram to be plotted (optional, nullptr=none)
-		  const char *output_fname,  // prefix for output files with path (optional)
-		  const char *geom_fname,    // GeometryTPC config file (required)
+void plot_MCevent(std::string input_fname1,  // input ROOT file name for reading (required)
+		  std::string input_hname1,  // input TH3F/TH3D histogram to be plotted (required)
+		  std::string input_fname2,  // input ROOT file name for reading (optional, nullptr=none)
+		  std::string input_hname2,  // input TH3F/TH3D histogram to be plotted (optional, nullptr=none)
+		  std::string output_fname,  // prefix for output files with path (optional)
+		  std::string geom_fname,    // GeometryTPC config file (required)
 		  bool color_scale_flag,     // plot vertical color scale for TH3F/TH3D values (default=false)
 		  bool animation_flag,       // create several PNG files instead of one (for animated GIFs, default=false)
 		  int rebin,                 // rebin factor for X, Y and Z axes (default=none=1)
 		  const double convert_to_mm_factor, // conversion factor from [input_histogram_units] to [mm]
-		  const char *titleX,
-		  const char *titleY,
-		  const char *titleZ,
-		  const char *titleVAL,     // nullptr=no title change
+		  std::string titleX,
+		  std::string titleY,
+		  std::string titleZ,
+		  std::string titleVAL,     // nullptr=no title change
 		  double phi0,              // TView parameter [deg]
 		  double theta0,            // TView parameter [deg]
 		  double color_power) {     // color TransferFunction power parameter: val^power, where power>0, 0<val<1 
@@ -125,7 +125,7 @@ void plot_MCevent(const char *input_fname1,  // input ROOT file name for reading
     TH2F *h = new TH2F("h","",1, 0., 1., 1, 0., 1.); h->Fill(-1, -1);
     h->SetMinimum(h3->GetMinimum()); 
     h->SetMaximum(h3->GetMaximum());  
-    h->GetZaxis()->SetTitle(titleVAL); 
+    h->GetZaxis()->SetTitle(titleVAL.c_str()); 
     h->GetZaxis()->CenterTitle(true);
     h->GetZaxis()->SetTitleOffset(1.6);
     h->GetZaxis()->SetLabelOffset(0.01);
@@ -175,13 +175,13 @@ void plot_MCevent(const char *input_fname1,  // input ROOT file name for reading
     lf->Add(tf);
   }
 
-  if(titleX) h3->GetXaxis()->SetTitle(titleX);
+  if(titleX.c_str()) h3->GetXaxis()->SetTitle(titleX.c_str());
   h3->GetXaxis()->CenterTitle(true);
   h3->GetXaxis()->SetTitleOffset(2);
-  if(titleY) h3->GetYaxis()->SetTitle(titleY);
+  if(titleY.c_str()) h3->GetYaxis()->SetTitle(titleY.c_str());
   h3->GetYaxis()->CenterTitle(true);
   h3->GetYaxis()->SetTitleOffset(2);
-  if(titleZ) h3->GetZaxis()->SetTitle(titleZ);
+  if(titleZ.c_str()) h3->GetZaxis()->SetTitle(titleZ.c_str());
   h3->GetZaxis()->CenterTitle(true);
   h3->GetZaxis()->SetTitleOffset(2);
   //  h3->GetXaxis()->SetTicks("-");
@@ -194,14 +194,14 @@ void plot_MCevent(const char *input_fname1,  // input ROOT file name for reading
   //
   // Here are different 3D histo drawing options:
   //
-  const char *option="GLCOL";   // color according to my_transfer_function(<bin content>)
-  //  const char *option="GLCOLZ";  // color according to my_transfer_function(<bin content>) + color Z scale (quite ugly)
-  //  const char *option="GLBOX";   // box size prop. to <bin contetnt>
-  //  const char *option="GLBOX1";  // sphere size prop. to <bin content>
+  std::string option="GLCOL";   // color according to my_transfer_function(<bin content>)
+  //  std::string option="GLCOLZ";  // color according to my_transfer_function(<bin content>) + color Z scale (quite ugly)
+  //  std::string option="GLBOX";   // box size prop. to <bin contetnt>
+  //  std::string option="GLBOX1";  // sphere size prop. to <bin content>
   //  h3->SetFillColor(kRed);  // valid for GLBOX, GLBOX1 only
 
   option = "box";
-  h3->Draw(option);
+  h3->Draw(option.c_str());
   //  h3->DrawCopy(option);
 
   gPad->Update();
@@ -266,7 +266,7 @@ void plot_MCevent(const char *input_fname1,  // input ROOT file name for reading
 	TH2F *h = new TH2F("h","",1, 0., 1., 1, 0., 1.); h->Fill(-1, -1);
 	h->SetMinimum(h3->GetMinimum()); 
 	h->SetMaximum(h3->GetMaximum());  
-	h->GetZaxis()->SetTitle(titleVAL); 
+	h->GetZaxis()->SetTitle(titleVAL.c_str());
 	h->GetZaxis()->CenterTitle(true);
 	h->GetZaxis()->SetTitleOffset(1.6);
 	h->GetZaxis()->SetLabelOffset(0.01);
@@ -303,7 +303,7 @@ void plot_MCevent(const char *input_fname1,  // input ROOT file name for reading
       gPad->RedrawAxis();
 
       //      tf->SetParameter(2, (i+1)*0.1 );
-      h3->DrawCopy(option);
+      h3->DrawCopy(option.c_str());
       
       gPad->Modified();
       gPad->Update();
@@ -350,10 +350,10 @@ void plot_MCevent(const char *input_fname1,  // input ROOT file name for reading
   std::cout << "th2poly: ptr=" << tp1 << ", integral=" << tp1->Integral() << std::endl;
 
   tp1->SetTitle("Time-integrated charge per strip");
-  if(titleX) tp1->GetXaxis()->SetTitle(titleX);
+  if(titleX.c_str()) tp1->GetXaxis()->SetTitle(titleX.c_str());
   tp1->GetXaxis()->CenterTitle(true);
   tp1->GetXaxis()->SetTitleOffset(1.4);
-  if(titleY) tp1->GetYaxis()->SetTitle(titleY);
+  if(titleY.c_str()) tp1->GetYaxis()->SetTitle(titleY.c_str());
   tp1->GetYaxis()->CenterTitle(true);
   tp1->GetYaxis()->SetTitleOffset(1.4);
   tp1->GetZaxis()->SetTitle("Charge [arb.u.]");
@@ -412,18 +412,18 @@ void plot_MCevent(const char *input_fname1,  // input ROOT file name for reading
   zmin = 0.0;
   zmax = 0.0;
 
-  for(int i=0; i<3; i++) {
-    c2->cd(i+1);
+  for (auto&& i : std::vector<projection>{ projection::DIR_U,projection::DIR_V,projection::DIR_W }) {
+    c2->cd(int(i)+1);
     //    ts2[i] = (TH2D*) p->DrawStripVsTime(i, "COL2Z");
-    ts2[i] = p->GetStripVsTime_TH2D(i);
-    if(!ts2[i]) {
-      std::cerr << "ERROR: Strip vs time TH2D[" << i << "] is nullptr !!!" << std::endl;
+    ts2[int(i)] = p->GetStripVsTime_TH2D(i);
+    if(!ts2[int(i)]) {
+      std::cerr << "ERROR: Strip vs time TH2D[" << int(i) << "] is nullptr !!!" << std::endl;
       return;
     }
-    ts2[i]->Draw("COL2Z");
-    std::cout << "dir=" << i << ": ptr=" << ts2[i] << ", integral=" << ts2[i]->Integral() << std::endl;
-    if( ts2[i]->GetMaximum()>zmax ) zmax=ts2[i]->GetMaximum();
-    if( ts2[i]->GetMinimum()<zmin ) zmin=ts2[i]->GetMinimum();
+    ts2[int(i)]->Draw("COL2Z");
+    std::cout << "dir=" << int(i) << ": ptr=" << ts2[int(i)] << ", integral=" << ts2[int(i)]->Integral() << std::endl;
+    if( ts2[int(i)]->GetMaximum()>zmax ) zmax=ts2[int(i)]->GetMaximum();
+    if( ts2[int(i)]->GetMinimum()<zmin ) zmin=ts2[int(i)]->GetMinimum();
   }
   for(int i=0; i<3; i++) {
     c2->cd(i+1);
@@ -504,18 +504,18 @@ void plot_MCevent(const char *input_fname1,  // input ROOT file name for reading
   zmax = 0.0;
   zmin = 0.0;
 
-  for(int i=0; i<3; i++) {
-    c3->cd(i+1);
+  for(auto&& i : std::vector<projection>{ projection::DIR_U,projection::DIR_V,projection::DIR_W }) {
+    c3->cd(int(i)+1);
     //    ts3[i] = (TH2D*) p->DrawStripVsTime(i, "LEGO2 FB");
-    ts3[i] = p->GetStripVsTime_TH2D(i);
-    if(!ts3[i]) {
-      std::cerr << "ERROR: Strip vs time TH2D[" << i << "] is nullptr !!!" << std::endl;
+    ts3[int(i)] = p->GetStripVsTime_TH2D(i);
+    if(!ts3[int(i)]) {
+      std::cerr << "ERROR: Strip vs time TH2D[" << int(i) << "] is nullptr !!!" << std::endl;
       return;
     }
-    ts3[i]->Draw("LEGO2 FB");
-    std::cout << "dir=" << i << ": ptr=" << ts3[i] << ", integral=" << ts3[i]->Integral() << std::endl;
-    if( ts3[i]->GetMaximum()>zmax ) zmax=ts3[i]->GetMaximum();
-    if( ts3[i]->GetMinimum()<zmin ) zmin=ts3[i]->GetMinimum();
+    ts3[int(i)]->Draw("LEGO2 FB");
+    std::cout << "dir=" << int(i) << ": ptr=" << ts3[int(i)] << ", integral=" << ts3[int(i)]->Integral() << std::endl;
+    if( ts3[int(i)]->GetMaximum()>zmax ) zmax=ts3[int(i)]->GetMaximum();
+    if( ts3[int(i)]->GetMinimum()<zmin ) zmin=ts3[int(i)]->GetMinimum();
   }
   for(int i=0; i<3; i++) {
     c3->cd(i+1);
@@ -609,15 +609,15 @@ void plot_MCevent(const char *input_fname1,  // input ROOT file name for reading
 
     tmg[i] = new TMultiGraph();
 
-    for(int istrip=1; istrip<=g->GetDirNstrips(i); istrip++) {
-      TGraph *tg = new TGraph( ts2[i]->ProjectionX(Form("%s%d",g->GetDirName(i),istrip), istrip, istrip));
+    for(int istrip=1; istrip<=g->GetDirNstrips(projection(i)); istrip++) {
+      TGraph *tg = new TGraph( ts2[i]->ProjectionX(Form("%s%d",g->GetDirName(projection(i)),istrip), istrip, istrip));
       std::cout << "dir=" << i << ", strip=" << istrip << ": ptr=" << tg << ", integral_tgraph=" << tg->Integral() 
 	   << ", integral_sliceX=" << ts2[i]->Integral(1, ts2[i]->GetNbinsX(), istrip, istrip) << std::endl;
 
       TPaletteAxis *pa2 = (TPaletteAxis*)ts2[i]->GetListOfFunctions()->FindObject("palette");
       int ci = kBlack;
       if(pa2) {
-	ci = pa2->GetValueColor( (Double_t)( ts2[i]->Integral(1, ts2[i]->GetNbinsX(), istrip, istrip)) );
+	ci = pa2->GetValueColor( (double)( ts2[i]->Integral(1, ts2[i]->GetNbinsX(), istrip, istrip)) );
       } 
       tg->SetLineWidth(2);
       tg->SetLineColor(ci);
@@ -705,7 +705,7 @@ void plot_MCevent(const char *input_fname1,  // input ROOT file name for reading
   for(int i=0; i<3; i++) {
     c5->cd(i+1);
     //    ts[i] = (TH1D*) p->DrawStripProfile(i);
-    ts[i] = p->GetStripProfile_TH1D(i);
+    ts[i] = p->GetStripProfile_TH1D(projection(i));
     if(!ts[i]) {
       std::cerr << "ERROR: Strip profile TH1D[" << i << "] is nullptr !!!" << std::endl;
       return;
@@ -770,15 +770,15 @@ void plot_MCevent(const char *input_fname1,  // input ROOT file name for reading
 //_________________________
 // load TH3D from ROOT file
 //
-TH3D* load_TH3D(const char *input_fname, const char* input_hname) {
+TH3D* load_TH3D(std::string input_fname, std::string  input_hname) {
 
   TFile *fin = nullptr;
-  if(input_fname) fin = new TFile(input_fname,"OLD");
+  if(!input_fname.empty()) fin = new TFile(input_fname.c_str(),"OLD");
   if(!fin) return nullptr;
   fin->cd();
   fin->ls();
 
-  TH3D *h3_orig = (TH3D*)(fin->Get(input_hname));  // also works with TH3F
+  TH3D *h3_orig = (TH3D*)(fin->Get(input_hname.c_str()));  // also works with TH3F
   if(!h3_orig || h3_orig->GetDimension()!=3) return nullptr;  
 
   TH3D *h3 = (TH3D*)(h3_orig->Clone(Form("%s_copy", h3_orig->GetName()))); // new TH3D(*h3_orig);
@@ -896,7 +896,7 @@ bool add_to_TH3D(TH3D *h1, TH3D *h2, double weight) {
   return true;
 }
 
-Double_t my_transfer_function(const Double_t *x, const Double_t *param)
+double my_transfer_function(const double *x, const double *param)
 {
   // Requires 2 params:
   // - Bin values from param[0] to param[1]
@@ -915,7 +915,7 @@ Double_t my_transfer_function(const Double_t *x, const Double_t *param)
 // Example of custom color palette taken from [1].
 // [1] http://ultrahigh.org/2007/08/making-pretty-root-color-palettes/ -- acccess: 4 Nov 2017
 //
-Double_t my_transfer_function3(const Double_t *x, const Double_t *param)
+double my_transfer_function3(const double *x, const double *param)
 {
   // Requires 3 params:
   // - Bin values from param[0] to param[1]
@@ -935,32 +935,32 @@ Double_t my_transfer_function3(const Double_t *x, const Double_t *param)
   return 0.0;
 }
 
-void set_custom_rainbow_palette(const Int_t NCont, const Float_t alpha)
+void set_custom_rainbow_palette(const int32_t NCont, const float alpha)
 {
-  const Int_t NRGBs = 5;
+  const int32_t NRGBs = 5;
 
-  Double_t stops[NRGBs] = { 0.00, 0.34, 0.61, 0.84, 1.00 };
-  Double_t red[NRGBs]   = { 0.00, 0.00, 0.87, 1.00, 0.51 };
-  Double_t green[NRGBs] = { 0.00, 0.81, 1.00, 0.20, 0.00 };
-  Double_t blue[NRGBs]  = { 0.51, 1.00, 0.12, 0.00, 0.00 };
+  double stops[NRGBs] = { 0.00, 0.34, 0.61, 0.84, 1.00 };
+  double red[NRGBs]   = { 0.00, 0.00, 0.87, 1.00, 0.51 };
+  double green[NRGBs] = { 0.00, 0.81, 1.00, 0.20, 0.00 };
+  double blue[NRGBs]  = { 0.51, 1.00, 0.12, 0.00, 0.00 };
   TColor::CreateGradientColorTable(NRGBs, stops, red, green, blue, NCont, alpha);
   gStyle->SetNumberContours(NCont);
 }
 
 // Imported from ROOT 6.04 TColor::SetPalette
-void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
+void set_custom_palette(const int32_t index, int32_t NCont, const float alpha)
 {
-  const Int_t NRGBs = 9;
-  Double_t stops[NRGBs] = { 0.0000, 0.1250, 0.2500, 0.3750, 0.5000, 0.6250, 0.7500, 0.8750, 1.0000};
-  Int_t Idx;
+  const int32_t NRGBs = 9;
+  double stops[NRGBs] = { 0.0000, 0.1250, 0.2500, 0.3750, 0.5000, 0.6250, 0.7500, 0.8750, 1.0000};
+  int32_t Idx;
 
   switch (index) {
     // Deep Sea
   case 51:
     {
-      Double_t red[NRGBs]   = {  0./255.,  9./255., 13./255., 17./255., 24./255.,  32./255.,  27./255.,  25./255.,  29./255.};
-      Double_t green[NRGBs] = {  0./255.,  0./255.,  0./255.,  2./255., 37./255.,  74./255., 113./255., 160./255., 221./255.};
-      Double_t blue[NRGBs]  = { 28./255., 42./255., 59./255., 78./255., 98./255., 129./255., 154./255., 184./255., 221./255.};
+      double red[NRGBs]   = {  0./255.,  9./255., 13./255., 17./255., 24./255.,  32./255.,  27./255.,  25./255.,  29./255.};
+      double green[NRGBs] = {  0./255.,  0./255.,  0./255.,  2./255., 37./255.,  74./255., 113./255., 160./255., 221./255.};
+      double blue[NRGBs]  = { 28./255., 42./255., 59./255., 78./255., 98./255., 129./255., 154./255., 184./255., 221./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -968,9 +968,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Grey Scale
   case 52:
     {
-      Double_t red[NRGBs]   = { 0./255., 32./255., 64./255., 96./255., 128./255., 160./255., 192./255., 224./255., 255./255.};
-      Double_t green[NRGBs] = { 0./255., 32./255., 64./255., 96./255., 128./255., 160./255., 192./255., 224./255., 255./255.};
-      Double_t blue[NRGBs]  = { 0./255., 32./255., 64./255., 96./255., 128./255., 160./255., 192./255., 224./255., 255./255.};
+      double red[NRGBs]   = { 0./255., 32./255., 64./255., 96./255., 128./255., 160./255., 192./255., 224./255., 255./255.};
+      double green[NRGBs] = { 0./255., 32./255., 64./255., 96./255., 128./255., 160./255., 192./255., 224./255., 255./255.};
+      double blue[NRGBs]  = { 0./255., 32./255., 64./255., 96./255., 128./255., 160./255., 192./255., 224./255., 255./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -978,9 +978,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Dark Body Radiator
   case 53:
     {
-      Double_t red[NRGBs]   = { 0./255., 45./255., 99./255., 156./255., 212./255., 230./255., 237./255., 234./255., 242./255.};
-      Double_t green[NRGBs] = { 0./255.,  0./255.,  0./255.,  45./255., 101./255., 168./255., 238./255., 238./255., 243./255.};
-      Double_t blue[NRGBs]  = { 0./255.,  1./255.,  1./255.,   3./255.,   9./255.,   8./255.,  11./255.,  95./255., 230./255.};
+      double red[NRGBs]   = { 0./255., 45./255., 99./255., 156./255., 212./255., 230./255., 237./255., 234./255., 242./255.};
+      double green[NRGBs] = { 0./255.,  0./255.,  0./255.,  45./255., 101./255., 168./255., 238./255., 238./255., 243./255.};
+      double blue[NRGBs]  = { 0./255.,  1./255.,  1./255.,   3./255.,   9./255.,   8./255.,  11./255.,  95./255., 230./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -988,9 +988,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Two-color hue (dark blue through neutral gray to bright yellow)
   case 54:
     {
-      Double_t red[NRGBs]   = {  0./255.,  22./255., 44./255., 68./255., 93./255., 124./255., 160./255., 192./255., 237./255.};
-      Double_t green[NRGBs] = {  0./255.,  16./255., 41./255., 67./255., 93./255., 125./255., 162./255., 194./255., 241./255.};
-      Double_t blue[NRGBs]  = { 97./255., 100./255., 99./255., 99./255., 93./255.,  68./255.,  44./255.,  26./255.,  74./255.};
+      double red[NRGBs]   = {  0./255.,  22./255., 44./255., 68./255., 93./255., 124./255., 160./255., 192./255., 237./255.};
+      double green[NRGBs] = {  0./255.,  16./255., 41./255., 67./255., 93./255., 125./255., 162./255., 194./255., 241./255.};
+      double blue[NRGBs]  = { 97./255., 100./255., 99./255., 99./255., 93./255.,  68./255.,  44./255.,  26./255.,  74./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -998,9 +998,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Rain Bow
   case 55:
     {
-      Double_t red[NRGBs]   = {  0./255.,   5./255.,  15./255.,  35./255., 102./255., 196./255., 208./255., 199./255., 110./255.};
-      Double_t green[NRGBs] = {  0./255.,  48./255., 124./255., 192./255., 206./255., 226./255.,  97./255.,  16./255.,   0./255.};
-      Double_t blue[NRGBs]  = { 99./255., 142./255., 198./255., 201./255.,  90./255.,  22./255.,  13./255.,   8./255.,   2./255.};
+      double red[NRGBs]   = {  0./255.,   5./255.,  15./255.,  35./255., 102./255., 196./255., 208./255., 199./255., 110./255.};
+      double green[NRGBs] = {  0./255.,  48./255., 124./255., 192./255., 206./255., 226./255.,  97./255.,  16./255.,   0./255.};
+      double blue[NRGBs]  = { 99./255., 142./255., 198./255., 201./255.,  90./255.,  22./255.,  13./255.,   8./255.,   2./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1008,9 +1008,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Inverted Dark Body Radiator
   case 56:
     {
-      Double_t red[NRGBs]   = { 242./255., 234./255., 237./255., 230./255., 212./255., 156./255., 99./255., 45./255., 0./255.};
-      Double_t green[NRGBs] = { 243./255., 238./255., 238./255., 168./255., 101./255.,  45./255.,  0./255.,  0./255., 0./255.};
-      Double_t blue[NRGBs]  = { 230./255.,  95./255.,  11./255.,   8./255.,   9./255.,   3./255.,  1./255.,  1./255., 0./255.};
+      double red[NRGBs]   = { 242./255., 234./255., 237./255., 230./255., 212./255., 156./255., 99./255., 45./255., 0./255.};
+      double green[NRGBs] = { 243./255., 238./255., 238./255., 168./255., 101./255.,  45./255.,  0./255.,  0./255., 0./255.};
+      double blue[NRGBs]  = { 230./255.,  95./255.,  11./255.,   8./255.,   9./255.,   3./255.,  1./255.,  1./255., 0./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1018,9 +1018,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Bird
   case 57:
     {
-      Double_t red[NRGBs]   = { 0.2082, 0.0592, 0.0780, 0.0232, 0.1802, 0.5301, 0.8186, 0.9956, 0.9764};
-      Double_t green[NRGBs] = { 0.1664, 0.3599, 0.5041, 0.6419, 0.7178, 0.7492, 0.7328, 0.7862, 0.9832};
-      Double_t blue[NRGBs]  = { 0.5293, 0.8684, 0.8385, 0.7914, 0.6425, 0.4662, 0.3499, 0.1968, 0.0539};
+      double red[NRGBs]   = { 0.2082, 0.0592, 0.0780, 0.0232, 0.1802, 0.5301, 0.8186, 0.9956, 0.9764};
+      double green[NRGBs] = { 0.1664, 0.3599, 0.5041, 0.6419, 0.7178, 0.7492, 0.7328, 0.7862, 0.9832};
+      double blue[NRGBs]  = { 0.5293, 0.8684, 0.8385, 0.7914, 0.6425, 0.4662, 0.3499, 0.1968, 0.0539};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1028,9 +1028,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Cubehelix
   case 58:
     {
-      Double_t red[NRGBs]   = { 0.0000, 0.0956, 0.0098, 0.2124, 0.6905, 0.9242, 0.7914, 0.7596, 1.0000};
-      Double_t green[NRGBs] = { 0.0000, 0.1147, 0.3616, 0.5041, 0.4577, 0.4691, 0.6905, 0.9237, 1.0000};
-      Double_t blue[NRGBs]  = { 0.0000, 0.2669, 0.3121, 0.1318, 0.2236, 0.6741, 0.9882, 0.9593, 1.0000};
+      double red[NRGBs]   = { 0.0000, 0.0956, 0.0098, 0.2124, 0.6905, 0.9242, 0.7914, 0.7596, 1.0000};
+      double green[NRGBs] = { 0.0000, 0.1147, 0.3616, 0.5041, 0.4577, 0.4691, 0.6905, 0.9237, 1.0000};
+      double blue[NRGBs]  = { 0.0000, 0.2669, 0.3121, 0.1318, 0.2236, 0.6741, 0.9882, 0.9593, 1.0000};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1038,9 +1038,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Green Red Violet
   case 59:
     {
-      Double_t red[NRGBs]   = {13./255., 23./255., 25./255., 63./255., 76./255., 104./255., 137./255., 161./255., 206./255.};
-      Double_t green[NRGBs] = {95./255., 67./255., 37./255., 21./255.,  0./255.,  12./255.,  35./255.,  52./255.,  79./255.};
-      Double_t blue[NRGBs]  = { 4./255.,  3./255.,  2./255.,  6./255., 11./255.,  22./255.,  49./255.,  98./255., 208./255.};
+      double red[NRGBs]   = {13./255., 23./255., 25./255., 63./255., 76./255., 104./255., 137./255., 161./255., 206./255.};
+      double green[NRGBs] = {95./255., 67./255., 37./255., 21./255.,  0./255.,  12./255.,  35./255.,  52./255.,  79./255.};
+      double blue[NRGBs]  = { 4./255.,  3./255.,  2./255.,  6./255., 11./255.,  22./255.,  49./255.,  98./255., 208./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1048,9 +1048,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Blue Red Yellow
   case 60:
     {
-      Double_t red[NRGBs]   = {0./255.,  61./255.,  89./255., 122./255., 143./255., 160./255., 185./255., 204./255., 231./255.};
-      Double_t green[NRGBs] = {0./255.,   0./255.,   0./255.,   0./255.,  14./255.,  37./255.,  72./255., 132./255., 235./255.};
-      Double_t blue[NRGBs]  = {0./255., 140./255., 224./255., 144./255.,   4./255.,   5./255.,   6./255.,   9./255.,  13./255.};
+      double red[NRGBs]   = {0./255.,  61./255.,  89./255., 122./255., 143./255., 160./255., 185./255., 204./255., 231./255.};
+      double green[NRGBs] = {0./255.,   0./255.,   0./255.,   0./255.,  14./255.,  37./255.,  72./255., 132./255., 235./255.};
+      double blue[NRGBs]  = {0./255., 140./255., 224./255., 144./255.,   4./255.,   5./255.,   6./255.,   9./255.,  13./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1058,9 +1058,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Ocean
   case 61:
     {
-      Double_t red[NRGBs]   = { 14./255.,  7./255.,  2./255.,  0./255.,  5./255.,  11./255.,  55./255., 131./255., 229./255.};
-      Double_t green[NRGBs] = {105./255., 56./255., 26./255.,  1./255., 42./255.,  74./255., 131./255., 171./255., 229./255.};
-      Double_t blue[NRGBs]  = {  2./255., 21./255., 35./255., 60./255., 92./255., 113./255., 160./255., 185./255., 229./255.};
+      double red[NRGBs]   = { 14./255.,  7./255.,  2./255.,  0./255.,  5./255.,  11./255.,  55./255., 131./255., 229./255.};
+      double green[NRGBs] = {105./255., 56./255., 26./255.,  1./255., 42./255.,  74./255., 131./255., 171./255., 229./255.};
+      double blue[NRGBs]  = {  2./255., 21./255., 35./255., 60./255., 92./255., 113./255., 160./255., 185./255., 229./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1068,9 +1068,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Color Printable On Grey
   case 62:
     {
-      Double_t red[NRGBs]   = { 0./255.,   0./255.,   0./255.,  70./255., 148./255., 231./255., 235./255., 237./255., 244./255.};
-      Double_t green[NRGBs] = { 0./255.,   0./255.,   0./255.,   0./255.,   0./255.,  69./255.,  67./255., 216./255., 244./255.};
-      Double_t blue[NRGBs]  = { 0./255., 102./255., 228./255., 231./255., 177./255., 124./255., 137./255.,  20./255., 244./255.};
+      double red[NRGBs]   = { 0./255.,   0./255.,   0./255.,  70./255., 148./255., 231./255., 235./255., 237./255., 244./255.};
+      double green[NRGBs] = { 0./255.,   0./255.,   0./255.,   0./255.,   0./255.,  69./255.,  67./255., 216./255., 244./255.};
+      double blue[NRGBs]  = { 0./255., 102./255., 228./255., 231./255., 177./255., 124./255., 137./255.,  20./255., 244./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1078,9 +1078,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Alpine
   case 63:
     {
-      Double_t red[NRGBs]   = { 50./255., 56./255., 63./255., 68./255.,  93./255., 121./255., 165./255., 192./255., 241./255.};
-      Double_t green[NRGBs] = { 66./255., 81./255., 91./255., 96./255., 111./255., 128./255., 155./255., 189./255., 241./255.};
-      Double_t blue[NRGBs]  = { 97./255., 91./255., 75./255., 65./255.,  77./255., 103./255., 143./255., 167./255., 217./255.};
+      double red[NRGBs]   = { 50./255., 56./255., 63./255., 68./255.,  93./255., 121./255., 165./255., 192./255., 241./255.};
+      double green[NRGBs] = { 66./255., 81./255., 91./255., 96./255., 111./255., 128./255., 155./255., 189./255., 241./255.};
+      double blue[NRGBs]  = { 97./255., 91./255., 75./255., 65./255.,  77./255., 103./255., 143./255., 167./255., 217./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1088,9 +1088,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Aquamarine
   case 64:
     {
-      Double_t red[NRGBs]   = { 145./255., 166./255., 167./255., 156./255., 131./255., 114./255., 101./255., 112./255., 132./255.};
-      Double_t green[NRGBs] = { 158./255., 178./255., 179./255., 181./255., 163./255., 154./255., 144./255., 152./255., 159./255.};
-      Double_t blue[NRGBs]  = { 190./255., 199./255., 201./255., 192./255., 176./255., 169./255., 160./255., 166./255., 190./255.};
+      double red[NRGBs]   = { 145./255., 166./255., 167./255., 156./255., 131./255., 114./255., 101./255., 112./255., 132./255.};
+      double green[NRGBs] = { 158./255., 178./255., 179./255., 181./255., 163./255., 154./255., 144./255., 152./255., 159./255.};
+      double blue[NRGBs]  = { 190./255., 199./255., 201./255., 192./255., 176./255., 169./255., 160./255., 166./255., 190./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1098,9 +1098,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Army
   case 65:
     {
-      Double_t red[NRGBs]   = { 93./255.,   91./255.,  99./255., 108./255., 130./255., 125./255., 132./255., 155./255., 174./255.};
-      Double_t green[NRGBs] = { 126./255., 124./255., 128./255., 129./255., 131./255., 121./255., 119./255., 153./255., 173./255.};
-      Double_t blue[NRGBs]  = { 103./255.,  94./255.,  87./255.,  85./255.,  80./255.,  85./255., 107./255., 120./255., 146./255.};
+      double red[NRGBs]   = { 93./255.,   91./255.,  99./255., 108./255., 130./255., 125./255., 132./255., 155./255., 174./255.};
+      double green[NRGBs] = { 126./255., 124./255., 128./255., 129./255., 131./255., 121./255., 119./255., 153./255., 173./255.};
+      double blue[NRGBs]  = { 103./255.,  94./255.,  87./255.,  85./255.,  80./255.,  85./255., 107./255., 120./255., 146./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1108,9 +1108,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Atlantic
   case 66:
     {
-      Double_t red[NRGBs]   = { 24./255., 40./255., 69./255.,  90./255., 104./255., 114./255., 120./255., 132./255., 103./255.};
-      Double_t green[NRGBs] = { 29./255., 52./255., 94./255., 127./255., 150./255., 162./255., 159./255., 151./255., 101./255.};
-      Double_t blue[NRGBs]  = { 29./255., 52./255., 96./255., 132./255., 162./255., 181./255., 184./255., 186./255., 131./255.};
+      double red[NRGBs]   = { 24./255., 40./255., 69./255.,  90./255., 104./255., 114./255., 120./255., 132./255., 103./255.};
+      double green[NRGBs] = { 29./255., 52./255., 94./255., 127./255., 150./255., 162./255., 159./255., 151./255., 101./255.};
+      double blue[NRGBs]  = { 29./255., 52./255., 96./255., 132./255., 162./255., 181./255., 184./255., 186./255., 131./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1118,9 +1118,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Aurora
   case 67:
     {
-      Double_t red[NRGBs]   = { 46./255., 38./255., 61./255., 92./255., 113./255., 121./255., 132./255., 150./255., 191./255.};
-      Double_t green[NRGBs] = { 46./255., 36./255., 40./255., 69./255., 110./255., 135./255., 131./255.,  92./255.,  34./255.};
-      Double_t blue[NRGBs]  = { 46./255., 80./255., 74./255., 70./255.,  81./255., 105./255., 165./255., 211./255., 225./255.};
+      double red[NRGBs]   = { 46./255., 38./255., 61./255., 92./255., 113./255., 121./255., 132./255., 150./255., 191./255.};
+      double green[NRGBs] = { 46./255., 36./255., 40./255., 69./255., 110./255., 135./255., 131./255.,  92./255.,  34./255.};
+      double blue[NRGBs]  = { 46./255., 80./255., 74./255., 70./255.,  81./255., 105./255., 165./255., 211./255., 225./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1128,9 +1128,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Avocado
   case 68:
     {
-      Double_t red[NRGBs]   = { 0./255.,  4./255., 12./255.,  30./255.,  52./255., 101./255., 142./255., 190./255., 237./255.};
-      Double_t green[NRGBs] = { 0./255., 40./255., 86./255., 121./255., 140./255., 172./255., 187./255., 213./255., 240./255.};
-      Double_t blue[NRGBs]  = { 0./255.,  9./255., 14./255.,  18./255.,  21./255.,  23./255.,  27./255.,  35./255., 101./255.};
+      double red[NRGBs]   = { 0./255.,  4./255., 12./255.,  30./255.,  52./255., 101./255., 142./255., 190./255., 237./255.};
+      double green[NRGBs] = { 0./255., 40./255., 86./255., 121./255., 140./255., 172./255., 187./255., 213./255., 240./255.};
+      double blue[NRGBs]  = { 0./255.,  9./255., 14./255.,  18./255.,  21./255.,  23./255.,  27./255.,  35./255., 101./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1138,9 +1138,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Beach
   case 69:
     {
-      Double_t red[NRGBs]   = { 198./255., 206./255., 206./255., 211./255., 198./255., 181./255., 161./255., 171./255., 244./255.};
-      Double_t green[NRGBs] = { 103./255., 133./255., 150./255., 172./255., 178./255., 174./255., 163./255., 175./255., 244./255.};
-      Double_t blue[NRGBs]  = {  49./255.,  54./255.,  55./255.,  66./255.,  91./255., 130./255., 184./255., 224./255., 244./255.};
+      double red[NRGBs]   = { 198./255., 206./255., 206./255., 211./255., 198./255., 181./255., 161./255., 171./255., 244./255.};
+      double green[NRGBs] = { 103./255., 133./255., 150./255., 172./255., 178./255., 174./255., 163./255., 175./255., 244./255.};
+      double blue[NRGBs]  = {  49./255.,  54./255.,  55./255.,  66./255.,  91./255., 130./255., 184./255., 224./255., 244./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1148,9 +1148,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Black Body
   case 70:
     {
-      Double_t red[NRGBs]   = { 243./255., 243./255., 240./255., 240./255., 241./255., 239./255., 186./255., 151./255., 129./255.};
-      Double_t green[NRGBs] = {   0./255.,  46./255.,  99./255., 149./255., 194./255., 220./255., 183./255., 166./255., 147./255.};
-      Double_t blue[NRGBs]  = {   6./255.,   8./255.,  36./255.,  91./255., 169./255., 235./255., 246./255., 240./255., 233./255.};
+      double red[NRGBs]   = { 243./255., 243./255., 240./255., 240./255., 241./255., 239./255., 186./255., 151./255., 129./255.};
+      double green[NRGBs] = {   0./255.,  46./255.,  99./255., 149./255., 194./255., 220./255., 183./255., 166./255., 147./255.};
+      double blue[NRGBs]  = {   6./255.,   8./255.,  36./255.,  91./255., 169./255., 235./255., 246./255., 240./255., 233./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1158,9 +1158,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Blue Green Yellow
   case 71:
     {
-      Double_t red[NRGBs]   = { 22./255., 19./255.,  19./255.,  25./255.,  35./255.,  53./255.,  88./255., 139./255., 210./255.};
-      Double_t green[NRGBs] = {  0./255., 32./255.,  69./255., 108./255., 135./255., 159./255., 183./255., 198./255., 215./255.};
-      Double_t blue[NRGBs]  = { 77./255., 96./255., 110./255., 116./255., 110./255., 100./255.,  90./255.,  78./255.,  70./255.};
+      double red[NRGBs]   = { 22./255., 19./255.,  19./255.,  25./255.,  35./255.,  53./255.,  88./255., 139./255., 210./255.};
+      double green[NRGBs] = {  0./255., 32./255.,  69./255., 108./255., 135./255., 159./255., 183./255., 198./255., 215./255.};
+      double blue[NRGBs]  = { 77./255., 96./255., 110./255., 116./255., 110./255., 100./255.,  90./255.,  78./255.,  70./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1168,9 +1168,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Brown Cyan
   case 72:
     {
-      Double_t red[NRGBs]   = { 68./255., 116./255., 165./255., 182./255., 189./255., 180./255., 145./255., 111./255.,  71./255.};
-      Double_t green[NRGBs] = { 37./255.,  82./255., 135./255., 178./255., 204./255., 225./255., 221./255., 202./255., 147./255.};
-      Double_t blue[NRGBs]  = { 16./255.,  55./255., 105./255., 147./255., 196./255., 226./255., 232./255., 224./255., 178./255.};
+      double red[NRGBs]   = { 68./255., 116./255., 165./255., 182./255., 189./255., 180./255., 145./255., 111./255.,  71./255.};
+      double green[NRGBs] = { 37./255.,  82./255., 135./255., 178./255., 204./255., 225./255., 221./255., 202./255., 147./255.};
+      double blue[NRGBs]  = { 16./255.,  55./255., 105./255., 147./255., 196./255., 226./255., 232./255., 224./255., 178./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1178,9 +1178,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // CMYK
   case 73:
     {
-      Double_t red[NRGBs]   = {  61./255.,  99./255., 136./255., 181./255., 213./255., 225./255., 198./255., 136./255., 24./255.};
-      Double_t green[NRGBs] = { 149./255., 140./255.,  96./255.,  83./255., 132./255., 178./255., 190./255., 135./255., 22./255.};
-      Double_t blue[NRGBs]  = { 214./255., 203./255., 168./255., 135./255., 110./255., 100./255., 111./255., 113./255., 22./255.};
+      double red[NRGBs]   = {  61./255.,  99./255., 136./255., 181./255., 213./255., 225./255., 198./255., 136./255., 24./255.};
+      double green[NRGBs] = { 149./255., 140./255.,  96./255.,  83./255., 132./255., 178./255., 190./255., 135./255., 22./255.};
+      double blue[NRGBs]  = { 214./255., 203./255., 168./255., 135./255., 110./255., 100./255., 111./255., 113./255., 22./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1188,9 +1188,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Candy
   case 74:
     {
-      Double_t red[NRGBs]   = { 76./255., 120./255., 156./255., 183./255., 197./255., 180./255., 162./255., 154./255., 140./255.};
-      Double_t green[NRGBs] = { 34./255.,  35./255.,  42./255.,  69./255., 102./255., 137./255., 164./255., 188./255., 197./255.};
-      Double_t blue[NRGBs]  = { 64./255.,  69./255.,  78./255., 105./255., 142./255., 177./255., 205./255., 217./255., 198./255.};
+      double red[NRGBs]   = { 76./255., 120./255., 156./255., 183./255., 197./255., 180./255., 162./255., 154./255., 140./255.};
+      double green[NRGBs] = { 34./255.,  35./255.,  42./255.,  69./255., 102./255., 137./255., 164./255., 188./255., 197./255.};
+      double blue[NRGBs]  = { 64./255.,  69./255.,  78./255., 105./255., 142./255., 177./255., 205./255., 217./255., 198./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1198,9 +1198,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Cherry
   case 75:
     {
-      Double_t red[NRGBs]   = { 37./255., 102./255., 157./255., 188./255., 196./255., 214./255., 223./255., 235./255., 251./255.};
-      Double_t green[NRGBs] = { 37./255.,  29./255.,  25./255.,  37./255.,  67./255.,  91./255., 132./255., 185./255., 251./255.};
-      Double_t blue[NRGBs]  = { 37./255.,  32./255.,  33./255.,  45./255.,  66./255.,  98./255., 137./255., 187./255., 251./255.};
+      double red[NRGBs]   = { 37./255., 102./255., 157./255., 188./255., 196./255., 214./255., 223./255., 235./255., 251./255.};
+      double green[NRGBs] = { 37./255.,  29./255.,  25./255.,  37./255.,  67./255.,  91./255., 132./255., 185./255., 251./255.};
+      double blue[NRGBs]  = { 37./255.,  32./255.,  33./255.,  45./255.,  66./255.,  98./255., 137./255., 187./255., 251./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1208,9 +1208,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Coffee
   case 76:
     {
-      Double_t red[NRGBs]   = { 79./255., 100./255., 119./255., 137./255., 153./255., 172./255., 192./255., 205./255., 250./255.};
-      Double_t green[NRGBs] = { 63./255.,  79./255.,  93./255., 103./255., 115./255., 135./255., 167./255., 196./255., 250./255.};
-      Double_t blue[NRGBs]  = { 51./255.,  59./255.,  66./255.,  61./255.,  62./255.,  70./255., 110./255., 160./255., 250./255.};
+      double red[NRGBs]   = { 79./255., 100./255., 119./255., 137./255., 153./255., 172./255., 192./255., 205./255., 250./255.};
+      double green[NRGBs] = { 63./255.,  79./255.,  93./255., 103./255., 115./255., 135./255., 167./255., 196./255., 250./255.};
+      double blue[NRGBs]  = { 51./255.,  59./255.,  66./255.,  61./255.,  62./255.,  70./255., 110./255., 160./255., 250./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1218,9 +1218,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Dark Rain Bow
   case 77:
     {
-      Double_t red[NRGBs]   = {  43./255.,  44./255., 50./255.,  66./255., 125./255., 172./255., 178./255., 155./255., 157./255.};
-      Double_t green[NRGBs] = {  63./255.,  63./255., 85./255., 101./255., 138./255., 163./255., 122./255.,  51./255.,  39./255.};
-      Double_t blue[NRGBs]  = { 121./255., 101./255., 58./255.,  44./255.,  47./255.,  55./255.,  57./255.,  44./255.,  43./255.};
+      double red[NRGBs]   = {  43./255.,  44./255., 50./255.,  66./255., 125./255., 172./255., 178./255., 155./255., 157./255.};
+      double green[NRGBs] = {  63./255.,  63./255., 85./255., 101./255., 138./255., 163./255., 122./255.,  51./255.,  39./255.};
+      double blue[NRGBs]  = { 121./255., 101./255., 58./255.,  44./255.,  47./255.,  55./255.,  57./255.,  44./255.,  43./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1228,9 +1228,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Dark Terrain
   case 78:
     {
-      Double_t red[NRGBs]   = {  0./255., 41./255., 62./255., 79./255., 90./255., 87./255., 99./255., 140./255., 228./255.};
-      Double_t green[NRGBs] = {  0./255., 57./255., 81./255., 93./255., 85./255., 70./255., 71./255., 125./255., 228./255.};
-      Double_t blue[NRGBs]  = { 95./255., 91./255., 91./255., 82./255., 60./255., 43./255., 44./255., 112./255., 228./255.};
+      double red[NRGBs]   = {  0./255., 41./255., 62./255., 79./255., 90./255., 87./255., 99./255., 140./255., 228./255.};
+      double green[NRGBs] = {  0./255., 57./255., 81./255., 93./255., 85./255., 70./255., 71./255., 125./255., 228./255.};
+      double blue[NRGBs]  = { 95./255., 91./255., 91./255., 82./255., 60./255., 43./255., 44./255., 112./255., 228./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1238,9 +1238,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Fall
   case 79:
     {
-      Double_t red[NRGBs]   = { 49./255., 59./255., 72./255., 88./255., 114./255., 141./255., 176./255., 205./255., 222./255.};
-      Double_t green[NRGBs] = { 78./255., 72./255., 66./255., 57./255.,  59./255.,  75./255., 106./255., 142./255., 173./255.};
-      Double_t blue[NRGBs]  = { 78./255., 55./255., 46./255., 40./255.,  39./255.,  39./255.,  40./255.,  41./255.,  47./255.};
+      double red[NRGBs]   = { 49./255., 59./255., 72./255., 88./255., 114./255., 141./255., 176./255., 205./255., 222./255.};
+      double green[NRGBs] = { 78./255., 72./255., 66./255., 57./255.,  59./255.,  75./255., 106./255., 142./255., 173./255.};
+      double blue[NRGBs]  = { 78./255., 55./255., 46./255., 40./255.,  39./255.,  39./255.,  40./255.,  41./255.,  47./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1248,9 +1248,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Fruit Punch
   case 80:
     {
-      Double_t red[NRGBs]   = { 243./255., 222./255., 201./255., 185./255., 165./255., 158./255., 166./255., 187./255., 219./255.};
-      Double_t green[NRGBs] = {  94./255., 108./255., 132./255., 135./255., 125./255.,  96./255.,  68./255.,  51./255.,  61./255.};
-      Double_t blue[NRGBs]  = {   7./255.,  9./255.,   12./255.,  19./255.,  45./255.,  89./255., 118./255., 146./255., 118./255.};
+      double red[NRGBs]   = { 243./255., 222./255., 201./255., 185./255., 165./255., 158./255., 166./255., 187./255., 219./255.};
+      double green[NRGBs] = {  94./255., 108./255., 132./255., 135./255., 125./255.,  96./255.,  68./255.,  51./255.,  61./255.};
+      double blue[NRGBs]  = {   7./255.,  9./255.,   12./255.,  19./255.,  45./255.,  89./255., 118./255., 146./255., 118./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1258,9 +1258,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Fuchsia
   case 81:
     {
-      Double_t red[NRGBs]   = { 19./255., 44./255., 74./255., 105./255., 137./255., 166./255., 194./255., 206./255., 220./255.};
-      Double_t green[NRGBs] = { 19./255., 28./255., 40./255.,  55./255.,  82./255., 110./255., 159./255., 181./255., 220./255.};
-      Double_t blue[NRGBs]  = { 19./255., 42./255., 68./255.,  96./255., 129./255., 157./255., 188./255., 203./255., 220./255.};
+      double red[NRGBs]   = { 19./255., 44./255., 74./255., 105./255., 137./255., 166./255., 194./255., 206./255., 220./255.};
+      double green[NRGBs] = { 19./255., 28./255., 40./255.,  55./255.,  82./255., 110./255., 159./255., 181./255., 220./255.};
+      double blue[NRGBs]  = { 19./255., 42./255., 68./255.,  96./255., 129./255., 157./255., 188./255., 203./255., 220./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1268,9 +1268,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Grey Yellow
   case 82:
     {
-      Double_t red[NRGBs]   = { 33./255., 44./255., 70./255.,  99./255., 140./255., 165./255., 199./255., 211./255., 216./255.};
-      Double_t green[NRGBs] = { 38./255., 50./255., 76./255., 105./255., 140./255., 165./255., 191./255., 189./255., 167./255.};
-      Double_t blue[NRGBs]  = { 55./255., 67./255., 97./255., 124./255., 140./255., 166./255., 163./255., 129./255.,  52./255.};
+      double red[NRGBs]   = { 33./255., 44./255., 70./255.,  99./255., 140./255., 165./255., 199./255., 211./255., 216./255.};
+      double green[NRGBs] = { 38./255., 50./255., 76./255., 105./255., 140./255., 165./255., 191./255., 189./255., 167./255.};
+      double blue[NRGBs]  = { 55./255., 67./255., 97./255., 124./255., 140./255., 166./255., 163./255., 129./255.,  52./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1278,9 +1278,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Green Brown Terrain
   case 83:
     {
-      Double_t red[NRGBs]   = { 0./255., 33./255., 73./255., 124./255., 136./255., 152./255., 159./255., 171./255., 223./255.};
-      Double_t green[NRGBs] = { 0./255., 43./255., 92./255., 124./255., 134./255., 126./255., 121./255., 144./255., 223./255.};
-      Double_t blue[NRGBs]  = { 0./255., 43./255., 68./255.,  76./255.,  73./255.,  64./255.,  72./255., 114./255., 223./255.};
+      double red[NRGBs]   = { 0./255., 33./255., 73./255., 124./255., 136./255., 152./255., 159./255., 171./255., 223./255.};
+      double green[NRGBs] = { 0./255., 43./255., 92./255., 124./255., 134./255., 126./255., 121./255., 144./255., 223./255.};
+      double blue[NRGBs]  = { 0./255., 43./255., 68./255.,  76./255.,  73./255.,  64./255.,  72./255., 114./255., 223./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1288,9 +1288,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Green Pink
   case 84:
     {
-      Double_t red[NRGBs]   = {  5./255.,  18./255.,  45./255., 124./255., 193./255., 223./255., 205./255., 128./255., 49./255.};
-      Double_t green[NRGBs] = { 48./255., 134./255., 207./255., 230./255., 193./255., 113./255.,  28./255.,   0./255.,  7./255.};
-      Double_t blue[NRGBs]  = {  6./255.,  15./255.,  41./255., 121./255., 193./255., 226./255., 208./255., 130./255., 49./255.};
+      double red[NRGBs]   = {  5./255.,  18./255.,  45./255., 124./255., 193./255., 223./255., 205./255., 128./255., 49./255.};
+      double green[NRGBs] = { 48./255., 134./255., 207./255., 230./255., 193./255., 113./255.,  28./255.,   0./255.,  7./255.};
+      double blue[NRGBs]  = {  6./255.,  15./255.,  41./255., 121./255., 193./255., 226./255., 208./255., 130./255., 49./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1298,9 +1298,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Island
   case 85:
     {
-      Double_t red[NRGBs]   = { 180./255., 106./255., 104./255., 135./255., 164./255., 188./255., 189./255., 165./255., 144./255.};
-      Double_t green[NRGBs] = {  72./255., 126./255., 154./255., 184./255., 198./255., 207./255., 205./255., 190./255., 179./255.};
-      Double_t blue[NRGBs]  = {  41./255., 120./255., 158./255., 188./255., 194./255., 181./255., 145./255., 100./255.,  62./255.};
+      double red[NRGBs]   = { 180./255., 106./255., 104./255., 135./255., 164./255., 188./255., 189./255., 165./255., 144./255.};
+      double green[NRGBs] = {  72./255., 126./255., 154./255., 184./255., 198./255., 207./255., 205./255., 190./255., 179./255.};
+      double blue[NRGBs]  = {  41./255., 120./255., 158./255., 188./255., 194./255., 181./255., 145./255., 100./255.,  62./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1308,9 +1308,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Lake
   case 86:
     {
-      Double_t red[NRGBs]   = {  57./255.,  72./255.,  94./255., 117./255., 136./255., 154./255., 174./255., 192./255., 215./255.};
-      Double_t green[NRGBs] = {   0./255.,  33./255.,  68./255., 109./255., 140./255., 171./255., 192./255., 196./255., 209./255.};
-      Double_t blue[NRGBs]  = { 116./255., 137./255., 173./255., 201./255., 200./255., 201./255., 203./255., 190./255., 187./255.};
+      double red[NRGBs]   = {  57./255.,  72./255.,  94./255., 117./255., 136./255., 154./255., 174./255., 192./255., 215./255.};
+      double green[NRGBs] = {   0./255.,  33./255.,  68./255., 109./255., 140./255., 171./255., 192./255., 196./255., 209./255.};
+      double blue[NRGBs]  = { 116./255., 137./255., 173./255., 201./255., 200./255., 201./255., 203./255., 190./255., 187./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1318,9 +1318,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Light Temperature
   case 87:
     {
-      Double_t red[NRGBs]   = {  31./255.,  71./255., 123./255., 160./255., 210./255., 222./255., 214./255., 199./255., 183./255.};
-      Double_t green[NRGBs] = {  40./255., 117./255., 171./255., 211./255., 231./255., 220./255., 190./255., 132./255.,  65./255.};
-      Double_t blue[NRGBs]  = { 234./255., 214./255., 228./255., 222./255., 210./255., 160./255., 105./255.,  60./255.,  34./255.};
+      double red[NRGBs]   = {  31./255.,  71./255., 123./255., 160./255., 210./255., 222./255., 214./255., 199./255., 183./255.};
+      double green[NRGBs] = {  40./255., 117./255., 171./255., 211./255., 231./255., 220./255., 190./255., 132./255.,  65./255.};
+      double blue[NRGBs]  = { 234./255., 214./255., 228./255., 222./255., 210./255., 160./255., 105./255.,  60./255.,  34./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1328,9 +1328,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Light Terrain
   case 88:
     {
-      Double_t red[NRGBs]   = { 123./255., 108./255., 109./255., 126./255., 154./255., 172./255., 188./255., 196./255., 218./255.};
-      Double_t green[NRGBs] = { 184./255., 138./255., 130./255., 133./255., 154./255., 175./255., 188./255., 196./255., 218./255.};
-      Double_t blue[NRGBs]  = { 208./255., 130./255., 109./255.,  99./255., 110./255., 122./255., 150./255., 171./255., 218./255.};
+      double red[NRGBs]   = { 123./255., 108./255., 109./255., 126./255., 154./255., 172./255., 188./255., 196./255., 218./255.};
+      double green[NRGBs] = { 184./255., 138./255., 130./255., 133./255., 154./255., 175./255., 188./255., 196./255., 218./255.};
+      double blue[NRGBs]  = { 208./255., 130./255., 109./255.,  99./255., 110./255., 122./255., 150./255., 171./255., 218./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1338,9 +1338,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Mint
   case 89:
     {
-      Double_t red[NRGBs]   = { 105./255., 106./255., 122./255., 143./255., 159./255., 172./255., 176./255., 181./255., 207./255.};
-      Double_t green[NRGBs] = { 252./255., 197./255., 194./255., 187./255., 174./255., 162./255., 153./255., 136./255., 125./255.};
-      Double_t blue[NRGBs]  = { 146./255., 133./255., 144./255., 155./255., 163./255., 167./255., 166./255., 162./255., 174./255.};
+      double red[NRGBs]   = { 105./255., 106./255., 122./255., 143./255., 159./255., 172./255., 176./255., 181./255., 207./255.};
+      double green[NRGBs] = { 252./255., 197./255., 194./255., 187./255., 174./255., 162./255., 153./255., 136./255., 125./255.};
+      double blue[NRGBs]  = { 146./255., 133./255., 144./255., 155./255., 163./255., 167./255., 166./255., 162./255., 174./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1348,9 +1348,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Neon
   case 90:
     {
-      Double_t red[NRGBs]   = { 171./255., 141./255., 145./255., 152./255., 154./255., 159./255., 163./255., 158./255., 177./255.};
-      Double_t green[NRGBs] = { 236./255., 143./255., 100./255.,  63./255.,  53./255.,  55./255.,  44./255.,  31./255.,   6./255.};
-      Double_t blue[NRGBs]  = {  59./255.,  48./255.,  46./255.,  44./255.,  42./255.,  54./255.,  82./255., 112./255., 179./255.};
+      double red[NRGBs]   = { 171./255., 141./255., 145./255., 152./255., 154./255., 159./255., 163./255., 158./255., 177./255.};
+      double green[NRGBs] = { 236./255., 143./255., 100./255.,  63./255.,  53./255.,  55./255.,  44./255.,  31./255.,   6./255.};
+      double blue[NRGBs]  = {  59./255.,  48./255.,  46./255.,  44./255.,  42./255.,  54./255.,  82./255., 112./255., 179./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1358,9 +1358,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Pastel
   case 91:
    {
-     Double_t red[NRGBs]   = { 180./255., 190./255., 209./255., 223./255., 204./255., 228./255., 205./255., 152./255.,  91./255.};
-     Double_t green[NRGBs] = {  93./255., 125./255., 147./255., 172./255., 181./255., 224./255., 233./255., 198./255., 158./255.};
-     Double_t blue[NRGBs]  = { 236./255., 218./255., 160./255., 133./255., 114./255., 132./255., 162./255., 220./255., 218./255.};
+     double red[NRGBs]   = { 180./255., 190./255., 209./255., 223./255., 204./255., 228./255., 205./255., 152./255.,  91./255.};
+     double green[NRGBs] = {  93./255., 125./255., 147./255., 172./255., 181./255., 224./255., 233./255., 198./255., 158./255.};
+     double blue[NRGBs]  = { 236./255., 218./255., 160./255., 133./255., 114./255., 132./255., 162./255., 220./255., 218./255.};
      Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
    }
    break;
@@ -1368,9 +1368,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
    // Pearl
   case 92:
     {
-      Double_t red[NRGBs]   = { 225./255., 183./255., 162./255., 135./255., 115./255., 111./255., 119./255., 145./255., 211./255.};
-      Double_t green[NRGBs] = { 205./255., 177./255., 166./255., 135./255., 124./255., 117./255., 117./255., 132./255., 172./255.};
-      Double_t blue[NRGBs]  = { 186./255., 165./255., 155./255., 135./255., 126./255., 130./255., 150./255., 178./255., 226./255.};
+      double red[NRGBs]   = { 225./255., 183./255., 162./255., 135./255., 115./255., 111./255., 119./255., 145./255., 211./255.};
+      double green[NRGBs] = { 205./255., 177./255., 166./255., 135./255., 124./255., 117./255., 117./255., 132./255., 172./255.};
+      double blue[NRGBs]  = { 186./255., 165./255., 155./255., 135./255., 126./255., 130./255., 150./255., 178./255., 226./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1378,9 +1378,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Pigeon
   case 93:
     {
-      Double_t red[NRGBs]   = { 39./255., 43./255., 59./255., 63./255., 80./255., 116./255., 153./255., 177./255., 223./255.};
-      Double_t green[NRGBs] = { 39./255., 43./255., 59./255., 74./255., 91./255., 114./255., 139./255., 165./255., 223./255.};
-      Double_t blue[NRGBs]  = { 39./255., 50./255., 59./255., 70./255., 85./255., 115./255., 151./255., 176./255., 223./255.};
+      double red[NRGBs]   = { 39./255., 43./255., 59./255., 63./255., 80./255., 116./255., 153./255., 177./255., 223./255.};
+      double green[NRGBs] = { 39./255., 43./255., 59./255., 74./255., 91./255., 114./255., 139./255., 165./255., 223./255.};
+      double blue[NRGBs]  = { 39./255., 50./255., 59./255., 70./255., 85./255., 115./255., 151./255., 176./255., 223./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1388,9 +1388,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Plum
   case 94:
     {
-      Double_t red[NRGBs]   = { 0./255., 38./255., 60./255., 76./255., 84./255., 89./255., 101./255., 128./255., 204./255.};
-      Double_t green[NRGBs] = { 0./255., 10./255., 15./255., 23./255., 35./255., 57./255.,  83./255., 123./255., 199./255.};
-      Double_t blue[NRGBs]  = { 0./255., 11./255., 22./255., 40./255., 63./255., 86./255.,  97./255.,  94./255.,  85./255.};
+      double red[NRGBs]   = { 0./255., 38./255., 60./255., 76./255., 84./255., 89./255., 101./255., 128./255., 204./255.};
+      double green[NRGBs] = { 0./255., 10./255., 15./255., 23./255., 35./255., 57./255.,  83./255., 123./255., 199./255.};
+      double blue[NRGBs]  = { 0./255., 11./255., 22./255., 40./255., 63./255., 86./255.,  97./255.,  94./255.,  85./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1398,9 +1398,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Red Blue
   case 95:
     {
-      Double_t red[NRGBs]   = { 94./255., 112./255., 141./255., 165./255., 167./255., 140./255.,  91./255.,  49./255.,  27./255.};
-      Double_t green[NRGBs] = { 27./255.,  46./255.,  88./255., 135./255., 166./255., 161./255., 135./255.,  97./255.,  58./255.};
-      Double_t blue[NRGBs]  = { 42./255.,  52./255.,  81./255., 106./255., 139./255., 158./255., 155./255., 137./255., 116./255.};
+      double red[NRGBs]   = { 94./255., 112./255., 141./255., 165./255., 167./255., 140./255.,  91./255.,  49./255.,  27./255.};
+      double green[NRGBs] = { 27./255.,  46./255.,  88./255., 135./255., 166./255., 161./255., 135./255.,  97./255.,  58./255.};
+      double blue[NRGBs]  = { 42./255.,  52./255.,  81./255., 106./255., 139./255., 158./255., 155./255., 137./255., 116./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1408,9 +1408,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Rose
   case 96:
     {
-      Double_t red[NRGBs]   = { 30./255., 49./255., 79./255., 117./255., 135./255., 151./255., 146./255., 138./255., 147./255.};
-      Double_t green[NRGBs] = { 63./255., 60./255., 72./255.,  90./255.,  94./255.,  94./255.,  68./255.,  46./255.,  16./255.};
-      Double_t blue[NRGBs]  = { 18./255., 28./255., 41./255.,  56./255.,  62./255.,  63./255.,  50./255.,  36./255.,  21./255.};
+      double red[NRGBs]   = { 30./255., 49./255., 79./255., 117./255., 135./255., 151./255., 146./255., 138./255., 147./255.};
+      double green[NRGBs] = { 63./255., 60./255., 72./255.,  90./255.,  94./255.,  94./255.,  68./255.,  46./255.,  16./255.};
+      double blue[NRGBs]  = { 18./255., 28./255., 41./255.,  56./255.,  62./255.,  63./255.,  50./255.,  36./255.,  21./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1418,9 +1418,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Rust
   case 97:
     {
-      Double_t red[NRGBs]   = {  0./255., 30./255., 63./255., 101./255., 143./255., 152./255., 169./255., 187./255., 230./255.};
-      Double_t green[NRGBs] = {  0./255., 14./255., 28./255.,  42./255.,  58./255.,  61./255.,  67./255.,  74./255.,  91./255.};
-      Double_t blue[NRGBs]  = { 39./255., 26./255., 21./255.,  18./255.,  15./255.,  14./255.,  14./255.,  13./255.,  13./255.};
+      double red[NRGBs]   = {  0./255., 30./255., 63./255., 101./255., 143./255., 152./255., 169./255., 187./255., 230./255.};
+      double green[NRGBs] = {  0./255., 14./255., 28./255.,  42./255.,  58./255.,  61./255.,  67./255.,  74./255.,  91./255.};
+      double blue[NRGBs]  = { 39./255., 26./255., 21./255.,  18./255.,  15./255.,  14./255.,  14./255.,  13./255.,  13./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1428,9 +1428,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Sandy Terrain
   case 98:
     {
-      Double_t red[NRGBs]   = { 149./255., 140./255., 164./255., 179./255., 182./255., 181./255., 131./255., 87./255., 61./255.};
-      Double_t green[NRGBs] = {  62./255.,  70./255., 107./255., 136./255., 144./255., 138./255., 117./255., 87./255., 74./255.};
-      Double_t blue[NRGBs]  = {  40./255.,  38./255.,  45./255.,  49./255.,  49./255.,  49./255.,  38./255., 32./255., 34./255.};
+      double red[NRGBs]   = { 149./255., 140./255., 164./255., 179./255., 182./255., 181./255., 131./255., 87./255., 61./255.};
+      double green[NRGBs] = {  62./255.,  70./255., 107./255., 136./255., 144./255., 138./255., 117./255., 87./255., 74./255.};
+      double blue[NRGBs]  = {  40./255.,  38./255.,  45./255.,  49./255.,  49./255.,  49./255.,  38./255., 32./255., 34./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1438,9 +1438,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Sienna
   case 99:
     {
-      Double_t red[NRGBs]   = { 99./255., 112./255., 148./255., 165./255., 179./255., 182./255., 183./255., 183./255., 208./255.};
-      Double_t green[NRGBs] = { 39./255.,  40./255.,  57./255.,  79./255., 104./255., 127./255., 148./255., 161./255., 198./255.};
-      Double_t blue[NRGBs]  = { 15./255.,  16./255.,  18./255.,  33./255.,  51./255.,  79./255., 103./255., 129./255., 177./255.};
+      double red[NRGBs]   = { 99./255., 112./255., 148./255., 165./255., 179./255., 182./255., 183./255., 183./255., 208./255.};
+      double green[NRGBs] = { 39./255.,  40./255.,  57./255.,  79./255., 104./255., 127./255., 148./255., 161./255., 198./255.};
+      double blue[NRGBs]  = { 15./255.,  16./255.,  18./255.,  33./255.,  51./255.,  79./255., 103./255., 129./255., 177./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1448,9 +1448,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Solar
   case 100:
     {
-      Double_t red[NRGBs]   = { 99./255., 116./255., 154./255., 174./255., 200./255., 196./255., 201./255., 201./255., 230./255.};
-      Double_t green[NRGBs] = {  0./255.,   0./255.,   8./255.,  32./255.,  58./255.,  83./255., 119./255., 136./255., 173./255.};
-      Double_t blue[NRGBs]  = {  5./255.,   6./255.,   7./255.,   9./255.,   9./255.,  14./255.,  17./255.,  19./255.,  24./255.};
+      double red[NRGBs]   = { 99./255., 116./255., 154./255., 174./255., 200./255., 196./255., 201./255., 201./255., 230./255.};
+      double green[NRGBs] = {  0./255.,   0./255.,   8./255.,  32./255.,  58./255.,  83./255., 119./255., 136./255., 173./255.};
+      double blue[NRGBs]  = {  5./255.,   6./255.,   7./255.,   9./255.,   9./255.,  14./255.,  17./255.,  19./255.,  24./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1458,9 +1458,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // South West
   case 101:
     {
-      Double_t red[NRGBs]   = { 82./255., 106./255., 126./255., 141./255., 155./255., 163./255., 142./255., 107./255.,  66./255.};
-      Double_t green[NRGBs] = { 62./255.,  44./255.,  69./255., 107./255., 135./255., 152./255., 149./255., 132./255., 119./255.};
-      Double_t blue[NRGBs]  = { 39./255.,  25./255.,  31./255.,  60./255.,  73./255.,  68./255.,  49./255.,  72./255., 188./255.};
+      double red[NRGBs]   = { 82./255., 106./255., 126./255., 141./255., 155./255., 163./255., 142./255., 107./255.,  66./255.};
+      double green[NRGBs] = { 62./255.,  44./255.,  69./255., 107./255., 135./255., 152./255., 149./255., 132./255., 119./255.};
+      double blue[NRGBs]  = { 39./255.,  25./255.,  31./255.,  60./255.,  73./255.,  68./255.,  49./255.,  72./255., 188./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1468,9 +1468,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Starry Night
   case 102:
     {
-      Double_t red[NRGBs]   = { 18./255., 29./255., 44./255.,  72./255., 116./255., 158./255., 184./255., 208./255., 221./255.};
-      Double_t green[NRGBs] = { 27./255., 46./255., 71./255., 105./255., 146./255., 177./255., 189./255., 190./255., 183./255.};
-      Double_t blue[NRGBs]  = { 39./255., 55./255., 80./255., 108./255., 130./255., 133./255., 124./255., 100./255.,  76./255.};
+      double red[NRGBs]   = { 18./255., 29./255., 44./255.,  72./255., 116./255., 158./255., 184./255., 208./255., 221./255.};
+      double green[NRGBs] = { 27./255., 46./255., 71./255., 105./255., 146./255., 177./255., 189./255., 190./255., 183./255.};
+      double blue[NRGBs]  = { 39./255., 55./255., 80./255., 108./255., 130./255., 133./255., 124./255., 100./255.,  76./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1478,9 +1478,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Sunset
   case 103:
     {
-      Double_t red[NRGBs]   = { 0./255., 48./255., 119./255., 173./255., 212./255., 224./255., 228./255., 228./255., 245./255.};
-      Double_t green[NRGBs] = { 0./255., 13./255.,  30./255.,  47./255.,  79./255., 127./255., 167./255., 205./255., 245./255.};
-      Double_t blue[NRGBs]  = { 0./255., 68./255.,  75./255.,  43./255.,  16./255.,  22./255.,  55./255., 128./255., 245./255.};
+      double red[NRGBs]   = { 0./255., 48./255., 119./255., 173./255., 212./255., 224./255., 228./255., 228./255., 245./255.};
+      double green[NRGBs] = { 0./255., 13./255.,  30./255.,  47./255.,  79./255., 127./255., 167./255., 205./255., 245./255.};
+      double blue[NRGBs]  = { 0./255., 68./255.,  75./255.,  43./255.,  16./255.,  22./255.,  55./255., 128./255., 245./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1488,9 +1488,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Temperature Map
   case 104:
     {
-      Double_t red[NRGBs]   = {  34./255.,  70./255., 129./255., 187./255., 225./255., 226./255., 216./255., 193./255., 179./255.};
-      Double_t green[NRGBs] = {  48./255.,  91./255., 147./255., 194./255., 226./255., 229./255., 196./255., 110./255.,  12./255.};
-      Double_t blue[NRGBs]  = { 234./255., 212./255., 216./255., 224./255., 206./255., 110./255.,  53./255.,  40./255.,  29./255.};
+      double red[NRGBs]   = {  34./255.,  70./255., 129./255., 187./255., 225./255., 226./255., 216./255., 193./255., 179./255.};
+      double green[NRGBs] = {  48./255.,  91./255., 147./255., 194./255., 226./255., 229./255., 196./255., 110./255.,  12./255.};
+      double blue[NRGBs]  = { 234./255., 212./255., 216./255., 224./255., 206./255., 110./255.,  53./255.,  40./255.,  29./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1498,9 +1498,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Thermometer
   case 105:
     {
-      Double_t red[NRGBs]   = {  30./255.,  55./255., 103./255., 147./255., 174./255., 203./255., 188./255., 151./255., 105./255.};
-      Double_t green[NRGBs] = {   0./255.,  65./255., 138./255., 182./255., 187./255., 175./255., 121./255.,  53./255.,   9./255.};
-      Double_t blue[NRGBs]  = { 191./255., 202./255., 212./255., 208./255., 171./255., 140./255.,  97./255.,  57./255.,  30./255.};
+      double red[NRGBs]   = {  30./255.,  55./255., 103./255., 147./255., 174./255., 203./255., 188./255., 151./255., 105./255.};
+      double green[NRGBs] = {   0./255.,  65./255., 138./255., 182./255., 187./255., 175./255., 121./255.,  53./255.,   9./255.};
+      double blue[NRGBs]  = { 191./255., 202./255., 212./255., 208./255., 171./255., 140./255.,  97./255.,  57./255.,  30./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1508,9 +1508,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Valentine
   case 106:
     {
-      Double_t red[NRGBs]   = { 112./255., 97./255., 113./255., 125./255., 138./255., 159./255., 178./255., 188./255., 225./255.};
-      Double_t green[NRGBs] = {  16./255., 17./255.,  24./255.,  37./255.,  56./255.,  81./255., 110./255., 136./255., 189./255.};
-      Double_t blue[NRGBs]  = {  38./255., 35./255.,  46./255.,  59./255.,  78./255., 103./255., 130./255., 152./255., 201./255.};
+      double red[NRGBs]   = { 112./255., 97./255., 113./255., 125./255., 138./255., 159./255., 178./255., 188./255., 225./255.};
+      double green[NRGBs] = {  16./255., 17./255.,  24./255.,  37./255.,  56./255.,  81./255., 110./255., 136./255., 189./255.};
+      double blue[NRGBs]  = {  38./255., 35./255.,  46./255.,  59./255.,  78./255., 103./255., 130./255., 152./255., 201./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1518,9 +1518,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Visible Spectrum
   case 107:
     {
-      Double_t red[NRGBs]   = { 18./255.,  72./255.,   5./255.,  23./255.,  29./255., 201./255., 200./255., 98./255., 29./255.};
-      Double_t green[NRGBs] = {  0./255.,   0./255.,  43./255., 167./255., 211./255., 117./255.,   0./255.,  0./255.,  0./255.};
-      Double_t blue[NRGBs]  = { 51./255., 203./255., 177./255.,  26./255.,  10./255.,   9./255.,   8./255.,  3./255.,  0./255.};
+      double red[NRGBs]   = { 18./255.,  72./255.,   5./255.,  23./255.,  29./255., 201./255., 200./255., 98./255., 29./255.};
+      double green[NRGBs] = {  0./255.,   0./255.,  43./255., 167./255., 211./255., 117./255.,   0./255.,  0./255.,  0./255.};
+      double blue[NRGBs]  = { 51./255., 203./255., 177./255.,  26./255.,  10./255.,   9./255.,   8./255.,  3./255.,  0./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1528,9 +1528,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Water Melon
   case 108:
     {
-      Double_t red[NRGBs]   = { 19./255., 42./255., 64./255.,  88./255., 118./255., 147./255., 175./255., 187./255., 205./255.};
-      Double_t green[NRGBs] = { 19./255., 55./255., 89./255., 125./255., 154./255., 169./255., 161./255., 129./255.,  70./255.};
-      Double_t blue[NRGBs]  = { 19./255., 32./255., 47./255.,  70./255., 100./255., 128./255., 145./255., 130./255.,  75./255.};
+      double red[NRGBs]   = { 19./255., 42./255., 64./255.,  88./255., 118./255., 147./255., 175./255., 187./255., 205./255.};
+      double green[NRGBs] = { 19./255., 55./255., 89./255., 125./255., 154./255., 169./255., 161./255., 129./255.,  70./255.};
+      double blue[NRGBs]  = { 19./255., 32./255., 47./255.,  70./255., 100./255., 128./255., 145./255., 130./255.,  75./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1538,9 +1538,9 @@ void set_custom_palette(const Int_t index, Int_t NCont, const Float_t alpha)
     // Cool
 case 109:
   {
-    Double_t red[NRGBs]   = {  33./255.,  31./255.,  42./255.,  68./255.,  86./255., 111./255., 141./255., 172./255., 227./255.};
-    Double_t green[NRGBs] = { 255./255., 175./255., 145./255., 106./255.,  88./255.,  55./255.,  15./255.,   0./255.,   0./255.};
-    Double_t blue[NRGBs]  = { 255./255., 205./255., 202./255., 203./255., 208./255., 205./255., 203./255., 206./255., 231./255.};
+    double red[NRGBs]   = {  33./255.,  31./255.,  42./255.,  68./255.,  86./255., 111./255., 141./255., 172./255., 227./255.};
+    double green[NRGBs] = { 255./255., 175./255., 145./255., 106./255.,  88./255.,  55./255.,  15./255.,   0./255.,   0./255.};
+    double blue[NRGBs]  = { 255./255., 205./255., 202./255., 203./255., 208./255., 205./255., 203./255., 206./255., 231./255.};
     Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
   }
   break;
@@ -1548,9 +1548,9 @@ case 109:
   // Copper
   case 110:
     {
-      Double_t red[NRGBs]   = { 0./255., 25./255., 50./255., 79./255., 110./255., 145./255., 181./255., 201./255., 254./255.};
-      Double_t green[NRGBs] = { 0./255., 16./255., 30./255., 46./255.,  63./255.,  82./255., 101./255., 124./255., 179./255.};
-      Double_t blue[NRGBs]  = { 0./255., 12./255., 21./255., 29./255.,  39./255.,  49./255.,  61./255.,  74./255., 103./255.};
+      double red[NRGBs]   = { 0./255., 25./255., 50./255., 79./255., 110./255., 145./255., 181./255., 201./255., 254./255.};
+      double green[NRGBs] = { 0./255., 16./255., 30./255., 46./255.,  63./255.,  82./255., 101./255., 124./255., 179./255.};
+      double blue[NRGBs]  = { 0./255., 12./255., 21./255., 29./255.,  39./255.,  49./255.,  61./255.,  74./255., 103./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
     break;
@@ -1558,9 +1558,9 @@ case 109:
     // Gist Earth
   case 111:
     {
-      Double_t red[NRGBs]   = { 0./255., 13./255.,  30./255.,  44./255.,  72./255., 120./255., 156./255., 200./255., 247./255.};
-      Double_t green[NRGBs] = { 0./255., 36./255.,  84./255., 117./255., 141./255., 153./255., 151./255., 158./255., 247./255.};
-      Double_t blue[NRGBs]  = { 0./255., 94./255., 100./255.,  82./255.,  56./255.,  66./255.,  76./255., 131./255., 247./255.};
+      double red[NRGBs]   = { 0./255., 13./255.,  30./255.,  44./255.,  72./255., 120./255., 156./255., 200./255., 247./255.};
+      double green[NRGBs] = { 0./255., 36./255.,  84./255., 117./255., 141./255., 153./255., 151./255., 158./255., 247./255.};
+      double blue[NRGBs]  = { 0./255., 94./255., 100./255.,  82./255.,  56./255.,  66./255.,  76./255., 131./255., 247./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, 255, alpha);
     }
    break;
@@ -1568,9 +1568,9 @@ case 109:
    // Viridis
   case 112:
     {
-      Double_t red[NRGBs]   = { 26./255., 51./255.,  43./255.,  33./255.,  28./255.,  35./255.,  74./255., 144./255., 246./255.};
-      Double_t green[NRGBs] = {  9./255., 24./255.,  55./255.,  87./255., 118./255., 150./255., 180./255., 200./255., 222./255.};
-      Double_t blue[NRGBs]  = { 30./255., 96./255., 112./255., 114./255., 112./255., 101./255.,  72./255.,  35./255.,   0./255.};
+      double red[NRGBs]   = { 26./255., 51./255.,  43./255.,  33./255.,  28./255.,  35./255.,  74./255., 144./255., 246./255.};
+      double green[NRGBs] = {  9./255., 24./255.,  55./255.,  87./255., 118./255., 150./255., 180./255., 200./255., 222./255.};
+      double blue[NRGBs]  = { 30./255., 96./255., 112./255., 114./255., 112./255., 101./255.,  72./255.,  35./255.,   0./255.};
       Idx = TColor::CreateGradientColorTable(9, stops, red, green, blue, NCont, alpha);
    }
     break;

@@ -1,23 +1,4 @@
-#include <cstdlib>
-#include <cstdio>
-#include <iostream>
-#include <string>
-#include <sstream>
-#include <vector>
-#include <map>
-#include <iterator>
-#include <fstream>
-#include <utility>
-#include <algorithm> // for find_if
-
-#include "TH1D.h"
-#include "TH2D.h"
-#include "TH3F.h"
-
-#include "GeometryTPC.h"
 #include "EventTPC.h"
-#include "TrackSegmentTPC.h"
-#include "SigClusterTPC.h"
 
 EventTPC::EventTPC() { Clear(); }
 
@@ -467,7 +448,7 @@ TH1D* EventTPC::GetTimeProjection(const SigClusterTPC& cluster) {  // all strips
   // fill new histogram
 	if (h != nullptr) {
 		//bool res;
-		for (auto&& strip_dir : std::vector<projection>{DIR_U,DIR_V,DIR_W}) {
+		for (auto&& strip_dir : std::vector<projection>{projection::DIR_U,projection::DIR_V,projection::DIR_W}) {
 			if (cluster.GetMultiplicity(strip_dir) < 1) continue;
 			for (int strip_num = cluster.GetMinStrip(strip_dir); strip_num <= cluster.GetMaxStrip(strip_dir); strip_num++) {
 				for (int icell = cluster.GetMinTime(strip_dir); icell <= cluster.GetMaxTime(strip_dir); icell++) {
@@ -791,7 +772,7 @@ std::vector<int> hits[3] = {
 				default:
 					val = 0.0;
 				}; // end of switch (method)...
-				Double_t z = myGeometryPtr->Timecell2pos(icell, err_flag);
+				double z = myGeometryPtr->Timecell2pos(icell, err_flag);
 				h1->Fill((it.second).X(), (it.second).Y(), val);
 				h2->Fill((it.second).X(), z, val);
 				h3->Fill((it.second).Y(), z, val);
@@ -1007,7 +988,7 @@ TH3D* EventTPC::Get3D(const SigClusterTPC& cluster, double radius, int rebin_spa
 				default:
 					val = 0.0;
 				}; // end of switch (method)...
-				Double_t z = myGeometryPtr->Timecell2pos(icell, err_flag);
+				double z = myGeometryPtr->Timecell2pos(icell, err_flag);
 				h->Fill((it.second).X(), (it.second).Y(), z, val);
 			}
 		}

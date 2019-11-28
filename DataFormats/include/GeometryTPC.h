@@ -5,15 +5,21 @@
 // VERSION: 05 May 2018
 
 #include <cstdlib>
-#include <cstddef> // for nullptr
 #include <vector>
 #include <map>
 #include <string>
 #include <algorithm>
+#include <iostream> // for: cout, cerr, endl
+#include <sstream>
+#include <iterator>
+#include <fstream>
+#include <utility>
 
-#include "TROOT.h"
-#include "TVector2.h"
-#include "TH2Poly.h"
+#include "root/include/TROOT.h"
+#include "root/include/TMath.h"
+#include "root/include/TVector2.h"
+#include "root/include/TGraph.h"
+#include "root/include/TH2Poly.h"
 #include "MultiKey.h"
 #include "CommonDefinitions.h"
 
@@ -40,8 +46,8 @@ class GeometryTPC {
   int AGET_Nchan_raw;                   // # of total channels in AGET chip (including FPN channels)
   int AGET_Ntimecells;                  // # of time cells (buckets) in AGET chip
   std::map<int, int>         stripN;    // pair=(directory_idx, number_of_strips=xxx,xxx,xxx,4*ASAD_N*COBO_N)                          
-  std::map<int, std::string> dir2name;  // pair=(directory_idx, group_name="U","V","W","FPN")
-  std::map<std::string, int> name2dir;  // pair=(group_name="U","V","W","FPN", directory_idx)
+  std::map<projection, std::string> dir2name;  // pair=(directory_idx, group_name="U","V","W","FPN")
+  std::map<std::string, projection> name2dir;  // pair=(group_name="U","V","W","FPN", directory_idx)
   std::map<MultiKey4, StripTPC*, multikey4_less> mapByAget;     // key=(COBO_idx[0-1], ASAD_idx[0-3], AGET_idx[0-3], channel_idx[0-63])
   std::map<MultiKey4, StripTPC*, multikey4_less> mapByAget_raw; // key=(COBO_idx[0-1], ASAD_idx[0-3], AGET_idx [0-3], raw_channel_idx [0-67] )
   std::map<MultiKey2, StripTPC*, multikey2_less> mapByStrip;    // key=(STRIP_DIRECTION [0-2], STRIP_NUMBER [1-1024])
@@ -67,7 +73,7 @@ class GeometryTPC {
      
   // Setter methods 
   
-  bool Load(const char *fname);                 // loads geometry from TXT config file
+  bool Load(std::string fname);                 // loads geometry from TXT config file
   bool InitTH2Poly();                           // define bins for the underlying TH2Poly histogram
 
   void SetTH2PolyStrip(int ibin, StripTPC *s);  // maps TH2Poly bin to a given StripTPC object
@@ -79,7 +85,7 @@ class GeometryTPC {
   
   // Setter methods 
   
-  GeometryTPC(const char* fname, bool debug=false);
+  GeometryTPC(std::string  fname, bool debug=false);
   void SetTH2PolyPartition(int nx, int ny); // change cartesian binning of the underlying TH2Poly
   inline int GetTH2PolyPartitionX() { return grid_nx; }
   inline int GetTH2PolyPartitionY() { return grid_ny; }
@@ -93,7 +99,7 @@ class GeometryTPC {
   inline bool IsOK() { return initOK; }
   int GetDirNstrips(projection dir);
   int GetDirNstrips(std::string name);
-  int GetDirNstrips(const char *name);
+  int GetDirNstrips(std::string name);
   int GetDirNstrips(StripTPC *s);
 
   inline int GetAgetNchips() { return AGET_Nchips; }
@@ -105,21 +111,21 @@ class GeometryTPC {
   inline int GetAsadNboards() { int n=0; for(int icobo=0; icobo<COBO_N; icobo++) { n+=ASAD_N[icobo]; } return n; }
   inline int GetCoboNboards() { return COBO_N; }
 
-  int GetDirIndex(const char *name); 
-  int GetDirIndex(std::string name);
+  projection GetDirIndex(std::string name); 
+  projection GetDirIndex(std::string name);
   int GetDirIndex(int global_channel_idx);
   int GetDirIndex(int COBO_idx, int ASAD_idx, int AGET_idx, int channel_idx);
   int GetDirIndex_raw(int global_raw_channel_idx);
   int GetDirIndex_raw(int COBO_idx, int ASAD_idx, int AGET_idx, int raw_channel_idx);
 
-  const char* GetDirName(projection dir);
-  const char* GetStripName(StripTPC *s);
+  std::string GetDirName(projection dir);
+  std::string GetStripName(StripTPC *s);
 
   StripTPC *GetStripByAget(int COBO_idx, int ASAD_idx, int AGET_idx, int channel_idx);         // valid range [0-1][0-3][0-3][0-63]
   StripTPC *GetStripByGlobal(int global_channel_idx);                                          // valid range [0-1023]
   StripTPC *GetStripByAget_raw(int COBO_idx, int ASAD_idx, int AGET_idx, int raw_channel_idx); // valid range [0-1][0-3][0-3][0-67]
   StripTPC *GetStripByGlobal_raw(int global_raw_channel_idx);                                  // valid range [0-(1023+4*ASAD_N*COBO_N)]
-  StripTPC *GetStripByDir(int dir, int num);                                                   // valid range [0-2][1-1024]
+  StripTPC *GetStripByDir(projection dir, int num);                                                   // valid range [0-2][1-1024]
   std::shared_ptr<StripTPC*[]> GetStrips();
 
   // various helper functions for calculating local/global normal/raw channel index
@@ -155,10 +161,10 @@ class GeometryTPC {
   inline double GetDriftCageZmin() { return drift_zmin; } // [mm]
   inline double GetDriftCageZmax() { return drift_zmax; } // [mm]
 
-  double Strip2posUVW(int dir, int number, bool &err_flag); // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of the central line of the (existing) strip on the strip pitch axis for a given direction
+  double Strip2posUVW(projection dir, int number, bool &err_flag); // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of the central line of the (existing) strip on the strip pitch axis for a given direction
   double Strip2posUVW(StripTPC *strip, bool &err_flag); // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of the central line of the (existing) strip on the strip pitch axis for a strip given direction
 
-  double Cartesian2posUVW(double x, double y, int dir, bool &err_flag); // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of a given (X,Y) point on the strip pitch axis for a given direction
+  double Cartesian2posUVW(double x, double y, projection dir, bool &err_flag); // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of a given (X,Y) point on the strip pitch axis for a given direction
   double Cartesian2posUVW(TVector2 pos, projection dir, bool &err_flag); // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of a given (X,Y) point on the strip pitch axis for a given direction
   
   double Timecell2pos(double position_in_cells, bool &err_flag); // [mm] output: position along Z-axis
