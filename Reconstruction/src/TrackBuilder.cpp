@@ -405,14 +405,14 @@ Track3D TrackBuilder::fitTrackNodes(const Track3D & aTrack) const{
   fitter.SetFCN(fcn, params.data());
 
   double minChi2 = 1E10;
-  for(unsigned int iStep=1;iStep<2;++iStep){
+  for(unsigned int iStep=1;iStep<3;++iStep){
     
     std::cout<<__FUNCTION__<<" iStep: "<<iStep<<std::endl;
     
     aTrackCandidate.extendToWholeChamber();
-    aTrackCandidate.shrinkToHits();
+    aTrackCandidate.shrinkToHits();    
     params = aTrackCandidate.getSegmentsStartEndXYZ();
-    
+    nParams = params.size();
     for (int iPar = 0; iPar < nParams; ++iPar){
       fitter.Config().ParSettings(iPar).SetValue(params[iPar]);
       fitter.Config().ParSettings(iPar).SetStepSize(1.0/(2*iStep));
@@ -430,9 +430,9 @@ Track3D TrackBuilder::fitTrackNodes(const Track3D & aTrack) const{
     }
     const ROOT::Fit::FitResult & result = fitter.Result();
     aTrackCandidate.chi2FromNodesList(result.GetParams());
-    aTrackCandidate.removeEmptySegments();
     aTrackCandidate.extendToWholeChamber();
     aTrackCandidate.shrinkToHits();
+    aTrackCandidate.removeEmptySegments();
 
     std::cout<<"Post-fit: "<<std::endl;
     std::cout<<aTrackCandidate<<std::endl;

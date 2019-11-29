@@ -26,5 +26,7 @@ private:
 
 typedef std::vector<Hit2D> Hit2DCollection;
 
+std::ostream & operator << (std::ostream &out, const Hit2D &aHit);
+
 #endif
 
