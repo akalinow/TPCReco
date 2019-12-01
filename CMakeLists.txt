@@ -6,6 +6,7 @@ project(TPCSoft)                   # this sets the project name
 ###############################################################################
 
 #ROOT 
+list(APPEND CMAKE_PREFIX_PATH "C:/root")
 list(APPEND CMAKE_PREFIX_PATH $ENV{ROOTSYS})
 list(APPEND CMAKE_MODULE_PATH $ENV{ROOTSYS}/etc/cmake)
 find_package(ROOT REQUIRED COMPONENTS Physics HistPainter)
@@ -29,8 +30,7 @@ MESSAGE( STATUS "CMAKE_INSTALL_PREFIX:         " ${CMAKE_INSTALL_PREFIX} )
 # in the package.
 #
 if(NOT IS_DIRECTORY ${CMAKE_INSTALL_PREFIX}/resources) # needs full path!
-  install(DIRECTORY resources DESTINATION ${CMAKE_INSTALL_PREFIX})
-else()
+  install(DIRECTORY resources DESTINATION "C:/Users/26kuba05/source/repos/TPCReco/out/build")
   MESSAGE( STATUS "RESOURCES dir already exists in the installation dir" )
 endif()
 
@@ -46,7 +46,6 @@ add_subdirectory(Utilities)
 add_subdirectory(Reconstruction)
 add_subdirectory(GUI)
 add_subdirectory(GrawToROOT)
-add_subdirectory(ToyMC)
 
 # Now comes everything we need, to create a package
 # there are a lot more variables you can set, and some

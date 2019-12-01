@@ -1,3 +1,4 @@
+#pragma once
 #ifndef __EVENTTPC_H__
 #define __EVENTTPC_H__
 
@@ -19,15 +20,13 @@
 #include <utility>
 #include <algorithm> // for find_if
 
-#include "root/include/TH1D.h"
-#include "root/include/TH2D.h"
-#include "root/include/TH3F.h"
+#include "TH1D.h"
+#include "TH2D.h"
+#include "TH3F.h"
 
 #include "GeometryTPC.h"
 #include "TrackSegmentTPC.h"
 #include "SigClusterTPC.h"
-
-enum class strips {UV,VW,WU};
 
 #define EVENTTPC_DEFAULT_RECO_METHOD 1  // 0 = equal charge division along the strip
                                         // 1 = weighted charge division from complementary strip directions
@@ -73,49 +72,27 @@ class EventTPC {
   void SetRunId(int64_t aId) { run_id =  aId; };
   // helper methods for inserting data points
   // they return TRUE on success and FALSE on error
-  bool AddValByStrip(StripTPC* strip, int time_cell, double val);                      // valid range [0-511]
+  bool AddValByStrip(std::shared_ptr<StripTPC> strip, int time_cell, double val);                      // valid range [0-511]
   bool AddValByStrip(projection strip_dir, int strip_number, int time_cell, double val);     // valid range [0-2][1-1024][0-511]
-  bool AddValByGlobalChannel(int glb_channel_idx, int time_cell, double val);         // valid range [0-1023][0-511]
-  bool AddValByGlobalChannel_raw(int glb_raw_channel_idx, int time_cell, double val); // valid range [0-1023+4*N][0-511]
   bool AddValByAgetChannel(int cobo_idx, int asad_idx, int aget_idx, int channel_idx, int time_cell, double val); // valid range [0-1][0-3][0-3][0-63][0-511]
-  bool AddValByAgetChannel_raw(int cobo_idx, int asad_idx, int aget_idx, int raw_channel_idx, int time_cell, double val); // valid range [0-1][0-3][0-3][0-67][0-511]
   
   // helper methods for extracting data points
   // they return 0.0 for non-existing data points
-  double GetValByStrip(StripTPC* strip, int time_cell/*, bool &result*/);                   // valid range [0-511]
   double GetValByStrip(projection strip_dir, int strip_number, int time_cell/*, bool &result*/);  // valid range [0-2][1-1024][0-511]
-  double GetValByGlobalChannel(int glb_channel_idx, int time_cell/*, bool &result*/);         // valid range [0-1023][0-511]
-  double GetValByGlobalChannel_raw(int glb_raw_channel_idx, int time_cell/*, bool &result*/); // valid range [0-1023+4*N][0-511]
-  double GetValByAgetChannel(int cobo_idx, int asad_idx, int aget_idx, int channel_idx, int time_cell/*, bool &result*/); // valid range [0-1][0-3][0-3][0-63][0-511]
-  double GetValByAgetChannel_raw(int cobo_idx, int asad_idx, int aget_idx, int raw_channel_idx, int time_cell/*, bool &result*/); // valid range [0-1][0-3][0-3][0-67][0-511]
 
-  inline GeometryTPC * GetGeoPtr() const { return myGeometryPtr.get(); }
+  inline std::shared_ptr<GeometryTPC> GetGeoPtr() const { return myGeometryPtr; }
   inline int64_t GetEventId() const { return event_id; }
-  inline int64_t GetRunId() const { return run_id; }
   inline bool IsOK() const { return initOK; }
-  inline int GetTimeRebin() const { return time_rebin; }       
   bool SetTimeRebin(int rebin); // HAS NO EFFECT YET !!!!
 
   double GetMaxCharge();                   // maximal charge from all strips
   double GetMaxCharge(projection strip_dir);      // maximal charge from strips of a given direction
   double GetMaxCharge(projection strip_dir, int strip_number);      // maximal charge from single strip of a given direction
-  int GetMaxChargeTime(projection strip_dir);     // arrival time of the maximal charge from strips of a given direction
-  int GetMaxChargeStrip(projection strip_dir);    // strip number with the maximal charge in a given direction 
-  int GetMaxChargeTime();                  // arrival time of the maximal charge from all strips
-  int GetMaxChargeChannel();               // global channel number with the maximal charge from all strips
   double GetTotalCharge();                 // charge integral from all strips
   double GetTotalCharge(projection strip_dir);    // charge integral from strips of a given direction 
   double GetTotalCharge(projection strip_dir, int strip_number); // charge integral from single strip of a given direction 
-  double GetTotalChargeByTimeCell(projection strip_dir, int time_cell); // charge integral from a single time cell from all strips in a given direction
-  double GetTotalChargeByTimeCell(int time_cell); // charge integral from a single time cell from all strips
 
   SigClusterTPC GetOneCluster(double thr, int delta_strips, int delta_timecells); // applies clustering threshold to all space-time data points 
-  
-  TH1D *GetStripProjection(const SigClusterTPC &cluster, projection strip_dir);    // clustered hits only, valid dir range [0-2]
-  TH1D *GetTimeProjection(const SigClusterTPC &cluster, projection strip_dir);     // clustered hits only, valid dir range [0-2]
-  TH1D *GetTimeProjection(const SigClusterTPC &cluster);                    // clustered hits only, all strip dirs
-  TH1D *GetStripProjection(projection strip_dir);                            // whole,event, valid dir range [0-2]
-  TH1D *GetTimeProjection();                                          // whole event, all strip dirs
   
   std::shared_ptr<TH2D> GetStripVsTime(const SigClusterTPC &cluster, projection strip_dir);        // clustered hits only, valid dir range [0-2]
   std::shared_ptr<TH2D> GetStripVsTime(projection strip_dir);                               // whole event, all strip dirs
@@ -129,9 +106,6 @@ class EventTPC {
   TH3D *Get3D(const SigClusterTPC &cluster, double radius,                       // clustered hits only, 3D view
 	      int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN, 
 	      int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN, 
-	      int method=EVENTTPC_DEFAULT_RECO_METHOD);  
-
-  template<strips str>
-  inline TH2D* GetXY_Test(TH2D* h); // auxillary functions for x-check 
+	      int method=EVENTTPC_DEFAULT_RECO_METHOD);
 };
 #endif

@@ -1,6 +1,10 @@
-#include "root/include/TH2D.h"
-#include "root/include/TH3D.h"
-#include "root/include/TH2Poly.h"
+#pragma once
+#ifndef __UTILSTPC_H__
+#define __UTILSTPC_H__
+
+#include "TH2D.h"
+#include "TH3D.h"
+#include "TH2Poly.h"
 
 // helper functions
 double my_transfer_function(const double *x, const double *param);   // for TH3D transparency
@@ -37,3 +41,4 @@ void plot_MCevent(std::string input_fname1="resources/bkg.root",  // input ROOT 
 		  double theta0=25.0,                        // TView parameter [deg]
 		  double color_power=0.8  );
 
+#endif

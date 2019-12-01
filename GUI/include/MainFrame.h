@@ -1,24 +1,24 @@
 #ifndef MainFrame_H
 #define MainFrame_H
 
-#include <root/include/TGDockableFrame.h>
-#include <root/include/TGFrame.h>
-#include <root/include/TGCanvas.h>
-#include <root/include/TGLayout.h>
-#include <root/include/TGTableLayout.h>
-#include <root/include/TGMenu.h>
-#include <root/include/TRootEmbeddedCanvas.h>
-#include <root/include/TGFileDialog.h>
-#include <root/include/TGNumberEntry.h>
-#include <root/include/TGIcon.h>
-#include <root/include/TGPicture.h>
+#include <TGDockableFrame.h>
+#include <TGFrame.h>
+#include <TGCanvas.h>
+#include <TGLayout.h>
+#include <TGTableLayout.h>
+#include <TGMenu.h>
+#include <TRootEmbeddedCanvas.h>
+#include <TGFileDialog.h>
+#include <TGNumberEntry.h>
+#include <TGIcon.h>
+#include <TGPicture.h>
 
-#include <root/include/RQ_OBJECT.h>
-#include <root/include/TCanvas.h>
-#include <root/include/TObject.h>
-#include <root/include/TClass.h>
-#include <root/include/TLine.h>
-#include <root/include/TArrow.h>
+#include <RQ_OBJECT.h>
+#include <TCanvas.h>
+#include <TObject.h>
+#include <TClass.h>
+#include <TLine.h>
+#include <TArrow.h>
 
 #include "EntryDialog.h"
 #include "SelectionBox.h"

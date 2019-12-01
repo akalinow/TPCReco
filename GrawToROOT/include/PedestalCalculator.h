@@ -1,3 +1,4 @@
+#pragma once
 #ifndef __PEDESTAL_CALCULATOR_H__
 #define __PEDESTAL_CALCULATOR_H__
 
@@ -11,10 +12,10 @@
 #include <string>
 #include <memory>
 
-#include "root/include/TH1D.h"
-#include "root/include/TH2D.h"
-#include "root/include/TH3F.h"
-#include "root/include/TProfile.h"
+#include "TH1D.h"
+#include "TH2D.h"
+#include "TH3F.h"
+#include "TProfile.h"
 
 #include "GeometryTPC.h"
 

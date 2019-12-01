@@ -153,7 +153,7 @@ bool SigClusterTPC::AddByStrip(projection strip_dir, int strip_number, int time_
   return false;  
 }               
                
-bool SigClusterTPC::AddByStrip(StripTPC *strip, int time_cell) {  // valid range [0-511]
+bool SigClusterTPC::AddByStrip(std::shared_ptr<StripTPC> strip, int time_cell) {  // valid range [0-511]
   if(strip) return AddByStrip(static_cast<projection>(strip->Dir()), strip->Num(), time_cell);
   return false;
 }
@@ -184,8 +184,8 @@ bool SigClusterTPC::CheckByStrip(projection strip_dir, int strip_number, int tim
   return false;  
 }
 
-bool SigClusterTPC::CheckByStrip(StripTPC *strip, int time_cell) const{  // valid range [0-511]
-  if(strip) return CheckByStrip(static_cast<projection>(strip->Dir()), strip->Num(), time_cell);
+bool SigClusterTPC::CheckByStrip(std::shared_ptr<StripTPC> strip, int time_cell) const{  // valid range [0-511]
+  if(strip != nullptr) return CheckByStrip(static_cast<projection>(strip->Dir()), strip->Num(), time_cell);
   return false;
 }
 
@@ -233,8 +233,7 @@ long SigClusterTPC::GetNhits() const{  // global # of hits
 }
 
 int SigClusterTPC::GetMultiplicity(projection strip_dir) const{  // # of strips with hits in a given direction
-  if(!IsOK()) return ERROR;
-  if (IsDIR_UVW(strip_dir)) {
+	if (IsDIR_UVW(strip_dir) && IsOK()) {
 	  return nstrips[int(strip_dir)];
   };
   return ERROR;
@@ -338,7 +337,7 @@ double SigClusterTPC::GetTotalCharge(projection strip_dir, int strip_number) con
     MultiKey2 mkey(int(strip_dir), strip_number);
 
     // check if hit is unique
-    std::map<MultiKey2, double, multikey2_less>::const_iterator it = totalChargeMap.find(mkey);
+    auto it = totalChargeMap.find(mkey);
     if(it!=totalChargeMap.end()) {
       return it->second;
     }
@@ -367,7 +366,7 @@ double SigClusterTPC::GetTotalChargeByTimeCell(projection strip_dir, int time_ce
 	  MultiKey2 mkey(int(strip_dir), time_cell);
 
     // check if time slice is unique
-    std::map<MultiKey2, double, multikey2_less>::const_iterator it = totalChargeMap2.find(mkey);
+    auto it = totalChargeMap2.find(mkey);
     if(it!=totalChargeMap2.end() ) {
       return it->second;
     }
@@ -380,7 +379,7 @@ double SigClusterTPC::GetTotalChargeByTimeCell(int time_cell) const{ // charge i
   if(!IsOK()) return 0.0;
   
   // check if time slice is unique
-  std::map<int, double>::const_iterator it = totalChargeMap3.find(time_cell);
+  auto it = totalChargeMap3.find(time_cell);
   if(it!=totalChargeMap3.end()){
     return it->second;
   }

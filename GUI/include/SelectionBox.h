@@ -1,11 +1,11 @@
 #ifndef SelectionBox_h
 #define SelectionBox_h
 
-#include "root/include/TGClient.h"
-#include "root/include/TGButton.h"
-#include "root/include/TGListBox.h"
-#include "root/include/TList.h"
-#include "root/include/RQ_OBJECT.h"
+#include "TGClient.h"
+#include "TGButton.h"
+#include "TGListBox.h"
+#include "TList.h"
+#include "RQ_OBJECT.h"
 
 class SelectionBox {
 

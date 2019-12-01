@@ -80,13 +80,13 @@ bool TrackSegment3D::SetComparisonCluster(SigClusterTPC &cluster) { // cluster =
 
   // sanity checks
   if(!cluster.IsOK()) return false;
-  GeometryTPC* geo_ptr = cluster.GetEvtPtr()->GetGeoPtr();
+  auto geo_ptr = cluster.GetEvtPtr()->GetGeoPtr();
   if(geo_ptr == nullptr || !geo_ptr->IsOK()) return false;
 
   // create UZ, VZ, WZ projections of the parent 3D track segment
   
   std::map<projection, TrackSegment2D> trkMap; // 1-key map: strip_dir [0-2]
-  for (auto&& strip_dir : std::vector<projection>{ projection::DIR_U,projection::DIR_V,projection::DIR_W }) {
+  for (auto&& strip_dir : proj_vec_UVW) {
 	  trkMap[strip_dir] = GetTrack2D(geo_ptr, strip_dir);
   }
   // Loop over 2D cluster hits and update statistics
@@ -164,7 +164,7 @@ double TrackSegment3D::GetClusterCharge() {
 }
 
 // project 3D track segment onto U-Z, V-Z or W-Z plane
-TrackSegment2D TrackSegment3D::GetTrack2D(GeometryTPC *geo_ptr, projection dir) {
+TrackSegment2D TrackSegment3D::GetTrack2D(std::shared_ptr<GeometryTPC> geo_ptr, projection dir) {
 
   static TrackSegment2D empty(TVector2(), TVector2(), 0); // empty track
 
@@ -415,7 +415,7 @@ bool TrackSegment2D::SetCluster(SigClusterTPC &cluster, projection dir) { // clu
   ResetChargeProjection();
   // sanity checks
   if(!cluster.IsOK()) return false;
-  GeometryTPC* geo_ptr = cluster.GetEvtPtr()->GetGeoPtr();
+  auto geo_ptr = cluster.GetEvtPtr()->GetGeoPtr();
   if(geo_ptr != nullptr || !geo_ptr->IsOK()) return false;
 
   // Loop over 2D cluster hits and update statistics

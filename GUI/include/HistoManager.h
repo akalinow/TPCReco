@@ -1,3 +1,4 @@
+#pragma once
 #ifndef _HistoManager_H_
 #define _HistoManager_H_
 
@@ -8,9 +9,9 @@
 #include "SigClusterTPC.h"
 #include "TrackBuilder.h"
 
-#include "root/include/TLine.h"
-#include "root/include/TGraph.h"
-#include "root/include/TH2Poly.h"
+#include "TLine.h"
+#include "TGraph.h"
+#include "TH2Poly.h"
 
 #include "CommonDefinitions.h"
 

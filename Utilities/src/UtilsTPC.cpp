@@ -1,17 +1,17 @@
-#include "root/include/TROOT.h"
-#include "root/include/TStyle.h"
-#include "root/include/TFile.h"
-#include "root/include/TCanvas.h"
-#include "root/include/TH1D.h"
-#include "root/include/TH2F.h"
-#include "root/include/TH2D.h"
-#include "root/include/TH3D.h"
-#include "root/include/TPaletteAxis.h"
-#include "root/include/TList.h"
-#include "root/include/TF1.h"
-#include "root/include/TGraph.h"
-#include "root/include/TMultiGraph.h"
-#include "root/include/TColor.h"
+#include "TROOT.h"
+#include "TStyle.h"
+#include "TFile.h"
+#include "TCanvas.h"
+#include "TH1D.h"
+#include "TH2F.h"
+#include "TH2D.h"
+#include "TH3D.h"
+#include "TPaletteAxis.h"
+#include "TList.h"
+#include "TF1.h"
+#include "TGraph.h"
+#include "TMultiGraph.h"
+#include "TColor.h"
 
 #include "MultiKey.h"
 #include "GeometryTPC.h"
@@ -412,7 +412,7 @@ void plot_MCevent(std::string input_fname1,  // input ROOT file name for reading
   zmin = 0.0;
   zmax = 0.0;
 
-  for (auto&& i : std::vector<projection>{ projection::DIR_U,projection::DIR_V,projection::DIR_W }) {
+  for (auto&& i : proj_vec_UVW) {
     c2->cd(int(i)+1);
     //    ts2[i] = (TH2D*) p->DrawStripVsTime(i, "COL2Z");
     ts2[int(i)] = p->GetStripVsTime_TH2D(i);
@@ -504,7 +504,7 @@ void plot_MCevent(std::string input_fname1,  // input ROOT file name for reading
   zmax = 0.0;
   zmin = 0.0;
 
-  for(auto&& i : std::vector<projection>{ projection::DIR_U,projection::DIR_V,projection::DIR_W }) {
+  for(auto&& i : proj_vec_UVW) {
     c3->cd(int(i)+1);
     //    ts3[i] = (TH2D*) p->DrawStripVsTime(i, "LEGO2 FB");
     ts3[int(i)] = p->GetStripVsTime_TH2D(i);

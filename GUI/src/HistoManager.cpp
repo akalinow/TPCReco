@@ -2,13 +2,13 @@
 #include <iostream>
 #include <tuple>
 
-#include "root/include/TCanvas.h"
-#include "root/include/TH2D.h"
-#include "root/include/TH3D.h"
-#include "root/include/TSpectrum2.h"
-#include "root/include/TVector3.h"
-#include "root/include/TPolyLine3D.h"
-#include "root/include/TView.h"
+#include "TCanvas.h"
+#include "TH2D.h"
+#include "TH3D.h"
+#include "TSpectrum2.h"
+#include "TVector3.h"
+#include "TPolyLine3D.h"
+#include "TView.h"
 
 #include "GeometryTPC.h"
 #include "EventTPC.h"

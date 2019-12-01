@@ -1,3 +1,4 @@
+#pragma once
 #ifndef __UVWPROJECTOR_H__
 #define __UVWPROJECTOR_H__
 
@@ -8,11 +9,11 @@
 #include <vector>
 #include <map>
 
-#include "root/include/TROOT.h"
-#include "root/include/TH3D.h"
-#include "root/include/TH2D.h"
-#include "root/include/TH1.h"
-#include "root/include/TH2Poly.h"
+#include "TROOT.h"
+#include "TH3D.h"
+#include "TH2D.h"
+#include "TH1.h"
+#include "TH2Poly.h"
 
 #include "GeometryTPC.h"
 

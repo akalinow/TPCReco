@@ -1,3 +1,4 @@
+#pragma once
 #ifndef __CommonDefinitions_h__
 #define __CommonDefinitions_h__
 #include <cmath>
@@ -19,6 +20,8 @@ enum class projection : int {
 inline bool IsDIR_UVW(projection DIR_) {
 	return DIR_ == projection::DIR_U || DIR_ == projection::DIR_V || DIR_ == projection::DIR_W;
 }
+
+const auto proj_vec_UVW = std::vector<projection>{ projection::DIR_U,projection::DIR_V,projection::DIR_W };
 
 //const std::vector<int> stripOffset = {-71, 0, -55};//strip/time bin units
 const std::vector<int> stripOffset = {0, 0, 0};/// mm units

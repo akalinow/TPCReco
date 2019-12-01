@@ -1,3 +1,4 @@
+#pragma once
 #ifndef __TRACK_SEGMENT_TPC_H__
 #define __TRACK_SEGMENT_TPC_H__
 
@@ -12,10 +13,10 @@
 #include <memory>
 #include <algorithm>
 
-#include "root/include/TH1D.h"
-#include "root/include/TH3F.h"
-#include "root/include/TVector3.h"
-#include "root/include/TVector2.h"
+#include "TH1D.h"
+#include "TH3F.h"
+#include "TVector3.h"
+#include "TVector2.h"
 #include "EventTPC.h"
 #include "SigClusterTPC.h"
 #include "GeometryTPC.h"
@@ -85,7 +86,7 @@ class TrackSegment3D {
   std::vector<double> GetClusterProjectionVec(); // binned 1D charge distribution along the track
   double GetClusterCharge();     // ADC units
 
-  TrackSegment2D GetTrack2D(GeometryTPC *geo_ptr, projection dir); // project 3D track segment onto U-Z, V-Z or W-Z plane
+  TrackSegment2D GetTrack2D(std::shared_ptr<GeometryTPC> geo_ptr, projection dir); // project 3D track segment onto U-Z, V-Z or W-Z plane
   
 };
 

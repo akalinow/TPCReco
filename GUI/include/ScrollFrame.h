@@ -1,9 +1,10 @@
+#pragma once
 #ifndef ScrollFrame_H
 #define ScrollFrame_H
 
-#include <root/include/RQ_OBJECT.h>
-#include <root/include/TGFrame.h>
-#include <root/include/TGCanvas.h>
+#include <RQ_OBJECT.h>
+#include <TGFrame.h>
+#include <TGCanvas.h>
 
 
 class ScrollFrame {

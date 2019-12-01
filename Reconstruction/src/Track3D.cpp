@@ -150,8 +150,8 @@ void Track3D::updateNodesChi2(projection strip_dir){
 
   if(!mySegments.size()) return;
 
-  TVector3 stripPitchDirection(cos(phiPitchDirection[strip_dir]),
-			       sin(phiPitchDirection[strip_dir]), 0);
+  TVector3 stripPitchDirection(cos(phiPitchDirection[int(strip_dir)]),
+			       sin(phiPitchDirection[int(strip_dir)]), 0);
   TVector3 aPoint;
 
   double charge = 0.0;
@@ -178,7 +178,7 @@ void Track3D::updateNodesChi2(projection strip_dir){
 
     if(ROOT::Math::VectorUtil::DeltaPhi(formerTransverse2D, latterTransverse2D)<0) std::swap(formerTransverse2D, latterTransverse2D);
 
-    for(const auto aHit:mySegments.front().getRecHits().at(strip_dir)){
+    for(const auto aHit:mySegments.front().getRecHits().at(int(strip_dir))){
       charge = aHit.getCharge();
       aPoint.SetXYZ(aHit.getPosTime(), aHit.getPosWire(), 0.0);
       aPoint -= node2D;
@@ -209,7 +209,7 @@ void Track3D::updateChi2(){
   nodeAngleChi2.clear();
   if(mySegments.size()) nodeAngleChi2.resize(mySegments.size()-1);
   
-  for (auto&& strip_dir : std::vector<projection>{projection::DIR_U,projection::DIR_V,projection::DIR_W}) {
+  for (auto&& strip_dir : proj_vec_UVW) {
     updateNodesChi2(strip_dir);
   }
 }

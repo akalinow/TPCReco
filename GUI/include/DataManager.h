@@ -5,8 +5,8 @@
 #include <vector>
 #include <memory>
 
-#include "root/include/TFile.h"
-#include "root/include/TTree.h"
+#include "TFile.h"
+#include "TTree.h"
 
 class GeometryTPC;
 class EventTPC;

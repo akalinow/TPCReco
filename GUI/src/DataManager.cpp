@@ -1,7 +1,7 @@
 #include<cstdlib>
 #include <iostream>
 
-#include "root/include/TCanvas.h"
+#include "TCanvas.h"
 
 #include "GeometryTPC.h"
 #include "EventTPC.h"

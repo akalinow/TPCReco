@@ -1,4 +1,6 @@
+#pragma once
 #ifndef __MULTIKEY_H__
+#define __MULTIKEY_H__
 
 #include <functional>
 
@@ -205,5 +207,4 @@ struct multikey5_less : public std::binary_function<MultiKey5, MultiKey5, bool>
   }
 };
 
-#define __MULTIKEY_H__
 #endif

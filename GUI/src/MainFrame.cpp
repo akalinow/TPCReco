@@ -2,19 +2,19 @@
 #include <iostream>
 #include <fstream>
 #include <atomic>
-#include <root/include/TApplication.h>
+#include <TApplication.h>
 #include <MainFrame.h>
 #include <SelectionBox.h>
 
-#include <root/include/TStyle.h>
-#include <root/include/TFrame.h>
-#include <root/include/TVirtualX.h>
-#include <root/include/TImage.h>
+#include <TStyle.h>
+#include <TFrame.h>
+#include <TVirtualX.h>
+#include <TImage.h>
 
-#include <root/include/TH2D.h>
-#include <root/include/TH3D.h>
-#include <root/include/TLatex.h>
-#include <root/include/TProfile.h>
+#include <TH2D.h>
+#include <TH3D.h>
+#include <TLatex.h>
+#include <TProfile.h>
 
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -250,7 +250,7 @@ void MainFrame::Update(){
   fCanvas->Divide(3,3);
   fCanvas->cd(1);
 
-  for (auto&& strip_dir : std::vector<projection>{projection::DIR_U,projection::DIR_V,projection::DIR_W}) {
+  for (auto&& strip_dir : proj_vec_UVW) {
     myHistoManager.getHoughAccumulator(strip_dir);
   }
 
@@ -261,7 +261,7 @@ void MainFrame::Update(){
   
   //myHistoManager.getCartesianProjection(DIR_U)->SaveAs("histo.root");
   
-  for(auto&& strip_dir : std::vector<projection>{ projection::DIR_U,projection::DIR_V,projection::DIR_W }){
+  for(auto&& strip_dir : proj_vec_UVW){
     ///First row
     TVirtualPad *aPad = fCanvas->cd(int(strip_dir)+1);
     myHistoManager.getCartesianProjection(strip_dir)->DrawClone("colz");

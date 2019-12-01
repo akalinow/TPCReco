@@ -1,9 +1,9 @@
 #ifndef EntryDialog_H
 #define EntryDialog_H
 
-#include <root/include/TGFrame.h>
-#include <root/include/TGLayout.h>
-#include <root/include/TGLabel.h>
+#include <TGFrame.h>
+#include <TGLayout.h>
+#include <TGLabel.h>
 
 class MainFrame;
 

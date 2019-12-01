@@ -7,16 +7,16 @@
 #include <vector>
 #include <map>
 
-#include "root/include/TROOT.h"
-#include "root/include/TGraph.h"
-#include "root/include/TH2.h"
-#include "root/include/TH2D.h"
-#include "root/include/TH3D.h"
-#include "root/include/TH2Poly.h"
-#include "root/include/TVector2.h"
-#include "root/include/TRandom3.h"
-#include "root/include/TMath.h"
-#include "root/include/TPad.h"
+#include "TROOT.h"
+#include "TGraph.h"
+#include "TH2.h"
+#include "TH2D.h"
+#include "TH3D.h"
+#include "TH2Poly.h"
+#include "TVector2.h"
+#include "TRandom3.h"
+#include "TMath.h"
+#include "TPad.h"
 
 #include "MultiKey.h"
 #include "GeometryTPC.h"
@@ -142,7 +142,7 @@ void UVWprojector::AddBinContent(int32_t bin, double w) {
 
   // sanity checks
   if(!geo_ptr || !(geo_ptr->IsOK())) return;
-  TH2Poly *tp = geo_ptr->GetTH2Poly();
+  auto tp = geo_ptr->GetTH2Poly();
   if (!tp || !tp->GetBins() || bin > tp->GetNumberOfBins() || bin == 0 || bin < -9) return;
   if (bin<0) { tp->SetBinContent(bin, tp->GetBinContent(bin)+w); return; }
 
@@ -165,7 +165,7 @@ void UVWprojector::SetBinContent(int32_t bin, double w) {
   // sanity checks
 
   if(!geo_ptr || !(geo_ptr->IsOK())) return;
-  TH2Poly *tp = geo_ptr->GetTH2Poly();
+  auto tp = geo_ptr->GetTH2Poly();
   if (!tp || !tp->GetBins() || bin > tp->GetNumberOfBins() || bin == 0 || bin < -9) return;
 
   if (bin<0) { tp->SetBinContent(bin, w); return; }
@@ -180,8 +180,8 @@ bool UVWprojector::InitAreaMapping() {
   fAreaFractionMap.clear();
 
   // sanity checks
-  TH2Poly *tp=nullptr;
-  if( area_npoints<1 || !h2 || !geo_ptr || !(geo_ptr->IsOK()) || !(tp=geo_ptr->GetTH2Poly())) {
+  auto tp = geo_ptr->GetTH2Poly();
+  if( area_npoints<1 || !h2 || !geo_ptr || !(geo_ptr->IsOK()) || tp == nullptr) {
 
     // DEBUG
     if(_debug) {
@@ -561,7 +561,7 @@ TH1D * UVWprojector::GetStripProfile_TH1D(projection dir) {
       int ix = (it->first).key1;
       int iy = (it->first).key2;
       int ibin = it2->first;       // TH2Poly
-      StripTPC *s = geo_ptr->GetTH2PolyStrip(ibin);
+	  std::shared_ptr<StripTPC> s = geo_ptr->GetTH2PolyStrip(ibin);
       if( s && projection(s->Dir())==dir ) {
 	int strip_num = s->Num(); // valid range [1-1024] 
 	double weight = it2->second;
@@ -630,39 +630,35 @@ TH2D* UVWprojector::GetStripVsTime_TH2D(projection dir) {
 
   
   // loop over all Z-slices
-  std::map<int, BinFracMap>::const_iterator it;
-  std::map<int, double>::const_iterator it2;
-  for(it=fTimeFractionMap.cbegin(); it!=fTimeFractionMap.cend(); it++) {
+  for(const auto& it : fTimeFractionMap) {
 
-    int iz = it->first; // Z-slice
+    int iz = it.first; // Z-slice
  
     // sanity checks
     if(iz<1 || iz>nzbins) continue;
 
     // loop over all mapped time cells for a give Z-slice
-    for(it2=(it->second).FracMap.cbegin(); it2!=(it->second).FracMap.cend(); it2++) {	
+    for(const auto& it2 : it.second.FracMap) {	
       
-      const double time_ibin = it2->first;
-      const double weightT = it2->second;
+      const double time_ibin = it2.first;
+      const double weightT = it2.second;
 
       // DEBUG
       if(_debug) {
 	std::cout << "Slice IZ=" << iz
-		  << ": adding contribution of TIME_CELL=" << it2->first 
-		  << ", WEIGHT=" << it2->second << std::endl;
+		  << ": adding contribution of TIME_CELL=" << it2.first 
+		  << ", WEIGHT=" << it2.second << std::endl;
       }
       // DEBUG
 
       // loop over all mapped X,Y bins and project TH3D to TH2D using proper weights
-      std::map<MultiKey2, BinFracMap, multikey2_less>::const_iterator it3;
-      std::map<int, double>::const_iterator it4;
-      for(it3=fAreaFractionMap.cbegin(); it3!=fAreaFractionMap.cend(); it3++) {
-	for(it4=(it3->second).FracMap.cbegin(); it4!=(it3->second).FracMap.cend(); it4++) {
-	  int ix = (it3->first).key1;
-	  int iy = (it3->first).key2;
-	  int ibin = it4->first;       // TH2Poly bin index
+      for(auto const& it3 : fAreaFractionMap) {
+	for(const auto& it4 : (it3.second).FracMap) {
+	  int ix = (it3.first).key1;
+	  int iy = (it3.first).key2;
+	  int ibin = it4.first;       // TH2Poly bin index
 	  
-	  StripTPC *s = geo_ptr->GetTH2PolyStrip(ibin);
+	  std::shared_ptr<StripTPC> s = geo_ptr->GetTH2PolyStrip(ibin);
 	  if( s && projection(s->Dir())==dir ) { 
 
 	    //////////// DEBUG 
@@ -671,7 +667,7 @@ TH2D* UVWprojector::GetStripVsTime_TH2D(projection dir) {
 	    //////////// DEBUG 
 
 	    const int strip_num = s->Num(); // valid range [1-1024] 
-	    const double weight = it4->second;
+	    const double weight = it4.second;
 
 	    if(weight<=0.0) continue;
 	    newth2->Fill(time_ibin*1., strip_num, h3->GetBinContent(ix, iy, iz)*weight*weightT);
@@ -699,8 +695,8 @@ TH2D* UVWprojector::GetStripVsTime_TH2D(projection dir) {
 TH2Poly* UVWprojector::GetStripProfile_TH2Poly() {
   
   // sanity checks
-  TH2Poly *tp=nullptr;
-  if(!geo_ptr || !(geo_ptr->IsOK()) || !(tp=geo_ptr->GetTH2Poly()) || !isOK_AreaMapping || !input_hist) { 
+  auto tp = (geo_ptr == nullptr ? nullptr : geo_ptr->GetTH2Poly());
+  if(!(geo_ptr->IsOK()) || tp == nullptr || !isOK_AreaMapping || !input_hist) { 
 
     // DEBUG
     if(_debug) {
@@ -779,24 +775,22 @@ TH2Poly* UVWprojector::GetStripProfile_TH2Poly() {
     }
 
     // loop over all Z-slices
-    std::map<int, BinFracMap>::const_iterator it;
-    std::map<int, double>::const_iterator it2;
 
-    for(it=fTimeFractionMap.cbegin(); it!=fTimeFractionMap.cend(); it++) {
+    for(const auto& it : fTimeFractionMap) {
       // calculate weight of each slice, range [0-1]
       double weight = 0.0;
-      int iz = it->first;
+      int iz = it.first;
       if(iz<1 || iz>nzbins) continue;
-      for(it2=(it->second).FracMap.cbegin(); it2!=(it->second).FracMap.cend(); it2++) {	
+      for(const auto& it2: it.second.FracMap) {	
 	// DEBUG
 	if(_debug) {
 	  std::cout << "Slice IZ=" << iz
-		    << ": mapping TIME_CELL=" << it2->first 
-		    << ", WEIGHT=" << it2->second << std::endl;
+		    << ": mapping TIME_CELL=" << it2.first 
+		    << ", WEIGHT=" << it2.second << std::endl;
 	}
 	// DEBUG
 
-	weight += it2->second;
+	weight += it2.second;
       }
 
       // skip slices out of electronics time acceptance window
@@ -840,14 +834,12 @@ TH2Poly* UVWprojector::GetStripProfile_TH2Poly() {
   }
 
   // Project TH2D content to TH2Poly  
-  std::map<MultiKey2, BinFracMap, multikey2_less>::const_iterator it;
-  std::map<int, double>::const_iterator it2;
-  for(it=fAreaFractionMap.cbegin(); it!=fAreaFractionMap.cend(); it++) {
-    for(it2=(it->second).FracMap.cbegin(); it2!=(it->second).FracMap.cend(); it2++) {
-      int ix = (it->first).key1;
-      int iy = (it->first).key2;
-      int ibin = it2->first;
-      double weight = it2->second;
+  for(const auto& it : fAreaFractionMap) {
+    for(const auto& it2 : it.second.FracMap) {
+      int ix = (it.first).key1;
+      int iy = (it.first).key2;
+      int ibin = it2.first;
+      double weight = it2.second;
       if(weight<=0.0) continue;
 
       this->AddBinContent(ibin, h2temp->GetBinContent(ix, iy)*weight); // customized UVWprojector add method for internal TH2Poly

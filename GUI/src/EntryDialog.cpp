@@ -1,9 +1,9 @@
 #include <cstdlib>
 #include <iostream>
 
-#include <root/include/TGFrame.h>
-#include <root/include/TGLabel.h>
-#include <root/include/TGFontDialog.h>
+#include <TGFrame.h>
+#include <TGLabel.h>
+#include <TGFontDialog.h>
 
 #include <EntryDialog.h>
 #include <MainFrame.h>
