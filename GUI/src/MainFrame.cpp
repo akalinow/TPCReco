@@ -269,12 +269,12 @@ void MainFrame::Update(){
     
     ///Third row.
     aPad = fCanvas->cd(strip_dir+1+3+3);
-    //myHistoManager.getHoughAccumulator(strip_dir).DrawClone("colz");
-    //myHistoManager.getHoughAccumulator(strip_dir).SaveAs(TString::Format("HoughAccumulator_%d.root", strip_dir));
-    myHistoManager.drawChargeAlongTrack3D(aPad);
+    myHistoManager.getHoughAccumulator(strip_dir).DrawClone("colz");
+    myHistoManager.getHoughAccumulator(strip_dir).SaveAs(TString::Format("HoughAccumulator_%d.root", strip_dir));
+    //myHistoManager.drawChargeAlongTrack3D(aPad);
   }  
-  //fCanvas->Update();    //TEST
-  //return;//TEST
+  fCanvas->Update();    //TEST
+  return;//TEST
   
   //Third row again.
   TVirtualPad *aPad = fCanvas->cd(7);

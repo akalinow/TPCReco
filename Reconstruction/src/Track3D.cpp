@@ -85,6 +85,7 @@ void Track3D::updateChargeProfile(){
   int nSteps =  getLength()/h;
   double lambdaCut = 0.0;
   double derivative = 0.0;
+  double maxCharge = 0.0;
 
   myChargeProfile.SetPoint(0, 0, 0);
   for(int iStep=1;iStep<=nSteps;++iStep){
@@ -92,8 +93,10 @@ void Track3D::updateChargeProfile(){
     derivative = getIntegratedCharge(lambdaCut + h) - getIntegratedCharge(lambdaCut - h);
     derivative /= 2.0*h;
     myChargeProfile.SetPoint(myChargeProfile.GetN(),  lambdaCut, derivative);
+    if(derivative>maxCharge) maxCharge = derivative;
   }
   myChargeProfile.SetPoint(myChargeProfile.GetN(), getLength(), 0);
+  myChargeProfile.SetMaximum(maxCharge);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -283,28 +286,29 @@ void Track3D::extendToWholeChamber(){
 /////////////////////////////////////////////////////////
 void Track3D::shrinkToHits(){
 
-  double lambdaStart = 0.0;
-  double lambdaEnd = getLength();
   if(getLength()<1.0) return;//FIXME move to configuration  
-  double minChargeCut = 10.0;//FIXME move to configuration and (dynamically?) optimize
-  double charge = 0.0;
+  double minChargeCut = 0.2*getChargeProfile().GetMaximum();//FIXME move to configuration and (dynamically?) optimize
   double h = 2.0;//FIXME move to configuration.
+  double charge = 0.0;
+  double lambdaStart = 0.0;
   while(charge<minChargeCut && lambdaStart<getLength()){
     lambdaStart +=h;
-    charge = getChargeProfile().Eval(lambdaStart);  
+    charge = 0.0;
+    for(int i=0;i<3;++i) charge += getChargeProfile().Eval(lambdaStart+i*h);    
   }
-  lambdaEnd = lambdaStart;
+  double lambdaEnd = lambdaStart;
   while(charge>minChargeCut && lambdaEnd<getLength()){
     lambdaEnd +=h;
-    charge = getChargeProfile().Eval(lambdaEnd);  
+    charge = 0.0;
+    for(int i=0;i<3;++i) charge += getChargeProfile().Eval(lambdaEnd+i*h);    
   }
 
   TrackSegment3D & aFirstSegment = mySegments.front();
   TrackSegment3D & aLastSegment = mySegments.back();
   
-  TVector3 aStart = aFirstSegment.getStart() + getSegmentLambda(lambdaStart)*aFirstSegment.getTangent();  
-  TVector3 aEnd = aLastSegment.getStart() + getSegmentLambda(lambdaEnd)*aLastSegment.getTangent();  
-  
+  TVector3 aStart = aFirstSegment.getStart() + getSegmentLambda(lambdaStart, 0)*aFirstSegment.getTangent();  
+  TVector3 aEnd = aLastSegment.getStart() + getSegmentLambda(lambdaEnd, mySegments.size()-1)*aLastSegment.getTangent();  
+
   aFirstSegment.setStartEnd(aStart, aFirstSegment.getEnd());
   aLastSegment.setStartEnd(aLastSegment.getStart(), aEnd);
 
@@ -312,14 +316,14 @@ void Track3D::shrinkToHits(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-double Track3D::getSegmentLambda(double lambda) const{
+double Track3D::getSegmentLambda(double lambda, unsigned int iSegment) const{
 
   double segmentLambda = lambda;
-  for(auto &aSegment: mySegments){
-    if(segmentLambda<aSegment.getLength()) return segmentLambda;
-    else segmentLambda -= aSegment.getLength();
+  for(unsigned int index=0;index<iSegment;++index){
+    segmentLambda -= mySegments[index].getLength();
   }
-  return 0.0;
+  if(segmentLambda<0) segmentLambda = 0.0;
+  return segmentLambda;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

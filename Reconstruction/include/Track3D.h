@@ -24,7 +24,7 @@ public:
 
   double getLength() const { return myLenght;}
 
-  double getSegmentLambda(double lambda) const;
+  double getSegmentLambda(double lambda, unsigned int iSegment) const;
 
   double getIntegratedCharge(double lambda) const;
 

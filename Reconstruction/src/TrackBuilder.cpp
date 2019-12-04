@@ -39,8 +39,8 @@ TrackBuilder::TrackBuilder() {
   ///to avoid having very small rho parameters, as
   ///orignally many tracks traverse close to X=0, Time=0
   ///point.
-  aHoughOffest.SetX(20.0);
-  aHoughOffest.SetY(40.0);
+  aHoughOffest.SetX(50.0);
+  aHoughOffest.SetY(50.0);
   aHoughOffest.SetZ(0.0);
 }
 /////////////////////////////////////////////////////////
@@ -103,7 +103,7 @@ void TrackBuilder::makeRecHits(int iDir){
   hRecHits.Reset();
   std::string tmpTitle(hRecHits.GetTitle());
   if(tmpTitle.find("Event")!=std::string::npos){
-    tmpTitle.replace(tmpTitle.find("Event"), 21,"Rec hits"); 
+    tmpTitle.replace(tmpTitle.find("Event"), 22,"Rec hits"); 
     hRecHits.SetTitle(tmpTitle.c_str());
   }
 
@@ -357,6 +357,8 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
 
   Track3D aTrackCandidate;
   aTrackCandidate.addSegment(aTrackSegment);
+  //return aTrackCandidate;//TEST
+      
   aTrackCandidate = fitTrackNodes(aTrackCandidate);
   
   TGraph aGraph = aTrackCandidate.getHitDistanceProfile();
@@ -375,7 +377,9 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
   
   std::cout<<"after split: "<<std::endl;
   std::cout<<aTrackCandidate<<std::endl;
-  
+
+  return aTrackCandidate;//TEST
+
   aTrackCandidate = fitTrackNodes(aTrackCandidate);
   return aTrackCandidate;
   /*
@@ -443,6 +447,9 @@ Track3D TrackBuilder::fitTrackNodes(const Track3D & aTrack) const{
     }
   }
   aTrackCandidate.chi2FromNodesList(bestParams.data());
+  aTrackCandidate.removeEmptySegments();
+  aTrackCandidate.extendToWholeChamber();
+  aTrackCandidate.shrinkToHits();
   return aTrackCandidate;
 }
 /////////////////////////////////////////////////////////
