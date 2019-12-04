@@ -23,7 +23,7 @@
 #include "TH2Poly.h"
 #include "MultiKey.h"
 #include "CommonDefinitions.h"
-
+ 
 constexpr auto FPN_CH = 3;    // FPN channel type index
 constexpr auto ERROR = -1;   // error result indicator
 constexpr auto NUM_TOLERANCE = 1e-6;

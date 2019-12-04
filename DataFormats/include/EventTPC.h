@@ -80,7 +80,7 @@ class EventTPC {
   // they return 0.0 for non-existing data points
   double GetValByStrip(projection strip_dir, int strip_number, int time_cell/*, bool &result*/);  // valid range [0-2][1-1024][0-511]
 
-  inline std::shared_ptr<GeometryTPC> GetGeoPtr() const { return myGeometryPtr; }
+  inline auto GetGeoPtr() const { return myGeometryPtr; }
   inline int64_t GetEventId() const { return event_id; }
   inline bool IsOK() const { return initOK; }
   bool SetTimeRebin(int rebin); // HAS NO EFFECT YET !!!!

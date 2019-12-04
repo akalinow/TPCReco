@@ -20,12 +20,12 @@
 #include "EventTPC.h"
 #include "SigClusterTPC.h"
 #include "GeometryTPC.h"
+#include "../../Reconstruction/include/TrackSegment2D.h"
 
 #define TRACKSEGMENTTPC_DEFAULT_FIT_SIGMA  1.5 // default expected position resolution [mm] for CHI2 definition (used in: 0,2)
 #define TRACKSEGMENTTPC_DEFAULT_FIT_METHOD 2   // 0 = sum of "perpendicular" distances 
                                                // 1 = sum of "parallel" distances assuming evenly distributed hits along the track
                                                // 2 = linear combination of method 0 and 1
-class TrackSegment2D;
 
 // 3D-track segment class
 

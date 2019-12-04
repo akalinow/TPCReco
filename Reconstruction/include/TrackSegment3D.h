@@ -20,7 +20,7 @@ public:
 
   TrackSegment3D();
 
-  ~TrackSegment3D() = default;
+  ~TrackSegment3D() {};
 
   void setBiasTangent(const TVector3 & aBias, const TVector3 & aTangent);
 

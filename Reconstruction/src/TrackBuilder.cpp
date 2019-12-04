@@ -82,7 +82,7 @@ void TrackBuilder::reconstruct(){
 /////////////////////////////////////////////////////////
 void TrackBuilder::makeRecHits(int iDir){ 
 
-  std::shared_ptr<TH2D> hRawHits = myEvent->GetStripVsTimeInMM(getCluster(), projection(iDir));
+  auto hRawHits = myEvent->GetStripVsTimeInMM(getCluster(), projection(iDir));
   TH2D & hRecHits = myRecHits[iDir];
   hRecHits.Reset();
   std::string tmpTitle(hRecHits.GetTitle());

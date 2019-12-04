@@ -53,7 +53,7 @@ GeometryTPC::GeometryTPC(std::string  fname, bool debug)
      std::cout << "GeometryTPC::Constructor - Started..." << std::endl;
    }
 
-   tp = std::make_unique<TH2Poly>();
+   tp = std::make_shared<TH2Poly>();
    tp->SetName("h_uvw_dummy");
 
    // default REFERENCE POINT position on XY plane
@@ -479,11 +479,7 @@ bool GeometryTPC::InitTH2Poly() {
 	  ymax = std::max({ ymax, point1.Y(), point2.Y() });
     }
   }
-  if(tp != nullptr) {
-    tp->Delete();
-    tp.reset();
-  }
-  tp = std::make_unique<TH2Poly>("h_uvw","GeometryTPC::TH2Poly;X;Y;Charge", grid_nx, xmin, xmax, grid_ny, ymin, ymax);
+  tp = std::make_shared<TH2Poly>("h_uvw","GeometryTPC::TH2Poly;X;Y;Charge", grid_nx, xmin, xmax, grid_ny, ymin, ymax);
   if(tp == nullptr) {
     if(_debug) {
       std::cout << "GeometryTPC::InitTH2Poly - Abort (2)" << std::endl;
@@ -621,7 +617,7 @@ void GeometryTPC::SetTH2PolyStrip(int ibin, std::shared_ptr<StripTPC> s) {
 }
 
 std::shared_ptr<StripTPC> GeometryTPC::GetTH2PolyStrip(int ibin) {
-  return (fStripMap.find(ibin)==fStripMap.end() ? nullptr : fStripMap[ibin]);
+  return (fStripMap.find(ibin)==fStripMap.end() ? std::shared_ptr<StripTPC>(nullptr) : fStripMap[ibin]);
 }
 
 int GeometryTPC::GetDirNstrips(projection dir) {

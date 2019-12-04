@@ -31,6 +31,7 @@ MESSAGE( STATUS "CMAKE_INSTALL_PREFIX:         " ${CMAKE_INSTALL_PREFIX} )
 #
 if(NOT IS_DIRECTORY ${CMAKE_INSTALL_PREFIX}/resources) # needs full path!
   install(DIRECTORY resources DESTINATION "C:/Users/26kuba05/source/repos/TPCReco/out/build")
+else()
   MESSAGE( STATUS "RESOURCES dir already exists in the installation dir" )
 endif()
 
