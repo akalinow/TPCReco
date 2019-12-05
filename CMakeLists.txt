@@ -47,6 +47,7 @@ add_subdirectory(Reconstruction)
 add_subdirectory(GUI)
 add_subdirectory(GrawToROOT)
 add_subdirectory(ToyMC)
+add_subdirectory(TrackGenerator)
 
 # Now comes everything we need, to create a package
 # there are a lot more variables you can set, and some
