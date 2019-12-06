@@ -14,7 +14,7 @@
 #include "TrackSegment2D.h"
 #include "CommonDefinitions.h"
 
-class TrackSegment3D{
+class TrackSegment3D {
 
 public:
 

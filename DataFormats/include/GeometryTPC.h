@@ -33,7 +33,7 @@ class StripTPC;
 // UVW strip geometry defined as a class
 
 //class GeometryTPC : public TObject {
-class GeometryTPC {
+class GeometryTPC : std::enable_shared_from_this<GeometryTPC> {
 
   friend class UVWprojector;
 

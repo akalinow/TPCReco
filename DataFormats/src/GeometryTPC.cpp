@@ -89,6 +89,7 @@ GeometryTPC::GeometryTPC(std::string  fname, bool debug)
  }
 
 bool GeometryTPC::Load(std::string fname) { 
+	auto this_shared = shared_from_this(); // may or may not work properly
   if(_debug) {
     std::cout << "GeometryTPC::Load - Started..." << std::endl;
   }
@@ -328,7 +329,7 @@ bool GeometryTPC::Load(std::string fname) {
 	    TVector2 offset = offset_in_strips * strip_pitch * pitch_unit_vec[int(dir)] + offset_in_pads * pad_pitch * strip_unit_vec[int(dir)];
 	    double length = length_in_pads * pad_pitch;
 	    std::shared_ptr<StripTPC> strip = std::make_shared<StripTPC>(int(dir), strip_num, cobo, asad, aget, chan_num, chan_num_raw, 
-					   strip_unit_vec[int(dir)], offset, length, this);
+					   strip_unit_vec[int(dir)], offset, length, this_shared);
 
 	    // update map (by: COBO board, ASAD board, AGET chip, AGET normal/raw channel)
 	    mapByAget[MultiKey4(cobo, asad, aget,chan_num)]=strip ; // StripTPC(dir, strip_num);
@@ -403,7 +404,7 @@ bool GeometryTPC::Load(std::string fname) {
       for(int ichip=0; ichip<AGET_Nchips; ichip++) 
 	for (unsigned i=0; i<FPN_chanId.size(); i++) {
 	  mapByAget_raw[MultiKey4(icobo, iasad, ichip, FPN_chanId[i])] = std::make_shared<StripTPC>(FPN_CH, i+1, icobo, iasad, ichip, ERROR, FPN_chanId[i], 
-										    TVector2(), TVector2(), 0.0, this);
+										    TVector2(), TVector2(), 0.0, this_shared);
 	}
 
   // adding # of FPN channels to stripN

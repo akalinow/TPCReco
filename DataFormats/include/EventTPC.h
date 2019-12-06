@@ -25,7 +25,6 @@
 #include "TH3F.h"
 
 #include "GeometryTPC.h"
-#include "TrackSegmentTPC.h"
 #include "SigClusterTPC.h"
 
 #define EVENTTPC_DEFAULT_RECO_METHOD 1  // 0 = equal charge division along the strip

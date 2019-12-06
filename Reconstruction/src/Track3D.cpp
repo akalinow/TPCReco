@@ -179,8 +179,8 @@ void Track3D::updateNodesChi2(projection strip_dir){
     if(ROOT::Math::VectorUtil::DeltaPhi(formerTransverse2D, latterTransverse2D)<0) std::swap(formerTransverse2D, latterTransverse2D);
 
     for(const auto aHit:mySegments.front().getRecHits().at(int(strip_dir))){
-      charge = aHit.getCharge();
-      aPoint.SetXYZ(aHit.getPosTime(), aHit.getPosWire(), 0.0);
+      charge = aHit().charge;
+      aPoint.SetXYZ(aHit().posTime, aHit().posWire, 0.0);
       aPoint -= node2D;
       double deltaHit = ROOT::Math::VectorUtil::DeltaPhi(formerTransverse2D, aPoint);//DeltaPhi(a, b) = b - a 
       double nodeOpeningAngle = ROOT::Math::VectorUtil::DeltaPhi(formerTransverse2D, latterTransverse2D);      

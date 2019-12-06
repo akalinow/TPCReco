@@ -580,14 +580,8 @@ std::vector<int> hits[3] = {
 
 // get 3D histogram of clustered hits
 TH3D* EventTPC::Get3D(const SigClusterTPC& cluster, double radius, int rebin_space, int rebin_time, int method) {
-	{
-		std::unique_ptr<TH3D> h = nullptr; // tworzymy wskaünik
-		h = std::make_unique<TH3D>(); // stwÛrz obiekt 1
-		h->AbstractMethod();// wywo≥aj z ob 1
-		h = std::make_unique<TH3D>(); // usuÒ 1, stwÛrz 2
-		h->AddBinContent(); //wywo≥aj z 2
-		// usuwamy wskaünie => usuwamy obiekt 2
-	}
+	TH3D* h = nullptr;
+
 	bool err_flag = false;
 
 	if (!IsOK() || !cluster.IsOK() ||

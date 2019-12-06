@@ -43,7 +43,6 @@ set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 
 #Framework packages
 add_subdirectory(DataFormats)
-add_subdirectory(Utilities)
 add_subdirectory(Reconstruction)
 add_subdirectory(GUI)
 add_subdirectory(GrawToROOT)

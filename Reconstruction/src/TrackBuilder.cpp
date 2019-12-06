@@ -283,9 +283,9 @@ TrackSegment2D TrackBuilder::findSegment2D(int iDir, int iPeak) const{
 TrackSegment3D TrackBuilder::buildSegment3D() const{
 
   int iTrack2DSeed = 0;
-  const TrackSegment2D & segmentU = my2DSeeds[int(projection::DIR_U)][iTrack2DSeed];
-  const TrackSegment2D & segmentV = my2DSeeds[int(projection::DIR_V)][iTrack2DSeed];
-  const TrackSegment2D & segmentW = my2DSeeds[int(projection::DIR_W)][iTrack2DSeed];
+  auto& segmentU = my2DSeeds[int(projection::DIR_U)][iTrack2DSeed];
+  auto& segmentV = my2DSeeds[int(projection::DIR_V)][iTrack2DSeed];
+  auto& segmentW = my2DSeeds[int(projection::DIR_W)][iTrack2DSeed];
 
   int nHits_U = segmentU.getNAccumulatorHits();
   int nHits_V = segmentV.getNAccumulatorHits();
