@@ -18,14 +18,13 @@
 
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h)
+MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h,  boost::property_tree::ptree &root)
       : TGMainFrame(p, w, h){
 
   //TEST ---
-  std::string dataFileName = "/home/akalinow/scratch/ELITPC/data/neutrons/EventTPC_2018-06-19T15:13:33.941.root"; 
-  std::string geometryFileName = "/home/akalinow/scratch/ELITPC/data/neutrons/geometry_mini_eTPC_2018-06-19T15:13:33.941.dat"; 
-  //dataFileName = "/home/akalinow/scratch/ELITPC/data/neutrons/ROOT/EventTPC_2018-06-20T10:35:30.853_0004.root";
-  
+  std::string dataFileName = root.get<std::string>("dataFile");
+  std::string geometryFileName = root.get<std::string>("geometryFile");
+ 
   myDataManager.loadGeometry(geometryFileName);  
   myDataManager.loadDataFile(dataFileName);
   myDataManager.loadTreeEntry(0);

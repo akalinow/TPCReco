@@ -1,6 +1,9 @@
 set(MODULE_NAME "TrackGenerator")
-MESSAGE( STATUS "Adding CMake fragment for module:         " ${MODULE_NAME} )
 
+# Finding Boost
+find_package(Boost 1.45.0) 
+if(Boost_FOUND)
+MESSAGE( STATUS "Adding CMake fragment for module:         " ${MODULE_NAME} )
 ###############################################################################
 ## file globbing ##############################################################
 ###############################################################################
@@ -10,7 +13,6 @@ MESSAGE( STATUS "Adding CMake fragment for module:         " ${MODULE_NAME} )
 # `sources`
 #
 file(GLOB_RECURSE sources       ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/src/*.cpp)
-
 ###############################################################################
 ## dependencies ###############################################################
 ###############################################################################
@@ -37,4 +39,7 @@ target_link_libraries(EventGenerator PUBLIC ${MODULE_NAME} DataFormats Utilities
 # relative to the executable.
 install(TARGETS ${MODULE_NAME} LIBRARY DESTINATION lib)
 install(TARGETS EventGenerator RUNTIME DESTINATION bin)
-install(DIRECTORY DESTINATION results)
+install(FILES $<1:${PROJECT_SOURCE_DIR}/${MODULE_NAME}/config/> DESTINATION config)
+else()
+    MESSAGE( WARNING "No libboost found. " ${MODULE_NAME} " will not be build.")
+endif()

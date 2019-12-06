@@ -18,7 +18,7 @@ public:
     void fillEvent();
 
     //Set-up
-
+    
     void loadGeometry(std::shared_ptr<GeometryTPC> geometryPtr);
     void loadGeometry(const std::string & fileName);
     void setTrackOrigin(double x=0,double y=0,double z=0); 
@@ -30,8 +30,12 @@ public:
     inline void setTrackTheta(double theta=0){trackVector.SetTheta(theta);}
     // Sets gaussian spread of track in mm. The spread is same in all directions.
     inline void setTrackSigma(double sigma){trackSigma=sigma;}
+    // Sets number of entries for generating track.
     inline void setTrackCounts(int counts){trackCounts=counts;}
-
+    // Sets track histogram space
+    void setTrackSpace(int NbinsX=50, double xmin=-100,double xmax=100,
+                        int NbinsY=50, double ymin=-100,double ymax=100,
+                        int NbinsZ=50, double zmin=-100,double zmax=100);
     //Getters:
 
     // Returns UVW projectionsCollections vector

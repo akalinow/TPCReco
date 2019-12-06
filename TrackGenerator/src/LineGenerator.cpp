@@ -2,23 +2,17 @@
 #include <iostream>
 //Default constructor. Creates default space for tracks
 LineGenerator::LineGenerator(): projectionsCollection(3) {
-  const unsigned int NbinsX = 50;
-  const unsigned int NbinsY = 50;
-  const unsigned int NbinsZ = 150;
-  const double xmin = -100.0;  // mm
-  const double xmax =  100.0;  // mm
-  const double ymin = -100.0; // mm
-  const double ymax =  100.0; // mm  
-  const double zmin = -100; // mm
-  const double zmax =  100; // mm
+ //setTrackSpace();
+}
 
-  myTrack3D =TH3D("h_xz", "Pseudo data;X [mm];Z [mm];Charge/bin [arb.u.]",
+void LineGenerator::setTrackSpace(int NbinsX, double xmin, double xmax,
+                        int NbinsY, double ymin, double ymax,
+                        int NbinsZ, double zmin, double zmax){
+    myTrack3D= TH3D("h_xz", "Pseudo data;X [mm];Z [mm];Charge/bin [arb.u.]",
 		    NbinsX, xmin, xmax,
             NbinsY, ymin, ymax,
 		    NbinsZ, zmin, zmax);
 }
-
-
 
 
 void LineGenerator::loadGeometry(std::shared_ptr<GeometryTPC> geometryPtr){
