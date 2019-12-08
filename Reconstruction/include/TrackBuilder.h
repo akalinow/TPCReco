@@ -1,3 +1,4 @@
+#pragma once
 #ifndef _TrackBuilder_H_
 #define _TrackBuilder_H_
 
@@ -5,8 +6,21 @@
 #include <vector>
 #include <memory>
 #include <tuple>
+#include <cstdlib>
+#include <iostream>
 
 #include <Fit/Fitter.h>
+
+#include "TVector3.h"
+#include "TProfile.h"
+#include "TObjArray.h"
+#include "TF1.h"
+#include "TFitResult.h"
+#include "Math/Functor.h"
+
+#include "GeometryTPC.h"
+#include "EventTPC.h"
+#include "SigClusterTPC.h"
 
 #include "TrackSegment2D.h"
 #include "TrackSegment3D.h"

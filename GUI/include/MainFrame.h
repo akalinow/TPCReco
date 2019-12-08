@@ -50,17 +50,17 @@ class MainFrame : public TGMainFrame {
   RQ_OBJECT("MainFrame")
 
 public:
-   MainFrame(const TGWindow *p, UInt_t w, UInt_t h);
+   MainFrame(const TGWindow *p, uint32_t w, uint32_t h);
    virtual ~MainFrame();
    virtual void CloseWindow();
-   virtual Bool_t ProcessMessage(Long_t msg, Long_t parm1, Long_t);
+   virtual bool ProcessMessage(int64_t msg, int64_t parm1, int64_t);
 
 ///Process message from EntryDialog
-    virtual Bool_t ProcessMessage(Long_t msg);
+    virtual bool ProcessMessage(int64_t msg);
 
-   void HandleEmbeddedCanvas(Int_t event, Int_t x, Int_t y, TObject *sel);
+   void HandleEmbeddedCanvas(int32_t event, int32_t x, int32_t y, TObject *sel);
 
-   void HandleMenu(Int_t);
+   void HandleMenu(int32_t);
 
    void DoButton();
 

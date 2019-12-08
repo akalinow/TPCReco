@@ -1,3 +1,4 @@
+#pragma once
 #ifndef _TrackSegment2D_H_
 #define _TrackSegment2D_H_
 
@@ -13,7 +14,7 @@ class TrackSegment2D{
 
 public:
 
-  TrackSegment2D(int strip_dir = DIR_U){ myStripDir = strip_dir;};
+  TrackSegment2D(projection strip_dir = projection::DIR_U){ myStripDir = int(strip_dir);};
 
   ~TrackSegment2D() {};
 
@@ -71,7 +72,7 @@ private:
   double getPointTransverseDistance(const TVector3 & aPoint) const;
 
   int myStripDir;
-  double myLenght;
+  double myLenght = 0.0;
 
   TVector3 myTangent, myBias;
   TVector3 myStart, myEnd;    

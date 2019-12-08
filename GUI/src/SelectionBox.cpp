@@ -3,11 +3,11 @@
 
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void SelectionBox::DoSelect(Long_t msg){
+void SelectionBox::DoSelect(int64_t msg){
    fSelected->Clear();
    fListBox->GetSelectedEntries(fSelected);
 
-   Emit("DoSelect(Long_t)",fSelected);
+   Emit("DoSelect(int64_t)",fSelected);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -16,8 +16,8 @@ void SelectionBox::DoExit(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-SelectionBox::SelectionBox(const TGWindow *p, TGWindow *main, UInt_t w,
-                           UInt_t h, UInt_t options){
+SelectionBox::SelectionBox(const TGWindow *p, TGWindow *main, uint32_t w,
+                           uint32_t h, uint32_t options){
 
    fMain = new TGTransientFrame(p, main, w, h, options);
    fMain->Connect("CloseWindow()", "SelectionBox", this, "DoExit()");
@@ -56,7 +56,7 @@ SelectionBox::SelectionBox(const TGWindow *p, TGWindow *main, UInt_t w,
    fMain->MapSubwindows();
    fMain->Resize();
 
-   this->Connect("DoSelect(Long_t)","MainFrame",main,"HandleHistoSelect(Long_t)");
+   this->Connect("DoSelect(int64_t)","MainFrame",main,"HandleHistoSelect(int64_t)");
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

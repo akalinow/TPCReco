@@ -82,7 +82,7 @@ void EntryDialog::updateFileName(const std::string & fileName){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 
-Bool_t EntryDialog::ProcessMessage(Long_t msg, Long_t parm1, Long_t /*parm2*/){
+bool EntryDialog::ProcessMessage(int64_t msg, int64_t parm1, int64_t /*parm2*/){
    switch (GET_MSG(msg)) {
    case kC_COMMAND:
       {

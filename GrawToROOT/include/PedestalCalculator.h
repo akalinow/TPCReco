@@ -1,3 +1,4 @@
+#pragma once
 #ifndef __PEDESTAL_CALCULATOR_H__
 #define __PEDESTAL_CALCULATOR_H__
 
@@ -54,10 +55,10 @@ class PedestalCalculator {
 
   std::vector<double> pedestals;
 
-  std::vector< std::vector<uint> > FPN_entries_pedestal;
+  std::vector< std::vector<uint32_t> > FPN_entries_pedestal;
   std::vector< std::vector<double> > FPN_ave_pedestal;
 
-  std::vector< std::vector<uint> > FPN_entries_signal;
+  std::vector< std::vector<uint32_t> > FPN_entries_signal;
   std::vector< std::vector<double> > FPN_ave_signal;
   
   // GLOBAL - PEDESTAL CONTROL HISTOGRAMS  

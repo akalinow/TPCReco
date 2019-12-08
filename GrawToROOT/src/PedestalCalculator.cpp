@@ -35,7 +35,7 @@ void PedestalCalculator::InitializeTables(){
   maxval = 4096;          // 12-bit ADC
   nbin_spectrum = 100;    // Energy spectrum histograms
 
-  FPN_entries_pedestal.assign(myGeometryPtr->GetAgetNchips(), std::vector<uint>(512));
+  FPN_entries_pedestal.assign(myGeometryPtr->GetAgetNchips(), std::vector<uint32_t>(512));
   FPN_ave_pedestal.assign(myGeometryPtr->GetAgetNchips(), std::vector<double>(512));
 
   FPN_entries_signal =  FPN_entries_pedestal;
@@ -88,7 +88,7 @@ void PedestalCalculator::CalculateEventPedestals(const GET::GDataFrame & dataFra
 
   // update vector with pedestals
   pedestals.clear();
-  for(Int_t ibin=1; ibin<=prof_pedestal->GetNbinsX(); ibin++) {
+  for(int32_t ibin=1; ibin<=prof_pedestal->GetNbinsX(); ibin++) {
     double mean=prof_pedestal->GetBinContent(ibin);
     //double rms=prof_pedestal->GetBinError(ibin);
     pedestals.push_back(mean);
