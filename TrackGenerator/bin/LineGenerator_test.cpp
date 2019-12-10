@@ -25,7 +25,7 @@ else{
   return 1;
 }
 
-l.loadGeometry(root.get<std::string>("geometry"));
+l.loadGeometry(root.get<std::string>("geometryFile"));
 TCanvas *c1 = new TCanvas("c1","c", 2, 78, 500, 500);
 l.setTrackCounts(root.get<double>("MCcounts"));
 
@@ -37,8 +37,7 @@ l.setTrackOrigin(root.get<double>("x0"),root.get<double>("y0"),root.get<double>(
 l.setTrackSpace(root.get<int>("NbinsX"),root.get<double>("xmin"),root.get<double>("xmax"),
                 root.get<int>("NbinsY"),root.get<double>("ymin"),root.get<double>("ymax"),
                 root.get<int>("NbinsZ"),root.get<double>("zmin"),root.get<double>("zmax"));
-std::cout<<"!!!!!!!!!!!!"<< root.get<int>("zmax")<<std::endl;
-EventTPC myEvent=l.generateLineEvent();
+EventTPC myEvent=l.generateEvent();
   myEvent.SetEventId(1);
 for (auto i: l.getProjections()){
         i->Draw("COLZ");

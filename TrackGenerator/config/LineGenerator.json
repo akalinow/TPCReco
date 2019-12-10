@@ -1,5 +1,5 @@
 {   
-    "geometry": "/home/mfila/data/TPCReco/resources/geometry_mini_eTPC.dat",
+    "geometryFile": "/home/mfila/data/TPCReco/resources/geometry_mini_eTPC.dat",
     "NbinsX":50, "xmin":-100, "xmax":100,
     "NbinsY":50, "ymin":-100, "ymax":100,
     "NbinsZ":50, "zmin":-100, "zmax":100,
@@ -10,5 +10,5 @@
     "theta":"30",
     "phi":"30",
     "sigma":"3",
-    "MCcounts":"10000000"
+    "MCcounts":"100000"
 }
