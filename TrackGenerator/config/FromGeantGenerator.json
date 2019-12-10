@@ -1,0 +1,8 @@
+{
+    "dataFile": "/home/mfila/data/neutrons_data/ntuple_t0.root",
+    "geometryFile": "/home/mfila/data/TPCReco/resources/geometry_mini_eTPC.dat",
+    "NbinsX":50, "xmin":-100, "xmax":100,
+    "NbinsY":50, "ymin":-100, "ymax":100,
+    "NbinsZ":50, "zmin":-100, "zmax":100
+ }
+ 
