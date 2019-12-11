@@ -12,22 +12,12 @@ void LineGenerator::setTrackOrigin(double x, double y, double z){
 
 // Resets old track and generate new track in form of line of set length, origin point and width (sigma).
 // Sigma is same for all directions
-void LineGenerator::generateTrack(int option){
+void LineGenerator::generateTrack(){
     myTrack3D.Reset();
-    if(!option){
-        for(int i=0;i!=trackCounts;++i){\
-            //add Z-dependend sigma?
-            TVector3 point(trackOrigin+rng.Uniform()*trackVector);
-            point+=TVector3(rng.Gaus(0,trackSigma),rng.Gaus(0,trackSigma),rng.Gaus(0,trackSigma));
-            myTrack3D.Fill(point.X(),point.Y(),point.Z());
-        }
+    for(int i=0;i!=trackCounts;++i){\
+        //add Z-dependend sigma?
+        TVector3 point(trackOrigin+rng.Uniform()*trackVector);
+        point+=TVector3(rng.Gaus(0,trackSigma),rng.Gaus(0,trackSigma),rng.Gaus(0,trackSigma));
+        myTrack3D.Fill(point.X(),point.Y(),point.Z());
     }
-}
-
-//Return EventTPC generated from line of set origin, length and width
-EventTPC& LineGenerator::generateEvent(){
-    generateTrack();
-    project();
-    fillEvent();
-    return myEvent;
 }

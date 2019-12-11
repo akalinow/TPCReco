@@ -2,7 +2,7 @@
 #include <iostream>
 //Default constructor. Creates default space for tracks
 AbstractGenerator::AbstractGenerator(): projectionsCollection(3) {
- //setTrackSpace();
+persistentEvent=&myEvent;
 }
 
 void AbstractGenerator::setTrackSpace(int NbinsX, double xmin, double xmax,
@@ -26,7 +26,12 @@ void AbstractGenerator::loadGeometry(const std::string & fileName){
   loadGeometry(std::make_shared<GeometryTPC>(fileName.c_str()));
 }
 
-
+EventTPC& AbstractGenerator::generateEvent(){
+    generateTrack();
+    project();
+    fillEvent();
+    return myEvent;
+}
 
 
 //Generates three 2D projections (UWV) of 3D track
@@ -51,4 +56,31 @@ void AbstractGenerator::fillEvent(){
         }
     }
     myEvent.SetEventId(eventNr);
+}
+
+void AbstractGenerator::setOutput(std::string outputName){
+    outputFile=new TFile(outputName.c_str(), "RECREATE");
+    outputTree=new TTree("TPCData","");
+    outputTree->Branch("Event", &persistentEvent);
+}
+void AbstractGenerator::writeOutput(){
+ 
+    outputTree->Write();
+    //outputFile->Close();
+}
+
+void AbstractGenerator::generateEvents(){
+    for (int i=0;i<5;++i){
+        setEntry(i);
+        generateEvent();
+        if(outputFile->IsOpen()){
+            myEvent.SetGeoPtr(0);
+            outputTree->Fill();
+        }
+    }
+    myEvent.SetGeoPtr(myGeometryPtr);
+}
+
+void AbstractGenerator::setEntry(int i){
+    eventNr=i;
 }

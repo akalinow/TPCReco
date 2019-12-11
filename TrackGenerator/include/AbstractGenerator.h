@@ -6,11 +6,14 @@
 #include "EventTPC.h"
 #include <memory>
 #include <vector>
+#include <TTree.h>
+#include <TFile.h>
 //Builder of eventTPCs in form of straight lines
 class AbstractGenerator {
 public:
     AbstractGenerator();
-    virtual EventTPC& generateEvent()=0;
+    virtual EventTPC& generateEvent();
+    virtual void generateTrack()=0;
     virtual void project();
     virtual void fillEvent();
 
@@ -31,6 +34,11 @@ public:
     // Returns EventTPC
     inline EventTPC &getEventTPC(){return myEvent;}
 
+    void setOutput(std::string);
+    void writeOutput();
+    void generateEvents();
+    virtual void setEntry(int i=0);
+
     protected:
     std::vector<TH2D*> projectionsCollection;
     std::shared_ptr<GeometryTPC> myGeometryPtr;
@@ -38,6 +46,9 @@ public:
     TH3D myTrack3D;
     EventTPC myEvent;
     int eventNr=0;
+    TFile* outputFile;
+    TTree* outputTree;
+    EventTPC* persistentEvent;
 
 };    
 #endif // _AbstractGenerator_H_

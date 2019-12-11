@@ -2,11 +2,9 @@
 FromGeantGenerator::FromGeantGenerator(): AbstractGenerator(){
 }
 
-EventTPC& FromGeantGenerator::generateEvent(){
-    generateTrack();
-    project();
-    fillEvent();
-    return myEvent;
+void FromGeantGenerator::setEntry(int i){
+    depTree->GetEntry(i);
+    eventNr=i;
 }
 
 void FromGeantGenerator::generateTrack(){

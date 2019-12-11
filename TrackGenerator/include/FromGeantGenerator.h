@@ -1,23 +1,19 @@
 #ifndef _FromGeantGenerator_H_
 #define _FromGeantGenerator_H_
 #include "AbstractGenerator.h"
-#include "TTree.h"
-#include "TFile.h"
 #include <iostream>
 class FromGeantGenerator: public AbstractGenerator {
 public:
-friend TTree;
     FromGeantGenerator();
-    EventTPC& generateEvent() final;
-    void generateTrack();
+    void generateTrack() final;
     void loadDataFile(std::string dataFileAddress);
-    void setEntry(int i=0){depTree->GetEntry(i);eventNr=i;}
+    void setEntry(int i=0) final;
 protected:
     void setBranches();
-    std::vector<double>* x=0;
-    std::vector<double>* y=0;
-    std::vector<double>* z=0;
-    std::vector<double>* Edep=0;
+    std::vector<double>* x=nullptr;
+    std::vector<double>* y=nullptr;
+    std::vector<double>* z=nullptr;
+    std::vector<double>* Edep=nullptr;
     TTree* depTree;
     TTree* primTree;
     TFile* dataFile;

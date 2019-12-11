@@ -1,8 +1,8 @@
 {   
     "geometryFile": "/home/mfila/data/TPCReco/resources/geometry_mini_eTPC.dat",
-    "NbinsX":50, "xmin":-100, "xmax":100,
-    "NbinsY":50, "ymin":-100, "ymax":100,
-    "NbinsZ":50, "zmin":-100, "zmax":100,
+    "NbinsX":200, "xmin":-100, "xmax":100,
+    "NbinsY":350, "ymin":-100, "ymax":100,
+    "NbinsZ":196, "zmin":-100, "zmax":100,
     "x0":"0",
     "y0":"0",
     "z0":"0",

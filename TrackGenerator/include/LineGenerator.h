@@ -9,10 +9,7 @@
 class LineGenerator: public AbstractGenerator {
 public:
     LineGenerator();
-    EventTPC& generateEvent() final;
-    void generateTrack(int option=0);
-
-
+    void generateTrack();
     //Set-up
     
     void setTrackOrigin(double x=0,double y=0,double z=0); 
