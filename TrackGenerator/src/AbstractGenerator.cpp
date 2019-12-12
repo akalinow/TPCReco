@@ -1,5 +1,6 @@
 #include "AbstractGenerator.h"
 #include <iostream>
+
 //Default constructor. Creates default space for tracks
 AbstractGenerator::AbstractGenerator(): projectionsCollection(3) {
 persistentEvent=&myEvent;
@@ -62,25 +63,32 @@ void AbstractGenerator::setOutput(std::string outputName){
     outputFile=new TFile(outputName.c_str(), "RECREATE");
     outputTree=new TTree("TPCData","");
     outputTree->Branch("Event", &persistentEvent);
+    outputTree->Branch("tracksNo",&tracksNo);
+    outputTree->Branch("A", &A);
+    outputTree->Branch("Z",&Z);
+    outputTree->Branch("momentum",&momentum);
+    outputTree->Branch("start",&start);
+    outputTree->Branch("stop",&stop);
+    outputTree->Branch("energy",&energy);
+    outputTree->Branch("length",&length);
 }
 void AbstractGenerator::writeOutput(){
- 
     outputTree->Write();
-    //outputFile->Close();
 }
 
-void AbstractGenerator::generateEvents(){
-    for (int i=0;i<5;++i){
-        setEntry(i);
-        generateEvent();
-        if(outputFile->IsOpen()){
-            myEvent.SetGeoPtr(0);
-            outputTree->Fill();
-        }
-    }
-    myEvent.SetGeoPtr(myGeometryPtr);
-}
+
 
 void AbstractGenerator::setEntry(int i){
     eventNr=i;
+}
+
+void AbstractGenerator::clearParameters(){
+    tracksNo=0;
+    A.clear();
+    Z.clear();
+    momentum.clear();
+    start.clear();
+    stop.clear();
+    energy.clear();
+    length.clear();
 }

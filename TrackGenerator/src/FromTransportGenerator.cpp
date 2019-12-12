@@ -1,12 +1,21 @@
 #include "FromTransportGenerator.h"
 #include "SimEvent.hh"
 FromTransportGenerator::FromTransportGenerator(): AbstractGenerator(){
-    persistentEvent=&myEvent;
 }
 
 void FromTransportGenerator::generateTrack(){
     myTrack3D=*(reinterpret_cast<TH3D*>(simEvent->GetAfterTransportHisto()));
-    //myTrack3D=*(reinterpret_cast<TH3D*>(simEvent->GetAfterTransportHisto()));
+    clearParameters();
+    tracksNo=simEvent->GetTracks().size();
+    for(auto &i: simEvent->GetTracks()){
+        A.push_back(i.GetA());
+        Z.push_back(i.GetZ());
+        momentum.push_back(i.GetMomentum());
+        start.push_back(i.GetStart());
+        stop.push_back(i.GetStop());
+        energy.push_back(i.GetEnergy());
+        length.push_back(i.GetLength());
+    }
 }
 
 void FromTransportGenerator::loadDataFile(std::string dataFileAddress){
@@ -23,3 +32,22 @@ void FromTransportGenerator::setEntry(int i){
     eventNr=i;
 }
 
+void FromTransportGenerator::generateEvents(int counts){
+    int eventsNo=0;
+    if(counts){
+        eventsNo=counts;
+    }
+    else{
+        eventsNo=dataTree->GetEntries();
+    }
+    
+    for (int i=0;i!=eventsNo;++i){
+        setEntry(i);
+        generateEvent();
+        if(outputFile->IsOpen()){
+            myEvent.SetGeoPtr(0);
+            outputTree->Fill();
+        }
+    }
+    myEvent.SetGeoPtr(myGeometryPtr);
+}

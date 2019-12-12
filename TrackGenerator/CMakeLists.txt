@@ -29,6 +29,8 @@ include_directories(${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include)
 include_directories(${PROJECT_SOURCE_DIR}/DataFormats/include)
 include_directories(${PROJECT_SOURCE_DIR}/Utilities/include)
 include_directories(/home/mfila/data/SimUtils/install/include)
+
+ROOT_GENERATE_DICTIONARY(G__${MODULE_NAME} ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/AbstractGenerator.h LINKDEF ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/RootDictLinkDef.h)
 #link_directories(/home/mfila/data/SimUtils/install/lib)
 ###############################################################################
 ## target definitions #########################################################
@@ -36,7 +38,7 @@ include_directories(/home/mfila/data/SimUtils/install/include)
 # The data is just added to the executable, because in some IDEs (QtCreator) 
 # files are invisible when they are not explicitly part of the project.
 #
-add_library(${MODULE_NAME} SHARED ${sources})
+add_library(${MODULE_NAME} SHARED ${sources}  G__${MODULE_NAME}.cxx)
 target_link_libraries(${MODULE_NAME} ${ROOT_LIBRARIES} SimUtils)
 add_executable(LineGenerator_test bin/LineGenerator_test.cpp)
 add_executable(FromGeantGenerator_test bin/FromGeantGenerator_test.cpp)
@@ -59,6 +61,8 @@ target_link_libraries(FromTransportGenerator_test PUBLIC ${MODULE_NAME} SimUtils
 
 
 install(TARGETS ${MODULE_NAME} LIBRARY DESTINATION lib)
+install(FILES ${CMAKE_BINARY_DIR}/${MODULE_NAME}/lib${MODULE_NAME}_rdict.pcm DESTINATION lib)
+install(FILES ${CMAKE_BINARY_DIR}/${MODULE_NAME}/lib${MODULE_NAME}.rootmap DESTINATION lib)
 install(TARGETS LineGenerator_test RUNTIME DESTINATION bin)
 install(TARGETS FromGeantGenerator_test RUNTIME DESTINATION bin)
 install(TARGETS FromTransportGenerator_test RUNTIME DESTINATION bin)

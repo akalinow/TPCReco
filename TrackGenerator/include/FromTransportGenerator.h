@@ -7,6 +7,7 @@ class FromTransportGenerator: public AbstractGenerator {
 public:
     FromTransportGenerator();
     void generateTrack() final;
+    void generateEvents(int counts=0) final;
     void loadDataFile(std::string dataFileAddress);
     void setEntry(int i=0) final;
 

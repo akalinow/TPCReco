@@ -13,6 +13,26 @@ void FromGeantGenerator::generateTrack(){
     }
 }
 
+void FromGeantGenerator::generateEvents(int counts){
+    int eventsNo=0;
+    if(counts){
+        eventsNo=counts;
+    }
+    else{
+        eventsNo=depTree->GetEntries();
+    }
+    
+    for (int i=0;i!=eventsNo;++i){
+        setEntry(i);
+        generateEvent();
+        if(outputFile->IsOpen()){
+            myEvent.SetGeoPtr(0);
+            outputTree->Fill();
+        }
+    }
+    myEvent.SetGeoPtr(myGeometryPtr);
+}
+
 void FromGeantGenerator::loadDataFile(std::string dataFileAddress){
     dataFile=new TFile(dataFileAddress.c_str(),"READ");
     dataFile->GetObject("EDep",depTree);

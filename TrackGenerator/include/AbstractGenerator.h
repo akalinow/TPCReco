@@ -8,11 +8,14 @@
 #include <vector>
 #include <TTree.h>
 #include <TFile.h>
+#include <TVector3.h>
+
 //Builder of eventTPCs in form of straight lines
 class AbstractGenerator {
 public:
     AbstractGenerator();
     virtual EventTPC& generateEvent();
+    virtual void generateEvents(int count=0)=0;
     virtual void generateTrack()=0;
     virtual void project();
     virtual void fillEvent();
@@ -36,7 +39,7 @@ public:
 
     void setOutput(std::string);
     void writeOutput();
-    void generateEvents();
+ 
     virtual void setEntry(int i=0);
 
     protected:
@@ -49,6 +52,14 @@ public:
     TFile* outputFile;
     TTree* outputTree;
     EventTPC* persistentEvent;
-
+    unsigned int tracksNo;
+    std::vector<unsigned int> A;
+    std::vector<unsigned int> Z;
+    std::vector<TVector3> momentum;
+    std::vector<TVector3> start;
+    std::vector<TVector3> stop;
+    std::vector<double> energy;
+    std::vector<double> length;
+    void clearParameters();
 };    
 #endif // _AbstractGenerator_H_

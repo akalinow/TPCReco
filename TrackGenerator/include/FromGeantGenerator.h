@@ -6,6 +6,7 @@ class FromGeantGenerator: public AbstractGenerator {
 public:
     FromGeantGenerator();
     void generateTrack() final;
+    void generateEvents(int counts=0) final;
     void loadDataFile(std::string dataFileAddress);
     void setEntry(int i=0) final;
 protected:

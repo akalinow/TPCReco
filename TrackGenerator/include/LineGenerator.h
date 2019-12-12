@@ -10,6 +10,7 @@ class LineGenerator: public AbstractGenerator {
 public:
     LineGenerator();
     void generateTrack();
+    void generateEvents(int count=0) final;
     //Set-up
     
     void setTrackOrigin(double x=0,double y=0,double z=0); 
@@ -23,7 +24,7 @@ public:
     inline void setTrackSigma(double sigma){trackSigma=sigma;}
     // Sets number of entries for generating track.
     inline void setTrackCounts(int counts){trackCounts=counts;}
-
+    
     private:
     TRandom3 rng;
     double trackLength{100}; //mm

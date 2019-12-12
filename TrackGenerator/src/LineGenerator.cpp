@@ -2,7 +2,7 @@
 #include <iostream>
 //Default constructor. Creates default space for tracks
 LineGenerator::LineGenerator(): AbstractGenerator() {
- //setTrackSpace();
+
 }
 
 // Sets cooridnates of track's origin point  in mm,mm,mm. 
@@ -20,4 +20,17 @@ void LineGenerator::generateTrack(){
         point+=TVector3(rng.Gaus(0,trackSigma),rng.Gaus(0,trackSigma),rng.Gaus(0,trackSigma));
         myTrack3D.Fill(point.X(),point.Y(),point.Z());
     }
+}
+
+
+void LineGenerator::generateEvents(int count){
+    for (int i=0;i!=count;++i){
+        setEntry(i);
+        generateEvent();
+        if(outputFile->IsOpen()){
+            myEvent.SetGeoPtr(0);
+            outputTree->Fill();
+        }
+    }
+    myEvent.SetGeoPtr(myGeometryPtr);
 }
