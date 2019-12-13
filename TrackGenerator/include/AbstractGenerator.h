@@ -32,8 +32,8 @@ public:
 
     //Sets event number
     virtual void setEntry(int i=0);
-
-
+    
+    
     //Set-up:
     
     //Loads GeometryTPC to EventTPC and UVWProjector
@@ -52,6 +52,8 @@ public:
     //Writes output tree on disk
     void writeOutput();
 
+    // Closes output file
+    inline void closeOutput(){outputFile->Close();}
     //Getters:
 
     // Returns UVW projections vector
@@ -67,7 +69,7 @@ public:
 
     std::vector<TH2D*> projectionsCollection;
     std::shared_ptr<GeometryTPC> myGeometryPtr;
-    std::unique_ptr<UVWprojector> myProjectorPtr;
+    UVWprojector* myProjectorPtr;
     TH3D myTrack3D;
     EventTPC myEvent;
     int eventNr=0;

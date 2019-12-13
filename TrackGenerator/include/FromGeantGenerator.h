@@ -1,7 +1,16 @@
 #ifndef _FromGeantGenerator_H_
 #define _FromGeantGenerator_H_
 #include "AbstractGenerator.h"
-//Builder of EventsTPC from MonteCarloSimulations/GELI output
+/*Builder of EventsTPC from MonteCarloSimulations/GELI output
+* Usage example:
+* FromGeantGenerator g;
+* g.loadGeometry(path/to/geometry);
+* g.loadDataFile(path/to/input);
+* g.setOutput(path/to/output); 
+* g.generateEvents();
+* g.writeOutput();
+* g.closeOutput();
+*/
 class FromGeantGenerator: public AbstractGenerator {
 public:
 

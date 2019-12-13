@@ -12,6 +12,7 @@
 * g.setOutput(path/to/output); 
 * g.generateEvents();
 * g.writeOutput();
+* g.closeOutput();
 */
 class LineGenerator: public AbstractGenerator {
 public:

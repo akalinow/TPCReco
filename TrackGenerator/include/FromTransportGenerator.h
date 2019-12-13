@@ -10,6 +10,7 @@
 * g.setOutput(path/to/output); 
 * g.generateEvents();
 * g.writeOutput();
+* g.closeOutput();
 */
 class FromTransportGenerator: public AbstractGenerator {
 public:
@@ -28,7 +29,7 @@ public:
 
     //Loads entry from input tree and sets EventTPC event number
     void setEntry(int i=0) final;
-
+   
 protected:
 
     //Sets Branchedressess for input tree

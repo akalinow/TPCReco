@@ -26,6 +26,7 @@ void FromTransportGenerator::loadDataFile(std::string dataFileAddress){
 void FromTransportGenerator::setBranches(){
     dataTree->SetBranchAddress("evt",&simEvent);
 }
+
 void FromTransportGenerator::setEntry(int i){
     dataTree->GetEntry(i);
     eventNr=i;
@@ -40,7 +41,7 @@ void FromTransportGenerator::generateEvents(int counts){
         eventsNo=dataTree->GetEntries();
     }
     
-    for (int i=0;i!=eventsNo;++i){
+    for (int i=1;i<=eventsNo;++i){
         setEntry(i);
         generateEvent();
         if(outputFile->IsOpen()){

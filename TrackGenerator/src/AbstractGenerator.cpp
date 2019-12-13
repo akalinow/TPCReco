@@ -16,7 +16,7 @@ void AbstractGenerator::setTrackSpace(int NbinsX, double xmin, double xmax,
 
 void AbstractGenerator::loadGeometry(std::shared_ptr<GeometryTPC> geometryPtr){
   myGeometryPtr=geometryPtr;
-  myProjectorPtr.reset(new UVWprojector(myGeometryPtr.get()));
+  myProjectorPtr=new UVWprojector(myGeometryPtr.get());
   myEvent.Clear();
   myEvent.SetGeoPtr(myGeometryPtr);
 }
@@ -50,6 +50,7 @@ void AbstractGenerator::fillEvent(){
                 myEvent.AddValByStrip(dir,j,i-1,projection->GetBinContent(i,j));
             }
         }
+    projection->Delete();
     }
     myEvent.SetEventId(eventNr);
 }
@@ -68,7 +69,8 @@ void AbstractGenerator::setOutput(std::string outputName){
     outputTree->Branch("length",&length);
 }
 void AbstractGenerator::writeOutput(){
-    outputTree->Write();
+   //outputTree->Write();
+    outputFile->WriteTObject(outputTree);
 }
 
 
