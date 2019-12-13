@@ -1,5 +1,4 @@
 #include "FromTransportGenerator.h"
-#include "SimEvent.hh"
 FromTransportGenerator::FromTransportGenerator(): AbstractGenerator(){
 }
 

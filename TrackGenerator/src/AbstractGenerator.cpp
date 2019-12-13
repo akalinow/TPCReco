@@ -1,6 +1,4 @@
 #include "AbstractGenerator.h"
-#include <iostream>
-
 
 AbstractGenerator::AbstractGenerator(): projectionsCollection(3) {
 persistentEvent=&myEvent;

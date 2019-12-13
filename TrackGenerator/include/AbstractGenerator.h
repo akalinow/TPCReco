@@ -1,11 +1,8 @@
 #ifndef _AbstractGenerator_H_
 #define _AbstractGenerator_H_
 
-#include "GeometryTPC.h"
 #include "UVWprojector.h"
 #include "EventTPC.h"
-#include <memory>
-#include <vector>
 #include <TTree.h>
 #include <TFile.h>
 #include <TVector3.h>

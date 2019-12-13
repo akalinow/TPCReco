@@ -1,14 +1,10 @@
-#include <string>
 #include <iostream>
 #include <TCanvas.h>
 #include "FromGeantGenerator.h"
-#include <TTree.h>
-#include <TFile.h>
-#include <TMath.h>
 #include <boost/property_tree/json_parser.hpp>
 namespace pt = boost::property_tree;
 /*
-*This tests checks the FromGeantGenerator class
+*This test checks the FromGeantGenerator class
 *From a set line shape a TPCEvent is created
 *In intermediate steps a series of .pdfs is created for consitency checking
 *.root tree is created and saved, which can later be used as input for gui application*/
@@ -29,7 +25,7 @@ l.loadDataFile(root.get<std::string>("dataFile"));
 l.setTrackSpace(root.get<int>("NbinsX"),root.get<double>("xmin"),root.get<double>("xmax"),
                 root.get<int>("NbinsY"),root.get<double>("ymin"),root.get<double>("ymax"),
                 root.get<int>("NbinsZ"),root.get<double>("zmin"),root.get<double>("zmax")); 
-l.setEntry(71);
+l.setEntry(0);
 EventTPC myEvent=l.generateEvent();
 
 TCanvas *c1 = new TCanvas("c1","c", 2, 78, 500, 500);

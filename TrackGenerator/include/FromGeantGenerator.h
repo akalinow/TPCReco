@@ -1,7 +1,6 @@
 #ifndef _FromGeantGenerator_H_
 #define _FromGeantGenerator_H_
 #include "AbstractGenerator.h"
-#include <iostream>
 //Builder of EventsTPC from MonteCarloSimulations/GELI output
 class FromGeantGenerator: public AbstractGenerator {
 public:
@@ -20,7 +19,7 @@ public:
     
     //Loads entry from input tree and sets EventTPC event number
     void setEntry(int i=0) final;
-    
+
 protected:
 
     //Sets Branchedressess for input tree

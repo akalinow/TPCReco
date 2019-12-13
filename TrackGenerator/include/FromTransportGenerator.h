@@ -2,7 +2,6 @@
 #define _FromTransportGenerator_H_
 #include "AbstractGenerator.h"
 #include "SimEvent.hh"
-#include <iostream>
 /*Builder of EventsTPC from MonteCarloSimulations/Transport output
 * Usage example:
 * FromTransportGenerator g;

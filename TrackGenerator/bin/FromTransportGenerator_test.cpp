@@ -1,14 +1,10 @@
-#include <string>
 #include <iostream>
 #include <TCanvas.h>
 #include "FromTransportGenerator.h"
-#include <TTree.h>
-#include <TFile.h>
-#include <TMath.h>
 #include <boost/property_tree/json_parser.hpp>
 namespace pt = boost::property_tree;
 /*
-*This tests checks the FromTranposrtGenerator class
+*This test checks the FromTranposrtGenerator class
 *From a set line shape a TPCEvent is created
 *In intermediate steps a series of .pdfs is created for consitency checking
 *.root tree is created and saved, which can later be used as input for gui application*/
@@ -30,7 +26,7 @@ l.setOutput(root.get<std::string>("outputFile"));
 l.setEntry(71);
 
 EventTPC myEvent=l.generateEvent();
-l.generateEvents();
+l.generateEvents(2);
 TCanvas *c1 = new TCanvas("c1","c", 2, 78, 500, 500);
 //track check            
 l.getTrack().Draw("colz");
