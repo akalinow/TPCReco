@@ -1,7 +1,7 @@
 #include "AbstractGenerator.h"
 #include <iostream>
 
-//Default constructor. Creates default space for tracks
+
 AbstractGenerator::AbstractGenerator(): projectionsCollection(3) {
 persistentEvent=&myEvent;
 }
@@ -35,7 +35,6 @@ EventTPC& AbstractGenerator::generateEvent(){
 }
 
 
-//Generates three 2D projections (UWV) of 3D track
 void AbstractGenerator::project(){
     myProjectorPtr->SetEvent3D(myTrack3D);
     for (int i=0;i!=3;++i){
@@ -43,8 +42,6 @@ void AbstractGenerator::project(){
     }
 }
 
-//Clears and creates EventTPC basing on generated projections.
-//Skips under- and overflowing bins
 void AbstractGenerator::fillEvent(){
     myEvent.Clear();
     myEvent.SetGeoPtr(myGeometryPtr);
