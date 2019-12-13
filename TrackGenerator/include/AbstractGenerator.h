@@ -6,6 +6,7 @@
 #include <TTree.h>
 #include <TFile.h>
 #include <TVector3.h>
+#include <iostream>
 
 //Base class for builder of EventTPCs via UWVProjector
 class AbstractGenerator {

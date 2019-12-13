@@ -23,6 +23,7 @@ void FromGeantGenerator::generateEvents(int counts){
     }
     
     for (int i=0;i!=eventsNo;++i){
+        std::cout<<"Event "<<i<<" ..."<<std::endl;
         setEntry(i);
         generateEvent();
         if(outputFile->IsOpen()){

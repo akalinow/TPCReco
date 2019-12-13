@@ -42,6 +42,7 @@ void FromTransportGenerator::generateEvents(int counts){
     }
     
     for (int i=1;i<=eventsNo;++i){
+        std::cout<<"Event "<<i<<" ..."<<std::endl;
         setEntry(i);
         generateEvent();
         if(outputFile->IsOpen()){
