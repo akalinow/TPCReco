@@ -42,16 +42,19 @@ ROOT_GENERATE_DICTIONARY(G__${MODULE_NAME} ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/
 add_library(${MODULE_NAME} SHARED 
 ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/src/AbstractGenerator.cpp
 ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/src/FromTransportGenerator.cpp
+${PROJECT_SOURCE_DIR}/${MODULE_NAME}/src/LineGenerator.cpp
 G__${MODULE_NAME}.cxx)
 
 target_link_libraries(${MODULE_NAME} ${ROOT_LIBRARIES} SimUtils)
 add_executable(EventGenerator bin/EventGenerator.cpp)
+add_executable(SimpleGenerator bin/SimpleGenerator.cpp)
 #add_executable(LineGenerator_test bin/LineGenerator_test.cpp)
 #add_executable(FromGeantGenerator_test bin/FromGeantGenerator_test.cpp)
 #add_executable(FromTransportGenerator_test bin/FromTransportGenerator_test.cpp)
 # Compiler flags.
 #
 target_compile_options(EventGenerator PUBLIC ${CMAKE_ROOT_CFLAGS})
+target_compile_options(SimpleGenerator PUBLIC ${CMAKE_ROOT_CFLAGS})
 #target_compile_options(LineGenerator_test PUBLIC ${CMAKE_ROOT_CFLAGS})
 #target_compile_options(FromGeantGenerator_test PUBLIC ${CMAKE_ROOT_CFLAGS})
 #target_compile_options(FromTransportGenerator_test PUBLIC ${CMAKE_ROOT_CFLAGS})
@@ -59,6 +62,7 @@ target_compile_options(EventGenerator PUBLIC ${CMAKE_ROOT_CFLAGS})
 #
 
 target_link_libraries(EventGenerator PUBLIC ${MODULE_NAME} SimUtils DataFormats Utilities )
+target_link_libraries(SimpleGenerator PUBLIC ${MODULE_NAME} DataFormats Utilities)
 #target_link_libraries(LineGenerator_test PUBLIC ${MODULE_NAME} DataFormats Utilities)
 #target_link_libraries(FromGeantGenerator_test PUBLIC ${MODULE_NAME}  DataFormats Utilities)
 #target_link_libraries(FromTransportGenerator_test PUBLIC ${MODULE_NAME} SimUtils DataFormats Utilities )
@@ -71,6 +75,7 @@ install(TARGETS ${MODULE_NAME} LIBRARY DESTINATION lib)
 install(FILES ${CMAKE_BINARY_DIR}/${MODULE_NAME}/lib${MODULE_NAME}_rdict.pcm DESTINATION lib)
 install(FILES ${CMAKE_BINARY_DIR}/${MODULE_NAME}/lib${MODULE_NAME}.rootmap DESTINATION lib)
 install(TARGETS EventGenerator RUNTIME DESTINATION bin)
+install(TARGETS SimpleGenerator RUNTIME DESTINATION bin)
 #install(TARGETS LineGenerator_test RUNTIME DESTINATION bin)
 #install(TARGETS FromGeantGenerator_test RUNTIME DESTINATION bin)
 #install(TARGETS FromTransportGenerator_test RUNTIME DESTINATION bin)

@@ -34,6 +34,7 @@ EventTPC& AbstractGenerator::generateEvent(){
 
 
 void AbstractGenerator::project(){
+    
     myProjectorPtr->SetEvent3D(myTrack3D);
     for (int i=0;i!=3;++i){
        projectionsCollection.at(i)=myProjectorPtr->GetStripVsTime_TH2D(i);
@@ -50,7 +51,7 @@ void AbstractGenerator::fillEvent(){
                 myEvent.AddValByStrip(dir,j,i-1,projection->GetBinContent(i,j));
             }
         }
-    projection->Delete();
+    //projection->Delete();
     }
     myEvent.SetEventId(eventNr);
 }
