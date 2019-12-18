@@ -1,4 +1,3 @@
-#pragma once
 #ifndef _Track3D_H_
 #define _Track3D_H_
 

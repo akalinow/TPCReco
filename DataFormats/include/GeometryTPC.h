@@ -1,4 +1,3 @@
-#pragma once
 #ifndef __GEOMETRYTPC_H__
 #define __GEOMETRYTPC_H__
 
@@ -33,9 +32,7 @@ class StripTPC;
 // UVW strip geometry defined as a class
 
 //class GeometryTPC : public TObject {
-class GeometryTPC : std::enable_shared_from_this<GeometryTPC> {
-
-  friend class UVWprojector;
+class GeometryTPC {
 
  private:
 
@@ -87,19 +84,14 @@ class GeometryTPC : std::enable_shared_from_this<GeometryTPC> {
   // Setter methods 
   
   GeometryTPC(std::string  fname, bool debug=false);
-  void SetTH2PolyPartition(int nx, int ny); // change cartesian binning of the underlying TH2Poly
-  inline int GetTH2PolyPartitionX() { return grid_nx; }
-  inline int GetTH2PolyPartitionY() { return grid_ny; }
   inline void SetDebug(bool flag) { _debug = flag; }
 
   // Getter methods
 
   inline std::shared_ptr<TH2Poly> GetTH2Poly() { return tp; }   // returns pointer to the underlying TH2Poly
-  std::shared_ptr<StripTPC> GetTH2PolyStrip(int ibin);          // returns pointer to StripTPC object corresponding to TH2Poly bin 
   
   inline bool IsOK() { return initOK; }
   int GetDirNstrips(projection dir);
-  int GetDirNstrips(std::string name);
 
   inline int GetAgetNchips() { return AGET_Nchips; }
   inline int GetAgetNchannels() { return AGET_Nchan; }
@@ -110,14 +102,11 @@ class GeometryTPC : std::enable_shared_from_this<GeometryTPC> {
   inline int GetAsadNboards() { int n=0; for(int icobo=0; icobo<COBO_N; icobo++) { n+=ASAD_N[icobo]; } return n; }
   inline int GetCoboNboards() { return COBO_N; }
 
-  projection GetDirIndex(std::string name); 
-
   std::string GetDirName(projection dir);
 
   std::shared_ptr<StripTPC> GetStripByAget(int COBO_idx, int ASAD_idx, int AGET_idx, int channel_idx);         // valid range [0-1][0-3][0-3][0-63]
   std::shared_ptr<StripTPC> GetStripByGlobal(int global_channel_idx);                                          // valid range [0-1023]
   std::shared_ptr<StripTPC> GetStripByAget_raw(int COBO_idx, int ASAD_idx, int AGET_idx, int raw_channel_idx); // valid range [0-1][0-3][0-3][0-67]
-  std::shared_ptr<StripTPC> GetStripByGlobal_raw(int global_raw_channel_idx);                                  // valid range [0-(1023+4*ASAD_N*COBO_N)]
   std::shared_ptr<StripTPC> GetStripByDir(projection dir, int num);                                                   // valid range [0-2][1-1024]
   std::vector<std::shared_ptr<StripTPC>> GetStrips();
 
@@ -129,76 +118,25 @@ class GeometryTPC : std::enable_shared_from_this<GeometryTPC> {
   int Global_normal2normal(int COBO_idx, int ASAD_idx, int aget_idx, int channel_idx);   // valid range [0-1][0-3][0-3][0-63]
 
   int Global_strip2normal(int dir, int num);                 // valid range [0-2][1-1024]
-  int Global_strip2raw(int dir, int num);                    // valid range [0-2][1-1024]
 
   bool GetCrossPoint(std::shared_ptr<StripTPC> strip1, std::shared_ptr<StripTPC> strip2, TVector2 &point);
   bool MatchCrossPoint(std::shared_ptr<StripTPC> strip1, std::shared_ptr<StripTPC> strip2, std::shared_ptr<StripTPC> strip3, double radius, TVector2 &point);
 
   inline double GetPadPitch() { return pad_pitch; } // [mm]
   inline double GetStripPitch() { return strip_pitch; } // [mm]
-  inline double GetVdrift() { return vdrift; } // [cm/us]
-  inline double GetSamplingRate() { return sampling_rate; } // [MHz]
   inline TVector2 GetReferencePoint() { return reference_point; } // XY ([mm],[mm])
   TVector2 GetStripPitchVector(projection dir); // XY ([mm],[mm])
-  inline double GetTriggerDelay() { return trigger_delay; } // [us]
-  inline double GetDriftCageZmin() { return drift_zmin; } // [mm]
-  inline double GetDriftCageZmax() { return drift_zmax; } // [mm]
 
   double Strip2posUVW(projection dir, int number, bool &err_flag); // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of the central line of the (existing) strip on the strip pitch axis for a given direction
   double Strip2posUVW(std::shared_ptr<StripTPC> strip, bool &err_flag); // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of the central line of the (existing) strip on the strip pitch axis for a strip given direction
 
-  double Cartesian2posUVW(double x, double y, projection dir, bool &err_flag); // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of a given (X,Y) point on the strip pitch axis for a given direction
-  double Cartesian2posUVW(TVector2 pos, projection dir, bool &err_flag); // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of a given (X,Y) point on the strip pitch axis for a given direction
-  
   double Timecell2pos(double position_in_cells, bool &err_flag); // [mm] output: position along Z-axis
-  double Pos2timecell(double z, bool &err_flag); // output: time-cell number, valid range [0-511]
 
   std::tuple<double, double, double, double> rangeXY(); //min/max X Y cartesian coordinates covered by strips in any direction
   
   //  ClassDef(GeometryTPC,1)
 };
 
-// Single UVW strip defined as a class
-
-//class StripTPC : public TObject {
-class StripTPC {
-
-  friend class GeometryTPC;
-
- private:
-
-  std::weak_ptr<GeometryTPC> geo_ptr; // parent pointer
-  int dir; // direction/group: 0=U / 1=V / 2=W / 3=FPN / -1=ERROR                                                      
-  int num; // strip number: 1-1024 for U,V,W / 1-(4*ASAD_N*COBO_N) for FPN / -1=ERROR
-  int coboId; // range [0-1]
-  int asadId; // range [0-3]
-  int agetId; // range [0-3]
-  int agetCh; // range [0-63]
-  int agetCh_raw; // range [0-67]
-  TVector2 unit_vec;   // 2D directional unit vector (towards increasing pad numbers)
-  TVector2 offset_vec; // 2D offset vector [mm] of the 1st pad wrt REF.POINT  
-  double length;  // strip length [mm]
-
- public:
-
-  StripTPC() = default;
-  StripTPC(int direction, int number, int cobo_index, int asad_index, int aget_index, int aget_channel, int aget_channel_raw, 
-	   TVector2 unit_vector, TVector2 offset_vector_in_mm, double length_in_mm, std::shared_ptr<GeometryTPC> geo_ptr);
-
-  inline int Dir() { return dir; }
-  inline int Num() { return num; }
-  inline int CoboId() { return coboId; }
-  inline int AsadId() { return asadId; }
-  inline int AgetId() { return agetId; }
-  inline int AgetCh() { return agetCh; }
-  inline int AgetCh_raw() { return agetCh_raw; }
-  int GlobalCh();
-  int GlobalCh_raw();
-  inline TVector2 Unit() { return unit_vec; } // ([mm],[mm])
-  inline TVector2 Offset() { return offset_vec; } // ([mm],[mm])
-  inline double Length() { return length; } // [mm]
-
-  //  ClassDef(StripTPC,1)
-};
+#include "StripTPC.h"
 
 #endif

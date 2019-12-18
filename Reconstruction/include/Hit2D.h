@@ -1,4 +1,3 @@
-#pragma once
 #ifndef _Hit2D_H_
 #define _Hit2D_H_
 

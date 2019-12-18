@@ -13,7 +13,6 @@ DataManager::DataManager() {
 
   myTree = 0;
   nEvents = 0;
-  currentEvent = 0;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -55,7 +54,6 @@ void DataManager::loadTreeEntry(unsigned int iEntry){
   }
   if(myTree->GetEntries()<=iEntry) return;
   
-  currentEvent->SetGeoPtr(0);
   myTree->GetEntry(iEntry);
   currentEvent->SetGeoPtr(myGeometryPtr);
   myCurrentEntry = iEntry;
@@ -72,13 +70,13 @@ void DataManager::loadEventId(unsigned int iEvent){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-EventTPC* DataManager::getCurrentEvent() const{
+std::shared_ptr<EventTPC> DataManager::getCurrentEvent() const{
 
   return currentEvent;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-EventTPC* DataManager::getNextEvent(){
+std::shared_ptr<EventTPC> DataManager::getNextEvent(){
 
   if(myCurrentEntry<nEvents){
     loadTreeEntry(++myCurrentEntry);
@@ -88,7 +86,7 @@ EventTPC* DataManager::getNextEvent(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-EventTPC* DataManager::getPreviousEvent(){
+std::shared_ptr<EventTPC> DataManager::getPreviousEvent(){
 
   if(myCurrentEntry>0){
     loadTreeEntry(--myCurrentEntry);

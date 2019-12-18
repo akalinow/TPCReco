@@ -1,4 +1,3 @@
-#pragma once
 #ifndef _HistoManager_H_
 #define _HistoManager_H_
 
@@ -28,7 +27,7 @@ public:
   
   ~HistoManager();
 
-  void setEvent(EventTPC* aEvent);
+  void setEvent(std::shared_ptr<EventTPC> aEvent);
 
   void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);
 
@@ -42,9 +41,9 @@ public:
 
   std::shared_ptr<TH2D> getRecHitStripVsTime(projection strip_dir);
 
-  TH3D* get3DReconstruction();
+  std::shared_ptr<TH3D> get3DReconstruction();
 
-  TH2D* get2DReconstruction(projection strip_dir);
+  std::shared_ptr<TH2D> get2DReconstruction(projection strip_dir);
 
   const TH2D & getHoughAccumulator(projection strip_dir, int iPeak=0);
 
@@ -60,10 +59,10 @@ public:
 
 private:
     
-  EventTPC *myEvent;
+    std::shared_ptr<EventTPC> myEvent;
 
   std::vector<TH2D*> projectionsInCartesianCoords;
-  TH3D *h3DReco;
+  std::shared_ptr<TH3D> h3DReco;
   TrackBuilder myTkBuilder;
   
   std::shared_ptr<GeometryTPC> myGeometryPtr;

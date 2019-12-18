@@ -1,4 +1,4 @@
-#pragma once
+
 #ifndef __MULTIKEY_H__
 #define __MULTIKEY_H__
 

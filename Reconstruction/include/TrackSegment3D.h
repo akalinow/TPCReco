@@ -1,4 +1,4 @@
-#pragma once
+
 #ifndef _TrackSegment3D_H_
 #define _TrackSegment3D_H_
 

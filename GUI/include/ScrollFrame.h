@@ -1,4 +1,3 @@
-#pragma once
 #ifndef ScrollFrame_H
 #define ScrollFrame_H
 

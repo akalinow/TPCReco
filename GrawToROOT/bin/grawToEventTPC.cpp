@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
   std::shared_ptr<GeometryTPC> myGeometryPtr = std::make_shared<GeometryTPC>(geomFileName.c_str());
 
   ///Create event
-  EventTPC myEvent;
+  std::shared_ptr<EventTPC> myEvent = std::make_shared<EventTPC>();
 
   PedestalCalculator myPedestalCalculator;
   myPedestalCalculator.SetGeometryAndInitialize(myGeometryPtr);
@@ -52,9 +52,8 @@ int main(int argc, char *argv[]) {
   
   TFile aFile(rootFileName.c_str(),"RECREATE");
   TTree aTree("TPCData","");
-  
-  EventTPC *persistent_event = &myEvent;
-  aTree.Branch("Event", &persistent_event);
+
+  aTree.Branch("Event", myEvent.get());
 
   ///Load data
   GET::GDataFrame dataFrame;

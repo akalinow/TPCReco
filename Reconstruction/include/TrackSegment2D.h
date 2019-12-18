@@ -1,10 +1,10 @@
-#pragma once
 #ifndef _TrackSegment2D_H_
 #define _TrackSegment2D_H_
 
 #include <string>
 #include <vector>
 #include <memory>
+#include <iostream>
 
 #include "TVector3.h"
 #include "Hit2D.h"

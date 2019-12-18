@@ -25,7 +25,6 @@ if(EXISTS ${GET_VERSION_DIR})
   include_directories(${ROOTINCDIR})
   include_directories(${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include)
   include_directories(${PROJECT_SOURCE_DIR}/DataFormats/include)
-  include_directories(${PROJECT_SOURCE_DIR}/Utilities/include)
 
   ###############################################################################
   ## target definitions #########################################################
@@ -43,7 +42,7 @@ if(EXISTS ${GET_VERSION_DIR})
 
   # Linker flags
   #
-  target_link_libraries(grawToEventTPC PUBLIC DataFormats Utilities GrawToROOT libget-root.so libcobo-frame-graw2frame.so libMultiFrame.so)
+  target_link_libraries(grawToEventTPC PUBLIC DataFormats GrawToROOT libget-root.so libcobo-frame-graw2frame.so libMultiFrame.so)
 
   # All install commands get the same destination. this allows us to use paths
   # relative to the executable.

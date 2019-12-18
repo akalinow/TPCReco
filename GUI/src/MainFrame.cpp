@@ -268,7 +268,7 @@ void MainFrame::Update(){
     ///Second row
     aPad = fCanvas->cd(int(strip_dir)+1+3);
     myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("colz");
-    myHistoManager.getRecHitStripVsTime(strip_dir)->SaveAs(TString::Format("RecHits_%d.root", strip_dir));
+    myHistoManager.getRecHitStripVsTime(strip_dir)->SaveAs(TString::Format("RecHits_%d.root", int(strip_dir)));
     myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad);
     //myHistoManager.drawTrack2DSeed(strip_dir, aPad);
     
@@ -284,7 +284,7 @@ void MainFrame::Update(){
   //Third row again.
   TVirtualPad *aPad = fCanvas->cd(7);
 
-  TH3D *h3DReco =  myHistoManager.get3DReconstruction();
+  auto h3DReco =  myHistoManager.get3DReconstruction();
   if(h3DReco){
     aPad->Clear();
     h3DReco->DrawClone("box2z");
@@ -297,7 +297,7 @@ void MainFrame::Update(){
   }
 
   aPad = fCanvas->cd(8);
-  TH2D *h2D =   myHistoManager.get2DReconstruction(projection::DIR_XY);
+  auto h2D =   myHistoManager.get2DReconstruction(projection::DIR_XY);
   if(h2D) h2D->Draw("colz");
   else myHistoManager.getDetectorLayout()->Draw("colz 0"); 
   myHistoManager.drawTrack3DProjectionXY(aPad);

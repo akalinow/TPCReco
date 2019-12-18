@@ -3,8 +3,6 @@
 /////////////////////////////////////////////////////////
 TrackBuilder::TrackBuilder() {
 
-  myEvent = 0;
-
   nAccumulatorRhoBins = 100;//FIX ME move to configuarable
   nAccumulatorPhiBins = 100;//FIX ME move to configuarable
 
@@ -40,7 +38,7 @@ void TrackBuilder::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void TrackBuilder::setEvent(EventTPC* aEvent){
+void TrackBuilder::setEvent(std::shared_ptr<EventTPC> aEvent){
 
   myEvent = aEvent;
   double eventMaxCharge = myEvent->GetMaxCharge();
@@ -52,11 +50,12 @@ void TrackBuilder::setEvent(EventTPC* aEvent){
 
   std::string hName, hTitle;
   if(!myHistoInitialized){     
+      std::shared_ptr<TH2D> hRawHits;
     for(int iDir = 0; iDir<3;++iDir){
-      std::shared_ptr<TH2D> hRawHits = myEvent->GetStripVsTimeInMM(getCluster(), projection(iDir));
+      hRawHits = myEvent->GetStripVsTimeInMM(getCluster(), projection(iDir));
       double maxX = hRawHits->GetXaxis()->GetXmax();
       double maxY = hRawHits->GetYaxis()->GetXmax();
-      double rho = sqrt( maxX*maxX + maxY*maxY);
+      double rho = std::hypot(maxX, maxY);
       hName = "hAccumulator_"+std::to_string(iDir);
       hTitle = "Hough accumulator for direction: "+std::to_string(iDir)+";#theta;#rho";
       TH2D hAccumulator(hName.c_str(), hTitle.c_str(), nAccumulatorPhiBins, -pi, pi, nAccumulatorRhoBins, 0, rho);   

@@ -26,11 +26,11 @@ public:
 
   void loadEventId(unsigned int iEvent);
 
-  EventTPC* getCurrentEvent() const;
+  std::shared_ptr<EventTPC> getCurrentEvent() const;
   
-  EventTPC* getNextEvent();
+  std::shared_ptr<EventTPC> getNextEvent();
 
-  EventTPC* getPreviousEvent();
+  std::shared_ptr<EventTPC> getPreviousEvent();
 
   unsigned int numberOfEvents() const;
 
@@ -46,7 +46,7 @@ private:
   unsigned int nEvents;
   unsigned int myCurrentEntry;
 
-  EventTPC *currentEvent;
+  std::shared_ptr<EventTPC> currentEvent;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
 
 };

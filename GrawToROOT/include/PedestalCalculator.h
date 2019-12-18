@@ -1,4 +1,3 @@
-#pragma once
 #ifndef __PEDESTAL_CALCULATOR_H__
 #define __PEDESTAL_CALCULATOR_H__
 
