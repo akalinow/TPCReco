@@ -6,22 +6,21 @@
 
 #include "CommonDefinitions.h"
 
+struct Hit2D_internal {
+	double posWire, posTime;
+	double charge;
+};
+
 class Hit2D {
 
 public:
 
-  Hit2D(double aPosTime, double aPosWire, double aCharge) : posWire(aPosWire), posTime(aPosTime), charge(aCharge) { }
-
-  double getPosWire() const { return posWire;}
-
-  double getPosTime() const { return posTime;}
-
-  double getCharge() const {return charge;}
-  
+	Hit2D(double aPosTime, double aPosWire, double aCharge) : Hit2D_data{ aPosWire, aPosTime, aCharge } { }
+	
+	auto operator()() const { return Hit2D_data; };
 private:
-  double posWire, posTime;
-  double charge;
 
+	Hit2D_internal Hit2D_data;
 };
 
 typedef std::vector<Hit2D> Hit2DCollection;

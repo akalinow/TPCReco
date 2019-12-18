@@ -1,3 +1,4 @@
+
 #ifndef _TrackBuilder_H_
 #define _TrackBuilder_H_
 
@@ -5,8 +6,22 @@
 #include <vector>
 #include <memory>
 #include <tuple>
+#include <cstdlib>
+#include <iostream>
 
 #include <Fit/Fitter.h>
+
+#include "TVector3.h"
+#include "TProfile.h"
+#include "TObjArray.h"
+#include "TF1.h"
+#include "TFitResult.h"
+#include "Math/Functor.h"
+#include "TH1D.h"
+
+#include "GeometryTPC.h"
+#include "EventTPC.h"
+#include "SigClusterTPC.h"
 
 #include "TrackSegment2D.h"
 #include "TrackSegment3D.h"
@@ -25,7 +40,7 @@ public:
   
   ~TrackBuilder();
 
-  void setEvent(EventTPC* aEvent);
+  void setEvent(std::shared_ptr<EventTPC> aEvent);
 
   void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);
 
@@ -64,7 +79,7 @@ private:
   double fitTrackSplitPoint(const Track3D& aTrackCandidate) const;
 
     
-  EventTPC *myEvent;
+  std::shared_ptr<EventTPC> myEvent;
   SigClusterTPC myCluster;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
 

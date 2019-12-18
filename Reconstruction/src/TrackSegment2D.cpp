@@ -1,7 +1,5 @@
 #include "TrackSegment2D.h"
 
-#include <iostream>
-
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void TrackSegment2D::setBiasTangent(const TVector3 & aBias, const TVector3 & aTangent){
@@ -59,11 +57,11 @@ double TrackSegment2D::getIntegratedCharge(double lambdaCut, const Hit2DCollecti
   TVector3 aPoint;
   
   for(const auto aHit:aRecHits){
-    x = aHit.getPosTime();
-    y = aHit.getPosWire();
+    x = aHit().posTime;
+    y = aHit().posWire;
     aPoint.SetXYZ(x, y, 0.0);    
     distance = getPointTransverseDistance(aPoint);
-    if(distance>0 && distance<radiusCut) totalCharge += aHit.getCharge();
+    if(distance>0 && distance<radiusCut) totalCharge += aHit().charge;
   }
   return totalCharge;
 }
@@ -78,13 +76,13 @@ double TrackSegment2D::getIntegratedHitDistance(double lambdaCut, const Hit2DCol
   TVector3 aPoint;
   
   for(const auto aHit:aRecHits){
-    x = aHit.getPosTime();
-    y = aHit.getPosWire();
+    x = aHit().posTime;
+    y = aHit().posWire;
     aPoint.SetXYZ(x, y, 0.0);    
     distance = getPointTransverseDistance(aPoint);
     if(distance>0){
-      sum += distance*aHit.getCharge();
-      totalCharge += aHit.getCharge();
+      sum += distance*aHit().charge;
+      totalCharge += aHit().charge;
     }
   }
   //FIXME divide by total segment charge, not total charge up to lambda
@@ -128,9 +126,9 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
   double charge = 0.0;
 
   for(const auto aHit:aRecHits){
-    x = aHit.getPosTime();
-    y = aHit.getPosWire();
-    charge = aHit.getCharge();
+    x = aHit().posTime;
+    y = aHit().posWire;
+    charge = aHit().charge;
     aPoint.SetXYZ(x, y, 0.0);
     distance = getPointTransverseDistance(aPoint);
     if(distance<0) continue;    

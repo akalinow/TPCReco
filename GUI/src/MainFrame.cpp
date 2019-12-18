@@ -18,13 +18,13 @@
 
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h)
+MainFrame::MainFrame(const TGWindow *p, uint32_t w, uint32_t h)
       : TGMainFrame(p, w, h){
 
   //TEST ---
-  std::string dataFileName = "/scratch/akalinow/ELITPC/data/neutrons/EventTPC_2018-06-19T15:13:33.941.root"; 
-  std::string geometryFileName = "/scratch/akalinow/ELITPC/data/neutrons/geometry_mini_eTPC_2018-06-19T15:13:33.941.dat"; 
-  //dataFileName = "/home/akalinow/scratch/ELITPC/data/neutrons/ROOT/EventTPC_2018-06-20T10:35:30.853_0004.root";
+  std::string geometryFileName = "C:/Users/tymon/Documents/ZPS/data/EventTPC_2018-06-19T15_13_33.941.root"; 
+  std::string dataFileName = "C:/Users/tymon/Documents/ZPS/data/geometry_mini_eTPC_2018-06-19T15_13_33.941.dat"; 
+  //dataFileName = "*poza buildem";
   
   myDataManager.loadGeometry(geometryFileName);  
   myDataManager.loadDataFile(dataFileName);
@@ -84,14 +84,14 @@ void MainFrame::AddTopMenu(){
   fMenuFile->AddEntry("S&ave as...", M_FILE_SAVEAS);
   fMenuFile->AddSeparator();
   fMenuFile->AddEntry("E&xit", M_FILE_EXIT);
-  fMenuFile->Connect("Activated(Int_t)", "MainFrame", this,"HandleMenu(Int_t)");
+  fMenuFile->Connect("Activated(int32_t)", "MainFrame", this,"HandleMenu(int32_t)");
 
   fMenuHelp = new TGPopupMenu(fClient->GetRoot());
   fMenuHelp->AddEntry("&Contents", M_HELP_CONTENTS);
   fMenuHelp->AddEntry("&Search...", M_HELP_SEARCH);
   fMenuHelp->AddSeparator();
   fMenuHelp->AddEntry("&About", M_HELP_ABOUT);
-  fMenuHelp->Connect("Activated(Int_t)", "MainFrame", this,"HandleMenu(Int_t)");
+  fMenuHelp->Connect("Activated(int32_t)", "MainFrame", this,"HandleMenu(int32_t)");
 
   fMenuBar = new TGMenuBar(this, 1, 1, kHorizontalFrame);
   fMenuBar->AddPopup("&File", fMenuFile, menuBarItemLayout);
@@ -117,8 +117,8 @@ void MainFrame::AddHistoCanvas(){
 
     // The Canvas
    TRootEmbeddedCanvas* embeddedCanvas = new TRootEmbeddedCanvas("Histograms",fFrame,1000,1000);
-   UInt_t attach_left=0, attach_right=8;
-   UInt_t attach_top=0,  attach_bottom=12;
+   uint32_t attach_left=0, attach_right=8;
+   uint32_t attach_top=0,  attach_bottom=12;
    fTCanvasLayout = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
    					   kLHintsFillX|kLHintsFillY);
    fFrame->AddFrame(embeddedCanvas, fTCanvasLayout);
@@ -138,13 +138,13 @@ void MainFrame::AddButtons(){
 					   "Close the application"};
   std::vector<unsigned int> button_id = {M_NEXT_EVENT, M_PREVIOUS_EVENT, M_FILE_EXIT};
 
-  UInt_t attach_left=8, attach_right=9;
+  uint32_t attach_left=8, attach_right=9;
   for (unsigned int iButton = 0; iButton < button_names.size(); ++iButton) {
     TGTextButton* button = new TGTextButton(fFrame,
 					    button_names[iButton].c_str(),
 					    button_id[iButton]);
 
-    UInt_t attach_top=iButton,  attach_bottom=iButton+1;
+    uint32_t attach_top=iButton,  attach_bottom=iButton+1;
     TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 						      kLHintsFillX | kLHintsFillY);
 
@@ -166,8 +166,8 @@ void MainFrame::AddGoToEventDialog(int attach_top){
   fEventIdEntry->Connect("ReturnPressed()", "MainFrame", this, "DoButton()");
   fEventIdEntry->SetToolTipText("Jump to given event id.");  
 
-  UInt_t attach_left=8, attach_right=9;
-  UInt_t attach_bottom=attach_top+1;
+  uint32_t attach_left=8, attach_right=9;
+  uint32_t attach_bottom=attach_top+1;
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 						    kLHintsFillX | kLHintsFillY,
 						    0, 0, 5, 2);  
@@ -180,8 +180,8 @@ void MainFrame::AddNumbersDialog(){
 
   fEntryDialog = new EntryDialog(fFrame, this);
 
-  UInt_t attach_left=9, attach_right=12;
-  UInt_t attach_top=0,  attach_bottom=3;
+  uint32_t attach_left=9, attach_right=12;
+  uint32_t attach_top=0,  attach_bottom=3;
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 						    kLHintsShrinkX|kLHintsShrinkY|
 						    kLHintsFillX|kLHintsFillY);
@@ -206,8 +206,8 @@ void MainFrame::AddLogos(){
   delete img;
   TGIcon *icon = new TGIcon(fFrame, ipic, width, height);
 
-  UInt_t attach_left=9, attach_right=10;
-  UInt_t attach_top=10,  attach_bottom=12;
+  uint32_t attach_left=9, attach_right=10;
+  uint32_t attach_top=10,  attach_bottom=12;
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom);
   fFrame->AddFrame(icon, tloh);
 
@@ -250,30 +250,30 @@ void MainFrame::Update(){
   fCanvas->Divide(3,3);
   fCanvas->cd(1);
 
-  for(projection strip_dir=0;strip_dir<3;++strip_dir){
+  for (auto&& strip_dir : proj_vec_UVW) {
     myHistoManager.getHoughAccumulator(strip_dir);
   }
 
-  projection strip_dir = DIR_W;
+  projection strip_dir = projection::DIR_W;
   myHistoManager.getRawStripVsTime(strip_dir)->SaveAs("histoRaw.root");
   myHistoManager.getCartesianProjection(strip_dir)->SaveAs("histoThreshold.root");
   myHistoManager.getRecHitStripVsTime(strip_dir)->SaveAs("histoRecHit.root");
   
   //myHistoManager.getCartesianProjection(DIR_U)->SaveAs("histo.root");
   
-  for(projection strip_dir=0;strip_dir<3;++strip_dir){
+  for(auto&& strip_dir : proj_vec_UVW){
     ///First row
-    TVirtualPad *aPad = fCanvas->cd(strip_dir+1);
+    TVirtualPad *aPad = fCanvas->cd(int(strip_dir)+1);
     myHistoManager.getCartesianProjection(strip_dir)->DrawClone("colz");
     ///Second row
-    aPad = fCanvas->cd(strip_dir+1+3);
+    aPad = fCanvas->cd(int(strip_dir)+1+3);
     myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("colz");
-    myHistoManager.getRecHitStripVsTime(strip_dir)->SaveAs(TString::Format("RecHits_%d.root", strip_dir));
+    myHistoManager.getRecHitStripVsTime(strip_dir)->SaveAs(TString::Format("RecHits_%d.root", int(strip_dir)));
     myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad);
     //myHistoManager.drawTrack2DSeed(strip_dir, aPad);
     
     ///Third row.
-    aPad = fCanvas->cd(strip_dir+1+3+3);
+    aPad = fCanvas->cd(int(strip_dir)+1+3+3);
     //myHistoManager.getHoughAccumulator(strip_dir).DrawClone("colz");
     //myHistoManager.getHoughAccumulator(strip_dir).SaveAs(TString::Format("HoughAccumulator_%d.root", strip_dir));
     myHistoManager.drawChargeAlongTrack3D(aPad);
@@ -284,7 +284,7 @@ void MainFrame::Update(){
   //Third row again.
   TVirtualPad *aPad = fCanvas->cd(7);
 
-  TH3D *h3DReco =  myHistoManager.get3DReconstruction();
+  auto h3DReco =  myHistoManager.get3DReconstruction();
   if(h3DReco){
     aPad->Clear();
     h3DReco->DrawClone("box2z");
@@ -297,7 +297,7 @@ void MainFrame::Update(){
   }
 
   aPad = fCanvas->cd(8);
-  TH2D *h2D =   myHistoManager.get2DReconstruction(DIR_XY);
+  auto h2D =   myHistoManager.get2DReconstruction(projection::DIR_XY);
   if(h2D) h2D->Draw("colz");
   else myHistoManager.getDetectorLayout()->Draw("colz 0"); 
   myHistoManager.drawTrack3DProjectionXY(aPad);
@@ -309,7 +309,7 @@ void MainFrame::Update(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-Bool_t MainFrame::ProcessMessage(Long_t msg, Long_t parm1, Long_t){
+bool MainFrame::ProcessMessage(int64_t msg, int64_t parm1, int64_t){
    // Handle messages send to the MainFrame object. E.g. all menu button
    // messages.
 
@@ -317,7 +317,7 @@ Bool_t MainFrame::ProcessMessage(Long_t msg, Long_t parm1, Long_t){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-Bool_t MainFrame::ProcessMessage(Long_t msg){
+bool MainFrame::ProcessMessage(int64_t msg){
 
   std::cout<<__FUNCTION__<<" msg: "<<msg<<std::endl;
 
@@ -325,16 +325,16 @@ Bool_t MainFrame::ProcessMessage(Long_t msg){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void MainFrame::HandleEmbeddedCanvas(Int_t event, Int_t x, Int_t y,
+void MainFrame::HandleEmbeddedCanvas(int32_t event, int32_t x, int32_t y,
                                       TObject *sel){
   //TObject *select = gPad->GetSelected();
 
 }
 ////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void MainFrame::HandleMenu(Int_t id){
+void MainFrame::HandleMenu(int32_t id){
 
-  const char *filetypes[] = {
+  const char* filetypes[] = {
 			     "ROOT files",    "*.root",
 			     "All files",     "*",
 			     0,               0
@@ -396,7 +396,7 @@ void MainFrame::HandleMenu(Int_t id){
 /////////////////////////////////////////////////////////
 void MainFrame::DoButton(){
  TGButton* button = (TGButton*)gTQSender;
- UInt_t button_id = button->WidgetId();
+ uint32_t button_id = button->WidgetId();
    HandleMenu(button_id);
  }
 ////////////////////////////////////////////////////////

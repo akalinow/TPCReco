@@ -42,7 +42,7 @@ target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
 target_compile_options(tpcGUI PUBLIC ${CMAKE_ROOT_CFLAGS})
 
 target_link_libraries(${MODULE_NAME} DataFormats Reconstruction ${ROOT_LIBRARIES})
-target_link_libraries(tpcGUI PUBLIC DataFormats Utilities Reconstruction ${MODULE_NAME} -lSpectrum)
+target_link_libraries(tpcGUI PUBLIC DataFormats Reconstruction ${MODULE_NAME} -lSpectrum)
 
 # All install commands get the same destination. this allows us to use paths
 # relative to the executable.

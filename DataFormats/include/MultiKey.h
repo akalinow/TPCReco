@@ -1,6 +1,8 @@
-#ifndef __MULTIKEY_H__
 
-#include<functional>
+#ifndef __MULTIKEY_H__
+#define __MULTIKEY_H__
+
+#include <functional>
 
 // Allows to define multi-keyword maps.
 // VERSION: 11 Feb 2018
@@ -205,5 +207,4 @@ struct multikey5_less : public std::binary_function<MultiKey5, MultiKey5, bool>
   }
 };
 
-#define __MULTIKEY_H__
 #endif

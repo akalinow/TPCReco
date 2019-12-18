@@ -1,23 +1,7 @@
-#include <cstdlib>
-#include <iostream>
-
-#include "TVector3.h"
-#include "TProfile.h"
-#include "TObjArray.h"
-#include "TF1.h"
-#include "TFitResult.h"
-#include "Math/Functor.h"
-
-#include "GeometryTPC.h"
-#include "EventTPC.h"
-#include "SigClusterTPC.h"
-
 #include "TrackBuilder.h"
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 TrackBuilder::TrackBuilder() {
-
-  myEvent = 0;
 
   nAccumulatorRhoBins = 100;//FIX ME move to configuarable
   nAccumulatorPhiBins = 100;//FIX ME move to configuarable
@@ -54,7 +38,7 @@ void TrackBuilder::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void TrackBuilder::setEvent(EventTPC* aEvent){
+void TrackBuilder::setEvent(std::shared_ptr<EventTPC> aEvent){
 
   myEvent = aEvent;
   double eventMaxCharge = myEvent->GetMaxCharge();
@@ -66,11 +50,12 @@ void TrackBuilder::setEvent(EventTPC* aEvent){
 
   std::string hName, hTitle;
   if(!myHistoInitialized){     
+      std::shared_ptr<TH2D> hRawHits;
     for(int iDir = 0; iDir<3;++iDir){
-      std::shared_ptr<TH2D> hRawHits = myEvent->GetStripVsTimeInMM(getCluster(), iDir);
+      hRawHits = myEvent->GetStripVsTimeInMM(getCluster(), projection(iDir));
       double maxX = hRawHits->GetXaxis()->GetXmax();
       double maxY = hRawHits->GetYaxis()->GetXmax();
-      double rho = sqrt( maxX*maxX + maxY*maxY);
+      double rho = std::hypot(maxX, maxY);
       hName = "hAccumulator_"+std::to_string(iDir);
       hTitle = "Hough accumulator for direction: "+std::to_string(iDir)+";#theta;#rho";
       TH2D hAccumulator(hName.c_str(), hTitle.c_str(), nAccumulatorPhiBins, -pi, pi, nAccumulatorRhoBins, 0, rho);   
@@ -84,10 +69,10 @@ void TrackBuilder::setEvent(EventTPC* aEvent){
 /////////////////////////////////////////////////////////
 void TrackBuilder::reconstruct(){
 
-  for(int iDir=DIR_U;iDir<=DIR_W;++iDir){
-    makeRecHits(iDir);
-    fillHoughAccumulator(iDir);
-    my2DSeeds[iDir] = findSegment2DCollection(iDir);    
+  for(auto&& iDir : proj_vec_UVW){
+    makeRecHits(int(iDir));
+    fillHoughAccumulator(int(iDir));
+    my2DSeeds[int(iDir)] = findSegment2DCollection(int(iDir));    
   }
   myTrack3DSeed = buildSegment3D();
   myFittedTrack = fitTrack3D(myTrack3DSeed);
@@ -96,7 +81,7 @@ void TrackBuilder::reconstruct(){
 /////////////////////////////////////////////////////////
 void TrackBuilder::makeRecHits(int iDir){ 
 
-  std::shared_ptr<TH2D> hRawHits = myEvent->GetStripVsTimeInMM(getCluster(), iDir);
+  auto hRawHits = myEvent->GetStripVsTimeInMM(getCluster(), projection(iDir));
   TH2D & hRecHits = myRecHits[iDir];
   hRecHits.Reset();
   std::string tmpTitle(hRecHits.GetTitle());
@@ -287,7 +272,7 @@ TrackSegment2D TrackBuilder::findSegment2D(int iDir, int iPeak) const{
   aY = rho*cos(theta);
   aTangent.SetXYZ(aX, aY, 0.0);
   
-  TrackSegment2D aSegment2D(iDir);
+  TrackSegment2D aSegment2D{ projection(iDir) };
   aSegment2D.setBiasTangent(aBias, aTangent);
   aSegment2D.setNAccumulatorHits(nHits);
   return aSegment2D;
@@ -297,9 +282,9 @@ TrackSegment2D TrackBuilder::findSegment2D(int iDir, int iPeak) const{
 TrackSegment3D TrackBuilder::buildSegment3D() const{
 
   int iTrack2DSeed = 0;
-  const TrackSegment2D & segmentU = my2DSeeds[DIR_U][iTrack2DSeed];
-  const TrackSegment2D & segmentV = my2DSeeds[DIR_V][iTrack2DSeed];
-  const TrackSegment2D & segmentW = my2DSeeds[DIR_W][iTrack2DSeed];
+  auto& segmentU = my2DSeeds[int(projection::DIR_U)][iTrack2DSeed];
+  auto& segmentV = my2DSeeds[int(projection::DIR_V)][iTrack2DSeed];
+  auto& segmentW = my2DSeeds[int(projection::DIR_W)][iTrack2DSeed];
 
   int nHits_U = segmentU.getNAccumulatorHits();
   int nHits_V = segmentV.getNAccumulatorHits();
@@ -310,9 +295,9 @@ TrackSegment3D TrackBuilder::buildSegment3D() const{
   double bZ_fromW = segmentW.getBiasAtT0().X();
   double bZ = (bZ_fromU*nHits_U + bZ_fromV*nHits_V + bZ_fromW*nHits_W)/(nHits_U+nHits_V+nHits_W);
   
-  double bX_fromU = (segmentU.getBiasAtT0().Y())*cos(phiPitchDirection[DIR_U]);
-  double bY_fromV = (segmentV.getBiasAtT0().Y() - bX_fromU*cos(phiPitchDirection[DIR_V]))/sin(phiPitchDirection[DIR_V]);
-  double bY_fromW = (segmentW.getBiasAtT0().Y() - bX_fromU*cos(phiPitchDirection[DIR_W]))/sin(phiPitchDirection[DIR_W]);  
+  double bX_fromU = (segmentU.getBiasAtT0().Y())*cos(phiPitchDirection[int(projection::DIR_U)]);
+  double bY_fromV = (segmentV.getBiasAtT0().Y() - bX_fromU*cos(phiPitchDirection[int(projection::DIR_V)]))/sin(phiPitchDirection[int(projection::DIR_V)]);
+  double bY_fromW = (segmentW.getBiasAtT0().Y() - bX_fromU*cos(phiPitchDirection[int(projection::DIR_W)]))/sin(phiPitchDirection[int(projection::DIR_W)]);  
   double bY = (bY_fromV*nHits_V + bY_fromW*nHits_W)/(nHits_V+nHits_W);
   double bX = bX_fromU;
   TVector3 aBias(bX, bY, bZ);
@@ -322,9 +307,9 @@ TrackSegment3D TrackBuilder::buildSegment3D() const{
   double tZ_fromW = segmentW.getTangentWithT1().X();
   double tZ = (tZ_fromU*nHits_U + tZ_fromV*nHits_V + tZ_fromW*nHits_W)/(nHits_U+nHits_V+nHits_W);
 
-  double tX_fromU = segmentU.getTangentWithT1().Y()*cos(phiPitchDirection[DIR_U]);
-  double tY_fromV = (segmentV.getTangentWithT1().Y() - tX_fromU*cos(phiPitchDirection[DIR_V]))/sin(phiPitchDirection[DIR_V]);
-  double tY_fromW = (segmentW.getTangentWithT1().Y() - tX_fromU*cos(phiPitchDirection[DIR_W]))/sin(phiPitchDirection[DIR_W]);
+  double tX_fromU = segmentU.getTangentWithT1().Y()*cos(phiPitchDirection[int(projection::DIR_U)]);
+  double tY_fromV = (segmentV.getTangentWithT1().Y() - tX_fromU*cos(phiPitchDirection[int(projection::DIR_V)]))/sin(phiPitchDirection[int(projection::DIR_V)]);
+  double tY_fromW = (segmentW.getTangentWithT1().Y() - tX_fromU*cos(phiPitchDirection[int(projection::DIR_W)]))/sin(phiPitchDirection[int(projection::DIR_W)]);
   double tY = (tY_fromV*nHits_V + tY_fromW*nHits_W)/(nHits_V+nHits_W);
   double tX = tX_fromU;
   TVector3 aTangent(tX, tY, tZ);

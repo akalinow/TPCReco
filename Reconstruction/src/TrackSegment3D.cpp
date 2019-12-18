@@ -52,14 +52,14 @@ void TrackSegment3D::setRecHits(const std::vector<TH2D> & aRecHits){
   myRecHits.resize(3);
   
   double x=-999.0, y=-999.0, charge=-999.0;
-  for(auto&& strip_dir : std::vector<projection>{ DIR_U,DIR_V,DIR_W }){
-    const TH2D & hRecHits = aRecHits[strip_dir];
+  for(auto&& strip_dir : proj_vec_UVW){
+    const TH2D & hRecHits = aRecHits[int(strip_dir)];
     for(int iBinX=1;iBinX<hRecHits.GetNbinsX();++iBinX){
       for(int iBinY=1;iBinY<hRecHits.GetNbinsY();++iBinY){
 	charge = hRecHits.GetBinContent(iBinX, iBinY);
 	x = hRecHits.GetXaxis()->GetBinCenter(iBinX);
 	y = hRecHits.GetYaxis()->GetBinCenter(iBinY);
-	if(charge>0.0) myRecHits.at(strip_dir).push_back(Hit2D(x, y, charge));
+	if(charge>0.0) myRecHits.at(int(strip_dir)).push_back(Hit2D(x, y, charge));
       }
     }  
   }
@@ -99,8 +99,8 @@ std::vector<double> TrackSegment3D::getStartEndXYZ() const{
 /////////////////////////////////////////////////////////
 TVector3 TrackSegment3D::getPointOn2DProjection(double lambda, projection strip_dir) const{
 
-  TVector3 stripPitchDirection(cos(phiPitchDirection[strip_dir]),
-			       sin(phiPitchDirection[strip_dir]), 0);
+  TVector3 stripPitchDirection(cos(phiPitchDirection[int(strip_dir)]),
+			       sin(phiPitchDirection[int(strip_dir)]), 0);
 
   const TVector3 & start = getStart();
   const TVector3 & tangent = getTangent();
@@ -127,9 +127,9 @@ TrackSegment2D TrackSegment3D::get2DProjection(projection strip_dir, double lamb
 double TrackSegment3D::getIntegratedHitDistance(double lambdaCut) const{
 
   double sum = 0.0;
-  for(auto&& strip_dir : std::vector<projection>{ DIR_U,DIR_V,DIR_W }){
+  for(auto&& strip_dir : proj_vec_UVW){
     TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, lambdaCut);
-    const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
+    const Hit2DCollection & aRecHits = myRecHits.at(int(strip_dir));
     sum += aTrack2DProjection.getIntegratedHitDistance(lambdaCut, aRecHits);    
   } 
   return sum;
@@ -139,9 +139,9 @@ double TrackSegment3D::getIntegratedHitDistance(double lambdaCut) const{
 double TrackSegment3D::getIntegratedCharge(double lambdaCut) const{
 
   double charge = 0.0;
-  for (auto&& strip_dir : std::vector<projection>{DIR_U,DIR_V,DIR_W}) {
+  for (auto&& strip_dir : proj_vec_UVW) {
     TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, lambdaCut);
-    const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
+    const Hit2DCollection & aRecHits = myRecHits.at(int(strip_dir));
     charge += aTrack2DProjection.getIntegratedCharge(lambdaCut, aRecHits);    
   } 
   return charge;
@@ -159,10 +159,10 @@ double TrackSegment3D::getRecHitChi2() const{
 void TrackSegment3D::calculateRecHitChi2(){
 
   //#pragma omp parallel for
-  for(auto&& strip_dir : std::vector<projection>{ DIR_U,DIR_V,DIR_W }){
+  for(auto&& strip_dir : proj_vec_UVW){
     TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, getLength());
-    const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
-    myProjectionsChi2[strip_dir] = aTrack2DProjection.getRecHitChi2(aRecHits);
+    const Hit2DCollection & aRecHits = myRecHits.at(int(strip_dir));
+    myProjectionsChi2[int(strip_dir)] = aTrack2DProjection.getRecHitChi2(aRecHits);
   }  
 }
 /////////////////////////////////////////////////////////

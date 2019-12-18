@@ -8,7 +8,6 @@ project(TPCSoft)                   # this sets the project name
 #ROOT 
 list(APPEND CMAKE_PREFIX_PATH $ENV{ROOTSYS})
 list(APPEND CMAKE_MODULE_PATH $ENV{ROOTSYS}/etc/cmake)
-find_package(ROOT REQUIRED COMPONENTS RIO Net)
 find_package(ROOT REQUIRED COMPONENTS Physics HistPainter)
 include(${ROOT_USE_FILE})
 
@@ -35,19 +34,17 @@ else()
   MESSAGE( STATUS "RESOURCES dir already exists in the installation dir" )
 endif()
 
-set( CMAKE_CXX_FLAGS "${ROOT_CXX_FLAGS} -Wall -O3 -std=c++17 -fopenmp")
+set( CMAKE_CXX_FLAGS "${ROOT_CXX_FLAGS} -Wall -O3 -std=c++14 -fopenmp")
 
 #Set RPATH to install dir, so user do not have to set the LD_LIBRARY_PATH
 set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 
 
 #Framework packages
-add_subdirectory(DataFormats)
-add_subdirectory(Utilities)
-add_subdirectory(Reconstruction)
 add_subdirectory(GUI)
 add_subdirectory(GrawToROOT)
-add_subdirectory(ToyMC)
+add_subdirectory(Reconstruction)
+add_subdirectory(DataFormats)
 
 # Now comes everything we need, to create a package
 # there are a lot more variables you can set, and some

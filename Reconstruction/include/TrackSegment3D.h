@@ -1,3 +1,4 @@
+
 #ifndef _TrackSegment3D_H_
 #define _TrackSegment3D_H_
 
@@ -13,13 +14,13 @@
 #include "TrackSegment2D.h"
 #include "CommonDefinitions.h"
 
-class TrackSegment3D{
+class TrackSegment3D {
 
 public:
 
   TrackSegment3D();
 
-  ~TrackSegment3D(){};
+  ~TrackSegment3D() {};
 
   void setBiasTangent(const TVector3 & aBias, const TVector3 & aTangent);
 
@@ -95,7 +96,7 @@ private:
 
 std::ostream & operator << (std::ostream &out, const TrackSegment3D &aSegment);
 
-typedef std::vector<TrackSegment3D> TrackSegment3DCollection;
+using TrackSegment3DCollection = std::vector<TrackSegment3D>;
 
 #endif
 

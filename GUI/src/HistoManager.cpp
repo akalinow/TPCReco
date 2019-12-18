@@ -34,7 +34,7 @@ void HistoManager::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void HistoManager::setEvent(EventTPC* aEvent){
+void HistoManager::setEvent(std::shared_ptr<EventTPC> aEvent){
 
   myEvent = aEvent;
 
@@ -74,7 +74,7 @@ std::shared_ptr<TH2D> HistoManager::getRawStripVsTime(projection strip_dir){
   std::vector<int> nStrips = {72, 92, 92};
   
   std::cout<<" varianceX*12: "<<varianceX*12/450/450
-	   <<" varianceY*12: "<<varianceY*12/nStrips[strip_dir]/nStrips[strip_dir]
+	   <<" varianceY*12: "<<varianceY*12/nStrips[int(strip_dir)]/nStrips[int(strip_dir)]
 	   <<" varianceXY: "<<varianceXY
 	   <<std::endl;
   
@@ -90,12 +90,12 @@ std::shared_ptr<TH2D> HistoManager::getFilteredStripVsTime(projection strip_dir)
 /////////////////////////////////////////////////////////
 std::shared_ptr<TH2D> HistoManager::getRecHitStripVsTime(projection strip_dir){
 
-  return std::shared_ptr<TH2D>(new TH2D(myTkBuilder.getRecHits2D(strip_dir)));//FIX ME avoid object copying
+  return std::make_shared<TH2D>(myTkBuilder.getRecHits2D(int(strip_dir)));//FIX ME avoid object copying
 
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TH3D* HistoManager::get3DReconstruction(){
+std::shared_ptr<TH3D> HistoManager::get3DReconstruction(){
 
   double radius = 2.0;
   int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN;
@@ -106,19 +106,19 @@ TH3D* HistoManager::get3DReconstruction(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TH2D* HistoManager::get2DReconstruction(projection strip_dir){
+std::shared_ptr<TH2D> HistoManager::get2DReconstruction(projection strip_dir){
 
   double radius = 2.0;
   int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN;
   int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN; 
   int method=EVENTTPC_DEFAULT_RECO_METHOD;
-  std::vector<TH2D*> h2DVector = myEvent->Get2D(myTkBuilder.getCluster(),  radius, rebin_space, rebin_time, method);
+  auto h2DVector = myEvent->Get2D(myTkBuilder.getCluster(),  radius, rebin_space, rebin_time, method);
   if(!h2DVector.size()) return 0;
   int index = 0;
   
-  if(strip_dir==DIR_XY) index = 0;
-  if(strip_dir==DIR_XZ) index = 1;
-  if(strip_dir==DIR_YZ) index = 2;
+  if(strip_dir== projection::DIR_XY) index = 0;
+  if(strip_dir== projection::DIR_XZ) index = 1;
+  if(strip_dir== projection::DIR_YZ) index = 2;
    
   return h2DVector[index];
 }
@@ -126,7 +126,7 @@ TH2D* HistoManager::get2DReconstruction(projection strip_dir){
 /////////////////////////////////////////////////////////
 const TH2D & HistoManager::getHoughAccumulator(projection strip_dir, int iPeak){
 
-  return myTkBuilder.getHoughtTransform(strip_dir);
+  return myTkBuilder.getHoughtTransform(int(strip_dir));
 
 }
 /////////////////////////////////////////////////////////
@@ -177,7 +177,7 @@ void HistoManager::drawTrack3DProjectionXY(TVirtualPad *aPad){
 /////////////////////////////////////////////////////////
 void HistoManager::drawTrack2DSeed(projection strip_dir, TVirtualPad *aPad){
 
-  const TrackSegment2D & aSegment2D = myTkBuilder.getSegment2D(strip_dir);
+  const TrackSegment2D & aSegment2D = myTkBuilder.getSegment2D(int(strip_dir));
   const TVector3 & start = aSegment2D.getStart();
   const TVector3 & end = aSegment2D.getEnd();
 

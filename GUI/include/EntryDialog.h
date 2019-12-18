@@ -16,7 +16,7 @@ public:
 
    virtual ~EntryDialog();
 
-   virtual Bool_t ProcessMessage(Long_t msg, Long_t parm1, Long_t);
+   virtual bool ProcessMessage(int64_t msg, int64_t parm1, int64_t);
 
   void updateFileName(const std::string & fileName);
 
