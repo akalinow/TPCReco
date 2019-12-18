@@ -1,6 +1,7 @@
 {   
+    "events":4,
     "geometryFile": "/home/mfila/data/TPCReco/resources/geometry_mini_eTPC.dat",
-    "outputFile": "MCevent.root",
+    "outputFile": "lineEvents.root",
     "sigma":"3",
     "MCcounts":"10000",
     "NbinsX":100, "xmin":-100, "xmax":100,

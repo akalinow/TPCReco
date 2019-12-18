@@ -19,7 +19,7 @@ FromTransportGenerator l;
 l.loadGeometry(root.get<std::string>("geometryFile"));
 l.loadDataFile(root.get<std::string>("dataFile"));
 l.setOutput(root.get<std::string>("outputFile"));
-l.generateEvents(3);
+l.generateEvents(root.get<int>("events"));
 l.writeOutput();
 l.closeOutput();
 return 0;

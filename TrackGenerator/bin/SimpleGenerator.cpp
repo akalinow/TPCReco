@@ -48,7 +48,7 @@ l.setTrackSpace(root.get<int>("NbinsX"),root.get<double>("xmin"),root.get<double
                 root.get<int>("NbinsY"),root.get<double>("ymin"),root.get<double>("ymax"),
                 root.get<int>("NbinsZ"),root.get<double>("zmin"),root.get<double>("zmax"));
 l.setOutput(root.get<std::string>( "outputFile"));
-l.generateEvents(10);
+l.generateEvents(root.get<int>("events"));
 l.writeOutput();
 l.closeOutput();
 return 0;
