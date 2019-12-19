@@ -22,8 +22,16 @@ MainFrame::MainFrame(const TGWindow *p, uint32_t w, uint32_t h)
       : TGMainFrame(p, w, h){
 
   //TEST ---
-  std::string geometryFileName = "C:/Users/tymon/Documents/ZPS/data/EventTPC_2018-06-19T15_13_33.941.root"; 
-  std::string dataFileName = "C:/Users/tymon/Documents/ZPS/data/geometry_mini_eTPC_2018-06-19T15_13_33.941.dat"; 
+    std::string pathFileName = "paths.txt";
+  std::string geometryFileName; 
+  std::string dataFileName; 
+    std::fstream path_file;
+    path_file.open(pathFileName, std::ios::in);
+    path_file >> geometryFileName;
+    path_file >> dataFileName;
+    std::cout << geometryFileName << std::endl;
+    std::cout << dataFileName << std::endl;
+    path_file.close();
   //dataFileName = "*poza buildem";
   
   myDataManager.loadGeometry(geometryFileName);  
