@@ -98,7 +98,6 @@ class GeometryTPC {
   inline int GetAgetNchannels_raw() { return AGET_Nchan_raw; }
   inline int GetAgetNchannels_fpn() { return AGET_Nchan_fpn; }
   inline int GetAgetNtimecells() { return AGET_Ntimecells; }
-  inline int GetAsadNboards(int COBO_idx) { return (ASAD_N.find(COBO_idx)==ASAD_N.end() ? 0 : ASAD_N[COBO_idx]); }
   inline int GetAsadNboards() { int n=0; for(int icobo=0; icobo<COBO_N; icobo++) { n+=ASAD_N[icobo]; } return n; }
   inline int GetCoboNboards() { return COBO_N; }
 

@@ -156,9 +156,7 @@ void Track3D::updateNodesChi2(projection strip_dir){
 
   TVector3 stripPitchDirection(cos(phiPitchDirection[int(strip_dir)]),
 			       sin(phiPitchDirection[int(strip_dir)]), 0);
-  TVector3 aPoint;
 
-  double charge = 0.0;
   double sum = 0.0;
   double nodeChi2 = 0.0;
   unsigned int iNode = 0;
@@ -181,13 +179,14 @@ void Track3D::updateNodesChi2(projection strip_dir){
     
 
     if(ROOT::Math::VectorUtil::DeltaPhi(formerTransverse2D, latterTransverse2D)<0) std::swap(formerTransverse2D, latterTransverse2D);
-
+    deltaPhi = ROOT::Math::VectorUtil::DeltaPhi(formerTransverse2D, latterTransverse2D);
     for(const auto aHit:mySegments.front().getRecHits().at(int(strip_dir))){
-      charge = aHit().charge;
+        TVector3 aPoint;
+      auto charge = aHit().charge;
       aPoint.SetXYZ(aHit().posTime, aHit().posWire, 0.0);
       aPoint -= node2D;
       double deltaHit = ROOT::Math::VectorUtil::DeltaPhi(formerTransverse2D, aPoint);//DeltaPhi(a, b) = b - a 
-      double nodeOpeningAngle = ROOT::Math::VectorUtil::DeltaPhi(formerTransverse2D, latterTransverse2D);      
+      double nodeOpeningAngle = deltaPhi;      
       bool belongsToNode = deltaHit < nodeOpeningAngle && deltaHit>0.0;
       if(belongsToNode){
 	nodeChi2 += aPoint.Mag2()*charge;
@@ -212,9 +211,9 @@ void Track3D::updateChi2(){
   nodeAngleChi2.clear();
   if(mySegments.size() != 0) nodeAngleChi2.resize(mySegments.size()-1);
   
-  for (auto&& strip_dir : proj_vec_UVW) {
-    updateNodesChi2(strip_dir);
-  }
+  std::for_each(/*std::execution::par_unseq*/proj_vec_UVW.begin(), proj_vec_UVW.end(), [&](auto strip_dir) { //C++17
+      updateNodesChi2(strip_dir);
+  });
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

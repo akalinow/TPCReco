@@ -17,6 +17,7 @@
 #include <fstream>
 #include <utility>
 #include <algorithm> // for find_if
+#include <set>
 
 #include "MultiKey.h"
 #include "CommonDefinitions.h"
@@ -28,14 +29,14 @@ class EventTPC;
 class SigClusterTPC {
   friend class EventTPC;
  private:
-     std::weak_ptr<EventTPC> evt_ptr;              // pointer to the existing TPC geometry
-  std::vector<MultiKey3> hitList; // list of selected space-time cells for further analysis where return
+     EventTPC& evt_ref;              // pointer to the existing TPC geometry
+  std::set<MultiKey3> hitList; // list of selected space-time cells for further analysis where return
                                   // value=key(STRIP_DIR [0-2], STRIP_NUM [1-1024], REBIN_TIME_CELL [0-511])
   std::map<MultiKey2, 
     std::vector<int>, multikey2_less> hitListByTimeDir; // same list of selected space-time cells as a map
                                                         // with key=(REBIN_TIME_CELL [0-511], STRIP_DIR [0-2]) 
                                                         // that returns vector of STRIP_NUMBERS 
-  std::map<int, std::vector<MultiKey2> > hitListByDir;  // same list of selected space-time cells as a map
+  std::map<int, std::set<MultiKey2> > hitListByDir;  // same list of selected space-time cells as a map
                                                         // with key=STRIP_DIR [0-2]) 
                                                         // that returns key=(REBIN_TIME_CELL [0-511], STRIP_NUM [1-1024]
   bool initOK;                    // is geometry valid?
@@ -70,9 +71,9 @@ class SigClusterTPC {
 
   SigClusterTPC() = default; //default contructor 
   
-  SigClusterTPC(std::shared_ptr<EventTPC> e); // constructor needs a pointer to the existing event
-  inline std::vector<MultiKey3> GetHitList() const { return hitList; } // list of ALL hits, value=key(STRIP_DIR [0-2], STRIP_NUM [1-1024], REBIN_TIME_CELL [0-511])
-  std::vector<MultiKey2> GetHitListByDir(projection strip_dir) const; // list of SELECTED hits corresponding to a given STRIP_DIR[0-2], value=key(REBIN_TIME_CELL [0-511], STRIP_NUM [1-1024])
+  SigClusterTPC(EventTPC& e); // constructor needs a pointer to the existing event
+  inline std::set<MultiKey3> GetHitList() const { return hitList; } // list of ALL hits, value=key(STRIP_DIR [0-2], STRIP_NUM [1-1024], REBIN_TIME_CELL [0-511])
+  std::set<MultiKey2> GetHitListByDir(projection strip_dir) const; // list of SELECTED hits corresponding to a given STRIP_DIR[0-2], value=key(REBIN_TIME_CELL [0-511], STRIP_NUM [1-1024])
 
   const std::map<MultiKey2, std::vector<int>, multikey2_less> & GetHitListByTimeDir() const;
 

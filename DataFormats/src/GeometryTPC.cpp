@@ -240,12 +240,8 @@ bool GeometryTPC::Load(std::string fname) {
       }
 
     // set unit vectors (along strips) and strip pitch vectors (perpendicular to strips)
-    strip_unit_vec[int(projection::DIR_U)].Set( std::cos( angle[int(projection::DIR_U)]*TMath::DegToRad() ),
-		std::sin( angle[int(projection::DIR_U)]*TMath::DegToRad() )  );
-    strip_unit_vec[int(projection::DIR_V)].Set( std::cos( angle[int(projection::DIR_V)]*TMath::DegToRad() ),
-		std::sin( angle[int(projection::DIR_V)]*TMath::DegToRad() )  );
-    strip_unit_vec[int(projection::DIR_W)].Set( std::cos( angle[int(projection::DIR_W)]*TMath::DegToRad() ),
-		std::sin( angle[int(projection::DIR_W)]*TMath::DegToRad() )  );
+    std::for_each(proj_vec_UVW.begin(), proj_vec_UVW.end(), [&](auto proj) {
+        strip_unit_vec[int(proj)].Set(std::cos(angle[int(proj)] * deg_to_rad), std::sin(angle[int(proj)] * deg_to_rad));  });
 
     pitch_unit_vec[int(projection::DIR_U)] = -1.0*( strip_unit_vec[int(projection::DIR_W)] + strip_unit_vec[int(projection::DIR_V)] ).Unit();
     pitch_unit_vec[int(projection::DIR_V)] =      ( strip_unit_vec[int(projection::DIR_U)] + strip_unit_vec[int(projection::DIR_W)] ).Unit();
@@ -292,8 +288,8 @@ bool GeometryTPC::Load(std::string fname) {
 		      << " / AGET=" << aget << " / CHANNUM=" << chan_num << "\n";
 	  }
 	  // DEBUG
-
-	  if(mapByAget.find(MultiKey4(cobo, asad, aget, chan_num))==mapByAget.end()) {
+      auto _key = MultiKey4(cobo, asad, aget, chan_num);
+	  if(mapByAget.find(_key)==mapByAget.end()) {
 
 	    // create new strip
 	    int chan_num_raw = Aget_normal2raw(chan_num);
@@ -303,8 +299,8 @@ bool GeometryTPC::Load(std::string fname) {
 					   strip_unit_vec[int(dir)], offset, length);
 
 	    // update map (by: COBO board, ASAD board, AGET chip, AGET normal/raw channel)
-	    mapByAget[MultiKey4(cobo, asad, aget,chan_num)]=strip ; // StripTPC(dir, strip_num);
-	    mapByAget_raw[MultiKey4(cobo, asad, aget,chan_num_raw)]=strip; // StripTPC(dir, strip_num);
+	    mapByAget[_key] = strip ; // StripTPC(dir, strip_num);
+	    mapByAget_raw[_key] = strip; // StripTPC(dir, strip_num);
 
 	    // update reverse map (by: strip direction, strip number)
 	    if(IsDIR_UVW(dir)) {
@@ -324,15 +320,14 @@ bool GeometryTPC::Load(std::string fname) {
 	    else stripN[int(dir)]++;
 	    
 	    // DEBUG
-		auto mkey4 = MultiKey4(cobo, asad, aget, chan_num);
 	    if(_debug) {
             auto strip_int = (*mapByStrip[MultiKey2(int(dir), strip_num)])();
 	      std::cout << ">>> ADDED NEW STRIP:" 
 			<< "KEY=[COBO=" << cobo << ", ASAD=" << asad << ", AGET=" << aget << ", CHAN=" << chan_num 
 			<<"]  VAL=[DIR=" << int(dir) << ", STRIP=" << strip_num << "], "
 			<< "NSTRIPS[DIR="<< int(dir) <<"]=" << stripN[int(dir)] << ", "
-			<< "   map_by_AGET=(" << (*mapByAget[mkey4])().dir << "," 
-			<< (*mapByAget[mkey4])().num << "), "
+			<< "   map_by_AGET=(" << (*mapByAget[_key])().dir << "," 
+			<< (*mapByAget[_key])().num << "), "
 			<< "   map_by_STRIP=(" << strip_int.coboId << ","
 			<< strip_int.asadId << ","
 			<< strip_int.agetId << ","
@@ -388,9 +383,9 @@ bool GeometryTPC::Load(std::string fname) {
   // print statistics
   std::cout << std::endl 
 	    << "Geometry config file = " << fname << std::endl;
-  std::cout << "Total number of " << this->GetDirName(projection::DIR_U) << " strips = " << this->GetDirNstrips(projection::DIR_U) << std::endl;
-  std::cout << "Total number of " << this->GetDirName(projection::DIR_V) << " strips = " << this->GetDirNstrips(projection::DIR_V) << std::endl;
-  std::cout << "Total number of " << this->GetDirName(projection::DIR_W) << " strips = " << this->GetDirNstrips(projection::DIR_W) << std::endl;
+  for (auto& proj : proj_vec_UVW) {
+      std::cout << "Total number of " << this->GetDirName(proj) << " strips = " << this->GetDirNstrips(proj) << std::endl;
+  }
   std::cout << "Number of active channels per AGET chip = " << this->GetAgetNchannels() << std::endl;
   std::cout << "Number of " << this->GetDirName(static_cast<projection>(FPN_CH)) << " channels per AGET chip = " << this->GetDirNstrips(static_cast<projection>(FPN_CH)) << std::endl;
   std::cout << "Number of raw channels per AGET chip = " << this->GetAgetNchannels_raw() << std::endl;

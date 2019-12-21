@@ -2,9 +2,9 @@
 #include "EventTPC.h"
 /* ============= SPACE-TIME CLUSTER CLASS ===========*/
 
-SigClusterTPC::SigClusterTPC(std::shared_ptr<EventTPC> e)
+SigClusterTPC::SigClusterTPC(EventTPC& e)
   : 
-    evt_ptr(e),
+    evt_ref(e),
     initOK(false), 
     glb_min_time( -1 ),
     glb_max_time( -1 ),
@@ -33,17 +33,17 @@ SigClusterTPC::SigClusterTPC(std::shared_ptr<EventTPC> e)
   totalChargeMap2.clear();  // 2-key map: strip_dir, time_cell
   totalChargeMap3.clear();  // 1-key map: time_cell
   maxChargeMap.clear();     // 2-key map: strip_dir, strip_number 
-  if(evt_ptr.lock() != nullptr && evt_ptr.lock()->IsOK()) initOK=true;
+  if(evt_ref.IsOK()) initOK=true;
   
 }
 
 // list of SELECTED hits corresponding to a given STRIP_DIR[0-2],
 // return value=key(REBIN_TIME_CELL [0-511], STRIP_NUM [1-1024])
-std::vector<MultiKey2> SigClusterTPC::GetHitListByDir(projection strip_dir) const{
+std::set<MultiKey2> SigClusterTPC::GetHitListByDir(projection strip_dir) const{
 	if (IsDIR_UVW(strip_dir)) {
 		return hitListByDir.find(int(strip_dir))->second;
 	};
-	return std::vector<MultiKey2>();
+	return std::set<MultiKey2>();
 }
 
  const std::map<MultiKey2, std::vector<int>, multikey2_less> & SigClusterTPC::GetHitListByTimeDir() const{
@@ -52,8 +52,8 @@ std::vector<MultiKey2> SigClusterTPC::GetHitListByDir(projection strip_dir) cons
 
 bool SigClusterTPC::AddByStrip(projection strip_dir, int strip_number, int time_cell) {  // valid range [0-2][1-1024][0-511]
   if(!IsOK() || 
-     time_cell<0 || time_cell>=evt_ptr.lock()->GetGeoPtr()->GetAgetNtimecells() || 
-     strip_number<1 || strip_number>evt_ptr.lock()->GetGeoPtr()->GetDirNstrips(strip_dir)) return false;
+     time_cell<0 || time_cell>=evt_ref.GetGeoPtr()->GetAgetNtimecells() || 
+     strip_number<1 || strip_number>evt_ref.GetGeoPtr()->GetDirNstrips(strip_dir)) return false;
   if (IsDIR_UVW(strip_dir)) {
 	  MultiKey3 mkey3(int(strip_dir), strip_number, time_cell);
     MultiKey2 mkey2(time_cell, int(strip_dir));
@@ -65,12 +65,12 @@ bool SigClusterTPC::AddByStrip(projection strip_dir, int strip_number, int time_
     MultiKey2 mkey2_CellStrip(time_cell, strip_number);
 
     // hitList - check if hit is unique
-    if(find_if(hitList.begin(), hitList.end(), mkey3)==hitList.end()) {
+    if(hitList.find(mkey3)==hitList.end()) {
 
       // add new hit
-      hitList.push_back(mkey3);
+      hitList.insert(mkey3);
       hitListByTimeDir[mkey2].push_back(strip_number);
-      hitListByDir[int(strip_dir)].push_back(mkey2_CellStrip);
+      hitListByDir[int(strip_dir)].insert(mkey2_CellStrip);
 
       // update hit statistics
       MultiKey2 mkey(int(strip_dir), strip_number);
@@ -88,7 +88,7 @@ bool SigClusterTPC::AddByStrip(projection strip_dir, int strip_number, int time_
       glb_max_time = std::max(glb_max_time, time_cell);
       if( glb_min_time > time_cell || glb_min_time<1 ) glb_min_time = time_cell;
 
-      double val = evt_ptr.lock()->GetValByStrip(strip_dir, strip_number, time_cell);
+      double val = evt_ref.GetValByStrip(strip_dir, strip_number, time_cell);
 
       // update charge integrals
 
@@ -144,7 +144,7 @@ bool SigClusterTPC::AddByStrip(projection strip_dir, int strip_number, int time_
 	if( val > glb_max_charge ) {
 	  glb_max_charge=val;
 	  glb_max_charge_timing=time_cell;
-	  glb_max_charge_channel=evt_ptr.lock()->GetGeoPtr()->Global_strip2normal(int(strip_dir), strip_number);
+	  glb_max_charge_channel=evt_ref.GetGeoPtr()->Global_strip2normal(int(strip_dir), strip_number);
 	}
       }
 
@@ -155,7 +155,7 @@ bool SigClusterTPC::AddByStrip(projection strip_dir, int strip_number, int time_
 }
 
 bool SigClusterTPC::CheckByStrip(projection strip_dir, int strip_number, int time_cell) const{  // valid range [0-2][1-1024][0-511]
-  if(!IsOK() || time_cell<0 || time_cell>=512 || strip_number<1 || strip_number>evt_ptr.lock()->GetGeoPtr()->GetDirNstrips(strip_dir)) return false;
+  if(!IsOK() || time_cell<0 || time_cell>=512 || strip_number<1 || strip_number>evt_ref.GetGeoPtr()->GetDirNstrips(strip_dir)) return false;
   if (IsDIR_UVW(strip_dir)) {
       auto temp = hitListByDir.find(int(strip_dir));
 	  return std::find_if(temp->second.begin(),

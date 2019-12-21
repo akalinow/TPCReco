@@ -34,16 +34,16 @@ constexpr auto EVENTTPC_DEFAULT_STRIP_REBIN = 2;  // number of strips to rebin [
 constexpr auto EVENTTPC_DEFAULT_TIME_REBIN = 5;  // number of time cells to rebin [1-512];
 
 
-class EventTPC : public std::enable_shared_from_this<EventTPC> {
+class EventTPC {
   //  friend class SigClusterTPC;
  private:
   int64_t event_id, run_id;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
   
-  std::map<MultiKey3, double, multikey3_less> chargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
-  std::map<MultiKey2, double, multikey2_less> maxChargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024])
-  std::map<MultiKey2, double, multikey2_less> totalChargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024])
-  std::map<MultiKey2, double, multikey2_less> totalChargeMap2; // key=(STRIP_DIR [0-2], TIME_CELL [0-511])
+  std::map<MultiKey3, double> chargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
+  std::map<MultiKey2, double> maxChargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024])
+  std::map<MultiKey2, double> totalChargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024])
+  std::map<MultiKey2, double> totalChargeMap2; // key=(STRIP_DIR [0-2], TIME_CELL [0-511])
   std::map<int, double> totalChargeMap3; // key=TIME_CELL [0-511]
 
   bool initOK;      // is geometry valid?
@@ -83,18 +83,18 @@ class EventTPC : public std::enable_shared_from_this<EventTPC> {
 
   double GetMaxCharge();                   // maximal charge from all strips
 
-  SigClusterTPC GetOneCluster(double thr, int delta_strips, int delta_timecells); // applies clustering threshold to all space-time data points 
+  std::shared_ptr<SigClusterTPC> GetOneCluster(double thr, int delta_strips, int delta_timecells); // applies clustering threshold to all space-time data points 
   
-  std::shared_ptr<TH2D> GetStripVsTime(const SigClusterTPC &cluster, projection strip_dir);        // clustered hits only, valid dir range [0-2]
+  std::shared_ptr<TH2D> GetStripVsTime(std::shared_ptr<SigClusterTPC> cluster, projection strip_dir);        // clustered hits only, valid dir range [0-2]
   std::shared_ptr<TH2D> GetStripVsTime(projection strip_dir);                               // whole event, all strip dirs
-  std::shared_ptr<TH2D> GetStripVsTimeInMM(const SigClusterTPC &cluster, projection strip_dir);  // valid range [0-2]
+  std::shared_ptr<TH2D> GetStripVsTimeInMM(std::shared_ptr<SigClusterTPC> cluster, projection strip_dir);  // valid range [0-2]
 
-  std::vector<std::shared_ptr<TH2D>> Get2D(const SigClusterTPC &cluster, double radius,          // clustered hits only,
+  std::vector<std::shared_ptr<TH2D>> Get2D(std::shared_ptr<SigClusterTPC> cluster, double radius,          // clustered hits only,
 			   int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN,   // projections on: XY, XZ, YZ planes
 			   int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN, 
 			   int method=EVENTTPC_DEFAULT_RECO_METHOD);  
 
-  std::shared_ptr<TH3D> Get3D(const SigClusterTPC &cluster, double radius,                       // clustered hits only, 3D view
+  std::shared_ptr<TH3D> Get3D(std::shared_ptr<SigClusterTPC> cluster, double radius,                       // clustered hits only, 3D view
 	      int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN, 
 	      int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN, 
 	      int method=EVENTTPC_DEFAULT_RECO_METHOD);

@@ -158,36 +158,36 @@ double EventTPC::GetMaxCharge() {  // maximal charge from all strips
 	return glb_max_charge;
 }
 
-SigClusterTPC EventTPC::GetOneCluster(double thr, int delta_strips, int delta_timecells) {  // applies clustering threshold to all space-time data points
-	SigClusterTPC cluster(this->shared_from_this());
+std::shared_ptr<SigClusterTPC> EventTPC::GetOneCluster(double thr, int delta_strips, int delta_timecells) {  // applies clustering threshold to all space-time data points
+	std::shared_ptr<SigClusterTPC> cluster = std::make_shared<SigClusterTPC>(*this);
 
 	// getting cluster seed hits
 	for (auto&& it: chargeMap) {
-		if (it.second > thr) cluster.AddByStrip(static_cast<projection>(it.first.key1), it.first.key2, it.first.key3);
+		if (it.second > thr) cluster->AddByStrip(static_cast<projection>(it.first.key[0]), it.first.key[1], it.first.key[2]);
 		// debug - dump the whole event as a single cluster
-		//    cluster.AddByStrip( (it->first).key1, (it->first).key2, (it->first).key3 );
+		//    cluster->AddByStrip( (it->first).key[0], (it->first).key[1], (it->first).key[2] );
 		// debug - dump the whole event as a single cluster
 	}
 
 	// debug 
-	//  std::cout << ">>>> GetSigCluster: nhits=" << cluster.GetNhits() << ", chargeMap.size=" << chargeMap.size() << std::endl;
+	//  std::cout << ">>>> GetSigCluster: nhits=" << cluster->GetNhits() << ", chargeMap.size=" << chargeMap.size() << std::endl;
 	std::cout << Form(">>>> GetSigCluster: BEFORE ENVELOPE: nhits(%d)/nhits(%d)/nhits(%d)=%ld/%ld/%ld",
 		int(projection::DIR_U), int(projection::DIR_V), int(projection::DIR_W),
-		cluster.GetNhits(projection::DIR_U),
-		cluster.GetNhits(projection::DIR_V),
-		cluster.GetNhits(projection::DIR_W)) << std::endl;
+		cluster->GetNhits(projection::DIR_U),
+		cluster->GetNhits(projection::DIR_V),
+		cluster->GetNhits(projection::DIR_W)) << std::endl;
 	// debug
 
 	// adding envelope to the seed hits
-	auto oldList = cluster.GetHitList(); // make a copy of list of SEED-hits
+	auto oldList = cluster->GetHitList(); // make a copy of list of SEED-hits
 
 	// loop thru SEED-hits
 	for (auto&& it2 : oldList) {
 
 		// unpack coordinates
-		const projection strip_dir = static_cast<projection>(it2.key1);
-		const int strip_num = it2.key2;
-		const int time_cell = it2.key3;
+		const projection strip_dir = static_cast<projection>(it2.key[0]);
+		const int strip_num = it2.key[1];
+		const int time_cell = it2.key[2];
 		const int strip_range[2] = { std::max(1, strip_num - delta_strips),
 					 std::min(myGeometryPtr->GetDirNstrips(strip_dir), strip_num + delta_strips) };
 		const int timecell_range[2] = { std::max(0, time_cell - delta_timecells),
@@ -200,7 +200,7 @@ SigClusterTPC EventTPC::GetOneCluster(double thr, int delta_strips, int delta_ti
 				if (chargeMap.find(mkey3)->second < 0) continue; // exclude negative values (due to pedestal subtraction)
 				// add new space-time point
 				if (find_if(oldList.begin(), oldList.end(), mkey3) == oldList.end()) {
-					cluster.AddByStrip(strip_dir, istrip, icell);
+					cluster->AddByStrip(strip_dir, istrip, icell);
 				}
 			}
 		}
@@ -209,17 +209,17 @@ SigClusterTPC EventTPC::GetOneCluster(double thr, int delta_strips, int delta_ti
 	// debug
 	std::cout << Form(">>>> GetSigCluster: AFTER ENVELOPE:  nhits(%d)/nhits(%d)/nhits(%d)=%ld/%ld/%ld",
 		int(projection::DIR_U), int(projection::DIR_V), int(projection::DIR_W),
-		cluster.GetNhits(projection::DIR_U),
-		cluster.GetNhits(projection::DIR_V),
-		cluster.GetNhits(projection::DIR_W)) << std::endl;
+		cluster->GetNhits(projection::DIR_U),
+		cluster->GetNhits(projection::DIR_V),
+		cluster->GetNhits(projection::DIR_W)) << std::endl;
 	// debug
 
 	return cluster;
 }
 
-std::shared_ptr<TH2D> EventTPC::GetStripVsTime(const SigClusterTPC& cluster, projection strip_dir) {
+std::shared_ptr<TH2D> EventTPC::GetStripVsTime(std::shared_ptr<SigClusterTPC> cluster, projection strip_dir) {
 
-	if (!IsOK() || !cluster.IsOK()) return std::shared_ptr<TH2D>();
+	if (!IsOK() || !cluster->IsOK()) return std::shared_ptr<TH2D>();
 
 	std::shared_ptr<TH2D> result = std::make_shared<TH2D>(Form("hclust_%s_vs_time_evt%lld", myGeometryPtr->GetDirName(strip_dir).c_str(), event_id),
 		Form("Event-%lld: Clustered hits from %s strips;Time bin [arb.u.];%s strip no.;Charge/bin [arb.u.]",
@@ -231,9 +231,9 @@ std::shared_ptr<TH2D> EventTPC::GetStripVsTime(const SigClusterTPC& cluster, pro
 		1.0 - 0.5,
 		1. * myGeometryPtr->GetDirNstrips(strip_dir) + 0.5);
 
-	for (int strip_num = cluster.GetMinStrip(strip_dir); strip_num <= cluster.GetMaxStrip(strip_dir); strip_num++) {
-		for (int icell = cluster.GetMinTime(strip_dir); icell <= cluster.GetMaxTime(strip_dir); icell++) {
-			if (cluster.CheckByStrip(strip_dir, strip_num, icell)) {
+	for (int strip_num = cluster->GetMinStrip(strip_dir); strip_num <= cluster->GetMaxStrip(strip_dir); strip_num++) {
+		for (int icell = cluster->GetMinTime(strip_dir); icell <= cluster->GetMaxTime(strip_dir); icell++) {
+			if (cluster->CheckByStrip(strip_dir, strip_num, icell)) {
 				result->Fill(1. * icell, 1. * strip_num, GetValByStrip(strip_dir, strip_num, icell));
 			}
 		}
@@ -265,7 +265,7 @@ std::shared_ptr<TH2D> EventTPC::GetStripVsTime(projection strip_dir) {  // valid
 	return result;
 }
 
-std::shared_ptr<TH2D> EventTPC::GetStripVsTimeInMM(const SigClusterTPC& cluster, projection strip_dir) {  // valid range [0-2]
+std::shared_ptr<TH2D> EventTPC::GetStripVsTimeInMM(std::shared_ptr<SigClusterTPC> cluster, projection strip_dir) {  // valid range [0-2]
 
 	if (!IsOK()) return std::shared_ptr<TH2D>();
 
@@ -294,9 +294,9 @@ std::shared_ptr<TH2D> EventTPC::GetStripVsTimeInMM(const SigClusterTPC& cluster,
 	// fill new histogram
 	double x = 0.0, y = 0.0;
 
-	for (int strip_num = cluster.GetMinStrip(strip_dir); strip_num <= cluster.GetMaxStrip(strip_dir); strip_num++) {
-		for (int icell = cluster.GetMinTime(strip_dir); icell <= cluster.GetMaxTime(strip_dir); icell++) {
-			if (cluster.CheckByStrip(strip_dir, strip_num, icell)) {
+	for (int strip_num = cluster->GetMinStrip(strip_dir); strip_num <= cluster->GetMaxStrip(strip_dir); strip_num++) {
+		for (int icell = cluster->GetMinTime(strip_dir); icell <= cluster->GetMaxTime(strip_dir); icell++) {
+			if (cluster->CheckByStrip(strip_dir, strip_num, icell)) {
 				double val = GetValByStrip(strip_dir, strip_num, icell);
 				x = myGeometryPtr->Timecell2pos(icell, err_flag);
 				y = myGeometryPtr->Strip2posUVW(strip_dir, strip_num, err_flag);
@@ -308,24 +308,24 @@ std::shared_ptr<TH2D> EventTPC::GetStripVsTimeInMM(const SigClusterTPC& cluster,
 }
 
 // get three projections on: XY, XZ, YZ planes
-std::vector<std::shared_ptr<TH2D>> EventTPC::Get2D(const SigClusterTPC& cluster, double radius, int rebin_space, int rebin_time, int method) {
+std::vector<std::shared_ptr<TH2D>> EventTPC::Get2D(std::shared_ptr<SigClusterTPC> cluster, double radius, int rebin_space, int rebin_time, int method) {
 
 	//  const bool rebin_flag=false;
 	std::shared_ptr<TH2D> h1, h2, h3;
 	std::vector<std::shared_ptr<TH2D>> hvec;
 	bool err_flag = false;
 
-	if (!IsOK() || !cluster.IsOK() ||
-		cluster.GetNhits(projection::DIR_U) < 1 || cluster.GetNhits(projection::DIR_V) < 1 || cluster.GetNhits(projection::DIR_W) < 1) return hvec;
+	if (!IsOK() || !cluster->IsOK() ||
+		cluster->GetNhits(projection::DIR_U) < 1 || cluster->GetNhits(projection::DIR_V) < 1 || cluster->GetNhits(projection::DIR_W) < 1) return hvec;
 
 	// loop over time slices and match hits in space
-	const int time_cell_min = *std::max_element( &cluster.min_time[0], &cluster.min_time[3]);
-	const int time_cell_max = *std::min_element( &cluster.max_time[0], &cluster.max_time[3]);
+	const int time_cell_min = *std::max_element( &cluster->min_time[0], &cluster->min_time[3]);
+	const int time_cell_max = *std::min_element( &cluster->max_time[0], &cluster->max_time[3]);
 
 	//std::cout << Form(">>>> EventId = %lld", event_id) << std::endl;
 	//std::cout << Form(">>>> Time cell range = [%d, %d]", time_cell_min, time_cell_max) << std::endl;
 
-	const auto& hitListByTimeDir = cluster.GetHitListByTimeDir();
+	const auto& hitListByTimeDir = cluster->GetHitListByTimeDir();
 
 	for (int icell = time_cell_min; icell <= time_cell_max; icell++) {
 
@@ -335,9 +335,9 @@ std::vector<std::shared_ptr<TH2D>> EventTPC::Get2D(const SigClusterTPC& cluster,
 		std::transform(proj_vec_UVW.begin(), proj_vec_UVW.end(), &hits[0], [&](auto proj) { return hitListByTimeDir.find(MultiKey2(icell, int(proj)))->second; });
 		/*
 std::vector<int> hits[3] = {
-			cluster.GetHitListByTimeDir()[MultiKey2(icell, DIR_U)],
-			cluster.GetHitListByTimeDir()[MultiKey2(icell, DIR_V)],
-			cluster.GetHitListByTimeDir()[MultiKey2(icell, DIR_W)] };
+			cluster->GetHitListByTimeDir()[MultiKey2(icell, DIR_U)],
+			cluster->GetHitListByTimeDir()[MultiKey2(icell, DIR_V)],
+			cluster->GetHitListByTimeDir()[MultiKey2(icell, DIR_W)] };
 			*/
 
 			//   std::cout << Form(">>>> Number of hits: time cell=%d: U=%d / V=%d / W=%d",
@@ -434,9 +434,9 @@ std::vector<int> hits[3] = {
 
 		for (auto&& it1 : hitPos) {
 
-			int u1 = (it1.first).key1;
-			int v1 = (it1.first).key2;
-			int w1 = (it1.first).key3;
+			int u1 = (it1.first).key[0];
+			int v1 = (it1.first).key[1];
+			int w1 = (it1.first).key[2];
 			double qtot[3] = { 0. };  // sum of charges along three directions (for a given time range)
 			double    q[3] = { 0. };  // charge in a given strip (for a given time range)
 			auto arr = { u1 , v1, w1 };
@@ -444,9 +444,9 @@ std::vector<int> hits[3] = {
 
 			// loop over directions
 			for (auto&& it2 : hitPos) {
-				int u2 = (it2.first).key1;
-				int v2 = (it2.first).key2;
-				int w2 = (it2.first).key3;
+				int u2 = (it2.first).key[0];
+				int v2 = (it2.first).key[1];
+				int w2 = (it2.first).key[2];
 
 				if (u1 == u2) {
 					qtot[int(projection::DIR_V)] += GVBS_b(projection::DIR_V, v2);
@@ -477,19 +477,19 @@ std::vector<int> hits[3] = {
 
 				case 0: // mehtod #1 - divide charge equally
 					val =
-						GVBS_b(projection::DIR_U, (it.first).key1) / n_match[0].at((it.first).key1) +
-						GVBS_b(projection::DIR_V, (it.first).key2) / n_match[1].at((it.first).key2) +
-						GVBS_b(projection::DIR_W, (it.first).key3) / n_match[2].at((it.first).key3);
+						GVBS_b(projection::DIR_U, (it.first).key[0]) / n_match[0].at((it.first).key[0]) +
+						GVBS_b(projection::DIR_V, (it.first).key[1]) / n_match[1].at((it.first).key[1]) +
+						GVBS_b(projection::DIR_W, (it.first).key[2]) / n_match[2].at((it.first).key[2]);
 					break;
 
 				case 1: // method #2 - divide charge according to charge-fraction in two other directions
 					val =
 						GVBS_b(projection::DIR_U,
-						(it.first).key1) * 0.5 * (fraction[int(projection::DIR_V)].at(it.first) + fraction[int(projection::DIR_W)].at(it.first)) +
+						(it.first).key[0]) * 0.5 * (fraction[int(projection::DIR_V)].at(it.first) + fraction[int(projection::DIR_W)].at(it.first)) +
 						GVBS_b(projection::DIR_V,
-						(it.first).key2) * 0.5 * (fraction[int(projection::DIR_W)].at(it.first) + fraction[int(projection::DIR_U)].at(it.first)) +
+						(it.first).key[1]) * 0.5 * (fraction[int(projection::DIR_W)].at(it.first) + fraction[int(projection::DIR_U)].at(it.first)) +
 						GVBS_b(projection::DIR_W,
-						(it.first).key3) * 0.5 * (fraction[int(projection::DIR_U)].at(it.first) + fraction[int(projection::DIR_V)].at(it.first));
+						(it.first).key[2]) * 0.5 * (fraction[int(projection::DIR_U)].at(it.first) + fraction[int(projection::DIR_V)].at(it.first));
 					break;
 
 				default:
@@ -513,22 +513,22 @@ std::vector<int> hits[3] = {
 
 
 // get 3D histogram of clustered hits
-std::shared_ptr<TH3D> EventTPC::Get3D(const SigClusterTPC& cluster, double radius, int rebin_space, int rebin_time, int method) {
+std::shared_ptr<TH3D> EventTPC::Get3D(std::shared_ptr<SigClusterTPC> cluster, double radius, int rebin_space, int rebin_time, int method) {
 	std::shared_ptr<TH3D> h;
 
 	bool err_flag = false;
 
-	if (!IsOK() || !cluster.IsOK() ||
-		cluster.GetNhits(projection::DIR_U) < 1 || cluster.GetNhits(projection::DIR_V) < 1 || cluster.GetNhits(projection::DIR_W) < 1) return nullptr;
+	if (!IsOK() || !cluster->IsOK() ||
+		cluster->GetNhits(projection::DIR_U) < 1 || cluster->GetNhits(projection::DIR_V) < 1 || cluster->GetNhits(projection::DIR_W) < 1) return nullptr;
 
 	// loop over time slices and match hits in space
-	const int time_cell_min = *std::max_element(&cluster.min_time[0], &cluster.min_time[3]);
-	const int time_cell_max = *std::min_element(&cluster.max_time[0], &cluster.max_time[3]);
+	const int time_cell_min = *std::max_element(&cluster->min_time[0], &cluster->min_time[3]);
+	const int time_cell_max = *std::min_element(&cluster->max_time[0], &cluster->max_time[3]);
 
 	//std::cout << Form(">>>> EventId = %lld", event_id) << std::endl;
 	//std::cout << Form(">>>> Time cell range = [%d, %d]", time_cell_min, time_cell_max) << std::endl;
 
-	const auto& hitListByTimeDir = cluster.GetHitListByTimeDir();
+	const auto& hitListByTimeDir = cluster->GetHitListByTimeDir();
 
 	for (int icell = time_cell_min; icell <= time_cell_max; icell++) {
 
@@ -646,9 +646,9 @@ std::shared_ptr<TH3D> EventTPC::Get3D(const SigClusterTPC& cluster, double radiu
 
 		for (auto&& it1 : hitPos) {
 
-			int u1 = (it1.first).key1;
-			int v1 = (it1.first).key2;
-			int w1 = (it1.first).key3;
+			int u1 = (it1.first).key[0];
+			int v1 = (it1.first).key[1];
+			int w1 = (it1.first).key[2];
 			double qtot[3] = { 0., 0., 0. };  // sum of charges along three directions (for a given time range)
 			double    q[3] = { 0., 0., 0. };  // charge in a given strip (for a given time range)
 			q[int(projection::DIR_U)] = GetValByStrip(projection::DIR_U, u1, icell);
@@ -657,9 +657,9 @@ std::shared_ptr<TH3D> EventTPC::Get3D(const SigClusterTPC& cluster, double radiu
 
 			// loop over directions
 			for (auto&& it2 : hitPos) {
-				int u2 = (it2.first).key1;
-				int v2 = (it2.first).key2;
-				int w2 = (it2.first).key3;
+				int u2 = (it2.first).key[0];
+				int v2 = (it2.first).key[1];
+				int w2 = (it2.first).key[2];
 
 				if (u1 == u2) {
 					qtot[int(projection::DIR_V)] += GetValByStrip(projection::DIR_V, v2, icell);
@@ -690,19 +690,19 @@ std::shared_ptr<TH3D> EventTPC::Get3D(const SigClusterTPC& cluster, double radiu
 
 				case 0: // mehtod #1 - divide charge equally
 					val =
-						GetValByStrip(projection::DIR_U, (it.first).key1, icell) / n_match[0].at((it.first).key1) +
-						GetValByStrip(projection::DIR_V, (it.first).key2, icell) / n_match[1].at((it.first).key2) +
-						GetValByStrip(projection::DIR_W, (it.first).key3, icell) / n_match[2].at((it.first).key3);
+						GetValByStrip(projection::DIR_U, (it.first).key[0], icell) / n_match[0].at((it.first).key[0]) +
+						GetValByStrip(projection::DIR_V, (it.first).key[1], icell) / n_match[1].at((it.first).key[1]) +
+						GetValByStrip(projection::DIR_W, (it.first).key[2], icell) / n_match[2].at((it.first).key[2]);
 					break;
 
 				case 1: // method #2 - divide charge according to charge-fraction in two other directions
 					val =
 						GetValByStrip(projection::DIR_U,
-						(it.first).key1, icell) * 0.5 * (fraction[int(projection::DIR_V)].at(it.first) + fraction[int(projection::DIR_W)].at(it.first)) +
+						(it.first).key[0], icell) * 0.5 * (fraction[int(projection::DIR_V)].at(it.first) + fraction[int(projection::DIR_W)].at(it.first)) +
 						GetValByStrip(projection::DIR_V,
-						(it.first).key2, icell) * 0.5 * (fraction[int(projection::DIR_W)].at(it.first) + fraction[int(projection::DIR_U)].at(it.first)) +
+						(it.first).key[1], icell) * 0.5 * (fraction[int(projection::DIR_W)].at(it.first) + fraction[int(projection::DIR_U)].at(it.first)) +
 						GetValByStrip(projection::DIR_W,
-						(it.first).key3, icell) * 0.5 * (fraction[int(projection::DIR_U)].at(it.first) + fraction[int(projection::DIR_V)].at(it.first));
+						(it.first).key[2], icell) * 0.5 * (fraction[int(projection::DIR_U)].at(it.first) + fraction[int(projection::DIR_V)].at(it.first));
 					break;
 
 				default:

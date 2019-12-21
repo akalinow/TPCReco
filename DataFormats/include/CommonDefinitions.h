@@ -2,9 +2,7 @@
 #define __CommonDefinitions_h__
 #include <cmath>
 const double pi = 4 * atan(1);
-//#define DIR_U    0    // U-direction channel index
-//#define DIR_V    1    // V-direction channel index
-//#define DIR_W    2    // W-direction channel index
+const double deg_to_rad = pi / 180.0;
 
 enum class projection : int {
 		DIR_U=0,    // U-direction channel index
