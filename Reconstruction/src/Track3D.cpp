@@ -17,11 +17,15 @@ void Track3D::addSegment(const TrackSegment3D & aSegment3D){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void Track3D::update(){
+#ifndef _cpp17_
+    std::vector<double> lenghts;
+    lenghts.resize(mySegments.size());
+    std::transform(mySegments.begin(), mySegments.end(), lenghts.begin(), [&](TrackSegment3D obj) { return obj.getLength(); });
+    myLenght = std::accumulate(lenghts.begin(), lenghts.end(), 0.0);
+#else
+    myLenght = std::transform_reduce(std::execution::par, mySegments.begin(), mySegments.end(), 0.0, std::plus<>(), [&](TrackSegment3D obj) { return obj.getLength(); });
+#endif // !_cpp17_
 
-  myLenght = 0.0;
-  for(auto &aSegment: mySegments){
-    myLenght += aSegment.getLength();
-  }
   updateChi2();
   updateChargeProfile();
   updateHitDistanceProfile();
@@ -31,7 +35,7 @@ void Track3D::update(){
 std::vector<double> Track3D::getSegmentsStartEndXYZ() const{
 
   std::vector<double> coordinates;
-  if(!mySegments.size()) return coordinates;
+  if(mySegments.size() == 0) return coordinates;
   
   for(auto &aSegment: mySegments){
     std::vector<double> segmentCoordinates = aSegment.getStartEndXYZ();
@@ -128,21 +132,21 @@ double Track3D::getChi2() const{
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 double Track3D::getSegmentsChi2() const{
-
-  double chi2 = 0.0;
-  std::for_each(segmentChi2.begin(), segmentChi2.end(), [&](auto aItem){chi2 += aItem;});
-  return chi2;
+#ifndef _cpp17_
+  return std::accumulate(segmentChi2.begin(), segmentChi2.end(), 0.0);
+#else
+    return std::reduce(std::execution::par, segmentChi2.begin(), segmentChi2.end(), 0.0);
+#endif // !_cpp17_
 
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 double Track3D::getNodesChi2() const{
-
-  double chi2 = 0.0;
-  std::for_each(nodeHitsChi2.begin(), nodeHitsChi2.end(), [&](auto aItem){chi2 += aItem;});
-  std::for_each(nodeAngleChi2.begin(), nodeAngleChi2.end(), [&](auto aItem){chi2 += aItem;});
-  return chi2;
-
+#ifndef _cpp17_
+  return std::accumulate(nodeHitsChi2.begin(), nodeHitsChi2.end(), 0.0) + std::accumulate(nodeAngleChi2.begin(), nodeAngleChi2.end(), 0.0);
+#else
+    return std::reduce(std::execution::par, nodeHitsChi2.begin(), nodeHitsChi2.end(), 0.0) + std::reduce(std::execution::par, nodeAngleChi2.begin(), nodeAngleChi2.end(), 0.0);
+#endif // !_cpp17_
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -199,15 +203,14 @@ void Track3D::updateNodesChi2(projection strip_dir){
 void Track3D::updateChi2(){
 
   segmentChi2.clear();
-  for(auto aItem: mySegments){
-    segmentChi2.push_back(aItem.getRecHitChi2());
-  }
+  segmentChi2.resize(mySegments.size());
+  std::transform(/*std::execution::par,*/ mySegments.begin(), mySegments.end(), segmentChi2.begin(), [](TrackSegment3D obj)->double{ return obj.getRecHitChi2(); }); //C++17
 
   nodeHitsChi2.clear();
-  if(mySegments.size()) nodeHitsChi2.resize(mySegments.size()-1);
+  if(mySegments.size() != 0) nodeHitsChi2.resize(mySegments.size()-1);
 
   nodeAngleChi2.clear();
-  if(mySegments.size()) nodeAngleChi2.resize(mySegments.size()-1);
+  if(mySegments.size() != 0) nodeAngleChi2.resize(mySegments.size()-1);
   
   for (auto&& strip_dir : proj_vec_UVW) {
     updateNodesChi2(strip_dir);
@@ -226,7 +229,7 @@ double Track3D::getNodeChi2(unsigned int iNode) const{
 void Track3D::splitWorseChi2Segment(double lenghtFraction){
 
   update();
-  if(!segmentChi2.size()) return;
+  if(segmentChi2.size() == 0) return;
   if(lenghtFraction<0 || lenghtFraction>1.0) lenghtFraction = 0.5;
 
   double maxChi2 = 0.0;

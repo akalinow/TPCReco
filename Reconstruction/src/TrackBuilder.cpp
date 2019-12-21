@@ -286,9 +286,9 @@ TrackSegment3D TrackBuilder::buildSegment3D() const{
   auto& segmentV = my2DSeeds[int(projection::DIR_V)][iTrack2DSeed];
   auto& segmentW = my2DSeeds[int(projection::DIR_W)][iTrack2DSeed];
 
-  int nHits_U = segmentU.getNAccumulatorHits();
-  int nHits_V = segmentV.getNAccumulatorHits();
-  int nHits_W = segmentW.getNAccumulatorHits();
+  int64_t nHits_U = segmentU.getNAccumulatorHits();
+  int64_t nHits_V = segmentV.getNAccumulatorHits();
+  int64_t nHits_W = segmentW.getNAccumulatorHits();
   
   double bZ_fromU = segmentU.getBiasAtT0().X();
   double bZ_fromV = segmentV.getBiasAtT0().X();

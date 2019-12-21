@@ -83,7 +83,7 @@ bool SigClusterTPC::AddByStrip(projection strip_dir, int strip_number, int time_
       // update space-time envelope
       max_strip[int(strip_dir)] = std::max(max_strip[int(strip_dir)], strip_number);
       if( min_strip[int(strip_dir)] > strip_number || min_strip[int(strip_dir)]<1 ) min_strip[int(strip_dir)] = strip_number;
-	  max_time[int(strip_dir)] = std::max(max_time[int(strip_dir)], strip_number);
+	  max_time[int(strip_dir)] = std::max(max_time[int(strip_dir)], time_cell);
       if( min_time[int(strip_dir)] > time_cell || min_time[int(strip_dir)]<1 ) min_time[int(strip_dir)] = time_cell;
       glb_max_time = std::max(glb_max_time, time_cell);
       if( glb_min_time > time_cell || glb_min_time<1 ) glb_min_time = time_cell;
@@ -157,9 +157,10 @@ bool SigClusterTPC::AddByStrip(projection strip_dir, int strip_number, int time_
 bool SigClusterTPC::CheckByStrip(projection strip_dir, int strip_number, int time_cell) const{  // valid range [0-2][1-1024][0-511]
   if(!IsOK() || time_cell<0 || time_cell>=512 || strip_number<1 || strip_number>evt_ptr.lock()->GetGeoPtr()->GetDirNstrips(strip_dir)) return false;
   if (IsDIR_UVW(strip_dir)) {
-	  return std::find_if(hitListByDir.find(int(strip_dir))->second.begin(),
-			     hitListByDir.find(int(strip_dir))->second.end(),
-			     MultiKey2(time_cell, strip_number))!=hitListByDir.find(int(strip_dir))->second.end();
+      auto temp = hitListByDir.find(int(strip_dir));
+	  return std::find_if(temp->second.begin(),
+			     temp->second.end(),
+			     MultiKey2(time_cell, strip_number))!= temp->second.end();
   };
   return false;  
 }

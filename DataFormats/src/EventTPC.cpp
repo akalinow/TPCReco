@@ -67,8 +67,8 @@ bool EventTPC::AddValByStrip(std::shared_ptr<StripTPC> strip, int time_cell, dou
 		glb_tot_charge += val;
 
 		// totalChargeMap - check if strip exists
-		std::map<MultiKey2, double, multikey2_less>::iterator it_total;
-		if ((it_total = totalChargeMap.find(mkey_total)) == totalChargeMap.end()) {
+		auto it_total = totalChargeMap.find(mkey_total);
+		if (it_total == totalChargeMap.end()) {
 			// add new total value per strip
 			totalChargeMap[mkey_total] = val;
 		}
@@ -78,8 +78,8 @@ bool EventTPC::AddValByStrip(std::shared_ptr<StripTPC> strip, int time_cell, dou
 		}
 
 		// totalChargeMap2 - check if strip exists
-		std::map<MultiKey2, double, multikey2_less>::iterator it_total2;
-		if ((it_total2 = totalChargeMap2.find(mkey_total2)) == totalChargeMap2.end()) {
+		auto it_total2 = totalChargeMap2.find(mkey_total2);
+		if (it_total2 == totalChargeMap2.end()) {
 			// add new total value per strip
 			totalChargeMap2[mkey_total2] = val;
 		}
@@ -89,8 +89,8 @@ bool EventTPC::AddValByStrip(std::shared_ptr<StripTPC> strip, int time_cell, dou
 		}
 
 		// totalChargeMap3 - check if strip exists
-		std::map<int, double>::iterator it_total3;
-		if ((it_total3 = totalChargeMap3.find(time_cell)) == totalChargeMap3.end()) {
+		auto it_total3 = totalChargeMap3.find(time_cell);
+		if (it_total3 == totalChargeMap3.end()) {
 			// add new total value per strip
 			totalChargeMap3[time_cell] = val;
 		}
@@ -102,8 +102,8 @@ bool EventTPC::AddValByStrip(std::shared_ptr<StripTPC> strip, int time_cell, dou
 		// upadate charge maxima
 
 		// maxChargeMap - check if strip exists
-		std::map<MultiKey2, double, multikey2_less>::iterator it_maxval;
-		if ((it_maxval = maxChargeMap.find(mkey_maxval)) == maxChargeMap.end()) {
+		auto it_maxval = maxChargeMap.find(mkey_maxval);
+		if (it_maxval == maxChargeMap.end()) {
 			// add new max value per strip
 			maxChargeMap[mkey_maxval] = new_val;
 		}
@@ -274,12 +274,12 @@ std::shared_ptr<TH2D> EventTPC::GetStripVsTimeInMM(const SigClusterTPC& cluster,
 	double zmax = 511. + 0.5; // time_cell_max;  
 	double minTimeInMM = myGeometryPtr->Timecell2pos(zmin, err_flag);
 	double maxTimeInMM = myGeometryPtr->Timecell2pos(zmax, err_flag);
+	
+	auto firstStrip_offset_vec = (*myGeometryPtr->GetStripByDir(strip_dir, 1))().offset_vec;
+	auto lastStrip_offset_vec = (*myGeometryPtr->GetStripByDir(strip_dir, myGeometryPtr->GetDirNstrips(strip_dir)))().offset_vec;
 
-	auto firstStrip = myGeometryPtr->GetStripByDir(strip_dir, 1);
-	auto lastStrip = myGeometryPtr->GetStripByDir(strip_dir, myGeometryPtr->GetDirNstrips(strip_dir));
-
-	double minStripInMM = ((*firstStrip)().offset_vec + myGeometryPtr->GetReferencePoint()) * myGeometryPtr->GetStripPitchVector(strip_dir);
-	double maxStripInMM = ((*firstStrip)().offset_vec + myGeometryPtr->GetReferencePoint()) * myGeometryPtr->GetStripPitchVector(strip_dir);
+	double minStripInMM = (firstStrip_offset_vec + myGeometryPtr->GetReferencePoint()) * myGeometryPtr->GetStripPitchVector(strip_dir);
+	double maxStripInMM = (lastStrip_offset_vec + myGeometryPtr->GetReferencePoint()) * myGeometryPtr->GetStripPitchVector(strip_dir);
 
 	if (minStripInMM > maxStripInMM) {
 		std::swap(minStripInMM, maxStripInMM);
@@ -313,7 +313,6 @@ std::vector<std::shared_ptr<TH2D>> EventTPC::Get2D(const SigClusterTPC& cluster,
 	//  const bool rebin_flag=false;
 	std::shared_ptr<TH2D> h1, h2, h3;
 	std::vector<std::shared_ptr<TH2D>> hvec;
-	hvec.resize(0);
 	bool err_flag = false;
 
 	if (!IsOK() || !cluster.IsOK() ||
@@ -332,10 +331,8 @@ std::vector<std::shared_ptr<TH2D>> EventTPC::Get2D(const SigClusterTPC& cluster,
 
 		if (std::any_of(proj_vec_UVW.begin(), proj_vec_UVW.end(), [&](auto dir_) { return hitListByTimeDir.find(MultiKey2(icell, int(dir_))) == hitListByTimeDir.end(); })) continue;
 
-		std::vector<int> hits[3] = {
-					hitListByTimeDir.find(MultiKey2(icell, int(projection::DIR_U)))->second,
-					hitListByTimeDir.find(MultiKey2(icell, int(projection::DIR_V)))->second,
-					hitListByTimeDir.find(MultiKey2(icell, int(projection::DIR_W)))->second };
+		std::vector<int> hits[3];
+		std::transform(proj_vec_UVW.begin(), proj_vec_UVW.end(), &hits[0], [&](auto proj) { return hitListByTimeDir.find(MultiKey2(icell, int(proj)))->second; });
 		/*
 std::vector<int> hits[3] = {
 			cluster.GetHitListByTimeDir()[MultiKey2(icell, DIR_U)],
@@ -537,10 +534,8 @@ std::shared_ptr<TH3D> EventTPC::Get3D(const SigClusterTPC& cluster, double radiu
 
 		if (std::any_of(proj_vec_UVW.begin(), proj_vec_UVW.end(), [&](auto dir_) { return hitListByTimeDir.find(MultiKey2(icell, int(dir_))) == hitListByTimeDir.end(); })) continue;
 
-		std::vector<int> hits[3] = {
-					hitListByTimeDir.find(MultiKey2(icell, int(projection::DIR_U)))->second,
-					hitListByTimeDir.find(MultiKey2(icell, int(projection::DIR_V)))->second,
-					hitListByTimeDir.find(MultiKey2(icell, int(projection::DIR_W)))->second };
+		std::vector<int> hits[3];
+		std::transform(proj_vec_UVW.begin(), proj_vec_UVW.end(), &hits[0], [&](auto proj) { return hitListByTimeDir.find(MultiKey2(icell, int(proj)))->second; });
 
 		//   std::cout << Form(">>>> Number of hits: time cell=%d: U=%d / V=%d / W=%d",
 		//		      icell, (int)hits[int(projection::DIR_U)].size(), (int)hits[int(projection::DIR_V)].size(), (int)hits[int(projection::DIR_W)].size()) << std::endl;
@@ -679,9 +674,9 @@ std::shared_ptr<TH3D> EventTPC::Get3D(const SigClusterTPC& cluster, double radiu
 					qtot[int(projection::DIR_V)] += GetValByStrip(projection::DIR_V, v2, icell);
 				}
 			}
-			fraction[int(projection::DIR_U)].insert(std::pair<MultiKey3, double>(it1.first, q[int(projection::DIR_U)] / qtot[int(projection::DIR_U)]));
-			fraction[int(projection::DIR_V)].insert(std::pair<MultiKey3, double>(it1.first, q[int(projection::DIR_V)] / qtot[int(projection::DIR_V)]));
-			fraction[int(projection::DIR_W)].insert(std::pair<MultiKey3, double>(it1.first, q[int(projection::DIR_W)] / qtot[int(projection::DIR_W)]));
+			std::for_each(proj_vec_UVW.begin(), proj_vec_UVW.end(), [&](auto proj) {
+				fraction[int(proj)].insert(std::pair<MultiKey3, double>(it1.first, q[int(proj)] / qtot[int(proj)]));
+			});
 		}
 
 		// loop over matched hits and fill histograms

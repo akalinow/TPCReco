@@ -5,6 +5,9 @@
 #include <vector>
 #include <memory>
 #include <iostream>
+#include <algorithm>
+#include <execution>
+#include <numeric>
 
 #include "TVector3.h"
 #include "Hit2D.h"

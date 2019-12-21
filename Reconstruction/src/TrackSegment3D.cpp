@@ -6,9 +6,6 @@
 /////////////////////////////////////////////////////////
 TrackSegment3D::TrackSegment3D(){
 
-  myRecHits.clear();
-  myRecHits.resize(3);
-
   myProjectionsChi2.resize(3);
 }
 /////////////////////////////////////////////////////////
@@ -47,22 +44,18 @@ void TrackSegment3D::setStartEnd(const double *par){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void TrackSegment3D::setRecHits(const std::vector<TH2D> & aRecHits){
-
-  myRecHits.clear();
-  myRecHits.resize(3);
   
-  double x=-999.0, y=-999.0, charge=-999.0;
-  for(auto&& strip_dir : proj_vec_UVW){
-    const TH2D & hRecHits = aRecHits[int(strip_dir)];
-    for(int iBinX=1;iBinX<hRecHits.GetNbinsX();++iBinX){
-      for(int iBinY=1;iBinY<hRecHits.GetNbinsY();++iBinY){
-	charge = hRecHits.GetBinContent(iBinX, iBinY);
-	x = hRecHits.GetXaxis()->GetBinCenter(iBinX);
-	y = hRecHits.GetYaxis()->GetBinCenter(iBinY);
-	if(charge>0.0) myRecHits.at(int(strip_dir)).push_back(Hit2D(x, y, charge));
+  std::for_each(/*std::execution::par,*/ proj_vec_UVW.begin(), proj_vec_UVW.end(), [&](auto strip_dir) { //C++17
+      auto& hRecHits = aRecHits[int(strip_dir)];
+      for (int iBinX = 1; iBinX < hRecHits.GetNbinsX(); ++iBinX) {
+          for (int iBinY = 1; iBinY < hRecHits.GetNbinsY(); ++iBinY) {
+              auto charge = hRecHits.GetBinContent(iBinX, iBinY);
+              auto x = hRecHits.GetXaxis()->GetBinCenter(iBinX);
+              auto y = hRecHits.GetYaxis()->GetBinCenter(iBinY);
+              if (charge > 0.0) myRecHits.at(int(strip_dir)).push_back(Hit2D(x, y, charge));
+          }
       }
-    }  
-  }
+  });
 
   calculateRecHitChi2();
 }
@@ -126,44 +119,50 @@ TrackSegment2D TrackSegment3D::get2DProjection(projection strip_dir, double lamb
 /////////////////////////////////////////////////////////
 double TrackSegment3D::getIntegratedHitDistance(double lambdaCut) const{
 
-  double sum = 0.0;
-  for(auto&& strip_dir : proj_vec_UVW){
-    TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, lambdaCut);
-    const Hit2DCollection & aRecHits = myRecHits.at(int(strip_dir));
-    sum += aTrack2DProjection.getIntegratedHitDistance(lambdaCut, aRecHits);    
-  } 
-  return sum;
+#ifndef _cpp17_
+  return std::inner_product(proj_vec_UVW.begin(), proj_vec_UVW.end(), myRecHits.begin(), 0.0, std::plus<>(), [&](projection strip_dir, auto& aRecHits)->double {
+      TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, lambdaCut);
+      return aTrack2DProjection.getIntegratedHitDistance(lambdaCut, aRecHits);
+  });
+#else
+  return std::transform_reduce(std::execution::par_unseq, proj_vec_UVW.begin(), proj_vec_UVW.end(), myRecHits.begin(), 0.0, std::plus<>(), [&](projection strip_dir, auto& aRecHits)->auto {
+      TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, lambdaCut);
+      return aTrack2DProjection.getIntegratedHitDistance(lambdaCut, aRecHits);
+  });
+
+#endif // !_cpp17_
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 double TrackSegment3D::getIntegratedCharge(double lambdaCut) const{
 
-  double charge = 0.0;
-  for (auto&& strip_dir : proj_vec_UVW) {
-    TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, lambdaCut);
-    const Hit2DCollection & aRecHits = myRecHits.at(int(strip_dir));
-    charge += aTrack2DProjection.getIntegratedCharge(lambdaCut, aRecHits);    
-  } 
-  return charge;
+#ifndef _cpp17_
+  return std::inner_product(proj_vec_UVW.begin(), proj_vec_UVW.end(), myRecHits.begin(), 0.0, std::plus<>(), [&](projection strip_dir, auto& aRecHits)->auto {
+      TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, lambdaCut);
+      return aTrack2DProjection.getIntegratedCharge(lambdaCut, aRecHits);
+  });
+#else
+    return std::transform_reduce(std::execution::par_unseq, proj_vec_UVW.begin(), proj_vec_UVW.end(), myRecHits.begin(), 0.0, std::plus<>(), [&](projection strip_dir, auto& aRecHits)->auto {
+        TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, lambdaCut);
+        return aTrack2DProjection.getIntegratedCharge(lambdaCut, aRecHits);
+});
+
+#endif // !_cpp17_
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 double TrackSegment3D::getRecHitChi2() const{
 
-  double chi2 = 0.0;
-  std::for_each(myProjectionsChi2.begin(), myProjectionsChi2.end(), [&](auto aItem){chi2 += aItem;});
-  return chi2;
+  return std::accumulate(myProjectionsChi2.begin(), myProjectionsChi2.end(), 0.0);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void TrackSegment3D::calculateRecHitChi2(){
 
-  //#pragma omp parallel for
-  for(auto&& strip_dir : proj_vec_UVW){
-    TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, getLength());
-    const Hit2DCollection & aRecHits = myRecHits.at(int(strip_dir));
-    myProjectionsChi2[int(strip_dir)] = aTrack2DProjection.getRecHitChi2(aRecHits);
-  }  
+    std::transform(/*std::execution::par,*/ proj_vec_UVW.begin(), proj_vec_UVW.end(), myRecHits.begin(), myProjectionsChi2.begin(), [&](auto strip_dir, auto& aRecHits) { //C++17
+        TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, getLength());
+        return aTrack2DProjection.getRecHitChi2(aRecHits);
+    });
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
