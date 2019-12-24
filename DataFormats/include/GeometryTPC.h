@@ -48,7 +48,7 @@ class GeometryTPC {
   std::map<std::string, projection> name2dir;  // pair=(group_name="U","V","W","FPN", directory_idx)
   std::map<MultiKey4, std::shared_ptr<StripTPC>, multikey4_less> mapByAget;     // key=(COBO_idx[0-1], ASAD_idx[0-3], AGET_idx[0-3], channel_idx[0-63])
   std::map<MultiKey4, std::shared_ptr<StripTPC>, multikey4_less> mapByAget_raw; // key=(COBO_idx[0-1], ASAD_idx[0-3], AGET_idx [0-3], raw_channel_idx [0-67] )
-  std::map<MultiKey2, std::shared_ptr<StripTPC>, multikey2_less> mapByStrip;    // key=(STRIP_DIRECTION [0-2], STRIP_NUMBER [1-1024])
+  std::map<projection, std::vector<std::shared_ptr<StripTPC>>> stripArray; // key = {DIR_U,DIR_V,DIR_W}, STRIP_NUMBER [1-1024]
   std::map<int, int> ASAD_N;       // pair=(COBO_idx, number of ASAD boards)
   std::vector<int> FPN_chanId;     // FPN channels in AGET chips
   double pad_size;                 // in [mm]
@@ -107,6 +107,7 @@ class GeometryTPC {
   std::shared_ptr<StripTPC> GetStripByGlobal(int global_channel_idx);                                          // valid range [0-1023]
   std::shared_ptr<StripTPC> GetStripByAget_raw(int COBO_idx, int ASAD_idx, int AGET_idx, int raw_channel_idx); // valid range [0-1][0-3][0-3][0-67]
   std::shared_ptr<StripTPC> GetStripByDir(projection dir, int num);                                                   // valid range [0-2][1-1024]
+  decltype(stripArray)& GetStripArray() { return stripArray; };
   std::vector<std::shared_ptr<StripTPC>> GetStrips();
 
   // various helper functions for calculating local/global normal/raw channel index
@@ -116,7 +117,7 @@ class GeometryTPC {
   int Global_normal2raw(int COBO_idx, int ASAD_idx, int aget_idx, int channel_idx);      // valid range [0-1][0-3][0-3][0-63]
   int Global_normal2normal(int COBO_idx, int ASAD_idx, int aget_idx, int channel_idx);   // valid range [0-1][0-3][0-3][0-63]
 
-  int Global_strip2normal(int dir, int num);                 // valid range [0-2][1-1024]
+  int Global_strip2normal(projection dir, int num);                 // valid range [0-2][1-1024]
 
   bool GetCrossPoint(std::shared_ptr<StripTPC> strip1, std::shared_ptr<StripTPC> strip2, TVector2 &point);
   bool MatchCrossPoint(std::shared_ptr<StripTPC> strip1, std::shared_ptr<StripTPC> strip2, std::shared_ptr<StripTPC> strip3, double radius, TVector2 &point);

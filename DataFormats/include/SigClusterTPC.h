@@ -36,7 +36,7 @@ class SigClusterTPC {
     std::vector<int>, multikey2_less> hitListByTimeDir; // same list of selected space-time cells as a map
                                                         // with key=(REBIN_TIME_CELL [0-511], STRIP_DIR [0-2]) 
                                                         // that returns vector of STRIP_NUMBERS 
-  std::map<int, std::set<MultiKey2> > hitListByDir;  // same list of selected space-time cells as a map
+  std::map<projection, std::set<MultiKey2> > hitListByDir;  // same list of selected space-time cells as a map
                                                         // with key=STRIP_DIR [0-2]) 
                                                         // that returns key=(REBIN_TIME_CELL [0-511], STRIP_NUM [1-1024]
   bool initOK;                    // is geometry valid?

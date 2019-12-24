@@ -101,7 +101,7 @@ std::shared_ptr<TH3D> HistoManager::get3DReconstruction(){
   int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN;
   int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN; 
   int method=EVENTTPC_DEFAULT_RECO_METHOD;
-  h3DReco = myEvent->Get3D(myTkBuilder.getCluster(),  radius, rebin_space, rebin_time, method);
+  h3DReco = myEvent->Get<D3>(myTkBuilder.getCluster(),  radius, rebin_space, rebin_time, method).second;
   return h3DReco;
 }
 /////////////////////////////////////////////////////////
@@ -112,7 +112,7 @@ std::shared_ptr<TH2D> HistoManager::get2DReconstruction(projection strip_dir){
   int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN;
   int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN; 
   int method=EVENTTPC_DEFAULT_RECO_METHOD;
-  auto h2DVector = myEvent->Get2D(myTkBuilder.getCluster(),  radius, rebin_space, rebin_time, method);
+  auto h2DVector = myEvent->Get<D2>(myTkBuilder.getCluster(),  radius, rebin_space, rebin_time, method).first;
   if(!h2DVector.size()) return 0;
   int index = 0;
   

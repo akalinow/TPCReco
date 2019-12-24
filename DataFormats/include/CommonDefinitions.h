@@ -4,7 +4,7 @@
 const double pi = 4 * atan(1);
 const double deg_to_rad = pi / 180.0;
 
-enum class projection : int {
+enum class projection : unsigned {
 		DIR_U=0,    // U-direction channel index
         DIR_V=1,    // V-direction channel index
         DIR_W=2,    // W-direction channel index
@@ -12,6 +12,11 @@ enum class projection : int {
 		DIR_XZ=4,    // 2D projection on XZ plane
 		DIR_YZ=5,    // 2D projection on YZ plane
 		DIR_3D=6    // 3D reconstruction
+};
+
+enum Dims {
+	D2,
+	D3
 };
 
 inline bool IsDIR_UVW(projection DIR_) {

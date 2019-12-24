@@ -52,6 +52,10 @@ GeometryTPC::GeometryTPC(std::string  fname, bool debug)
      name2dir.insert(std::pair<std::string, projection>(it.second, it.first));
    }
    
+   for (auto& dir : proj_vec_UVW) {
+       
+   }
+
    // Load config file    
    Load(fname);
 
@@ -71,7 +75,6 @@ bool GeometryTPC::Load(std::string fname) {
 
   mapByAget.clear();
   mapByAget_raw.clear();
-  mapByStrip.clear();
   stripN.clear();
   ASAD_N.clear();
   fStripMap.clear();
@@ -304,7 +307,9 @@ bool GeometryTPC::Load(std::string fname) {
 
 	    // update reverse map (by: strip direction, strip number)
 	    if(IsDIR_UVW(dir)) {
-	      mapByStrip[MultiKey2(int(dir), strip_num)]=strip; //Global_normal2normal(aget, chan_num); 
+            if (strip_num >= stripArray[dir].size()) {
+                stripArray[dir][strip_num] = strip;
+            }
 	    }
 
 	    // update maximal ASAD index (by: COBO board) 
@@ -321,17 +326,17 @@ bool GeometryTPC::Load(std::string fname) {
 	    
 	    // DEBUG
 	    if(_debug) {
-            auto strip_int = (*mapByStrip[MultiKey2(int(dir), strip_num)])();
+            auto op = (*stripArray[dir][strip_num])();
 	      std::cout << ">>> ADDED NEW STRIP:" 
 			<< "KEY=[COBO=" << cobo << ", ASAD=" << asad << ", AGET=" << aget << ", CHAN=" << chan_num 
 			<<"]  VAL=[DIR=" << int(dir) << ", STRIP=" << strip_num << "], "
 			<< "NSTRIPS[DIR="<< int(dir) <<"]=" << stripN[int(dir)] << ", "
 			<< "   map_by_AGET=(" << (*mapByAget[_key])().dir << "," 
 			<< (*mapByAget[_key])().num << "), "
-			<< "   map_by_STRIP=(" << strip_int.coboId << ","
-			<< strip_int.asadId << ","
-			<< strip_int.agetId << ","
-			<< strip_int.agetCh << ")"
+			<< "   map_by_STRIP=(" << op.coboId << ","
+			<< op.asadId << ","
+			<< op.agetId << ","
+			<< op.agetCh << ")"
 			<<"\n";  
 	    }
 	    // DEBUG
@@ -625,7 +630,10 @@ std::shared_ptr<StripTPC> GeometryTPC::GetStripByAget_raw(int COBO_idx, int ASAD
 }
 
 std::shared_ptr<StripTPC> GeometryTPC::GetStripByDir(projection dir, int num) { // valid range [0-2][1-1024]
-  return this->GetStripByGlobal( Global_strip2normal(int(dir), num) );
+    if (num >= stripArray[dir].size()) {
+        return stripArray[dir][num];
+    }
+    return std::shared_ptr<StripTPC>();
 }
 
 int GeometryTPC::Aget_normal2raw(int channel_idx) { // valid range [0-63]
@@ -663,12 +671,14 @@ int GeometryTPC::Global_normal2normal(int COBO_idx, int ASAD_idx, int aget_idx, 
   return ((ASAD_offset+ASAD_idx)*AGET_Nchips + aget_idx)*AGET_Nchan + channel_idx; 
 }
 
-int GeometryTPC::Global_strip2normal(int dir, int num) {                 // valid range [0-2][1-92]
-  auto it=mapByStrip.find(MultiKey2(dir, num));
-  if (it != mapByStrip.end() && it->second) {
-      auto op = (*it->second)();
-      return Global_normal2normal(op.coboId, op.asadId, op.agetId, op.agetCh);
-  }
+int GeometryTPC::Global_strip2normal(projection dir, int num) {                 // valid range [0-2][1-92]
+    if (IsDIR_UVW(dir) && num < stripArray[dir].size()) {
+        auto it = stripArray[dir][num];
+        if (it) {
+            auto op = (*it)();
+            return Global_normal2normal(op.coboId, op.asadId, op.agetId, op.agetCh);
+        }
+    }
   return ERROR;
 }
 

@@ -18,6 +18,8 @@
 #include <fstream>
 #include <utility>
 #include <algorithm> // for find_if
+#include <numeric>
+#include <variant> //C++17
 
 #include "TH1D.h"
 #include "TH2D.h"
@@ -40,10 +42,10 @@ class EventTPC {
   int64_t event_id, run_id;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
   
-  std::map<MultiKey3, double> chargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
-  std::map<MultiKey2, double> maxChargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024])
-  std::map<MultiKey2, double> totalChargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024])
-  std::map<MultiKey2, double> totalChargeMap2; // key=(STRIP_DIR [0-2], TIME_CELL [0-511])
+  std::map<MultiKey3, double, multikey3_less> chargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
+  std::map<MultiKey2, double, multikey2_less> maxChargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024])
+  std::map<MultiKey2, double, multikey2_less> totalChargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024])
+  std::map<MultiKey2, double, multikey2_less> totalChargeMap2; // key=(STRIP_DIR [0-2], TIME_CELL [0-511])
   std::map<int, double> totalChargeMap3; // key=TIME_CELL [0-511]
 
   bool initOK;      // is geometry valid?
@@ -89,15 +91,11 @@ class EventTPC {
   std::shared_ptr<TH2D> GetStripVsTime(projection strip_dir);                               // whole event, all strip dirs
   std::shared_ptr<TH2D> GetStripVsTimeInMM(std::shared_ptr<SigClusterTPC> cluster, projection strip_dir);  // valid range [0-2]
 
-  std::vector<std::shared_ptr<TH2D>> Get2D(std::shared_ptr<SigClusterTPC> cluster, double radius,          // clustered hits only,
-			   int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN,   // projections on: XY, XZ, YZ planes
-			   int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN, 
-			   int method=EVENTTPC_DEFAULT_RECO_METHOD);  
-
-  std::shared_ptr<TH3D> Get3D(std::shared_ptr<SigClusterTPC> cluster, double radius,                       // clustered hits only, 3D view
-	      int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN, 
-	      int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN, 
-	      int method=EVENTTPC_DEFAULT_RECO_METHOD);
+  template <Dims dimensions>
+  std::pair<std::vector<std::shared_ptr<TH2D>>, std::shared_ptr<TH3D>> Get(std::shared_ptr<SigClusterTPC> cluster, double radius,          // clustered hits only, / clustered hits only, 3D view
+      int rebin_space = EVENTTPC_DEFAULT_STRIP_REBIN,   // projections on: XY, XZ, YZ planes / all planes
+      int rebin_time = EVENTTPC_DEFAULT_TIME_REBIN,
+      int method = EVENTTPC_DEFAULT_RECO_METHOD);
 };
 
 #endif
