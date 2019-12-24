@@ -51,10 +51,6 @@ GeometryTPC::GeometryTPC(std::string  fname, bool debug)
    for(auto&& it: dir2name) {
      name2dir.insert(std::pair<std::string, projection>(it.second, it.first));
    }
-   
-   for (auto& dir : proj_vec_UVW) {
-       
-   }
 
    // Load config file    
    Load(fname);
@@ -308,8 +304,9 @@ bool GeometryTPC::Load(std::string fname) {
 	    // update reverse map (by: strip direction, strip number)
 	    if(IsDIR_UVW(dir)) {
             if (strip_num >= stripArray[dir].size()) {
-                stripArray[dir][strip_num] = strip;
+                stripArray[dir].resize(strip_num);
             }
+            stripArray[dir][strip_num] = strip;
 	    }
 
 	    // update maximal ASAD index (by: COBO board) 

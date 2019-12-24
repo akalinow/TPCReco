@@ -145,8 +145,8 @@ double EventTPC::GetValByStrip(projection strip_dir, int strip_number, int time_
 		// check if hit is unique
 		auto it = chargeMap.find(mkey);
 		if (it != chargeMap.end()) {
-			return it->second;
 			//result=true;
+			return it->second;
 		}
 	};
 	return 0.0;
