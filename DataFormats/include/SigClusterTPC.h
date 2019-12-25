@@ -18,6 +18,7 @@
 #include <utility>
 #include <algorithm> // for find_if
 #include <set>
+#include <cstdint>
 
 #include "MultiKey.h"
 #include "CommonDefinitions.h"
@@ -42,7 +43,7 @@ class SigClusterTPC {
   bool initOK;                    // is geometry valid?
 
   // statistics variables
-  long nhits[3];   // number of space-time cells in a given U,V,W direction
+  int64_t nhits[3];   // number of space-time cells in a given U,V,W direction
   std::map<MultiKey2, int, multikey2_less> nhitsMap; // number of space-time cells per strip, 
                                                      // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024])
   int nstrips[3];   // number of strips with some hits in a given direction

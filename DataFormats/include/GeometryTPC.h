@@ -14,6 +14,7 @@
 #include <iterator>
 #include <fstream>
 #include <utility>
+#include <numeric>
 
 #include "TROOT.h"
 #include "TMath.h"
@@ -43,7 +44,7 @@ class GeometryTPC {
   int AGET_Nchan_fpn;                   // # of FPN channels in AGET chip
   int AGET_Nchan_raw;                   // # of total channels in AGET chip (including FPN channels)
   int AGET_Ntimecells;                  // # of time cells (buckets) in AGET chip
-  std::map<int, int>         stripN;    // pair=(directory_idx, number_of_strips=xxx,xxx,xxx,4*ASAD_N*COBO_N)                          
+  std::map<projection, int>         stripN;    // pair=(directory_idx, number_of_strips=xxx,xxx,xxx,4*ASAD_N*COBO_N)                          
   std::map<projection, std::string> dir2name;  // pair=(directory_idx, group_name="U","V","W","FPN")
   std::map<std::string, projection> name2dir;  // pair=(group_name="U","V","W","FPN", directory_idx)
   std::map<MultiKey4, std::shared_ptr<StripTPC>, multikey4_less> mapByAget;     // key=(COBO_idx[0-1], ASAD_idx[0-3], AGET_idx[0-3], channel_idx[0-63])
@@ -104,8 +105,6 @@ class GeometryTPC {
   std::string GetDirName(projection dir);
 
   std::shared_ptr<StripTPC> GetStripByAget(int COBO_idx, int ASAD_idx, int AGET_idx, int channel_idx);         // valid range [0-1][0-3][0-3][0-63]
-  std::shared_ptr<StripTPC> GetStripByGlobal(int global_channel_idx);                                          // valid range [0-1023]
-  std::shared_ptr<StripTPC> GetStripByAget_raw(int COBO_idx, int ASAD_idx, int AGET_idx, int raw_channel_idx); // valid range [0-1][0-3][0-3][0-67]
   std::shared_ptr<StripTPC> GetStripByDir(projection dir, int num);                                                   // valid range [0-2][1-1024]
   decltype(stripArray)& GetStripArray() { return stripArray; };
   std::vector<std::shared_ptr<StripTPC>> GetStrips();
@@ -114,7 +113,6 @@ class GeometryTPC {
   int Aget_normal2raw(int channel_idx);                      // valid range [0-63]
   int Aget_fpn2raw(int FPN_idx);                             // valid range [0-3]
 
-  int Global_normal2raw(int COBO_idx, int ASAD_idx, int aget_idx, int channel_idx);      // valid range [0-1][0-3][0-3][0-63]
   int Global_normal2normal(int COBO_idx, int ASAD_idx, int aget_idx, int channel_idx);   // valid range [0-1][0-3][0-3][0-63]
 
   int Global_strip2normal(projection dir, int num);                 // valid range [0-2][1-1024]
