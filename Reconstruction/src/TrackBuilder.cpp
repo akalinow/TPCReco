@@ -92,18 +92,15 @@ void TrackBuilder::makeRecHits(int iDir){
 
   TH1D *hProj;
   double hitWirePos = -999.0;
-  double hitTimePos = -999.0;
-  double hitTimePosError = -999.0;
-  double hitCharge = -999.0;
   for(int iBinY=1;iBinY<hRecHits.GetNbinsY();++iBinY){
     hProj = hRawHits->ProjectionX("hProj",iBinY, iBinY);
     TF1 timeResponseShape = fitTimeWindow(hProj);
 
     hitWirePos = hRawHits->GetYaxis()->GetBinCenter(iBinY);
     for(int iSet=0;iSet<timeResponseShape.GetNpar();iSet+=3){
-      hitTimePos = timeResponseShape.GetParameter(iSet+1);
-      hitTimePosError = timeResponseShape.GetParameter(iSet+2);
-      hitCharge = timeResponseShape.GetParameter(iSet);
+      double hitTimePos = timeResponseShape.GetParameter(iSet+1);
+      double hitTimePosError = timeResponseShape.GetParameter(iSet+2);
+      double hitCharge = timeResponseShape.GetParameter(iSet);
       hitCharge *= sqrt(2.0)*pi*hitTimePosError;//the gausian fits are made without the normalisation factor
       if(hitCharge>50) hRecHits.Fill(hitTimePos, hitWirePos, hitCharge);//FIXME optimize, use dynamic threshold?
     }
@@ -148,9 +145,8 @@ TF1 TrackBuilder::fitTimeWindow(TH1D* hProj){
      fitResult = hProj->Fit(&timeResponseShape, "QRBSW");   
 
      double chi2 = 0.0;
-     double x = 0.0;
      for(int iBinX=1;iBinX<hProj->GetNbinsX();++iBinX){
-       x = hProj->GetBinCenter(iBinX);
+       double x = hProj->GetBinCenter(iBinX);
        chi2 += std::pow(hProj->GetBinContent(iBinX) - timeResponseShape.Eval(x), 2);
      }
      /*
@@ -342,7 +338,7 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
   std::cout<<"bestSplit: "<<bestSplit<<std::endl;
   aTrackCandidate.splitWorseChi2Segment(bestSplit);
   
-  for(int iSplit = 0;iSplit<0;++iSplit){
+  for(int iSplit = 0;iSplit<0;++iSplit){ //FIX ME
     unsigned int nSegments = aTrackCandidate.getSegments().size();
     for(unsigned int iSegment=0;iSegment<nSegments;iSegment+=2){
       aTrackCandidate.splitSegment(iSegment, 0.5);

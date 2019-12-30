@@ -69,281 +69,288 @@ bool GeometryTPC::Load(std::string fname) {
 
   initOK=false;
 
-  mapByAget.clear();
-  mapByAget_raw.clear();
   stripN.clear();
   ASAD_N.clear();
   fStripMap.clear();
 
-  std::string line;
   std::ifstream f(fname);
-  std::map<int, double> angle;
+  std::map<projection, double> angle;
+  std::vector<std::string> file_lines;
+  auto find_line = [](std::vector<std::string>& vec, std::string str) {
+      return std::find_if(/*std::execution::par, */vec.begin(), vec.end(), [&](std::string& str_) { return str_.find(str) != std::string::npos; }); //C++17
+  };
 
-  if (f.is_open()) {
-
-    // set U,V,W angles
-    f.seekg (0, f.beg);
-    while( getline(f,line) ) 
+  if (f.is_open() && f) {
       {
-	double angle1=0., angle2=0., angle3=0.;
-	if(sscanf(line.c_str(),"ANGLES: %lf %lf %lf",&angle1, &angle2, &angle3)==3) {
-	  angle1 = fmod( fmod(angle1, 360.)+360., 360.); // convert to range [0, 360 deg[ range 
-	  angle2 = fmod( fmod(angle2, 360.)+360., 360.); // convert to range [0, 360 deg[ range 
-	  angle3 = fmod( fmod(angle3, 360.)+360., 360.); // convert to range [0, 360 deg[ range 
-	  if( fmod(angle1, 180.)!=fmod(angle2, 180.) &&  // reject parallel / anti-parallel duplicates 
-	      fmod(angle2, 180.)!=fmod(angle3, 180.) &&  // reject parallel / anti-parallel duplicates 
-	      fmod(angle3, 180.)!=fmod(angle1, 180.) ) { // reject parallel / anti-parallel duplicates 
-	    angle[int(projection::DIR_U)] = angle1;
-	    angle[int(projection::DIR_V)] = angle2;
-	    angle[int(projection::DIR_W)] = angle3;
-	    std::cout << Form("Angle of U/V/W strips wrt X axis = %lf / %lf / %lf deg", 
-			      angle[int(projection::DIR_U)], angle[int(projection::DIR_V)], angle[int(projection::DIR_W)])
-		      << std::endl;
-	    break;
-	  } else {
-	    std::cerr << "ERROR: Wrong U/V/W angles !!!" << std::endl;	    
-	    return initOK;
-	  }
-	}
+          //read file to memory
+          std::string line;
+          while (getline(f, line)) {
+              file_lines.push_back(line);
+          }
       }
-
-    // set pad size
-    f.seekg (0, f.beg);
-    while( getline(f,line) ) 
       {
-	double val=0.;
-	if(sscanf(line.c_str(),"DIAMOND SIZE: %lf",&val)==1) {
-	  if(val>0.0) {
-	    pad_size = val;
-	    std::cout << Form("Length of diamond edge = %lf mm", pad_size)
-		      << std::endl;
-	    break;
-	  } else {
-	    std::cerr << "ERROR: Wrong pad size !!!" << std::endl;
-	    if(_debug) {
-	      std::cout << "GeometryTPC::Load - Abort (1)" << std::endl;
-	    }
-	    return initOK;
-	  }
-	}
+          // set U,V,W angles
+          for (const auto& line : file_lines) {
+              double angle1 = 0., angle2 = 0., angle3 = 0.;
+              if (sscanf(line.c_str(), "ANGLES: %lf %lf %lf", &angle1, &angle2, &angle3) == 3) {
+                  angle1 = fmod(fmod(angle1, 360.) + 360., 360.); // convert to range [0, 360 deg[ range 
+                  angle2 = fmod(fmod(angle2, 360.) + 360., 360.); // convert to range [0, 360 deg[ range 
+                  angle3 = fmod(fmod(angle3, 360.) + 360., 360.); // convert to range [0, 360 deg[ range 
+                  if (fmod(angle1, 180.) != fmod(angle2, 180.) &&  // reject parallel / anti-parallel duplicates 
+                      fmod(angle2, 180.) != fmod(angle3, 180.) &&  // reject parallel / anti-parallel duplicates 
+                      fmod(angle3, 180.) != fmod(angle1, 180.)) { // reject parallel / anti-parallel duplicates 
+                      angle[projection::DIR_U] = angle1;
+                      angle[projection::DIR_V] = angle2;
+                      angle[projection::DIR_W] = angle3;
+                      std::cout << Form("Angle of U/V/W strips wrt X axis = %lf / %lf / %lf deg",
+                          angle[projection::DIR_U], angle[projection::DIR_V], angle[projection::DIR_W])
+                          << std::endl;
+                      break;
+                  }
+                  else {
+                      std::cerr << "ERROR: Wrong U/V/W angles !!!" << std::endl;
+                      return initOK;
+                  }
+              }
+          }
       }
-    pad_pitch   = pad_size * std::sqrt(3.);
-    strip_pitch = pad_size * 1.5;
-
-    // set REFERECE POINT offset [mm]
-    f.seekg (0, f.beg);
-    while( getline(f,line) ) 
       {
-	double xoff=0.0, yoff=0.0;
-	if(sscanf(line.c_str(),"REFERENCE POINT: %lf %lf",&xoff, &yoff)==2) {
-	  if(fabs(xoff)<500. && fabs(yoff)<500.) { // [mm]
-	    reference_point.Set(xoff, yoff);
-	    std::cout << Form("Reference point offset = [%lf mm, %lf mm]", 
-			      reference_point.X(), reference_point.Y())
-		      << std::endl;
-	    break;
-	  } else {
-	    std::cerr << "ERROR: Reference point coordinate >500 mm !!!" << std::endl;
-	    if(_debug) {
-	      std::cout << "GeometryTPC::Load - Abort (2)" << std::endl;
-	    }
-	    return initOK;	    	    
-	  }
-	}
+          // set pad size
+		  auto it = find_line(file_lines, "DIAMOND SIZE:");
+          if (it != file_lines.end()) {
+              double val = 0.;
+              if (sscanf(it->c_str(), "DIAMOND SIZE: %lf", &val) == 1) {
+                  if (val > 0.0) {
+                      pad_size = val;
+                      std::cout << Form("Length of diamond edge = %lf mm", pad_size)
+                          << std::endl;
+                  }
+                  else {
+                      std::cerr << "ERROR: Wrong pad size !!!" << std::endl;
+                      if (_debug) {
+                          std::cout << "GeometryTPC::Load - Abort (1)" << std::endl;
+                      }
+                      return initOK;
+                  }
+              }
+          }
+          pad_pitch = pad_size * std::sqrt(3.);
+          strip_pitch = pad_size * 1.5;
       }
-
-    // set electron drift velocity [cm/us]
-    f.seekg (0, f.beg);
-    while( getline(f,line) ) 
       {
-	double val=0.;
-	if(sscanf(line.c_str(),"DRIFT VELOCITY: %lf",&val)==1) {
-	  if(val>0.0) {
-	    vdrift = val;
-	    std::cout << Form("Drift velocity = %lf cm/us", vdrift)
-		      << std::endl;
-	    break;
-	  } else {
-	    std::cerr << "ERROR: Wrong drift velocity !!!" << std::endl;
-	    if(_debug) {
-	      std::cout << "GeometryTPC::Load - Abort (3)" << std::endl;
-	    }
-	    return initOK;	    
-	  }
-	}
+          // set REFERECE POINT offset [mm]
+          for (const auto& line : file_lines) {
+              double xoff = 0.0, yoff = 0.0;
+              if (sscanf(line.c_str(), "REFERENCE POINT: %lf %lf", &xoff, &yoff) == 2) {
+                  if (fabs(xoff) < 500. && fabs(yoff) < 500.) { // [mm]
+                      reference_point.Set(xoff, yoff);
+                      std::cout << Form("Reference point offset = [%lf mm, %lf mm]",
+                          reference_point.X(), reference_point.Y())
+                          << std::endl;
+                      break;
+                  }
+                  else {
+                      std::cerr << "ERROR: Reference point coordinate >500 mm !!!" << std::endl;
+                      if (_debug) {
+                          std::cout << "GeometryTPC::Load - Abort (2)" << std::endl;
+                      }
+                      return initOK;
+                  }
+              }
+          }
       }
-
-    // set electronics sampling rate [MHz]
-    f.seekg (0, f.beg);
-    while( getline(f,line) ) 
       {
-	double val=0.;
-	if(sscanf(line.c_str(),"SAMPLING RATE: %lf",&val)==1) {
-	  if(val>0.0) {
-	    sampling_rate = val;
-	    std::cout << Form("Sampling rate = %lf MHz", sampling_rate)
-		      << std::endl;
-	    break;
-	  } else {
-	    std::cerr << "ERROR: Wrong sampling rate !!!" << std::endl;
-	    if(_debug) {
-	      std::cout << "GeometryTPC::Load - Abort (4)" << std::endl;
-	    }
-	    return initOK;	    
-	  }
-	}
+          // set electron drift velocity [cm/us]
+          for (const auto& line : file_lines) {
+              double val = 0.;
+              if (sscanf(line.c_str(), "DRIFT VELOCITY: %lf", &val) == 1) {
+                  if (val > 0.0) {
+                      vdrift = val;
+                      std::cout << Form("Drift velocity = %lf cm/us", vdrift)
+                          << std::endl;
+                      break;
+                  }
+                  else {
+                      std::cerr << "ERROR: Wrong drift velocity !!!" << std::endl;
+                      if (_debug) {
+                          std::cout << "GeometryTPC::Load - Abort (3)" << std::endl;
+                      }
+                      return initOK;
+                  }
+              }
+          }
       }
-
-    // set electronics trigger delay [us]
-    f.seekg (0, f.beg);
-    while( getline(f,line) ) 
       {
-	double val=0.;
-	if(sscanf(line.c_str(),"TRIGGER DELAY: %lf",&val)==1) {
-	  if(fabs(val)<1000.) {
-	    trigger_delay = val;
-	    std::cout << Form("Trigger delay = %lf us", trigger_delay)
-		      << std::endl;
-	    break;
-	  } else {
-	    std::cerr << "ERROR: Trigger delay >1000 us !!!" << std::endl;
-	    if(_debug) {
-	      std::cout << "GeometryTPC::Load - Abort (5)" << std::endl;
-	    }
-	    return initOK;	    
-	  }
-	}
+          // set electronics sampling rate [MHz]
+          for (const auto& line : file_lines) {
+              double val = 0.;
+              if (sscanf(line.c_str(), "SAMPLING RATE: %lf", &val) == 1) {
+                  if (val > 0.0) {
+                      sampling_rate = val;
+                      std::cout << Form("Sampling rate = %lf MHz", sampling_rate)
+                          << std::endl;
+                      break;
+                  }
+                  else {
+                      std::cerr << "ERROR: Wrong sampling rate !!!" << std::endl;
+                      if (_debug) {
+                          std::cout << "GeometryTPC::Load - Abort (4)" << std::endl;
+                      }
+                      return initOK;
+                  }
+              }
+          }
       }
-	
-    // set drift cage acceptance limits along Z-axis [mm]
-    f.seekg (0, f.beg);
-    while( getline(f,line) ) 
       {
-	double val1=0.0, val2=0.0;
-	if(sscanf(line.c_str(),"DRIFT CAGE ACCEPTANCE: %lf %lf",&val1, &val2)==2) {
-	  if(fabs(val1)<200. && fabs(val2)<200. && val1<val2) { // [mm]
-	    drift_zmin = val1;
-	    drift_zmax = val2;
-	    std::cout << Form("Drift cage Z-axis acceptance = [%lf mm, %lf mm]", 
-			      drift_zmin, drift_zmax)
-		      << std::endl;
-	    break;
-	  } else {
-	    std::cerr << "ERROR: Drift cage acceptance limits mismatched or beyond 200 mm !!!" << std::endl;
-	    if(_debug) {
-	      std::cout << "GeometryTPC::Load - Abort (6)" << std::endl;
-	    }
-	    return initOK;	    	    
-	  }
-	}
+          // set electronics trigger delay [us]
+          for (const auto& line : file_lines) {
+              double val = 0.;
+              if (sscanf(line.c_str(), "TRIGGER DELAY: %lf", &val) == 1) {
+                  if (fabs(val) < 1000.) {
+                      trigger_delay = val;
+                      std::cout << Form("Trigger delay = %lf us", trigger_delay)
+                          << std::endl;
+                      break;
+                  }
+                  else {
+                      std::cerr << "ERROR: Trigger delay >1000 us !!!" << std::endl;
+                      if (_debug) {
+                          std::cout << "GeometryTPC::Load - Abort (5)" << std::endl;
+                      }
+                      return initOK;
+                  }
+              }
+          }
       }
-
-    // set unit vectors (along strips) and strip pitch vectors (perpendicular to strips)
-    std::for_each(proj_vec_UVW.begin(), proj_vec_UVW.end(), [&](auto proj) {
-        strip_unit_vec[int(proj)].Set(std::cos(angle[int(proj)] * deg_to_rad), std::sin(angle[int(proj)] * deg_to_rad));  });
-
-    pitch_unit_vec[int(projection::DIR_U)] = -1.0*( strip_unit_vec[int(projection::DIR_W)] + strip_unit_vec[int(projection::DIR_V)] ).Unit();
-    pitch_unit_vec[int(projection::DIR_V)] =      ( strip_unit_vec[int(projection::DIR_U)] + strip_unit_vec[int(projection::DIR_W)] ).Unit();
-    pitch_unit_vec[int(projection::DIR_W)] =      ( strip_unit_vec[int(projection::DIR_V)] - strip_unit_vec[int(projection::DIR_U)] ).Unit();
-
-    bool found=false;
-    f.seekg (0, f.beg);
-    while ( getline (f,line) )
       {
-	std::map<std::string, projection>::iterator it;
-	char name[4];
-	int cobo=0, asad=0, aget, strip_num, chan_num;
-	double offset_in_pads, offset_in_strips, length_in_pads;
+          // set drift cage acceptance limits along Z-axis [mm]
+          for (const auto& line : file_lines) {
+              double val1 = 0.0, val2 = 0.0;
+              if (sscanf(line.c_str(), "DRIFT CAGE ACCEPTANCE: %lf %lf", &val1, &val2) == 2) {
+                  if (fabs(val1) < 200. && fabs(val2) < 200. && val1 < val2) { // [mm]
+                      drift_zmin = val1;
+                      drift_zmax = val2;
+                      std::cout << Form("Drift cage Z-axis acceptance = [%lf mm, %lf mm]",
+                          drift_zmin, drift_zmax)
+                          << std::endl;
+                      break;
+                  }
+                  else {
+                      std::cerr << "ERROR: Drift cage acceptance limits mismatched or beyond 200 mm !!!" << std::endl;
+                      if (_debug) {
+                          std::cout << "GeometryTPC::Load - Abort (6)" << std::endl;
+                      }
+                      return initOK;
+                  }
+              }
+          }
+      }
+      {
+          // set unit vectors (along strips) and strip pitch vectors (perpendicular to strips)
+          std::for_each(proj_vec_UVW.begin(), proj_vec_UVW.end(), [&](auto proj) {
+              strip_unit_vec[proj].Set(std::cos(angle[proj] * deg_to_rad), std::sin(angle[proj] * deg_to_rad));  });
 
-	if( (sscanf(line.c_str(), "%1s %d %d %d %d %d %lf %lf %lf",   // NEW FORMAT (several ASADs)
-		    name, 
-		    &strip_num, &cobo, &asad, &aget, &chan_num,
-		    &offset_in_pads, &offset_in_strips, &length_in_pads)==9 || 
-	     (sscanf(line.c_str(), "%1s %d %d %d %lf %lf %lf",         // LEGACY FORMAT (1 ASAD only)
-		     name, 
-		     &strip_num, &aget, &chan_num,
-		     &offset_in_pads, &offset_in_strips, &length_in_pads)==7 && (cobo=0)==0 && (asad=0)==0 )) && 
-	   strip_num>=1 &&
-	   cobo>=0 &&
-	   asad>=0 &&
-	   aget>=0 && aget<=AGET_Nchips && 
-	   chan_num>=0 && chan_num<AGET_Nchan &&
-	   length_in_pads>=1.0 &&
-	   std::string(name)!="FPN" &&                     // veto any FPN entries and
-	   (it=name2dir.find(name))!=name2dir.end() ) {    // accept only U,V,W entries
-	  
-	  if(!found) {
-	    found=true;
-	    std::cout << "DIR     STRIP   COBO    ASAD    AGET    AGET_CH OFF_PAD OFF_STR LENGTH\n";
-	  }
-	  std::cout << Form("%-8s%-8d%-8d%-8d%-8d%-8d%-8.1lf%-8.1lf%-8.1lf", name, strip_num, cobo, asad, aget, chan_num, offset_in_pads, offset_in_strips, length_in_pads) << std::endl;
+          pitch_unit_vec[projection::DIR_U] = -1.0 * (strip_unit_vec[projection::DIR_W] + strip_unit_vec[projection::DIR_V]).Unit();
+          pitch_unit_vec[projection::DIR_V] = (strip_unit_vec[projection::DIR_U] + strip_unit_vec[projection::DIR_W]).Unit();
+          pitch_unit_vec[projection::DIR_W] = (strip_unit_vec[projection::DIR_V] - strip_unit_vec[projection::DIR_U]).Unit();
 
-	  auto dir = it->second; // strip direction index
+          bool found = false;
+          for (const auto& line : file_lines) {
+              std::map<std::string, projection>::iterator it;
+              char name[4];
+              int cobo = 0, asad = 0, aget, strip_num, chan_num;
+              double offset_in_pads, offset_in_strips, length_in_pads;
 
-	  // DEBUG
-	  if(_debug) {
-	    std::cout << "DIRNAME=" << std::string(name) << " / DIR=" << int(dir) << " / STRIPNUM=" << strip_num 
-		      << " / COBO=" << cobo << " / ASAD=" << asad
-		      << " / AGET=" << aget << " / CHANNUM=" << chan_num << "\n";
-	  }
-	  // DEBUG
-      auto _key = MultiKey4(cobo, asad, aget, chan_num);
-	  if(mapByAget.find(_key)==mapByAget.end()) {
+              if ((sscanf(line.c_str(), "%1s %d %d %d %d %d %lf %lf %lf",   // NEW FORMAT (several ASADs)
+                  name,
+                  &strip_num, &cobo, &asad, &aget, &chan_num,
+                  &offset_in_pads, &offset_in_strips, &length_in_pads) == 9 ||
+                  (sscanf(line.c_str(), "%1s %d %d %d %lf %lf %lf",         // LEGACY FORMAT (1 ASAD only)
+                      name,
+                      &strip_num, &aget, &chan_num,
+                      &offset_in_pads, &offset_in_strips, &length_in_pads) == 7 && (cobo = 0) == 0 && (asad = 0) == 0)) &&
+                  strip_num >= 1 &&
+                  cobo >= 0 &&
+                  asad >= 0 &&
+                  aget >= 0 && aget <= AGET_Nchips &&
+                  chan_num >= 0 && chan_num < AGET_Nchan &&
+                  length_in_pads >= 1.0 &&
+                  std::string(name) != "FPN" &&                     // veto any FPN entries and
+                  (it = name2dir.find(name)) != name2dir.end()) {    // accept only U,V,W entries
 
-	    // create new strip
-	    int chan_num_raw = Aget_normal2raw(chan_num);
-	    TVector2 offset = offset_in_strips * strip_pitch * pitch_unit_vec[int(dir)] + offset_in_pads * pad_pitch * strip_unit_vec[int(dir)];
-	    double length = length_in_pads * pad_pitch;
-	    std::shared_ptr<StripTPC> strip = std::make_shared<StripTPC>(int(dir), strip_num, cobo, asad, aget, chan_num, chan_num_raw, 
-					   strip_unit_vec[int(dir)], offset, length);
+                  if (!found) {
+                      found = true;
+                      std::cout << "DIR     STRIP   COBO    ASAD    AGET    AGET_CH OFF_PAD OFF_STR LENGTH\n";
+                  }
+                  std::cout << Form("%-8s%-8d%-8d%-8d%-8d%-8d%-8.1lf%-8.1lf%-8.1lf", name, strip_num, cobo, asad, aget, chan_num, offset_in_pads, offset_in_strips, length_in_pads) << std::endl;
 
-	    // update map (by: COBO board, ASAD board, AGET chip, AGET normal/raw channel)
-	    mapByAget[_key] = strip ; // StripTPC(dir, strip_num);
-	    mapByAget_raw[_key] = strip; // StripTPC(dir, strip_num);
+                  auto dir = it->second; // strip direction index
 
-	    // update reverse map (by: strip direction, strip number)
-	    if(IsDIR_UVW(dir)) {
-            if (strip_num >= stripArray[dir].size()) {
-                stripArray[dir].resize(strip_num);
-            }
-            stripArray[dir][strip_num] = strip;
-	    }
+                  // DEBUG
+                  if (_debug) {
+                      std::cout << "DIRNAME=" << std::string(name) << " / DIR=" << int(dir) << " / STRIPNUM=" << strip_num
+                          << " / COBO=" << cobo << " / ASAD=" << asad
+                          << " / AGET=" << aget << " / CHANNUM=" << chan_num << "\n";
+                  }
+                  // DEBUG
+                  auto _key = MultiKey4(cobo, asad, aget, chan_num);
+                  if (arrayByAget[cobo][asad][aget][chan_num] == nullptr) {
 
-	    // update maximal ASAD index (by: COBO board) 
-	    if(ASAD_N.find(cobo)==ASAD_N.end()) {
-	      ASAD_N[cobo]=asad+1;  // ASAD indexing starts from 0
-	      if(cobo>=COBO_N) COBO_N=cobo+1; // COBO indexing starts from 0
-	    } else {
-	      if(asad>=ASAD_N[cobo]) ASAD_N[cobo]=asad+1; // ASAD indexing starts from 0
-	    }
-	    
-	    // update number of strips in each direction
-	    if(stripN.find(dir)==stripN.end()) stripN[dir] = 1;
-	    else stripN[dir]++;
-	    
-	    // DEBUG
-	    if(_debug) {
-            auto op = (*stripArray[dir][strip_num])();
-	      std::cout << ">>> ADDED NEW STRIP:" 
-			<< "KEY=[COBO=" << cobo << ", ASAD=" << asad << ", AGET=" << aget << ", CHAN=" << chan_num 
-			<<"]  VAL=[DIR=" << int(dir) << ", STRIP=" << strip_num << "], "
-			<< "NSTRIPS[DIR="<< int(dir) <<"]=" << stripN[dir] << ", "
-			<< "   map_by_AGET=(" << (*mapByAget[_key])().dir << "," 
-			<< (*mapByAget[_key])().num << "), "
-			<< "   map_by_STRIP=(" << op.coboId << ","
-			<< op.asadId << ","
-			<< op.agetId << ","
-			<< op.agetCh << ")"
-			<<"\n";  
-	    }
-	    // DEBUG
-	    
-	  } else {
-	    std::cout << "WARNING: Ignored duplicated keyword: COBO=" << cobo << ", ASAD=" << asad 
-		      << ", AGET="<<aget<<", CHANNEL="<<chan_num<<" !!!\n";
-	  } 
-	  
-	}
+                      // create new strip
+                      int chan_num_raw = Aget_normal2raw(chan_num);
+                      TVector2 offset = offset_in_strips * strip_pitch * pitch_unit_vec[dir] + offset_in_pads * pad_pitch * strip_unit_vec[dir];
+                      double length = length_in_pads * pad_pitch;
+                      std::shared_ptr<StripTPC> strip = std::make_shared<StripTPC>(dir, strip_num, cobo, asad, aget, chan_num, chan_num_raw,
+                          strip_unit_vec[dir], offset, length);
+
+                      // update map (by: COBO board, ASAD board, AGET chip, AGET normal/raw channel)
+                      arrayByAget[cobo][asad][aget][chan_num] = strip; // StripTPC(dir, strip_num);
+                      arrayByAget_raw[cobo][asad][aget][chan_num] = strip; // StripTPC(dir, strip_num);
+
+                      // update reverse map (by: strip direction, strip number)
+                      if (IsDIR_UVW(dir)) {
+                          stripArray[dir][strip_num] = strip;
+                      }
+
+                      // update maximal ASAD index (by: COBO board) 
+                      if (ASAD_N.find(cobo) == ASAD_N.end()) {
+                          ASAD_N[cobo] = asad + 1;  // ASAD indexing starts from 0
+                          if (cobo >= COBO_N) COBO_N = cobo + 1; // COBO indexing starts from 0
+                      }
+                      else {
+                          if (asad >= ASAD_N[cobo]) ASAD_N[cobo] = asad + 1; // ASAD indexing starts from 0
+                      }
+
+                      // update number of strips in each direction
+                      if (stripN.find(dir) == stripN.end()) stripN[dir] = 1;
+                      else stripN[dir]++;
+
+                      // DEBUG
+                      if (_debug) {
+                          auto op = (*stripArray[dir][strip_num])();
+                          auto op2 = (*arrayByAget[cobo][asad][aget][chan_num])();
+                          std::cout << ">>> ADDED NEW STRIP:"
+                              << "KEY=[COBO=" << cobo << ", ASAD=" << asad << ", AGET=" << aget << ", CHAN=" << chan_num
+                              << "]  VAL=[DIR=" << int(dir) << ", STRIP=" << strip_num << "], "
+                              << "NSTRIPS[DIR=" << int(dir) << "]=" << stripN[dir] << ", "
+                              << "   map_by_AGET=(" << (int)op2.dir << ","
+                              << op2.num << "), "
+                              << "   map_by_STRIP=(" << op.coboId << ","
+                              << op.asadId << ","
+                              << op.agetId << ","
+                              << op.agetCh << ")"
+                              << "\n";
+                      }
+                      // DEBUG
+
+                  }
+                  else {
+                      std::cout << "WARNING: Ignored duplicated keyword: COBO=" << cobo << ", ASAD=" << asad
+                          << ", AGET=" << aget << ", CHANNEL=" << chan_num << " !!!\n";
+                  }
+
+              }
+          }
       }
     f.close();
   }
@@ -372,7 +379,7 @@ bool GeometryTPC::Load(std::string fname) {
     for(int iasad=0; iasad<ASAD_N[icobo]; iasad++)
       for(int ichip=0; ichip<AGET_Nchips; ichip++) 
 	for (unsigned i=0; i<FPN_chanId.size(); i++) {
-	  mapByAget_raw[MultiKey4(icobo, iasad, ichip, FPN_chanId[i])] = std::make_shared<StripTPC>(FPN_CH, i+1, icobo, iasad, ichip, ERROR, FPN_chanId[i], 
+	  arrayByAget_raw[icobo][iasad][ichip][FPN_chanId[i]] = std::make_shared<StripTPC>(projection(FPN_CH), i+1, icobo, iasad, ichip, ERROR, FPN_chanId[i], 
 										    TVector2(), TVector2(), 0.0);
 	}
 
@@ -596,9 +603,9 @@ std::string GeometryTPC::GetDirName(projection dir) {
 }
 
 std::shared_ptr<StripTPC> GeometryTPC::GetStripByAget(int COBO_idx, int ASAD_idx, int AGET_idx, int channel_idx) { // valid range [0-1][0-3][0-3][0-63]
-  auto it = mapByAget.find(MultiKey4(COBO_idx, ASAD_idx, AGET_idx, channel_idx));
-  if( it != mapByAget.end() && IsOK()) {
-    return it->second;
+  auto it = arrayByAget[COBO_idx][ASAD_idx][AGET_idx][channel_idx];
+  if(IsOK()) {
+    return it;
   }
   return nullptr; // ERROR
 }
@@ -632,17 +639,6 @@ int GeometryTPC::Global_normal2normal(int COBO_idx, int ASAD_idx, int aget_idx, 
     ASAD_offset += elem.second;
   }
   return ((ASAD_offset+ASAD_idx)*AGET_Nchips + aget_idx)*AGET_Nchan + channel_idx; 
-}
-
-int GeometryTPC::Global_strip2normal(projection dir, int num) {                 // valid range [0-2][1-92]
-    if (IsDIR_UVW(dir) && num < stripArray[dir].size()) {
-        auto it = stripArray[dir][num];
-        if (it != nullptr) {
-            auto op = (*it)();
-            return Global_normal2normal(op.coboId, op.asadId, op.agetId, op.agetCh);
-        }
-    }
-  return ERROR;
 }
 
 // Checks if 2 strips are crossing inside the active area of TPC,
@@ -687,7 +683,7 @@ bool GeometryTPC::MatchCrossPoint(std::shared_ptr<StripTPC> strip1, std::shared_
 
 TVector2 GeometryTPC::GetStripPitchVector(projection dir) { // XY ([mm],[mm])
   if (IsDIR_UVW(dir) && IsOK()) {
-	  return pitch_unit_vec.at(int(dir));
+	  return pitch_unit_vec.at(dir);
   };
   return TVector2(0, 0); // ERROR  
 }
@@ -710,11 +706,13 @@ double GeometryTPC::Strip2posUVW(projection dir, int num, bool &err_flag) {
 // - input StripTPC object is invalid
 double GeometryTPC::Strip2posUVW(std::shared_ptr<StripTPC> strip, bool &err_flag) {
   err_flag=true;
-  auto op = (*strip)();
-  if (IsDIR_UVW(static_cast<projection>(op.dir)) && strip != nullptr) {
-	  err_flag=false; // valid strip
-    return (reference_point + op.offset_vec)*pitch_unit_vec[op.dir]; // [mm]
-  };
+  if (strip != nullptr) {
+      auto op = (*strip)();
+      if (IsDIR_UVW(op.dir)) {
+          err_flag = false; // valid strip
+          return (reference_point + op.offset_vec) * pitch_unit_vec[op.dir]; // [mm]
+      }
+  }
   return 0.0; // ERROR
 }
 

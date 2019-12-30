@@ -47,8 +47,8 @@ class GeometryTPC {
   std::map<projection, int>         stripN;    // pair=(directory_idx, number_of_strips=xxx,xxx,xxx,4*ASAD_N*COBO_N)                          
   std::map<projection, std::string> dir2name;  // pair=(directory_idx, group_name="U","V","W","FPN")
   std::map<std::string, projection> name2dir;  // pair=(group_name="U","V","W","FPN", directory_idx)
-  std::map<MultiKey4, std::shared_ptr<StripTPC>, multikey4_less> mapByAget;     // key=(COBO_idx[0-1], ASAD_idx[0-3], AGET_idx[0-3], channel_idx[0-63])
-  std::map<MultiKey4, std::shared_ptr<StripTPC>, multikey4_less> mapByAget_raw; // key=(COBO_idx[0-1], ASAD_idx[0-3], AGET_idx [0-3], raw_channel_idx [0-67] )
+  std::array<std::array<std::array<std::array<std::shared_ptr<StripTPC>, 64 /*channel_idx[0-63]*/>, 4 /*AGET_idx[0-3]*/>, 4 /*ASAD_idx[0-3]*/>, 2 /*COBO_idx[0-1]*/> arrayByAget;
+  std::array<std::array<std::array<std::array<std::shared_ptr<StripTPC>, 64 /*raw_channel_idx[0-67]*/>, 4 /*AGET_idx[0-3]*/>, 4 /*ASAD_idx[0-3]*/>, 2 /*COBO_idx[0-1]*/> arrayByAget_raw;
   std::map<projection, std::vector<std::shared_ptr<StripTPC>>> stripArray; // key = {DIR_U,DIR_V,DIR_W}, STRIP_NUMBER [1-1024]
   std::map<int, int> ASAD_N;       // pair=(COBO_idx, number of ASAD boards)
   std::vector<int> FPN_chanId;     // FPN channels in AGET chips
@@ -56,8 +56,8 @@ class GeometryTPC {
   double pad_pitch;                // in [mm]
   double strip_pitch;              // in [mm]
   TVector2 reference_point;        // XY offset in [mm] of the REFERENCE POINT used to define the geometry
-  std::map<int, TVector2> strip_unit_vec; // XY unit vector in [mm] for a given family of strips pointing towards ascending pad numbers of the strip
-  std::map<int, TVector2> pitch_unit_vec; // XY unit vector in [mm] for a given family of strips pointing towards ascending strip numbers 
+  std::map<projection, TVector2> strip_unit_vec; // XY unit vector in [mm] for a given family of strips pointing towards ascending pad numbers of the strip
+  std::map<projection, TVector2> pitch_unit_vec; // XY unit vector in [mm] for a given family of strips pointing towards ascending strip numbers 
   std::map<int /* TH2Poly bin index [1..1024] */, std::shared_ptr<StripTPC> /* TPC strip */> fStripMap; // maps TH2Poly bin to a given StripTPC object
   double vdrift;                   // electron drift velocity in [cm / micosecond]
   double sampling_rate;            // electronics sampling rate in [MHz]
@@ -114,8 +114,6 @@ class GeometryTPC {
   int Aget_fpn2raw(int FPN_idx);                             // valid range [0-3]
 
   int Global_normal2normal(int COBO_idx, int ASAD_idx, int aget_idx, int channel_idx);   // valid range [0-1][0-3][0-3][0-63]
-
-  int Global_strip2normal(projection dir, int num);                 // valid range [0-2][1-1024]
 
   bool GetCrossPoint(std::shared_ptr<StripTPC> strip1, std::shared_ptr<StripTPC> strip2, TVector2 &point);
   bool MatchCrossPoint(std::shared_ptr<StripTPC> strip1, std::shared_ptr<StripTPC> strip2, std::shared_ptr<StripTPC> strip3, double radius, TVector2 &point);

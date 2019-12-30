@@ -5,34 +5,18 @@
 SigClusterTPC::SigClusterTPC(EventTPC& e)
   : 
     evt_ref(e),
-    initOK(false), 
-    glb_min_time( -1 ),
-    glb_max_time( -1 ),
-    glb_max_charge( 0.0 ),
-    glb_max_charge_timing( -1 ),
-    glb_max_charge_channel( -1 ),
-    glb_tot_charge( 0.0 ) {
+    initOK(false) {
   
   for(int idir=0; idir<3; idir++) {
     nhits[idir]=0;
-    nstrips[idir]=0;
     min_strip[idir]=-1;
     max_strip[idir]=-1;
     min_time[idir]=-1;
     max_time[idir]=-1;
-    max_charge[idir]=0.0;
-    max_charge_timing[idir]=-1;
-    max_charge_strip[idir]=-1;
-    tot_charge[idir]=0.0;
   }
-  nhitsMap.clear();
   hitList.clear();
   hitListByTimeDir.clear();
   hitListByDir.clear();
-  totalChargeMap.clear();   // 2-key map: strip_dir, strip_number
-  totalChargeMap2.clear();  // 2-key map: strip_dir, time_cell
-  totalChargeMap3.clear();  // 1-key map: time_cell
-  maxChargeMap.clear();     // 2-key map: strip_dir, strip_number 
   if(evt_ref.IsOK()) initOK=true;
   
 }
@@ -73,80 +57,15 @@ bool SigClusterTPC::AddByStrip(projection strip_dir, int strip_number, int time_
       hitListByDir[strip_dir].insert(mkey2_CellStrip);
 
       // update hit statistics
-      MultiKey2 mkey(int(strip_dir), strip_number);
       nhits[int(strip_dir)]++;
-      if(nhitsMap.find(mkey)==nhitsMap.end()) {
-	nstrips[int(strip_dir)]++;  // increment counter only once for a given strip
-      }
-      nhitsMap[mkey]++; // increment counter for each time-cell of a given strip
 
       // update space-time envelope
       max_strip[int(strip_dir)] = std::max(max_strip[int(strip_dir)], strip_number);
       if( min_strip[int(strip_dir)] > strip_number || min_strip[int(strip_dir)]<1 ) min_strip[int(strip_dir)] = strip_number;
 	  max_time[int(strip_dir)] = std::max(max_time[int(strip_dir)], time_cell);
       if( min_time[int(strip_dir)] > time_cell || min_time[int(strip_dir)]<1 ) min_time[int(strip_dir)] = time_cell;
-      glb_max_time = std::max(glb_max_time, time_cell);
-      if( glb_min_time > time_cell || glb_min_time<1 ) glb_min_time = time_cell;
 
       double val = evt_ref.GetValByStrip(strip_dir, strip_number, time_cell);
-
-      // update charge integrals
-
-      tot_charge[int(strip_dir)] += val;
-      glb_tot_charge += val;
-
-      // totalChargeMap - check if strip exists
-      auto it_total=totalChargeMap.find(mkey_total);
-      if( it_total == totalChargeMap.end() ) {
-	// add new total charge per strip
-	totalChargeMap[mkey_total]=val;
-      } else {
-	// update already existing total charge per strip
-	it_total->second += val;
-      }
-      
-      // totalChargeMap2 - check if strip exists
-      auto it_total2 = totalChargeMap2.find(mkey_total2);
-      if(it_total2 == totalChargeMap2.end() ) {
-	// add new total value per strip
-	totalChargeMap2[mkey_total2]=val;
-      } else {
-	// update already existing total value per strip
-	it_total2->second += val;
-      }
-      
-      // totalChargeMap3 - check if strip exists
-      auto it_total3 = totalChargeMap3.find(time_cell);
-      if(it_total3 == totalChargeMap3.end() ) {
-	// add new total value per strip
-	totalChargeMap3[time_cell]=val;
-      } else {
-	// update already existing total value per strip
-	it_total3->second += val;
-      }
-
-      // update charge maxima
-
-      // maxChargeMap - check if strip exists
-      auto it_maxval = maxChargeMap.find(mkey_maxval);
-      if(it_maxval == maxChargeMap.end() ) {
-	// add new max value per strip
-	maxChargeMap[mkey_maxval]=val;
-      } else {
-	// update already existing max value per strip
-	if(val > it_maxval->second) it_maxval->second = val;
-      }
-    
-      if( val > max_charge[int(strip_dir)] ) {
-	max_charge[int(strip_dir)]=val;
-	max_charge_timing[int(strip_dir)]=time_cell;
-	max_charge_strip[int(strip_dir)]=strip_number;
-	if( val > glb_max_charge ) {
-	  glb_max_charge=val;
-	  glb_max_charge_timing=time_cell;
-	  glb_max_charge_channel=evt_ref.GetGeoPtr()->Global_strip2normal(strip_dir, strip_number);
-	}
-      }
 
     }
     return true;

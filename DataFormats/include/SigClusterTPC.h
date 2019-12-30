@@ -44,29 +44,10 @@ class SigClusterTPC {
 
   // statistics variables
   int64_t nhits[3];   // number of space-time cells in a given U,V,W direction
-  std::map<MultiKey2, int, multikey2_less> nhitsMap; // number of space-time cells per strip, 
-                                                     // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024])
-  int nstrips[3];   // number of strips with some hits in a given direction
   int min_strip[3]; // minimal strip number for each direction (-1=error)
   int max_strip[3]; // maximal strip number for each direction (-1=error)
   int min_time[3];  // minimal RAW time cell for each direction (-1=error)
   int max_time[3];  // maximal RAW time cell for each direction (-1=error)
-  int glb_min_time; // minimal RAW time cell from all strips (-1=error)
-  int glb_max_time; // maximal RAW time cell from all strips (-1=error)
-
-  double max_charge[3];
-  int max_charge_timing[3];   // range [0-511]
-  int max_charge_strip[3];    // range [1-1024]
-  double glb_max_charge;
-  int glb_max_charge_timing;  // range [0-511]
-  int glb_max_charge_channel; // range [0-1023]
-  double tot_charge[3];
-  double glb_tot_charge;
-
-  std::map<MultiKey2, double, multikey2_less> maxChargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024])
-  std::map<MultiKey2, double, multikey2_less> totalChargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024])
-  std::map<MultiKey2, double, multikey2_less> totalChargeMap2; // key=(STRIP_DIR [0-2], TIME_CELL [0-511])
-  std::map<int, double> totalChargeMap3; // key=TIME_CELL [0-511]
 
  public:
 

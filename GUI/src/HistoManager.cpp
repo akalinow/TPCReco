@@ -230,14 +230,14 @@ void HistoManager::drawTrack3DProjectionTimeStrip(projection strip_dir, TVirtual
   maxY = minY + delta;
 
   TH2D *hFrame = (TH2D*)aPad->GetListOfPrimitives()->At(0);
-  if(hFrame){
+  if(hFrame != nullptr){
     hFrame->GetXaxis()->SetRangeUser(minX, maxX);
     hFrame->GetYaxis()->SetRangeUser(minY, maxY);
   }
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
+void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad) const{
 
   const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
 

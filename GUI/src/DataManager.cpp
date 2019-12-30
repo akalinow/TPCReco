@@ -23,7 +23,7 @@ DataManager::~DataManager() {
 /////////////////////////////////////////////////////////
 void DataManager::loadGeometry(const std::string & fileName){
   
-  myGeometryPtr = std::make_shared<GeometryTPC>(fileName.c_str());
+  myGeometryPtr = std::make_shared<GeometryTPC>(fileName);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -38,7 +38,7 @@ void DataManager::loadDataFile(const std::string & fileName){
   }
   
   myTree = (TTree*)myFile->Get(treeName.c_str());
-  myTree->SetBranchAddress("Event", &currentEvent);
+  myTree->SetBranchAddress("Event", &*currentEvent); //CHECK IF CORRECT
   nEvents = myTree->GetEntries();
   loadTreeEntry(0);
 
@@ -48,7 +48,7 @@ void DataManager::loadDataFile(const std::string & fileName){
 /////////////////////////////////////////////////////////
 void DataManager::loadTreeEntry(unsigned int iEntry){
 
-  if(!myTree){
+  if(myTree == nullptr){
     std::cerr<<"ROOT tree not available!"<<std::endl;
     return;
   }

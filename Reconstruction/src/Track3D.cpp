@@ -328,7 +328,7 @@ void Track3D::removeEmptySegments(){
 									    return segmentChi2<1E-5 || segmentChi2>999;
 									  });
 
-  unsigned int newSize = modifiedEnd - mySegments.begin();
+  unsigned int newSize = std::distance(modifiedEnd, mySegments.begin());
   mySegments.resize(newSize);
   update();
 }
@@ -337,7 +337,7 @@ void Track3D::removeEmptySegments(){
 double Track3D::chi2FromNodesList(const double *par){
 
   for(unsigned int iSegment=0;iSegment<mySegments.size();++iSegment){
-    const double *segmentParameters = par+3*iSegment;
+    const double *segmentParameters = par+3*iSegment; //FIX ME
     mySegments.at(iSegment).setStartEnd(segmentParameters);
   }
 

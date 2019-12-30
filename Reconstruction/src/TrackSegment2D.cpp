@@ -117,7 +117,7 @@ double TrackSegment2D::getPointTransverseDistance(const TVector3 & aPoint) const
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-struct sum_elems {
+struct sum_elems { //temporary solution
     double
         chi2 = 0.0,
         charge = 0.0;
@@ -162,7 +162,7 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
       auto distance = getPointTransverseDistance(aPoint);
       if (distance < 0) return elems;
       elems.charge = aHit().charge;
-      ++elems.pointCount;
+      elems.pointCount = 1;
       elems.chi2 = std::pow(distance, 2) * elems.charge;
       return elems;
   });
@@ -177,14 +177,15 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
       auto distance = getPointTransverseDistance(aPoint);
       if (distance < 0) return elems;
       elems.charge = aHit().charge;
-      ++elems.pointCount;
+      elems.pointCount = 1;
       elems.chi2 = std::pow(distance, 2) * elems.charge;
       return elems;
   });
 #endif // !_cpp17_
   pointCount = sums.pointCount;
+  chargeSum = sums.charge;
   if(pointCount == 0) return dummyChi2;
-  chi2 = sums.chi2 / sums.charge;
+  chi2 = sums.chi2 / chargeSum;
   return chi2;
 }
 /////////////////////////////////////////////////////////

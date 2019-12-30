@@ -55,7 +55,7 @@ public:
 
   void drawTrack3DProjectionXY(TVirtualPad *aPad);
 
-  void drawChargeAlongTrack3D(TVirtualPad *aPad);
+  void drawChargeAlongTrack3D(TVirtualPad *aPad) const;
 
 private:
     
