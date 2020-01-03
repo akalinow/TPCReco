@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
   std::shared_ptr<GeometryTPC> myGeometryPtr = std::make_shared<GeometryTPC>(geomFileName);
 
   ///Create event
-  std::shared_ptr<EventTPC> myEvent = std::make_shared<EventTPC>();
+  std::shared_ptr<EventTPC> myEvent = std::make_shared<EventTPC>(myGeometryPtr);
 
   PedestalCalculator myPedestalCalculator;
   myPedestalCalculator.SetGeometryAndInitialize(myGeometryPtr);
@@ -64,7 +64,6 @@ int main(int argc, char *argv[]) {
 
   for(long eventId = 0;eventId<lastevent;++eventId){
     myEvent->Clear();
-    myEvent->SetGeoPtr(myGeometryPtr);
     myEvent->SetEventId(eventId);
     bool eventRead = f.GetGrawFrame(dataFrame, eventId);
     if(!eventRead){
@@ -98,7 +97,6 @@ int main(int argc, char *argv[]) {
 	      } // end of loop over time buckets	    
 	  } // end of AGET channels loop	
       } // end of AGET chips loop
-    myEvent->SetGeoPtr(0);
 
     ///Skip empty events
     if(skipEmptyEvents && myEvent->GetMaxCharge()<100) continue;

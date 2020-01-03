@@ -28,19 +28,18 @@ class EventTPC;
 
 // Space-time mask for signal clusters defined as a class
 class SigClusterTPC {
-  friend class EventTPC;
+    friend class EventTPC;
  private:
      EventTPC& evt_ref;              // pointer to the existing TPC geometry
   std::set<MultiKey3> hitList; // list of selected space-time cells for further analysis where return
                                   // value=key(STRIP_DIR [0-2], STRIP_NUM [1-1024], REBIN_TIME_CELL [0-511])
-  std::map<MultiKey2, 
-    std::vector<int>, multikey2_less> hitListByTimeDir; // same list of selected space-time cells as a map
+  std::map<int, std::map<projection,
+    std::vector<int>>> hitListByTimeDir; // same list of selected space-time cells as a map
                                                         // with key=(REBIN_TIME_CELL [0-511], STRIP_DIR [0-2]) 
                                                         // that returns vector of STRIP_NUMBERS 
   std::map<projection, std::set<MultiKey2> > hitListByDir;  // same list of selected space-time cells as a map
                                                         // with key=STRIP_DIR [0-2]) 
                                                         // that returns key=(REBIN_TIME_CELL [0-511], STRIP_NUM [1-1024]
-  bool initOK;                    // is geometry valid?
 
   // statistics variables
   int64_t nhits[3];   // number of space-time cells in a given U,V,W direction
@@ -57,7 +56,7 @@ class SigClusterTPC {
   inline std::set<MultiKey3> GetHitList() const { return hitList; } // list of ALL hits, value=key(STRIP_DIR [0-2], STRIP_NUM [1-1024], REBIN_TIME_CELL [0-511])
   std::set<MultiKey2> GetHitListByDir(projection strip_dir) const; // list of SELECTED hits corresponding to a given STRIP_DIR[0-2], value=key(REBIN_TIME_CELL [0-511], STRIP_NUM [1-1024])
 
-  const std::map<MultiKey2, std::vector<int>, multikey2_less> & GetHitListByTimeDir() const;
+  decltype(SigClusterTPC::hitListByTimeDir) & GetHitListByTimeDir();
 
   // helper methods for inserting data points
   // they return TRUE on success and FALSE on error
@@ -66,8 +65,6 @@ class SigClusterTPC {
   // helper methods for checking cluster membership
   // they return TRUE for member data points and FALSE for non-member data points
   bool CheckByStrip(projection strip_dir, int strip_number, int time_cell) const;  // valid range [0-2][1-1024][0-511]
-
-  inline bool IsOK() const { return initOK; }
 
   // statistics
   long GetNhits(projection strip_dir) const;                        // # of hits in a given direction

@@ -35,6 +35,7 @@ constexpr auto EVENTTPC_DEFAULT_RECO_METHOD = 1;  // 0 = equal charge division a
 constexpr auto EVENTTPC_DEFAULT_STRIP_REBIN = 2;  // number of strips to rebin [1-1024] ;
 constexpr auto EVENTTPC_DEFAULT_TIME_REBIN = 5;  // number of time cells to rebin [1-512];
 
+using Reconstr_hist = std::pair<std::map<projection, std::shared_ptr<TH2D>>, std::shared_ptr<TH3D>>;
 
 class EventTPC {
   //  friend class SigClusterTPC;
@@ -42,15 +43,12 @@ class EventTPC {
   int64_t event_id, run_id;
   std::shared_ptr<GeometryTPC> EvtGeometryPtr;
   
-  std::map<MultiKey3, double, multikey3_less> chargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
-
-  bool initOK;      // is geometry valid?
-  int time_rebin;   // how many raw data time bins to merge (default=1, i.e. none)
+  std::map<projection, std::map<int, std::map<int, double>>> chargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
 
   double glb_max_charge;
 
  public:
-  EventTPC();
+  EventTPC(std::shared_ptr<GeometryTPC> geo_ptr);
 
   ~EventTPC(){};
 
@@ -70,7 +68,6 @@ class EventTPC {
 
   inline auto GetGeoPtr() const { return EvtGeometryPtr; }
   inline int64_t GetEventId() const { return event_id; }
-  inline bool IsOK() const { return initOK; }
 
   double GetMaxCharge();                   // maximal charge from all strips
 
@@ -80,8 +77,7 @@ class EventTPC {
   std::shared_ptr<TH2D> GetStripVsTime(projection strip_dir);                               // whole event, all strip dirs
   std::shared_ptr<TH2D> GetStripVsTimeInMM(std::shared_ptr<SigClusterTPC> cluster, projection strip_dir);  // valid range [0-2]
 
-  template <Dims dimensions>
-  std::pair<std::vector<std::shared_ptr<TH2D>>, std::shared_ptr<TH3D>> Get(std::shared_ptr<SigClusterTPC> cluster, double radius,          // clustered hits only, / clustered hits only, 3D view
+  Reconstr_hist Get(std::shared_ptr<SigClusterTPC> cluster, double radius,          // clustered hits only, / clustered hits only, 3D view
       int rebin_space = EVENTTPC_DEFAULT_STRIP_REBIN,   // projections on: XY, XZ, YZ planes / all planes
       int rebin_time = EVENTTPC_DEFAULT_TIME_REBIN,
       int method = EVENTTPC_DEFAULT_RECO_METHOD);

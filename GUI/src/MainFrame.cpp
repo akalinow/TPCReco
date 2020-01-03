@@ -34,7 +34,9 @@ MainFrame::MainFrame(const TGWindow *p, uint32_t w, uint32_t h)
     path_file.close();
   //dataFileName = "*poza buildem";
   
-  myDataManager.loadGeometry(geometryFileName);  
+    if (!myDataManager.loadGeometry(geometryFileName)) {
+        throw std::runtime_error("Load error occured or geometry data is incorrect!"); //temporary solution / will be changed to popup
+    }
   myDataManager.loadDataFile(dataFileName);
   myDataManager.loadTreeEntry(0);
   myHistoManager.setGeometry(myDataManager.getGeometry());
@@ -293,7 +295,7 @@ void MainFrame::Update(){
   TVirtualPad *aPad = fCanvas->cd(7);
 
   auto h3DReco =  myHistoManager.get3DReconstruction();
-  if(h3DReco){
+  if(h3DReco != nullptr){
     aPad->Clear();
     h3DReco->DrawClone("box2z");
     myHistoManager.drawTrack3D(aPad);

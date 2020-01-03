@@ -38,7 +38,7 @@ public:
   
   TrackBuilder();
   
-  ~TrackBuilder();
+  ~TrackBuilder() = default;
 
   void setEvent(std::shared_ptr<EventTPC> aEvent);
 

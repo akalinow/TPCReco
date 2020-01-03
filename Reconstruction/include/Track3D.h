@@ -13,9 +13,9 @@ class Track3D{
 
 public:
 
-  Track3D(){};
+  Track3D() = default;
 
-  ~Track3D(){};
+  ~Track3D() = default;
 
   void addSegment(const TrackSegment3D & aSegment3D);
 
@@ -81,7 +81,7 @@ private:
   
 };
 
-typedef std::vector<Track3D> Track3DCollection;
+using Track3DCollection = std::vector<Track3D>;
 
 std::ostream & operator << (std::ostream &out, const Track3D &aTrack);
 

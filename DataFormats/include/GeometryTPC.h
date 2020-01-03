@@ -24,7 +24,7 @@
 #include "MultiKey.h"
 #include "CommonDefinitions.h"
  
-constexpr auto FPN_CH = 3;    // FPN channel type index
+constexpr auto FPN_CH = projection(3);    // FPN channel type index
 constexpr auto ERROR = -1;   // error result indicator
 constexpr auto NUM_TOLERANCE = 1e-6;
 
@@ -44,13 +44,12 @@ class GeometryTPC {
   int AGET_Nchan_fpn;                   // # of FPN channels in AGET chip
   int AGET_Nchan_raw;                   // # of total channels in AGET chip (including FPN channels)
   int AGET_Ntimecells;                  // # of time cells (buckets) in AGET chip
-  std::map<projection, int>         stripN;    // pair=(directory_idx, number_of_strips=xxx,xxx,xxx,4*ASAD_N*COBO_N)                          
+  std::map<projection, int>         stripN{ {projection::DIR_U, 0},{projection::DIR_V, 0},{projection::DIR_W, 0} };    // pair=(directory_idx, number_of_strips=xxx,xxx,xxx,4*ASAD_N*COBO_N)                          
   std::map<projection, std::string> dir2name;  // pair=(directory_idx, group_name="U","V","W","FPN")
   std::map<std::string, projection> name2dir;  // pair=(group_name="U","V","W","FPN", directory_idx)
   std::array<std::array<std::array<std::array<std::shared_ptr<StripTPC>, 64 /*channel_idx[0-63]*/>, 4 /*AGET_idx[0-3]*/>, 4 /*ASAD_idx[0-3]*/>, 2 /*COBO_idx[0-1]*/> arrayByAget;
-  std::array<std::array<std::array<std::array<std::shared_ptr<StripTPC>, 64 /*raw_channel_idx[0-67]*/>, 4 /*AGET_idx[0-3]*/>, 4 /*ASAD_idx[0-3]*/>, 2 /*COBO_idx[0-1]*/> arrayByAget_raw;
-  std::map<projection, std::vector<std::shared_ptr<StripTPC>>> stripArray; // key = {DIR_U,DIR_V,DIR_W}, STRIP_NUMBER [1-1024]
-  std::map<int, int> ASAD_N;       // pair=(COBO_idx, number of ASAD boards)
+  std::map<projection, std::map<int, std::shared_ptr<StripTPC>>> stripArray; // key = {DIR_U,DIR_V,DIR_W}, STRIP_NUMBER [1-1024]
+  std::vector<int> ASAD_N;       // pair=(COBO_idx, number of ASAD boards)
   std::vector<int> FPN_chanId;     // FPN channels in AGET chips
   double pad_size;                 // in [mm]
   double pad_pitch;                // in [mm]
@@ -67,7 +66,6 @@ class GeometryTPC {
   std::shared_ptr<TH2Poly> tp;                     // for internal storage of arbitrary strip shapes
   int grid_nx;                     // partition size of TH2Poly in X-dir
   int grid_ny;                     // partition size of TH2Poly in Y-dir
-  bool isOK_TH2Poly;               // is TH2Poly already initialized?
   bool _debug;                     // debug/verbose info flag
      
   // Setter methods 

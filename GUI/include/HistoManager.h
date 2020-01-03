@@ -41,6 +41,8 @@ public:
 
   std::shared_ptr<TH2D> getRecHitStripVsTime(projection strip_dir);
 
+  Reconstr_hist getReconstruction(bool force = false);
+
   std::shared_ptr<TH3D> get3DReconstruction();
 
   std::shared_ptr<TH2D> get2DReconstruction(projection strip_dir);
@@ -66,6 +68,10 @@ private:
   TrackBuilder myTkBuilder;
   
   std::shared_ptr<GeometryTPC> myGeometryPtr;
+
+  Reconstr_hist reconstruction;
+
+  bool reconstruction_done = false;
 
 };
 #endif

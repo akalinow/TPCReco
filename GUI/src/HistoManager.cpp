@@ -95,32 +95,26 @@ std::shared_ptr<TH2D> HistoManager::getRecHitStripVsTime(projection strip_dir){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+Reconstr_hist HistoManager::getReconstruction(bool force) {
+    if (!reconstruction_done || force) {
+        double radius = 2.0;
+        int rebin_space = EVENTTPC_DEFAULT_STRIP_REBIN;
+        int rebin_time = EVENTTPC_DEFAULT_TIME_REBIN;
+        int method = EVENTTPC_DEFAULT_RECO_METHOD;
+        reconstruction = myEvent->Get(myTkBuilder.getCluster(), radius, rebin_space, rebin_time, method);
+        reconstruction_done = true;
+    }
+    return reconstruction;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 std::shared_ptr<TH3D> HistoManager::get3DReconstruction(){
-
-  double radius = 2.0;
-  int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN;
-  int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN; 
-  int method=EVENTTPC_DEFAULT_RECO_METHOD;
-  h3DReco = myEvent->Get<D3>(myTkBuilder.getCluster(),  radius, rebin_space, rebin_time, method).second;
-  return h3DReco;
+  return getReconstruction().second;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::shared_ptr<TH2D> HistoManager::get2DReconstruction(projection strip_dir){
-
-  double radius = 2.0;
-  int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN;
-  int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN; 
-  int method=EVENTTPC_DEFAULT_RECO_METHOD;
-  auto h2DVector = myEvent->Get<D2>(myTkBuilder.getCluster(),  radius, rebin_space, rebin_time, method).first;
-  if(!h2DVector.size()) return 0;
-  int index = 0;
-  
-  if(strip_dir== projection::DIR_XY) index = 0;
-  if(strip_dir== projection::DIR_XZ) index = 1;
-  if(strip_dir== projection::DIR_YZ) index = 2;
-   
-  return h2DVector[index];
+  return getReconstruction().first[strip_dir];
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -199,7 +193,6 @@ void HistoManager::drawTrack3DProjectionTimeStrip(projection strip_dir, TVirtual
   aSegment2DLine.SetLineWidth(2);
   double minX = 999.0, minY = 999.0;
   double maxX = -999.0, maxY = -999.0;
-  double tmp = 0.0;
 
   for(const auto & aItem: aTrack3D.getSegments()){
     const TrackSegment2D & aSegment2DProjection = aItem.get2DProjection(strip_dir, 0, aItem.getLength());
@@ -209,17 +202,10 @@ void HistoManager::drawTrack3DProjectionTimeStrip(projection strip_dir, TVirtual
     aSegment2DLine.DrawLine(start.X(), start.Y(),  end.X(),  end.Y());	
     ++iSegment;
     
-    tmp = std::min(start.Y(), end.Y());
-    minY = std::min(minY, tmp);
-
-    tmp = std::max(start.Y(), end.Y());
-    maxY = std::max(maxY, tmp);
-
-    tmp = std::min(start.X(), end.X());
-    minX = std::min(minX, tmp);
-
-    tmp = std::max(start.X(), end.X());
-    maxX = std::max(maxX, tmp);   
+    minY = std::min({ minY, start.Y(), end.Y() });
+    maxY = std::max({ maxY, start.Y(), end.Y() });
+    minX = std::min({ minX, start.X(), end.X() });
+    maxX = std::max({ maxX, start.X(), end.X() }); 
   }
   minX -=5;
   minY -=5;

@@ -6,7 +6,7 @@
 
 #include "CommonDefinitions.h"
 
-struct Hit2D_internal {
+struct i_Hit2D {
 	double posWire, posTime;
 	double charge;
 };
@@ -20,7 +20,7 @@ public:
 	auto operator()() const { return Hit2D_data; };
 private:
 
-	Hit2D_internal Hit2D_data;
+	i_Hit2D Hit2D_data;
 };
 
 typedef std::vector<Hit2D> Hit2DCollection;

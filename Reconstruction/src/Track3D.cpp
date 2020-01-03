@@ -122,12 +122,7 @@ void Track3D::updateHitDistanceProfile(){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 double Track3D::getChi2() const{
-
-  double chi2 = 0.0;
-  chi2 += getSegmentsChi2();
-  chi2 += getNodesChi2();
-
-  return chi2;
+  return getSegmentsChi2() + getNodesChi2();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -135,7 +130,7 @@ double Track3D::getSegmentsChi2() const{
 #ifndef _cpp17_
   return std::accumulate(segmentChi2.begin(), segmentChi2.end(), 0.0);
 #else
-    return std::reduce(std::execution::par, segmentChi2.begin(), segmentChi2.end(), 0.0);
+    return std::reduce(std::execution::par_unseq, segmentChi2.begin(), segmentChi2.end(), 0.0);
 #endif // !_cpp17_
 
 }
@@ -143,59 +138,59 @@ double Track3D::getSegmentsChi2() const{
 /////////////////////////////////////////////////////////
 double Track3D::getNodesChi2() const{
 #ifndef _cpp17_
-  return std::accumulate(nodeHitsChi2.begin(), nodeHitsChi2.end(), 0.0) + std::accumulate(nodeAngleChi2.begin(), nodeAngleChi2.end(), 0.0);
+    return std::accumulate(nodeHitsChi2.begin(), nodeHitsChi2.end(), 0.0) + std::accumulate(nodeAngleChi2.begin(), nodeAngleChi2.end(), 0.0);
 #else
     return std::reduce(std::execution::par, nodeHitsChi2.begin(), nodeHitsChi2.end(), 0.0) + std::reduce(std::execution::par, nodeAngleChi2.begin(), nodeAngleChi2.end(), 0.0);
 #endif // !_cpp17_
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void Track3D::updateNodesChi2(projection strip_dir){
+void Track3D::updateNodesChi2(projection strip_dir) {
 
-  if(!mySegments.size()) return;
+	if (!mySegments.size()) return;
 
-  TVector3 stripPitchDirection(cos(phiPitchDirection[int(strip_dir)]),
-			       sin(phiPitchDirection[int(strip_dir)]), 0);
+	TVector3 stripPitchDirection(cos(phiPitchDirection[int(strip_dir)]),
+		sin(phiPitchDirection[int(strip_dir)]), 0);
 
-  double sum = 0.0;
-  double nodeChi2 = 0.0;
-  unsigned int iNode = 0;
- 
-  for(auto aSegment = mySegments.begin(); aSegment!=(mySegments.end()-1);++aSegment){
+	double sum = 0.0;
+	double nodeChi2 = 0.0;
+	unsigned int iNode = 0;
 
-    sum = 0.0;
-    nodeChi2 = 0.0;
-    
-    TVector3 node3D = aSegment->getEnd();
-    TVector3 formerTangent3D = aSegment->getTangent();
-    TVector3 latterTangent3D = (aSegment+1)->getTangent();    
+    for (auto& aSegment : decltype(mySegments){mySegments.begin(), mySegments.end() - 1}) {
 
-    TVector3 node2D(node3D.Z(), node3D*stripPitchDirection, 0.0);
-    TVector3 formerTransverse2D(-formerTangent3D*stripPitchDirection, formerTangent3D.Z(), 0.0);    
-    TVector3 latterTransverse2D(-latterTangent3D*stripPitchDirection, latterTangent3D.Z(), 0.0);
-    double deltaPhi = ROOT::Math::VectorUtil::DeltaPhi(formerTransverse2D, latterTransverse2D);
+		sum = 0.0;
+		nodeChi2 = 0.0;
 
-    nodeAngleChi2[iNode] = 0.1*(std::pow(deltaPhi,2));
-    
+		TVector3 node3D = aSegment.getEnd();
+		TVector3 formerTangent3D = aSegment.getTangent();
+		TVector3 latterTangent3D = (&aSegment)[1].getTangent();
 
-    if(ROOT::Math::VectorUtil::DeltaPhi(formerTransverse2D, latterTransverse2D)<0) std::swap(formerTransverse2D, latterTransverse2D);
-    deltaPhi = ROOT::Math::VectorUtil::DeltaPhi(formerTransverse2D, latterTransverse2D);
-    for(const auto aHit:mySegments.front().getRecHits().at(int(strip_dir))){
-        TVector3 aPoint;
-      auto charge = aHit().charge;
-      aPoint.SetXYZ(aHit().posTime, aHit().posWire, 0.0);
-      aPoint -= node2D;
-      double deltaHit = ROOT::Math::VectorUtil::DeltaPhi(formerTransverse2D, aPoint);//DeltaPhi(a, b) = b - a 
-      double nodeOpeningAngle = deltaPhi;      
-      bool belongsToNode = deltaHit < nodeOpeningAngle && deltaHit>0.0;
-      if(belongsToNode){
-	nodeChi2 += aPoint.Mag2()*charge;
-	sum += charge;
-      }
-    }
-    if(sum>0.0) nodeHitsChi2[iNode] += nodeChi2/sum;
-    ++iNode;
-  }
+		TVector3 node2D(node3D.Z(), node3D * stripPitchDirection, 0.0);
+		TVector3 formerTransverse2D(-formerTangent3D * stripPitchDirection, formerTangent3D.Z(), 0.0);
+		TVector3 latterTransverse2D(-latterTangent3D * stripPitchDirection, latterTangent3D.Z(), 0.0);
+		double deltaPhi = ROOT::Math::VectorUtil::DeltaPhi(formerTransverse2D, latterTransverse2D);
+
+		nodeAngleChi2[iNode] = 0.1 * (std::pow(deltaPhi, 2));
+
+
+		if (ROOT::Math::VectorUtil::DeltaPhi(formerTransverse2D, latterTransverse2D) < 0) std::swap(formerTransverse2D, latterTransverse2D);
+		deltaPhi = ROOT::Math::VectorUtil::DeltaPhi(formerTransverse2D, latterTransverse2D);
+		for (const auto& aHit : mySegments.front().getRecHits().at(int(strip_dir))) {
+			TVector3 aPoint;
+			auto charge = aHit().charge;
+			aPoint.SetXYZ(aHit().posTime, aHit().posWire, 0.0);
+			aPoint -= node2D;
+			double deltaHit = ROOT::Math::VectorUtil::DeltaPhi(formerTransverse2D, aPoint);//DeltaPhi(a, b) = b - a 
+			double nodeOpeningAngle = deltaPhi;
+			bool belongsToNode = deltaHit < nodeOpeningAngle && deltaHit>0.0;
+			if (belongsToNode) {
+				nodeChi2 += aPoint.Mag2() * charge;
+				sum += charge;
+			}
+		}
+		if (sum > 0.0) nodeHitsChi2[iNode] += nodeChi2 / sum;
+		++iNode;
+	}
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
