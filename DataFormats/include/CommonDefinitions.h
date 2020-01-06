@@ -1,6 +1,7 @@
 #ifndef __CommonDefinitions_h__
 #define __CommonDefinitions_h__
 #include <cmath>
+#include <iostream>
 const double pi = 4 * atan(1);
 const double deg_to_rad = pi / 180.0;
 
@@ -14,10 +15,9 @@ enum class projection : unsigned {
 		DIR_3D=6    // 3D reconstruction
 };
 
-enum Dims {
-	D2,
-	D3
-};
+inline std::ostream& operator<<(std::ostream& str, projection proj) {
+	return (str << int(proj));
+}
 
 inline bool IsDIR_UVW(projection DIR_) {
 	return DIR_ == projection::DIR_U || DIR_ == projection::DIR_V || DIR_ == projection::DIR_W;

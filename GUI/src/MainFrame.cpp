@@ -294,7 +294,7 @@ void MainFrame::Update(){
   //Third row again.
   TVirtualPad *aPad = fCanvas->cd(7);
 
-  auto h3DReco =  myHistoManager.get3DReconstruction();
+  auto h3DReco =  myHistoManager.get3DReconstruction(true);
   if(h3DReco != nullptr){
     aPad->Clear();
     h3DReco->DrawClone("box2z");

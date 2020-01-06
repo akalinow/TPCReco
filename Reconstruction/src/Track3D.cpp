@@ -276,11 +276,11 @@ void Track3D::shrinkToHits(){
 
   double lambdaStart = 0.0;
   double lambdaEnd = getLength();
-  if(getLength()<1.0) return;//FIXME move to configuration  
+  if(lambdaEnd < 1.0) return;//FIXME move to configuration  
   double minChargeCut = 100.0;//FIXME move to configuration and (dynamically?) optimize
   double charge = 0.0;
   double h = 2.0;//FIXME move to configuration.
-  while(charge<minChargeCut && lambdaStart<getLength()){
+  while(charge < minChargeCut && lambdaStart < lambdaEnd){
     lambdaStart +=h;
     charge = getChargeProfile().Eval(lambdaStart);  
   }
@@ -332,8 +332,9 @@ void Track3D::removeEmptySegments(){
 double Track3D::chi2FromNodesList(const double *par){
 
   for(unsigned int iSegment=0;iSegment<mySegments.size();++iSegment){
-    const double *segmentParameters = par+3*iSegment; //FIX ME
-    mySegments.at(iSegment).setStartEnd(segmentParameters);
+      TVector3 start(&par[3 * iSegment]);
+      TVector3 end(&par[3 * (iSegment + 1)]);
+    mySegments.at(iSegment).setStartEnd(start, end);
   }
 
   updateChi2();

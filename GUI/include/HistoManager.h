@@ -37,15 +37,13 @@ public:
 
   std::shared_ptr<TH2D> getCartesianProjection(projection strip_dir);
 
-  std::shared_ptr<TH2D> getFilteredStripVsTime(projection strip_dir);
-
   std::shared_ptr<TH2D> getRecHitStripVsTime(projection strip_dir);
 
-  Reconstr_hist getReconstruction(bool force = false);
+  Reconstr_hist getReconstruction(bool force);
 
-  std::shared_ptr<TH3D> get3DReconstruction();
+  std::shared_ptr<TH3D> get3DReconstruction(bool force = false);
 
-  std::shared_ptr<TH2D> get2DReconstruction(projection strip_dir);
+  std::shared_ptr<TH2D> get2DReconstruction(projection strip_dir, bool force = false);
 
   const TH2D & getHoughAccumulator(projection strip_dir, int iPeak=0);
 

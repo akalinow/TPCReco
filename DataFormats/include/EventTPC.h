@@ -73,7 +73,6 @@ class EventTPC {
 
   std::shared_ptr<SigClusterTPC> GetOneCluster(double thr, int delta_strips, int delta_timecells); // applies clustering threshold to all space-time data points 
   
-  std::shared_ptr<TH2D> GetStripVsTime(std::shared_ptr<SigClusterTPC> cluster, projection strip_dir);        // clustered hits only, valid dir range [0-2]
   std::shared_ptr<TH2D> GetStripVsTime(projection strip_dir);                               // whole event, all strip dirs
   std::shared_ptr<TH2D> GetStripVsTimeInMM(std::shared_ptr<SigClusterTPC> cluster, projection strip_dir);  // valid range [0-2]
 

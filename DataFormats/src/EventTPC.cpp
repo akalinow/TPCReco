@@ -21,7 +21,7 @@ void EventTPC::SetGeoPtr(std::shared_ptr<GeometryTPC> aPtr) {
 
 bool EventTPC::AddValByStrip(std::shared_ptr<StripTPC> strip, int time_cell, double val) {  // valid range [0-2][1-1024][0-511]
 	auto op = (*strip)();
-	if (time_cell < 0 || time_cell >= EvtGeometryPtr->GetAgetNtimecells() || op.num<1 || op.num>EvtGeometryPtr->GetDirNstrips(op.dir) || !IsDIR_UVW(op.dir)) return false;
+	if (time_cell < 0 || time_cell >= EvtGeometryPtr->GetAgetNtimecells() || op.num<1 || op.num>EvtGeometryPtr->GetDirNstrips(op.dir)) return false;
 
 	chargeMap[op.dir][op.num][time_cell] += val; //update hit or add new one
 
@@ -37,19 +37,16 @@ bool EventTPC::AddValByAgetChannel(int cobo_idx, int asad_idx, int aget_idx, int
 
 double EventTPC::GetValByStrip(projection strip_dir, int strip_number, int time_cell/*, bool &result*/) {  // valid range [0-2][1-1024][0-511]
   //result=false;
-	if (time_cell < 0 || time_cell >= 512 || strip_number<1 || strip_number>EvtGeometryPtr->GetDirNstrips(strip_dir)) {
+	if (!IsDIR_UVW(strip_dir) || time_cell < 0 || time_cell >= 512 || strip_number<1 || strip_number>EvtGeometryPtr->GetDirNstrips(strip_dir)) {
 		return 0.0;
 	}
 
-	if (IsDIR_UVW(strip_dir)) {
-
-		// check if hit is unique
-		auto it = chargeMap[strip_dir][strip_number].find(time_cell);
-		if (it != chargeMap[strip_dir][strip_number].end()) {
-			//result=true;
-			return it->second;
-		}
-	};
+	// check if hit is unique
+	auto it = chargeMap[strip_dir][strip_number].find(time_cell);
+	if (it != chargeMap[strip_dir][strip_number].end()) {
+		//result=true;
+		return it->second;
+	}
 	return 0.0;
 }
 
@@ -85,30 +82,31 @@ std::shared_ptr<SigClusterTPC> EventTPC::GetOneCluster(double thr, int delta_str
 	auto oldList = cluster->GetHitList(); // make a copy of list of SEED-hits
 
 	// loop thru SEED-hits
-	for (auto&& it2 : oldList) {
-
-		// unpack coordinates
-		const projection strip_dir = static_cast<projection>(it2.key[0]);
-		const int strip_num = it2.key[1];
-		const int time_cell = it2.key[2];
-		const int strip_range[2] = { std::max(1, strip_num - delta_strips),
-					 std::min(EvtGeometryPtr->GetDirNstrips(strip_dir), strip_num + delta_strips) };
-		const int timecell_range[2] = { std::max(0, time_cell - delta_timecells),
-						std::min(EvtGeometryPtr->GetAgetNtimecells() - 1, time_cell + delta_timecells) };
-		for (int icell = timecell_range[0]; icell <= timecell_range[1]; icell++) {
-			for (int istrip = strip_range[0]; istrip <= strip_range[1]; istrip++) {
-				if (icell == time_cell && istrip == strip_num) continue; // exclude existing seed hits
-				MultiKey3 mkey3(int(strip_dir), istrip, icell);
-				if (chargeMap[strip_dir][istrip].find(icell) == chargeMap[strip_dir][istrip].end()) continue; // exclude non-existing space-time coordinates
-				if (chargeMap[strip_dir][istrip][icell] < 0) continue; // exclude negative values (due to pedestal subtraction)
-				// add new space-time point
-				if (oldList.find(mkey3) == oldList.end()) {
-					cluster->AddByStrip(strip_dir, istrip, icell);
+	for (auto& by_strip_dir : oldList) {
+		for (auto& by_strip_num : by_strip_dir.second) {
+			for (auto& time_cell : by_strip_num.second) {
+				// unpack coordinates
+				const projection strip_dir = by_strip_dir.first;
+				const int strip_num = by_strip_num.first;
+				auto min_strip_num = std::max(1, strip_num - delta_strips);
+				auto max_strip_num = std::min(EvtGeometryPtr->GetDirNstrips(strip_dir), strip_num + delta_strips);
+				auto min_time_cell = std::max(0, time_cell - delta_timecells);
+				auto max_time_cell = std::min(EvtGeometryPtr->GetAgetNtimecells() - 1, time_cell + delta_timecells);
+				for (int icell = min_time_cell; icell <= max_time_cell; icell++) {
+					for (int istrip = min_strip_num; istrip <= max_strip_num; istrip++) {
+						if ((icell == time_cell && istrip == strip_num) || // exclude existing seed hits
+							(chargeMap[strip_dir][istrip].find(icell) == chargeMap[strip_dir][istrip].end()) || // exclude non-existing space-time coordinates
+							(chargeMap[strip_dir][istrip][icell] < 0)) continue; // exclude negative values (due to pedestal subtraction)
+						// add new space-time point
+						if (oldList[strip_dir][strip_num].find(time_cell) == oldList[strip_dir][strip_num].end()) {
+							cluster->AddByStrip(strip_dir, istrip, icell);
+						}
+					}
 				}
 			}
 		}
 	}
-
+	cluster->UpdateStats();
 	// debug
 	std::cout << Form(">>>> GetSigCluster: AFTER ENVELOPE:  nhits(%d)/nhits(%d)/nhits(%d)=%ld/%ld/%ld",
 		int(projection::DIR_U), int(projection::DIR_V), int(projection::DIR_W),
@@ -118,29 +116,6 @@ std::shared_ptr<SigClusterTPC> EventTPC::GetOneCluster(double thr, int delta_str
 	// debug
 
 	return cluster;
-}
-
-std::shared_ptr<TH2D> EventTPC::GetStripVsTime(std::shared_ptr<SigClusterTPC> cluster, projection strip_dir) {
-
-	std::shared_ptr<TH2D> result = std::make_shared<TH2D>(Form("hclust_%s_vs_time_evt%lld", EvtGeometryPtr->GetDirName(strip_dir).c_str(), event_id),
-		Form("Event-%lld: Clustered hits from %s strips;Time bin [arb.u.];%s strip no.;Charge/bin [arb.u.]",
-			event_id, EvtGeometryPtr->GetDirName(strip_dir).c_str(), EvtGeometryPtr->GetDirName(strip_dir).c_str()),
-		EvtGeometryPtr->GetAgetNtimecells(),
-		0.0 - 0.5,
-		1. * EvtGeometryPtr->GetAgetNtimecells() - 0.5, // ends at 511.5 (cells numbered from 0 to 511)
-		EvtGeometryPtr->GetDirNstrips(strip_dir),
-		1.0 - 0.5,
-		1. * EvtGeometryPtr->GetDirNstrips(strip_dir) + 0.5);
-
-	for (int strip_num = cluster->GetMinStrip(strip_dir); strip_num <= cluster->GetMaxStrip(strip_dir); strip_num++) {
-		for (int icell = cluster->GetMinTime(strip_dir); icell <= cluster->GetMaxTime(strip_dir); icell++) {
-			if (cluster->CheckByStrip(strip_dir, strip_num, icell)) {
-				result->Fill(1. * icell, 1. * strip_num, GetValByStrip(strip_dir, strip_num, icell));
-			}
-		}
-	}
-
-	return result;
 }
 
 std::shared_ptr<TH2D> EventTPC::GetStripVsTime(projection strip_dir) {  // valid range [0-2]
@@ -155,8 +130,10 @@ std::shared_ptr<TH2D> EventTPC::GetStripVsTime(projection strip_dir) {  // valid
 		1.0 - 0.5,
 		1. * EvtGeometryPtr->GetDirNstrips(strip_dir) + 0.5);
 	// fill new histogram
-	for (int strip_num = 1; strip_num <= EvtGeometryPtr->GetDirNstrips(strip_dir); strip_num++) {
-		for (int icell = 0; icell < EvtGeometryPtr->GetAgetNtimecells(); icell++) {
+	for (auto& by_strip_num : chargeMap[strip_dir]) {
+		for (auto& by_time_cell : by_strip_num.second) {
+			auto strip_num = by_strip_num.first;
+			auto icell = by_time_cell.first;
 			double val = GetValByStrip(strip_dir, strip_num, icell);
 			result->Fill(1. * icell, 1. * strip_num, val);
 		}
@@ -191,14 +168,14 @@ std::shared_ptr<TH2D> EventTPC::GetStripVsTimeInMM(std::shared_ptr<SigClusterTPC
 	// fill new histogram
 	double x = 0.0, y = 0.0;
 
-	for (int strip_num = cluster->GetMinStrip(strip_dir); strip_num <= cluster->GetMaxStrip(strip_dir); strip_num++) {
-		for (int icell = cluster->GetMinTime(strip_dir); icell <= cluster->GetMaxTime(strip_dir); icell++) {
-			if (cluster->CheckByStrip(strip_dir, strip_num, icell)) {
-				double val = GetValByStrip(strip_dir, strip_num, icell);
-				x = EvtGeometryPtr->Timecell2pos(icell, err_flag);
-				y = EvtGeometryPtr->Strip2posUVW(strip_dir, strip_num, err_flag);
-				result->Fill(x, y, val);
-			}
+	auto HitListOneDir = cluster->GetHitList()[strip_dir];
+	for (auto& by_strip_num : HitListOneDir) {
+		for (auto icell : by_strip_num.second) {
+			auto strip_num = by_strip_num.first;
+			double val = GetValByStrip(strip_dir, strip_num, icell);
+			x = EvtGeometryPtr->Timecell2pos(icell, err_flag);
+			y = EvtGeometryPtr->Strip2posUVW(strip_dir, strip_num);
+			result->Fill(x, y, val);
 		}
 	}
 	return result;
@@ -213,21 +190,18 @@ Reconstr_hist EventTPC::Get(std::shared_ptr<SigClusterTPC> cluster, double radiu
 
 	if (cluster->GetNhits(projection::DIR_U) < 1 || cluster->GetNhits(projection::DIR_V) < 1 || cluster->GetNhits(projection::DIR_W) < 1) return h_all;
 
-	// loop over time slices and match hits in space
-	const int time_cell_min = *std::max_element(&cluster->min_time[0], &cluster->min_time[3]);
-	const int time_cell_max = *std::min_element(&cluster->max_time[0], &cluster->max_time[3]);
-
 	//std::cout << Form(">>>> EventId = %lld", event_id) << std::endl;
 	//std::cout << Form(">>>> Time cell range = [%d, %d]", time_cell_min, time_cell_max) << std::endl;
 
 	auto& hitListByTimeDir = cluster->GetHitListByTimeDir();
 
-	for (int icell = time_cell_min; icell <= time_cell_max; icell++) {
+	for (auto& by_time_cell : hitListByTimeDir) {
+		auto icell = by_time_cell.first;
 		// check if there is at least one hit in each direction
-		if (std::any_of(proj_vec_UVW.begin(), proj_vec_UVW.end(), [&](projection dir_) { return hitListByTimeDir[icell][dir_].size() == 0; })) continue;
+		if (std::any_of(proj_vec_UVW.begin(), proj_vec_UVW.end(), [&](projection dir_) { return by_time_cell.second[dir_].size() == 0; })) continue;
 
-		std::vector<int> hits[3];
-		std::transform(proj_vec_UVW.begin(), proj_vec_UVW.end(), &hits[0], [&](projection dir_) { return hitListByTimeDir[icell][dir_]; });
+		std::set<int> hits[3];
+		std::transform(proj_vec_UVW.begin(), proj_vec_UVW.end(), &hits[0], [&](projection dir_) { return by_time_cell.second[dir_]; });
 
 		//   std::cout << Form(">>>> Number of hits: time cell=%d: U=%d / V=%d / W=%d",
 		//		      icell, (int)hits[int(projection::DIR_U)].size(), (int)hits[int(projection::DIR_V)].size(), (int)hits[int(projection::DIR_W)].size()) << std::endl;
@@ -236,22 +210,22 @@ Reconstr_hist EventTPC::Get(std::shared_ptr<SigClusterTPC> cluster, double radiu
 		std::map<MultiKey3, TVector2> hitPos; // key=(STRIP_NUM_U, STRIP_NUM_V, STRIP_NUM_W), value=(X [mm],Y [mm])
 
 		// loop over hits and confirm matching in space
-		for (auto& it0 : hits[0]) {
-			auto strip0 = EvtGeometryPtr->GetStripByDir(projection::DIR_U, it0);
-			for (auto& it1 : hits[1]) {
-				auto strip1 = EvtGeometryPtr->GetStripByDir(projection::DIR_V, it1);
-				for (auto& it2 : hits[2]) {
-					auto strip2 = EvtGeometryPtr->GetStripByDir(projection::DIR_W, it2);
+		for (auto& strip_num_U : hits[0]) {
+			auto strip_U = EvtGeometryPtr->GetStripByDir(projection::DIR_U, strip_num_U);
+			for (auto& strip_num_V : hits[1]) {
+				auto strip_V = EvtGeometryPtr->GetStripByDir(projection::DIR_V, strip_num_V);
+				for (auto& strip_num_W : hits[2]) {
+					auto strip_W = EvtGeometryPtr->GetStripByDir(projection::DIR_W, strip_num_W);
 
 					//	  std::cout << Form(">>>> Checking triplet: time_cell=%d: U=%d / V=%d / W=%d",
 					//			    icell, hits[0].at(i0), hits[1].at(i1), hits[2].at(i2)) << std::endl;
 
 					TVector2 pos;
-					if (EvtGeometryPtr->MatchCrossPoint(strip0, strip1, strip2, radius, pos)) {
-						(n_match[int(projection::DIR_U)])[it0]++;
-						(n_match[int(projection::DIR_V)])[it1]++;
-						(n_match[int(projection::DIR_W)])[it2]++;
-						hitPos[MultiKey3(it0, it1, it2)] = pos;
+					if (EvtGeometryPtr->MatchCrossPoint(strip_U, strip_V, strip_W, radius, pos)) {
+						(n_match[int(projection::DIR_U)])[strip_num_U]++;
+						(n_match[int(projection::DIR_V)])[strip_num_V]++;
+						(n_match[int(projection::DIR_W)])[strip_num_W]++;
+						hitPos[MultiKey3(strip_num_U, strip_num_V, strip_num_W)] = pos;
 						//	    std::cout << Form(">>>> Checking triplet: result = TRUE" ) << std::endl;
 					}
 					else {

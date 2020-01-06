@@ -82,12 +82,6 @@ std::shared_ptr<TH2D> HistoManager::getRawStripVsTime(projection strip_dir){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<TH2D> HistoManager::getFilteredStripVsTime(projection strip_dir){
-
-  return myEvent->GetStripVsTime(myTkBuilder.getCluster(), strip_dir);
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
 std::shared_ptr<TH2D> HistoManager::getRecHitStripVsTime(projection strip_dir){
 
   return std::make_shared<TH2D>(myTkBuilder.getRecHits2D(int(strip_dir)));//FIX ME avoid object copying
@@ -108,13 +102,13 @@ Reconstr_hist HistoManager::getReconstruction(bool force) {
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<TH3D> HistoManager::get3DReconstruction(){
-  return getReconstruction().second;
+std::shared_ptr<TH3D> HistoManager::get3DReconstruction(bool force){
+  return getReconstruction(force).second;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<TH2D> HistoManager::get2DReconstruction(projection strip_dir){
-  return getReconstruction().first[strip_dir];
+std::shared_ptr<TH2D> HistoManager::get2DReconstruction(projection strip_dir, bool force) {
+  return getReconstruction(force).first[strip_dir];
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -130,7 +124,7 @@ void HistoManager::drawTrack3D(TVirtualPad *aPad){
   aPad->cd();
   const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
   const TrackSegment3DCollection & trackSegments = aTrack3D.getSegments();
-  if(!trackSegments.size()) return;
+  if(trackSegments.size() == 0) return;
   
   TPolyLine3D aPolyLine;
   aPolyLine.SetLineWidth(2);
@@ -141,7 +135,7 @@ void HistoManager::drawTrack3D(TVirtualPad *aPad){
 		     trackSegments.front().getStart().Y(),
 		     trackSegments.front().getStart().Z());
   
-   for(auto aSegment: trackSegments){
+   for(auto& aSegment: trackSegments){
      aPolyLine.SetPoint(aPolyLine.GetLastPoint()+1,
 			aSegment.getEnd().X(),
 			aSegment.getEnd().Y(),

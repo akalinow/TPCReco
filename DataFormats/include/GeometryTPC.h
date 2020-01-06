@@ -121,8 +121,8 @@ class GeometryTPC {
   inline TVector2 GetReferencePoint() { return reference_point; } // XY ([mm],[mm])
   TVector2 GetStripPitchVector(projection dir); // XY ([mm],[mm])
 
-  double Strip2posUVW(projection dir, int number, bool &err_flag); // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of the central line of the (existing) strip on the strip pitch axis for a given direction
-  double Strip2posUVW(std::shared_ptr<StripTPC> strip, bool &err_flag); // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of the central line of the (existing) strip on the strip pitch axis for a strip given direction
+  double Strip2posUVW(projection dir, int number); // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of the central line of the (existing) strip on the strip pitch axis for a given direction
+  double Strip2posUVW(std::shared_ptr<StripTPC> strip); // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of the central line of the (existing) strip on the strip pitch axis for a strip given direction
 
   double Timecell2pos(double position_in_cells, bool &err_flag); // [mm] output: position along Z-axis
 

@@ -20,7 +20,6 @@
 #include <set>
 #include <cstdint>
 
-#include "MultiKey.h"
 #include "CommonDefinitions.h"
 
 class GeometryTPC;
@@ -31,30 +30,19 @@ class SigClusterTPC {
     friend class EventTPC;
  private:
      EventTPC& evt_ref;              // pointer to the existing TPC geometry
-  std::set<MultiKey3> hitList; // list of selected space-time cells for further analysis where return
+     std::map<projection, std::map<int, std::set<int>>> hitList; // list of selected space-time cells for further analysis where return
                                   // value=key(STRIP_DIR [0-2], STRIP_NUM [1-1024], REBIN_TIME_CELL [0-511])
-  std::map<int, std::map<projection,
-    std::vector<int>>> hitListByTimeDir; // same list of selected space-time cells as a map
+  std::map<int, std::map<projection, std::set<int>>> hitListByTimeDir; // same list of selected space-time cells as a map
                                                         // with key=(REBIN_TIME_CELL [0-511], STRIP_DIR [0-2]) 
                                                         // that returns vector of STRIP_NUMBERS 
-  std::map<projection, std::set<MultiKey2> > hitListByDir;  // same list of selected space-time cells as a map
-                                                        // with key=STRIP_DIR [0-2]) 
-                                                        // that returns key=(REBIN_TIME_CELL [0-511], STRIP_NUM [1-1024]
 
   // statistics variables
-  int64_t nhits[3];   // number of space-time cells in a given U,V,W direction
-  int min_strip[3]; // minimal strip number for each direction (-1=error)
-  int max_strip[3]; // maximal strip number for each direction (-1=error)
-  int min_time[3];  // minimal RAW time cell for each direction (-1=error)
-  int max_time[3];  // maximal RAW time cell for each direction (-1=error)
+  size_t nhits[3] = { 0 };   // number of space-time cells in a given U,V,W direction
 
  public:
-
-  SigClusterTPC() = default; //default contructor 
   
   SigClusterTPC(EventTPC& e); // constructor needs a pointer to the existing event
-  inline std::set<MultiKey3> GetHitList() const { return hitList; } // list of ALL hits, value=key(STRIP_DIR [0-2], STRIP_NUM [1-1024], REBIN_TIME_CELL [0-511])
-  std::set<MultiKey2> GetHitListByDir(projection strip_dir) const; // list of SELECTED hits corresponding to a given STRIP_DIR[0-2], value=key(REBIN_TIME_CELL [0-511], STRIP_NUM [1-1024])
+  inline decltype(hitList) GetHitList() const { return hitList; } // list of ALL hits, value=key(STRIP_DIR [0-2], STRIP_NUM [1-1024], REBIN_TIME_CELL [0-511])
 
   decltype(SigClusterTPC::hitListByTimeDir) & GetHitListByTimeDir();
 
@@ -62,16 +50,10 @@ class SigClusterTPC {
   // they return TRUE on success and FALSE on error
   bool AddByStrip(projection strip_dir, int strip_number, int time_cell);     // valid range [0-2][1-1024][0-511]
 
-  // helper methods for checking cluster membership
-  // they return TRUE for member data points and FALSE for non-member data points
-  bool CheckByStrip(projection strip_dir, int strip_number, int time_cell) const;  // valid range [0-2][1-1024][0-511]
-
   // statistics
-  long GetNhits(projection strip_dir) const;                        // # of hits in a given direction
-  int GetMinStrip(projection strip_dir) const; // minimal strip number in a given direction
-  int GetMaxStrip(projection strip_dir) const; // maximal strip number in a given direction
-  int GetMinTime(projection strip_dir) const;  // minimal RAW time cell in a given direction
-  int GetMaxTime(projection strip_dir) const;  // maximal RAW time cell in a given direction
+  size_t GetNhits(projection strip_dir) const;                        // # of hits in a given direction
+
+  void UpdateStats(); //update all statistics variables
 };
 
 #endif
