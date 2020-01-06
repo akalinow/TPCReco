@@ -6,6 +6,9 @@
 #include <vector>
 #include <memory>
 #include <algorithm>
+#include <numeric>
+#include <atomic>
+#include <execution>
 
 #include "TVector3.h"
 #include "TH2D.h"
@@ -29,8 +32,6 @@ public:
   void setStartEnd(const double *par);
 
   void setRecHits(const std::vector<TH2D> & aRecHits);
-
-  void setRecHits(const std::vector<Hit2DCollection> & aRecHits) {myRecHits = aRecHits;}
 
   ///Unit tangential vector along segment.
   const TVector3 & getTangent() const { return myTangent;}
@@ -67,7 +68,7 @@ public:
 
   double getIntegratedHitDistance(double lambda) const;
 
-  const std::vector<Hit2DCollection> & getRecHits() const { return myRecHits;}
+  const auto & getRecHits() const { return myRecHits;}
 
   double getRecHitChi2() const;
   
@@ -89,7 +90,7 @@ private:
   TVector3 myStart, myEnd;
   double myLenght;
 
-  std::vector<Hit2DCollection> myRecHits;
+  std::array<Hit2DCollection, 3> myRecHits;
   std::vector<double> myProjectionsChi2;
   
 };

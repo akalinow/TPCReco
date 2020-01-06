@@ -39,10 +39,10 @@ int main(int argc, char *argv[]) {
     timestamp = std::string(argv[3]);
     std::cout<<"timestamp: "<<timestamp<<std::endl;
   }
-  std::shared_ptr<GeometryTPC> myGeometryPtr = std::make_shared<GeometryTPC>(geomFileName.c_str());
+  std::shared_ptr<GeometryTPC> myGeometryPtr = std::make_shared<GeometryTPC>(geomFileName);
 
   ///Create event
-  std::shared_ptr<EventTPC> myEvent = std::make_shared<EventTPC>();
+  std::shared_ptr<EventTPC> myEvent = std::make_shared<EventTPC>(myGeometryPtr);
 
   PedestalCalculator myPedestalCalculator;
   myPedestalCalculator.SetGeometryAndInitialize(myGeometryPtr);
@@ -60,12 +60,11 @@ int main(int argc, char *argv[]) {
   TGrawFile f(dataFileName.c_str());
   long lastevent=f.GetGrawFramesNumber();
 
-  myEvent.SetRunId(0);
+  myEvent->SetRunId(0);
 
   for(long eventId = 0;eventId<lastevent;++eventId){
-    myEvent.Clear();
-    myEvent.SetGeoPtr(myGeometryPtr);
-    myEvent.SetEventId(eventId);
+    myEvent->Clear();
+    myEvent->SetEventId(eventId);
     bool eventRead = f.GetGrawFrame(dataFrame, eventId);
     if(!eventRead){
       std::cerr << "ERROR: cannot read event " << eventId << std::endl;
@@ -93,15 +92,14 @@ int main(int argc, char *argv[]) {
 		
 		double rawVal  = sample->fValue;		
 		double corrVal = rawVal - myPedestalCalculator.GetPedestalCorrection(iChannelGlobal, agetId, icell);
-		myEvent.AddValByAgetChannel(COBO_idx, ASAD_idx, agetId, chanId, icell, corrVal);
+		myEvent->AddValByAgetChannel(COBO_idx, ASAD_idx, agetId, chanId, icell, corrVal);
 		
 	      } // end of loop over time buckets	    
 	  } // end of AGET channels loop	
       } // end of AGET chips loop
-    myEvent.SetGeoPtr(0);
 
     ///Skip empty events
-    if(skipEmptyEvents && myEvent.GetMaxCharge()<100) continue;
+    if(skipEmptyEvents && myEvent->GetMaxCharge()<100) continue;
     /////////////////////
     aTree.Fill();
   }

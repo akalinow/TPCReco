@@ -9,21 +9,10 @@
 #include "DataManager.h"
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-DataManager::DataManager() {
-
-  myTree = 0;
-  nEvents = 0;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-DataManager::~DataManager() {
-
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void DataManager::loadGeometry(const std::string & fileName){
+bool DataManager::loadGeometry(const std::string & fileName){
   
-  myGeometryPtr = std::make_shared<GeometryTPC>(fileName.c_str());
+  myGeometryPtr = std::make_shared<GeometryTPC>(fileName);
+  return myGeometryPtr != nullptr && myGeometryPtr->IsOK();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -38,7 +27,7 @@ void DataManager::loadDataFile(const std::string & fileName){
   }
   
   myTree = (TTree*)myFile->Get(treeName.c_str());
-  myTree->SetBranchAddress("Event", &currentEvent);
+  myTree->SetBranchAddress("Event", &*currentEvent); //CHECK IF CORRECT
   nEvents = myTree->GetEntries();
   loadTreeEntry(0);
 
@@ -48,7 +37,7 @@ void DataManager::loadDataFile(const std::string & fileName){
 /////////////////////////////////////////////////////////
 void DataManager::loadTreeEntry(unsigned int iEntry){
 
-  if(!myTree){
+  if(myTree == nullptr){
     std::cerr<<"ROOT tree not available!"<<std::endl;
     return;
   }
@@ -112,7 +101,7 @@ unsigned int DataManager::numberOfEvents() const{
 /////////////////////////////////////////////////////////
 unsigned int DataManager::currentEventNumber() const{
 
-  if(currentEvent){
+  if(currentEvent != nullptr){
     return currentEvent->GetEventId();
   }
   

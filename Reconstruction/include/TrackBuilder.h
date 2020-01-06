@@ -38,7 +38,7 @@ public:
   
   TrackBuilder();
   
-  ~TrackBuilder();
+  ~TrackBuilder() = default;
 
   void setEvent(std::shared_ptr<EventTPC> aEvent);
 
@@ -46,7 +46,7 @@ public:
 
   void reconstruct();
 
-  const SigClusterTPC & getCluster() const { return myCluster;}
+  const std::shared_ptr<SigClusterTPC> getCluster() const { return myCluster;}
 
   const TH2D & getRecHits2D(int iDir) const;
 
@@ -80,7 +80,7 @@ private:
 
     
   std::shared_ptr<EventTPC> myEvent;
-  SigClusterTPC myCluster;
+  std::shared_ptr<SigClusterTPC> myCluster;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
 
   bool myHistoInitialized;

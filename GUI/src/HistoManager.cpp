@@ -82,12 +82,6 @@ std::shared_ptr<TH2D> HistoManager::getRawStripVsTime(projection strip_dir){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<TH2D> HistoManager::getFilteredStripVsTime(projection strip_dir){
-
-  return myEvent->GetStripVsTime(myTkBuilder.getCluster(), strip_dir);
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
 std::shared_ptr<TH2D> HistoManager::getRecHitStripVsTime(projection strip_dir){
 
   return std::make_shared<TH2D>(myTkBuilder.getRecHits2D(int(strip_dir)));//FIX ME avoid object copying
@@ -95,32 +89,26 @@ std::shared_ptr<TH2D> HistoManager::getRecHitStripVsTime(projection strip_dir){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<TH3D> HistoManager::get3DReconstruction(){
-
-  double radius = 2.0;
-  int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN;
-  int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN; 
-  int method=EVENTTPC_DEFAULT_RECO_METHOD;
-  h3DReco = myEvent->Get3D(myTkBuilder.getCluster(),  radius, rebin_space, rebin_time, method);
-  return h3DReco;
+Reconstr_hist HistoManager::getReconstruction(bool force) {
+    if (!reconstruction_done || force) {
+        double radius = 2.0;
+        int rebin_space = EVENTTPC_DEFAULT_STRIP_REBIN;
+        int rebin_time = EVENTTPC_DEFAULT_TIME_REBIN;
+        int method = EVENTTPC_DEFAULT_RECO_METHOD;
+        reconstruction = myEvent->Get(myTkBuilder.getCluster(), radius, rebin_space, rebin_time, method);
+        reconstruction_done = true;
+    }
+    return reconstruction;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<TH2D> HistoManager::get2DReconstruction(projection strip_dir){
-
-  double radius = 2.0;
-  int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN;
-  int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN; 
-  int method=EVENTTPC_DEFAULT_RECO_METHOD;
-  auto h2DVector = myEvent->Get2D(myTkBuilder.getCluster(),  radius, rebin_space, rebin_time, method);
-  if(!h2DVector.size()) return 0;
-  int index = 0;
-  
-  if(strip_dir== projection::DIR_XY) index = 0;
-  if(strip_dir== projection::DIR_XZ) index = 1;
-  if(strip_dir== projection::DIR_YZ) index = 2;
-   
-  return h2DVector[index];
+std::shared_ptr<TH3D> HistoManager::get3DReconstruction(bool force){
+  return getReconstruction(force).second;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::shared_ptr<TH2D> HistoManager::get2DReconstruction(projection strip_dir, bool force) {
+  return getReconstruction(force).first[strip_dir];
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -136,7 +124,7 @@ void HistoManager::drawTrack3D(TVirtualPad *aPad){
   aPad->cd();
   const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
   const TrackSegment3DCollection & trackSegments = aTrack3D.getSegments();
-  if(!trackSegments.size()) return;
+  if(trackSegments.size() == 0) return;
   
   TPolyLine3D aPolyLine;
   aPolyLine.SetLineWidth(2);
@@ -147,7 +135,7 @@ void HistoManager::drawTrack3D(TVirtualPad *aPad){
 		     trackSegments.front().getStart().Y(),
 		     trackSegments.front().getStart().Z());
   
-   for(auto aSegment: trackSegments){
+   for(auto& aSegment: trackSegments){
      aPolyLine.SetPoint(aPolyLine.GetLastPoint()+1,
 			aSegment.getEnd().X(),
 			aSegment.getEnd().Y(),
@@ -199,7 +187,6 @@ void HistoManager::drawTrack3DProjectionTimeStrip(projection strip_dir, TVirtual
   aSegment2DLine.SetLineWidth(2);
   double minX = 999.0, minY = 999.0;
   double maxX = -999.0, maxY = -999.0;
-  double tmp = 0.0;
 
   for(const auto & aItem: aTrack3D.getSegments()){
     const TrackSegment2D & aSegment2DProjection = aItem.get2DProjection(strip_dir, 0, aItem.getLength());
@@ -209,17 +196,10 @@ void HistoManager::drawTrack3DProjectionTimeStrip(projection strip_dir, TVirtual
     aSegment2DLine.DrawLine(start.X(), start.Y(),  end.X(),  end.Y());	
     ++iSegment;
     
-    tmp = std::min(start.Y(), end.Y());
-    minY = std::min(minY, tmp);
-
-    tmp = std::max(start.Y(), end.Y());
-    maxY = std::max(maxY, tmp);
-
-    tmp = std::min(start.X(), end.X());
-    minX = std::min(minX, tmp);
-
-    tmp = std::max(start.X(), end.X());
-    maxX = std::max(maxX, tmp);   
+    minY = std::min({ minY, start.Y(), end.Y() });
+    maxY = std::max({ maxY, start.Y(), end.Y() });
+    minX = std::min({ minX, start.X(), end.X() });
+    maxX = std::max({ maxX, start.X(), end.X() }); 
   }
   minX -=5;
   minY -=5;
@@ -230,14 +210,14 @@ void HistoManager::drawTrack3DProjectionTimeStrip(projection strip_dir, TVirtual
   maxY = minY + delta;
 
   TH2D *hFrame = (TH2D*)aPad->GetListOfPrimitives()->At(0);
-  if(hFrame){
+  if(hFrame != nullptr){
     hFrame->GetXaxis()->SetRangeUser(minX, maxX);
     hFrame->GetYaxis()->SetRangeUser(minY, maxY);
   }
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
+void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad) const{
 
   const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
 

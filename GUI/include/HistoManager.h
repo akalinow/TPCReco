@@ -37,13 +37,13 @@ public:
 
   std::shared_ptr<TH2D> getCartesianProjection(projection strip_dir);
 
-  std::shared_ptr<TH2D> getFilteredStripVsTime(projection strip_dir);
-
   std::shared_ptr<TH2D> getRecHitStripVsTime(projection strip_dir);
 
-  std::shared_ptr<TH3D> get3DReconstruction();
+  Reconstr_hist getReconstruction(bool force);
 
-  std::shared_ptr<TH2D> get2DReconstruction(projection strip_dir);
+  std::shared_ptr<TH3D> get3DReconstruction(bool force = false);
+
+  std::shared_ptr<TH2D> get2DReconstruction(projection strip_dir, bool force = false);
 
   const TH2D & getHoughAccumulator(projection strip_dir, int iPeak=0);
 
@@ -55,7 +55,7 @@ public:
 
   void drawTrack3DProjectionXY(TVirtualPad *aPad);
 
-  void drawChargeAlongTrack3D(TVirtualPad *aPad);
+  void drawChargeAlongTrack3D(TVirtualPad *aPad) const;
 
 private:
     
@@ -66,6 +66,10 @@ private:
   TrackBuilder myTkBuilder;
   
   std::shared_ptr<GeometryTPC> myGeometryPtr;
+
+  Reconstr_hist reconstruction;
+
+  bool reconstruction_done = false;
 
 };
 #endif

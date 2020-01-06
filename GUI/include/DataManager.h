@@ -14,11 +14,11 @@ class EventTPC;
 class DataManager {
 public:
   
-  DataManager();
+  DataManager() = default;
   
-  ~DataManager();
+  ~DataManager() = default;
 
-  void loadGeometry(const std::string & fileName);
+  bool loadGeometry(const std::string & fileName);
 
   void loadDataFile(const std::string & fileName);
 
@@ -41,9 +41,9 @@ public:
 private:
   
   std::shared_ptr<TFile> myFile;
-  TTree *myTree;
+  TTree *myTree = nullptr;
 
-  unsigned int nEvents;
+  unsigned int nEvents = 0;
   unsigned int myCurrentEntry;
 
   std::shared_ptr<EventTPC> currentEvent;

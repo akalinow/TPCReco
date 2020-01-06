@@ -49,44 +49,58 @@ void TrackSegment2D::initialize(){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 double TrackSegment2D::getIntegratedCharge(double lambdaCut, const Hit2DCollection & aRecHits) const{
-
-  double x = 0.0, y = 0.0;
-  double totalCharge = 0.0;
   double radiusCut = 2.0;//FIXME put into configuration
-  double distance = 0.0;
-  TVector3 aPoint;
   
-  for(const auto aHit:aRecHits){
-    x = aHit().posTime;
-    y = aHit().posWire;
-    aPoint.SetXYZ(x, y, 0.0);    
-    distance = getPointTransverseDistance(aPoint);
-    if(distance>0 && distance<radiusCut) totalCharge += aHit().charge;
-  }
-  return totalCharge;
+#ifndef _cpp17_
+  std::vector<double> charges;
+  charges.resize(aRecHits.size());
+  std::transform(aRecHits.begin(), aRecHits.end(), charges.begin(), [&](const auto& aHit) {
+      TVector3 aPoint;
+      auto x = aHit().posTime;
+      auto y = aHit().posWire;
+      aPoint.SetXYZ(x, y, 0.0);
+      auto distance = getPointTransverseDistance(aPoint);
+      return (distance < radiusCut && distance > 0 ? aHit().charge : 0.0);
+  });
+  return std::accumulate(charges.begin(), charges.end(), 0.0);
+#else
+  return std::transform_reduce( std::execution::par, aRecHits.begin(), aRecHits.end(), 0.0, std::plus<>(), [&](const auto& aHit) {
+      TVector3 aPoint;
+      auto x = aHit().posTime;
+      auto y = aHit().posWire;
+      aPoint.SetXYZ(x, y, 0.0);
+      auto distance = getPointTransverseDistance(aPoint);
+      return (distance < radiusCut && distance > 0 ? aHit().charge : 0.0);
+});
+#endif // !_cpp17_
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 double TrackSegment2D::getIntegratedHitDistance(double lambdaCut, const Hit2DCollection & aRecHits) const{
 
-  double x = 0.0, y = 0.0;
-  double totalCharge = 0.0;
-  double distance = 0.0;
-  double sum = 0.0;
-  TVector3 aPoint;
-  
-  for(const auto aHit:aRecHits){
-    x = aHit().posTime;
-    y = aHit().posWire;
-    aPoint.SetXYZ(x, y, 0.0);    
-    distance = getPointTransverseDistance(aPoint);
-    if(distance>0){
-      sum += distance*aHit().charge;
-      totalCharge += aHit().charge;
-    }
-  }
   //FIXME divide by total segment charge, not total charge up to lambda
-  return sum;
+#ifndef _cpp17_
+  std::vector<double> distances;
+  distances.resize(aRecHits.size());
+  std::transform(aRecHits.begin(), aRecHits.end(), distances.begin(), [&](const auto& aHit) {
+      TVector3 aPoint;
+    auto x = aHit().posTime;
+    auto y = aHit().posWire;
+    aPoint.SetXYZ(x, y, 0.0);    
+    auto distance = getPointTransverseDistance(aPoint);
+    return (distance > 0 ? distance*aHit().charge : 0.0);
+  });
+  return std::accumulate(distances.begin(), distances.end(), 0.0);
+#else
+    return std::transform_reduce(aRecHits.begin(), aRecHits.end(), 0.0, std::plus<>(), [&](const auto& aHit) {
+        TVector3 aPoint;
+        auto x = aHit().posTime;
+        auto y = aHit().posWire;
+        aPoint.SetXYZ(x, y, 0.0);
+        auto distance = getPointTransverseDistance(aPoint);
+        return (distance > 0 ? distance * aHit().charge : 0.0);
+    });
+#endif
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -103,6 +117,22 @@ double TrackSegment2D::getPointTransverseDistance(const TVector3 & aPoint) const
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+struct sum_elems { //temporary solution
+    double
+        chi2 = 0.0,
+        charge = 0.0;
+    int
+        pointCount = 0;
+};
+
+auto operator+(sum_elems& elems1, sum_elems& elems2) {
+    return sum_elems{
+        elems1.chi2 + elems2.chi2,
+        elems1.charge + elems2.charge,
+        elems1.pointCount + elems2.pointCount
+    };
+}
+
 double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
 
   double dummyChi2 = 1E9;
@@ -116,29 +146,46 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
     return dummyChi2;
   }
 
-  TVector3 aPoint;
   double chi2 = 0.0;
   double chargeSum = 0.0;
-  double distance = 0.0;
   int pointCount = 0;
-  
-  double x = 0.0, y = 0.0;
-  double charge = 0.0;
 
-  for(const auto aHit:aRecHits){
-    x = aHit().posTime;
-    y = aHit().posWire;
-    charge = aHit().charge;
-    aPoint.SetXYZ(x, y, 0.0);
-    distance = getPointTransverseDistance(aPoint);
-    if(distance<0) continue;    
-    ++pointCount;    
-    chi2 += std::pow(distance, 2)*charge;
-    chargeSum +=charge;
-  }
-  if(!pointCount) return dummyChi2;
-
-  chi2 /= chargeSum;
+#ifndef _cpp17_
+  std::vector<sum_elems> elems_struct_vec;
+  elems_struct_vec.resize(aRecHits.size());
+  std::transform(aRecHits.begin(), aRecHits.end(), elems_struct_vec.begin(), [&](const auto& aHit) {
+      TVector3 aPoint;
+      sum_elems elems;
+      auto x = aHit().posTime;
+      auto y = aHit().posWire;
+      aPoint.SetXYZ(x, y, 0.0);
+      auto distance = getPointTransverseDistance(aPoint);
+      if (distance < 0) return elems;
+      elems.charge = aHit().charge;
+      elems.pointCount = 1;
+      elems.chi2 = std::pow(distance, 2) * elems.charge;
+      return elems;
+  });
+  auto sums = std::accumulate(elems_struct_vec.begin(), elems_struct_vec.end(), sum_elems());
+#else
+  auto sums = std::transform_reduce(std::execution::par, aRecHits.begin(), aRecHits.end(), sum_elems(), std::plus<>(), [&](const auto& aHit) {
+      TVector3 aPoint;
+      sum_elems elems;
+      auto x = aHit().posTime;
+      auto y = aHit().posWire;
+      aPoint.SetXYZ(x, y, 0.0);
+      auto distance = getPointTransverseDistance(aPoint);
+      if (distance < 0) return elems;
+      elems.charge = aHit().charge;
+      elems.pointCount = 1;
+      elems.chi2 = std::pow(distance, 2) * elems.charge;
+      return elems;
+  });
+#endif // !_cpp17_
+  pointCount = sums.pointCount;
+  chargeSum = sums.charge;
+  if(pointCount == 0) return dummyChi2;
+  chi2 = sums.chi2 / chargeSum;
   return chi2;
 }
 /////////////////////////////////////////////////////////
