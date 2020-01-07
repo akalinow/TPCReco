@@ -17,7 +17,7 @@ public:
 
 	Hit2D(double aPosTime, double aPosWire, double aCharge) : Hit2D_data{ aPosWire, aPosTime, aCharge } { }
 	
-	auto operator()() const { return Hit2D_data; };
+	i_Hit2D operator()() const { return Hit2D_data; };
 private:
 
 	i_Hit2D Hit2D_data;

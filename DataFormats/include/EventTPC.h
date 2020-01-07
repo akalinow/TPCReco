@@ -19,7 +19,7 @@
 #include <utility>
 #include <algorithm> // for find_if
 #include <numeric>
-#include <variant> //C++17
+//#include <variant> //C++17
 
 #include "TH1D.h"
 #include "TH2D.h"
@@ -66,7 +66,7 @@ class EventTPC {
   // they return 0.0 for non-existing data points
   double GetValByStrip(projection strip_dir, int strip_number, int time_cell/*, bool &result*/);  // valid range [0-2][1-1024][0-511]
 
-  inline auto GetGeoPtr() const { return EvtGeometryPtr; }
+  inline decltype(EventTPC::EvtGeometryPtr) GetGeoPtr() const { return EvtGeometryPtr; }
   inline int64_t GetEventId() const { return event_id; }
 
   double GetMaxCharge();                   // maximal charge from all strips

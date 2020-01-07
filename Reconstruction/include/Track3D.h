@@ -4,7 +4,7 @@
 #include "TGraph.h"
 
 #include <vector>
-#include <execution>
+//#include <execution> //C++17
 
 #include "TrackSegment3D.h"
 #include "CommonDefinitions.h"

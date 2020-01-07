@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <numeric>
 #include <atomic>
-#include <execution>
+//#include <execution> //C++17
 
 #include "TVector3.h"
 #include "TH2D.h"
@@ -68,7 +68,7 @@ public:
 
   double getIntegratedHitDistance(double lambda) const;
 
-  const auto & getRecHits() const { return myRecHits;}
+  const std::array<Hit2DCollection, 3>& getRecHits() const { return myRecHits;}
 
   double getRecHitChi2() const;
   

@@ -6,7 +6,7 @@
 #include <memory>
 #include <iostream>
 #include <algorithm>
-#include <execution>
+//#include <execution> //C++17
 #include <numeric>
 
 #include "TVector3.h"
