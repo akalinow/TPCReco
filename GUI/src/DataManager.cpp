@@ -20,13 +20,13 @@ void DataManager::loadDataFile(const std::string & fileName){
 
   std::string treeName = "TPCData";
   
-  myFile = std::make_shared<TFile>(fileName.c_str(),"READ");
-  if(!myFile){
+  myFile.OpenFile(fileName.c_str(),"READ");
+  if(myFile.IsOpen()){
     std::cerr<<"File: "<<fileName<<"not found!"<<std::endl;
     return;
   }
   
-  myTree = (TTree*)myFile->Get(treeName.c_str());
+  myTree = (TTree*)myFile.Get(treeName.c_str());
   myTree->SetBranchAddress("Event", &*currentEvent); //CHECK IF CORRECT
   nEvents = myTree->GetEntries();
   loadTreeEntry(0);

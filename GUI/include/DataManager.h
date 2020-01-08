@@ -40,7 +40,7 @@ public:
     
 private:
   
-  std::shared_ptr<TFile> myFile;
+  TFile myFile;
   TTree *myTree = nullptr;
 
   unsigned int nEvents = 0;
