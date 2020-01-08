@@ -277,9 +277,11 @@ bool GeometryTPC::Load(std::string fname) {
 						stripArray[dir][strip_num] = strip;
 
 						// update maximal ASAD index (by: COBO board) 
+						if (cobo >= ASAD_N.size()) { //resize ASAD_N if necessary
+							ASAD_N.resize(cobo + 1);
+						}
 						if (ASAD_N[cobo] == 0) { //CHECK IF CORRECT
 							ASAD_N[cobo] = asad + 1;  // ASAD indexing starts from 0
-							if (cobo >= COBO_N) COBO_N = cobo + 1; // COBO indexing starts from 0
 						}
 						else {
 							if (asad >= ASAD_N[cobo]) ASAD_N[cobo] = asad + 1; // ASAD indexing starts from 0
@@ -314,6 +316,7 @@ bool GeometryTPC::Load(std::string fname) {
 
 				}
 			}
+			COBO_N = ASAD_N.size(); // set COBO_N, COBO indexing starts from 0
 		}
 	}
 	else {
