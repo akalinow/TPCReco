@@ -11,7 +11,7 @@
 /////////////////////////////////////////////////////////
 bool DataManager::loadGeometry(const std::string & fileName){
   
-  myGeometryPtr = std::make_shared<GeometryTPC>(fileName);
+  myGeometryPtr = std::make_shared<GeometryTPC>(fileName, true);
   return myGeometryPtr != nullptr && myGeometryPtr->IsOK();
 }
 /////////////////////////////////////////////////////////

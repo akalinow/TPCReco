@@ -15,6 +15,7 @@
 #include <fstream>
 #include <utility>
 #include <numeric>
+#include <functional>
 
 #include "TROOT.h"
 #include "TMath.h"
@@ -30,6 +31,11 @@ constexpr auto NUM_TOLERANCE = 1e-6;
 
 class StripTPC;
 
+
+auto find_line = [](std::vector<std::string>& vec, std::string str) {
+    return std::find_if(/*std::execution::par, */vec.begin(), vec.end(), [&](std::string& str_) { return str_.find(str) != std::string::npos; }); //C++17
+};
+
 // UVW strip geometry defined as a class
 
 //class GeometryTPC : public TObject {
@@ -44,11 +50,12 @@ class GeometryTPC {
   int AGET_Nchan_fpn;                   // # of FPN channels in AGET chip
   int AGET_Nchan_raw;                   // # of total channels in AGET chip (including FPN channels)
   int AGET_Ntimecells;                  // # of time cells (buckets) in AGET chip
+  int ASAD_Nboards;                     // total # of ASAD boards
   std::map<projection, int>         stripN{ {projection::DIR_U, 0},{projection::DIR_V, 0},{projection::DIR_W, 0} };    // pair=(directory_idx, number_of_strips=xxx,xxx,xxx,4*ASAD_N*COBO_N)                          
   std::map<projection, std::string> dir2name;  // pair=(directory_idx, group_name="U","V","W","FPN")
   std::map<std::string, projection> name2dir;  // pair=(group_name="U","V","W","FPN", directory_idx)
   std::array<std::array<std::array<std::array<std::shared_ptr<StripTPC>, 64 /*channel_idx[0-63]*/>, 4 /*AGET_idx[0-3]*/>, 4 /*ASAD_idx[0-3]*/>, 2 /*COBO_idx[0-1]*/> arrayByAget;
-  std::map<projection, std::map<int, std::shared_ptr<StripTPC>>> stripArray; // key = {DIR_U,DIR_V,DIR_W}, STRIP_NUMBER [1-1024]
+  std::map<projection, std::array<std::shared_ptr<StripTPC>, 1024 + 1>> stripArray; // key = {DIR_U,DIR_V,DIR_W}, STRIP_NUMBER [1-1024]
   std::vector<int> ASAD_N;       // pair=(COBO_idx, number of ASAD boards)
   std::vector<int> FPN_chanId;     // FPN channels in AGET chips
   double pad_size;                 // in [mm]
@@ -64,8 +71,8 @@ class GeometryTPC {
   double drift_zmin;               // lower drift cage acceptance limit along Z-axis [mm] (closest to readout PCB)
   double drift_zmax;               // upper drift cage acceptance limit along Z-axis [mm] (farthest from readout PCB)
   std::shared_ptr<TH2Poly> tp;                     // for internal storage of arbitrary strip shapes
-  int grid_nx;                     // partition size of TH2Poly in X-dir
-  int grid_ny;                     // partition size of TH2Poly in Y-dir
+  const int grid_nx;                     // partition size of TH2Poly in X-dir
+  const int grid_ny;                     // partition size of TH2Poly in Y-dir
   bool _debug;                     // debug/verbose info flag
      
   // Setter methods 
@@ -97,7 +104,7 @@ class GeometryTPC {
   inline int GetAgetNchannels_raw() { return AGET_Nchan_raw; }
   inline int GetAgetNchannels_fpn() { return AGET_Nchan_fpn; }
   inline int GetAgetNtimecells() { return AGET_Ntimecells; }
-  inline int GetAsadNboards() { int n=0; for(int icobo=0; icobo<COBO_N; icobo++) { n+=ASAD_N[icobo]; } return n; }
+  inline int GetAsadNboards() { return ASAD_Nboards; }
   inline int GetCoboNboards() { return COBO_N; }
 
   std::string GetDirName(projection dir);

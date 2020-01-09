@@ -1,5 +1,44 @@
 #include "GeometryTPC.h" 
 
+template <typename Type>
+bool load_var(std::vector<std::string> file_lines, std::string full_line, Type* var_ptr, std::function<bool(Type)> var_check, std::string units, int error_number, bool _debug = false) {
+	auto var_name = full_line.substr(0, full_line.find(':'));
+	auto it = find_line(file_lines, var_name);
+	if (it != file_lines.end() && //line exists
+		(sscanf(it->c_str(), full_line.c_str(), var_ptr) == 1) && //line constains values
+		var_check(*var_ptr)) { //values are correct
+		std::cout << var_name << " = " << *var_ptr << " " << units << std::endl;
+		return true;
+	}
+	else {
+		std::cerr << "ERROR: Wrong " << var_name <<" !!!" << std::endl;
+		if (_debug) {
+			std::cout << "GeometryTPC::Load - Abort (" << error_number << ")" << std::endl;
+		}
+		return false;
+	}
+}
+
+/*template <typename... Type>
+bool load_var(std::vector<std::string> file_lines, std::string full_line, std::function<bool(Type...)> var_check, std::string units, int error_number, bool _debug = false, Type*... var_ptr) {
+	auto args = std::tuple<Type...>(var_ptr);
+	auto var_name = full_line.substr(0, full_line.find(':'));
+	auto it = find_line(file_lines, var_name);
+	if (it != file_lines.end() && //line exists
+		(std::invoke(sscanf, it->c_str(), full_line, var_ptr...) == sizeof(Type...)) && //line constains values
+		std::invoke(var_check, (*var_ptr)...)) { //values are correct
+		//std::cout << var_name << " = " << *var_ptr << " " << units << std::endl;
+		return true;
+	}
+	else {
+		std::cerr << "ERROR: Wrong " << var_name << " !!!" << std::endl;
+		if (_debug) {
+			std::cout << "GeometryTPC::Load - Abort (" << error_number << ")" << std::endl;
+		}
+		return false;
+	}
+}*/
+
 GeometryTPC::GeometryTPC(std::string  fname, bool debug) 
   : initOK(false), 
     COBO_N(0), 
@@ -75,9 +114,6 @@ bool GeometryTPC::Load(std::string fname) {
 	std::ifstream f(fname);
 	std::map<projection, double> angle;
 	std::vector<std::string> file_lines;
-	auto find_line = [](std::vector<std::string>& vec, std::string str) {
-		return std::find_if(/*std::execution::par, */vec.begin(), vec.end(), [&](std::string& str_) { return str_.find(str) != std::string::npos; }); //C++17
-	};
 
 	if (f.is_open() && f) {
 		{
@@ -115,17 +151,7 @@ bool GeometryTPC::Load(std::string fname) {
 		}
 		{
 			// set pad size
-			auto it = find_line(file_lines, "DIAMOND SIZE:");
-			if (it != file_lines.end() && //line exists
-				(sscanf(it->c_str(), "DIAMOND SIZE: %lf", &pad_size) == 1) && //line constains values
-				pad_size > 0.0) { //values are correct
-				std::cout << "Length of diamond edge = " << pad_size << " mm" << std::endl;
-			}
-			else {
-				std::cerr << "ERROR: Wrong pad size !!!" << std::endl;
-				if (_debug) {
-					std::cout << "GeometryTPC::Load - Abort (1)" << std::endl;
-				}
+			if (!load_var<double>(file_lines, "DIAMOND SIZE: %lf", &pad_size, [&](double var) {return var > 0.0; }, "mm", 1, _debug)) {
 				return false;
 			}
 			pad_pitch = pad_size * std::sqrt(3.);
@@ -150,50 +176,10 @@ bool GeometryTPC::Load(std::string fname) {
 			}
 		}
 		{
-			// set electron drift velocity [cm/us]
-			auto it = find_line(file_lines, "DRIFT VELOCITY:");
-			if (it != file_lines.end() &&
-				(sscanf(it->c_str(), "DRIFT VELOCITY: %lf", &vdrift) == 1) &&
-				vdrift > 0.0) {
-				std::cout << "Drift velocity = " << vdrift << " cm/us" << std::endl;
-			}
-			else {
-				std::cerr << "ERROR: Wrong drift velocity !!!" << std::endl;
-				if (_debug) {
-					std::cout << "GeometryTPC::Load - Abort (3)" << std::endl;
-				}
-				return false;
-			}
-		}
-		{
-			// set electronics sampling rate [MHz]
-			auto it = find_line(file_lines, "SAMPLING RATE:");
-			if (it != file_lines.end() &&
-				(sscanf(it->c_str(), "SAMPLING RATE: %lf", &sampling_rate) == 1) &&
-				sampling_rate > 0.0) {
-				std::cout << "Sampling rate = " << sampling_rate <<" MHz" << std::endl;
-			}
-			else {
-				std::cerr << "ERROR: Wrong sampling rate !!!" << std::endl;
-				if (_debug) {
-					std::cout << "GeometryTPC::Load - Abort (4)" << std::endl;
-				}
-				return false;
-			}
-		}
-		{
-			// set electronics trigger delay [us]
-			auto it = find_line(file_lines, "TRIGGER DELAY:");
-			if (it != file_lines.end() &&
-				(sscanf(it->c_str(), "TRIGGER DELAY: %lf", &trigger_delay) == 1) &&
-				fabs(trigger_delay) < 1000.) {
-				std::cout << "Trigger delay = " << trigger_delay << " us" << std::endl;
-			}
-			else {
-				std::cerr << "ERROR: Trigger delay >1000 us !!!" << std::endl;
-				if (_debug) {
-					std::cout << "GeometryTPC::Load - Abort (5)" << std::endl;
-				}
+			
+			if (!load_var<double>(file_lines, "DRIFT VELOCITY: %lf", &vdrift, [&](double var) {return var > 0.0; }, "cm/us", 3, _debug) || // set electron drift velocity [cm/us]
+				!load_var<double>(file_lines, "SAMPLING RATE: %lf", &sampling_rate, [&](double var) {return var > 0.0; }, "MHz", 4, _debug) || // set electronics sampling rate [MHz]
+				!load_var<double>(file_lines, "TRIGGER DELAY: %lf", &trigger_delay, [&](double var) {return std::fabs(var) < 1000.0; }, "us", 5, _debug)) { // set electronics trigger delay [us]
 				return false;
 			}
 		}
@@ -280,16 +266,11 @@ bool GeometryTPC::Load(std::string fname) {
 						if (cobo >= ASAD_N.size()) { //resize ASAD_N if necessary
 							ASAD_N.resize(cobo + 1);
 						}
-						if (ASAD_N[cobo] == 0) { //CHECK IF CORRECT
-							ASAD_N[cobo] = asad + 1;  // ASAD indexing starts from 0
-						}
-						else {
-							if (asad >= ASAD_N[cobo]) ASAD_N[cobo] = asad + 1; // ASAD indexing starts from 0
-						}
+						std::cout << "ASAD_N.size() = " << ASAD_N.size() << std::endl;
+						ASAD_N[cobo] = std::max(ASAD_N[cobo], asad + 1); // ASAD indexing starts from 0
 
 						// update number of strips in each direction
-						if (stripN.find(dir) == stripN.end()) stripN[dir] = 1;
-						else stripN[dir]++;
+						stripN[dir]++;
 
 						// DEBUG
 						if (_debug) {
@@ -317,6 +298,7 @@ bool GeometryTPC::Load(std::string fname) {
 				}
 			}
 			COBO_N = ASAD_N.size(); // set COBO_N, COBO indexing starts from 0
+			ASAD_Nboards = std::accumulate(ASAD_N.begin(), ASAD_N.end(), 0.0);
 		}
 	}
 	else {
@@ -399,10 +381,9 @@ bool GeometryTPC::InitTH2Poly() {
   double ymax = -1E30; 
   for (auto& by_dir : stripArray) {
 	  for (auto strip : by_dir.second) {
-		  if (strip.second == nullptr) continue;
-		  auto op = (*strip.second)();
-		  TVector2 point1 = reference_point + op.offset_vec
-			  - op.unit_vec * 0.5 * pad_pitch;
+		  if (strip == nullptr) continue;
+		  auto op = (*strip)();
+		  TVector2 point1 = reference_point + op.offset_vec - op.unit_vec * 0.5 * pad_pitch;
 		  TVector2 point2 = point1 + op.unit_vec * op.length;
 		  xmin = std::min({ xmin, point1.X(), point2.X() });
 		  xmax = std::max({ xmax, point1.X(), point2.X() });
@@ -424,17 +405,17 @@ bool GeometryTPC::InitTH2Poly() {
   ///////// DEBUG
 
   // create TPolyBin corresponding to each StripTPC  
-  for (auto& dir_strips : stripArray) {
+  for (auto& by_strip_dir : stripArray) {
 	  ///////// DEBUG
 	  if (_debug) {
-		  std::cout << "GeometryTPC::InitTH2Poly: nstrips[" << dir_strips.first << "]=" << this->GetDirNstrips(dir_strips.first) << std::endl;
+		  std::cout << "GeometryTPC::InitTH2Poly: nstrips[" << by_strip_dir.first << "]=" << this->GetDirNstrips(by_strip_dir.first) << std::endl;
 	  }
 	  ///////// DEBUG
 
-	  for (auto strip : dir_strips.second) {
+	  for (auto strip : by_strip_dir.second) {
 
-		  if (strip.second == nullptr) continue;
-		  auto op = (*strip.second)();
+		  if (strip == nullptr) continue;
+		  auto op = (*strip)();
 
 		  // create diamond-shaped pad for a given direction
 		  std::vector<TVector2> offset_vec;
@@ -484,7 +465,7 @@ bool GeometryTPC::InitTH2Poly() {
 			  std::cout << "TH2POLY ADDBIN: "
 				  << "TH2POLY_IBIN=" << ibin
 				  //		  << ", TH2POLYBIN_PTR=" << bin 	          
-				  << ", DIR=" << this->GetDirName(dir_strips.first) << ", NUM=" << op.num
+				  << ", DIR=" << this->GetDirName(by_strip_dir.first) << ", NUM=" << op.num
 				  << ", NPADS=" << npads
 				  << ", NPOINTS=" << npoints << " (" << ipoint << ")"
 				  << std::endl;
@@ -499,7 +480,7 @@ bool GeometryTPC::InitTH2Poly() {
 
 		  if (ibin < 1) { // failed to create new bin
 			  std::cerr << "ERROR: Failed to create new TH2Poly bin: TH2POLY->AddBin()=" << ibin
-				  << ", DIR=" << this->GetDirName(dir_strips.first) << ", NUM=" << op.num
+				  << ", DIR=" << this->GetDirName(by_strip_dir.first) << ", NUM=" << op.num
 				  << ", NPADS=" << npads
 				  << ", NPOINTS=" << npoints << ", TGraph->Print():"
 				  << std::endl;
@@ -510,11 +491,11 @@ bool GeometryTPC::InitTH2Poly() {
 		  }
 
 		  // update strip map
-		  SetTH2PolyStrip(ibin, strip.second);
+		  SetTH2PolyStrip(ibin, strip);
 
 		  // DEBUG
 		  if (_debug) {
-			  std::cout << "TH2POLY ADDBIN: DIR=" << this->GetDirName(dir_strips.first) << ", NUM=" << op.num
+			  std::cout << "TH2POLY ADDBIN: DIR=" << this->GetDirName(by_strip_dir.first) << ", NUM=" << op.num
 				  << ", TH2POLY_IBIN=" << ibin
 				  << ", NPADS=" << npads
 				  << ", NPOINTS=" << npoints << " (" << ipoint << ")"
@@ -551,14 +532,11 @@ std::string GeometryTPC::GetDirName(projection dir) {
 }
 
 std::shared_ptr<StripTPC> GeometryTPC::GetStripByAget(int COBO_idx, int ASAD_idx, int AGET_idx, int channel_idx) { // valid range [0-1][0-3][0-3][0-63]
-  return arrayByAget[COBO_idx][ASAD_idx][AGET_idx][channel_idx]; // ERROR
+  return arrayByAget[COBO_idx][ASAD_idx][AGET_idx][channel_idx];
 }
 
 std::shared_ptr<StripTPC> GeometryTPC::GetStripByDir(projection dir, int num) { // valid range [0-2][1-1024]
-    if (num < stripArray[dir].size()) {
-        return stripArray[dir][num];
-    }
-    return std::shared_ptr<StripTPC>();
+	return stripArray[dir][num];
 }
 
 int GeometryTPC::Aget_normal2raw(int channel_idx) { // valid range [0-63]
