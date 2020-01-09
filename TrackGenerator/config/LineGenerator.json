@@ -1,0 +1,34 @@
+{   
+    "events":4,
+    "geometryFile": "/home/mfila/data/TPCReco/resources/geometry_mini_eTPC.dat",
+    "outputFile": "lineEvents.root",
+    "sigma":"3",
+    "MCcounts":"10000",
+    "NbinsX":100, "xmin":-100, "xmax":100,
+    "NbinsY":100, "ymin":-100, "ymax":100,
+    "NbinsZ":100, "zmin":-100, "zmax":100,
+    "lines":[
+        {
+            "x0":"0",
+            "y0":"0",
+            "z0":"0",
+            "length":"60",
+            "theta":"0",
+            "phi":"0",
+            "thetaRandom":false,
+            "phiRandom":false,
+            "lengthRandom": false
+        },
+        {
+            "x0":"0",
+            "y0":"0",
+            "z0":"0",
+            "length":"90",
+            "theta":"1.7",
+            "phi":"1.7",
+            "thetaRandom":true,
+            "phiRandom":true,
+            "lengthRandom": false
+        }
+    ]
+}

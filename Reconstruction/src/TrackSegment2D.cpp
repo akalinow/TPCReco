@@ -133,6 +133,7 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
     charge = aHit.getCharge();
     aPoint.SetXYZ(x, y, 0.0);
     distance = getPointTransverseDistance(aPoint);
+    if(distance>10) continue;//Ignore far away hits. FIXME optimize threshold
     if(distance<0) continue;    
     ++pointCount;    
     chi2 += std::pow(distance, 2)*charge;

@@ -24,7 +24,7 @@ public:
 
   double getLength() const { return myLenght;}
 
-  double getSegmentLambda(double lambda) const;
+  double getSegmentLambda(double lambda, unsigned int iSegment) const;
 
   double getIntegratedCharge(double lambda) const;
 
@@ -49,7 +49,9 @@ public:
 
   double chi2FromSplitPoint(const double *par);
 
-  double getNodeChi2(unsigned int iNode) const;
+  double getNodeHitsChi2(unsigned int iNode) const;
+
+  double getNodeAngleChi2(unsigned int iNode) const;
 
   void splitSegment(unsigned int iSegment,  double lengthFraction);
 

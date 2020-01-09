@@ -25,3 +25,9 @@
 */.deps/*
 */.libs/*
 m4/*
+build/
+
+# Editor files
+###################
+*~
+.vscode

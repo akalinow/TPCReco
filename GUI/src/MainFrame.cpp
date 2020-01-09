@@ -18,14 +18,13 @@
 
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h)
+MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h,  boost::property_tree::ptree &root)
       : TGMainFrame(p, w, h){
 
   //TEST ---
-  std::string dataFileName = "/home/akalinow/scratch/ELITPC/data/neutrons/EventTPC_2018-06-19T15:13:33.941.root"; 
-  std::string geometryFileName = "/home/akalinow/scratch/ELITPC/data/neutrons/geometry_mini_eTPC_2018-06-19T15:13:33.941.dat"; 
-  //dataFileName = "/home/akalinow/scratch/ELITPC/data/neutrons/ROOT/EventTPC_2018-06-20T10:35:30.853_0004.root";
-  
+  std::string dataFileName = root.get<std::string>("dataFile");
+  std::string geometryFileName = root.get<std::string>("geometryFile");
+ 
   myDataManager.loadGeometry(geometryFileName);  
   myDataManager.loadDataFile(dataFileName);
   myDataManager.loadTreeEntry(0);
@@ -38,7 +37,8 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h)
 
   SetCleanup(kDeepCleanup);
   SetWMPosition(500,0);
-  SetWMSize(1500,1000);
+  //SetWMSize(1500,1000);
+  SetWMSize(1200,800);
   
   AddTopMenu();
   SetTheFrame();
@@ -254,13 +254,6 @@ void MainFrame::Update(){
     myHistoManager.getHoughAccumulator(strip_dir);
   }
 
-  int strip_dir = DIR_W;
-  myHistoManager.getRawStripVsTime(strip_dir)->SaveAs("histoRaw.root");
-  myHistoManager.getCartesianProjection(strip_dir)->SaveAs("histoThreshold.root");
-  myHistoManager.getRecHitStripVsTime(strip_dir)->SaveAs("histoRecHit.root");
-  
-  //myHistoManager.getCartesianProjection(DIR_U)->SaveAs("histo.root");
-  
   for(int strip_dir=0;strip_dir<3;++strip_dir){
     ///First row
     TVirtualPad *aPad = fCanvas->cd(strip_dir+1);
@@ -269,17 +262,18 @@ void MainFrame::Update(){
     aPad = fCanvas->cd(strip_dir+1+3);
     myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("colz");
     myHistoManager.getRecHitStripVsTime(strip_dir)->SaveAs(TString::Format("RecHits_%d.root", strip_dir));
+    myHistoManager.getCartesianProjection(strip_dir)->SaveAs(TString::Format("RawHits_%d.root", strip_dir));
     myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad);
     //myHistoManager.drawTrack2DSeed(strip_dir, aPad);
     
     ///Third row.
     aPad = fCanvas->cd(strip_dir+1+3+3);
-    //myHistoManager.getHoughAccumulator(strip_dir).DrawClone("colz");
-    //myHistoManager.getHoughAccumulator(strip_dir).SaveAs(TString::Format("HoughAccumulator_%d.root", strip_dir));
-    myHistoManager.drawChargeAlongTrack3D(aPad);
+    myHistoManager.getHoughAccumulator(strip_dir).DrawClone("colz");
+    myHistoManager.getHoughAccumulator(strip_dir).SaveAs(TString::Format("HoughAccumulator_%d.root", strip_dir));
+    //myHistoManager.drawChargeAlongTrack3D(aPad);
   }  
-  //fCanvas->Update();    //TEST
-  //return;//TEST
+  fCanvas->Update();    //TEST
+  return;//TEST
   
   //Third row again.
   TVirtualPad *aPad = fCanvas->cd(7);

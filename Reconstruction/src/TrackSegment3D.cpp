@@ -18,7 +18,7 @@ void TrackSegment3D::setBiasTangent(const TVector3 & aBias, const TVector3 & aTa
   myBias = aBias;
   myTangent = aTangent.Unit();
 
-  double lambda = 30;//FIXME what value shouldbe here?
+  double lambda = 30;//FIXME what value should be here?
   myStart = myBias;
   myEnd = myStart + lambda*myTangent;
   

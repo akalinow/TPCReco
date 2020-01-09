@@ -1,0 +1,5 @@
+{
+    "dataFile": "/home/mfila/data/neutrons_data/ntuple_t0_transport.root",
+    "geometryFile": "/home/mfila/data/TPCReco/resources/geometry_mini_eTPC.dat",
+    "outputFile": "MCevent.root"
+ }

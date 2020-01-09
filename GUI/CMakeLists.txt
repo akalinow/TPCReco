@@ -1,4 +1,6 @@
 set(MODULE_NAME "GUI")
+find_package(Boost 1.45.0) 
+if(Boost_FOUND)
 MESSAGE( STATUS "Adding CMake fragment for module:         " ${MODULE_NAME} )
 
 ###############################################################################
@@ -51,5 +53,7 @@ install(TARGETS tpcGUI RUNTIME DESTINATION bin)
 install(FILES ${CMAKE_BINARY_DIR}/${MODULE_NAME}/lib${MODULE_NAME}_rdict.pcm DESTINATION lib)
 install(FILES ${CMAKE_BINARY_DIR}/${MODULE_NAME}/lib${MODULE_NAME}.rootmap DESTINATION lib)
 install(FILES $<1:${PROJECT_SOURCE_DIR}/${MODULE_NAME}/config/> DESTINATION config)
-
+else()
+    MESSAGE( WARNING "No libboost found. " ${MODULE_NAME} " will not be build.")
+endif()
 

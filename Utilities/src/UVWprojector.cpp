@@ -546,7 +546,7 @@ TH1D * UVWprojector::GetStripProfile_TH1D(int dir) {
   }
 
   // Create TH1D with strip numbers for a given direction
-  TH1D *newth1 = new TH1D(Form("h_strips%s", geo_ptr->GetDirName(dir)),
+  TH1D *newth1 = new TH1D("",
 			  Form("Time-integrated charge for %s-strips;%s strip number;Charge [arb.u.]", 
 			       geo_ptr->GetDirName(dir), geo_ptr->GetDirName(dir)),
 			  geo_ptr->GetDirNstrips(dir),
@@ -618,7 +618,7 @@ TH2D* UVWprojector::GetStripVsTime_TH2D(int dir) {
   if(zmin>=zmax || nzbins<=0) return NULL;
   
   // Create TH2D with strip numbers for a given direction
-  TH2D *newth2 = new TH2D(Form("h_strips%s_vs_time", geo_ptr->GetDirName(dir)),
+  TH2D *newth2 = new TH2D("",
 			  Form("Signal(time) for %s-strips;Time cell;%s strip number", 
 			       geo_ptr->GetDirName(dir), geo_ptr->GetDirName(dir)),
 			  geo_ptr->GetAgetNtimecells(),
