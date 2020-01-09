@@ -29,4 +29,11 @@ const auto proj_vec_UVW = std::vector<projection>{ projection::DIR_U,projection:
 //#ANGLES: 90.0 -30.0 30.0
 const std::vector<double> phiPitchDirection = {pi, -pi/6.0 + pi/2.0, pi/6.0 - pi/2.0};
 
+inline std::string filename_string(std::string path_str) {
+	return path_str.substr(path_str.rfind("\\") + 1, path_str.size() - path_str.rfind("\\") - 1);
+}
+
+#define _endl_ " (" << filename_string(__FILE__) << "; " << __LINE__ << ")" << std::endl<char, std::char_traits<char>>
+#define checkpoint std::cout << "checkpoint" << _endl_
+
 #endif

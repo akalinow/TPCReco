@@ -312,7 +312,7 @@ bool GeometryTPC::Load(std::string fname) {
 
 	// sanity checks
 	for (int icobo = 0; icobo < COBO_N; icobo++) {
-		if (ASAD_N[icobo] == 0) { //CHECK IF CORRECT
+		if (ASAD_N[icobo] == 0) {
 			std::cerr << "ERROR: Number of ASAD boards for COBO " << icobo << " is not defined !!!" << std::endl;
 			if (_debug) {
 				std::cout << "GeometryTPC::Load - Abort (8)" << std::endl;
