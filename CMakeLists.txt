@@ -40,8 +40,8 @@ set( CMAKE_CXX_FLAGS "${ROOT_CXX_FLAGS} -Wall -Werror -O3 -std=c++14 -fopenmp")
 set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 
 #External modules
-include(ExternalProject)
-ExternalProject_Add(RootAnalysis SOURCE_DIR ${CMAKE_SOURCE_DIR}/RootAnalysis)
+#include(ExternalProject)
+#ExternalProject_Add(RootAnalysis SOURCE_DIR ${CMAKE_SOURCE_DIR}/RootAnalysis)
 
 #Framework packages
 add_subdirectory(DataFormats)

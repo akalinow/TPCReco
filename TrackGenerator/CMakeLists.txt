@@ -3,9 +3,12 @@ set(MODULE_NAME "TrackGenerator")
 # Finding Boost
 find_package(Boost 1.45.0) 
 if(Boost_FOUND)
-find_package(SimUtils REQUIRED)
-if(SimUtils_FOUND)
-MESSAGE( STATUS "SimUtils found")
+
+# Adding external project
+include(ExternalProject)
+ExternalProject_Add(Sim_Utils SOURCE_DIR ${CMAKE_SOURCE_DIR}/TrackGenerator/deps/SimUtils CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_BINARY_DIR})
+include_directories(${PROJECT_BINARY_DIR}/include)
+link_directories(${PROJECT_BINARY_DIR}/lib)
 
 MESSAGE( STATUS "Adding CMake fragment for module:         " ${MODULE_NAME} )
 
@@ -45,7 +48,7 @@ ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/src/FromTransportGenerator.cpp
 ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/src/LineGenerator.cpp
 G__${MODULE_NAME}.cxx)
 
-target_link_libraries(${MODULE_NAME} ${ROOT_LIBRARIES} SimUtils)
+
 add_executable(EventGenerator bin/EventGenerator.cpp)
 add_executable(SimpleGenerator bin/SimpleGenerator.cpp)
 #add_executable(LineGenerator_test bin/LineGenerator_test.cpp)
@@ -53,6 +56,8 @@ add_executable(SimpleGenerator bin/SimpleGenerator.cpp)
 #add_executable(FromTransportGenerator_test bin/FromTransportGenerator_test.cpp)
 # Compiler flags.
 #
+add_dependencies(${MODULE_NAME} Sim_Utils)
+add_dependencies(EventGenerator Sim_Utils)
 target_compile_options(EventGenerator PUBLIC ${CMAKE_ROOT_CFLAGS})
 target_compile_options(SimpleGenerator PUBLIC ${CMAKE_ROOT_CFLAGS})
 #target_compile_options(LineGenerator_test PUBLIC ${CMAKE_ROOT_CFLAGS})
@@ -60,7 +65,7 @@ target_compile_options(SimpleGenerator PUBLIC ${CMAKE_ROOT_CFLAGS})
 #target_compile_options(FromTransportGenerator_test PUBLIC ${CMAKE_ROOT_CFLAGS})
 # Linker flags
 #
-
+target_link_libraries(${MODULE_NAME} ${ROOT_LIBRARIES} SimUtils)
 target_link_libraries(EventGenerator PUBLIC ${MODULE_NAME} SimUtils DataFormats Utilities )
 target_link_libraries(SimpleGenerator PUBLIC ${MODULE_NAME} DataFormats Utilities)
 #target_link_libraries(LineGenerator_test PUBLIC ${MODULE_NAME} DataFormats Utilities)
@@ -80,9 +85,7 @@ install(TARGETS SimpleGenerator RUNTIME DESTINATION bin)
 #install(TARGETS FromGeantGenerator_test RUNTIME DESTINATION bin)
 #install(TARGETS FromTransportGenerator_test RUNTIME DESTINATION bin)
 install(FILES $<1:${PROJECT_SOURCE_DIR}/${MODULE_NAME}/config/> DESTINATION config)
-else()
-    MESSAGE( WARNING "No SimUtils found. " ${MODULE_NAME} " will not be build.")
-endif()
+
 else()
     MESSAGE( WARNING "No libboost found. " ${MODULE_NAME} " will not be build.")
 endif()
