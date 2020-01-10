@@ -34,20 +34,24 @@ ROOT_GENERATE_DICTIONARY(G__${MODULE_NAME} ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/
 #
 add_library(${MODULE_NAME} SHARED ${sources} G__${MODULE_NAME}.cxx)
 
-add_executable(tpcGUI bin/tpcGUI.cxx)
+add_executable(tpcGUI bin/tpcGUI.cpp)
+add_executable(tpcBatch bin/tpcBatch.cpp)
 
 # Compiler flags.
 #
 target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
 target_compile_options(tpcGUI PUBLIC ${CMAKE_ROOT_CFLAGS})
+target_compile_options(tpcBatch PUBLIC ${CMAKE_ROOT_CFLAGS})
 
 target_link_libraries(${MODULE_NAME} DataFormats Reconstruction ${ROOT_LIBRARIES})
 target_link_libraries(tpcGUI PUBLIC DataFormats Reconstruction ${MODULE_NAME} -lSpectrum)
+target_link_libraries(tpcBatch PUBLIC DataFormats Reconstruction ${MODULE_NAME})
 
 # All install commands get the same destination. this allows us to use paths
 # relative to the executable.
 install(TARGETS ${MODULE_NAME} LIBRARY DESTINATION lib)
 install(TARGETS tpcGUI RUNTIME DESTINATION bin)
+install(TARGETS tpcBatch RUNTIME DESTINATION bin)
 install(FILES ${CMAKE_BINARY_DIR}/${MODULE_NAME}/lib${MODULE_NAME}_rdict.pcm DESTINATION lib)
 install(FILES ${CMAKE_BINARY_DIR}/${MODULE_NAME}/lib${MODULE_NAME}.rootmap DESTINATION lib)
 install(FILES $<1:${PROJECT_SOURCE_DIR}/${MODULE_NAME}/config/> DESTINATION config)

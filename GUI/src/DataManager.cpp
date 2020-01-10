@@ -27,7 +27,7 @@ void DataManager::loadDataFile(const std::string & fileName){
   }
   
   myTree = (TTree*)myFile.Get(treeName.c_str());
-  myTree->SetBranchAddress("Event", &currentEvent); //CHECK IF CORRECT
+  myTree->SetBranchAddress("Event", &*currentEvent); //CHECK IF CORRECT
   nEvents = myTree->GetEntries();
   loadTreeEntry(0);
 
