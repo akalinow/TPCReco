@@ -39,9 +39,6 @@ set( CMAKE_CXX_FLAGS "${ROOT_CXX_FLAGS} -Wall -Werror -O3 -std=c++14 -fopenmp")
 #Set RPATH to install dir, so user do not have to set the LD_LIBRARY_PATH
 set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 
-#External modules
-#include(ExternalProject)
-#ExternalProject_Add(RootAnalysis SOURCE_DIR ${CMAKE_SOURCE_DIR}/RootAnalysis)
 
 #Framework packages
 add_subdirectory(DataFormats)
