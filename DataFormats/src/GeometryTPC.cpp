@@ -10,7 +10,7 @@ bool load_var(std::vector<std::string> file_lines, std::string full_line, Type& 
 	auto var_name = full_line.substr(0, full_line.find(':'));
 	auto it = find_line(file_lines, var_name);
 	if (it != file_lines.end() && //line exists
-		(std::stringstream(*it) >> std::string() >> var_ref) && //line constains values
+		(std::stringstream(it->substr(it->find(':') + 1)) >> var_ref) && //line constains values
 		var_check(var_ref)) { //values are correct
 		std::cout << var_name << " = " << var_ref << " " << units << std::endl;
 		return true;

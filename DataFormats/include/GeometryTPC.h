@@ -17,6 +17,7 @@
 #include <numeric>
 #include <functional>
 #include <mutex>
+#include <sstream>
 
 #include "TROOT.h"
 #include "TMath.h"
