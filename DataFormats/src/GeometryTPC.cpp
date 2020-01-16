@@ -1,13 +1,18 @@
 #include "GeometryTPC.h" 
 
+GeometryTPC& GetGeometry(std::string fname, bool debug) {
+	static GeometryTPC main_geometry{ fname, debug };
+	return main_geometry;
+}
+
 template <typename Type>
-bool load_var(std::vector<std::string> file_lines, std::string full_line, Type* var_ptr, std::function<bool(Type)> var_check, std::string units, int error_number, bool _debug = false) {
+bool load_var(std::vector<std::string> file_lines, std::string full_line, Type& var_ref, std::function<bool(Type)> var_check, std::string units, int error_number, bool _debug = false) {
 	auto var_name = full_line.substr(0, full_line.find(':'));
 	auto it = find_line(file_lines, var_name);
 	if (it != file_lines.end() && //line exists
-		(sscanf(it->c_str(), full_line.c_str(), var_ptr) == 1) && //line constains values
-		var_check(*var_ptr)) { //values are correct
-		std::cout << var_name << " = " << *var_ptr << " " << units << std::endl;
+		(std::stringstream(*it) >> std::string() >> var_ref) && //line constains values
+		var_check(var_ref)) { //values are correct
+		std::cout << var_name << " = " << var_ref << " " << units << std::endl;
 		return true;
 	}
 	else {
@@ -91,7 +96,10 @@ GeometryTPC::GeometryTPC(std::string  fname, bool debug)
    }
 
    // Load config file    
-   initOK = Load(fname);
+   if (!Load(fname)) {
+	   checkpoint;
+	   throw std::runtime_error("Load error occured or geometry data is incorrect!"); //temporary solution / will be changed to popup
+   }
 
    if(_debug) {
      std::cout << "GeometryTPC::Constructor - Ended..." << std::endl;
@@ -135,23 +143,23 @@ bool GeometryTPC::Load(std::string fname) {
 				if (fmod(angle[projection::DIR_U], 180.) != fmod(angle[projection::DIR_V], 180.) &&  // reject parallel / anti-parallel duplicates 
 					fmod(angle[projection::DIR_V], 180.) != fmod(angle[projection::DIR_W], 180.) &&  // reject parallel / anti-parallel duplicates 
 					fmod(angle[projection::DIR_W], 180.) != fmod(angle[projection::DIR_U], 180.)) { // reject parallel / anti-parallel duplicates 
-					std::cout << Form("Angle of U/V/W strips wrt X axis = %lf / %lf / %lf deg",
-						angle[projection::DIR_U], angle[projection::DIR_V], angle[projection::DIR_W])
-						<< std::endl;
+					std::cout << Form("Angle of U/V/W strips wrt X axis = %lf / %lf / %lf deg", angle[projection::DIR_U], angle[projection::DIR_V], angle[projection::DIR_W]) << std::endl;
 				}
 				else {
 					std::cerr << "ERROR: Wrong U/V/W angles !!!" << std::endl;
+					std::cout << Form("Angle of U/V/W strips wrt X axis = %lf / %lf / %lf deg", angle[projection::DIR_U], angle[projection::DIR_V], angle[projection::DIR_W]) << std::endl;
 					return false;
 				}
 			}
 			else {
 				std::cerr << "ERROR: Wrong U/V/W angles !!!" << std::endl;
+				std::cout << Form("Angle of U/V/W strips wrt X axis = %lf / %lf / %lf deg", angle[projection::DIR_U], angle[projection::DIR_V], angle[projection::DIR_W]) << std::endl;
 				return false;
 			}
 		}
 		{
 			// set pad size
-			if (!load_var<double>(file_lines, "DIAMOND SIZE: %lf", &pad_size, [&](double var) {return var > 0.0; }, "mm", 1, _debug)) {
+			if (!load_var<double>(file_lines, "DIAMOND SIZE: %lf", pad_size, [&](double var) {return var > 0.0; }, "mm", 1, _debug)) {
 				return false;
 			}
 			pad_pitch = pad_size * std::sqrt(3.);
@@ -177,9 +185,9 @@ bool GeometryTPC::Load(std::string fname) {
 		}
 		{
 			
-			if (!load_var<double>(file_lines, "DRIFT VELOCITY: %lf", &vdrift, [&](double var) {return var > 0.0; }, "cm/us", 3, _debug) || // set electron drift velocity [cm/us]
-				!load_var<double>(file_lines, "SAMPLING RATE: %lf", &sampling_rate, [&](double var) {return var > 0.0; }, "MHz", 4, _debug) || // set electronics sampling rate [MHz]
-				!load_var<double>(file_lines, "TRIGGER DELAY: %lf", &trigger_delay, [&](double var) {return std::fabs(var) < 1000.0; }, "us", 5, _debug)) { // set electronics trigger delay [us]
+			if (!load_var<double>(file_lines, "DRIFT VELOCITY: %lf", vdrift, [&](double var) {return var > 0.0; }, "cm/us", 3, _debug) || // set electron drift velocity [cm/us]
+				!load_var<double>(file_lines, "SAMPLING RATE: %lf", sampling_rate, [&](double var) {return var > 0.0; }, "MHz", 4, _debug) || // set electronics sampling rate [MHz]
+				!load_var<double>(file_lines, "TRIGGER DELAY: %lf", trigger_delay, [&](double var) {return std::fabs(var) < 1000.0; }, "us", 5, _debug)) { // set electronics trigger delay [us]
 				return false;
 			}
 		}
@@ -211,26 +219,19 @@ bool GeometryTPC::Load(std::string fname) {
 			bool found = false;
 			for (const auto& line : file_lines) {
 				std::map<std::string, projection>::iterator it;
-				char name[4];
+				std::string name;
 				int cobo = 0, asad = 0, aget, strip_num, chan_num;
 				double offset_in_pads, offset_in_strips, length_in_pads;
-
-				if ((sscanf(line.c_str(), "%1s %d %d %d %d %d %lf %lf %lf",   // NEW FORMAT (several ASADs)
-					name,
-					&strip_num, &cobo, &asad, &aget, &chan_num,
-					&offset_in_pads, &offset_in_strips, &length_in_pads) == 9 ||
-					(sscanf(line.c_str(), "%1s %d %d %d %lf %lf %lf",         // LEGACY FORMAT (1 ASAD only)
-						name,
-						&strip_num, &aget, &chan_num,
-						&offset_in_pads, &offset_in_strips, &length_in_pads) == 7 && (cobo = 0) == 0 && (asad = 0) == 0)) &&
+				if (((std::stringstream(line) >> name >> strip_num >> cobo >> asad >> aget >> chan_num >> offset_in_pads >> offset_in_strips >> length_in_pads) || // NEW FORMAT (several ASADs)
+					(std::stringstream(line) >> name >> strip_num >> aget >> chan_num >> offset_in_pads >> offset_in_strips >> length_in_pads) && (cobo = 0) == 0 && (asad = 0) == 0) && // LEGACY FORMAT (1 ASAD only)
 					strip_num >= 1 &&
 					cobo >= 0 &&
 					asad >= 0 &&
 					aget >= 0 && aget <= AGET_Nchips &&
 					chan_num >= 0 && chan_num < AGET_Nchan &&
 					length_in_pads >= 1.0 &&
-					std::string(name) != "FPN" &&                     // veto any FPN entries and
-					(it = name2dir.find(std::string(name))) != name2dir.end()) {    // accept only U,V,W entries
+					name != "FPN" &&                     // veto any FPN entries and
+					(it = name2dir.find(name)) != name2dir.end()) {    // accept only U,V,W entries
 
 					if (!found) {
 						found = true;
@@ -242,7 +243,7 @@ bool GeometryTPC::Load(std::string fname) {
 
 					// DEBUG
 					if (_debug) {
-						std::cout << "DIRNAME=" << std::string(name) << " / DIR=" << dir << " / STRIPNUM=" << strip_num
+						std::cout << "DIRNAME=" << name << " / DIR=" << dir << " / STRIPNUM=" << strip_num
 							<< " / COBO=" << cobo << " / ASAD=" << asad
 							<< " / AGET=" << aget << " / CHANNUM=" << chan_num << "\n";
 					}
@@ -313,7 +314,7 @@ bool GeometryTPC::Load(std::string fname) {
 	// sanity checks
 	for (int icobo = 0; icobo < COBO_N; icobo++) {
 		if (ASAD_N[icobo] == 0) {
-			std::cerr << "ERROR: Number of ASAD boards for COBO " << icobo << " is not defined !!!" << std::endl;
+			std::cerr << "ERROR: Number of ASAD boards for COBO " << std::distance(&(*ASAD_N.begin()), &ASAD_N[icobo]) << " is not defined !!!" << std::endl;
 			if (_debug) {
 				std::cout << "GeometryTPC::Load - Abort (8)" << std::endl;
 			}

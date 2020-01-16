@@ -25,7 +25,7 @@ public:
   
   HistoManager();
   
-  ~HistoManager();
+  ~HistoManager() = default;
 
   void setEvent(std::shared_ptr<EventTPC> aEvent);
 
@@ -65,7 +65,7 @@ private:
   std::shared_ptr<TH3D> h3DReco;
   TrackBuilder myTkBuilder;
   
-  std::shared_ptr<GeometryTPC> myGeometryPtr;
+  GeometryTPC& myGeometryPtr;
 
   Reconstr_hist reconstruction;
 

@@ -70,7 +70,7 @@ private:
 
   double getNodesChi2() const;
 
-  double myLenght = 0.0, myChi2 = 0.0;
+  double myLenght = 0.0;
   std::vector<double> segmentChi2;
   std::vector<double> nodeHitsChi2;
   std::vector<double> nodeAngleChi2;

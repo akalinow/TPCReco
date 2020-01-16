@@ -30,31 +30,23 @@
 #include "GeometryTPC.h"
 #include "SigClusterTPC.h"
 
-constexpr auto EVENTTPC_DEFAULT_RECO_METHOD = 1;  // 0 = equal charge division along the strip;
-                                        // 1 = weighted charge division from complementary strip directions
-constexpr auto EVENTTPC_DEFAULT_STRIP_REBIN = 2;  // number of strips to rebin [1-1024] ;
-constexpr auto EVENTTPC_DEFAULT_TIME_REBIN = 5;  // number of time cells to rebin [1-512];
-
-using Reconstr_hist = std::pair<std::map<projection, std::shared_ptr<TH2D>>, std::shared_ptr<TH3D>>;
-
 class EventTPC {
   //  friend class SigClusterTPC;
  private:
   int64_t event_id, run_id;
-  std::shared_ptr<GeometryTPC> EvtGeometryPtr;
+  GeometryTPC& EvtGeometryPtr;
   
   std::map<projection, std::map<int, std::map<int, double>>> chargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
 
   double glb_max_charge;
 
  public:
-  EventTPC(std::shared_ptr<GeometryTPC> geo_ptr);
+  EventTPC();
 
   ~EventTPC(){};
 
   void Clear();
 
-  void SetGeoPtr(std::shared_ptr<GeometryTPC> aPtr);
   void SetEventId(int64_t aId) { event_id = aId; };
   void SetRunId(int64_t aId) { run_id =  aId; };
   // helper methods for inserting data points
@@ -74,12 +66,6 @@ class EventTPC {
   std::shared_ptr<SigClusterTPC> GetOneCluster(double thr, int delta_strips, int delta_timecells); // applies clustering threshold to all space-time data points 
   
   std::shared_ptr<TH2D> GetStripVsTime(projection strip_dir);                               // whole event, all strip dirs
-  std::shared_ptr<TH2D> GetStripVsTimeInMM(std::shared_ptr<SigClusterTPC> cluster, projection strip_dir);  // valid range [0-2]
-
-  Reconstr_hist Get(std::shared_ptr<SigClusterTPC> cluster, double radius,          // clustered hits only, / clustered hits only, 3D view
-      int rebin_space = EVENTTPC_DEFAULT_STRIP_REBIN,   // projections on: XY, XZ, YZ planes / all planes
-      int rebin_time = EVENTTPC_DEFAULT_TIME_REBIN,
-      int method = EVENTTPC_DEFAULT_RECO_METHOD);
 };
 
 #endif

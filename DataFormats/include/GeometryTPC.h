@@ -16,6 +16,7 @@
 #include <utility>
 #include <numeric>
 #include <functional>
+#include <mutex>
 
 #include "TROOT.h"
 #include "TMath.h"
@@ -31,6 +32,9 @@ constexpr auto NUM_TOLERANCE = 1e-6;
 
 class StripTPC;
 
+class GeometryTPC;
+
+GeometryTPC& GetGeometry(std::string fname = "", bool debug = false);
 
 auto find_line = [](std::vector<std::string>& vec, std::string str) {
     return std::find_if(/*std::execution::par, */vec.begin(), vec.end(), [&](std::string& str_) { return str_.find(str) != std::string::npos; }); //C++17
@@ -82,14 +86,11 @@ class GeometryTPC {
 
   void SetTH2PolyStrip(int ibin, std::shared_ptr<StripTPC> s);  // maps TH2Poly bin to a given StripTPC object
   
- public:
+  GeometryTPC(std::string  fname, bool debug=false);
 
-	 GeometryTPC() = default;  // empty constructor for required by TObject
-  //  virtual ~GeometryTPC();
-  
+ public:
   // Setter methods 
   
-  GeometryTPC(std::string  fname, bool debug=false);
   inline void SetDebug(bool flag) { _debug = flag; }
 
   // Getter methods
@@ -135,7 +136,8 @@ class GeometryTPC {
 
   std::tuple<double, double, double, double> rangeXY(); //min/max X Y cartesian coordinates covered by strips in any direction
   
-  //  ClassDef(GeometryTPC,1)
+  friend GeometryTPC& GetGeometry(std::string fname, bool debug);
+  friend class std::unique_ptr<GeometryTPC>;
 };
 
 #include "StripTPC.h"

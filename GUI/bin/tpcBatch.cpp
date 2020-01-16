@@ -6,9 +6,6 @@
 
 int main() {
 
-    DataManager aDataManager;
-    TrackBuilder aTkBuilder;
-
     //TEST ---
     std::string pathFileName = "paths.txt";
     std::string geometryFileName;
@@ -22,16 +19,16 @@ int main() {
     path_file.close();
     //dataFileName = "*poza buildem";
 
-    if (!aDataManager.loadGeometry(geometryFileName)) {
-        checkpoint;
-        throw std::runtime_error("Load error occured or geometry data is incorrect!"); //temporary solution / will be changed to popup
-    }
+    DataManager aDataManager;
+    TrackBuilder aTkBuilder;
+
+    aDataManager.loadGeometry(geometryFileName);
     checkpoint;
     aDataManager.loadDataFile(dataFileName);
     aDataManager.loadTreeEntry(3);
 
     auto aEvent = aDataManager.getCurrentEvent();
-    if (!aEvent) {
+    if (aEvent == nullptr) {
         std::cout << __FUNCTION__ << " NULL EventTPC pointer" << std::endl;
         return -1;
     }

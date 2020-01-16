@@ -7,6 +7,7 @@
 
 #include "TFile.h"
 #include "TTree.h"
+#include "GeometryTPC.h"
 
 class GeometryTPC;
 class EventTPC;
@@ -14,11 +15,11 @@ class EventTPC;
 class DataManager {
 public:
   
-  DataManager() = default;
+    DataManager() : myGeometryPtr(GetGeometry()) {};
   
   ~DataManager() = default;
 
-  bool loadGeometry(const std::string & fileName);
+  void loadGeometry(const std::string & fileName);
 
   void loadDataFile(const std::string & fileName);
 
@@ -35,8 +36,6 @@ public:
   unsigned int numberOfEvents() const;
 
   unsigned int currentEventNumber() const;
-
-  std::shared_ptr<GeometryTPC> getGeometry() const;
     
 private:
   
@@ -47,7 +46,7 @@ private:
   unsigned int myCurrentEntry;
 
   std::shared_ptr<EventTPC> currentEvent;
-  std::shared_ptr<GeometryTPC> myGeometryPtr;
+  GeometryTPC& myGeometryPtr;
 
 };
 #endif
