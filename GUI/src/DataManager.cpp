@@ -9,10 +9,7 @@
 #include "DataManager.h"
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-bool DataManager::loadGeometry(const std::string & fileName){
-  
-  myGeometryPtr = std::make_shared<GeometryTPC>(fileName);
-  return myGeometryPtr != nullptr && myGeometryPtr->IsOK();
+void DataManager::loadGeometry(const std::string & fileName){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -20,14 +17,15 @@ void DataManager::loadDataFile(const std::string & fileName){
 
   std::string treeName = "TPCData";
   
-  myFile = std::make_shared<TFile>(fileName.c_str(),"READ");
-  if(!myFile){
+  myFile.OpenFile(fileName.c_str(),"READ");
+  if(myFile.IsOpen()){
     std::cerr<<"File: "<<fileName<<"not found!"<<std::endl;
     return;
   }
-  
-  myTree = (TTree*)myFile->Get(treeName.c_str());
-  myTree->SetBranchAddress("Event", &*currentEvent); //CHECK IF CORRECT
+  EventTPC* temp_ptr;
+  myTree = (TTree*)myFile.Get(treeName.c_str());
+  myTree->SetBranchAddress("Event", &temp_ptr); //NOT CORRECT
+  currentEvent = std::make_shared<EventTPC>(*temp_ptr);
   nEvents = myTree->GetEntries();
   loadTreeEntry(0);
 
@@ -44,7 +42,6 @@ void DataManager::loadTreeEntry(unsigned int iEntry){
   if(myTree->GetEntries()<=iEntry) return;
   
   myTree->GetEntry(iEntry);
-  currentEvent->SetGeoPtr(myGeometryPtr);
   myCurrentEntry = iEntry;
 }
 /////////////////////////////////////////////////////////
@@ -82,13 +79,6 @@ std::shared_ptr<EventTPC> DataManager::getPreviousEvent(){
   }
 
   return currentEvent;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-std::shared_ptr<GeometryTPC> DataManager::getGeometry() const{
-
-  return myGeometryPtr;
-  
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

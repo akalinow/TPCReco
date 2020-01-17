@@ -6,7 +6,7 @@
 #include <memory>
 #include <iostream>
 #include <algorithm>
-#include <execution>
+//#include <execution> //C++17
 #include <numeric>
 
 #include "TVector3.h"
@@ -17,7 +17,7 @@ class TrackSegment2D{
 
 public:
 
-  TrackSegment2D(projection strip_dir = projection::DIR_U){ myStripDir = int(strip_dir);};
+  TrackSegment2D(projection strip_dir = projection::DIR_U){ myStripDir = strip_dir;};
 
   ~TrackSegment2D() {};
 
@@ -29,7 +29,7 @@ public:
 
   void setNAccumulatorHits(int nHits){nAccumulatorHits = nHits;}
 
-  int getStripDir() const {return myStripDir;}
+  projection getStripDir() const {return myStripDir;}
 
   int getNAccumulatorHits() const { return nAccumulatorHits;}
 
@@ -74,7 +74,7 @@ private:
   ///Calculate transvere distance from point to the segment.
   double getPointTransverseDistance(const TVector3 & aPoint) const;
 
-  int myStripDir;
+  projection myStripDir;
   double myLenght = 0.0;
 
   TVector3 myTangent, myBias;

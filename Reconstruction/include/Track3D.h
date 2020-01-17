@@ -4,7 +4,7 @@
 #include "TGraph.h"
 
 #include <vector>
-#include <execution>
+//#include <execution> //C++17
 
 #include "TrackSegment3D.h"
 #include "CommonDefinitions.h"
@@ -70,7 +70,7 @@ private:
 
   double getNodesChi2() const;
 
-  double myLenght = 0.0, myChi2 = 0.0;
+  double myLenght = 0.0;
   std::vector<double> segmentChi2;
   std::vector<double> nodeHitsChi2;
   std::vector<double> nodeAngleChi2;

@@ -42,17 +42,15 @@ public:
 
   void setEvent(std::shared_ptr<EventTPC> aEvent);
 
-  void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);
-
   void reconstruct();
 
   const std::shared_ptr<SigClusterTPC> getCluster() const { return myCluster;}
 
-  const TH2D & getRecHits2D(int iDir) const;
+  const TH2D & getRecHits2D(projection dir) const;
 
-  const TH2D & getHoughtTransform(int iDir) const;
+  const TH2D & getHoughtTransform(projection dir) const;
   
-  const TrackSegment2D & getSegment2D(int iDir, unsigned int iTrack=0) const;
+  const TrackSegment2D & getSegment2D(projection dir, unsigned int iTrack=0) const;
   
   const TrackSegment3D & getSegment3DSeed() const;
 
@@ -60,15 +58,15 @@ public:
 
 private:
 
-  void makeRecHits(int iDir);
+  void makeRecHits(projection dir);
 
   TF1 fitTimeWindow(TH1D* hProj);
  
-  void fillHoughAccumulator(int iDir);
+  void fillHoughAccumulator(projection dir);
 
-  TrackSegment2DCollection findSegment2DCollection(int iDir);
+  TrackSegment2DCollection findSegment2DCollection(projection dir);
   
-  TrackSegment2D findSegment2D(int iDir, int iPeak) const;
+  TrackSegment2D findSegment2D(projection dir, int iPeak) const;
   
   TrackSegment3D buildSegment3D() const;
   
@@ -76,20 +74,18 @@ private:
 
   Track3D fitTrackNodes(const Track3D & aTrack) const;
 
-  double fitTrackSplitPoint(const Track3D& aTrackCandidate) const;
-
     
   std::shared_ptr<EventTPC> myEvent;
   std::shared_ptr<SigClusterTPC> myCluster;
-  std::shared_ptr<GeometryTPC> myGeometryPtr;
+  GeometryTPC& myGeometryPtr;
 
   bool myHistoInitialized;
   int nAccumulatorRhoBins, nAccumulatorPhiBins;
 
   TVector3 aHoughOffest;
-  std::vector<TH2D> myAccumulators;
-  std::vector<TH2D> myRecHits;
-  std::vector<TrackSegment2DCollection> my2DSeeds;
+  std::map<projection, TH2D> myAccumulators;
+  std::map<projection, TH2D> myRecHits;
+  std::map<projection, TrackSegment2DCollection> my2DSeeds;
 
   TrackSegment2D dummySegment2D;
   

@@ -39,10 +39,10 @@ int main(int argc, char *argv[]) {
     timestamp = std::string(argv[3]);
     std::cout<<"timestamp: "<<timestamp<<std::endl;
   }
-  std::shared_ptr<GeometryTPC> myGeometryPtr = std::make_shared<GeometryTPC>(geomFileName);
+  GeometryTPC& myGeometryPtr = GetGeometry(geomFileName);
 
   ///Create event
-  std::shared_ptr<EventTPC> myEvent = std::make_shared<EventTPC>(myGeometryPtr);
+  std::shared_ptr<EventTPC> myEvent = std::make_shared<EventTPC>();
 
   PedestalCalculator myPedestalCalculator;
   myPedestalCalculator.SetGeometryAndInitialize(myGeometryPtr);

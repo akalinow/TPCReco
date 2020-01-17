@@ -34,14 +34,12 @@ MainFrame::MainFrame(const TGWindow *p, uint32_t w, uint32_t h)
     path_file.close();
   //dataFileName = "*poza buildem";
   
-    if (!myDataManager.loadGeometry(geometryFileName)) {
-        throw std::runtime_error("Load error occured or geometry data is incorrect!"); //temporary solution / will be changed to popup
-    }
+    myDataManager.loadGeometry(geometryFileName);
+    checkpoint;
   myDataManager.loadDataFile(dataFileName);
   myDataManager.loadTreeEntry(0);
-  myHistoManager.setGeometry(myDataManager.getGeometry());
   ////////////////////
-
+  checkpoint;
   fSelectionBox = 0;
   fArrow = 0;
   fLine = 0;

@@ -5,7 +5,7 @@ project(TPCSoft)                   # this sets the project name
 ## dependencies ###############################################################
 ###############################################################################
 
-#ROOT 
+#ROOT
 list(APPEND CMAKE_PREFIX_PATH $ENV{ROOTSYS})
 list(APPEND CMAKE_MODULE_PATH $ENV{ROOTSYS}/etc/cmake)
 find_package(ROOT REQUIRED COMPONENTS Physics HistPainter)

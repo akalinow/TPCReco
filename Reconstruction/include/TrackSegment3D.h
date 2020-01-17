@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <numeric>
 #include <atomic>
-#include <execution>
+//#include <execution> //C++17
 
 #include "TVector3.h"
 #include "TH2D.h"
@@ -31,7 +31,7 @@ public:
 
   void setStartEnd(const double *par);
 
-  void setRecHits(const std::vector<TH2D> & aRecHits);
+  void setRecHits(const std::map<projection, TH2D> & aRecHits);
 
   ///Unit tangential vector along segment.
   const TVector3 & getTangent() const { return myTangent;}
@@ -68,7 +68,7 @@ public:
 
   double getIntegratedHitDistance(double lambda) const;
 
-  const auto & getRecHits() const { return myRecHits;}
+  const std::map<projection, Hit2DCollection>& getRecHits() const { return myRecHits;}
 
   double getRecHitChi2() const;
   
@@ -90,7 +90,7 @@ private:
   TVector3 myStart, myEnd;
   double myLenght;
 
-  std::array<Hit2DCollection, 3> myRecHits;
+  std::map<projection, Hit2DCollection> myRecHits;
   std::vector<double> myProjectionsChi2;
   
 };

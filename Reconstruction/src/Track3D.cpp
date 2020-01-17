@@ -149,8 +149,8 @@ void Track3D::updateNodesChi2(projection strip_dir) {
 
 	if (!mySegments.size()) return;
 
-	TVector3 stripPitchDirection(cos(phiPitchDirection[int(strip_dir)]),
-		sin(phiPitchDirection[int(strip_dir)]), 0);
+	TVector3 stripPitchDirection(cos(phiPitchDirection.at(strip_dir)),
+		sin(phiPitchDirection.at(strip_dir)), 0);
 
 	double sum = 0.0;
 	double nodeChi2 = 0.0;
@@ -175,7 +175,7 @@ void Track3D::updateNodesChi2(projection strip_dir) {
 
 		if (ROOT::Math::VectorUtil::DeltaPhi(formerTransverse2D, latterTransverse2D) < 0) std::swap(formerTransverse2D, latterTransverse2D);
 		deltaPhi = ROOT::Math::VectorUtil::DeltaPhi(formerTransverse2D, latterTransverse2D);
-		for (const auto& aHit : mySegments.front().getRecHits().at(int(strip_dir))) {
+		for (const auto& aHit : mySegments.front().getRecHits().at(strip_dir)) {
 			TVector3 aPoint;
 			auto charge = aHit().charge;
 			aPoint.SetXYZ(aHit().posTime, aHit().posWire, 0.0);
@@ -198,13 +198,14 @@ void Track3D::updateChi2(){
 
   segmentChi2.clear();
   segmentChi2.resize(mySegments.size());
-  std::transform(/*std::execution::par,*/ mySegments.begin(), mySegments.end(), segmentChi2.begin(), [](TrackSegment3D obj)->double{ return obj.getRecHitChi2(); }); //C++17
+  std::transform(/*std::execution::par,*/ mySegments.begin(), mySegments.end(), segmentChi2.begin(), [](TrackSegment3D& obj)->double{ return obj.getRecHitChi2(); }); //C++17
 
   nodeHitsChi2.clear();
-  if(mySegments.size() != 0) nodeHitsChi2.resize(mySegments.size()-1);
-
   nodeAngleChi2.clear();
-  if(mySegments.size() != 0) nodeAngleChi2.resize(mySegments.size()-1);
+  if (mySegments.size() != 0) {
+      nodeHitsChi2.resize(mySegments.size() - 1);
+      nodeAngleChi2.resize(mySegments.size() - 1);
+  }
   
   std::for_each(/*std::execution::par_unseq*/proj_vec_UVW.begin(), proj_vec_UVW.end(), [&](auto strip_dir) { //C++17
       updateNodesChi2(strip_dir);
