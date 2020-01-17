@@ -5,8 +5,7 @@ project(TPCSoft)                   # this sets the project name
 ## dependencies ###############################################################
 ###############################################################################
 
-#ROOT 
-list(APPEND CMAKE_PREFIX_PATH "C:/root")
+#ROOT
 list(APPEND CMAKE_PREFIX_PATH $ENV{ROOTSYS})
 list(APPEND CMAKE_MODULE_PATH $ENV{ROOTSYS}/etc/cmake)
 find_package(ROOT REQUIRED COMPONENTS Physics HistPainter)
@@ -30,7 +29,7 @@ MESSAGE( STATUS "CMAKE_INSTALL_PREFIX:         " ${CMAKE_INSTALL_PREFIX} )
 # in the package.
 #
 if(NOT IS_DIRECTORY ${CMAKE_INSTALL_PREFIX}/resources) # needs full path!
-  install(DIRECTORY resources DESTINATION "C:/Users/26kuba05/source/repos/TPCReco/out")
+  install(DIRECTORY resources DESTINATION ${CMAKE_INSTALL_PREFIX})
 else()
   MESSAGE( STATUS "RESOURCES dir already exists in the installation dir" )
 endif()
