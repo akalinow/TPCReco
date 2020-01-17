@@ -126,7 +126,7 @@ double TrackSegment3D::getIntegratedHitDistance(double lambdaCut) const{
   });
 #else
   return std::transform_reduce(std::execution::par_unseq, proj_vec_UVW.begin(), proj_vec_UVW.end(), myRecHits.begin(), 0.0, std::plus<>(), [&](projection strip_dir, auto& aRecHits)->auto {
-      TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, lambdaCut);
+      TrackSegment2D aTrack2DProjection = this->get2DProjection(strip_dir, 0, lambdaCut);
       return aTrack2DProjection.getIntegratedHitDistance(lambdaCut, aRecHits.second);
   });
 

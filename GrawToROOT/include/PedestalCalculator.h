@@ -30,8 +30,6 @@ class PedestalCalculator {
 
   ~PedestalCalculator();
 
-  void SetGeometryAndInitialize(std::shared_ptr<GeometryTPC> aPtr);
-
   double GetPedestalCorrection(int iChannelGlobal, int agentId, int iCell);
 
   void CalculateEventPedestals(const GET::GDataFrame & dataFrame);
@@ -50,7 +48,7 @@ class PedestalCalculator {
   int minSignalCell, maxSignalCell;
   int minPedestalCell, maxPedestalCell;
 
-  GeometryTPC& myGeometryPtr = GetGeometry();
+  GeometryTPC& myGeometry = GetGeometry();
 
   std::vector<double> pedestals;
 
