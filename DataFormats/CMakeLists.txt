@@ -32,12 +32,18 @@ ROOT_GENERATE_DICTIONARY(G__${MODULE_NAME}
 #
 add_library(${MODULE_NAME} SHARED ${sources} G__${MODULE_NAME}.cxx)
 target_link_libraries(${MODULE_NAME} ${ROOT_LIBRARIES})
+
+add_executable(dummyEventTPCMaker bin/dummyEventTPCMaker.cpp)
+
 # Compiler flags.
 #
 target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
 
+target_link_libraries(dummyEventTPCMaker PUBLIC ${MODULE_NAME})
+
 # All install commands get the same destination. this allows us to use paths
 # relative to the executable.
 install(TARGETS ${MODULE_NAME} LIBRARY DESTINATION lib)
+install(TARGETS dummyEventTPCMaker RUNTIME DESTINATION bin)
 install(FILES ${CMAKE_BINARY_DIR}/${MODULE_NAME}/lib${MODULE_NAME}_rdict.pcm DESTINATION lib)
 install(FILES ${CMAKE_BINARY_DIR}/${MODULE_NAME}/lib${MODULE_NAME}.rootmap DESTINATION lib)
