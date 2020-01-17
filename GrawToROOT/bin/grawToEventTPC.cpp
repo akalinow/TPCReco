@@ -39,13 +39,12 @@ int main(int argc, char *argv[]) {
     timestamp = std::string(argv[3]);
     std::cout<<"timestamp: "<<timestamp<<std::endl;
   }
-  GeometryTPC& myGeometryPtr = GetGeometry(geomFileName);
+  GeometryTPC& myGeometry = GetGeometry(geomFileName);
 
   ///Create event
   std::shared_ptr<EventTPC> myEvent = std::make_shared<EventTPC>();
 
   PedestalCalculator myPedestalCalculator;
-  myPedestalCalculator.SetGeometryAndInitialize(myGeometryPtr);
 
   ///Create ROOT Tree
   std::string rootFileName = "EventTPC_"+timestamp+".root";
@@ -76,12 +75,12 @@ int main(int argc, char *argv[]) {
     int COBO_idx = 0;
     int ASAD_idx = 0;
     
-    for (int32_t agetId = 0; agetId < myGeometryPtr->GetAgetNchips(); ++agetId){
+    for (int32_t agetId = 0; agetId < myGeometry.GetAgetNchips(); ++agetId){
 	// loop over normal channels and update channel mask for clustering
-	for (int32_t chanId = 0; chanId < myGeometryPtr->GetAgetNchannels(); ++chanId){
-	  int iChannelGlobal     = myGeometryPtr->Global_normal2normal(COBO_idx, ASAD_idx, agetId, chanId);// 0-255 (without FPN)
+	for (int32_t chanId = 0; chanId < myGeometry.GetAgetNchannels(); ++chanId){
+	  int iChannelGlobal     = myGeometry.Global_normal2normal(COBO_idx, ASAD_idx, agetId, chanId);// 0-255 (without FPN)
 	    
-	    GET::GDataChannel* channel = dataFrame.SearchChannel(agetId, myGeometryPtr->Aget_normal2raw(chanId));
+	    GET::GDataChannel* channel = dataFrame.SearchChannel(agetId, myGeometry.Aget_normal2raw(chanId));
 	    if (!channel) continue;
 	    
 	    for (int32_t i = 0; i < channel->fNsamples; ++i){

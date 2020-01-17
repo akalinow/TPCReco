@@ -7,19 +7,13 @@
 #include "PedestalCalculator.h"
 
 PedestalCalculator::PedestalCalculator(){
+
+  InitializeTables();
+  InitializeMonitoringHistos();
 }
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 PedestalCalculator::~PedestalCalculator(){
-}
-///////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////
-void PedestalCalculator::SetGeometryAndInitialize(std::shared_ptr<GeometryTPC> aPtr){
-
-  myGeometryPtr = aPtr;
-
-  InitializeTables();
-  InitializeMonitoringHistos();
 }
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
@@ -31,12 +25,12 @@ void PedestalCalculator::InitializeTables(){
   minPedestalCell=10;
   maxPedestalCell=50;
 
-  nchan = myGeometryPtr->GetAgetNchips()*myGeometryPtr->GetAgetNchannels(); // 64 normal channels
+  nchan = myGeometry.GetAgetNchips()*myGeometry.GetAgetNchannels(); // 64 normal channels
   maxval = 4096;          // 12-bit ADC
   nbin_spectrum = 100;    // Energy spectrum histograms
 
-  FPN_entries_pedestal.assign(myGeometryPtr->GetAgetNchips(), std::vector<uint32_t>(512));
-  FPN_ave_pedestal.assign(myGeometryPtr->GetAgetNchips(), std::vector<double>(512));
+  FPN_entries_pedestal.assign(myGeometry.GetAgetNchips(), std::vector<uint32_t>(512));
+  FPN_ave_pedestal.assign(myGeometry.GetAgetNchips(), std::vector<double>(512));
 
   FPN_entries_signal =  FPN_entries_pedestal;
   FPN_ave_signal = FPN_ave_pedestal;
@@ -47,7 +41,7 @@ void PedestalCalculator::ResetTables(){
 
   prof_pedestal->Clear();
 
-  for (int agetId = 0; agetId < myGeometryPtr->GetAgetNchips(); ++agetId){
+  for (int agetId = 0; agetId < myGeometry.GetAgetNchips(); ++agetId){
     for(int cellId=minPedestalCell; cellId<=maxPedestalCell; ++cellId) { 
       FPN_entries_pedestal[agetId][cellId]=0; 
       FPN_ave_pedestal[agetId][cellId]=0.0;
@@ -93,7 +87,7 @@ void PedestalCalculator::CalculateEventPedestals(const GET::GDataFrame & dataFra
     //double rms=prof_pedestal->GetBinError(ibin);
     pedestals.push_back(mean);
   }
-  if ((int)pedestals.size()!=myGeometryPtr->GetAgetNchannels()*myGeometryPtr->GetAgetNchips()) {
+  if ((int)pedestals.size()!=myGeometry.GetAgetNchannels()*myGeometry.GetAgetNchips()) {
     std::cerr << "ERROR: wrong size of pedestal vector!!!" << std::endl;
     //return false;
   }    
@@ -110,11 +104,11 @@ void PedestalCalculator::ProcessDataFrame(const GET::GDataFrame &dataFrame, bool
   if(calculateMean) ResetTables();
   
   // loop over AGET chips
-  for (int agetId = 0; agetId < myGeometryPtr->GetAgetNchips(); ++agetId){
+  for (int agetId = 0; agetId < myGeometry.GetAgetNchips(); ++agetId){
     // FPN channels loop
-    for (int channelId=0; calculateMean && channelId<myGeometryPtr->GetAgetNchannels_fpn(); ++channelId) {
+    for (int channelId=0; calculateMean && channelId<myGeometry.GetAgetNchannels_fpn(); ++channelId) {
 
-      GET::GDataChannel* channel = const_cast<GET::GDataFrame &>(dataFrame).SearchChannel(agetId, myGeometryPtr->Aget_fpn2raw(channelId));
+      GET::GDataChannel* channel = const_cast<GET::GDataFrame &>(dataFrame).SearchChannel(agetId, myGeometry.Aget_fpn2raw(channelId));
       if (!channel) continue;
 
       for (int aSample = 0; aSample < channel->fNsamples; ++aSample){
@@ -143,9 +137,9 @@ void PedestalCalculator::ProcessDataFrame(const GET::GDataFrame &dataFrame, bool
     }
 
     ///Loop over normal channels
-    for (int channelId=0; !calculateMean && channelId<myGeometryPtr->GetAgetNchannels(); ++channelId) {
+    for (int channelId=0; !calculateMean && channelId<myGeometry.GetAgetNchannels(); ++channelId) {
 
-      GET::GDataChannel* channel = const_cast<GET::GDataFrame &>(dataFrame).SearchChannel(agetId, myGeometryPtr->Aget_normal2raw(channelId));
+      GET::GDataChannel* channel = const_cast<GET::GDataFrame &>(dataFrame).SearchChannel(agetId, myGeometry.Aget_normal2raw(channelId));
       if (!channel) continue;
 
       for (int aSample = 0; aSample < channel->fNsamples; ++aSample){
@@ -156,7 +150,7 @@ void PedestalCalculator::ProcessDataFrame(const GET::GDataFrame &dataFrame, bool
 	if(cellId>=minPedestalCell && cellId<=maxPedestalCell){
 	  rawVal  = sample->fValue;
 	  corrVal = rawVal - FPN_ave_pedestal[agetId][cellId];
-	  globalChannelId = myGeometryPtr->Global_normal2normal(COBO_idx, ASAD_idx, agetId, channelId);// 0-255 (without FPN)
+	  globalChannelId = myGeometry.Global_normal2normal(COBO_idx, ASAD_idx, agetId, channelId);// 0-255 (without FPN)
 	  prof_pedestal->Fill(globalChannelId, corrVal);
 	}
       }

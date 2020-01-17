@@ -190,7 +190,7 @@ Reconstr_hist SigClusterTPC::Get(double radius, int rebin_space, int rebin_time,
 
 			std::map<projection, double> charge_along_direction;  // sum of charges along three directions (for a given time range)
 			for (auto dir : proj_vec_UVW) {
-				charge_along_direction[dir] = GetValByStrip(dir, uvw1[dir], icell);
+				charge_along_direction[dir] = evt_ref.GetValByStrip(dir, uvw1[dir], icell);
 			}
 
 			// loop over directions
