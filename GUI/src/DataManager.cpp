@@ -9,10 +9,6 @@
 #include "DataManager.h"
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void DataManager::loadGeometry(const std::string & fileName){
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
 void DataManager::loadDataFile(const std::string & fileName){
 
   std::string treeName = "TPCData";
@@ -22,10 +18,8 @@ void DataManager::loadDataFile(const std::string & fileName){
     std::cerr<<"File: "<<fileName<<"not found!"<<std::endl;
     return;
   }
-  EventTPC* temp_ptr;
   myTree = (TTree*)myFile.Get(treeName.c_str());
-  myTree->SetBranchAddress("Event", &temp_ptr); //NOT CORRECT
-  currentEvent = std::make_shared<EventTPC>(*temp_ptr);
+  myTree->SetBranchAddress("Event", &currentEvent_internal); //MIGHT BE INCORRECT
   nEvents = myTree->GetEntries();
   loadTreeEntry(0);
 
@@ -42,6 +36,7 @@ void DataManager::loadTreeEntry(unsigned int iEntry){
   if(myTree->GetEntries()<=iEntry) return;
   
   myTree->GetEntry(iEntry);
+  currentEvent_external_copy = std::make_shared<EventTPC>(*currentEvent_internal);
   myCurrentEntry = iEntry;
 }
 /////////////////////////////////////////////////////////
@@ -58,7 +53,7 @@ void DataManager::loadEventId(unsigned int iEvent){
 /////////////////////////////////////////////////////////
 std::shared_ptr<EventTPC> DataManager::getCurrentEvent() const{
 
-  return currentEvent;
+  return currentEvent_external_copy;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -68,7 +63,7 @@ std::shared_ptr<EventTPC> DataManager::getNextEvent(){
     loadTreeEntry(++myCurrentEntry);
   }
 
-  return currentEvent;
+  return currentEvent_external_copy;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -78,7 +73,7 @@ std::shared_ptr<EventTPC> DataManager::getPreviousEvent(){
     loadTreeEntry(--myCurrentEntry);
   }
 
-  return currentEvent;
+  return currentEvent_external_copy;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -91,8 +86,8 @@ unsigned int DataManager::numberOfEvents() const{
 /////////////////////////////////////////////////////////
 unsigned int DataManager::currentEventNumber() const{
 
-  if(currentEvent != nullptr){
-    return currentEvent->GetEventId();
+  if(currentEvent_external_copy != nullptr){
+    return currentEvent_external_copy->GetEventId();
   }
   
   return 0;

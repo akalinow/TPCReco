@@ -23,7 +23,7 @@ class EventTPC;
 class HistoManager {
 public:
   
-  HistoManager();
+  HistoManager() = default;
   
   ~HistoManager() = default;
 
@@ -64,8 +64,6 @@ private:
   std::vector<TH2D*> projectionsInCartesianCoords;
   std::shared_ptr<TH3D> h3DReco;
   TrackBuilder myTkBuilder;
-  
-  GeometryTPC& myGeometryPtr;
 
   Reconstr_hist reconstruction;
 

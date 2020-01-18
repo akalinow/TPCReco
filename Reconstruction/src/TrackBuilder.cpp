@@ -1,8 +1,7 @@
 #include "TrackBuilder.h"
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TrackBuilder::TrackBuilder() :
-    myGeometryPtr(GetGeometry()) {
+TrackBuilder::TrackBuilder() {
 
   nAccumulatorRhoBins = 100;//FIX ME move to configuarable
   nAccumulatorPhiBins = 100;//FIX ME move to configuarable

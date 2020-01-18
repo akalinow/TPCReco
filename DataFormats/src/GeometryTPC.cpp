@@ -1,6 +1,6 @@
 #include "GeometryTPC.h" 
 
-GeometryTPC& GetGeometry(std::string fname, bool debug) {
+GeometryTPC& Geometry(std::string fname, bool debug) {
 	static GeometryTPC main_geometry{ fname, debug };
 	return main_geometry;
 }
@@ -312,9 +312,9 @@ bool GeometryTPC::Load(std::string fname) {
 	}
 
 	// sanity checks
-	for (int icobo = 0; icobo < COBO_N; icobo++) {
-		if (ASAD_N[icobo] == 0) {
-			std::cerr << "ERROR: Number of ASAD boards for COBO " << std::distance(&(*ASAD_N.begin()), &ASAD_N[icobo]) << " is not defined !!!" << std::endl;
+	for (auto asad : ASAD_N) {
+		if (asad == 0) {
+			std::cerr << "ERROR: Number of ASAD boards for COBO " << std::distance(&ASAD_N[0], &asad) << " is not defined !!!" << std::endl;
 			if (_debug) {
 				std::cout << "GeometryTPC::Load - Abort (8)" << std::endl;
 			}
@@ -557,7 +557,7 @@ int GeometryTPC::Aget_fpn2raw(int FPN_idx) { // valid range [0-3]
 int GeometryTPC::Global_normal2normal(int COBO_idx, int ASAD_idx, int aget_idx, int channel_idx) {   // valid range [0-1][0-3][0-3][0-63]
   if(COBO_idx<0 || COBO_idx>=COBO_N || ASAD_idx<0 || ASAD_idx>ASAD_N[COBO_idx] || aget_idx<0 || aget_idx>=AGET_Nchips ||
      channel_idx<0 || channel_idx>=AGET_Nchan ) return ERROR;
-  int ASAD_offset = std::accumulate(ASAD_N.begin(), ASAD_N.end(), 0);
+  int ASAD_offset = std::accumulate(ASAD_N.begin(), ASAD_N.begin() + COBO_idx, 0);
   return ((ASAD_offset+ASAD_idx)*AGET_Nchips + aget_idx)*AGET_Nchan + channel_idx; 
 }
 

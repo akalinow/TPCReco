@@ -1,11 +1,5 @@
 #include "EventTPC.h"
 
-EventTPC::EventTPC() :
-EvtGeometryPtr(GetGeometry()) {
-	Clear(); 
-}
-
-
 void EventTPC::Clear() {
 
 	glb_max_charge = 0.0;
@@ -15,7 +9,7 @@ void EventTPC::Clear() {
 
 bool EventTPC::AddValByStrip(std::shared_ptr<StripTPC> strip, int time_cell, double val) {  // valid range [0-2][1-1024][0-511]
 	auto op = (*strip)();
-	if (time_cell < 0 || time_cell >= EvtGeometryPtr.GetAgetNtimecells() || op.num<1 || op.num>EvtGeometryPtr.GetDirNstrips(op.dir)) return false;
+	if (time_cell < 0 || time_cell >= Geometry().GetAgetNtimecells() || op.num<1 || op.num>Geometry().GetDirNstrips(op.dir)) return false;
 
 	chargeMap[op.dir][op.num][time_cell] += val; //update hit or add new one
 
@@ -26,12 +20,12 @@ bool EventTPC::AddValByStrip(std::shared_ptr<StripTPC> strip, int time_cell, dou
 }
 
 bool EventTPC::AddValByAgetChannel(int cobo_idx, int asad_idx, int aget_idx, int channel_idx, int time_cell, double val) {  // valid range [0-1][0-3][0-3][0-63][0-511]
-	return AddValByStrip(EvtGeometryPtr.GetStripByAget(cobo_idx, asad_idx, aget_idx, channel_idx), time_cell, val);
+	return AddValByStrip(Geometry().GetStripByAget(cobo_idx, asad_idx, aget_idx, channel_idx), time_cell, val);
 }
 
 double EventTPC::GetValByStrip(projection strip_dir, int strip_number, int time_cell/*, bool &result*/) {  // valid range [0-2][1-1024][0-511]
   //result=false;
-	if (!IsDIR_UVW(strip_dir) || time_cell < 0 || time_cell >= 512 || strip_number<1 || strip_number>EvtGeometryPtr.GetDirNstrips(strip_dir)) {
+	if (!IsDIR_UVW(strip_dir) || time_cell < 0 || time_cell >= 512 || strip_number<1 || strip_number>Geometry().GetDirNstrips(strip_dir)) {
 		return 0.0;
 	}
 
@@ -83,9 +77,9 @@ std::shared_ptr<SigClusterTPC> EventTPC::GetOneCluster(double thr, int delta_str
 				const projection strip_dir = by_strip_dir.first;
 				const int strip_num = by_strip_num.first;
 				auto min_strip_num = std::max(1, strip_num - delta_strips);
-				auto max_strip_num = std::min(EvtGeometryPtr.GetDirNstrips(strip_dir), strip_num + delta_strips);
+				auto max_strip_num = std::min(Geometry().GetDirNstrips(strip_dir), strip_num + delta_strips);
 				auto min_time_cell = std::max(0, time_cell - delta_timecells);
-				auto max_time_cell = std::min(EvtGeometryPtr.GetAgetNtimecells() - 1, time_cell + delta_timecells);
+				auto max_time_cell = std::min(Geometry().GetAgetNtimecells() - 1, time_cell + delta_timecells);
 				for (int icell = min_time_cell; icell <= max_time_cell; icell++) {
 					for (int istrip = min_strip_num; istrip <= max_strip_num; istrip++) {
 						if ((icell == time_cell && istrip == strip_num) || // exclude existing seed hits
@@ -114,15 +108,15 @@ std::shared_ptr<SigClusterTPC> EventTPC::GetOneCluster(double thr, int delta_str
 
 std::shared_ptr<TH2D> EventTPC::GetStripVsTime(projection strip_dir) {  // valid range [0-2]
 
-	std::shared_ptr<TH2D> result = std::make_shared<TH2D>(Form("hraw_%s_vs_time_evt%lld", EvtGeometryPtr.GetDirName(strip_dir).c_str(), event_id),
+	std::shared_ptr<TH2D> result = std::make_shared<TH2D>(Form("hraw_%s_vs_time_evt%lld", Geometry().GetDirName(strip_dir).c_str(), event_id),
 		Form("Event-%lld: Raw signals from %s strips;Time bin [arb.u.];%s strip no.;Charge/bin [arb.u.]",
-			event_id, EvtGeometryPtr.GetDirName(strip_dir).c_str(), EvtGeometryPtr.GetDirName(strip_dir).c_str()),
-		EvtGeometryPtr.GetAgetNtimecells(),
+			event_id, Geometry().GetDirName(strip_dir).c_str(), Geometry().GetDirName(strip_dir).c_str()),
+		Geometry().GetAgetNtimecells(),
 		0.0 - 0.5,
-		1. * EvtGeometryPtr.GetAgetNtimecells() - 0.5, // ends at 511.5 (cells numbered from 0 to 511)
-		EvtGeometryPtr.GetDirNstrips(strip_dir),
+		1. * Geometry().GetAgetNtimecells() - 0.5, // ends at 511.5 (cells numbered from 0 to 511)
+		Geometry().GetDirNstrips(strip_dir),
 		1.0 - 0.5,
-		1. * EvtGeometryPtr.GetDirNstrips(strip_dir) + 0.5);
+		1. * Geometry().GetDirNstrips(strip_dir) + 0.5);
 	// fill new histogram
 	for (auto& by_strip_num : chargeMap[strip_dir]) {
 		for (auto& by_time_cell : by_strip_num.second) {

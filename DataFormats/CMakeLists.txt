@@ -33,7 +33,7 @@ ROOT_GENERATE_DICTIONARY(G__${MODULE_NAME}
 add_library(${MODULE_NAME} SHARED ${sources} G__${MODULE_NAME}.cxx)
 target_link_libraries(${MODULE_NAME} ${ROOT_LIBRARIES})
 
-add_executable(dummyEventTPCMaker bin/dummyEventTPCMaker.cpp)
+add_executable(dummyEventTPCMaker ../GrawToROOT/bin/dummyEventTPCMaker.cpp)
 
 # Compiler flags.
 #

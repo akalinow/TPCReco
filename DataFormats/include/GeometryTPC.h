@@ -35,7 +35,7 @@ class StripTPC;
 
 class GeometryTPC;
 
-GeometryTPC& GetGeometry(std::string fname = "", bool debug = false);
+GeometryTPC& Geometry(std::string fname = "", bool debug = false);
 
 auto find_line = [](std::vector<std::string>& vec, std::string str) {
     return std::find_if(/*std::execution::par, */vec.begin(), vec.end(), [&](std::string& str_) { return str_.find(str) != std::string::npos; }); //C++17
@@ -137,8 +137,7 @@ class GeometryTPC {
 
   std::tuple<double, double, double, double> rangeXY(); //min/max X Y cartesian coordinates covered by strips in any direction
   
-  friend GeometryTPC& GetGeometry(std::string fname, bool debug);
-  friend class std::unique_ptr<GeometryTPC>;
+  friend GeometryTPC& Geometry(std::string fname, bool debug);
 };
 
 #include "StripTPC.h"

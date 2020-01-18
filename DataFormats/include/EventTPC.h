@@ -19,7 +19,6 @@
 #include <utility>
 #include <algorithm> // for find_if
 #include <numeric>
-//#include <variant> //C++17
 
 #include "TH1D.h"
 #include "TH2D.h"
@@ -34,16 +33,15 @@ class EventTPC {
   //  friend class SigClusterTPC;
  private:
   int64_t event_id, run_id;
-  GeometryTPC& EvtGeometryPtr;
   
   std::map<projection, std::map<int, std::map<int, double>>> chargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
 
-  double glb_max_charge;
+  double glb_max_charge = 0.0;
 
  public:
-  EventTPC();
+  EventTPC() = default;
 
-  ~EventTPC(){};
+  ~EventTPC() = default;
 
   void Clear();
 
@@ -58,7 +56,6 @@ class EventTPC {
   // they return 0.0 for non-existing data points
   double GetValByStrip(projection strip_dir, int strip_number, int time_cell/*, bool &result*/);  // valid range [0-2][1-1024][0-511]
 
-  inline decltype(EventTPC::EvtGeometryPtr) GetGeoPtr() const { return EvtGeometryPtr; }
   inline int64_t GetEventId() const { return event_id; }
 
   double GetMaxCharge();                   // maximal charge from all strips

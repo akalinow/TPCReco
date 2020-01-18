@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
     timestamp = std::string(argv[3]);
     std::cout<<"timestamp: "<<timestamp<<std::endl;
   }
-  GeometryTPC& myGeometry = GetGeometry(geomFileName);
+  GeometryTPC& myGeometry = Geometry(geomFileName);
 
   ///Create event
   std::shared_ptr<EventTPC> myEvent = std::make_shared<EventTPC>();

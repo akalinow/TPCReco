@@ -16,14 +16,6 @@
 #include "HistoManager.h"
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-HistoManager::HistoManager() :
-myGeometryPtr(GetGeometry()) {
-
-  myEvent = 0;
-
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
 void HistoManager::setEvent(std::shared_ptr<EventTPC> aEvent){
 
   myEvent = aEvent;
@@ -42,7 +34,7 @@ std::shared_ptr<TH2D> HistoManager::getCartesianProjection(projection strip_dir)
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 TH2Poly * HistoManager::getDetectorLayout() const{
-  TH2Poly* aPtr = (TH2Poly*)myGeometryPtr.GetTH2Poly()->Clone();
+  TH2Poly* aPtr = (TH2Poly*)Geometry().GetTH2Poly()->Clone();
   int nBins = aPtr->GetNumberOfBins(); 
   for(int iBin=1;iBin<nBins;iBin+=nBins/50){
     aPtr->SetBinContent(iBin, 1.0);
