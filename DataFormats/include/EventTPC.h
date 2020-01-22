@@ -26,6 +26,7 @@
 #include "MultiKey.h"
 #include "CommonDefinitions.h"
 
+#include "Event_Strip.h"
 #include "GeometryTPC.h"
 #include "SigClusterTPC.h"
 
@@ -35,6 +36,7 @@ class EventTPC {
   int64_t event_id, run_id;
   
   std::map<projection, std::map<int, std::map<int, double>>> chargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
+  std::map<projection, std::map<int, Event_Strip>> chargeMap_test; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024])
 
   double glb_max_charge = 0.0;
 
@@ -49,7 +51,7 @@ class EventTPC {
   void SetRunId(int64_t aId) { run_id =  aId; };
   // helper methods for inserting data points
   // they return TRUE on success and FALSE on error
-  bool AddValByStrip(std::shared_ptr<StripTPC> strip, int time_cell, double val);                      // valid range [0-511]
+  bool AddValByStrip(std::shared_ptr<Geometry_Strip> strip, int time_cell, double val);                      // valid range [0-511]
   bool AddValByAgetChannel(int cobo_idx, int asad_idx, int aget_idx, int channel_idx, int time_cell, double val); // valid range [0-1][0-3][0-3][0-63][0-511]
   
   // helper methods for extracting data points

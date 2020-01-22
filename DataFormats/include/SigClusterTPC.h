@@ -37,7 +37,7 @@ class SigClusterTPC {
                                                         // that returns vector of STRIP_NUMBERS 
 
   // statistics variables
-  size_t nhits[3] = { 0 };   // number of space-time cells in a given U,V,W direction
+  std::map<projection, size_t> nhits;   // number of space-time cells in a given U,V,W direction
 
  public:
   

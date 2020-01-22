@@ -23,7 +23,7 @@ include_directories(${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include)
 ROOT_GENERATE_DICTIONARY(G__${MODULE_NAME}
   ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/EventTPC.h
   ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/GeometryTPC.h 
-  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/StripTPC.h  
+  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/Geometry_Strip.h  
   ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/SigClusterTPC.h  
   LINKDEF ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/LinkDef.h)
 

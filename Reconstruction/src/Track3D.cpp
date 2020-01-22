@@ -156,14 +156,14 @@ void Track3D::updateNodesChi2(projection strip_dir) {
 	double nodeChi2 = 0.0;
 	unsigned int iNode = 0;
 
-    for (auto& aSegment : decltype(mySegments){mySegments.begin(), mySegments.end() - 1}) {
+    for (auto& aSegment : {mySegments.begin(), mySegments.end() - 1}) {
 
 		sum = 0.0;
 		nodeChi2 = 0.0;
 
-		TVector3 node3D = aSegment.getEnd();
-		TVector3 formerTangent3D = aSegment.getTangent();
-		TVector3 latterTangent3D = (&aSegment)[1].getTangent();
+		TVector3 node3D = aSegment->getEnd();
+		TVector3 formerTangent3D = aSegment->getTangent();
+		TVector3 latterTangent3D = (aSegment + 1)->getTangent();
 
 		TVector3 node2D(node3D.Z(), node3D * stripPitchDirection, 0.0);
 		TVector3 formerTransverse2D(-formerTangent3D * stripPitchDirection, formerTangent3D.Z(), 0.0);
@@ -173,9 +173,10 @@ void Track3D::updateNodesChi2(projection strip_dir) {
 		nodeAngleChi2[iNode] = 0.1 * (std::pow(deltaPhi, 2));
 
 
-		if (ROOT::Math::VectorUtil::DeltaPhi(formerTransverse2D, latterTransverse2D) < 0) std::swap(formerTransverse2D, latterTransverse2D);
+		if (deltaPhi < 0) std::swap(formerTransverse2D, latterTransverse2D);
 		deltaPhi = ROOT::Math::VectorUtil::DeltaPhi(formerTransverse2D, latterTransverse2D);
-		for (const auto& aHit : mySegments.front().getRecHits().at(strip_dir)) {
+        const auto& RecHits_dir  = mySegments.front().getRecHits().at(strip_dir);
+		for (const auto& aHit : RecHits_dir) {
 			TVector3 aPoint;
 			auto charge = aHit().charge;
 			aPoint.SetXYZ(aHit().posTime, aHit().posWire, 0.0);

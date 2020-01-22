@@ -7,7 +7,7 @@ void EventTPC::Clear() {
 	chargeMap.clear();
 }
 
-bool EventTPC::AddValByStrip(std::shared_ptr<StripTPC> strip, int time_cell, double val) {  // valid range [0-2][1-1024][0-511]
+bool EventTPC::AddValByStrip(std::shared_ptr<Geometry_Strip> strip, int time_cell, double val) {  // valid range [0-2][1-1024][0-511]
 	auto op = (*strip)();
 	if (time_cell < 0 || time_cell >= Geometry().GetAgetNtimecells() || op.num<1 || op.num>Geometry().GetDirNstrips(op.dir)) return false;
 
@@ -71,24 +71,21 @@ std::shared_ptr<SigClusterTPC> EventTPC::GetOneCluster(double thr, int delta_str
 
 	// loop thru SEED-hits
 	for (auto& by_strip_dir : oldList) {
+		const projection strip_dir = by_strip_dir.first;
+		auto& charge_dir = chargeMap[strip_dir];
 		for (auto& by_strip_num : by_strip_dir.second) {
 			for (auto& time_cell : by_strip_num.second) {
 				// unpack coordinates
-				const projection strip_dir = by_strip_dir.first;
 				const int strip_num = by_strip_num.first;
-				auto min_strip_num = std::max(1, strip_num - delta_strips);
-				auto max_strip_num = std::min(Geometry().GetDirNstrips(strip_dir), strip_num + delta_strips);
-				auto min_time_cell = std::max(0, time_cell - delta_timecells);
-				auto max_time_cell = std::min(Geometry().GetAgetNtimecells() - 1, time_cell + delta_timecells);
-				for (int icell = min_time_cell; icell <= max_time_cell; icell++) {
-					for (int istrip = min_strip_num; istrip <= max_strip_num; istrip++) {
-						if ((icell == time_cell && istrip == strip_num) || // exclude existing seed hits
-							(chargeMap[strip_dir][istrip].find(icell) == chargeMap[strip_dir][istrip].end()) || // exclude non-existing space-time coordinates
-							(chargeMap[strip_dir][istrip][icell] < 0)) continue; // exclude negative values (due to pedestal subtraction)
+				auto min_strip = charge_dir.lower_bound(strip_num - delta_strips);
+				auto max_strip = charge_dir.upper_bound(strip_num + delta_strips);
+				for (auto& charge_strip : { min_strip, max_strip }) {
+					auto min_time_cell = charge_strip->second.lower_bound(time_cell - delta_timecells);
+					auto max_time_cell = charge_strip->second.upper_bound(time_cell + delta_timecells);
+					for (auto charge_time_cell : { min_time_cell, max_time_cell }) {
+						if (charge_time_cell->second < 0) continue; // exclude negative values (due to pedestal subtraction)
 						// add new space-time point
-						if (oldList[strip_dir][strip_num].find(time_cell) == oldList[strip_dir][strip_num].end()) {
-							cluster->AddByStrip(strip_dir, istrip, icell);
-						}
+						cluster->AddByStrip(strip_dir, charge_strip->first, charge_time_cell->first);
 					}
 				}
 			}
@@ -122,8 +119,8 @@ std::shared_ptr<TH2D> EventTPC::GetStripVsTime(projection strip_dir) {  // valid
 		for (auto& by_time_cell : by_strip_num.second) {
 			auto strip_num = by_strip_num.first;
 			auto icell = by_time_cell.first;
-			double val = GetValByStrip(strip_dir, strip_num, icell);
-			result->Fill(1. * icell, 1. * strip_num, val);
+			double val = by_time_cell.second;
+			result->Fill(icell, strip_num, val);
 		}
 	}
 	return result;

@@ -22,15 +22,15 @@ SigClusterTPC::SigClusterTPC(EventTPC& e)
  void SigClusterTPC::UpdateStats() {
      // count hits
      for (auto& by_dir : hitList) {
-         nhits[int(by_dir.first)] = 0;
+         nhits[by_dir.first] = 0;
          for (auto& by_strip_num : by_dir.second) {
-             nhits[int(by_dir.first)] += by_strip_num.second.size();
+             nhits[by_dir.first] += by_strip_num.second.size();
          }
      }
  }
 
 size_t SigClusterTPC::GetNhits(projection strip_dir) const {   // # of hits in a given direction
-	return nhits[int(strip_dir)];
+	return nhits.at(strip_dir);
 }
 
 std::shared_ptr<TH2D> SigClusterTPC::GetStripVsTimeInMM(projection strip_dir) {  // valid range [0-2]

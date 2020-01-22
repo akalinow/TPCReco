@@ -6,7 +6,7 @@
 
 #pragma link C++ class EventTPC+;
 #pragma link C++ class GeometryTPC+;
-#pragma link C++ class StripTPC+;
+#pragma link C++ class Geometry_Strip+;
 #pragma link C++ class SigClusterTPC+;
 
 #endif

@@ -192,7 +192,6 @@ void MainFrame::AddNumbersDialog(){
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 						    kLHintsShrinkX|kLHintsShrinkY|
 						    kLHintsFillX|kLHintsFillY);
-  fEntryDialog->initialize();  
   fFrame->AddFrame(fEntryDialog, tloh);
 
  }

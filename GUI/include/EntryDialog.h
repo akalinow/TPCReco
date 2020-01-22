@@ -12,11 +12,7 @@ class EntryDialog : public TGCompositeFrame {
 public:
    EntryDialog(const TGWindow *p, MainFrame *aFrame);
 
-   void initialize();
-
    virtual ~EntryDialog();
-
-   virtual bool ProcessMessage(int64_t msg, int64_t parm1, int64_t);
 
   void updateFileName(const std::string & fileName);
 
