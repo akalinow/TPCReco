@@ -33,8 +33,7 @@ MainFrame::MainFrame(const TGWindow *p, uint32_t w, uint32_t h)
     std::cout << dataFileName << std::endl;
     path_file.close();
   //dataFileName = "*poza buildem";
-  
-    myDataManager.loadGeometry(geometryFileName);
+    Geometry(geometryFileName, true);
     checkpoint;
   myDataManager.loadDataFile(dataFileName);
   myDataManager.loadTreeEntry(0);
@@ -193,7 +192,6 @@ void MainFrame::AddNumbersDialog(){
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 						    kLHintsShrinkX|kLHintsShrinkY|
 						    kLHintsFillX|kLHintsFillY);
-  fEntryDialog->initialize();  
   fFrame->AddFrame(fEntryDialog, tloh);
 
  }

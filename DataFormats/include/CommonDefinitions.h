@@ -4,6 +4,7 @@
 #include <iostream>
 #include <tuple>
 #include <map>
+#include <vector>
 const double pi = 4 * atan(1);
 const double deg_to_rad = pi / 180.0;
 
@@ -32,7 +33,7 @@ const auto proj_vec_UVW = std::vector<projection>{ projection::DIR_U,projection:
 const std::map<projection, const double> phiPitchDirection = { {projection::DIR_U, pi}, {projection::DIR_V, (-pi / 6.0 + pi / 2.0)}, {projection::DIR_U, (pi / 6.0 - pi / 2.0)} };
 
 inline std::string filename_string(std::string path_str) {
-	return path_str.substr(path_str.rfind("\\") + 1, path_str.size() - path_str.rfind("\\") - 1);
+	return path_str.substr(path_str.rfind("/") + 1, path_str.size() - path_str.rfind("/") - 1);
 }
 
 #define _endl_ " (" << filename_string(__FILE__) << "; " << __LINE__ << ")" << std::endl<char, std::char_traits<char>>

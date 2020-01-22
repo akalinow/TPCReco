@@ -10,7 +10,7 @@
 #include "MultiKey.h"
 #include "CommonDefinitions.h"
 
-struct i_StripTPC {
+struct Strip_Data {
     projection dir; // direction/group: 0=U / 1=V / 2=W / 3=FPN / -1=ERROR                                                      
     int num; // strip number: 1-1024 for U,V,W / 1-(4*ASAD_N*COBO_N) for FPN / -1=ERROR
     int coboId; // range [0-1]
@@ -24,20 +24,20 @@ struct i_StripTPC {
 };
 
 // Single UVW strip defined as a class
-//class StripTPC : public TObject {
-class StripTPC {
+//class Geometry_Strip : public TObject {
+class Geometry_Strip {
 
 private:
 
-    i_StripTPC i_;
+    Strip_Data data;
 public:
 
-    StripTPC() = default;
-    StripTPC(projection direction, int number, int cobo_index, int asad_index, int aget_index, int aget_channel, int aget_channel_raw,
+    Geometry_Strip() = default;
+    Geometry_Strip(projection direction, int number, int cobo_index, int asad_index, int aget_index, int aget_channel, int aget_channel_raw,
         TVector2 unit_vector, TVector2 offset_vector_in_mm, double length_in_mm);
 
-    decltype(StripTPC::i_) operator()() { return i_; };
-    //  ClassDef(StripTPC,1)
+    decltype(Geometry_Strip::data) operator()() { return data; };
+    //  ClassDef(Geometry_Strip,1)
 };
 
 #endif

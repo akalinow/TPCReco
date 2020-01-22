@@ -15,11 +15,9 @@ class EventTPC;
 class DataManager {
 public:
   
-    DataManager() : myGeometryPtr(GetGeometry()) {};
+    DataManager() = default;
   
   ~DataManager() = default;
-
-  void loadGeometry(const std::string & fileName);
 
   void loadDataFile(const std::string & fileName);
 
@@ -45,9 +43,8 @@ private:
   unsigned int nEvents = 0;
   unsigned int myCurrentEntry;
 
-  std::shared_ptr<EventTPC> currentEvent;
-  GeometryTPC& myGeometryPtr;
-
+  std::shared_ptr<EventTPC> currentEvent_external_copy;
+  EventTPC* currentEvent_internal;
 };
 #endif
 

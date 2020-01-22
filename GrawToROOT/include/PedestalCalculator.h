@@ -28,7 +28,7 @@ class PedestalCalculator {
 
   PedestalCalculator();
 
-  ~PedestalCalculator();
+  ~PedestalCalculator() = default;
 
   double GetPedestalCorrection(int iChannelGlobal, int agentId, int iCell);
 

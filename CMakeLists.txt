@@ -28,6 +28,7 @@ MESSAGE( STATUS "CMAKE_INSTALL_PREFIX:         " ${CMAKE_INSTALL_PREFIX} )
 # resources in the build directory, but here we tell cmake that we want it
 # in the package.
 #
+
 if(NOT IS_DIRECTORY ${CMAKE_INSTALL_PREFIX}/resources) # needs full path!
   install(DIRECTORY resources DESTINATION ${CMAKE_INSTALL_PREFIX})
 else()

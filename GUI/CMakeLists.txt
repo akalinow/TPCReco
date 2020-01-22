@@ -25,7 +25,6 @@ find_package(ROOT REQUIRED COMPONENTS RIO GenVector Gui)
 ###############################################################################
 # ROOT dictionary for persistens classes
 ROOT_GENERATE_DICTIONARY(G__${MODULE_NAME} ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/MainFrame.h
-  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/ScrollFrame.h
   ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/SelectionBox.h
   LINKDEF ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/RootDictLinkDef.h)
 

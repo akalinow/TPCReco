@@ -55,9 +55,6 @@ EntryDialog::~EntryDialog(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void EntryDialog::initialize(){ }
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
 void EntryDialog::updateEventNumbers(unsigned int nTotalEvents,
                                      unsigned int iCurrentEvent){
  
@@ -78,37 +75,6 @@ void EntryDialog::updateFileName(const std::string & fileName){
   }
   fileNameLabel->SetText(fileNameWithBreaks.c_str());  
   fileInfoFrame->Layout();
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-
-bool EntryDialog::ProcessMessage(int64_t msg, int64_t parm1, int64_t /*parm2*/){
-   switch (GET_MSG(msg)) {
-   case kC_COMMAND:
-      {
-         switch (GET_SUBMSG(msg)) {
-         case kCM_BUTTON:
-            {
-               switch (parm1) {
-                  // exit button
-               case 1:
-                  {
-                     std::cout<<"EntryDialog::ProcessMessage(): msg: "<<msg<<std::endl;
-                     break;
-                  }
-                  // set button
-               case 2:
-                  {
-                     break;
-                  }
-               }
-               break;
-            }
-         }
-         break;
-      }
-   }
-   return kTRUE;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

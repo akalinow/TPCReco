@@ -77,7 +77,6 @@ private:
     
   std::shared_ptr<EventTPC> myEvent;
   std::shared_ptr<SigClusterTPC> myCluster;
-  GeometryTPC& myGeometryPtr;
 
   bool myHistoInitialized;
   int nAccumulatorRhoBins, nAccumulatorPhiBins;
