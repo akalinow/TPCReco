@@ -29,29 +29,25 @@ public:
 
   void setEvent(std::shared_ptr<EventTPC> aEvent);
 
-  void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);
+  std::shared_ptr<TH2D> getRawStripVsTime(direction strip_dir);
 
-  TH2Poly *getDetectorLayout() const;
+  std::shared_ptr<TH2D> getCartesianProjection(direction strip_dir);
 
-  std::shared_ptr<TH2D> getRawStripVsTime(projection strip_dir);
-
-  std::shared_ptr<TH2D> getCartesianProjection(projection strip_dir);
-
-  std::shared_ptr<TH2D> getRecHitStripVsTime(projection strip_dir);
+  std::shared_ptr<TH2D> getRecHitStripVsTime(direction strip_dir);
 
   Reconstr_hist getReconstruction(bool force);
 
   std::shared_ptr<TH3D> get3DReconstruction(bool force = false);
 
-  std::shared_ptr<TH2D> get2DReconstruction(projection strip_dir, bool force = false);
+  std::shared_ptr<TH2D> get2DReconstruction(bool force = false);
 
-  const TH2D & getHoughAccumulator(projection strip_dir, int iPeak=0);
+  const TH2D & getHoughAccumulator(direction strip_dir, int iPeak=0);
 
-  void drawTrack2DSeed(projection strip_dir, TVirtualPad *aPad);
+  void drawTrack2DSeed(direction strip_dir, TVirtualPad *aPad);
 
   void drawTrack3D(TVirtualPad *aPad);
 
-  void drawTrack3DProjectionTimeStrip(projection strip_dir, TVirtualPad *aPad);
+  void drawTrack3DProjectionTimeStrip(direction strip_dir, TVirtualPad *aPad);
 
   void drawTrack3DProjectionXY(TVirtualPad *aPad);
 
@@ -61,7 +57,7 @@ private:
     
     std::shared_ptr<EventTPC> myEvent;
 
-  std::vector<TH2D*> projectionsInCartesianCoords;
+  std::vector<TH2D*> directionsInCartesianCoords;
   std::shared_ptr<TH3D> h3DReco;
   TrackBuilder myTkBuilder;
 

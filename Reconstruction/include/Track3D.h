@@ -60,7 +60,7 @@ private:
 
   void updateChi2();
 
-  void updateNodesChi2(projection strip_dir);
+  void updateNodesChi2(direction strip_dir);
 
   void updateChargeProfile();
 

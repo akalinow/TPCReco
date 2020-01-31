@@ -25,10 +25,8 @@
 #include "TVector2.h"
 #include "TGraph.h"
 #include "TH2Poly.h"
-#include "MultiKey.h"
 #include "CommonDefinitions.h"
  
-constexpr auto FPN_CH = projection(3);    // FPN channel type index
 constexpr auto ERROR = -1;   // error result indicator
 constexpr auto NUM_TOLERANCE = 1e-6;
 
@@ -56,25 +54,24 @@ class GeometryTPC {
   int AGET_Nchan_raw;                   // # of total channels in AGET chip (including FPN channels)
   int AGET_Ntimecells;                  // # of time cells (buckets) in AGET chip
   int ASAD_Nboards;                     // total # of ASAD boards
-  std::map<projection, int>         stripN{ {projection::DIR_U, 0},{projection::DIR_V, 0},{projection::DIR_W, 0} };    // pair=(directory_idx, number_of_strips=xxx,xxx,xxx,4*ASAD_N*COBO_N)                          
-  std::map<projection, std::string> dir2name;  // pair=(directory_idx, group_name="U","V","W","FPN")
-  std::map<std::string, projection> name2dir;  // pair=(group_name="U","V","W","FPN", directory_idx)
-  std::map<int, std::map<int, std::map<int, std::map<int, std::shared_ptr<Geometry_Strip>>>>> arrayByAget;/*channel_idx[0-63] AGET_idx[0-3] ASAD_idx[0-3] COBO_idx[0-1]*/
-  std::map<projection, std::map<int ,std::shared_ptr<Geometry_Strip>>> stripArray; // key = {DIR_U,DIR_V,DIR_W}, STRIP_NUMBER [1-1024]
+  std::map<direction, int>         stripN{ {direction::U, 0},{direction::V, 0},{direction::W, 0} };    // pair=(directory_idx, number_of_strips=xxx,xxx,xxx,4*ASAD_N*COBO_N)                          
+  std::map<direction, std::string> dir2name;  // pair=(directory_idx, group_name="U","V","W","FPN")
+  std::map<std::string, direction> name2dir;  // pair=(group_name="U","V","W","FPN", directory_idx)
+  std::map<std::tuple<int, int, int, int>, std::shared_ptr<Geometry_Strip>> arrayByAget;/*channel_idx[0-63] AGET_idx[0-3] ASAD_idx[0-3] COBO_idx[0-1]*/
+  std::map<std::tuple<direction, int> ,std::shared_ptr<Geometry_Strip>> stripArray; // key = {U,V,W}, STRIP_NUMBER [1-1024]
   std::vector<int> ASAD_N;       // pair=(COBO_idx, number of ASAD boards)
   std::vector<int> FPN_chanId;     // FPN channels in AGET chips
   double pad_size;                 // in [mm]
   double pad_pitch;                // in [mm]
   double strip_pitch;              // in [mm]
   TVector2 reference_point;        // XY offset in [mm] of the REFERENCE POINT used to define the geometry
-  std::map<projection, TVector2> strip_unit_vec; // XY unit vector in [mm] for a given family of strips pointing towards ascending pad numbers of the strip
-  std::map<projection, TVector2> pitch_unit_vec; // XY unit vector in [mm] for a given family of strips pointing towards ascending strip numbers 
+  std::map<direction, TVector2> strip_unit_vec; // XY unit vector in [mm] for a given family of strips pointing towards ascending pad numbers of the strip
+  std::map<direction, TVector2> pitch_unit_vec; // XY unit vector in [mm] for a given family of strips pointing towards ascending strip numbers 
   double vdrift;                   // electron drift velocity in [cm / micosecond]
   double sampling_rate;            // electronics sampling rate in [MHz]
   double trigger_delay;            // delay in [microseconds] of the external "t0" trigger signal (for accelerator beam) 
   double drift_zmin;               // lower drift cage acceptance limit along Z-axis [mm] (closest to readout PCB)
   double drift_zmax;               // upper drift cage acceptance limit along Z-axis [mm] (farthest from readout PCB)
-  std::shared_ptr<TH2Poly> tp;                     // for internal storage of arbitrary strip shapes
   const int grid_nx;                     // partition size of TH2Poly in X-dir
   const int grid_ny;                     // partition size of TH2Poly in Y-dir
   const bool _debug;                     // debug/verbose info flag
@@ -82,17 +79,13 @@ class GeometryTPC {
   // Setter methods 
   
   bool Load(std::string fname);                 // loads geometry from TXT config file
-  bool InitTH2Poly();                           // define bins for the underlying TH2Poly histogram
   
   GeometryTPC(std::string  fname, bool debug=false);
 
  public:
 
-  // Getter methods
-
-  inline std::shared_ptr<TH2Poly> GetTH2Poly() { return tp; }   // returns pointer to the underlying TH2Poly
-  
-  int GetDirNstrips(projection dir) const;
+  // Getter methods  
+  int GetDirNstrips(direction dir) const;
 
   inline int GetAgetNchips() { return AGET_Nchips; }
   inline int GetAgetNchannels() { return AGET_Nchan; }
@@ -102,10 +95,10 @@ class GeometryTPC {
   inline int GetAsadNboards() { return ASAD_Nboards; }
   inline int GetCoboNboards() { return COBO_N; }
 
-  std::string GetDirName(projection dir);
+  std::string GetDirName(direction dir);
 
   std::shared_ptr<Geometry_Strip> GetStripByAget(int COBO_idx, int ASAD_idx, int AGET_idx, int channel_idx) const;         // valid range [0-1][0-3][0-3][0-63]
-  std::shared_ptr<Geometry_Strip> GetStripByDir(projection dir, int num) const;                                                   // valid range [0-2][1-1024]
+  std::shared_ptr<Geometry_Strip> GetStripByDir(direction dir, int num) const;                                                   // valid range [0-2][1-1024]
   std::vector<std::shared_ptr<Geometry_Strip>> GetStrips() const;
 
   // various helper functions for calculating local/global normal/raw channel index
@@ -115,17 +108,17 @@ class GeometryTPC {
   int Global_normal2normal(int COBO_idx, int ASAD_idx, int aget_idx, int channel_idx);   // valid range [0-1][0-3][0-3][0-63]
 
   bool GetCrossPoint(std::shared_ptr<Geometry_Strip> strip1, std::shared_ptr<Geometry_Strip> strip2, TVector2 &point);
-  bool MatchCrossPoint(std::shared_ptr<Geometry_Strip> strip1, std::shared_ptr<Geometry_Strip> strip2, std::shared_ptr<Geometry_Strip> strip3, double radius, TVector2 &point);
+  bool MatchCrossPoint(int strip_num_U, int strip_num_V, int strip_num_W, double radius, TVector2 &point);
 
   inline double GetPadPitch() { return pad_pitch; } // [mm]
   inline double GetStripPitch() { return strip_pitch; } // [mm]
   inline TVector2 GetReferencePoint() { return reference_point; } // XY ([mm],[mm])
-  TVector2 GetStripPitchVector(projection dir); // XY ([mm],[mm])
+  TVector2 GetStripPitchVector(direction dir); // XY ([mm],[mm])
 
-  double Strip2posUVW(projection dir, int number); // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of the central line of the (existing) strip on the strip pitch axis for a given direction
-  double Strip2posUVW(std::shared_ptr<Geometry_Strip> strip); // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of the central line of the (existing) strip on the strip pitch axis for a strip given direction
+  double Strip2posUVW(direction dir, int number); // [mm] (signed) distance of direction of (X=0, Y=0) point from direction of the central line of the (existing) strip on the strip pitch axis for a given direction
+  double Strip2posUVW(std::shared_ptr<Geometry_Strip> strip); // [mm] (signed) distance of direction of (X=0, Y=0) point from direction of the central line of the (existing) strip on the strip pitch axis for a strip given direction
 
-  double Timecell2pos(double position_in_cells, bool &err_flag); // [mm] output: position along Z-axis
+  double Timecell2pos(double position_in_cells); // [mm] output: position along Z-axis
 
   std::tuple<double, double, double, double> rangeXY(); //min/max X Y cartesian coordinates covered by strips in any direction
   

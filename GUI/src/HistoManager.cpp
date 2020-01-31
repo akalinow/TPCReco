@@ -26,24 +26,14 @@ void HistoManager::setEvent(std::shared_ptr<EventTPC> aEvent){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<TH2D> HistoManager::getCartesianProjection(projection strip_dir){
+std::shared_ptr<TH2D> HistoManager::getCartesianProjection(direction strip_dir){
 
   return myTkBuilder.getCluster()->GetStripVsTimeInMM(strip_dir);
   
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TH2Poly * HistoManager::getDetectorLayout() const{
-  TH2Poly* aPtr = (TH2Poly*)Geometry().GetTH2Poly()->Clone();
-  int nBins = aPtr->GetNumberOfBins(); 
-  for(int iBin=1;iBin<nBins;iBin+=nBins/50){
-    aPtr->SetBinContent(iBin, 1.0);
-  }  
-  return aPtr;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-std::shared_ptr<TH2D> HistoManager::getRawStripVsTime(projection strip_dir){
+std::shared_ptr<TH2D> HistoManager::getRawStripVsTime(direction strip_dir){
 
   std::shared_ptr<TH2D> hProjection = myEvent->GetStripVsTime(strip_dir);
   double varianceX = hProjection->GetCovariance(1, 1);
@@ -61,9 +51,9 @@ std::shared_ptr<TH2D> HistoManager::getRawStripVsTime(projection strip_dir){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<TH2D> HistoManager::getRecHitStripVsTime(projection strip_dir){
+std::shared_ptr<TH2D> HistoManager::getRecHitStripVsTime(direction strip_dir){
 
-  return std::make_shared<TH2D>(myTkBuilder.getRecHits2D(strip_dir));//FIX ME avoid object copying
+  return myTkBuilder.getRecHits2D(strip_dir);
 
 }
 /////////////////////////////////////////////////////////
@@ -71,10 +61,7 @@ std::shared_ptr<TH2D> HistoManager::getRecHitStripVsTime(projection strip_dir){
 Reconstr_hist HistoManager::getReconstruction(bool force) {
     if (!reconstruction_done || force) {
         double radius = 2.0;
-        int rebin_space = EVENTTPC_DEFAULT_STRIP_REBIN;
-        int rebin_time = EVENTTPC_DEFAULT_TIME_REBIN;
-        int method = EVENTTPC_DEFAULT_RECO_METHOD;
-        reconstruction = myTkBuilder.getCluster()->Get(radius, rebin_space, rebin_time, method);
+        reconstruction = myTkBuilder.getCluster()->Get(radius);
         reconstruction_done = true;
     }
     return reconstruction;
@@ -86,12 +73,12 @@ std::shared_ptr<TH3D> HistoManager::get3DReconstruction(bool force){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<TH2D> HistoManager::get2DReconstruction(projection strip_dir, bool force) {
-  return getReconstruction(force).first[strip_dir];
+std::shared_ptr<TH2D> HistoManager::get2DReconstruction(bool force) {
+  return getReconstruction(force).first;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-const TH2D & HistoManager::getHoughAccumulator(projection strip_dir, int iPeak){
+const TH2D & HistoManager::getHoughAccumulator(direction strip_dir, int iPeak){
 
   return myTkBuilder.getHoughtTransform(strip_dir);
 
@@ -142,7 +129,7 @@ void HistoManager::drawTrack3DProjectionXY(TVirtualPad *aPad){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void HistoManager::drawTrack2DSeed(projection strip_dir, TVirtualPad *aPad){
+void HistoManager::drawTrack2DSeed(direction strip_dir, TVirtualPad *aPad){
 
   const TrackSegment2D & aSegment2D = myTkBuilder.getSegment2D(strip_dir);
   const TVector3 & start = aSegment2D.getStart();
@@ -156,7 +143,7 @@ void HistoManager::drawTrack2DSeed(projection strip_dir, TVirtualPad *aPad){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void HistoManager::drawTrack3DProjectionTimeStrip(projection strip_dir, TVirtualPad *aPad){
+void HistoManager::drawTrack3DProjectionTimeStrip(direction strip_dir, TVirtualPad *aPad){
 
   aPad->cd();
   const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);

@@ -46,11 +46,11 @@ public:
 
   const std::shared_ptr<SigClusterTPC> getCluster() const { return myCluster;}
 
-  const TH2D & getRecHits2D(projection dir) const;
+  const std::shared_ptr <TH2D> getRecHits2D(direction dir) const;
 
-  const TH2D & getHoughtTransform(projection dir) const;
+  const TH2D & getHoughtTransform(direction dir) const;
   
-  const TrackSegment2D & getSegment2D(projection dir, unsigned int iTrack=0) const;
+  const TrackSegment2D & getSegment2D(direction dir, unsigned int iTrack=0) const;
   
   const TrackSegment3D & getSegment3DSeed() const;
 
@@ -58,15 +58,15 @@ public:
 
 private:
 
-  void makeRecHits(projection dir);
+  void makeRecHits(direction dir);
 
   TF1 fitTimeWindow(TH1D* hProj);
  
-  void fillHoughAccumulator(projection dir);
+  void fillHoughAccumulator(direction dir);
 
-  TrackSegment2DCollection findSegment2DCollection(projection dir);
+  TrackSegment2DCollection findSegment2DCollection(direction dir);
   
-  TrackSegment2D findSegment2D(projection dir, int iPeak) const;
+  TrackSegment2D findSegment2D(direction dir, int iPeak) const;
   
   TrackSegment3D buildSegment3D() const;
   
@@ -82,9 +82,9 @@ private:
   int nAccumulatorRhoBins, nAccumulatorPhiBins;
 
   TVector3 aHoughOffest;
-  std::map<projection, TH2D> myAccumulators;
-  std::map<projection, TH2D> myRecHits;
-  std::map<projection, TrackSegment2DCollection> my2DSeeds;
+  std::map<direction, TH2D> myAccumulators;
+  std::map<direction, std::shared_ptr<TH2D>> myRecHits;
+  std::map<direction, TrackSegment2DCollection> my2DSeeds;
 
   TrackSegment2D dummySegment2D;
   

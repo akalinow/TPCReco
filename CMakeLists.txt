@@ -29,6 +29,7 @@ MESSAGE( STATUS "CMAKE_INSTALL_PREFIX:         " ${CMAKE_INSTALL_PREFIX} )
 # in the package.
 #
 
+set (CMAKE_INSTALL_PREFIX "C:\\Users\\26kuba05\\source\\repos\\TPCReco\\out\\build\\x64-Debug")
 if(NOT IS_DIRECTORY ${CMAKE_INSTALL_PREFIX}/resources) # needs full path!
   install(DIRECTORY resources DESTINATION ${CMAKE_INSTALL_PREFIX})
 else()

@@ -1,4 +1,4 @@
-#include<cstdlib>
+#include <cstdlib>
 #include <iostream>
 
 #include "TCanvas.h"
@@ -9,88 +9,81 @@
 #include "DataManager.h"
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void DataManager::loadDataFile(const std::string & fileName){
+void DataManager::loadDataFile(const std::string& fileName) {
 
-  std::string treeName = "TPCData";
-  
-  myFile.OpenFile(fileName.c_str(),"READ");
-  if(myFile.IsOpen()){
-    std::cerr<<"File: "<<fileName<<"not found!"<<std::endl;
-    return;
-  }
-  myTree = (TTree*)myFile.Get(treeName.c_str());
-  myTree->SetBranchAddress("Event", &currentEvent_internal); //MIGHT BE INCORRECT
-  nEvents = myTree->GetEntries();
-  loadTreeEntry(0);
+	std::string treeName = "TPCData";
 
-  std::cout<<"File: "<<fileName<<" loaded."<<std::endl;
+	myFile.OpenFile(fileName.c_str(), "READ");
+	if (myFile.IsOpen()) {
+		std::cerr << "File: " << fileName << "not found!" << std::endl;
+		return;
+	}
+	myTree = (TTree*)myFile.Get(treeName.c_str());
+	if (myTree == nullptr) {
+		throw std::runtime_error("ROOT tree not available!");
+	}
+	myTree->SetBranchAddress("Event", &currentEvent_internal); //MIGHT BE INCORRECT
+	nEvents = myTree->GetEntries();
+	loadTreeEntry(0);
+
+	std::cout << "File: " << fileName << " loaded." << std::endl;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void DataManager::loadTreeEntry(unsigned int iEntry){
+void DataManager::loadTreeEntry(unsigned int iEntry) {
 
-  if(myTree == nullptr){
-    std::cerr<<"ROOT tree not available!"<<std::endl;
-    return;
-  }
-  if(myTree->GetEntries()<=iEntry) return;
-  
-  myTree->GetEntry(iEntry);
-  currentEvent_external_copy = std::make_shared<EventTPC>(*currentEvent_internal);
-  myCurrentEntry = iEntry;
+	if (myTree->GetEntries() <= iEntry) return;
+
+	myTree->GetEntry(iEntry);
+	currentEvent_external_copy = std::make_shared<EventTPC>(*currentEvent_internal);
+	myCurrentEntry = iEntry;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void DataManager::loadEventId(unsigned int iEvent){
+void DataManager::loadEventId(unsigned int iEvent) {
 
-  int iEntry = 0;
-  while(currentEventNumber()!=iEvent){  
-    loadTreeEntry(iEntry);
-    ++iEntry;
-  }
+	int iEntry = 0;
+	while (currentEventNumber() != iEvent) {
+		loadTreeEntry(iEntry);
+		++iEntry;
+	}
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<EventTPC> DataManager::getCurrentEvent() const{
+std::shared_ptr<EventTPC> DataManager::getCurrentEvent() const {
 
-  return currentEvent_external_copy;
+	return currentEvent_external_copy;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<EventTPC> DataManager::getNextEvent(){
-
-  if(myCurrentEntry<nEvents){
-    loadTreeEntry(++myCurrentEntry);
-  }
-
-  return currentEvent_external_copy;
+void DataManager::loadNextEvent() {
+	if (myCurrentEntry < nEvents) {
+		loadTreeEntry(++myCurrentEntry);
+	}
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<EventTPC> DataManager::getPreviousEvent(){
-
-  if(myCurrentEntry>0){
-    loadTreeEntry(--myCurrentEntry);
-  }
-
-  return currentEvent_external_copy;
+void DataManager::loadPreviousEvent() {
+	if (myCurrentEntry > 0) {
+		loadTreeEntry(--myCurrentEntry);
+	}
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-unsigned int DataManager::numberOfEvents() const{
+unsigned int DataManager::numberOfEvents() const {
 
-  return nEvents;
-  
+	return nEvents;
+
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-unsigned int DataManager::currentEventNumber() const{
+unsigned int DataManager::currentEventNumber() const {
 
-  if(currentEvent_external_copy != nullptr){
-    return currentEvent_external_copy->GetEventId();
-  }
-  
-  return 0;
+	if (currentEvent_external_copy != nullptr) {
+		return currentEvent_external_copy->Info().EventId();
+	}
+
+	return 0;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
