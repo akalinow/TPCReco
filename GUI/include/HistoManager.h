@@ -41,8 +41,6 @@ public:
 
   std::shared_ptr<TH2D> get2DReconstruction(bool force = false);
 
-  const TH2D & getHoughAccumulator(direction strip_dir, int iPeak=0);
-
   void drawTrack2DSeed(direction strip_dir, TVirtualPad *aPad);
 
   void drawTrack3D(TVirtualPad *aPad);

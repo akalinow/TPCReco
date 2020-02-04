@@ -56,7 +56,7 @@ SelectionBox::SelectionBox(const TGWindow *p, TGWindow *main, uint32_t w,
    fMain->MapSubwindows();
    fMain->Resize();
 
-   this->Connect("DoSelect(int64_t)","MainFrame",main,"HandleHistoSelect(int64_t)");
+   Connect("DoSelect(int64_t)","MainFrame",main,"HandleHistoSelect(int64_t)");
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

@@ -43,8 +43,7 @@ void TrackBuilder::setEvent(std::shared_ptr<EventTPC> aEvent) {
 			double rho = std::hypot(maxX, maxY);
 			hName = "hAccumulator_" + std::to_string(int(dir));
 			hTitle = "Hough accumulator for direction: " + std::to_string(int(dir)) + ";#theta;#rho";
-			TH2D hAccumulator(hName.c_str(), hTitle.c_str(), nAccumulatorPhiBins, -pi, pi, nAccumulatorRhoBins, 0, rho);
-			myAccumulators[dir] = hAccumulator;
+			myAccumulators[dir] = { hName.c_str(), hTitle.c_str(), nAccumulatorPhiBins, -pi, pi, nAccumulatorRhoBins, 0, rho };
 			myRecHits[dir] = hRawHits;
 		}
 		myHistoInitialized = true;
@@ -107,16 +106,10 @@ TF1 TrackBuilder::fitTimeWindow(TH1D* hProj) {
 	double windowIntegral = hProj->Integral(maxBin - 25, maxBin + 25);
 	if (maxValue < 25 || windowIntegral < 50) return bestTimeResponseShape;//FIXME how to choose the thresholds?
 
-	std::string formula = "";
+	std::stringstream formula;
 	for (int iComponent = 0; iComponent < 3; ++iComponent) {
-		if (iComponent == 0) {
-			formula = "gaus(" + std::to_string(3 * iComponent) + ")";
-		}
-		else {
-			formula += "+gaus(" + std::to_string(3 * iComponent) + ")";
-
-		}
-		TF1 timeResponseShape("timeResponseShape", formula.c_str());
+		formula << (iComponent == 0 ? "" : "+") << "gaus(" << std::to_string(3 * iComponent) << ")";
+		TF1 timeResponseShape("timeResponseShape", formula.str().c_str());
 		timeResponseShape.SetRange(maxPos - 25, maxPos + 25);
 		for (int iSet = 0; iSet < timeResponseShape.GetNpar(); iSet += 3) {
 			timeResponseShape.SetParameter(iSet, maxValue * 2);
@@ -158,16 +151,7 @@ const std::shared_ptr<TH2D> TrackBuilder::getRecHits2D(direction dir) const {
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-const TH2D& TrackBuilder::getHoughtTransform(direction dir) const {
-
-	return myAccumulators.at(dir);
-
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
 const TrackSegment2D& TrackBuilder::getSegment2D(direction dir, unsigned int iTrack) const {
-
-	if (my2DSeeds.at(dir).size() < iTrack) return dummySegment2D;
 	return my2DSeeds.at(dir).at(iTrack);
 }
 /////////////////////////////////////////////////////////

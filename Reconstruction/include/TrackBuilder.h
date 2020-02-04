@@ -8,6 +8,7 @@
 #include <tuple>
 #include <cstdlib>
 #include <iostream>
+#include <sstream>
 
 #include <Fit/Fitter.h>
 
@@ -47,8 +48,6 @@ public:
   const std::shared_ptr<SigClusterTPC> getCluster() const { return myCluster;}
 
   const std::shared_ptr <TH2D> getRecHits2D(direction dir) const;
-
-  const TH2D & getHoughtTransform(direction dir) const;
   
   const TrackSegment2D & getSegment2D(direction dir, unsigned int iTrack=0) const;
   
@@ -85,10 +84,8 @@ private:
   std::map<direction, TH2D> myAccumulators;
   std::map<direction, std::shared_ptr<TH2D>> myRecHits;
   std::map<direction, TrackSegment2DCollection> my2DSeeds;
-
-  TrackSegment2D dummySegment2D;
   
-  TrackSegment3D myTrack3DSeed, dummySegment3D;
+  TrackSegment3D myTrack3DSeed;
 
   Track3D myFittedTrack;
 

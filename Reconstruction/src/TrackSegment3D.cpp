@@ -4,12 +4,6 @@
 
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TrackSegment3D::TrackSegment3D() {
-
-	myProjectionsChi2.resize(3);
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
 void TrackSegment3D::setBiasTangent(const TVector3& aBias, const TVector3& aTangent) {
 
 	myBias = aBias;
@@ -78,7 +72,7 @@ void TrackSegment3D::initialize() {
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::vector<double> TrackSegment3D::getStartEndXYZ() const {
+std::vector<double>&& TrackSegment3D::getStartEndXYZ() const {
 
 	std::vector<double> coordinates(6);
 	double* data = coordinates.data();
@@ -86,7 +80,7 @@ std::vector<double> TrackSegment3D::getStartEndXYZ() const {
 	getStart().GetXYZ(data);
 	getEnd().GetXYZ(data + 3);
 
-	return coordinates;
+	return std::move(coordinates);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -105,7 +99,7 @@ TVector3 TrackSegment3D::getPointOn2DProjection(double lambda, direction strip_d
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TrackSegment2D TrackSegment3D::get2DProjection(direction strip_dir, double lambdaStart, double lambdaEnd) const {
+TrackSegment2D&& TrackSegment3D::get2DProjection(direction strip_dir, double lambdaStart, double lambdaEnd) const {
 
 	TVector3 start = getPointOn2DProjection(lambdaStart, strip_dir);
 	TVector3 end = getPointOn2DProjection(lambdaEnd, strip_dir);
@@ -113,7 +107,7 @@ TrackSegment2D TrackSegment3D::get2DProjection(direction strip_dir, double lambd
 	TrackSegment2D a2DProjection(strip_dir);
 	a2DProjection.setStartEnd(start, end);
 
-	return a2DProjection;
+	return std::move(a2DProjection);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -121,12 +115,12 @@ double TrackSegment3D::getIntegratedHitDistance(double lambdaCut) const {
 
 #ifndef _cpp17_
 	return std::inner_product(dir_vec_UVW.begin(), dir_vec_UVW.end(), myRecHits.begin(), 0.0, std::plus<>(), [&](direction strip_dir, auto& aRecHits)->double {
-		TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, lambdaCut);
+		auto&& aTrack2DProjection = get2DProjection(strip_dir, 0, lambdaCut);
 		return aTrack2DProjection.getIntegratedHitDistance(lambdaCut, aRecHits.second);
 	});
 #else
 	return std::transform_reduce(std::execution::par_unseq, dir_vec_UVW.begin(), dir_vec_UVW.end(), myRecHits.begin(), 0.0, std::plus<>(), [&](direction strip_dir, auto& aRecHits)->auto {
-		TrackSegment2D aTrack2DProjection = this->get2DProjection(strip_dir, 0, lambdaCut);
+		TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, lambdaCut);
 		return aTrack2DProjection.getIntegratedHitDistance(lambdaCut, aRecHits.second);
 	});
 
@@ -138,7 +132,7 @@ double TrackSegment3D::getIntegratedCharge(double lambdaCut) const {
 
 #ifndef _cpp17_
 	return std::inner_product(dir_vec_UVW.begin(), dir_vec_UVW.end(), myRecHits.begin(), 0.0, std::plus<>(), [&](direction strip_dir, auto& aRecHits)->auto {
-		TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, lambdaCut);
+		auto&& aTrack2DProjection = get2DProjection(strip_dir, 0, lambdaCut);
 		return aTrack2DProjection.getIntegratedCharge(lambdaCut, aRecHits.second);
 	});
 #else
@@ -160,7 +154,7 @@ double TrackSegment3D::getRecHitChi2() const {
 void TrackSegment3D::calculateRecHitChi2() {
 
 	std::transform(/*std::execution::par,*/ dir_vec_UVW.begin(), dir_vec_UVW.end(), myRecHits.begin(), myProjectionsChi2.begin(), [&](auto strip_dir, auto& aRecHits) { //C++17
-		TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, getLength());
+		auto&& aTrack2DProjection = get2DProjection(strip_dir, 0, getLength());
 		return aTrack2DProjection.getRecHitChi2(aRecHits.second);
 	});
 }

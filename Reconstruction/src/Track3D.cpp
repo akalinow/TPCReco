@@ -38,10 +38,10 @@ std::vector<double> Track3D::getSegmentsStartEndXYZ() const {
 	if (mySegments.size() == 0) return coordinates;
 
 	for (auto& aSegment : mySegments) {
-		std::vector<double> segmentCoordinates = aSegment.getStartEndXYZ();
+		auto&& segmentCoordinates = aSegment.getStartEndXYZ();
 		coordinates.insert(coordinates.end(), segmentCoordinates.begin(), segmentCoordinates.begin() + 3);
 	}
-	std::vector<double> segmentCoordinates = mySegments.back().getStartEndXYZ();
+	auto&& segmentCoordinates = mySegments.back().getStartEndXYZ();
 	coordinates.insert(coordinates.end(), segmentCoordinates.begin() + 3, segmentCoordinates.end());
 
 	return coordinates;

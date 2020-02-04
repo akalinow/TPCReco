@@ -157,12 +157,12 @@ bool GeometryTPC::Load(std::string fname) {
 		}
 		{
 			double xoff = 0.0, yoff = 0.0;
-			if (!load_var<double>(file_lines, "REFERENCE POINT", { [](double _xoff, double _yoff) {return (fabs(_xoff) < 500. && fabs(_yoff) < 500.); } }, "mm", 2, _debug, xoff, yoff) || // set REFERECE POINT offset [mm]
+			if (!load_var<double, double>(file_lines, "REFERENCE POINT", { [](double _xoff, double _yoff) {return (fabs(_xoff) < 500. && fabs(_yoff) < 500.); } }, "mm", 2, _debug, xoff, yoff) || // set REFERECE POINT offset [mm]
 				!load_var<double>(file_lines, "DIAMOND SIZE", { [](double var) {return var > 0.0; } }, "mm", 2, _debug, pad_size) || // set pad size
 				!load_var<double>(file_lines, "DRIFT VELOCITY", { [](double var) {return var > 0.0; } }, "cm/us", 3, _debug, vdrift) || // set electron drift velocity [cm/us]
 				!load_var<double>(file_lines, "SAMPLING RATE", { [](double var) {return var > 0.0; } }, "MHz", 4, _debug, sampling_rate) || // set electronics sampling rate [MHz]
 				!load_var<double>(file_lines, "TRIGGER DELAY", { [](double var) {return std::fabs(var) < 1000.0; } }, "us", 5, _debug, trigger_delay) || // set electronics trigger delay [us]
-				!load_var<double>(file_lines, "DRIFT CAGE ACCEPTANCE", { [](double _drift_zmin, double _drift_zmax) {return (fabs(_drift_zmin) < 200. && fabs(_drift_zmax) < 200. && _drift_zmin < _drift_zmax); } }, "mm", 6, _debug, drift_zmin, drift_zmax)) { // set drift cage acceptance limits along Z-axis [mm]
+				!load_var<double, double>(file_lines, "DRIFT CAGE ACCEPTANCE", { [](double _drift_zmin, double _drift_zmax) {return (fabs(_drift_zmin) < 200. && fabs(_drift_zmax) < 200. && _drift_zmin < _drift_zmax); } }, "mm", 6, _debug, drift_zmin, drift_zmax)) { // set drift cage acceptance limits along Z-axis [mm]
 				return false;
 			}
 			reference_point.Set(xoff, yoff);
@@ -171,8 +171,7 @@ bool GeometryTPC::Load(std::string fname) {
 		}
 		{
 			// set unit vectors (along strips) and strip pitch vectors (perpendicular to strips)
-			std::for_each(dir_vec_UVW.begin(), dir_vec_UVW.end(), [&](auto proj) {
-				strip_unit_vec[proj].Set(std::cos(angle[proj] * deg_to_rad), std::sin(angle[proj] * deg_to_rad));  });
+			std::for_each(dir_vec_UVW.begin(), dir_vec_UVW.end(), [&](auto proj) {strip_unit_vec[proj].Set(std::cos(angle[proj] * deg_to_rad), std::sin(angle[proj] * deg_to_rad));  });
 
 			pitch_unit_vec[direction::U] = -1.0 * (strip_unit_vec[direction::W] + strip_unit_vec[direction::V]).Unit();
 			pitch_unit_vec[direction::V] = (strip_unit_vec[direction::U] + strip_unit_vec[direction::W]).Unit();
@@ -268,14 +267,14 @@ bool GeometryTPC::Load(std::string fname) {
 	std::cout << std::endl
 		<< "Geometry config file = " << fname << std::endl;
 	for (auto& proj : dir_vec_UVW) {
-		std::cout << "Total number of " << this->GetDirName(proj) << " strips = " << this->GetDirNstrips(proj) << std::endl;
+		std::cout << "Total number of " << GetDirName(proj) << " strips = " << GetDirNstrips(proj) << std::endl;
 	}
-	std::cout << "Number of active channels per AGET chip = " << this->GetAgetNchannels() << std::endl;
-	std::cout << "Number of " << this->GetDirName(direction::FPN_CH) << " channels per AGET chip = " << this->GetDirNstrips(direction::FPN_CH) << std::endl;
-	std::cout << "Number of raw channels per AGET chip = " << this->GetAgetNchannels_raw() << std::endl;
-	std::cout << "Number of AGET chips per ASAD board = " << this->GetAgetNchips() << std::endl;
-	std::cout << "Number of ASAD boards = " << this->GetAsadNboards() << std::endl;
-	std::cout << "Number of COBO boards = " << this->GetCoboNboards() << std::endl;
+	std::cout << "Number of active channels per AGET chip = " << GetAgetNchannels() << std::endl;
+	std::cout << "Number of " << GetDirName(direction::FPN_CH) << " channels per AGET chip = " << GetDirNstrips(direction::FPN_CH) << std::endl;
+	std::cout << "Number of raw channels per AGET chip = " << GetAgetNchannels_raw() << std::endl;
+	std::cout << "Number of AGET chips per ASAD board = " << GetAgetNchips() << std::endl;
+	std::cout << "Number of ASAD boards = " << GetAsadNboards() << std::endl;
+	std::cout << "Number of COBO boards = " << GetCoboNboards() << std::endl;
 
 	// now initialize TH2Poly (while initOK=true) and set initOK flag according to the result 
 
@@ -288,17 +287,11 @@ bool GeometryTPC::Load(std::string fname) {
 }
 
 int GeometryTPC::GetDirNstrips(direction dir) const {
-	if (IsUVW(dir) || dir == direction::FPN_CH) {
-		return stripN.at(dir);
-	};
-	return ERROR;
+	return stripN.at(dir);
 }
 
 std::string GeometryTPC::GetDirName(direction dir) {
-	if ((IsUVW(dir) || dir == direction::FPN_CH)) {
-		return dir2name.at(dir); // dir2name[dir];
-	};
-	return std::string(); // "ERROR";
+	return dir2name.at(dir);
 }
 
 std::shared_ptr<Geometry_Strip> GeometryTPC::GetStripByAget(int COBO_idx, int ASAD_idx, int AGET_idx, int channel_idx) const { // valid range [0-1][0-3][0-3][0-63]
@@ -319,7 +312,6 @@ int GeometryTPC::Aget_normal2raw(int channel_idx) { // valid range [0-63]
 }
 
 int GeometryTPC::Aget_fpn2raw(int FPN_idx) { // valid range [0-3]
-	if (FPN_idx < 0 || FPN_idx >= stripN[direction::FPN_CH]) return ERROR;
 	return FPN_chanId.at(FPN_idx);
 }
 
@@ -358,11 +350,11 @@ bool GeometryTPC::GetCrossPoint(std::shared_ptr<Geometry_Strip> strip1, std::sha
 // on success (true) also returns the average calculated offset vector wrt ORIGIN POINT (0,0)
 bool GeometryTPC::MatchCrossPoint(int strip_num_U, int strip_num_V, int strip_num_W, double radius, TVector2& point) {
 	TVector2 points[3];
-	std::array<std::shared_ptr<Geometry_Strip>,3> strips = {GetStripByDir(direction::U,strip_num_U),GetStripByDir(direction::U,strip_num_U) ,GetStripByDir(direction::U,strip_num_U) };
+	std::array<std::shared_ptr<Geometry_Strip>, 3> strips = { GetStripByDir(direction::U,strip_num_U),GetStripByDir(direction::V,strip_num_U) ,GetStripByDir(direction::W,strip_num_U) };
 	const double rad2 = pow(radius, 2);
-	if (!this->GetCrossPoint(strips[1], strips[2], points[0]) ||
-		!this->GetCrossPoint(strips[2], strips[3], points[1]) ||
-		!this->GetCrossPoint(strips[3], strips[1], points[2]) ||
+	if (!GetCrossPoint(strips[1], strips[2], points[0]) ||
+		!GetCrossPoint(strips[2], strips[3], points[1]) ||
+		!GetCrossPoint(strips[3], strips[1], points[2]) ||
 		(points[0] - points[1]).Mod2() > rad2 ||
 		(points[1] - points[2]).Mod2() > rad2 ||
 		(points[2] - points[0]).Mod2() > rad2) return false;
@@ -414,7 +406,7 @@ std::tuple<double, double, double, double> GeometryTPC::rangeXY() {
 	*ymin -= GetPadPitch() * 0.3;
 	*ymax += GetPadPitch() * 0.7;
 
-	return std::tuple<double, double, double, double>(*xmin, *xmax, *ymin, *ymax);
+	return { *xmin, *xmax, *ymin, *ymax };
 }
 
 // Returns vector of first and last strips in each dir

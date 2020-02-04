@@ -10,8 +10,7 @@ bool SigClusterTPC::AddHit(std::tuple<direction, int, int> hit) {  // valid rang
 	auto strip_number = std::get<1>(hit);
 	auto time_cell = std::get<2>(hit);
 	if (time_cell < 0 || time_cell >= Geometry().GetAgetNtimecells() ||
-		strip_number < 1 || strip_number > Geometry().GetDirNstrips(strip_dir) ||
-		!IsUVW(strip_dir)) return false;
+		strip_number < 1 || strip_number > Geometry().GetDirNstrips(strip_dir)) return false;
 
 	hitListByTimeDir.insert({ time_cell,strip_dir,strip_number });
 	hitList.insert(hit);
@@ -21,7 +20,7 @@ bool SigClusterTPC::AddHit(std::tuple<direction, int, int> hit) {  // valid rang
 void SigClusterTPC::UpdateStats() {
 	// count hits
 	for (auto dir : dir_vec_UVW) {
-		nhits[dir] = std::distance(hitList.lower_bound({dir, std::numeric_limits<int>::min(),std::numeric_limits<int>::min() }), hitList.upper_bound({ dir, std::numeric_limits<int>::max(),std::numeric_limits<int>::max() }));
+		nhits[dir] = std::distance(hitList.lower_bound({ dir, std::numeric_limits<int>::min(),std::numeric_limits<int>::min() }), hitList.upper_bound({ dir, std::numeric_limits<int>::max(),std::numeric_limits<int>::max() }));
 	}
 }
 
@@ -56,7 +55,7 @@ std::shared_ptr<TH2D> SigClusterTPC::GetStripVsTimeInMM(direction strip_dir) {  
 	// fill new histogram
 	for (auto& hit : decltype(hitList){
 		hitList.lower_bound({ strip_dir, std::numeric_limits<int>::min(), std::numeric_limits<int>::min() }),
-		hitList.upper_bound({ strip_dir, std::numeric_limits<int>::max(), std::numeric_limits<int>::max() }) }) {
+			hitList.upper_bound({ strip_dir, std::numeric_limits<int>::max(), std::numeric_limits<int>::max() }) }) {
 		auto strip_num = std::get<1>(hit);
 		auto icell = std::get<2>(hit);
 		double val = evt_ref.GetValByStrip(strip_dir, strip_num, icell);
@@ -69,6 +68,12 @@ std::shared_ptr<TH2D> SigClusterTPC::GetStripVsTimeInMM(direction strip_dir) {  
 
 // get three directions on: XY, XZ, YZ planes
 Reconstr_hist SigClusterTPC::Get(double radius, int rebin_space, int rebin_time, int method) {
+
+	static std::function<std::pair<bool, TVector2>(int, int, int, double)> fn = [](int s1_num, int s2_num, int s3_num, double rad)->std::pair<bool, TVector2> {
+		TVector2 pos;
+		return { Geometry().MatchCrossPoint(s1_num, s2_num, s3_num, rad, pos), pos };
+	};
+	static RV_Storage<std::pair<bool, TVector2>, int, int, int, double> MatchCrossPoint_functor(fn);
 
 	Reconstr_hist h_all;
 	bool err_flag = false;
@@ -92,18 +97,17 @@ Reconstr_hist SigClusterTPC::Get(double radius, int rebin_space, int rebin_time,
 
 		std::map<std::tuple<direction, int>, int> n_match; // map of number of matched points for each strip, key=STRIP_NUM [1-1024]
 		std::map<std::array<int, 3>, TVector2> hitPos; // key=(STRIP_NUM_U, STRIP_NUM_V, STRIP_NUM_W), value=(X [mm],Y [mm])
-
 		// loop over hits and confirm matching in space
 		for (auto& hit_strip_num_U : hits_in_dir[direction::U]) {
 			for (auto& hit_strip_num_V : hits_in_dir[direction::V]) {
 				for (auto& hit_strip_num_W : hits_in_dir[direction::W]) {
-
 					TVector2 pos;
-					if (Geometry().MatchCrossPoint(std::get<2>(hit_strip_num_U), std::get<2>(hit_strip_num_V), std::get<2>(hit_strip_num_W), radius, pos)) {
+					auto res = MatchCrossPoint_functor(std::get<2>(hit_strip_num_U), std::get<2>(hit_strip_num_V), std::get<2>(hit_strip_num_W), radius);
+					if (std::get<0>(res)) {
 						n_match[{direction::U, std::get<2>(hit_strip_num_U)}]++;
 						n_match[{direction::V, std::get<2>(hit_strip_num_V)}]++;
 						n_match[{direction::W, std::get<2>(hit_strip_num_W)}]++;
-						hitPos[{std::get<2>(hit_strip_num_U), std::get<2>(hit_strip_num_V), std::get<2>(hit_strip_num_W)}] = pos;
+						hitPos[{std::get<2>(hit_strip_num_U), std::get<2>(hit_strip_num_V), std::get<2>(hit_strip_num_W)}] = std::get<1>(res);
 						//	    std::cout << Form(">>>> Checking triplet: result = TRUE" ) << std::endl;
 					}
 					else {

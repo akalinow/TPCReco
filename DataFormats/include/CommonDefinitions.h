@@ -16,6 +16,9 @@ private:
 public:
 	RV_Storage(std::function<Ret_Type(Func_Args...)>& f_ptr) : func_ptr(f_ptr) {};
 	~RV_Storage() = default;
+	decltype(func_ptr)& operator=(std::function < Ret_Type(Func_Args...)> f_ptr) {
+		return (func_ptr = f_ptr);
+	}
 	Ret_Type operator()(Func_Args... args) {
 		const auto it = ret_val_map.find({ args... });
 		return (it != ret_val_map.end() ? it->second : (ret_val_map[{ args... }] = func_ptr(args...)));
@@ -33,26 +36,21 @@ enum class direction : unsigned {
 };
 
 enum class projection {
-		DIR_XY,     // 2D direction on XY plane
-		DIR_XZ,    // 2D direction on XZ plane
-		DIR_YZ,    // 2D direction on YZ plane
-		DIR_3D    // 3D reconstruction
+	DIR_XY,     // 2D direction on XY plane
+	DIR_XZ,    // 2D direction on XZ plane
+	DIR_YZ,    // 2D direction on YZ plane
+	DIR_3D    // 3D reconstruction
 };
 
 inline std::ostream& operator<<(std::ostream& str, direction proj) {
 	return (str << int(proj));
 }
 
-
-inline bool IsUVW(direction DIR_) {
-	return DIR_ == direction::U || DIR_ == direction::V || DIR_ == direction::W;
-}
-
 const auto dir_vec_UVW = std::vector<direction>{ direction::U,direction::V,direction::W };
-  
+
 //#### Angles of U/V/W unit vectors wrt X-axis [deg]
 //#ANGLES: 90.0 -30.0 30.0
-const std::map<direction, const double> phiPitchDirection = { {direction::U, pi}, {direction::V, (-pi / 6.0 + pi / 2.0)}, {direction::U, (pi / 6.0 - pi / 2.0)} };
+const std::map<direction, const double> phiPitchDirection = { {direction::U, pi}, {direction::V, (-pi / 6.0 + pi / 2.0)}, {direction::W, (pi / 6.0 - pi / 2.0)} };
 
 inline std::string filename_string(std::string path_str) {
 	return path_str.substr(path_str.rfind("/") + 1, path_str.size() - path_str.rfind("/") - 1);
@@ -64,7 +62,6 @@ inline std::string filename_string(std::string path_str) {
 class TH2D;
 class TH3D;
 using Reconstr_hist = std::pair<std::shared_ptr<TH2D>, std::shared_ptr<TH3D>>;
-
 
 constexpr auto EVENTTPC_DEFAULT_RECO_METHOD = 1;  // 0 = equal charge division along the strip;
 										// 1 = weighted charge division from complementary strip directions
