@@ -3,7 +3,7 @@
 void EventTPC::Clear() {
 
 	glb_max_charge = 0.0;
-
+	is_glb_max_charge_calculated = false;
 	chargeMap.clear();
 }
 
@@ -33,6 +33,10 @@ double EventTPC::GetValByStrip(direction strip_dir, int strip_number, int time_c
 }
 
 double EventTPC::GetMaxCharge() {  // maximal charge from all strips
+	if (!is_glb_max_charge_calculated) {
+		glb_max_charge = std::max_element(chargeMap.begin(), chargeMap.end())->second;
+		is_glb_max_charge_calculated = true;
+	}
 	return glb_max_charge;
 }
 
@@ -54,10 +58,8 @@ std::shared_ptr<SigClusterTPC> EventTPC::GetOneCluster(double thr, int delta_str
 	// debug
 
 	// adding envelope to the seed hits
-	auto oldList = cluster->GetHitList(); // make a copy of list of SEED-hits
-
 	// loop thru SEED-hits
-	for (auto& hit : oldList) {
+	for (auto& hit : cluster->GetHitList()) {
 		const auto strip_dir = std::get<0>(hit);
 		const auto strip_num = std::get<1>(hit);
 		const auto time_cell = std::get<2>(hit);
@@ -66,12 +68,13 @@ std::shared_ptr<SigClusterTPC> EventTPC::GetOneCluster(double thr, int delta_str
 		for (auto strip = min_strip; std::get<1>(strip->first) <= strip_num + delta_strips; strip = chargeMap.upper_bound({ strip_dir, std::get<1>(strip->first), std::numeric_limits<int>::max() })) {
 			auto min_time_cell = chargeMap.lower_bound({ strip_dir, std::get<1>(strip->first), time_cell - delta_timecells });
 			auto max_time_cell = chargeMap.upper_bound({ strip_dir, std::get<1>(strip->first), time_cell + delta_timecells });
-			for (auto& charge : decltype(chargeMap){ min_time_cell, max_time_cell }) {
-				if (charge.second < 0) continue; // exclude negative values (due to pedestal subtraction)
-				cluster->AddHit(charge.first); // add new space-time point
+			for (auto charge = min_time_cell; charge != max_time_cell; charge++) {
+				if (charge->second < 0) continue; // exclude negative values (due to pedestal subtraction)
+				cluster->AddEnvelopeHit(charge->first); // add new space-time point
 			}
 		}
 	}
+	cluster->Combine();
 	cluster->UpdateStats();
 	// debug
 	std::cout << Form(">>>> GetSigCluster: AFTER ENVELOPE:  nhits(%d)/nhits(%d)/nhits(%d)=%ld/%ld/%ld",
@@ -96,12 +99,12 @@ std::shared_ptr<TH2D> EventTPC::GetStripVsTime(direction strip_dir) {  // valid 
 		1.0 - 0.5,
 		1. * Geometry().GetDirNstrips(strip_dir) + 0.5);
 	// fill new histogram
-	for (auto& charge : decltype(chargeMap){
-		chargeMap.lower_bound({strip_dir, std::numeric_limits<int>::min(), std::numeric_limits<int>::min()}),
-		chargeMap.lower_bound({strip_dir, std::numeric_limits<int>::max(), std::numeric_limits<int>::max()}) }) {
-		auto strip_num = std::get<1>(charge.first);
-		auto time_cell = std::get<1>(charge.first);
-		auto val = charge.second;
+	auto min_strip = chargeMap.lower_bound({strip_dir, std::numeric_limits<int>::min(), std::numeric_limits<int>::min()});
+	auto max_strip = chargeMap.upper_bound({strip_dir, std::numeric_limits<int>::max(), std::numeric_limits<int>::max()});
+	for (auto charge = min_strip; charge != max_strip; charge++) {
+		auto strip_num = std::get<1>(charge->first);
+		auto time_cell = std::get<2>(charge->first);
+		auto val = charge->second;
 		result->Fill(time_cell, strip_num, val);
 	}
 	return result;

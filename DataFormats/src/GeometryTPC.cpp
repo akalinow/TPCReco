@@ -1,11 +1,17 @@
 #include "GeometryTPC.h" 
 
 GeometryTPC& Geometry(std::string fname, bool debug) {
+	static std::once_flag geometry_init_check;
+	std::call_once(geometry_init_check, [&]() {
+		if (fname == "") {
+			throw std::runtime_error("Geometry wasn't initialized before first use");
+		}
+	});
 	static GeometryTPC main_geometry{ fname, debug };
 	return main_geometry;
 }
 
-template <size_t element_index, typename... Types>
+/*template <size_t element_index, typename... Types>
 std::ostream& tuple_write(std::ostream& output_stream, std::tuple<Types...>& data_tuple) {
 	if constexpr (element_index < sizeof...(Types)) {
 		output_stream << std::get<element_index>(data_tuple) << "	";
@@ -53,6 +59,44 @@ bool load_var(std::vector<std::string> file_lines, std::string line_name, std::f
 		}
 		return false;
 	}
+}*/
+
+//version above not working, workarounds below
+
+template <typename Type>
+bool load_var(std::vector<std::string> file_lines, std::string line_name, std::function<bool(Type)> var_check, std::string units, int error_number, bool _debug, Type& var_ref) {
+	auto it = find_line(file_lines, line_name);
+	if (it != file_lines.end() && //line exists
+		(std::stringstream(it->substr(it->find(':') + 1)) >> var_ref) && //line constains values
+		var_check(var_ref)) { //values are correct
+		std::cout << line_name << " = " << var_ref << " " << units << std::endl;
+		return true;
+	}
+	else {
+		std::cerr << "ERROR: Wrong " << line_name << " !!!" << std::endl;
+		if (_debug) {
+			std::cout << "GeometryTPC::Load - Abort (" << error_number << ")" << std::endl;
+		}
+		return false;
+	}
+}
+
+template <typename Type1, typename Type2>
+bool load_var(std::vector<std::string> file_lines, std::string line_name, std::function<bool(Type1, Type2)> var_check, std::string units, int error_number, bool _debug, Type1& var_ref1, Type2& var_ref2) {
+	auto it = find_line(file_lines, line_name);
+	if (it != file_lines.end() && //line exists
+		(std::stringstream(it->substr(it->find(':') + 1)) >> var_ref1 >> var_ref2) && //line constains values
+		var_check(var_ref1, var_ref2)) { //values are correct
+		std::cout << line_name << " = " << var_ref1 << " " << var_ref2 << " " << units << std::endl;
+		return true;
+	}
+	else {
+		std::cerr << "ERROR: Wrong " << line_name << " !!!" << std::endl;
+		if (_debug) {
+			std::cout << "GeometryTPC::Load - Abort (" << error_number << ")" << std::endl;
+		}
+		return false;
+	}
 }
 
 GeometryTPC::GeometryTPC(std::string  fname, bool debug)
@@ -70,8 +114,6 @@ GeometryTPC::GeometryTPC(std::string  fname, bool debug)
 	trigger_delay(0.),
 	drift_zmin(0.),
 	drift_zmax(0.),
-	grid_nx(25),
-	grid_ny(25),
 	_debug(debug)
 {
 	if (_debug) {
@@ -348,9 +390,10 @@ bool GeometryTPC::GetCrossPoint(std::shared_ptr<Geometry_Strip> strip1, std::sha
 
 // Checks if 3 strips are crossing inside the active area of TPC within a given tolerance (radius in [mm]),
 // on success (true) also returns the average calculated offset vector wrt ORIGIN POINT (0,0)
-bool GeometryTPC::MatchCrossPoint(int strip_num_U, int strip_num_V, int strip_num_W, double radius, TVector2& point) {
+bool GeometryTPC::MatchCrossPoint(std::array<int, 3> strip_nums, double radius, TVector2& point) {
 	TVector2 points[3];
-	std::array<std::shared_ptr<Geometry_Strip>, 3> strips = { GetStripByDir(direction::U,strip_num_U),GetStripByDir(direction::V,strip_num_U) ,GetStripByDir(direction::W,strip_num_U) };
+	std::array<std::shared_ptr<Geometry_Strip>, 3> strips;
+	std::transform(strip_nums.begin(), strip_nums.end(), dir_vec_UVW.begin(), strips.begin(), [&](int strip_num, direction dir) { return GetStripByDir(dir, strip_num); });
 	const double rad2 = pow(radius, 2);
 	if (!GetCrossPoint(strips[1], strips[2], points[0]) ||
 		!GetCrossPoint(strips[2], strips[3], points[1]) ||

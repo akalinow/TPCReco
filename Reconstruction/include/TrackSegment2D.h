@@ -19,7 +19,7 @@ public:
 
   TrackSegment2D(direction strip_dir = direction::U){ myStripDir = strip_dir;};
 
-  ~TrackSegment2D() {};
+  ~TrackSegment2D() = default;
 
   void setBiasTangent(const TVector3 & aBias, const TVector3 & aTangent);
 

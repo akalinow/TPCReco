@@ -17,11 +17,30 @@ bool SigClusterTPC::AddHit(std::tuple<direction, int, int> hit) {  // valid rang
 	return true;
 }
 
+bool SigClusterTPC::AddEnvelopeHit(std::tuple<direction, int, int> hit) {  // valid range [0-2][1-1024][0-511]
+	auto strip_dir = std::get<0>(hit);
+	auto strip_number = std::get<1>(hit);
+	auto time_cell = std::get<2>(hit);
+	if (time_cell < 0 || time_cell >= Geometry().GetAgetNtimecells() ||
+		strip_number < 1 || strip_number > Geometry().GetDirNstrips(strip_dir)) return false;
+
+	envelope_hitList.insert(hit);
+	envelope_hitListByTimeDir.insert({ time_cell,strip_dir,strip_number });
+	return true;
+}
+
 void SigClusterTPC::UpdateStats() {
 	// count hits
 	for (auto dir : dir_vec_UVW) {
 		nhits[dir] = std::distance(hitList.lower_bound({ dir, std::numeric_limits<int>::min(),std::numeric_limits<int>::min() }), hitList.upper_bound({ dir, std::numeric_limits<int>::max(),std::numeric_limits<int>::max() }));
 	}
+}
+
+void SigClusterTPC::Combine() {
+	hitList.insert(envelope_hitList.begin(), envelope_hitList.end()); // insert envelope hit list
+	hitListByTimeDir.insert(envelope_hitListByTimeDir.begin(), envelope_hitListByTimeDir.end());
+	envelope_hitList.clear(); //clear envelope hit list
+	envelope_hitListByTimeDir.clear();
 }
 
 size_t SigClusterTPC::GetNhits(direction strip_dir) const {   // # of hits in a given direction
@@ -53,11 +72,11 @@ std::shared_ptr<TH2D> SigClusterTPC::GetStripVsTimeInMM(direction strip_dir) {  
 		Geometry().GetDirNstrips(strip_dir), minStripInMM, maxStripInMM);
 
 	// fill new histogram
-	for (auto& hit : decltype(hitList){
-		hitList.lower_bound({ strip_dir, std::numeric_limits<int>::min(), std::numeric_limits<int>::min() }),
-			hitList.upper_bound({ strip_dir, std::numeric_limits<int>::max(), std::numeric_limits<int>::max() }) }) {
-		auto strip_num = std::get<1>(hit);
-		auto icell = std::get<2>(hit);
+	auto min_hit = hitList.lower_bound({ strip_dir, std::numeric_limits<int>::min(), std::numeric_limits<int>::min() });
+	auto max_hit = hitList.upper_bound({ strip_dir, std::numeric_limits<int>::max(), std::numeric_limits<int>::max() });
+	for (auto hit = min_hit; hit != max_hit; hit++) {
+		auto strip_num = std::get<1>(*hit);
+		auto icell = std::get<2>(*hit);
 		double val = evt_ref.GetValByStrip(strip_dir, strip_num, icell);
 		auto x = Geometry().Timecell2pos(icell);
 		auto y = Geometry().Strip2posUVW(strip_dir, strip_num);
@@ -67,47 +86,50 @@ std::shared_ptr<TH2D> SigClusterTPC::GetStripVsTimeInMM(direction strip_dir) {  
 }
 
 // get three directions on: XY, XZ, YZ planes
-Reconstr_hist SigClusterTPC::Get(double radius, int rebin_space, int rebin_time, int method) {
+Reconstr_hist&& SigClusterTPC::Get(double radius, int rebin_space, int rebin_time, int method) {
 
 	static std::function<std::pair<bool, TVector2>(int, int, int, double)> fn = [](int s1_num, int s2_num, int s3_num, double rad)->std::pair<bool, TVector2> {
 		TVector2 pos;
-		return { Geometry().MatchCrossPoint(s1_num, s2_num, s3_num, rad, pos), pos };
+		return { Geometry().MatchCrossPoint({s1_num, s2_num, s3_num}, rad, pos), pos };
 	};
 	static RV_Storage<std::pair<bool, TVector2>, int, int, int, double> MatchCrossPoint_functor(fn);
 
 	Reconstr_hist h_all;
 	bool err_flag = false;
-	if (std::any_of(dir_vec_UVW.begin(), dir_vec_UVW.end(), [&](direction dir_) { return GetNhits(dir_) < 1; })) return h_all;
+	if (std::any_of(dir_vec_UVW.begin(), dir_vec_UVW.end(), [&](direction dir_) { return GetNhits(dir_) < 1; })) return std::move(h_all);
 
 	//std::cout << Form(">>>> EventId = %lld", event_id) << std::endl;
 	//std::cout << Form(">>>> Time cell range = [%d, %d]", time_cell_min, time_cell_max) << std::endl;
 
-	for (auto hits_in_time_cell_begin = hitListByTimeDir.begin(); hits_in_time_cell_begin != hitListByTimeDir.end(); hits_in_time_cell_begin = hitListByTimeDir.upper_bound({ std::get<0>(*hits_in_time_cell_begin), std::numeric_limits<direction>::max(), std::numeric_limits<int>::max() })) {
+	for (auto hits_in_time_cell_begin = hitListByTimeDir.begin(); hits_in_time_cell_begin != hitListByTimeDir.end(); hits_in_time_cell_begin = hitListByTimeDir.upper_bound({ std::get<0>(*hits_in_time_cell_begin), std::numeric_limits<direction>::max(), std::numeric_limits<int>::max() })) { //iterate over time cells
 		auto icell = std::get<0>(*hits_in_time_cell_begin);
-		auto hits_in_time_cell = decltype(hitListByTimeDir){hits_in_time_cell_begin, hitListByTimeDir.upper_bound({ std::get<0>(*hits_in_time_cell_begin), std::numeric_limits<direction>::max(), std::numeric_limits<int>::max() }) };
-		std::map<direction, decltype(hitListByTimeDir)> hits_in_dir;
+		std::map<direction, std::vector<int>> hits_strip_nums_in_dir;
 		for (auto dir : dir_vec_UVW) {
-			hits_in_dir[dir] = decltype(hitListByTimeDir){ hits_in_time_cell.lower_bound({ std::get<0>(*hits_in_time_cell_begin), dir, std::numeric_limits<int>::min() }), hits_in_time_cell.upper_bound({ std::get<0>(*hits_in_time_cell_begin), dir, std::numeric_limits<int>::max() }) };
+			auto min_hit = hitListByTimeDir.lower_bound({ icell, dir, std::numeric_limits<int>::min() });
+			auto max_hit = hitListByTimeDir.upper_bound({ icell, dir, std::numeric_limits<int>::max() });
+			for (auto hit = min_hit; hit != max_hit; hit++) {
+				hits_strip_nums_in_dir[dir].push_back(std::get<2>(*hit));
+			}
 		}
 		// check if there is at least one hit in each direction
-		if (std::any_of(dir_vec_UVW.begin(), dir_vec_UVW.end(), [&](direction dir_) { return hits_in_dir[dir_].size() == 0; })) continue;
+		if (std::any_of(dir_vec_UVW.begin(), dir_vec_UVW.end(), [&](direction dir_) { return hits_strip_nums_in_dir[dir_].size() == 0; })) continue;
 
 		//   std::cout << Form(">>>> Number of hits: time cell=%d: U=%d / V=%d / W=%d",
 		//		      icell, (int)hits[int(direction::U)].size(), (int)hits[int(direction::V)].size(), (int)hits[int(direction::W)].size()) << std::endl;
 
-		std::map<std::tuple<direction, int>, int> n_match; // map of number of matched points for each strip, key=STRIP_NUM [1-1024]
+		std::map<std::pair<direction, int>, int> n_match; // map of number of matched points for each strip, key=STRIP_NUM [1-1024]
 		std::map<std::array<int, 3>, TVector2> hitPos; // key=(STRIP_NUM_U, STRIP_NUM_V, STRIP_NUM_W), value=(X [mm],Y [mm])
 		// loop over hits and confirm matching in space
-		for (auto& hit_strip_num_U : hits_in_dir[direction::U]) {
-			for (auto& hit_strip_num_V : hits_in_dir[direction::V]) {
-				for (auto& hit_strip_num_W : hits_in_dir[direction::W]) {
+		for (auto& hit_strip_num_U : hits_strip_nums_in_dir[direction::U]) {
+			for (auto& hit_strip_num_V : hits_strip_nums_in_dir[direction::V]) {
+				for (auto& hit_strip_num_W : hits_strip_nums_in_dir[direction::W]) {
 					TVector2 pos;
-					auto res = MatchCrossPoint_functor(std::get<2>(hit_strip_num_U), std::get<2>(hit_strip_num_V), std::get<2>(hit_strip_num_W), radius);
-					if (std::get<0>(res)) {
-						n_match[{direction::U, std::get<2>(hit_strip_num_U)}]++;
-						n_match[{direction::V, std::get<2>(hit_strip_num_V)}]++;
-						n_match[{direction::W, std::get<2>(hit_strip_num_W)}]++;
-						hitPos[{std::get<2>(hit_strip_num_U), std::get<2>(hit_strip_num_V), std::get<2>(hit_strip_num_W)}] = std::get<1>(res);
+					auto result = MatchCrossPoint_functor(hit_strip_num_U, hit_strip_num_V, hit_strip_num_W, radius);
+					if (std::get<0>(result)) {
+						n_match[{direction::U, hit_strip_num_U}]++;
+						n_match[{direction::V, hit_strip_num_V}]++;
+						n_match[{direction::W, hit_strip_num_W}]++;
+						hitPos[{hit_strip_num_U, hit_strip_num_V, hit_strip_num_W}] = std::get<1>(result);
 						//	    std::cout << Form(">>>> Checking triplet: result = TRUE" ) << std::endl;
 					}
 					else {
@@ -164,12 +186,9 @@ Reconstr_hist SigClusterTPC::Get(double radius, int rebin_space, int rebin_time,
 
 		for (auto& it1 : hitPos) {
 			std::map<direction, int> uvw1;
-			for (auto dir : dir_vec_UVW) {
-				uvw1[dir] = it1.first[int(dir)];
-			}
-
 			std::map<direction, double> charge_along_direction;  // sum of charges along three directions (for a given time range)
 			for (auto dir : dir_vec_UVW) {
+				uvw1[dir] = it1.first[int(dir)];
 				charge_along_direction[dir] = evt_ref.GetValByStrip(dir, uvw1[dir], icell);
 			}
 
@@ -224,5 +243,5 @@ Reconstr_hist SigClusterTPC::Get(double radius, int rebin_space, int rebin_time,
 			h_all.first->Fill((it.second).X(), (it.second).Y(), val);
 		}
 	}
-	return h_all;
+	return std::move(h_all);
 }

@@ -42,7 +42,6 @@ auto find_line = [](std::vector<std::string>& vec, std::string str) {
 
 // UVW strip geometry defined as a class
 
-//class GeometryTPC : public TObject {
 class GeometryTPC {
 
  private:
@@ -72,8 +71,6 @@ class GeometryTPC {
   double trigger_delay;            // delay in [microseconds] of the external "t0" trigger signal (for accelerator beam) 
   double drift_zmin;               // lower drift cage acceptance limit along Z-axis [mm] (closest to readout PCB)
   double drift_zmax;               // upper drift cage acceptance limit along Z-axis [mm] (farthest from readout PCB)
-  const int grid_nx;                     // partition size of TH2Poly in X-dir
-  const int grid_ny;                     // partition size of TH2Poly in Y-dir
   const bool _debug;                     // debug/verbose info flag
      
   // Setter methods 
@@ -108,7 +105,7 @@ class GeometryTPC {
   int Global_normal2normal(int COBO_idx, int ASAD_idx, int aget_idx, int channel_idx);   // valid range [0-1][0-3][0-3][0-63]
 
   bool GetCrossPoint(std::shared_ptr<Geometry_Strip> strip1, std::shared_ptr<Geometry_Strip> strip2, TVector2 &point);
-  bool MatchCrossPoint(int strip_num_U, int strip_num_V, int strip_num_W, double radius, TVector2 &point);
+  bool MatchCrossPoint(std::array<int, 3> strip_nums, double radius, TVector2 &point);
 
   inline double GetPadPitch() { return pad_pitch; } // [mm]
   inline double GetStripPitch() { return strip_pitch; } // [mm]

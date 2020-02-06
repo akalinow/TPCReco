@@ -35,6 +35,8 @@ private:
 
 	double glb_max_charge = 0.0;
 
+	bool is_glb_max_charge_calculated = false;
+
 	Event_Information event_info;
 
 public:

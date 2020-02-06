@@ -93,7 +93,7 @@ void TrackBuilder::makeRecHits(direction dir) {
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TF1 TrackBuilder::fitTimeWindow(TH1D* hProj) {
+TF1&& TrackBuilder::fitTimeWindow(TH1D* hProj) {
 
 	TFitResultPtr fitResult;
 	TF1 timeResponseShape;
@@ -104,7 +104,7 @@ TF1 TrackBuilder::fitTimeWindow(TH1D* hProj) {
 	double maxValue = hProj->GetMaximum();
 	double maxPos = hProj->GetBinCenter(maxBin);
 	double windowIntegral = hProj->Integral(maxBin - 25, maxBin + 25);
-	if (maxValue < 25 || windowIntegral < 50) return bestTimeResponseShape;//FIXME how to choose the thresholds?
+	if (maxValue < 25 || windowIntegral < 50) return std::move(bestTimeResponseShape);//FIXME how to choose the thresholds?
 
 	std::stringstream formula;
 	for (int iComponent = 0; iComponent < 3; ++iComponent) {
@@ -140,7 +140,7 @@ TF1 TrackBuilder::fitTimeWindow(TH1D* hProj) {
 			timeResponseShape.Copy(bestTimeResponseShape);
 		}
 	}
-	return bestTimeResponseShape;
+	return std::move(bestTimeResponseShape);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -194,18 +194,18 @@ void TrackBuilder::fillHoughAccumulator(direction dir) {
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TrackSegment2DCollection TrackBuilder::findSegment2DCollection(direction dir) {
+TrackSegment2DCollection&& TrackBuilder::findSegment2DCollection(direction dir) {
 
 	TrackSegment2DCollection aTrackCollection;
 	for (int iPeak = 0; iPeak < 2; ++iPeak) {
 		TrackSegment2D aTrackSegment = findSegment2D(dir, iPeak);
 		aTrackCollection.push_back(aTrackSegment);
 	}
-	return aTrackCollection;
+	return std::move(aTrackCollection);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TrackSegment2D TrackBuilder::findSegment2D(direction dir, int iPeak) const {
+TrackSegment2D&& TrackBuilder::findSegment2D(direction dir, int iPeak) const {
 
 	int iBinX = 0, iBinY = 0, iBinZ = 0;
 	int margin = 5;
@@ -240,11 +240,11 @@ TrackSegment2D TrackBuilder::findSegment2D(direction dir, int iPeak) const {
 	TrackSegment2D aSegment2D{ dir };
 	aSegment2D.setBiasTangent(aBias, aTangent);
 	aSegment2D.setNAccumulatorHits(nHits);
-	return aSegment2D;
+	return std::move(aSegment2D);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TrackSegment3D TrackBuilder::buildSegment3D() const {
+TrackSegment3D&& TrackBuilder::buildSegment3D() const {
 
 	int iTrack2DSeed = 0;
 	auto& segmentU = my2DSeeds.at(direction::U)[iTrack2DSeed];
@@ -283,11 +283,11 @@ TrackSegment3D TrackBuilder::buildSegment3D() const {
 	a3DSeed.setBiasTangent(aBias, aTangent);
 	a3DSeed.setRecHits(myRecHits);
 
-	return a3DSeed;
+	return std::move(a3DSeed);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-Track3D TrackBuilder::fitTrack3D(const TrackSegment3D& aTrackSegment) const {
+Track3D&& TrackBuilder::fitTrack3D(const TrackSegment3D& aTrackSegment) const {
 
 	Track3D aTrackCandidate;
 	aTrackCandidate.addSegment(aTrackSegment);
@@ -307,17 +307,8 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D& aTrackSegment) const {
 	std::cout << "bestSplit: " << bestSplit << std::endl;
 	aTrackCandidate.splitWorseChi2Segment(bestSplit);
 
-	for (int iSplit = 0; iSplit < 0; ++iSplit) { //FIX ME
-		unsigned int nSegments = aTrackCandidate.getSegments().size();
-		for (unsigned int iSegment = 0; iSegment < nSegments; iSegment += 2) {
-			aTrackCandidate.splitSegment(iSegment, 0.5);
-			nSegments = aTrackCandidate.getSegments().size();
-		}
-	}
-
-
 	aTrackCandidate = fitTrackNodes(aTrackCandidate);
-	return aTrackCandidate;//TEST
+	return std::move(aTrackCandidate);//TEST
 	/*
 	if(aTrackCandidate.getLength()<1.0) return aTrackCandidate;//FIX me move threshold to configuration
 
@@ -337,8 +328,8 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D& aTrackSegment) const {
 Track3D TrackBuilder::fitTrackNodes(const Track3D& aTrack) const {
 
 	Track3D aTrackCandidate = aTrack;
-	std::vector<double> bestParams = aTrackCandidate.getSegmentsStartEndXYZ();
-	std::vector<double> params = aTrackCandidate.getSegmentsStartEndXYZ();
+	auto&& bestParams = aTrackCandidate.getSegmentsStartEndXYZ();
+	auto&& params = aTrackCandidate.getSegmentsStartEndXYZ();
 	int nParams = params.size();
 
 	ROOT::Math::Functor fcn(&aTrackCandidate, &Track3D::chi2FromNodesList, nParams);
@@ -349,7 +340,7 @@ Track3D TrackBuilder::fitTrackNodes(const Track3D& aTrack) const {
 		fitter.Config().ParSettings(iPar).SetLimits(-100, 100);
 	}
 
-	double minChi2 = 1E10;
+	double minChi2 = std::numeric_limits<double>::max();
 	for (unsigned int iStep = 0; iStep < 1; ++iStep) { //FIX ME
 
 		std::cout << __FUNCTION__ << " iStep: " << iStep << std::endl;

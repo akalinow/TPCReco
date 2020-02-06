@@ -32,10 +32,10 @@ void Track3D::update() {
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::vector<double> Track3D::getSegmentsStartEndXYZ() const {
+std::vector<double>&& Track3D::getSegmentsStartEndXYZ() const {
 
 	std::vector<double> coordinates;
-	if (mySegments.size() == 0) return coordinates;
+	if (mySegments.size() == 0) return std::move(coordinates);
 
 	for (auto& aSegment : mySegments) {
 		auto&& segmentCoordinates = aSegment.getStartEndXYZ();
@@ -44,7 +44,7 @@ std::vector<double> Track3D::getSegmentsStartEndXYZ() const {
 	auto&& segmentCoordinates = mySegments.back().getStartEndXYZ();
 	coordinates.insert(coordinates.end(), segmentCoordinates.begin() + 3, segmentCoordinates.end());
 
-	return coordinates;
+	return std::move(coordinates);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -228,15 +228,8 @@ void Track3D::splitWorseChi2Segment(double lenghtFraction) {
 	if (segmentChi2.size() == 0) return;
 	if (lenghtFraction < 0 || lenghtFraction>1.0) lenghtFraction = 0.5;
 
-	double maxChi2 = 0.0;
-	unsigned int worseChi2Segment = 0;
-	for (unsigned int iSegment = 0; iSegment < mySegments.size(); ++iSegment) {
-		if (segmentChi2[iSegment] > maxChi2) {
-			maxChi2 = segmentChi2[iSegment];
-			worseChi2Segment = iSegment;
-		}
-	}
-	splitSegment(worseChi2Segment, lenghtFraction);
+	auto worseChi2Segment = std::max_element(segmentChi2.begin(), segmentChi2.end());
+	splitSegment(std::distance(segmentChi2.begin(), worseChi2Segment), lenghtFraction);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

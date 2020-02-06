@@ -11,7 +11,7 @@
 /////////////////////////////////////////////////////////
 void DataManager::loadDataFile(const std::string& fileName) {
 
-	std::string treeName = "TPCData";
+	const std::string treeName = "TPCData";
 
 	myFile.OpenFile(fileName.c_str(), "READ");
 	if (myFile.IsOpen()) {

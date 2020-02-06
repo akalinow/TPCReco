@@ -21,7 +21,7 @@ public:
 
   const TrackSegment3DCollection & getSegments() const { return mySegments;}
 
-  std::vector<double> getSegmentsStartEndXYZ() const;
+  std::vector<double>&& getSegmentsStartEndXYZ() const;
 
   double getLength() const { return myLenght;}
 
@@ -71,9 +71,10 @@ private:
   double getNodesChi2() const;
 
   double myLenght = 0.0;
-  std::vector<double> segmentChi2;
-  std::vector<double> nodeHitsChi2;
-  std::vector<double> nodeAngleChi2;
+  std::vector<double> 
+      segmentChi2,
+      nodeHitsChi2,
+      nodeAngleChi2;
   
   TrackSegment3DCollection mySegments;
   TGraph myChargeProfile;
