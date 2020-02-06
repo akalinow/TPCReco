@@ -40,11 +40,11 @@ int main(int argc, char* argv[]) {
 
 	aTree.Branch("Event", myEvent.get());
 
-	myEvent->SetRunId(0);
+	myEvent->Info().RunId(0);
 	auto lastevent = 100;
 	for (long eventId = 0; eventId < lastevent; ++eventId) {
 		myEvent->Clear();
-		myEvent->SetEventId(eventId);
+		myEvent->Info().EventId(eventId);
 
 		int COBO_idx = 0;
 		int ASAD_idx = 0;
