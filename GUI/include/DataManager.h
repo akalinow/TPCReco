@@ -27,9 +27,9 @@ public:
 
   std::shared_ptr<EventTPC> getCurrentEvent() const;
   
-  std::shared_ptr<EventTPC> getNextEvent();
+  void loadNextEvent();
 
-  std::shared_ptr<EventTPC> getPreviousEvent();
+  void loadPreviousEvent();
 
   unsigned int numberOfEvents() const;
 
@@ -44,7 +44,7 @@ private:
   unsigned int myCurrentEntry;
 
   std::shared_ptr<EventTPC> currentEvent_external_copy;
-  EventTPC* currentEvent_internal;
+  EventTPC* currentEvent_internal = nullptr;
 };
 #endif
 

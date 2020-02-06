@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <numeric>
 #include <atomic>
+#include <utility>
 //#include <execution> //C++17
 
 #include "TVector3.h"
@@ -21,9 +22,9 @@ class TrackSegment3D {
 
 public:
 
-  TrackSegment3D();
+  TrackSegment3D() = default;
 
-  ~TrackSegment3D() {};
+  ~TrackSegment3D() = default;
 
   void setBiasTangent(const TVector3 & aBias, const TVector3 & aTangent);
 
@@ -31,7 +32,7 @@ public:
 
   void setStartEnd(const double *par);
 
-  void setRecHits(const std::map<projection, TH2D> & aRecHits);
+  void setRecHits(const std::map<direction, std::shared_ptr<TH2D>> & aRecHits);
 
   ///Unit tangential vector along segment.
   const TVector3 & getTangent() const { return myTangent;}
@@ -55,11 +56,11 @@ public:
   const TVector3 & getEnd() const { return myEnd;}
 
   ///Return packed cartesian coordinates of the segment start/end points.
-  std::vector<double> getStartEndXYZ() const;
+  std::vector<double>&& getStartEndXYZ() const;
 
-  ///Return 2D projection for strip_dir corresponding to start and end
+  ///Return 2D direction for strip_dir corresponding to start and end
   ///along the 3D segment.
-  TrackSegment2D get2DProjection(projection strip_dir, double start, double end) const;
+  TrackSegment2D&& get2DProjection(direction strip_dir, double start, double end) const;
 
   ///Return the full lenght of the segment.
   double getLength() const { return myLenght;}
@@ -68,7 +69,7 @@ public:
 
   double getIntegratedHitDistance(double lambda) const;
 
-  const std::map<projection, Hit2DCollection>& getRecHits() const { return myRecHits;}
+  const std::map<direction, Hit2DCollection>& getRecHits() const { return myRecHits;}
 
   double getRecHitChi2() const;
   
@@ -77,12 +78,12 @@ public:
 
 private:
 
-  TVector3 getPointOn2DProjection(double lambda, projection strip_dir) const;
+  TVector3 getPointOn2DProjection(double lambda, direction strip_dir) const;
 
   ///Calculate vector for different parametrisations.
   void initialize();
 
-  ///Calculate and store chi2 for all projections.
+  ///Calculate and store chi2 for all directions.
   void calculateRecHitChi2();
  
   TVector3 myTangent, myBias;
@@ -90,8 +91,8 @@ private:
   TVector3 myStart, myEnd;
   double myLenght;
 
-  std::map<projection, Hit2DCollection> myRecHits;
-  std::vector<double> myProjectionsChi2;
+  std::map<direction, Hit2DCollection> myRecHits;
+  std::array<double, 3> myProjectionsChi2;
   
 };
 
