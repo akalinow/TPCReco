@@ -383,6 +383,7 @@ bool GeometryTPC::Load(const char *fname) {
 			<< mapByStrip[MultiKey2(dir,strip_num)]->AgetId() << ","
 			<< mapByStrip[MultiKey2(dir,strip_num)]->AgetCh() << ")"
 			<<"\n";  
+      std::cout<<offset_in_pads<<" "<<offset_in_strips<<" "<< length_in_pads<<" "<<length<<std::endl;
 	    }
 	    // DEBUG
 	    
@@ -485,7 +486,7 @@ bool GeometryTPC::InitTH2Poly() {
   double ymin = 1E30;
   double ymax = -1E30; 
 
-  std::cout<<"!!!!!!!!!!!!"<<std::endl;
+  /*std::cout<<"!!!!!!!!!!!!"<<std::endl;
   for (auto &i : mapByAget){
      std::cout<<i.second->CoboId()<<std::endl;
      std::cout<<i.second->AsadId()<<std::endl;
@@ -504,13 +505,13 @@ bool GeometryTPC::InitTH2Poly() {
 
 
 
-  std::cout<<"!!!!!!!!!!!!"<<std::endl;
+  std::cout<<"!!!!!!!!!!!!"<<std::endl;*/
   for(int dir=0; dir<=2; dir++) {
     for(int num=1; num<=this->GetDirNstrips(dir); num++) {
-      std::cout<<this->GetDirNstrips(dir)<<std::endl;
+     // std::cout<<this->GetDirNstrips(dir)<<std::endl;
       StripTPC *s = this->GetStripByDir(dir, num);
       if(!s) {std::cout<<"skipping"<<std::endl;continue;}
-      std::cout<<s->Offset().X()<<std::endl;
+      //std::cout<<s->Offset().X()<<std::endl;
       TVector2 point1 = reference_point + s->Offset() 
 	- s->Unit()*0.5*pad_pitch;
       TVector2 point2 = point1 + s->Unit()*s->Length();
@@ -565,7 +566,7 @@ bool GeometryTPC::InitTH2Poly() {
 
       TVector2 point0 = reference_point + s->Offset() - s->Unit()*0.5*pad_pitch;
       
-      const int npads = (int)( s->Length()/pad_pitch );
+      const int npads = ceil(( s->Length()/pad_pitch ));
       const int npoints = npads * offset_vec.size();
       TGraph *g = new TGraph(npoints);
       int ipoint=0;
