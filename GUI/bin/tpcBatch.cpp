@@ -18,7 +18,7 @@ int main() {
     std::cout << dataFileName << std::endl;
     path_file.close();
     //dataFileName = "*poza buildem";
-    Geometry(geometryFileName, true); //load initialize GeometryTPC before first use
+    Geometry(geometryFileName, true); //initialize GeometryTPC before first use
     DataManager aDataManager;
     TrackBuilder aTkBuilder;
     checkpoint;

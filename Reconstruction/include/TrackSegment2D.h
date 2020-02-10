@@ -17,9 +17,9 @@ class TrackSegment2D{
 
 public:
 
-  TrackSegment2D(projection strip_dir = projection::DIR_U){ myStripDir = strip_dir;};
+  TrackSegment2D(direction strip_dir = direction::U){ myStripDir = strip_dir;};
 
-  ~TrackSegment2D() {};
+  ~TrackSegment2D() = default;
 
   void setBiasTangent(const TVector3 & aBias, const TVector3 & aTangent);
 
@@ -29,7 +29,7 @@ public:
 
   void setNAccumulatorHits(int nHits){nAccumulatorHits = nHits;}
 
-  projection getStripDir() const {return myStripDir;}
+  direction getStripDir() const {return myStripDir;}
 
   int getNAccumulatorHits() const { return nAccumulatorHits;}
 
@@ -60,7 +60,7 @@ public:
 
   double getIntegratedHitDistance(double lambdaCut, const Hit2DCollection & aRecHits) const;
 
-  ///Rec hits assigned to this projection.
+  ///Rec hits assigned to this direction.
   const Hit2DCollection & getRecHits() const {return myRecHits;}
 
   ///Return rec hits chi2.
@@ -74,7 +74,7 @@ private:
   ///Calculate transvere distance from point to the segment.
   double getPointTransverseDistance(const TVector3 & aPoint) const;
 
-  projection myStripDir;
+  direction myStripDir;
   double myLenght = 0.0;
 
   TVector3 myTangent, myBias;
@@ -84,7 +84,7 @@ private:
 
   Hit2DCollection myRecHits;
 
-  int nAccumulatorHits{0};
+  int nAccumulatorHits = 0;
     
 };
 

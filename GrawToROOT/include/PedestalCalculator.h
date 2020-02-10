@@ -48,7 +48,7 @@ class PedestalCalculator {
   int minSignalCell, maxSignalCell;
   int minPedestalCell, maxPedestalCell;
 
-  GeometryTPC& myGeometry = GetGeometry();
+  GeometryTPC& myGeometry = Geometry();
 
   std::vector<double> pedestals;
 

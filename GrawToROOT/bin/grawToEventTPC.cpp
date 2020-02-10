@@ -17,93 +17,92 @@
 #include "get/TGrawFile.h"
 #include "mfm/FrameDictionary.h"
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
 
-  if(argc<3) return -1;
+	if (argc < 3) return -1;
 
-  int minSignalCell = 51;
-  int maxSignalCell = 500;
-  bool skipEmptyEvents = false;
-  
-  ///Load TPC geometry
-  std::string geomFileName = "geometry_mini_eTPC.dat";
-  std::string dataFileName =  "/data/edaq/CoBo_2018-05-11T14:23:14.736_0000.graw";
-  std::string timestamp = "";
-  if(argc>3){
-    geomFileName = std::string(argv[1]);
-    std::cout<<"geomFileName: "<<geomFileName<<std::endl;
+	int minSignalCell = 51;
+	int maxSignalCell = 500;
+	bool skipEmptyEvents = false;
 
-    dataFileName = std::string(argv[2]);
-    std::cout<<"dataFileName: "<<dataFileName<<std::endl;
+	///Load TPC geometry
+	std::string geomFileName = "geometry_mini_eTPC.dat";
+	std::string dataFileName = "/data/edaq/CoBo_2018-05-11T14:23:14.736_0000.graw";
+	std::string timestamp = "";
+	if (argc > 3) {
+		geomFileName = std::string(argv[1]);
+		std::cout << "geomFileName: " << geomFileName << std::endl;
 
-    timestamp = std::string(argv[3]);
-    std::cout<<"timestamp: "<<timestamp<<std::endl;
-  }
-  GeometryTPC& myGeometry = Geometry(geomFileName);
+		dataFileName = std::string(argv[2]);
+		std::cout << "dataFileName: " << dataFileName << std::endl;
 
-  ///Create event
-  std::shared_ptr<EventTPC> myEvent = std::make_shared<EventTPC>();
+		timestamp = std::string(argv[3]);
+		std::cout << "timestamp: " << timestamp << std::endl;
+	}
+	GeometryTPC& myGeometry = Geometry(geomFileName);
 
-  PedestalCalculator myPedestalCalculator;
+	EventTPC myEvent;
 
-  ///Create ROOT Tree
-  std::string rootFileName = "EventTPC_"+timestamp+".root";
-  
-  TFile aFile(rootFileName.c_str(),"RECREATE");
-  TTree aTree("TPCData","");
+	PedestalCalculator myPedestalCalculator;
 
-  aTree.Branch("Event", myEvent.get());
+	///Create ROOT Tree
+	std::string rootFileName = "EventTPC_" + timestamp + ".root";
 
-  ///Load data
-  GET::GDataFrame dataFrame;
-  TGrawFile f(dataFileName.c_str());
-  long lastevent=f.GetGrawFramesNumber();
+	TFile aFile(rootFileName.c_str(), "RECREATE");
+	TTree aTree("TPCData", "");
 
-  myEvent->SetRunId(0);
+	aTree.Branch("Event", &myEvent);
 
-  for(long eventId = 0;eventId<lastevent;++eventId){
-    myEvent->Clear();
-    myEvent->SetEventId(eventId);
-    bool eventRead = f.GetGrawFrame(dataFrame, eventId);
-    if(!eventRead){
-      std::cerr << "ERROR: cannot read event " << eventId << std::endl;
-      return -1;
-    }
+	///Load data
+	GET::GDataFrame dataFrame;
+	TGrawFile f(dataFileName.c_str());
+	long lastevent = f.GetGrawFramesNumber();
 
-    myPedestalCalculator.CalculateEventPedestals(dataFrame);
-    
-    int COBO_idx = 0;
-    int ASAD_idx = 0;
-    
-    for (int32_t agetId = 0; agetId < myGeometry.GetAgetNchips(); ++agetId){
-	// loop over normal channels and update channel mask for clustering
-	for (int32_t chanId = 0; chanId < myGeometry.GetAgetNchannels(); ++chanId){
-	  int iChannelGlobal     = myGeometry.Global_normal2normal(COBO_idx, ASAD_idx, agetId, chanId);// 0-255 (without FPN)
-	    
-	    GET::GDataChannel* channel = dataFrame.SearchChannel(agetId, myGeometry.Aget_normal2raw(chanId));
-	    if (!channel) continue;
-	    
-	    for (int32_t i = 0; i < channel->fNsamples; ++i){
-		GET::GDataSample* sample = (GET::GDataSample*) channel->fSamples.At(i);
-		// skip cells outside signal time-window
-		int32_t icell = sample->fBuckIdx;
-		if(icell<2 || icell>509 || icell<minSignalCell || icell>maxSignalCell) continue;
-		
-		double rawVal  = sample->fValue;		
-		double corrVal = rawVal - myPedestalCalculator.GetPedestalCorrection(iChannelGlobal, agetId, icell);
-		myEvent->AddValByAgetChannel(COBO_idx, ASAD_idx, agetId, chanId, icell, corrVal);
-		
-	      } // end of loop over time buckets	    
-	  } // end of AGET channels loop	
-      } // end of AGET chips loop
+	myEvent().RunId(0);
 
-    ///Skip empty events
-    if(skipEmptyEvents && myEvent->GetMaxCharge()<100) continue;
-    /////////////////////
-    aTree.Fill();
-  }
+	for (long eventId = 0; eventId < lastevent; ++eventId) {
+		myEvent.Clear();
+		myEvent().EventId(eventId);
+		bool eventRead = f.GetGrawFrame(dataFrame, eventId);
+		if (!eventRead) {
+			std::cerr << "ERROR: cannot read event " << eventId << std::endl;
+			return -1;
+		}
 
-  aTree.Write();
-  aFile.Close();
-  return 0;
+		myPedestalCalculator.CalculateEventPedestals(dataFrame);
+
+		int COBO_idx = 0;
+		int ASAD_idx = 0;
+
+		for (int32_t agetId = 0; agetId < myGeometry.GetAgetNchips(); ++agetId) {
+			// loop over normal channels and update channel mask for clustering
+			for (int32_t chanId = 0; chanId < myGeometry.GetAgetNchannels(); ++chanId) {
+				int iChannelGlobal = myGeometry.Global_normal2normal(COBO_idx, ASAD_idx, agetId, chanId);// 0-255 (without FPN)
+
+				GET::GDataChannel* channel = dataFrame.SearchChannel(agetId, myGeometry.Aget_normal2raw(chanId));
+				if (!channel) continue;
+
+				for (int32_t i = 0; i < channel->fNsamples; ++i) {
+					GET::GDataSample* sample = (GET::GDataSample*) channel->fSamples.At(i);
+					// skip cells outside signal time-window
+					int32_t icell = sample->fBuckIdx;
+					if (icell < 2 || icell>509 || icell<minSignalCell || icell>maxSignalCell) continue;
+
+					double rawVal = sample->fValue;
+					double corrVal = rawVal - myPedestalCalculator.GetPedestalCorrection(iChannelGlobal, agetId, icell);
+					myEvent.AddValByAgetChannel(COBO_idx, ASAD_idx, agetId, chanId, icell, corrVal);
+
+				} // end of loop over time buckets	    
+			} // end of AGET channels loop	
+		} // end of AGET chips loop
+
+	  ///Skip empty events
+		if (skipEmptyEvents && myEvent.GetMaxCharge() < 100) continue;
+		/////////////////////
+		aTree.Fill();
+	}
+
+	aTree.Write();
+	aFile.Close();
+	return 0;
 }
