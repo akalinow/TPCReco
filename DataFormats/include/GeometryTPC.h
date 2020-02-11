@@ -74,7 +74,7 @@ class GeometryTPC {
   void SetTH2PolyStrip(int ibin, StripTPC *s);  // maps TH2Poly bin to a given StripTPC object
   
  public:
-
+  void Debug();
   GeometryTPC() { ; }  // empty constructor for required by TObject
   //  virtual ~GeometryTPC();
   

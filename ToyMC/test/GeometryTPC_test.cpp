@@ -2,7 +2,7 @@
 #include "GeometryTPC.h"
 
 #include "TCanvas.h"
-
+#include "TFile.h"
 int main(int argc, char *argv[]) {
 
   std::cout << "main: argc=" << argc << std::endl;
@@ -35,9 +35,18 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  TCanvas *c1 = new TCanvas();
-  g->GetTH2Poly()->Draw();
-  c1->Print("test.root");
+//  TCanvas *c1 = new TCanvas();
+TFile f2("test.root","RECREATE");
+TH2Poly* a(g->GetTH2Poly());
+a->SetName("a");
+a->Write();
+g->Debug();
+  //g->GetTH2Poly()->Write();
+  TH2Poly* b(g->GetTH2Poly());
+  b->SetName("b");
+  b->Write();
+//  g->GetTH2Poly()->Draw("colz");
+  //c1->Print("test.root");
 
   return 0;
 }

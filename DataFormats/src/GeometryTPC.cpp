@@ -566,9 +566,6 @@ bool GeometryTPC::InitTH2Poly() {
       offset_vec.push_back(TVector2(0.,0.));
       offset_vec.push_back(s->Unit().Rotate(TMath::Pi()/6.)*pad_size);
       offset_vec.push_back(s->Unit()*pad_pitch);
-      offset_vec.push_back(s->Unit().Rotate(-TMath::Pi()/6.)*pad_size);
-      offset_vec.push_back(TVector2(0.,0.));
-
       TVector2 point0 = reference_point + s->Offset() - s->Unit()*0.5*pad_pitch;
       int npads=s->Npads();
     //  const int npads =int( s->Length()/pad_pitch );
@@ -576,13 +573,22 @@ bool GeometryTPC::InitTH2Poly() {
       TGraph *g = new TGraph(npoints);
       int ipoint=0;
       for(int ipad=0; ipad<npads; ipad++) {
-	for(size_t icorner=0; icorner<offset_vec.size(); icorner++) {
-	  TVector2 corner = point0 + s->Unit()*ipad*pad_pitch + offset_vec[icorner];
-	  g->SetPoint(ipoint, corner.X(), corner.Y());
-	  ipoint++;
-	}
+	      for(size_t icorner=0; icorner<offset_vec.size(); icorner++) {
+	        TVector2 corner = point0 + s->Unit()*ipad*pad_pitch + offset_vec[icorner];
+	        g->SetPoint(ipoint, corner.X(), corner.Y());
+	        ipoint++;
+      	}
       }
-      
+      offset_vec.clear();
+      offset_vec.push_back(s->Unit().Rotate(-TMath::Pi()/6.)*pad_size);
+      offset_vec.push_back(TVector2(0.,0.));
+      for(int ipad=npads-1; ipad>=0; ipad--) {
+	      for(size_t icorner=0; icorner<offset_vec.size(); icorner++) {
+	        TVector2 corner = point0 + s->Unit()*ipad*pad_pitch + offset_vec[icorner];
+	        g->SetPoint(ipoint, corner.X(), corner.Y());
+	        ipoint++;
+      	}
+      }
       // create new TH2PolyBin
 
       // DEBUG
@@ -1159,7 +1165,18 @@ std::tuple<double, double, double, double> GeometryTPC::rangeXY(){
 
   return std::tuple<double, double, double, double>(xmin, xmax, ymin, ymax);
 }
+void GeometryTPC::Debug(){
+  for (auto &i: mapByStrip){
+    auto s=i.second;
+    auto p=s->Offset()+reference_point;
+    double x=p.X();
+    double y=p.Y();
+    //auto p=s->Offset()+reference_point;
+    std::cout<<p.X()<<", "<<p.Y()<<s->Section()<<std::endl;
+    tp->Fill(x,y,s->Section()+1);
+  }
 
+}
   
 //ClassImp(StripTPC)
 //ClassImp(GeometryTPC)
