@@ -1,4 +1,4 @@
 {
-   "dataFile": "/home/akalinow/scratch/ELITPC/data/neutrons/EventTPC_2018-06-19T15:13:33.941.root",
-   "geometryFile": "/home/akalinow/scratch/ELITPC/data/neutrons/geometry_mini_eTPC_2018-06-19T15:13:33.941.dat"
+   "dataFile": "/home/mfila/data/neutrons_data/EventTPC_2018-06-19T11:18:25.056_0000.root",
+   "geometryFile": "/home/mfila/TPCReco/resources/geometry_mini_eTPC.dat"
 }

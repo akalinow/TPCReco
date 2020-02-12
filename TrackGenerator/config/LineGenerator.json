@@ -1,6 +1,6 @@
 {   
     "events":4,
-    "geometryFile": "/home/mfila/data/TPCReco/resources/geometry_mini_eTPC.dat",
+    "geometryFile": "/home/mfila/TPCReco/resources/new_geometry_mini_eTPC.dat",
     "outputFile": "lineEvents.root",
     "sigma":"3",
     "MCcounts":"10000",
