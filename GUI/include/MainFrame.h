@@ -52,7 +52,7 @@ class MainFrame : public TGMainFrame {
   RQ_OBJECT("MainFrame")
 
 public:
-   MainFrame(const TGWindow *p, UInt_t w, UInt_t h, boost::property_tree::ptree &root);
+   MainFrame(const TGWindow *p, UInt_t w, UInt_t h, const boost::property_tree::ptree &aConfig);
    virtual ~MainFrame();
    virtual void CloseWindow();
    virtual Bool_t ProcessMessage(Long_t msg, Long_t parm1, Long_t);
@@ -68,6 +68,8 @@ public:
 
 private:
 
+  boost::property_tree::ptree myConfig;
+  
   std::shared_ptr<EventSourceBase> myEventSource;
   HistoManager myHistoManager;
   
@@ -79,21 +81,21 @@ private:
   void AddGoToEventDialog(int attach_left);
   void AddLogos();
 
-   void SetCursorTheme();
+  void SetCursorTheme();
 
   void Update();
 
-   TGCompositeFrame   *fFrame;
-   TGCanvas           *fCanvasWindow;
-   TCanvas            *fCanvas;
+  TGCompositeFrame   *fFrame;
+  TGCanvas           *fCanvasWindow;
+  TCanvas            *fCanvas;
 
-   TGMenuBar          *fMenuBar;
-   TGPopupMenu        *fMenuFile, *fMenuHelp;
+  TGMenuBar          *fMenuBar;
+  TGPopupMenu        *fMenuFile, *fMenuHelp;
 
-   TGLayoutHints      *fFrameLayout;
-   TGTableLayoutHints *fTCanvasLayout;
+  TGLayoutHints      *fFrameLayout;
+  TGTableLayoutHints *fTCanvasLayout;
 
-   TGTransientFrame *fLegendMain;
+  TGTransientFrame *fLegendMain;
 
   TGNumberEntryField *fEventIdEntry;
   TGGroupFrame        *fGframe;
@@ -102,8 +104,8 @@ private:
   SelectionBox *fSelectionBox;
   
 
-   TArrow *fArrow;
-   TLine *fLine;
+  TArrow *fArrow;
+  TLine *fLine;
 
 };
 /////////////////////////////////////////////////////////

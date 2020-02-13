@@ -17,10 +17,14 @@ EventSourceBase::~EventSourceBase() { }
 void EventSourceBase::loadGeometry(const std::string & fileName){
   
   myGeometryPtr = std::make_shared<GeometryTPC>(fileName.c_str());
+  if(!myGeometryPtr){
+    std::cerr<<"Geometry not loaded! Refuse to work anymore."<<std::endl;
+    exit(0);
+  }
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void EventSourceBase::loadEventId(unsigned int iEvent){
+void EventSourceBase::loadEventId(unsigned long int iEvent){
 
   int iEntry = 0;
   while(currentEventNumber()!=iEvent){  
@@ -59,10 +63,10 @@ std::shared_ptr<EventTPC> EventSourceBase::getPreviousEvent(){
 std::shared_ptr<GeometryTPC> EventSourceBase::getGeometry() const{ return myGeometryPtr; }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-unsigned int EventSourceBase::numberOfEvents() const{ return nEvents; }
+unsigned long int EventSourceBase::numberOfEvents() const{ return nEvents; }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-unsigned int EventSourceBase::currentEventNumber() const{
+unsigned long int EventSourceBase::currentEventNumber() const{
 
   if(myCurrentEvent){
     return myCurrentEvent->GetEventId();

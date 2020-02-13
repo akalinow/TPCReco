@@ -19,9 +19,9 @@ public:
 
   virtual void loadDataFile(const std::string & fileName) = 0;
 
-  virtual void loadFileEntry(unsigned int iEntry) = 0;
+  virtual void loadFileEntry(unsigned long int iEntry) = 0;
 
-  void loadEventId(unsigned int iEvent);
+  void loadEventId(unsigned long int iEvent);
 
   std::shared_ptr<EventTPC> getCurrentEvent() const;
   
@@ -29,16 +29,16 @@ public:
 
   std::shared_ptr<EventTPC> getPreviousEvent();
 
-  unsigned int numberOfEvents() const;
+  unsigned long int numberOfEvents() const;
 
-  unsigned int currentEventNumber() const;
+  unsigned long int currentEventNumber() const;
 
   std::shared_ptr<GeometryTPC> getGeometry() const;
     
 protected:
   
-  unsigned int nEvents;
-  unsigned int myCurrentEntry;
+  unsigned long int nEvents;
+  unsigned long int myCurrentEntry;
 
   std::shared_ptr<EventTPC> myCurrentEvent;
   std::shared_ptr<GeometryTPC> myGeometryPtr;

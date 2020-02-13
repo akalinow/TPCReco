@@ -20,15 +20,20 @@
 #include "EventSourceGRAW.h"
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h,  boost::property_tree::ptree &root)
+MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h,  const boost::property_tree::ptree &aConfig)
       : TGMainFrame(p, w, h){
 
-  //TEST ---
-  std::string dataFileName = root.get<std::string>("dataFile");
-  std::string geometryFileName = root.get<std::string>("geometryFile");
+  myConfig = aConfig;
+  std::string dataFileName = myConfig.get<std::string>("dataFile");
+  std::string geometryFileName = myConfig.get<std::string>("geometryFile");
 
-  //myEventSource = std::make_shared<EventSourceROOT>();
-  myEventSource = std::make_shared<EventSourceGRAW>();
+  if(dataFileName.find(".root")!=std::string::npos) myEventSource = std::make_shared<EventSourceROOT>();
+  else if(dataFileName.find(".graw")!=std::string::npos) myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
+  else{
+    std::cerr<<"Input source not know. Exiting."<<std::endl;
+    exit(0);
+  }
+  
   myEventSource->loadGeometry(geometryFileName); 
   myEventSource->loadDataFile(dataFileName);
   myEventSource->loadFileEntry(0);
@@ -40,7 +45,6 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h,  boost::property_tre
 
   SetCleanup(kDeepCleanup);
   SetWMPosition(500,0);
-  //SetWMSize(1500,1000);
   SetWMSize(1200,800);
   
   AddTopMenu();
@@ -196,8 +200,7 @@ void MainFrame::AddNumbersDialog(){
 /////////////////////////////////////////////////////////
 void MainFrame::AddLogos(){
 
-  //return;
-  std::string filePath = "resources/FUW_znak.png";
+  std::string filePath = myConfig.get<std::string>("resourcesPath")+"/FUW_znak.png";
   TImage *img = TImage::Open(filePath.c_str());
   if(!img) return;
   double ratio = img->GetWidth()/img->GetHeight();
@@ -214,8 +217,7 @@ void MainFrame::AddLogos(){
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom);
   fFrame->AddFrame(icon, tloh);
 
-
-  filePath = "resources/ELITEPC_znak.png";
+  filePath = myConfig.get<std::string>("resourcesPath")+"/ELITEPC_znak.png";
   img = TImage::Open(filePath.c_str());
   if(!img) return;
   ratio = img->GetWidth()/img->GetHeight();

@@ -32,13 +32,13 @@ void EventSourceROOT::loadDataFile(const std::string & fileName){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void EventSourceROOT::loadFileEntry(unsigned int iEntry){
+void EventSourceROOT::loadFileEntry(unsigned long int iEntry){
 
   if(!myTree){
     std::cerr<<"ROOT tree not available!"<<std::endl;
     return;
   }
-  if(myTree->GetEntries()<=iEntry) return;
+  if(myTree->GetEntries()<=(long int)iEntry) return;
   
   myCurrentEvent->SetGeoPtr(0);
   myTree->GetEntry(iEntry);

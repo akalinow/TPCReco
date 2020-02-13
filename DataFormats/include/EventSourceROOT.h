@@ -15,7 +15,7 @@ public:
 
   void loadDataFile(const std::string & fileName);
 
-  void loadFileEntry(unsigned int iEntry);
+  void loadFileEntry(unsigned long int iEntry);
 
 private:
 

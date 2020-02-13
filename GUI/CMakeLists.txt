@@ -1,7 +1,7 @@
 set(MODULE_NAME "GUI")
 find_package(Boost 1.45.0) 
 if(Boost_FOUND)
-MESSAGE( STATUS "Adding CMake fragment for module:         " ${MODULE_NAME} )
+  MESSAGE( STATUS "Adding CMake fragment for module:         " ${MODULE_NAME} )
 
 ###############################################################################
 ## file globbing ##############################################################
@@ -44,7 +44,7 @@ add_executable(tpcGUI bin/tpcGUI.cxx)
 target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
 target_compile_options(tpcGUI PUBLIC ${CMAKE_ROOT_CFLAGS})
 
-target_link_libraries(${MODULE_NAME} DataFormats Reconstruction ${ROOT_LIBRARIES})
+target_link_libraries(${MODULE_NAME} DataFormats Reconstruction GrawToROOT ${ROOT_LIBRARIES})
 target_link_libraries(tpcGUI PUBLIC DataFormats Utilities Reconstruction GrawToROOT ${MODULE_NAME} -lSpectrum)
 
 # All install commands get the same destination. this allows us to use paths
