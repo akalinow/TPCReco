@@ -23,7 +23,7 @@
 #include "EntryDialog.h"
 #include "SelectionBox.h"
 
-#include "DataManager.h"
+#include "EventSourceBase.h"
 #include "HistoManager.h"
 
 enum ETestCommandIdentifiers {
@@ -66,7 +66,7 @@ public:
 
 private:
 
-  DataManager myDataManager;
+  std::shared_ptr<EventSourceBase> myEventSource;
   HistoManager myHistoManager;
   
   void AddTopMenu();

@@ -29,6 +29,8 @@ public:
 
   void setEvent(EventTPC* aEvent);
 
+  void setEvent(std::shared_ptr<EventTPC> aEvent);
+
   void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);
 
   TH2Poly *getDetectorLayout() const;
@@ -59,12 +61,11 @@ public:
 
 private:
     
-  EventTPC *myEvent;
-
   std::vector<TH2D*> projectionsInCartesianCoords;
   TH3D *h3DReco;
   TrackBuilder myTkBuilder;
-  
+
+  std::shared_ptr<EventTPC> myEvent;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
 
 };

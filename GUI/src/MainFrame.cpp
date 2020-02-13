@@ -16,6 +16,7 @@
 #include <TLatex.h>
 #include <TProfile.h>
 
+#include "EventSourceROOT.h"
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h)
@@ -25,12 +26,12 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h)
   std::string dataFileName = "/home/akalinow/scratch/ELITPC/data/neutrons/EventTPC_2018-06-19T15:13:33.941.root"; 
   std::string geometryFileName = "/home/akalinow/scratch/ELITPC/data/neutrons/geometry_mini_eTPC_2018-06-19T15:13:33.941.dat"; 
   //dataFileName = "/home/akalinow/scratch/ELITPC/data/neutrons/ROOT/EventTPC_2018-06-20T10:35:30.853_0004.root";
-  
-  myDataManager.loadGeometry(geometryFileName);  
-  myDataManager.loadDataFile(dataFileName);
-  myDataManager.loadTreeEntry(0);
-  myHistoManager.setGeometry(myDataManager.getGeometry());
-  ////////////////////
+
+  myEventSource = std::make_shared<EventSourceROOT>();
+  myEventSource->loadGeometry(geometryFileName); 
+  myEventSource->loadDataFile(dataFileName);
+  myEventSource->loadFileEntry(0);
+  myHistoManager.setGeometry(myEventSource->getGeometry());
 
   fSelectionBox = 0;
   fArrow = 0;
@@ -163,7 +164,7 @@ void MainFrame::AddGoToEventDialog(int attach_top){
 					 TGNumberFormat::kNESInteger,
 					 TGNumberFormat::kNEANonNegative,
 					 TGNumberFormat::kNELLimitMinMax,
-					 0, myDataManager.numberOfEvents());
+					 0, myEventSource->numberOfEvents());
   fEventIdEntry->Connect("ReturnPressed()", "MainFrame", this, "DoButton()");
   fEventIdEntry->SetToolTipText("Jump to given event id.");  
 
@@ -242,9 +243,9 @@ void MainFrame::CloseWindow(){
 /////////////////////////////////////////////////////////
 void MainFrame::Update(){
 
-  myHistoManager.setEvent(myDataManager.getCurrentEvent());
-  fEntryDialog->updateEventNumbers(myDataManager.numberOfEvents(),
-				   myDataManager.currentEventNumber());
+  myHistoManager.setEvent(myEventSource->getCurrentEvent());
+  fEntryDialog->updateEventNumbers(myEventSource->numberOfEvents(),
+				   myEventSource->currentEventNumber());
   
   fCanvas->Clear();
   fCanvas->cd();
@@ -344,7 +345,7 @@ void MainFrame::HandleMenu(Int_t id){
       new TGFileDialog(gClient->GetRoot(), this, kFDOpen, &fi);
       std::string fileName;
       if(fi.fFilename) fileName.append(fi.fFilename);
-      myDataManager.loadDataFile(fileName);
+      myEventSource->loadDataFile(fileName);
       fEntryDialog->updateFileName(fileName);
       Update();
     }
@@ -363,13 +364,13 @@ void MainFrame::HandleMenu(Int_t id){
     break;
   case M_NEXT_EVENT:
     {
-     myDataManager.getNextEvent();      
+     myEventSource->getNextEvent();      
       Update();
     }
     break;
   case M_PREVIOUS_EVENT:
     {
-      myDataManager.getPreviousEvent();
+      myEventSource->getPreviousEvent();
       Update();
     }
     break;
@@ -377,7 +378,7 @@ void MainFrame::HandleMenu(Int_t id){
     {
       int eventId = fEventIdEntry->GetIntNumber();
       std::cout<<"M_GOTO_EVENT eventId: "<<eventId<<std::endl;
-      myDataManager.loadEventId(eventId);
+      myEventSource->loadEventId(eventId);
       Update();
     }
     break;
