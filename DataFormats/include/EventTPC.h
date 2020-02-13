@@ -57,13 +57,13 @@ public:
 
 	// helper methods for extracting data points
 	// they return 0.0 for non-existing data points
-	double GetValByStrip(direction strip_dir, int strip_number, int time_cell);  // valid range [0-2][1-1024][0-511]
+	double GetValByStrip(direction strip_dir, int strip_number, int time_cell) const;  // valid range [0-2][1-1024][0-511]
 
 	double GetMaxCharge();                   // maximal charge from all strips
 
 	std::shared_ptr<SigClusterTPC> GetOneCluster(double thr, int delta_strips, int delta_timecells); // applies clustering threshold to all space-time data points 
 
-	std::shared_ptr<TH2D> GetStripVsTime(direction strip_dir);                               // whole event, all strip dirs
+	TH2D&& GetStripVsTime(direction strip_dir);                               // whole event, all strip dirs
 };
 
 #endif

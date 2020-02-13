@@ -59,7 +59,7 @@ class GeometryTPC {
   std::map<std::tuple<int, int, int, int>, std::shared_ptr<Geometry_Strip>> arrayByAget;/*channel_idx[0-63] AGET_idx[0-3] ASAD_idx[0-3] COBO_idx[0-1]*/
   std::map<std::tuple<direction, int> ,std::shared_ptr<Geometry_Strip>> stripArray; // key = {U,V,W}, STRIP_NUMBER [1-1024]
   std::vector<int> ASAD_N;       // pair=(COBO_idx, number of ASAD boards)
-  std::vector<int> FPN_chanId;     // FPN channels in AGET chips
+  const std::vector<int> FPN_chanId = { 11, 22, 45, 56 };     // FPN channels in AGET chips
   double pad_size;                 // in [mm]
   double pad_pitch;                // in [mm]
   double strip_pitch;              // in [mm]

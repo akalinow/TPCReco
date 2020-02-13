@@ -35,12 +35,6 @@ private:
 	std::set< std::tuple<int, direction, int>> hitListByTimeDir; // same list of selected space-time cells as a map
 														  // with key=(REBIN_TIME_CELL [0-511], STRIP_DIR [0-2]) 
 														  // that returns vector of STRIP_NUMBERS 
-	std::set<std::tuple<direction, int, int>> envelope_hitList; // temporary list of selected envelope space-time cells for further analysis where return
-								 // value=key(STRIP_DIR [0-2], STRIP_NUM [1-1024], REBIN_TIME_CELL [0-511])
-	std::set< std::tuple<int, direction, int>> envelope_hitListByTimeDir; // same temporary list of selected envelope space-time cells as a map
-														  // with key=(REBIN_TIME_CELL [0-511], STRIP_DIR [0-2]) 
-														  // that returns vector of STRIP_NUMBERS 
-
 	// statistics variables
 	std::map<direction, size_t> nhits;   // number of space-time cells in a given U,V,W direction
 

@@ -8,5 +8,7 @@
 #pragma link C++ class GeometryTPC+;
 #pragma link C++ class Geometry_Strip+;
 #pragma link C++ class SigClusterTPC+;
+#pragma link C++ class Event_Information+;
+#pragma link C++ class property<long>+;
 
 #endif

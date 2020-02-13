@@ -10,11 +10,7 @@ void EventTPC::Clear() {
 bool EventTPC::AddValByStrip(std::shared_ptr<Geometry_Strip> strip, int time_cell, double val) {  // valid range [0-2][1-1024][0-511]
 	auto op = (*strip)();
 	if (time_cell < 0 || time_cell >= Geometry().GetAgetNtimecells()) return false;
-	auto& ref = chargeMap[{op.dir, op.num, time_cell}];
-	ref += val; //update hit or add new one
-
-	// upadate charge maxima
-	glb_max_charge = std::max(glb_max_charge, ref);
+	chargeMap[{op.dir, op.num, time_cell}] += val; //update hit or add new one
 
 	return true;
 }
@@ -23,7 +19,7 @@ bool EventTPC::AddValByAgetChannel(int cobo_idx, int asad_idx, int aget_idx, int
 	return AddValByStrip(Geometry().GetStripByAget(cobo_idx, asad_idx, aget_idx, channel_idx), time_cell, val);
 }
 
-double EventTPC::GetValByStrip(direction strip_dir, int strip_number, int time_cell) {  // valid range [0-2][1-1024][0-511]
+double EventTPC::GetValByStrip(direction strip_dir, int strip_number, int time_cell) const {  // valid range [0-2][1-1024][0-511]
 	// check if hit is unique
 	auto it = chargeMap.find({ strip_dir,strip_number,time_cell });
 	if (it != chargeMap.end()) {
@@ -87,9 +83,9 @@ std::shared_ptr<SigClusterTPC> EventTPC::GetOneCluster(double thr, int delta_str
 	return cluster;
 }
 
-std::shared_ptr<TH2D> EventTPC::GetStripVsTime(direction strip_dir) {  // valid range [0-2]
+TH2D&& EventTPC::GetStripVsTime(direction strip_dir) {  // valid range [0-2]
 
-	std::shared_ptr<TH2D> result = std::make_shared<TH2D>(Form("hraw_%s_vs_time_evt%lld", Geometry().GetDirName(strip_dir).c_str(), event_info.EventId()),
+	TH2D result{ Form("hraw_%s_vs_time_evt%lld", Geometry().GetDirName(strip_dir).c_str(), event_info.EventId()),
 		Form("Event-%lld: Raw signals from %s strips;Time bin [arb.u.];%s strip no.;Charge/bin [arb.u.]",
 			event_info.EventId(), Geometry().GetDirName(strip_dir).c_str(), Geometry().GetDirName(strip_dir).c_str()),
 		Geometry().GetAgetNtimecells(),
@@ -97,7 +93,7 @@ std::shared_ptr<TH2D> EventTPC::GetStripVsTime(direction strip_dir) {  // valid 
 		1. * Geometry().GetAgetNtimecells() - 0.5, // ends at 511.5 (cells numbered from 0 to 511)
 		Geometry().GetDirNstrips(strip_dir),
 		1.0 - 0.5,
-		1. * Geometry().GetDirNstrips(strip_dir) + 0.5);
+		1. * Geometry().GetDirNstrips(strip_dir) + 0.5 };
 	// fill new histogram
 	auto min_strip = chargeMap.lower_bound({strip_dir, std::numeric_limits<int>::min(), std::numeric_limits<int>::min()});
 	auto max_strip = chargeMap.upper_bound({strip_dir, std::numeric_limits<int>::max(), std::numeric_limits<int>::max()});
@@ -105,7 +101,7 @@ std::shared_ptr<TH2D> EventTPC::GetStripVsTime(direction strip_dir) {  // valid 
 		auto strip_num = std::get<1>(charge->first);
 		auto time_cell = std::get<2>(charge->first);
 		auto val = charge->second;
-		result->Fill(time_cell, strip_num, val);
+		result.Fill(time_cell, strip_num, val);
 	}
-	return result;
+	return std::move(result);
 }
