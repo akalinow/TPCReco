@@ -18,13 +18,14 @@
 #include "MultiKey.h"
 #include "GeometryTPC.h"
 
-StripTPC::StripTPC(int direction, int number,
+StripTPC::StripTPC(int direction, int section, int number,
 		   int cobo_index, int asad_index, int aget_index, int aget_channel, int aget_channel_raw,
 		   TVector2 unit_vector, TVector2 offset_vector_in_mm, 
-		   double length_in_mm,
+		   int number_of_pads,
 		   GeometryTPC *g) : 
   geo_ptr(g),
   dir(direction), 
+  section(section),  
   num(number),
   coboId(cobo_index),
   asadId(asad_index),
@@ -33,7 +34,7 @@ StripTPC::StripTPC(int direction, int number,
   agetCh_raw(aget_channel_raw),
   unit_vec(unit_vector),
   offset_vec(offset_vector_in_mm),
-  length(length_in_mm) { }
+  npads(number_of_pads) { }
 
 int StripTPC::GlobalCh() {
   if(geo_ptr && geo_ptr->IsOK()) return geo_ptr->Global_normal2normal(coboId, asadId, agetId, agetCh);
@@ -65,7 +66,7 @@ GeometryTPC::GeometryTPC(const char* fname, bool debug)
     grid_nx(25),
     grid_ny(25),
     isOK_TH2Poly(false),
-    _debug(debug)
+    _debug(true)
  {
    if(_debug) {
      std::cout << "GeometryTPC::Constructor - Started..." << std::flush << std::endl;
@@ -304,17 +305,17 @@ bool GeometryTPC::Load(const char *fname) {
       {
 	std::map<std::string, int>::iterator it;
 	char name[4];
-	int cobo=0, asad=0, aget, strip_num, chan_num;
+	int cobo=0, asad=0, aget, strip_num, chan_num, section=0;
 	double offset_in_pads, offset_in_strips, length_in_pads;
 
-	if( (sscanf(line.c_str(), "%1s %d %d %d %d %d %lf %lf %lf",   // NEW FORMAT (several ASADs)
+	if( (sscanf(line.c_str(), "%1s %d %d %d %d %d %d %lf %lf %lf",   // NEW FORMAT (several ASADs)
 		    name, 
-		    &strip_num, &cobo, &asad, &aget, &chan_num,
-		    &offset_in_pads, &offset_in_strips, &length_in_pads)==9 || 
+		    &section, &strip_num, &cobo, &asad, &aget, &chan_num,
+		    &offset_in_pads, &offset_in_strips, &length_in_pads)==10 || 
 	     (sscanf(line.c_str(), "%1s %d %d %d %lf %lf %lf",         // LEGACY FORMAT (1 ASAD only)
 		     name, 
 		     &strip_num, &aget, &chan_num,
-		     &offset_in_pads, &offset_in_strips, &length_in_pads)==7 && (cobo=0)==0 && (asad=0)==0 )) && 
+		     &offset_in_pads, &offset_in_strips, &length_in_pads)==7 && (section=0)==0 && (cobo=0)==0 && (asad=0)==0 )) && 
 	   strip_num>=1 &&
 	   cobo>=0 &&
 	   asad>=0 &&
@@ -328,13 +329,13 @@ bool GeometryTPC::Load(const char *fname) {
 	    found=true;
 	    std::cout << "DIR     STRIP   COBO    ASAD    AGET    AGET_CH OFF_PAD OFF_STR LENGTH\n";
 	  }
-	  std::cout << Form("%-8s%-8d%-8d%-8d%-8d%-8d%-8.1lf%-8.1lf%-8.1lf", name, strip_num, cobo, asad, aget, chan_num, offset_in_pads, offset_in_strips, length_in_pads) << std::endl;
+	  std::cout << Form("%-8s%-8d%-8d%-8d%-8d%-8d%-8d%-8.1lf%-8.1lf%-8.1lf", name, section, strip_num, cobo, asad, aget, chan_num, offset_in_pads, offset_in_strips, length_in_pads) << std::endl;
 
 	  int dir=it->second; // strip direction index
 
 	  // DEBUG
 	  if(_debug) {
-	    std::cout << "DIRNAME=" << std::string(name) << " / DIR=" << dir << " / STRIPNUM=" << strip_num 
+	    std::cout << "DIRNAME=" << std::string(name) << " / DIR=" << dir << " / SECTION=" << section <<" / STRIPNUM=" << strip_num 
 		      << " / COBO=" << cobo << " / ASAD=" << asad
 		      << " / AGET=" << aget << " / CHANNUM=" << chan_num << "\n";
 	  }
@@ -346,8 +347,8 @@ bool GeometryTPC::Load(const char *fname) {
 	    int chan_num_raw = Aget_normal2raw(chan_num);
 	    TVector2 offset = offset_in_strips * strip_pitch * pitch_unit_vec[dir] + offset_in_pads * pad_pitch * strip_unit_vec[dir];
 	    double length = length_in_pads * pad_pitch;
-	    StripTPC *strip = new StripTPC(dir, strip_num, cobo, asad, aget, chan_num, chan_num_raw, 
-					   strip_unit_vec[dir], offset, length, this);
+	    StripTPC *strip = new StripTPC(dir, section, strip_num, cobo, asad, aget, chan_num, chan_num_raw, 
+					   strip_unit_vec[dir], offset, length_in_pads, this);
 
 	    // update map (by: COBO board, ASAD board, AGET chip, AGET normal/raw channel)
 	    mapByAget[MultiKey4(cobo, asad, aget,chan_num)]=strip ; // StripTPC(dir, strip_num);
@@ -355,7 +356,7 @@ bool GeometryTPC::Load(const char *fname) {
 
 	    // update reverse map (by: strip direction, strip number)
 	    if(dir==DIR_U||dir==DIR_V||dir==DIR_W) {
-	      mapByStrip[MultiKey2(dir, strip_num)]=strip; //Global_normal2normal(aget, chan_num); 
+	      mapByStrip[MultiKey3(dir, section, strip_num)]=strip; //Global_normal2normal(aget, chan_num); 
 	    }
 
 	    // update maximal ASAD index (by: COBO board) 
@@ -374,15 +375,16 @@ bool GeometryTPC::Load(const char *fname) {
 	    if(_debug) {
 	      std::cout << ">>> ADDED NEW STRIP:" 
 			<< "KEY=[COBO=" << cobo << ", ASAD=" << asad << ", AGET=" << aget << ", CHAN=" << chan_num 
-			<<"]  VAL=[DIR=" << dir << ", STRIP=" << strip_num << "], "
+			<<"]  VAL=[DIR=" << dir << ", SECTION=" << section << ", STRIP=" << strip_num << "], "
 			<< "NSTRIPS[DIR="<<dir<<"]=" << stripN[dir] << ", "
 			<< "   map_by_AGET=(" << mapByAget[MultiKey4(cobo, asad, aget, chan_num)]->Dir() << "," 
 			<< mapByAget[MultiKey4(cobo, asad, aget, chan_num)]->Num() << "), "
-			<< "   map_by_STRIP=(" << mapByStrip[MultiKey2(dir,strip_num)]->CoboId() << ","
-			<< mapByStrip[MultiKey2(dir,strip_num)]->AsadId() << ","
-			<< mapByStrip[MultiKey2(dir,strip_num)]->AgetId() << ","
-			<< mapByStrip[MultiKey2(dir,strip_num)]->AgetCh() << ")"
+			<< "   map_by_STRIP=(" << mapByStrip[MultiKey3(dir,section,strip_num)]->CoboId() << ","
+			<< mapByStrip[MultiKey3(dir,section,strip_num)]->AsadId() << ","
+			<< mapByStrip[MultiKey3(dir,section,strip_num)]->AgetId() << ","
+			<< mapByStrip[MultiKey3(dir,section,strip_num)]->AgetCh() << ")"
 			<<"\n";  
+      std::cout<<offset_in_pads<<" "<<offset_in_strips<<" "<< length_in_pads<<" "<<length<<std::endl;
 	    }
 	    // DEBUG
 	    
@@ -420,8 +422,8 @@ bool GeometryTPC::Load(const char *fname) {
     for(int iasad=0; iasad<ASAD_N[icobo]; iasad++)
       for(int ichip=0; ichip<AGET_Nchips; ichip++) 
 	for (uint i=0; i<FPN_chanId.size(); i++) {
-	  mapByAget_raw[MultiKey4(icobo, iasad, ichip, FPN_chanId[i])]=new StripTPC(FPN_CH, i+1, icobo, iasad, ichip, ERROR, FPN_chanId[i], 
-										    TVector2(), TVector2(), 0.0, this);
+	  mapByAget_raw[MultiKey4(icobo, iasad, ichip, FPN_chanId[i])]=new StripTPC(FPN_CH, 0, i+1, icobo, iasad, ichip, ERROR, FPN_chanId[i], 
+										    TVector2(), TVector2(), 0, this);
 	}
 
   // adding # of FPN channels to stripN
@@ -484,10 +486,34 @@ bool GeometryTPC::InitTH2Poly() {
   double xmax = -1E30;
   double ymin = 1E30;
   double ymax = -1E30; 
-  for(int dir=0; dir<=2; dir++) {
-    for(int num=1; num<=this->GetDirNstrips(dir); num++) {
-      StripTPC *s = this->GetStripByDir(dir, num);
-      if(!s) continue;
+
+  /*std::cout<<"!!!!!!!!!!!!"<<std::endl;
+  for (auto &i : mapByAget){
+     std::cout<<i.second->CoboId()<<std::endl;
+     std::cout<<i.second->AsadId()<<std::endl;
+     std::cout<<i.second->AgetId()<<std::endl;
+     std::cout<<i.second->AgetCh()<<std::endl;
+    std::cout<<i.second->Dir()<<std::endl;
+    std::cout<<i.second->Num()<<std::endl;
+    std::cout<<i.second->GlobalCh()<<std::endl;
+    std::cout<<i.second->GlobalCh_raw()<<std::endl;
+    
+     std::cout<<"!!!!!!!!!!!!"<<std::endl;
+    std::cout<<mapByStrip.find(MultiKey2(i.second->Dir(),i.second->Num()))->second->GlobalCh()<<std::endl;
+    //std::cout<<this->GetStripByGlobal(i.second->GlobalCh())->GlobalCh()<<std::endl;
+  }
+
+
+
+
+  std::cout<<"!!!!!!!!!!!!"<<std::endl;*/
+ // for(int dir=0; dir<=2; dir++) {
+  //  for(int num=1; num<=this->GetDirNstrips(dir); num++)
+  for (auto &i: mapByStrip)   {
+     // std::cout<<this->GetDirNstrips(dir)<<std::endl;
+      auto s = i.second;
+     // if(!s) {std::cout<<"skipping"<<std::endl;continue;}
+      //std::cout<<s->Offset().X()<<std::endl;
       TVector2 point1 = reference_point + s->Offset() 
 	- s->Unit()*0.5*pad_pitch;
       TVector2 point2 = point1 + s->Unit()*s->Length();
@@ -499,7 +525,7 @@ bool GeometryTPC::InitTH2Poly() {
       else if(point1.Y() > ymax) ymax = point1.Y();
       if(point2.Y() < ymin)      ymin = point2.Y();
       else if(point2.Y() > ymax) ymax = point2.Y();      
-    }
+   // }
   }
   if(tp) {
     tp->Delete();
@@ -519,7 +545,7 @@ bool GeometryTPC::InitTH2Poly() {
   ///////// DEBUG
 
   // create TPolyBin corresponding to each StripTPC  
-  for(int dir=0; dir<=2; dir++) {
+  /*for(int dir=0; dir<=2; dir++) {
 
     ///////// DEBUG
     if(_debug) {
@@ -527,33 +553,42 @@ bool GeometryTPC::InitTH2Poly() {
     }
     ///////// DEBUG
 
-    for(int num=1; num<=this->GetDirNstrips(dir); num++) {
+    for(int num=1; num<=this->GetDirNstrips(dir); num++)*/
+    for (auto &i:mapByStrip) {
 
-      StripTPC *s = this->GetStripByDir(dir, num);
-      if(!s) continue;
-
+      auto *s = i.second;
+     // if(!s) continue;
+      int dir=s->Dir();
+      int section=s->Section();
+      int num=s->Num();
       // create diamond-shaped pad for a given direction
       std::vector<TVector2> offset_vec;
       offset_vec.push_back(TVector2(0.,0.));
       offset_vec.push_back(s->Unit().Rotate(TMath::Pi()/6.)*pad_size);
       offset_vec.push_back(s->Unit()*pad_pitch);
-      offset_vec.push_back(s->Unit().Rotate(-TMath::Pi()/6.)*pad_size);
-      offset_vec.push_back(TVector2(0.,0.));
-
       TVector2 point0 = reference_point + s->Offset() - s->Unit()*0.5*pad_pitch;
-      
-      const int npads = (int)( s->Length()/pad_pitch );
+      int npads=s->Npads();
+    //  const int npads =int( s->Length()/pad_pitch );
       const int npoints = npads * offset_vec.size();
       TGraph *g = new TGraph(npoints);
       int ipoint=0;
       for(int ipad=0; ipad<npads; ipad++) {
-	for(size_t icorner=0; icorner<offset_vec.size(); icorner++) {
-	  TVector2 corner = point0 + s->Unit()*ipad*pad_pitch + offset_vec[icorner];
-	  g->SetPoint(ipoint, corner.X(), corner.Y());
-	  ipoint++;
-	}
+	      for(size_t icorner=0; icorner<offset_vec.size(); icorner++) {
+	        TVector2 corner = point0 + s->Unit()*ipad*pad_pitch + offset_vec[icorner];
+	        g->SetPoint(ipoint, corner.X(), corner.Y());
+	        ipoint++;
+      	}
       }
-      
+      offset_vec.clear();
+      offset_vec.push_back(s->Unit().Rotate(-TMath::Pi()/6.)*pad_size);
+      offset_vec.push_back(TVector2(0.,0.));
+      for(int ipad=npads-1; ipad>=0; ipad--) {
+	      for(size_t icorner=0; icorner<offset_vec.size(); icorner++) {
+	        TVector2 corner = point0 + s->Unit()*ipad*pad_pitch + offset_vec[icorner];
+	        g->SetPoint(ipoint, corner.X(), corner.Y());
+	        ipoint++;
+      	}
+      }
       // create new TH2PolyBin
 
       // DEBUG
@@ -580,7 +615,7 @@ bool GeometryTPC::InitTH2Poly() {
 	std::cout << "TH2POLY ADDBIN: " 
 		  << "TH2POLY_IBIN=" << ibin
 	  //		  << ", TH2POLYBIN_PTR=" << bin 	          
-		  << ", DIR=" << this->GetDirName(dir) << ", NUM=" << num
+		  << ", DIR=" << this->GetDirName(dir) << ", SECTION=" << section << ", NUM=" << num
 		  << ", NPADS=" << npads 
 		  << ", NPOINTS=" << npoints << " (" << ipoint << ")"
 		  << std::endl;
@@ -595,7 +630,7 @@ bool GeometryTPC::InitTH2Poly() {
       
       if(ibin<1) { // failed to create new bin
 	std::cerr << "ERROR: Failed to create new TH2Poly bin: TH2POLY->AddBin()=" << ibin
-		  << ", DIR=" << this->GetDirName(dir) << ", NUM=" << num
+		  << ", DIR=" << this->GetDirName(dir) << ", SECTION=" << section << ", NUM=" << num
 		  << ", NPADS=" << npads 
 		  << ", NPOINTS=" << npoints << ", TGraph->Print():" 
 		  << std::endl;
@@ -610,7 +645,7 @@ bool GeometryTPC::InitTH2Poly() {
 
       // DEBUG
       if(_debug) {
-	std::cout << "TH2POLY ADDBIN: DIR=" << this->GetDirName(dir) << ", NUM=" << num
+	std::cout << "TH2POLY ADDBIN: DIR=" << this->GetDirName(dir) << ", SECTION=" << section << ", NUM=" << num
 		  << ", TH2POLY_IBIN=" << ibin
 		  << ", NPADS=" << npads 
 		  << ", NPOINTS=" << npoints << " (" << ipoint << ")"
@@ -618,7 +653,7 @@ bool GeometryTPC::InitTH2Poly() {
       }
       // DEBUG
 
-    }
+  //  }
   }
 
   // final result
@@ -738,22 +773,42 @@ StripTPC* GeometryTPC::GetStripByAget(int COBO_idx, int ASAD_idx, int AGET_idx, 
   return NULL; // ERROR
 }
 
-StripTPC* GeometryTPC::GetStripByGlobal(int global_channel_idx) { // valid range [0-1023]
+/*StripTPC* GeometryTPC::GetStripByGlobal(int global_channel_idx) { // valid range [0-1023]
   if(global_channel_idx<0) return NULL; // ERROR
   int AGET_idx = (int) (global_channel_idx / AGET_Nchan);         // relative AGET index
   int ASAD_idx = (int) (AGET_idx / AGET_Nchips);                  // relative ASAD index
   int channel_idx = global_channel_idx % AGET_Nchan;
   int counter=0;
-  for(int icobo=0; icobo<COBO_N; icobo++)
+  for(int icobo=0; icobo<COBO_N; icobo++){
     for(int iasad=0; iasad<ASAD_N[icobo]; iasad++) {
       if(counter==ASAD_idx) {
-	return this->GetStripByAget(icobo, iasad, AGET_idx, channel_idx);
+	      return this->GetStripByAget(icobo, iasad, AGET_idx, channel_idx);
       }
       counter++;
     }
+  }
+  return NULL; // ERROR
+}*/
+StripTPC* GeometryTPC::GetStripByGlobal(int global_channel_idx) { // valid range [0-1023]
+  if(global_channel_idx<0) return NULL; // ERROR
+  int channel_idx = global_channel_idx % AGET_Nchan;
+  int rest1= global_channel_idx/ AGET_Nchan;
+  int AGET_idx=rest1 % AGET_Nchips;
+  int rest2=rest1 /AGET_Nchips;
+  int counter=0;
+  for(int icobo=0; icobo<COBO_N; icobo++){
+    for(int iasad=0; iasad<ASAD_N[icobo]; iasad++) {
+      if(counter==rest2) {
+	      return this->GetStripByAget(icobo, iasad, AGET_idx, channel_idx);
+      }
+      counter++;
+    }
+  }
   return NULL; // ERROR
 }
-                                     
+
+
+
 StripTPC* GeometryTPC::GetStripByAget_raw(int COBO_idx, int ASAD_idx, int AGET_idx, int raw_channel_idx) { // valid range [0-1][0-3][0-3][0-67]
   if(!IsOK()) return NULL; // ERROR
   std::map<MultiKey4, StripTPC*, multikey4_less>::iterator it;
@@ -762,7 +817,7 @@ StripTPC* GeometryTPC::GetStripByAget_raw(int COBO_idx, int ASAD_idx, int AGET_i
   }
   return NULL; // ERROR
 }
-
+/*
 StripTPC* GeometryTPC::GetStripByGlobal_raw(int global_raw_channel_idx) {  // valid range [0-(1023+ASAD_N[0]*4+...)]
   if(global_raw_channel_idx<0) return NULL; // ERROR
   int AGET_idx = (int) (global_raw_channel_idx / AGET_Nchan_raw); // relative AGET index
@@ -778,9 +833,31 @@ StripTPC* GeometryTPC::GetStripByGlobal_raw(int global_raw_channel_idx) {  // va
     }
   return NULL; // ERROR
 }
+*/
+StripTPC* GeometryTPC::GetStripByGlobal_raw(int global_raw_channel_idx) { // valid range [0-1023]
+  if(global_raw_channel_idx<0) return NULL; // ERROR
+  int raw_channel_idx = global_raw_channel_idx % AGET_Nchan_raw;
+  int rest1= global_raw_channel_idx/ AGET_Nchan_raw;
+  int AGET_idx=rest1 % AGET_Nchips;
+  int rest2=rest1 /AGET_Nchips;
+  int counter=0;
+  for(int icobo=0; icobo<COBO_N; icobo++){
+    for(int iasad=0; iasad<ASAD_N[icobo]; iasad++) {
+      if(counter==rest2) {
+	      return this->GetStripByAget_raw(icobo, iasad, AGET_idx, raw_channel_idx);
+      }
+      counter++;
+    }
+  }
+  return NULL; // ERROR
+}
 
-StripTPC* GeometryTPC::GetStripByDir(int dir, int num) { // valid range [0-2][1-1024]
-  return this->GetStripByGlobal( Global_strip2normal(dir, num) );
+
+StripTPC* GeometryTPC::GetStripByDir(int dir, int section, int num) { // valid range [0-2][0-2][1-1024]
+  return this->GetStripByGlobal( Global_strip2normal(dir, section, num) );
+}
+StripTPC* GeometryTPC::GetStripByDir(int dir, int num) { // legacy for section=0, valid range [0-2][1-1024]
+  return GetStripByDir(dir,0,num);
 }
 
 int GeometryTPC::Aget_normal2raw(int channel_idx) { // valid range [0-63]
@@ -883,23 +960,29 @@ int GeometryTPC::Global_raw2raw(int COBO_idx, int ASAD_idx, int aget_idx, int ra
 }
 
 int GeometryTPC::Global_strip2normal(StripTPC *s) {
-  return Global_strip2normal(s->Dir(), s->Num());
+  return Global_strip2normal(s->Dir(), s->Section(), s->Num());
 }
 
-int GeometryTPC::Global_strip2normal(int dir, int num) {                 // valid range [0-2][1-92]
-  std::map<MultiKey2, StripTPC*>::iterator it=mapByStrip.find(MultiKey2(dir, num));
+int GeometryTPC::Global_strip2normal(int dir, int section, int num) {                 // valid range [0-2][0-2][1-92]
+  std::map<MultiKey3, StripTPC*>::iterator it=mapByStrip.find(MultiKey3(dir,section,num));
   if(it!=mapByStrip.end() && it->second) return (it->second)->GlobalCh();
   return ERROR;
 }
-
-int GeometryTPC::Global_strip2raw(StripTPC *s) {
-  return Global_strip2raw(s->Dir(), s->Num());
+int GeometryTPC::Global_strip2normal(int dir, int num) {                 // legacy for section=0, valid range [0-2][1-92]
+  return Global_strip2normal(dir,0,num);
 }
 
-int GeometryTPC::Global_strip2raw(int dir, int num) {                  // valid range [0-2][1-92]
-  std::map<MultiKey2, StripTPC*>::iterator it=mapByStrip.find(MultiKey2(dir, num));
+int GeometryTPC::Global_strip2raw(StripTPC *s) {
+  return Global_strip2raw(s->Dir(), s->Section(),s->Num());
+}
+
+int GeometryTPC::Global_strip2raw(int dir, int section, int num) {                  // valid range [0-2][0-2][1-92]
+  std::map<MultiKey3, StripTPC*>::iterator it=mapByStrip.find(MultiKey3(dir, section,num));
   if(it!=mapByStrip.end() && it->second) return (it->second)->GlobalCh_raw();
   return ERROR;
+}
+int GeometryTPC::Global_strip2raw(int dir, int num) {                  // legacy for section=0, valid range [0-2][1-92]
+  return Global_strip2raw(dir,0,num);
 }
 
 // Checks if 2 strips are crossing inside the active area of TPC,
@@ -961,6 +1044,10 @@ TVector2 GeometryTPC::GetStripPitchVector(int dir) { // XY ([mm],[mm])
   return empty; // ERROR  
 }
 
+
+double GeometryTPC::Strip2posUVW(int dir, int section, int num, bool &err_flag) {
+  return this->Strip2posUVW( this->GetStripByDir(dir, section, num), err_flag );
+}
 // Calculates (signed) distance in [mm] of projection of point (X=0,Y=0) from
 // projection of the central axis of the existing strip (DIR, NUM) on
 // the strip pitch axis for a given DIR family.
@@ -968,7 +1055,7 @@ TVector2 GeometryTPC::GetStripPitchVector(int dir) { // XY ([mm],[mm])
 // - geometry has not been initialized properly, or
 // - input strip DIR and/or NUM are invalid
 double GeometryTPC::Strip2posUVW(int dir, int num, bool &err_flag) {
-  return this->Strip2posUVW( this->GetStripByDir(dir, num), err_flag );
+  return Strip2posUVW(dir,0,num,err_flag);
 }
 
 // Calculates (signed) distance in [mm] of projection of point (X=0,Y=0) from
@@ -1078,7 +1165,18 @@ std::tuple<double, double, double, double> GeometryTPC::rangeXY(){
 
   return std::tuple<double, double, double, double>(xmin, xmax, ymin, ymax);
 }
+void GeometryTPC::Debug(){
+  for (auto &i: mapByStrip){
+    auto s=i.second;
+    auto p=s->Offset()+reference_point;
+    double x=p.X();
+    double y=p.Y();
+    //auto p=s->Offset()+reference_point;
+    std::cout<<p.X()<<", "<<p.Y()<<s->Section()<<std::endl;
+    tp->Fill(x,y,s->Section()+1);
+  }
 
+}
   
 //ClassImp(StripTPC)
 //ClassImp(GeometryTPC)

@@ -26,6 +26,8 @@
 #include "EventSourceBase.h"
 #include "HistoManager.h"
 
+#include <boost/property_tree/json_parser.hpp>
+
 enum ETestCommandIdentifiers {
    M_FILE_OPEN,
    M_FILE_SAVE,
@@ -50,7 +52,7 @@ class MainFrame : public TGMainFrame {
   RQ_OBJECT("MainFrame")
 
 public:
-   MainFrame(const TGWindow *p, UInt_t w, UInt_t h);
+   MainFrame(const TGWindow *p, UInt_t w, UInt_t h, boost::property_tree::ptree &root);
    virtual ~MainFrame();
    virtual void CloseWindow();
    virtual Bool_t ProcessMessage(Long_t msg, Long_t parm1, Long_t);

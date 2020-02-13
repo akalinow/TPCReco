@@ -1,0 +1,3 @@
+[submodule "TrackGenerator/deps/SimUtils"]
+	path = TrackGenerator/deps/SimUtils
+	url = ssh://git@dracula.hep.fuw.edu.pl:8822/ppodlaski/SimUtils.git
