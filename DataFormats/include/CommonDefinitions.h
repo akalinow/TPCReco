@@ -25,7 +25,7 @@ public:
 	};
 };
 
-const double pi = 4 * atan(1);
+const double pi = 4 * std::atan(1);
 const double deg_to_rad = pi / 180.0;
 
 enum class direction : unsigned {

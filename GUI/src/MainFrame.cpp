@@ -257,7 +257,7 @@ void MainFrame::Update() {
 	fCanvas->cd(1);
 
 	direction strip_dir = direction::W;
-	myHistoManager.getRawStripVsTime(strip_dir)->SaveAs("histoRaw.root");
+	myHistoManager.getRawStripVsTime(strip_dir).SaveAs("histoRaw.root");
 	myHistoManager.getCartesianProjection(strip_dir)->SaveAs("histoThreshold.root");
 	myHistoManager.getRecHitStripVsTime(strip_dir)->SaveAs("histoRecHit.root");
 

@@ -114,20 +114,14 @@ GeometryTPC::GeometryTPC(std::string  fname, bool debug)
 	trigger_delay(0.),
 	drift_zmin(0.),
 	drift_zmax(0.),
-	_debug(debug)
+	_debug(debug),
+	reference_point(0., 0.) // default REFERENCE POINT position on XY plane
 {
 	if (_debug) {
 		std::cout << "GeometryTPC::Constructor - Started..." << std::endl;
 	}
 
-	// default REFERENCE POINT position on XY plane
-	reference_point.Set(0., 0.);
-
 	// FPN channels in each AGET chip
-	FPN_chanId.push_back(11);
-	FPN_chanId.push_back(22);
-	FPN_chanId.push_back(45);
-	FPN_chanId.push_back(56);
 	AGET_Nchan_fpn = FPN_chanId.size();
 	AGET_Nchan_raw = AGET_Nchan + AGET_Nchan_fpn;
 
@@ -180,20 +174,16 @@ bool GeometryTPC::Load(std::string fname) {
 				for (auto dir : dir_vec_UVW) {
 					angle[dir] = fmod(fmod(angle[dir], 360.) + 360., 360.); // convert to range [0, 360 deg[ range 
 				}
-				if (fmod(angle[direction::U], 180.) != fmod(angle[direction::V], 180.) &&  // reject parallel / anti-parallel duplicates 
-					fmod(angle[direction::V], 180.) != fmod(angle[direction::W], 180.) &&  // reject parallel / anti-parallel duplicates 
-					fmod(angle[direction::W], 180.) != fmod(angle[direction::U], 180.)) { // reject parallel / anti-parallel duplicates 
-					std::cout << Form("Angle of U/V/W strips wrt X axis = %lf / %lf / %lf deg", angle[direction::U], angle[direction::V], angle[direction::W]) << std::endl;
-				}
-				else {
+				std::cout << Form("Angle of U/V/W strips wrt X axis = %lf / %lf / %lf deg", angle[direction::U], angle[direction::V], angle[direction::W]) << std::endl;
+				if (fmod(angle[direction::U], 180.) == fmod(angle[direction::V], 180.) ||  // reject parallel / anti-parallel duplicates 
+					fmod(angle[direction::V], 180.) == fmod(angle[direction::W], 180.) ||  // reject parallel / anti-parallel duplicates 
+					fmod(angle[direction::W], 180.) == fmod(angle[direction::U], 180.)) { // reject parallel / anti-parallel duplicates 
 					std::cerr << "ERROR: Wrong U/V/W angles !!!" << std::endl;
-					std::cout << Form("Angle of U/V/W strips wrt X axis = %lf / %lf / %lf deg", angle[direction::U], angle[direction::V], angle[direction::W]) << std::endl;
 					return false;
 				}
 			}
 			else {
-				std::cerr << "ERROR: Wrong U/V/W angles !!!" << std::endl;
-				std::cout << Form("Angle of U/V/W strips wrt X axis = %lf / %lf / %lf deg", angle[direction::U], angle[direction::V], angle[direction::W]) << std::endl;
+				std::cerr << "ERROR: U/V/W angles not provided !!!" << std::endl;
 				return false;
 			}
 		}
@@ -258,7 +248,7 @@ bool GeometryTPC::Load(std::string fname) {
 
 						// update maximal ASAD index (by: COBO board) 
 						if (cobo >= ASAD_N.size()) { //resize ASAD_N if necessary
-							ASAD_N.resize(cobo + 1);
+							ASAD_N.resize(static_cast<size_t>(cobo) + 1);
 						}
 						ASAD_N[cobo] = std::max(ASAD_N[cobo], asad + 1); // ASAD indexing starts from 0
 
@@ -318,8 +308,6 @@ bool GeometryTPC::Load(std::string fname) {
 	std::cout << "Number of ASAD boards = " << GetAsadNboards() << std::endl;
 	std::cout << "Number of COBO boards = " << GetCoboNboards() << std::endl;
 
-	// now initialize TH2Poly (while initOK=true) and set initOK flag according to the result 
-
 	std::cout << "\n==== INITIALIZING TPC GEOMETRY - END ====\n\n";
 
 	if (_debug) {
@@ -358,7 +346,7 @@ int GeometryTPC::Aget_fpn2raw(int FPN_idx) { // valid range [0-3]
 }
 
 int GeometryTPC::Global_normal2normal(int COBO_idx, int ASAD_idx, int aget_idx, int channel_idx) {   // valid range [0-1][0-3][0-3][0-63]
-	if (COBO_idx < 0 || COBO_idx >= COBO_N || ASAD_idx < 0 || ASAD_idx > ASAD_N[COBO_idx] || aget_idx < 0 || aget_idx >= AGET_Nchips ||
+	if (ASAD_idx < 0 || ASAD_idx > ASAD_N[COBO_idx] || aget_idx < 0 || aget_idx >= AGET_Nchips ||
 		channel_idx < 0 || channel_idx >= AGET_Nchan) return ERROR;
 	int ASAD_offset = std::accumulate(ASAD_N.begin(), ASAD_N.begin() + COBO_idx, 0);
 	return ((ASAD_offset + ASAD_idx) * AGET_Nchips + aget_idx) * AGET_Nchan + channel_idx;
@@ -396,8 +384,8 @@ bool GeometryTPC::MatchCrossPoint(std::array<int, 3> strip_nums, double radius, 
 	std::transform(strip_nums.begin(), strip_nums.end(), dir_vec_UVW.begin(), strips.begin(), [&](int strip_num, direction dir) { return GetStripByDir(dir, strip_num); });
 	const double rad2 = pow(radius, 2);
 	if (!GetCrossPoint(strips[1], strips[2], points[0]) ||
-		!GetCrossPoint(strips[2], strips[3], points[1]) ||
-		!GetCrossPoint(strips[3], strips[1], points[2]) ||
+		!GetCrossPoint(strips[2], strips[0], points[1]) ||
+		!GetCrossPoint(strips[0], strips[1], points[2]) ||
 		(points[0] - points[1]).Mod2() > rad2 ||
 		(points[1] - points[2]).Mod2() > rad2 ||
 		(points[2] - points[0]).Mod2() > rad2) return false;

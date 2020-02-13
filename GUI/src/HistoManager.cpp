@@ -33,12 +33,12 @@ std::shared_ptr<TH2D> HistoManager::getCartesianProjection(direction strip_dir) 
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<TH2D> HistoManager::getRawStripVsTime(direction strip_dir) {
+TH2D&& HistoManager::getRawStripVsTime(direction strip_dir) {
 
-	std::shared_ptr<TH2D> hProjection = myEvent->GetStripVsTime(strip_dir);
-	double varianceX = hProjection->GetCovariance(1, 1);
-	double varianceY = hProjection->GetCovariance(2, 2);
-	double varianceXY = hProjection->GetCovariance(1, 2);
+	auto&& hProjection = myEvent->GetStripVsTime(strip_dir);
+	double varianceX = hProjection.GetCovariance(1, 1);
+	double varianceY = hProjection.GetCovariance(2, 2);
+	double varianceXY = hProjection.GetCovariance(1, 2);
 
 	std::vector<int> nStrips = { 72, 92, 92 };
 
@@ -47,7 +47,7 @@ std::shared_ptr<TH2D> HistoManager::getRawStripVsTime(direction strip_dir) {
 		<< " varianceXY: " << varianceXY
 		<< std::endl;
 
-	return hProjection;
+	return std::move(hProjection);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
