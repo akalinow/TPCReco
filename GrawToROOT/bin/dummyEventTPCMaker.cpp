@@ -9,42 +9,32 @@
 #include "TFile.h"
 #include "TTree.h"
 
-int main(int argc, char* argv[]) {
+int main() {
 
-	if (argc < 3) return -1;
-
-	int minSignalCell = 51;
-	int maxSignalCell = 500;
-	bool skipEmptyEvents = false;
-
-	///Load TPC geometry
-	std::string geomFileName = "geometry_mini_eTPC.dat";
-	std::string timestamp = "";
-	if (argc > 3) {
-		geomFileName = std::string(argv[1]);
-		std::cout << "geomFileName: " << geomFileName << std::endl;
-
-		timestamp = std::string(argv[3]);
-		std::cout << "timestamp: " << timestamp << std::endl;
-	}
+	std::string pathFileName = "paths.txt";
+	std::string geomFileName;
+	std::fstream path_file;
+	path_file.open(pathFileName, std::ios::in);
+	path_file >> geomFileName;
+	path_file.close();
 	GeometryTPC& myGeometry = Geometry(geomFileName);
 
 	///Create event
-	std::shared_ptr<EventTPC> myEvent = std::make_shared<EventTPC>();
+	EventTPC myEvent;
 
 	///Create ROOT Tree
-	std::string rootFileName = "EventTPC_" + timestamp + ".root";
+	std::string rootFileName = "EventTPC_dummy.root";
 
 	TFile aFile(rootFileName.c_str(), "RECREATE");
 	TTree aTree("TPCData", "");
 
-	aTree.Branch("Event", myEvent.get());
+	aTree.Branch("Event", &myEvent);
 
-	myEvent->Info().RunId(0);
+	myEvent.Info().RunId(0);
 	auto lastevent = 100;
 	for (long eventId = 0; eventId < lastevent; ++eventId) {
-		myEvent->Clear();
-		myEvent->Info().EventId(eventId);
+		myEvent.Clear();
+		myEvent.Info().EventId(eventId);
 
 		int COBO_idx = 0;
 		int ASAD_idx = 0;
@@ -56,7 +46,7 @@ int main(int argc, char* argv[]) {
 				for (int32_t i = 0; i < 1; ++i) {
 					double aVal = 500;
 					int32_t icell = 125;
-					myEvent->AddValByAgetChannel(COBO_idx, ASAD_idx, agetId, chanId, icell, aVal);
+					myEvent.AddValByAgetChannel(COBO_idx, ASAD_idx, agetId, chanId, icell, aVal);
 				} // end of loop over time buckets	    
 			} // end of AGET channels loop	
 		} // end of AGET chips loop
