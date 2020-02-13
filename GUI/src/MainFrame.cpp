@@ -17,17 +17,20 @@
 #include <TProfile.h>
 
 #include "EventSourceROOT.h"
+#include "EventSourceGRAW.h"
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h)
       : TGMainFrame(p, w, h){
 
   //TEST ---
-  std::string dataFileName = "/home/akalinow/scratch/ELITPC/data/neutrons/EventTPC_2018-06-19T15:13:33.941.root"; 
+  std::string dataFileName = "/home/akalinow/scratch/ELITPC/data/neutrons/EventTPC_2018-06-19T15:13:33.941.root";
+  dataFileName = "/home/akalinow/data/neutrons/CoBo_2018-06-19T15:13:33.941_0008.graw";
   std::string geometryFileName = "/home/akalinow/scratch/ELITPC/data/neutrons/geometry_mini_eTPC_2018-06-19T15:13:33.941.dat"; 
   //dataFileName = "/home/akalinow/scratch/ELITPC/data/neutrons/ROOT/EventTPC_2018-06-20T10:35:30.853_0004.root";
 
-  myEventSource = std::make_shared<EventSourceROOT>();
+  //myEventSource = std::make_shared<EventSourceROOT>();
+  myEventSource = std::make_shared<EventSourceGRAW>();
   myEventSource->loadGeometry(geometryFileName); 
   myEventSource->loadDataFile(dataFileName);
   myEventSource->loadFileEntry(0);

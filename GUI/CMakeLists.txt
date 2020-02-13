@@ -18,6 +18,7 @@ include_directories(${ROOTINCDIR})
 include_directories(${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include)
 include_directories(${PROJECT_SOURCE_DIR}/DataFormats/include)
 include_directories(${PROJECT_SOURCE_DIR}/Reconstruction/include)
+include_directories(${PROJECT_SOURCE_DIR}/GrawToROOT/include)
 
 find_package(ROOT REQUIRED COMPONENTS RIO GenVector Gui)
 ###############################################################################
@@ -42,7 +43,7 @@ target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
 target_compile_options(tpcGUI PUBLIC ${CMAKE_ROOT_CFLAGS})
 
 target_link_libraries(${MODULE_NAME} DataFormats Reconstruction ${ROOT_LIBRARIES})
-target_link_libraries(tpcGUI PUBLIC DataFormats Utilities Reconstruction ${MODULE_NAME} -lSpectrum)
+target_link_libraries(tpcGUI PUBLIC DataFormats Utilities Reconstruction GrawToROOT ${MODULE_NAME} -lSpectrum)
 
 # All install commands get the same destination. this allows us to use paths
 # relative to the executable.

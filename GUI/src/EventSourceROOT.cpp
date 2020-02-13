@@ -10,7 +10,6 @@
 EventSourceROOT::EventSourceROOT() {
 
   treeName = "TPCData";
-  myCurrentEvent =  std::make_shared<EventTPC>();
   aPtr = myCurrentEvent.get();
 }
 /////////////////////////////////////////////////////////
