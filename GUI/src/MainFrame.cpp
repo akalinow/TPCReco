@@ -16,8 +16,10 @@
 #include <TLatex.h>
 #include <TProfile.h>
 
-#include "EventSourceROOT.h"
+#ifdef WITH_GET
 #include "EventSourceGRAW.h"
+#endif
+#include "EventSourceROOT.h"
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h,  const boost::property_tree::ptree &aConfig)
@@ -28,7 +30,9 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h,  const boost::proper
   std::string geometryFileName = myConfig.get<std::string>("geometryFile");
 
   if(dataFileName.find(".root")!=std::string::npos) myEventSource = std::make_shared<EventSourceROOT>();
+  #ifdef WITH_GET
   else if(dataFileName.find(".graw")!=std::string::npos) myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
+  #endif
   else{
     std::cerr<<"Input source not know. Exiting."<<std::endl;
     exit(0);

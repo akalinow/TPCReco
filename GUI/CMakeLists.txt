@@ -44,8 +44,8 @@ add_executable(tpcGUI bin/tpcGUI.cxx)
 target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
 target_compile_options(tpcGUI PUBLIC ${CMAKE_ROOT_CFLAGS})
 
-target_link_libraries(${MODULE_NAME} DataFormats Reconstruction GrawToROOT ${ROOT_LIBRARIES})
-target_link_libraries(tpcGUI PUBLIC DataFormats Utilities Reconstruction GrawToROOT ${MODULE_NAME} -lSpectrum)
+target_link_libraries(${MODULE_NAME} DataFormats Reconstruction ${GRAW_TO_ROOT_LIBRARY} ${ROOT_LIBRARIES})
+target_link_libraries(tpcGUI PUBLIC DataFormats Utilities Reconstruction ${GRAW_TO_ROOT_LIBRARY} ${MODULE_NAME})
 
 # All install commands get the same destination. this allows us to use paths
 # relative to the executable.
