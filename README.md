@@ -10,7 +10,11 @@ cmake ../
 make install -j 4
 ```
 ## Run instructions:
+Update the  config/config_GUI.json with correct values for input date file (ROOT or GRAW), corresponding geometry file,
+and location of the resources directory.
+When reading a GRAW file one has to enter the resources direcotry, as GET software requires a lots of additional files.
 
 ```
-./bin/tpcGUI config/config_GUI.json
+cd resources
+../bin/tpcGUI ../config/config_GUI.json
 ```

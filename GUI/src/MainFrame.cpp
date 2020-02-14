@@ -16,20 +16,32 @@
 #include <TLatex.h>
 #include <TProfile.h>
 
+#ifdef WITH_GET
+#include "EventSourceGRAW.h"
+#endif
+#include "EventSourceROOT.h"
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h,  boost::property_tree::ptree &root)
+MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h,  const boost::property_tree::ptree &aConfig)
       : TGMainFrame(p, w, h){
 
-  //TEST ---
-  std::string dataFileName = root.get<std::string>("dataFile");
-  std::string geometryFileName = root.get<std::string>("geometryFile");
- 
-  myDataManager.loadGeometry(geometryFileName);  
-  myDataManager.loadDataFile(dataFileName);
-  myDataManager.loadTreeEntry(0);
-  myHistoManager.setGeometry(myDataManager.getGeometry());
-  ////////////////////
+  myConfig = aConfig;
+  std::string dataFileName = myConfig.get<std::string>("dataFile");
+  std::string geometryFileName = myConfig.get<std::string>("geometryFile");
+
+  if(dataFileName.find(".root")!=std::string::npos) myEventSource = std::make_shared<EventSourceROOT>();
+  #ifdef WITH_GET
+  else if(dataFileName.find(".graw")!=std::string::npos) myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
+  #endif
+  else{
+    std::cerr<<"Input source not know. Exiting."<<std::endl;
+    exit(0);
+  }
+  
+  myEventSource->loadGeometry(geometryFileName); 
+  myEventSource->loadDataFile(dataFileName);
+  myEventSource->loadFileEntry(0);
+  myHistoManager.setGeometry(myEventSource->getGeometry());
 
   fSelectionBox = 0;
   fArrow = 0;
@@ -37,7 +49,6 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h,  boost::property_tre
 
   SetCleanup(kDeepCleanup);
   SetWMPosition(500,0);
-  //SetWMSize(1500,1000);
   SetWMSize(1200,800);
   
   AddTopMenu();
@@ -162,7 +173,7 @@ void MainFrame::AddGoToEventDialog(int attach_top){
 					 TGNumberFormat::kNESInteger,
 					 TGNumberFormat::kNEANonNegative,
 					 TGNumberFormat::kNELLimitMinMax,
-					 0, myDataManager.numberOfEvents());
+					 0, myEventSource->numberOfEvents());
   fEventIdEntry->Connect("ReturnPressed()", "MainFrame", this, "DoButton()");
   fEventIdEntry->SetToolTipText("Jump to given event id.");  
 
@@ -193,8 +204,7 @@ void MainFrame::AddNumbersDialog(){
 /////////////////////////////////////////////////////////
 void MainFrame::AddLogos(){
 
-  //return;
-  std::string filePath = "resources/FUW_znak.png";
+  std::string filePath = myConfig.get<std::string>("resourcesPath")+"/FUW_znak.png";
   TImage *img = TImage::Open(filePath.c_str());
   if(!img) return;
   double ratio = img->GetWidth()/img->GetHeight();
@@ -211,8 +221,7 @@ void MainFrame::AddLogos(){
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom);
   fFrame->AddFrame(icon, tloh);
 
-
-  filePath = "resources/ELITEPC_znak.png";
+  filePath = myConfig.get<std::string>("resourcesPath")+"/ELITEPC_znak.png";
   img = TImage::Open(filePath.c_str());
   if(!img) return;
   ratio = img->GetWidth()/img->GetHeight();
@@ -241,9 +250,9 @@ void MainFrame::CloseWindow(){
 /////////////////////////////////////////////////////////
 void MainFrame::Update(){
 
-  myHistoManager.setEvent(myDataManager.getCurrentEvent());
-  fEntryDialog->updateEventNumbers(myDataManager.numberOfEvents(),
-				   myDataManager.currentEventNumber());
+  myHistoManager.setEvent(myEventSource->getCurrentEvent());
+  fEntryDialog->updateEventNumbers(myEventSource->numberOfEvents(),
+				   myEventSource->currentEventNumber());
   
   fCanvas->Clear();
   fCanvas->cd();
@@ -343,7 +352,7 @@ void MainFrame::HandleMenu(Int_t id){
       new TGFileDialog(gClient->GetRoot(), this, kFDOpen, &fi);
       std::string fileName;
       if(fi.fFilename) fileName.append(fi.fFilename);
-      myDataManager.loadDataFile(fileName);
+      myEventSource->loadDataFile(fileName);
       fEntryDialog->updateFileName(fileName);
       Update();
     }
@@ -362,13 +371,13 @@ void MainFrame::HandleMenu(Int_t id){
     break;
   case M_NEXT_EVENT:
     {
-     myDataManager.getNextEvent();      
+     myEventSource->getNextEvent();      
       Update();
     }
     break;
   case M_PREVIOUS_EVENT:
     {
-      myDataManager.getPreviousEvent();
+      myEventSource->getPreviousEvent();
       Update();
     }
     break;
@@ -376,7 +385,7 @@ void MainFrame::HandleMenu(Int_t id){
     {
       int eventId = fEventIdEntry->GetIntNumber();
       std::cout<<"M_GOTO_EVENT eventId: "<<eventId<<std::endl;
-      myDataManager.loadEventId(eventId);
+      myEventSource->loadEventId(eventId);
       Update();
     }
     break;
