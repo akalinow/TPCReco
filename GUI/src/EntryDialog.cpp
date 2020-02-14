@@ -26,7 +26,7 @@ EntryDialog::EntryDialog(const TGWindow * p, MainFrame * aFrame)
    
    TGGroupFrame *totalEventsFrame = new TGGroupFrame(datasetInfoFrame, "Events in the file:");
    TGGroupFrame *currentEventFrame = new TGGroupFrame(datasetInfoFrame, "Current event:");
-   TGGroupFrame *fileNameFrame = new TGGroupFrame(fileInfoFrame, "Processing file:");
+   TGGroupFrame *fileNameFrame = new TGGroupFrame(fileInfoFrame, "Processing file or directory:");
    
    totalEventsLabel = new TGLabel(totalEventsFrame, "No input.");
    currentEventLabel = new TGLabel(currentEventFrame, "No input.");
@@ -62,9 +62,9 @@ void EntryDialog::updateEventNumbers(unsigned int nTotalEvents,
                                      unsigned int iCurrentEvent){
  
   totalEventsLabel->SetText(Form("%u", nTotalEvents));
-  currentEventLabel->SetText(Form("%u",iCurrentEvent));
-  
+  currentEventLabel->SetText(Form("%u",iCurrentEvent));  
   datasetInfoFrame->Layout();
+  std::cout<<__FUNCTION__<<std::endl;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -81,7 +81,6 @@ void EntryDialog::updateFileName(const std::string & fileName){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-
 Bool_t EntryDialog::ProcessMessage(Long_t msg, Long_t parm1, Long_t /*parm2*/){
    switch (GET_MSG(msg)) {
    case kC_COMMAND:

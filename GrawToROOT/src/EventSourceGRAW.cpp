@@ -21,6 +21,10 @@ EventSourceGRAW::~EventSourceGRAW() { }
 void EventSourceGRAW::loadDataFile(const std::string & fileName){
 
   myFile =  std::make_shared<TGrawFile>(fileName.c_str());
+  if(!myFile){
+    std::cerr<<"File: "<<fileName<<"not found!"<<std::endl;
+    exit(0);
+  }
   nEvents = myFile->GetGrawFramesNumber();
 }
 /////////////////////////////////////////////////////////

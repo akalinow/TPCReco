@@ -12,7 +12,8 @@ make install -j 4
 ## Run instructions:
 Update the  config/config_GUI.json with correct values for input date file (ROOT or GRAW), corresponding geometry file,
 and location of the resources directory.
-When reading a GRAW file one has to enter the resources direcotry, as GET software requires a lots of additional files.
+When reading a GRAW file one has to enter the resources directory, as GET software requires a lots of additional files.
+For reading in the online mode set  "mode":"online", and "dataFile": "directory_path". After aplication start click "Watch directory"
 
 ```
 cd resources

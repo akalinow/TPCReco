@@ -1,6 +1,11 @@
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
+#include <chrono>
+#include <thread>
+
+#include <sys/inotify.h>
+#include <sys/types.h>
 
 #include <TApplication.h>
 #include <MainFrame.h>
@@ -29,18 +34,23 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h,  const boost::proper
   std::string dataFileName = myConfig.get<std::string>("dataFile");
   std::string geometryFileName = myConfig.get<std::string>("geometryFile");
 
-  if(dataFileName.find(".root")!=std::string::npos) myEventSource = std::make_shared<EventSourceROOT>();
+  if(dataFileName.find(".root")!=std::string::npos){
+    myEventSource = std::make_shared<EventSourceROOT>();
+    myEventSource->loadGeometry(geometryFileName); 
+  }
   #ifdef WITH_GET
   else if(dataFileName.find(".graw")!=std::string::npos) myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
+  else if(myConfig.get<std::string>("mode")=="online") myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
   #endif
-  else{
+  else if(!myEventSource){
     std::cerr<<"Input source not know. Exiting."<<std::endl;
     exit(0);
   }
-  
-  myEventSource->loadGeometry(geometryFileName); 
-  myEventSource->loadDataFile(dataFileName);
-  myEventSource->loadFileEntry(0);
+
+  if(myConfig.get<std::string>("mode")!="online"){
+    myEventSource->loadDataFile(myConfig.get<std::string>("dataFile"));
+    myEventSource->loadFileEntry(0);
+  }
   myHistoManager.setGeometry(myEventSource->getGeometry());
 
   fSelectionBox = 0;
@@ -72,9 +82,8 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h,  const boost::proper
   for(int iPad=1;iPad<=9;++iPad){
     fCanvas->cd(iPad);
     aMessage.DrawText(0.2, 0.5,"Waiting for data.");
-  }
-  //////
- }
+  }   
+}
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 MainFrame::~MainFrame(){
@@ -143,11 +152,12 @@ void MainFrame::AddHistoCanvas(){
 /////////////////////////////////////////////////////////
 void MainFrame::AddButtons(){
 
-  std::vector<std::string> button_names = {"Next event", "Previous event",  "Exit"};
+  std::vector<std::string> button_names = {"Next event", "Previous event",  "Watch directory", "Exit"};
   std::vector<std::string> tooltips =     {"Load the next event.",
 					   "Load the previous event.",
+					   "Show last event of last file in a directory.",
 					   "Close the application"};
-  std::vector<unsigned int> button_id = {M_NEXT_EVENT, M_PREVIOUS_EVENT, M_FILE_EXIT};
+  std::vector<unsigned int> button_id = {M_NEXT_EVENT, M_PREVIOUS_EVENT, M_DIR_WATCH, M_FILE_EXIT};
 
   UInt_t attach_left=8, attach_right=9;
   for (unsigned int iButton = 0; iButton < button_names.size(); ++iButton) {
@@ -339,10 +349,10 @@ void MainFrame::HandleMenu(Int_t id){
 
   const char *filetypes[] = {
 			     "ROOT files",    "*.root",
+			     "GRAW files",    "*.graw",
 			     "All files",     "*",
-			     0,               0
-  };
-
+			     0,               0};
+  
   switch (id) {
   case M_FILE_OPEN:
     {
@@ -353,6 +363,7 @@ void MainFrame::HandleMenu(Int_t id){
       std::string fileName;
       if(fi.fFilename) fileName.append(fi.fFilename);
       myEventSource->loadDataFile(fileName);
+      myEventSource->loadFileEntry(0);
       fEntryDialog->updateFileName(fileName);
       Update();
     }
@@ -369,9 +380,10 @@ void MainFrame::HandleMenu(Int_t id){
       if(fi.fFilename) fileName.append(fi.fFilename);
     }
     break;
+    
   case M_NEXT_EVENT:
-    {
-     myEventSource->getNextEvent();      
+    {      
+      myEventSource->getNextEvent();
       Update();
     }
     break;
@@ -384,11 +396,16 @@ void MainFrame::HandleMenu(Int_t id){
   case M_GOTO_EVENT:
     {
       int eventId = fEventIdEntry->GetIntNumber();
-      std::cout<<"M_GOTO_EVENT eventId: "<<eventId<<std::endl;
       myEventSource->loadEventId(eventId);
       Update();
     }
     break;
+
+  case M_DIR_WATCH:
+    {
+      watchDirectory();
+    }
+    break; 
 
   case M_FILE_EXIT:
     CloseWindow();   // terminate theApp no need to use SendCloseMessage()
@@ -405,4 +422,45 @@ void MainFrame::DoButton(){
  }
 ////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+void MainFrame::watchDirectory(){
 
+  std::string fName;
+  std::string dirName = myConfig.get<std::string>("dataFile");
+  int MAX_EVENTS = 32; /*Max. number of events to process at one go*/
+  int LEN_NAME = 32; /*Assuming that the length of the filename won't exceed 16 bytes*/
+  int EVENT_SIZE = ( sizeof (struct inotify_event) ); /*size of one event*/
+  int BUF_LEN =    ( MAX_EVENTS * ( EVENT_SIZE + LEN_NAME )); /*buffer to store the data of events*/  
+  uint32_t inotifyEventMask = IN_MODIFY;
+  
+  int fileDescriptor = inotify_init();
+  if(fileDescriptor < 0) {
+    std::cerr<<"Couldn't initialize inotify"<<std::endl;
+  }
+  int wd = inotify_add_watch(fileDescriptor, dirName.c_str(), inotifyEventMask);
+  if(wd == -1) std::cerr<<"Couldn't add watch to "<<dirName<<std::endl;
+
+  char buffer[BUF_LEN];
+
+  while(true){
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    int nbytesRead = read(fileDescriptor, buffer, BUF_LEN);
+    if(nbytesRead<0) std::cerr<<"Problem reading the inotify state"<<std::endl;
+    int eventIndex = 0;
+    while(eventIndex < nbytesRead) {
+      struct inotify_event *event = ( struct inotify_event * ) &buffer[eventIndex];
+      if(event->len && !(event->mask & event->mask & IN_ISDIR)){
+	fName = std::string(event->name);
+	if(fName.find(".graw")!=std::string::npos){
+	  std::this_thread::sleep_for(std::chrono::milliseconds(500));
+	  std::cout<<"fName: "<<fName<<std::endl;
+	  myEventSource->loadDataFile(dirName+"/"+fName);
+	  myEventSource->getLastEvent();
+	  Update();
+	}      
+      }
+      eventIndex += EVENT_SIZE + event->len;
+    }
+  }
+}
+////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////

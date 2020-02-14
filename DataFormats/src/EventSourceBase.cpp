@@ -42,7 +42,7 @@ std::shared_ptr<EventTPC> EventSourceBase::getCurrentEvent() const{
 /////////////////////////////////////////////////////////
 std::shared_ptr<EventTPC> EventSourceBase::getNextEvent(){
 
-  if(myCurrentEntry<nEvents){
+  if(nEvents>0 && myCurrentEntry<nEvents-1){
     loadFileEntry(++myCurrentEntry);
   }
 
@@ -52,8 +52,19 @@ std::shared_ptr<EventTPC> EventSourceBase::getNextEvent(){
 /////////////////////////////////////////////////////////
 std::shared_ptr<EventTPC> EventSourceBase::getPreviousEvent(){
 
-  if(myCurrentEntry>0){
+  if(myCurrentEntry>0 && nEvents>0){
     loadFileEntry(--myCurrentEntry);
+  }
+
+  return myCurrentEvent;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::shared_ptr<EventTPC> EventSourceBase::getLastEvent(){
+
+  if(nEvents>0){
+    loadFileEntry(nEvents-1);
+    myCurrentEntry = nEvents-1;
   }
 
   return myCurrentEvent;

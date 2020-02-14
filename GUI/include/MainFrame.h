@@ -9,6 +9,7 @@
 #include <TGMenu.h>
 #include <TRootEmbeddedCanvas.h>
 #include <TGFileDialog.h>
+#include <TGFileBrowser.h>
 #include <TGNumberEntry.h>
 #include <TGIcon.h>
 #include <TGPicture.h>
@@ -35,6 +36,8 @@ enum ETestCommandIdentifiers {
    M_FILE_PRINT,
    M_FILE_PRINTSETUP,
    M_FILE_EXIT,
+
+   M_DIR_WATCH,
 
    M_HELP_CONTENTS,
    M_HELP_SEARCH,
@@ -72,6 +75,8 @@ private:
   
   std::shared_ptr<EventSourceBase> myEventSource;
   HistoManager myHistoManager;
+
+  void watchDirectory();
   
   void AddTopMenu();
   void SetTheFrame();
