@@ -18,6 +18,27 @@ MESSAGE( STATUS "ROOT_INCLUDE_DIRS:         " ${ROOT_INCLUDE_DIRS} )
 MESSAGE( STATUS "ROOT_LIBRARIES:            " ${ROOT_LIBRARIES} )
 MESSAGE( STATUS "ROOT_USE_FILE:             " ${ROOT_USE_FILE})
 
+
+#GET software presence
+set(GET_VERSION_DIR $ENV{GET_DIR}/GetSoftware_$ENV{GET_RELEASE})
+if(EXISTS ${GET_VERSION_DIR})
+  set(GET_LIBRARIES ${GET_VERSION_DIR}/lib/libget-root.so ${GET_VERSION_DIR}/lib/libcobo-frame-graw2frame.so ${GET_VERSION_DIR}/lib/libMultiFrame.so)
+  set(GET_CXX_FLAGS -Wno-deprecated-declarations -DUTL_LOG_LEVEL=10)
+  add_definitions(-DWITH_GET)
+  set(GRAW_TO_ROOT_LIBRARY GrawToROOT)
+  include_directories(${GET_VERSION_DIR}/include)
+  else()
+    MESSAGE(WARNING "No GET software found. ")
+    set(GET_LIBRARIES "")
+    set(GET_CXX_FLAGS "")
+    set(GRAW_TO_ROOT_LIBRARY "")
+endif()  
+  
+MESSAGE( STATUS "GET_VERSION_DIR:       " ${GET_VERSION_DIR})
+MESSAGE( STATUS "GET libraries:         " ${GET_LIBRARIES} )
+MESSAGE( STATUS "GET compile flags:     " ${GET_CXX_FLAGS} )
+#####################################################################
+
 ###############################################################################
 ## packaging ##################################################################
 ###############################################################################
@@ -34,7 +55,7 @@ else()
   MESSAGE( STATUS "RESOURCES dir already exists in the installation dir" )
 endif()
 
-set( CMAKE_CXX_FLAGS "${ROOT_CXX_FLAGS} -Wall -Werror -O3 -std=c++14 -fopenmp")
+set(CMAKE_CXX_FLAGS "${ROOT_CXX_FLAGS} -Wall -Werror -O3 -std=c++14 -fopenmp")
 
 #Set RPATH to install dir, so user do not have to set the LD_LIBRARY_PATH
 set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
@@ -42,10 +63,10 @@ set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 
 #Framework packages
 add_subdirectory(DataFormats)
+add_subdirectory(GrawToROOT) 
 add_subdirectory(Utilities)
 add_subdirectory(Reconstruction)
 add_subdirectory(GUI)
-add_subdirectory(GrawToROOT)
 add_subdirectory(ToyMC)
 add_subdirectory(TrackGenerator)
 
