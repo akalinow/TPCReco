@@ -28,7 +28,7 @@ void EventSourceGRAW::loadDataFile(const std::string & fileName){
 void EventSourceGRAW::loadFileEntry(unsigned long int iEntry){
 
   myCurrentEvent->Clear();
-  
+  if(iEntry>=nEvents) iEntry = nEvents;
   bool dataFrameRead = myFile->GetGrawFrame(myDataFrame, iEntry);
   if(!dataFrameRead){
     std::cerr << "ERROR: cannot read event " << iEntry << std::endl;

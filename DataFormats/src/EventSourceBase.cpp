@@ -26,8 +26,8 @@ void EventSourceBase::loadGeometry(const std::string & fileName){
 /////////////////////////////////////////////////////////
 void EventSourceBase::loadEventId(unsigned long int iEvent){
 
-  int iEntry = 0;
-  while(currentEventNumber()!=iEvent){  
+  unsigned long int iEntry = 0;
+  while(currentEventNumber()!=iEvent && iEntry<nEvents){  
     loadFileEntry(iEntry);
     ++iEntry;
   }

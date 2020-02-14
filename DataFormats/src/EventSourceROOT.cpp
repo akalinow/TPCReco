@@ -38,7 +38,7 @@ void EventSourceROOT::loadFileEntry(unsigned long int iEntry){
     std::cerr<<"ROOT tree not available!"<<std::endl;
     return;
   }
-  if(myTree->GetEntries()<=(long int)iEntry) return;
+  if((long int)iEntry>=myTree->GetEntries()) iEntry = myTree->GetEntries() - 1;
   
   myCurrentEvent->SetGeoPtr(0);
   myTree->GetEntry(iEntry);
