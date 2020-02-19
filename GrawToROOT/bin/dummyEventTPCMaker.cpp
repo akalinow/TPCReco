@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "GeometryTPC.h"
-#include "EventTPC.h"
+#include "EventCharges.h"
 
 #include "TFile.h"
 #include "TTree.h"
@@ -20,7 +20,7 @@ int main() {
 	GeometryTPC& myGeometry = Geometry(geomFileName);
 
 	///Create event
-	EventTPC myEvent;
+	EventCharges myEvent;
 
 	///Create ROOT Tree
 	std::string rootFileName = "EventTPC_dummy.root";

@@ -10,7 +10,7 @@
 #include "GeometryTPC.h"
 
 class GeometryTPC;
-class EventTPC;
+class EventCharges;
 
 class DataManager {
 public:
@@ -25,7 +25,7 @@ public:
 
   void loadEventId(unsigned int iEvent);
 
-  std::shared_ptr<EventTPC> getCurrentEvent() const;
+  std::shared_ptr<EventCharges> getCurrentEvent() const;
   
   void loadNextEvent();
 
@@ -43,8 +43,8 @@ private:
   unsigned int nEvents = 0;
   unsigned int myCurrentEntry;
 
-  std::shared_ptr<EventTPC> currentEvent_external_copy;
-  EventTPC* currentEvent_internal = nullptr;
+  std::shared_ptr<EventCharges> currentEvent_external_copy;
+  EventCharges* currentEvent_internal = nullptr;
 };
 #endif
 

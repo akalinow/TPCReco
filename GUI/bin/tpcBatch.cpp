@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include "DataManager.h"
-#include "SigClusterTPC.h"
+#include "EventHits.h"
 #include "TrackBuilder.h"
 
 int main() {
@@ -27,7 +27,7 @@ int main() {
 
     auto aEvent = aDataManager.getCurrentEvent();
     if (aEvent == nullptr) {
-        std::cout << __FUNCTION__ << " NULL EventTPC pointer" << std::endl;
+        std::cout << __FUNCTION__ << " NULL EventCharges pointer" << std::endl;
         return -1;
     }
 

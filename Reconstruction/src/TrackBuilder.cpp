@@ -1,4 +1,5 @@
 #include "TrackBuilder.h"
+#include "HistoManager.h"
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 TrackBuilder::TrackBuilder() {
@@ -24,20 +25,23 @@ TrackBuilder::TrackBuilder() {
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void TrackBuilder::setEvent(std::shared_ptr<EventTPC> aEvent) {
+std::shared_ptr<EventHits> TrackBuilder::setEvent(std::shared_ptr<EventCharges> evt_ch) {
 
-	myEvent = aEvent;
+	myEvent = evt_ch;
 	double eventMaxCharge = myEvent->GetMaxCharge();
 	double chargeThreshold = 0.15 * eventMaxCharge;
 	int delta_timecells = 15;
 	int delta_strips = 1;
 
-	myCluster = myEvent->GetOneCluster(chargeThreshold, delta_strips, delta_timecells);
+	myCluster = myEvent->GetHitsObject(chargeThreshold, delta_strips, delta_timecells);
+	return myCluster;
+}
 
+void TrackBuilder::initialize() {
 	std::string hName, hTitle;
 	if (!myHistoInitialized) {
 		for (auto dir : dir_vec_UVW) {
-			auto hRawHits = myCluster->GetStripVsTimeInMM(dir);
+			auto hRawHits = HistogramManager().GetStripVsTimeInMM(dir);
 			double maxX = hRawHits->GetXaxis()->GetXmax();
 			double maxY = hRawHits->GetYaxis()->GetXmax();
 			double rho = std::hypot(maxX, maxY);
@@ -65,7 +69,7 @@ void TrackBuilder::reconstruct() {
 /////////////////////////////////////////////////////////
 void TrackBuilder::makeRecHits(direction dir) {
 
-	auto hRawHits = myCluster->GetStripVsTimeInMM(dir);
+	auto hRawHits = HistogramManager().GetStripVsTimeInMM(dir);
 	auto hRecHits = myRecHits[dir];
 	hRecHits->Reset();
 	std::string tmpTitle(hRecHits->GetTitle());

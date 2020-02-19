@@ -21,8 +21,8 @@
 #include "TH1D.h"
 
 #include "GeometryTPC.h"
-#include "EventTPC.h"
-#include "SigClusterTPC.h"
+#include "EventCharges.h"
+#include "EventHits.h"
 
 #include "TrackSegment2D.h"
 #include "TrackSegment3D.h"
@@ -32,65 +32,68 @@ class TH2D;
 class TF1;
 
 class GeometryTPC;
-class EventTPC;
+class EventCharges;
+class HistoManager;
 
 class TrackBuilder {
 public:
-  
-  TrackBuilder();
-  
-  ~TrackBuilder() = default;
+	
+	TrackBuilder();
 
-  void setEvent(std::shared_ptr<EventTPC> aEvent);
+	~TrackBuilder() = default;
 
-  void reconstruct();
+	std::shared_ptr<EventHits> setEvent(std::shared_ptr<EventCharges> evt_ch);
 
-  const std::shared_ptr<SigClusterTPC> getCluster() const { return myCluster;}
+	void initialize();
 
-  const std::shared_ptr <TH2D> getRecHits2D(direction dir) const;
-  
-  const TrackSegment2D & getSegment2D(direction dir, unsigned int iTrack=0) const;
-  
-  const TrackSegment3D & getSegment3DSeed() const;
+	void reconstruct();
 
-  const Track3D & getTrack3D(unsigned int iSegment) const;
+	const std::shared_ptr<EventHits> getCluster() const { return myCluster; }
+
+	const std::shared_ptr <TH2D> getRecHits2D(direction dir) const;
+
+	const TrackSegment2D& getSegment2D(direction dir, unsigned int iTrack = 0) const;
+
+	const TrackSegment3D& getSegment3DSeed() const;
+
+	const Track3D& getTrack3D(unsigned int iSegment) const;
 
 private:
 
-  void makeRecHits(direction dir);
+	void makeRecHits(direction dir);
 
-  TF1&& fitTimeWindow(TH1D* hProj);
- 
-  void fillHoughAccumulator(direction dir);
+	TF1&& fitTimeWindow(TH1D* hProj);
 
-  TrackSegment2DCollection&& findSegment2DCollection(direction dir);
-  
-  TrackSegment2D&& findSegment2D(direction dir, int iPeak) const;
-  
-  TrackSegment3D&& buildSegment3D() const;
-  
-  Track3D&& fitTrack3D(const TrackSegment3D & aTrackSeedSegment) const;
+	void fillHoughAccumulator(direction dir);
 
-  Track3D fitTrackNodes(const Track3D & aTrack) const;
+	TrackSegment2DCollection&& findSegment2DCollection(direction dir);
 
-    
-  std::shared_ptr<EventTPC> myEvent;
-  std::shared_ptr<SigClusterTPC> myCluster;
+	TrackSegment2D&& findSegment2D(direction dir, int iPeak) const;
 
-  bool myHistoInitialized;
-  int nAccumulatorRhoBins, nAccumulatorPhiBins;
+	TrackSegment3D&& buildSegment3D() const;
 
-  TVector3 aHoughOffest;
-  std::map<direction, TH2D> myAccumulators;
-  std::map<direction, std::shared_ptr<TH2D>> myRecHits;
-  std::map<direction, TrackSegment2DCollection> my2DSeeds;
-  
-  TrackSegment3D myTrack3DSeed;
+	Track3D&& fitTrack3D(const TrackSegment3D& aTrackSeedSegment) const;
 
-  Track3D myFittedTrack;
+	Track3D fitTrackNodes(const Track3D& aTrack) const;
 
-  mutable ROOT::Fit::Fitter fitter;
-  
+
+	std::shared_ptr<EventCharges> myEvent;
+	std::shared_ptr<EventHits> myCluster;
+
+	bool myHistoInitialized;
+	int nAccumulatorRhoBins, nAccumulatorPhiBins;
+
+	TVector3 aHoughOffest;
+	std::map<direction, TH2D> myAccumulators;
+	std::map<direction, std::shared_ptr<TH2D>> myRecHits;
+	std::map<direction, TrackSegment2DCollection> my2DSeeds;
+
+	TrackSegment3D myTrack3DSeed;
+
+	Track3D myFittedTrack;
+
+	mutable ROOT::Fit::Fitter fitter;
+
 };
 #endif
 

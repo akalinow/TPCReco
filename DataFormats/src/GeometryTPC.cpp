@@ -285,7 +285,7 @@ bool GeometryTPC::Load(std::string fname) {
 	// sanity checks
 	auto it = std::find(ASAD_N.begin(), ASAD_N.end(), 0);
 	if (it != ASAD_N.end()) {
-		std::cerr << "ERROR: Number of ASAD boards for COBO " << std::distance(&ASAD_N[0], &*it) << " is not defined !!!" << std::endl;
+		std::cerr << "ERROR: Number of ASAD boards for COBO " << std::distance(ASAD_N.begin(), it) << " is not defined !!!" << std::endl;
 		if (_debug) {
 			std::cout << "GeometryTPC::Load - Abort (8)" << std::endl;
 		}

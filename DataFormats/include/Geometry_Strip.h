@@ -6,7 +6,6 @@
 #include "TMath.h"
 #include "TVector2.h"
 #include "TGraph.h"
-#include "TH2Poly.h"
 #include "CommonDefinitions.h"
 
 struct Strip_Data {

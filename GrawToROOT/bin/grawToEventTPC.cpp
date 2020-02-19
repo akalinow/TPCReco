@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "GeometryTPC.h"
-#include "EventTPC.h"
+#include "EventCharges.h"
 #include "PedestalCalculator.h"
 
 #include "TFile.h"
@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
 	}
 	GeometryTPC& myGeometry = Geometry(geomFileName);
 
-	EventTPC myEvent;
+	EventCharges myEvent;
 
 	PedestalCalculator myPedestalCalculator;
 
