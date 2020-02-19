@@ -174,7 +174,7 @@ TF1 TrackBuilder::fitTimeWindow(TH1D* hProj){
        timeResponseShape.SetParLimits(iSet+1, maxPos-15*timeBinToCartesianScale, maxPos+15*timeBinToCartesianScale);   
        timeResponseShape.SetParLimits(iSet+2, 0.5*timeBinToCartesianScale, 8*timeBinToCartesianScale);
      }   
-     fitResult = hProj->Fit(&timeResponseShape, "QRBSW");   
+     fitResult = hProj->Fit(&timeResponseShape, "QRBSWN");   
 
      double chi2 = 0.0;
      double x = 0.0;

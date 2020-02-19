@@ -33,6 +33,8 @@ private:
   TGLabel *currentEventLabel;
   TGLabel *fileNameLabel;
 
+  unsigned int fileNameLineLength = 36;
+
 };
 
 #endif

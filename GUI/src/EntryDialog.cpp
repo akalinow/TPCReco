@@ -26,11 +26,13 @@ EntryDialog::EntryDialog(const TGWindow * p, MainFrame * aFrame)
    
    TGGroupFrame *totalEventsFrame = new TGGroupFrame(datasetInfoFrame, "Events in the file:");
    TGGroupFrame *currentEventFrame = new TGGroupFrame(datasetInfoFrame, "Current event:");
-   TGGroupFrame *fileNameFrame = new TGGroupFrame(fileInfoFrame, "Processing file or directory:");
+   TGGroupFrame *fileNameFrame = new TGGroupFrame(fileInfoFrame, "Processing file:");
    
    totalEventsLabel = new TGLabel(totalEventsFrame, "No input.");
    currentEventLabel = new TGLabel(currentEventFrame, "No input.");
-   fileNameLabel = new TGLabel(fileNameFrame, "No input.");
+   std::string tmp = "No input.";
+   tmp.resize(fileNameLineLength,' ');
+   fileNameLabel = new TGLabel(fileNameFrame,tmp.c_str());
 
    aLayoutHints = new TGLayoutHints(kLHintsTop | kLHintsLeft, 5, 5, 5, 5);
    totalEventsFrame->AddFrame(totalEventsLabel, aLayoutHints);
@@ -64,17 +66,19 @@ void EntryDialog::updateEventNumbers(unsigned int nTotalEvents,
   totalEventsLabel->SetText(Form("%u", nTotalEvents));
   currentEventLabel->SetText(Form("%u",iCurrentEvent));  
   datasetInfoFrame->Layout();
-  std::cout<<__FUNCTION__<<std::endl;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void EntryDialog::updateFileName(const std::string & fileName){
 
   std::string fileNameWithBreaks = fileName;
-  unsigned int lineLength = 40;
-  for(unsigned int iPos=lineLength;iPos<lineLength*5;iPos+=lineLength)
-  if(fileName.size()>iPos){
-    fileNameWithBreaks.insert(iPos,"\n");
+  size_t previousBreakPoint = 0;
+  for(size_t iPos=0;iPos<fileNameWithBreaks.size();){
+    iPos = fileNameWithBreaks.find("/",iPos+1);
+    if(fileNameLineLength-iPos+previousBreakPoint<10){
+      fileNameWithBreaks.insert(iPos+1,"\n");
+      previousBreakPoint = iPos;
+    }
   }
   fileNameLabel->SetText(fileNameWithBreaks.c_str());  
   fileInfoFrame->Layout();

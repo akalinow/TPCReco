@@ -1,6 +1,9 @@
 #ifndef MainFrame_H
 #define MainFrame_H
 
+#include <thread>
+#include <mutex>
+
 #include <TGDockableFrame.h>
 #include <TGFrame.h>
 #include <TGCanvas.h>
@@ -48,6 +51,11 @@ enum ETestCommandIdentifiers {
    M_GOTO_EVENT,
 
 };
+
+enum Messages {
+	       M_DATA_FILE_UPDATED
+	       
+};
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 class MainFrame : public TGMainFrame {
@@ -76,7 +84,13 @@ private:
   std::shared_ptr<EventSourceBase> myEventSource;
   HistoManager myHistoManager;
 
+  
+  std::thread fileWatchThread;
+  std::mutex myMutex; 
   void watchDirectory();
+
+  void InitializeEventSource();
+  void InitializeWindows();
   
   void AddTopMenu();
   void SetTheFrame();
