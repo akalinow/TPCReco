@@ -14,12 +14,12 @@ Update the  config/config_GUI.json with correct values for input date file (ROOT
 and location of the resources directory.
 When reading a GRAW file one has to run the application from the resources directory, as GET software requires a lots of additional files.
 When reading GRAW files setup the GRAW environment. At the daqula2 node use a following command:
-
+For reading the GRAW files in online mode set  "dataFile": "directory_path" WITH trailing "/" character. 
 ```
 source /opt/soft/GetSoftware_20170928/thisGET.sh
 ```
 
-For reading in the online mode set  "mode":"online", and "dataFile": "directory_path".
+
 ```
 cd resources
 ../bin/tpcGUI ../config/config_GUI.json

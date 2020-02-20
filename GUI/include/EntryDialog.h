@@ -1,6 +1,8 @@
 #ifndef EntryDialog_H
 #define EntryDialog_H
 
+#include <string>
+
 #include <TGFrame.h>
 #include <TGLayout.h>
 #include <TGLabel.h>
@@ -22,16 +24,20 @@ public:
 
   void updateEventNumbers(unsigned int nTotalEvents, unsigned int iCurrentEvent);
 
+  void updateModeLabel(const std::string & aMode);
+
 private:
 
   MainFrame *theMainFrame;
 
   TGHorizontalFrame *datasetInfoFrame;
   TGHorizontalFrame* fileInfoFrame;
+  TGHorizontalFrame* modeInfoFrame;
   
   TGLabel *totalEventsLabel;
   TGLabel *currentEventLabel;
   TGLabel *fileNameLabel;
+  TGLabel *modeLabel;
 
   unsigned int fileNameLineLength = 36;
 

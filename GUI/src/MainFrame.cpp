@@ -34,14 +34,19 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h,  const boost::proper
 
   InitializeWindows();
   InitializeEventSource();
-  
-  fCanvas->Clear();
-  fCanvas->Divide(3,3);
-  TText aMessage(0.2, 0.5,"Waiting for data.");
-  for(int iPad=1;iPad<=9;++iPad){
-    fCanvas->cd(iPad);
-    aMessage.DrawText(0.2, 0.5,"Waiting for data.");
+
+  std::string modeLabel = "NONE";
+  if(myWorkMode==M_ONLINE_MODE){
+    modeLabel = "ONLINE";
   }
+  else if(myWorkMode==M_OFFLINE_ROOT_MODE){
+    modeLabel = "OFFLINE from ROOT";
+  }
+  else if(myWorkMode==M_OFFLINE_GRAW_MODE){
+    modeLabel = "OFFLINE from GRAW";
+  }
+  fEntryDialog->updateModeLabel(modeLabel);
+  Update();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -81,25 +86,36 @@ void MainFrame::InitializeEventSource(){
   std::string dataFileName = myConfig.get<std::string>("dataFile");
   std::string geometryFileName = myConfig.get<std::string>("geometryFile");
 
+  if(dataFileName.empty() || geometryFileName.empty()){
+    std::cerr<<"No data or geometry file path provided."<<std::endl;
+    return;
+  }
+
   if(dataFileName.find(".root")!=std::string::npos){
+    myWorkMode = M_OFFLINE_ROOT_MODE;
     myEventSource = std::make_shared<EventSourceROOT>();
     myEventSource->loadGeometry(geometryFileName); 
   }
 #ifdef WITH_GET
-  else if(dataFileName.find(".graw")!=std::string::npos) myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
-  else if(myConfig.get<std::string>("mode")=="online"){
+  else if(dataFileName.find(".graw")!=std::string::npos){
+    myWorkMode = M_OFFLINE_GRAW_MODE;
+    myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
+  }
+  else if(dataFileName.back()=='/'){
+    myWorkMode = M_ONLINE_MODE;
     myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
     fileWatchThread = std::thread(&DirectoryWatch::watch, &myDirWatch, dataFileName);
     myDirWatch.Connect("Message(const char *)", "MainFrame", this, "ProcessMessage(const char *)");
   }
 #endif
   else if(!myEventSource){
-    std::cerr<<"Input source not know. Exiting."<<std::endl;
-    exit(0);
+    std::cerr<<"Input source not known. dataFile: "
+	     <<dataFileName<<" Exiting."<<std::endl;
+    return;
   }
 
-  if(myConfig.get<std::string>("mode")!="online"){
-    myEventSource->loadDataFile(myConfig.get<std::string>("dataFile"));
+  if(myWorkMode!=M_ONLINE_MODE){
+    myEventSource->loadDataFile(dataFileName);
     myEventSource->loadFileEntry(0);
   }
   myHistoManager.setGeometry(myEventSource->getGeometry());
@@ -147,17 +163,25 @@ void MainFrame::SetTheFrame(){
 /////////////////////////////////////////////////////////
 void MainFrame::AddHistoCanvas(){
 
-   embeddedCanvas = new TRootEmbeddedCanvas("Histograms",fFrame,1000,1000);
-   UInt_t attach_left=0, attach_right=8;
-   UInt_t attach_top=0,  attach_bottom=12;
-   fTCanvasLayout = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
-   					   kLHintsFillX|kLHintsFillY);
-   fFrame->AddFrame(embeddedCanvas, fTCanvasLayout);
+  gStyle->SetOptStat(0);
+  gStyle->SetPalette(55);
 
-   fCanvas = embeddedCanvas->GetCanvas();
-   fCanvas->MoveOpaque(kFALSE);
-   gStyle->SetOptStat(0);
-   gStyle->SetPalette(55);
+  embeddedCanvas = new TRootEmbeddedCanvas("Histograms",fFrame,1000,1000);
+  UInt_t attach_left=0, attach_right=8;
+  UInt_t attach_top=0,  attach_bottom=12;
+  fTCanvasLayout = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
+					  kLHintsFillX|kLHintsFillY);
+  fFrame->AddFrame(embeddedCanvas, fTCanvasLayout);
+
+  fCanvas = embeddedCanvas->GetCanvas();
+  fCanvas->MoveOpaque(kFALSE);
+  fCanvas->Divide(3,3);
+  TText aMessage(0.2, 0.5,"Waiting for data.");
+  for(int iPad=1;iPad<=9;++iPad){
+    fCanvas->cd(iPad);
+    aMessage.DrawText(0.2, 0.5,"Waiting for data.");
+  }
+  fCanvas->Update(); 
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

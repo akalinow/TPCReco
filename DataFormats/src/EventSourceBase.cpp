@@ -7,6 +7,7 @@
 EventSourceBase::EventSourceBase() {
 
   myCurrentEvent =  std::make_shared<EventTPC>();
+  myCurrentEntry = 0;
   nEvents = 0;
 }
 /////////////////////////////////////////////////////////
@@ -49,10 +50,13 @@ std::shared_ptr<EventTPC> EventSourceBase::getCurrentEvent() const{
 /////////////////////////////////////////////////////////
 std::shared_ptr<EventTPC> EventSourceBase::getNextEvent(){
 
+  std::cout<<"nEvents: "<<nEvents
+	   <<" myCurrentEntry: "<<myCurrentEntry
+	   <<std::endl;
+
   if(nEvents>0 && myCurrentEntry<nEvents-1){
     loadFileEntry(++myCurrentEntry);
   }
-
   return myCurrentEvent;
 }
 /////////////////////////////////////////////////////////
@@ -62,7 +66,6 @@ std::shared_ptr<EventTPC> EventSourceBase::getPreviousEvent(){
   if(myCurrentEntry>0 && nEvents>0){
     loadFileEntry(--myCurrentEntry);
   }
-
   return myCurrentEvent;
 }
 /////////////////////////////////////////////////////////

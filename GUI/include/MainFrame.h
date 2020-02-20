@@ -58,6 +58,12 @@ enum Messages {
 	       M_DATA_FILE_UPDATED
 	       
 };
+
+enum Modes {
+	    M_ONLINE_MODE,
+	    M_OFFLINE_GRAW_MODE,
+	    M_OFFLINE_ROOT_MODE	       
+};
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 class MainFrame : public TGMainFrame {
@@ -81,6 +87,7 @@ class MainFrame : public TGMainFrame {
 private:
 
   boost::property_tree::ptree myConfig;
+  int myWorkMode = 0;
   
   std::shared_ptr<EventSourceBase> myEventSource;
   HistoManager myHistoManager;
