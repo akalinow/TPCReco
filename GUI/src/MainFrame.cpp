@@ -371,8 +371,8 @@ void MainFrame::HandleMenu(Int_t id){
 
   const char *filetypes[] = {
 			     "ROOT files",    "*.root",
-			     "GRAW files",    "*.graw",
-			     "All files",     "*",
+			     //"GRAW files",    "*.graw",
+			     //"All files",     "*",
 			     0,               0};
   
   switch (id) {
@@ -384,9 +384,9 @@ void MainFrame::HandleMenu(Int_t id){
       new TGFileDialog(gClient->GetRoot(), this, kFDOpen, &fi);
       std::string fileName;
       if(fi.fFilename) fileName.append(fi.fFilename);
+      else return;
       myEventSource->loadDataFile(fileName);
       myEventSource->loadFileEntry(0);
-      fEntryDialog->updateFileName(fileName);
       Update();
     }
     break;
