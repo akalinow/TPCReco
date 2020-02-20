@@ -14,9 +14,16 @@ EventSourceBase::EventSourceBase() {
 EventSourceBase::~EventSourceBase() { }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+void EventSourceBase::loadDataFile(const std::string & fileName){
+
+  currentFilePath = fileName;
+  
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 void EventSourceBase::loadGeometry(const std::string & fileName){
   
-  myGeometryPtr = std::make_shared<GeometryTPC>(fileName.c_str());
+  myGeometryPtr = std::make_shared<GeometryTPC>(fileName.c_str(), false);
   if(!myGeometryPtr){
     std::cerr<<"Geometry not loaded! Refuse to work anymore."<<std::endl;
     exit(0);
@@ -83,6 +90,12 @@ unsigned long int EventSourceBase::currentEventNumber() const{
     return myCurrentEvent->GetEventId();
   }
   return 0;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::string EventSourceBase::getCurrentPath() const{
+
+  return currentFilePath;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

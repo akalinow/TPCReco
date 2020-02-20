@@ -1,15 +1,12 @@
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
-#include <chrono>
-
-#include <sys/inotify.h>
-#include <sys/types.h>
 
 #include <TApplication.h>
 #include <MainFrame.h>
 #include <SelectionBox.h>
 
+#include <TSystem.h>
 #include <TStyle.h>
 #include <TFrame.h>
 #include <TVirtualX.h>
@@ -44,7 +41,7 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h,  const boost::proper
   for(int iPad=1;iPad<=9;++iPad){
     fCanvas->cd(iPad);
     aMessage.DrawText(0.2, 0.5,"Waiting for data.");
-  }   
+  }
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -92,9 +89,8 @@ void MainFrame::InitializeEventSource(){
   else if(dataFileName.find(".graw")!=std::string::npos) myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
   else if(myConfig.get<std::string>("mode")=="online"){
     myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
-    ROOT::EnableThreadSafety();
-    fileWatchThread = std::thread(&MainFrame::watchDirectory, this);
-    Connect("watchDirectory()", "MainFrame", this,"ProcessMessage(Long_t)");
+    fileWatchThread = std::thread(&DirectoryWatch::watch, &myDirWatch, dataFileName);
+    myDirWatch.Connect("Message(const char *)", "MainFrame", this, "ProcessMessage(const char *)");
   }
 #endif
   else if(!myEventSource){
@@ -151,8 +147,7 @@ void MainFrame::SetTheFrame(){
 /////////////////////////////////////////////////////////
 void MainFrame::AddHistoCanvas(){
 
-    // The Canvas
-   TRootEmbeddedCanvas* embeddedCanvas = new TRootEmbeddedCanvas("Histograms",fFrame,1000,1000);
+   embeddedCanvas = new TRootEmbeddedCanvas("Histograms",fFrame,1000,1000);
    UInt_t attach_left=0, attach_right=8;
    UInt_t attach_top=0,  attach_bottom=12;
    fTCanvasLayout = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
@@ -168,12 +163,11 @@ void MainFrame::AddHistoCanvas(){
 /////////////////////////////////////////////////////////
 void MainFrame::AddButtons(){
 
-  std::vector<std::string> button_names = {"Next event", "Previous event",  "Watch directory", "Exit"};
+  std::vector<std::string> button_names = {"Next event", "Previous event", "Exit"};
   std::vector<std::string> tooltips =     {"Load the next event.",
 					   "Load the previous event.",
-					   "Show last event of last file in a directory.",
 					   "Close the application"};
-  std::vector<unsigned int> button_id = {M_NEXT_EVENT, M_PREVIOUS_EVENT, M_DIR_WATCH, M_FILE_EXIT};
+  std::vector<unsigned int> button_id = {M_NEXT_EVENT, M_PREVIOUS_EVENT,  M_FILE_EXIT};
 
   UInt_t attach_left=8, attach_right=9;
   for (unsigned int iButton = 0; iButton < button_names.size(); ++iButton) {
@@ -274,23 +268,20 @@ void MainFrame::CloseWindow(){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MainFrame::Update(){
-
-  myHistoManager.setEvent(myEventSource->getCurrentEvent());
+  
+  fEntryDialog->updateFileName(myEventSource->getCurrentPath());
   fEntryDialog->updateEventNumbers(myEventSource->numberOfEvents(),
 				   myEventSource->currentEventNumber());
 
+  myHistoManager.setEvent(myEventSource->getCurrentEvent());
   for(int strip_dir=0;strip_dir<3;++strip_dir){
     myHistoManager.getHoughAccumulator(strip_dir);
   }
 
-  fCanvas->Clear();
-  fCanvas->cd();
-  fCanvas->Divide(3,3);
-
   for(int strip_dir=0;strip_dir<3;++strip_dir){
     ///First row
     TVirtualPad *aPad = fCanvas->cd(strip_dir+1);
-    myHistoManager.getCartesianProjection(strip_dir)->DrawClone("colz");
+    myHistoManager.getCartesianProjection(strip_dir)->DrawClone("colz");    
     ///Second row
     aPad = fCanvas->cd(strip_dir+1+3);
     myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("colz");
@@ -346,16 +337,26 @@ Bool_t MainFrame::ProcessMessage(Long_t msg, Long_t parm1, Long_t){
 /////////////////////////////////////////////////////////
 Bool_t MainFrame::ProcessMessage(Long_t msg){
 
+  std::cout<<__FUNCTION__<<std::endl;
+
   switch (msg) {
   case M_DATA_FILE_UPDATED:
     {
-      myMutex.lock();
-      Update();
-      myMutex.unlock();
     }
     break;
   }
     return kTRUE;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+Bool_t MainFrame::ProcessMessage(const char * msg){
+
+  myMutex.lock();
+  myEventSource->loadDataFile(std::string(msg));
+  myEventSource->getLastEvent();
+  Update();
+  myMutex.unlock();
+  return kTRUE;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -424,7 +425,7 @@ void MainFrame::HandleMenu(Int_t id){
 
   case M_DIR_WATCH:
     {
-      //watchDirectory();     
+      Update();
     }
     break; 
 
@@ -441,49 +442,5 @@ void MainFrame::DoButton(){
 
    HandleMenu(button_id);
  }
-////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void MainFrame::watchDirectory(){
-
-  std::string fName;
-  std::string dirName = myConfig.get<std::string>("dataFile");
-  int MAX_EVENTS = 32; /*Max. number of events to process at one go*/
-  int LEN_NAME = 32; /*Assuming that the length of the filename won't exceed 16 bytes*/
-  int EVENT_SIZE = ( sizeof (struct inotify_event) ); /*size of one event*/
-  int BUF_LEN =    ( MAX_EVENTS * ( EVENT_SIZE + LEN_NAME )); /*buffer to store the data of events*/  
-  uint32_t inotifyEventMask = IN_MODIFY;
-  
-  int fileDescriptor = inotify_init();
-  if(fileDescriptor < 0) {
-    std::cerr<<"Couldn't initialize inotify"<<std::endl;
-  }
-  int wd = inotify_add_watch(fileDescriptor, dirName.c_str(), inotifyEventMask);
-  if(wd == -1) std::cerr<<"Couldn't add watch to "<<dirName<<std::endl;
-
-  char buffer[BUF_LEN];
-
-  while(true){
-    int nbytesRead = read(fileDescriptor, buffer, BUF_LEN);
-    if(nbytesRead<0) std::cerr<<"Problem reading the inotify state"<<std::endl;
-    std::cout<<"nbytesRead: "<<nbytesRead<<std::endl;
-    int eventIndex = 0;
-    while(eventIndex < nbytesRead) {
-      struct inotify_event *event = ( struct inotify_event * ) &buffer[eventIndex];
-      if(event->len && !(event->mask & IN_ISDIR)){
-	fName = std::string(event->name);
-	if(fName.find(".graw")!=std::string::npos){
-	  std::this_thread::sleep_for(std::chrono::milliseconds(500));
-	  myEventSource->loadDataFile(dirName+"/"+fName);
-	  fEntryDialog->updateFileName(dirName+"/"+fName);
-	  myEventSource->getLastEvent();
-	  std::cout<<"fPath: "<<dirName+"/"+fName<<std::endl;
-	  //Update();
-	  Emit("watchDirectory()", M_DATA_FILE_UPDATED);
-	}      
-      }
-      eventIndex += EVENT_SIZE + event->len;
-    }
-  }
-}
 ////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

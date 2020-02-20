@@ -36,7 +36,6 @@ void HistoManager::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
 void HistoManager::setEvent(EventTPC* aEvent){
 
   myEvent.reset(aEvent);
-
   myTkBuilder.setEvent(aEvent);
   myTkBuilder.reconstruct();
   
@@ -46,7 +45,6 @@ void HistoManager::setEvent(EventTPC* aEvent){
 void HistoManager::setEvent(std::shared_ptr<EventTPC> aEvent){
 
   myEvent = aEvent;
-
   myTkBuilder.setEvent(aEvent.get());
   myTkBuilder.reconstruct();
   
