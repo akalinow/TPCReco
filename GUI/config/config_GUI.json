@@ -1,7 +1,7 @@
 {
     "dataFile": "/home/akalinow/scratch/ELITPC/data/neutrons/ROOT/EventTPC_2018-06-20T10:35:30.853_0004.root",
-    "dataFile3": "/home/akalinow/scratch/ELITPC/data/neutrons/CoBo_2018-06-20T10:35:30.853_0004.graw",
-    "dataFile2": "/home/akalinow/scratch/ELITPC/data/neutrons/test/",
+    "dataFile_test": "/home/akalinow/scratch/ELITPC/data/neutrons/CoBo_2018-06-20T10:35:30.853_0004.graw",
+    "dataFile_test": "/home/akalinow/scratch/ELITPC/data/neutrons/test/",
     "geometryFile": "/home/akalinow/scratch/ELITPC/data/neutrons/geometry_mini_eTPC_2018-06-19T10:35:30.853.dat",
     "resourcesPath":"/home/akalinow/TPCReco/build/resources/"
 }
