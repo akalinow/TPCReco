@@ -13,38 +13,26 @@ private:
 
 /* ============= SPACE-TIME CLUSTER CLASS ===========*/
 
-EventHits::EventHits(EventCharges& e)
-	: evt_ref(e) {}
-
-bool EventHits::AddHit(std::tuple<direction, int, int> hit) {  // valid range [0-2][1-1024][0-511]
+void EventHits::AddHit(std::tuple<direction, int, int> hit) {  // valid range [0-2][1-1024][0-511]
 	auto strip_dir = std::get<0>(hit);
 	auto strip_number = std::get<1>(hit);
 	auto time_cell = std::get<2>(hit);
 	if (time_cell < 0 || time_cell >= Geometry().GetAgetNtimecells() ||
-		strip_number < 1 || strip_number > Geometry().GetDirNstrips(strip_dir)) return false;
+		strip_number < 1 || strip_number > Geometry().GetDirNstrips(strip_dir)) return;
 
 	hitListByTimeDir.insert({ time_cell,strip_dir,strip_number });
 	hitList.insert(hit);
-	return true;
 }
 
-bool EventHits::AddEnvelopeHit(std::tuple<direction, int, int> hit) {  // valid range [0-2][1-1024][0-511]
+void EventHits::AddEnvelopeHit(std::tuple<direction, int, int> hit) {  // valid range [0-2][1-1024][0-511]
 	auto strip_dir = std::get<0>(hit);
 	auto strip_number = std::get<1>(hit);
 	auto time_cell = std::get<2>(hit);
 	if (time_cell < 0 || time_cell >= Geometry().GetAgetNtimecells() ||
-		strip_number < 1 || strip_number > Geometry().GetDirNstrips(strip_dir)) return false;
+		strip_number < 1 || strip_number > Geometry().GetDirNstrips(strip_dir)) return;
 
 	envelope.hitList.insert(hit);
 	envelope.hitListByTimeDir.insert({ time_cell,strip_dir,strip_number });
-	return true;
-}
-
-void EventHits::UpdateStats() {
-	// count hits
-	for (auto dir : dir_vec_UVW) {
-		nhits[dir] = std::distance(hitList.lower_bound({ dir, std::numeric_limits<int>::min(),std::numeric_limits<int>::min() }), hitList.upper_bound({ dir, std::numeric_limits<int>::max(),std::numeric_limits<int>::max() }));
-	}
 }
 
 void EventHits::Combine() {
@@ -55,5 +43,5 @@ void EventHits::Combine() {
 }
 
 size_t EventHits::GetNhits(direction strip_dir) const {   // # of hits in a given direction
-	return nhits.at(strip_dir);
+	return std::distance(hitList.lower_bound({ strip_dir, std::numeric_limits<int>::min(),std::numeric_limits<int>::min() }), hitList.upper_bound({ strip_dir, std::numeric_limits<int>::max(),std::numeric_limits<int>::max() }));
 }

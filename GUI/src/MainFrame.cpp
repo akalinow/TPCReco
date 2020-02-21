@@ -33,7 +33,7 @@ MainFrame::MainFrame(const TGWindow* p, uint32_t w, uint32_t h)
 	std::cout << geometryFileName << std::endl;
 	std::cout << dataFileName << std::endl;
 	//dataFileName = "*poza buildem";
-	Geometry(geometryFileName, true);
+	Geometry(geometryFileName);
 	checkpoint;
 	myDataManager.loadDataFile(dataFileName);
 	myDataManager.loadTreeEntry(0);

@@ -27,6 +27,7 @@ public:
 
 const double pi = 4 * std::atan(1);
 const double deg_to_rad = pi / 180.0;
+const bool is_debug = true;
 
 enum class direction : unsigned {
 	U = 0,    // U-direction channel index

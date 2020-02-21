@@ -87,3 +87,7 @@ unsigned int DataManager::currentEventNumber() const {
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+void DataManager::loadEvent(std::string fname) {
+	currentEvent_external_copy = std::make_shared<EventCharges>();
+	currentEvent_external_copy->Read("dummy.root");
+}

@@ -66,8 +66,8 @@ public:
 private:
 	HistoManager() = default;
 
-	std::shared_ptr<EventCharges> charges;
-	std::shared_ptr<EventHits> hits;
+	std::shared_ptr<EventCharges> chargesObject;
+	std::shared_ptr<EventHits> hitsObject;
 
 	std::vector<TH2D*> directionsInCartesianCoords;
 	std::shared_ptr<TH3D> h3DReco;

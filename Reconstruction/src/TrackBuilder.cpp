@@ -27,14 +27,14 @@ TrackBuilder::TrackBuilder() {
 /////////////////////////////////////////////////////////
 std::shared_ptr<EventHits> TrackBuilder::setEvent(std::shared_ptr<EventCharges> evt_ch) {
 
-	myEvent = evt_ch;
-	double eventMaxCharge = myEvent->GetMaxCharge();
+	chargesObject = evt_ch;
+	double eventMaxCharge = chargesObject->GetMaxCharge();
 	double chargeThreshold = 0.15 * eventMaxCharge;
 	int delta_timecells = 15;
 	int delta_strips = 1;
 
-	myCluster = myEvent->GetHitsObject(chargeThreshold, delta_strips, delta_timecells);
-	return myCluster;
+	hitsObject = chargesObject->GetHits(chargeThreshold, delta_strips, delta_timecells);
+	return hitsObject;
 }
 
 void TrackBuilder::initialize() {

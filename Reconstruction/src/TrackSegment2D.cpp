@@ -52,9 +52,9 @@ double TrackSegment2D::getIntegratedCharge(double lambdaCut, const Hit2DCollecti
 	double radiusCut = 2.0;//FIXME put into configuration
 
 #ifndef _cpp17_
-	std::vector<double> charges;
-	charges.resize(aRecHits.size());
-	std::transform(aRecHits.begin(), aRecHits.end(), charges.begin(), [&](const auto& aHit) {
+	std::vector<double> chargesObject;
+	chargesObject.resize(aRecHits.size());
+	std::transform(aRecHits.begin(), aRecHits.end(), chargesObject.begin(), [&](const auto& aHit) {
 		TVector3 aPoint;
 		auto x = aHit().posTime;
 		auto y = aHit().posWire;
@@ -62,7 +62,7 @@ double TrackSegment2D::getIntegratedCharge(double lambdaCut, const Hit2DCollecti
 		auto distance = getPointTransverseDistance(aPoint);
 		return (distance < radiusCut && distance > 0 ? aHit().charge : 0.0);
 	});
-	return std::accumulate(charges.begin(), charges.end(), 0.0);
+	return std::accumulate(chargesObject.begin(), chargesObject.end(), 0.0);
 #else
 	return std::transform_reduce(std::execution::par, aRecHits.begin(), aRecHits.end(), 0.0, std::plus<>(), [&](const auto& aHit) {
 		TVector3 aPoint;

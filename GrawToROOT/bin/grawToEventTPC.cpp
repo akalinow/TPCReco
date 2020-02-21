@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
 	}
 	GeometryTPC& myGeometry = Geometry(geomFileName);
 
-	EventCharges myEvent;
+	EventCharges chargesObject;
 
 	PedestalCalculator myPedestalCalculator;
 
@@ -51,18 +51,18 @@ int main(int argc, char* argv[]) {
 	TFile aFile(rootFileName.c_str(), "RECREATE");
 	TTree aTree("TPCData", "");
 
-	aTree.Branch("Event", &myEvent);
+	aTree.Branch("Event", &chargesObject);
 
 	///Load data
 	GET::GDataFrame dataFrame;
 	TGrawFile f(dataFileName.c_str());
 	long lastevent = f.GetGrawFramesNumber();
 
-	myEvent().RunId(0);
+	chargesObject().RunId(0);
 
 	for (long eventId = 0; eventId < lastevent; ++eventId) {
-		myEvent.Clear();
-		myEvent().EventId(eventId);
+		chargesObject.Clear();
+		chargesObject().EventId(eventId);
 		bool eventRead = f.GetGrawFrame(dataFrame, eventId);
 		if (!eventRead) {
 			std::cerr << "ERROR: cannot read event " << eventId << std::endl;
@@ -90,14 +90,14 @@ int main(int argc, char* argv[]) {
 
 					double rawVal = sample->fValue;
 					double corrVal = rawVal - myPedestalCalculator.GetPedestalCorrection(iChannelGlobal, agetId, icell);
-					myEvent.AddValByAgetChannel(COBO_idx, ASAD_idx, agetId, chanId, icell, corrVal);
+					chargesObject.AddValByAgetChannel(COBO_idx, ASAD_idx, agetId, chanId, icell, corrVal);
 
 				} // end of loop over time buckets	    
 			} // end of AGET channels loop	
 		} // end of AGET chips loop
 
 	  ///Skip empty events
-		if (skipEmptyEvents && myEvent.GetMaxCharge() < 100) continue;
+		if (skipEmptyEvents && chargesObject.GetMaxCharge() < 100) continue;
 		/////////////////////
 		aTree.Fill();
 	}

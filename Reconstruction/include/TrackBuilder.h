@@ -48,7 +48,7 @@ public:
 
 	void reconstruct();
 
-	const std::shared_ptr<EventHits> getCluster() const { return myCluster; }
+	const std::shared_ptr<EventHits> GetHits() const { return hitsObject; }
 
 	const std::shared_ptr <TH2D> getRecHits2D(direction dir) const;
 
@@ -77,8 +77,8 @@ private:
 	Track3D fitTrackNodes(const Track3D& aTrack) const;
 
 
-	std::shared_ptr<EventCharges> myEvent;
-	std::shared_ptr<EventHits> myCluster;
+	std::shared_ptr<EventCharges> chargesObject;
+	std::shared_ptr<EventHits> hitsObject;
 
 	bool myHistoInitialized;
 	int nAccumulatorRhoBins, nAccumulatorPhiBins;

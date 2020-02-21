@@ -34,7 +34,7 @@ class Geometry_Strip;
 
 class GeometryTPC;
 
-GeometryTPC& Geometry(std::string fname = "", bool debug = false);
+GeometryTPC& Geometry(std::string fname = "");
 
 auto find_line = [](std::vector<std::string>& vec, std::string str) {
 	return std::find_if(/*std::execution::par, */vec.begin(), vec.end(), [&](std::string& str_) { return str_.find(str) != std::string::npos; }); //C++17
@@ -71,13 +71,12 @@ private:
 	double trigger_delay;            // delay in [microseconds] of the external "t0" trigger signal (for accelerator beam) 
 	double drift_zmin;               // lower drift cage acceptance limit along Z-axis [mm] (closest to readout PCB)
 	double drift_zmax;               // upper drift cage acceptance limit along Z-axis [mm] (farthest from readout PCB)
-	const bool _debug;                     // debug/verbose info flag
 
 	// Setter methods 
 
 	bool Load(std::string fname);                 // loads geometry from TXT config file
 
-	GeometryTPC(std::string  fname, bool debug = false);
+	GeometryTPC(std::string fname);
 
 public:
 
@@ -119,7 +118,7 @@ public:
 
 	std::tuple<double, double, double, double> rangeXY(); //min/max X Y cartesian coordinates covered by strips in any direction
 
-	friend GeometryTPC& Geometry(std::string fname, bool debug);
+	friend GeometryTPC& Geometry(std::string fname);
 };
 
 #include "Geometry_Strip.h"

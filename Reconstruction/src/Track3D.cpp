@@ -357,10 +357,11 @@ std::ostream& operator << (std::ostream& out, const Track3D& aTrack) {
 
 	std::cout << "\t Nodes: node [chi2]: " << std::endl;
 	for (unsigned int iSegment = 0; iSegment < (aTrack.getSegments().size() - 1); ++iSegment) {
+		auto& temp = aTrack.getSegments().at(iSegment).getEnd();
 		out << "\t \t ("
-			<< aTrack.getSegments().at(iSegment).getEnd().X() << ", "
-			<< aTrack.getSegments().at(iSegment).getEnd().Y() << ", "
-			<< aTrack.getSegments().at(iSegment).getEnd().Z() << ") "
+			<< temp.X() << ", "
+			<< temp.Y() << ", "
+			<< temp.Z() << ") "
 			<< "[" << aTrack.getNodeChi2(iSegment) << "]"
 			<< std::endl;
 	}

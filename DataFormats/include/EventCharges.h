@@ -62,7 +62,12 @@ public:
 
 	double GetMaxCharge();                   // maximal charge from all strips
 
-	std::shared_ptr<EventHits> GetHitsObject(double thr, int delta_strips, int delta_timecells); // applies clustering threshold to all space-time data points 
+	std::shared_ptr<EventHits> GetHits(double thr, int delta_strips, int delta_timecells); // applies clustering threshold to all space-time data points 
+
+	//temporary (or not) methods for saving event to and reading from file
+	void Read(std::string fname);
+	void Write(std::string fname);
+
 };
 
 #endif

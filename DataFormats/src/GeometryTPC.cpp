@@ -1,13 +1,13 @@
 #include "GeometryTPC.h" 
 
-GeometryTPC& Geometry(std::string fname, bool debug) {
+GeometryTPC& Geometry(std::string fname) {
 	static std::once_flag geometry_init_check;
 	std::call_once(geometry_init_check, [&]() {
 		if (fname == "") {
 			throw std::runtime_error("Geometry wasn't initialized before first use");
 		}
 	});
-	static GeometryTPC main_geometry{ fname, debug };
+	static GeometryTPC main_geometry{ fname };
 	return main_geometry;
 }
 
@@ -44,7 +44,7 @@ std::istream& operator>>(std::istream& input_stream, std::tuple<Types...>& data_
 }
 
 template <typename... Types>
-bool load_var(std::vector<std::string> file_lines, std::string line_name, std::function<bool(Types...)> var_check, std::string units, int error_number, bool _debug, Types&... var_ref) {
+bool load_var(std::vector<std::string> file_lines, std::string line_name, std::function<bool(Types...)> var_check, std::string units, int error_number, Types&... var_ref) {
 	auto it = find_line(file_lines, line_name);
 	if (it != file_lines.end() && //line exists
 		(std::stringstream(it->substr(it->find(':') + 1)) >> std::tie(var_ref...)) && //line constains values
@@ -54,7 +54,7 @@ bool load_var(std::vector<std::string> file_lines, std::string line_name, std::f
 	}
 	else {
 		std::cerr << "ERROR: Wrong " << line_name << " !!!" << std::endl;
-		if (_debug) {
+		if (is_debug) {
 			std::cout << "GeometryTPC::Load - Abort (" << error_number << ")" << std::endl;
 		}
 		return false;
@@ -64,7 +64,7 @@ bool load_var(std::vector<std::string> file_lines, std::string line_name, std::f
 //version above not working, workarounds below
 
 template <typename Type>
-bool load_var(std::vector<std::string> file_lines, std::string line_name, std::function<bool(Type)> var_check, std::string units, int error_number, bool _debug, Type& var_ref) {
+bool load_var(std::vector<std::string> file_lines, std::string line_name, std::function<bool(Type)> var_check, std::string units, int error_number, Type& var_ref) {
 	auto it = find_line(file_lines, line_name);
 	if (it != file_lines.end() && //line exists
 		(std::stringstream(it->substr(it->find(':') + 1)) >> var_ref) && //line constains values
@@ -74,7 +74,7 @@ bool load_var(std::vector<std::string> file_lines, std::string line_name, std::f
 	}
 	else {
 		std::cerr << "ERROR: Wrong " << line_name << " !!!" << std::endl;
-		if (_debug) {
+		if (is_debug) {
 			std::cout << "GeometryTPC::Load - Abort (" << error_number << ")" << std::endl;
 		}
 		return false;
@@ -82,7 +82,7 @@ bool load_var(std::vector<std::string> file_lines, std::string line_name, std::f
 }
 
 template <typename Type1, typename Type2>
-bool load_var(std::vector<std::string> file_lines, std::string line_name, std::function<bool(Type1, Type2)> var_check, std::string units, int error_number, bool _debug, Type1& var_ref1, Type2& var_ref2) {
+bool load_var(std::vector<std::string> file_lines, std::string line_name, std::function<bool(Type1, Type2)> var_check, std::string units, int error_number, Type1& var_ref1, Type2& var_ref2) {
 	auto it = find_line(file_lines, line_name);
 	if (it != file_lines.end() && //line exists
 		(std::stringstream(it->substr(it->find(':') + 1)) >> var_ref1 >> var_ref2) && //line constains values
@@ -92,14 +92,14 @@ bool load_var(std::vector<std::string> file_lines, std::string line_name, std::f
 	}
 	else {
 		std::cerr << "ERROR: Wrong " << line_name << " !!!" << std::endl;
-		if (_debug) {
+		if (is_debug) {
 			std::cout << "GeometryTPC::Load - Abort (" << error_number << ")" << std::endl;
 		}
 		return false;
 	}
 }
 
-GeometryTPC::GeometryTPC(std::string  fname, bool debug)
+GeometryTPC::GeometryTPC(std::string fname)
 	: COBO_N(0),
 	AGET_Nchips(4),
 	AGET_Nchan(64),
@@ -114,10 +114,9 @@ GeometryTPC::GeometryTPC(std::string  fname, bool debug)
 	trigger_delay(0.),
 	drift_zmin(0.),
 	drift_zmax(0.),
-	_debug(debug),
 	reference_point(0., 0.) // default REFERENCE POINT position on XY plane
 {
-	if (_debug) {
+	if (is_debug) {
 		std::cout << "GeometryTPC::Constructor - Started..." << std::endl;
 	}
 
@@ -141,13 +140,13 @@ GeometryTPC::GeometryTPC(std::string  fname, bool debug)
 		throw std::runtime_error("Load error occured or geometry data is incorrect!");
 	}
 
-	if (_debug) {
+	if (is_debug) {
 		std::cout << "GeometryTPC::Constructor - Ended..." << std::endl;
 	}
 }
 
 bool GeometryTPC::Load(std::string fname) {
-	if (_debug) {
+	if (is_debug) {
 		std::cout << "GeometryTPC::Load - Started..." << std::endl;
 	}
 
@@ -189,12 +188,12 @@ bool GeometryTPC::Load(std::string fname) {
 		}
 		{
 			double xoff = 0.0, yoff = 0.0;
-			if (!load_var<double, double>(file_lines, "REFERENCE POINT", { [](double _xoff, double _yoff) {return (fabs(_xoff) < 500. && fabs(_yoff) < 500.); } }, "mm", 2, _debug, xoff, yoff) || // set REFERECE POINT offset [mm]
-				!load_var<double>(file_lines, "DIAMOND SIZE", { [](double var) {return var > 0.0; } }, "mm", 2, _debug, pad_size) || // set pad size
-				!load_var<double>(file_lines, "DRIFT VELOCITY", { [](double var) {return var > 0.0; } }, "cm/us", 3, _debug, vdrift) || // set electron drift velocity [cm/us]
-				!load_var<double>(file_lines, "SAMPLING RATE", { [](double var) {return var > 0.0; } }, "MHz", 4, _debug, sampling_rate) || // set electronics sampling rate [MHz]
-				!load_var<double>(file_lines, "TRIGGER DELAY", { [](double var) {return std::fabs(var) < 1000.0; } }, "us", 5, _debug, trigger_delay) || // set electronics trigger delay [us]
-				!load_var<double, double>(file_lines, "DRIFT CAGE ACCEPTANCE", { [](double _drift_zmin, double _drift_zmax) {return (fabs(_drift_zmin) < 200. && fabs(_drift_zmax) < 200. && _drift_zmin < _drift_zmax); } }, "mm", 6, _debug, drift_zmin, drift_zmax)) { // set drift cage acceptance limits along Z-axis [mm]
+			if (!load_var<double, double>(file_lines, "REFERENCE POINT", { [](double _xoff, double _yoff) {return (fabs(_xoff) < 500. && fabs(_yoff) < 500.); } }, "mm", 2,  xoff, yoff) || // set REFERECE POINT offset [mm]
+				!load_var<double>(file_lines, "DIAMOND SIZE", { [](double var) {return var > 0.0; } }, "mm", 2, pad_size) || // set pad size
+				!load_var<double>(file_lines, "DRIFT VELOCITY", { [](double var) {return var > 0.0; } }, "cm/us", 3, vdrift) || // set electron drift velocity [cm/us]
+				!load_var<double>(file_lines, "SAMPLING RATE", { [](double var) {return var > 0.0; } }, "MHz", 4, sampling_rate) || // set electronics sampling rate [MHz]
+				!load_var<double>(file_lines, "TRIGGER DELAY", { [](double var) {return std::fabs(var) < 1000.0; } }, "us", 5, trigger_delay) || // set electronics trigger delay [us]
+				!load_var<double, double>(file_lines, "DRIFT CAGE ACCEPTANCE", { [](double _drift_zmin, double _drift_zmax) {return (fabs(_drift_zmin) < 200. && fabs(_drift_zmax) < 200. && _drift_zmin < _drift_zmax); } }, "mm", 6, drift_zmin, drift_zmax)) { // set drift cage acceptance limits along Z-axis [mm]
 				return false;
 			}
 			reference_point.Set(xoff, yoff);
@@ -256,7 +255,7 @@ bool GeometryTPC::Load(std::string fname) {
 						stripN[dir]++;
 
 						// DEBUG
-						if (_debug) {
+						if (is_debug) {
 							std::cout << ">>> ADDED NEW STRIP:" << " NSTRIPS[DIR=" << dir << "]=" << stripN[dir] << "\n";
 						}
 						// DEBUG
@@ -276,7 +275,7 @@ bool GeometryTPC::Load(std::string fname) {
 	else {
 		std::cout << "\n==== INITIALIZING TPC GEOMETRY - END ====\n\n";
 		std::cerr << "ERROR: Unable to open config file: " << fname << "!!!\n";
-		if (_debug) {
+		if (is_debug) {
 			std::cout << "GeometryTPC::Load - Abort (7)" << std::endl;
 		}
 		return false;
@@ -286,7 +285,7 @@ bool GeometryTPC::Load(std::string fname) {
 	auto it = std::find(ASAD_N.begin(), ASAD_N.end(), 0);
 	if (it != ASAD_N.end()) {
 		std::cerr << "ERROR: Number of ASAD boards for COBO " << std::distance(ASAD_N.begin(), it) << " is not defined !!!" << std::endl;
-		if (_debug) {
+		if (is_debug) {
 			std::cout << "GeometryTPC::Load - Abort (8)" << std::endl;
 		}
 		return false;
@@ -310,7 +309,7 @@ bool GeometryTPC::Load(std::string fname) {
 
 	std::cout << "\n==== INITIALIZING TPC GEOMETRY - END ====\n\n";
 
-	if (_debug) {
+	if (is_debug) {
 		std::cout << "GeometryTPC::Load - Ended..." << std::endl;
 	}
 	return true;
