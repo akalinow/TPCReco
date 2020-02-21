@@ -181,7 +181,7 @@ void MainFrame::AddHistoCanvas(){
     fCanvas->cd(iPad);
     aMessage.DrawText(0.2, 0.5,"Waiting for data.");
   }
-  fCanvas->Update(); 
+  fCanvas->Update();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -292,7 +292,8 @@ void MainFrame::CloseWindow(){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MainFrame::Update(){
-  
+
+  if(!myEventSource->numberOfEvents()) return;
   fEntryDialog->updateFileName(myEventSource->getCurrentPath());
   fEntryDialog->updateEventNumbers(myEventSource->numberOfEvents(),
 				   myEventSource->currentEventNumber());
@@ -301,7 +302,7 @@ void MainFrame::Update(){
   for(int strip_dir=0;strip_dir<3;++strip_dir){
     myHistoManager.getHoughAccumulator(strip_dir);
   }
-
+  
   for(int strip_dir=0;strip_dir<3;++strip_dir){
     ///First row
     TVirtualPad *aPad = fCanvas->cd(strip_dir+1);
