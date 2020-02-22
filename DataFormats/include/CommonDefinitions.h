@@ -57,7 +57,7 @@ inline std::string filename_string(std::string path_str) {
 	return path_str.substr(path_str.rfind("/") + 1, path_str.size() - path_str.rfind("/") - 1);
 }
 
-#define _endl_ " (" << filename_string(__FILE__) << "; " << __LINE__ << ")" << std::endl<char, std::char_traits<char>>
+#define _endl_ " (" << filename_string(__FILE__) << "; " << __LINE__ << "; " << __FUNCTION__ << ")" << std::endl<char, std::char_traits<char>>
 #define checkpoint std::cout << "checkpoint" << _endl_
 
 class TH2D;

@@ -229,7 +229,7 @@ TH2D&& HistoManager::GetStripVsTime(direction strip_dir) {  // valid range [0-2]
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::shared_ptr<TH2D> HistoManager::GetStripVsTimeInMM(direction strip_dir) {  // valid range [0-2]
-	auto event_id = (*chargesObject)().EventId();
+	auto event_id = chargesObject->Info().EventId();
 	bool err_flag = false;
 	double zmin = 0.0 - 0.5;  // time_cell_min;
 	double zmax = 511. + 0.5; // time_cell_max;  

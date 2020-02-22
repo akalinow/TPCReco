@@ -60,9 +60,9 @@ std::shared_ptr<EventHits> EventCharges::GetHits(double thr, int delta_strips, i
 		const auto time_cell = std::get<2>(hit);
 		auto min_strip = chargeMap.lower_bound({ strip_dir, strip_num - delta_strips, time_cell - delta_timecells });
 		auto max_strip = chargeMap.upper_bound({ strip_dir, strip_num + delta_strips, time_cell + delta_timecells });
-		for (auto strip = min_strip; std::get<1>(strip->first) <= strip_num + delta_strips; strip = chargeMap.upper_bound({ strip_dir, std::get<1>(strip->first), std::numeric_limits<int>::max() })) {
-			auto min_time_cell = chargeMap.lower_bound({ strip_dir, std::get<1>(strip->first), time_cell - delta_timecells });
-			auto max_time_cell = chargeMap.upper_bound({ strip_dir, std::get<1>(strip->first), time_cell + delta_timecells });
+		for (auto strip_num_local = strip_num - delta_strips; strip_num_local <= strip_num + delta_strips; strip_num_local++) {
+			auto min_time_cell = chargeMap.lower_bound({ strip_dir, strip_num_local, time_cell - delta_timecells });
+			auto max_time_cell = chargeMap.upper_bound({ strip_dir, strip_num_local, time_cell + delta_timecells });
 			for (auto charge = min_time_cell; charge != max_time_cell; charge++) {
 				if (charge->second < 0) continue; // exclude negative values (due to pedestal subtraction)
 				hitsObject->AddEnvelopeHit(charge->first); // add new space-time point
@@ -96,10 +96,9 @@ void EventCharges::Read(std::string fname) {
 	}
 	file.close();
 };
-};
 
 void EventCharges::Write(std::string fname) {
-	std::fstream file(fname, std::ios::in | std::ios::binary | std::ios::trunc);
+	std::fstream file(fname, std::ios::out | std::ios::binary | std::ios::trunc);
 	file.write(reinterpret_cast<const char*>(&event_info), sizeof(event_info));
 	file.write(reinterpret_cast<const char*>(&glb_max_charge), sizeof(glb_max_charge));
 	file.write(reinterpret_cast<const char*>(&is_glb_max_charge_calculated), sizeof(is_glb_max_charge_calculated));

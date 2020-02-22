@@ -82,7 +82,7 @@ void TrackBuilder::makeRecHits(direction dir) {
 	double hitWirePos = -999.0;
 	for (int iBinY = 1; iBinY < hRecHits->GetNbinsY(); ++iBinY) {
 		hProj = hRawHits->ProjectionX("hProj", iBinY, iBinY);
-		TF1 timeResponseShape = fitTimeWindow(hProj);
+		auto&& timeResponseShape = fitTimeWindow(hProj);
 
 		hitWirePos = hRawHits->GetYaxis()->GetBinCenter(iBinY);
 		for (int iSet = 0; iSet < timeResponseShape.GetNpar(); iSet += 3) {

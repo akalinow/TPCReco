@@ -3,6 +3,7 @@
 #include "DataManager.h"
 #include "EventHits.h"
 #include "TrackBuilder.h"
+#include "HistoManager.h"
 
 int main() {
 
@@ -31,8 +32,7 @@ int main() {
         return -1;
     }
 
-    auto hitsObject = aTkBuilder.setEvent(aEvent);
-    aTkBuilder.reconstruct();
+    HistogramManager().setEvent(aEvent);
 
     return 0;
 }
