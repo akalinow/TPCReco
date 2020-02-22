@@ -18,10 +18,10 @@ public:
 	operator Type() { return variable; };
 };
 
-class Event_Information {
+class EventInformation {
 public:
-	Event_Information() = default;
-	~Event_Information() = default;
+	EventInformation() = default;
+	~EventInformation() = default;
 	property<int64_t> 
 		EventId,
 		RunId;

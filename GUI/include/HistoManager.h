@@ -5,7 +5,7 @@
 #include <vector>
 #include <memory>
 
-#include "SigClusterTPC.h"
+#include "EventHits.h"
 #include "TrackBuilder.h"
 
 #include "TLine.h"
@@ -18,16 +18,19 @@ class TH2D;
 class TH3D;
 
 class GeometryTPC;
-class EventTPC;
+class EventCharges;
+class TrackBuilder;
+class HistoManager;
+
+HistoManager& HistogramManager();
 
 class HistoManager {
+	friend HistoManager& HistogramManager();
 public:
-
-	HistoManager() = default;
 
 	~HistoManager() = default;
 
-	void setEvent(std::shared_ptr<EventTPC> aEvent);
+	void setEvent(std::shared_ptr<EventCharges> aEvent);
 
 	TH2D&& getRawStripVsTime(direction strip_dir);
 
@@ -51,9 +54,20 @@ public:
 
 	void drawChargeAlongTrack3D(TVirtualPad* aPad) const;
 
-private:
+	TH2D&& GetStripVsTime(direction strip_dir);                               // whole event, all strip dirs
 
-	std::shared_ptr<EventTPC> myEvent;
+	std::shared_ptr<TH2D> GetStripVsTimeInMM(direction strip_dir);  // valid range [0-2]
+
+	Reconstr_hist&& Get(double radius,          // clustered hits only, / clustered hits only, 3D view
+		int rebin_space = EVENTTPC_DEFAULT_STRIP_REBIN,   // directions on: XY, XZ, YZ planes / all planes
+		int rebin_time = EVENTTPC_DEFAULT_TIME_REBIN,
+		int method = EVENTTPC_DEFAULT_RECO_METHOD);
+
+private:
+	HistoManager() = default;
+
+	std::shared_ptr<EventCharges> chargesObject;
+	std::shared_ptr<EventHits> hitsObject;
 
 	std::vector<TH2D*> directionsInCartesianCoords;
 	std::shared_ptr<TH3D> h3DReco;

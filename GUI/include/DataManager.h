@@ -10,41 +10,43 @@
 #include "GeometryTPC.h"
 
 class GeometryTPC;
-class EventTPC;
+class EventCharges;
 
 class DataManager {
 public:
-  
-    DataManager() = default;
-  
-  ~DataManager() = default;
 
-  void loadDataFile(const std::string & fileName);
+	DataManager() = default;
 
-  void loadTreeEntry(unsigned int iEntry);
+	~DataManager() = default;
 
-  void loadEventId(unsigned int iEvent);
+	void loadDataFile(const std::string& fileName);
 
-  std::shared_ptr<EventTPC> getCurrentEvent() const;
-  
-  void loadNextEvent();
+	void loadTreeEntry(unsigned int iEntry);
 
-  void loadPreviousEvent();
+	void loadEventId(unsigned int iEvent);
 
-  unsigned int numberOfEvents() const;
+	std::shared_ptr<EventCharges> getCurrentEvent() const;
 
-  unsigned int currentEventNumber() const;
-    
+	void loadNextEvent();
+
+	void loadPreviousEvent();
+
+	unsigned int numberOfEvents() const;
+
+	unsigned int currentEventNumber() const;
+
+	void loadEvent(std::string fname); //temporary (or not) event loading method
+
 private:
-  
-  TFile myFile;
-  TTree *myTree = nullptr;
 
-  unsigned int nEvents = 0;
-  unsigned int myCurrentEntry;
+	TFile myFile;
+	TTree* myTree = nullptr;
 
-  std::shared_ptr<EventTPC> currentEvent_external_copy;
-  EventTPC* currentEvent_internal = nullptr;
+	unsigned int nEvents = 0;
+	unsigned int myCurrentEntry;
+
+	std::shared_ptr<EventCharges> currentEvent_external_copy;
+	EventCharges* currentEvent_internal = nullptr;
 };
 #endif
 

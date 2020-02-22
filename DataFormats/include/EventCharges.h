@@ -24,11 +24,12 @@
 #include "TH2D.h"
 #include "TH3F.h"
 #include "CommonDefinitions.h"
-#include "Event_Information.h"
+#include "EventInformation.h"
 #include "GeometryTPC.h"
-#include "SigClusterTPC.h"
+#include "EventHits.h"
 
-class EventTPC {
+class EventCharges {
+	friend class HistoManager;
 private:
 
 	std::map< std::tuple<direction, int, int>, double> chargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
@@ -37,16 +38,16 @@ private:
 
 	bool is_glb_max_charge_calculated = false;
 
-	Event_Information event_info;
+	EventInformation event_info;
 
 public:
 
 	decltype(event_info)& operator()() { return event_info; };
 	decltype(event_info)& Info() { return event_info; };
 
-	EventTPC() = default;
+	EventCharges() = default;
 
-	~EventTPC() = default;
+	~EventCharges() = default;
 
 	void Clear();
 
@@ -61,9 +62,12 @@ public:
 
 	double GetMaxCharge();                   // maximal charge from all strips
 
-	std::shared_ptr<SigClusterTPC> GetOneCluster(double thr, int delta_strips, int delta_timecells); // applies clustering threshold to all space-time data points 
+	std::shared_ptr<EventHits> GetHits(double thr, int delta_strips, int delta_timecells); // applies clustering threshold to all space-time data points 
 
-	TH2D&& GetStripVsTime(direction strip_dir);                               // whole event, all strip dirs
+	//temporary (or not) methods for saving event to and reading from file
+	void Read(std::string fname);
+	void Write(std::string fname);
+
 };
 
 #endif

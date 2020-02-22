@@ -4,7 +4,7 @@
 #include "TCanvas.h"
 
 #include "GeometryTPC.h"
-#include "EventTPC.h"
+#include "EventCharges.h"
 
 #include "DataManager.h"
 /////////////////////////////////////////////////////////
@@ -35,7 +35,7 @@ void DataManager::loadTreeEntry(unsigned int iEntry) {
 	if (myTree->GetEntries() <= iEntry) return;
 
 	myTree->GetEntry(iEntry);
-	currentEvent_external_copy = std::make_shared<EventTPC>(*currentEvent_internal);
+	currentEvent_external_copy = std::make_shared<EventCharges>(*currentEvent_internal);
 	myCurrentEntry = iEntry;
 }
 /////////////////////////////////////////////////////////
@@ -50,7 +50,7 @@ void DataManager::loadEventId(unsigned int iEvent) {
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<EventTPC> DataManager::getCurrentEvent() const {
+std::shared_ptr<EventCharges> DataManager::getCurrentEvent() const {
 
 	return currentEvent_external_copy;
 }
@@ -87,3 +87,7 @@ unsigned int DataManager::currentEventNumber() const {
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+void DataManager::loadEvent(std::string fname) {
+	currentEvent_external_copy = std::make_shared<EventCharges>();
+	currentEvent_external_copy->Read("dummy.root");
+}

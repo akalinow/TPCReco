@@ -67,7 +67,7 @@ public:
 private:
 
   DataManager myDataManager;
-  HistoManager myHistoManager;
+  HistoManager& myHistoManager = HistogramManager();
   
   void AddTopMenu();
   void SetTheFrame();
