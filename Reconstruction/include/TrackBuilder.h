@@ -62,17 +62,17 @@ private:
 
 	void makeRecHits(direction dir);
 
-	TF1&& fitTimeWindow(TH1D* hProj);
+	TF1 fitTimeWindow(TH1D* hProj);
 
 	void fillHoughAccumulator(direction dir);
 
-	TrackSegment2DCollection&& findSegment2DCollection(direction dir);
+	TrackSegment2DCollection findSegment2DCollection(direction dir);
 
-	TrackSegment2D&& findSegment2D(direction dir, int iPeak) const;
+	TrackSegment2D findSegment2D(direction dir, int iPeak) const;
 
-	TrackSegment3D&& buildSegment3D() const;
+	TrackSegment3D buildSegment3D() const;
 
-	Track3D&& fitTrack3D(const TrackSegment3D& aTrackSeedSegment) const;
+	Track3D fitTrack3D(const TrackSegment3D& aTrackSeedSegment) const;
 
 	Track3D fitTrackNodes(const Track3D& aTrack) const;
 

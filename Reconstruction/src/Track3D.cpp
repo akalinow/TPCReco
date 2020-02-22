@@ -169,7 +169,9 @@ void Track3D::updateNodesChi2(direction strip_dir) {
 		TVector3 formerTransverse2D(-formerTangent3D * stripPitchDirection, formerTangent3D.Z(), 0.0);
 		TVector3 latterTransverse2D(-latterTangent3D * stripPitchDirection, latterTangent3D.Z(), 0.0);
 		double deltaPhi = ROOT::Math::VectorUtil::DeltaPhi(formerTransverse2D, latterTransverse2D);
-
+		if (nodeAngleChi2.size() <= iNode) {
+			nodeAngleChi2.resize(iNode + 1);
+		}
 		nodeAngleChi2[iNode] = 0.1 * (std::pow(deltaPhi, 2));
 
 
