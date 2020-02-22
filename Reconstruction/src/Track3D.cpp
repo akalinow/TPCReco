@@ -32,10 +32,10 @@ void Track3D::update() {
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::vector<double>&& Track3D::getSegmentsStartEndXYZ() const {
+std::vector<double> Track3D::getSegmentsStartEndXYZ() const {
 
 	std::vector<double> coordinates;
-	if (mySegments.size() == 0) return std::move(coordinates);
+	if (mySegments.size() == 0) return coordinates;
 
 	for (auto& aSegment : mySegments) {
 		auto&& segmentCoordinates = aSegment.getStartEndXYZ();
@@ -44,7 +44,7 @@ std::vector<double>&& Track3D::getSegmentsStartEndXYZ() const {
 	auto&& segmentCoordinates = mySegments.back().getStartEndXYZ();
 	coordinates.insert(coordinates.end(), segmentCoordinates.begin() + 3, segmentCoordinates.end());
 
-	return std::move(coordinates);
+	return coordinates;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

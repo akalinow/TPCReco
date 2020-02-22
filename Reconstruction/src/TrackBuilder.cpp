@@ -287,7 +287,7 @@ TrackSegment3D TrackBuilder::buildSegment3D() const {
 	a3DSeed.setBiasTangent(aBias, aTangent);
 	a3DSeed.setRecHits(myRecHits);
 
-	return std::move(a3DSeed);
+	return a3DSeed;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -312,7 +312,7 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D& aTrackSegment) const {
 	aTrackCandidate.splitWorseChi2Segment(bestSplit);
 
 	aTrackCandidate = fitTrackNodes(aTrackCandidate);
-	return std::move(aTrackCandidate);//TEST
+	return aTrackCandidate;//TEST
 	/*
 	if(aTrackCandidate.getLength()<1.0) return aTrackCandidate;//FIX me move threshold to configuration
 
@@ -332,8 +332,8 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D& aTrackSegment) const {
 Track3D TrackBuilder::fitTrackNodes(const Track3D& aTrack) const {
 
 	Track3D aTrackCandidate = aTrack;
-	auto&& bestParams = aTrackCandidate.getSegmentsStartEndXYZ();
-	auto&& params = aTrackCandidate.getSegmentsStartEndXYZ();
+	auto bestParams = aTrackCandidate.getSegmentsStartEndXYZ();
+	auto params = aTrackCandidate.getSegmentsStartEndXYZ();
 	int nParams = params.size();
 
 	ROOT::Math::Functor fcn(&aTrackCandidate, &Track3D::chi2FromNodesList, nParams);

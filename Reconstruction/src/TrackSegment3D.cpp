@@ -153,10 +153,10 @@ double TrackSegment3D::getRecHitChi2() const {
 /////////////////////////////////////////////////////////
 void TrackSegment3D::calculateRecHitChi2() {
 
-	std::transform(/*std::execution::par,*/ dir_vec_UVW.begin(), dir_vec_UVW.end(), myRecHits.begin(), myProjectionsChi2.begin(), [&](auto strip_dir, auto& aRecHits) { //C++17
+	for (auto strip_dir : dir_vec_UVW) {
 		auto&& aTrack2DProjection = get2DProjection(strip_dir, 0, getLength());
-		return aTrack2DProjection.getRecHitChi2(aRecHits.second);
-	});
+		myProjectionsChi2[(int)strip_dir] = aTrack2DProjection.getRecHitChi2(myRecHits[strip_dir]);
+	};
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
