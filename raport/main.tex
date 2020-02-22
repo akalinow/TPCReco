@@ -1,0 +1,119 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[breaklinks=true]{hyperref}
+\usepackage{breakcites}
+\usepackage[polish]{babel}
+\usepackage{mdframed}
+\usepackage{subfiles}
+\usepackage{subcaption}
+\usepackage{graphicx}
+\usepackage{wrapfig}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{polski}
+\hypersetup{
+    linktoc=all,     %set to all if you want both sections and subsections linked
+    linkcolor=blue,  %choose some color if you want links to stand out
+}
+\title{Praca nad projektem TPCReco i jego konserwacja}
+\author{Jakub Żak \and Jakub Korsak \and Tymon Maciejak}
+\date{}
+\begin{document}
+
+\maketitle
+\vfill
+\centerline{\large Opiekun: dr hab. Artur Kalinowski}
+\vfill
+
+\pagebreak
+\section{Wstęp}
+Program \textit{TPCReco} służy do analizy danych z detektora \textit{ELITPC}\cite{elitpc}, który bada reakcje fotonuklearne metodą monochromatycznych promieni gamma. Został on napisany w języku \texttt{C++} i jest aktywnie rozwijany na Wydziale Fizyki UW. Czerpie w dużej mierze z genewskiej biblioteki do analizy danych \textit{ROOT}\cite{cern}.
+\section{Cel projektu}
+Celem projektu było zaimplementowanie współpracy w programowaniu wspólnego projektu w języku \texttt{C++}.
+Zadaniem uczestników projektu było polepszenie ogólnej jakości kodu, poprawa wydajności oraz wprowadzenie metodologi \textit{Test Driven Development}\cite{agile}. Przez korzystanie z systemu wersjonowania kodu (\textit{GIT}\cite{git}) oraz oprogramowania służącego do konteneryzacji projektu (\textit{Docker}\cite{docker}), uczestnicy przyswoili najważniejesze informacje dotyczące praktycznej pracy nad kodem w zespole.
+
+\vfill
+\pagebreak
+
+\section{Kod projektu}
+\label{kod}
+Repozytorium projektu znajduje się pod adresem \texttt{https://github.com/akalinow/TPCReco}. Tam wprowadzano wszelkie zmiany za pomocą programu \textit{GIT}. Każdy z uczestników tworzył własne gałęzie, na których pracował. Gałęzie utworzone przez uczestników to:
+\begin{enumerate}
+    \item \texttt{develJZ}
+    \item \texttt{develZPS\_tests}
+    \item \texttt{jakubkorsakdevel}
+    \item \texttt{README\_update}.
+\end{enumerate}
+Gałęzią najbardziej aktualną jest \texttt{develZPS\_tests}\cite{unit-test}
+
+\section{Wprowadzone zmiany}
+Poniżej wymieniono główne zmiany w kodzie, przypisy są odnośnikami do odpowiednich zmian na serwisie \textit{Github}.
+\begin{itemize}
+    \item Refaktoryzacja \cite{ref1} \cite{ref2} \cite{ref3}
+        \subitem Zmieniono definicję liczby $\pi$,
+        \subitem Zmieniono w odpowiednich miejscach typy z \texttt{int} na bardziej szczegółowe klasy enum \texttt{projection}, \texttt{direction}
+        \subitem Uwspólniono sprawdzenie \texttt{DIR\_U}, \texttt{DIR\_V}, \texttt{DIR\_W} na \texttt{IsDIR\_UVW}
+        \subitem Zamieniono użycie \texttt{NULL} na \texttt{nullptr}
+        \subitem Zwiększono użycie kontenerów z biblioteki standardowej
+        \subitem Zmiana zwykłych wskaźników na sprytne wskaźniki \cite{pointer} \cite{ms-smart-pointers}
+        \subitem Przemianowano stałe z \texttt{\#define} na \texttt{constexpr auto}
+    \item Uogólniono użycie MultiKey \cite{multikey}
+    \item Stworzono wersję programu bez interfejsu graficznego \cite{batch}
+        \subitem Dzięki temu, można było odpalać projekt na większym zakresie środowisk.
+    \item Zaimplementowano \textit{Singleton Design Pattern}        \subitem Przełożono klasę \texttt{GeometryTPC} na singleton \cite{geometry-singleton}
+    \item Usprawnino zarządzanie pamięcią \cite{memory-improvement}
+        \subitem Zaimplementowano elementy \textit{Generic Programming} tworząc m.in. template \texttt{load\_var} w \texttt{GeometryTPC}.
+        \subitem Pozamieniano \texttt{std::map<\ldots>} na \texttt{std::set<std::tuple<\ldots>>} \cite{tuple}
+        \subitem Wszędzie gdzie można było, zamieniono zwykłe wskaźniki na sprytne.
+    \item Ułatwiono zarządzanie plikami źródłowymi (danymi z eksperymentu). Teraz ścieżkę do danych można zmieniać niezależnie od kodu źródłowego, co na pewno ułatwi pracę z programem.
+    \item Skonfigurowano projekt do współpracy z biblioteką \textit{GoogleTest}\cite{gtest}
+        \subitem Projekt \textit{GoogleTest} został wybrany ze względu na jego dojrzałość, przejrzystą dokumentację oraz szerokie wsparcie od społeczności.
+    \item Przygotowano przykładowy test jednostkowy \cite{unit-test}.
+        \subitem W samym teście sprawdzono działanie funkcji \texttt{GeometryTPC::MatchCrossPoint}
+        \subitem Opierając się na nim, będzie można pisać kolejne testy i zwiększając tym \textit{Code Coverage} projektu.\cite{code-coverage}
+\end{itemize}
+
+\section{Podsumowanie}
+Projekt wykonano podczas semestru zimowego roku akademickiego 2020 na Wydziale Fizyki UW. W wyniku prac, poprawiono czytelność i spójnośc kodu, zoptymalizowano działanie programu oraz przygotowano podstawy do implementacji unit-testów. Dzięki temu, uczestnicy zrealizowali ogólne założenia projektu. W chwili zakończenia Projektu, kod nie działał poprawnie i wymaga dalszej pracy.
+
+\begin{thebibliography}{99}
+    \bibitem{cern}
+        The ROOT Project, \url{https://root.cern.ch/}
+    \bibitem{agile}
+        The Agile Alliance, \url{https://www.agilealliance.org/glossary/tdd/}
+    \bibitem{git}
+        GIT - The Stupid Content Manager, \url{https://git-scm.com/}
+    \bibitem{docker}
+        Docker, \url{https://www.docker.com/}
+    \bibitem{pointer}
+        \url{https://github.com/akalinow/TPCReco/commit/4e0d7f74fd3dec64bab370e0b310717a8f45deb5}
+    \bibitem{ms-smart-pointers}
+        Microsoft Docs: Smart pointers - Modern C++, \url{https://docs.microsoft.com/en-us/cpp/cpp/smart-pointers-modern-cpp?view=vs-2019}
+    \bibitem{multikey}
+        \url{https://github.com/akalinow/TPCReco/commit/243bc8d7990572e5e475cdeebd228f120960e078}
+    \bibitem{batch}
+        \url{https://github.com/akalinow/TPCReco/commit/36feb07949eb3e8e5884d024fe99f6cfe0b45d41}
+    \bibitem{geometry-singleton}
+        \url{https://github.com/akalinow/TPCReco/commit/ee33baa25274f396153d9d17349f5b664042389e}
+    \bibitem{ref1}
+        \url{https://github.com/akalinow/TPCReco/commit/22cd90d8ec9e836789f6b1437aeeedb12f76fae0}
+    \bibitem{ref2}
+        \url{https://github.com/akalinow/TPCReco/commit/3802f4ed78487a68018c7bc7da6ae8b76090822d}
+    \bibitem{ref3}
+        \url{https://github.com/akalinow/TPCReco/commit/1458eeecd84c86c7f38d4639020addc92610967a}
+    \bibitem{memory-improvement}
+        \url{https://github.com/akalinow/TPCReco/commit/640d12c0dbd14e04936410bc30ae40663064e2af}
+    \bibitem{tuple}
+        \url{https://github.com/akalinow/TPCReco/commit/4cdea1426ab5f8e4967c962e9bb4bbb025ddeff3}
+    \bibitem{gtest}
+        Google test - biblioteka do testów, \url{https://github.com/google/googletest}
+    \bibitem{unit-test}
+        \url{https://github.com/akalinow/TPCReco/commit/a9defced06ec22a5ee7128ad96a3c49df58f2f65}
+    \bibitem{code-coverage}
+        Wikipedia: Code Coverage, \url{https://en.wikipedia.org/wiki/Code\_coverage}
+    \bibitem{elitpc}
+        Prezentacja na temat ELITPC, \url{https://drive.google.com/open?id=1ysWmcq72yF7J8-0beLsETGwes95He9IH}
+\end{thebibliography}
+\end{document}
+
+
