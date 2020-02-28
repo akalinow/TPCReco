@@ -1,8 +1,8 @@
 {
     "dataFile1": "/home/mfilaELITPC/data/neutrons/ROOT/EventTPC_2018-06-20T10:35:30.853_0004.root",
     "dataFile": "/home/mfila/ELITPC/data/neutrons/CoBo_2018-06-20T10:35:30.853_0004.graw",
-    "geometryFile": "/home/mfila/TPCReco/resources/geometry_ELITPC.dat",
-    "geometryFile1": "/home/mfila/ELITPC/data/neutrons/geometry_mini_eTPC_2018-06-19T10:35:30.853.dat",
+    "geometryFile1": "/home/mfila/TPCReco/resources/geometry_ELITPC.dat",
+    "geometryFile": "/home/mfila/ELITPC/data/neutrons/geometry_mini_eTPC_2018-06-19T10:35:30.853.dat",
     "geometryFile1": "/home/mfila/TPCReco/resources/test_geometry.dat",
     "resourcesPath":"/home/mfila/TPCReco/build/resources/"
 }

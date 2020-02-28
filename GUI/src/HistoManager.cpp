@@ -48,7 +48,7 @@ void HistoManager::setEvent(std::shared_ptr<EventTPC> aEvent){
   myEvent = aEvent;
 
   myTkBuilder.setEvent(aEvent.get());
-  myTkBuilder.reconstruct();
+//  myTkBuilder.reconstruct();
   
 }
 /////////////////////////////////////////////////////////
@@ -71,11 +71,21 @@ TH2Poly * HistoManager::getDetectorLayout() const{
   }  
   return aPtr;
 }
+
+std::shared_ptr<TH1D> HistoManager::getRawTimeProjection(){
+  return   std::shared_ptr<TH1D>(myEvent->GetTimeProjection());
+}
+
+std::shared_ptr<TH1D> HistoManager::getRawStripProjection(int strip_dir){
+  return   std::shared_ptr<TH1D>(myEvent->GetStripProjection(strip_dir));
+}
+
+
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::shared_ptr<TH2D> HistoManager::getRawStripVsTime(int strip_dir){
 
-  std::shared_ptr<TH2D> hProjection = myEvent->GetStripVsTime(strip_dir);
+  std::shared_ptr<TH2D> hProjection = myEvent->GetMergedStripVsTime(strip_dir);
   double varianceX = hProjection->GetCovariance(1, 1);
   double varianceY = hProjection->GetCovariance(2, 2);
   double varianceXY = hProjection->GetCovariance(1, 2);
