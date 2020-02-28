@@ -19,10 +19,12 @@ EventSourceROOT::~EventSourceROOT() { }
 /////////////////////////////////////////////////////////
 void EventSourceROOT::loadDataFile(const std::string & fileName){
 
+  EventSourceBase::loadDataFile(fileName);
+
   myFile = std::make_shared<TFile>(fileName.c_str(),"READ");
   if(!myFile){
     std::cerr<<"File: "<<fileName<<"not found!"<<std::endl;
-    return;
+    exit(0);
   }
   
   myTree.reset((TTree*)myFile->Get(treeName.c_str()));  

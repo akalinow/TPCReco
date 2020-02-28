@@ -144,6 +144,15 @@ TF1 TrackBuilder::fitTimeWindow(TH1D* hProj){
    TF1 bestTimeResponseShape;
    double bestChi2OverNDF = 1E10;
 
+   if(!hProj){
+     std::cerr<<__FUNCTION__<<" NULL hProj"<<std::endl; 
+     return bestTimeResponseShape;
+   }
+   if(!myGeometryPtr){
+     std::cerr<<__FUNCTION__<<" NULL myGeometryPtr"<<std::endl; 
+     return bestTimeResponseShape;
+   }
+
    double sampling_rate = myGeometryPtr->GetSamplingRate();
    double vdrift = myGeometryPtr->GetVdrift()*10.0;
    double timeBinToCartesianScale = 1.0/sampling_rate*vdrift;
@@ -174,7 +183,7 @@ TF1 TrackBuilder::fitTimeWindow(TH1D* hProj){
        timeResponseShape.SetParLimits(iSet+1, maxPos-15*timeBinToCartesianScale, maxPos+15*timeBinToCartesianScale);   
        timeResponseShape.SetParLimits(iSet+2, 0.5*timeBinToCartesianScale, 8*timeBinToCartesianScale);
      }   
-     fitResult = hProj->Fit(&timeResponseShape, "QRBSW");   
+     fitResult = hProj->Fit(&timeResponseShape, "QRBSWN");   
 
      double chi2 = 0.0;
      double x = 0.0;

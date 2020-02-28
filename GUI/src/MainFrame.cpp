@@ -6,6 +6,7 @@
 #include <MainFrame.h>
 #include <SelectionBox.h>
 
+#include <TSystem.h>
 #include <TStyle.h>
 #include <TFrame.h>
 #include <TVirtualX.h>
@@ -26,26 +27,40 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h,  const boost::proper
       : TGMainFrame(p, w, h){
 
   myConfig = aConfig;
-  std::string dataFileName = myConfig.get<std::string>("dataFile");
-  std::string geometryFileName = myConfig.get<std::string>("geometryFile");
-
-  if(dataFileName.find(".root")!=std::string::npos) myEventSource = std::make_shared<EventSourceROOT>();
-  #ifdef WITH_GET
-  else if(dataFileName.find(".graw")!=std::string::npos) myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
-  #endif
-  else{
-    std::cerr<<"Input source not know. Exiting."<<std::endl;
-    exit(0);
-  }
-  
-  myEventSource->loadGeometry(geometryFileName); 
-  myEventSource->loadDataFile(dataFileName);
-  myEventSource->loadFileEntry(0);
-  myHistoManager.setGeometry(myEventSource->getGeometry());
-
+ 
   fSelectionBox = 0;
   fArrow = 0;
   fLine = 0;
+
+  InitializeWindows();
+  InitializeEventSource();
+
+  std::string modeLabel = "NONE";
+  if(myWorkMode==M_ONLINE_MODE){
+    modeLabel = "ONLINE";
+  }
+  else if(myWorkMode==M_OFFLINE_ROOT_MODE){
+    modeLabel = "OFFLINE from ROOT";
+  }
+  else if(myWorkMode==M_OFFLINE_GRAW_MODE){
+    modeLabel = "OFFLINE from GRAW";
+  }
+  fEntryDialog->updateModeLabel(modeLabel);
+  Update();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+MainFrame::~MainFrame(){
+
+  fileWatchThread.join();
+  // Delete all created widgets.
+  delete fMenuFile;
+  delete fMenuHelp;
+  delete fMenuBar;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void MainFrame::InitializeWindows(){
 
   SetCleanup(kDeepCleanup);
   SetWMPosition(500,0);
@@ -63,25 +78,47 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h,  const boost::proper
   Resize();
   MapWindow();
   SetWindowName("TPC GUI");
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void MainFrame::InitializeEventSource(){
 
-  fEntryDialog->updateFileName(dataFileName);
-  
-  fCanvas->Clear();
-  fCanvas->Divide(3,3);
-  TText aMessage(0.2, 0.5,"Waiting for data.");
-  for(int iPad=1;iPad<=9;++iPad){
-    fCanvas->cd(iPad);
-    aMessage.DrawText(0.2, 0.5,"Waiting for data.");
+  std::string dataFileName = myConfig.get<std::string>("dataFile");
+  std::string geometryFileName = myConfig.get<std::string>("geometryFile");
+
+  if(dataFileName.empty() || geometryFileName.empty()){
+    std::cerr<<"No data or geometry file path provided."<<std::endl;
+    return;
   }
-  //////
- }
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-MainFrame::~MainFrame(){
-   // Delete all created widgets.
-   delete fMenuFile;
-   delete fMenuHelp;
-   delete fMenuBar;
+
+  if(dataFileName.find(".root")!=std::string::npos){
+    myWorkMode = M_OFFLINE_ROOT_MODE;
+    myEventSource = std::make_shared<EventSourceROOT>();
+    myEventSource->loadGeometry(geometryFileName); 
+  }
+#ifdef WITH_GET
+  else if(dataFileName.find(".graw")!=std::string::npos){
+    myWorkMode = M_OFFLINE_GRAW_MODE;
+    myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
+  }
+  else if(dataFileName.back()=='/'){
+    myWorkMode = M_ONLINE_MODE;
+    myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
+    fileWatchThread = std::thread(&DirectoryWatch::watch, &myDirWatch, dataFileName);
+    myDirWatch.Connect("Message(const char *)", "MainFrame", this, "ProcessMessage(const char *)");
+  }
+#endif
+  else if(!myEventSource){
+    std::cerr<<"Input source not known. dataFile: "
+	     <<dataFileName<<" Exiting."<<std::endl;
+    return;
+  }
+
+  if(myWorkMode!=M_ONLINE_MODE){
+    myEventSource->loadDataFile(dataFileName);
+    myEventSource->loadFileEntry(0);
+  }
+  myHistoManager.setGeometry(myEventSource->getGeometry());
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -126,28 +163,35 @@ void MainFrame::SetTheFrame(){
 /////////////////////////////////////////////////////////
 void MainFrame::AddHistoCanvas(){
 
-    // The Canvas
-   TRootEmbeddedCanvas* embeddedCanvas = new TRootEmbeddedCanvas("Histograms",fFrame,1000,1000);
-   UInt_t attach_left=0, attach_right=8;
-   UInt_t attach_top=0,  attach_bottom=12;
-   fTCanvasLayout = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
-   					   kLHintsFillX|kLHintsFillY);
-   fFrame->AddFrame(embeddedCanvas, fTCanvasLayout);
+  gStyle->SetOptStat(0);
+  gStyle->SetPalette(55);
 
-   fCanvas = embeddedCanvas->GetCanvas();
-   fCanvas->MoveOpaque(kFALSE);
-   gStyle->SetOptStat(0);
-   gStyle->SetPalette(55);
+  embeddedCanvas = new TRootEmbeddedCanvas("Histograms",fFrame,1000,1000);
+  UInt_t attach_left=0, attach_right=8;
+  UInt_t attach_top=0,  attach_bottom=12;
+  fTCanvasLayout = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
+					  kLHintsFillX|kLHintsFillY);
+  fFrame->AddFrame(embeddedCanvas, fTCanvasLayout);
+
+  fCanvas = embeddedCanvas->GetCanvas();
+  fCanvas->MoveOpaque(kFALSE);
+  fCanvas->Divide(3,3);
+  TText aMessage(0.2, 0.5,"Waiting for data.");
+  for(int iPad=1;iPad<=9;++iPad){
+    fCanvas->cd(iPad);
+    aMessage.DrawText(0.2, 0.5,"Waiting for data.");
+  }
+  fCanvas->Update();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MainFrame::AddButtons(){
 
-  std::vector<std::string> button_names = {"Next event", "Previous event",  "Exit"};
+  std::vector<std::string> button_names = {"Next event", "Previous event", "Exit"};
   std::vector<std::string> tooltips =     {"Load the next event.",
 					   "Load the previous event.",
 					   "Close the application"};
-  std::vector<unsigned int> button_id = {M_NEXT_EVENT, M_PREVIOUS_EVENT, M_FILE_EXIT};
+  std::vector<unsigned int> button_id = {M_NEXT_EVENT, M_PREVIOUS_EVENT,  M_FILE_EXIT};
 
   UInt_t attach_left=8, attach_right=9;
   for (unsigned int iButton = 0; iButton < button_names.size(); ++iButton) {
@@ -172,8 +216,7 @@ void MainFrame::AddGoToEventDialog(int attach_top){
   fEventIdEntry = new TGNumberEntryField(fGframe, M_GOTO_EVENT, 0,
 					 TGNumberFormat::kNESInteger,
 					 TGNumberFormat::kNEANonNegative,
-					 TGNumberFormat::kNELLimitMinMax,
-					 0, myEventSource->numberOfEvents());
+					 TGNumberFormat::kNELNoLimits);
   fEventIdEntry->Connect("ReturnPressed()", "MainFrame", this, "DoButton()");
   fEventIdEntry->SetToolTipText("Jump to given event id.");  
 
@@ -196,7 +239,7 @@ void MainFrame::AddNumbersDialog(){
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 						    kLHintsShrinkX|kLHintsShrinkY|
 						    kLHintsFillX|kLHintsFillY);
-  fEntryDialog->initialize();  
+  fEntryDialog->initialize();
   fFrame->AddFrame(fEntryDialog, tloh);
 
  }
@@ -250,15 +293,12 @@ void MainFrame::CloseWindow(){
 /////////////////////////////////////////////////////////
 void MainFrame::Update(){
 
-  myHistoManager.setEvent(myEventSource->getCurrentEvent());
+  if(!myEventSource->numberOfEvents()) return;
+  fEntryDialog->updateFileName(myEventSource->getCurrentPath());
   fEntryDialog->updateEventNumbers(myEventSource->numberOfEvents(),
 				   myEventSource->currentEventNumber());
-  
-  fCanvas->Clear();
-  fCanvas->cd();
-  fCanvas->Divide(3,3);
-  fCanvas->cd(1);
 
+<<<<<<< HEAD
  // for(int strip_dir=0;strip_dir<3;++strip_dir){
  //   myHistoManager.getHoughAccumulator(strip_dir);
  // }
@@ -281,6 +321,29 @@ void MainFrame::Update(){
   //  aPad = fCanvas->cd(strip_dir+1+3+3);
   //  myHistoManager.getHoughAccumulator(strip_dir).DrawClone("colz");
   //  myHistoManager.getHoughAccumulator(strip_dir).SaveAs(TString::Format("HoughAccumulator_%d.root", strip_dir));
+=======
+  myHistoManager.setEvent(myEventSource->getCurrentEvent());
+  for(int strip_dir=0;strip_dir<3;++strip_dir){
+    myHistoManager.getHoughAccumulator(strip_dir);
+  }
+  
+  for(int strip_dir=0;strip_dir<3;++strip_dir){
+    ///First row
+    TVirtualPad *aPad = fCanvas->cd(strip_dir+1);
+    myHistoManager.getCartesianProjection(strip_dir)->DrawClone("colz");    
+    ///Second row
+    aPad = fCanvas->cd(strip_dir+1+3);
+    myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("colz");
+    //myHistoManager.getRecHitStripVsTime(strip_dir)->SaveAs(TString::Format("RecHits_%d.root", strip_dir));
+    //myHistoManager.getCartesianProjection(strip_dir)->SaveAs(TString::Format("RawHits_%d.root", strip_dir));
+    //myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad);
+    myHistoManager.drawTrack2DSeed(strip_dir, aPad);
+    
+    ///Third row.
+    aPad = fCanvas->cd(strip_dir+1+3+3);
+    myHistoManager.getHoughAccumulator(strip_dir).DrawClone("colz");
+    //myHistoManager.getHoughAccumulator(strip_dir).SaveAs(TString::Format("HoughAccumulator_%d.root", strip_dir));
+>>>>>>> develAK
     //myHistoManager.drawChargeAlongTrack3D(aPad);
     aPad->GetName();
   }  
@@ -325,9 +388,26 @@ Bool_t MainFrame::ProcessMessage(Long_t msg, Long_t parm1, Long_t){
 /////////////////////////////////////////////////////////
 Bool_t MainFrame::ProcessMessage(Long_t msg){
 
-  std::cout<<__FUNCTION__<<" msg: "<<msg<<std::endl;
+  std::cout<<__FUNCTION__<<std::endl;
 
-   return kTRUE;
+  switch (msg) {
+  case M_DATA_FILE_UPDATED:
+    {
+    }
+    break;
+  }
+    return kTRUE;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+Bool_t MainFrame::ProcessMessage(const char * msg){
+
+  myMutex.lock();
+  myEventSource->loadDataFile(std::string(msg));
+  myEventSource->getLastEvent();
+  Update();
+  myMutex.unlock();
+  return kTRUE;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -342,10 +422,10 @@ void MainFrame::HandleMenu(Int_t id){
 
   const char *filetypes[] = {
 			     "ROOT files",    "*.root",
-			     "All files",     "*",
-			     0,               0
-  };
-
+			     //"GRAW files",    "*.graw",
+			     //"All files",     "*",
+			     0,               0};
+  
   switch (id) {
   case M_FILE_OPEN:
     {
@@ -355,8 +435,9 @@ void MainFrame::HandleMenu(Int_t id){
       new TGFileDialog(gClient->GetRoot(), this, kFDOpen, &fi);
       std::string fileName;
       if(fi.fFilename) fileName.append(fi.fFilename);
+      else return;
       myEventSource->loadDataFile(fileName);
-      fEntryDialog->updateFileName(fileName);
+      myEventSource->loadFileEntry(0);
       Update();
     }
     break;
@@ -372,9 +453,10 @@ void MainFrame::HandleMenu(Int_t id){
       if(fi.fFilename) fileName.append(fi.fFilename);
     }
     break;
+    
   case M_NEXT_EVENT:
-    {
-     myEventSource->getNextEvent();      
+    {      
+      myEventSource->getNextEvent();
       Update();
     }
     break;
@@ -387,11 +469,16 @@ void MainFrame::HandleMenu(Int_t id){
   case M_GOTO_EVENT:
     {
       int eventId = fEventIdEntry->GetIntNumber();
-      std::cout<<"M_GOTO_EVENT eventId: "<<eventId<<std::endl;
       myEventSource->loadEventId(eventId);
       Update();
     }
     break;
+
+  case M_DIR_WATCH:
+    {
+      Update();
+    }
+    break; 
 
   case M_FILE_EXIT:
     CloseWindow();   // terminate theApp no need to use SendCloseMessage()
@@ -408,4 +495,3 @@ void MainFrame::DoButton(){
  }
 ////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-
