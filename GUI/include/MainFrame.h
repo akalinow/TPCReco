@@ -1,6 +1,10 @@
 #ifndef MainFrame_H
 #define MainFrame_H
 
+#include <thread>
+#include <mutex>
+#include <string>
+
 #include <TGDockableFrame.h>
 #include <TGFrame.h>
 #include <TGCanvas.h>
@@ -9,6 +13,7 @@
 #include <TGMenu.h>
 #include <TRootEmbeddedCanvas.h>
 #include <TGFileDialog.h>
+#include <TGFileBrowser.h>
 #include <TGNumberEntry.h>
 #include <TGIcon.h>
 #include <TGPicture.h>
@@ -23,8 +28,9 @@
 #include "EntryDialog.h"
 #include "SelectionBox.h"
 
-#include "DataManager.h"
+#include "EventSourceBase.h"
 #include "HistoManager.h"
+#include "DirectoryWatch.h"
 
 #include <boost/property_tree/json_parser.hpp>
 
@@ -36,6 +42,8 @@ enum ETestCommandIdentifiers {
    M_FILE_PRINTSETUP,
    M_FILE_EXIT,
 
+   M_DIR_WATCH,
+
    M_HELP_CONTENTS,
    M_HELP_SEARCH,
    M_HELP_ABOUT,
@@ -45,31 +53,51 @@ enum ETestCommandIdentifiers {
    M_GOTO_EVENT,
 
 };
+
+enum Messages {
+	       M_DATA_FILE_UPDATED
+	       
+};
+
+enum Modes {
+	    M_ONLINE_MODE,
+	    M_OFFLINE_GRAW_MODE,
+	    M_OFFLINE_ROOT_MODE	       
+};
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 class MainFrame : public TGMainFrame {
 
   RQ_OBJECT("MainFrame")
 
-public:
-   MainFrame(const TGWindow *p, UInt_t w, UInt_t h, boost::property_tree::ptree &root);
-   virtual ~MainFrame();
-   virtual void CloseWindow();
-   virtual Bool_t ProcessMessage(Long_t msg, Long_t parm1, Long_t);
+  public:
+  MainFrame(const TGWindow *p, UInt_t w, UInt_t h, const boost::property_tree::ptree &aConfig);
+  virtual ~MainFrame();
+  virtual void CloseWindow();
+  virtual Bool_t ProcessMessage(Long_t msg, Long_t parm1, Long_t);
+  virtual Bool_t ProcessMessage(Long_t msg);
+  virtual Bool_t ProcessMessage(const char *);
 
-///Process message from EntryDialog
-    virtual Bool_t ProcessMessage(Long_t msg);
+  void HandleEmbeddedCanvas(Int_t event, Int_t x, Int_t y, TObject *sel);
 
-   void HandleEmbeddedCanvas(Int_t event, Int_t x, Int_t y, TObject *sel);
+  void HandleMenu(Int_t);
 
-   void HandleMenu(Int_t);
-
-   void DoButton();
+  void DoButton();
 
 private:
 
-  DataManager myDataManager;
+  boost::property_tree::ptree myConfig;
+  int myWorkMode = 0;
+  
+  std::shared_ptr<EventSourceBase> myEventSource;
   HistoManager myHistoManager;
+
+  DirectoryWatch myDirWatch;
+  std::thread fileWatchThread;
+  std::mutex myMutex; 
+
+  void InitializeEventSource();
+  void InitializeWindows();
   
   void AddTopMenu();
   void SetTheFrame();
@@ -79,21 +107,21 @@ private:
   void AddGoToEventDialog(int attach_left);
   void AddLogos();
 
-   void SetCursorTheme();
+  void SetCursorTheme();
 
   void Update();
 
-   TGCompositeFrame   *fFrame;
-   TGCanvas           *fCanvasWindow;
-   TCanvas            *fCanvas;
+  TGCompositeFrame   *fFrame;
+  TRootEmbeddedCanvas *embeddedCanvas;
+  TCanvas            *fCanvas;
 
-   TGMenuBar          *fMenuBar;
-   TGPopupMenu        *fMenuFile, *fMenuHelp;
+  TGMenuBar          *fMenuBar;
+  TGPopupMenu        *fMenuFile, *fMenuHelp;
 
-   TGLayoutHints      *fFrameLayout;
-   TGTableLayoutHints *fTCanvasLayout;
+  TGLayoutHints      *fFrameLayout;
+  TGTableLayoutHints *fTCanvasLayout;
 
-   TGTransientFrame *fLegendMain;
+  TGTransientFrame *fLegendMain;
 
   TGNumberEntryField *fEventIdEntry;
   TGGroupFrame        *fGframe;
@@ -102,9 +130,11 @@ private:
   SelectionBox *fSelectionBox;
   
 
-   TArrow *fArrow;
-   TLine *fLine;
+  TArrow *fArrow;
+  TLine *fLine;
 
+
+  ClassDef(MainFrame, 0); 
 };
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
