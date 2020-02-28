@@ -298,7 +298,6 @@ void MainFrame::Update(){
   fEntryDialog->updateEventNumbers(myEventSource->numberOfEvents(),
 				   myEventSource->currentEventNumber());
 
-<<<<<<< HEAD
  // for(int strip_dir=0;strip_dir<3;++strip_dir){
  //   myHistoManager.getHoughAccumulator(strip_dir);
  // }
@@ -321,29 +320,6 @@ void MainFrame::Update(){
   //  aPad = fCanvas->cd(strip_dir+1+3+3);
   //  myHistoManager.getHoughAccumulator(strip_dir).DrawClone("colz");
   //  myHistoManager.getHoughAccumulator(strip_dir).SaveAs(TString::Format("HoughAccumulator_%d.root", strip_dir));
-=======
-  myHistoManager.setEvent(myEventSource->getCurrentEvent());
-  for(int strip_dir=0;strip_dir<3;++strip_dir){
-    myHistoManager.getHoughAccumulator(strip_dir);
-  }
-  
-  for(int strip_dir=0;strip_dir<3;++strip_dir){
-    ///First row
-    TVirtualPad *aPad = fCanvas->cd(strip_dir+1);
-    myHistoManager.getCartesianProjection(strip_dir)->DrawClone("colz");    
-    ///Second row
-    aPad = fCanvas->cd(strip_dir+1+3);
-    myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("colz");
-    //myHistoManager.getRecHitStripVsTime(strip_dir)->SaveAs(TString::Format("RecHits_%d.root", strip_dir));
-    //myHistoManager.getCartesianProjection(strip_dir)->SaveAs(TString::Format("RawHits_%d.root", strip_dir));
-    //myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad);
-    myHistoManager.drawTrack2DSeed(strip_dir, aPad);
-    
-    ///Third row.
-    aPad = fCanvas->cd(strip_dir+1+3+3);
-    myHistoManager.getHoughAccumulator(strip_dir).DrawClone("colz");
-    //myHistoManager.getHoughAccumulator(strip_dir).SaveAs(TString::Format("HoughAccumulator_%d.root", strip_dir));
->>>>>>> develAK
     //myHistoManager.drawChargeAlongTrack3D(aPad);
     aPad->GetName();
   }  
