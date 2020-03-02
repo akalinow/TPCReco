@@ -51,7 +51,7 @@ void EventSourceGRAW::loadFileEntry(unsigned long int iEntry){
   }
   else{
     std::cout<<"\033[34m";
-    std::cout<<"Addng a frame to existing event: "<<eventIdx<<std::endl;
+    std::cout<<"Addng a frame from ASAD: "<< myDataFrame.fHeader.fAsadIdx<< " to existing event: "<<eventIdx<<std::endl;
     std::cout<<"\033[39m";
   }
   myCurrentEvent->SetGeoPtr(myGeometryPtr);
