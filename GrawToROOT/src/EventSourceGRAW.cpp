@@ -33,15 +33,28 @@ void EventSourceGRAW::loadDataFile(const std::string & fileName){
 /////////////////////////////////////////////////////////
 void EventSourceGRAW::loadFileEntry(unsigned long int iEntry){
 
-  myCurrentEvent->Clear();
   if(iEntry>=nEvents) iEntry = nEvents;
   bool dataFrameRead = myFile->GetGrawFrame(myDataFrame, iEntry);
   if(!dataFrameRead){
     std::cerr << "ERROR: cannot read event " << iEntry << std::endl;
     exit(0);
   }
+
+  int eventIdx = myDataFrame.fHeader.fEventIdx;
+  if(myCurrentEvent->GetEventId()!=eventIdx){
+    myCurrentEvent->Clear();
+    myCurrentEvent->SetEventId(eventIdx);
+    myCurrentEvent->SetGeoPtr(myGeometryPtr);
+     std::cout<<"\033[34m";
+     std::cout<<"Creating a new event: "<<eventIdx<<std::endl;
+    std::cout<<"\033[39m";
+  }
+  else{
+    std::cout<<"\033[34m";
+    std::cout<<"Addng a frame to existing event: "<<eventIdx<<std::endl;
+    std::cout<<"\033[39m";
+  }
   myCurrentEvent->SetGeoPtr(myGeometryPtr);
-  myCurrentEvent->SetEventId(iEntry);
   fillEventFromFrame(myDataFrame);
 }
 /////////////////////////////////////////////////////////
@@ -49,31 +62,40 @@ void EventSourceGRAW::loadFileEntry(unsigned long int iEntry){
 void EventSourceGRAW::fillEventFromFrame(GET::GDataFrame & aGrawFrame){
 
   myPedestalCalculator.CalculateEventPedestals(aGrawFrame);
-    
-  for(int COBO_idx = 0; COBO_idx < myGeometryPtr->GetCoboNboards(); ++COBO_idx){
-    for(int ASAD_idx = 0; ASAD_idx < myGeometryPtr->GetAsadNboards(COBO_idx); ++ASAD_idx){   
-      for (Int_t agetId = 0; agetId < myGeometryPtr->GetAgetNchips(); ++agetId){
-	// loop over normal channels and update channel mask for clustering
-	      for (Int_t chanId = 0; chanId < myGeometryPtr->GetAgetNchannels(); ++chanId){
-	        //int iChannelGlobal     = myGeometryPtr->Global_normal2normal(COBO_idx, ASAD_idx, agetId, chanId);// 0-255 (without FPN)
-	        GET::GDataChannel* channel = aGrawFrame.SearchChannel(agetId, myGeometryPtr->Aget_normal2raw(chanId));
-	        if (!channel){
-            continue;
-          }
-	        for (Int_t i = 0; i < channel->fNsamples; ++i){
-	          GET::GDataSample* sample = (GET::GDataSample*) channel->fSamples.At(i);
-	    // skip cells outside signal time-window
-	          Int_t icell = sample->fBuckIdx;
-	          if(icell<2 || icell>509 || icell<minSignalCell || icell>maxSignalCell){
-              continue;
-            }	    
-	          Double_t rawVal  = sample->fValue;
-	          //Double_t corrVal = rawVal - myPedestalCalculator.GetPedestalCorrection(iChannelGlobal, agetId, icell);
-            //std::cout<<corrVal <<std::endl;
-	          myCurrentEvent->AddValByAgetChannel(COBO_idx, ASAD_idx, agetId, chanId, icell, rawVal);
-	        }
-	      } 
-      } 
+
+  int  COBO_idx = myDataFrame.fHeader.fCoboIdx;
+  int  ASAD_idx = myDataFrame.fHeader.fAsadIdx;
+
+  if(ASAD_idx >= myGeometryPtr->GetAsadNboards()){
+    std::cout<<"\033[31m";
+    std::cout<<"Data format mismatch!. ASAD: "<<ASAD_idx
+	     <<" number of ASAD boards in geometry: "<<myGeometryPtr->GetAsadNboards()
+	     <<" Skipping the frame."
+	     <<std::endl;
+    std::cout<<"\033[39m";
+    return;
+  }
+  
+  for (Int_t agetId = 0; agetId < myGeometryPtr->GetAgetNchips(); ++agetId){
+    // loop over normal channels and update channel mask for clustering
+    for (Int_t chanId = 0; chanId < myGeometryPtr->GetAgetNchannels(); ++chanId){
+      int iChannelGlobal     = myGeometryPtr->Global_normal2normal(COBO_idx, ASAD_idx, agetId, chanId);// 0-255 (without FPN)
+      GET::GDataChannel* channel = aGrawFrame.SearchChannel(agetId, myGeometryPtr->Aget_normal2raw(chanId));
+      if (!channel) continue;
+	  
+      for (Int_t i = 0; i < channel->fNsamples; ++i){
+	GET::GDataSample* sample = (GET::GDataSample*) channel->fSamples.At(i);
+	// skip cells outside signal time-window
+	Int_t icell = sample->fBuckIdx;
+	if(icell<2 || icell>509 || icell<minSignalCell || icell>maxSignalCell) continue;
+	    
+	Double_t rawVal  = sample->fValue;
+	Double_t corrVal = rawVal;
+	if(myGeometryPtr->GetAsadNboards()==1){ //HACK: Pedestal calculator does not work for >1 ASAD
+	  rawVal -= myPedestalCalculator.GetPedestalCorrection(iChannelGlobal, agetId, icell);
+	}
+	myCurrentEvent->AddValByAgetChannel(COBO_idx, ASAD_idx, agetId, chanId, icell, corrVal);
+      }
     }
   }
 }
