@@ -175,9 +175,9 @@ void MainFrame::AddHistoCanvas(){
 
   fCanvas = embeddedCanvas->GetCanvas();
   fCanvas->MoveOpaque(kFALSE);
-  fCanvas->Divide(3,3);
+  fCanvas->Divide(2,2);
   TText aMessage(0.2, 0.5,"Waiting for data.");
-  for(int iPad=1;iPad<=9;++iPad){
+  for(int iPad=1;iPad<=4;++iPad){
     fCanvas->cd(iPad);
     aMessage.DrawText(0.2, 0.5,"Waiting for data.");
   }
@@ -297,19 +297,18 @@ void MainFrame::Update(){
   fEntryDialog->updateFileName(myEventSource->getCurrentPath());
   fEntryDialog->updateEventNumbers(myEventSource->numberOfEvents(),
 				   myEventSource->currentEventNumber());
-
+  myHistoManager.setEvent(myEventSource->getCurrentEvent());
  // for(int strip_dir=0;strip_dir<3;++strip_dir){
  //   myHistoManager.getHoughAccumulator(strip_dir);
  // }
 
   for(int strip_dir=0;strip_dir<3;++strip_dir){
     ///First row
-    TVirtualPad *aPad = fCanvas->cd(strip_dir+1);
+    fCanvas->cd(strip_dir+1);
       myHistoManager.getRawStripVsTime(strip_dir)->DrawClone("colz");
   //  myHistoManager.getCartesianProjection(strip_dir)->DrawClone("colz");
     ///Second row
-    aPad = fCanvas->cd(strip_dir+1+3);
-      myHistoManager.getRawTimeProjection()->DrawClone("colz");
+
    // myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("colz");
    // myHistoManager.getRecHitStripVsTime(strip_dir)->SaveAs(TString::Format("RecHits_%d.root", strip_dir));
    // myHistoManager.getCartesianProjection(strip_dir)->SaveAs(TString::Format("RawHits_%d.root", strip_dir));
@@ -321,36 +320,11 @@ void MainFrame::Update(){
   //  myHistoManager.getHoughAccumulator(strip_dir).DrawClone("colz");
   //  myHistoManager.getHoughAccumulator(strip_dir).SaveAs(TString::Format("HoughAccumulator_%d.root", strip_dir));
     //myHistoManager.drawChargeAlongTrack3D(aPad);
-    aPad->GetName();
+   // aPad->GetName();
   }  
-  fCanvas->Update();    //TEST
-  return;//TEST
-  
-  //Third row again.
-  TVirtualPad *aPad = fCanvas->cd(7);
-
-  TH3D *h3DReco =  myHistoManager.get3DReconstruction();
-  if(h3DReco){
-    aPad->Clear();
-    h3DReco->DrawClone("box2z");
-    myHistoManager.drawTrack3D(aPad);
-  }
-  else {
-    aPad->Clear();
-    TText aMessage(0.2, 0.5,"Calculating 3D scence");
-    aMessage.DrawText(0.2, 0.5, "3D scene not available.");
-  }
-
-  aPad = fCanvas->cd(8);
-  TH2D *h2D =   myHistoManager.get2DReconstruction(DIR_XY);
-  if(h2D) h2D->Draw("colz");
-  else myHistoManager.getDetectorLayout()->Draw("colz 0"); 
-  myHistoManager.drawTrack3DProjectionXY(aPad);
-
-  aPad = fCanvas->cd(9);
-  myHistoManager.drawChargeAlongTrack3D(aPad);
-  
-  fCanvas->Update();    
+      fCanvas->cd(4);
+      myHistoManager.getRawTimeProjection()->DrawClone("colz");
+  fCanvas->Update();    //TEST 
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
