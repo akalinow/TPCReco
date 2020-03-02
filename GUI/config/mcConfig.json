@@ -1,5 +1,6 @@
 {
-    "dataFile": "/home/mfila/TPCReco/build/MCevent.root",
-    "geometryFile": "/home/mfila/TPCReco/resources/geometry_mini_eTPC.dat"
+    "dataFile": "/home/mfila/TPCReco/build/lineEvents.root",
+    "geometryFile": "/home/mfila/TPCReco/resources/geometry_mini_eTPC.dat",
+    "resourcesPath":"/home/mfila/TPCReco/build/resources/"
  }
  

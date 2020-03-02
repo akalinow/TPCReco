@@ -59,17 +59,17 @@ void TrackBuilder::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
 void TrackBuilder::setEvent(EventTPC* aEvent){
 
   myEvent = aEvent;
-  double eventMaxCharge = myEvent->GetMaxCharge();
-  double chargeThreshold = 0.15*eventMaxCharge;
-  int delta_timecells = 15;
-  int delta_strips = 2;
+  //double eventMaxCharge = myEvent->GetMaxCharge();
+  //double chargeThreshold = 0.15*eventMaxCharge;
+  //int delta_timecells = 15;
+  //int delta_strips = 2;
 
-  myCluster = myEvent->GetOneCluster(chargeThreshold, delta_strips, delta_timecells);
+ // myCluster = myEvent->GetOneCluster(chargeThreshold, delta_strips, delta_timecells);
 
   std::string hName, hTitle;
   if(!myHistoInitialized){     
     for(int iDir = 0; iDir<3;++iDir){
-      std::shared_ptr<TH2D> hRawHits = myEvent->GetStripVsTimeInMM(getCluster(), iDir);
+/*      std::shared_ptr<TH2D> hRawHits = myEvent->GetStripVsTimeInMM(getCluster(), iDir);
       double maxX = hRawHits->GetXaxis()->GetXmax();
       double maxY = hRawHits->GetYaxis()->GetXmax();
       double rho = sqrt( maxX*maxX + maxY*maxY);
@@ -77,7 +77,7 @@ void TrackBuilder::setEvent(EventTPC* aEvent){
       hTitle = "Hough accumulator for direction: "+std::to_string(iDir)+";#theta;#rho";
       TH2D hAccumulator(hName.c_str(), hTitle.c_str(), nAccumulatorPhiBins, -M_PI, M_PI, nAccumulatorRhoBins, 0, rho);   
       myAccumulators[iDir] = hAccumulator;
-      myRecHits[iDir] = *hRawHits;
+      myRecHits[iDir] = *hRawHits;*/
     }
     myHistoInitialized = true;
   } 
