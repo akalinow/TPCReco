@@ -85,19 +85,7 @@ std::shared_ptr<TH1D> HistoManager::getRawStripProjection(int strip_dir){
 /////////////////////////////////////////////////////////
 std::shared_ptr<TH2D> HistoManager::getRawStripVsTime(int strip_dir){
 
-  std::shared_ptr<TH2D> hProjection = myEvent->GetMergedStripVsTime(strip_dir);
-  double varianceX = hProjection->GetCovariance(1, 1);
-  double varianceY = hProjection->GetCovariance(2, 2);
-  double varianceXY = hProjection->GetCovariance(1, 2);
-
-  std::vector<int> nStrips = {72, 92, 92};
-  
-  std::cout<<" varianceX*12: "<<varianceX*12/450/450
-	   <<" varianceY*12: "<<varianceY*12/nStrips[strip_dir]/nStrips[strip_dir]
-	   <<" varianceXY: "<<varianceXY
-	   <<std::endl;
-  
-  return hProjection;
+  return  myEvent->GetMergedStripVsTime(strip_dir);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
