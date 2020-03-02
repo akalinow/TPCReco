@@ -27,6 +27,9 @@ void EventTPC::Clear(){
   SetGeoPtr(0);
   initOK = false;
 
+  event_id = -1;
+  run_id = -1;
+
   time_rebin = 1;
   glb_max_charge = 0.0;
   glb_max_charge_timing = -1;
