@@ -592,16 +592,17 @@ std::shared_ptr<TH2D> EventTPC::GetStripVsTime(const SigClusterTPC &cluster, int
 std::shared_ptr<TH2D> EventTPC::GetMergedStripVsTime(int strip_dir){  // valid range [0-2]
 
   if(!IsOK()) return std::shared_ptr<TH2D>();
-
+  auto minStripNum=myGeometryPtr->GetDirMinStripMerged(strip_dir);
+  auto maxStripNum=myGeometryPtr->GetDirMaxStripMerged(strip_dir);
   std::shared_ptr<TH2D> result(new TH2D( Form("hraw_%s_vs_time_evt%lld", myGeometryPtr->GetDirName(strip_dir), event_id),
 					 Form("Event-%lld: Raw signals from %s strips;Time bin [arb.u.];%s strip no.;Charge/bin [arb.u.]",
 					      event_id, myGeometryPtr->GetDirName(strip_dir), myGeometryPtr->GetDirName(strip_dir)),
 					 myGeometryPtr->GetAgetNtimecells(),
 					 0.0-0.5, 
 					 1.*myGeometryPtr->GetAgetNtimecells()-0.5, // ends at 511.5 (cells numbered from 0 to 511)
-					 myGeometryPtr->GetDirNstrips(strip_dir),
-					 1.0-0.5,
-					 1.*myGeometryPtr->GetDirNstrips(strip_dir)+0.5 ));
+					 maxStripNum-minStripNum,
+					 minStripNum-0.5,
+					 1.*maxStripNum+0.5 ));
   // fill new histogram
   for(int strip_num=1; strip_num<=myGeometryPtr->GetDirNstrips(strip_dir); strip_num++) {
     for(int icell=0; icell<myGeometryPtr->GetAgetNtimecells(); icell++) {
