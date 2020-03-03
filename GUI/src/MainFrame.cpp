@@ -70,7 +70,7 @@ void MainFrame::InitializeWindows(){
   SetTheFrame();
   AddHistoCanvas();
   AddButtons();
-  AddGoToEventDialog(4);
+  AddGoToEventDialog(5);
   AddNumbersDialog();
   AddLogos();
 
@@ -208,6 +208,18 @@ void MainFrame::AddButtons(){
     button->Connect("Clicked()","MainFrame",this,"DoButton()");
     button->SetToolTipText(tooltips[iButton].c_str());
    }
+  std::string button_name="Set logscale";
+  std::string button_tooltip="Sets logscale Z";
+  TGCheckButton* button = new TGCheckButton(fFrame,
+					    button_name.c_str(),
+					   M_TOGGLE_LOGSCALE);
+  UInt_t attach_top=button_names.size(),  attach_bottom=button_names.size()+1;
+  TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
+						      kLHintsFillX | kLHintsFillY);
+  fFrame->AddFrame(button,tloh);
+  button->Connect("Clicked()","MainFrame",this,"DoButton()");
+  button->SetToolTipText(button_tooltip.c_str());
+
  }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -415,6 +427,15 @@ void MainFrame::HandleMenu(Int_t id){
     {
       myEventSource->getPreviousEvent();
       Update();
+    }
+    break;
+  case M_TOGGLE_LOGSCALE:
+    {
+      isLogScaleOn=!isLogScaleOn;
+      for(int iPad=1;iPad<=3;++iPad){
+        fCanvas->cd(iPad)->SetLogz(isLogScaleOn);
+      }
+      fCanvas->Update();
     }
     break;
   case M_GOTO_EVENT:
