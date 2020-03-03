@@ -164,7 +164,8 @@ void MainFrame::SetTheFrame(){
 void MainFrame::AddHistoCanvas(){
 
   gStyle->SetOptStat(0);
-  gStyle->SetPalette(55);
+  gStyle->SetPalette(57);
+ // gStyle->SetOptLogz();
 
   embeddedCanvas = new TRootEmbeddedCanvas("Histograms",fFrame,1000,1000);
   UInt_t attach_left=0, attach_right=8;
