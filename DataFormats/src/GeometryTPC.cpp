@@ -369,6 +369,8 @@ bool GeometryTPC::Load(const char *fname) {
 	    if(stripN.find(dir)==stripN.end()) stripN[dir]=1;
 	    else stripN[dir]++;
 	    
+      geometryStats.Fill(dir,section,strip_num);
+
 	    // DEBUG
 	    if(_debug) {
 	      std::cout << ">>> ADDED NEW STRIP:" 
@@ -443,6 +445,9 @@ bool GeometryTPC::Load(const char *fname) {
   std::cout << "Number of ASAD boards = " << this->GetAsadNboards() << std::endl;
   std::cout << "Number of COBO boards = " << this->GetCoboNboards() << std::endl;
 
+
+  geometryStats.print();
+  
   // now initialize TH2Poly (while initOK=true) and set initOK flag according to the result 
   initOK = InitTH2Poly();
 
@@ -485,35 +490,10 @@ bool GeometryTPC::InitTH2Poly() {
   double ymin = 1E30;
   double ymax = -1E30; 
 
-  /*std::cout<<"!!!!!!!!!!!!"<<std::endl;
-  for (auto &i : mapByAget){
-     std::cout<<i.second->CoboId()<<std::endl;
-     std::cout<<i.second->AsadId()<<std::endl;
-     std::cout<<i.second->AgetId()<<std::endl;
-     std::cout<<i.second->AgetCh()<<std::endl;
-    std::cout<<i.second->Dir()<<std::endl;
-    std::cout<<i.second->Num()<<std::endl;
-    std::cout<<i.second->GlobalCh()<<std::endl;
-    std::cout<<i.second->GlobalCh_raw()<<std::endl;
-    
-     std::cout<<"!!!!!!!!!!!!"<<std::endl;
-    std::cout<<mapByStrip.find(MultiKey2(i.second->Dir(),i.second->Num()))->second->GlobalCh()<<std::endl;
-    //std::cout<<this->GetStripByGlobal(i.second->GlobalCh())->GlobalCh()<<std::endl;
-  }
-
-
-
-
-  std::cout<<"!!!!!!!!!!!!"<<std::endl;*/
- // for(int dir=0; dir<=2; dir++) {
-  //  for(int num=1; num<=this->GetDirNstrips(dir); num++)
   for (auto &i: mapByStrip)   {
      // std::cout<<this->GetDirNstrips(dir)<<std::endl;
       auto s = i.second;
-     // if(!s) {std::cout<<"skipping"<<std::endl;continue;}
-      //std::cout<<s->Offset().X()<<std::endl;
-      TVector2 point1 = reference_point + s->Offset() 
-	- s->Unit()*0.5*pad_pitch;
+      TVector2 point1 = reference_point + s->Offset() - s->Unit()*0.5*pad_pitch;
       TVector2 point2 = point1 + s->Unit()*s->Length();
       if(point1.X() < xmin)      xmin = point1.X();
       else if(point1.X() > xmax) xmax = point1.X();
@@ -538,20 +518,6 @@ bool GeometryTPC::InitTH2Poly() {
   }
   tp->SetFloat(true); // allow to expand outside of the current limits
 
-  ///////// DEBUG
-  //  int strip_counter = 0;
-  ///////// DEBUG
-
-  // create TPolyBin corresponding to each StripTPC  
-  /*for(int dir=0; dir<=2; dir++) {
-
-    ///////// DEBUG
-    if(_debug) {
-      std::cout << "GeometryTPC::InitTH2Poly: nstrips[" << dir << "]=" << this->GetDirNstrips(dir) << std::endl;
-    }
-    ///////// DEBUG
-
-    for(int num=1; num<=this->GetDirNstrips(dir); num++)*/
     for (auto &i:mapByStrip) {
 
       auto *s = i.second;
@@ -771,22 +737,6 @@ StripTPC* GeometryTPC::GetStripByAget(int COBO_idx, int ASAD_idx, int AGET_idx, 
   return NULL; // ERROR
 }
 
-/*StripTPC* GeometryTPC::GetStripByGlobal(int global_channel_idx) { // valid range [0-1023]
-  if(global_channel_idx<0) return NULL; // ERROR
-  int AGET_idx = (int) (global_channel_idx / AGET_Nchan);         // relative AGET index
-  int ASAD_idx = (int) (AGET_idx / AGET_Nchips);                  // relative ASAD index
-  int channel_idx = global_channel_idx % AGET_Nchan;
-  int counter=0;
-  for(int icobo=0; icobo<COBO_N; icobo++){
-    for(int iasad=0; iasad<ASAD_N[icobo]; iasad++) {
-      if(counter==ASAD_idx) {
-	      return this->GetStripByAget(icobo, iasad, AGET_idx, channel_idx);
-      }
-      counter++;
-    }
-  }
-  return NULL; // ERROR
-}*/
 StripTPC* GeometryTPC::GetStripByGlobal(int global_channel_idx) { // valid range [0-1023]
   if(global_channel_idx<0) return NULL; // ERROR
   int channel_idx = global_channel_idx % AGET_Nchan;
@@ -815,23 +765,7 @@ StripTPC* GeometryTPC::GetStripByAget_raw(int COBO_idx, int ASAD_idx, int AGET_i
   }
   return NULL; // ERROR
 }
-/*
-StripTPC* GeometryTPC::GetStripByGlobal_raw(int global_raw_channel_idx) {  // valid range [0-(1023+ASAD_N[0]*4+...)]
-  if(global_raw_channel_idx<0) return NULL; // ERROR
-  int AGET_idx = (int) (global_raw_channel_idx / AGET_Nchan_raw); // relative AGET index
-  int ASAD_idx = (int) (AGET_idx / AGET_Nchips);                  // relative ASAD index
-  int raw_channel_idx = global_raw_channel_idx % AGET_Nchan_raw;
-  int counter=0;
-  for(int icobo=0; icobo<COBO_N; icobo++)
-    for(int iasad=0; iasad<ASAD_N[icobo]; iasad++) {
-      if(counter==ASAD_idx) {
-	return this->GetStripByAget_raw(icobo, iasad, AGET_idx, raw_channel_idx);
-      }
-      counter++;
-    }
-  return NULL; // ERROR
-}
-*/
+
 StripTPC* GeometryTPC::GetStripByGlobal_raw(int global_raw_channel_idx) { // valid range [0-1023]
   if(global_raw_channel_idx<0) return NULL; // ERROR
   int raw_channel_idx = global_raw_channel_idx % AGET_Nchan_raw;
@@ -1176,6 +1110,6 @@ void GeometryTPC::Debug(){
   }
 
 }
-  
+
 //ClassImp(StripTPC)
 //ClassImp(GeometryTPC)
