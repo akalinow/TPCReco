@@ -65,7 +65,6 @@ void EventSourceGRAW::fillEventFromFrame(GET::GDataFrame & aGrawFrame){
 
   int  COBO_idx = myDataFrame.fHeader.fCoboIdx;
   int  ASAD_idx = myDataFrame.fHeader.fAsadIdx;
-
   if(ASAD_idx >= myGeometryPtr->GetAsadNboards()){
     std::cout<<"\033[31m";
     std::cout<<"Data format mismatch!. ASAD: "<<ASAD_idx
@@ -91,9 +90,13 @@ void EventSourceGRAW::fillEventFromFrame(GET::GDataFrame & aGrawFrame){
 	    
 	Double_t rawVal  = sample->fValue;
 	Double_t corrVal = rawVal;
-	if(myGeometryPtr->GetAsadNboards()==1){ //HACK: Pedestal calculator does not work for >1 ASAD
-	  rawVal -= myPedestalCalculator.GetPedestalCorrection(iChannelGlobal, agetId, icell);
-	}
+//	if(myGeometryPtr->GetAsadNboards()==1){
+    // Beware HACK!!!
+  //TProfile with pedestals is only 256 (max chans in frame) long, pedestals are calculated for each frame and reset
+  //to fit into TProfile the global number of first chan in COBO/ASAD has to be substracted from global chanel
+  int minChannelGlobal     = myGeometryPtr->Global_normal2normal(COBO_idx, ASAD_idx, 0, 0);
+	corrVal -= myPedestalCalculator.GetPedestalCorrection(iChannelGlobal-minChannelGlobal, agetId, icell);
+//	} 
 	myCurrentEvent->AddValByAgetChannel(COBO_idx, ASAD_idx, agetId, chanId, icell, corrVal);
       }
     }

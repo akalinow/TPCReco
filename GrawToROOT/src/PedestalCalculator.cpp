@@ -104,9 +104,8 @@ void PedestalCalculator::ProcessDataFrame(const GET::GDataFrame &dataFrame, bool
   
   double rawVal = 0, corrVal = 0;
   int globalChannelId = 0;
-  int COBO_idx = 0;
-  int ASAD_idx = 0;
-
+  int  COBO_idx = dataFrame.fHeader.fCoboIdx;
+  int  ASAD_idx = dataFrame.fHeader.fAsadIdx;
   if(calculateMean) ResetTables();
   
   // loop over AGET chips
@@ -157,7 +156,11 @@ void PedestalCalculator::ProcessDataFrame(const GET::GDataFrame &dataFrame, bool
 	  rawVal  = sample->fValue;
 	  corrVal = rawVal - FPN_ave_pedestal[agetId][cellId];
 	  globalChannelId = myGeometryPtr->Global_normal2normal(COBO_idx, ASAD_idx, agetId, channelId);// 0-255 (without FPN)
-	  prof_pedestal->Fill(globalChannelId, corrVal);
+    // Beware HACK!!!
+    //TProfile (prof_pedestal) with pedestals is only 256 (max chans in frame) long, pedestals are calculated for each frame and reset
+    //to fit into TProfile the global number of first chan in COBO/ASAD has to be substracted from global channel
+    int minChannelGlobal = myGeometryPtr->Global_normal2normal(COBO_idx, ASAD_idx, 0, 0);
+	  prof_pedestal->Fill(globalChannelId-minChannelGlobal, corrVal);
 	}
       }
     }// end of FPN loop    
