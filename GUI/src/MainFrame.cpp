@@ -336,8 +336,8 @@ void MainFrame::Update(){
    // aPad->GetName();
   }  
       fCanvas->cd(4);
-      myHistoManager.getRawTimeProjection()->DrawClone("colz");
-  fCanvas->Update();    //TEST 
+      myHistoManager.getRawTimeProjection()->DrawClone("hist");
+  fCanvas->Update();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
