@@ -24,9 +24,9 @@ TRIGGER DELAY: 10.24
 #
 #### Acceptance of drift cage along Z-axis (cathode has the highest Z, beam axis has Z=0 by definition)
 #
-DRIFT CAGE ACCEPTANCE: -100.0 100.0
+DRIFT CAGE ACCEPTANCE: -98.0 98.0
 #
-#### Columns: Strip_direction / Strip_number/ COBO_id/ ASAD_id / AGET_id / AGET_ch / pad_pitch_offset / strip_pitch_offset / lengt
+#### Columns: Strip_direction/ Strip_section / Strip_number/ COBO_id/ ASAD_id / AGET_id / AGET_ch / pad_pitch_offset / strip_pitch_offset / length_in_pads
 #
 U		1		1		0		0		3		0		0.5		0		80
 U		2		1		0		3		3		1		80.5		0		81
