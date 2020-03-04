@@ -33,7 +33,7 @@ MainFrame::MainFrame(const TGWindow* p, uint32_t w, uint32_t h)
 	std::cout << geometryFileName << std::endl;
 	std::cout << dataFileName << std::endl;
 	//dataFileName = "*poza buildem";
-	Geometry(geometryFileName, true);
+	Geometry(geometryFileName);
 	checkpoint;
 	myDataManager.loadDataFile(dataFileName);
 	myDataManager.loadTreeEntry(0);
@@ -257,7 +257,7 @@ void MainFrame::Update() {
 	fCanvas->cd(1);
 
 	direction strip_dir = direction::W;
-	myHistoManager.getRawStripVsTime(strip_dir)->SaveAs("histoRaw.root");
+	myHistoManager.getRawStripVsTime(strip_dir).SaveAs("histoRaw.root");
 	myHistoManager.getCartesianProjection(strip_dir)->SaveAs("histoThreshold.root");
 	myHistoManager.getRecHitStripVsTime(strip_dir)->SaveAs("histoRecHit.root");
 

@@ -1,13 +1,13 @@
 #include "GeometryTPC.h" 
 
-GeometryTPC& Geometry(std::string fname, bool debug) {
+GeometryTPC& Geometry(std::string fname) {
 	static std::once_flag geometry_init_check;
 	std::call_once(geometry_init_check, [&]() {
 		if (fname == "") {
 			throw std::runtime_error("Geometry wasn't initialized before first use");
 		}
 	});
-	static GeometryTPC main_geometry{ fname, debug };
+	static GeometryTPC main_geometry{ fname };
 	return main_geometry;
 }
 
@@ -44,7 +44,7 @@ std::istream& operator>>(std::istream& input_stream, std::tuple<Types...>& data_
 }
 
 template <typename... Types>
-bool load_var(std::vector<std::string> file_lines, std::string line_name, std::function<bool(Types...)> var_check, std::string units, int error_number, bool _debug, Types&... var_ref) {
+bool load_var(std::vector<std::string> file_lines, std::string line_name, std::function<bool(Types...)> var_check, std::string units, int error_number, Types&... var_ref) {
 	auto it = find_line(file_lines, line_name);
 	if (it != file_lines.end() && //line exists
 		(std::stringstream(it->substr(it->find(':') + 1)) >> std::tie(var_ref...)) && //line constains values
@@ -54,7 +54,7 @@ bool load_var(std::vector<std::string> file_lines, std::string line_name, std::f
 	}
 	else {
 		std::cerr << "ERROR: Wrong " << line_name << " !!!" << std::endl;
-		if (_debug) {
+		if (is_debug) {
 			std::cout << "GeometryTPC::Load - Abort (" << error_number << ")" << std::endl;
 		}
 		return false;
@@ -64,7 +64,7 @@ bool load_var(std::vector<std::string> file_lines, std::string line_name, std::f
 //version above not working, workarounds below
 
 template <typename Type>
-bool load_var(std::vector<std::string> file_lines, std::string line_name, std::function<bool(Type)> var_check, std::string units, int error_number, bool _debug, Type& var_ref) {
+bool load_var(std::vector<std::string> file_lines, std::string line_name, std::function<bool(Type)> var_check, std::string units, int error_number, Type& var_ref) {
 	auto it = find_line(file_lines, line_name);
 	if (it != file_lines.end() && //line exists
 		(std::stringstream(it->substr(it->find(':') + 1)) >> var_ref) && //line constains values
@@ -74,7 +74,7 @@ bool load_var(std::vector<std::string> file_lines, std::string line_name, std::f
 	}
 	else {
 		std::cerr << "ERROR: Wrong " << line_name << " !!!" << std::endl;
-		if (_debug) {
+		if (is_debug) {
 			std::cout << "GeometryTPC::Load - Abort (" << error_number << ")" << std::endl;
 		}
 		return false;
@@ -82,7 +82,7 @@ bool load_var(std::vector<std::string> file_lines, std::string line_name, std::f
 }
 
 template <typename Type1, typename Type2>
-bool load_var(std::vector<std::string> file_lines, std::string line_name, std::function<bool(Type1, Type2)> var_check, std::string units, int error_number, bool _debug, Type1& var_ref1, Type2& var_ref2) {
+bool load_var(std::vector<std::string> file_lines, std::string line_name, std::function<bool(Type1, Type2)> var_check, std::string units, int error_number, Type1& var_ref1, Type2& var_ref2) {
 	auto it = find_line(file_lines, line_name);
 	if (it != file_lines.end() && //line exists
 		(std::stringstream(it->substr(it->find(':') + 1)) >> var_ref1 >> var_ref2) && //line constains values
@@ -92,14 +92,14 @@ bool load_var(std::vector<std::string> file_lines, std::string line_name, std::f
 	}
 	else {
 		std::cerr << "ERROR: Wrong " << line_name << " !!!" << std::endl;
-		if (_debug) {
+		if (is_debug) {
 			std::cout << "GeometryTPC::Load - Abort (" << error_number << ")" << std::endl;
 		}
 		return false;
 	}
 }
 
-GeometryTPC::GeometryTPC(std::string  fname, bool debug)
+GeometryTPC::GeometryTPC(std::string fname)
 	: COBO_N(0),
 	AGET_Nchips(4),
 	AGET_Nchan(64),
@@ -114,20 +114,13 @@ GeometryTPC::GeometryTPC(std::string  fname, bool debug)
 	trigger_delay(0.),
 	drift_zmin(0.),
 	drift_zmax(0.),
-	_debug(debug)
+	reference_point(0., 0.) // default REFERENCE POINT position on XY plane
 {
-	if (_debug) {
+	if (is_debug) {
 		std::cout << "GeometryTPC::Constructor - Started..." << std::endl;
 	}
 
-	// default REFERENCE POINT position on XY plane
-	reference_point.Set(0., 0.);
-
 	// FPN channels in each AGET chip
-	FPN_chanId.push_back(11);
-	FPN_chanId.push_back(22);
-	FPN_chanId.push_back(45);
-	FPN_chanId.push_back(56);
 	AGET_Nchan_fpn = FPN_chanId.size();
 	AGET_Nchan_raw = AGET_Nchan + AGET_Nchan_fpn;
 
@@ -147,13 +140,13 @@ GeometryTPC::GeometryTPC(std::string  fname, bool debug)
 		throw std::runtime_error("Load error occured or geometry data is incorrect!");
 	}
 
-	if (_debug) {
+	if (is_debug) {
 		std::cout << "GeometryTPC::Constructor - Ended..." << std::endl;
 	}
 }
 
 bool GeometryTPC::Load(std::string fname) {
-	if (_debug) {
+	if (is_debug) {
 		std::cout << "GeometryTPC::Load - Started..." << std::endl;
 	}
 
@@ -180,31 +173,27 @@ bool GeometryTPC::Load(std::string fname) {
 				for (auto dir : dir_vec_UVW) {
 					angle[dir] = fmod(fmod(angle[dir], 360.) + 360., 360.); // convert to range [0, 360 deg[ range 
 				}
-				if (fmod(angle[direction::U], 180.) != fmod(angle[direction::V], 180.) &&  // reject parallel / anti-parallel duplicates 
-					fmod(angle[direction::V], 180.) != fmod(angle[direction::W], 180.) &&  // reject parallel / anti-parallel duplicates 
-					fmod(angle[direction::W], 180.) != fmod(angle[direction::U], 180.)) { // reject parallel / anti-parallel duplicates 
-					std::cout << Form("Angle of U/V/W strips wrt X axis = %lf / %lf / %lf deg", angle[direction::U], angle[direction::V], angle[direction::W]) << std::endl;
-				}
-				else {
+				std::cout << Form("Angle of U/V/W strips wrt X axis = %lf / %lf / %lf deg", angle[direction::U], angle[direction::V], angle[direction::W]) << std::endl;
+				if (fmod(angle[direction::U], 180.) == fmod(angle[direction::V], 180.) ||  // reject parallel / anti-parallel duplicates 
+					fmod(angle[direction::V], 180.) == fmod(angle[direction::W], 180.) ||  // reject parallel / anti-parallel duplicates 
+					fmod(angle[direction::W], 180.) == fmod(angle[direction::U], 180.)) { // reject parallel / anti-parallel duplicates 
 					std::cerr << "ERROR: Wrong U/V/W angles !!!" << std::endl;
-					std::cout << Form("Angle of U/V/W strips wrt X axis = %lf / %lf / %lf deg", angle[direction::U], angle[direction::V], angle[direction::W]) << std::endl;
 					return false;
 				}
 			}
 			else {
-				std::cerr << "ERROR: Wrong U/V/W angles !!!" << std::endl;
-				std::cout << Form("Angle of U/V/W strips wrt X axis = %lf / %lf / %lf deg", angle[direction::U], angle[direction::V], angle[direction::W]) << std::endl;
+				std::cerr << "ERROR: U/V/W angles not provided !!!" << std::endl;
 				return false;
 			}
 		}
 		{
 			double xoff = 0.0, yoff = 0.0;
-			if (!load_var<double, double>(file_lines, "REFERENCE POINT", { [](double _xoff, double _yoff) {return (fabs(_xoff) < 500. && fabs(_yoff) < 500.); } }, "mm", 2, _debug, xoff, yoff) || // set REFERECE POINT offset [mm]
-				!load_var<double>(file_lines, "DIAMOND SIZE", { [](double var) {return var > 0.0; } }, "mm", 2, _debug, pad_size) || // set pad size
-				!load_var<double>(file_lines, "DRIFT VELOCITY", { [](double var) {return var > 0.0; } }, "cm/us", 3, _debug, vdrift) || // set electron drift velocity [cm/us]
-				!load_var<double>(file_lines, "SAMPLING RATE", { [](double var) {return var > 0.0; } }, "MHz", 4, _debug, sampling_rate) || // set electronics sampling rate [MHz]
-				!load_var<double>(file_lines, "TRIGGER DELAY", { [](double var) {return std::fabs(var) < 1000.0; } }, "us", 5, _debug, trigger_delay) || // set electronics trigger delay [us]
-				!load_var<double, double>(file_lines, "DRIFT CAGE ACCEPTANCE", { [](double _drift_zmin, double _drift_zmax) {return (fabs(_drift_zmin) < 200. && fabs(_drift_zmax) < 200. && _drift_zmin < _drift_zmax); } }, "mm", 6, _debug, drift_zmin, drift_zmax)) { // set drift cage acceptance limits along Z-axis [mm]
+			if (!load_var<double, double>(file_lines, "REFERENCE POINT", { [](double _xoff, double _yoff) {return (fabs(_xoff) < 500. && fabs(_yoff) < 500.); } }, "mm", 2,  xoff, yoff) || // set REFERECE POINT offset [mm]
+				!load_var<double>(file_lines, "DIAMOND SIZE", { [](double var) {return var > 0.0; } }, "mm", 2, pad_size) || // set pad size
+				!load_var<double>(file_lines, "DRIFT VELOCITY", { [](double var) {return var > 0.0; } }, "cm/us", 3, vdrift) || // set electron drift velocity [cm/us]
+				!load_var<double>(file_lines, "SAMPLING RATE", { [](double var) {return var > 0.0; } }, "MHz", 4, sampling_rate) || // set electronics sampling rate [MHz]
+				!load_var<double>(file_lines, "TRIGGER DELAY", { [](double var) {return std::fabs(var) < 1000.0; } }, "us", 5, trigger_delay) || // set electronics trigger delay [us]
+				!load_var<double, double>(file_lines, "DRIFT CAGE ACCEPTANCE", { [](double _drift_zmin, double _drift_zmax) {return (fabs(_drift_zmin) < 200. && fabs(_drift_zmax) < 200. && _drift_zmin < _drift_zmax); } }, "mm", 6, drift_zmin, drift_zmax)) { // set drift cage acceptance limits along Z-axis [mm]
 				return false;
 			}
 			reference_point.Set(xoff, yoff);
@@ -258,7 +247,7 @@ bool GeometryTPC::Load(std::string fname) {
 
 						// update maximal ASAD index (by: COBO board) 
 						if (cobo >= ASAD_N.size()) { //resize ASAD_N if necessary
-							ASAD_N.resize(cobo + 1);
+							ASAD_N.resize(static_cast<size_t>(cobo) + 1);
 						}
 						ASAD_N[cobo] = std::max(ASAD_N[cobo], asad + 1); // ASAD indexing starts from 0
 
@@ -266,7 +255,7 @@ bool GeometryTPC::Load(std::string fname) {
 						stripN[dir]++;
 
 						// DEBUG
-						if (_debug) {
+						if (is_debug) {
 							std::cout << ">>> ADDED NEW STRIP:" << " NSTRIPS[DIR=" << dir << "]=" << stripN[dir] << "\n";
 						}
 						// DEBUG
@@ -286,7 +275,7 @@ bool GeometryTPC::Load(std::string fname) {
 	else {
 		std::cout << "\n==== INITIALIZING TPC GEOMETRY - END ====\n\n";
 		std::cerr << "ERROR: Unable to open config file: " << fname << "!!!\n";
-		if (_debug) {
+		if (is_debug) {
 			std::cout << "GeometryTPC::Load - Abort (7)" << std::endl;
 		}
 		return false;
@@ -295,8 +284,8 @@ bool GeometryTPC::Load(std::string fname) {
 	// sanity checks
 	auto it = std::find(ASAD_N.begin(), ASAD_N.end(), 0);
 	if (it != ASAD_N.end()) {
-		std::cerr << "ERROR: Number of ASAD boards for COBO " << std::distance(&ASAD_N[0], &*it) << " is not defined !!!" << std::endl;
-		if (_debug) {
+		std::cerr << "ERROR: Number of ASAD boards for COBO " << std::distance(ASAD_N.begin(), it) << " is not defined !!!" << std::endl;
+		if (is_debug) {
 			std::cout << "GeometryTPC::Load - Abort (8)" << std::endl;
 		}
 		return false;
@@ -318,11 +307,9 @@ bool GeometryTPC::Load(std::string fname) {
 	std::cout << "Number of ASAD boards = " << GetAsadNboards() << std::endl;
 	std::cout << "Number of COBO boards = " << GetCoboNboards() << std::endl;
 
-	// now initialize TH2Poly (while initOK=true) and set initOK flag according to the result 
-
 	std::cout << "\n==== INITIALIZING TPC GEOMETRY - END ====\n\n";
 
-	if (_debug) {
+	if (is_debug) {
 		std::cout << "GeometryTPC::Load - Ended..." << std::endl;
 	}
 	return true;
@@ -358,7 +345,7 @@ int GeometryTPC::Aget_fpn2raw(int FPN_idx) { // valid range [0-3]
 }
 
 int GeometryTPC::Global_normal2normal(int COBO_idx, int ASAD_idx, int aget_idx, int channel_idx) {   // valid range [0-1][0-3][0-3][0-63]
-	if (COBO_idx < 0 || COBO_idx >= COBO_N || ASAD_idx < 0 || ASAD_idx > ASAD_N[COBO_idx] || aget_idx < 0 || aget_idx >= AGET_Nchips ||
+	if (ASAD_idx < 0 || ASAD_idx > ASAD_N[COBO_idx] || aget_idx < 0 || aget_idx >= AGET_Nchips ||
 		channel_idx < 0 || channel_idx >= AGET_Nchan) return ERROR;
 	int ASAD_offset = std::accumulate(ASAD_N.begin(), ASAD_N.begin() + COBO_idx, 0);
 	return ((ASAD_offset + ASAD_idx) * AGET_Nchips + aget_idx) * AGET_Nchan + channel_idx;
@@ -396,8 +383,8 @@ bool GeometryTPC::MatchCrossPoint(std::array<int, 3> strip_nums, double radius, 
 	std::transform(strip_nums.begin(), strip_nums.end(), dir_vec_UVW.begin(), strips.begin(), [&](int strip_num, direction dir) { return GetStripByDir(dir, strip_num); });
 	const double rad2 = pow(radius, 2);
 	if (!GetCrossPoint(strips[1], strips[2], points[0]) ||
-		!GetCrossPoint(strips[2], strips[3], points[1]) ||
-		!GetCrossPoint(strips[3], strips[1], points[2]) ||
+		!GetCrossPoint(strips[2], strips[0], points[1]) ||
+		!GetCrossPoint(strips[0], strips[1], points[2]) ||
 		(points[0] - points[1]).Mod2() > rad2 ||
 		(points[1] - points[2]).Mod2() > rad2 ||
 		(points[2] - points[0]).Mod2() > rad2) return false;

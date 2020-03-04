@@ -56,11 +56,11 @@ public:
   const TVector3 & getEnd() const { return myEnd;}
 
   ///Return packed cartesian coordinates of the segment start/end points.
-  std::vector<double>&& getStartEndXYZ() const;
+  std::vector<double> getStartEndXYZ() const;
 
   ///Return 2D direction for strip_dir corresponding to start and end
   ///along the 3D segment.
-  TrackSegment2D&& get2DProjection(direction strip_dir, double start, double end) const;
+  TrackSegment2D get2DProjection(direction strip_dir, double start, double end) const;
 
   ///Return the full lenght of the segment.
   double getLength() const { return myLenght;}

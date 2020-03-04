@@ -72,7 +72,7 @@ void TrackSegment3D::initialize() {
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::vector<double>&& TrackSegment3D::getStartEndXYZ() const {
+std::vector<double> TrackSegment3D::getStartEndXYZ() const {
 
 	std::vector<double> coordinates(6);
 	double* data = coordinates.data();
@@ -80,7 +80,7 @@ std::vector<double>&& TrackSegment3D::getStartEndXYZ() const {
 	getStart().GetXYZ(data);
 	getEnd().GetXYZ(data + 3);
 
-	return std::move(coordinates);
+	return coordinates;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -99,7 +99,7 @@ TVector3 TrackSegment3D::getPointOn2DProjection(double lambda, direction strip_d
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TrackSegment2D&& TrackSegment3D::get2DProjection(direction strip_dir, double lambdaStart, double lambdaEnd) const {
+TrackSegment2D TrackSegment3D::get2DProjection(direction strip_dir, double lambdaStart, double lambdaEnd) const {
 
 	TVector3 start = getPointOn2DProjection(lambdaStart, strip_dir);
 	TVector3 end = getPointOn2DProjection(lambdaEnd, strip_dir);
@@ -107,7 +107,7 @@ TrackSegment2D&& TrackSegment3D::get2DProjection(direction strip_dir, double lam
 	TrackSegment2D a2DProjection(strip_dir);
 	a2DProjection.setStartEnd(start, end);
 
-	return std::move(a2DProjection);
+	return a2DProjection;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -153,10 +153,10 @@ double TrackSegment3D::getRecHitChi2() const {
 /////////////////////////////////////////////////////////
 void TrackSegment3D::calculateRecHitChi2() {
 
-	std::transform(/*std::execution::par,*/ dir_vec_UVW.begin(), dir_vec_UVW.end(), myRecHits.begin(), myProjectionsChi2.begin(), [&](auto strip_dir, auto& aRecHits) { //C++17
+	for (auto strip_dir : dir_vec_UVW) {
 		auto&& aTrack2DProjection = get2DProjection(strip_dir, 0, getLength());
-		return aTrack2DProjection.getRecHitChi2(aRecHits.second);
-	});
+		myProjectionsChi2[(int)strip_dir] = aTrack2DProjection.getRecHitChi2(myRecHits[strip_dir]);
+	};
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

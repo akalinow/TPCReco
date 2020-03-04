@@ -21,7 +21,7 @@ public:
 
   const TrackSegment3DCollection & getSegments() const { return mySegments;}
 
-  std::vector<double>&& getSegmentsStartEndXYZ() const;
+  std::vector<double> getSegmentsStartEndXYZ() const;
 
   double getLength() const { return myLenght;}
 

@@ -32,10 +32,10 @@ void Track3D::update() {
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::vector<double>&& Track3D::getSegmentsStartEndXYZ() const {
+std::vector<double> Track3D::getSegmentsStartEndXYZ() const {
 
 	std::vector<double> coordinates;
-	if (mySegments.size() == 0) return std::move(coordinates);
+	if (mySegments.size() == 0) return coordinates;
 
 	for (auto& aSegment : mySegments) {
 		auto&& segmentCoordinates = aSegment.getStartEndXYZ();
@@ -44,7 +44,7 @@ std::vector<double>&& Track3D::getSegmentsStartEndXYZ() const {
 	auto&& segmentCoordinates = mySegments.back().getStartEndXYZ();
 	coordinates.insert(coordinates.end(), segmentCoordinates.begin() + 3, segmentCoordinates.end());
 
-	return std::move(coordinates);
+	return coordinates;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -169,7 +169,9 @@ void Track3D::updateNodesChi2(direction strip_dir) {
 		TVector3 formerTransverse2D(-formerTangent3D * stripPitchDirection, formerTangent3D.Z(), 0.0);
 		TVector3 latterTransverse2D(-latterTangent3D * stripPitchDirection, latterTangent3D.Z(), 0.0);
 		double deltaPhi = ROOT::Math::VectorUtil::DeltaPhi(formerTransverse2D, latterTransverse2D);
-
+		if (nodeAngleChi2.size() <= iNode) {
+			nodeAngleChi2.resize(iNode + 1);
+		}
 		nodeAngleChi2[iNode] = 0.1 * (std::pow(deltaPhi, 2));
 
 
@@ -357,10 +359,11 @@ std::ostream& operator << (std::ostream& out, const Track3D& aTrack) {
 
 	std::cout << "\t Nodes: node [chi2]: " << std::endl;
 	for (unsigned int iSegment = 0; iSegment < (aTrack.getSegments().size() - 1); ++iSegment) {
+		auto& temp = aTrack.getSegments().at(iSegment).getEnd();
 		out << "\t \t ("
-			<< aTrack.getSegments().at(iSegment).getEnd().X() << ", "
-			<< aTrack.getSegments().at(iSegment).getEnd().Y() << ", "
-			<< aTrack.getSegments().at(iSegment).getEnd().Z() << ") "
+			<< temp.X() << ", "
+			<< temp.Y() << ", "
+			<< temp.Z() << ") "
 			<< "[" << aTrack.getNodeChi2(iSegment) << "]"
 			<< std::endl;
 	}

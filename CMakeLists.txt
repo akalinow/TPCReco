@@ -22,8 +22,8 @@ MESSAGE(STATUS "ROOT_USE_FILE: " ${ROOT_USE_FILE})
 ###############################################################################
 ## packaging ##################################################################
 ###############################################################################
-set(CMAKE_INSTALL_PREFIX "$ENV{PWD}") # install in the current directory
-MESSAGE(STATUS "CMAKE_INSTALL_PREFIX: " ${CMAKE_INSTALL_PREFIX})
+set(CMAKE_INSTALL_PREFIX $ENV{PWD}) # install in the current directory
+MESSAGE( STATUS "CMAKE_INSTALL_PREFIX:         " ${CMAKE_INSTALL_PREFIX} )
 
 # This is basically a repeat of the file copy instruction that copies the
 # resources in the build directory, but here we tell cmake that we want it

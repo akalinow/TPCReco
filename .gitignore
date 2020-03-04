@@ -25,3 +25,6 @@
 */.deps/*
 */.libs/*
 m4/*
+/.vs
+/out/build/x64-Debug
+/CMakeSettings.json

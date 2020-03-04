@@ -1,8 +1,9 @@
 #include <iostream>
 
 #include "DataManager.h"
-#include "SigClusterTPC.h"
+#include "EventHits.h"
 #include "TrackBuilder.h"
+#include "HistoManager.h"
 
 int main() {
 
@@ -18,21 +19,20 @@ int main() {
     std::cout << dataFileName << std::endl;
     path_file.close();
     //dataFileName = "*poza buildem";
-    Geometry(geometryFileName, true); //initialize GeometryTPC before first use
+    Geometry(geometryFileName); //initialize GeometryTPC before first use
     DataManager aDataManager;
     TrackBuilder aTkBuilder;
     checkpoint;
-    aDataManager.loadDataFile(dataFileName);
-    aDataManager.loadTreeEntry(3);
-
+    //aDataManager.loadDataFile(dataFileName);
+    //aDataManager.loadTreeEntry(3);
+    aDataManager.loadEvent(dataFileName);
     auto aEvent = aDataManager.getCurrentEvent();
     if (aEvent == nullptr) {
-        std::cout << __FUNCTION__ << " NULL EventTPC pointer" << std::endl;
+        std::cout << __FUNCTION__ << " NULL EventCharges pointer" << std::endl;
         return -1;
     }
 
-    aTkBuilder.setEvent(aEvent);
-    aTkBuilder.reconstruct();
+    HistogramManager().setEvent(aEvent);
 
     return 0;
 }

@@ -1,4 +1,5 @@
 #include "TrackBuilder.h"
+#include "HistoManager.h"
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 TrackBuilder::TrackBuilder() {
@@ -24,20 +25,23 @@ TrackBuilder::TrackBuilder() {
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void TrackBuilder::setEvent(std::shared_ptr<EventTPC> aEvent) {
+std::shared_ptr<EventHits> TrackBuilder::setEvent(std::shared_ptr<EventCharges> evt_ch) {
 
-	myEvent = aEvent;
-	double eventMaxCharge = myEvent->GetMaxCharge();
+	chargesObject = evt_ch;
+	double eventMaxCharge = chargesObject->GetMaxCharge();
 	double chargeThreshold = 0.15 * eventMaxCharge;
 	int delta_timecells = 15;
 	int delta_strips = 1;
 
-	myCluster = myEvent->GetOneCluster(chargeThreshold, delta_strips, delta_timecells);
+	hitsObject = chargesObject->GetHits(chargeThreshold, delta_strips, delta_timecells);
+	return hitsObject;
+}
 
+void TrackBuilder::initialize() {
 	std::string hName, hTitle;
 	if (!myHistoInitialized) {
 		for (auto dir : dir_vec_UVW) {
-			auto hRawHits = myCluster->GetStripVsTimeInMM(dir);
+			auto hRawHits = HistogramManager().GetStripVsTimeInMM(dir);
 			double maxX = hRawHits->GetXaxis()->GetXmax();
 			double maxY = hRawHits->GetYaxis()->GetXmax();
 			double rho = std::hypot(maxX, maxY);
@@ -65,7 +69,7 @@ void TrackBuilder::reconstruct() {
 /////////////////////////////////////////////////////////
 void TrackBuilder::makeRecHits(direction dir) {
 
-	auto hRawHits = myCluster->GetStripVsTimeInMM(dir);
+	auto hRawHits = HistogramManager().GetStripVsTimeInMM(dir);
 	auto hRecHits = myRecHits[dir];
 	hRecHits->Reset();
 	std::string tmpTitle(hRecHits->GetTitle());
@@ -78,7 +82,7 @@ void TrackBuilder::makeRecHits(direction dir) {
 	double hitWirePos = -999.0;
 	for (int iBinY = 1; iBinY < hRecHits->GetNbinsY(); ++iBinY) {
 		hProj = hRawHits->ProjectionX("hProj", iBinY, iBinY);
-		TF1 timeResponseShape = fitTimeWindow(hProj);
+		auto&& timeResponseShape = fitTimeWindow(hProj);
 
 		hitWirePos = hRawHits->GetYaxis()->GetBinCenter(iBinY);
 		for (int iSet = 0; iSet < timeResponseShape.GetNpar(); iSet += 3) {
@@ -93,7 +97,7 @@ void TrackBuilder::makeRecHits(direction dir) {
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TF1&& TrackBuilder::fitTimeWindow(TH1D* hProj) {
+TF1 TrackBuilder::fitTimeWindow(TH1D* hProj) {
 
 	TFitResultPtr fitResult;
 	TF1 timeResponseShape;
@@ -104,7 +108,7 @@ TF1&& TrackBuilder::fitTimeWindow(TH1D* hProj) {
 	double maxValue = hProj->GetMaximum();
 	double maxPos = hProj->GetBinCenter(maxBin);
 	double windowIntegral = hProj->Integral(maxBin - 25, maxBin + 25);
-	if (maxValue < 25 || windowIntegral < 50) return std::move(bestTimeResponseShape);//FIXME how to choose the thresholds?
+	if (maxValue < 25 || windowIntegral < 50) return bestTimeResponseShape;//FIXME how to choose the thresholds?
 
 	std::stringstream formula;
 	for (int iComponent = 0; iComponent < 3; ++iComponent) {
@@ -140,7 +144,7 @@ TF1&& TrackBuilder::fitTimeWindow(TH1D* hProj) {
 			timeResponseShape.Copy(bestTimeResponseShape);
 		}
 	}
-	return std::move(bestTimeResponseShape);
+	return bestTimeResponseShape;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -194,18 +198,18 @@ void TrackBuilder::fillHoughAccumulator(direction dir) {
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TrackSegment2DCollection&& TrackBuilder::findSegment2DCollection(direction dir) {
+TrackSegment2DCollection TrackBuilder::findSegment2DCollection(direction dir) {
 
 	TrackSegment2DCollection aTrackCollection;
 	for (int iPeak = 0; iPeak < 2; ++iPeak) {
 		TrackSegment2D aTrackSegment = findSegment2D(dir, iPeak);
 		aTrackCollection.push_back(aTrackSegment);
 	}
-	return std::move(aTrackCollection);
+	return aTrackCollection;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TrackSegment2D&& TrackBuilder::findSegment2D(direction dir, int iPeak) const {
+TrackSegment2D TrackBuilder::findSegment2D(direction dir, int iPeak) const {
 
 	int iBinX = 0, iBinY = 0, iBinZ = 0;
 	int margin = 5;
@@ -244,7 +248,7 @@ TrackSegment2D&& TrackBuilder::findSegment2D(direction dir, int iPeak) const {
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TrackSegment3D&& TrackBuilder::buildSegment3D() const {
+TrackSegment3D TrackBuilder::buildSegment3D() const {
 
 	int iTrack2DSeed = 0;
 	auto& segmentU = my2DSeeds.at(direction::U)[iTrack2DSeed];
@@ -283,11 +287,11 @@ TrackSegment3D&& TrackBuilder::buildSegment3D() const {
 	a3DSeed.setBiasTangent(aBias, aTangent);
 	a3DSeed.setRecHits(myRecHits);
 
-	return std::move(a3DSeed);
+	return a3DSeed;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-Track3D&& TrackBuilder::fitTrack3D(const TrackSegment3D& aTrackSegment) const {
+Track3D TrackBuilder::fitTrack3D(const TrackSegment3D& aTrackSegment) const {
 
 	Track3D aTrackCandidate;
 	aTrackCandidate.addSegment(aTrackSegment);
@@ -308,7 +312,7 @@ Track3D&& TrackBuilder::fitTrack3D(const TrackSegment3D& aTrackSegment) const {
 	aTrackCandidate.splitWorseChi2Segment(bestSplit);
 
 	aTrackCandidate = fitTrackNodes(aTrackCandidate);
-	return std::move(aTrackCandidate);//TEST
+	return aTrackCandidate;//TEST
 	/*
 	if(aTrackCandidate.getLength()<1.0) return aTrackCandidate;//FIX me move threshold to configuration
 
@@ -328,8 +332,8 @@ Track3D&& TrackBuilder::fitTrack3D(const TrackSegment3D& aTrackSegment) const {
 Track3D TrackBuilder::fitTrackNodes(const Track3D& aTrack) const {
 
 	Track3D aTrackCandidate = aTrack;
-	auto&& bestParams = aTrackCandidate.getSegmentsStartEndXYZ();
-	auto&& params = aTrackCandidate.getSegmentsStartEndXYZ();
+	auto bestParams = aTrackCandidate.getSegmentsStartEndXYZ();
+	auto params = aTrackCandidate.getSegmentsStartEndXYZ();
 	int nParams = params.size();
 
 	ROOT::Math::Functor fcn(&aTrackCandidate, &Track3D::chi2FromNodesList, nParams);

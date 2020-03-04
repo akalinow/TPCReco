@@ -6,10 +6,9 @@
 #include "TMath.h"
 #include "TVector2.h"
 #include "TGraph.h"
-#include "TH2Poly.h"
 #include "CommonDefinitions.h"
 
-struct Strip_Data {
+struct StripData {
     direction dir; // direction/group: 0=U / 1=V / 2=W / 3=FPN / -1=ERROR                                                      
     int num; // strip number: 1-1024 for U,V,W / 1-(4*ASAD_N*COBO_N) for FPN / -1=ERROR
     int coboId; // range [0-1]
@@ -23,12 +22,11 @@ struct Strip_Data {
 };
 
 // Single UVW strip defined as a class
-//class Geometry_Strip : public TObject {
 class Geometry_Strip {
 
 private:
 
-    Strip_Data data;
+    StripData data;
 public:
 
     Geometry_Strip() = default;
@@ -36,7 +34,6 @@ public:
         TVector2 unit_vector, TVector2 offset_vector_in_mm, double length_in_mm);
 
     decltype(Geometry_Strip::data) operator()() { return data; };
-    //  ClassDef(Geometry_Strip,1)
 };
 
 #endif
