@@ -600,9 +600,9 @@ std::shared_ptr<TH2D> EventTPC::GetMergedStripVsTime(int strip_dir){  // valid r
 					 myGeometryPtr->GetAgetNtimecells(),
 					 0.0-0.5, 
 					 1.*myGeometryPtr->GetAgetNtimecells()-0.5, // ends at 511.5 (cells numbered from 0 to 511)
-					 maxStripNum-minStripNum,
+					 maxStripNum-minStripNum+1,
 					 minStripNum-0.5,
-					 1.*maxStripNum+0.5 ));
+					 1*maxStripNum+0.5 ));
   // fill new histogram
   for(int strip_num=1; strip_num<=myGeometryPtr->GetDirNstrips(strip_dir); strip_num++) {
     for(int icell=0; icell<myGeometryPtr->GetAgetNtimecells(); icell++) {
