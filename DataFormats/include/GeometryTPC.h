@@ -69,6 +69,7 @@ class GeometryTPC {
   // Setter methods 
   
   bool Load(const char *fname);                 // loads geometry from TXT config file
+  bool LoadAnalog(std::istream &f);                            //subrutine. Loads analog channels from geometry TXT config file
   bool InitTH2Poly();                           // define bins for the underlying TH2Poly histogram
 
   void SetTH2PolyStrip(int ibin, StripTPC *s);  // maps TH2Poly bin to a given StripTPC object

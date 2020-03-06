@@ -1046,3 +1046,13 @@ W		0		223		0		2		2		56		79		-157		37
 W		0		224		0		2		2		58		79.5		-158		35
 W		0		225		0		2		2		60		80		-159		33
 W		0		226		0		2		2		62		80.5		-160		31
+#
+# Auxilliary spare channels of the GET electronics
+#
+#### Columns: AUX_name / COBO_id / ASAD_id[0-3] / AGET_id[0-3] / AGET_ch[0-63]
+Ain0		0	0	0	62
+Ain0_copy	0	0	0	60
+Ain0_copy2	0	0	0	58
+Ain1		0	3	0	62
+Ain2		0	3	0	60
+Ain3		0	3	0	58
