@@ -420,8 +420,11 @@ bool GeometryTPC::Load(const char *fname) {
         }
       }
     }
-    LoadAnalog(f);
+    auto retv = LoadAnalog(f);
     f.close();
+    if (!retv) {
+      return retv;
+    }
   } else {
     std::cout << "\n==== INITIALIZING TPC GEOMETRY - END ====\n\n";
     std::cerr << "ERROR: Unable to open config file: " << fname << "!!!\n";
@@ -518,10 +521,18 @@ bool GeometryTPC::LoadAnalog(std::istream &f) {
         found = true;
         std::cout << "AUX_name  COBO ASAD  AGET / AGET_CH" << std::endl;
       }
-      std::cout << Form("%-12s%-8d%-8d%-8d%-8d", name, cobo, asad, aget,
-                        chan_num)
-                << std::endl;
-  //HERE GOES ADDING ANALOG CHANNELS FROM CONFIG
+      if (mapByAget.find(MultiKey4(cobo, asad, aget, chan_num)) ==
+          mapByAget.end()) {
+        std::cout << Form("%-12s%-8d%-8d%-8d%-8d", name, cobo, asad, aget,
+                          chan_num)
+                  << std::endl;
+        // HERE GOES ADDING ANALOG CHANNELS FROM CONFIG
+      } else {
+        std::cout << "Error channel " << cobo << "  " << asad << "  " << aget
+                  << "  " << chan_num << "  already declared as STRIP!"
+                  << std::endl;
+        return false;
+      }
     }
   }
   return true;
