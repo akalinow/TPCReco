@@ -27,6 +27,7 @@ private:
   PedestalCalculator myPedestalCalculator;
   GET::GDataFrame myDataFrame;
   std::shared_ptr<TGrawFile> myFile;
+  std::string myFilePath;
 
   int minSignalCell;
   int maxSignalCell;

@@ -1,6 +1,7 @@
 #include<cstdlib>
 #include <iostream>
 
+#include "get/graw2dataframe.h"
 #include "EventSourceGRAW.h"
 
 /////////////////////////////////////////////////////////
@@ -22,6 +23,7 @@ void EventSourceGRAW::loadDataFile(const std::string & fileName){
 
   EventSourceBase::loadDataFile(fileName);
 
+  myFilePath = fileName;
   myFile =  std::make_shared<TGrawFile>(fileName.c_str());
   if(!myFile){
     std::cerr<<"File: "<<fileName<<"not found!"<<std::endl;
@@ -34,7 +36,9 @@ void EventSourceGRAW::loadDataFile(const std::string & fileName){
 void EventSourceGRAW::loadFileEntry(unsigned long int iEntry){
 
   if(iEntry>=nEvents) iEntry = nEvents;
-  bool dataFrameRead = myFile->GetGrawFrame(myDataFrame, iEntry);
+  ///getGrawFrame counts frames from 1 (WRRR!)
+  bool dataFrameRead = getGrawFrame(myFilePath, iEntry+1, myDataFrame);
+  
   if(!dataFrameRead){
     std::cerr << "ERROR: cannot read event " << iEntry << std::endl;
     exit(0);
@@ -50,8 +54,10 @@ void EventSourceGRAW::loadFileEntry(unsigned long int iEntry){
     std::cout<<"\033[39m";
   }
   else{
+    int  ASAD_idx = myDataFrame.fHeader.fAsadIdx;
     std::cout<<"\033[34m";
-    std::cout<<"Addng a frame to existing event: "<<eventIdx<<std::endl;
+    std::cout<<"Addng a frame to existing event: "<<eventIdx
+	     <<" for  ASAD: "<<ASAD_idx<<std::endl;
     std::cout<<"\033[39m";
   }
   myCurrentEvent->SetGeoPtr(myGeometryPtr);
