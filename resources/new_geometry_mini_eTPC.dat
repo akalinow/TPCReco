@@ -28,7 +28,7 @@ DRIFT CAGE ACCEPTANCE: -100.0 100.0
 #
 #### Columns: Strip_direction / Strip_number / AGET_id / AGET_ch / pad_pitch_offset / strip_pitch_offset
 #
-U	1	0	1	2	62	0	-71	56
+U	1	0	0	2	62	0	-71	56
 U	2	0	0	1	0	-0.5	-70	57
 U	3	0	0	2	60	-1	-69	58
 U	4	0	0	1	2	-1.5	-68	59

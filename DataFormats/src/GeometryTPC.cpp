@@ -66,7 +66,7 @@ GeometryTPC::GeometryTPC(const char* fname, bool debug)
     grid_nx(25),
     grid_ny(25),
     isOK_TH2Poly(false),
-    _debug(true)
+    _debug(debug)
  {
    if(_debug) {
      std::cout << "GeometryTPC::Constructor - Started..." << std::flush << std::endl;
@@ -327,12 +327,11 @@ bool GeometryTPC::Load(const char *fname) {
 	  
 	  if(!found) {
 	    found=true;
-	    std::cout << "DIR     STRIP   COBO    ASAD    AGET    AGET_CH OFF_PAD OFF_STR LENGTH\n";
+	    std::cout << "DIR  SECTION   STRIP   COBO    ASAD    AGET    AGET_CH OFF_PAD OFF_STR LENGTH\n";
 	  }
 	  std::cout << Form("%-8s%-8d%-8d%-8d%-8d%-8d%-8d%-8.1lf%-8.1lf%-8.1lf", name, section, strip_num, cobo, asad, aget, chan_num, offset_in_pads, offset_in_strips, length_in_pads) << std::endl;
 
 	  int dir=it->second; // strip direction index
-
 	  // DEBUG
 	  if(_debug) {
 	    std::cout << "DIRNAME=" << std::string(name) << " / DIR=" << dir << " / SECTION=" << section <<" / STRIPNUM=" << strip_num 
@@ -340,7 +339,6 @@ bool GeometryTPC::Load(const char *fname) {
 		      << " / AGET=" << aget << " / CHANNUM=" << chan_num << "\n";
 	  }
 	  // DEBUG
-
 	  if(mapByAget.find(MultiKey4(cobo, asad, aget, chan_num))==mapByAget.end()) {
 
 	    // create new strip
@@ -927,12 +925,13 @@ int GeometryTPC::Global_normal2raw(int glb_channel_idx) {                // vali
 }
                          
 int GeometryTPC::Global_normal2normal(int COBO_idx, int ASAD_idx, int aget_idx, int channel_idx) {   // valid range [0-1][0-3][0-3][0-63]
-  if(/*!IsOK() || */COBO_idx<0 || COBO_idx>=COBO_N || ASAD_idx<0 || ASAD_idx>ASAD_N[COBO_idx] || aget_idx<0 || aget_idx>=AGET_Nchips ||
-     channel_idx<0 || channel_idx>=AGET_Nchan ) return ERROR;
+ // if(/*!IsOK() || */COBO_idx<0 || COBO_idx>=COBO_N || ASAD_idx<0 || ASAD_idx>ASAD_N[COBO_idx] || aget_idx<0 || aget_idx>=AGET_Nchips ||
+ //    channel_idx<0 || channel_idx>=AGET_Nchan ) return ERROR;
   int ASAD_offset=0;
   for(int icobo=0; icobo<COBO_idx; icobo++) {
     ASAD_offset += ASAD_N[icobo];
   }
+
   return ((ASAD_offset+ASAD_idx)*AGET_Nchips + aget_idx)*AGET_Nchan + channel_idx; 
 }                                 
 
