@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.14) # setting this is required
 set(This TPCSoft)
 project(${This} CXX)                   # this sets the project name
+set(Tests_flag False)
 
 ###############################################################################
 ## dependencies ###############################################################
@@ -42,12 +43,14 @@ set(CMAKE_CXX_FLAGS "${ROOT_CXX_FLAGS} -Wall -O3 -std=c++14 -fopenmp")
 set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 
 #Framework packages
-add_subdirectory(googletest)
+if(Tests_flag)
+    add_subdirectory(googletest)
+    add_subdirectory(DataFormatsTests)
+endif()
 add_subdirectory(GUI)
 add_subdirectory(GrawToROOT)
 add_subdirectory(Reconstruction)
 add_subdirectory(DataFormats)
-add_subdirectory(DataFormatsTests)
 
 # Now comes everything we need, to create a package
 # there are a lot more variables you can set, and some

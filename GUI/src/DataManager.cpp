@@ -22,7 +22,7 @@ void DataManager::loadDataFile(const std::string& fileName) {
 	if (myTree == nullptr) {
 		throw std::runtime_error("ROOT tree not available!");
 	}
-	myTree->SetBranchAddress("Event", &currentEvent_internal); //MIGHT BE INCORRECT
+	myTree->SetBranchAddress("Event", &currentEvent_internal);
 	nEvents = myTree->GetEntries();
 	loadTreeEntry(0);
 
