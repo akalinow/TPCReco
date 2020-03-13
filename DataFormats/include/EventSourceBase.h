@@ -15,7 +15,7 @@ public:
   
   virtual ~EventSourceBase();
 
-  bool isFileLoaded() const { return nEvents>0;}
+  bool isFileLoaded() const { return nEntries>0;}
 
   void loadGeometry(const std::string & fileName);
 
@@ -23,21 +23,25 @@ public:
 
   virtual void loadFileEntry(unsigned long int iEntry) = 0;
 
-  void loadEventId(unsigned long int iEvent);
+  virtual void loadEventId(unsigned long int iEvent) = 0;
 
   std::string getCurrentPath() const;
 
   std::shared_ptr<EventTPC> getCurrentEvent() const;
   
-  std::shared_ptr<EventTPC> getNextEvent();
+  virtual std::shared_ptr<EventTPC> getNextEvent() = 0;
 
-  std::shared_ptr<EventTPC> getPreviousEvent();
+  virtual std::shared_ptr<EventTPC> getPreviousEvent() = 0;
 
   std::shared_ptr<EventTPC> getLastEvent();
 
-  unsigned long int numberOfEvents() const;
+  virtual unsigned long int numberOfEvents() const = 0;
+
+  unsigned long int numberOfEntries() const;
 
   unsigned long int currentEventNumber() const;
+
+  unsigned long int currentEntryNumber() const;
 
   std::shared_ptr<GeometryTPC> getGeometry() const;
     
@@ -45,7 +49,7 @@ protected:
 
   std::string currentFilePath;
   
-  unsigned long int nEvents;
+  unsigned long int nEntries;
   unsigned long int myCurrentEntry;
 
   std::shared_ptr<EventTPC> myCurrentEvent;

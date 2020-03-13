@@ -29,7 +29,7 @@ void EventSourceROOT::loadDataFile(const std::string & fileName){
   
   myTree.reset((TTree*)myFile->Get(treeName.c_str()));  
   myTree->SetBranchAddress("Event", &aPtr);
-  nEvents = myTree->GetEntries();
+  nEntries = myTree->GetEntries();
   std::cout<<"File: "<<fileName<<" loaded."<<std::endl;
 }
 /////////////////////////////////////////////////////////
@@ -46,6 +46,37 @@ void EventSourceROOT::loadFileEntry(unsigned long int iEntry){
   myTree->GetEntry(iEntry);
   myCurrentEvent->SetGeoPtr(myGeometryPtr);
   myCurrentEntry = iEntry;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+unsigned long int EventSourceROOT::numberOfEvents() const{ return nEntries; }
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::shared_ptr<EventTPC> EventSourceROOT::getNextEvent(){
+
+  if(nEntries>0 && myCurrentEntry<nEntries-1){
+    loadFileEntry(++myCurrentEntry);
+  }
+  return myCurrentEvent;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::shared_ptr<EventTPC> EventSourceROOT::getPreviousEvent(){
+
+  if(myCurrentEntry>0 && nEntries>0){
+    loadFileEntry(--myCurrentEntry);
+  }
+  return myCurrentEvent;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void EventSourceROOT::loadEventId(unsigned long int iEvent){
+
+  unsigned long int iEntry = 0;
+  while(currentEventNumber()!=iEvent && iEntry<nEntries){  
+    loadFileEntry(iEntry);
+    ++iEntry;
+  }
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
