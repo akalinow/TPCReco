@@ -50,6 +50,7 @@ endif()
 add_subdirectory(GUI)
 add_subdirectory(GrawToROOT)
 add_subdirectory(Reconstruction)
+add_subdirectory(TrackGenerator)
 add_subdirectory(DataFormats)
 
 # Now comes everything we need, to create a package
