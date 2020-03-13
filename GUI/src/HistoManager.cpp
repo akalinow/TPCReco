@@ -85,7 +85,7 @@ std::shared_ptr<TH1D> HistoManager::getRawStripProjection(int strip_dir){
 /////////////////////////////////////////////////////////
 std::shared_ptr<TH2D> HistoManager::getRawStripVsTime(int strip_dir){
 
-  return  myEvent->GetMergedStripVsTime(strip_dir);
+  return  myEvent->GetStripVsTime(strip_dir);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

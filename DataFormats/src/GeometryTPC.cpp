@@ -756,8 +756,11 @@ int GeometryTPC::GetDirNstrips(int dir) {
   case DIR_U:
   case DIR_V:
   case DIR_W:
+    return GetDirNStripsMerged(dir);
+    break;
   case FPN_CH:
     return stripN[dir];
+    break;
   };
   return ERROR;
 }

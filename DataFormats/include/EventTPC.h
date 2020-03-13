@@ -31,12 +31,10 @@ class EventTPC {
   Long64_t event_id, run_id;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
   
-  std::map<MultiKey3, double, multikey3_less> mergedChargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
-  
-  std::map<MultiKey4, double, multikey4_less> chargeMap; // key=(STRIP_DIR [0-2], SECTION [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
-  std::map<MultiKey2, double, multikey2_less> maxChargeMap; // key=(STRIP_DIR [0-2],  STRIP_NUM [1-1024])
-  std::map<MultiKey2, double, multikey2_less> totalChargeMap; // key=(STRIP_DIR [0-2],  STRIP_NUM [1-1024])
-  std::map<MultiKey2, double, multikey2_less> totalChargeMap2; // key=(STRIP_DIR [0-2],  TIME_CELL [0-511])
+  std::map<MultiKey3, double, multikey3_less> chargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
+  std::map<MultiKey2, double, multikey2_less> maxChargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024])
+  std::map<MultiKey2, double, multikey2_less> totalChargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024])
+  std::map<MultiKey2, double, multikey2_less> totalChargeMap2; // key=(STRIP_DIR [0-2], TIME_CELL [0-511])
   std::map<int, double> totalChargeMap3; // key=TIME_CELL [0-511]
 
   bool initOK;      // is geometry valid?
@@ -64,8 +62,7 @@ class EventTPC {
   // helper methods for inserting data points
   // they return TRUE on success and FALSE on error
   bool AddValByStrip(StripTPC* strip, int time_cell, double val);                      // valid range [0-511]
-  bool AddValByStrip(int strip_dir, int section, int strip_number, int time_cell, double val);     // valid range [0-2][0-2][1-1024][0-511]
-  bool AddValByStrip(int strip_dir, int strip_number, int time_cell, double val);     //legacy section=0; valid range [0-2][1-1024][0-511]
+  bool AddValByStrip(int strip_dir, int strip_number, int time_cell, double val);     // valid range [0-2][1-1024][0-511]
   bool AddValByGlobalChannel(int glb_channel_idx, int time_cell, double val);         // valid range [0-1023][0-511]
   bool AddValByGlobalChannel_raw(int glb_raw_channel_idx, int time_cell, double val); // valid range [0-1023+4*N][0-511]
   bool AddValByAgetChannel(int cobo_idx, int asad_idx, int aget_idx, int channel_idx, int time_cell, double val); // valid range [0-1][0-3][0-3][0-63][0-511]
@@ -74,8 +71,7 @@ class EventTPC {
   // helper methods for extracting data points
   // they return 0.0 for non-existing data points
   double GetValByStrip(StripTPC* strip, int time_cell/*, bool &result*/);                   // valid range [0-511]
-  double GetValByStrip(int strip_dir, int section, int strip_number, int time_cell/*, bool &result*/);  // valid range [0-2][0-2][1-1024][0-511]
-  double GetValByStrip(int strip_dir, int strip_number, int time_cell/*, bool &result*/);  // legacy section=0; valid range [0-2][1-1024][0-511]
+  double GetValByStrip(int strip_dir, int strip_number, int time_cell/*, bool &result*/);  // valid range [0-2][1-1024][0-511]
   double GetValByGlobalChannel(int glb_channel_idx, int time_cell/*, bool &result*/);         // valid range [0-1023][0-511]
   double GetValByGlobalChannel_raw(int glb_raw_channel_idx, int time_cell/*, bool &result*/); // valid range [0-1023+4*N][0-511]
   double GetValByAgetChannel(int cobo_idx, int asad_idx, int aget_idx, int channel_idx, int time_cell/*, bool &result*/); // valid range [0-1][0-3][0-3][0-63][0-511]
@@ -110,8 +106,7 @@ class EventTPC {
   TH1D *GetTimeProjection();                                          // whole event, all strip dirs
   
   std::shared_ptr<TH2D> GetStripVsTime(const SigClusterTPC &cluster, int strip_dir);        // clustered hits only, valid dir range [0-2]
-  std::shared_ptr<TH2D> GetMergedStripVsTime(int strip_dir);    
-  std::shared_ptr<TH2D> GetStripVsTime(int strip_dir, int section);                            // whole event, all strip dirs
+  std::shared_ptr<TH2D> GetStripVsTime(int strip_dir);                               // whole event, all strip dirs
   std::shared_ptr<TH2D> GetStripVsTimeInMM(const SigClusterTPC &cluster, int strip_dir);  // valid range [0-2]
 
   std::vector<TH2D*> Get2D(const SigClusterTPC &cluster, double radius,          // clustered hits only,
