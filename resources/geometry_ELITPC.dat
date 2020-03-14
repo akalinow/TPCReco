@@ -8,7 +8,7 @@ DIAMOND SIZE: 1.0
 #
 #### Offset in [mm] of the reference point wrt X-Y plane origin
 #
-REFERENCE POINT: 0 0
+REFERENCE POINT: -110 110
 #
 #### Electron drift velocity [cm/us]
 #
