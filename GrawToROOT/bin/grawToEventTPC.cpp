@@ -52,6 +52,7 @@ int main(int argc, char *argv[]) {
 
   long numberOfEntries = myEventSource.numberOfEntries();
   std::map<unsigned int, bool> eventIdxMap;
+  numberOfEntries = 0;//TEST
   for(long iFileEntry = 0; iFileEntry<numberOfEntries; ++iFileEntry){
     myEventSource.loadFileEntry(iFileEntry);
     myEventPtr->SetGeoPtr(0);
@@ -65,7 +66,16 @@ int main(int argc, char *argv[]) {
     }
   }
   aTree.Print();
-  return 0;
+
+  /*
+  std::cout<<"myEventSource.loadFileEntry(0)"<<std::endl;
+  myEventSource.loadFileEntry(0);
+
+  std::cout<<"myEventSource.loadEventId(1)"<<std::endl;
+  myEventSource.loadEventId(0);
+
+  //std::cout<<"myEventSource.getNextEvent()"<<std::endl;
+  //myEventSource.getNextEvent();
 
   std::cout<<"myEventSource.loadEventId(3)"<<std::endl;
   myEventSource.loadEventId(3);
@@ -85,8 +95,12 @@ int main(int argc, char *argv[]) {
   std::cout<<"myEventSource.loadEventId(0)"<<std::endl;
   myEventSource.loadEventId(0);
 
+  std::cout<<"myEventSource.getNextEvent()"<<std::endl;
+  myEventSource.getNextEvent();
+
   std::cout<<"myEventSource.getPreviousEvent()"<<std::endl;
   myEventSource.getPreviousEvent();
+  */
   
   aTree.Write();
   aFile.Close();

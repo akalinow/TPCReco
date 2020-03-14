@@ -94,7 +94,6 @@ void EventSourceGRAW::loadFileEntry(unsigned long int iEntry){
   myCurrentEntry = iEntry;
   loadGrawFrame(iEntry);
   unsigned long int eventIdx = myDataFrame.fHeader.fEventIdx;
-
   if(myFramesMap.find(eventIdx)==myFramesMap.end() ||
      myFramesMap.find(eventIdx)->second.size()<GRAW_EVENT_FRAGMENTS){
     findEventFragments(eventIdx, iEntry);
