@@ -13,9 +13,19 @@ public:
   
   ~EventSourceROOT();
 
+  void loadFileEntry(unsigned long int iEntry);
+
+  void loadEventId(unsigned long int iEvent);
+
   void loadDataFile(const std::string & fileName);
 
-  void loadFileEntry(unsigned long int iEntry);
+  std::shared_ptr<EventTPC> getNextEvent();
+
+  std::shared_ptr<EventTPC> getPreviousEvent();
+
+  std::shared_ptr<EventTPC> getLastEvent();
+
+  unsigned long int numberOfEvents() const;
 
 private:
 

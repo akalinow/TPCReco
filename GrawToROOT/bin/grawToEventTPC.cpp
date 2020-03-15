@@ -50,16 +50,60 @@ int main(int argc, char *argv[]) {
   EventTPC *persistent_event = myEventPtr.get();
   aTree.Branch("Event", &persistent_event);
 
-  long numberOfEvents = myEventSource.numberOfEvents();
-  for(long iFileEntry = 0; iFileEntry<numberOfEvents; ++iFileEntry){
+  long numberOfEntries = myEventSource.numberOfEntries();
+  std::map<unsigned int, bool> eventIdxMap;
+  numberOfEntries = 0;//TEST
+  for(long iFileEntry = 0; iFileEntry<numberOfEntries; ++iFileEntry){
     myEventSource.loadFileEntry(iFileEntry);
     myEventPtr->SetGeoPtr(0);
     ///Skip empty events
     if(skipEmptyEvents && myEventPtr->GetMaxCharge()<100) continue;
     /////////////////////
-    aTree.Fill();
+    unsigned int eventIdx = myEventPtr->GetEventId();
+    if(eventIdxMap.find(eventIdx)==eventIdxMap.end()){
+      eventIdxMap[eventIdx] = true;
+      aTree.Fill();
+    }
   }
+  aTree.Print();
+
+  /*
+  std::cout<<"myEventSource.loadFileEntry(0)"<<std::endl;
+  myEventSource.loadFileEntry(0);
+
+  std::cout<<"myEventSource.loadEventId(1)"<<std::endl;
+  myEventSource.loadEventId(0);
+
+  //std::cout<<"myEventSource.getNextEvent()"<<std::endl;
+  //myEventSource.getNextEvent();
+
+  std::cout<<"myEventSource.loadEventId(3)"<<std::endl;
+  myEventSource.loadEventId(3);
+
+  std::cout<<"myEventSource.getPreviousEvent()"<<std::endl;
+  myEventSource.getPreviousEvent();
+
+  std::cout<<"myEventSource.getNextEvent() "<<std::endl;
+  myEventSource.getNextEvent();
+
+  std::cout<<" myEventSource.getLastEvent() "<<std::endl;
+  myEventSource.getLastEvent();
+
+  std::cout<<"myEventSource.getNextEvent() "<<std::endl;
+  myEventSource.getNextEvent();
+
+  std::cout<<"myEventSource.loadEventId(0)"<<std::endl;
+  myEventSource.loadEventId(0);
+
+  std::cout<<"myEventSource.getNextEvent()"<<std::endl;
+  myEventSource.getNextEvent();
+
+  std::cout<<"myEventSource.getPreviousEvent()"<<std::endl;
+  myEventSource.getPreviousEvent();
+  */
+  
   aTree.Write();
   aFile.Close();
+  
   return 0;
 }
