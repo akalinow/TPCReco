@@ -1,6 +1,6 @@
 #include "AbstractGenerator.h"
 
-AbstractGenerator::AbstractGenerator() : projectionsCollection(3) {
+AbstractGenerator::AbstractGenerator() {
 	persistentEvent = &myEvent;
 }
 
@@ -35,17 +35,17 @@ void AbstractGenerator::project() {
 
 	myProjectorPtr->SetEvent3D(myTrack3D);
 	for (auto dir : dir_vec_UVW) {
-		projectionsCollection.at(dir) = myProjectorPtr->GetStripVsTime_TH2D(dir);
+		projectionsCollection[dir] = myProjectorPtr->GetStripVsTime_TH2D(dir);
 	}
 }
 
 void AbstractGenerator::fillEvent() {
 	myEvent.Clear();
 	for (auto dir : dir_vec_UVW) {
-		TH2D* hist = projectionsCollection.at(dir);
+		auto hist = projectionsCollection.at(dir);
 		for (int i = 1; i != hist->GetNbinsX(); ++i) {
 			for (int j = 1; j != hist->GetNbinsY(); ++j) {
-				myEvent.AddValByStrip(dir, j, i - 1, hist->GetBinContent(i, j));
+				myEvent.AddValByStrip(Geometry().GetStripByDir(dir, j), i - 1, hist->GetBinContent(i, j)); //might work, might not
 			}
 		}
 		//hist->Delete();

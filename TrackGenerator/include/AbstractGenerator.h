@@ -13,7 +13,7 @@
 class AbstractGenerator {
 protected:
 
-	std::map<direction, TH2D*> projectionsCollection;
+	std::map<direction, std::shared_ptr<TH2D>> projectionsCollection;
 	std::unique_ptr<UVWprojector> myProjectorPtr;
 	TH3D myTrack3D;
 	EventCharges myEvent;
