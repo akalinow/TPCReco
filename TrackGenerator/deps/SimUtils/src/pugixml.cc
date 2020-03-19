@@ -1274,7 +1274,7 @@ PUGI__NS_BEGIN
 		child->parent = parent;
 
 		if (node->next_sibling)
-			node->next_siblinGeometry().prev_sibling_c = child;
+			node->next_sibling->prev_sibling_c = child;
 		else
 			parent->first_child->prev_sibling_c = child;
 
@@ -1306,7 +1306,7 @@ PUGI__NS_BEGIN
 		xml_node_struct* parent = node->parent;
 
 		if (node->next_sibling)
-			node->next_siblinGeometry().prev_sibling_c = node->prev_sibling_c;
+			node->next_sibling->prev_sibling_c = node->prev_sibling_c;
 		else
 			parent->first_child->prev_sibling_c = node->prev_sibling_c;
 
@@ -11378,7 +11378,7 @@ PUGI__NS_BEGIN
 					if (!n) return 0;
 
 					if (argc < 2) args[argc] = n;
-					else last_arGeometry().set_next(n);
+					else last_arg->set_next(n);
 
 					argc++;
 					last_arg = n;
