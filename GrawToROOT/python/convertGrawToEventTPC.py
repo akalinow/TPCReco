@@ -6,7 +6,7 @@ import os, commands
 
 
 path = "/home/akalinow/data/neutrons/"
-command = "../bin/grawToEventTPC"
+command = "../bin/grawToEventCharges"
 geometryFile = path+"geometry_mini_eTPC.dat"
 
 grawFileList = {}

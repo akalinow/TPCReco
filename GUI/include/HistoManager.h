@@ -59,9 +59,9 @@ public:
 	std::shared_ptr<TH2D> GetStripVsTimeInMM(direction strip_dir);  // valid range [0-2]
 
 	Reconstr_hist&& Get(double radius,          // clustered hits only, / clustered hits only, 3D view
-		int rebin_space = EVENTTPC_DEFAULT_STRIP_REBIN,   // directions on: XY, XZ, YZ planes / all planes
-		int rebin_time = EVENTTPC_DEFAULT_TIME_REBIN,
-		int method = EVENTTPC_DEFAULT_RECO_METHOD);
+		int rebin_space = EventCharges_DEFAULT_STRIP_REBIN,   // directions on: XY, XZ, YZ planes / all planes
+		int rebin_time = EventCharges_DEFAULT_TIME_REBIN,
+		int method = EventCharges_DEFAULT_RECO_METHOD);
 
 private:
 	HistoManager() = default;

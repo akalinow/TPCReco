@@ -27,7 +27,7 @@ public:
     //Loads .root data file -> output from MonteCarloSimulations/Transport
     void loadDataFile(std::string dataFileAddress);
 
-    //Loads entry from input tree and sets EventTPC event number
+    //Loads entry from input tree and sets EventCharges event number
     void setEntry(int i=0) final;
    
 protected:

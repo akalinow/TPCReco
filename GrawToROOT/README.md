@@ -15,24 +15,24 @@ cmake ../
 make install -j 4
 ```
 
-Convert all graw files in the directory hardcoded in the convertGrawToEventTPC.py file
-to ROOT EventTPC format. Since the GET software nees a lots of config files the command has to
+Convert all graw files in the directory hardcoded in the convertGrawToEventCharges.py file
+to ROOT EventCharges format. Since the GET software nees a lots of config files the command has to
 issued from a directory containing the config files. (To be fixed in some distant future.)
 Each .graw file is converted into a .root file with the same timestamp and file fragment number.
 Conversion requires a geometry file witg the same time stamp as data files (without file fragment number).
 IMPORTANT: Update the path to data location
 ```
 cd resources
-../python/convertGrawToEventTPC.py
+../python/convertGrawToEventCharges.py
 ```
 
-Read an event in EventTPC format, and fill an example histogram.
+Read an event in EventCharges format, and fill an example histogram.
 Requires geometry definition in resources/geometry_mini_eTPC.dat.
 The plot will be saved to current directory.
 IMPORTANT: Update the data file name and geometry location.
 ```
 cd ../
-./bin/testEventTPCread
+./bin/testEventChargesread
 ```
 
 Read all events in may all files from a single run (single timestamp), and fill an example histogram.
@@ -41,5 +41,5 @@ The plot will be saved to current directory.
 IMPORTANT: Update the data file name and geometry location.
 ```
 cd ../
-./bin/testEventTPCreadTChain
+./bin/testEventChargesreadTChain
 ```

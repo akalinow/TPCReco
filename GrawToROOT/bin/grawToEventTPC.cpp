@@ -46,7 +46,7 @@ int main(int argc, char* argv[]) {
 	PedestalCalculator myPedestalCalculator;
 
 	///Create ROOT Tree
-	std::string rootFileName = "EventTPC_" + timestamp + ".root";
+	std::string rootFileName = "EventCharges_" + timestamp + ".root";
 
 	TFile aFile(rootFileName.c_str(), "RECREATE");
 	TTree aTree("TPCData", "");

@@ -57,7 +57,7 @@ private:
 	std::map<direction, std::string> dir2name;  // pair=(directory_idx, group_name="U","V","W","FPN")
 	std::map<std::string, direction> name2dir;  // pair=(group_name="U","V","W","FPN", directory_idx)
 	std::map<std::tuple<int, int, int, int>, std::shared_ptr<Geometry_Strip>> arrayByAget;/*channel_idx[0-63] AGET_idx[0-3] ASAD_idx[0-3] COBO_idx[0-1]*/
-	std::map<std::tuple<direction, int>, std::shared_ptr<Geometry_Strip>> stripArray; // key = {U,V,W}, STRIP_NUMBER [1-1024]
+	std::map<std::tuple<direction,int, int>, std::shared_ptr<Geometry_Strip>> stripArray; // key = {U,V,W}, section [0-2], STRIP_NUMBER [1-1024]
 	std::vector<int> ASAD_N;       // pair=(COBO_idx, number of ASAD boards)
 	const std::vector<int> FPN_chanId = { 11, 22, 45, 56 };     // FPN channels in AGET chips
 	double pad_size;                 // in [mm]
@@ -71,14 +71,32 @@ private:
 	double trigger_delay;            // delay in [microseconds] of the external "t0" trigger signal (for accelerator beam) 
 	double drift_zmin;               // lower drift cage acceptance limit along Z-axis [mm] (closest to readout PCB)
 	double drift_zmax;               // upper drift cage acceptance limit along Z-axis [mm] (farthest from readout PCB)
+	std::shared_ptr<TH2Poly> tp;                     // for internal storage of arbitrary strip shapes
+	int grid_nx;                     // partition size of TH2Poly in X-dir
+	int grid_ny;                     // partition size of TH2Poly in Y-dir
+	bool isOK_TH2Poly;               // is TH2Poly already initialized?
+	std::map<int, std::shared_ptr<Geometry_Strip>> fStripMap; // maps TH2Poly bin to a given StripTPC object  [TH2Poly bin index [1..1024]] 
 
 	// Setter methods 
 
 	bool Load(std::string fname);                 // loads geometry from TXT config file
+	bool InitTH2Poly();                           // define bins for the underlying TH2Poly histogram
+
+	void SetTH2PolyStrip(int ibin, std::shared_ptr<Geometry_Strip> s);  // maps TH2Poly bin to a given StripTPC object
 
 	GeometryTPC(std::string fname);
 
 public:
+
+
+	void SetTH2PolyPartition(int nx, int ny); // change cartesian binning of the underlying TH2Poly
+	inline int GetTH2PolyPartitionX() { return grid_nx; }
+	inline int GetTH2PolyPartitionY() { return grid_ny; }
+
+	// Getter methods
+
+	inline auto GetTH2Poly() { return tp; }   // returns pointer to the underlying TH2Poly
+	std::shared_ptr<Geometry_Strip> GetTH2PolyStrip(int ibin);          // returns pointer to StripTPC object corresponding to TH2Poly bin 
 
 	// Getter methods  
 	int GetDirNstrips(direction dir) const;
@@ -90,11 +108,17 @@ public:
 	inline int GetAgetNtimecells() { return AGET_Ntimecells; }
 	inline int GetAsadNboards() { return ASAD_Nboards; }
 	inline int GetCoboNboards() { return COBO_N; }
+	inline double GetVdrift() { return vdrift; }
+	inline double GetDriftCageZmin() { return drift_zmin; };
+	inline double GetDriftCageZmax() { return drift_zmax; };
+	inline double GetSamplingRate() { return sampling_rate; };
+	inline double GetTriggerDelay() { return trigger_delay; };
 
 	std::string GetDirName(direction dir);
 
 	std::shared_ptr<Geometry_Strip> GetStripByAget(int COBO_idx, int ASAD_idx, int AGET_idx, int channel_idx) const;         // valid range [0-1][0-3][0-3][0-63]
 	std::shared_ptr<Geometry_Strip> GetStripByDir(direction dir, int num) const;                                                   // valid range [0-2][1-1024]
+	std::shared_ptr<Geometry_Strip> GetStripByDir(direction dir, int section, int num) const;                                                   // valid range [0-2][0-2][1-1024]
 	std::vector<std::shared_ptr<Geometry_Strip>> GetStrips() const;
 
 	// various helper functions for calculating local/global normal/raw channel index

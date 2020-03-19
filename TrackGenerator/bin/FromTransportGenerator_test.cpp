@@ -25,7 +25,7 @@ l.loadDataFile(root.get<std::string>("dataFile"));
 l.setOutput(root.get<std::string>("outputFile"));
 l.setEntry(71);
 
-EventTPC myEvent=l.generateEvent();
+EventCharges myEvent=l.generateEvent();
 l.generateEvents(2);
 TCanvas *c1 = new TCanvas("c1","c", 2, 78, 500, 500);
 //track check            

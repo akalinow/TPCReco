@@ -1,4 +1,4 @@
-set(MODULE_NAME "DataFormats")
+set(MODULE_NAME "Utilities")
 MESSAGE( STATUS "Adding CMake fragment for module:         " ${MODULE_NAME} )
 
 ###############################################################################
@@ -16,38 +16,20 @@ file(GLOB_RECURSE sources       ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/src/*.cpp)
 ###############################################################################
 include_directories(${ROOTINCDIR})
 include_directories(${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include)
+include_directories(${PROJECT_SOURCE_DIR}/DataFormats/include)
 ###############################################################################
 ## target definitions #########################################################
 ###############################################################################
-# ROOT dictionary for persistens classes
-ROOT_GENERATE_DICTIONARY(G__${MODULE_NAME}
-  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/EventCharges.h
-  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/GeometryTPC.h 
-  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/Geometry_Strip.h  
-  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/EventHits.h  
-  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/EventInformation.h  
-  LINKDEF ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/LinkDef.h)
-
 # The data is just added to the executable, because in some IDEs (QtCreator) 
 # files are invisible when they are not explicitly part of the project.
 #
-add_library(${MODULE_NAME} SHARED ${sources} G__${MODULE_NAME}.cxx)
+add_library(${MODULE_NAME} SHARED ${sources})
 target_link_libraries(${MODULE_NAME} ${ROOT_LIBRARIES})
-
-add_executable(dummyEventChargesMaker ../GrawToROOT/bin/dummyEventChargesMaker.cpp) 
-add_executable(dummyEventChargesMaker_ROOT ../GrawToROOT/bin/dummyEventChargesMaker_ROOT.cpp)# ROOT TTree testing
-
 # Compiler flags.
 #
 target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
 
-target_link_libraries(dummyEventChargesMaker PUBLIC ${MODULE_NAME})
-target_link_libraries(dummyEventChargesMaker_ROOT PUBLIC ${MODULE_NAME})# ROOT TTree testing
-
 # All install commands get the same destination. this allows us to use paths
 # relative to the executable.
 install(TARGETS ${MODULE_NAME} LIBRARY DESTINATION lib)
-install(TARGETS dummyEventChargesMaker RUNTIME DESTINATION bin)
-install(TARGETS dummyEventChargesMaker_ROOT RUNTIME DESTINATION bin)# ROOT TTree testing
-install(FILES ${CMAKE_BINARY_DIR}/${MODULE_NAME}/lib${MODULE_NAME}_rdict.pcm DESTINATION lib)
-install(FILES ${CMAKE_BINARY_DIR}/${MODULE_NAME}/lib${MODULE_NAME}.rootmap DESTINATION lib)
+

@@ -188,7 +188,7 @@ bool GeometryTPC::Load(std::string fname) {
 		}
 		{
 			double xoff = 0.0, yoff = 0.0;
-			if (!load_var<double, double>(file_lines, "REFERENCE POINT", { [](double _xoff, double _yoff) {return (fabs(_xoff) < 500. && fabs(_yoff) < 500.); } }, "mm", 2,  xoff, yoff) || // set REFERECE POINT offset [mm]
+			if (!load_var<double, double>(file_lines, "REFERENCE POINT", { [](double _xoff, double _yoff) {return (fabs(_xoff) < 500. && fabs(_yoff) < 500.); } }, "mm", 2, xoff, yoff) || // set REFERECE POINT offset [mm]
 				!load_var<double>(file_lines, "DIAMOND SIZE", { [](double var) {return var > 0.0; } }, "mm", 2, pad_size) || // set pad size
 				!load_var<double>(file_lines, "DRIFT VELOCITY", { [](double var) {return var > 0.0; } }, "cm/us", 3, vdrift) || // set electron drift velocity [cm/us]
 				!load_var<double>(file_lines, "SAMPLING RATE", { [](double var) {return var > 0.0; } }, "MHz", 4, sampling_rate) || // set electronics sampling rate [MHz]
@@ -212,10 +212,10 @@ bool GeometryTPC::Load(std::string fname) {
 			for (const auto& line : file_lines) {
 				std::map<std::string, direction>::iterator it;
 				std::string name;
-				int cobo = 0, asad = 0, aget, strip_num, chan_num;
-				double offset_in_pads, offset_in_strips, length_in_pads;
-				if (((std::stringstream(line) >> name >> strip_num >> cobo >> asad >> aget >> chan_num >> offset_in_pads >> offset_in_strips >> length_in_pads) || // NEW FORMAT (several ASADs)
-					(std::stringstream(line) >> name >> strip_num >> aget >> chan_num >> offset_in_pads >> offset_in_strips >> length_in_pads) && (cobo = 0) == 0 && (asad = 0) == 0) && // LEGACY FORMAT (1 ASAD only)
+				int section, cobo = 0, asad = 0, aget, strip_num, chan_num, length_in_pads;
+				double offset_in_pads, offset_in_strips;
+				if (((std::stringstream(line) >> name >> section >> strip_num >> cobo >> asad >> aget >> chan_num >> offset_in_pads >> offset_in_strips >> length_in_pads) || // NEW FORMAT (several ASADs)
+					(std::stringstream(line) >> name >> strip_num >> aget >> chan_num >> offset_in_pads >> offset_in_strips >> length_in_pads) && (section = 0) == 0 && (cobo = 0) == 0 && (asad = 0) == 0) && // LEGACY FORMAT (1 ASAD only)
 					strip_num >= 1 &&
 					cobo >= 0 &&
 					asad >= 0 &&
@@ -236,14 +236,14 @@ bool GeometryTPC::Load(std::string fname) {
 						int chan_num_raw = Aget_normal2raw(chan_num);
 						TVector2 offset = offset_in_strips * strip_pitch * pitch_unit_vec[dir] + offset_in_pads * pad_pitch * strip_unit_vec[dir];
 						double length = length_in_pads * pad_pitch;
-						std::shared_ptr<Geometry_Strip> strip = std::make_shared<Geometry_Strip>(dir, strip_num, cobo, asad, aget, chan_num, chan_num_raw,
+						std::shared_ptr<Geometry_Strip> strip = std::make_shared<Geometry_Strip>(dir, section, strip_num, cobo, asad, aget, chan_num, chan_num_raw,
 							strip_unit_vec[dir], offset, length);
 
 						// update map (by: COBO board, ASAD board, AGET chip, AGET normal/raw channel)
 						arrayByAget[{cobo, asad, aget, chan_num}] = strip;
 
 						// update reverse map (by: strip direction, strip number)
-						stripArray[{dir, strip_num}] = strip;
+						stripArray[{dir, section, strip_num}] = strip;
 
 						// update maximal ASAD index (by: COBO board) 
 						if (cobo >= ASAD_N.size()) { //resize ASAD_N if necessary
@@ -315,6 +315,223 @@ bool GeometryTPC::Load(std::string fname) {
 	return true;
 }
 
+bool GeometryTPC::InitTH2Poly() {
+
+	if (is_debug) {
+		std::cout << "GeometryTPC::InitTH2Poly - Started..." << std::flush << std::endl;
+	}
+
+	isOK_TH2Poly = false;
+	fStripMap.clear();
+
+	// sanity checks
+	if (grid_nx < 1 || grid_ny < 1) {
+		if (is_debug) {
+			std::cout << "GeometryTPC::InitTH2Poly - Abort (1)" << std::flush << std::endl;
+		}
+		return false;
+	}
+
+	// find X and Y range according to geo_ptr
+	double xmin = 1E30;
+	double xmax = -1E30;
+	double ymin = 1E30;
+	double ymax = -1E30;
+
+	/*std::cout<<"!!!!!!!!!!!!"<<std::endl;
+	for (auto &i : mapByAget){
+	   std::cout<<i.second->CoboId()<<std::endl;
+	   std::cout<<i.second->AsadId()<<std::endl;
+	   std::cout<<i.second->AgetId()<<std::endl;
+	   std::cout<<i.second->AgetCh()<<std::endl;
+	  std::cout<<i.second->Dir()<<std::endl;
+	  std::cout<<i.second->Num()<<std::endl;
+	  std::cout<<i.second->GlobalCh()<<std::endl;
+	  std::cout<<i.second->GlobalCh_raw()<<std::endl;
+
+	   std::cout<<"!!!!!!!!!!!!"<<std::endl;
+	  std::cout<<mapByStrip.find(MultiKey2(i.second->Dir(),i.second->Num()))->second->GlobalCh()<<std::endl;
+	  //std::cout<<this->GetStripByGlobal(i.second->GlobalCh())->GlobalCh()<<std::endl;
+	}
+
+
+
+
+	std::cout<<"!!!!!!!!!!!!"<<std::endl;*/
+	// for(int dir=0; dir<=2; dir++) {
+	 //  for(int num=1; num<=this->GetDirNstrips(dir); num++)
+	for (auto& i : stripArray) {
+		// std::cout<<this->GetDirNstrips(dir)<<std::endl;
+		auto strip_data = (*i.second)();
+		// if(!strip_data) {std::cout<<"skipping"<<std::endl;continue;}
+		 //std::cout<<strip_data->Offset().X()<<std::endl;
+		TVector2 point1 = reference_point + strip_data.offset_vec - strip_data.unit_vec * 0.5 * pad_pitch;
+		TVector2 point2 = point1 + strip_data.unit_vec * strip_data.length();
+		if (point1.X() < xmin)      xmin = point1.X();
+		else if (point1.X() > xmax) xmax = point1.X();
+		if (point2.X() < xmin)      xmin = point2.X();
+		else if (point2.X() > xmax) xmax = point2.X();
+		if (point1.Y() < ymin)      ymin = point1.Y();
+		else if (point1.Y() > ymax) ymax = point1.Y();
+		if (point2.Y() < ymin)      ymin = point2.Y();
+		else if (point2.Y() > ymax) ymax = point2.Y();
+		// }
+	}
+	if (tp) {
+		tp->Delete();
+		tp = NULL;
+	}
+	tp = std::make_shared<TH2Poly>("h_uvw", "GeometryTPC::TH2Poly;X;Y;Charge", grid_nx, xmin, xmax, grid_ny, ymin, ymax);
+	if (!tp) {
+		if (is_debug) {
+			std::cout << "GeometryTPC::InitTH2Poly - Abort (2)" << std::flush << std::endl;
+		}
+		return false;
+	}
+	tp->SetFloat(true); // allow to expand outside of the current limits
+
+	///////// DEBUG
+	//  int strip_counter = 0;
+	///////// DEBUG
+
+	// create TPolyBin corresponding to each StripTPC  
+	/*for(int dir=0; dir<=2; dir++) {
+
+	  ///////// DEBUG
+	  if(is_debug) {
+		std::cout << "GeometryTPC::InitTH2Poly: nstrips[" << dir << "]=" << this->GetDirNstrips(dir) << std::endl;
+	  }
+	  ///////// DEBUG
+
+	  for(int num=1; num<=this->GetDirNstrips(dir); num++)*/
+	for (auto& strip_it : stripArray) {
+		auto strip = strip_it.second;
+		auto strip_data = (*strip)();
+		// if(!strip_data) continue;
+		auto dir = strip_data.dir;
+		int section = strip_data.section;
+		int num = strip_data.num;
+		// create diamond-shaped pad for a given direction
+		std::vector<TVector2> offset_vec;
+		offset_vec.push_back(TVector2(0., 0.));
+		offset_vec.push_back(strip_data.unit_vec.Rotate(TMath::Pi() / 6.) * pad_size);
+		offset_vec.push_back(strip_data.unit_vec * pad_pitch);
+		TVector2 point0 = reference_point + strip_data.offset_vec - strip_data.unit_vec * 0.5 * pad_pitch;
+		int npads = strip_data.npads;
+		//  const int npads =int( strip_data->Length()/pad_pitch );
+		const int npoints = npads * offset_vec.size();
+		auto g = std::make_unique<TGraph>(npoints);
+		int ipoint = 0;
+		for (int ipad = 0; ipad < npads; ipad++) {
+			for (size_t icorner = 0; icorner < offset_vec.size(); icorner++) {
+				TVector2 corner = point0 + strip_data.unit_vec * ipad * pad_pitch + offset_vec[icorner];
+				g->SetPoint(ipoint, corner.X(), corner.Y());
+				ipoint++;
+			}
+		}
+		offset_vec.clear();
+		offset_vec.push_back(strip_data.unit_vec.Rotate(-TMath::Pi() / 6.) * pad_size);
+		offset_vec.push_back(TVector2(0., 0.));
+		for (int ipad = npads - 1; ipad >= 0; ipad--) {
+			for (size_t icorner = 0; icorner < offset_vec.size(); icorner++) {
+				TVector2 corner = point0 + strip_data.unit_vec * ipad * pad_pitch + offset_vec[icorner];
+				g->SetPoint(ipoint, corner.X(), corner.Y());
+				ipoint++;
+			}
+		}
+		// create new TH2PolyBin
+
+		// DEBUG
+		if (is_debug) {
+			std::cout << "TH2POLY ADDBIN: BEFORE CREATING BIN: GetNumberOfBins=" << tp->GetNumberOfBins() << std::endl;
+		}
+		// DEBUG      
+
+		// primary method:
+		//      const int ibin = tp->AddBin(g);
+
+		// alternative method due to bin endexing bug in TH2Poly::AddBin() implementation:
+		const int nbins_old = tp->GetNumberOfBins();
+		int ibin = tp->AddBin(&*g);
+		const int nbins_new = tp->GetNumberOfBins();
+		if (nbins_new > nbins_old) {
+			TH2PolyBin* bin = (TH2PolyBin*)tp->GetBins()->At(tp->GetNumberOfBins() - 1);
+			if (bin) ibin = bin->GetBinNumber();
+		}
+
+		// DEBUG
+		if (is_debug) {
+			std::cout << "TH2POLY ADDBIN: AFTER CREATING BIN: GetNumberOfBins=" << tp->GetNumberOfBins() << std::endl;
+			std::cout << "TH2POLY ADDBIN: "
+				<< "TH2POLY_IBIN=" << ibin
+				//		  << ", TH2POLYBIN_PTR=" << bin 	          
+				<< ", DIR=" << this->GetDirName(dir) << ", SECTION=" << section << ", NUM=" << num
+				<< ", NPADS=" << npads
+				<< ", NPOINTS=" << npoints << " (" << ipoint << ")"
+				<< std::endl;
+		}
+		// DEBUG      
+
+		///////// DEBUG
+		// strip_counter++;
+		///////// DEBUG
+
+		// DEBUG
+
+		if (ibin < 1) { // failed to create new bin
+			std::cerr << "ERROR: Failed to create new TH2Poly bin: TH2POLY->AddBin()=" << ibin
+				<< ", DIR=" << this->GetDirName(dir) << ", SECTION=" << section << ", NUM=" << num
+				<< ", NPADS=" << npads
+				<< ", NPOINTS=" << npoints << ", TGraph->Print():"
+				<< std::endl;
+			g->Print();
+			std::cerr << std::endl << std::flush;
+			return false;
+			//	continue; 
+		}
+
+		// update strip map
+		SetTH2PolyStrip(ibin, strip);
+
+		// DEBUG
+		if (is_debug) {
+			std::cout << "TH2POLY ADDBIN: DIR=" << GetDirName(dir) << ", SECTION=" << section << ", NUM=" << num
+				<< ", TH2POLY_IBIN=" << ibin
+				<< ", NPADS=" << npads
+				<< ", NPOINTS=" << npoints << " (" << ipoint << ")"
+				<< std::endl;
+		}
+		// DEBUG
+
+	//  }
+	}
+
+	// final result
+	if (fStripMap.size() > 0) isOK_TH2Poly = true;
+
+	if (is_debug) {
+		std::cout << "GeometryTPC::InitTH2Poly - Ended..." << std::flush << std::endl;
+	}
+
+	return isOK_TH2Poly;
+}
+
+// change cartesian binning of the underlying TH2Poly
+void GeometryTPC::SetTH2PolyPartition(int nx, int ny) {
+	bool change = false;
+	if (nx > 1 && nx != grid_nx) { grid_nx = nx; change = true; }
+	if (ny > 1 && ny != grid_ny) { grid_ny = ny; change = true; }
+	if (change && tp) tp->ChangePartition(grid_nx, grid_ny);
+}
+
+void GeometryTPC::SetTH2PolyStrip(int ibin, std::shared_ptr<Geometry_Strip> s) {
+	if (s) fStripMap[ibin] = s;
+}
+
+std::shared_ptr<Geometry_Strip> GeometryTPC::GetTH2PolyStrip(int ibin) {
+	return (fStripMap.find(ibin) == fStripMap.end() ? NULL : fStripMap[ibin]);
+}
+
 int GeometryTPC::GetDirNstrips(direction dir) const {
 	return stripN.at(dir);
 }
@@ -328,7 +545,11 @@ std::shared_ptr<Geometry_Strip> GeometryTPC::GetStripByAget(int COBO_idx, int AS
 }
 
 std::shared_ptr<Geometry_Strip> GeometryTPC::GetStripByDir(direction dir, int num) const { // valid range [0-2][1-1024]
-	return stripArray.at({ dir,num });
+	return stripArray.at({ dir, 0, num });
+}
+
+std::shared_ptr<Geometry_Strip> GeometryTPC::GetStripByDir(direction dir, int section, int num) const { // valid range [0-2][1-1024]
+	return stripArray.at({ dir, section, num });
 }
 
 int GeometryTPC::Aget_normal2raw(int channel_idx) { // valid range [0-63]
@@ -369,7 +590,7 @@ bool GeometryTPC::GetCrossPoint(std::shared_ptr<Geometry_Strip> strip1, std::sha
 	double len2 = W2 / W;
 	double residual = 0.5 * pad_pitch;
 	if (len1<-residual - NUM_TOLERANCE || len2<-residual - NUM_TOLERANCE ||
-		len1 > op1.length + NUM_TOLERANCE || len2 > op2.length + NUM_TOLERANCE) return false;
+		len1 > op1.length() + NUM_TOLERANCE || len2 > op2.length() + NUM_TOLERANCE) return false;
 	point.Set(op1.offset_vec.X() + len1 * op1.unit_vec.X(), op1.offset_vec.Y() + len1 * op1.unit_vec.Y());
 	point += reference_point;
 	return true;

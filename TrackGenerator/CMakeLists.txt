@@ -26,6 +26,7 @@ SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 ###############################################################################
 ## dependencies ###############################################################
 ###############################################################################
+include_directories(${Boost_INCLUDE_DIR})
 include_directories(${ROOTINCDIR})
 include_directories(${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include)
 include_directories(${PROJECT_SOURCE_DIR}/DataFormats/include)

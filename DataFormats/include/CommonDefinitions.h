@@ -64,10 +64,10 @@ class TH2D;
 class TH3D;
 using Reconstr_hist = std::pair<std::shared_ptr<TH2D>, std::shared_ptr<TH3D>>;
 
-constexpr auto EVENTTPC_DEFAULT_RECO_METHOD = 1;  // 0 = equal charge division along the strip;
+constexpr auto EventCharges_DEFAULT_RECO_METHOD = 1;  // 0 = equal charge division along the strip;
 										// 1 = weighted charge division from complementary strip directions
-constexpr auto EVENTTPC_DEFAULT_STRIP_REBIN = 2;  // number of strips to rebin [1-1024] ;
-constexpr auto EVENTTPC_DEFAULT_TIME_REBIN = 5;  // number of time cells to rebin [1-512];
+constexpr auto EventCharges_DEFAULT_STRIP_REBIN = 2;  // number of strips to rebin [1-1024] ;
+constexpr auto EventCharges_DEFAULT_TIME_REBIN = 5;  // number of time cells to rebin [1-512];
 
 template < std::size_t I = 0, typename...Tp >
 inline void sumTuples(const std::tuple < Tp...>& t1, const std::tuple < Tp...>& t2, std::tuple < Tp...>& _result) noexcept {

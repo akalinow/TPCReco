@@ -1,5 +1,5 @@
-#ifndef __EVENTTPC_H__
-#define __EVENTTPC_H__
+#ifndef __EventCharges_H__
+#define __EventCharges_H__
 
 /// TPC event class.
 ///

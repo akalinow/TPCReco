@@ -26,7 +26,7 @@ l.setTrackSpace(root.get<int>("NbinsX"),root.get<double>("xmin"),root.get<double
                 root.get<int>("NbinsY"),root.get<double>("ymin"),root.get<double>("ymax"),
                 root.get<int>("NbinsZ"),root.get<double>("zmin"),root.get<double>("zmax")); 
 l.setEntry(0);
-EventTPC myEvent=l.generateEvent();
+EventCharges myEvent=l.generateEvent();
 
 TCanvas *c1 = new TCanvas("c1","c", 2, 78, 500, 500);
 //track check            
@@ -49,10 +49,10 @@ for (int dir=0;dir!=3;++dir){
 }
 
 
-  std::string rootFileName = "EventTPC_MC.root";
+  std::string rootFileName = "EventCharges_MC.root";
   TFile aFile(rootFileName.c_str(),"RECREATE");
   TTree aTree("TPCData","");
-  EventTPC *persistent_event = &myEvent;
+  EventCharges *persistent_event = &myEvent;
   aTree.Branch("Event", &persistent_event);
   myEvent.SetGeoPtr(0);
   aTree.Fill();
