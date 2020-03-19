@@ -309,6 +309,13 @@ bool GeometryTPC::Load(std::string fname) {
 
 	std::cout << "\n==== INITIALIZING TPC GEOMETRY - END ====\n\n";
 
+	if (!InitTH2Poly()) {
+		std::cerr << "ERROR: Cannot initialize TH2Poly !!!" << std::endl;
+		if (is_debug) {
+			std::cout << "GeometryTPC::Load - Abort (9)" << std::flush << std::endl;
+		}
+		return false;
+	}
 	if (is_debug) {
 		std::cout << "GeometryTPC::Load - Ended..." << std::endl;
 	}
