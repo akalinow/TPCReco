@@ -13,14 +13,10 @@ void AbstractGenerator::setTrackSpace(int NbinsX, double xmin, double xmax,
 		NbinsZ, zmin, zmax);
 }
 
-
-void AbstractGenerator::loadGeometry(std::shared_ptr<GeometryTPC> geometryPtr) {
+void AbstractGenerator::loadGeometry(const std::string& fileName) {
+	Geometry(fileName);
 	myProjectorPtr = std::make_unique<UVWprojector>();
 	myEvent.Clear();
-}
-
-void AbstractGenerator::loadGeometry(const std::string& fileName) {
-	loadGeometry(std::make_shared<GeometryTPC>(fileName.c_str()));
 }
 
 EventCharges& AbstractGenerator::generateEvent() {

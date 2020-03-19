@@ -66,8 +66,6 @@ public:
 	//Set-up:
 
 	//Loads GeometryTPC to EventCharges and UVWProjector
-	virtual void loadGeometry(std::shared_ptr<GeometryTPC> geometryPtr);
-	//Loads GeometryTPC to EventCharges and UVWProjector
 	virtual void loadGeometry(const std::string& fileName);
 
 	//Creates empty track 3D histogram. Redundant if histogram is loaded from other source
