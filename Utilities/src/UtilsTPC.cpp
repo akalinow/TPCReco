@@ -805,14 +805,12 @@ bool compare_TH3D_bins(TH3D* h1, TH3D* h2) {
 		<< h2->GetNbinsZ()
 		<< " [" << h2->GetZaxis()->GetXmin() << ", " << h2->GetZaxis()->GetXmax() << "]" << std::endl;
 
-	if ((h2->GetXaxis()->GetXmax() - h2->GetXaxis()->GetXmin()) / h2->GetNbinsX() !=
-		(h1->GetXaxis()->GetXmax() - h1->GetXaxis()->GetXmin()) / h1->GetNbinsX()) return false; // bin size mismatch
-	if ((h2->GetYaxis()->GetXmax() - h2->GetYaxis()->GetXmin()) / h2->GetNbinsY() !=
-		(h1->GetYaxis()->GetXmax() - h1->GetYaxis()->GetXmin()) / h1->GetNbinsY()) return false; // bin size mismatch
-	if ((h2->GetZaxis()->GetXmax() - h2->GetZaxis()->GetXmin()) / h2->GetNbinsZ() !=
-		(h1->GetZaxis()->GetXmax() - h1->GetZaxis()->GetXmin()) / h1->GetNbinsZ()) return false; // bin size mismatch
-
-	return true; // bin widths are the same
+	return (h2->GetXaxis()->GetXmax() - h2->GetXaxis()->GetXmin()) / h2->GetNbinsX() ==
+		(h1->GetXaxis()->GetXmax() - h1->GetXaxis()->GetXmin()) / h1->GetNbinsX() &&
+		(h2->GetYaxis()->GetXmax() - h2->GetYaxis()->GetXmin()) / h2->GetNbinsY() ==
+		(h1->GetYaxis()->GetXmax() - h1->GetYaxis()->GetXmin()) / h1->GetNbinsY() &&
+		(h2->GetZaxis()->GetXmax() - h2->GetZaxis()->GetXmin()) / h2->GetNbinsZ() ==
+		(h1->GetZaxis()->GetXmax() - h1->GetZaxis()->GetXmin()) / h1->GetNbinsZ(); // check for bin size mismatch
 }
 
 //__________________________________________________________
@@ -871,13 +869,11 @@ TH3D* rescale_TH3D_axes(TH3D* h3_orig, double convert_to_mm_factor) {
 //
 bool add_to_TH3D(TH3D* h1, TH3D* h2, double weight) {
 
-	if (!h1) return false; // first histogram is required
-	if (weight == 0.0 || h2 == NULL) return true; // nothing to be changed!
+	if (h1 == nullptr) return false; // first histogram is required
+	if (weight == 0.0 || h2 == nullptr) return true; // nothing to be changed!
 	if (!compare_TH3D_bins(h1, h2)) return false; // different bin widths
 
-	if (h1->Add(h2, weight)) { // same ranges 
-	}
-	else {                  // different ranges
+	if (!h1->Add(h2, weight)) {	// different ranges
 		for (int ix = 1; ix <= h2->GetNbinsX(); ix++) {
 			const double x = h2->GetXaxis()->GetBinCenter(ix);
 			for (int iy = 1; iy <= h2->GetNbinsY(); iy++) {
