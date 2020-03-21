@@ -326,7 +326,7 @@ void plot_MCevent(const char* input_fname1,  // input ROOT file name for reading
 	std::cout << p->GetAreaNpoints() << std::endl;
 	std::cout << Geometry().GetTH2PolyPartitionX() << std::endl;
 	std::cout << Geometry().GetTH2PolyPartitionY() << std::endl;
-	std::cout << "uvwprojector: ptr=" << p << ", integral=" << p->GetEventIntegral() << std::endl;
+	std::cout << "integral=" << p->GetEventIntegral() << std::endl;
 	if (!p) return;
 
 
@@ -345,7 +345,7 @@ void plot_MCevent(const char* input_fname1,  // input ROOT file name for reading
 		return;
 	}
 	tp1->Draw("COLZ");
-	std::cout << "th2poly: ptr=" << tp1 << ", integral=" << tp1->Integral() << std::endl;
+	std::cout << "integral=" << tp1->Integral() << std::endl;
 
 	tp1->SetTitle("Time-integrated charge per strip");
 	if (titleX) tp1->GetXaxis()->SetTitle(titleX);
