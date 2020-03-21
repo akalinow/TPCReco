@@ -1,6 +1,4 @@
 #include "FromGeantGenerator.h"
-FromGeantGenerator::FromGeantGenerator() : AbstractGenerator() {
-}
 
 void FromGeantGenerator::setEntry(int i) {
 	depTree->GetEntry(i);
@@ -33,7 +31,7 @@ void FromGeantGenerator::generateEvents(int counts) {
 }
 
 void FromGeantGenerator::loadDataFile(std::string dataFileAddress) {
-	dataFile = new TFile(dataFileAddress.c_str(), "READ");
+	dataFile = std::make_unique<TFile>(dataFileAddress.c_str(), "READ");
 	dataFile->GetObject("EDep", depTree);
 	dataFile->GetObject("prim", primTree);
 	setBranches();

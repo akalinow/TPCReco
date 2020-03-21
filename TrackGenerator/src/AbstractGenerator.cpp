@@ -26,9 +26,7 @@ EventCharges& AbstractGenerator::generateEvent() {
 	return myEvent;
 }
 
-
 void AbstractGenerator::project() {
-
 	myProjectorPtr->SetEvent3D(myTrack3D);
 	for (auto dir : dir_vec_UVW) {
 		projectionsCollection[dir] = myProjectorPtr->GetStripVsTime_TH2D(dir);
@@ -50,8 +48,8 @@ void AbstractGenerator::fillEvent() {
 }
 
 void AbstractGenerator::setOutput(std::string outputName) {
-	outputFile = new TFile(outputName.c_str(), "RECREATE");
-	outputTree = new TTree("TPCData", "");
+	outputFile = std::make_unique<TFile>(outputName.c_str(), "RECREATE");
+	outputTree = std::make_unique<TTree>("TPCData", "");
 	outputTree->Branch("Event", &persistentEvent);
 	outputTree->Branch("tracksNo", &tracksNo);
 	outputTree->Branch("A", &A);
@@ -62,9 +60,10 @@ void AbstractGenerator::setOutput(std::string outputName) {
 	outputTree->Branch("energy", &energy);
 	outputTree->Branch("length", &length);
 }
+
 void AbstractGenerator::writeOutput() {
 	//outputTree->Write();
-	outputFile->WriteTObject(outputTree);
+	outputFile->WriteTObject(outputTree.get());
 }
 
 void AbstractGenerator::setEntry(int i) {

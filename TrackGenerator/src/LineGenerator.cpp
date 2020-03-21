@@ -17,7 +17,7 @@ void LineGenerator::generateTrack() {
 		}
 		A.push_back(0);
 		Z.push_back(0);
-		momentum.push_back(TVector3(0, 0, 0));
+		momentum.push_back({ 0, 0, 0 });
 		energy.push_back(0);
 		start.push_back(line.getStart());
 		stop.push_back(line.getStop());

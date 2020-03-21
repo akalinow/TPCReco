@@ -21,8 +21,8 @@ protected:
 
 	//Output:
 
-	TFile* outputFile;
-	TTree* outputTree;
+	std::unique_ptr<TFile> outputFile;
+	std::unique_ptr<TTree> outputTree;
 	EventCharges* persistentEvent;
 
 	//Simulation parameters:

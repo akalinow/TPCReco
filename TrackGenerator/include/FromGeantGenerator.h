@@ -15,7 +15,7 @@ class FromGeantGenerator: public AbstractGenerator {
 public:
 
     //Default constructor (not RAII)
-    FromGeantGenerator();
+    FromGeantGenerator() = default;
 
     //Fills histogram (remember to setup it first!) with information from input
     void generateTrack() final;
@@ -40,9 +40,9 @@ protected:
     std::vector<double>* y=nullptr;
     std::vector<double>* z=nullptr;
     std::vector<double>* Edep=nullptr;
-    TTree* depTree;
-    TTree* primTree;
-    TFile* dataFile;
+    std::unique_ptr<TTree> depTree;
+    std::unique_ptr<TTree> primTree;
+    std::unique_ptr<TFile> dataFile;
     
 };
 #endif // _FromGeantGenerator_H_

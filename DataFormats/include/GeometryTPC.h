@@ -72,9 +72,8 @@ private:
 	double drift_zmin;               // lower drift cage acceptance limit along Z-axis [mm] (closest to readout PCB)
 	double drift_zmax;               // upper drift cage acceptance limit along Z-axis [mm] (farthest from readout PCB)
 	std::shared_ptr<TH2Poly> tp;                     // for internal storage of arbitrary strip shapes
-	int grid_nx;                     // partition size of TH2Poly in X-dir
-	int grid_ny;                     // partition size of TH2Poly in Y-dir
-	bool isOK_TH2Poly;               // is TH2Poly already initialized?
+	int grid_nx = 25;                     // partition size of TH2Poly in X-dir
+	int grid_ny = 25;                     // partition size of TH2Poly in Y-dir
 	std::map<int, std::shared_ptr<Geometry_Strip>> fStripMap; // maps TH2Poly bin to a given StripTPC object  [TH2Poly bin index [1..1024]] 
 
 	// Setter methods 
@@ -87,7 +86,7 @@ private:
 	GeometryTPC(std::string fname);
 
 public:
-
+	void Debug();
 
 	void SetTH2PolyPartition(int nx, int ny); // change cartesian binning of the underlying TH2Poly
 	inline int GetTH2PolyPartitionX() { return grid_nx; }
@@ -114,6 +113,9 @@ public:
 	inline double GetSamplingRate() { return sampling_rate; };
 	inline double GetTriggerDelay() { return trigger_delay; };
 
+	double Cartesian2posUVW(double x, double y, direction dir); // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of a given (X,Y) point on the strip pitch axis for a given direction
+	double Cartesian2posUVW(TVector2 pos, direction dir); // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of a given (X,Y) point on the strip pitch axis for a given direction
+
 	std::string GetDirName(direction dir);
 
 	std::shared_ptr<Geometry_Strip> GetStripByAget(int COBO_idx, int ASAD_idx, int AGET_idx, int channel_idx) const;         // valid range [0-1][0-3][0-3][0-63]
@@ -135,6 +137,7 @@ public:
 	inline TVector2 GetReferencePoint() { return reference_point; } // XY ([mm],[mm])
 	TVector2 GetStripPitchVector(direction dir); // XY ([mm],[mm])
 
+	double Strip2posUVW(direction dir, int section, int number); //legacy for section=0, [mm] (signed) distance of projection of (X=0, Y=0) point from projection of the central line of the (existing) strip on the strip pitch axis for a given direction
 	double Strip2posUVW(direction dir, int number); // [mm] (signed) distance of direction of (X=0, Y=0) point from direction of the central line of the (existing) strip on the strip pitch axis for a given direction
 	double Strip2posUVW(std::shared_ptr<Geometry_Strip> strip); // [mm] (signed) distance of direction of (X=0, Y=0) point from direction of the central line of the (existing) strip on the strip pitch axis for a strip given direction
 

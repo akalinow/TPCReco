@@ -60,6 +60,8 @@ inline std::string filename_string(std::string path_str) {
 #define _endl_ " (" << filename_string(__FILE__) << "; " << __LINE__ << "; " << __FUNCTION__ << ")" << std::endl<char, std::char_traits<char>>
 #define checkpoint std::cout << "checkpoint" << _endl_
 
+const std::map<direction, std::string> dir_name = { {direction::U,"U"}, {direction::V,"V"}, {direction::W,"W"} };
+
 class TH2D;
 class TH3D;
 using Reconstr_hist = std::pair<std::shared_ptr<TH2D>, std::shared_ptr<TH3D>>;

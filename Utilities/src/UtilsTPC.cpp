@@ -165,13 +165,13 @@ void plot_MCevent(const char* input_fname1,  // input ROOT file name for reading
 	// Associate color transfer functions with TH3F histograms
 	//
 	TList* lf = h3->GetListOfFunctions();
-	TF1* tf = NULL;
-	if (lf) {
+	std::unique_ptr<TF1> tf;
+	if (lf != nullptr) {
 		lf->Clear(); // remove all previous functions just in case
 		// function with 2 parameters (range of hist values)
-		tf = new TF1("TransferFunction", my_transfer_function3, h3->GetMinimum(), h3->GetMaximum(), 3);
+		tf = std::make_unique<TF1>("TransferFunction", my_transfer_function3, h3->GetMinimum(), h3->GetMaximum(), 3);
 		tf->SetParameters(h3->GetMinimum(), h3->GetMaximum(), color_power);
-		lf->Add(tf);
+		lf->Add(tf.get());
 	}
 
 	if (titleX) h3->GetXaxis()->SetTitle(titleX);
@@ -262,7 +262,8 @@ void plot_MCevent(const char* input_fname1,  // input ROOT file name for reading
 				gPad->SetPad(0.0, 0.0, 1.0, 1.0);   // this TPad is used only to draw a nice TPaletteAxis for Z axis
 
 				// create dummy (non-empty) TH2F in order to draw nice coloured Z-scale on the right hand side of TCanvas
-				TH2F* h = new TH2F("h", "", 1, 0., 1., 1, 0., 1.); h->Fill(-1, -1);
+				auto h = std::make_unique<TH2F>("h", "", 1, 0., 1., 1, 0., 1.);
+				h->Fill(-1, -1);
 				h->SetMinimum(h3->GetMinimum());
 				h->SetMaximum(h3->GetMaximum());
 				h->GetZaxis()->SetTitle(titleVAL);
@@ -281,7 +282,7 @@ void plot_MCevent(const char* input_fname1,  // input ROOT file name for reading
 				gPad->SetBottomMargin(0.3); // to suppress dummy TH2F
 
 				gPad->Update();  // needed for accesing TFrame, TPaletteAxis
-				TPaletteAxis* tpal = (TPaletteAxis*)h->GetListOfFunctions()->FindObject("palette");
+				auto tpal = (TPaletteAxis*)h->GetListOfFunctions()->FindObject("palette");
 				if (tpal) {
 					tpal->SetX1NDC(0.82);   // Z-scale will take 5% of TCanvas width
 					tpal->SetX2NDC(0.87);
@@ -320,7 +321,7 @@ void plot_MCevent(const char* input_fname1,  // input ROOT file name for reading
 	// ________________________
 
 	Geometry(geom_fname);
-	UVWprojector* p = new UVWprojector(100, 25, 25); //  100, 100, 100);
+	auto p = std::make_unique<UVWprojector>(100, 25, 25); //  100, 100, 100);
 	p->SetEvent3D(*h3);
 	std::cout << p->GetAreaNpoints() << std::endl;
 	std::cout << Geometry().GetTH2PolyPartitionX() << std::endl;
@@ -335,7 +336,7 @@ void plot_MCevent(const char* input_fname1,  // input ROOT file name for reading
 	gStyle->SetOptTitle(false);
 	set_custom_palette(palette);
 
-	TCanvas* c1 = new TCanvas("c1", "c1", 900, 800);
+	auto c1 = std::make_unique<TCanvas>("c1", "c1", 900, 800);
 	c1->cd();
 	//  TH2Poly *tp1 = (TH2Poly*) p->DrawTH2Poly("COL2Z");
 	auto tp1 = p->GetStripProfile_TH2Poly();
@@ -377,7 +378,7 @@ void plot_MCevent(const char* input_fname1,  // input ROOT file name for reading
 	gPad->Modified();
 	c1->Modified();
 	c1->Update();
-	c1->SetSelected(c1);
+	c1->SetSelected(c1.get());
 
 	// PNG - works fine (transparency is preserved)
 	c1->Print(Form("%s__output_TH2poly.png", prefix.c_str()), "png");
@@ -401,7 +402,7 @@ void plot_MCevent(const char* input_fname1,  // input ROOT file name for reading
 	gStyle->SetCanvasPreferGL(false);
 	gStyle->SetOptTitle(false);
 	set_custom_palette(palette);
-	TCanvas* c2 = new TCanvas("c2", "c2", 900, (int)(900 * 3.0));
+	auto c2 = std::make_unique<TCanvas>("c2", "c2", 900, (int)(900 * 3.0));
 	c2->Divide(1, 3);
 	c2->cd();
 	std::map<direction, std::shared_ptr<TH2D>> ts2;
@@ -454,7 +455,7 @@ void plot_MCevent(const char* input_fname1,  // input ROOT file name for reading
 
 		gPad->Update(); // updates list of functions to get TPaletteAxis
 		ts2[dir]->GetListOfFunctions()->ls();
-		TPaletteAxis* pa2 = (TPaletteAxis*)ts2[dir]->GetListOfFunctions()->FindObject("palette");
+		auto pa2 = (TPaletteAxis*)ts2[dir]->GetListOfFunctions()->FindObject("palette");
 		pa2->SetX2NDC(0.92);
 		pa2->SetX1NDC(0.87);
 		pa2->SetY2NDC(1 - 0.10);
@@ -471,7 +472,7 @@ void plot_MCevent(const char* input_fname1,  // input ROOT file name for reading
 	}
 	c2->Modified();
 	c2->Update();
-	c2->SetSelected(c2);
+	c2->SetSelected(c2.get());
 
 	// PNG - works fine (transparency is preserved)
 	c2->Print(Form("%s__output_UVW_vs_time.png", prefix.c_str()), "png");
@@ -493,7 +494,7 @@ void plot_MCevent(const char* input_fname1,  // input ROOT file name for reading
 	gStyle->SetCanvasPreferGL(false);
 	gStyle->SetOptTitle(false);
 	set_custom_palette(palette, 99);
-	TCanvas* c3 = new TCanvas("c3", "c3", 900, (int)(900 * 3.0));
+	auto c3 = std::make_unique<TCanvas>("c3", "c3", 900, (int)(900 * 3.0));
 	c3->Divide(1, 3);
 	c3->cd();
 	std::map<direction, std::shared_ptr<TH2D>> ts3;
@@ -570,7 +571,7 @@ void plot_MCevent(const char* input_fname1,  // input ROOT file name for reading
 	}
 	c3->Modified();
 	c3->Update();
-	c3->SetSelected(c3);
+	c3->SetSelected(c3.get());
 
 	// PNG - works fine (transparency is preserved)
 	c3->Print(Form("%s__output_UVW_vs_time2.png", prefix.c_str()), "png");
@@ -593,7 +594,7 @@ void plot_MCevent(const char* input_fname1,  // input ROOT file name for reading
 	gStyle->SetCanvasPreferGL(false);
 	gStyle->SetOptTitle(false);
 	set_custom_palette(palette); // back to 255 contours
-	TCanvas* c4 = new TCanvas("c4", "c4", 900, (int)(900 * 3.0));
+	auto c4 = std::make_unique<TCanvas>("c4", "c4", 900, (int)(900 * 3.0));
 	c4->Divide(1, 3);
 	c4->cd();
 	std::map<direction, TMultiGraph> tmg;
@@ -670,7 +671,7 @@ void plot_MCevent(const char* input_fname1,  // input ROOT file name for reading
 	}
 	c4->Modified();
 	c4->Update();
-	c4->SetSelected(c4);
+	c4->SetSelected(c4.get());
 
 	// PNG - works fine (transparency is preserved)
 	c4->Print(Form("%s__output_UVW_vs_time3.png", prefix.c_str()), "png");
@@ -693,7 +694,7 @@ void plot_MCevent(const char* input_fname1,  // input ROOT file name for reading
 	gStyle->SetCanvasPreferGL(false);
 	gStyle->SetOptTitle(false);
 	set_custom_palette(palette); // back to 255 contours
-	TCanvas* c5 = new TCanvas("c5", "c5", 900, (int)(900 * 3.0));
+	auto c5 = std::make_unique<TCanvas>("c5", "c5", 900, (int)(900 * 3.0));
 	c5->Divide(1, 3);
 	c5->cd();
 	std::map<direction, std::shared_ptr<TH1D>> ts;
@@ -701,7 +702,7 @@ void plot_MCevent(const char* input_fname1,  // input ROOT file name for reading
 		c5->cd(int(dir) + 1);
 		//    ts[dir] = (TH1D*) p->DrawStripProfile(dir);
 		ts[dir] = p->GetStripProfile_TH1D(dir);
-		if (!ts[dir]) {
+		if (ts[dir] == nullptr) {
 			std::cerr << "ERROR: Strip profile TH1D[" << dir << "] is NULL !!!" << std::endl;
 			return;
 		}
@@ -740,7 +741,7 @@ void plot_MCevent(const char* input_fname1,  // input ROOT file name for reading
 	}
 	c5->Modified();
 	c5->Update();
-	c5->SetSelected(c5);
+	c5->SetSelected(c5.get());
 
 	// PNG - works fine (transparency is preserved)
 	c5->Print(Form("%s__output_UVW.png", prefix.c_str()), "png");

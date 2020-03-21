@@ -120,6 +120,9 @@ GeometryTPC::GeometryTPC(std::string fname)
 		std::cout << "GeometryTPC::Constructor - Started..." << std::endl;
 	}
 
+	tp = std::make_shared<TH2Poly>();
+	tp->SetName("h_uvw_dummy");
+
 	// FPN channels in each AGET chip
 	AGET_Nchan_fpn = FPN_chanId.size();
 	AGET_Nchan_raw = AGET_Nchan + AGET_Nchan_fpn;
@@ -236,8 +239,7 @@ bool GeometryTPC::Load(std::string fname) {
 						int chan_num_raw = Aget_normal2raw(chan_num);
 						TVector2 offset = offset_in_strips * strip_pitch * pitch_unit_vec[dir] + offset_in_pads * pad_pitch * strip_unit_vec[dir];
 						double length = length_in_pads * pad_pitch;
-						std::shared_ptr<Geometry_Strip> strip = std::make_shared<Geometry_Strip>(dir, section, strip_num, cobo, asad, aget, chan_num, chan_num_raw,
-							strip_unit_vec[dir], offset, length);
+						auto strip = std::make_shared<Geometry_Strip>(dir, section, strip_num, cobo, asad, aget, chan_num, chan_num_raw, strip_unit_vec[dir], offset, length);
 
 						// update map (by: COBO board, ASAD board, AGET chip, AGET normal/raw channel)
 						arrayByAget[{cobo, asad, aget, chan_num}] = strip;
@@ -328,7 +330,6 @@ bool GeometryTPC::InitTH2Poly() {
 		std::cout << "GeometryTPC::InitTH2Poly - Started..." << std::flush << std::endl;
 	}
 
-	isOK_TH2Poly = false;
 	fStripMap.clear();
 
 	// sanity checks
@@ -340,10 +341,10 @@ bool GeometryTPC::InitTH2Poly() {
 	}
 
 	// find X and Y range according to geo_ptr
-	double xmin = 1E30;
-	double xmax = -1E30;
-	double ymin = 1E30;
-	double ymax = -1E30;
+	double xmin = std::numeric_limits<double>::infinity();
+	double xmax = -std::numeric_limits<double>::infinity();
+	double ymin = std::numeric_limits<double>::infinity();
+	double ymax = -std::numeric_limits<double>::infinity();
 
 	/*std::cout<<"!!!!!!!!!!!!"<<std::endl;
 	for (auto &i : mapByAget){
@@ -367,11 +368,8 @@ bool GeometryTPC::InitTH2Poly() {
 	std::cout<<"!!!!!!!!!!!!"<<std::endl;*/
 	// for(int dir=0; dir<=2; dir++) {
 	 //  for(int num=1; num<=this->GetDirNstrips(dir); num++)
-	for (auto& i : stripArray) {
-		// std::cout<<this->GetDirNstrips(dir)<<std::endl;
-		auto strip_data = (*i.second)();
-		// if(!strip_data) {std::cout<<"skipping"<<std::endl;continue;}
-		 //std::cout<<strip_data->Offset().X()<<std::endl;
+	for (auto& strip_it : stripArray) {
+		auto strip_data = (*strip_it.second)();
 		TVector2 point1 = reference_point + strip_data.offset_vec - strip_data.unit_vec * 0.5 * pad_pitch;
 		TVector2 point2 = point1 + strip_data.unit_vec * strip_data.length();
 		if (point1.X() < xmin)      xmin = point1.X();
@@ -384,17 +382,7 @@ bool GeometryTPC::InitTH2Poly() {
 		else if (point2.Y() > ymax) ymax = point2.Y();
 		// }
 	}
-	if (tp) {
-		tp->Delete();
-		tp = NULL;
-	}
 	tp = std::make_shared<TH2Poly>("h_uvw", "GeometryTPC::TH2Poly;X;Y;Charge", grid_nx, xmin, xmax, grid_ny, ymin, ymax);
-	if (!tp) {
-		if (is_debug) {
-			std::cout << "GeometryTPC::InitTH2Poly - Abort (2)" << std::flush << std::endl;
-		}
-		return false;
-	}
 	tp->SetFloat(true); // allow to expand outside of the current limits
 
 	///////// DEBUG
@@ -420,7 +408,7 @@ bool GeometryTPC::InitTH2Poly() {
 		int num = strip_data.num;
 		// create diamond-shaped pad for a given direction
 		std::vector<TVector2> offset_vec;
-		offset_vec.push_back(TVector2(0., 0.));
+		offset_vec.push_back({ 0., 0. });
 		offset_vec.push_back(strip_data.unit_vec.Rotate(TMath::Pi() / 6.) * pad_size);
 		offset_vec.push_back(strip_data.unit_vec * pad_pitch);
 		TVector2 point0 = reference_point + strip_data.offset_vec - strip_data.unit_vec * 0.5 * pad_pitch;
@@ -438,7 +426,7 @@ bool GeometryTPC::InitTH2Poly() {
 		}
 		offset_vec.clear();
 		offset_vec.push_back(strip_data.unit_vec.Rotate(-TMath::Pi() / 6.) * pad_size);
-		offset_vec.push_back(TVector2(0., 0.));
+		offset_vec.push_back({ 0., 0. });
 		for (int ipad = npads - 1; ipad >= 0; ipad--) {
 			for (size_t icorner = 0; icorner < offset_vec.size(); icorner++) {
 				TVector2 corner = point0 + strip_data.unit_vec * ipad * pad_pitch + offset_vec[icorner];
@@ -463,7 +451,7 @@ bool GeometryTPC::InitTH2Poly() {
 		const int nbins_new = tp->GetNumberOfBins();
 		if (nbins_new > nbins_old) {
 			TH2PolyBin* bin = (TH2PolyBin*)tp->GetBins()->At(tp->GetNumberOfBins() - 1);
-			if (bin) ibin = bin->GetBinNumber();
+			if (bin != nullptr) ibin = bin->GetBinNumber();
 		}
 
 		// DEBUG
@@ -513,14 +501,11 @@ bool GeometryTPC::InitTH2Poly() {
 	//  }
 	}
 
-	// final result
-	if (fStripMap.size() > 0) isOK_TH2Poly = true;
-
 	if (is_debug) {
 		std::cout << "GeometryTPC::InitTH2Poly - Ended..." << std::flush << std::endl;
 	}
 
-	return isOK_TH2Poly;
+	return (fStripMap.size() > 0);
 }
 
 // change cartesian binning of the underlying TH2Poly
@@ -532,11 +517,11 @@ void GeometryTPC::SetTH2PolyPartition(int nx, int ny) {
 }
 
 void GeometryTPC::SetTH2PolyStrip(int ibin, std::shared_ptr<Geometry_Strip> s) {
-	if (s) fStripMap[ibin] = s;
+	fStripMap[ibin] = s;
 }
 
 std::shared_ptr<Geometry_Strip> GeometryTPC::GetTH2PolyStrip(int ibin) {
-	return (fStripMap.find(ibin) == fStripMap.end() ? NULL : fStripMap[ibin]);
+	return fStripMap[ibin];
 }
 
 int GeometryTPC::GetDirNstrips(direction dir) const {
@@ -675,6 +660,39 @@ std::vector<std::shared_ptr<Geometry_Strip>> GeometryTPC::GetStrips() const {
 		_strips_.push_back(GetStripByDir(_dir_, GetDirNstrips(_dir_))); //last strip
 	}
 	return _strips_;
+}
+
+double GeometryTPC::Strip2posUVW(direction dir, int section, int num) {
+	return Strip2posUVW(GetStripByDir(dir, section, num));
+}
+
+// Calculates (signed) distance of projection of (X=0, Y=0) point from
+// projection of a given (X,Y) point on the strip pitch axis
+// for a given DIR family.
+// The "err_flag" is set to TRUE if:
+// - geometry has not been initialized properly, or
+// - input strip DIR is invalid
+double GeometryTPC::Cartesian2posUVW(double x, double y, direction dir) {
+	return Cartesian2posUVW({ x, y }, dir); // [mm]
+}
+
+// Calculates (signed) distance of projection of (X=0, Y=0) point from
+// projection of a given (X,Y) point on the strip pitch axis
+// for a given DIR family.
+double GeometryTPC::Cartesian2posUVW(TVector2 pos, direction dir) {
+	return pos * pitch_unit_vec[dir]; // [mm]
+}
+
+void GeometryTPC::Debug() {
+	for (auto& strip_it : stripArray) {
+		auto strip_data = (*strip_it.second)();
+		auto p = strip_data.offset_vec + reference_point;
+		double x = p.X();
+		double y = p.Y();
+		//auto p=strip_data->Offset()+reference_point;
+		std::cout << p.X() << ", " << p.Y() << strip_data.section << std::endl;
+		tp->Fill(x, y, strip_data.section + 1);
+	}
 }
 
 //ClassImp(Geometry_Strip)
