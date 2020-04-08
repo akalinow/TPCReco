@@ -588,8 +588,8 @@ int GeometryTPC::Global_normal2normal(int COBO_idx, int ASAD_idx, int aget_idx, 
 // on success (true) also returns the calculated offset vector wrt ORIGIN POINT (0,0)
 bool GeometryTPC::GetCrossPoint(std::shared_ptr<Geometry_Strip> strip1, std::shared_ptr<Geometry_Strip> strip2, TVector2& point) {
 	auto
-		op1 = (*strip1)(),
-		op2 = (*strip2)();
+		& op1 = (*strip1)(),
+		& op2 = (*strip2)();
 	const double u1[2] = { op1.unit_vec.X(), op1.unit_vec.Y() };
 	const double u2[2] = { op2.unit_vec.X(), op2.unit_vec.Y() };
 	double W = -u1[0] * u2[1] + u1[1] * u2[0];
@@ -640,7 +640,7 @@ double GeometryTPC::Strip2posUVW(direction dir, int num) {
 // direction of the central axis of the existing strip (Geometry_Strip object) on
 // the strip pitch axis for a given strip family.
 double GeometryTPC::Strip2posUVW(std::shared_ptr<Geometry_Strip> strip) {
-	auto op = (*strip)();
+	auto& op = (*strip)();
 	return (reference_point + op.offset_vec) * pitch_unit_vec[op.dir]; // [mm]
 }
 
@@ -656,7 +656,7 @@ std::tuple<double, double, double, double> GeometryTPC::rangeXY() {
 
 	std::vector<double> xs, ys;
 	for (auto& strip : GetStrips()) {
-		auto op = (*strip)();
+		auto& op = (*strip)();
 		TVector2 vec = op.offset_vec + GetReferencePoint();
 		xs.push_back(vec.X());
 		ys.push_back(vec.Y());

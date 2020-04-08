@@ -21,7 +21,7 @@ struct StripData {
     TVector2 unit_vec;   // 2D directional unit vector (towards increasing pad numbers)
     TVector2 offset_vec; // 2D offset vector [mm] of the 1st pad wrt REF.POINT  
     int npads;  // length in npads
-    double length() { return npads * Geometry().GetPadPitch(); }
+    double length() const { return npads * Geometry().GetPadPitch(); }
 };
 
 // Single UVW strip defined as a class
@@ -32,7 +32,6 @@ private:
     const StripData data;
 public:
 
-    Geometry_Strip() = default;
     Geometry_Strip(direction dir_, int section, int number, int cobo_index, int asad_index, int aget_index, int aget_channel, int aget_channel_raw,
         TVector2 unit_vector, TVector2 offset_vector_in_mm, int number_of_pads);
 
