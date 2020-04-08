@@ -173,7 +173,7 @@ bool GeometryTPC::Load(std::string fname) {
 			auto it = find_line(file_lines, "ANGLES");
 			if (it != file_lines.end() &&
 				((std::stringstream(it->substr(it->find(':') + 1)) >> angle[direction::U] >> angle[direction::V] >> angle[direction::W]))) {
-				for (auto dir : dir_vec_UVW) {
+				for (auto dir : dirs) {
 					angle[dir] = fmod(fmod(angle[dir], 360.) + 360., 360.); // convert to range [0, 360 deg[ range 
 				}
 				std::cout << Form("Angle of U/V/W strips wrt X axis = %lf / %lf / %lf deg", angle[direction::U], angle[direction::V], angle[direction::W]) << std::endl;
@@ -205,7 +205,7 @@ bool GeometryTPC::Load(std::string fname) {
 		}
 		{
 			// set unit vectors (along strips) and strip pitch vectors (perpendicular to strips)
-			std::for_each(dir_vec_UVW.begin(), dir_vec_UVW.end(), [&](auto proj) {strip_unit_vec[proj].Set(std::cos(angle[proj] * deg_to_rad), std::sin(angle[proj] * deg_to_rad));  });
+			std::for_each(dirs.begin(), dirs.end(), [&](auto proj) {strip_unit_vec[proj].Set(std::cos(angle[proj] * deg_to_rad), std::sin(angle[proj] * deg_to_rad));  });
 
 			pitch_unit_vec[direction::U] = -1.0 * (strip_unit_vec[direction::W] + strip_unit_vec[direction::V]).Unit();
 			pitch_unit_vec[direction::V] = (strip_unit_vec[direction::U] + strip_unit_vec[direction::W]).Unit();
@@ -299,7 +299,7 @@ bool GeometryTPC::Load(std::string fname) {
 	// print statistics
 	std::cout << std::endl
 		<< "Geometry config file = " << fname << std::endl;
-	for (auto& proj : dir_vec_UVW) {
+	for (auto& proj : dirs) {
 		std::cout << "Total number of " << GetDirName(proj) << " strips = " << GetDirNstrips(proj) << std::endl;
 	}
 	std::cout << "Number of active channels per AGET chip = " << GetAgetNchannels() << std::endl;
@@ -369,7 +369,7 @@ bool GeometryTPC::InitTH2Poly() {
 	// for(int dir=0; dir<=2; dir++) {
 	 //  for(int num=1; num<=this->GetDirNstrips(dir); num++)
 	for (auto& strip_it : stripArray) {
-		auto strip_data = (*strip_it.second)();
+		auto& strip_data = (*strip_it.second)();
 		TVector2 point1 = reference_point + strip_data.offset_vec - strip_data.unit_vec * 0.5 * pad_pitch;
 		TVector2 point2 = point1 + strip_data.unit_vec * strip_data.length();
 		if (point1.X() < xmin)      xmin = point1.X();
@@ -401,7 +401,7 @@ bool GeometryTPC::InitTH2Poly() {
 	  for(int num=1; num<=this->GetDirNstrips(dir); num++)*/
 	for (auto& strip_it : stripArray) {
 		auto strip = strip_it.second;
-		auto strip_data = (*strip)();
+		auto& strip_data = (*strip)();
 		// if(!strip_data) continue;
 		auto dir = strip_data.dir;
 		int section = strip_data.section;
@@ -544,6 +544,26 @@ std::shared_ptr<Geometry_Strip> GeometryTPC::GetStripByDir(direction dir, int se
 	return stripArray.at({ dir, section, num });
 }
 
+
+std::shared_ptr<Geometry_Strip> GeometryTPC::GetStripByGlobal(int global_channel_idx) { // valid range [0-1023]
+	if (global_channel_idx >= 0) {
+		int channel_idx = global_channel_idx % AGET_Nchan;
+		int rest1 = global_channel_idx / AGET_Nchan;
+		int AGET_idx = rest1 % AGET_Nchips;
+		int rest2 = rest1 / AGET_Nchips;
+		int counter = 0;
+		for (int icobo = 0; icobo < COBO_N; icobo++) {
+			for (int iasad = 0; iasad < ASAD_N[icobo]; iasad++) {
+				if (counter == rest2) {
+					return GetStripByAget(icobo, iasad, AGET_idx, channel_idx);
+				}
+				counter++;
+			}
+		}
+	}
+	return nullptr; // ERROR
+}
+
 int GeometryTPC::Aget_normal2raw(int channel_idx) { // valid range [0-63]
 	if (channel_idx < 0 || channel_idx >= AGET_Nchan) return ERROR;
 	int raw_channel_idx = channel_idx;
@@ -593,7 +613,7 @@ bool GeometryTPC::GetCrossPoint(std::shared_ptr<Geometry_Strip> strip1, std::sha
 bool GeometryTPC::MatchCrossPoint(std::array<int, 3> strip_nums, double radius, TVector2& point) {
 	TVector2 points[3];
 	std::array<std::shared_ptr<Geometry_Strip>, 3> strips;
-	std::transform(strip_nums.begin(), strip_nums.end(), dir_vec_UVW.begin(), strips.begin(), [&](int strip_num, direction dir) { return GetStripByDir(dir, strip_num); });
+	std::transform(strip_nums.begin(), strip_nums.end(), dirs.begin(), strips.begin(), [&](int strip_num, direction dir) { return GetStripByDir(dir, strip_num); });
 	const double rad2 = pow(radius, 2);
 	if (!GetCrossPoint(strips[1], strips[2], points[0]) ||
 		!GetCrossPoint(strips[2], strips[0], points[1]) ||
@@ -655,7 +675,7 @@ std::tuple<double, double, double, double> GeometryTPC::rangeXY() {
 // Returns vector of first and last strips in each dir
 std::vector<std::shared_ptr<Geometry_Strip>> GeometryTPC::GetStrips() const {
 	std::vector<std::shared_ptr<Geometry_Strip>> _strips_;
-	for (auto& _dir_ : dir_vec_UVW) {
+	for (auto& _dir_ : dirs) {
 		_strips_.push_back(GetStripByDir(_dir_, 1)); //first strip
 		_strips_.push_back(GetStripByDir(_dir_, GetDirNstrips(_dir_))); //last strip
 	}
@@ -685,7 +705,7 @@ double GeometryTPC::Cartesian2posUVW(TVector2 pos, direction dir) {
 
 void GeometryTPC::Debug() {
 	for (auto& strip_it : stripArray) {
-		auto strip_data = (*strip_it.second)();
+		auto& strip_data = (*strip_it.second)();
 		auto p = strip_data.offset_vec + reference_point;
 		double x = p.X();
 		double y = p.Y();

@@ -1,7 +1,5 @@
 #include "LineGenerator.h"
 #include <iostream>
-//Default constructor. Creates default space for tracks
-LineGenerator::LineGenerator() : lines(0) {}
 
 // Resets old track and generate new track in form of line of set length, origin point and width (sigma).
 // Sigma is same for all directions

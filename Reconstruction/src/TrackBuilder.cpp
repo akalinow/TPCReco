@@ -40,7 +40,7 @@ std::shared_ptr<EventHits> TrackBuilder::setEvent(std::shared_ptr<EventCharges> 
 void TrackBuilder::initialize() {
 	std::string hName, hTitle;
 	if (!myHistoInitialized) {
-		for (auto dir : dir_vec_UVW) {
+		for (auto dir : dirs) {
 			auto hRawHits = HistogramManager().GetStripVsTimeInMM(dir);
 			double maxX = hRawHits->GetXaxis()->GetXmax();
 			double maxY = hRawHits->GetYaxis()->GetXmax();
@@ -57,7 +57,7 @@ void TrackBuilder::initialize() {
 /////////////////////////////////////////////////////////
 void TrackBuilder::reconstruct() {
 
-	for (auto&& dir : dir_vec_UVW) {
+	for (auto&& dir : dirs) {
 		makeRecHits(dir);
 		fillHoughAccumulator(dir);
 		my2DSeeds[dir] = findSegment2DCollection(dir);
@@ -78,7 +78,7 @@ void TrackBuilder::makeRecHits(direction dir) {
 		hRecHits->SetTitle(tmpTitle.c_str());
 	}
 
-	TH1D* hProj;
+	std::shared_ptr<TH1D> hProj;
 	double hitWirePos = -999.0;
 	for (int iBinY = 1; iBinY < hRecHits->GetNbinsY(); ++iBinY) {
 		hProj = hRawHits->ProjectionX("hProj", iBinY, iBinY);
@@ -97,7 +97,7 @@ void TrackBuilder::makeRecHits(direction dir) {
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TF1 TrackBuilder::fitTimeWindow(TH1D* hProj) {
+TF1 TrackBuilder::fitTimeWindow(std::shared_ptr<TH1D> hProj) {
 
 	TFitResultPtr fitResult;
 	TF1 timeResponseShape;

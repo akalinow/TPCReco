@@ -19,7 +19,7 @@
 class LineGenerator : public AbstractGenerator {
 public:
 	//Default constructor (not RAII)
-	LineGenerator();
+	LineGenerator() = default;
 
 	//Generates track 3d histogram for line contructed with setters
 	void generateTrack();

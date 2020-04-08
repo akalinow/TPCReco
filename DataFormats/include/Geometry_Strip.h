@@ -29,14 +29,14 @@ class Geometry_Strip {
 
 private:
 
-    StripData data;
+    const StripData data;
 public:
 
     Geometry_Strip() = default;
     Geometry_Strip(direction dir_, int section, int number, int cobo_index, int asad_index, int aget_index, int aget_channel, int aget_channel_raw,
         TVector2 unit_vector, TVector2 offset_vector_in_mm, int number_of_pads);
 
-    decltype(data) operator()() { return data; };
+    const decltype(data)& operator()() { return data; };
 };
 
 #endif

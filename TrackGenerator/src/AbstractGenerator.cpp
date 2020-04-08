@@ -28,14 +28,14 @@ EventCharges& AbstractGenerator::generateEvent() {
 
 void AbstractGenerator::project() {
 	myProjectorPtr->SetEvent3D(myTrack3D);
-	for (auto dir : dir_vec_UVW) {
+	for (auto dir : dirs) {
 		projectionsCollection[dir] = myProjectorPtr->GetStripVsTime_TH2D(dir);
 	}
 }
 
 void AbstractGenerator::fillEvent() {
 	myEvent.Clear();
-	for (auto dir : dir_vec_UVW) {
+	for (auto dir : dirs) {
 		auto hist = projectionsCollection.at(dir);
 		for (int i = 1; i != hist->GetNbinsX(); ++i) {
 			for (int j = 1; j != hist->GetNbinsY(); ++j) {

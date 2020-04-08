@@ -1,6 +1,10 @@
 #ifndef MainFrame_H
 #define MainFrame_H
 
+#include <thread>
+#include <mutex>
+#include <string>
+
 #include <TGDockableFrame.h>
 #include <TGFrame.h>
 #include <TGCanvas.h>
@@ -9,6 +13,7 @@
 #include <TGMenu.h>
 #include <TRootEmbeddedCanvas.h>
 #include <TGFileDialog.h>
+#include <TGFileBrowser.h>
 #include <TGNumberEntry.h>
 #include <TGIcon.h>
 #include <TGPicture.h>
@@ -23,86 +28,112 @@
 #include "EntryDialog.h"
 #include "SelectionBox.h"
 
-#include "DataManager.h"
+#include "EventSourceBase.h"
 #include "HistoManager.h"
+#include "DirectoryWatch.h"
+
+#include <boost/property_tree/json_parser.hpp>
 
 enum ETestCommandIdentifiers {
-   M_FILE_OPEN,
-   M_FILE_SAVE,
-   M_FILE_SAVEAS,
-   M_FILE_PRINT,
-   M_FILE_PRINTSETUP,
-   M_FILE_EXIT,
+	M_FILE_OPEN,
+	M_FILE_SAVE,
+	M_FILE_SAVEAS,
+	M_FILE_PRINT,
+	M_FILE_PRINTSETUP,
+	M_FILE_EXIT,
 
-   M_HELP_CONTENTS,
-   M_HELP_SEARCH,
-   M_HELP_ABOUT,
+	M_DIR_WATCH,
 
-   M_NEXT_EVENT,
-   M_PREVIOUS_EVENT,
-   M_GOTO_EVENT,
+	M_HELP_CONTENTS,
+	M_HELP_SEARCH,
+	M_HELP_ABOUT,
 
+	M_NEXT_EVENT,
+	M_PREVIOUS_EVENT,
+	M_GOTO_EVENT,
+
+};
+
+enum Messages {
+	M_DATA_FILE_UPDATED
+
+};
+
+enum Modes {
+	M_ONLINE_MODE,
+	M_OFFLINE_GRAW_MODE,
+	M_OFFLINE_ROOT_MODE
 };
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 class MainFrame : public TGMainFrame {
 
-  RQ_OBJECT("MainFrame")
+	RQ_OBJECT("MainFrame")
 
 public:
-   MainFrame(const TGWindow *p, uint32_t w, uint32_t h);
-   virtual ~MainFrame();
-   virtual void CloseWindow();
-   virtual bool ProcessMessage(int64_t msg, int64_t parm1, int64_t);
+	MainFrame(const TGWindow* p, UInt_t w, UInt_t h, const boost::property_tree::ptree& aConfig);
+	virtual ~MainFrame();
+	virtual void CloseWindow();
+	virtual Bool_t ProcessMessage(Long_t msg, Long_t parm1, Long_t);
+	virtual Bool_t ProcessMessage(Long_t msg);
+	virtual Bool_t ProcessMessage(const char*);
 
-///Process message from EntryDialog
-    virtual bool ProcessMessage(int64_t msg);
+	void HandleEmbeddedCanvas(Int_t event, Int_t x, Int_t y, TObject* sel);
 
-   void HandleEmbeddedCanvas(int32_t event, int32_t x, int32_t y, TObject *sel);
+	void HandleMenu(Int_t);
 
-   void HandleMenu(int32_t);
-
-   void DoButton();
+	void DoButton();
 
 private:
 
-  DataManager myDataManager;
-  HistoManager& myHistoManager = HistogramManager();
-  
-  void AddTopMenu();
-  void SetTheFrame();
-  void AddHistoCanvas();
-  void AddButtons();
-  void AddNumbersDialog();
-  void AddGoToEventDialog(int attach_left);
-  void AddLogos();
+	boost::property_tree::ptree myConfig;
+	int myWorkMode = 0;
 
-   void SetCursorTheme();
+	std::shared_ptr<EventSourceBase> myEventSource;
 
-  void Update();
+	DirectoryWatch myDirWatch;
+	std::thread fileWatchThread;
+	std::mutex myMutex;
 
-   TGCompositeFrame   *fFrame;
-   TGCanvas           *fCanvasWindow;
-   TCanvas            *fCanvas;
+	void InitializeEventSource();
+	void InitializeWindows();
 
-   TGMenuBar          *fMenuBar;
-   TGPopupMenu        *fMenuFile, *fMenuHelp;
+	void AddTopMenu();
+	void SetTheFrame();
+	void AddHistoCanvas();
+	void AddButtons();
+	void AddNumbersDialog();
+	void AddGoToEventDialog(int attach_left);
+	void AddLogos();
 
-   TGLayoutHints      *fFrameLayout;
-   TGTableLayoutHints *fTCanvasLayout;
+	void SetCursorTheme();
 
-   TGTransientFrame *fLegendMain;
+	void Update();
 
-  TGNumberEntryField *fEventIdEntry;
-  TGGroupFrame        *fGframe;
-  
-  EntryDialog *fEntryDialog;
-  SelectionBox *fSelectionBox;
-  
+	TGCompositeFrame* fFrame;
+	TRootEmbeddedCanvas* embeddedCanvas;
+	TCanvas* fCanvas;
 
-   TArrow *fArrow;
-   TLine *fLine;
+	std::unique_ptr<TGMenuBar> fMenuBar;
+	std::unique_ptr<TGPopupMenu> fMenuFile, fMenuHelp;
 
+	TGLayoutHints* fFrameLayout;
+	TGTableLayoutHints* fTCanvasLayout;
+
+	TGTransientFrame* fLegendMain;
+
+	TGNumberEntryField* fEventIdEntry;
+	std::unique_ptr<TGGroupFrame> fGframe;
+
+	std::unique_ptr<EntryDialog> fEntryDialog;
+	SelectionBox* fSelectionBox;
+
+
+	TArrow* fArrow;
+	TLine* fLine;
+
+
+	ClassDef(MainFrame, 0);
 };
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

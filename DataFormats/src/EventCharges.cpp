@@ -9,7 +9,7 @@ void EventCharges::Clear() {
 bool EventCharges::AddValByStrip(std::shared_ptr<Geometry_Strip> strip, int time_cell, double val) {  // valid range [0-2][1-1024][0-511]
 	auto op = (*strip)();
 	if (time_cell < 0 || time_cell >= Geometry().GetAgetNtimecells()) return false;
-	chargeMap[{op.dir, op.num, time_cell}] += val; //update hit or add new one
+	chargeMap[{op.dir, op.section, op.num, time_cell}] += val; //update hit or add new one
 
 	return true;
 }
@@ -19,12 +19,21 @@ bool EventCharges::AddValByAgetChannel(int cobo_idx, int asad_idx, int aget_idx,
 }
 
 double EventCharges::GetValByStrip(direction strip_dir, int strip_number, int time_cell) const {  // valid range [0-2][1-1024][0-511]
-	// check if hit is unique
-	auto it = chargeMap.find({ strip_dir,strip_number,time_cell });
-	if (it != chargeMap.end()) {
-		return it->second;
-	}
-	return 0.0;
+	return GetValByStrip(strip_dir, 0, strip_number, time_cell);
+}
+
+double EventCharges::GetValByStrip(direction strip_dir, int strip_section, int strip_number, int time_cell) const {  // valid range [0-2][1-1024][0-511]
+	auto it = chargeMap.find({ strip_dir, strip_section,strip_number,time_cell });
+	return (it != chargeMap.end() ? it->second: 0.0);
+}
+
+double EventCharges::GetValByStrip(std::shared_ptr<Geometry_Strip> strip, int time_cell) {  // valid range [0-511]
+	auto& strip_data = (*strip)();
+	return GetValByStrip(strip_data.dir, strip_data.section, strip_data.num, time_cell);
+}
+
+double EventCharges::GetValByGlobalChannel(int glb_channel_idx, int time_cell) {  // valid range [0-1023][0-511]
+	return GetValByStrip(Geometry().GetStripByGlobal(glb_channel_idx), time_cell);
 }
 
 double EventCharges::GetMaxCharge() {  // maximal charge from all strips
@@ -56,16 +65,18 @@ std::shared_ptr<EventHits> EventCharges::GetHits(double thr, int delta_strips, i
 	// loop thru SEED-hits
 	for (auto& hit : hitsObject->GetHitList()) {
 		const auto strip_dir = std::get<0>(hit);
-		const auto strip_num = std::get<1>(hit);
-		const auto time_cell = std::get<2>(hit);
-		auto min_strip = chargeMap.lower_bound({ strip_dir, strip_num - delta_strips, time_cell - delta_timecells });
-		auto max_strip = chargeMap.upper_bound({ strip_dir, strip_num + delta_strips, time_cell + delta_timecells });
-		for (auto strip_num_local = strip_num - delta_strips; strip_num_local <= strip_num + delta_strips; strip_num_local++) {
-			auto min_time_cell = chargeMap.lower_bound({ strip_dir, strip_num_local, time_cell - delta_timecells });
-			auto max_time_cell = chargeMap.upper_bound({ strip_dir, strip_num_local, time_cell + delta_timecells });
-			for (auto charge = min_time_cell; charge != max_time_cell; charge++) {
-				if (charge->second < 0) continue; // exclude negative values (due to pedestal subtraction)
-				hitsObject->AddEnvelopeHit(charge->first); // add new space-time point
+		const auto strip_num = std::get<2>(hit);
+		const auto time_cell = std::get<3>(hit);
+		auto min_strip = chargeMap.lower_bound({ strip_dir, section_min, strip_num - delta_strips, time_cell - delta_timecells });
+		auto max_strip = chargeMap.upper_bound({ strip_dir, section_max, strip_num + delta_strips, time_cell + delta_timecells });
+		for (auto section : section_indices) {
+			for (auto strip_num_local = strip_num - delta_strips; strip_num_local <= strip_num + delta_strips; strip_num_local++) {
+				auto min_time_cell = chargeMap.lower_bound({ strip_dir, section, strip_num_local, time_cell - delta_timecells });
+				auto max_time_cell = chargeMap.upper_bound({ strip_dir, section, strip_num_local, time_cell + delta_timecells });
+				for (auto charge = min_time_cell; charge != max_time_cell; charge++) {
+					if (charge->second < 0) continue; // exclude negative values (due to pedestal subtraction)
+					hitsObject->AddEnvelopeHit(charge->first); // add new space-time point
+				}
 			}
 		}
 	}
@@ -88,7 +99,7 @@ void EventCharges::Read(std::string fname) {
 	file.read(reinterpret_cast<char*>(&glb_max_charge), sizeof(glb_max_charge));
 	file.read(reinterpret_cast<char*>(&is_glb_max_charge_calculated), sizeof(is_glb_max_charge_calculated));
 	size_t map_size;
-	std::pair<std::tuple<direction, int, int>, double> elem;
+	std::pair<position, double> elem;
 	file.read(reinterpret_cast<char*>(&map_size), sizeof(map_size));
 	for (size_t index = 0; index < map_size; index++) {
 		file.read(reinterpret_cast<char*>(&elem), sizeof(elem));

@@ -106,6 +106,7 @@ public:
 	inline int GetAgetNchannels_fpn() { return AGET_Nchan_fpn; }
 	inline int GetAgetNtimecells() { return AGET_Ntimecells; }
 	inline int GetAsadNboards() { return ASAD_Nboards; }
+	inline int GetAsadNboards(int COBO_idx) { return (ASAD_N.find(COBO_idx) == ASAD_N.end() ? 0 : ASAD_N[COBO_idx]); }
 	inline int GetCoboNboards() { return COBO_N; }
 	inline double GetVdrift() { return vdrift; }
 	inline double GetDriftCageZmin() { return drift_zmin; };
@@ -121,6 +122,8 @@ public:
 	std::shared_ptr<Geometry_Strip> GetStripByAget(int COBO_idx, int ASAD_idx, int AGET_idx, int channel_idx) const;         // valid range [0-1][0-3][0-3][0-63]
 	std::shared_ptr<Geometry_Strip> GetStripByDir(direction dir, int num) const;                                                   // valid range [0-2][1-1024]
 	std::shared_ptr<Geometry_Strip> GetStripByDir(direction dir, int section, int num) const;                                                   // valid range [0-2][0-2][1-1024]
+	std::shared_ptr<Geometry_Strip> GetStripByGlobal(int global_channel_idx);                                          // valid range [0-1023]
+
 	std::vector<std::shared_ptr<Geometry_Strip>> GetStrips() const;
 
 	// various helper functions for calculating local/global normal/raw channel index

@@ -62,7 +62,7 @@ private:
 
 	void makeRecHits(direction dir);
 
-	TF1 fitTimeWindow(TH1D* hProj);
+	TF1 fitTimeWindow(std::shared_ptr<TH1D> hProj);
 
 	void fillHoughAccumulator(direction dir);
 

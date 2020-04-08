@@ -32,7 +32,7 @@ class EventCharges {
 	friend class HistoManager;
 private:
 
-	std::map< std::tuple<direction, int, int>, double> chargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
+	std::map< position, double> chargeMap; // key=(STRIP_DIR [0-2], SECTION [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
 
 	double glb_max_charge = 0.0;
 
@@ -59,6 +59,9 @@ public:
 	// helper methods for extracting data points
 	// they return 0.0 for non-existing data points
 	double GetValByStrip(direction strip_dir, int strip_number, int time_cell) const;  // valid range [0-2][1-1024][0-511]
+	double GetValByStrip(direction strip_dir, int strip_section, int strip_number, int time_cell) const;  // valid range [0-2][0-2][1-1024][0-511]
+	double GetValByStrip(std::shared_ptr<Geometry_Strip> strip, int time_cell);                   // valid range [0-511]
+	double GetValByGlobalChannel(int glb_channel_idx, int time_cell/*, bool &result*/);         // valid range [0-1023][0-511]
 
 	double GetMaxCharge();                   // maximal charge from all strips
 

@@ -63,6 +63,10 @@ public:
 		int rebin_time = EventCharges_DEFAULT_TIME_REBIN,
 		int method = EventCharges_DEFAULT_RECO_METHOD);
 
+	std::shared_ptr<TH1D> GetTimeProjection_Hits(direction strip_dir);     // clustered hits only, valid dir range [0-2]
+	std::shared_ptr<TH1D> GetTimeProjection_Hits();                    // clustered hits only, all strip dirs
+	std::shared_ptr<TH1D> GetTimeProjection_Charges();                                          // whole event, all strip dirs
+
 private:
 	HistoManager() = default;
 

@@ -1,6 +1,4 @@
 #include "FromTransportGenerator.h"
-FromTransportGenerator::FromTransportGenerator() : AbstractGenerator() {
-}
 
 void FromTransportGenerator::generateTrack() {
 	myTrack3D = *(reinterpret_cast<TH3D*>(simEvent->GetAfterTransportHisto()));

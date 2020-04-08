@@ -410,7 +410,7 @@ void plot_MCevent(const char* input_fname1,  // input ROOT file name for reading
 	zmin = 0.0;
 	zmax = 0.0;
 
-	for (auto dir : dir_vec_UVW) {
+	for (auto dir : dirs) {
 		c2->cd(int(dir) + 1);
 		//    ts2[dir] = (TH2D*) p->DrawStripVsTime(dir, "COL2Z");
 		ts2[dir] = p->GetStripVsTime_TH2D(dir);
@@ -423,7 +423,7 @@ void plot_MCevent(const char* input_fname1,  // input ROOT file name for reading
 		if (ts2[dir]->GetMaximum() > zmax) zmax = ts2[dir]->GetMaximum();
 		if (ts2[dir]->GetMinimum() < zmin) zmin = ts2[dir]->GetMinimum();
 	}
-	for (auto dir : dir_vec_UVW) {
+	for (auto dir : dirs) {
 		c2->cd(int(dir) + 1);
 
 		ts2[dir]->SetMinimum(zmin);
@@ -502,7 +502,7 @@ void plot_MCevent(const char* input_fname1,  // input ROOT file name for reading
 	zmax = 0.0;
 	zmin = 0.0;
 
-	for (auto dir : dir_vec_UVW) {
+	for (auto dir : dirs) {
 		c3->cd(int(dir) + 1);
 		//    ts3[dir] = (TH2D*) p->DrawStripVsTime(dir, "LEGO2 FB");
 		ts3[dir] = p->GetStripVsTime_TH2D(dir);
@@ -515,7 +515,7 @@ void plot_MCevent(const char* input_fname1,  // input ROOT file name for reading
 		if (ts3[dir]->GetMaximum() > zmax) zmax = ts3[dir]->GetMaximum();
 		if (ts3[dir]->GetMinimum() < zmin) zmin = ts3[dir]->GetMinimum();
 	}
-	for (auto dir : dir_vec_UVW) {
+	for (auto dir : dirs) {
 		c3->cd(int(dir) + 1);
 
 		ts3[dir]->SetLineColorAlpha(kWhite, 0.01);
@@ -602,7 +602,7 @@ void plot_MCevent(const char* input_fname1,  // input ROOT file name for reading
 	zmin = 0.0;
 	zmax = 0.0;
 
-	for (auto dir : dir_vec_UVW) {
+	for (auto dir : dirs) {
 		c4->cd(int(dir) + 1);
 
 		for (int istrip = 1; istrip <= Geometry().GetDirNstrips(dir); istrip++) {
@@ -626,7 +626,7 @@ void plot_MCevent(const char* input_fname1,  // input ROOT file name for reading
 		if (tmg[dir].GetHistogram()->GetMaximum() > zmax) zmax = tmg[dir].GetHistogram()->GetMaximum();
 		if (tmg[dir].GetHistogram()->GetMinimum() < zmin) zmin = tmg[dir].GetHistogram()->GetMinimum();
 	}
-	for (auto dir : dir_vec_UVW) {
+	for (auto dir : dirs) {
 		c4->cd(int(dir) + 1);
 
 		tmg[dir].GetHistogram()->SetMaximum(zmax);
@@ -698,9 +698,9 @@ void plot_MCevent(const char* input_fname1,  // input ROOT file name for reading
 	c5->Divide(1, 3);
 	c5->cd();
 	std::map<direction, std::shared_ptr<TH1D>> ts;
-	for (auto dir : dir_vec_UVW) {
+	for (auto dir : dirs) {
 		c5->cd(int(dir) + 1);
-		//    ts[dir] = (TH1D*) p->DrawStripProfile(dir);
+		//    ts[dir] = (std::shared_ptr<TH1D>) p->DrawStripProfile(dir);
 		ts[dir] = p->GetStripProfile_TH1D(dir);
 		if (ts[dir] == nullptr) {
 			std::cerr << "ERROR: Strip profile TH1D[" << dir << "] is NULL !!!" << std::endl;

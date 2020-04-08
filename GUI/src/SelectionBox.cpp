@@ -3,11 +3,11 @@
 
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void SelectionBox::DoSelect(int64_t msg){
+void SelectionBox::DoSelect(Long_t msg){
    fSelected->Clear();
    fListBox->GetSelectedEntries(fSelected);
 
-   Emit("DoSelect(int64_t)",fSelected);
+   Emit("DoSelect(Long_t)",fSelected);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -16,8 +16,8 @@ void SelectionBox::DoExit(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-SelectionBox::SelectionBox(const TGWindow *p, TGWindow *main, uint32_t w,
-                           uint32_t h, uint32_t options){
+SelectionBox::SelectionBox(const TGWindow *p, TGWindow *main, UInt_t w,
+                           UInt_t h, UInt_t options){
 
    fMain = new TGTransientFrame(p, main, w, h, options);
    fMain->Connect("CloseWindow()", "SelectionBox", this, "DoExit()");
@@ -25,7 +25,7 @@ SelectionBox::SelectionBox(const TGWindow *p, TGWindow *main, uint32_t w,
    fMain->SetCleanup(kDeepCleanup);
    fMain->Resize(300,500);
 
-   fFrame = new TGHorizontalFrame(fMain, 60, 20, kFixedWidth);
+   fFrame = std::make_unique<TGHorizontalFrame>(fMain, 60, 20, kFixedWidth);
    fListBox = new TGListBox(fFrame, 89);
    fListBox->SetMultipleSelections(true);
    fListBox->Resize(300,500);
@@ -35,7 +35,7 @@ SelectionBox::SelectionBox(const TGWindow *p, TGWindow *main, uint32_t w,
                                         kLHintsExpandX | kLHintsExpandY,
                                         5, 5, 5, 5));
 
-   TGHorizontalFrame *hframe = new TGHorizontalFrame(fMain, 250, 20, kFixedWidth);
+   TGHorizontalFrame *hframe = std::make_unique<TGHorizontalFrame>(fMain, 250, 20, kFixedWidth);
    TGTextButton *show = new TGTextButton(hframe, "&Set");
    show->Connect("Pressed()", "SelectionBox", this, "DoSelect()");
    hframe->AddFrame(show, new TGLayoutHints(kLHintsExpandX, 5, 5, 3, 4));
@@ -56,7 +56,7 @@ SelectionBox::SelectionBox(const TGWindow *p, TGWindow *main, uint32_t w,
    fMain->MapSubwindows();
    fMain->Resize();
 
-   Connect("DoSelect(int64_t)","MainFrame",main,"HandleHistoSelect(int64_t)");
+   this->Connect("DoSelect(Long_t)","MainFrame",main,"HandleHistoSelect(Long_t)");
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

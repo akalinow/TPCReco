@@ -16,7 +16,7 @@ class FromTransportGenerator : public AbstractGenerator {
 public:
 
 	//Default constructor (not RAII)
-	FromTransportGenerator();
+	FromTransportGenerator() = default;
 
 	//Copies track histogram from input tree and sets simulation parameters (A,Z,length)
 	void generateTrack() final;

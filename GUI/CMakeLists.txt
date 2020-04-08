@@ -14,6 +14,7 @@ file(GLOB_RECURSE sources       ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/src/*.cpp)
 ###############################################################################
 ## dependencies ###############################################################
 ###############################################################################
+include_directories(${Boost_INCLUDE_DIR})
 include_directories(${ROOTINCDIR})
 include_directories(${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include)
 include_directories(${PROJECT_SOURCE_DIR}/DataFormats/include)
@@ -24,8 +25,11 @@ find_package(ROOT REQUIRED COMPONENTS RIO GenVector Gui)
 ## target definitions #########################################################
 ###############################################################################
 # ROOT dictionary for persistens classes
-ROOT_GENERATE_DICTIONARY(G__${MODULE_NAME} ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/MainFrame.h
+ROOT_GENERATE_DICTIONARY(G__${MODULE_NAME}
+  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/MainFrame.h
+  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/ScrollFrame.h
   ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/SelectionBox.h
+  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/DirectoryWatch.h
   LINKDEF ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/RootDictLinkDef.h)
 
 # The data is just added to the executable, because in some IDEs (QtCreator) 
@@ -58,5 +62,4 @@ install(TARGETS tpcBatch_ROOT RUNTIME DESTINATION bin) # ROOT TTree testing
 install(FILES ${CMAKE_BINARY_DIR}/${MODULE_NAME}/lib${MODULE_NAME}_rdict.pcm DESTINATION lib)
 install(FILES ${CMAKE_BINARY_DIR}/${MODULE_NAME}/lib${MODULE_NAME}.rootmap DESTINATION lib)
 install(FILES $<1:${PROJECT_SOURCE_DIR}/${MODULE_NAME}/config/> DESTINATION config)
-
 

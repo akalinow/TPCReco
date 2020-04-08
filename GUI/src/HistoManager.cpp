@@ -216,8 +216,8 @@ TH2D&& HistoManager::GetStripVsTime(direction strip_dir) {  // valid range [0-2]
 		1.0 - 0.5,
 		1. * Geometry().GetDirNstrips(strip_dir) + 0.5 };
 	// fill new histogram
-	auto min_strip = chargesObject->chargeMap.lower_bound({ strip_dir, std::numeric_limits<int>::min(), std::numeric_limits<int>::min() });
-	auto max_strip = chargesObject->chargeMap.upper_bound({ strip_dir, std::numeric_limits<int>::max(), std::numeric_limits<int>::max() });
+	auto min_strip = chargesObject->chargeMap.lower_bound({ strip_dir, 0, std::numeric_limits<int>::min(), std::numeric_limits<int>::min() });
+	auto max_strip = chargesObject->chargeMap.upper_bound({ strip_dir, section_max - 1, std::numeric_limits<int>::max(), std::numeric_limits<int>::max() });
 	for (auto charge = min_strip; charge != max_strip; charge++) {
 		auto strip_num = std::get<1>(charge->first);
 		auto time_cell = std::get<2>(charge->first);
@@ -289,14 +289,14 @@ Reconstr_hist&& HistoManager::Get(double radius, int rebin_space, int rebin_time
 
 	Reconstr_hist h_all;
 	bool err_flag = false;
-	if (std::any_of(dir_vec_UVW.begin(), dir_vec_UVW.end(), [&](direction dir_) { return hitsObject->GetNhits(dir_) < 1; })) return std::move(h_all);
+	if (std::any_of(dirs.begin(), dirs.end(), [&](direction dir_) { return hitsObject->GetNhits(dir_) < 1; })) return std::move(h_all);
 
 	//std::cout << Form(">>>> EventId = %lld", event_id) << std::endl;
 
 	for (auto hits_in_time_cell_begin = hitsObject->hitListByTimeDir.begin(); hits_in_time_cell_begin != hitsObject->hitListByTimeDir.end(); hits_in_time_cell_begin = hitsObject->hitListByTimeDir.upper_bound({ std::get<0>(*hits_in_time_cell_begin), std::numeric_limits<direction>::max(), std::numeric_limits<int>::max() })) { //iterate over time cells
 		auto icell = std::get<0>(*hits_in_time_cell_begin);
 		std::map<direction, std::vector<int>> hits_strip_nums_in_dir;
-		for (auto dir : dir_vec_UVW) {
+		for (auto dir : dirs) {
 			auto min_hit = hitsObject->hitListByTimeDir.lower_bound({ icell, dir, std::numeric_limits<int>::min() });
 			auto max_hit = hitsObject->hitListByTimeDir.upper_bound({ icell, dir, std::numeric_limits<int>::max() });
 			for (auto hit = min_hit; hit != max_hit; hit++) {
@@ -304,7 +304,7 @@ Reconstr_hist&& HistoManager::Get(double radius, int rebin_space, int rebin_time
 			}
 		}
 		// check if there is at least one hit in each direction
-		if (std::any_of(dir_vec_UVW.begin(), dir_vec_UVW.end(), [&](direction dir) { return hits_strip_nums_in_dir[dir].size() == 0; })) continue;
+		if (std::any_of(dirs.begin(), dirs.end(), [&](direction dir) { return hits_strip_nums_in_dir[dir].size() == 0; })) continue;
 
 		//   std::cout << Form(">>>> Number of hits: time cell=%d: U=%d / V=%d / W=%d",
 		//		      icell, (int)hits[int(direction::U)].size(), (int)hits[int(direction::V)].size(), (int)hits[int(direction::W)].size()) << std::endl;
@@ -372,7 +372,7 @@ Reconstr_hist&& HistoManager::Get(double radius, int rebin_space, int rebin_time
 		for (auto& it1 : hitPos) {
 			std::map<direction, int> uvw1;
 			std::map<direction, double> charge_along_direction;  // sum of charges along three directions (for a given time range)
-			for (auto dir : dir_vec_UVW) {
+			for (auto dir : dirs) {
 				uvw1[dir] = it1.first[int(dir)];
 				charge_along_direction[dir] = chargesObject->GetValByStrip(dir, uvw1[dir], icell);
 			}
@@ -380,13 +380,13 @@ Reconstr_hist&& HistoManager::Get(double radius, int rebin_space, int rebin_time
 			// loop over directions
 			for (auto& it2 : hitPos) {
 				std::map<direction, int> uvw2;
-				for (auto dir : dir_vec_UVW) {
+				for (auto dir : dirs) {
 					uvw2[dir] = it2.first[int(dir)];
 				}
 
-				for (auto dir1 : dir_vec_UVW) {
+				for (auto dir1 : dirs) {
 					if (uvw1[dir1] == uvw2[dir1]) {
-						for (auto dir2 : dir_vec_UVW) {
+						for (auto dir2 : dirs) {
 							if (dir2 != dir1) {
 								charge_along_direction[dir2] += chargesObject->GetValByStrip(dir2, uvw2[dir2], icell);
 							}
@@ -394,7 +394,7 @@ Reconstr_hist&& HistoManager::Get(double radius, int rebin_space, int rebin_time
 					}
 				}
 			}
-			for (auto dir : dir_vec_UVW) {
+			for (auto dir : dirs) {
 				auto charge_in_strip = chargesObject->GetValByStrip(dir, uvw1[dir], icell); // charge in a given strip (for a given time range)
 				fraction[dir].insert({ it1.first, charge_in_strip / charge_along_direction[dir] });
 			}
@@ -404,8 +404,8 @@ Reconstr_hist&& HistoManager::Get(double radius, int rebin_space, int rebin_time
 		for (auto&& it : hitPos) {
 
 			double val = 0.5 * // divide charge according to charge-fraction in two other directions
-				std::inner_product(dir_vec_UVW.begin(), dir_vec_UVW.end(), it.first.begin(), 0.0, std::plus<>(), [&](direction dir, int key) {
-				return chargesObject->GetValByStrip(dir, key, icell) * std::inner_product(fraction.begin(), fraction.end(), dir_vec_UVW.begin(), 0.0, std::plus<>(), [&](auto& map_, direction dir2) {
+				std::inner_product(dirs.begin(), dirs.end(), it.first.begin(), 0.0, std::plus<>(), [&](direction dir, int key) {
+				return chargesObject->GetValByStrip(dir, key, icell) * std::inner_product(fraction.begin(), fraction.end(), dirs.begin(), 0.0, std::plus<>(), [&](auto& map_, direction dir2) {
 					return (dir2 != dir ? map_.second.at(it.first) : 0.0);
 				});
 			});
@@ -415,4 +415,70 @@ Reconstr_hist&& HistoManager::Get(double radius, int rebin_space, int rebin_time
 		}
 	}
 	return std::move(h_all);
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::shared_ptr<TH1D> HistoManager::GetTimeProjection_Hits(direction strip_dir) {  // valid range [0-2]
+	if (hitsObject->GetNhits(strip_dir) < 1) return;
+	auto result = std::make_shared<TH1D>(Form("hclust_%stime_evt%lld", Geometry().GetDirName(strip_dir), chargesObject->Info().EventId),
+		Form("Event-%lld: Clustered hits from %s strips;Time bin [arb.u.];Charge/bin [arb.u.]",
+			chargesObject->Info().EventId, Geometry().GetDirName(strip_dir)),
+		Geometry().GetAgetNtimecells(),
+		0.0 - 0.5,
+		1. * Geometry().GetAgetNtimecells() - 0.5); // ends at 511.5 (cells numbered from 0 to 511)
+  // fill new histogram
+	auto min_hit = hitsObject->hitList.lower_bound({ strip_dir, std::numeric_limits<int>::min(), std::numeric_limits<int>::min() });
+	auto max_hit = hitsObject->hitList.upper_bound({ strip_dir, std::numeric_limits<int>::max(), std::numeric_limits<int>::max() });
+	for (auto hit = min_hit; hit != max_hit; hit++) {
+		auto strip_num = std::get<1>(*hit);
+		auto icell = std::get<2>(*hit);
+		double val = chargesObject->GetValByStrip(strip_dir, strip_num, icell);
+		result->Fill(1. * icell, val);
+	}
+	return result;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::shared_ptr<TH1D> HistoManager::GetTimeProjection_Hits() {  // all strips
+	auto result = std::make_shared<TH1D>(Form("hclust_time_evt%lld", chargesObject->Info().EventId),
+		Form("Event-%lld: Clustered hits from all strips;Time bin [arb.u.];Charge/bin [arb.u.]", chargesObject->Info().EventId),
+		Geometry().GetAgetNtimecells(),
+		0.0 - 0.5,
+		1. * Geometry().GetAgetNtimecells() - 0.5); // ends at 511.5 (cells numbered from 0 to 511)
+	if (hitsObject->GetNhits() == 0) return result;
+	// fill new histogram
+	for (auto strip_dir : dirs) {
+		auto min_hit = hitsObject->hitList.lower_bound({ strip_dir, std::numeric_limits<int>::min(), std::numeric_limits<int>::min() });
+		auto max_hit = hitsObject->hitList.upper_bound({ strip_dir, std::numeric_limits<int>::max(), std::numeric_limits<int>::max() });
+		for (auto hit = min_hit; hit != max_hit; hit++) {
+			auto strip_num = std::get<1>(*hit);
+			auto icell = std::get<2>(*hit);
+			double val = chargesObject->GetValByStrip(strip_dir, strip_num, icell);
+			result->Fill(1. * icell, val);
+		}
+	}
+	return result;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::shared_ptr<TH1D> HistoManager::GetTimeProjection_Charges() {  // whole event, all strips
+	auto result = std::make_shared<TH1D>(Form("hraw_time_evt%lld", chargesObject->Info().EventId),
+		Form("Event-%lld: Raw signals from all strips;Time bin [arb.u.];Charge/bin [arb.u.]", chargesObject->Info().EventId),
+		Geometry().GetAgetNtimecells(),
+		0.0 - 0.5,
+		1. * Geometry().GetAgetNtimecells() - 0.5); // ends at 511.5 (cells numbered from 0 to 511)
+  // fill new histogram
+	int counter = 0;
+	for (int icobo = 0; icobo < Geometry().GetCoboNboards(); icobo++) {
+		for (int iasad = 0; iasad < Geometry().GetAsadNboards(icobo); iasad++) {
+			for (int ichan = 0; ichan < Geometry().GetAgetNchannels() * Geometry().GetAgetNchips(); ichan++) {
+				counter++;
+				for (int icell = 0; icell <= Geometry().GetAgetNtimecells(); icell++) {
+					double val = chargesObject->GetValByGlobalChannel(counter, icell);
+					if (val != 0.0) result->Fill(1. * icell, val);
+				}
+			}
+		}
+	}
+	return result;
 }

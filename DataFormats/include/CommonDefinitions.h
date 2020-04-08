@@ -7,6 +7,7 @@
 #include <vector>
 #include <functional>
 
+
 //class RV_Storage automatically manages function calls and stores already calculated results in memory
 template <typename Ret_Type, typename... Func_Args>
 class RV_Storage {
@@ -36,6 +37,35 @@ enum class direction : unsigned {
 	FPN_CH = 3 // FPN channel index
 };
 
+using position = std::tuple<direction, int, int, int>;
+using position_reduced = std::tuple<direction, int, int>;
+using position_by_time = std::tuple<int, direction, int, int>;
+using position_by_time_reduced = std::tuple<int, direction, int>;
+
+inline position_reduced to_reduced(position pos) {
+	return { std::get<0>(pos), std::get<2>(pos), std::get<3>(pos) };
+}
+
+inline position to_normal(position_reduced pos) {
+	return { std::get<0>(pos), 0, std::get<1>(pos), std::get<2>(pos) };
+}
+
+inline position_by_time_reduced to_reduced(position_by_time pos) {
+	return { std::get<0>(pos), std::get<1>(pos), std::get<3>(pos) };
+}
+
+inline position_by_time to_normal(position_by_time_reduced pos) {
+	return { std::get<0>(pos),std::get<1>(pos), 0,  std::get<2>(pos) };
+}
+
+inline position_by_time to_by_time(position pos) {
+	return { std::get<3>(pos),std::get<0>(pos),std::get<1>(pos), std::get<2>(pos) };
+}
+
+inline position_by_time_reduced to_by_time(position_reduced pos) {
+	return { std::get<2>(pos),std::get<0>(pos),std::get<1>(pos) };
+}
+
 enum class projection {
 	DIR_XY,     // 2D direction on XY plane
 	DIR_XZ,    // 2D direction on XZ plane
@@ -47,7 +77,13 @@ inline std::ostream& operator<<(std::ostream& str, direction proj) {
 	return (str << int(proj));
 }
 
-const auto dir_vec_UVW = std::vector<direction>{ direction::U,direction::V,direction::W };
+const auto dirs = std::vector<direction>{ direction::U,direction::V,direction::W };
+
+const auto section_min = 0;
+
+const auto section_max = 3;
+
+const std::vector<int> section_indices = { 0,1,2 };
 
 //#### Angles of U/V/W unit vectors wrt X-axis [deg]
 //#ANGLES: 90.0 -30.0 30.0
