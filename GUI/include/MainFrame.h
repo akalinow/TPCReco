@@ -110,27 +110,27 @@ private:
 
 	void Update();
 
-	TGCompositeFrame* fFrame;
-	TRootEmbeddedCanvas* embeddedCanvas;
-	TCanvas* fCanvas;
+	std::unique_ptr<TGCompositeFrame> fFrame;
+	std::unique_ptr<TRootEmbeddedCanvas> embeddedCanvas;
+	std::unique_ptr<TCanvas> fCanvas;
 
 	std::unique_ptr<TGMenuBar> fMenuBar;
 	std::unique_ptr<TGPopupMenu> fMenuFile, fMenuHelp;
 
-	TGLayoutHints* fFrameLayout;
-	TGTableLayoutHints* fTCanvasLayout;
+	std::unique_ptr<TGLayoutHints> fFrameLayout;
+	std::unique_ptr<TGTableLayoutHints> fTCanvasLayout;
 
-	TGTransientFrame* fLegendMain;
+	std::unique_ptr<TGTransientFrame> fLegendMain;
 
-	TGNumberEntryField* fEventIdEntry;
+	std::unique_ptr<TGNumberEntryField> fEventIdEntry;
 	std::unique_ptr<TGGroupFrame> fGframe;
 
 	std::unique_ptr<EntryDialog> fEntryDialog;
-	SelectionBox* fSelectionBox;
+	std::unique_ptr<SelectionBox> fSelectionBox;
 
 
-	TArrow* fArrow;
-	TLine* fLine;
+	std::unique_ptr<TArrow> fArrow;
+	std::unique_ptr<TLine> fLine;
 
 
 	ClassDef(MainFrame, 0);

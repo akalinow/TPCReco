@@ -1,4 +1,5 @@
 set(MODULE_NAME "GUI")
+find_package(Boost 1.72.0)
 MESSAGE( STATUS "Adding CMake fragment for module:         " ${MODULE_NAME} )
 
 ###############################################################################

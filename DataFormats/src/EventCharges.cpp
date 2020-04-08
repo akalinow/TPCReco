@@ -65,8 +65,8 @@ std::shared_ptr<EventHits> EventCharges::GetHits(double thr, int delta_strips, i
 	// loop thru SEED-hits
 	for (auto& hit : hitsObject->GetHitList()) {
 		const auto strip_dir = std::get<0>(hit);
-		const auto strip_num = std::get<2>(hit);
-		const auto time_cell = std::get<3>(hit);
+		const auto strip_num = std::get<1>(hit);
+		const auto time_cell = std::get<2>(hit);
 		auto min_strip = chargeMap.lower_bound({ strip_dir, section_min, strip_num - delta_strips, time_cell - delta_timecells });
 		auto max_strip = chargeMap.upper_bound({ strip_dir, section_max, strip_num + delta_strips, time_cell + delta_timecells });
 		for (auto section : section_indices) {

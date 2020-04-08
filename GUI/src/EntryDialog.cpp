@@ -26,19 +26,19 @@ EntryDialog::EntryDialog(const TGWindow* p, MainFrame* aFrame)
 	AddFrame(fileInfoFrame.get(), new TGLayoutHints(kLHintsFillX, 2, 2, 2, 2));
 	AddFrame(datasetInfoFrame.get(), aLayoutHints);
 
-	auto totalEventsFrame = std::make_unique<TGGroupFrame>(datasetInfoFrame, "Events in the file:");
-	auto currentEventFrame = std::make_unique<TGGroupFrame>(datasetInfoFrame, "Current event:");
-	auto fileNameFrame = std::make_unique<TGGroupFrame>(fileInfoFrame, "Processing file:");
-	auto modeFrame = std::make_unique<TGGroupFrame>(modeInfoFrame, "Mode:");
+	auto totalEventsFrame = std::make_unique<TGGroupFrame>(datasetInfoFrame.get(), "Events in the file:");
+	auto currentEventFrame = std::make_unique<TGGroupFrame>(datasetInfoFrame.get(), "Current event:");
+	auto fileNameFrame = std::make_unique<TGGroupFrame>(fileInfoFrame.get(), "Processing file:");
+	auto modeFrame = std::make_unique<TGGroupFrame>(modeInfoFrame.get(), "Mode:");
 
-	totalEventsLabel = std::make_unique<TGLabel>(totalEventsFrame, "No input.");
-	currentEventLabel = std::make_unique<TGLabel>(currentEventFrame, "No input.");
+	totalEventsLabel = std::make_unique<TGLabel>(totalEventsFrame.get(), "No input.");
+	currentEventLabel = std::make_unique<TGLabel>(currentEventFrame.get(), "No input.");
 	std::string tmp = "No input.";
 	tmp.resize(fileNameLineLength, ' ');
-	fileNameLabel = std::make_unique<TGLabel>(fileNameFrame, tmp.c_str());
+	fileNameLabel = std::make_unique<TGLabel>(fileNameFrame.get(), tmp.c_str());
 
 	std::string mode = "NONE";
-	modeLabel = std::make_unique<TGLabel>(modeFrame, mode.c_str());
+	modeLabel = std::make_unique<TGLabel>(modeFrame.get(), mode.c_str());
 	ULong_t iColor;
 	gClient->GetColorByName("red", iColor);
 	modeLabel->SetTextColor(iColor);

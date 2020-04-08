@@ -147,12 +147,12 @@ void MainFrame::AddTopMenu() {
 void MainFrame::SetTheFrame() {
 
 	int nRows = 12, nColumns = 12;
-	fFrame = new TGCompositeFrame(this, 400, 400, kSunkenFrame);
-	TGTableLayout* tlo = new TGTableLayout(fFrame, nRows, nColumns, 1);
+	fFrame = std::make_unique<TGCompositeFrame>(this, 400, 400, kSunkenFrame);
+	TGTableLayout* tlo = new TGTableLayout(fFrame.get(), nRows, nColumns, 1);
 	fFrame->SetLayoutManager(tlo);
-	fFrameLayout = new TGLayoutHints(kLHintsTop | kLHintsLeft |
+	fFrameLayout = std::make_unique<TGLayoutHints>(kLHintsTop | kLHintsLeft |
 		kLHintsExpandX | kLHintsExpandY);
-	AddFrame(fFrame, fFrameLayout);
+	AddFrame(fFrame.get(), fFrameLayout.get());
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -161,14 +161,14 @@ void MainFrame::AddHistoCanvas() {
 	gStyle->SetOptStat(0);
 	gStyle->SetPalette(55);
 
-	embeddedCanvas = new TRootEmbeddedCanvas("Histograms", fFrame, 1000, 1000);
+	embeddedCanvas = std::make_unique<TRootEmbeddedCanvas>("Histograms", fFrame.get(), 1000, 1000);
 	UInt_t attach_left = 0, attach_right = 8;
 	UInt_t attach_top = 0, attach_bottom = 12;
-	fTCanvasLayout = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
+	fTCanvasLayout = std::make_unique<TGTableLayoutHints>(attach_left, attach_right, attach_top, attach_bottom,
 		kLHintsFillX | kLHintsFillY);
-	fFrame->AddFrame(embeddedCanvas, fTCanvasLayout);
+	fFrame->AddFrame(embeddedCanvas.get(), fTCanvasLayout.get());
 
-	fCanvas = embeddedCanvas->GetCanvas();
+	fCanvas = std::make_unique<TCanvas>(embeddedCanvas->GetCanvas());
 	fCanvas->MoveOpaque(kFALSE);
 	fCanvas->Divide(3, 3);
 	TText aMessage(0.2, 0.5, "Waiting for data.");
@@ -190,7 +190,7 @@ void MainFrame::AddButtons() {
 
 	UInt_t attach_left = 8, attach_right = 9;
 	for (unsigned int iButton = 0; iButton < button_names.size(); ++iButton) {
-		TGTextButton* button = new TGTextButton(fFrame,
+		TGTextButton* button = new TGTextButton(fFrame.get(),
 			button_names[iButton].c_str(),
 			button_id[iButton]);
 
@@ -208,7 +208,7 @@ void MainFrame::AddButtons() {
 void MainFrame::AddGoToEventDialog(int attach_top) {
 
 	fGframe = std::make_unique<TGGroupFrame>(this, "Go to event");
-	fEventIdEntry = new TGNumberEntryField(fGframe.get(), M_GOTO_EVENT, 0,
+	fEventIdEntry = std::make_unique<TGNumberEntryField>(fGframe.get(), M_GOTO_EVENT, 0,
 		TGNumberFormat::kNESInteger,
 		TGNumberFormat::kNEANonNegative,
 		TGNumberFormat::kNELNoLimits);
@@ -221,13 +221,13 @@ void MainFrame::AddGoToEventDialog(int attach_top) {
 		kLHintsFillX | kLHintsFillY,
 		0, 0, 5, 2);
 	fFrame->AddFrame(fGframe.get(), tloh);
-	fGframe->AddFrame(fEventIdEntry, new TGLayoutHints(kLHintsExpandX, 0, 0, 0, 0));
+	fGframe->AddFrame(fEventIdEntry.get(), new TGLayoutHints(kLHintsExpandX, 0, 0, 0, 0));
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MainFrame::AddNumbersDialog() {
 
-	fEntryDialog = std::make_unique<EntryDialog>(fFrame, this);
+	fEntryDialog = std::make_unique<EntryDialog>(fFrame.get(), this);
 
 	UInt_t attach_left = 9, attach_right = 12;
 	UInt_t attach_top = 0, attach_bottom = 3;
@@ -252,7 +252,7 @@ void MainFrame::AddLogos() {
 	///FIXME clean up the ipic at the application closure.
 	const TGPicture* ipic = (TGPicture*)gClient->GetPicturePool()->GetPicture("FUW_znak", img->GetPixmap(), img->GetMask());
 	delete img;
-	TGIcon* icon = new TGIcon(fFrame, ipic, width, height);
+	TGIcon* icon = new TGIcon(fFrame.get(), ipic, width, height);
 
 	UInt_t attach_left = 9, attach_right = 10;
 	UInt_t attach_top = 10, attach_bottom = 12;
@@ -269,7 +269,7 @@ void MainFrame::AddLogos() {
 	///FIXME clean up the ipic at the application closure.
 	ipic = (TGPicture*)gClient->GetPicturePool()->GetPicture("FUW_znak", img->GetPixmap(), img->GetMask());
 	delete img;
-	icon = new TGIcon(fFrame, ipic, width, height);
+	icon = new TGIcon(fFrame.get(), ipic, width, height);
 
 	attach_left = 11, attach_right = 12;
 	tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom, 0, 0, 0, -20);

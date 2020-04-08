@@ -419,14 +419,14 @@ Reconstr_hist&& HistoManager::Get(double radius, int rebin_space, int rebin_time
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::shared_ptr<TH1D> HistoManager::GetTimeProjection_Hits(direction strip_dir) {  // valid range [0-2]
-	if (hitsObject->GetNhits(strip_dir) < 1) return;
 	auto result = std::make_shared<TH1D>(Form("hclust_%stime_evt%lld", Geometry().GetDirName(strip_dir), chargesObject->Info().EventId),
 		Form("Event-%lld: Clustered hits from %s strips;Time bin [arb.u.];Charge/bin [arb.u.]",
 			chargesObject->Info().EventId, Geometry().GetDirName(strip_dir)),
 		Geometry().GetAgetNtimecells(),
 		0.0 - 0.5,
 		1. * Geometry().GetAgetNtimecells() - 0.5); // ends at 511.5 (cells numbered from 0 to 511)
-  // fill new histogram
+	if (hitsObject->GetNhits(strip_dir) < 1) return result;
+	// fill new histogram
 	auto min_hit = hitsObject->hitList.lower_bound({ strip_dir, std::numeric_limits<int>::min(), std::numeric_limits<int>::min() });
 	auto max_hit = hitsObject->hitList.upper_bound({ strip_dir, std::numeric_limits<int>::max(), std::numeric_limits<int>::max() });
 	for (auto hit = min_hit; hit != max_hit; hit++) {

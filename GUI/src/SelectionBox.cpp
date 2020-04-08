@@ -3,70 +3,65 @@
 
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void SelectionBox::DoSelect(Long_t msg){
-   fSelected->Clear();
-   fListBox->GetSelectedEntries(fSelected);
+void SelectionBox::DoSelect(Long_t msg) {
+	fSelected->Clear();
+	fListBox->GetSelectedEntries(fSelected.get());
 
-   Emit("DoSelect(Long_t)",fSelected);
+	Emit("DoSelect(Long_t)", fSelected.get());
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void SelectionBox::DoExit(){
-   fMain->CloseWindow();
+void SelectionBox::DoExit() {
+	fMain->CloseWindow();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-SelectionBox::SelectionBox(const TGWindow *p, TGWindow *main, UInt_t w,
-                           UInt_t h, UInt_t options){
+SelectionBox::SelectionBox(const TGWindow* p, TGWindow* main, UInt_t w,
+	UInt_t h, UInt_t options) {
 
-   fMain = new TGTransientFrame(p, main, w, h, options);
-   fMain->Connect("CloseWindow()", "SelectionBox", this, "DoExit()");
-   fMain->DontCallClose(); // to avoid double deletions.
-   fMain->SetCleanup(kDeepCleanup);
-   fMain->Resize(300,500);
+	fMain = std::make_unique<TGTransientFrame>(p, main, w, h, options);
+	fMain->Connect("CloseWindow()", "SelectionBox", this, "DoExit()");
+	fMain->DontCallClose(); // to avoid double deletions.
+	fMain->SetCleanup(kDeepCleanup);
+	fMain->Resize(300, 500);
 
-   fFrame = std::make_unique<TGHorizontalFrame>(fMain, 60, 20, kFixedWidth);
-   fListBox = new TGListBox(fFrame, 89);
-   fListBox->SetMultipleSelections(true);
-   fListBox->Resize(300,500);
-   fSelected = new TList;
+	fFrame = std::make_unique<TGHorizontalFrame>(fMain.get(), 60, 20, kFixedWidth);
+	fListBox = std::make_unique<TGListBox>(fFrame.get(), 89);
+	fListBox->SetMultipleSelections(true);
+	fListBox->Resize(300, 500);
+	fSelected = std::make_unique<TList>();
 
-   fFrame->AddFrame(fListBox, new TGLayoutHints(kLHintsTop | kLHintsLeft |
-                                        kLHintsExpandX | kLHintsExpandY,
-                                        5, 5, 5, 5));
+	fFrame->AddFrame(fListBox.get(), new TGLayoutHints(kLHintsTop | kLHintsLeft |
+		kLHintsExpandX | kLHintsExpandY,
+		5, 5, 5, 5));
 
-   TGHorizontalFrame *hframe = std::make_unique<TGHorizontalFrame>(fMain, 250, 20, kFixedWidth);
-   TGTextButton *show = new TGTextButton(hframe, "&Set");
-   show->Connect("Pressed()", "SelectionBox", this, "DoSelect()");
-   hframe->AddFrame(show, new TGLayoutHints(kLHintsExpandX, 5, 5, 3, 4));
-   TGTextButton *exit = new TGTextButton(hframe, "&Exit ");
-   exit->Connect("Pressed()", "SelectionBox", this, "DoExit()");
-   hframe->AddFrame(exit, new TGLayoutHints(kLHintsExpandX, 5, 5, 3, 4));
-   fMain->AddFrame(hframe, new TGLayoutHints(kLHintsBottom | kLHintsExpandX, 2, 2, 5, 1));
+	auto hframe = std::make_unique<TGHorizontalFrame>(fMain.get(), 250, 20, kFixedWidth);
+	TGTextButton* show = new TGTextButton(hframe.get(), "&Set");
+	show->Connect("Pressed()", "SelectionBox", this, "DoSelect()");
+	hframe->AddFrame(show, new TGLayoutHints(kLHintsExpandX, 5, 5, 3, 4));
+	TGTextButton* exit = new TGTextButton(hframe.get(), "&Exit ");
+	exit->Connect("Pressed()", "SelectionBox", this, "DoExit()");
+	hframe->AddFrame(exit, new TGLayoutHints(kLHintsExpandX, 5, 5, 3, 4));
+	fMain->AddFrame(hframe.get(), new TGLayoutHints(kLHintsBottom | kLHintsExpandX, 2, 2, 5, 1));
 
-   // Set a name to the main frame
-  // position relative to the parent's window
-   TGLayoutHints *fL1 = new TGLayoutHints(kLHintsTop | kLHintsLeft | kLHintsExpandX,
-                           2, 2, 2, 2);
+	// Set a name to the main frame
+   // position relative to the parent's window
+	TGLayoutHints* fL1 = new TGLayoutHints(kLHintsTop | kLHintsLeft | kLHintsExpandX,
+		2, 2, 2, 2);
 
-   fMain->AddFrame(fFrame, fL1);
-   fMain->CenterOnParent();
-   fMain->SetWindowName("Histogram selection");
-   fMain->MapWindow();
-   fMain->MapSubwindows();
-   fMain->Resize();
+	fMain->AddFrame(fFrame.get(), fL1);
+	fMain->CenterOnParent();
+	fMain->SetWindowName("Histogram selection");
+	fMain->MapWindow();
+	fMain->MapSubwindows();
+	fMain->Resize();
 
-   this->Connect("DoSelect(Long_t)","MainFrame",main,"HandleHistoSelect(Long_t)");
+	Connect("DoSelect(Long_t)", "MainFrame", main, "HandleHistoSelect(Long_t)");
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-SelectionBox::~SelectionBox()
-{
-   if (fSelected) {
-      fSelected->Delete();
-      delete fSelected;
-   }
-   fMain->DeleteWindow();
+SelectionBox::~SelectionBox() {
+	fMain->DeleteWindow();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -76,19 +71,13 @@ void SelectionBox::HandleButtons()
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void SelectionBox::Initialize(const std::vector<std::string> & hNames){
+void SelectionBox::Initialize(const std::vector<std::string>& hNames) {
 
-  for(unsigned int iHisto=0;iHisto<hNames.size();++iHisto){
-    fListBox->AddEntry(hNames[iHisto].c_str(), iHisto+1);
-  }
-  fListBox->Select(1);
-  fMain->Layout();
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-const TList* SelectionBox::GetSelected() const{
-
-  return fSelected;
+	for (unsigned int iHisto = 0; iHisto < hNames.size(); ++iHisto) {
+		fListBox->AddEntry(hNames[iHisto].c_str(), iHisto + 1);
+	}
+	fListBox->Select(1);
+	fMain->Layout();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

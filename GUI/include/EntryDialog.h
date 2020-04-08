@@ -12,34 +12,34 @@ class MainFrame;
 class EntryDialog : public TGCompositeFrame {
 
 public:
-   EntryDialog(const TGWindow *p, MainFrame *aFrame);
+	EntryDialog(const TGWindow* p, MainFrame* aFrame);
 
-   void initialize();
+	void initialize();
 
-   virtual ~EntryDialog() = default;
+	virtual ~EntryDialog() = default;
 
-   virtual Bool_t ProcessMessage(Long_t msg, Long_t parm1, Long_t);
+	virtual Bool_t ProcessMessage(Long_t msg, Long_t parm1, Long_t);
 
-  void updateFileName(const std::string & fileName);
+	void updateFileName(const std::string& fileName);
 
-  void updateEventNumbers(unsigned int nTotalEvents, unsigned int iCurrentEvent);
+	void updateEventNumbers(unsigned int nTotalEvents, unsigned int iCurrentEvent);
 
-  void updateModeLabel(const std::string & aMode);
+	void updateModeLabel(const std::string& aMode);
 
 private:
 
-  MainFrame *theMainFrame;
+	MainFrame* theMainFrame;
 
-  std::unique_ptr<TGHorizontalFrame> datasetInfoFrame;
-  std::unique_ptr<TGHorizontalFrame> fileInfoFrame;
-  std::unique_ptr<TGHorizontalFrame> modeInfoFrame;
-  
-  std::unique_ptr<TGLabel> totalEventsLabel;
-  std::unique_ptr<TGLabel> currentEventLabel;
-  std::unique_ptr<TGLabel> fileNameLabel;
-  std::unique_ptr<TGLabel> modeLabel;
+	std::unique_ptr<TGHorizontalFrame> datasetInfoFrame;
+	std::unique_ptr<TGHorizontalFrame> fileInfoFrame;
+	std::unique_ptr<TGHorizontalFrame> modeInfoFrame;
 
-  unsigned int fileNameLineLength = 36;
+	std::unique_ptr<TGLabel> totalEventsLabel;
+	std::unique_ptr<TGLabel> currentEventLabel;
+	std::unique_ptr<TGLabel> fileNameLabel;
+	std::unique_ptr<TGLabel> modeLabel;
+
+	unsigned int fileNameLineLength = 36;
 
 };
 

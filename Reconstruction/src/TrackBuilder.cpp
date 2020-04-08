@@ -78,10 +78,9 @@ void TrackBuilder::makeRecHits(direction dir) {
 		hRecHits->SetTitle(tmpTitle.c_str());
 	}
 
-	std::shared_ptr<TH1D> hProj;
 	double hitWirePos = -999.0;
 	for (int iBinY = 1; iBinY < hRecHits->GetNbinsY(); ++iBinY) {
-		hProj = hRawHits->ProjectionX("hProj", iBinY, iBinY);
+		auto hProj = std::shared_ptr<TH1D>(hRawHits->ProjectionX("hProj", iBinY, iBinY));
 		auto&& timeResponseShape = fitTimeWindow(hProj);
 
 		hitWirePos = hRawHits->GetYaxis()->GetBinCenter(iBinY);
@@ -92,7 +91,6 @@ void TrackBuilder::makeRecHits(direction dir) {
 			hitCharge *= sqrt(2.0) * pi * hitTimePosError;//the gausian fits are made without the normalisation factor
 			if (hitCharge > 50) hRecHits->Fill(hitTimePos, hitWirePos, hitCharge);//FIXME optimize, use dynamic threshold?
 		}
-		delete hProj;
 	}
 }
 /////////////////////////////////////////////////////////

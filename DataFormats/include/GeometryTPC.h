@@ -106,7 +106,7 @@ public:
 	inline int GetAgetNchannels_fpn() { return AGET_Nchan_fpn; }
 	inline int GetAgetNtimecells() { return AGET_Ntimecells; }
 	inline int GetAsadNboards() { return ASAD_Nboards; }
-	inline int GetAsadNboards(int COBO_idx) { return (ASAD_N.find(COBO_idx) == ASAD_N.end() ? 0 : ASAD_N[COBO_idx]); }
+	inline int GetAsadNboards(int COBO_idx) { return (COBO_idx < ASAD_N.size() ? ASAD_N[COBO_idx] : 0); }
 	inline int GetCoboNboards() { return COBO_N; }
 	inline double GetVdrift() { return vdrift; }
 	inline double GetDriftCageZmin() { return drift_zmin; };

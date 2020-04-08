@@ -13,18 +13,16 @@ class SelectionBox {
 
 private:
 
-   TGTransientFrame    *fMain;
-   TGHorizontalFrame   *fFrame;
-   TGListBox           *fListBox;
-   TList               *fSelected;
+   std::unique_ptr<TGTransientFrame> fMain;
+   std::unique_ptr<TGHorizontalFrame> fFrame;
+   std::unique_ptr<TGListBox> fListBox;
+   std::unique_ptr<TList> fSelected;
 
 public:
 
    SelectionBox(const TGWindow *p, TGWindow *main, UInt_t w, UInt_t h,
                 UInt_t options = kVerticalFrame);
    virtual ~SelectionBox();
-
-   const TList* GetSelected() const;
 
    void Initialize(const std::vector<std::string> &);
 
