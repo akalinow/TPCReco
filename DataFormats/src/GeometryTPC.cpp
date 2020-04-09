@@ -371,16 +371,11 @@ bool GeometryTPC::InitTH2Poly() {
 	for (auto& strip_it : stripArray) {
 		auto& strip_data = (*strip_it.second)();
 		TVector2 point1 = reference_point + strip_data.offset_vec - strip_data.unit_vec * 0.5 * pad_pitch;
-		TVector2 point2 = point1 + strip_data.unit_vec * strip_data.length();
-		if (point1.X() < xmin)      xmin = point1.X();
-		else if (point1.X() > xmax) xmax = point1.X();
-		if (point2.X() < xmin)      xmin = point2.X();
-		else if (point2.X() > xmax) xmax = point2.X();
-		if (point1.Y() < ymin)      ymin = point1.Y();
-		else if (point1.Y() > ymax) ymax = point1.Y();
-		if (point2.Y() < ymin)      ymin = point2.Y();
-		else if (point2.Y() > ymax) ymax = point2.Y();
-		// }
+		TVector2 point2 = point1 + strip_data.unit_vec * /*strip_data.length()*/ strip_data.npads * Geometry().GetPadPitch();
+		xmax = std::max({ xmax, point1.X(), point2.X() });
+		xmin = std::min({ xmin, point1.X(), point2.X() });
+		ymax = std::max({ ymax, point1.Y(), point2.Y() });
+		ymin = std::min({ ymin, point1.Y(), point2.Y() });
 	}
 	tp = std::make_shared<TH2Poly>("h_uvw", "GeometryTPC::TH2Poly;X;Y;Charge", grid_nx, xmin, xmax, grid_ny, ymin, ymax);
 	tp->SetFloat(true); // allow to expand outside of the current limits
@@ -602,7 +597,7 @@ bool GeometryTPC::GetCrossPoint(std::shared_ptr<Geometry_Strip> strip1, std::sha
 	double len2 = W2 / W;
 	double residual = 0.5 * pad_pitch;
 	if (len1<-residual - NUM_TOLERANCE || len2<-residual - NUM_TOLERANCE ||
-		len1 > op1.length() + NUM_TOLERANCE || len2 > op2.length() + NUM_TOLERANCE) return false;
+		len1 > /*op1.length()*/ op1.npads * Geometry().GetPadPitch() + NUM_TOLERANCE || len2 > /*op2.length()*/ op2.npads * Geometry().GetPadPitch() + NUM_TOLERANCE) return false;
 	point.Set(op1.offset_vec.X() + len1 * op1.unit_vec.X(), op1.offset_vec.Y() + len1 * op1.unit_vec.Y());
 	point += reference_point;
 	return true;
@@ -674,12 +669,12 @@ std::tuple<double, double, double, double> GeometryTPC::rangeXY() {
 
 // Returns vector of first and last strips in each dir
 std::vector<std::shared_ptr<Geometry_Strip>> GeometryTPC::GetStrips() const {
-	std::vector<std::shared_ptr<Geometry_Strip>> _strips_;
-	for (auto& _dir_ : dirs) {
-		_strips_.push_back(GetStripByDir(_dir_, 1)); //first strip
-		_strips_.push_back(GetStripByDir(_dir_, GetDirNstrips(_dir_))); //last strip
+	std::vector<std::shared_ptr<Geometry_Strip>> strips;
+	for (auto dir : dirs) {
+		strips.push_back(GetStripByDir(dir, 1)); //first strip
+		strips.push_back(GetStripByDir(dir, GetDirNstrips(dir))); //last strip
 	}
-	return _strips_;
+	return strips;
 }
 
 double GeometryTPC::Strip2posUVW(direction dir, int section, int num) {
