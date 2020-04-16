@@ -606,7 +606,7 @@ void plot_MCevent(const char* input_fname1,  // input ROOT file name for reading
 		c4->cd(int(dir) + 1);
 
 		for (int istrip = 1; istrip <= Geometry().GetDirNstrips(dir); istrip++) {
-			TGraph* tg = new TGraph(ts2[dir]->ProjectionX(Form("%s%d", Geometry().GetDirName(dir), istrip), istrip, istrip));
+			TGraph* tg = new TGraph(ts2[dir]->ProjectionX(Form("%s%d", Geometry().GetDirName(dir).c_str(), istrip), istrip, istrip));
 			std::cout << "dir=" << dir << ", strip=" << istrip << ": ptr=" << tg << ", integral_tgraph=" << tg->Integral()
 				<< ", integral_sliceX=" << ts2[dir]->Integral(1, ts2[dir]->GetNbinsX(), istrip, istrip) << std::endl;
 

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14) # setting this is required
+cmake_minimum_required(VERSION 3.5) # setting this is required
 set(This TPCSoft)
 project(${This} CXX)                   # this sets the project name
 set(Tests_flag False)

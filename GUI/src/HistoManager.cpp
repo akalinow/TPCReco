@@ -216,8 +216,8 @@ TH2D&& HistoManager::GetStripVsTime(direction strip_dir) {  // valid range [0-2]
 		1.0 - 0.5,
 		1. * Geometry().GetDirNstrips(strip_dir) + 0.5 };
 	// fill new histogram
-	auto min_strip = chargesObject->chargeMap.lower_bound({ strip_dir, 0, std::numeric_limits<int>::min(), std::numeric_limits<int>::min() });
-	auto max_strip = chargesObject->chargeMap.upper_bound({ strip_dir, section_max - 1, std::numeric_limits<int>::max(), std::numeric_limits<int>::max() });
+	auto min_strip = chargesObject->chargeMap.lower_bound(position{ strip_dir, 0, std::numeric_limits<int>::min(), std::numeric_limits<int>::min() });
+	auto max_strip = chargesObject->chargeMap.upper_bound(position{ strip_dir, section_max - 1, std::numeric_limits<int>::max(), std::numeric_limits<int>::max() });
 	for (auto charge = min_strip; charge != max_strip; charge++) {
 		auto strip_num = std::get<1>(charge->first);
 		auto time_cell = std::get<2>(charge->first);
@@ -264,8 +264,8 @@ std::shared_ptr<TH2D> HistoManager::GetStripVsTimeInMM(direction strip_dir) {  /
 		maxStripInMM);
 
 	// fill new histogram
-	auto min_hit = hitsObject->hitList.lower_bound({ strip_dir, std::numeric_limits<int>::min(), std::numeric_limits<int>::min() });
-	auto max_hit = hitsObject->hitList.upper_bound({ strip_dir, std::numeric_limits<int>::max(), std::numeric_limits<int>::max() });
+	auto min_hit = hitsObject->hitList.lower_bound(position_reduced{ strip_dir, std::numeric_limits<int>::min(), std::numeric_limits<int>::min() });
+	auto max_hit = hitsObject->hitList.upper_bound(position_reduced{ strip_dir, std::numeric_limits<int>::max(), std::numeric_limits<int>::max() });
 	for (auto hit = min_hit; hit != max_hit; hit++) {
 		auto strip_num = std::get<1>(*hit);
 		auto icell = std::get<2>(*hit);
@@ -293,12 +293,12 @@ Reconstr_hist&& HistoManager::Get(double radius, int rebin_space, int rebin_time
 
 	//std::cout << Form(">>>> EventId = %lld", event_id) << std::endl;
 
-	for (auto hits_in_time_cell_begin = hitsObject->hitListByTimeDir.begin(); hits_in_time_cell_begin != hitsObject->hitListByTimeDir.end(); hits_in_time_cell_begin = hitsObject->hitListByTimeDir.upper_bound({ std::get<0>(*hits_in_time_cell_begin), std::numeric_limits<direction>::max(), std::numeric_limits<int>::max() })) { //iterate over time cells
+	for (auto hits_in_time_cell_begin = hitsObject->hitListByTimeDir.begin(); hits_in_time_cell_begin != hitsObject->hitListByTimeDir.end(); hits_in_time_cell_begin = hitsObject->hitListByTimeDir.upper_bound(position_by_time_reduced{ std::get<0>(*hits_in_time_cell_begin), std::numeric_limits<direction>::max(), std::numeric_limits<int>::max() })) { //iterate over time cells
 		auto icell = std::get<0>(*hits_in_time_cell_begin);
 		std::map<direction, std::vector<int>> hits_strip_nums_in_dir;
 		for (auto dir : dirs) {
-			auto min_hit = hitsObject->hitListByTimeDir.lower_bound({ icell, dir, std::numeric_limits<int>::min() });
-			auto max_hit = hitsObject->hitListByTimeDir.upper_bound({ icell, dir, std::numeric_limits<int>::max() });
+			auto min_hit = hitsObject->hitListByTimeDir.lower_bound(position_by_time_reduced{ icell, dir, std::numeric_limits<int>::min() });
+			auto max_hit = hitsObject->hitListByTimeDir.upper_bound(position_by_time_reduced{ icell, dir, std::numeric_limits<int>::max() });
 			for (auto hit = min_hit; hit != max_hit; hit++) {
 				hits_strip_nums_in_dir[dir].push_back(std::get<2>(*hit));
 			}
@@ -419,16 +419,16 @@ Reconstr_hist&& HistoManager::Get(double radius, int rebin_space, int rebin_time
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::shared_ptr<TH1D> HistoManager::GetTimeProjection_Hits(direction strip_dir) {  // valid range [0-2]
-	auto result = std::make_shared<TH1D>(Form("hclust_%stime_evt%lld", Geometry().GetDirName(strip_dir), chargesObject->Info().EventId),
+	auto result = std::make_shared<TH1D>(Form("hclust_%stime_evt%lld", Geometry().GetDirName(strip_dir).c_str(), chargesObject->Info().EventId),
 		Form("Event-%lld: Clustered hits from %s strips;Time bin [arb.u.];Charge/bin [arb.u.]",
-			chargesObject->Info().EventId, Geometry().GetDirName(strip_dir)),
+			chargesObject->Info().EventId, Geometry().GetDirName(strip_dir).c_str()),
 		Geometry().GetAgetNtimecells(),
 		0.0 - 0.5,
 		1. * Geometry().GetAgetNtimecells() - 0.5); // ends at 511.5 (cells numbered from 0 to 511)
 	if (hitsObject->GetNhits(strip_dir) < 1) return result;
 	// fill new histogram
-	auto min_hit = hitsObject->hitList.lower_bound({ strip_dir, std::numeric_limits<int>::min(), std::numeric_limits<int>::min() });
-	auto max_hit = hitsObject->hitList.upper_bound({ strip_dir, std::numeric_limits<int>::max(), std::numeric_limits<int>::max() });
+	auto min_hit = hitsObject->hitList.lower_bound(std::make_tuple( strip_dir, std::numeric_limits<int>::min(), std::numeric_limits<int>::min() ));
+	auto max_hit = hitsObject->hitList.upper_bound(std::make_tuple( strip_dir, std::numeric_limits<int>::max(), std::numeric_limits<int>::max() ));
 	for (auto hit = min_hit; hit != max_hit; hit++) {
 		auto strip_num = std::get<1>(*hit);
 		auto icell = std::get<2>(*hit);
@@ -448,8 +448,8 @@ std::shared_ptr<TH1D> HistoManager::GetTimeProjection_Hits() {  // all strips
 	if (hitsObject->GetNhits() == 0) return result;
 	// fill new histogram
 	for (auto strip_dir : dirs) {
-		auto min_hit = hitsObject->hitList.lower_bound({ strip_dir, std::numeric_limits<int>::min(), std::numeric_limits<int>::min() });
-		auto max_hit = hitsObject->hitList.upper_bound({ strip_dir, std::numeric_limits<int>::max(), std::numeric_limits<int>::max() });
+		auto min_hit = hitsObject->hitList.lower_bound(std::make_tuple( strip_dir, std::numeric_limits<int>::min(), std::numeric_limits<int>::min()));
+		auto max_hit = hitsObject->hitList.upper_bound(std::make_tuple( strip_dir, std::numeric_limits<int>::max(), std::numeric_limits<int>::max()));
 		for (auto hit = min_hit; hit != max_hit; hit++) {
 			auto strip_num = std::get<1>(*hit);
 			auto icell = std::get<2>(*hit);

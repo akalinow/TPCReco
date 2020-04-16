@@ -21,8 +21,8 @@ public:
 		return (func_ptr = f_ptr);
 	}
 	Ret_Type operator()(Func_Args... args) {
-		const auto it = ret_val_map.find({ args... });
-		return (it != ret_val_map.end() ? it->second : (ret_val_map[{ args... }] = func_ptr(args...)));
+		const auto it = ret_val_map.find(std::make_tuple( args... ));
+		return (it != ret_val_map.end() ? it->second : (ret_val_map[std::make_tuple( args... )] = func_ptr(args...)));
 	};
 };
 
@@ -43,27 +43,27 @@ using position_by_time = std::tuple<int, direction, int, int>;
 using position_by_time_reduced = std::tuple<int, direction, int>;
 
 inline position_reduced to_reduced(position pos) {
-	return { std::get<0>(pos), std::get<2>(pos), std::get<3>(pos) };
+	return position_reduced{ std::get<0>(pos), std::get<2>(pos), std::get<3>(pos) };
 }
 
 inline position to_normal(position_reduced pos) {
-	return { std::get<0>(pos), 0, std::get<1>(pos), std::get<2>(pos) };
+	return position{ std::get<0>(pos), 0, std::get<1>(pos), std::get<2>(pos) };
 }
 
 inline position_by_time_reduced to_reduced(position_by_time pos) {
-	return { std::get<0>(pos), std::get<1>(pos), std::get<3>(pos) };
+	return position_by_time_reduced{ std::get<0>(pos), std::get<1>(pos), std::get<3>(pos) };
 }
 
 inline position_by_time to_normal(position_by_time_reduced pos) {
-	return { std::get<0>(pos),std::get<1>(pos), 0,  std::get<2>(pos) };
+	return position_by_time{ std::get<0>(pos),std::get<1>(pos), 0,  std::get<2>(pos) };
 }
 
 inline position_by_time to_by_time(position pos) {
-	return { std::get<3>(pos),std::get<0>(pos),std::get<1>(pos), std::get<2>(pos) };
+	return position_by_time{ std::get<3>(pos),std::get<0>(pos),std::get<1>(pos), std::get<2>(pos) };
 }
 
 inline position_by_time_reduced to_by_time(position_reduced pos) {
-	return { std::get<2>(pos),std::get<0>(pos),std::get<1>(pos) };
+	return position_by_time_reduced{ std::get<2>(pos),std::get<0>(pos),std::get<1>(pos) };
 }
 
 enum class projection {
@@ -109,7 +109,7 @@ constexpr auto EventCharges_DEFAULT_TIME_REBIN = 5;  // number of time cells to 
 
 template < std::size_t I = 0, typename...Tp >
 inline void sumTuples(const std::tuple < Tp...>& t1, const std::tuple < Tp...>& t2, std::tuple < Tp...>& _result) noexcept {
-	if constexpr (I < sizeof...(Tp)) {
+	if  (I < sizeof...(Tp)) {
 		std::get < I >(_result) = std::get < I >(t1) + std::get < I >(t2);
 		sumTuples < I + 1, Tp...>(t1, t2, _result);
 	}

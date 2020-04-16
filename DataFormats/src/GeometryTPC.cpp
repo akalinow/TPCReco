@@ -233,7 +233,7 @@ bool GeometryTPC::Load(std::string fname) {
 					std::cout << name << "	" << dir << "	" << strip_num << "	" << cobo << "	" << asad << "	" << aget
 						<< "	" << chan_num << "	" << offset_in_pads << "	" << offset_in_strips << "	" << length_in_pads << std::endl;
 
-					if (arrayByAget[{cobo, asad, aget, chan_num}] == nullptr) {
+					if (arrayByAget[std::make_tuple(cobo, asad, aget, chan_num)] == nullptr) {
 
 						// create new strip
 						int chan_num_raw = Aget_normal2raw(chan_num);
@@ -242,10 +242,10 @@ bool GeometryTPC::Load(std::string fname) {
 						auto strip = std::make_shared<Geometry_Strip>(dir, section, strip_num, cobo, asad, aget, chan_num, chan_num_raw, strip_unit_vec[dir], offset, length);
 
 						// update map (by: COBO board, ASAD board, AGET chip, AGET normal/raw channel)
-						arrayByAget[{cobo, asad, aget, chan_num}] = strip;
+						arrayByAget[std::make_tuple(cobo, asad, aget, chan_num)] = strip;
 
 						// update reverse map (by: strip direction, strip number)
-						stripArray[{dir, section, strip_num}] = strip;
+						stripArray[std::make_tuple(dir, section, strip_num)] = strip;
 
 						// update maximal ASAD index (by: COBO board) 
 						if (cobo >= ASAD_N.size()) { //resize ASAD_N if necessary
@@ -528,15 +528,15 @@ std::string GeometryTPC::GetDirName(direction dir) {
 }
 
 std::shared_ptr<Geometry_Strip> GeometryTPC::GetStripByAget(int COBO_idx, int ASAD_idx, int AGET_idx, int channel_idx) const { // valid range [0-1][0-3][0-3][0-63]
-	return arrayByAget.at({ COBO_idx , ASAD_idx,AGET_idx, channel_idx });
+	return arrayByAget.at(std::make_tuple( COBO_idx , ASAD_idx,AGET_idx, channel_idx ));
 }
 
 std::shared_ptr<Geometry_Strip> GeometryTPC::GetStripByDir(direction dir, int num) const { // valid range [0-2][1-1024]
-	return stripArray.at({ dir, 0, num });
+	return stripArray.at(std::make_tuple( dir, 0, num ));
 }
 
 std::shared_ptr<Geometry_Strip> GeometryTPC::GetStripByDir(direction dir, int section, int num) const { // valid range [0-2][1-1024]
-	return stripArray.at({ dir, section, num });
+	return stripArray.at(std::make_tuple(dir, section, num ));
 }
 
 
@@ -664,7 +664,7 @@ std::tuple<double, double, double, double> GeometryTPC::rangeXY() {
 	*ymin -= GetPadPitch() * 0.3;
 	*ymax += GetPadPitch() * 0.7;
 
-	return { *xmin, *xmax, *ymin, *ymax };
+	return std::make_tuple( *xmin, *xmax, *ymin, *ymax );
 }
 
 // Returns vector of first and last strips in each dir

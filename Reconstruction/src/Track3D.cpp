@@ -211,7 +211,7 @@ void Track3D::updateChi2() {
 	}
 
 	std::for_each(/*std::execution::par_unseq*/dirs.begin(), dirs.end(), [&](auto strip_dir) { //C++17
-		updateNodesChi2(strip_dir);
+		this->updateNodesChi2(strip_dir);
 	});
 }
 /////////////////////////////////////////////////////////

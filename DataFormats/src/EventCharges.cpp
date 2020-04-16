@@ -9,7 +9,7 @@ void EventCharges::Clear() {
 bool EventCharges::AddValByStrip(std::shared_ptr<Geometry_Strip> strip, int time_cell, double val) {  // valid range [0-2][1-1024][0-511]
 	auto op = (*strip)();
 	if (time_cell < 0 || time_cell >= Geometry().GetAgetNtimecells()) return false;
-	chargeMap[{op.dir, op.section, op.num, time_cell}] += val; //update hit or add new one
+	chargeMap[position{op.dir, op.section, op.num, time_cell}] += val; //update hit or add new one
 
 	return true;
 }
@@ -23,7 +23,7 @@ double EventCharges::GetValByStrip(direction strip_dir, int strip_number, int ti
 }
 
 double EventCharges::GetValByStrip(direction strip_dir, int strip_section, int strip_number, int time_cell) const {  // valid range [0-2][1-1024][0-511]
-	auto it = chargeMap.find({ strip_dir, strip_section,strip_number,time_cell });
+	auto it = chargeMap.find(position{ strip_dir, strip_section,strip_number,time_cell });
 	return (it != chargeMap.end() ? it->second: 0.0);
 }
 
@@ -67,12 +67,12 @@ std::shared_ptr<EventHits> EventCharges::GetHits(double thr, int delta_strips, i
 		const auto strip_dir = std::get<0>(hit);
 		const auto strip_num = std::get<1>(hit);
 		const auto time_cell = std::get<2>(hit);
-		auto min_strip = chargeMap.lower_bound({ strip_dir, section_min, strip_num - delta_strips, time_cell - delta_timecells });
-		auto max_strip = chargeMap.upper_bound({ strip_dir, section_max, strip_num + delta_strips, time_cell + delta_timecells });
+		auto min_strip = chargeMap.lower_bound(position{ strip_dir, section_min, strip_num - delta_strips, time_cell - delta_timecells });
+		auto max_strip = chargeMap.upper_bound(position{ strip_dir, section_max, strip_num + delta_strips, time_cell + delta_timecells });
 		for (auto section : section_indices) {
 			for (auto strip_num_local = strip_num - delta_strips; strip_num_local <= strip_num + delta_strips; strip_num_local++) {
-				auto min_time_cell = chargeMap.lower_bound({ strip_dir, section, strip_num_local, time_cell - delta_timecells });
-				auto max_time_cell = chargeMap.upper_bound({ strip_dir, section, strip_num_local, time_cell + delta_timecells });
+				auto min_time_cell = chargeMap.lower_bound(position{ strip_dir, section, strip_num_local, time_cell - delta_timecells });
+				auto max_time_cell = chargeMap.upper_bound(position{ strip_dir, section, strip_num_local, time_cell + delta_timecells });
 				for (auto charge = min_time_cell; charge != max_time_cell; charge++) {
 					if (charge->second < 0) continue; // exclude negative values (due to pedestal subtraction)
 					hitsObject->AddEnvelopeHit(charge->first); // add new space-time point

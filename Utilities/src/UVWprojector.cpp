@@ -233,7 +233,7 @@ bool UVWprojector::InitAreaMapping() {
 				// DEBUG - VERY VERBOSE
 
 				if (ibin < 1) continue; // skip underflow/overflow/sea bins
-				BinFracMap& bmap = fAreaFractionMap[{ibinx, ibiny}];
+				BinFracMap& bmap = fAreaFractionMap[std::make_tuple(ibinx, ibiny)];
 				if (bmap.FracMap.find(ibin) == bmap.FracMap.end()) {
 					bmap.FracMap[ibin] = weight;  // assign weight to a new strip
 				}
@@ -533,7 +533,7 @@ std::shared_ptr<TH1D> UVWprojector::GetStripProfile_TH1D(direction dir) {
 	// Create TH1D with strip numbers for a given direction
 	auto newth1 = std::make_shared<TH1D>("",
 		Form("Time-integrated charge for %s-strips;%s strip number;Charge [arb.u.]",
-			Geometry().GetDirName(dir), Geometry().GetDirName(dir)),
+			Geometry().GetDirName(dir).c_str(), Geometry().GetDirName(dir).c_str()),
 		Geometry().GetDirNstrips(dir),
 		1.,
 		(Geometry().GetDirNstrips(dir) + 1) * 1.);
@@ -601,7 +601,7 @@ std::shared_ptr<TH2D> UVWprojector::GetStripVsTime_TH2D(direction dir) {
 	// Create TH2D with strip numbers for a given direction
 	auto newth2 = std::make_shared<TH2D>("",
 		Form("Signal(time) for %s-strips;Time cell;%s strip number",
-			Geometry().GetDirName(dir), Geometry().GetDirName(dir)),
+			Geometry().GetDirName(dir).c_str(), Geometry().GetDirName(dir).c_str()),
 		Geometry().GetAgetNtimecells(),
 		0.,
 		1. * Geometry().GetAgetNtimecells(),

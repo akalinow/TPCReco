@@ -59,7 +59,7 @@ double TrackSegment2D::getIntegratedCharge(double lambdaCut, const Hit2DCollecti
 		auto x = aHit().posTime;
 		auto y = aHit().posWire;
 		aPoint.SetXYZ(x, y, 0.0);
-		auto distance = getPointTransverseDistance(aPoint);
+		auto distance = this->getPointTransverseDistance(aPoint);
 		return (distance < radiusCut && distance > 0 ? aHit().charge : 0.0);
 	});
 	return std::accumulate(chargesObject.begin(), chargesObject.end(), 0.0);
@@ -87,7 +87,7 @@ double TrackSegment2D::getIntegratedHitDistance(double lambdaCut, const Hit2DCol
 		auto x = aHit().posTime;
 		auto y = aHit().posWire;
 		aPoint.SetXYZ(x, y, 0.0);
-		auto distance = getPointTransverseDistance(aPoint);
+		auto distance = this->getPointTransverseDistance(aPoint);
 		return (distance > 0 ? distance * aHit().charge : 0.0);
 	});
 	return std::accumulate(distances.begin(), distances.end(), 0.0);
@@ -159,7 +159,7 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection& aRecHits) const {
 		auto x = aHit().posTime;
 		auto y = aHit().posWire;
 		aPoint.SetXYZ(x, y, 0.0);
-		auto distance = getPointTransverseDistance(aPoint);
+		auto distance = this->getPointTransverseDistance(aPoint);
 		if (distance < 0) return elems;
 		elems.charge = aHit().charge;
 		elems.pointCount = 1;

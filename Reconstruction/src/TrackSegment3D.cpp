@@ -115,7 +115,7 @@ double TrackSegment3D::getIntegratedHitDistance(double lambdaCut) const {
 
 #ifndef _cpp17_
 	return std::inner_product(dirs.begin(), dirs.end(), myRecHits.begin(), 0.0, std::plus<>(), [&](direction strip_dir, auto& aRecHits)->double {
-		auto&& aTrack2DProjection = get2DProjection(strip_dir, 0, lambdaCut);
+		auto&& aTrack2DProjection = this->get2DProjection(strip_dir, 0, lambdaCut);
 		return aTrack2DProjection.getIntegratedHitDistance(lambdaCut, aRecHits.second);
 	});
 #else
@@ -132,7 +132,7 @@ double TrackSegment3D::getIntegratedCharge(double lambdaCut) const {
 
 #ifndef _cpp17_
 	return std::inner_product(dirs.begin(), dirs.end(), myRecHits.begin(), 0.0, std::plus<>(), [&](direction strip_dir, auto& aRecHits)->auto {
-		auto&& aTrack2DProjection = get2DProjection(strip_dir, 0, lambdaCut);
+		auto&& aTrack2DProjection = this->get2DProjection(strip_dir, 0, lambdaCut);
 		return aTrack2DProjection.getIntegratedCharge(lambdaCut, aRecHits.second);
 	});
 #else

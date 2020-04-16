@@ -46,8 +46,8 @@ void EventHits::Combine() {
 
 size_t EventHits::GetNhits(direction strip_dir) const {   // # of hits in a given direction
 	return std::distance(
-		hitList.lower_bound({ strip_dir, std::numeric_limits<int>::min(), std::numeric_limits<int>::min() }),
-		hitList.upper_bound({ strip_dir, std::numeric_limits<int>::max(), std::numeric_limits<int>::max() }));
+		hitList.lower_bound(position_reduced{ strip_dir, std::numeric_limits<int>::min(), std::numeric_limits<int>::min() }),
+		hitList.upper_bound(position_reduced{ strip_dir, std::numeric_limits<int>::max(), std::numeric_limits<int>::max() }));
 }
 
 size_t EventHits::GetNhits() const {

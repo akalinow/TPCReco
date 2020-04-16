@@ -94,7 +94,7 @@ public:
 
 	// Getter methods
 
-	inline auto GetTH2Poly() { return tp; }   // returns pointer to the underlying TH2Poly
+	inline std::shared_ptr<TH2Poly> GetTH2Poly() { return tp; }   // returns pointer to the underlying TH2Poly
 	std::shared_ptr<Geometry_Strip> GetTH2PolyStrip(int ibin);          // returns pointer to StripTPC object corresponding to TH2Poly bin 
 
 	// Getter methods  
