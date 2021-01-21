@@ -17,7 +17,7 @@
 #include <TGNumberEntry.h>
 #include <TGIcon.h>
 #include <TGPicture.h>
-
+#include <TGButton.h>
 #include <RQ_OBJECT.h>
 #include <TCanvas.h>
 #include <TObject.h>
@@ -42,6 +42,7 @@ enum ETestCommandIdentifiers {
    M_FILE_PRINTSETUP,
    M_FILE_EXIT,
 
+   M_TOGGLE_LOGSCALE,
    M_DIR_WATCH,
 
    M_HELP_CONTENTS,
@@ -88,7 +89,7 @@ private:
 
   boost::property_tree::ptree myConfig;
   int myWorkMode = 0;
-  
+  bool isLogScaleOn{false};
   std::shared_ptr<EventSourceBase> myEventSource;
   HistoManager myHistoManager;
 

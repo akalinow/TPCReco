@@ -70,7 +70,7 @@ void MainFrame::InitializeWindows(){
   SetTheFrame();
   AddHistoCanvas();
   AddButtons();
-  AddGoToEventDialog(4);
+  AddGoToEventDialog(5);
   AddNumbersDialog();
   AddLogos();
 
@@ -164,7 +164,8 @@ void MainFrame::SetTheFrame(){
 void MainFrame::AddHistoCanvas(){
 
   gStyle->SetOptStat(0);
-  gStyle->SetPalette(55);
+  gStyle->SetPalette(57);
+ // gStyle->SetOptLogz();
 
   embeddedCanvas = new TRootEmbeddedCanvas("Histograms",fFrame,1000,1000);
   UInt_t attach_left=0, attach_right=8;
@@ -175,9 +176,9 @@ void MainFrame::AddHistoCanvas(){
 
   fCanvas = embeddedCanvas->GetCanvas();
   fCanvas->MoveOpaque(kFALSE);
-  fCanvas->Divide(3,3);
+  fCanvas->Divide(2,2);
   TText aMessage(0.2, 0.5,"Waiting for data.");
-  for(int iPad=1;iPad<=9;++iPad){
+  for(int iPad=1;iPad<=4;++iPad){
     fCanvas->cd(iPad);
     aMessage.DrawText(0.2, 0.5,"Waiting for data.");
   }
@@ -207,6 +208,18 @@ void MainFrame::AddButtons(){
     button->Connect("Clicked()","MainFrame",this,"DoButton()");
     button->SetToolTipText(tooltips[iButton].c_str());
    }
+  std::string button_name="Set logscale";
+  std::string button_tooltip="Sets logscale Z";
+  TGCheckButton* button = new TGCheckButton(fFrame,
+					    button_name.c_str(),
+					   M_TOGGLE_LOGSCALE);
+  UInt_t attach_top=button_names.size(),  attach_bottom=button_names.size()+1;
+  TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
+						      kLHintsFillX | kLHintsFillY);
+  fFrame->AddFrame(button,tloh);
+  button->Connect("Clicked()","MainFrame",this,"DoButton()");
+  button->SetToolTipText(button_tooltip.c_str());
+
  }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -297,19 +310,18 @@ void MainFrame::Update(){
   fEntryDialog->updateFileName(myEventSource->getCurrentPath());
   fEntryDialog->updateEventNumbers(myEventSource->numberOfEvents(),
 				   myEventSource->currentEventNumber());
-
+  myHistoManager.setEvent(myEventSource->getCurrentEvent());
  // for(int strip_dir=0;strip_dir<3;++strip_dir){
  //   myHistoManager.getHoughAccumulator(strip_dir);
  // }
 
   for(int strip_dir=0;strip_dir<3;++strip_dir){
     ///First row
-    TVirtualPad *aPad = fCanvas->cd(strip_dir+1);
+    fCanvas->cd(strip_dir+1);
       myHistoManager.getRawStripVsTime(strip_dir)->DrawClone("colz");
   //  myHistoManager.getCartesianProjection(strip_dir)->DrawClone("colz");
     ///Second row
-    aPad = fCanvas->cd(strip_dir+1+3);
-      myHistoManager.getRawTimeProjection()->DrawClone("colz");
+
    // myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("colz");
    // myHistoManager.getRecHitStripVsTime(strip_dir)->SaveAs(TString::Format("RecHits_%d.root", strip_dir));
    // myHistoManager.getCartesianProjection(strip_dir)->SaveAs(TString::Format("RawHits_%d.root", strip_dir));
@@ -321,36 +333,11 @@ void MainFrame::Update(){
   //  myHistoManager.getHoughAccumulator(strip_dir).DrawClone("colz");
   //  myHistoManager.getHoughAccumulator(strip_dir).SaveAs(TString::Format("HoughAccumulator_%d.root", strip_dir));
     //myHistoManager.drawChargeAlongTrack3D(aPad);
-    aPad->GetName();
+   // aPad->GetName();
   }  
-  fCanvas->Update();    //TEST
-  return;//TEST
-  
-  //Third row again.
-  TVirtualPad *aPad = fCanvas->cd(7);
-
-  TH3D *h3DReco =  myHistoManager.get3DReconstruction();
-  if(h3DReco){
-    aPad->Clear();
-    h3DReco->DrawClone("box2z");
-    myHistoManager.drawTrack3D(aPad);
-  }
-  else {
-    aPad->Clear();
-    TText aMessage(0.2, 0.5,"Calculating 3D scence");
-    aMessage.DrawText(0.2, 0.5, "3D scene not available.");
-  }
-
-  aPad = fCanvas->cd(8);
-  TH2D *h2D =   myHistoManager.get2DReconstruction(DIR_XY);
-  if(h2D) h2D->Draw("colz");
-  else myHistoManager.getDetectorLayout()->Draw("colz 0"); 
-  myHistoManager.drawTrack3DProjectionXY(aPad);
-
-  aPad = fCanvas->cd(9);
-  myHistoManager.drawChargeAlongTrack3D(aPad);
-  
-  fCanvas->Update();    
+      fCanvas->cd(4);
+      myHistoManager.getRawTimeProjection()->DrawClone("hist");
+  fCanvas->Update();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -440,6 +427,15 @@ void MainFrame::HandleMenu(Int_t id){
     {
       myEventSource->getPreviousEvent();
       Update();
+    }
+    break;
+  case M_TOGGLE_LOGSCALE:
+    {
+      isLogScaleOn=!isLogScaleOn;
+      for(int iPad=1;iPad<=3;++iPad){
+        fCanvas->cd(iPad)->SetLogz(isLogScaleOn);
+      }
+      fCanvas->Update();
     }
     break;
   case M_GOTO_EVENT:

@@ -15,7 +15,7 @@
 #include "TH2Poly.h"
 #include "MultiKey.h"
 #include "CommonDefinitions.h"
-
+#include "GeometryStats.h"
 #define FPN_CH   3    // FPN channel type index
 #define ERROR    -1   // error result indicator                                                                         
 #define MINIMUM(A,B) ((A)<(B) ? (A) : (B))
@@ -32,7 +32,7 @@ class GeometryTPC {
   friend class UVWprojector;
 
  private:
-
+  GeometryStats geometryStats;
   bool initOK;                          // was geometry initialized properly?
   int COBO_N;                           // total # of COBO boards in the system
   int AGET_Nchips;                      // # of AGET chips per ASAD board
@@ -69,6 +69,7 @@ class GeometryTPC {
   // Setter methods 
   
   bool Load(const char *fname);                 // loads geometry from TXT config file
+  bool LoadAnalog(std::istream &f);                            //subrutine. Loads analog channels from geometry TXT config file
   bool InitTH2Poly();                           // define bins for the underlying TH2Poly histogram
 
   void SetTH2PolyStrip(int ibin, StripTPC *s);  // maps TH2Poly bin to a given StripTPC object
@@ -92,10 +93,19 @@ class GeometryTPC {
   StripTPC *GetTH2PolyStrip(int ibin);          // returns pointer to StripTPC object corresponding to TH2Poly bin 
   
   inline bool IsOK() { return initOK; }
+  
+  //returns total number of strips in sections
   int GetDirNstrips(int dir);
   int GetDirNstrips(std::string name);
   int GetDirNstrips(const char *name);
   int GetDirNstrips(StripTPC *s);
+
+  int GetDirNStrips(int dir,int section){return geometryStats.GetDirNStrips(dir,section);}
+  int GetDirMinStrip(int dir,int section){return geometryStats.GetDirMinStrip(dir,section);}
+  int GetDirMaxStrip(int dir,int section){return geometryStats.GetDirMaxStrip(dir,section);}
+  int GetDirNStripsMerged(int dir){return geometryStats.GetDirNStripsMerged(dir);}
+  int GetDirMinStripMerged(int dir){return geometryStats.GetDirMinStripMerged(dir);}
+  int GetDirMaxStripMerged(int dir){return geometryStats.GetDirMaxStripMerged(dir);}
 
   inline int GetAgetNchips() { return AGET_Nchips; }
   inline int GetAgetNchannels() { return AGET_Nchan; }
