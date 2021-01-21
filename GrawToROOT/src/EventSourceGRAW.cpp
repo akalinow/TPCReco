@@ -54,6 +54,16 @@ void EventSourceGRAW::loadDataFile(const std::string & fileName){
     exit(0);
   }
   nEntries = myFile->GetGrawFramesNumber();
+
+  /*
+  for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
+    loadGrawFrame(iEntry);
+    int currentEventIdx = myDataFrame.fHeader.fEventIdx;
+    std::cout<<"iEntry: "<<iEntry
+	     <<" currentEventIdx: "<<currentEventIdx
+	     <<std::endl;
+      
+  }*/
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -67,6 +77,10 @@ bool EventSourceGRAW::loadGrawFrame(unsigned int iEntry){
   
   if(!dataFrameRead){
     std::cerr << "ERROR: cannot read event " << iEntry << std::endl;
+    std::cerr <<KRED
+	      <<"Please check if you are running the application from the resources directory."
+	      <<RST
+	      <<std::endl;
     exit(1);
   }
   return dataFrameRead;
@@ -75,6 +89,10 @@ bool EventSourceGRAW::loadGrawFrame(unsigned int iEntry){
 /////////////////////////////////////////////////////////
 void EventSourceGRAW::loadEventId(unsigned long int eventIdx){
 
+  std::cout<<KBLU
+	   <<"Start looking for the event id: "<<eventIdx
+	   <<RST<<std::endl;
+  
   auto it = myFramesMap.find(eventIdx);
 
   if(it!=myFramesMap.end() &&
@@ -86,6 +104,10 @@ void EventSourceGRAW::loadEventId(unsigned long int eventIdx){
     findEventFragments(eventIdx,0);
   }
   collectEventFragments(eventIdx);
+
+  std::cout<<KBLU
+	   <<"Finished looking for the event id: "<<eventIdx
+	   <<RST<<std::endl;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -129,8 +151,8 @@ void EventSourceGRAW::collectEventFragments(unsigned int eventIdx){
   if(it->second.size()!=GRAW_EVENT_FRAGMENTS){
      std::cout<<"\033[31m";
       std::cerr<<__FUNCTION__
-	       <<" Feagment counts for eventIdx = "<<eventIdx
-	       <<" misnatch. Expected: "<<GRAW_EVENT_FRAGMENTS
+	       <<" Feragment counts for eventIdx = "<<eventIdx
+	       <<" mismatch. Expected: "<<GRAW_EVENT_FRAGMENTS
 	       <<" found: "<<it->second.size()
 	       <<std::endl;
       std::cout<<"\033[39m";

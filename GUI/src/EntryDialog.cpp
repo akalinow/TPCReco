@@ -27,12 +27,14 @@ EntryDialog::EntryDialog(const TGWindow * p, MainFrame * aFrame)
    AddFrame(datasetInfoFrame, aLayoutHints);
    
    TGGroupFrame *totalEventsFrame = new TGGroupFrame(datasetInfoFrame, "Events in the file:");
-   TGGroupFrame *currentEventFrame = new TGGroupFrame(datasetInfoFrame, "Current event:");
+   TGGroupFrame *currentEventFrame = new TGGroupFrame(datasetInfoFrame, "Event id.:");
+   TGGroupFrame *currentEntryFrame = new TGGroupFrame(datasetInfoFrame, "File entry:");
    TGGroupFrame *fileNameFrame = new TGGroupFrame(fileInfoFrame, "Processing file:");
    TGGroupFrame *modeFrame = new TGGroupFrame(modeInfoFrame, "Mode:");
    
    totalEventsLabel = new TGLabel(totalEventsFrame, "No input.");
    currentEventLabel = new TGLabel(currentEventFrame, "No input.");
+   currentEntryLabel = new TGLabel(currentEntryFrame, "No input.");
    std::string tmp = "No input.";
    tmp.resize(fileNameLineLength,' ');
    fileNameLabel = new TGLabel(fileNameFrame,tmp.c_str());
@@ -46,12 +48,14 @@ EntryDialog::EntryDialog(const TGWindow * p, MainFrame * aFrame)
    aLayoutHints = new TGLayoutHints(kLHintsTop | kLHintsLeft, 5, 5, 5, 5);
    totalEventsFrame->AddFrame(totalEventsLabel, aLayoutHints);
    currentEventFrame->AddFrame(currentEventLabel, aLayoutHints);
+   currentEntryFrame->AddFrame(currentEntryLabel, aLayoutHints);
    fileNameFrame->AddFrame(fileNameLabel, aLayoutHints);
    modeFrame->AddFrame(modeLabel, aLayoutHints);
 
    aLayoutHints = new TGLayoutHints(kLHintsTop | kLHintsLeft, 2, 2, 1, 1);
    datasetInfoFrame->AddFrame(totalEventsFrame, aLayoutHints);
    datasetInfoFrame->AddFrame(currentEventFrame, aLayoutHints);
+   datasetInfoFrame->AddFrame(currentEntryFrame, aLayoutHints);
    fileInfoFrame->AddFrame(fileNameFrame, aLayoutHints);
    modeInfoFrame->AddFrame(modeFrame, aLayoutHints);
 }
@@ -62,6 +66,7 @@ EntryDialog::~EntryDialog(){
   delete datasetInfoFrame;
   delete totalEventsLabel;
   delete currentEventLabel;
+  delete currentEntryLabel;
 
   delete fileInfoFrame;
   delete fileNameLabel;
@@ -72,10 +77,12 @@ void EntryDialog::initialize(){ }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void EntryDialog::updateEventNumbers(unsigned int nTotalEvents,
-                                     unsigned int iCurrentEvent){
- 
+                                     unsigned int iCurrentEvent,
+				     unsigned int iCurrentEntry){
+
   totalEventsLabel->SetText(Form("%u", nTotalEvents));
-  currentEventLabel->SetText(Form("%u",iCurrentEvent));  
+  currentEventLabel->SetText(Form("%u",iCurrentEvent));
+  currentEntryLabel->SetText(Form("%u",iCurrentEntry));  
   datasetInfoFrame->Layout();
 }
 /////////////////////////////////////////////////////////

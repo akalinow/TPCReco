@@ -16,7 +16,7 @@ When reading a GRAW file one has to run the application from the resources direc
 When reading GRAW files setup the GRAW environment. At the daqula2 node use a following command:
 For reading the GRAW files in online mode set  "dataFile": "directory_path" WITH trailing "/" character. 
 ```
-source /opt/soft/GetSoftware_20170928/thisGET.sh
+source /opt/soft/GetSoftware_bin/env_settings.sh
 ```
 
 

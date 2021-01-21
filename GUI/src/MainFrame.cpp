@@ -71,6 +71,7 @@ void MainFrame::InitializeWindows(){
   AddHistoCanvas();
   AddButtons();
   AddGoToEventDialog(5);
+  AddGoToFileEntryDialog(6);
   AddNumbersDialog();
   AddLogos();
 
@@ -111,6 +112,9 @@ void MainFrame::InitializeEventSource(){
   else if(!myEventSource){
     std::cerr<<"Input source not known. dataFile: "
 	     <<dataFileName<<" Exiting."<<std::endl;
+#ifndef WITH_GET
+    std::cerr<<"GRAW libriaries not set."<<std::endl;
+#endif    
     return;
   }
 
@@ -225,7 +229,7 @@ void MainFrame::AddButtons(){
 /////////////////////////////////////////////////////////
 void MainFrame::AddGoToEventDialog(int attach_top){
 
-  fGframe = new TGGroupFrame(this, "Go to event");
+  fGframe = new TGGroupFrame(this, "Go to event id.");
   fEventIdEntry = new TGNumberEntryField(fGframe, M_GOTO_EVENT, 0,
 					 TGNumberFormat::kNESInteger,
 					 TGNumberFormat::kNEANonNegative,
@@ -240,6 +244,26 @@ void MainFrame::AddGoToEventDialog(int attach_top){
 						    0, 0, 5, 2);  
   fFrame->AddFrame(fGframe, tloh);
   fGframe->AddFrame(fEventIdEntry, new TGLayoutHints(kLHintsExpandX, 0, 0, 0, 0));
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void MainFrame::AddGoToFileEntryDialog(int attach_top){
+
+  fGframe = new TGGroupFrame(this, "Go to file entry.");
+  fFileEntryEntry = new TGNumberEntryField(fGframe, M_GOTO_ENTRY, 0,
+					 TGNumberFormat::kNESInteger,
+					 TGNumberFormat::kNEANonNegative,
+					 TGNumberFormat::kNELNoLimits);
+  fFileEntryEntry->Connect("ReturnPressed()", "MainFrame", this, "DoButton()");
+  fFileEntryEntry->SetToolTipText("Jump to given event id.");  
+
+  UInt_t attach_left=8, attach_right=9;
+  UInt_t attach_bottom=attach_top+1;
+  TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
+						    kLHintsFillX | kLHintsFillY,
+						    0, 0, 5, 2);  
+  fFrame->AddFrame(fGframe, tloh);
+  fGframe->AddFrame(fFileEntryEntry, new TGLayoutHints(kLHintsExpandX, 0, 0, 0, 0));
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -309,7 +333,8 @@ void MainFrame::Update(){
   if(!myEventSource->numberOfEvents()) return;
   fEntryDialog->updateFileName(myEventSource->getCurrentPath());
   fEntryDialog->updateEventNumbers(myEventSource->numberOfEvents(),
-				   myEventSource->currentEventNumber());
+				   myEventSource->currentEventNumber(),
+				   myEventSource->currentEntryNumber());
   myHistoManager.setEvent(myEventSource->getCurrentEvent());
  // for(int strip_dir=0;strip_dir<3;++strip_dir){
  //   myHistoManager.getHoughAccumulator(strip_dir);
@@ -442,6 +467,13 @@ void MainFrame::HandleMenu(Int_t id){
     {
       int eventId = fEventIdEntry->GetIntNumber();
       myEventSource->loadEventId(eventId);
+      Update();
+    }
+    break;
+  case M_GOTO_ENTRY:
+    {
+      int fileEntry = fFileEntryEntry->GetIntNumber();
+      myEventSource->loadFileEntry(fileEntry);
       Update();
     }
     break;

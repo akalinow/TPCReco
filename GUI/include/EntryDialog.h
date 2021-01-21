@@ -22,7 +22,9 @@ public:
 
   void updateFileName(const std::string & fileName);
 
-  void updateEventNumbers(unsigned int nTotalEvents, unsigned int iCurrentEvent);
+  void updateEventNumbers(unsigned int nTotalEvents,
+			  unsigned int iCurrentEvent,
+			  unsigned int iCurrentEntry);
 
   void updateModeLabel(const std::string & aMode);
 
@@ -36,6 +38,7 @@ private:
   
   TGLabel *totalEventsLabel;
   TGLabel *currentEventLabel;
+  TGLabel *currentEntryLabel;
   TGLabel *fileNameLabel;
   TGLabel *modeLabel;
 
