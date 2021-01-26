@@ -106,6 +106,7 @@ private:
   void AddHistoCanvas();
   void AddButtons();
   void AddNumbersDialog();
+  void AddEventTypeDialog();
   void AddGoToEventDialog(int attach_top);
   void AddGoToFileEntryDialog(int attach_top);
   void AddLogos();
@@ -113,6 +114,7 @@ private:
   void SetCursorTheme();
 
   void Update();
+  void UpdateEventLog();
 
   TGCompositeFrame   *fFrame;
   TRootEmbeddedCanvas *embeddedCanvas;
@@ -131,6 +133,7 @@ private:
   
   EntryDialog *fEntryDialog;
   SelectionBox *fSelectionBox;
+  TGButtonGroup *eventTypeButtonGroup;
   
 
   TArrow *fArrow;

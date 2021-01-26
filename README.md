@@ -19,7 +19,6 @@ For reading the GRAW files in online mode set  "dataFile": "directory_path" WITH
 source /opt/soft/GetSoftware_bin/env_settings.sh
 ```
 
-
 ```
 cd resources
 ../bin/tpcGUI ../config/config_GUI.json

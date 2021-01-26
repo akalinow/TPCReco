@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
+#include <iomanip>
 
 #include <TApplication.h>
 #include <MainFrame.h>
@@ -21,6 +22,9 @@
 #include "EventSourceGRAW.h"
 #endif
 #include "EventSourceROOT.h"
+
+#include "TGButtonGroup.h"
+#include "TGButton.h"
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h,  const boost::property_tree::ptree &aConfig)
@@ -73,6 +77,7 @@ void MainFrame::InitializeWindows(){
   AddGoToEventDialog(5);
   AddGoToFileEntryDialog(6);
   AddNumbersDialog();
+  AddEventTypeDialog();
   AddLogos();
 
   MapSubwindows();
@@ -282,6 +287,26 @@ void MainFrame::AddNumbersDialog(){
  }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+void MainFrame::AddEventTypeDialog(){
+
+  eventTypeButtonGroup = new TGButtonGroup(fFrame,"Event type",kHorizontalFrame);
+  eventTypeButtonGroup->SetExclusive(kTRUE);
+  std::vector<TGCheckButton*> fR(4);
+  fR[0] = new TGCheckButton(eventTypeButtonGroup, new TGHotString("Empty"));
+  fR[1] = new TGCheckButton(eventTypeButtonGroup, new TGHotString("1 track"));
+  fR[2] = new TGCheckButton(eventTypeButtonGroup, new TGHotString("3 tracks"));
+  fR[3] = new TGCheckButton(eventTypeButtonGroup, new TGHotString("Other"));
+  fR[0]->SetState(kButtonDown);
+  
+  UInt_t attach_left=9, attach_right=12;
+  UInt_t attach_top=4,  attach_bottom=5;
+  TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
+						    kLHintsShrinkX|kLHintsShrinkY|
+						    kLHintsFillX|kLHintsFillY);
+  fFrame->AddFrame(eventTypeButtonGroup, tloh);
+ }
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 void MainFrame::AddLogos(){
 
   std::string filePath = myConfig.get<std::string>("resourcesPath")+"/FUW_znak.png";
@@ -366,6 +391,49 @@ void MainFrame::Update(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+void MainFrame::UpdateEventLog(){
+
+  int index =  myEventSource->getCurrentPath().find_last_of("/");
+  int pathLength =  myEventSource->getCurrentPath().size();
+  std::string logFileName = myEventSource->getCurrentPath().substr(index+1, pathLength);
+  logFileName += ".log";
+  std::fstream out(logFileName);
+  std::cout<<"out.is_open(): "<<out.is_open()<<std::endl;
+
+  ///Log header
+  if(!out.is_open()){
+    out.open(logFileName, std::ofstream::app);    
+    for(int iButton=1;iButton<=eventTypeButtonGroup->GetCount();++iButton){
+      TGTextButton *aButton = (TGTextButton*)eventTypeButtonGroup->GetButton(iButton);
+      if(!aButton){
+	std::cerr<<__FUNCTION__<<" Coversion to TGTextButton failed!"<<std::endl;
+	continue;
+      }
+      out<<iButton<<" - "<<aButton->GetString()<<std::endl;
+    }
+    out<<"Event Id \t entry number \t Event type"<<std::endl;
+  }
+  /////
+  out.close();
+  out.open(logFileName, std::ofstream::app);
+  
+  if(!eventTypeButtonGroup){
+    std::cerr<<"eventTypeButtonGroup not initialised!";
+    return;
+  }
+  for(int iButton=1;iButton<=eventTypeButtonGroup->GetCount();++iButton){
+    if(eventTypeButtonGroup->GetButton(iButton)->IsOn()){
+      out<<myEventSource->currentEventNumber()<<" \t\t "
+	 <<myEventSource->currentEntryNumber()<<" \t\t "
+	 <<iButton<<std::endl;
+      break;
+    }
+  }
+  out.close();
+  eventTypeButtonGroup->SetButton(1, kTRUE);  
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 Bool_t MainFrame::ProcessMessage(Long_t msg, Long_t parm1, Long_t){
    // Handle messages send to the MainFrame object. E.g. all menu button
    // messages.
@@ -443,13 +511,15 @@ void MainFrame::HandleMenu(Int_t id){
     break;
     
   case M_NEXT_EVENT:
-    {      
+    {
+      UpdateEventLog();
       myEventSource->getNextEvent();
       Update();
     }
     break;
   case M_PREVIOUS_EVENT:
     {
+      UpdateEventLog();
       myEventSource->getPreviousEvent();
       Update();
     }
