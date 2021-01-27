@@ -290,7 +290,7 @@ void MainFrame::AddNumbersDialog(){
 void MainFrame::AddEventTypeDialog(){
 
   eventTypeButtonGroup = new TGButtonGroup(fFrame,
-					   2, 4, 0.05, 0.05,
+					   7, 1, 1.0, 1.0,
 					   "Event type");
   eventTypeButtonGroup->SetExclusive(kTRUE);
   std::vector<TGCheckButton*> buttonsContainer;
@@ -303,8 +303,8 @@ void MainFrame::AddEventTypeDialog(){
   buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Other")));
   buttonsContainer.front()->SetState(kButtonDown);
   
-  UInt_t attach_left=9, attach_right=12;
-  UInt_t attach_top=4,  attach_bottom=5;
+  UInt_t attach_left=10, attach_right=11;
+  UInt_t attach_top=4,  attach_bottom=7;
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 						    kLHintsShrinkX|kLHintsShrinkY|
 						    kLHintsFillX|kLHintsFillY);
