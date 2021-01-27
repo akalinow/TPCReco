@@ -289,14 +289,19 @@ void MainFrame::AddNumbersDialog(){
 /////////////////////////////////////////////////////////
 void MainFrame::AddEventTypeDialog(){
 
-  eventTypeButtonGroup = new TGButtonGroup(fFrame,"Event type",kHorizontalFrame);
+  eventTypeButtonGroup = new TGButtonGroup(fFrame,
+					   2, 4, 0.05, 0.05,
+					   "Event type");
   eventTypeButtonGroup->SetExclusive(kTRUE);
-  std::vector<TGCheckButton*> fR(4);
-  fR[0] = new TGCheckButton(eventTypeButtonGroup, new TGHotString("Empty"));
-  fR[1] = new TGCheckButton(eventTypeButtonGroup, new TGHotString("1 track"));
-  fR[2] = new TGCheckButton(eventTypeButtonGroup, new TGHotString("3 tracks"));
-  fR[3] = new TGCheckButton(eventTypeButtonGroup, new TGHotString("Other"));
-  fR[0]->SetState(kButtonDown);
+  std::vector<TGCheckButton*> buttonsContainer;
+  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Empty")));
+  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Noise")));
+  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Dot")));
+  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("1 track")));
+  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("2 tracks")));
+  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("3 tracks")));
+  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Other")));
+  buttonsContainer.front()->SetState(kButtonDown);
   
   UInt_t attach_left=9, attach_right=12;
   UInt_t attach_top=4,  attach_bottom=5;
@@ -398,7 +403,6 @@ void MainFrame::UpdateEventLog(){
   std::string logFileName = myEventSource->getCurrentPath().substr(index+1, pathLength);
   logFileName += ".log";
   std::fstream out(logFileName);
-  std::cout<<"out.is_open(): "<<out.is_open()<<std::endl;
 
   ///Log header
   if(!out.is_open()){
