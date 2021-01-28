@@ -15,6 +15,7 @@
 
 #include <TH2D.h>
 #include <TH3D.h>
+#include <TMarker.h>
 #include <TLatex.h>
 #include <TProfile.h>
 
@@ -78,6 +79,7 @@ void MainFrame::InitializeWindows(){
   AddGoToFileEntryDialog(6);
   AddNumbersDialog();
   AddEventTypeDialog();
+  AddMarkersDialog();
   AddLogos();
 
   MapSubwindows();
@@ -174,7 +176,6 @@ void MainFrame::AddHistoCanvas(){
 
   gStyle->SetOptStat(0);
   gStyle->SetPalette(57);
- // gStyle->SetOptLogz();
 
   embeddedCanvas = new TRootEmbeddedCanvas("Histograms",fFrame,1000,1000);
   UInt_t attach_left=0, attach_right=8;
@@ -191,6 +192,9 @@ void MainFrame::AddHistoCanvas(){
     fCanvas->cd(iPad);
     aMessage.DrawText(0.2, 0.5,"Waiting for data.");
   }
+  fCanvas->Connect("ProcessedEvent(Int_t,Int_t,Int_t,TObject*)",
+		   "MainFrame", this,
+		   "HandleEmbeddedCanvas(Int_t,Int_t,Int_t,TObject*)");
   fCanvas->Update();
 }
 /////////////////////////////////////////////////////////
@@ -312,6 +316,13 @@ void MainFrame::AddEventTypeDialog(){
  }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+void MainFrame::AddMarkersDialog(){
+
+  
+  
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 void MainFrame::AddLogos(){
 
   std::string filePath = myConfig.get<std::string>("resourcesPath")+"/FUW_znak.png";
@@ -349,13 +360,36 @@ void MainFrame::AddLogos(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void MainFrame::CloseWindow(){
-   // Got close message for this MainFrame. Terminate the application
-   // or returns from the TApplication event loop (depending on the
-   // argument specified in TApplication::Run()).
+void MainFrame::HandleEmbeddedCanvas(Int_t event, Int_t x, Int_t y, TObject *sel){
 
-   gApplication->Terminate(0);
+    TObject *select = gPad->GetSelected();
+    std::string objName = "";
+    if(select) objName = std::string(select->GetName());
+    
+    ///Enums defined in Buttons.h ROOT file.
+    if(event == kButton1) std::cout<<"kButton1"<<std::endl;
+    if(event == kButton2) std::cout<<"kButton2"<<std::endl;
+    //bool fIgnoreCursor = false;
+
+    if(event == kButton1 && objName.find("vs_time")!=std::string::npos){      
+      std::cout<<"select->GetName(): "<<objName<<std::endl;
+      TVirtualPad *aCurrentPad = gPad->GetSelectedPad();
+      aCurrentPad->cd();
+      
+      float localX = aCurrentPad->AbsPixeltoX(x);
+      float localY = aCurrentPad->AbsPixeltoY(y);
+      std::cout<<"localX: "<<localX<<std::endl;
+      std::cout<<"localY: "<<localY<<std::endl;
+      TMarker *aMarker = new TMarker(localX, localY, 8);
+      aMarker->SetMarkerColor(2);
+      aMarker->SetMarkerSize(1);
+      aMarker->Draw();
+      aCurrentPad->Update();
+    }
 }
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void MainFrame::CloseWindow(){ gApplication->Terminate(0); }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MainFrame::Update(){
@@ -470,13 +504,6 @@ Bool_t MainFrame::ProcessMessage(const char * msg){
   return kTRUE;
 }
 /////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void MainFrame::HandleEmbeddedCanvas(Int_t event, Int_t x, Int_t y,
-                                      TObject *sel){
-  //TObject *select = gPad->GetSelected();
-
-}
-////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MainFrame::HandleMenu(Int_t id){
 

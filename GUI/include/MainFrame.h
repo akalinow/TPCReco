@@ -107,6 +107,7 @@ private:
   void AddButtons();
   void AddNumbersDialog();
   void AddEventTypeDialog();
+  void AddMarkersDialog();
   void AddGoToEventDialog(int attach_top);
   void AddGoToFileEntryDialog(int attach_top);
   void AddLogos();
