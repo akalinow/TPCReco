@@ -4,8 +4,9 @@
 #include <iomanip>
 
 #include <TApplication.h>
-#include <MainFrame.h>
-#include <SelectionBox.h>
+#include "MainFrame.h"
+#include "SelectionBox.h"
+#include "MarkersManager.h"
 
 #include <TSystem.h>
 #include <TStyle.h>
@@ -15,7 +16,6 @@
 
 #include <TH2D.h>
 #include <TH3D.h>
-#include <TMarker.h>
 #include <TLatex.h>
 #include <TProfile.h>
 
@@ -73,13 +73,13 @@ void MainFrame::InitializeWindows(){
   
   AddTopMenu();
   SetTheFrame();
+  AddMarkersDialog();
   AddHistoCanvas();
   AddButtons();
   AddGoToEventDialog(5);
   AddGoToFileEntryDialog(6);
-  AddNumbersDialog();
-  AddEventTypeDialog();
-  AddMarkersDialog();
+  AddEventTypeDialog(7);
+  AddNumbersDialog(); 
   AddLogos();
 
   MapSubwindows();
@@ -193,8 +193,8 @@ void MainFrame::AddHistoCanvas(){
     aMessage.DrawText(0.2, 0.5,"Waiting for data.");
   }
   fCanvas->Connect("ProcessedEvent(Int_t,Int_t,Int_t,TObject*)",
-		   "MainFrame", this,
-		   "HandleEmbeddedCanvas(Int_t,Int_t,Int_t,TObject*)");
+		   "MarkersManager", fMarkersManager,
+		   "HandleMarkerPosition(Int_t,Int_t,Int_t,TObject*)");
   fCanvas->Update();
 }
 /////////////////////////////////////////////////////////
@@ -291,7 +291,7 @@ void MainFrame::AddNumbersDialog(){
  }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void MainFrame::AddEventTypeDialog(){
+void MainFrame::AddEventTypeDialog(int  attach_top){
 
   eventTypeButtonGroup = new TGButtonGroup(fFrame,
 					   7, 1, 1.0, 1.0,
@@ -307,8 +307,8 @@ void MainFrame::AddEventTypeDialog(){
   buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Other")));
   buttonsContainer.front()->SetState(kButtonDown);
   
-  UInt_t attach_left=10, attach_right=11;
-  UInt_t attach_top=4,  attach_bottom=7;
+  UInt_t attach_left=8, attach_right=9;
+  UInt_t attach_bottom = attach_top + 3;
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 						    kLHintsShrinkX|kLHintsShrinkY|
 						    kLHintsFillX|kLHintsFillY);
@@ -318,16 +318,24 @@ void MainFrame::AddEventTypeDialog(){
 /////////////////////////////////////////////////////////
 void MainFrame::AddMarkersDialog(){
 
-  
-  
+  fMarkersManager = new MarkersManager(fFrame, this);
+  UInt_t attach_left=9, attach_right=12;
+  UInt_t attach_top=4,  attach_bottom=6;
+  TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right,
+						    attach_top, attach_bottom,
+						    kLHintsExpandX|kLHintsExpandY |
+						    kLHintsShrinkX|kLHintsShrinkY|
+						    kLHintsFillX|kLHintsFillY);
+  fFrame->AddFrame(fMarkersManager, tloh);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MainFrame::AddLogos(){
 
+  std::cout<<"Here 0"<<std::endl;
   std::string filePath = myConfig.get<std::string>("resourcesPath")+"/FUW_znak.png";
   TImage *img = TImage::Open(filePath.c_str());
-  if(!img) return;
+  if(!img->IsValid()) return;
   double ratio = img->GetWidth()/img->GetHeight();
   double height = 80;
   double width = ratio*height;
@@ -344,7 +352,7 @@ void MainFrame::AddLogos(){
 
   filePath = myConfig.get<std::string>("resourcesPath")+"/ELITEPC_znak.png";
   img = TImage::Open(filePath.c_str());
-  if(!img) return;
+  if(!img->IsValid()) return;
   ratio = img->GetWidth()/img->GetHeight();
   height = 100;
   width = ratio*height;
@@ -362,30 +370,7 @@ void MainFrame::AddLogos(){
 /////////////////////////////////////////////////////////
 void MainFrame::HandleEmbeddedCanvas(Int_t event, Int_t x, Int_t y, TObject *sel){
 
-    TObject *select = gPad->GetSelected();
-    std::string objName = "";
-    if(select) objName = std::string(select->GetName());
-    
-    ///Enums defined in Buttons.h ROOT file.
-    if(event == kButton1) std::cout<<"kButton1"<<std::endl;
-    if(event == kButton2) std::cout<<"kButton2"<<std::endl;
-    //bool fIgnoreCursor = false;
-
-    if(event == kButton1 && objName.find("vs_time")!=std::string::npos){      
-      std::cout<<"select->GetName(): "<<objName<<std::endl;
-      TVirtualPad *aCurrentPad = gPad->GetSelectedPad();
-      aCurrentPad->cd();
-      
-      float localX = aCurrentPad->AbsPixeltoX(x);
-      float localY = aCurrentPad->AbsPixeltoY(y);
-      std::cout<<"localX: "<<localX<<std::endl;
-      std::cout<<"localY: "<<localY<<std::endl;
-      TMarker *aMarker = new TMarker(localX, localY, 8);
-      aMarker->SetMarkerColor(2);
-      aMarker->SetMarkerSize(1);
-      aMarker->Draw();
-      aCurrentPad->Update();
-    }
+  std::cout<<__FUNCTION__<<std::endl;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -482,7 +467,7 @@ Bool_t MainFrame::ProcessMessage(Long_t msg, Long_t parm1, Long_t){
 /////////////////////////////////////////////////////////
 Bool_t MainFrame::ProcessMessage(Long_t msg){
 
-  std::cout<<__FUNCTION__<<std::endl;
+  std::cout<<__FUNCTION__<<" msg: "<<msg<<std::endl;
 
   switch (msg) {
   case M_DATA_FILE_UPDATED:
