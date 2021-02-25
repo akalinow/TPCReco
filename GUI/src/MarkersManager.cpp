@@ -10,11 +10,12 @@
 #include <TGTableLayout.h>
 #include <TGFontDialog.h>
 
-#include <MarkersManager.h>
-#include <EntryDialog.h>
-#include <MainFrame.h>
-#include <HistoManager.h>
-#include <ScrollFrame.h>
+#include "MarkersManager.h"
+#include "EntryDialog.h"
+#include "MainFrame.h"
+#include "HistoManager.h"
+#include "ScrollFrame.h"
+#include "CommonDefinitions.h"
 
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -64,21 +65,26 @@ MarkersManager::~MarkersManager(){
 /////////////////////////////////////////////////////////
 void MarkersManager::initialize(){
 
+  fMarkersContainer.resize(3);
+  
   firstMarker = 0;
   secondMarker = 0;
-  currentLine = 0;
+  aLine = 0;
 
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MarkersManager::reset(){
 
+   std::for_each(fMarkersContainer.begin(), fMarkersContainer.end(),
+		 [](TMarker *item){delete item; item = 0;});
+
   if(firstMarker) delete firstMarker;
   if(secondMarker) delete secondMarker;
-  if(currentLine) delete currentLine;
+  if(aLine) delete aLine;
   firstMarker = 0;
   secondMarker = 0;
-  currentLine = 0;
+  aLine = 0;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -126,78 +132,103 @@ void MarkersManager::addMarkerFrame(int iMarker){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void MarkersManager::HandleMarkerPosition(Int_t event, Int_t x, Int_t y, TObject *sel){
+void MarkersManager::processClickCoordinates(int iDir, float x, float y){
 
-  TObject *select = gPad->GetSelected();
-    std::string objName = "";
-    if(select) objName = std::string(select->GetName());
-    
-    if(event == kButton1 && objName.find("vs_time")!=std::string::npos){      
-      std::cout<<"select->GetName(): "<<objName<<std::endl;
-      TH2F *aHisto = (TH2F*)gROOT->FindObject(objName.c_str());
-      double minY = 0.0;
-      double maxY = 70.0;
-      if(aHisto){
-	aHisto->Print();
-	minY = aHisto->GetYaxis()->GetXmin();
-	maxY = aHisto->GetYaxis()->GetXmax();
-      }
-      TVirtualPad *aCurrentPad = gPad->GetSelectedPad();
-      aCurrentPad->cd();
-      
-      float localX = aCurrentPad->AbsPixeltoX(x);
-      float localY = aCurrentPad->AbsPixeltoY(y);
-      std::cout<<"localX: "<<localX<<std::endl;
-      std::cout<<"localY: "<<localY<<std::endl;
-
-      if(firstMarker && !secondMarker && std::abs(localX-firstMarker->GetX())<10){
-	  localX = firstMarker->GetX();
-	  if(currentLine){
-	    delete currentLine;
-	    currentLine = 0;
-	  }
-      }
-      else if(firstMarker && secondMarker){
-	return;
-      }
-      else if(firstMarker){
-	return;
-      }
-
-      
-      int aMarkerColor = 2;
-      TMarker *aMarker = new TMarker(localX, localY, 8);
-      aMarker->SetMarkerColor(aMarkerColor);
-      aMarker->SetMarkerSize(1);
-      aMarker->Draw();
-      if(!firstMarker) {
-	firstMarker = aMarker;
-	addMarkerFrame(0);
-      }
-      else if(!secondMarker) secondMarker = aMarker;
-
-      if(!secondMarker){
-	currentLine = new TLine(localX, minY, localX, maxY);
-	currentLine->SetLineColor(aMarkerColor);
-	currentLine->SetLineWidth(2);
-	
-	TPad *aPad_1 = (TPad*)gROOT->FindObject("Histograms_1");
-	aPad_1->cd();
-	currentLine->Draw();
-	
-	TPad *aPad_2 = (TPad*)gROOT->FindObject("Histograms_2");
-	aPad_2->cd();
-	currentLine->Draw();
-
-	TPad *aPad_3 = (TPad*)gROOT->FindObject("Histograms_3");
-	aPad_3->cd();
-	currentLine->Draw();
-      }
+  if(iDir<0 || iDir>=(int)fMarkersContainer.size() || fMarkersContainer.at(iDir)) return;  
+  if(firstMarker){
+    x = firstMarker->GetX();
+  }
+   
+  int iMarkerColor = 2;
+  int iMarkerStyle = 8;
+  int iMarkerSize = 1;
+  TMarker *aMarker = new TMarker(x, y, iMarkerStyle);
+  aMarker->SetMarkerColor(iMarkerColor);
+  aMarker->SetMarkerSize(iMarkerSize);
+  aMarker->Draw();
+  fMarkersContainer.at(iDir) = aMarker;
+  if(!firstMarker){
+    firstMarker = aMarker;
+    if(aLine){
+      delete aLine;
+      aLine = 0;
     }
+    drawFixedTimeLines(iDir, x);
+  }
+  else{
+    delete aLine;
+    aLine = 0;
+    y = 30;
+    int missingMarkerDir = findMissingMarkerDir();
+    aMarker = new TMarker(x, y, iMarkerStyle);
+    aMarker->SetMarkerColor(iMarkerColor);
+    aMarker->SetMarkerSize(iMarkerSize);
+    std::string padName = "Histograms_"+std::to_string(missingMarkerDir+1);
+    TPad *aPad = (TPad*)gROOT->FindObject(padName.c_str());
+    aPad->cd();
+    aMarker->Draw();
+    fMarkersContainer[missingMarkerDir] = aMarker;    
+  }
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+void MarkersManager::drawFixedTimeLines(int iDir, double time){
 
+  double minY = 0.0;
+  double maxY = 72.0;
+  int aColor = 2;
+  aLine = new TLine(time, minY, time, maxY);
+  aLine->SetLineColor(aColor);
+  aLine->SetLineWidth(2);
+
+  for(int iDirTmp=0;iDirTmp<3;++iDirTmp){
+    std::string padName = "Histograms_"+std::to_string(iDirTmp+1);
+    TPad *aPad = (TPad*)gROOT->FindObject(padName.c_str());
+    if(!aPad) continue;
+    aPad->cd();
+    aLine->Draw();
+  }  
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+int MarkersManager::findMissingMarkerDir(){
+
+ for(int iDirTmp=0;iDirTmp<3;++iDirTmp){
+    TMarker *item = fMarkersContainer.at(iDirTmp);
+    if(!item) return iDirTmp;
+    }
+    return -1;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+double MarkersManager::getMissingYCoordinate(unsigned int missingMarkerDir){
+
+
+  
+  
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void MarkersManager::HandleMarkerPosition(Int_t event, Int_t x, Int_t y, TObject *sel){
+  
+  TObject *select = gPad->GetSelected();
+  std::string objName = "";
+  if(select) objName = std::string(select->GetName());
+  if(event == kButton1 && objName.find("vs_time")!=std::string::npos){
+    int iDir = (objName.find("U")!=std::string::npos) +
+      2*(objName.find("V")!=std::string::npos) +
+      3*(objName.find("W")!=std::string::npos) - 1;
+
+    TVirtualPad *aCurrentPad = gPad->GetSelectedPad();
+    aCurrentPad->cd();
+    float localX = aCurrentPad->AbsPixeltoX(x);
+    float localY = aCurrentPad->AbsPixeltoY(y);
+
+    processClickCoordinates(iDir, localX, localY);		     
+  }
+
+  return;
+}
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 Bool_t MarkersManager::ProcessMessage(Long_t msg, Long_t parm1, Long_t /*parm2*/){

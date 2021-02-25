@@ -29,14 +29,16 @@ public:
 private:
 
   void addMarkerFrame(int iMarker);
+  void processClickCoordinates(int iDir, float x, float y);
+  void drawFixedTimeLines(int iDir, double time);
+  int findMissingMarkerDir();
 
-  MainFrame *fParentFrame = 0;
-  TGVerticalFrame *fTopFrame = 0;
-  TGCanvas *fMarkerGCanvas = 0;
+  MainFrame *fParentFrame;
+  TGVerticalFrame *fTopFrame;
+  TGCanvas *fMarkerGCanvas;
 
+  TLine *aLine;
   TMarker *firstMarker, *secondMarker;
-  TLine *currentLine;
-
   std::vector<TMarker*> fMarkersContainer;
   int tmp=0;
 

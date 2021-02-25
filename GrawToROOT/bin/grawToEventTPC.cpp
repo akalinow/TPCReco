@@ -52,7 +52,6 @@ int main(int argc, char *argv[]) {
 
   long numberOfEntries = myEventSource.numberOfEntries();
   std::map<unsigned int, bool> eventIdxMap;
-  numberOfEntries = 0;//TEST
   for(long iFileEntry = 0; iFileEntry<numberOfEntries; ++iFileEntry){
     myEventSource.loadFileEntry(iFileEntry);
     myEventPtr->SetGeoPtr(0);
