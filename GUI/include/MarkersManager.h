@@ -32,6 +32,7 @@ private:
   void processClickCoordinates(int iDir, float x, float y);
   void drawFixedTimeLines(int iDir, double time);
   int findMissingMarkerDir();
+  double getMissingYCoordinate(unsigned int missingMarkerDir);
 
   MainFrame *fParentFrame;
   TGVerticalFrame *fTopFrame;

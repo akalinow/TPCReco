@@ -203,8 +203,8 @@ int MarkersManager::findMissingMarkerDir(){
 /////////////////////////////////////////////////////////
 double MarkersManager::getMissingYCoordinate(unsigned int missingMarkerDir){
 
-
-  
+  ///Not implemented yet.
+  return 0.0;
   
 }
 /////////////////////////////////////////////////////////
