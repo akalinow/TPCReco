@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
+#include <iomanip>
 
 #include <TApplication.h>
 #include <MainFrame.h>
@@ -21,6 +22,9 @@
 #include "EventSourceGRAW.h"
 #endif
 #include "EventSourceROOT.h"
+
+#include "TGButtonGroup.h"
+#include "TGButton.h"
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h,  const boost::property_tree::ptree &aConfig)
@@ -71,7 +75,9 @@ void MainFrame::InitializeWindows(){
   AddHistoCanvas();
   AddButtons();
   AddGoToEventDialog(5);
+  AddGoToFileEntryDialog(6);
   AddNumbersDialog();
+  AddEventTypeDialog();
   AddLogos();
 
   MapSubwindows();
@@ -111,6 +117,9 @@ void MainFrame::InitializeEventSource(){
   else if(!myEventSource){
     std::cerr<<"Input source not known. dataFile: "
 	     <<dataFileName<<" Exiting."<<std::endl;
+#ifndef WITH_GET
+    std::cerr<<"GRAW libriaries not set."<<std::endl;
+#endif    
     return;
   }
 
@@ -225,7 +234,7 @@ void MainFrame::AddButtons(){
 /////////////////////////////////////////////////////////
 void MainFrame::AddGoToEventDialog(int attach_top){
 
-  fGframe = new TGGroupFrame(this, "Go to event");
+  fGframe = new TGGroupFrame(this, "Go to event id.");
   fEventIdEntry = new TGNumberEntryField(fGframe, M_GOTO_EVENT, 0,
 					 TGNumberFormat::kNESInteger,
 					 TGNumberFormat::kNEANonNegative,
@@ -243,6 +252,26 @@ void MainFrame::AddGoToEventDialog(int attach_top){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+void MainFrame::AddGoToFileEntryDialog(int attach_top){
+
+  fGframe = new TGGroupFrame(this, "Go to file entry.");
+  fFileEntryEntry = new TGNumberEntryField(fGframe, M_GOTO_ENTRY, 0,
+					 TGNumberFormat::kNESInteger,
+					 TGNumberFormat::kNEANonNegative,
+					 TGNumberFormat::kNELNoLimits);
+  fFileEntryEntry->Connect("ReturnPressed()", "MainFrame", this, "DoButton()");
+  fFileEntryEntry->SetToolTipText("Jump to given event id.");  
+
+  UInt_t attach_left=8, attach_right=9;
+  UInt_t attach_bottom=attach_top+1;
+  TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
+						    kLHintsFillX | kLHintsFillY,
+						    0, 0, 5, 2);  
+  fFrame->AddFrame(fGframe, tloh);
+  fGframe->AddFrame(fFileEntryEntry, new TGLayoutHints(kLHintsExpandX, 0, 0, 0, 0));
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 void MainFrame::AddNumbersDialog(){
 
   fEntryDialog = new EntryDialog(fFrame, this);
@@ -255,6 +284,31 @@ void MainFrame::AddNumbersDialog(){
   fEntryDialog->initialize();
   fFrame->AddFrame(fEntryDialog, tloh);
 
+ }
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void MainFrame::AddEventTypeDialog(){
+
+  eventTypeButtonGroup = new TGButtonGroup(fFrame,
+					   7, 1, 1.0, 1.0,
+					   "Event type");
+  eventTypeButtonGroup->SetExclusive(kTRUE);
+  std::vector<TGCheckButton*> buttonsContainer;
+  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Empty")));
+  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Noise")));
+  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Dot")));
+  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("1 track")));
+  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("2 tracks")));
+  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("3 tracks")));
+  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Other")));
+  buttonsContainer.front()->SetState(kButtonDown);
+  
+  UInt_t attach_left=10, attach_right=11;
+  UInt_t attach_top=4,  attach_bottom=7;
+  TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
+						    kLHintsShrinkX|kLHintsShrinkY|
+						    kLHintsFillX|kLHintsFillY);
+  fFrame->AddFrame(eventTypeButtonGroup, tloh);
  }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -309,7 +363,8 @@ void MainFrame::Update(){
   if(!myEventSource->numberOfEvents()) return;
   fEntryDialog->updateFileName(myEventSource->getCurrentPath());
   fEntryDialog->updateEventNumbers(myEventSource->numberOfEvents(),
-				   myEventSource->currentEventNumber());
+				   myEventSource->currentEventNumber(),
+				   myEventSource->currentEntryNumber());
   myHistoManager.setEvent(myEventSource->getCurrentEvent());
  // for(int strip_dir=0;strip_dir<3;++strip_dir){
  //   myHistoManager.getHoughAccumulator(strip_dir);
@@ -338,6 +393,48 @@ void MainFrame::Update(){
       fCanvas->cd(4);
       myHistoManager.getRawTimeProjection()->DrawClone("hist");
   fCanvas->Update();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void MainFrame::UpdateEventLog(){
+
+  int index =  myEventSource->getCurrentPath().find_last_of("/");
+  int pathLength =  myEventSource->getCurrentPath().size();
+  std::string logFileName = myEventSource->getCurrentPath().substr(index+1, pathLength);
+  logFileName += ".log";
+  std::fstream out(logFileName);
+
+  ///Log header
+  if(!out.is_open()){
+    out.open(logFileName, std::ofstream::app);    
+    for(int iButton=1;iButton<=eventTypeButtonGroup->GetCount();++iButton){
+      TGTextButton *aButton = (TGTextButton*)eventTypeButtonGroup->GetButton(iButton);
+      if(!aButton){
+	std::cerr<<__FUNCTION__<<" Coversion to TGTextButton failed!"<<std::endl;
+	continue;
+      }
+      out<<iButton<<" - "<<aButton->GetString()<<std::endl;
+    }
+    out<<"Event Id \t entry number \t Event type"<<std::endl;
+  }
+  /////
+  out.close();
+  out.open(logFileName, std::ofstream::app);
+  
+  if(!eventTypeButtonGroup){
+    std::cerr<<"eventTypeButtonGroup not initialised!";
+    return;
+  }
+  for(int iButton=1;iButton<=eventTypeButtonGroup->GetCount();++iButton){
+    if(eventTypeButtonGroup->GetButton(iButton)->IsOn()){
+      out<<myEventSource->currentEventNumber()<<" \t\t "
+	 <<myEventSource->currentEntryNumber()<<" \t\t "
+	 <<iButton<<std::endl;
+      break;
+    }
+  }
+  out.close();
+  eventTypeButtonGroup->SetButton(1, kTRUE);  
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -418,13 +515,15 @@ void MainFrame::HandleMenu(Int_t id){
     break;
     
   case M_NEXT_EVENT:
-    {      
+    {
+      UpdateEventLog();
       myEventSource->getNextEvent();
       Update();
     }
     break;
   case M_PREVIOUS_EVENT:
     {
+      UpdateEventLog();
       myEventSource->getPreviousEvent();
       Update();
     }
@@ -442,6 +541,13 @@ void MainFrame::HandleMenu(Int_t id){
     {
       int eventId = fEventIdEntry->GetIntNumber();
       myEventSource->loadEventId(eventId);
+      Update();
+    }
+    break;
+  case M_GOTO_ENTRY:
+    {
+      int fileEntry = fFileEntryEntry->GetIntNumber();
+      myEventSource->loadFileEntry(fileEntry);
       Update();
     }
     break;

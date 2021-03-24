@@ -52,6 +52,7 @@ enum ETestCommandIdentifiers {
    M_NEXT_EVENT,
    M_PREVIOUS_EVENT,
    M_GOTO_EVENT,
+   M_GOTO_ENTRY,
 
 };
 
@@ -105,12 +106,15 @@ private:
   void AddHistoCanvas();
   void AddButtons();
   void AddNumbersDialog();
-  void AddGoToEventDialog(int attach_left);
+  void AddEventTypeDialog();
+  void AddGoToEventDialog(int attach_top);
+  void AddGoToFileEntryDialog(int attach_top);
   void AddLogos();
 
   void SetCursorTheme();
 
   void Update();
+  void UpdateEventLog();
 
   TGCompositeFrame   *fFrame;
   TRootEmbeddedCanvas *embeddedCanvas;
@@ -124,11 +128,12 @@ private:
 
   TGTransientFrame *fLegendMain;
 
-  TGNumberEntryField *fEventIdEntry;
+  TGNumberEntryField *fEventIdEntry, *fFileEntryEntry;
   TGGroupFrame        *fGframe;
   
   EntryDialog *fEntryDialog;
   SelectionBox *fSelectionBox;
+  TGButtonGroup *eventTypeButtonGroup;
   
 
   TArrow *fArrow;
