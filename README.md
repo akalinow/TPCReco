@@ -1,7 +1,7 @@
 ## Installation instructions:
 
 ```
-git clone ssh://git@dracula.hep.fuw.edu.pl:8822/akalinowski/TPCReco.git
+git clone ssh://git@dracula.hep.fuw.edu.pl:8888/elitpcSoftware/TPCReco.git
 cd TPCReco
 git checkout relevant_tag
 git submodule update --init --recursive
