@@ -73,13 +73,13 @@ void MainFrame::InitializeWindows(){
   
   AddTopMenu();
   SetTheFrame();
+  AddNumbersDialog(); 
   AddMarkersDialog();
   AddHistoCanvas();
   AddButtons();
   AddGoToEventDialog(5);
   AddGoToFileEntryDialog(6);
-  AddEventTypeDialog(7);
-  AddNumbersDialog(); 
+  AddEventTypeDialog(7);  
   AddLogos();
 
   MapSubwindows();
@@ -285,7 +285,7 @@ void MainFrame::AddNumbersDialog(){
   fEntryDialog = new EntryDialog(fFrame, this);
 
   UInt_t attach_left=9, attach_right=12;
-  UInt_t attach_top=0,  attach_bottom=3;
+  UInt_t attach_top=0,  attach_bottom=4;
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 						    kLHintsShrinkX|kLHintsShrinkY|
 						    kLHintsFillX|kLHintsFillY);
