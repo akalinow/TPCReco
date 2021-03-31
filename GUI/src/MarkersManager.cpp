@@ -41,17 +41,18 @@ MarkersManager::MarkersManager(const TGWindow * p, MainFrame * aFrame)
    aLabel = new TGLabel(aHeaderFrame,"W");
    aHeaderFrame->AddFrame(aLabel, new TGLayoutHints(kLHintsLeft, 2, 2, 1, 1));
    */
+   /*
    fMarkerGCanvas = new TGCanvas(fTopFrame, 300, 300);
    TGCompositeFrame *aMarkerContainer = new TGCompositeFrame(fMarkerGCanvas->GetViewPort(), kVerticalFrame);
    fMarkerGCanvas->SetContainer(aMarkerContainer);
    fTopFrame->AddFrame(fMarkerGCanvas, new TGLayoutHints(kLHintsExpandX, 2, 2, 1, 1));
    fTopFrame->Layout();
-
-   
+   */
+   /*
    for(int iMarker=0;iMarker<4;++iMarker){
      addMarkerFrame(iMarker);
    }
-  
+   */
 
    initialize();
 }
@@ -135,9 +136,7 @@ void MarkersManager::addMarkerFrame(int iMarker){
 void MarkersManager::processClickCoordinates(int iDir, float x, float y){
 
   if(iDir<0 || iDir>=(int)fMarkersContainer.size() || fMarkersContainer.at(iDir)) return;  
-  if(firstMarker){
-    x = firstMarker->GetX();
-  }
+  if(firstMarker){ x = firstMarker->GetX(); }
    
   int iMarkerColor = 2;
   int iMarkerStyle = 8;
@@ -158,7 +157,7 @@ void MarkersManager::processClickCoordinates(int iDir, float x, float y){
   else{
     delete aLine;
     aLine = 0;
-    y = 30;
+    y = 30;//FIXME - calculate from other markers
     int missingMarkerDir = findMissingMarkerDir();
     aMarker = new TMarker(x, y, iMarkerStyle);
     aMarker->SetMarkerColor(iMarkerColor);
@@ -223,10 +222,8 @@ void MarkersManager::HandleMarkerPosition(Int_t event, Int_t x, Int_t y, TObject
     aCurrentPad->cd();
     float localX = aCurrentPad->AbsPixeltoX(x);
     float localY = aCurrentPad->AbsPixeltoY(y);
-
     processClickCoordinates(iDir, localX, localY);		     
   }
-
   return;
 }
 /////////////////////////////////////////////////////////

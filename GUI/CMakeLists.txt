@@ -21,6 +21,7 @@ include_directories(${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include)
 include_directories(${PROJECT_SOURCE_DIR}/DataFormats/include)
 include_directories(${PROJECT_SOURCE_DIR}/Reconstruction/include)
 include_directories(${PROJECT_SOURCE_DIR}/GrawToROOT/include)
+include_directories(${PROJECT_SOURCE_DIR}/Utilities/include)
 
 find_package(ROOT REQUIRED COMPONENTS RIO GenVector Gui)
 ###############################################################################

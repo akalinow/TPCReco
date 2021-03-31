@@ -113,6 +113,10 @@ void MainFrame::InitializeEventSource(){
     myWorkMode = M_ONLINE_MODE;
     myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
     fileWatchThread = std::thread(&DirectoryWatch::watch, &myDirWatch, dataFileName);
+    if(myConfig.find("updateInterval")!=myConfig.not_found()){
+      int updateInterval = myConfig.get<int>("updateInterval");
+      myDirWatch.setUpdateInterval(updateInterval);
+    }
     myDirWatch.Connect("Message(const char *)", "MainFrame", this, "ProcessMessage(const char *)");
   }
 #endif
@@ -332,7 +336,6 @@ void MainFrame::AddMarkersDialog(){
 /////////////////////////////////////////////////////////
 void MainFrame::AddLogos(){
 
-  std::cout<<"Here 0"<<std::endl;
   std::string filePath = myConfig.get<std::string>("resourcesPath")+"/FUW_znak.png";
   TImage *img = TImage::Open(filePath.c_str());
   if(!img->IsValid()) return;
