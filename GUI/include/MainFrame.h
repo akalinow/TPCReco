@@ -115,6 +115,9 @@ private:
 
   void SetCursorTheme();
 
+  void drawRawHistos();
+  void drawRecoHistos();
+
   void Update();
   void UpdateEventLog();
 

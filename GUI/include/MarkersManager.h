@@ -41,8 +41,6 @@ private:
   TLine *aLine;
   TMarker *firstMarker, *secondMarker;
   std::vector<TMarker*> fMarkersContainer;
-  int tmp=0;
-
 
 };
 

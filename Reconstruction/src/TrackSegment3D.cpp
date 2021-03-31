@@ -18,10 +18,9 @@ void TrackSegment3D::setBiasTangent(const TVector3 & aBias, const TVector3 & aTa
   myBias = aBias;
   myTangent = aTangent.Unit();
 
-  double lambda = 30;//FIXME what value should be here?
-  myStart = myBias;
-  myEnd = myStart + lambda*myTangent;
-  
+  double lambda = 10;
+  myStart = myBias-lambda*myTangent;
+  myEnd = myBias+lambda*myTangent;  
   initialize();
 }
 /////////////////////////////////////////////////////////
@@ -63,7 +62,6 @@ void TrackSegment3D::setRecHits(const std::vector<TH2D> & aRecHits){
       }
     }  
   }
-
   calculateRecHitChi2();
 }
 /////////////////////////////////////////////////////////

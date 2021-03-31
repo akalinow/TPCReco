@@ -12,6 +12,7 @@
 
 #include "GeometryTPC.h"
 #include "EventTPC.h"
+#include "colorText.h"
 
 #include "HistoManager.h"
 /////////////////////////////////////////////////////////
@@ -38,8 +39,7 @@ void HistoManager::setEvent(EventTPC* aEvent){
   if(!aEvent) return;
   myEvent.reset(aEvent);
   myTkBuilder.setEvent(aEvent);
-  myTkBuilder.reconstruct();
-  
+  myTkBuilder.reconstruct();  
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -48,7 +48,7 @@ void HistoManager::setEvent(std::shared_ptr<EventTPC> aEvent){
   if(!aEvent) return;
   myEvent = aEvent;
   myTkBuilder.setEvent(aEvent.get());
-//  myTkBuilder.reconstruct();
+  myTkBuilder.reconstruct();
   
 }
 /////////////////////////////////////////////////////////
@@ -71,16 +71,16 @@ TH2Poly * HistoManager::getDetectorLayout() const{
   }  
   return aPtr;
 }
-
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 std::shared_ptr<TH1D> HistoManager::getRawTimeProjection(){
   return   std::shared_ptr<TH1D>(myEvent->GetTimeProjection());
 }
-
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 std::shared_ptr<TH1D> HistoManager::getRawStripProjection(int strip_dir){
   return   std::shared_ptr<TH1D>(myEvent->GetStripProjection(strip_dir));
 }
-
-
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::shared_ptr<TH2D> HistoManager::getRawStripVsTime(int strip_dir){
@@ -189,10 +189,10 @@ void HistoManager::drawTrack2DSeed(int strip_dir, TVirtualPad *aPad){
   const TVector3 & end = aSegment2D.getEnd();
 
   TLine aSegment2DLine;
-  aSegment2DLine.SetLineWidth(2);
-  aSegment2DLine.SetLineColor(9);
+  aSegment2DLine.SetLineWidth(3);
+  aSegment2DLine.SetLineColor(2);
   aPad->cd();
-  aSegment2DLine.DrawLine(start.X(), start.Y(),  end.X(),  end.Y());	  
+  aSegment2DLine.DrawLine(start.X(), start.Y(),  end.X(),  end.Y());
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -203,7 +203,7 @@ void HistoManager::drawTrack3DProjectionTimeStrip(int strip_dir, TVirtualPad *aP
 
   int iSegment = 0;
   TLine aSegment2DLine;
-  aSegment2DLine.SetLineWidth(2);
+  aSegment2DLine.SetLineWidth(3);
   double minX = 999.0, minY = 999.0;
   double maxX = -999.0, maxY = -999.0;
   double tmp = 0.0;
@@ -212,10 +212,11 @@ void HistoManager::drawTrack3DProjectionTimeStrip(int strip_dir, TVirtualPad *aP
     const TrackSegment2D & aSegment2DProjection = aItem.get2DProjection(strip_dir, 0, aItem.getLength());
     const TVector3 & start = aSegment2DProjection.getStart();
     const TVector3 & end = aSegment2DProjection.getEnd();
+    
     aSegment2DLine.SetLineColor(2+iSegment);
     aSegment2DLine.DrawLine(start.X(), start.Y(),  end.X(),  end.Y());	
     ++iSegment;
-    
+
     tmp = std::min(start.Y(), end.Y());
     minY = std::min(minY, tmp);
 
@@ -236,10 +237,15 @@ void HistoManager::drawTrack3DProjectionTimeStrip(int strip_dir, TVirtualPad *aP
   maxX = minX + delta;
   maxY = minY + delta;
 
-  TH2D *hFrame = (TH2D*)aPad->GetListOfPrimitives()->At(0);
-  if(hFrame){
-    hFrame->GetXaxis()->SetRangeUser(minX, maxX);
-    hFrame->GetYaxis()->SetRangeUser(minY, maxY);
+  if(aPad->GetListOfPrimitives()->GetSize()){
+    TH2D *hFrame = (TH2D*)aPad->GetListOfPrimitives()->At(0);
+    if(hFrame){
+      hFrame->GetXaxis()->SetRangeUser(minX, maxX);
+      hFrame->GetYaxis()->SetRangeUser(minY, maxY);
+    }
+  }
+  else{
+    std::cout<<KRED<<"No frame histogram drawn!."<<RST<<std::endl;
   }
 }
 /////////////////////////////////////////////////////////

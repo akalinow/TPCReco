@@ -388,33 +388,40 @@ void MainFrame::Update(){
 				   myEventSource->currentEventNumber(),
 				   myEventSource->currentEntryNumber());
   myHistoManager.setEvent(myEventSource->getCurrentEvent());
- // for(int strip_dir=0;strip_dir<3;++strip_dir){
- //   myHistoManager.getHoughAccumulator(strip_dir);
- // }
+
+  //drawRawHistos();
+  drawRecoHistos();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void MainFrame::drawRawHistos(){
 
   for(int strip_dir=0;strip_dir<3;++strip_dir){
-    ///First row
     fCanvas->cd(strip_dir+1);
-      myHistoManager.getRawStripVsTime(strip_dir)->DrawClone("colz");
-  //  myHistoManager.getCartesianProjection(strip_dir)->DrawClone("colz");
-    ///Second row
-
-   // myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("colz");
-   // myHistoManager.getRecHitStripVsTime(strip_dir)->SaveAs(TString::Format("RecHits_%d.root", strip_dir));
-   // myHistoManager.getCartesianProjection(strip_dir)->SaveAs(TString::Format("RawHits_%d.root", strip_dir));
-   // myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad);
+    myHistoManager.getRawStripVsTime(strip_dir)->DrawClone("colz");
+  }  
+  fCanvas->cd(4);
+  myHistoManager.getRawTimeProjection()->DrawClone("hist");
+  fCanvas->Update();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void MainFrame::drawRecoHistos(){
+  
+   for(int strip_dir=0;strip_dir<3;++strip_dir){
+    TVirtualPad *aPad = fCanvas->cd(strip_dir+1);
+    myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("colz");
+    //myHistoManager.getCartesianProjection(strip_dir)->DrawClone("colz");
+    //myHistoManager.getHoughAccumulator(strip_dir).DrawClone("colz");
     //myHistoManager.drawTrack2DSeed(strip_dir, aPad);
+    myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad);
     
-    ///Third row.
-  //  aPad = fCanvas->cd(strip_dir+1+3+3);
-  //  myHistoManager.getHoughAccumulator(strip_dir).DrawClone("colz");
-  //  myHistoManager.getHoughAccumulator(strip_dir).SaveAs(TString::Format("HoughAccumulator_%d.root", strip_dir));
-    //myHistoManager.drawChargeAlongTrack3D(aPad);
    // aPad->GetName();
   }  
-      fCanvas->cd(4);
-      myHistoManager.getRawTimeProjection()->DrawClone("hist");
+  TVirtualPad *aPad = fCanvas->cd(4);
+  myHistoManager.drawChargeAlongTrack3D(aPad);
   fCanvas->Update();
+  
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

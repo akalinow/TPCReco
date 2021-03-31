@@ -302,7 +302,6 @@ void Track3D::shrinkToHits(){
     charge = 0.0;
     for(int i=0;i<3;++i) charge += getChargeProfile().Eval(lambdaEnd+i*h);    
   }
-
   TrackSegment3D & aFirstSegment = mySegments.front();
   TrackSegment3D & aLastSegment = mySegments.back();
   
