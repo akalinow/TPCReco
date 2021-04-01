@@ -27,6 +27,8 @@ public:
 
   void setEvent(EventTPC* aEvent);
 
+  void setEvent(std::shared_ptr<EventTPC> aEvent);
+
   void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);
 
   void reconstruct();

@@ -7,6 +7,7 @@
 #include "MainFrame.h"
 #include "SelectionBox.h"
 #include "MarkersManager.h"
+#include "colorText.h"
 
 #include <TSystem.h>
 #include <TStyle.h>
@@ -121,10 +122,11 @@ void MainFrame::InitializeEventSource(){
   }
 #endif
   else if(!myEventSource){
-    std::cerr<<"Input source not known. dataFile: "
+    std::cerr<<KRED<<"Input source not known. dataFile: "<<RST
 	     <<dataFileName<<" Exiting."<<std::endl;
 #ifndef WITH_GET
-    std::cerr<<"GRAW libriaries not set."<<std::endl;
+    std::cerr<<KRED<<" or GRAW libriaries not set."<<RST<<std::endl;
+    exit(0);
 #endif    
     return;
   }
@@ -180,7 +182,7 @@ void MainFrame::AddHistoCanvas(){
 
   gStyle->SetOptStat(0);
   gStyle->SetPalette(57);
-  gStyle->SetPadLeftMargin(0.12);
+  gStyle->SetPadLeftMargin(0.15);
   gStyle->SetPadRightMargin(0.15);
 
   embeddedCanvas = new TRootEmbeddedCanvas("Histograms",fFrame,1000,1000);

@@ -35,22 +35,19 @@ void HistoManager::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void HistoManager::setEvent(EventTPC* aEvent){
-
   if(!aEvent) return;
   myEvent.reset(aEvent);
-  myTkBuilder.setEvent(aEvent);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void HistoManager::setEvent(std::shared_ptr<EventTPC> aEvent){
-
   if(!aEvent) return;
   myEvent = aEvent;
-  myTkBuilder.setEvent(aEvent.get());
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void HistoManager::reconstruct(){
+  myTkBuilder.setEvent(myEvent);
   myTkBuilder.reconstruct();
 }
 /////////////////////////////////////////////////////////
@@ -77,7 +74,7 @@ TH2Poly * HistoManager::getDetectorLayout() const{
 /////////////////////////////////////////////////////////
 std::shared_ptr<TH1D> HistoManager::getRawTimeProjection(){
   TH1D *h = myEvent->GetTimeProjection();
-  h->GetYaxis()->SetTitleOffset(1.8);
+  h->GetYaxis()->SetTitleOffset(2.0);
   return std::shared_ptr<TH1D>(h);
 }
 /////////////////////////////////////////////////////////
@@ -91,8 +88,8 @@ std::shared_ptr<TH1D> HistoManager::getRawStripProjection(int strip_dir){
 std::shared_ptr<TH2D> HistoManager::getRawStripVsTime(int strip_dir){
 
   std::shared_ptr<TH2D> h = myEvent->GetStripVsTime(strip_dir);
-  h->GetYaxis()->SetTitleOffset(1.5);
-  h->GetZaxis()->SetTitleOffset(1.1);
+  h->GetYaxis()->SetTitleOffset(1.8);
+  h->GetZaxis()->SetTitleOffset(1.5);
   return h;
 }
 /////////////////////////////////////////////////////////
