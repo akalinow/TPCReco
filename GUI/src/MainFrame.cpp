@@ -75,7 +75,7 @@ void MainFrame::InitializeWindows(){
   AddTopMenu();
   SetTheFrame();
   AddNumbersDialog(); 
-  AddMarkersDialog();
+  //AddMarkersDialog();
   AddHistoCanvas();
   AddButtons();
   AddGoToEventDialog(5);
@@ -201,9 +201,11 @@ void MainFrame::AddHistoCanvas(){
     fCanvas->cd(iPad);
     aMessage.DrawText(0.2, 0.5,"Waiting for data.");
   }
+  /*
   fCanvas->Connect("ProcessedEvent(Int_t,Int_t,Int_t,TObject*)",
 		   "MarkersManager", fMarkersManager,
 		   "HandleMarkerPosition(Int_t,Int_t,Int_t,TObject*)");
+  */
   fCanvas->Update();
 }
 /////////////////////////////////////////////////////////
