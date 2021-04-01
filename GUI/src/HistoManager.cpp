@@ -39,7 +39,6 @@ void HistoManager::setEvent(EventTPC* aEvent){
   if(!aEvent) return;
   myEvent.reset(aEvent);
   myTkBuilder.setEvent(aEvent);
-  myTkBuilder.reconstruct();  
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -48,8 +47,11 @@ void HistoManager::setEvent(std::shared_ptr<EventTPC> aEvent){
   if(!aEvent) return;
   myEvent = aEvent;
   myTkBuilder.setEvent(aEvent.get());
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void HistoManager::reconstruct(){
   myTkBuilder.reconstruct();
-  
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -74,18 +76,24 @@ TH2Poly * HistoManager::getDetectorLayout() const{
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::shared_ptr<TH1D> HistoManager::getRawTimeProjection(){
-  return   std::shared_ptr<TH1D>(myEvent->GetTimeProjection());
+  TH1D *h = myEvent->GetTimeProjection();
+  h->GetYaxis()->SetTitleOffset(1.8);
+  return std::shared_ptr<TH1D>(h);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::shared_ptr<TH1D> HistoManager::getRawStripProjection(int strip_dir){
-  return   std::shared_ptr<TH1D>(myEvent->GetStripProjection(strip_dir));
+
+  return  std::shared_ptr<TH1D>(myEvent->GetStripProjection(strip_dir));
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::shared_ptr<TH2D> HistoManager::getRawStripVsTime(int strip_dir){
 
-  return  myEvent->GetStripVsTime(strip_dir);
+  std::shared_ptr<TH2D> h = myEvent->GetStripVsTime(strip_dir);
+  h->GetYaxis()->SetTitleOffset(1.5);
+  h->GetZaxis()->SetTitleOffset(1.1);
+  return h;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -96,9 +104,10 @@ std::shared_ptr<TH2D> HistoManager::getFilteredStripVsTime(int strip_dir){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::shared_ptr<TH2D> HistoManager::getRecHitStripVsTime(int strip_dir){
-
-  return std::shared_ptr<TH2D>(new TH2D(myTkBuilder.getRecHits2D(strip_dir)));//FIX ME avoid object copying
-
+  TH2D *h = (TH2D*)myTkBuilder.getRecHits2D(strip_dir).Clone();
+  h->GetYaxis()->SetTitleOffset(1.5);
+  h->GetZaxis()->SetTitleOffset(1.1);
+  return std::shared_ptr<TH2D>(h);//FIX ME avoid object copying
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -260,6 +269,7 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   aGr.SetTitle("Charge distribution along track.;d[track length];charge[arbitrary units]");
   aGr.SetLineWidth(2);
   aGr.SetLineColor(2);
+  aGr.GetYaxis()->SetTitleOffset(1.5);
   aGr.DrawClone("AL");
 }
 /////////////////////////////////////////////////////////

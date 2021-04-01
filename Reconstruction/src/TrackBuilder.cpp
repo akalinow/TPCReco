@@ -46,14 +46,16 @@ TrackBuilder::TrackBuilder() {
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TrackBuilder::~TrackBuilder() {
-
-}
+TrackBuilder::~TrackBuilder() { }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void TrackBuilder::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
   
   myGeometryPtr = aGeometryPtr;
+  phiPitchDirection.resize(3);
+  phiPitchDirection[DIR_U] = myGeometryPtr->GetStripPitchVector(DIR_U).Phi();
+  phiPitchDirection[DIR_V] = myGeometryPtr->GetStripPitchVector(DIR_V).Phi();
+  phiPitchDirection[DIR_W] = myGeometryPtr->GetStripPitchVector(DIR_W).Phi();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -362,6 +364,7 @@ TrackSegment3D TrackBuilder::buildSegment3D() const{
   TVector3 aTangent(tX, tY, tZ);
 
   TrackSegment3D a3DSeed;
+  a3DSeed.setGeometry(myGeometryPtr);
   a3DSeed.setBiasTangent(aBias, aTangent);
   a3DSeed.setRecHits(myRecHits);
   return a3DSeed;

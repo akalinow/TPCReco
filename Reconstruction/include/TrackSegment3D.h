@@ -12,6 +12,8 @@
 #include "TrackSegment2D.h"
 #include "CommonDefinitions.h"
 
+class GeometryTPC;
+
 class TrackSegment3D{
 
 public:
@@ -19,6 +21,10 @@ public:
   TrackSegment3D();
 
   ~TrackSegment3D(){};
+
+  void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);
+
+  std::shared_ptr<GeometryTPC> getGeometry() const;
 
   void setBiasTangent(const TVector3 & aBias, const TVector3 & aTangent);
 
@@ -54,7 +60,7 @@ public:
   ///Return packed cartesian coordinates of the segment start/end points.
   std::vector<double> getStartEndXYZ() const;
 
-  ///Return 2D projection for strip_dir corresponding to start and end
+  ///Return 2D projection for stripPitchDirection corresponding to start and end lambdas
   ///along the 3D segment.
   TrackSegment2D get2DProjection(int strip_dir, double start, double end) const;
 
@@ -74,14 +80,16 @@ public:
 
 private:
 
-  TVector3 getPointOn2DProjection(double lambda, int strip_dir) const;
+  ///Return point on 2D projection for stripPitchDirection corresponding to given lambda.
+  TVector3 getPointOn2DProjection(double lambda, const TVector3 & stripPitchDirection) const;
 
   ///Calculate vector for different parametrisations.
   void initialize();
 
   ///Calculate and store chi2 for all projections.
   void calculateRecHitChi2();
- 
+
+  std::shared_ptr<GeometryTPC> myGeometryPtr;
   TVector3 myTangent, myBias;
   TVector3 myBiasAtX0, myBiasAtY0, myBiasAtZ0;
   TVector3 myStart, myEnd;

@@ -33,6 +33,8 @@ public:
 
   void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);
 
+  void reconstruct();
+
   TH2Poly *getDetectorLayout() const;
   
   std::shared_ptr<TH1D> getRawTimeProjection();

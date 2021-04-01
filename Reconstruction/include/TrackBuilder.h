@@ -67,6 +67,7 @@ private:
   EventTPC *myEvent;
   SigClusterTPC myCluster;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
+  std::vector<double> phiPitchDirection;
 
   bool myHistoInitialized;
   int nAccumulatorRhoBins, nAccumulatorPhiBins;

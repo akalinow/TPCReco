@@ -399,22 +399,20 @@ void MainFrame::Update(){
 /////////////////////////////////////////////////////////
 void MainFrame::drawRawHistos(){
 
-
   for(int strip_dir=0;strip_dir<3;++strip_dir){
     fCanvas->cd(strip_dir+1);
-    TH1 *h = (TH1*)myHistoManager.getRawStripVsTime(strip_dir)->DrawClone("colz");
-    h->GetYaxis()->SetTitleOffset(1.5);
-    h->GetZaxis()->SetTitleOffset(1.1);
+    myHistoManager.getRawStripVsTime(strip_dir)->DrawClone("colz");
     fCanvas->Update();
   }  
   fCanvas->cd(4);
-  TH1 *h = (TH1*)myHistoManager.getRawTimeProjection()->DrawClone("hist");
-  h->GetYaxis()->SetTitleOffset(1.8);
+  myHistoManager.getRawTimeProjection()->DrawClone("hist");
   fCanvas->Update();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MainFrame::drawRecoHistos(){
+
+  myHistoManager.reconstruct();
   
    for(int strip_dir=0;strip_dir<3;++strip_dir){
     TVirtualPad *aPad = fCanvas->cd(strip_dir+1);
@@ -423,6 +421,7 @@ void MainFrame::drawRecoHistos(){
     //myHistoManager.getHoughAccumulator(strip_dir).DrawClone("colz");
     //myHistoManager.drawTrack2DSeed(strip_dir, aPad);
     myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad);
+    fCanvas->Update();
   }  
   TVirtualPad *aPad = fCanvas->cd(4);
   myHistoManager.drawChargeAlongTrack3D(aPad);
