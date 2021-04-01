@@ -50,8 +50,8 @@ void EventSourceGRAW::loadDataFile(const std::string & fileName){
   myFilePath = fileName;
   myFile =  std::make_shared<TGrawFile>(fileName.c_str());
   if(!myFile){
-    std::cerr<<"File: "<<fileName<<"not found!"<<std::endl;
-    exit(0);
+    std::cerr<<KRED<<"Can not open file: "<<fileName<<"!"<<RST<<std::endl;
+    exit(1);
   }
   nEntries = myFile->GetGrawFramesNumber();
 
@@ -76,7 +76,7 @@ bool EventSourceGRAW::loadGrawFrame(unsigned int iEntry){
   std::cout.clear();
   
   if(!dataFrameRead){
-    std::cerr << "ERROR: cannot read event " << iEntry << std::endl;
+    std::cerr <<KRED<< "ERROR: cannot read event " << RST<<iEntry << std::endl;
     std::cerr <<KRED
 	      <<"Please check if you are running the application from the resources directory."
 	      <<RST
@@ -149,13 +149,11 @@ void EventSourceGRAW::collectEventFragments(unsigned int eventIdx){
   auto it = myFramesMap.find(eventIdx);
   if(it==myFramesMap.end()) return;
   if(it->second.size()!=GRAW_EVENT_FRAGMENTS){
-     std::cout<<"\033[31m";
       std::cerr<<__FUNCTION__
-	       <<" Feragment counts for eventIdx = "<<eventIdx
+	       <<KRED<<" Fragment counts for eventIdx = "<<eventIdx
 	       <<" mismatch. Expected: "<<GRAW_EVENT_FRAGMENTS
 	       <<" found: "<<it->second.size()
-	       <<std::endl;
-      std::cout<<"\033[39m";
+	       <<RST<<std::endl;
   }
 
   myCurrentEvent->Clear();

@@ -1,6 +1,7 @@
 #include<cstdlib>
 #include <iostream>
 
+#include "colorText.h"
 #include "EventSourceROOT.h"
 #include "TFile.h"
 #include "TTree.h"
@@ -23,8 +24,8 @@ void EventSourceROOT::loadDataFile(const std::string & fileName){
 
   myFile = std::make_shared<TFile>(fileName.c_str(),"READ");
   if(!myFile){
-    std::cerr<<"File: "<<fileName<<"not found!"<<std::endl;
-    exit(0);
+    std::cerr<<KRED<<"Can not open file: "<<RST<<fileName<<KRED<<"!"<<RST<<std::endl;
+    exit(1);
   }
   
   myTree.reset((TTree*)myFile->Get(treeName.c_str()));  

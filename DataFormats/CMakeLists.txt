@@ -16,6 +16,7 @@ file(GLOB_RECURSE sources       ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/src/*.cpp)
 ###############################################################################
 include_directories(${ROOTINCDIR})
 include_directories(${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include)
+include_directories(${PROJECT_SOURCE_DIR}/Utilities/include)
 ###############################################################################
 ## target definitions #########################################################
 ###############################################################################
