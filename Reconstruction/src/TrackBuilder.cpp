@@ -13,14 +13,15 @@
 #include "SigClusterTPC.h"
 
 #include "TrackBuilder.h"
+#include "colorText.h"
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 TrackBuilder::TrackBuilder() {
 
   myEvent = 0;
 
-  nAccumulatorRhoBins = 100;//FIX ME move to configuarable
-  nAccumulatorPhiBins = 100;//FIX ME move to configuarable
+  nAccumulatorRhoBins = 50;//FIX ME move to configuarable
+  nAccumulatorPhiBins = 2.0*M_PI/0.1;//FIX ME move to configuarable
 
   myHistoInitialized = false;
   myAccumulators.resize(3);
@@ -45,26 +46,35 @@ TrackBuilder::TrackBuilder() {
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TrackBuilder::~TrackBuilder() {
-
-}
+TrackBuilder::~TrackBuilder() { }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void TrackBuilder::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
   
   myGeometryPtr = aGeometryPtr;
+  phiPitchDirection.resize(3);
+  phiPitchDirection[DIR_U] = myGeometryPtr->GetStripPitchVector(DIR_U).Phi();
+  phiPitchDirection[DIR_V] = myGeometryPtr->GetStripPitchVector(DIR_V).Phi();
+  phiPitchDirection[DIR_W] = myGeometryPtr->GetStripPitchVector(DIR_W).Phi();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void TrackBuilder::setEvent(std::shared_ptr<EventTPC> aEvent){
+  setEvent(aEvent.get());
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void TrackBuilder::setEvent(EventTPC* aEvent){
 
   myEvent = aEvent;
-  // NEEDS TO BE FIXED. DOESNT WORK WITH SECTIONS
-  /*
+
   double eventMaxCharge = myEvent->GetMaxCharge();
-  double chargeThreshold = 0.15*eventMaxCharge;
+  double chargeThreshold = -0.15*eventMaxCharge;
   int delta_timecells = 15;
   int delta_strips = 2;
+
+  delta_timecells = 0;
+  delta_strips = 0;
 
   myCluster = myEvent->GetOneCluster(chargeThreshold, delta_strips, delta_timecells);
 
@@ -77,13 +87,13 @@ void TrackBuilder::setEvent(EventTPC* aEvent){
       double rho = sqrt( maxX*maxX + maxY*maxY);
       hName = "hAccumulator_"+std::to_string(iDir);
       hTitle = "Hough accumulator for direction: "+std::to_string(iDir)+";#theta;#rho";
-      TH2D hAccumulator(hName.c_str(), hTitle.c_str(), nAccumulatorPhiBins, -M_PI, M_PI, nAccumulatorRhoBins, 0, rho);   
+      TH2D hAccumulator(hName.c_str(), hTitle.c_str(), nAccumulatorPhiBins,
+			-M_PI, M_PI, nAccumulatorRhoBins, 0, rho);   
       myAccumulators[iDir] = hAccumulator;
       myRecHits[iDir] = *hRawHits;
     }
     myHistoInitialized = true;
   } 
-  */
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -249,6 +259,8 @@ void TrackBuilder::fillHoughAccumulator(int iDir){
   myAccumulators[iDir].Reset();
   
   const TH2D & hRecHits  = getRecHits2D(iDir);
+  double maxCharge = hRecHits.GetMaximum();
+  std::cout<<"maxCharge: "<<maxCharge<<std::endl;
 
   double theta = 0.0, rho = 0.0;
   double x = 0.0, y=0.0;
@@ -258,7 +270,7 @@ void TrackBuilder::fillHoughAccumulator(int iDir){
       x = hRecHits.GetXaxis()->GetBinCenter(iBinX) + aHoughOffest.X();
       y = hRecHits.GetYaxis()->GetBinCenter(iBinY) + aHoughOffest.Y();
       charge = hRecHits.GetBinContent(iBinX, iBinY);
-      if(charge<1) continue;
+      if(charge<0.2*maxCharge) continue;
       for(int iBinTheta=1;iBinTheta<myAccumulators[iDir].GetNbinsX();++iBinTheta){
 	theta = myAccumulators[iDir].GetXaxis()->GetBinCenter(iBinTheta);
 	rho = x*cos(theta) + y*sin(theta);
@@ -306,7 +318,6 @@ TrackSegment2D TrackBuilder::findSegment2D(int iDir, int iPeak) const{
   double aX = rho*cos(theta);
   double aY = rho*sin(theta);
   aBias.SetXYZ(aX, aY, 0.0);
-
   aBias -= aHoughOffest.Dot(aBias.Unit())*aBias.Unit();
   
   aX = -rho*sin(theta);
@@ -321,7 +332,7 @@ TrackSegment2D TrackBuilder::findSegment2D(int iDir, int iPeak) const{
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 TrackSegment3D TrackBuilder::buildSegment3D() const{
-
+	     
   int iTrack2DSeed = 0;
   const TrackSegment2D & segmentU = my2DSeeds[DIR_U][iTrack2DSeed];
   const TrackSegment2D & segmentV = my2DSeeds[DIR_V][iTrack2DSeed];
@@ -358,9 +369,9 @@ TrackSegment3D TrackBuilder::buildSegment3D() const{
   TVector3 aTangent(tX, tY, tZ);
 
   TrackSegment3D a3DSeed;
+  a3DSeed.setGeometry(myGeometryPtr);
   a3DSeed.setBiasTangent(aBias, aTangent);
   a3DSeed.setRecHits(myRecHits);
-
   return a3DSeed;
 }
 /////////////////////////////////////////////////////////
@@ -369,9 +380,8 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
 
   Track3D aTrackCandidate;
   aTrackCandidate.addSegment(aTrackSegment);
-  //return aTrackCandidate;//TEST
-      
   aTrackCandidate = fitTrackNodes(aTrackCandidate);
+  return aTrackCandidate;//TEST
   
   TGraph aGraph = aTrackCandidate.getHitDistanceProfile();
   double maxValue = 0.0;
@@ -389,8 +399,6 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
   
   std::cout<<"after split: "<<std::endl;
   std::cout<<aTrackCandidate<<std::endl;
-
-  return aTrackCandidate;//TEST
 
   aTrackCandidate = fitTrackNodes(aTrackCandidate);
   return aTrackCandidate;
@@ -412,7 +420,7 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
 /////////////////////////////////////////////////////////
 Track3D TrackBuilder::fitTrackNodes(const Track3D & aTrack) const{
 
-  Track3D aTrackCandidate = aTrack;
+  Track3D aTrackCandidate = aTrack; 
   std::vector<double> bestParams = aTrackCandidate.getSegmentsStartEndXYZ();
   std::vector<double> params = aTrackCandidate.getSegmentsStartEndXYZ();
   int nParams = params.size();
@@ -421,12 +429,12 @@ Track3D TrackBuilder::fitTrackNodes(const Track3D & aTrack) const{
   fitter.SetFCN(fcn, params.data());
 
   double minChi2 = 1E10;
-  for(unsigned int iStep=1;iStep<3;++iStep){
+  for(unsigned int iStep=1;iStep<2;++iStep){
     
     std::cout<<__FUNCTION__<<" iStep: "<<iStep<<std::endl;
     
     aTrackCandidate.extendToWholeChamber();
-    aTrackCandidate.shrinkToHits();    
+    aTrackCandidate.shrinkToHits();
     params = aTrackCandidate.getSegmentsStartEndXYZ();
     nParams = params.size();
     for (int iPar = 0; iPar < nParams; ++iPar){

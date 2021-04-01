@@ -1,7 +1,8 @@
-#include "Track3D.h"
-
 #include <iostream>
 #include <algorithm>
+
+#include "Track3D.h"
+#include "GeometryTPC.h"
 
 #include <Fit/Fitter.h>
 #include <Math/Functor.h>
@@ -152,11 +153,8 @@ double Track3D::getNodesChi2() const{
 void Track3D::updateNodesChi2(int strip_dir){
 
   if(!mySegments.size()) return;
-
-  TVector3 stripPitchDirection(cos(phiPitchDirection[strip_dir]),
-			       sin(phiPitchDirection[strip_dir]), 0);
+  
   TVector3 aPoint;
-
   double charge = 0.0;
   double sum = 0.0;
   double nodeChi2 = 0.0;
@@ -169,7 +167,8 @@ void Track3D::updateNodesChi2(int strip_dir){
     
     TVector3 node3D = aSegment->getEnd();
     TVector3 formerTangent3D = aSegment->getTangent();
-    TVector3 latterTangent3D = (aSegment+1)->getTangent();    
+    TVector3 latterTangent3D = (aSegment+1)->getTangent();
+    TVector3 stripPitchDirection = aSegment->getGeometry()->GetStripPitchVector3D(strip_dir);
 
     TVector3 node2D(node3D.Z(), node3D*stripPitchDirection, 0.0);
     TVector3 formerTransverse2D(-formerTangent3D*stripPitchDirection, formerTangent3D.Z(), 0.0);    
@@ -302,7 +301,6 @@ void Track3D::shrinkToHits(){
     charge = 0.0;
     for(int i=0;i<3;++i) charge += getChargeProfile().Eval(lambdaEnd+i*h);    
   }
-
   TrackSegment3D & aFirstSegment = mySegments.front();
   TrackSegment3D & aLastSegment = mySegments.back();
   

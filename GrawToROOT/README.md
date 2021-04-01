@@ -4,7 +4,7 @@ Before compilig setup the GET environment.
 At the daqula2 node use afollowing command:
 
 ```
-source /opt/soft/GetSoftware_20170928/thisGET.sh
+source /opt/soft/GetSoftware_bin/env_settings.sh
 ```
 
 ```

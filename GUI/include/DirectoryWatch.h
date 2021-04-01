@@ -10,9 +10,14 @@ class DirectoryWatch: public TQObject{
   
 public:
   
-  DirectoryWatch(){};
+  DirectoryWatch();
+  void setUpdateInterval(int aInterval); //[ms]
   virtual ~DirectoryWatch(){};
   void watch(const std::string & dirName);
+
+private:
+
+  int updateIterval;// [ms]
 
 };
 

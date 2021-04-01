@@ -4,8 +4,10 @@
 #include <iomanip>
 
 #include <TApplication.h>
-#include <MainFrame.h>
-#include <SelectionBox.h>
+#include "MainFrame.h"
+#include "SelectionBox.h"
+#include "MarkersManager.h"
+#include "colorText.h"
 
 #include <TSystem.h>
 #include <TStyle.h>
@@ -72,12 +74,13 @@ void MainFrame::InitializeWindows(){
   
   AddTopMenu();
   SetTheFrame();
+  AddNumbersDialog(); 
+  //AddMarkersDialog();
   AddHistoCanvas();
   AddButtons();
   AddGoToEventDialog(5);
   AddGoToFileEntryDialog(6);
-  AddNumbersDialog();
-  AddEventTypeDialog();
+  AddEventTypeDialog(7);  
   AddLogos();
 
   MapSubwindows();
@@ -111,14 +114,19 @@ void MainFrame::InitializeEventSource(){
     myWorkMode = M_ONLINE_MODE;
     myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
     fileWatchThread = std::thread(&DirectoryWatch::watch, &myDirWatch, dataFileName);
+    if(myConfig.find("updateInterval")!=myConfig.not_found()){
+      int updateInterval = myConfig.get<int>("updateInterval");
+      myDirWatch.setUpdateInterval(updateInterval);
+    }
     myDirWatch.Connect("Message(const char *)", "MainFrame", this, "ProcessMessage(const char *)");
   }
 #endif
   else if(!myEventSource){
-    std::cerr<<"Input source not known. dataFile: "
+    std::cerr<<KRED<<"Input source not known. dataFile: "<<RST
 	     <<dataFileName<<" Exiting."<<std::endl;
 #ifndef WITH_GET
-    std::cerr<<"GRAW libriaries not set."<<std::endl;
+    std::cerr<<KRED<<" or GRAW libriaries not set."<<RST<<std::endl;
+    exit(0);
 #endif    
     return;
   }
@@ -174,7 +182,8 @@ void MainFrame::AddHistoCanvas(){
 
   gStyle->SetOptStat(0);
   gStyle->SetPalette(57);
- // gStyle->SetOptLogz();
+  gStyle->SetPadLeftMargin(0.15);
+  gStyle->SetPadRightMargin(0.15);
 
   embeddedCanvas = new TRootEmbeddedCanvas("Histograms",fFrame,1000,1000);
   UInt_t attach_left=0, attach_right=8;
@@ -185,12 +194,18 @@ void MainFrame::AddHistoCanvas(){
 
   fCanvas = embeddedCanvas->GetCanvas();
   fCanvas->MoveOpaque(kFALSE);
-  fCanvas->Divide(2,2);
+  fCanvas->Divide(2,2, 0.02, 0.02);
+  
   TText aMessage(0.2, 0.5,"Waiting for data.");
   for(int iPad=1;iPad<=4;++iPad){
     fCanvas->cd(iPad);
     aMessage.DrawText(0.2, 0.5,"Waiting for data.");
   }
+  /*
+  fCanvas->Connect("ProcessedEvent(Int_t,Int_t,Int_t,TObject*)",
+		   "MarkersManager", fMarkersManager,
+		   "HandleMarkerPosition(Int_t,Int_t,Int_t,TObject*)");
+  */
   fCanvas->Update();
 }
 /////////////////////////////////////////////////////////
@@ -277,7 +292,7 @@ void MainFrame::AddNumbersDialog(){
   fEntryDialog = new EntryDialog(fFrame, this);
 
   UInt_t attach_left=9, attach_right=12;
-  UInt_t attach_top=0,  attach_bottom=3;
+  UInt_t attach_top=0,  attach_bottom=4;
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 						    kLHintsShrinkX|kLHintsShrinkY|
 						    kLHintsFillX|kLHintsFillY);
@@ -287,7 +302,7 @@ void MainFrame::AddNumbersDialog(){
  }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void MainFrame::AddEventTypeDialog(){
+void MainFrame::AddEventTypeDialog(int  attach_top){
 
   eventTypeButtonGroup = new TGButtonGroup(fFrame,
 					   7, 1, 1.0, 1.0,
@@ -303,8 +318,8 @@ void MainFrame::AddEventTypeDialog(){
   buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Other")));
   buttonsContainer.front()->SetState(kButtonDown);
   
-  UInt_t attach_left=10, attach_right=11;
-  UInt_t attach_top=4,  attach_bottom=7;
+  UInt_t attach_left=8, attach_right=9;
+  UInt_t attach_bottom = attach_top + 3;
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 						    kLHintsShrinkX|kLHintsShrinkY|
 						    kLHintsFillX|kLHintsFillY);
@@ -312,11 +327,25 @@ void MainFrame::AddEventTypeDialog(){
  }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+void MainFrame::AddMarkersDialog(){
+
+  fMarkersManager = new MarkersManager(fFrame, this);
+  UInt_t attach_left=9, attach_right=12;
+  UInt_t attach_top=4,  attach_bottom=6;
+  TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right,
+						    attach_top, attach_bottom,
+						    kLHintsExpandX|kLHintsExpandY |
+						    kLHintsShrinkX|kLHintsShrinkY|
+						    kLHintsFillX|kLHintsFillY);
+  fFrame->AddFrame(fMarkersManager, tloh);
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 void MainFrame::AddLogos(){
 
   std::string filePath = myConfig.get<std::string>("resourcesPath")+"/FUW_znak.png";
   TImage *img = TImage::Open(filePath.c_str());
-  if(!img) return;
+  if(!img->IsValid()) return;
   double ratio = img->GetWidth()/img->GetHeight();
   double height = 80;
   double width = ratio*height;
@@ -333,7 +362,7 @@ void MainFrame::AddLogos(){
 
   filePath = myConfig.get<std::string>("resourcesPath")+"/ELITEPC_znak.png";
   img = TImage::Open(filePath.c_str());
-  if(!img) return;
+  if(!img->IsValid()) return;
   ratio = img->GetWidth()/img->GetHeight();
   height = 100;
   width = ratio*height;
@@ -349,13 +378,13 @@ void MainFrame::AddLogos(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void MainFrame::CloseWindow(){
-   // Got close message for this MainFrame. Terminate the application
-   // or returns from the TApplication event loop (depending on the
-   // argument specified in TApplication::Run()).
+void MainFrame::HandleEmbeddedCanvas(Int_t event, Int_t x, Int_t y, TObject *sel){
 
-   gApplication->Terminate(0);
+  std::cout<<__FUNCTION__<<std::endl;
 }
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void MainFrame::CloseWindow(){ gApplication->Terminate(0); }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MainFrame::Update(){
@@ -366,33 +395,42 @@ void MainFrame::Update(){
 				   myEventSource->currentEventNumber(),
 				   myEventSource->currentEntryNumber());
   myHistoManager.setEvent(myEventSource->getCurrentEvent());
- // for(int strip_dir=0;strip_dir<3;++strip_dir){
- //   myHistoManager.getHoughAccumulator(strip_dir);
- // }
+
+  drawRawHistos();
+  //drawRecoHistos();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void MainFrame::drawRawHistos(){
 
   for(int strip_dir=0;strip_dir<3;++strip_dir){
-    ///First row
     fCanvas->cd(strip_dir+1);
-      myHistoManager.getRawStripVsTime(strip_dir)->DrawClone("colz");
-  //  myHistoManager.getCartesianProjection(strip_dir)->DrawClone("colz");
-    ///Second row
-
-   // myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("colz");
-   // myHistoManager.getRecHitStripVsTime(strip_dir)->SaveAs(TString::Format("RecHits_%d.root", strip_dir));
-   // myHistoManager.getCartesianProjection(strip_dir)->SaveAs(TString::Format("RawHits_%d.root", strip_dir));
-   // myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad);
-    //myHistoManager.drawTrack2DSeed(strip_dir, aPad);
-    
-    ///Third row.
-  //  aPad = fCanvas->cd(strip_dir+1+3+3);
-  //  myHistoManager.getHoughAccumulator(strip_dir).DrawClone("colz");
-  //  myHistoManager.getHoughAccumulator(strip_dir).SaveAs(TString::Format("HoughAccumulator_%d.root", strip_dir));
-    //myHistoManager.drawChargeAlongTrack3D(aPad);
-   // aPad->GetName();
+    myHistoManager.getRawStripVsTime(strip_dir)->DrawClone("colz");
+    fCanvas->Update();
   }  
-      fCanvas->cd(4);
-      myHistoManager.getRawTimeProjection()->DrawClone("hist");
+  fCanvas->cd(4);
+  myHistoManager.getRawTimeProjection()->DrawClone("hist");
   fCanvas->Update();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void MainFrame::drawRecoHistos(){
+
+  myHistoManager.reconstruct();
+  
+   for(int strip_dir=0;strip_dir<3;++strip_dir){
+    TVirtualPad *aPad = fCanvas->cd(strip_dir+1);
+    myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("colz");
+    //myHistoManager.getCartesianProjection(strip_dir)->DrawClone("colz");
+    //myHistoManager.getHoughAccumulator(strip_dir).DrawClone("colz");
+    //myHistoManager.drawTrack2DSeed(strip_dir, aPad);
+    myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad);
+    fCanvas->Update();
+  }  
+  TVirtualPad *aPad = fCanvas->cd(4);
+  myHistoManager.drawChargeAlongTrack3D(aPad);
+  fCanvas->Update();
+  
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -448,7 +486,7 @@ Bool_t MainFrame::ProcessMessage(Long_t msg, Long_t parm1, Long_t){
 /////////////////////////////////////////////////////////
 Bool_t MainFrame::ProcessMessage(Long_t msg){
 
-  std::cout<<__FUNCTION__<<std::endl;
+  std::cout<<__FUNCTION__<<" msg: "<<msg<<std::endl;
 
   switch (msg) {
   case M_DATA_FILE_UPDATED:
@@ -470,13 +508,6 @@ Bool_t MainFrame::ProcessMessage(const char * msg){
   return kTRUE;
 }
 /////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void MainFrame::HandleEmbeddedCanvas(Int_t event, Int_t x, Int_t y,
-                                      TObject *sel){
-  //TObject *select = gPad->GetSelected();
-
-}
-////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MainFrame::HandleMenu(Int_t id){
 

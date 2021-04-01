@@ -21,6 +21,7 @@ include_directories(${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include)
 include_directories(${PROJECT_SOURCE_DIR}/DataFormats/include)
 include_directories(${PROJECT_SOURCE_DIR}/Reconstruction/include)
 include_directories(${PROJECT_SOURCE_DIR}/GrawToROOT/include)
+include_directories(${PROJECT_SOURCE_DIR}/Utilities/include)
 
 find_package(ROOT REQUIRED COMPONENTS RIO GenVector Gui)
 ###############################################################################
@@ -40,7 +41,7 @@ ROOT_GENERATE_DICTIONARY(G__${MODULE_NAME}
 add_library(${MODULE_NAME} SHARED ${sources} G__${MODULE_NAME}.cxx)
 
 add_executable(tpcGUI bin/tpcGUI.cxx)
-
+add_executable(dumpProjectionHistos bin/dumpProjectionHistos.cpp)
 # Compiler flags.
 #
 target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
@@ -48,11 +49,13 @@ target_compile_options(tpcGUI PUBLIC ${CMAKE_ROOT_CFLAGS})
 
 target_link_libraries(${MODULE_NAME} DataFormats Reconstruction ${GRAW_TO_ROOT_LIBRARY} ${ROOT_LIBRARIES})
 target_link_libraries(tpcGUI PUBLIC DataFormats Utilities Reconstruction ${GRAW_TO_ROOT_LIBRARY} ${MODULE_NAME})
+target_link_libraries(dumpProjectionHistos PUBLIC DataFormats Utilities Reconstruction ${GRAW_TO_ROOT_LIBRARY} ${MODULE_NAME})
 
 # All install commands get the same destination. this allows us to use paths
 # relative to the executable.
 install(TARGETS ${MODULE_NAME} LIBRARY DESTINATION lib)
 install(TARGETS tpcGUI RUNTIME DESTINATION bin)
+install(TARGETS dumpProjectionHistos RUNTIME DESTINATION bin)
 install(FILES ${CMAKE_BINARY_DIR}/${MODULE_NAME}/lib${MODULE_NAME}_rdict.pcm DESTINATION lib)
 install(FILES ${CMAKE_BINARY_DIR}/${MODULE_NAME}/lib${MODULE_NAME}.rootmap DESTINATION lib)
 install(FILES $<1:${PROJECT_SOURCE_DIR}/${MODULE_NAME}/config/> DESTINATION config)

@@ -27,6 +27,8 @@ public:
 
   void setEvent(EventTPC* aEvent);
 
+  void setEvent(std::shared_ptr<EventTPC> aEvent);
+
   void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);
 
   void reconstruct();
@@ -67,6 +69,7 @@ private:
   EventTPC *myEvent;
   SigClusterTPC myCluster;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
+  std::vector<double> phiPitchDirection;
 
   bool myHistoInitialized;
   int nAccumulatorRhoBins, nAccumulatorPhiBins;

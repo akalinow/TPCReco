@@ -343,7 +343,9 @@ double EventTPC::GetTotalChargeByTimeCell(int time_cell) { // charge integral fr
 }
 
 SigClusterTPC EventTPC::GetOneCluster(double thr, int delta_strips, int delta_timecells) {  // applies clustering threshold to all space-time data points
+
   SigClusterTPC cluster(this);
+
 
   // getting cluster seed hits
   std::map<MultiKey3, double, multikey3_less>::iterator it;

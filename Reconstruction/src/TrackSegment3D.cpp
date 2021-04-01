@@ -1,4 +1,6 @@
 #include "TrackSegment3D.h"
+#include "GeometryTPC.h"
+#include "colorText.h"
 
 #include <iostream>
 
@@ -13,15 +15,25 @@ TrackSegment3D::TrackSegment3D(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+void TrackSegment3D::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
+  
+  myGeometryPtr = aGeometryPtr;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::shared_ptr<GeometryTPC> TrackSegment3D::getGeometry() const{
+  return myGeometryPtr;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 void TrackSegment3D::setBiasTangent(const TVector3 & aBias, const TVector3 & aTangent){
 
   myBias = aBias;
   myTangent = aTangent.Unit();
 
-  double lambda = 30;//FIXME what value should be here?
-  myStart = myBias;
-  myEnd = myStart + lambda*myTangent;
-  
+  double lambda = 10;
+  myStart = myBias-lambda*myTangent;
+  myEnd = myBias+lambda*myTangent;  
   initialize();
 }
 /////////////////////////////////////////////////////////
@@ -63,7 +75,6 @@ void TrackSegment3D::setRecHits(const std::vector<TH2D> & aRecHits){
       }
     }  
   }
-
   calculateRecHitChi2();
 }
 /////////////////////////////////////////////////////////
@@ -97,10 +108,8 @@ std::vector<double> TrackSegment3D::getStartEndXYZ() const{
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TVector3 TrackSegment3D::getPointOn2DProjection(double lambda, int strip_dir) const{
-
-  TVector3 stripPitchDirection(cos(phiPitchDirection[strip_dir]),
-			       sin(phiPitchDirection[strip_dir]), 0);
+TVector3 TrackSegment3D::getPointOn2DProjection(double lambda,
+						const TVector3 & stripPitchDirection) const{
 
   const TVector3 & start = getStart();
   const TVector3 & tangent = getTangent();
@@ -112,12 +121,16 @@ TVector3 TrackSegment3D::getPointOn2DProjection(double lambda, int strip_dir) co
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TrackSegment2D TrackSegment3D::get2DProjection(int strip_dir, double lambdaStart, double lambdaEnd) const{
-  
-  TVector3 start = getPointOn2DProjection(lambdaStart, strip_dir);
-  TVector3 end = getPointOn2DProjection(lambdaEnd, strip_dir);
+TrackSegment2D TrackSegment3D::get2DProjection(int strip_dir, double lambdaStart, double lambdaEnd)const{
 
   TrackSegment2D a2DProjection(strip_dir);
+  if(!myGeometryPtr){
+    std::cout<<__FUNCTION__<<KRED<<" No valid geometry pointer!"<<std::endl;
+    return a2DProjection;
+  }
+  const TVector3 & stripPitchDirection = myGeometryPtr->GetStripPitchVector3D(strip_dir);
+  TVector3 start = getPointOn2DProjection(lambdaStart, stripPitchDirection);
+  TVector3 end = getPointOn2DProjection(lambdaEnd, stripPitchDirection);
   a2DProjection.setStartEnd(start, end);
 
   return a2DProjection;

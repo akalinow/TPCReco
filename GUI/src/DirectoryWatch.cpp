@@ -5,9 +5,26 @@
 #include <sys/inotify.h>
 #include <sys/types.h>
 
+#include "colorText.h"
 #include "DirectoryWatch.h"
 
+////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+DirectoryWatch::DirectoryWatch(){
 
+  updateIterval = 3000;
+  
+}
+////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void DirectoryWatch::setUpdateInterval(int aInterval){
+  if(aInterval<1000){
+    std::cout<<KRED<<"Time interval: "<<aInterval<<" too low. "
+	     <<RST<<"Setting to 1000 ms."<<std::endl;
+    aInterval = 1000;
+  }
+  updateIterval = aInterval;
+}
 ////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void DirectoryWatch::watch(const std::string & dirName){
@@ -37,7 +54,7 @@ void DirectoryWatch::watch(const std::string & dirName){
       if(event->len && !(event->mask & IN_ISDIR)){
 	fName = std::string(event->name);
 	if(fName.find(".graw")!=std::string::npos){
-	  std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+	  std::this_thread::sleep_for(std::chrono::milliseconds(updateIterval));
 	  fullPath = dirName+"/"+fName;
 	  Message(fullPath.c_str());
 	}      

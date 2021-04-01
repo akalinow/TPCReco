@@ -27,6 +27,7 @@
 
 #include "EntryDialog.h"
 #include "SelectionBox.h"
+#include "MarkersManager.h"
 
 #include "EventSourceBase.h"
 #include "HistoManager.h"
@@ -106,12 +107,16 @@ private:
   void AddHistoCanvas();
   void AddButtons();
   void AddNumbersDialog();
-  void AddEventTypeDialog();
+  void AddEventTypeDialog(int attach_top);
+  void AddMarkersDialog();
   void AddGoToEventDialog(int attach_top);
   void AddGoToFileEntryDialog(int attach_top);
   void AddLogos();
 
   void SetCursorTheme();
+
+  void drawRawHistos();
+  void drawRecoHistos();
 
   void Update();
   void UpdateEventLog();
@@ -130,11 +135,11 @@ private:
 
   TGNumberEntryField *fEventIdEntry, *fFileEntryEntry;
   TGGroupFrame        *fGframe;
-  
+  TGButtonGroup *eventTypeButtonGroup;
+
+  MarkersManager *fMarkersManager;  
   EntryDialog *fEntryDialog;
   SelectionBox *fSelectionBox;
-  TGButtonGroup *eventTypeButtonGroup;
-  
 
   TArrow *fArrow;
   TLine *fLine;

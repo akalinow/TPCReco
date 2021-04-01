@@ -194,7 +194,10 @@ bool SigClusterTPC::AddByAgetChannel_raw(int cobo_idx, int asad_idx, int aget_id
   return AddByStrip(evt_ptr->GetGeoPtr()->GetStripByAget_raw(cobo_idx, asad_idx, aget_idx, raw_channel_idx), time_cell);
 }
 
-bool SigClusterTPC::CheckByStrip(int strip_dir, int strip_number, int time_cell) const{  // valid range [0-2][1-1024][0-511]
+bool SigClusterTPC::CheckByStrip(int strip_dir, int strip_number, int time_cell) const{  // valid range [0-2][1-1024][0-511]  
+
+  if(!evt_ptr->GetGeoPtr()) return false;
+  
   if(!IsOK() || time_cell<0 || time_cell>=512 || strip_number<1 || strip_number>evt_ptr->GetGeoPtr()->GetDirNstrips(strip_dir)) return false;
   switch(strip_dir) {
   case DIR_U:
