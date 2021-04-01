@@ -180,6 +180,8 @@ void MainFrame::AddHistoCanvas(){
 
   gStyle->SetOptStat(0);
   gStyle->SetPalette(57);
+  gStyle->SetPadLeftMargin(0.12);
+  gStyle->SetPadRightMargin(0.15);
 
   embeddedCanvas = new TRootEmbeddedCanvas("Histograms",fFrame,1000,1000);
   UInt_t attach_left=0, attach_right=8;
@@ -190,7 +192,8 @@ void MainFrame::AddHistoCanvas(){
 
   fCanvas = embeddedCanvas->GetCanvas();
   fCanvas->MoveOpaque(kFALSE);
-  fCanvas->Divide(2,2);
+  fCanvas->Divide(2,2, 0.02, 0.02);
+  
   TText aMessage(0.2, 0.5,"Waiting for data.");
   for(int iPad=1;iPad<=4;++iPad){
     fCanvas->cd(iPad);
@@ -389,19 +392,24 @@ void MainFrame::Update(){
 				   myEventSource->currentEntryNumber());
   myHistoManager.setEvent(myEventSource->getCurrentEvent());
 
-  //drawRawHistos();
-  drawRecoHistos();
+  drawRawHistos();
+  //drawRecoHistos();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MainFrame::drawRawHistos(){
 
+
   for(int strip_dir=0;strip_dir<3;++strip_dir){
     fCanvas->cd(strip_dir+1);
-    myHistoManager.getRawStripVsTime(strip_dir)->DrawClone("colz");
+    TH1 *h = (TH1*)myHistoManager.getRawStripVsTime(strip_dir)->DrawClone("colz");
+    h->GetYaxis()->SetTitleOffset(1.5);
+    h->GetZaxis()->SetTitleOffset(1.1);
+    fCanvas->Update();
   }  
   fCanvas->cd(4);
-  myHistoManager.getRawTimeProjection()->DrawClone("hist");
+  TH1 *h = (TH1*)myHistoManager.getRawTimeProjection()->DrawClone("hist");
+  h->GetYaxis()->SetTitleOffset(1.8);
   fCanvas->Update();
 }
 /////////////////////////////////////////////////////////
@@ -415,8 +423,6 @@ void MainFrame::drawRecoHistos(){
     //myHistoManager.getHoughAccumulator(strip_dir).DrawClone("colz");
     //myHistoManager.drawTrack2DSeed(strip_dir, aPad);
     myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad);
-    
-   // aPad->GetName();
   }  
   TVirtualPad *aPad = fCanvas->cd(4);
   myHistoManager.drawChargeAlongTrack3D(aPad);
