@@ -75,12 +75,14 @@ private:
   void AddTopMenu();
   void SetTheFrame();
   void AddHistoCanvas();
-  void AddButtons();
-  void AddNumbersDialog();
-  void AddEventTypeDialog(int attach_top);
-  void AddMarkersDialog();
-  void AddGoToEventDialog(int attach_top);
-  void AddGoToFileEntryDialog(int attach_top);
+  
+  int AddButtons(int attach);
+  int AddGoToFileEntryDialog(int attach);
+  int AddGoToEventDialog(int attach);
+  int AddEventTypeDialog(int attach);
+  int AddMarkersDialog(int attach);
+  int AddNumbersDialog(int attach);
+  
   void AddLogos();
 
   void SetCursorTheme();

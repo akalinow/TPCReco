@@ -74,25 +74,25 @@ void MainFrame::InitializeWindows(){
   
   AddTopMenu();
   SetTheFrame();
-  AddNumbersDialog(); 
-  AddMarkersDialog();
   AddHistoCanvas();
-  AddButtons();
-  AddGoToEventDialog(5);
-  AddGoToFileEntryDialog(6);
-  AddEventTypeDialog(7);  
+
+  ///Middle Column
+  int attach  = 0;
+  attach = AddButtons(attach);
+  attach = AddGoToEventDialog(attach);
+  attach = AddGoToFileEntryDialog(attach);
+  attach = AddEventTypeDialog(attach);  
+
+  //Right column
+  attach = 0;
+  attach = AddNumbersDialog(attach); 
+  attach = AddMarkersDialog(attach);
   AddLogos();
 
   MapSubwindows();
   Resize();
   MapWindow();
   SetWindowName("TPC GUI");
-  /*
-  Pixel_t aColor;
-  gClient->GetColorByName("lightblue", aColor);
-  fFrame->ChangeBackground(aColor);
-  fFrame->ChangeSubframesBackground(aColor);
-  */
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -168,13 +168,12 @@ void MainFrame::AddTopMenu(){
   fMenuBar->AddPopup("&File", fMenuFile, menuBarItemLayout);
   fMenuBar->AddPopup("&Help", fMenuHelp, menuBarHelpLayout);
   AddFrame(fMenuBar, new TGLayoutHints(kLHintsExpandX, 0, 0, 1, 0));
-
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MainFrame::SetTheFrame(){
 
-  int nRows = 15, nColumns = 12;
+  int nRows = 18, nColumns = 12;
   fFrame = new TGCompositeFrame(this,400,400,kSunkenFrame);
   TGTableLayout* tlo = new TGTableLayout(fFrame, nRows, nColumns, 1);
   fFrame->SetLayoutManager(tlo);
@@ -218,7 +217,7 @@ void MainFrame::AddHistoCanvas(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void MainFrame::AddButtons(){
+int MainFrame::AddButtons(int attach){
 
   std::vector<std::string> button_names = {"Next event", "Previous event", "Exit"};
   std::vector<std::string> tooltips =     {"Load the next event.",
@@ -238,7 +237,7 @@ void MainFrame::AddButtons(){
 					    button_names[iButton].c_str(),
 					    button_id[iButton]);
 
-    UInt_t attach_top=iButton,  attach_bottom=iButton+1;
+    UInt_t attach_top=iButton+attach,  attach_bottom=iButton+1;
     TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 						      kLHintsFillX | kLHintsFillY);
 
@@ -252,17 +251,18 @@ void MainFrame::AddButtons(){
   TGCheckButton* button = new TGCheckButton(fFrame,
 					    button_name.c_str(),
 					   M_TOGGLE_LOGSCALE);
-  UInt_t attach_top=button_names.size(),  attach_bottom=button_names.size()+1;
+  UInt_t attach_top=attach+button_names.size(),  attach_bottom=button_names.size()+1;
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 						      kLHintsFillX | kLHintsFillY);
   fFrame->AddFrame(button,tloh);
   button->Connect("Clicked()","MainFrame",this,"DoButton()");
   button->SetToolTipText(button_tooltip.c_str());
 
+  return attach_bottom;
  }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void MainFrame::AddGoToEventDialog(int attach_top){
+int MainFrame::AddGoToEventDialog(int attach){
 
   fGframe = new TGGroupFrame(this, "Go to event id.");
   fEventIdEntry = new TGNumberEntryField(fGframe, M_GOTO_EVENT, 0,
@@ -274,19 +274,23 @@ void MainFrame::AddGoToEventDialog(int attach_top){
 
   TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
   int nColumns = aLayout->fNcols;
+  //int nRows = aLayout->fNrows;
 
   UInt_t attach_left=0.7*nColumns;
   UInt_t attach_right=attach_left+1;
+  UInt_t attach_top=attach+1;
   UInt_t attach_bottom=attach_top+1;
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 						    kLHintsFillX | kLHintsFillY,
 						    0, 0, 5, 2);  
   fFrame->AddFrame(fGframe, tloh);
   fGframe->AddFrame(fEventIdEntry, new TGLayoutHints(kLHintsExpandX, 0, 0, 0, 0));
+
+  return attach_bottom;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void MainFrame::AddGoToFileEntryDialog(int attach_top){
+int MainFrame::AddGoToFileEntryDialog(int attach){
 
   fGframe = new TGGroupFrame(this, "Go to file entry.");
   fFileEntryEntry = new TGNumberEntryField(fGframe, M_GOTO_ENTRY, 0,
@@ -298,19 +302,23 @@ void MainFrame::AddGoToFileEntryDialog(int attach_top){
 
   TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
   int nColumns = aLayout->fNcols;
+  int nRows = aLayout->fNrows;
 
   UInt_t attach_left=0.7*nColumns;
   UInt_t attach_right=attach_left+1;
-  UInt_t attach_bottom=attach_top+1;
+  UInt_t attach_top=attach;
+  UInt_t attach_bottom=attach_top+nRows*0.1;
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 						    kLHintsFillX | kLHintsFillY,
 						    0, 0, 5, 2);  
   fFrame->AddFrame(fGframe, tloh);
   fGframe->AddFrame(fFileEntryEntry, new TGLayoutHints(kLHintsExpandX, 0, 0, 0, 0));
+
+  return attach_bottom;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void MainFrame::AddNumbersDialog(){
+int MainFrame::AddNumbersDialog(int attach){
 
   fEntryDialog = new EntryDialog(fFrame, this);
 
@@ -319,18 +327,18 @@ void MainFrame::AddNumbersDialog(){
   int nColumns = aLayout->fNcols;
   UInt_t attach_left=nColumns*0.7+1;
   UInt_t attach_right=nColumns;
-  UInt_t attach_top=0;
-  UInt_t attach_bottom=nRows*0.2;
+  UInt_t attach_top=attach;
+  UInt_t attach_bottom=nRows*0.25;
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 						    kLHintsShrinkX|kLHintsShrinkY|
 						    kLHintsFillX|kLHintsFillY);
   fEntryDialog->initialize();
   fFrame->AddFrame(fEntryDialog, tloh);
-
+  return attach_bottom;
  }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void MainFrame::AddEventTypeDialog(int  attach_top){
+int MainFrame::AddEventTypeDialog(int attach){
 
   eventTypeButtonGroup = new TGButtonGroup(fFrame,
 					   7, 1, 1.0, 1.0,
@@ -348,24 +356,28 @@ void MainFrame::AddEventTypeDialog(int  attach_top){
 
   TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
   int nColumns = aLayout->fNcols;
+  int nRows = aLayout->fNrows;
+  
   UInt_t attach_left=nColumns*0.7;
   UInt_t attach_right=attach_left+1;
-  UInt_t attach_bottom=attach_top + 3;
+  UInt_t attach_top=attach+1;
+  UInt_t attach_bottom=attach_top + nRows*0.2;
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 						    kLHintsShrinkX|kLHintsShrinkY|
 						    kLHintsFillX|kLHintsFillY);
   fFrame->AddFrame(eventTypeButtonGroup, tloh);
+  return attach_bottom;
  }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void MainFrame::AddMarkersDialog(){
+int MainFrame::AddMarkersDialog(int attach){
 
   TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
   int nColumns = aLayout->fNcols;
   int nRows = aLayout->fNcols;
   UInt_t attach_left=nColumns*0.7+1;
   UInt_t attach_right=nColumns;
-  UInt_t attach_top=nRows*0.2+1;
+  UInt_t attach_top=attach+1;
   UInt_t attach_bottom=attach_top+nRows*0.3;
 
   fMarkersManager = new MarkersManager(fFrame, this);
@@ -376,6 +388,7 @@ void MainFrame::AddMarkersDialog(){
 						    kLHintsShrinkX|kLHintsShrinkY|
 						    kLHintsFillX|kLHintsFillY);
   fFrame->AddFrame(fMarkersManager, tloh);
+  return attach_bottom;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
