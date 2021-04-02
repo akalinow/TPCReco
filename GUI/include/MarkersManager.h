@@ -18,14 +18,10 @@ class MarkersManager : public TGCompositeFrame {
 
 public:
   MarkersManager(const TGWindow *p, MainFrame *aFrame);
-  
-  void initialize();
-  void reset();
-  
   virtual ~MarkersManager();
 
-  void DoButton();
-  
+  void initialize();  
+  void DoButton();  
   void HandleMarkerPosition(Int_t,Int_t,Int_t,TObject*);
   
 private:
@@ -35,7 +31,11 @@ private:
   void drawFixedTimeLines(int iDir, double time);
   int findMissingMarkerDir();
   double getMissingYCoordinate(unsigned int missingMarkerDir);
-  void clearLines();
+
+  void resetMarkers();
+  void clearHelperLines();
+  void updateSegments(int strip_dir);
+  bool isLastSegmentComplete(int strip_dir);
   
   Bool_t HandleButton(Int_t id);
 
@@ -43,9 +43,14 @@ private:
   TGVerticalFrame *fTopFrame;
   TGCanvas *fMarkerGCanvas;
 
-  TMarker *firstMarker, *secondMarker;
+  TGTextButton* addSegmentButton;
+
+  TMarker *firstMarker;
   std::vector<TMarker*> fMarkersContainer;
-  std::vector<TLine *> fLinesContainer;
+  std::vector<TLine*> fHelperLinesContainer;
+  std::vector<std::vector<TLine>> fSegmentsContainer;
+  
+  bool acceptPoints;
 };
 
 #endif
