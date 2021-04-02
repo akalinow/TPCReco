@@ -9,7 +9,9 @@
 #include <TGCanvas.h>
 #include <TGTableLayout.h>
 #include <TGFontDialog.h>
+#include <TFrame.h>
 
+#include "colorText.h"
 #include "MarkersManager.h"
 #include "EntryDialog.h"
 #include "MainFrame.h"
@@ -29,9 +31,18 @@ MarkersManager::MarkersManager(const TGWindow * p, MainFrame * aFrame)
 			      kLHintsShrinkX|kLHintsShrinkY |
 			      kLHintsFillX|kLHintsFillY, 2, 2, 2, 2);
    AddFrame(fTopFrame, &aLayoutHints);
-   /*
-   TGGroupFrame *aHeaderFrame = new TGGroupFrame(fTopFrame, "Marker selection");
+   
+   TGGroupFrame *aHeaderFrame = new TGGroupFrame(fTopFrame, "Segment selection");
    fTopFrame->AddFrame(aHeaderFrame, new TGLayoutHints(kLHintsExpandX, 2, 2, 1, 1));
+
+   TGTextButton* aButton = new TGTextButton(aHeaderFrame,"Add", M_ADD_SEGMENT);
+   ULong_t aColor;
+   gClient->GetColorByName("yellow", aColor);
+   aButton->ChangeBackground(aColor);
+   
+   aHeaderFrame->AddFrame(aButton, new TGLayoutHints(kLHintsLeft, 2, 2, 1, 1));
+   aButton->Connect("Clicked()","MarkersManager",this,"DoButton()");
+   /*
    TGLabel *aLabel = new TGLabel(aHeaderFrame,"U");
    aHeaderFrame->AddFrame(aLabel, new TGLayoutHints(kLHintsLeft, 2, 2, 1, 1));
 
@@ -67,10 +78,10 @@ MarkersManager::~MarkersManager(){
 void MarkersManager::initialize(){
 
   fMarkersContainer.resize(3);
+  fLinesContainer.resize(3);
   
   firstMarker = 0;
   secondMarker = 0;
-  aLine = 0;
 
 }
 /////////////////////////////////////////////////////////
@@ -78,14 +89,22 @@ void MarkersManager::initialize(){
 void MarkersManager::reset(){
 
    std::for_each(fMarkersContainer.begin(), fMarkersContainer.end(),
-		 [](TMarker *item){delete item; item = 0;});
+		 [](TMarker *item){if(item){delete item; item = 0;}});
 
   if(firstMarker) delete firstMarker;
   if(secondMarker) delete secondMarker;
-  if(aLine) delete aLine;
   firstMarker = 0;
   secondMarker = 0;
-  aLine = 0;
+
+  clearLines();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void MarkersManager::clearLines(){
+
+std::for_each(fLinesContainer.begin(), fLinesContainer.end(),
+	      [](TLine *item){if(item){delete item; item = 0;}});
+  
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -148,15 +167,10 @@ void MarkersManager::processClickCoordinates(int iDir, float x, float y){
   fMarkersContainer.at(iDir) = aMarker;
   if(!firstMarker){
     firstMarker = aMarker;
-    if(aLine){
-      delete aLine;
-      aLine = 0;
-    }
     drawFixedTimeLines(iDir, x);
   }
   else{
-    delete aLine;
-    aLine = 0;
+    clearLines();
     y = 30;//FIXME - calculate from other markers
     int missingMarkerDir = findMissingMarkerDir();
     aMarker = new TMarker(x, y, iMarkerStyle);
@@ -173,19 +187,22 @@ void MarkersManager::processClickCoordinates(int iDir, float x, float y){
 /////////////////////////////////////////////////////////
 void MarkersManager::drawFixedTimeLines(int iDir, double time){
 
-  double minY = 0.0;
-  double maxY = 72.0;
-  int aColor = 2;
-  aLine = new TLine(time, minY, time, maxY);
-  aLine->SetLineColor(aColor);
-  aLine->SetLineWidth(2);
-
+  clearLines();
+  int aColor = 1;
+  TLine aLine(time, 0, time, 0);
+  aLine.SetLineColor(aColor);
+  aLine.SetLineWidth(2);
+  
   for(int iDirTmp=0;iDirTmp<3;++iDirTmp){
     std::string padName = "Histograms_"+std::to_string(iDirTmp+1);
     TPad *aPad = (TPad*)gROOT->FindObject(padName.c_str());
     if(!aPad) continue;
     aPad->cd();
-    aLine->Draw();
+    TFrame *hFrame = (TFrame*)aPad->GetListOfPrimitives()->At(0);
+    if(!hFrame) continue;
+    double minY = hFrame->GetY1();
+    double maxY = hFrame->GetY2();
+    fLinesContainer[iDirTmp] = aLine.DrawLine(time, minY, time, maxY);
   }  
 }
 /////////////////////////////////////////////////////////
@@ -228,33 +245,22 @@ void MarkersManager::HandleMarkerPosition(Int_t event, Int_t x, Int_t y, TObject
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-Bool_t MarkersManager::ProcessMessage(Long_t msg, Long_t parm1, Long_t /*parm2*/){
-   switch (GET_MSG(msg)) {
-   case kC_COMMAND:
-      {
-         switch (GET_SUBMSG(msg)) {
-         case kCM_BUTTON:
-            {
-               switch (parm1) {
-                  // exit button
-               case 1:
-                  {
-                     std::cout<<"MarkersManager::ProcessMessage(): msg: "<<msg<<std::endl;
-                     break;
-                  }
-                  // set button
-               case 2:
-                  {
-                     break;
-                  }
-               }
-               break;
-            }
-         }
-         break;
-      }
+Bool_t MarkersManager::HandleButton(Int_t id){
+   switch (id) {
+   case M_ADD_SEGMENT:
+    {
+      std::cout<<KRED<<"Button!"<<RST<<std::endl;
+    }
+    break;
    }
    return kTRUE;
 }
 /////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void MarkersManager::DoButton(){
+ TGButton* button = (TGButton*)gTQSender;
+   UInt_t button_id = button->WidgetId();
+   HandleButton(button_id);
+ }
+////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

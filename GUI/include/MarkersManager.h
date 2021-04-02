@@ -8,6 +8,8 @@
 
 #include <TGFrame.h>
 
+#include "GUI_commons.h"
+
 class MainFrame;
 class TGCanvas;
 
@@ -21,8 +23,8 @@ public:
   void reset();
   
   virtual ~MarkersManager();
-  
-  virtual Bool_t ProcessMessage(Long_t msg, Long_t parm1, Long_t);
+
+  void DoButton();
   
   void HandleMarkerPosition(Int_t,Int_t,Int_t,TObject*);
   
@@ -33,15 +35,17 @@ private:
   void drawFixedTimeLines(int iDir, double time);
   int findMissingMarkerDir();
   double getMissingYCoordinate(unsigned int missingMarkerDir);
+  void clearLines();
+  
+  Bool_t HandleButton(Int_t id);
 
   MainFrame *fParentFrame;
   TGVerticalFrame *fTopFrame;
   TGCanvas *fMarkerGCanvas;
 
-  TLine *aLine;
   TMarker *firstMarker, *secondMarker;
   std::vector<TMarker*> fMarkersContainer;
-
+  std::vector<TLine *> fLinesContainer;
 };
 
 #endif

@@ -70,12 +70,12 @@ void MainFrame::InitializeWindows(){
 
   SetCleanup(kDeepCleanup);
   SetWMPosition(500,0);
-  SetWMSize(1200,800);
+  SetWMSize(1300,800);
   
   AddTopMenu();
   SetTheFrame();
   AddNumbersDialog(); 
-  //AddMarkersDialog();
+  AddMarkersDialog();
   AddHistoCanvas();
   AddButtons();
   AddGoToEventDialog(5);
@@ -87,6 +87,12 @@ void MainFrame::InitializeWindows(){
   Resize();
   MapWindow();
   SetWindowName("TPC GUI");
+  /*
+  Pixel_t aColor;
+  gClient->GetColorByName("lightblue", aColor);
+  fFrame->ChangeBackground(aColor);
+  fFrame->ChangeSubframesBackground(aColor);
+  */
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -168,7 +174,7 @@ void MainFrame::AddTopMenu(){
 /////////////////////////////////////////////////////////
 void MainFrame::SetTheFrame(){
 
-  int nRows = 12, nColumns = 12;
+  int nRows = 15, nColumns = 12;
   fFrame = new TGCompositeFrame(this,400,400,kSunkenFrame);
   TGTableLayout* tlo = new TGTableLayout(fFrame, nRows, nColumns, 1);
   fFrame->SetLayoutManager(tlo);
@@ -186,8 +192,12 @@ void MainFrame::AddHistoCanvas(){
   gStyle->SetPadRightMargin(0.15);
 
   embeddedCanvas = new TRootEmbeddedCanvas("Histograms",fFrame,1000,1000);
-  UInt_t attach_left=0, attach_right=8;
-  UInt_t attach_top=0,  attach_bottom=12;
+  TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
+  int nRows = aLayout->fNrows;
+  int nColumns = aLayout->fNcols;
+  
+  UInt_t attach_left=0, attach_right=0.7*nColumns;
+  UInt_t attach_top=0,  attach_bottom=nRows;
   fTCanvasLayout = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 					  kLHintsFillX|kLHintsFillY);
   fFrame->AddFrame(embeddedCanvas, fTCanvasLayout);
@@ -201,11 +211,9 @@ void MainFrame::AddHistoCanvas(){
     fCanvas->cd(iPad);
     aMessage.DrawText(0.2, 0.5,"Waiting for data.");
   }
-  /*
   fCanvas->Connect("ProcessedEvent(Int_t,Int_t,Int_t,TObject*)",
 		   "MarkersManager", fMarkersManager,
 		   "HandleMarkerPosition(Int_t,Int_t,Int_t,TObject*)");
-  */
   fCanvas->Update();
 }
 /////////////////////////////////////////////////////////
@@ -218,9 +226,15 @@ void MainFrame::AddButtons(){
 					   "Close the application"};
   std::vector<unsigned int> button_id = {M_NEXT_EVENT, M_PREVIOUS_EVENT,  M_FILE_EXIT};
 
-  UInt_t attach_left=8, attach_right=9;
+  ULong_t aColor =  TColor::RGB2Pixel(195,195,250);
+
+  TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
+  int nColumns = aLayout->fNcols;
+  UInt_t attach_left=0.7*nColumns;
+  UInt_t attach_right=attach_left+1;
+  
   for (unsigned int iButton = 0; iButton < button_names.size(); ++iButton) {
-    TGTextButton* button = new TGTextButton(fFrame,
+    TGTextButton* aButton = new TGTextButton(fFrame,
 					    button_names[iButton].c_str(),
 					    button_id[iButton]);
 
@@ -228,9 +242,10 @@ void MainFrame::AddButtons(){
     TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 						      kLHintsFillX | kLHintsFillY);
 
-    fFrame->AddFrame(button,tloh);
-    button->Connect("Clicked()","MainFrame",this,"DoButton()");
-    button->SetToolTipText(tooltips[iButton].c_str());
+    fFrame->AddFrame(aButton,tloh);
+    aButton->Connect("Clicked()","MainFrame",this,"DoButton()");
+    aButton->SetToolTipText(tooltips[iButton].c_str());
+    aButton->ChangeBackground(aColor);
    }
   std::string button_name="Set logscale";
   std::string button_tooltip="Sets logscale Z";
@@ -255,9 +270,13 @@ void MainFrame::AddGoToEventDialog(int attach_top){
 					 TGNumberFormat::kNEANonNegative,
 					 TGNumberFormat::kNELNoLimits);
   fEventIdEntry->Connect("ReturnPressed()", "MainFrame", this, "DoButton()");
-  fEventIdEntry->SetToolTipText("Jump to given event id.");  
+  fEventIdEntry->SetToolTipText("Jump to given event id.");
 
-  UInt_t attach_left=8, attach_right=9;
+  TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
+  int nColumns = aLayout->fNcols;
+
+  UInt_t attach_left=0.7*nColumns;
+  UInt_t attach_right=attach_left+1;
   UInt_t attach_bottom=attach_top+1;
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 						    kLHintsFillX | kLHintsFillY,
@@ -277,7 +296,11 @@ void MainFrame::AddGoToFileEntryDialog(int attach_top){
   fFileEntryEntry->Connect("ReturnPressed()", "MainFrame", this, "DoButton()");
   fFileEntryEntry->SetToolTipText("Jump to given event id.");  
 
-  UInt_t attach_left=8, attach_right=9;
+  TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
+  int nColumns = aLayout->fNcols;
+
+  UInt_t attach_left=0.7*nColumns;
+  UInt_t attach_right=attach_left+1;
   UInt_t attach_bottom=attach_top+1;
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 						    kLHintsFillX | kLHintsFillY,
@@ -291,8 +314,13 @@ void MainFrame::AddNumbersDialog(){
 
   fEntryDialog = new EntryDialog(fFrame, this);
 
-  UInt_t attach_left=9, attach_right=12;
-  UInt_t attach_top=0,  attach_bottom=4;
+  TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
+  int nRows = aLayout->fNrows;
+  int nColumns = aLayout->fNcols;
+  UInt_t attach_left=nColumns*0.7+1;
+  UInt_t attach_right=nColumns;
+  UInt_t attach_top=0;
+  UInt_t attach_bottom=nRows*0.2;
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 						    kLHintsShrinkX|kLHintsShrinkY|
 						    kLHintsFillX|kLHintsFillY);
@@ -317,9 +345,12 @@ void MainFrame::AddEventTypeDialog(int  attach_top){
   buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("3 tracks")));
   buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Other")));
   buttonsContainer.front()->SetState(kButtonDown);
-  
-  UInt_t attach_left=8, attach_right=9;
-  UInt_t attach_bottom = attach_top + 3;
+
+  TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
+  int nColumns = aLayout->fNcols;
+  UInt_t attach_left=nColumns*0.7;
+  UInt_t attach_right=attach_left+1;
+  UInt_t attach_bottom=attach_top + 3;
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 						    kLHintsShrinkX|kLHintsShrinkY|
 						    kLHintsFillX|kLHintsFillY);
@@ -329,9 +360,16 @@ void MainFrame::AddEventTypeDialog(int  attach_top){
 /////////////////////////////////////////////////////////
 void MainFrame::AddMarkersDialog(){
 
+  TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
+  int nColumns = aLayout->fNcols;
+  int nRows = aLayout->fNcols;
+  UInt_t attach_left=nColumns*0.7+1;
+  UInt_t attach_right=nColumns;
+  UInt_t attach_top=nRows*0.2+1;
+  UInt_t attach_bottom=attach_top+nRows*0.3;
+
   fMarkersManager = new MarkersManager(fFrame, this);
-  UInt_t attach_left=9, attach_right=12;
-  UInt_t attach_top=4,  attach_bottom=6;
+
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right,
 						    attach_top, attach_bottom,
 						    kLHintsExpandX|kLHintsExpandY |
@@ -355,8 +393,13 @@ void MainFrame::AddLogos(){
   delete img;
   TGIcon *icon = new TGIcon(fFrame, ipic, width, height);
 
-  UInt_t attach_left=9, attach_right=10;
-  UInt_t attach_top=10,  attach_bottom=12;
+  TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
+  int nColumns = aLayout->fNcols;
+  int nRows = aLayout->fNrows;
+  UInt_t attach_left=nColumns*0.7+1;
+  UInt_t attach_right=attach_left+1;
+  UInt_t attach_top=nRows*0.9;
+  UInt_t attach_bottom=nRows;
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom);
   fFrame->AddFrame(icon, tloh);
 
@@ -372,7 +415,8 @@ void MainFrame::AddLogos(){
   delete img;
   icon = new TGIcon(fFrame, ipic, width, height);
 
-  attach_left=11, attach_right=12;
+  attach_left=attach_right+1;
+  attach_right=nColumns;
   tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom, 0, 0, 0, -20);
   fFrame->AddFrame(icon, tloh);
 }
@@ -424,8 +468,9 @@ void MainFrame::drawRecoHistos(){
     //myHistoManager.getCartesianProjection(strip_dir)->DrawClone("colz");
     //myHistoManager.getHoughAccumulator(strip_dir).DrawClone("colz");
     //myHistoManager.drawTrack2DSeed(strip_dir, aPad);
-    myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad);
+    //myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad);
     fCanvas->Update();
+    aPad->Print();
   }  
   TVirtualPad *aPad = fCanvas->cd(4);
   myHistoManager.drawChargeAlongTrack3D(aPad);
@@ -599,7 +644,6 @@ void MainFrame::HandleMenu(Int_t id){
 void MainFrame::DoButton(){
  TGButton* button = (TGButton*)gTQSender;
    UInt_t button_id = button->WidgetId();
-
    HandleMenu(button_id);
  }
 ////////////////////////////////////////////////////////

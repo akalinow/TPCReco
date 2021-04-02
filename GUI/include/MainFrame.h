@@ -25,6 +25,7 @@
 #include <TLine.h>
 #include <TArrow.h>
 
+#include "GUI_commons.h"
 #include "EntryDialog.h"
 #include "SelectionBox.h"
 #include "MarkersManager.h"
@@ -35,38 +36,7 @@
 
 #include <boost/property_tree/json_parser.hpp>
 
-enum ETestCommandIdentifiers {
-   M_FILE_OPEN,
-   M_FILE_SAVE,
-   M_FILE_SAVEAS,
-   M_FILE_PRINT,
-   M_FILE_PRINTSETUP,
-   M_FILE_EXIT,
 
-   M_TOGGLE_LOGSCALE,
-   M_DIR_WATCH,
-
-   M_HELP_CONTENTS,
-   M_HELP_SEARCH,
-   M_HELP_ABOUT,
-
-   M_NEXT_EVENT,
-   M_PREVIOUS_EVENT,
-   M_GOTO_EVENT,
-   M_GOTO_ENTRY,
-
-};
-
-enum Messages {
-	       M_DATA_FILE_UPDATED
-	       
-};
-
-enum Modes {
-	    M_ONLINE_MODE,
-	    M_OFFLINE_GRAW_MODE,
-	    M_OFFLINE_ROOT_MODE	       
-};
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 class MainFrame : public TGMainFrame {
@@ -143,7 +113,6 @@ private:
 
   TArrow *fArrow;
   TLine *fLine;
-
 
   ClassDef(MainFrame, 0); 
 };
