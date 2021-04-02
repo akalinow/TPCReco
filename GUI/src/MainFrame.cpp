@@ -74,21 +74,21 @@ void MainFrame::InitializeWindows(){
   
   AddTopMenu();
   SetTheFrame();
+  
+  //Left column
   AddHistoCanvas();
-
-  ///Middle Column
+  ///Middle column
   int attach  = 0;
   attach = AddButtons(attach);
   attach = AddGoToEventDialog(attach);
   attach = AddGoToFileEntryDialog(attach);
   attach = AddEventTypeDialog(attach);  
-
   //Right column
   attach = 0;
   attach = AddNumbersDialog(attach); 
   attach = AddMarkersDialog(attach);
   AddLogos();
-
+  /////////////
   MapSubwindows();
   Resize();
   MapWindow();
@@ -210,9 +210,6 @@ void MainFrame::AddHistoCanvas(){
     fCanvas->cd(iPad);
     aMessage.DrawText(0.2, 0.5,"Waiting for data.");
   }
-  fCanvas->Connect("ProcessedEvent(Int_t,Int_t,Int_t,TObject*)",
-		   "MarkersManager", fMarkersManager,
-		   "HandleMarkerPosition(Int_t,Int_t,Int_t,TObject*)");
   fCanvas->Update();
 }
 /////////////////////////////////////////////////////////
@@ -328,7 +325,7 @@ int MainFrame::AddNumbersDialog(int attach){
   UInt_t attach_left=nColumns*0.7+1;
   UInt_t attach_right=nColumns;
   UInt_t attach_top=attach;
-  UInt_t attach_bottom=nRows*0.25;
+  UInt_t attach_bottom=attach_top+nRows*0.25;
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 						    kLHintsShrinkX|kLHintsShrinkY|
 						    kLHintsFillX|kLHintsFillY);
@@ -361,7 +358,7 @@ int MainFrame::AddEventTypeDialog(int attach){
   UInt_t attach_left=nColumns*0.7;
   UInt_t attach_right=attach_left+1;
   UInt_t attach_top=attach+1;
-  UInt_t attach_bottom=attach_top + nRows*0.2;
+  UInt_t attach_bottom=attach_top + nRows*0.25;
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 						    kLHintsShrinkX|kLHintsShrinkY|
 						    kLHintsFillX|kLHintsFillY);
@@ -381,13 +378,16 @@ int MainFrame::AddMarkersDialog(int attach){
   UInt_t attach_bottom=attach_top+nRows*0.3;
 
   fMarkersManager = new MarkersManager(fFrame, this);
-
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right,
 						    attach_top, attach_bottom,
 						    kLHintsExpandX|kLHintsExpandY |
 						    kLHintsShrinkX|kLHintsShrinkY|
 						    kLHintsFillX|kLHintsFillY);
   fFrame->AddFrame(fMarkersManager, tloh);
+
+  fCanvas->Connect("ProcessedEvent(Int_t,Int_t,Int_t,TObject*)",
+		   "MarkersManager", fMarkersManager,
+		   "HandleMarkerPosition(Int_t,Int_t,Int_t,TObject*)");
   return attach_bottom;
 }
 /////////////////////////////////////////////////////////

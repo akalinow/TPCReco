@@ -156,7 +156,7 @@ void MarkersManager::processClickCoordinates(int iDir, float x, float y){
 
   if(iDir<0 || iDir>=(int)fMarkersContainer.size() || fMarkersContainer.at(iDir)) return;  
   if(firstMarker){ x = firstMarker->GetX(); }
-   
+
   int iMarkerColor = 2;
   int iMarkerStyle = 8;
   int iMarkerSize = 1;
