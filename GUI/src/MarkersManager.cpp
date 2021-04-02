@@ -105,8 +105,7 @@ void MarkersManager::updateSegments(int strip_dir){
     aLine.SetLineColor(2+aSegmentsContainer.size());
     aSegmentsContainer.push_back(aLine);
   }
- 
-  aSegmentsContainer.back().Print();
+
   std::string padName = "Histograms_"+std::to_string(strip_dir+1);
   TPad *aPad = (TPad*)gROOT->FindObject(padName.c_str());
   if(!aPad) return;
@@ -117,7 +116,6 @@ void MarkersManager::updateSegments(int strip_dir){
     aMarker.SetMarkerColor(item.GetLineColor());
     aMarker.DrawMarker(item.GetX1(), item.GetY1());
     aMarker.DrawMarker(item.GetX2(), item.GetY2());
-    aMarker.Print();
   }
 }
 /////////////////////////////////////////////////////////
@@ -130,8 +128,7 @@ void MarkersManager::resetMarkers(){
 
   clearHelperLines();
 
-  int strip_dir = 2;//TEST
-  std::cout<<"isLastSegmentComplete(strip_dir): "<<isLastSegmentComplete(strip_dir)<<std::endl;
+  int strip_dir = 0;//TEST
   if(isLastSegmentComplete(strip_dir)){
     acceptPoints = false;
     if(addSegmentButton) addSegmentButton->SetState(kButtonUp);
@@ -191,8 +188,6 @@ void MarkersManager::addMarkerFrame(int iMarker){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MarkersManager::processClickCoordinates(int strip_dir, float x, float y){
-
-  std::cout<<KBLU<<__FUNCTION__<<RST<<std::endl;
   
   if(strip_dir<0 || strip_dir>=(int)fMarkersContainer.size() || fMarkersContainer.at(strip_dir)) return;  
   if(firstMarker){ x = firstMarker->GetX(); }
@@ -269,7 +264,7 @@ double MarkersManager::getMissingYCoordinate(unsigned int missingMarkerDir){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MarkersManager::HandleMarkerPosition(Int_t event, Int_t x, Int_t y, TObject *sel){
-
+  
   if(!acceptPoints) return;
   TObject *select = gPad->GetSelected();
   std::string objName = "";
@@ -293,7 +288,6 @@ Bool_t MarkersManager::HandleButton(Int_t id){
    switch (id) {
    case M_ADD_SEGMENT:
     {
-      std::cout<<KRED<<"Button!"<<RST<<std::endl;
       acceptPoints = true;
       addSegmentButton->SetState(kButtonDown);
     }
