@@ -40,6 +40,8 @@ public:
   const TH2D & getHoughtTransform(int iDir) const;
   
   const TrackSegment2D & getSegment2D(int iDir, unsigned int iTrack=0) const;
+
+  void getSegment2DCollectionFromGUI(const std::vector<double> & segmentsXY);
   
   const TrackSegment3D & getSegment3DSeed() const;
 
@@ -57,7 +59,7 @@ private:
   
   TrackSegment2D findSegment2D(int iDir, int iPeak) const;
   
-  TrackSegment3D buildSegment3D() const;
+  TrackSegment3D buildSegment3D(int iTrackSeed=0) const;
   
   Track3D fitTrack3D(const TrackSegment3D & aTrackSeedSegment) const;
 

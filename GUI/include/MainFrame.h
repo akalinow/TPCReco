@@ -51,6 +51,8 @@ class MainFrame : public TGMainFrame {
   virtual Bool_t ProcessMessage(Long_t msg);
   virtual Bool_t ProcessMessage(const char *);
 
+  void drawRecoFromMarkers(std::vector<double> * segmentsXY);
+
   void HandleEmbeddedCanvas(Int_t event, Int_t x, Int_t y, TObject *sel);
 
   void HandleMenu(Int_t);

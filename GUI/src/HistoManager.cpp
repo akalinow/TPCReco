@@ -52,6 +52,14 @@ void HistoManager::reconstruct(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+void HistoManager::reconstructSegmentsFromMarkers(std::vector<double> * segmentsXY){
+
+  //myTkBuilder.setEvent(myEvent);  
+  myTkBuilder.getSegment2DCollectionFromGUI(*segmentsXY);
+  
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 std::shared_ptr<TH2D> HistoManager::getCartesianProjection(int strip_dir){
 
   return myEvent->GetStripVsTimeInMM(myTkBuilder.getCluster(), strip_dir);
@@ -202,7 +210,7 @@ void HistoManager::drawTrack2DSeed(int strip_dir, TVirtualPad *aPad){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void HistoManager::drawTrack3DProjectionTimeStrip(int strip_dir, TVirtualPad *aPad){
+void HistoManager::drawTrack3DProjectionTimeStrip(int strip_dir, TVirtualPad *aPad,  bool zoomIn){
 
   aPad->cd();
   const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
@@ -218,7 +226,7 @@ void HistoManager::drawTrack3DProjectionTimeStrip(int strip_dir, TVirtualPad *aP
     const TrackSegment2D & aSegment2DProjection = aItem.get2DProjection(strip_dir, 0, aItem.getLength());
     const TVector3 & start = aSegment2DProjection.getStart();
     const TVector3 & end = aSegment2DProjection.getEnd();
-    
+
     aSegment2DLine.SetLineColor(2+iSegment);
     aSegment2DLine.DrawLine(start.X(), start.Y(),  end.X(),  end.Y());	
     ++iSegment;
@@ -243,9 +251,10 @@ void HistoManager::drawTrack3DProjectionTimeStrip(int strip_dir, TVirtualPad *aP
   maxX = minX + delta;
   maxY = minY + delta;
 
+  if(!zoomIn) return;
   if(aPad->GetListOfPrimitives()->GetSize()){
     TH2D *hFrame = (TH2D*)aPad->GetListOfPrimitives()->At(0);
-    if(hFrame){
+     if(hFrame){
       hFrame->GetXaxis()->SetRangeUser(minX, maxX);
       hFrame->GetYaxis()->SetRangeUser(minY, maxY);
     }

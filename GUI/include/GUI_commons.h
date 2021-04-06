@@ -22,6 +22,7 @@ enum CommandIdentifiers {
    M_GOTO_ENTRY,
 
    M_ADD_SEGMENT,
+   M_FIT,
 };
 
 enum Messages {

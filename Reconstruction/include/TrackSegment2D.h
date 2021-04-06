@@ -84,6 +84,7 @@ private:
     
 };
 
+std::ostream & operator << (std::ostream &out, const TrackSegment2D &aSegment);
 
 typedef std::vector<TrackSegment2D> TrackSegment2DCollection;
 

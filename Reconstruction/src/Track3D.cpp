@@ -144,7 +144,7 @@ double Track3D::getNodesChi2() const{
 
   double chi2 = 0.0;
   std::for_each(nodeHitsChi2.begin(), nodeHitsChi2.end(), [&](auto aItem){chi2 += aItem;});
-  std::for_each(nodeAngleChi2.begin(), nodeAngleChi2.end(), [&](auto aItem){chi2 += aItem;});
+  //TEST std::for_each(nodeAngleChi2.begin(), nodeAngleChi2.end(), [&](auto aItem){chi2 += aItem;});
   return chi2;
 
 }

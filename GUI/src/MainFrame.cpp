@@ -63,6 +63,7 @@ MainFrame::~MainFrame(){
   delete fMenuFile;
   delete fMenuHelp;
   delete fMenuBar;
+  delete fMarkersManager;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -85,7 +86,7 @@ void MainFrame::InitializeWindows(){
   attach = AddEventTypeDialog(attach);  
   //Right column
   attach = 0;
-  attach = AddNumbersDialog(attach); 
+  attach = AddNumbersDialog(attach);  
   attach = AddMarkersDialog(attach);
   AddLogos();
   /////////////
@@ -222,7 +223,7 @@ int MainFrame::AddButtons(int attach){
 					   "Close the application"};
   std::vector<unsigned int> button_id = {M_NEXT_EVENT, M_PREVIOUS_EVENT,  M_FILE_EXIT};
 
-  ULong_t aColor =  TColor::RGB2Pixel(195,195,250);
+  ULong_t aColor = TColor::RGB2Pixel(195,195,250);
 
   TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
   int nColumns = aLayout->fNcols;
@@ -325,7 +326,7 @@ int MainFrame::AddNumbersDialog(int attach){
   UInt_t attach_left=nColumns*0.7+1;
   UInt_t attach_right=nColumns;
   UInt_t attach_top=attach;
-  UInt_t attach_bottom=attach_top+nRows*0.25;
+  UInt_t attach_bottom=attach_top+nRows*0.35;
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 						    kLHintsShrinkX|kLHintsShrinkY|
 						    kLHintsFillX|kLHintsFillY);
@@ -378,17 +379,18 @@ int MainFrame::AddMarkersDialog(int attach){
   UInt_t attach_bottom=attach_top+nRows*0.3;
 
   fMarkersManager = new MarkersManager(fFrame, this);
+  fMarkersManager->Connect("sendSegmentsData(std::vector<double> *)","MainFrame",
+			   this,"drawRecoFromMarkers(std::vector<double> *)");
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right,
 						    attach_top, attach_bottom,
 						    kLHintsExpandX|kLHintsExpandY |
 						    kLHintsShrinkX|kLHintsShrinkY|
 						    kLHintsFillX|kLHintsFillY);
-  fFrame->AddFrame(fMarkersManager, tloh);
-
+  fFrame->AddFrame(fMarkersManager, tloh);  
   fCanvas->Connect("ProcessedEvent(Int_t,Int_t,Int_t,TObject*)",
 		   "MarkersManager", fMarkersManager,
 		   "HandleMarkerPosition(Int_t,Int_t,Int_t,TObject*)");
-  return attach_bottom;
+  return attach_bottom; 
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -452,9 +454,10 @@ void MainFrame::Update(){
 				   myEventSource->currentEventNumber(),
 				   myEventSource->currentEntryNumber());
   myHistoManager.setEvent(myEventSource->getCurrentEvent());
+  fMarkersManager->reset();
 
-  drawRawHistos();
-  //drawRecoHistos();
+  //drawRawHistos();
+  drawRecoHistos();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -477,18 +480,29 @@ void MainFrame::drawRecoHistos(){
   
    for(int strip_dir=0;strip_dir<3;++strip_dir){
     TVirtualPad *aPad = fCanvas->cd(strip_dir+1);
-    myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("colz");
-    //myHistoManager.getCartesianProjection(strip_dir)->DrawClone("colz");
+    //myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("colz");
+    myHistoManager.getCartesianProjection(strip_dir)->DrawClone("colz");
     //myHistoManager.getHoughAccumulator(strip_dir).DrawClone("colz");
     //myHistoManager.drawTrack2DSeed(strip_dir, aPad);
-    //myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad);
+    myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad);
     fCanvas->Update();
-    aPad->Print();
-  }  
+    std::cout<<aPad<<std::endl;
+  }
   TVirtualPad *aPad = fCanvas->cd(4);
   myHistoManager.drawChargeAlongTrack3D(aPad);
   fCanvas->Update();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void MainFrame::drawRecoFromMarkers(std::vector<double> * segmentsXY){
+
+  myHistoManager.reconstructSegmentsFromMarkers(segmentsXY);
   
+  for(int strip_dir=0;strip_dir<3;++strip_dir){
+    TVirtualPad *aPad = fCanvas->cd(strip_dir+1);
+    myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
+    fCanvas->Update();
+  }
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -557,6 +571,8 @@ Bool_t MainFrame::ProcessMessage(Long_t msg){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 Bool_t MainFrame::ProcessMessage(const char * msg){
+
+  std::cout<<__FUNCTION__<<" msg: "<<msg<<std::endl;
 
   myMutex.lock();
   myEventSource->loadDataFile(std::string(msg));

@@ -329,9 +329,48 @@ TrackSegment2D TrackBuilder::findSegment2D(int iDir, int iPeak) const{
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TrackSegment3D TrackBuilder::buildSegment3D() const{
+void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & segmentsXY){
+  
+  if(segmentsXY.size()%3 || (segmentsXY.size()/3)%4){
+    std::cout<<KRED<<__FUNCTION__<<RST<<"Wrong number on segment endpoints: "
+	     <<segmentsXY.size()<<std::endl;      
+  }
+  std::for_each(my2DSeeds.begin(), my2DSeeds.end(),
+		[](TrackSegment2DCollection &item){item.resize(0);});
+
+  TVector3 aStart, aEnd;
+  double x=0.0, y=0.0;
+  Track3D aTrackCandidate;
+  int nSegments = segmentsXY.size()/3/4;
+  for(int iSegment=0;iSegment<nSegments;++iSegment){
+    for(int iDir = DIR_U; iDir<=DIR_W;++iDir){
+      TrackSegment2D aSegment2D(iDir);
+      x = segmentsXY.at(iDir*4 + iSegment*12);
+      y = segmentsXY.at(iDir*4 + iSegment*12 + 1);
+      aStart.SetXYZ(x,y,0.0);
+      x = segmentsXY.at(iDir*4 + iSegment*12 + 2);
+      y = segmentsXY.at(iDir*4 + iSegment*12 + 3);
+      aEnd.SetXYZ(x,y,0.0);
+      aSegment2D.setStartEnd(aStart, aEnd);
+      aSegment2D.setNAccumulatorHits(1);//FIXME
+      std::cout<<aSegment2D<<std::endl;
+      my2DSeeds[iDir].push_back(aSegment2D);
+      //makeRecHits(iDir);//FIXME
+    }
+    TrackSegment3D aTrackSegment = buildSegment3D(iSegment);
+    aTrackCandidate.addSegment(aTrackSegment);
+  }
+
+  std::cout<<aTrackCandidate<<std::endl;
+  ///TEST
+  myFittedTrack = aTrackCandidate;
+  //myFittedTrack = fitTrackNodes(aTrackCandidate);
+  ///////
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
 	     
-  int iTrack2DSeed = 0;
   const TrackSegment2D & segmentU = my2DSeeds[DIR_U][iTrack2DSeed];
   const TrackSegment2D & segmentV = my2DSeeds[DIR_V][iTrack2DSeed];
   const TrackSegment2D & segmentW = my2DSeeds[DIR_W][iTrack2DSeed];
@@ -431,8 +470,8 @@ Track3D TrackBuilder::fitTrackNodes(const Track3D & aTrack) const{
     
     std::cout<<__FUNCTION__<<" iStep: "<<iStep<<std::endl;
     
-    aTrackCandidate.extendToWholeChamber();
-    aTrackCandidate.shrinkToHits();
+    //aTrackCandidate.extendToWholeChamber();
+    //aTrackCandidate.shrinkToHits();
     params = aTrackCandidate.getSegmentsStartEndXYZ();
     nParams = params.size();
     for (int iPar = 0; iPar < nParams; ++iPar){

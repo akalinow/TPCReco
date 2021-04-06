@@ -26,45 +26,41 @@ MarkersManager::MarkersManager(const TGWindow * p, MainFrame * aFrame)
 
    SetCleanup(kDeepCleanup);
 
-   fTopFrame = new TGVerticalFrame(this, 300, 300);
-   TGLayoutHints aLayoutHints(kLHintsTop | kLHintsLeft | kLHintsExpandY |
-			      kLHintsShrinkX|kLHintsShrinkY |
-			      kLHintsFillX|kLHintsFillY, 2, 2, 2, 2);
-   AddFrame(fTopFrame, &aLayoutHints);
-   
-   TGGroupFrame *aHeaderFrame = new TGGroupFrame(fTopFrame, "Segment creation");
-   fTopFrame->AddFrame(aHeaderFrame, new TGLayoutHints(kLHintsExpandX, 2, 2, 1, 1));
+   int nRows = 3;
+   int nColumns = 3;
+   TGGroupFrame *aHeaderFrame = new TGGroupFrame(this, "Segment creation");
+   TGTableLayout* tlo = new TGTableLayout(aHeaderFrame, nRows, nColumns, 1);
+   aHeaderFrame->SetLayoutManager(tlo);
+   AddFrame(aHeaderFrame, new TGLayoutHints(kLHintsExpandX, 2, 2, 1, 1));
 
    addSegmentButton = new TGTextButton(aHeaderFrame,"Add segment", M_ADD_SEGMENT);
-   ULong_t aColor;
-   gClient->GetColorByName("yellow", aColor);
+   ULong_t aColor = TColor::RGB2Pixel(255, 255, 26);
    addSegmentButton->ChangeBackground(aColor);
-   addSegmentButton->Connect("Clicked()","MarkersManager",this,"DoButton()");   
-   aHeaderFrame->AddFrame(addSegmentButton, new TGLayoutHints(kLHintsLeft, 2, 2, 1, 1));
+   addSegmentButton->Connect("Clicked()","MarkersManager",this,"DoButton()");
 
-   /*
-   TGLabel *aLabel = new TGLabel(aHeaderFrame,"U");
-   aHeaderFrame->AddFrame(aLabel, new TGLayoutHints(kLHintsLeft, 2, 2, 1, 1));
-
-   aLabel = new TGLabel(aHeaderFrame,"V");
-   aHeaderFrame->AddFrame(aLabel, new TGLayoutHints(kLHintsLeft, 2, 2, 1, 1));
-
-   aLabel = new TGLabel(aHeaderFrame,"W");
-   aHeaderFrame->AddFrame(aLabel, new TGLayoutHints(kLHintsLeft, 2, 2, 1, 1));
-   */
-   /*
-   fMarkerGCanvas = new TGCanvas(fTopFrame, 300, 300);
-   TGCompositeFrame *aMarkerContainer = new TGCompositeFrame(fMarkerGCanvas->GetViewPort(), kVerticalFrame);
-   fMarkerGCanvas->SetContainer(aMarkerContainer);
-   fTopFrame->AddFrame(fMarkerGCanvas, new TGLayoutHints(kLHintsExpandX, 2, 2, 1, 1));
-   fTopFrame->Layout();
-   */
-   /*
-   for(int iMarker=0;iMarker<4;++iMarker){
-     addMarkerFrame(iMarker);
-   }
-   */
-
+   UInt_t attach_left=0, attach_right=1;
+   UInt_t attach_top=0,  attach_bottom=1;
+   UInt_t padLeft = 0;
+   TGTableLayoutHints *aTableLayout = new TGTableLayoutHints(attach_left, attach_right,
+							      attach_top, attach_bottom,
+							     kLHintsFillX|kLHintsFillY,
+							     padLeft);
+   aHeaderFrame->AddFrame(addSegmentButton, aTableLayout);
+   
+   fitButton = new TGTextButton(aHeaderFrame,"Fit segments", M_FIT);
+   aColor = TColor::RGB2Pixel(255, 255, 26);
+   fitButton->ChangeBackground(aColor);
+   fitButton->Connect("Clicked()","MarkersManager",this,"DoButton()");
+   //TEST fitButton->SetState(kButtonDisabled);
+   attach_left=1;
+   attach_right=2;   
+   padLeft = 5;
+   aTableLayout = new TGTableLayoutHints(attach_left, attach_right,
+					 attach_top, attach_bottom,
+					 kLHintsFillX|kLHintsFillY,
+					 padLeft);
+   aHeaderFrame->AddFrame(fitButton, aTableLayout);
+   
    initialize();
 }
 /////////////////////////////////////////////////////////
@@ -102,6 +98,7 @@ void MarkersManager::updateSegments(int strip_dir){
     double y = fMarkersContainer.at(strip_dir)->GetY();
     TLine aLine(x, y, x, y);
     aLine.SetLineWidth(3);
+    aLine.SetLineStyle(2);
     aLine.SetLineColor(2+aSegmentsContainer.size());
     aSegmentsContainer.push_back(aLine);
   }
@@ -120,6 +117,21 @@ void MarkersManager::updateSegments(int strip_dir){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+void MarkersManager::reset(){
+
+  resetMarkers();
+  resetSegments();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void MarkersManager::resetSegments(){
+
+  std::for_each(fSegmentsContainer.begin(), fSegmentsContainer.end(),
+		[](std::vector<TLine> &item){item.clear();});
+  
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 void MarkersManager::resetMarkers(){
 
   std::for_each(fMarkersContainer.begin(), fMarkersContainer.end(),
@@ -131,7 +143,10 @@ void MarkersManager::resetMarkers(){
   int strip_dir = 0;//TEST
   if(isLastSegmentComplete(strip_dir)){
     acceptPoints = false;
-    if(addSegmentButton) addSegmentButton->SetState(kButtonUp);
+    if(addSegmentButton){
+      addSegmentButton->SetState(kButtonUp);
+      fitButton->SetState(kButtonUp);
+    }
   }
 }
 /////////////////////////////////////////////////////////
@@ -258,8 +273,31 @@ int MarkersManager::findMissingMarkerDir(){
 double MarkersManager::getMissingYCoordinate(unsigned int missingMarkerDir){
 
   ///Not implemented yet.
-  return 30.0;
-  
+  //#ANGLES: 90.0 -30.0 30.0
+  const std::vector<double> phiPitchDirection = {M_PI, -M_PI/6.0 + M_PI/2.0, M_PI/6.0 - M_PI/2.0};
+
+  double x = 0.0, y = 0.0;
+  double xDenominator = 0.0, yDenominator = 0.0;
+  int sign = 1;
+  for(int strip_dir=0;strip_dir<3;++strip_dir){
+    TMarker *item = fMarkersContainer.at(strip_dir);
+    if(!item) continue;     
+    unsigned int next_strip_dir = (strip_dir+1)%3;
+    if(next_strip_dir==missingMarkerDir){ next_strip_dir = (next_strip_dir+1)%3;}
+    
+    x += sign*item->GetY()*sin(phiPitchDirection[next_strip_dir]);					   
+    xDenominator += sign*cos(phiPitchDirection[strip_dir])*sin(phiPitchDirection[next_strip_dir]);
+
+    y += sign*item->GetY()*cos(phiPitchDirection[next_strip_dir]);					   
+    yDenominator += sign*sin(phiPitchDirection[strip_dir])*cos(phiPitchDirection[next_strip_dir]);
+   
+    sign *=-1;
+  }
+  x /= xDenominator;
+  y /= yDenominator;
+  double strip_value = x*cos(phiPitchDirection[missingMarkerDir]) +
+    y*sin(phiPitchDirection[missingMarkerDir]);
+  return strip_value; 
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -284,14 +322,48 @@ void MarkersManager::HandleMarkerPosition(Int_t event, Int_t x, Int_t y, TObject
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+void MarkersManager::repackSegmentsData(){
+
+  fSegmentsXY.clear();
+  int nSegments = fSegmentsContainer.at(DIR_U).size();
+  for(int iSegment=0;iSegment<nSegments;++iSegment){
+    for(auto & strip_segments: fSegmentsContainer){
+      TLine &aLine = strip_segments.at(iSegment);
+      fSegmentsXY.push_back(aLine.GetX1());
+      fSegmentsXY.push_back(aLine.GetY1());
+      fSegmentsXY.push_back(aLine.GetX2());
+      fSegmentsXY.push_back(aLine.GetY2());    
+    }
+  }
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void MarkersManager::sendSegmentsData(std::vector<double> *segmentsXY){
+
+  std::cout<<KRED<<__FUNCTION__<<RST<<std::endl;
+  
+  Long_t args[1];
+  args[0] = (Long_t)segmentsXY;
+  
+  Emit("sendSegmentsData(std::vector<double> *)", args);
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 Bool_t MarkersManager::HandleButton(Int_t id){
    switch (id) {
    case M_ADD_SEGMENT:
     {
       acceptPoints = true;
       addSegmentButton->SetState(kButtonDown);
+      fitButton->SetState(kButtonDisabled);
     }
     break;
+   case M_FIT:
+     {
+       repackSegmentsData();
+       sendSegmentsData(&fSegmentsXY); 
+     }     
+     break;
    }
    return kTRUE;
 }
