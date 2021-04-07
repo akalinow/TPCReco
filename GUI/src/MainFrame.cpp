@@ -463,7 +463,7 @@ void MainFrame::Update(){
 /////////////////////////////////////////////////////////
 void MainFrame::drawRawHistos(){
 
-  for(int strip_dir=0;strip_dir<3;++strip_dir){
+  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
     fCanvas->cd(strip_dir+1);
     myHistoManager.getRawStripVsTime(strip_dir)->DrawClone("colz");
     fCanvas->Update();
@@ -478,7 +478,7 @@ void MainFrame::drawRecoHistos(){
 
   myHistoManager.reconstruct();
   
-   for(int strip_dir=0;strip_dir<3;++strip_dir){
+   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
     TVirtualPad *aPad = fCanvas->cd(strip_dir+1);
     //myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("colz");
     myHistoManager.getCartesianProjection(strip_dir)->DrawClone("colz");

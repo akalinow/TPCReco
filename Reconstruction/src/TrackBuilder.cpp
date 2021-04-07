@@ -352,7 +352,6 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
       aEnd.SetXYZ(x,y,0.0);
       aSegment2D.setStartEnd(aStart, aEnd);
       aSegment2D.setNAccumulatorHits(1);
-      std::cout<<aSegment2D<<std::endl;
       my2DSeeds[iDir].push_back(aSegment2D);
     }
     TrackSegment3D a3DSeed = buildSegment3D(iSegment);

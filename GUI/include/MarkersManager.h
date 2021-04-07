@@ -42,6 +42,8 @@ private:
   void updateSegments(int strip_dir);
   bool isLastSegmentComplete(int strip_dir);
 
+  void setPadsEditable(bool isEditable);
+
   void repackSegmentsData();
   void sendSegmentsData(std::vector<double> *segmentsXY);
   

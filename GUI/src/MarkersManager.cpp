@@ -132,15 +132,26 @@ void MarkersManager::resetSegments(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void MarkersManager::resetMarkers(){
+void MarkersManager::setPadsEditable(bool isEditable){
 
+  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+    std::string padName = "Histograms_"+std::to_string(strip_dir+1);
+    TPad *aPad = (TPad*)gROOT->FindObject(padName.c_str());
+    if(!aPad) continue;
+    aPad->SetEditable(isEditable);
+  }  
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void MarkersManager::resetMarkers(){
+  
   std::for_each(fMarkersContainer.begin(), fMarkersContainer.end(),
 		[](TMarker *&item){if(item){delete item; item = 0;}});
   firstMarker = 0;
 
   clearHelperLines();
 
-  int strip_dir = 0;//TEST
+  int strip_dir = DIR_U;//TEST
   if(isLastSegmentComplete(strip_dir)){
     acceptPoints = false;
     if(addSegmentButton){
@@ -204,7 +215,7 @@ void MarkersManager::addMarkerFrame(int iMarker){
 /////////////////////////////////////////////////////////
 void MarkersManager::processClickCoordinates(int strip_dir, float x, float y){
   
-  if(strip_dir<0 || strip_dir>=(int)fMarkersContainer.size() || fMarkersContainer.at(strip_dir)) return;  
+  if(strip_dir<DIR_U || strip_dir>=(int)fMarkersContainer.size() || fMarkersContainer.at(strip_dir)) return;  
   if(firstMarker){ x = firstMarker->GetX(); }
 
   int iMarkerColor = 2;
@@ -219,20 +230,20 @@ void MarkersManager::processClickCoordinates(int strip_dir, float x, float y){
     firstMarker = aMarker;
     drawFixedTimeLines(strip_dir, x);
   }
-  else{ 
+  else{
     int missingMarkerDir = findMissingMarkerDir();
     y = getMissingYCoordinate(missingMarkerDir);
     aMarker = new TMarker(x, y, iMarkerStyle);
     aMarker->SetMarkerColor(iMarkerColor);
     aMarker->SetMarkerSize(iMarkerSize);
-    fMarkersContainer.at(missingMarkerDir) = aMarker;
+    fMarkersContainer.at(missingMarkerDir) = aMarker;    
     std::string padName = "Histograms_"+std::to_string(missingMarkerDir+1);
     TPad *aPad = (TPad*)gROOT->FindObject(padName.c_str());
     aPad->cd();
     aMarker->Draw();
-    updateSegments(0);//TEST
-    updateSegments(1);//TEST
-    updateSegments(2);//TEST
+    updateSegments(DIR_U);
+    updateSegments(DIR_V);
+    updateSegments(DIR_W);
     resetMarkers();
   }
 }
@@ -246,8 +257,8 @@ void MarkersManager::drawFixedTimeLines(int strip_dir, double time){
   aLine.SetLineColor(aColor);
   aLine.SetLineWidth(2);
   
-  for(int strip_dirTmp=0;strip_dirTmp<3;++strip_dirTmp){
-    std::string padName = "Histograms_"+std::to_string(strip_dirTmp+1);
+  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+    std::string padName = "Histograms_"+std::to_string(strip_dir+1);
     TPad *aPad = (TPad*)gROOT->FindObject(padName.c_str());
     if(!aPad) continue;
     aPad->cd();
@@ -255,16 +266,16 @@ void MarkersManager::drawFixedTimeLines(int strip_dir, double time){
     if(!hFrame) continue;
     double minY = hFrame->GetY1();
     double maxY = hFrame->GetY2();
-    fHelperLinesContainer[strip_dirTmp] = aLine.DrawLine(time, minY, time, maxY);
+    fHelperLinesContainer[strip_dir] = aLine.DrawLine(time, minY, time, maxY);
   }  
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 int MarkersManager::findMissingMarkerDir(){
 
- for(int strip_dirTmp=0;strip_dirTmp<3;++strip_dirTmp){
-    TMarker *item = fMarkersContainer.at(strip_dirTmp);
-    if(!item) return strip_dirTmp;
+ for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+    TMarker *item = fMarkersContainer.at(strip_dir);
+    if(!item) return strip_dir;
     }
     return -1;
 }
@@ -279,7 +290,7 @@ double MarkersManager::getMissingYCoordinate(unsigned int missingMarkerDir){
   double x = 0.0, y = 0.0;
   double xDenominator = 0.0, yDenominator = 0.0;
   int sign = 1;
-  for(int strip_dir=0;strip_dir<3;++strip_dir){
+  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
     TMarker *item = fMarkersContainer.at(strip_dir);
     if(!item) continue;     
     unsigned int next_strip_dir = (strip_dir+1)%3;
@@ -302,21 +313,18 @@ double MarkersManager::getMissingYCoordinate(unsigned int missingMarkerDir){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MarkersManager::HandleMarkerPosition(Int_t event, Int_t x, Int_t y, TObject *sel){
-  
-  if(!acceptPoints) return;
-  TObject *select = gPad->GetSelected();
-  std::string objName = "";
-  if(select) objName = std::string(select->GetName());
-  if(event == kButton1 && objName.find("vs_time")!=std::string::npos){
-    int strip_dir = (objName.find("U")!=std::string::npos) +
-      2*(objName.find("V")!=std::string::npos) +
-      3*(objName.find("W")!=std::string::npos) - 1;
 
-    TVirtualPad *aCurrentPad = gPad->GetSelectedPad();
+  if(!acceptPoints) return;
+  TVirtualPad *aCurrentPad = gPad->GetSelectedPad();
+  if(!aCurrentPad) return;
+  std::string padName = std::string(aCurrentPad->GetName());
+  if(event == kButton1 && padName.find("Histograms_")!=std::string::npos){
     aCurrentPad->cd();
+    int strip_dir = stoi(padName.substr(11,1))-1;
     float localX = aCurrentPad->AbsPixeltoX(x);
-    float localY = aCurrentPad->AbsPixeltoY(y);
+    float localY = aCurrentPad->AbsPixeltoY(y);    
     processClickCoordinates(strip_dir, localX, localY);
+    aCurrentPad->Update();
   }
   return;
 }
@@ -339,8 +347,6 @@ void MarkersManager::repackSegmentsData(){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MarkersManager::sendSegmentsData(std::vector<double> *segmentsXY){
-
-  std::cout<<KRED<<__FUNCTION__<<RST<<std::endl;
   
   Long_t args[1];
   args[0] = (Long_t)segmentsXY;

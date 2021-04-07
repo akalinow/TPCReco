@@ -159,9 +159,9 @@ void HistoManager::drawTrack3D(TVirtualPad *aPad){
   int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN;
   int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN; 
   TH3D *h3DFrame = myEvent->Get3DFrame(rebin_space, rebin_time);
-  h3DFrame->GetXaxis()->SetTitleOffset(1.2);
-  h3DFrame->GetYaxis()->SetTitleOffset(1.2);
-  h3DFrame->GetZaxis()->SetTitleOffset(1.2);
+  h3DFrame->GetXaxis()->SetTitleOffset(2.0);
+  h3DFrame->GetYaxis()->SetTitleOffset(2.0);
+  h3DFrame->GetZaxis()->SetTitleOffset(2.0);
   h3DFrame->Draw();
   
   const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
@@ -171,8 +171,13 @@ void HistoManager::drawTrack3D(TVirtualPad *aPad){
   int iColor = 2;
   std::vector<double> xVec, yVec, zVec;
    for(auto aSegment: trackSegments){
+     
      double totalCharge =  aSegment.getIntegratedCharge(aSegment.getLength());
-     std::cout<<"totalCharge: "<<totalCharge<<std::endl;
+     std::cout<<KBLU<<"segment properties: "<<RST<<std::endl;
+     std::cout<<"\t charge: "<<totalCharge<<std::endl;
+     std::cout<<"direction: ";
+     aSegment.getTangent().Print();
+     
      TPolyLine3D aPolyLine;
      aPolyLine.SetLineWidth(2);
      aPolyLine.SetLineColor(iColor++);
