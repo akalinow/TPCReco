@@ -155,26 +155,53 @@ const TH2D & HistoManager::getHoughAccumulator(int strip_dir, int iPeak){
 void HistoManager::drawTrack3D(TVirtualPad *aPad){
 
   aPad->cd();
+
+  int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN;
+  int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN; 
+  TH3D *h3DFrame = myEvent->Get3DFrame(rebin_space, rebin_time);
+  h3DFrame->GetXaxis()->SetTitleOffset(1.2);
+  h3DFrame->GetYaxis()->SetTitleOffset(1.2);
+  h3DFrame->GetZaxis()->SetTitleOffset(1.2);
+  h3DFrame->Draw();
+  
   const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
   const TrackSegment3DCollection & trackSegments = aTrack3D.getSegments();
   if(!trackSegments.size()) return;
   
-  TPolyLine3D aPolyLine;
-  aPolyLine.SetLineWidth(2);
-  aPolyLine.SetLineColor(2);
-
-  aPolyLine.SetPoint(0,
-		     trackSegments.front().getStart().X(),
-		     trackSegments.front().getStart().Y(),
-		     trackSegments.front().getStart().Z());
-  
+  int iColor = 2;
+  std::vector<double> xVec, yVec, zVec;
    for(auto aSegment: trackSegments){
-     aPolyLine.SetPoint(aPolyLine.GetLastPoint()+1,
+     double totalCharge =  aSegment.getIntegratedCharge(aSegment.getLength());
+     std::cout<<"totalCharge: "<<totalCharge<<std::endl;
+     TPolyLine3D aPolyLine;
+     aPolyLine.SetLineWidth(2);
+     aPolyLine.SetLineColor(iColor++);
+
+     aPolyLine.SetPoint(0,
+			aSegment.getStart().X(),
+			aSegment.getStart().Y(),
+			aSegment.getStart().Z());			
+     aPolyLine.SetPoint(1,
 			aSegment.getEnd().X(),
 			aSegment.getEnd().Y(),
-			aSegment.getEnd().Z());     
+			aSegment.getEnd().Z());
+     aPolyLine.DrawClone();
+     xVec.push_back(aSegment.getStart().X());
+     xVec.push_back(aSegment.getEnd().X());
+     yVec.push_back(aSegment.getStart().Y());
+     yVec.push_back(aSegment.getEnd().Y());
+     zVec.push_back(aSegment.getStart().Z());
+     zVec.push_back(aSegment.getEnd().Z());
    }
-   aPolyLine.DrawClone();
+   double min = *std::min_element(xVec.begin(), xVec.end());
+   double max = *std::max_element(xVec.begin(), xVec.end());
+   h3DFrame->GetXaxis()->SetRangeUser(min, max);
+   min = *std::min_element(yVec.begin(), yVec.end());
+   max = *std::max_element(yVec.begin(), yVec.end());
+   h3DFrame->GetYaxis()->SetRangeUser(min, max);
+   min = *std::min_element(zVec.begin(), zVec.end());
+   max = *std::max_element(zVec.begin(), zVec.end());
+   h3DFrame->GetZaxis()->SetRangeUser(min, max);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

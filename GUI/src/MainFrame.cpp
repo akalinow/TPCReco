@@ -321,12 +321,12 @@ int MainFrame::AddNumbersDialog(int attach){
   fEntryDialog = new EntryDialog(fFrame, this);
 
   TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
-  int nRows = aLayout->fNrows;
+  //int nRows = aLayout->fNrows;
   int nColumns = aLayout->fNcols;
   UInt_t attach_left=nColumns*0.7+1;
   UInt_t attach_right=nColumns;
   UInt_t attach_top=attach;
-  UInt_t attach_bottom=attach_top+nRows*0.35;
+  UInt_t attach_bottom=attach_top+6;
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 						    kLHintsShrinkX|kLHintsShrinkY|
 						    kLHintsFillX|kLHintsFillY);
@@ -484,7 +484,7 @@ void MainFrame::drawRecoHistos(){
     myHistoManager.getCartesianProjection(strip_dir)->DrawClone("colz");
     //myHistoManager.getHoughAccumulator(strip_dir).DrawClone("colz");
     //myHistoManager.drawTrack2DSeed(strip_dir, aPad);
-    myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad);
+    //myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
     fCanvas->Update();
     std::cout<<aPad<<std::endl;
   }
@@ -503,6 +503,10 @@ void MainFrame::drawRecoFromMarkers(std::vector<double> * segmentsXY){
     myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
     fCanvas->Update();
   }
+  TCanvas *a3dCanvas = new TCanvas("a3dCanvas","3D Canvas", 500, 500);
+  TVirtualPad *aPad = a3dCanvas->cd();
+  myHistoManager.drawTrack3D(aPad);
+  a3dCanvas->Update();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

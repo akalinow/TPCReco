@@ -114,6 +114,8 @@ class EventTPC {
 			   int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN, 
 			   int method=EVENTTPC_DEFAULT_RECO_METHOD);  
 
+  TH3D *Get3DFrame(int rebin_space, int rebin_time) const; //frame for plotting 3D reconstruction
+  
   TH3D *Get3D(const SigClusterTPC &cluster, double radius,                       // clustered hits only, 3D view
 	      int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN, 
 	      int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN, 

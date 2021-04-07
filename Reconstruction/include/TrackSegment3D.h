@@ -51,6 +51,9 @@ public:
   ///Bias vector with Z=0.
   const TVector3 & getBiasAtZ0() const { return myBiasAtZ0;}
 
+  ///Lambda value for given Z (corresponding to time) with current start and stop points
+  double getLambdaAtZ(double z) const;
+
   ///Bias vector at the beggining of the segment.
   const TVector3 & getStart() const { return myStart;}
 

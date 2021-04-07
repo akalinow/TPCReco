@@ -258,8 +258,6 @@ void TrackBuilder::fillHoughAccumulator(int iDir){
   
   const TH2D & hRecHits  = getRecHits2D(iDir);
   double maxCharge = hRecHits.GetMaximum();
-  std::cout<<"maxCharge: "<<maxCharge<<std::endl;
-
   double theta = 0.0, rho = 0.0;
   double x = 0.0, y=0.0;
   int charge = 0;
@@ -338,9 +336,10 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
   std::for_each(my2DSeeds.begin(), my2DSeeds.end(),
 		[](TrackSegment2DCollection &item){item.resize(0);});
 
+  Track3D aTrackCandidate;
+  
   TVector3 aStart, aEnd;
   double x=0.0, y=0.0;
-  Track3D aTrackCandidate;
   int nSegments = segmentsXY.size()/3/4;
   for(int iSegment=0;iSegment<nSegments;++iSegment){
     for(int iDir = DIR_U; iDir<=DIR_W;++iDir){
@@ -352,16 +351,24 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
       y = segmentsXY.at(iDir*4 + iSegment*12 + 3);
       aEnd.SetXYZ(x,y,0.0);
       aSegment2D.setStartEnd(aStart, aEnd);
-      aSegment2D.setNAccumulatorHits(1);//FIXME
+      aSegment2D.setNAccumulatorHits(1);
       std::cout<<aSegment2D<<std::endl;
       my2DSeeds[iDir].push_back(aSegment2D);
-      //makeRecHits(iDir);//FIXME
     }
-    TrackSegment3D aTrackSegment = buildSegment3D(iSegment);
-    aTrackCandidate.addSegment(aTrackSegment);
+    TrackSegment3D a3DSeed = buildSegment3D(iSegment);
+    double startTime = my2DSeeds.at(DIR_U).at(iSegment).getStart().X();
+    //if(iSegment>0){
+    //  startTime = my2DSeeds.at(DIR_U).at(iSegment-1).getEnd().X();
+    //}
+    double endTime = my2DSeeds.at(DIR_U).at(iSegment).getEnd().X();
+    double lambdaStartTime = a3DSeed.getLambdaAtZ(startTime);
+    double lambdaEndTime = a3DSeed.getLambdaAtZ(endTime);
+    TVector3 start =  a3DSeed.getStart() + lambdaStartTime*a3DSeed.getTangent();
+    TVector3 end =  a3DSeed.getStart() + lambdaEndTime*a3DSeed.getTangent();
+    a3DSeed.setStartEnd(start, end);
+    aTrackCandidate.addSegment(a3DSeed);
   }
 
-  std::cout<<aTrackCandidate<<std::endl;
   ///TEST
   myFittedTrack = aTrackCandidate;
   //myFittedTrack = fitTrackNodes(aTrackCandidate);
@@ -417,7 +424,9 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
 
   Track3D aTrackCandidate;
   aTrackCandidate.addSegment(aTrackSegment);
+  aTrackCandidate.extendToWholeChamber();
   aTrackCandidate = fitTrackNodes(aTrackCandidate);
+  aTrackCandidate.shrinkToHits();  
   return aTrackCandidate;//TEST
   
   TGraph aGraph = aTrackCandidate.getHitDistanceProfile();
@@ -457,7 +466,7 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
 /////////////////////////////////////////////////////////
 Track3D TrackBuilder::fitTrackNodes(const Track3D & aTrack) const{
 
-  Track3D aTrackCandidate = aTrack; 
+  Track3D aTrackCandidate = aTrack;
   std::vector<double> bestParams = aTrackCandidate.getSegmentsStartEndXYZ();
   std::vector<double> params = aTrackCandidate.getSegmentsStartEndXYZ();
   int nParams = params.size();
@@ -468,10 +477,7 @@ Track3D TrackBuilder::fitTrackNodes(const Track3D & aTrack) const{
   double minChi2 = 1E10;
   for(unsigned int iStep=1;iStep<2;++iStep){
     
-    std::cout<<__FUNCTION__<<" iStep: "<<iStep<<std::endl;
-    
-    //aTrackCandidate.extendToWholeChamber();
-    //aTrackCandidate.shrinkToHits();
+    std::cout<<__FUNCTION__<<" iStep: "<<iStep<<std::endl;   
     params = aTrackCandidate.getSegmentsStartEndXYZ();
     nParams = params.size();
     for (int iPar = 0; iPar < nParams; ++iPar){
@@ -479,7 +485,6 @@ Track3D TrackBuilder::fitTrackNodes(const Track3D & aTrack) const{
       fitter.Config().ParSettings(iPar).SetStepSize(1.0/(2*iStep));
       fitter.Config().ParSettings(iPar).SetLimits(params[iPar]-20.0/iStep, params[iPar]+20.0/iStep);
     }  
-
     std::cout<<"Pre-fit: "<<std::endl; 
     std::cout<<aTrackCandidate<<std::endl;
     
@@ -491,9 +496,6 @@ Track3D TrackBuilder::fitTrackNodes(const Track3D & aTrack) const{
     }
     const ROOT::Fit::FitResult & result = fitter.Result();
     aTrackCandidate.chi2FromNodesList(result.GetParams());
-    aTrackCandidate.extendToWholeChamber();
-    aTrackCandidate.shrinkToHits();
-    aTrackCandidate.removeEmptySegments();
 
     std::cout<<"Post-fit: "<<std::endl;
     std::cout<<aTrackCandidate<<std::endl;
@@ -504,9 +506,6 @@ Track3D TrackBuilder::fitTrackNodes(const Track3D & aTrack) const{
     }
   }
   aTrackCandidate.chi2FromNodesList(bestParams.data());
-  aTrackCandidate.removeEmptySegments();
-  aTrackCandidate.extendToWholeChamber();
-  aTrackCandidate.shrinkToHits();
   return aTrackCandidate;
 }
 /////////////////////////////////////////////////////////
