@@ -125,7 +125,7 @@ void MainFrame::InitializeEventSource(){
 
   if(myWorkMode!=M_ONLINE_MODE){
     myEventSource->loadDataFile(dataFileName);
-    myEventSource->loadFileEntry(0);
+    myEventSource->loadFileEntry(1);
   }
   myHistoManager.setGeometry(myEventSource->getGeometry());
 }
