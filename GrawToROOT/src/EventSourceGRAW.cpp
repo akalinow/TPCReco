@@ -134,7 +134,7 @@ void EventSourceGRAW::findEventFragments(unsigned long int eventIdx, unsigned in
   unsigned int currentEventIdx = 0;
 
   if(iInitialEntry>5) iInitialEntry-=5;
-  else iInitialEntry = 0;
+  else iInitialEntry = 1;
   for(unsigned int iEntry=iInitialEntry;iEntry<nEntries && nFragments<GRAW_EVENT_FRAGMENTS;++iEntry){
     loadGrawFrame(iEntry);
     currentEventIdx = myDataFrame.fHeader.fEventIdx;
