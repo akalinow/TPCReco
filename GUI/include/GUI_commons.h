@@ -10,6 +10,7 @@ enum CommandIdentifiers {
    M_FILE_EXIT,
 
    M_TOGGLE_LOGSCALE,
+   M_TOGGLE_AUTOZOOM,
    M_DIR_WATCH,
 
    M_HELP_CONTENTS,
@@ -18,6 +19,7 @@ enum CommandIdentifiers {
 
    M_NEXT_EVENT,
    M_PREVIOUS_EVENT,
+   M_RESET_EVENT,
    M_GOTO_EVENT,
    M_GOTO_ENTRY,
 

@@ -116,7 +116,7 @@ void TrackBuilder::makeRecHits(int iDir){
   hRecHits.Reset();
   std::string tmpTitle(hRecHits.GetTitle());
   if(tmpTitle.find("Event")!=std::string::npos){
-    tmpTitle.replace(tmpTitle.find("Event"), 22,"Rec hits"); 
+    tmpTitle.replace(tmpTitle.find("Event"), 24,"Rec hits"); 
     hRecHits.SetTitle(tmpTitle.c_str());
   }
 

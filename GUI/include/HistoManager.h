@@ -37,6 +37,8 @@ public:
 
   void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);
 
+  void toggleAutozoom() { doAutozoom = !doAutozoom;};
+
   void reconstruct();
 
   void reconstructSegmentsFromMarkers(std::vector<double> * segmentsXY);
@@ -49,7 +51,7 @@ public:
 
   std::shared_ptr<TH2D> getRawStripVsTime(int strip_dir);
 
-  std::shared_ptr<TH2D> getCartesianProjection(int strip_dir);
+  std::shared_ptr<TH2D> getRawStripVsTimeInMM(int strip_dir);
 
   std::shared_ptr<TH2D> getFilteredStripVsTime(int strip_dir);
 
@@ -72,6 +74,9 @@ public:
   void drawChargeAlongTrack3D(TVirtualPad *aPad);
 
 private:
+
+  void makeAutozoom(std::shared_ptr<TH2D> & aHisto);
+  
     
   std::vector<TH2D*> projectionsInCartesianCoords;
   TH3D *h3DReco;
@@ -79,6 +84,8 @@ private:
 
   std::shared_ptr<EventTPC> myEvent;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
+
+  bool doAutozoom;
 
 };
 #endif

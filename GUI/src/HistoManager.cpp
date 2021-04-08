@@ -20,6 +20,7 @@
 HistoManager::HistoManager() {
 
   myEvent = 0;
+  doAutozoom = false;
 
 }
 /////////////////////////////////////////////////////////
@@ -60,13 +61,6 @@ void HistoManager::reconstructSegmentsFromMarkers(std::vector<double> * segments
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<TH2D> HistoManager::getCartesianProjection(int strip_dir){
-
-  return myEvent->GetStripVsTimeInMM(myTkBuilder.getCluster(), strip_dir);
-  
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
 TH2Poly * HistoManager::getDetectorLayout() const{
 
   if(!myGeometryPtr) return 0;
@@ -95,24 +89,44 @@ std::shared_ptr<TH1D> HistoManager::getRawStripProjection(int strip_dir){
 /////////////////////////////////////////////////////////
 std::shared_ptr<TH2D> HistoManager::getRawStripVsTime(int strip_dir){
 
-  std::shared_ptr<TH2D> h = myEvent->GetStripVsTime(strip_dir);
-  h->GetYaxis()->SetTitleOffset(1.8);
-  h->GetZaxis()->SetTitleOffset(1.5);
-  return h;
+  std::shared_ptr<TH2D> aHisto = myEvent->GetStripVsTime(strip_dir);  
+  if(doAutozoom) makeAutozoom(aHisto);
+  aHisto->GetYaxis()->SetTitleOffset(1.8);
+  aHisto->GetZaxis()->SetTitleOffset(1.5);
+  return aHisto;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::shared_ptr<TH2D> HistoManager::getRawStripVsTimeInMM(int strip_dir){
+
+  std::shared_ptr<TH2D> aHisto = myEvent->GetStripVsTimeInMM(myTkBuilder.getCluster(), strip_dir);
+  aHisto->GetYaxis()->SetTitleOffset(1.8);
+  aHisto->GetZaxis()->SetTitleOffset(1.5);
+  if(doAutozoom) makeAutozoom(aHisto);
+  return aHisto;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::shared_ptr<TH2D> HistoManager::getFilteredStripVsTime(int strip_dir){
 
-  return myEvent->GetStripVsTime(myTkBuilder.getCluster(), strip_dir);
+  std::shared_ptr<TH2D> aHisto = myEvent->GetStripVsTime(myTkBuilder.getCluster(), strip_dir);
+  aHisto->GetYaxis()->SetTitleOffset(1.8);
+  aHisto->GetZaxis()->SetTitleOffset(1.5);
+  if(doAutozoom) makeAutozoom(aHisto);
+  return aHisto;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::shared_ptr<TH2D> HistoManager::getRecHitStripVsTime(int strip_dir){
+
   TH2D *h = (TH2D*)myTkBuilder.getRecHits2D(strip_dir).Clone();
-  h->GetYaxis()->SetTitleOffset(1.5);
-  h->GetZaxis()->SetTitleOffset(1.1);
-  return std::shared_ptr<TH2D>(h);//FIX ME avoid object copying
+  std::shared_ptr<TH2D> aHisto(h);
+
+  if(doAutozoom) makeAutozoom(aHisto);
+  aHisto->GetYaxis()->SetTitleOffset(1.8);
+  aHisto->GetZaxis()->SetTitleOffset(1.5);
+
+  return aHisto;//FIX ME avoid object copying
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -148,7 +162,6 @@ TH2D* HistoManager::get2DReconstruction(int strip_dir){
 const TH2D & HistoManager::getHoughAccumulator(int strip_dir, int iPeak){
 
   return myTkBuilder.getHoughtTransform(strip_dir);
-
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -309,6 +322,19 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   aGr.SetLineColor(2);
   aGr.GetYaxis()->SetTitleOffset(1.5);
   aGr.DrawClone("AL");
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void HistoManager::makeAutozoom(std::shared_ptr<TH2D>& aHisto){
+
+  if(!aHisto.get()) return;  
+  for(int iAxis=1;iAxis<3;++iAxis){
+    double threshold = 0.8*aHisto->GetMaximum();  
+    int lowBin = aHisto->FindFirstBinAbove(threshold, iAxis) - 30;
+    int highBin = aHisto->FindLastBinAbove(threshold, iAxis) + 30;
+    if(iAxis==1) aHisto->GetXaxis()->SetRange(lowBin, highBin);
+    else if(iAxis==2) aHisto->GetYaxis()->SetRange(lowBin, highBin);
+  }  
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
