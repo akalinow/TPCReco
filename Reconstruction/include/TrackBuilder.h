@@ -14,6 +14,8 @@
 
 class TH2D;
 class TF1;
+class TTree;
+class TFile;
 
 class GeometryTPC;
 class EventTPC;
@@ -24,6 +26,10 @@ public:
   TrackBuilder();
   
   ~TrackBuilder();
+
+  void openOutputStream(const std::string & fileName);
+  void closeOutputStream();
+  void fillOutputStream();
 
   void setEvent(EventTPC* aEvent);
 
@@ -82,10 +88,12 @@ private:
   std::vector<TrackSegment2DCollection> my2DSeeds;
 
   TrackSegment2D dummySegment2D;
-  
   TrackSegment3D myTrack3DSeed, dummySegment3D;
-
   Track3D myFittedTrack;
+  Track3D *myFittedTrackPtr;
+
+  std::shared_ptr<TFile> myOutputFilePtr;
+  std::shared_ptr<TTree> myOutputTreePtr;
 
   mutable ROOT::Fit::Fitter fitter;
   

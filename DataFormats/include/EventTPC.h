@@ -29,7 +29,7 @@ class EventTPC {
   //  friend class SigClusterTPC;
  private:
   Long64_t event_id, run_id;
-  std::shared_ptr<GeometryTPC> myGeometryPtr;
+  std::shared_ptr<GeometryTPC> myGeometryPtr;  //! transient data member
   
   std::map<MultiKey3, double, multikey3_less> chargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
   std::map<MultiKey2, double, multikey2_less> maxChargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024])

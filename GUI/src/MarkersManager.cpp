@@ -51,7 +51,7 @@ MarkersManager::MarkersManager(const TGWindow * p, MainFrame * aFrame)
    aColor = TColor::RGB2Pixel(255, 255, 26);
    fitButton->ChangeBackground(aColor);
    fitButton->Connect("Clicked()","MarkersManager",this,"DoButton()");
-   //TEST fitButton->SetState(kButtonDisabled);
+   fitButton->SetState(kButtonDisabled);
    attach_left=1;
    attach_right=2;   
    padLeft = 5;

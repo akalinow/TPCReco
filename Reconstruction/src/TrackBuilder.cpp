@@ -5,6 +5,8 @@
 #include "TProfile.h"
 #include "TObjArray.h"
 #include "TF1.h"
+#include "TTree.h"
+#include "TFile.h"
 #include "TFitResult.h"
 #include "Math/Functor.h"
 
@@ -43,10 +45,58 @@ TrackBuilder::TrackBuilder() {
   aHoughOffest.SetX(50.0);
   aHoughOffest.SetY(50.0);
   aHoughOffest.SetZ(0.0);
+
+  std::string fileName = "Reco.root";
+  myFittedTrackPtr = &myFittedTrack;
+  openOutputStream(fileName);
+
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TrackBuilder::~TrackBuilder() { }
+TrackBuilder::~TrackBuilder() {
+  closeOutputStream();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void TrackBuilder::openOutputStream(const std::string & fileName){
+
+  if(!myFittedTrackPtr){
+    std::cout<<KRED<<__FUNCTION__<<RST
+	     <<" pointer to fitted track not set!"
+	     <<std::endl;
+    return;
+  }
+  std::string treeName = "TPCRecoData";
+  myOutputFilePtr = std::make_shared<TFile>(fileName.c_str(),"RECREATE");
+  myOutputTreePtr = std::make_shared<TTree>(treeName.c_str(),"");
+  myOutputTreePtr->Branch("RecoEvent", "Track3D", &myFittedTrackPtr);
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void TrackBuilder::closeOutputStream(){
+
+  if(!myOutputFilePtr){
+     std::cout<<KRED<<__FUNCTION__<<RST
+	     <<" pointer to output file not set!"
+	     <<std::endl;
+     return;
+  }
+  myOutputFilePtr->Write();
+  myOutputFilePtr->Close();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void TrackBuilder::fillOutputStream(){
+
+  if(!myOutputTreePtr){
+     std::cout<<KRED<<__FUNCTION__<<RST
+	     <<" pointer to output tree not set!"
+	     <<std::endl;
+     return;
+  }
+  myOutputTreePtr->Fill();
+  myOutputTreePtr->Print();
+}
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void TrackBuilder::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
@@ -105,7 +155,7 @@ void TrackBuilder::reconstruct(){
     my2DSeeds[iDir] = findSegment2DCollection(iDir);    
   }
   myTrack3DSeed = buildSegment3D();
-  myFittedTrack = fitTrack3D(myTrack3DSeed);
+  *(&myFittedTrack) = fitTrack3D(myTrack3DSeed);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -355,10 +405,7 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
       my2DSeeds[iDir].push_back(aSegment2D);
     }
     TrackSegment3D a3DSeed = buildSegment3D(iSegment);
-    double startTime = my2DSeeds.at(DIR_U).at(iSegment).getStart().X();
-    //if(iSegment>0){
-    //  startTime = my2DSeeds.at(DIR_U).at(iSegment-1).getEnd().X();
-    //}
+    double startTime = my2DSeeds.at(DIR_U).at(iSegment).getStart().X();    
     double endTime = my2DSeeds.at(DIR_U).at(iSegment).getEnd().X();
     double lambdaStartTime = a3DSeed.getLambdaAtZ(startTime);
     double lambdaEndTime = a3DSeed.getLambdaAtZ(endTime);
@@ -370,6 +417,11 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
 
   ///TEST
   myFittedTrack = aTrackCandidate;
+  //myFittedTrackPtr = fitTrack3D(myTrack3DSeed);
+
+  myFittedTrackPtr = &myFittedTrack;
+  fillOutputStream();
+  closeOutputStream();
   //myFittedTrack = fitTrackNodes(aTrackCandidate);
   ///////
 }

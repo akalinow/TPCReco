@@ -9,7 +9,6 @@
 #include <Math/Functor.h>
 #include <Math/GenVector/VectorUtil.h>
 
-
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 Track3D::Track3D(){
@@ -310,13 +309,7 @@ void Track3D::shrinkToHits(){
     lambdaEnd -=stepAlongTrack;
     charge += getChargeProfile().Eval(lambdaEnd);
   }
-  
-  std::cout<<KBLU<<__FUNCTION__<<RST
-	   <<" chargeCut: "<<chargeCut
-	   <<" start: "<<lambdaStart<<" end: "<<lambdaEnd
-	   <<" length: "<<lambdaEnd - lambdaStart
-	   <<std::endl;
-  
+    
   TrackSegment3D & aFirstSegment = mySegments.front();
   TrackSegment3D & aLastSegment = mySegments.back();
   
@@ -382,10 +375,10 @@ std::ostream & operator << (std::ostream &out, const Track3D &aTrack){
   out << "Number of segments: "<<aTrack.getSegments().size()<<std::endl;
   if(!aTrack.getSegments().size()) return out;
 
-  std::cout<<"\t Path: start->end [chi2]: "<<std::endl;
+  out<<"\t Path: start->end [chi2]: "<<std::endl;
   for(auto aSegment: aTrack.getSegments()) out<<"\t \t"<<aSegment<<std::endl;
 
-  std::cout<<"\t Nodes: node [hits chi2, angle chi2]: "<<std::endl;
+  out<<"\t Nodes: node [hits chi2, angle chi2]: "<<std::endl;
   for(unsigned int iSegment = 0;iSegment<(aTrack.getSegments().size()-1);++iSegment){
     out<<"\t \t ("
        <<aTrack.getSegments().at(iSegment).getEnd().X()<<", "
@@ -395,7 +388,7 @@ std::ostream & operator << (std::ostream &out, const Track3D &aTrack){
        <<", "<<aTrack.getNodeAngleChi2(iSegment)<<"]"
        <<std::endl;
   }
-  std::cout<<"\t Total track chi2: "<<aTrack.getChi2();  
+  out<<"\t Total track chi2: "<<aTrack.getChi2();  
   return out;
 }
 /////////////////////////////////////////////////////////
