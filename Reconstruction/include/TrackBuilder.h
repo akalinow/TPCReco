@@ -72,8 +72,7 @@ private:
   Track3D fitTrackNodes(const Track3D & aTrack) const;
 
   double fitTrackSplitPoint(const Track3D& aTrackCandidate) const;
-
-    
+   
   EventTPC *myEvent;
   SigClusterTPC myCluster;
   std::shared_ptr<GeometryTPC> myGeometryPtr;

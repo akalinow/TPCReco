@@ -70,6 +70,7 @@ void TrackBuilder::openOutputStream(const std::string & fileName){
   myOutputFilePtr = std::make_shared<TFile>(fileName.c_str(),"RECREATE");
   myOutputTreePtr = std::make_shared<TTree>(treeName.c_str(),"");
   myOutputTreePtr->Branch("RecoEvent", "Track3D", &myFittedTrackPtr);
+  //myOutputTreePtr->Branch("DetEvent", "EventTPC", &myEvent);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -82,7 +83,7 @@ void TrackBuilder::closeOutputStream(){
      return;
   }
   myOutputFilePtr->Write();
-  myOutputFilePtr->Close();
+  //myOutputFilePtr->Close();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -418,7 +419,6 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
   ///TEST
   myFittedTrack = aTrackCandidate;
   //myFittedTrackPtr = fitTrack3D(myTrack3DSeed);
-
   myFittedTrackPtr = &myFittedTrack;
   fillOutputStream();
   closeOutputStream();
