@@ -49,15 +49,13 @@ void HistoManager::setEvent(std::shared_ptr<EventTPC> aEvent){
 /////////////////////////////////////////////////////////
 void HistoManager::reconstruct(){
   myTkBuilder.setEvent(myEvent);
-  myTkBuilder.reconstruct();
+  //myTkBuilder.reconstruct();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void HistoManager::reconstructSegmentsFromMarkers(std::vector<double> * segmentsXY){
 
-  //myTkBuilder.setEvent(myEvent);  
-  myTkBuilder.getSegment2DCollectionFromGUI(*segmentsXY);
-  
+  myTkBuilder.getSegment2DCollectionFromGUI(*segmentsXY);  
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -338,3 +336,22 @@ void HistoManager::makeAutozoom(std::shared_ptr<TH2D>& aHisto){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+void HistoManager::openOutputStream(const std::string & fileName){
+
+  std::size_t last_dot_position = fileName.find_last_of(".");
+  std::size_t last_slash_position = fileName.find_last_of("//");
+  std::string recoFileName = "Reco_"+fileName.substr(last_slash_position+1,
+						     last_dot_position-last_slash_position-1)+".root";
+  std::cout<<KBLU<<"recoFileName: "<<RST<<recoFileName<<std::endl;
+  myTkBuilder.openOutputStream(recoFileName);  
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void HistoManager::writeSegments(){
+
+  myTkBuilder.fillOutputStream();
+  
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+

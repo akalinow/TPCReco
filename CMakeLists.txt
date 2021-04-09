@@ -65,6 +65,7 @@ add_subdirectory(GrawToROOT)
 add_subdirectory(Utilities)
 add_subdirectory(Reconstruction)
 add_subdirectory(GUI)
+add_subdirectory(Analysis)
 add_subdirectory(ToyMC)
 add_subdirectory(TrackGenerator)
 

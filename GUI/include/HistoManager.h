@@ -37,6 +37,10 @@ public:
 
   void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);
 
+  void openOutputStream(const std::string & fileName);
+
+  void writeSegments();
+
   void toggleAutozoom() { doAutozoom = !doAutozoom;};
 
   void reconstruct();

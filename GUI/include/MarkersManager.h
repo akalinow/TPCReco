@@ -2,6 +2,7 @@
 #define MarkersManager_H
 
 #include <string>
+#include <map>
 
 #include <TMarker.h>
 #include <TLine.h>
@@ -31,6 +32,7 @@ public:
 private:
 
   void addMarkerFrame(int iMarker);
+  void addButtons();
   void processClickCoordinates(int iDir, float x, float y);
   void drawFixedTimeLines(int iDir, double time);
   int findMissingMarkerDir();
@@ -50,11 +52,10 @@ private:
   Bool_t HandleButton(Int_t id);
 
   MainFrame *fParentFrame;
-  TGVerticalFrame *fTopFrame;
+  TGGroupFrame *fHeaderFrame;
   TGCanvas *fMarkerGCanvas;
 
-  TGTextButton* addSegmentButton;
-  TGTextButton* fitButton; 
+  std::map<std::string, TGTextButton*> myButtons;
 
   TMarker *firstMarker;
   std::vector<TMarker*> fMarkersContainer;

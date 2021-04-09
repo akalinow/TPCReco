@@ -46,10 +46,7 @@ TrackBuilder::TrackBuilder() {
   aHoughOffest.SetY(50.0);
   aHoughOffest.SetZ(0.0);
 
-  std::string fileName = "Reco.root";
   myFittedTrackPtr = &myFittedTrack;
-  openOutputStream(fileName);
-
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -82,8 +79,7 @@ void TrackBuilder::closeOutputStream(){
 	     <<std::endl;
      return;
   }
-  myOutputFilePtr->Write();
-  //myOutputFilePtr->Close();
+  myOutputFilePtr->Close();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -96,7 +92,7 @@ void TrackBuilder::fillOutputStream(){
      return;
   }
   myOutputTreePtr->Fill();
-  myOutputTreePtr->Print();
+  myOutputTreePtr->Write();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -416,14 +412,8 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
     aTrackCandidate.addSegment(a3DSeed);
   }
 
-  ///TEST
   myFittedTrack = aTrackCandidate;
-  //myFittedTrackPtr = fitTrack3D(myTrack3DSeed);
   myFittedTrackPtr = &myFittedTrack;
-  fillOutputStream();
-  closeOutputStream();
-  //myFittedTrack = fitTrackNodes(aTrackCandidate);
-  ///////
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

@@ -143,6 +143,7 @@ void MainFrame::InitializeEventSource(){
     myEventSource->loadFileEntry(0);
   }
   myHistoManager.setGeometry(myEventSource->getGeometry());
+  myHistoManager.openOutputStream(dataFileName);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -489,16 +490,16 @@ void MainFrame::drawRecoHistos(){
   
    for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
     TVirtualPad *aPad = fCanvas->cd(strip_dir+1);
-    myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("colz");
-    //myHistoManager.getRawStripVsTimeInMM(strip_dir)->DrawClone("colz");
+    std::cout<<"aPad: "<<aPad<<std::endl;
+    //myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("colz");
+    myHistoManager.getRawStripVsTimeInMM(strip_dir)->DrawClone("colz");
     //myHistoManager.getHoughAccumulator(strip_dir).DrawClone("colz");
     //myHistoManager.drawTrack2DSeed(strip_dir, aPad);
     //myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
     fCanvas->Update();
-    std::cout<<aPad<<std::endl;
   }
-  TVirtualPad *aPad = fCanvas->cd(4);
-  myHistoManager.drawChargeAlongTrack3D(aPad);
+   //TVirtualPad *aPad = fCanvas->cd(4);
+  //myHistoManager.drawChargeAlongTrack3D(aPad);
   fCanvas->Update();
 }
 /////////////////////////////////////////////////////////
@@ -680,15 +681,20 @@ void MainFrame::HandleMenu(Int_t id){
       Update();
     }
     break;
-
   case M_DIR_WATCH:
     {
       Update();
     }
     break; 
-
   case M_FILE_EXIT:
-    CloseWindow();   // terminate theApp no need to use SendCloseMessage()
+    {
+      CloseWindow();   // terminate theApp no need to use SendCloseMessage()
+    }
+    break;
+  case M_WRITE_SEGMENT:
+    {
+      myHistoManager.writeSegments();
+    }
     break;
   }
 }

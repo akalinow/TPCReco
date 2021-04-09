@@ -28,12 +28,13 @@ MarkersManager::MarkersManager(const TGWindow * p, MainFrame * aFrame)
 
    int nRows = 3;
    int nColumns = 3;
-   TGGroupFrame *aHeaderFrame = new TGGroupFrame(this, "Segment creation");
-   TGTableLayout* tlo = new TGTableLayout(aHeaderFrame, nRows, nColumns, 1);
-   aHeaderFrame->SetLayoutManager(tlo);
-   AddFrame(aHeaderFrame, new TGLayoutHints(kLHintsExpandX, 2, 2, 1, 1));
-
-   addSegmentButton = new TGTextButton(aHeaderFrame,"Add segment", M_ADD_SEGMENT);
+   fHeaderFrame = new TGGroupFrame(this, "Segment creation");
+   TGTableLayout* tlo = new TGTableLayout(fHeaderFrame, nRows, nColumns, 1);
+   fHeaderFrame->SetLayoutManager(tlo);
+   AddFrame(fHeaderFrame, new TGLayoutHints(kLHintsExpandX, 2, 2, 1, 1));
+   addButtons();
+   /*
+   addSegmentButton = new TGTextButton(fHeaderFrame,"Add segment", M_ADD_SEGMENT);
    ULong_t aColor = TColor::RGB2Pixel(255, 255, 26);
    addSegmentButton->ChangeBackground(aColor);
    addSegmentButton->Connect("Clicked()","MarkersManager",this,"DoButton()");
@@ -45,9 +46,9 @@ MarkersManager::MarkersManager(const TGWindow * p, MainFrame * aFrame)
 							      attach_top, attach_bottom,
 							     kLHintsFillX|kLHintsFillY,
 							     padLeft);
-   aHeaderFrame->AddFrame(addSegmentButton, aTableLayout);
+   fHeaderFrame->AddFrame(addSegmentButton, aTableLayout);
    
-   fitButton = new TGTextButton(aHeaderFrame,"Fit segments", M_FIT);
+   fitButton = new TGTextButton(fHeaderFrame,"Fit segments", M_FIT);
    aColor = TColor::RGB2Pixel(255, 255, 26);
    fitButton->ChangeBackground(aColor);
    fitButton->Connect("Clicked()","MarkersManager",this,"DoButton()");
@@ -59,9 +60,42 @@ MarkersManager::MarkersManager(const TGWindow * p, MainFrame * aFrame)
 					 attach_top, attach_bottom,
 					 kLHintsFillX|kLHintsFillY,
 					 padLeft);
-   aHeaderFrame->AddFrame(fitButton, aTableLayout);
-   
+   fHeaderFrame->AddFrame(fitButton, aTableLayout);
+   */
    initialize();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void MarkersManager::addButtons(){
+
+  std::vector<std::string> button_names = {"Add segment", "Fit segments", "Save segments"};
+  std::vector<std::string> button_tooltips = {"Click to add segments end points. Each point is set by coordinates on two projections",
+					      "Calculate 3D orientation from the 2D projections",
+					      "Save the segments to ROOT file"};
+  std::vector<unsigned int> button_id = {M_ADD_SEGMENT, M_FIT_SEGMENT,  M_WRITE_SEGMENT};
+
+  ULong_t aColor = TColor::RGB2Pixel(255, 255, 26);
+  UInt_t attach_left=0;
+  UInt_t attach_right=attach_left+1;
+  UInt_t attach_top=0;
+  UInt_t attach_bottom=attach_top+1;
+  
+  for (unsigned int iButton = 0; iButton < button_names.size(); ++iButton) {
+    TGTextButton* aButton = new TGTextButton(fHeaderFrame,
+					    button_names[iButton].c_str(),
+					    button_id[iButton]);
+    TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
+    						      kLHintsFillX | kLHintsFillY);
+
+    fHeaderFrame->AddFrame(aButton,tloh);
+    if(button_names[iButton]=="Save segments") aButton->Connect("Clicked()","MainFrame",fParentFrame,"DoButton()");
+    else aButton->Connect("Clicked()","MarkersManager",this,"DoButton()");
+    if(button_names[iButton]!="Add segment") aButton->SetState(kButtonDisabled);
+    aButton->ChangeBackground(aColor);
+    myButtons[button_names[iButton]] = aButton;
+    ++attach_left;
+    ++attach_right;
+  }
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -154,9 +188,12 @@ void MarkersManager::resetMarkers(){
   int strip_dir = DIR_U;//TEST
   if(isLastSegmentComplete(strip_dir)){
     acceptPoints = false;
-    if(addSegmentButton){
-      addSegmentButton->SetState(kButtonUp);
-      fitButton->SetState(kButtonUp);
+    if(myButtons.find("Add segment")!=myButtons.end() &&
+       myButtons.find("Fit segments")!=myButtons.end() &&
+       myButtons.find("Save segments")!=myButtons.end()){
+      myButtons.find("Add segment")->second->SetState(kButtonUp);
+      myButtons.find("Fit segments")->second->SetState(kButtonUp);
+      myButtons.find("Save segments")->second->SetState(kButtonDisabled);
     }
   }
 }
@@ -360,14 +397,20 @@ Bool_t MarkersManager::HandleButton(Int_t id){
    case M_ADD_SEGMENT:
     {
       acceptPoints = true;
-      addSegmentButton->SetState(kButtonDown);
-      fitButton->SetState(kButtonDisabled);
+      if(myButtons.find("Add segment")!=myButtons.end() &&
+	 myButtons.find("Fit segments")!=myButtons.end()){
+	myButtons.find("Add segment")->second->SetState(kButtonDown);
+	myButtons.find("Fit segments")->second->SetState(kButtonDisabled);
+      }
     }
     break;
-   case M_FIT:
+   case M_FIT_SEGMENT:
      {
        repackSegmentsData();
-       sendSegmentsData(&fSegmentsXY); 
+       sendSegmentsData(&fSegmentsXY);
+       if(myButtons.find("Save segments")!=myButtons.end()){
+	 myButtons.find("Save segments")->second->SetState(kButtonUp);
+       }
      }     
      break;
    }
