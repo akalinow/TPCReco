@@ -62,13 +62,13 @@ public:
   ///Return rec hits chi2.
   double getRecHitChi2(const Hit2DCollection & aRecHits) const;
 
+  ///Calculate transvere distance from point to the segment.
+  double getPointTransverseDistance(const TVector3 & aPoint) const;
+
 private:
 
   ///Calculate vector for different parametrisations.
   void initialize();
-
-  ///Calculate transvere distance from point to the segment.
-  double getPointTransverseDistance(const TVector3 & aPoint) const;
 
   int myStripDir;
   double myLenght;
