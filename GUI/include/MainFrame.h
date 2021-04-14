@@ -25,8 +25,10 @@
 #include <TLine.h>
 #include <TArrow.h>
 
+#include "GUI_commons.h"
 #include "EntryDialog.h"
 #include "SelectionBox.h"
+#include "MarkersManager.h"
 
 #include "EventSourceBase.h"
 #include "HistoManager.h"
@@ -34,38 +36,7 @@
 
 #include <boost/property_tree/json_parser.hpp>
 
-enum ETestCommandIdentifiers {
-   M_FILE_OPEN,
-   M_FILE_SAVE,
-   M_FILE_SAVEAS,
-   M_FILE_PRINT,
-   M_FILE_PRINTSETUP,
-   M_FILE_EXIT,
 
-   M_TOGGLE_LOGSCALE,
-   M_DIR_WATCH,
-
-   M_HELP_CONTENTS,
-   M_HELP_SEARCH,
-   M_HELP_ABOUT,
-
-   M_NEXT_EVENT,
-   M_PREVIOUS_EVENT,
-   M_GOTO_EVENT,
-   M_GOTO_ENTRY,
-
-};
-
-enum Messages {
-	       M_DATA_FILE_UPDATED
-	       
-};
-
-enum Modes {
-	    M_ONLINE_MODE,
-	    M_OFFLINE_GRAW_MODE,
-	    M_OFFLINE_ROOT_MODE	       
-};
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 class MainFrame : public TGMainFrame {
@@ -79,6 +50,8 @@ class MainFrame : public TGMainFrame {
   virtual Bool_t ProcessMessage(Long_t msg, Long_t parm1, Long_t);
   virtual Bool_t ProcessMessage(Long_t msg);
   virtual Bool_t ProcessMessage(const char *);
+
+  void drawRecoFromMarkers(std::vector<double> * segmentsXY);
 
   void HandleEmbeddedCanvas(Int_t event, Int_t x, Int_t y, TObject *sel);
 
@@ -104,14 +77,20 @@ private:
   void AddTopMenu();
   void SetTheFrame();
   void AddHistoCanvas();
-  void AddButtons();
-  void AddNumbersDialog();
-  void AddEventTypeDialog();
-  void AddGoToEventDialog(int attach_top);
-  void AddGoToFileEntryDialog(int attach_top);
+  
+  int AddButtons(int attach);
+  int AddGoToFileEntryDialog(int attach);
+  int AddGoToEventDialog(int attach);
+  int AddEventTypeDialog(int attach);
+  int AddMarkersDialog(int attach);
+  int AddNumbersDialog(int attach);
+  
   void AddLogos();
 
   void SetCursorTheme();
+
+  void drawRawHistos();
+  void drawRecoHistos();
 
   void Update();
   void UpdateEventLog();
@@ -130,15 +109,14 @@ private:
 
   TGNumberEntryField *fEventIdEntry, *fFileEntryEntry;
   TGGroupFrame        *fGframe;
-  
+  TGButtonGroup *eventTypeButtonGroup;
+
+  MarkersManager *fMarkersManager;  
   EntryDialog *fEntryDialog;
   SelectionBox *fSelectionBox;
-  TGButtonGroup *eventTypeButtonGroup;
-  
 
   TArrow *fArrow;
   TLine *fLine;
-
 
   ClassDef(MainFrame, 0); 
 };

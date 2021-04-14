@@ -1,5 +1,5 @@
 #include "TrackSegment2D.h"
-
+#include "colorText.h"
 #include <iostream>
 
 /////////////////////////////////////////////////////////
@@ -9,10 +9,9 @@ void TrackSegment2D::setBiasTangent(const TVector3 & aBias, const TVector3 & aTa
   myBias = aBias;
   myTangent = aTangent.Unit();
 
-  double lambda = 100;
-  myStart = myBias;
-  myEnd = myStart + lambda*myTangent;
-  
+  double lambda = 10;//FIXME what value should be here?
+  myStart = myBias-lambda*myTangent;
+  myEnd = myBias+lambda*myTangent;
   initialize();
 }
 /////////////////////////////////////////////////////////
@@ -37,10 +36,11 @@ void TrackSegment2D::initialize(){
   lambda = -myBias.Y()/myTangent.Y();
   myBiasAtWire0 = myBias + lambda*myTangent;
 
-  ///Set tangent direction along time arrow with unit time component.
-  ///So vector components can be compared between projections.
+  ///Set tangent direction along time arrow with unit time component,
+  ///so vector components can be compared between projections.
   myTangentWithT1 = myTangent;
   if(myTangentWithT1.X()<0) myTangentWithT1 *= -1;
+  
   if(std::abs(myTangentWithT1.X())>1E-5){
     myTangentWithT1 *= 1.0/myTangentWithT1.X();
   }
@@ -110,10 +110,11 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
   double dummyChi2 = 1E9;
 
   if(getTangent().Mag()<1E-3){
-    std::cout<<__FUNCTION__<<" Null tangent: ";
-    getTangent().Print();
-    std::cout<<" for direction: "<<getStripDir()<<std::endl;
+    std::cout<<__FUNCTION__<<KRED<< " TrackSegment2D has null tangent "<<RST
+	     <<" for direction: "<<getStripDir()<<std::endl;
+    std::cout<<KGRN<<"Start point: "<<RST;
     getStart().Print();
+    std::cout<<KGRN<<"End point: "<<RST;
     getEnd().Print();
     return dummyChi2;
   }
@@ -146,4 +147,18 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+std::ostream & operator << (std::ostream &out, const TrackSegment2D &aSegment){
 
+  const TVector3 & start = aSegment.getStart();
+  const TVector3 & end = aSegment.getEnd();
+  
+  out<<"direction: "<<aSegment.getStripDir()
+     <<" ("<<start.X()<<", "<<start.Y()
+     <<" -> "
+     <<"("<<end.X()<<", "<<end.Y()<<") "<<std::endl
+     <<"\t N Hough accumulator hits: "
+     <<"["<<aSegment.getNAccumulatorHits()<<"]";
+  return out;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////

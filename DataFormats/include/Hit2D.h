@@ -10,6 +10,8 @@ class Hit2D {
 
 public:
 
+  Hit2D() : posWire(-999), posTime(-999), charge(-999) { }
+  
   Hit2D(double aPosTime, double aPosWire, double aCharge) : posWire(aPosWire), posTime(aPosTime), charge(aCharge) { }
 
   double getPosWire() const { return posWire;}

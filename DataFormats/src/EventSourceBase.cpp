@@ -1,6 +1,8 @@
-#include<cstdlib>
+#include <cstdlib>
 #include <iostream>
+#include <fstream>
 
+#include "colorText.h"
 #include "EventSourceBase.h"
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -17,8 +19,12 @@ EventSourceBase::~EventSourceBase() { }
 /////////////////////////////////////////////////////////
 void EventSourceBase::loadDataFile(const std::string & fileName){
 
+  if(!std::ifstream(fileName)){
+    std::cout<<KRED<<"Input data file: "<<RST<<fileName<<KRED<<" not found!"<<RST<<std::endl;
+    exit(1);
+  }
+
   currentFilePath = fileName;
-  
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

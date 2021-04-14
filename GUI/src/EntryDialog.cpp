@@ -13,11 +13,11 @@ EntryDialog::EntryDialog(const TGWindow * p, MainFrame * aFrame)
  : TGCompositeFrame(p, 10, 10, kVerticalFrame), theMainFrame(aFrame){
 
    SetCleanup(kDeepCleanup);
-
-   datasetInfoFrame = new TGHorizontalFrame(this, 300, 100);
-   fileInfoFrame = new TGHorizontalFrame(this, 300, 100);
-   modeInfoFrame = new TGHorizontalFrame(this, 300, 100);
    
+   modeInfoFrame = new TGHorizontalFrame(this, 300, 50);
+   fileInfoFrame = new TGHorizontalFrame(this, 300, 50);
+   datasetInfoFrame = new TGHorizontalFrame(this, 300, 50);
+
    TGLayoutHints *aLayoutHints = new TGLayoutHints(kLHintsTop | kLHintsLeft  |
 						 kLHintsShrinkX|kLHintsShrinkY |
 						 kLHintsFillX|kLHintsFillY, 2, 2, 2, 2);

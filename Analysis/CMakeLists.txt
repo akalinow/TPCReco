@@ -1,4 +1,4 @@
-set(MODULE_NAME "Reconstruction")
+set(MODULE_NAME "Analysis")
 MESSAGE( STATUS "Adding CMake fragment for module:         " ${MODULE_NAME} )
 
 ###############################################################################
@@ -17,17 +17,9 @@ file(GLOB_RECURSE sources       ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/src/*.cpp)
 include_directories(${ROOTINCDIR})
 include_directories(${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include)
 include_directories(${PROJECT_SOURCE_DIR}/DataFormats/include)
-include_directories(${PROJECT_SOURCE_DIR}/Utilities/include)
 ###############################################################################
 ## target definitions #########################################################
 ###############################################################################
-# Compiler flags.
-#
-add_library(${MODULE_NAME} SHARED ${sources})
-target_link_libraries(${MODULE_NAME} ${ROOT_LIBRARIES})
-
 # All install commands get the same destination. this allows us to use paths
 # relative to the executable.
-install(TARGETS ${MODULE_NAME} LIBRARY DESTINATION lib)
-
-
+install(FILES $<1:${PROJECT_SOURCE_DIR}/${MODULE_NAME}/test/> DESTINATION test)

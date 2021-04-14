@@ -15,6 +15,7 @@
 #include "TROOT.h"
 #include "TVector2.h"
 
+#include "colorText.h"
 #include "GeometryTPC.h"
 #include "MultiKey.h"
 
@@ -427,7 +428,7 @@ bool GeometryTPC::Load(const char *fname) {
     }
   } else {
     std::cout << "\n==== INITIALIZING TPC GEOMETRY - END ====\n\n";
-    std::cerr << "ERROR: Unable to open config file: " << fname << "!!!\n";
+    std::cerr <<KRED<< "ERROR: Unable to open config file: " <<RST<< fname << "!!!\n";
     if (_debug) {
       std::cout << "GeometryTPC::Load - Abort (7)" << std::flush << std::endl;
     }
@@ -1164,9 +1165,10 @@ TVector2 GeometryTPC::GetStripUnitVector(int dir) { // XY ([mm],[mm])
 }
 
 TVector2 GeometryTPC::GetStripPitchVector(int dir) { // XY ([mm],[mm])
-  const TVector2 empty(0, 0);
-  if (!IsOK())
+  
+  if (!IsOK()){
     return empty; // ERROR
+  }
   switch (dir) {
   case DIR_U:
   case DIR_V:
@@ -1174,6 +1176,10 @@ TVector2 GeometryTPC::GetStripPitchVector(int dir) { // XY ([mm],[mm])
     return pitch_unit_vec.at(dir);
   };
   return empty; // ERROR
+}
+
+TVector3 GeometryTPC::GetStripPitchVector3D(int dir) {
+  return TVector3(GetStripPitchVector(dir).X(), GetStripPitchVector(dir).Y(), 0);
 }
 
 double GeometryTPC::Strip2posUVW(int dir, int section, int num,

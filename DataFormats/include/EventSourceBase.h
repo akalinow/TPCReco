@@ -59,7 +59,6 @@ protected:
 
   std::shared_ptr<EventTPC> myCurrentEvent;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
-
 };
 #endif
 
