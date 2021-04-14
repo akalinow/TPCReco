@@ -12,6 +12,7 @@
 
 #include "TROOT.h"
 #include "TVector2.h"
+#include "TVector3.h"
 #include "TH2Poly.h"
 #include "MultiKey.h"
 #include "CommonDefinitions.h"
@@ -52,6 +53,7 @@ class GeometryTPC {
   double pad_pitch;                // in [mm]
   double strip_pitch;              // in [mm]
   TVector2 reference_point;        // XY offset in [mm] of the REFERENCE POINT used to define the geometry
+  TVector2 empty;                  //dummy vector returned for invalid input data
   std::map<int, TVector2> strip_unit_vec; // XY unit vector in [mm] for a given family of strips pointing towards ascending pad numbers of the strip
   std::map<int, TVector2> pitch_unit_vec; // XY unit vector in [mm] for a given family of strips pointing towards ascending strip numbers 
   std::map<int /* TH2Poly bin index [1..1024] */, StripTPC* /* TPC strip */> fStripMap; // maps TH2Poly bin to a given StripTPC object
@@ -164,6 +166,7 @@ class GeometryTPC {
   inline TVector2 GetReferencePoint() { return reference_point; } // XY ([mm],[mm])
   TVector2 GetStripUnitVector(int dir); // XY ([mm],[mm])
   TVector2 GetStripPitchVector(int dir); // XY ([mm],[mm])
+  TVector3 GetStripPitchVector3D(int dir); // XYZ ([mm],[mm],0)
   inline double GetTriggerDelay() { return trigger_delay; } // [us]
   inline double GetDriftCageZmin() { return drift_zmin; } // [mm]
   inline double GetDriftCageZmax() { return drift_zmax; } // [mm]
@@ -203,7 +206,7 @@ class StripTPC {
   int agetCh; // range [0-63]
   int agetCh_raw; // range [0-67]
   TVector2 unit_vec;   // 2D directional unit vector (towards increasing pad numbers)
-  TVector2 offset_vec; // 2D offset vector [mm] of the 1st pad wrt REF.POINT  
+  TVector2 offset_vec; // 2D offset vector [mm] of the 1st pad wrt REF.POINT
  // double length;  // strip length [mm]
   int npads; //strip length in pads
  public:

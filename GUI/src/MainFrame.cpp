@@ -4,8 +4,10 @@
 #include <iomanip>
 
 #include <TApplication.h>
-#include <MainFrame.h>
-#include <SelectionBox.h>
+#include "MainFrame.h"
+#include "SelectionBox.h"
+#include "MarkersManager.h"
+#include "colorText.h"
 
 #include <TSystem.h>
 #include <TStyle.h>
@@ -61,6 +63,7 @@ MainFrame::~MainFrame(){
   delete fMenuFile;
   delete fMenuHelp;
   delete fMenuBar;
+  delete fMarkersManager;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -68,18 +71,25 @@ void MainFrame::InitializeWindows(){
 
   SetCleanup(kDeepCleanup);
   SetWMPosition(500,0);
-  SetWMSize(1200,800);
+  SetWMSize(1300,800);
   
   AddTopMenu();
   SetTheFrame();
+  
+  //Left column
   AddHistoCanvas();
-  AddButtons();
-  AddGoToEventDialog(5);
-  AddGoToFileEntryDialog(6);
-  AddNumbersDialog();
-  AddEventTypeDialog();
+  ///Middle column
+  int attach  = 0;
+  attach = AddButtons(attach);
+  attach = AddGoToEventDialog(attach);
+  attach = AddGoToFileEntryDialog(attach);
+  attach = AddEventTypeDialog(attach);  
+  //Right column
+  attach = 0;
+  attach = AddNumbersDialog(attach);  
+  attach = AddMarkersDialog(attach);
   AddLogos();
-
+  /////////////
   MapSubwindows();
   Resize();
   MapWindow();
@@ -111,14 +121,19 @@ void MainFrame::InitializeEventSource(){
     myWorkMode = M_ONLINE_MODE;
     myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
     fileWatchThread = std::thread(&DirectoryWatch::watch, &myDirWatch, dataFileName);
+    if(myConfig.find("updateInterval")!=myConfig.not_found()){
+      int updateInterval = myConfig.get<int>("updateInterval");
+      myDirWatch.setUpdateInterval(updateInterval);
+    }
     myDirWatch.Connect("Message(const char *)", "MainFrame", this, "ProcessMessage(const char *)");
   }
 #endif
   else if(!myEventSource){
-    std::cerr<<"Input source not known. dataFile: "
+    std::cerr<<KRED<<"Input source not known. dataFile: "<<RST
 	     <<dataFileName<<" Exiting."<<std::endl;
 #ifndef WITH_GET
-    std::cerr<<"GRAW libriaries not set."<<std::endl;
+    std::cerr<<KRED<<" or GRAW libriaries not set."<<RST<<std::endl;
+    exit(0);
 #endif    
     return;
   }
@@ -128,6 +143,7 @@ void MainFrame::InitializeEventSource(){
     myEventSource->loadFileEntry(1);
   }
   myHistoManager.setGeometry(myEventSource->getGeometry());
+  myHistoManager.openOutputStream(dataFileName);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -154,13 +170,12 @@ void MainFrame::AddTopMenu(){
   fMenuBar->AddPopup("&File", fMenuFile, menuBarItemLayout);
   fMenuBar->AddPopup("&Help", fMenuHelp, menuBarHelpLayout);
   AddFrame(fMenuBar, new TGLayoutHints(kLHintsExpandX, 0, 0, 1, 0));
-
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MainFrame::SetTheFrame(){
 
-  int nRows = 12, nColumns = 12;
+  int nRows = 20, nColumns = 12;
   fFrame = new TGCompositeFrame(this,400,400,kSunkenFrame);
   TGTableLayout* tlo = new TGTableLayout(fFrame, nRows, nColumns, 1);
   fFrame->SetLayoutManager(tlo);
@@ -174,18 +189,24 @@ void MainFrame::AddHistoCanvas(){
 
   gStyle->SetOptStat(0);
   gStyle->SetPalette(57);
- // gStyle->SetOptLogz();
+  gStyle->SetPadLeftMargin(0.15);
+  gStyle->SetPadRightMargin(0.15);
 
   embeddedCanvas = new TRootEmbeddedCanvas("Histograms",fFrame,1000,1000);
-  UInt_t attach_left=0, attach_right=8;
-  UInt_t attach_top=0,  attach_bottom=12;
+  TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
+  int nRows = aLayout->fNrows;
+  int nColumns = aLayout->fNcols;
+  
+  UInt_t attach_left=0, attach_right=0.7*nColumns;
+  UInt_t attach_top=0,  attach_bottom=nRows;
   fTCanvasLayout = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 					  kLHintsFillX|kLHintsFillY);
   fFrame->AddFrame(embeddedCanvas, fTCanvasLayout);
 
   fCanvas = embeddedCanvas->GetCanvas();
   fCanvas->MoveOpaque(kFALSE);
-  fCanvas->Divide(2,2);
+  fCanvas->Divide(2,2, 0.02, 0.02);
+  
   TText aMessage(0.2, 0.5,"Waiting for data.");
   for(int iPad=1;iPad<=4;++iPad){
     fCanvas->cd(iPad);
@@ -195,44 +216,61 @@ void MainFrame::AddHistoCanvas(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void MainFrame::AddButtons(){
+int MainFrame::AddButtons(int attach){
 
-  std::vector<std::string> button_names = {"Next event", "Previous event", "Exit"};
-  std::vector<std::string> tooltips =     {"Load the next event.",
-					   "Load the previous event.",
-					   "Close the application"};
-  std::vector<unsigned int> button_id = {M_NEXT_EVENT, M_PREVIOUS_EVENT,  M_FILE_EXIT};
+  std::vector<std::string> button_names = {"Next event", "Previous event", "Reset event" , "Exit"};
+  std::vector<std::string> button_tooltips = {"Load the next event.",
+					      "Load the previous event.",
+					      "Reload the current event, and reset all settings.",
+					      "Close the application"};
+  std::vector<unsigned int> button_id = {M_NEXT_EVENT, M_PREVIOUS_EVENT,  M_RESET_EVENT, M_FILE_EXIT};
 
-  UInt_t attach_left=8, attach_right=9;
+  ULong_t aColor = TColor::RGB2Pixel(195,195,250);
+
+  TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
+  int nColumns = aLayout->fNcols;
+  UInt_t attach_left=0.7*nColumns;
+  UInt_t attach_right=attach_left+1;
+  UInt_t attach_top=attach;
+  UInt_t attach_bottom=1;
+  
   for (unsigned int iButton = 0; iButton < button_names.size(); ++iButton) {
-    TGTextButton* button = new TGTextButton(fFrame,
+    TGTextButton* aButton = new TGTextButton(fFrame,
 					    button_names[iButton].c_str(),
 					    button_id[iButton]);
+    TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
+    						      kLHintsFillX | kLHintsFillY);
 
-    UInt_t attach_top=iButton,  attach_bottom=iButton+1;
+    fFrame->AddFrame(aButton,tloh);
+    aButton->Connect("Clicked()","MainFrame",this,"DoButton()");
+    aButton->SetToolTipText(button_tooltips[iButton].c_str());
+    aButton->ChangeBackground(aColor);
+    ++attach_top;
+    ++attach_bottom;
+   }
+
+  std::vector<std::string> checkbox_names = {"Set Z logscale", "Set auto zoom"};
+  std::vector<std::string> checkbox_tooltips = {"Enables the logscale on Z axis",
+						"Enables automatic zoom in on region with deposits"};
+  std::vector<unsigned int> checkbox_id = {M_TOGGLE_LOGSCALE, M_TOGGLE_AUTOZOOM};
+  
+  for (unsigned int iCheckbox = 0; iCheckbox < checkbox_names.size(); ++iCheckbox) {
+    TGCheckButton* aCheckbox = new TGCheckButton(fFrame,
+						 checkbox_names[iCheckbox].c_str(),
+						 checkbox_id[iCheckbox]);
     TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 						      kLHintsFillX | kLHintsFillY);
-
-    fFrame->AddFrame(button,tloh);
-    button->Connect("Clicked()","MainFrame",this,"DoButton()");
-    button->SetToolTipText(tooltips[iButton].c_str());
+    fFrame->AddFrame(aCheckbox,tloh);
+    aCheckbox->Connect("Clicked()","MainFrame",this,"DoButton()");
+    aCheckbox->SetToolTipText(checkbox_tooltips[iCheckbox].c_str());
+    ++attach_top;
+    ++attach_bottom;
    }
-  std::string button_name="Set logscale";
-  std::string button_tooltip="Sets logscale Z";
-  TGCheckButton* button = new TGCheckButton(fFrame,
-					    button_name.c_str(),
-					   M_TOGGLE_LOGSCALE);
-  UInt_t attach_top=button_names.size(),  attach_bottom=button_names.size()+1;
-  TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
-						      kLHintsFillX | kLHintsFillY);
-  fFrame->AddFrame(button,tloh);
-  button->Connect("Clicked()","MainFrame",this,"DoButton()");
-  button->SetToolTipText(button_tooltip.c_str());
-
+  return attach_bottom;
  }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void MainFrame::AddGoToEventDialog(int attach_top){
+int MainFrame::AddGoToEventDialog(int attach){
 
   fGframe = new TGGroupFrame(this, "Go to event id.");
   fEventIdEntry = new TGNumberEntryField(fGframe, M_GOTO_EVENT, 0,
@@ -240,19 +278,27 @@ void MainFrame::AddGoToEventDialog(int attach_top){
 					 TGNumberFormat::kNEANonNegative,
 					 TGNumberFormat::kNELNoLimits);
   fEventIdEntry->Connect("ReturnPressed()", "MainFrame", this, "DoButton()");
-  fEventIdEntry->SetToolTipText("Jump to given event id.");  
+  fEventIdEntry->SetToolTipText("Jump to given event id.");
 
-  UInt_t attach_left=8, attach_right=9;
-  UInt_t attach_bottom=attach_top+1;
+  TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
+  int nColumns = aLayout->fNcols;
+  int nRows = aLayout->fNrows;
+
+  UInt_t attach_left=0.7*nColumns;
+  UInt_t attach_right=attach_left+1;
+  UInt_t attach_top=attach;
+  UInt_t attach_bottom=attach_top+nRows*0.08;
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 						    kLHintsFillX | kLHintsFillY,
 						    0, 0, 5, 2);  
   fFrame->AddFrame(fGframe, tloh);
   fGframe->AddFrame(fEventIdEntry, new TGLayoutHints(kLHintsExpandX, 0, 0, 0, 0));
+
+  return attach_bottom;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void MainFrame::AddGoToFileEntryDialog(int attach_top){
+int MainFrame::AddGoToFileEntryDialog(int attach){
 
   fGframe = new TGGroupFrame(this, "Go to file entry.");
   fFileEntryEntry = new TGNumberEntryField(fGframe, M_GOTO_ENTRY, 0,
@@ -262,32 +308,45 @@ void MainFrame::AddGoToFileEntryDialog(int attach_top){
   fFileEntryEntry->Connect("ReturnPressed()", "MainFrame", this, "DoButton()");
   fFileEntryEntry->SetToolTipText("Jump to given event id.");  
 
-  UInt_t attach_left=8, attach_right=9;
-  UInt_t attach_bottom=attach_top+1;
+  TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
+  int nColumns = aLayout->fNcols;
+  int nRows = aLayout->fNrows;
+
+  UInt_t attach_left=0.7*nColumns;
+  UInt_t attach_right=attach_left+1;
+  UInt_t attach_top=attach;
+  UInt_t attach_bottom=attach_top+nRows*0.08;
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 						    kLHintsFillX | kLHintsFillY,
 						    0, 0, 5, 2);  
   fFrame->AddFrame(fGframe, tloh);
   fGframe->AddFrame(fFileEntryEntry, new TGLayoutHints(kLHintsExpandX, 0, 0, 0, 0));
+
+  return attach_bottom;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void MainFrame::AddNumbersDialog(){
+int MainFrame::AddNumbersDialog(int attach){
 
   fEntryDialog = new EntryDialog(fFrame, this);
 
-  UInt_t attach_left=9, attach_right=12;
-  UInt_t attach_top=0,  attach_bottom=3;
+  TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
+  //int nRows = aLayout->fNrows;
+  int nColumns = aLayout->fNcols;
+  UInt_t attach_left=nColumns*0.7+1;
+  UInt_t attach_right=nColumns;
+  UInt_t attach_top=attach;
+  UInt_t attach_bottom=attach_top+6;
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 						    kLHintsShrinkX|kLHintsShrinkY|
 						    kLHintsFillX|kLHintsFillY);
   fEntryDialog->initialize();
   fFrame->AddFrame(fEntryDialog, tloh);
-
+  return attach_bottom;
  }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void MainFrame::AddEventTypeDialog(){
+int MainFrame::AddEventTypeDialog(int attach){
 
   eventTypeButtonGroup = new TGButtonGroup(fFrame,
 					   7, 1, 1.0, 1.0,
@@ -302,21 +361,54 @@ void MainFrame::AddEventTypeDialog(){
   buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("3 tracks")));
   buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Other")));
   buttonsContainer.front()->SetState(kButtonDown);
+
+  TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
+  int nColumns = aLayout->fNcols;
+  int nRows = aLayout->fNrows;
   
-  UInt_t attach_left=10, attach_right=11;
-  UInt_t attach_top=4,  attach_bottom=7;
+  UInt_t attach_left=nColumns*0.7;
+  UInt_t attach_right=attach_left+1;
+  UInt_t attach_top=attach;
+  UInt_t attach_bottom=attach_top + nRows*0.25;
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 						    kLHintsShrinkX|kLHintsShrinkY|
 						    kLHintsFillX|kLHintsFillY);
   fFrame->AddFrame(eventTypeButtonGroup, tloh);
+  return attach_bottom;
  }
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+int MainFrame::AddMarkersDialog(int attach){
+
+  TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
+  int nColumns = aLayout->fNcols;
+  int nRows = aLayout->fNcols;
+  UInt_t attach_left=nColumns*0.7+1;
+  UInt_t attach_right=nColumns;
+  UInt_t attach_top=attach;
+  UInt_t attach_bottom=attach_top+nRows*0.3;
+
+  fMarkersManager = new MarkersManager(fFrame, this);
+  fMarkersManager->Connect("sendSegmentsData(std::vector<double> *)","MainFrame",
+			   this,"drawRecoFromMarkers(std::vector<double> *)");
+  TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right,
+						    attach_top, attach_bottom,
+						    kLHintsExpandX|kLHintsExpandY |
+						    kLHintsShrinkX|kLHintsShrinkY|
+						    kLHintsFillX|kLHintsFillY);
+  fFrame->AddFrame(fMarkersManager, tloh);  
+  fCanvas->Connect("ProcessedEvent(Int_t,Int_t,Int_t,TObject*)",
+		   "MarkersManager", fMarkersManager,
+		   "HandleMarkerPosition(Int_t,Int_t,Int_t,TObject*)");
+  return attach_bottom; 
+}
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MainFrame::AddLogos(){
 
   std::string filePath = myConfig.get<std::string>("resourcesPath")+"/FUW_znak.png";
   TImage *img = TImage::Open(filePath.c_str());
-  if(!img) return;
+  if(!img->IsValid()) return;
   double ratio = img->GetWidth()/img->GetHeight();
   double height = 80;
   double width = ratio*height;
@@ -326,14 +418,19 @@ void MainFrame::AddLogos(){
   delete img;
   TGIcon *icon = new TGIcon(fFrame, ipic, width, height);
 
-  UInt_t attach_left=9, attach_right=10;
-  UInt_t attach_top=10,  attach_bottom=12;
+  TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
+  int nColumns = aLayout->fNcols;
+  int nRows = aLayout->fNrows;
+  UInt_t attach_left=nColumns*0.7+1;
+  UInt_t attach_right=attach_left+1;
+  UInt_t attach_top=nRows*0.9;
+  UInt_t attach_bottom=nRows;
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom);
   fFrame->AddFrame(icon, tloh);
 
   filePath = myConfig.get<std::string>("resourcesPath")+"/ELITEPC_znak.png";
   img = TImage::Open(filePath.c_str());
-  if(!img) return;
+  if(!img->IsValid()) return;
   ratio = img->GetWidth()/img->GetHeight();
   height = 100;
   width = ratio*height;
@@ -343,19 +440,20 @@ void MainFrame::AddLogos(){
   delete img;
   icon = new TGIcon(fFrame, ipic, width, height);
 
-  attach_left=11, attach_right=12;
+  attach_left=attach_right+1;
+  attach_right=nColumns;
   tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom, 0, 0, 0, -20);
   fFrame->AddFrame(icon, tloh);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void MainFrame::CloseWindow(){
-   // Got close message for this MainFrame. Terminate the application
-   // or returns from the TApplication event loop (depending on the
-   // argument specified in TApplication::Run()).
+void MainFrame::HandleEmbeddedCanvas(Int_t event, Int_t x, Int_t y, TObject *sel){
 
-   gApplication->Terminate(0);
+  std::cout<<KBLU<<__FUNCTION__<<RST<<std::endl;
 }
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void MainFrame::CloseWindow(){ gApplication->Terminate(0); }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MainFrame::Update(){
@@ -366,33 +464,59 @@ void MainFrame::Update(){
 				   myEventSource->currentEventNumber(),
 				   myEventSource->currentEntryNumber());
   myHistoManager.setEvent(myEventSource->getCurrentEvent());
- // for(int strip_dir=0;strip_dir<3;++strip_dir){
- //   myHistoManager.getHoughAccumulator(strip_dir);
- // }
+  fMarkersManager->reset();
 
-  for(int strip_dir=0;strip_dir<3;++strip_dir){
-    ///First row
+  //drawRawHistos();
+  drawRecoHistos();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void MainFrame::drawRawHistos(){
+
+  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
     fCanvas->cd(strip_dir+1);
-      myHistoManager.getRawStripVsTime(strip_dir)->DrawClone("colz");
-  //  myHistoManager.getCartesianProjection(strip_dir)->DrawClone("colz");
-    ///Second row
-
-   // myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("colz");
-   // myHistoManager.getRecHitStripVsTime(strip_dir)->SaveAs(TString::Format("RecHits_%d.root", strip_dir));
-   // myHistoManager.getCartesianProjection(strip_dir)->SaveAs(TString::Format("RawHits_%d.root", strip_dir));
-   // myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad);
-    //myHistoManager.drawTrack2DSeed(strip_dir, aPad);
-    
-    ///Third row.
-  //  aPad = fCanvas->cd(strip_dir+1+3+3);
-  //  myHistoManager.getHoughAccumulator(strip_dir).DrawClone("colz");
-  //  myHistoManager.getHoughAccumulator(strip_dir).SaveAs(TString::Format("HoughAccumulator_%d.root", strip_dir));
-    //myHistoManager.drawChargeAlongTrack3D(aPad);
-   // aPad->GetName();
+    myHistoManager.getRawStripVsTime(strip_dir)->DrawClone("colz");
+    fCanvas->Update();
   }  
-      fCanvas->cd(4);
-      myHistoManager.getRawTimeProjection()->DrawClone("hist");
+  fCanvas->cd(4);
+  myHistoManager.getRawTimeProjection()->DrawClone("hist");
   fCanvas->Update();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void MainFrame::drawRecoHistos(){
+
+  myHistoManager.reconstruct();
+  
+   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+    TVirtualPad *aPad = fCanvas->cd(strip_dir+1);
+    std::cout<<"aPad: "<<aPad<<std::endl;
+    //myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("colz");
+    myHistoManager.getRawStripVsTimeInMM(strip_dir)->DrawClone("colz");
+    //myHistoManager.getHoughAccumulator(strip_dir).DrawClone("colz");
+    //myHistoManager.drawTrack2DSeed(strip_dir, aPad);
+    //myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
+    fCanvas->Update();
+  }
+   //TVirtualPad *aPad = fCanvas->cd(4);
+  //myHistoManager.drawChargeAlongTrack3D(aPad);
+  fCanvas->Update();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void MainFrame::drawRecoFromMarkers(std::vector<double> * segmentsXY){
+
+  myHistoManager.reconstructSegmentsFromMarkers(segmentsXY);
+  
+  for(int strip_dir=0;strip_dir<3;++strip_dir){
+    TVirtualPad *aPad = fCanvas->cd(strip_dir+1);
+    myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
+    fCanvas->Update();
+  }
+  TCanvas *a3dCanvas = new TCanvas("a3dCanvas","3D Canvas", 500, 500);
+  TVirtualPad *aPad = a3dCanvas->cd();
+  myHistoManager.drawTrack3D(aPad);
+  a3dCanvas->Update();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -448,7 +572,7 @@ Bool_t MainFrame::ProcessMessage(Long_t msg, Long_t parm1, Long_t){
 /////////////////////////////////////////////////////////
 Bool_t MainFrame::ProcessMessage(Long_t msg){
 
-  std::cout<<__FUNCTION__<<std::endl;
+  std::cout<<__FUNCTION__<<" msg: "<<msg<<std::endl;
 
   switch (msg) {
   case M_DATA_FILE_UPDATED:
@@ -462,6 +586,8 @@ Bool_t MainFrame::ProcessMessage(Long_t msg){
 /////////////////////////////////////////////////////////
 Bool_t MainFrame::ProcessMessage(const char * msg){
 
+  std::cout<<__FUNCTION__<<" msg: "<<msg<<std::endl;
+
   myMutex.lock();
   myEventSource->loadDataFile(std::string(msg));
   myEventSource->getLastEvent();
@@ -470,13 +596,6 @@ Bool_t MainFrame::ProcessMessage(const char * msg){
   return kTRUE;
 }
 /////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void MainFrame::HandleEmbeddedCanvas(Int_t event, Int_t x, Int_t y,
-                                      TObject *sel){
-  //TObject *select = gPad->GetSelected();
-
-}
-////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MainFrame::HandleMenu(Int_t id){
 
@@ -528,6 +647,17 @@ void MainFrame::HandleMenu(Int_t id){
       Update();
     }
     break;
+   case M_RESET_EVENT:
+    {
+      Update();
+    }
+    break;
+  case M_TOGGLE_AUTOZOOM:
+    {
+      myHistoManager.toggleAutozoom();
+      Update();      
+    }
+    break;
   case M_TOGGLE_LOGSCALE:
     {
       isLogScaleOn=!isLogScaleOn;
@@ -551,15 +681,20 @@ void MainFrame::HandleMenu(Int_t id){
       Update();
     }
     break;
-
   case M_DIR_WATCH:
     {
       Update();
     }
     break; 
-
   case M_FILE_EXIT:
-    CloseWindow();   // terminate theApp no need to use SendCloseMessage()
+    {
+      CloseWindow();   // terminate theApp no need to use SendCloseMessage()
+    }
+    break;
+  case M_WRITE_SEGMENT:
+    {
+      myHistoManager.writeSegments();
+    }
     break;
   }
 }
@@ -568,7 +703,6 @@ void MainFrame::HandleMenu(Int_t id){
 void MainFrame::DoButton(){
  TGButton* button = (TGButton*)gTQSender;
    UInt_t button_id = button->WidgetId();
-
    HandleMenu(button_id);
  }
 ////////////////////////////////////////////////////////

@@ -55,11 +55,9 @@ else()
   MESSAGE( STATUS "RESOURCES dir already exists in the installation dir" )
 endif()
 
-set(CMAKE_CXX_FLAGS "${ROOT_CXX_FLAGS} -Wall -Werror -O3 -std=c++14 -pthread")
-
+set(CMAKE_CXX_FLAGS "${ROOT_CXX_FLAGS} -Wall -Werror -O3 -std=c++17 -pthread")
 #Set RPATH to install dir, so user do not have to set the LD_LIBRARY_PATH
 set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
-
 
 #Framework packages
 add_subdirectory(DataFormats)
@@ -67,6 +65,7 @@ add_subdirectory(GrawToROOT)
 add_subdirectory(Utilities)
 add_subdirectory(Reconstruction)
 add_subdirectory(GUI)
+add_subdirectory(Analysis)
 add_subdirectory(ToyMC)
 add_subdirectory(TrackGenerator)
 

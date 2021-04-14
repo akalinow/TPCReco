@@ -12,7 +12,6 @@
 
 int main(int argc, char **argv){
 
-
   boost::property_tree::ptree root;
   if(argc<1){
     std::cout<<" Usage: tpcGUI config.json"<<std::endl;
