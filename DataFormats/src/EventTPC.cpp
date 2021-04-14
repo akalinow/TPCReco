@@ -244,7 +244,7 @@ double EventTPC::GetMaxCharge(int strip_dir) {  // maximal charge from strips of
   return 0.0;    
 }
 
-double EventTPC::GetMaxCharge() {  // maximal charge from all strips
+double EventTPC::GetMaxCharge() const {  // maximal charge from all strips
   if(!IsOK()) return 0.0;
   return glb_max_charge;
 }
@@ -307,7 +307,7 @@ double EventTPC::GetTotalCharge(int strip_dir) {  // charge integral from strips
   return 0.0;    
 }
 
-double EventTPC::GetTotalCharge() {   // charge integral from all strips
+double EventTPC::GetTotalCharge() const {   // charge integral from all strips
   if(!IsOK()) return 0.0;
   return glb_tot_charge;
 }
