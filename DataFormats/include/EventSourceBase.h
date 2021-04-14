@@ -5,6 +5,7 @@
 #include <vector>
 #include <memory>
 
+#include "EventFilter.h"
 #include "EventTPC.h"
 #include "GeometryTPC.h"
 
@@ -29,9 +30,9 @@ public:
 
   std::shared_ptr<EventTPC> getCurrentEvent() const;
   
-  virtual std::shared_ptr<EventTPC> getNextEvent() = 0;
+  std::shared_ptr<EventTPC> getNextEventLoop();
 
-  virtual std::shared_ptr<EventTPC> getPreviousEvent() = 0;
+  std::shared_ptr<EventTPC> getPreviousEventLoop();
 
   std::shared_ptr<EventTPC> getLastEvent();
 
@@ -45,12 +46,16 @@ public:
 
   std::shared_ptr<GeometryTPC> getGeometry() const;
     
+  inline EventFilter & getEventFilter() {return eventFilter;}
 protected:
 
+  virtual std::shared_ptr<EventTPC> getNextEvent() = 0;
+  virtual std::shared_ptr<EventTPC> getPreviousEvent() = 0;
   std::string currentFilePath;
   
   unsigned long int nEntries;
   unsigned long int myCurrentEntry;
+  EventFilter eventFilter;
 
   std::shared_ptr<EventTPC> myCurrentEvent;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
