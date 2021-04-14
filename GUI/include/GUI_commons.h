@@ -11,6 +11,7 @@ enum CommandIdentifiers {
 
    M_TOGGLE_LOGSCALE,
    M_TOGGLE_AUTOZOOM,
+   M_TOGGLE_RECOMODE,
    M_DIR_WATCH,
 
    M_HELP_CONTENTS,

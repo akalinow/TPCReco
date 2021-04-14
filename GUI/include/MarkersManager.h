@@ -24,6 +24,7 @@ public:
   MarkersManager(const TGWindow *p, MainFrame *aFrame);
   virtual ~MarkersManager();
 
+  void setEnabled(bool enable);
   void initialize();
   void reset();
   void DoButton();  
@@ -38,7 +39,7 @@ private:
   int findMissingMarkerDir();
   double getMissingYCoordinate(unsigned int missingMarkerDir);
 
-  void resetMarkers();
+  void resetMarkers(bool force=false);
   void resetSegments();
   void clearHelperLines();
   void updateSegments(int strip_dir);

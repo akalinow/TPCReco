@@ -207,13 +207,7 @@ void MainFrame::AddHistoCanvas(){
   fCanvas = embeddedCanvas->GetCanvas();
   fCanvas->MoveOpaque(kFALSE);
   fCanvas->Divide(2,2, 0.02, 0.02);
-  
-  TText aMessage(0.2, 0.5,"Waiting for data.");
-  for(int iPad=1;iPad<=4;++iPad){
-    fCanvas->cd(iPad);
-    aMessage.DrawText(0.2, 0.5,"Waiting for data.");
-  }
-  fCanvas->Update();
+  ClearCanvas();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -250,10 +244,11 @@ int MainFrame::AddButtons(int attach){
     ++attach_bottom;
    }
 
-  std::vector<std::string> checkbox_names = {"Set Z logscale", "Set auto zoom"};
+  std::vector<std::string> checkbox_names = {"Set Z logscale", "Set auto zoom", "Set reco mode"};
   std::vector<std::string> checkbox_tooltips = {"Enables the logscale on Z axis",
-						"Enables automatic zoom in on region with deposits"};
-  std::vector<unsigned int> checkbox_id = {M_TOGGLE_LOGSCALE, M_TOGGLE_AUTOZOOM};
+						"Enables automatic zoom in on region with deposits",
+						"Converts data to SI units and enables segment creation and fit"};
+  std::vector<unsigned int> checkbox_id = {M_TOGGLE_LOGSCALE, M_TOGGLE_AUTOZOOM, M_TOGGLE_RECOMODE};
   
   for (unsigned int iCheckbox = 0; iCheckbox < checkbox_names.size(); ++iCheckbox) {
     TGCheckButton* aCheckbox = new TGCheckButton(fFrame,
@@ -457,8 +452,22 @@ void MainFrame::HandleEmbeddedCanvas(Int_t event, Int_t x, Int_t y, TObject *sel
 void MainFrame::CloseWindow(){ gApplication->Terminate(0); }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void MainFrame::Update(){
+void MainFrame::ClearCanvas(){
 
+  TList *aList = fCanvas->GetListOfPrimitives();
+  TText aMessage(0.0, 0.0,"Waiting for data.");
+  for(auto obj: *aList){
+    TPad *aPad = (TPad*)(obj);
+    if(!aPad) continue;
+    aPad->Clear();
+    aPad->cd();
+    aMessage.DrawTextNDC(0.3, 0.5,"Waiting for data.");
+  }
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void MainFrame::Update(){
+  
   if(!myEventSource->numberOfEvents()) return;
   fEntryDialog->updateFileName(myEventSource->getCurrentPath());
   fEntryDialog->updateEventNumbers(myEventSource->numberOfEvents(),
@@ -466,9 +475,10 @@ void MainFrame::Update(){
 				   myEventSource->currentEntryNumber());
   myHistoManager.setEvent(myEventSource->getCurrentEvent());
   fMarkersManager->reset();
+  fMarkersManager->setEnabled(isRecoModeOn);
 
-  //drawRawHistos();
-  drawRecoHistos();
+  if(!isRecoModeOn) drawRawHistos();
+  else drawRecoHistos();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -514,10 +524,11 @@ void MainFrame::drawRecoFromMarkers(std::vector<double> * segmentsXY){
     myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
     fCanvas->Update();
   }
-  TCanvas *a3dCanvas = new TCanvas("a3dCanvas","3D Canvas", 500, 500);
-  TVirtualPad *aPad = a3dCanvas->cd();
+  TVirtualPad *aPad = fCanvas->cd(4);
+  //TCanvas *a3dCanvas = new TCanvas("a3dCanvas","3D Canvas", 500, 500);
+  //TVirtualPad *aPad = a3dCanvas->cd();
   myHistoManager.drawTrack3D(aPad);
-  a3dCanvas->Update();
+  fCanvas->Update();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -637,6 +648,7 @@ void MainFrame::HandleMenu(Int_t id){
   case M_NEXT_EVENT:
     {
       UpdateEventLog();
+      ClearCanvas();
       myEventSource->getNextEventLoop();
       Update();
     }
@@ -644,6 +656,7 @@ void MainFrame::HandleMenu(Int_t id){
   case M_PREVIOUS_EVENT:
     {
       UpdateEventLog();
+      ClearCanvas();
       myEventSource->getPreviousEventLoop();
       Update();
     }
@@ -668,9 +681,17 @@ void MainFrame::HandleMenu(Int_t id){
       fCanvas->Update();
     }
     break;
+  case M_TOGGLE_RECOMODE:
+    {
+      isRecoModeOn=!isRecoModeOn;
+      ClearCanvas();
+      Update();
+    }
+    break;
   case M_GOTO_EVENT:
     {
       int eventId = fEventIdEntry->GetIntNumber();
+      ClearCanvas();
       myEventSource->loadEventId(eventId);
       Update();
     }
@@ -678,6 +699,7 @@ void MainFrame::HandleMenu(Int_t id){
   case M_GOTO_ENTRY:
     {
       int fileEntry = fFileEntryEntry->GetIntNumber();
+      ClearCanvas();
       myEventSource->loadFileEntry(fileEntry);
       Update();
     }
