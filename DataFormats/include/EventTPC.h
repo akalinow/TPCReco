@@ -84,14 +84,14 @@ class EventTPC {
   inline int GetTimeRebin() const { return time_rebin; }       
   bool SetTimeRebin(int rebin); // HAS NO EFFECT YET !!!!
 
-  double GetMaxCharge();                   // maximal charge from all strips
+  double GetMaxCharge() const;                   // maximal charge from all strips
   double GetMaxCharge(int strip_dir);      // maximal charge from strips of a given direction
   double GetMaxCharge(int strip_dir, int strip_number);      // maximal charge from single strip of a given direction
   int GetMaxChargeTime(int strip_dir);     // arrival time of the maximal charge from strips of a given direction
   int GetMaxChargeStrip(int strip_dir);    // strip number with the maximal charge in a given direction 
   int GetMaxChargeTime();                  // arrival time of the maximal charge from all strips
   int GetMaxChargeChannel();               // global channel number with the maximal charge from all strips
-  double GetTotalCharge();                 // charge integral from all strips
+  double GetTotalCharge() const;                 // charge integral from all strips
   double GetTotalCharge(int strip_dir);    // charge integral from strips of a given direction 
   double GetTotalCharge(int strip_dir, int strip_number); // charge integral from single strip of a given direction 
   double GetTotalChargeByTimeCell(int strip_dir, int time_cell); // charge integral from a single time cell from all strips in a given direction

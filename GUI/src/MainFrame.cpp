@@ -144,6 +144,7 @@ void MainFrame::InitializeEventSource(){
   }
   myHistoManager.setGeometry(myEventSource->getGeometry());
   myHistoManager.openOutputStream(dataFileName);
+  myEventSource->getEventFilter().setConditions(myConfig);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -636,14 +637,14 @@ void MainFrame::HandleMenu(Int_t id){
   case M_NEXT_EVENT:
     {
       UpdateEventLog();
-      myEventSource->getNextEvent();
+      myEventSource->getNextEventLoop();
       Update();
     }
     break;
   case M_PREVIOUS_EVENT:
     {
       UpdateEventLog();
-      myEventSource->getPreviousEvent();
+      myEventSource->getPreviousEventLoop();
       Update();
     }
     break;
