@@ -4,7 +4,7 @@ Currently `tpcGUI` takes [JSON](https://en.wikipedia.org/wiki/JSON#Syntax) forma
 
 ## Known tags
 
-- `dataFile` — a path to a `.graw`, `.root` file (offline mode) or a directory (with trailing */*)(online mode). 
+- `dataFile` — a path to a `.graw`, `.root` file (offline mode) or a directory (with trailing */*) (online mode). 
 - `geometryFile` — a path to geometry `.dat` file. Geometries for **mini-eTPC** and full scale prototype **ELITPC** are available in *resources*,
 - `resourcesPath` — a path to *resources* directory,
 - `updateInterval` — a refresh rate in online mode,
