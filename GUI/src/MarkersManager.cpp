@@ -123,9 +123,6 @@ void MarkersManager::setEnabled(bool enable){
   if(!enable && myButtons.find("Add segment")!=myButtons.end() &&
      myButtons.find("Fit segments")!=myButtons.end() &&
      myButtons.find("Save segments")!=myButtons.end()){
-
-    std::cout<<KBLU<<__FUNCTION__<<RST<<" enable: "<<enable<<std::endl;
-    
     myButtons.find("Add segment")->second->SetState(kButtonDisabled);
     myButtons.find("Fit segments")->second->SetState(kButtonDisabled);
     myButtons.find("Save segments")->second->SetState(kButtonDisabled);
