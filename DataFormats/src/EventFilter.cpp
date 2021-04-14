@@ -12,13 +12,13 @@ bool EventFilter::pass(const EventTPC &event) const {
   if(event.GetTotalCharge()<conditions.get("totalChargeLowerBound",-std::numeric_limits<double>::max())){
     return false;
   }
-  if(event.GetTotalCharge()>conditions.get("totalChargeHigherBound",std::numeric_limits<double>::max())){
+  if(event.GetTotalCharge()>conditions.get("totalChargeUpperBound",std::numeric_limits<double>::max())){
     return false;
   }
   if(event.GetMaxCharge()<conditions.get("maxChargeLowerBound",-std::numeric_limits<double>::max())){
     return false;
   }
-  if(event.GetMaxCharge()>conditions.get("maxChargeHigherBound",std::numeric_limits<double>::max())){
+  if(event.GetMaxCharge()>conditions.get("maxChargeUpperBound",std::numeric_limits<double>::max())){
     return false;
   }
   return true;

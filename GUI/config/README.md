@@ -12,9 +12,9 @@ Currently `tpcGUI` takes [JSON](https://en.wikipedia.org/wiki/JSON#Syntax) forma
   - `enabled` — toggles filtering,
   - `events` — an array of indices of eligible events,
   - `maxChargeLowerBound` — low cutoff value on maximum charge in event,
-  - `maxChargeHigherBound` — high cutoff value on maximum charge in event,
+  - `maxChargeUpperBound` — high cutoff value on maximum charge in event,
   - `totalChargeLowerBound` — low cutoff value on total charge in event,
-  - `totalChargeHigherBound` — high cutoff value on total charge in event
+  - `totalChargeUpperBound` — high cutoff value on total charge in event
 
 ## Example
 
