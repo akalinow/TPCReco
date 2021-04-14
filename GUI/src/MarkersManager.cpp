@@ -113,6 +113,23 @@ void MarkersManager::initialize(){
   
   firstMarker = 0;
   acceptPoints = false;
+  setEnabled(false);
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void MarkersManager::setEnabled(bool enable){
+  
+  //reset();
+  if(!enable && myButtons.find("Add segment")!=myButtons.end() &&
+     myButtons.find("Fit segments")!=myButtons.end() &&
+     myButtons.find("Save segments")!=myButtons.end()){
+
+    std::cout<<KBLU<<__FUNCTION__<<RST<<" enable: "<<enable<<std::endl;
+    
+    myButtons.find("Add segment")->second->SetState(kButtonDisabled);
+    myButtons.find("Fit segments")->second->SetState(kButtonDisabled);
+    myButtons.find("Save segments")->second->SetState(kButtonDisabled);
+  }    
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -153,7 +170,7 @@ void MarkersManager::updateSegments(int strip_dir){
 /////////////////////////////////////////////////////////
 void MarkersManager::reset(){
 
-  resetMarkers();
+  resetMarkers(true);
   resetSegments();
 }
 /////////////////////////////////////////////////////////
@@ -177,7 +194,7 @@ void MarkersManager::setPadsEditable(bool isEditable){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void MarkersManager::resetMarkers(){
+void MarkersManager::resetMarkers(bool force){
   
   std::for_each(fMarkersContainer.begin(), fMarkersContainer.end(),
 		[](TMarker *&item){if(item){delete item; item = 0;}});
@@ -186,7 +203,7 @@ void MarkersManager::resetMarkers(){
   clearHelperLines();
 
   int strip_dir = DIR_U;//TEST
-  if(isLastSegmentComplete(strip_dir)){
+  if(force || isLastSegmentComplete(strip_dir)){
     acceptPoints = false;
     if(myButtons.find("Add segment")!=myButtons.end() &&
        myButtons.find("Fit segments")!=myButtons.end() &&
@@ -429,9 +446,9 @@ bool MarkersManager::isLastSegmentComplete(int strip_dir){
 
   std::vector<TLine> &aSegmentsContainer = fSegmentsContainer.at(strip_dir);
 
-  return aSegmentsContainer.size() &&
-         std::abs(aSegmentsContainer.back().GetX1() - aSegmentsContainer.back().GetX2())>1E-3 &&
-	 std::abs(aSegmentsContainer.back().GetY1() - aSegmentsContainer.back().GetY2())>1E-3;
+  return !aSegmentsContainer.size() ||
+    (std::abs(aSegmentsContainer.back().GetX1() - aSegmentsContainer.back().GetX2())>1E-3 &&
+     std::abs(aSegmentsContainer.back().GetY1() - aSegmentsContainer.back().GetY2())>1E-3);
 }
 ////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

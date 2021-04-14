@@ -63,7 +63,7 @@ private:
 
   boost::property_tree::ptree myConfig;
   int myWorkMode = 0;
-  bool isLogScaleOn{false};
+  bool isLogScaleOn{false}, isRecoModeOn{false};
   std::shared_ptr<EventSourceBase> myEventSource;
   HistoManager myHistoManager;
 
@@ -92,6 +92,7 @@ private:
   void drawRawHistos();
   void drawRecoHistos();
 
+  void ClearCanvas();
   void Update();
   void UpdateEventLog();
 
