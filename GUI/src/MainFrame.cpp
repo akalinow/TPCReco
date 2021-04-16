@@ -106,18 +106,24 @@ void MainFrame::InitializeEventSource(){
     std::cerr<<"No data or geometry file path provided."<<std::endl;
     return;
   }
+  
+  FileStat_t stat;
+  if(gSystem->GetPathInfo(dataFileName.c_str(), stat) != 0){
+    std::cerr<<"Invalid data path. No such file or directory: << "<<dataFileName<<std::endl;
+    return;
+  }
 
-  if(dataFileName.find(".root")!=std::string::npos){
+  if( ( (stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG) && dataFileName.find(".root")!=std::string::npos){
     myWorkMode = M_OFFLINE_ROOT_MODE;
     myEventSource = std::make_shared<EventSourceROOT>();
     myEventSource->loadGeometry(geometryFileName); 
   }
 #ifdef WITH_GET
-  else if(dataFileName.find(".graw")!=std::string::npos){
+  else if( ( (stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG) && dataFileName.find(".graw")!=std::string::npos){
     myWorkMode = M_OFFLINE_GRAW_MODE;
     myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
   }
-  else if(dataFileName.back()=='/'){
+  else if( (stat.fMode & EFileModeMask::kS_IFDIR) == EFileModeMask::kS_IFDIR) {
     myWorkMode = M_ONLINE_MODE;
     myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
     fileWatchThread = std::thread(&DirectoryWatch::watch, &myDirWatch, dataFileName);
