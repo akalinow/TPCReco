@@ -8,11 +8,11 @@ DIAMOND SIZE: 1.0
 #
 #### Offset in [mm] of the reference point wrt X-Y plane origin
 #
-REFERENCE POINT: -110 110
+REFERENCE POINT: -138.9971 98.25
 #
 #### Electron drift velocity [cm/us]
 #
-DRIFT VELOCITY: 1.0
+DRIFT VELOCITY: 0.7242
 #
 #### Electronics sampling rate [MHz] (eg. (512 cells)/(25 MHz)/(1cm/us) = 20.48 cm window can be recorded, length of drift cage is 20 cm)
 #
@@ -22,7 +22,7 @@ SAMPLING RATE: 25.0
 #
 TRIGGER DELAY: 10.24
 #
-#### Acceptance of drift cage along Z-axis (cathode has the highest Z, beam axis has Z=0 by definition)
+#### Acceptance of drift cage along Z-axis [mm] (cathode has the highest Z, beam axis has Z=0 by definition)
 #
 DRIFT CAGE ACCEPTANCE: -98.0 98.0
 #
@@ -1047,7 +1047,7 @@ W		0		224		0		2		2		58		79.5		-158		35
 W		0		225		0		2		2		60		80		-159		33
 W		0		226		0		2		2		62		80.5		-160		31
 #
-# Auxilliary spare channels of the GET electronics
+# Auxiliary spare channels of the GET electronics
 #
 #### Columns: AUX_name / COBO_id / ASAD_id[0-3] / AGET_id[0-3] / AGET_ch[0-63]
 Ain0		0	0	0	62
