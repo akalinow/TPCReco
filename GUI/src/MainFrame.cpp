@@ -99,11 +99,12 @@ void MainFrame::InitializeWindows(){
 /////////////////////////////////////////////////////////
 void MainFrame::InitializeEventSource(){
 
-  std::string dataFileName = myConfig.get<std::string>("dataFile");
-  std::string geometryFileName = myConfig.get<std::string>("geometryFile");
+  std::string dataFileName = myConfig.get("dataFile","");
+  std::string geometryFileName = myConfig.get("geometryFile","");
 
   if(dataFileName.empty() || geometryFileName.empty()){
     std::cerr<<"No data or geometry file path provided."<<std::endl;
+    exit(1);
     return;
   }
   
