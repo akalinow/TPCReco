@@ -8,6 +8,10 @@ Currently `tpcGUI` takes [JSON](https://en.wikipedia.org/wiki/JSON#Syntax) forma
 - `geometryFile` — a path to geometry `.dat` file. Geometries for **mini-eTPC** and full scale prototype **ELITPC** are available in *resources*,
 - `resourcesPath` — a path to *resources* directory,
 - `updateInterval` — a refresh rate in online mode,
+- `display` — a configuration of toggleable modes:
+  - `zLogScale` — displays charge on logarithmic scale on the projection histograms ,
+  - `autoZoom` — zooms the projection histograms to maximum charge deposits,
+  - `recoMode` — enables the reconstruction mode,
 - `eventFilter` — a configuration of filter:
   - `enabled` — toggles filtering,
   - `events` — an array of indices of eligible events,
@@ -15,7 +19,6 @@ Currently `tpcGUI` takes [JSON](https://en.wikipedia.org/wiki/JSON#Syntax) forma
   - `maxChargeUpperBound` — high cutoff value on maximum charge in event,
   - `totalChargeLowerBound` — low cutoff value on total charge in event,
   - `totalChargeUpperBound` — high cutoff value on total charge in event
-
 ## Example
 
 ``` json
@@ -24,6 +27,9 @@ Currently `tpcGUI` takes [JSON](https://en.wikipedia.org/wiki/JSON#Syntax) forma
     "geometryFile": "/home/mfila/ELITPC/data/neutrons/geometry_mini_eTPC_2018-06-19T10:35:30.853.dat",
     "resourcesPath": "/home/mfila/TPCReco/build/resources/",
     "updateInterval": 3000,
+    "display": {
+        "autoZoom": true,
+    }
     "eventFilter": {
         "enabled": true,
         "events": [

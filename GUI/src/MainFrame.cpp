@@ -248,8 +248,10 @@ int MainFrame::AddButtons(int attach){
   std::vector<std::string> checkbox_tooltips = {"Enables the logscale on Z axis",
 						"Enables automatic zoom in on region with deposits",
 						"Converts data to SI units and enables segment creation and fit"};
+  std::vector<std::string> checkbox_config = {"zLogScale", "autoZoom", "recoMode"};
   std::vector<unsigned int> checkbox_id = {M_TOGGLE_LOGSCALE, M_TOGGLE_AUTOZOOM, M_TOGGLE_RECOMODE};
   
+  auto displayConfig=myConfig.find("display");
   for (unsigned int iCheckbox = 0; iCheckbox < checkbox_names.size(); ++iCheckbox) {
     TGCheckButton* aCheckbox = new TGCheckButton(fFrame,
 						 checkbox_names[iCheckbox].c_str(),
@@ -261,6 +263,9 @@ int MainFrame::AddButtons(int attach){
     aCheckbox->SetToolTipText(checkbox_tooltips[iCheckbox].c_str());
     ++attach_top;
     ++attach_bottom;
+    if(displayConfig!=myConfig.not_found() &&  displayConfig->second.get(checkbox_config[iCheckbox],false)){
+      aCheckbox->SetState(kButtonDown, true);
+    }
    }
   return attach_bottom;
  }
@@ -467,8 +472,7 @@ void MainFrame::ClearCanvas(){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MainFrame::Update(){
-  
-  if(!myEventSource->numberOfEvents()) return;
+  if(myEventSource==nullptr || !myEventSource->numberOfEvents() ) {return;}
   fEntryDialog->updateFileName(myEventSource->getCurrentPath());
   fEntryDialog->updateEventNumbers(myEventSource->numberOfEvents(),
 				   myEventSource->currentEventNumber(),
