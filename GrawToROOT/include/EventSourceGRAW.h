@@ -20,6 +20,8 @@ public:
   
   ~EventSourceGRAW();
 
+  void setRemovePedestal(bool aFlag);
+
   std::shared_ptr<EventTPC> getNextEvent();
   
   std::shared_ptr<EventTPC> getPreviousEvent();
@@ -48,6 +50,7 @@ private:
 
   int minSignalCell;
   int maxSignalCell;
+  bool removePedestal{true};
 
 };
 #endif

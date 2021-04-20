@@ -134,14 +134,18 @@ void MainFrame::InitializeEventSource(){
     }
     myDirWatch.Connect("Message(const char *)", "MainFrame", this, "ProcessMessage(const char *)");
   }
+  if(myConfig.find("removePedestal")!=myConfig.not_found() && myEventSource.get()){
+       bool removePedestal = myConfig.get<bool>("removePedestal");
+       EventSourceGRAW* aGrawEventSrc = dynamic_cast<EventSourceGRAW*>(myEventSource.get());
+       if(aGrawEventSrc) aGrawEventSrc->setRemovePedestal(removePedestal);
+  }
 #endif
   else if(!myEventSource){
-    std::cerr<<KRED<<"Input source not known. dataFile: "<<RST
-	     <<dataFileName<<" Exiting."<<std::endl;
+    std::cerr<<KRED<<"Input source not known. dataFile: "<<RST<<dataFileName<<std::endl;
 #ifndef WITH_GET
-    std::cerr<<KRED<<" or GRAW libriaries not set."<<RST<<std::endl;
+    std::cerr<<KRED<<"and GRAW libriaries not set."<<RST<<std::endl;
+#endif
     exit(0);
-#endif    
     return;
   }
 

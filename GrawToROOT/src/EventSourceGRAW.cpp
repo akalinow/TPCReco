@@ -21,6 +21,11 @@ EventSourceGRAW::EventSourceGRAW(const std::string & geometryFileName) {
 EventSourceGRAW::~EventSourceGRAW() { }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+void EventSourceGRAW::setRemovePedestal(bool aFlag){
+  removePedestal = aFlag;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 std::shared_ptr<EventTPC> EventSourceGRAW::getNextEvent(){
 
   unsigned int currentEventIdx = myCurrentEvent->GetEventId();
@@ -214,8 +219,10 @@ void EventSourceGRAW::fillEventFromFrame(GET::GDataFrame & aGrawFrame){
     // Beware HACK!!!
   //TProfile with pedestals is only 256 (max chans in frame) long, pedestals are calculated for each frame and reset
   //to fit into TProfile the global number of first chan in COBO/ASAD has to be substracted from global chanel
-  int minChannelGlobal     = myGeometryPtr->Global_normal2normal(COBO_idx, ASAD_idx, 0, 0);
-  corrVal -= myPedestalCalculator.GetPedestalCorrection(iChannelGlobal-minChannelGlobal, agetId, icell);
+  if(removePedestal){
+    int minChannelGlobal = myGeometryPtr->Global_normal2normal(COBO_idx, ASAD_idx, 0, 0);
+    corrVal -= myPedestalCalculator.GetPedestalCorrection(iChannelGlobal-minChannelGlobal, agetId, icell);
+  }
 //	} 
 	myCurrentEvent->AddValByAgetChannel(COBO_idx, ASAD_idx, agetId, chanId, icell, corrVal);
       }
