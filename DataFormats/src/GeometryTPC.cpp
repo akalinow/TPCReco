@@ -44,8 +44,8 @@ int StripTPC::GlobalCh_raw() {
 GeometryTPC::GeometryTPC(const char *fname, bool debug)
     : initOK(false), COBO_N(0), AGET_Nchips(4), AGET_Nchan(64),
       AGET_Nchan_fpn(-1), AGET_Nchan_raw(-1), AGET_Ntimecells(512),
-      pad_size(0.), pad_pitch(0.), strip_pitch(0.), vdrift(0.),
-      sampling_rate(0.), trigger_delay(0.), drift_zmin(0.), drift_zmax(0.),
+      pad_size(0.), pad_pitch(0.), strip_pitch(0.),
+      drift_zmin(0.), drift_zmax(0.),
       grid_nx(25), grid_ny(25), isOK_TH2Poly(false), _debug(debug) {
   if (_debug) {
     std::cout << "GeometryTPC::Constructor - Started..." << std::flush
@@ -199,8 +199,8 @@ bool GeometryTPC::Load(const char *fname) {
       double val = 0.;
       if (sscanf(line.c_str(), "DRIFT VELOCITY: %lf", &val) == 1) {
         if (val > 0.0) {
-          vdrift = val;
-          std::cout << Form("Drift velocity = %lf cm/us", vdrift) << std::endl;
+          setDriftVelocity(val);
+          std::cout << Form("Drift velocity = %lf cm/us", val) << std::endl;
           break;
         } else {
           std::cerr << "ERROR: Wrong drift velocity !!!" << std::endl;
@@ -219,8 +219,8 @@ bool GeometryTPC::Load(const char *fname) {
       double val = 0.;
       if (sscanf(line.c_str(), "SAMPLING RATE: %lf", &val) == 1) {
         if (val > 0.0) {
-          sampling_rate = val;
-          std::cout << Form("Sampling rate = %lf MHz", sampling_rate)
+          setSamplingRate(val);
+          std::cout << Form("Sampling rate = %lf MHz", val)
                     << std::endl;
           break;
         } else {
@@ -240,8 +240,8 @@ bool GeometryTPC::Load(const char *fname) {
       double val = 0.;
       if (sscanf(line.c_str(), "TRIGGER DELAY: %lf", &val) == 1) {
         if (fabs(val) < 1000.) {
-          trigger_delay = val;
-          std::cout << Form("Trigger delay = %lf us", trigger_delay)
+          setTriggerDelay(val);
+          std::cout << Form("Trigger delay = %lf us", val)
                     << std::endl;
           break;
         } else {
@@ -744,6 +744,18 @@ void GeometryTPC::SetTH2PolyPartition(int nx, int ny) {
 void GeometryTPC::SetTH2PolyStrip(int ibin, StripTPC *s) {
   if (s)
     fStripMap[ibin] = s;
+}
+
+void GeometryTPC::setDriftVelocity(double v){
+  runConditions.setDriftVelocity(v);
+}
+
+void GeometryTPC::setSamplingRate(double r){
+  runConditions.setSamplingRate(r);
+}
+
+void GeometryTPC::setTriggerDelay(double d){
+  runConditions.setTriggerDelay(d);
 }
 
 StripTPC *GeometryTPC::GetTH2PolyStrip(int ibin) {
@@ -1254,8 +1266,8 @@ double GeometryTPC::Timecell2pos(double position_in_cells, bool &err_flag) {
     return 0.0; // ERROR
   if (position_in_cells >= 0.0 && position_in_cells <= AGET_Ntimecells)
     err_flag = false; // check range
-  return (position_in_cells - AGET_Ntimecells) / sampling_rate * vdrift * 10.0 +
-         trigger_delay * vdrift * 10.0; // [mm]
+  return (position_in_cells - AGET_Ntimecells) / GetSamplingRate() *  GetDriftVelocity()* 10.0 +
+    GetTriggerDelay() * GetDriftVelocity() * 10.0; // [mm]
 }
 
 // Calculates (fractional) time cell number [0-511] corresponding to
@@ -1267,7 +1279,7 @@ double GeometryTPC::Pos2timecell(double z, bool &err_flag) {
   err_flag = true;
   const double position_in_cells =
       AGET_Ntimecells +
-      sampling_rate * (z / vdrift / 10.0 - trigger_delay); // [cells]
+    GetSamplingRate() * (z / GetDriftVelocity() / 10.0 - GetTriggerDelay()); // [cells]
   if (position_in_cells >= 0.0 && position_in_cells <= AGET_Ntimecells)
     err_flag = false; // check range
   return position_in_cells;

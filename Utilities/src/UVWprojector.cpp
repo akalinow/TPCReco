@@ -298,7 +298,7 @@ bool UVWprojector::InitTimeMapping() {
   const double h3_zmin = h3->GetZaxis()->GetXmin();  // Z-position [mm] closest to readout PCB
   const double h3_zmax = h3->GetZaxis()->GetXmax();  // Z-position [mm] farthest from readout PCB
   const int h3_nbins = h3->GetNbinsZ(); // number of bins along Z-axis   
-  const double vdrift = geo_ptr->GetVdrift(); // electron drift velocity [cm/us]
+  const double vdrift = geo_ptr->GetDriftVelocity(); // electron drift velocity [cm/us]
   const double drift_zmin = geo_ptr->GetDriftCageZmin(); // drift cage lower acceptance limit [mm]
   const double drift_zmax = geo_ptr->GetDriftCageZmax(); // drift cage upper acceptance limit [mm]
   const double freq = geo_ptr->GetSamplingRate(); // electronics sampling rate [MHz]

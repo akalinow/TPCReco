@@ -156,6 +156,12 @@ void MainFrame::InitializeEventSource(){
   myHistoManager.setGeometry(myEventSource->getGeometry());
   myHistoManager.openOutputStream(dataFileName);
   myEventSource->getEventFilter().setConditions(myConfig);
+
+  //TEST
+  std::cout<<myEventSource->getGeometry()->getRunConditions()<<std::endl;
+  myEventSource->getGeometry()->setDriftVelocity(15.0);
+  std::cout<<myEventSource->getGeometry()->getRunConditions()<<std::endl;
+  /////
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
