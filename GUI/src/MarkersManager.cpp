@@ -13,7 +13,6 @@
 
 #include "colorText.h"
 #include "MarkersManager.h"
-#include "EntryDialog.h"
 #include "MainFrame.h"
 #include "HistoManager.h"
 #include "ScrollFrame.h"

@@ -26,7 +26,7 @@
 #include <TArrow.h>
 
 #include "GUI_commons.h"
-#include "EntryDialog.h"
+#include "FileInfoFrame.h"
 #include "SelectionBox.h"
 #include "MarkersManager.h"
 
@@ -113,7 +113,7 @@ private:
   TGButtonGroup *eventTypeButtonGroup;
 
   MarkersManager *fMarkersManager;  
-  EntryDialog *fEntryDialog;
+  FileInfoFrame *fFileInfoFrame;
   SelectionBox *fSelectionBox;
 
   TArrow *fArrow;

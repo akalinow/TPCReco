@@ -51,7 +51,7 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h,  const boost::proper
   else if(myWorkMode==M_OFFLINE_GRAW_MODE){
     modeLabel = "OFFLINE from GRAW";
   }
-  fEntryDialog->updateModeLabel(modeLabel);
+  fFileInfoFrame->updateModeLabel(modeLabel);
   Update();
 }
 /////////////////////////////////////////////////////////
@@ -171,7 +171,7 @@ void MainFrame::AddTopMenu(){
   TGLayoutHints * menuBarHelpLayout = new TGLayoutHints(kLHintsTop | kLHintsRight);
 
   fMenuFile = new TGPopupMenu(fClient->GetRoot());
-  fMenuFile->AddEntry("&Open...", M_FILE_OPEN);
+  if(myWorkMode!=M_ONLINE_MODE) fMenuFile->AddEntry("&Open...", M_FILE_OPEN);
   //fMenuFile->AddEntry("S&ave as...", M_FILE_SAVEAS);
   fMenuFile->AddSeparator();
   fMenuFile->AddEntry("E&xit", M_FILE_EXIT);
@@ -346,7 +346,7 @@ int MainFrame::AddGoToFileEntryDialog(int attach){
 /////////////////////////////////////////////////////////
 int MainFrame::AddNumbersDialog(int attach){
 
-  fEntryDialog = new EntryDialog(fFrame, this);
+  fFileInfoFrame = new FileInfoFrame(fFrame, this);
 
   TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
   //int nRows = aLayout->fNrows;
@@ -358,8 +358,8 @@ int MainFrame::AddNumbersDialog(int attach){
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 						    kLHintsShrinkX|kLHintsShrinkY|
 						    kLHintsFillX|kLHintsFillY);
-  fEntryDialog->initialize();
-  fFrame->AddFrame(fEntryDialog, tloh);
+  fFileInfoFrame->initialize();
+  fFrame->AddFrame(fFileInfoFrame, tloh);
   return attach_bottom;
  }
 /////////////////////////////////////////////////////////
@@ -490,8 +490,8 @@ void MainFrame::ClearCanvas(){
 /////////////////////////////////////////////////////////
 void MainFrame::Update(){
   if(myEventSource==nullptr || !myEventSource->numberOfEvents() ) {return;}
-  fEntryDialog->updateFileName(myEventSource->getCurrentPath());
-  fEntryDialog->updateEventNumbers(myEventSource->numberOfEvents(),
+  fFileInfoFrame->updateFileName(myEventSource->getCurrentPath());
+  fFileInfoFrame->updateEventNumbers(myEventSource->numberOfEvents(),
 				   myEventSource->currentEventNumber(),
 				   myEventSource->currentEntryNumber());
   myHistoManager.setEvent(myEventSource->getCurrentEvent());

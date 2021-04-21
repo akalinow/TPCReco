@@ -5,11 +5,11 @@
 #include <TGLabel.h>
 #include <TGFontDialog.h>
 
-#include <EntryDialog.h>
+#include <FileInfoFrame.h>
 #include <MainFrame.h>
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-EntryDialog::EntryDialog(const TGWindow * p, MainFrame * aFrame)
+FileInfoFrame::FileInfoFrame(const TGWindow * p, MainFrame * aFrame)
  : TGCompositeFrame(p, 10, 10, kVerticalFrame), theMainFrame(aFrame){
 
    SetCleanup(kDeepCleanup);
@@ -61,7 +61,7 @@ EntryDialog::EntryDialog(const TGWindow * p, MainFrame * aFrame)
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-EntryDialog::~EntryDialog(){
+FileInfoFrame::~FileInfoFrame(){
 
   delete datasetInfoFrame;
   delete totalEventsLabel;
@@ -73,10 +73,10 @@ EntryDialog::~EntryDialog(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void EntryDialog::initialize(){ }
+void FileInfoFrame::initialize(){ }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void EntryDialog::updateEventNumbers(unsigned int nTotalEvents,
+void FileInfoFrame::updateEventNumbers(unsigned int nTotalEvents,
                                      unsigned int iCurrentEvent,
 				     unsigned int iCurrentEntry){
 
@@ -87,7 +87,7 @@ void EntryDialog::updateEventNumbers(unsigned int nTotalEvents,
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void EntryDialog::updateFileName(const std::string & fileName){
+void FileInfoFrame::updateFileName(const std::string & fileName){
 
   std::string fileNameWithBreaks = fileName;
   size_t previousBreakPoint = 0;
@@ -111,14 +111,14 @@ void EntryDialog::updateFileName(const std::string & fileName){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void EntryDialog::updateModeLabel(const std::string & aMode){
+void FileInfoFrame::updateModeLabel(const std::string & aMode){
 
   modeLabel->SetText(aMode.c_str());
   modeInfoFrame->Layout();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-Bool_t EntryDialog::ProcessMessage(Long_t msg, Long_t parm1, Long_t /*parm2*/){
+Bool_t FileInfoFrame::ProcessMessage(Long_t msg, Long_t parm1, Long_t /*parm2*/){
    switch (GET_MSG(msg)) {
    case kC_COMMAND:
       {
@@ -129,7 +129,7 @@ Bool_t EntryDialog::ProcessMessage(Long_t msg, Long_t parm1, Long_t /*parm2*/){
                   // exit button
                case 1:
                   {
-                     std::cout<<"EntryDialog::ProcessMessage(): msg: "<<msg<<std::endl;
+                     std::cout<<"FileInfoFrame::ProcessMessage(): msg: "<<msg<<std::endl;
                      break;
                   }
                   // set button
