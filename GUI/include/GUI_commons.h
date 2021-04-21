@@ -28,6 +28,11 @@ enum CommandIdentifiers {
    M_FIT_SEGMENT,
    M_WRITE_SEGMENT,
 
+   M_SET_V_DRIFT,
+   M_SET_SAMLING_RATE,
+   M_SET_TRG_DELAY,
+   M_SET_CONDITIONS
+
 };
 
 enum Messages {

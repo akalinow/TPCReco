@@ -25,42 +25,13 @@ MarkersManager::MarkersManager(const TGWindow * p, MainFrame * aFrame)
 
    SetCleanup(kDeepCleanup);
 
-   int nRows = 3;
+   int nRows = 2;
    int nColumns = 3;
    fHeaderFrame = new TGGroupFrame(this, "Segment creation");
    TGTableLayout* tlo = new TGTableLayout(fHeaderFrame, nRows, nColumns, 1);
    fHeaderFrame->SetLayoutManager(tlo);
    AddFrame(fHeaderFrame, new TGLayoutHints(kLHintsExpandX, 2, 2, 1, 1));
-   addButtons();
-   /*
-   addSegmentButton = new TGTextButton(fHeaderFrame,"Add segment", M_ADD_SEGMENT);
-   ULong_t aColor = TColor::RGB2Pixel(255, 255, 26);
-   addSegmentButton->ChangeBackground(aColor);
-   addSegmentButton->Connect("Clicked()","MarkersManager",this,"DoButton()");
-
-   UInt_t attach_left=0, attach_right=1;
-   UInt_t attach_top=0,  attach_bottom=1;
-   UInt_t padLeft = 0;
-   TGTableLayoutHints *aTableLayout = new TGTableLayoutHints(attach_left, attach_right,
-							      attach_top, attach_bottom,
-							     kLHintsFillX|kLHintsFillY,
-							     padLeft);
-   fHeaderFrame->AddFrame(addSegmentButton, aTableLayout);
-   
-   fitButton = new TGTextButton(fHeaderFrame,"Fit segments", M_FIT);
-   aColor = TColor::RGB2Pixel(255, 255, 26);
-   fitButton->ChangeBackground(aColor);
-   fitButton->Connect("Clicked()","MarkersManager",this,"DoButton()");
-   fitButton->SetState(kButtonDisabled);
-   attach_left=1;
-   attach_right=2;   
-   padLeft = 5;
-   aTableLayout = new TGTableLayoutHints(attach_left, attach_right,
-					 attach_top, attach_bottom,
-					 kLHintsFillX|kLHintsFillY,
-					 padLeft);
-   fHeaderFrame->AddFrame(fitButton, aTableLayout);
-   */
+   addButtons();   
    initialize();
 }
 /////////////////////////////////////////////////////////
@@ -118,7 +89,6 @@ void MarkersManager::initialize(){
 /////////////////////////////////////////////////////////
 void MarkersManager::setEnabled(bool enable){
   
-  //reset();
   if(!enable && myButtons.find("Add segment")!=myButtons.end() &&
      myButtons.find("Fit segments")!=myButtons.end() &&
      myButtons.find("Save segments")!=myButtons.end()){
@@ -191,21 +161,22 @@ void MarkersManager::setPadsEditable(bool isEditable){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MarkersManager::resetMarkers(bool force){
-  
+
   std::for_each(fMarkersContainer.begin(), fMarkersContainer.end(),
 		[](TMarker *&item){if(item){delete item; item = 0;}});
   firstMarker = 0;
 
   clearHelperLines();
 
-  int strip_dir = DIR_U;//TEST
+  int strip_dir = DIR_U;//FIX ME
   if(force || isLastSegmentComplete(strip_dir)){
     acceptPoints = false;
     if(myButtons.find("Add segment")!=myButtons.end() &&
        myButtons.find("Fit segments")!=myButtons.end() &&
        myButtons.find("Save segments")!=myButtons.end()){
       myButtons.find("Add segment")->second->SetState(kButtonUp);
-      myButtons.find("Fit segments")->second->SetState(kButtonUp);
+      if(!force) myButtons.find("Fit segments")->second->SetState(kButtonUp);
+      else myButtons.find("Fit segments")->second->SetState(kButtonDisabled);
       myButtons.find("Save segments")->second->SetState(kButtonDisabled);
     }
   }
@@ -215,16 +186,8 @@ void MarkersManager::resetMarkers(bool force){
 void MarkersManager::clearHelperLines(){
 
 std::for_each(fHelperLinesContainer.begin(), fHelperLinesContainer.end(),
-	      [](TLine *&item){if(item){delete item; item = 0;}});  
+		[](TLine *&item){if(item){delete item; item = 0;}});  
 }
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-/*
-void MarkersManager::addHeaderFrame(){
-TGHorizontalFrame *aHorizontalFrame = new TGHorizontalFrame(fMarkerGCanvas->GetContainer(), 200, 30);
-  
-}
-*/
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MarkersManager::addMarkerFrame(int iMarker){
@@ -412,7 +375,7 @@ Bool_t MarkersManager::HandleButton(Int_t id){
       acceptPoints = true;
       if(myButtons.find("Add segment")!=myButtons.end() &&
 	 myButtons.find("Fit segments")!=myButtons.end()){
-	myButtons.find("Add segment")->second->SetState(kButtonDown);
+	myButtons.find("Add segment")->second->SetState(kButtonDisabled);
 	myButtons.find("Fit segments")->second->SetState(kButtonDisabled);
       }
     }

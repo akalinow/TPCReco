@@ -38,9 +38,9 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h,  const boost::proper
   fArrow = 0;
   fLine = 0;
 
-  InitializeWindows();
   InitializeEventSource();
-
+  InitializeWindows();
+  
   std::string modeLabel = "NONE";
   if(myWorkMode==M_ONLINE_MODE){
     modeLabel = "ONLINE";
@@ -66,7 +66,7 @@ MainFrame::~MainFrame(){
   delete fMarkersManager;
 }
 /////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////
 void MainFrame::InitializeWindows(){
 
   SetCleanup(kDeepCleanup);
@@ -86,8 +86,9 @@ void MainFrame::InitializeWindows(){
   attach = AddEventTypeDialog(attach);  
   //Right column
   attach = 0;
-  attach = AddNumbersDialog(attach);  
+  attach = AddFileInfoFrame(attach);  
   attach = AddMarkersDialog(attach);
+  attach = AddRunConditionsDialog(attach);
   AddLogos();
   /////////////
   MapSubwindows();
@@ -156,12 +157,6 @@ void MainFrame::InitializeEventSource(){
   myHistoManager.setGeometry(myEventSource->getGeometry());
   myHistoManager.openOutputStream(dataFileName);
   myEventSource->getEventFilter().setConditions(myConfig);
-
-  //TEST
-  //std::cout<<myEventSource->getGeometry()->getRunConditions()<<std::endl;
-  //myEventSource->getGeometry()->setDriftVelocity(15.0);
-  //std::cout<<myEventSource->getGeometry()->getRunConditions()<<std::endl;
-  /////
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -344,7 +339,7 @@ int MainFrame::AddGoToFileEntryDialog(int attach){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-int MainFrame::AddNumbersDialog(int attach){
+int MainFrame::AddFileInfoFrame(int attach){
 
   fFileInfoFrame = new FileInfoFrame(fFrame, this);
 
@@ -404,7 +399,7 @@ int MainFrame::AddMarkersDialog(int attach){
   UInt_t attach_left=nColumns*0.7+1;
   UInt_t attach_right=nColumns;
   UInt_t attach_top=attach;
-  UInt_t attach_bottom=attach_top+nRows*0.3;
+  UInt_t attach_bottom=attach_top+nRows*0.2;
 
   fMarkersManager = new MarkersManager(fFrame, this);
   fMarkersManager->Connect("sendSegmentsData(std::vector<double> *)","MainFrame",
@@ -418,6 +413,37 @@ int MainFrame::AddMarkersDialog(int attach){
   fCanvas->Connect("ProcessedEvent(Int_t,Int_t,Int_t,TObject*)",
 		   "MarkersManager", fMarkersManager,
 		   "HandleMarkerPosition(Int_t,Int_t,Int_t,TObject*)");
+  return attach_bottom; 
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+int MainFrame::AddRunConditionsDialog(int attach){
+
+  TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
+  int nColumns = aLayout->fNcols;
+  int nRows = aLayout->fNcols;
+  UInt_t attach_left=nColumns*0.7+1;
+  UInt_t attach_right=nColumns;
+  UInt_t attach_top=attach;
+  UInt_t attach_bottom=attach_top+nRows*0.35;
+
+  fRunConditionsDialog = new RunConditionsDialog(fFrame, this);
+  fRunConditionsDialog->Connect("updateRunConditions(std::vector<double>*)","MainFrame",
+  			   this,"updateRunConditions(std::vector<double>*)");
+  if(myEventSource && myEventSource->getGeometry()){
+    fRunConditionsDialog->initialize(myEventSource->getGeometry()->getRunConditions());
+  }
+  else{
+    std::cout<<KRED<<"ERROR "<<RST<<"Geometry not available for RunConditionsDialog.";
+    std::cout<<" dialog not added."<<std::endl;
+    return attach_bottom;
+  }
+  TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right,
+						    attach_top, attach_bottom,
+						    kLHintsExpandX|kLHintsExpandY |
+						    kLHintsShrinkX|kLHintsShrinkY|
+						    kLHintsFillX|kLHintsFillY);
+  fFrame->AddFrame(fRunConditionsDialog, tloh);  
   return attach_bottom; 
 }
 /////////////////////////////////////////////////////////
@@ -476,6 +502,7 @@ void MainFrame::CloseWindow(){ gApplication->Terminate(0); }
 /////////////////////////////////////////////////////////
 void MainFrame::ClearCanvas(){
 
+  if(fMarkersManager) fMarkersManager->reset();
   TList *aList = fCanvas->GetListOfPrimitives();
   TText aMessage(0.0, 0.0,"Waiting for data.");
   for(auto obj: *aList){
@@ -592,6 +619,22 @@ void MainFrame::UpdateEventLog(){
   }
   out.close();
   eventTypeButtonGroup->SetButton(1, kTRUE);  
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void MainFrame::updateRunConditions(std::vector<double> *runParams){
+
+  if(!runParams || !myEventSource ||
+     !myEventSource->getGeometry() ||
+     runParams->size()<3) return;
+  myEventSource->getGeometry()->setDriftVelocity(runParams->at(0));
+  myEventSource->getGeometry()->setSamplingRate(runParams->at(1));
+  myEventSource->getGeometry()->setTriggerDelay(runParams->at(2));
+  std::cout<<myEventSource->getGeometry()->getRunConditions()<<std::endl;
+  if(isRecoModeOn){
+    ClearCanvas();
+    Update();
+  }
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
