@@ -151,7 +151,7 @@ void MainFrame::InitializeEventSource(){
 
   if(myWorkMode!=M_ONLINE_MODE){
     myEventSource->loadDataFile(dataFileName);
-    myEventSource->loadFileEntry(1);
+    myEventSource->loadFileEntry(0);
   }
   myHistoManager.setGeometry(myEventSource->getGeometry());
   myHistoManager.openOutputStream(dataFileName);
@@ -172,7 +172,7 @@ void MainFrame::AddTopMenu(){
 
   fMenuFile = new TGPopupMenu(fClient->GetRoot());
   fMenuFile->AddEntry("&Open...", M_FILE_OPEN);
-  fMenuFile->AddEntry("S&ave as...", M_FILE_SAVEAS);
+  //fMenuFile->AddEntry("S&ave as...", M_FILE_SAVEAS);
   fMenuFile->AddSeparator();
   fMenuFile->AddEntry("E&xit", M_FILE_EXIT);
   fMenuFile->Connect("Activated(Int_t)", "MainFrame", this,"HandleMenu(Int_t)");
@@ -632,11 +632,13 @@ Bool_t MainFrame::ProcessMessage(const char * msg){
 /////////////////////////////////////////////////////////
 void MainFrame::HandleMenu(Int_t id){
 
-  const char *filetypes[] = {
-			     "ROOT files",    "*.root",
-			     //"GRAW files",    "*.graw",
-			     //"All files",     "*",
+  const char *filetypes[] = {"ROOT files",    "*.root",
 			     0,               0};
+
+  if(myWorkMode==M_ONLINE_MODE || myWorkMode==M_OFFLINE_GRAW_MODE){
+    filetypes[0] = "GRAW files";
+    filetypes[1] = "*.graw";
+  }
   
   switch (id) {
   case M_FILE_OPEN:
@@ -644,10 +646,14 @@ void MainFrame::HandleMenu(Int_t id){
       TGFileInfo fi;
       fi.fFileTypes = filetypes;
       fi.fIniDir    = StrDup(".");
+      //use std::filesystem::current_path(); when compiled with newer gcc
+      std::string oldDirectory = gSystem->GetWorkingDirectory();
       new TGFileDialog(gClient->GetRoot(), this, kFDOpen, &fi);
       std::string fileName;
       if(fi.fFilename) fileName.append(fi.fFilename);
       else return;
+      gSystem->cd(oldDirectory.c_str());
+      ClearCanvas();
       myEventSource->loadDataFile(fileName);
       myEventSource->loadFileEntry(0);
       Update();

@@ -59,6 +59,7 @@ void EventSourceGRAW::loadDataFile(const std::string & fileName){
     exit(1);
   }
   nEntries = myFile->GetGrawFramesNumber();
+  myFramesMap.clear();
 
   /*
   for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
@@ -66,19 +67,22 @@ void EventSourceGRAW::loadDataFile(const std::string & fileName){
     int currentEventIdx = myDataFrame.fHeader.fEventIdx;
     std::cout<<"iEntry: "<<iEntry
 	     <<" currentEventIdx: "<<currentEventIdx
-	     <<std::endl;
-      
-  }*/
+	     <<std::endl;      
+  }
+  std::cout<<KBLU<<"End of file"<<RST<<std::endl;
+  */
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 bool EventSourceGRAW::loadGrawFrame(unsigned int iEntry){
 
   if(iEntry>=nEntries) iEntry = nEntries;
-  ///getGrawFrame counts frames from 1 (WRRR!)
+  if(iEntry<0) iEntry = 0;
   std::cout.setstate(std::ios_base::failbit);
-  bool dataFrameRead = getGrawFrame(myFilePath, iEntry+1, myDataFrame);
+  bool dataFrameRead = getGrawFrame(myFilePath, iEntry+1, myDataFrame);///FIXME getGrawFrame counts frames from 1 (WRRR!)
   std::cout.clear();
+
+  std::cout<<KRED<<__FUNCTION__<<RST<<" iEntry: "<<iEntry<<std::endl;
   
   if(!dataFrameRead){
     std::cerr <<KRED<< "ERROR: cannot read event " << RST<<iEntry << std::endl;
@@ -139,7 +143,7 @@ void EventSourceGRAW::findEventFragments(unsigned long int eventIdx, unsigned in
   unsigned int currentEventIdx = 0;
 
   if(iInitialEntry>5) iInitialEntry-=5;
-  else iInitialEntry = 1;
+  else iInitialEntry = 0;
   for(unsigned int iEntry=iInitialEntry;iEntry<nEntries && nFragments<GRAW_EVENT_FRAGMENTS;++iEntry){
     loadGrawFrame(iEntry);
     currentEventIdx = myDataFrame.fHeader.fEventIdx;
