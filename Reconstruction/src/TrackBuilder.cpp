@@ -5,6 +5,8 @@
 #include "TProfile.h"
 #include "TObjArray.h"
 #include "TF1.h"
+#include "TTree.h"
+#include "TFile.h"
 #include "TFitResult.h"
 #include "Math/Functor.h"
 
@@ -43,10 +45,55 @@ TrackBuilder::TrackBuilder() {
   aHoughOffest.SetX(50.0);
   aHoughOffest.SetY(50.0);
   aHoughOffest.SetZ(0.0);
+
+  myFittedTrackPtr = &myFittedTrack;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TrackBuilder::~TrackBuilder() { }
+TrackBuilder::~TrackBuilder() {
+  closeOutputStream();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void TrackBuilder::openOutputStream(const std::string & fileName){
+
+  if(!myFittedTrackPtr){
+    std::cout<<KRED<<__FUNCTION__<<RST
+	     <<" pointer to fitted track not set!"
+	     <<std::endl;
+    return;
+  }
+  std::string treeName = "TPCRecoData";
+  myOutputFilePtr = std::make_shared<TFile>(fileName.c_str(),"RECREATE");
+  myOutputTreePtr = std::make_shared<TTree>(treeName.c_str(),"");
+  myOutputTreePtr->Branch("RecoEvent", "Track3D", &myFittedTrackPtr);
+  //myOutputTreePtr->Branch("DetEvent", "EventTPC", &myEvent);
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void TrackBuilder::closeOutputStream(){
+
+  if(!myOutputFilePtr){
+     std::cout<<KRED<<__FUNCTION__<<RST
+	     <<" pointer to output file not set!"
+	     <<std::endl;
+     return;
+  }
+  myOutputFilePtr->Close();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void TrackBuilder::fillOutputStream(){
+
+  if(!myOutputTreePtr){
+     std::cout<<KRED<<__FUNCTION__<<RST
+	     <<" pointer to output tree not set!"
+	     <<std::endl;
+     return;
+  }
+  myOutputTreePtr->Fill();
+  myOutputTreePtr->Write();
+}
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void TrackBuilder::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
@@ -105,7 +152,7 @@ void TrackBuilder::reconstruct(){
     my2DSeeds[iDir] = findSegment2DCollection(iDir);    
   }
   myTrack3DSeed = buildSegment3D();
-  myFittedTrack = fitTrack3D(myTrack3DSeed);
+  *(&myFittedTrack) = fitTrack3D(myTrack3DSeed);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -116,7 +163,7 @@ void TrackBuilder::makeRecHits(int iDir){
   hRecHits.Reset();
   std::string tmpTitle(hRecHits.GetTitle());
   if(tmpTitle.find("Event")!=std::string::npos){
-    tmpTitle.replace(tmpTitle.find("Event"), 22,"Rec hits"); 
+    tmpTitle.replace(tmpTitle.find("Event"), 24,"Rec hits"); 
     hRecHits.SetTitle(tmpTitle.c_str());
   }
 
@@ -167,7 +214,7 @@ TF1 TrackBuilder::fitTimeWindow(TH1D* hProj){
    }
 
    double sampling_rate = myGeometryPtr->GetSamplingRate();
-   double vdrift = myGeometryPtr->GetVdrift()*10.0;
+   double vdrift = myGeometryPtr->GetDriftVelocity()*10.0;// 10.0: [cm] -> [mm]
    double timeBinToCartesianScale = 1.0/sampling_rate*vdrift;
 
    int maxBin = hProj->GetMaximumBin();
@@ -223,15 +270,13 @@ TF1 TrackBuilder::fitTimeWindow(TH1D* hProj){
 /////////////////////////////////////////////////////////
 const TH2D & TrackBuilder::getRecHits2D(int iDir) const{
 
-  return myRecHits[iDir];
-  
+  return myRecHits[iDir];  
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 const TH2D & TrackBuilder::getHoughtTransform(int iDir) const{
 
-  return myAccumulators[iDir];
-  
+  return myAccumulators[iDir];  
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -260,8 +305,6 @@ void TrackBuilder::fillHoughAccumulator(int iDir){
   
   const TH2D & hRecHits  = getRecHits2D(iDir);
   double maxCharge = hRecHits.GetMaximum();
-  std::cout<<"maxCharge: "<<maxCharge<<std::endl;
-
   double theta = 0.0, rho = 0.0;
   double x = 0.0, y=0.0;
   int charge = 0;
@@ -331,9 +374,51 @@ TrackSegment2D TrackBuilder::findSegment2D(int iDir, int iPeak) const{
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TrackSegment3D TrackBuilder::buildSegment3D() const{
+void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & segmentsXY){
+  
+  if(segmentsXY.size()%3 || (segmentsXY.size()/3)%4){
+    std::cout<<KRED<<__FUNCTION__<<RST<<"Wrong number on segment endpoints: "
+	     <<segmentsXY.size()<<std::endl;      
+  }
+  std::for_each(my2DSeeds.begin(), my2DSeeds.end(),
+		[](TrackSegment2DCollection &item){item.resize(0);});
+
+  Track3D aTrackCandidate;
+  
+  TVector3 aStart, aEnd;
+  double x=0.0, y=0.0;
+  int nSegments = segmentsXY.size()/3/4;
+  for(int iSegment=0;iSegment<nSegments;++iSegment){
+    for(int iDir = DIR_U; iDir<=DIR_W;++iDir){
+      TrackSegment2D aSegment2D(iDir);
+      x = segmentsXY.at(iDir*4 + iSegment*12);
+      y = segmentsXY.at(iDir*4 + iSegment*12 + 1);
+      aStart.SetXYZ(x,y,0.0);
+      x = segmentsXY.at(iDir*4 + iSegment*12 + 2);
+      y = segmentsXY.at(iDir*4 + iSegment*12 + 3);
+      aEnd.SetXYZ(x,y,0.0);
+      aSegment2D.setStartEnd(aStart, aEnd);
+      aSegment2D.setNAccumulatorHits(1);
+      my2DSeeds[iDir].push_back(aSegment2D);
+    }
+    TrackSegment3D a3DSeed = buildSegment3D(iSegment);
+    double startTime = my2DSeeds.at(DIR_U).at(iSegment).getStart().X();    
+    double endTime = my2DSeeds.at(DIR_U).at(iSegment).getEnd().X();
+    double lambdaStartTime = a3DSeed.getLambdaAtZ(startTime);
+    double lambdaEndTime = a3DSeed.getLambdaAtZ(endTime);
+    TVector3 start =  a3DSeed.getStart() + lambdaStartTime*a3DSeed.getTangent();
+    TVector3 end =  a3DSeed.getStart() + lambdaEndTime*a3DSeed.getTangent();
+    a3DSeed.setStartEnd(start, end);
+    aTrackCandidate.addSegment(a3DSeed);
+  }
+
+  myFittedTrack = aTrackCandidate;
+  myFittedTrackPtr = &myFittedTrack;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
 	     
-  int iTrack2DSeed = 0;
   const TrackSegment2D & segmentU = my2DSeeds[DIR_U][iTrack2DSeed];
   const TrackSegment2D & segmentV = my2DSeeds[DIR_V][iTrack2DSeed];
   const TrackSegment2D & segmentW = my2DSeeds[DIR_W][iTrack2DSeed];
@@ -380,7 +465,9 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
 
   Track3D aTrackCandidate;
   aTrackCandidate.addSegment(aTrackSegment);
+  aTrackCandidate.extendToWholeChamber();
   aTrackCandidate = fitTrackNodes(aTrackCandidate);
+  aTrackCandidate.shrinkToHits();  
   return aTrackCandidate;//TEST
   
   TGraph aGraph = aTrackCandidate.getHitDistanceProfile();
@@ -420,7 +507,7 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
 /////////////////////////////////////////////////////////
 Track3D TrackBuilder::fitTrackNodes(const Track3D & aTrack) const{
 
-  Track3D aTrackCandidate = aTrack; 
+  Track3D aTrackCandidate = aTrack;
   std::vector<double> bestParams = aTrackCandidate.getSegmentsStartEndXYZ();
   std::vector<double> params = aTrackCandidate.getSegmentsStartEndXYZ();
   int nParams = params.size();
@@ -431,10 +518,7 @@ Track3D TrackBuilder::fitTrackNodes(const Track3D & aTrack) const{
   double minChi2 = 1E10;
   for(unsigned int iStep=1;iStep<2;++iStep){
     
-    std::cout<<__FUNCTION__<<" iStep: "<<iStep<<std::endl;
-    
-    aTrackCandidate.extendToWholeChamber();
-    aTrackCandidate.shrinkToHits();
+    std::cout<<__FUNCTION__<<" iStep: "<<iStep<<std::endl;   
     params = aTrackCandidate.getSegmentsStartEndXYZ();
     nParams = params.size();
     for (int iPar = 0; iPar < nParams; ++iPar){
@@ -442,7 +526,6 @@ Track3D TrackBuilder::fitTrackNodes(const Track3D & aTrack) const{
       fitter.Config().ParSettings(iPar).SetStepSize(1.0/(2*iStep));
       fitter.Config().ParSettings(iPar).SetLimits(params[iPar]-20.0/iStep, params[iPar]+20.0/iStep);
     }  
-
     std::cout<<"Pre-fit: "<<std::endl; 
     std::cout<<aTrackCandidate<<std::endl;
     
@@ -454,9 +537,6 @@ Track3D TrackBuilder::fitTrackNodes(const Track3D & aTrack) const{
     }
     const ROOT::Fit::FitResult & result = fitter.Result();
     aTrackCandidate.chi2FromNodesList(result.GetParams());
-    aTrackCandidate.extendToWholeChamber();
-    aTrackCandidate.shrinkToHits();
-    aTrackCandidate.removeEmptySegments();
 
     std::cout<<"Post-fit: "<<std::endl;
     std::cout<<aTrackCandidate<<std::endl;
@@ -467,9 +547,6 @@ Track3D TrackBuilder::fitTrackNodes(const Track3D & aTrack) const{
     }
   }
   aTrackCandidate.chi2FromNodesList(bestParams.data());
-  aTrackCandidate.removeEmptySegments();
-  aTrackCandidate.extendToWholeChamber();
-  aTrackCandidate.shrinkToHits();
   return aTrackCandidate;
 }
 /////////////////////////////////////////////////////////

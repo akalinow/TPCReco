@@ -20,7 +20,7 @@ public:
 
   TrackSegment3D();
 
-  ~TrackSegment3D(){};
+  virtual ~TrackSegment3D(){};
 
   void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);
 
@@ -50,6 +50,9 @@ public:
 
   ///Bias vector with Z=0.
   const TVector3 & getBiasAtZ0() const { return myBiasAtZ0;}
+
+  ///Lambda value for given Z (corresponding to time) with current start and stop points
+  double getLambdaAtZ(double z) const;
 
   ///Bias vector at the beggining of the segment.
   const TVector3 & getStart() const { return myStart;}
@@ -89,7 +92,7 @@ private:
   ///Calculate and store chi2 for all projections.
   void calculateRecHitChi2();
 
-  std::shared_ptr<GeometryTPC> myGeometryPtr;
+  std::shared_ptr<GeometryTPC> myGeometryPtr; //! transient data member
   TVector3 myTangent, myBias;
   TVector3 myBiasAtX0, myBiasAtY0, myBiasAtZ0;
   TVector3 myStart, myEnd;
@@ -97,7 +100,6 @@ private:
 
   std::vector<Hit2DCollection> myRecHits;
   std::vector<double> myProjectionsChi2;
-  
 };
 
 std::ostream & operator << (std::ostream &out, const TrackSegment3D &aSegment);

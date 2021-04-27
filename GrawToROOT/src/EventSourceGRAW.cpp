@@ -21,6 +21,11 @@ EventSourceGRAW::EventSourceGRAW(const std::string & geometryFileName) {
 EventSourceGRAW::~EventSourceGRAW() { }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+void EventSourceGRAW::setRemovePedestal(bool aFlag){
+  removePedestal = aFlag;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 std::shared_ptr<EventTPC> EventSourceGRAW::getNextEvent(){
 
   unsigned int currentEventIdx = myCurrentEvent->GetEventId();
@@ -50,10 +55,11 @@ void EventSourceGRAW::loadDataFile(const std::string & fileName){
   myFilePath = fileName;
   myFile =  std::make_shared<TGrawFile>(fileName.c_str());
   if(!myFile){
-    std::cerr<<"File: "<<fileName<<"not found!"<<std::endl;
-    exit(0);
+    std::cerr<<KRED<<"Can not open file: "<<fileName<<"!"<<RST<<std::endl;
+    exit(1);
   }
   nEntries = myFile->GetGrawFramesNumber();
+  myFramesMap.clear();
 
   /*
   for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
@@ -61,22 +67,25 @@ void EventSourceGRAW::loadDataFile(const std::string & fileName){
     int currentEventIdx = myDataFrame.fHeader.fEventIdx;
     std::cout<<"iEntry: "<<iEntry
 	     <<" currentEventIdx: "<<currentEventIdx
-	     <<std::endl;
-      
-  }*/
+	     <<std::endl;      
+  }
+  std::cout<<KBLU<<"End of file"<<RST<<std::endl;
+  */
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 bool EventSourceGRAW::loadGrawFrame(unsigned int iEntry){
 
   if(iEntry>=nEntries) iEntry = nEntries;
-  ///getGrawFrame counts frames from 1 (WRRR!)
+  if(iEntry<0) iEntry = 0;
   std::cout.setstate(std::ios_base::failbit);
-  bool dataFrameRead = getGrawFrame(myFilePath, iEntry+1, myDataFrame);
+  bool dataFrameRead = getGrawFrame(myFilePath, iEntry+1, myDataFrame);///FIXME getGrawFrame counts frames from 1 (WRRR!)
   std::cout.clear();
+
+  std::cout<<KRED<<__FUNCTION__<<RST<<" iEntry: "<<iEntry<<std::endl;
   
   if(!dataFrameRead){
-    std::cerr << "ERROR: cannot read event " << iEntry << std::endl;
+    std::cerr <<KRED<< "ERROR: cannot read event " << RST<<iEntry << std::endl;
     std::cerr <<KRED
 	      <<"Please check if you are running the application from the resources directory."
 	      <<RST
@@ -149,13 +158,11 @@ void EventSourceGRAW::collectEventFragments(unsigned int eventIdx){
   auto it = myFramesMap.find(eventIdx);
   if(it==myFramesMap.end()) return;
   if(it->second.size()!=GRAW_EVENT_FRAGMENTS){
-     std::cout<<"\033[31m";
       std::cerr<<__FUNCTION__
-	       <<" Feragment counts for eventIdx = "<<eventIdx
+	       <<KRED<<" Fragment counts for eventIdx = "<<eventIdx
 	       <<" mismatch. Expected: "<<GRAW_EVENT_FRAGMENTS
 	       <<" found: "<<it->second.size()
-	       <<std::endl;
-      std::cout<<"\033[39m";
+	       <<RST<<std::endl;
   }
 
   myCurrentEvent->Clear();
@@ -216,8 +223,10 @@ void EventSourceGRAW::fillEventFromFrame(GET::GDataFrame & aGrawFrame){
     // Beware HACK!!!
   //TProfile with pedestals is only 256 (max chans in frame) long, pedestals are calculated for each frame and reset
   //to fit into TProfile the global number of first chan in COBO/ASAD has to be substracted from global chanel
-  int minChannelGlobal     = myGeometryPtr->Global_normal2normal(COBO_idx, ASAD_idx, 0, 0);
-  corrVal -= myPedestalCalculator.GetPedestalCorrection(iChannelGlobal-minChannelGlobal, agetId, icell);
+  if(removePedestal){
+    int minChannelGlobal = myGeometryPtr->Global_normal2normal(COBO_idx, ASAD_idx, 0, 0);
+    corrVal -= myPedestalCalculator.GetPedestalCorrection(iChannelGlobal-minChannelGlobal, agetId, icell);
+  }
 //	} 
 	myCurrentEvent->AddValByAgetChannel(COBO_idx, ASAD_idx, agetId, chanId, icell, corrVal);
       }

@@ -20,6 +20,7 @@
 HistoManager::HistoManager() {
 
   myEvent = 0;
+  doAutozoom = false;
 
 }
 /////////////////////////////////////////////////////////
@@ -48,14 +49,13 @@ void HistoManager::setEvent(std::shared_ptr<EventTPC> aEvent){
 /////////////////////////////////////////////////////////
 void HistoManager::reconstruct(){
   myTkBuilder.setEvent(myEvent);
-  myTkBuilder.reconstruct();
+  //myTkBuilder.reconstruct();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<TH2D> HistoManager::getCartesianProjection(int strip_dir){
+void HistoManager::reconstructSegmentsFromMarkers(std::vector<double> * segmentsXY){
 
-  return myEvent->GetStripVsTimeInMM(myTkBuilder.getCluster(), strip_dir);
-  
+  myTkBuilder.getSegment2DCollectionFromGUI(*segmentsXY);  
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -87,24 +87,44 @@ std::shared_ptr<TH1D> HistoManager::getRawStripProjection(int strip_dir){
 /////////////////////////////////////////////////////////
 std::shared_ptr<TH2D> HistoManager::getRawStripVsTime(int strip_dir){
 
-  std::shared_ptr<TH2D> h = myEvent->GetStripVsTime(strip_dir);
-  h->GetYaxis()->SetTitleOffset(1.8);
-  h->GetZaxis()->SetTitleOffset(1.5);
-  return h;
+  std::shared_ptr<TH2D> aHisto = myEvent->GetStripVsTime(strip_dir);  
+  if(doAutozoom) makeAutozoom(aHisto);
+  aHisto->GetYaxis()->SetTitleOffset(1.8);
+  aHisto->GetZaxis()->SetTitleOffset(1.5);
+  return aHisto;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::shared_ptr<TH2D> HistoManager::getRawStripVsTimeInMM(int strip_dir){
+
+  std::shared_ptr<TH2D> aHisto = myEvent->GetStripVsTimeInMM(myTkBuilder.getCluster(), strip_dir);
+  aHisto->GetYaxis()->SetTitleOffset(1.8);
+  aHisto->GetZaxis()->SetTitleOffset(1.5);
+  if(doAutozoom) makeAutozoom(aHisto);
+  return aHisto;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::shared_ptr<TH2D> HistoManager::getFilteredStripVsTime(int strip_dir){
 
-  return myEvent->GetStripVsTime(myTkBuilder.getCluster(), strip_dir);
+  std::shared_ptr<TH2D> aHisto = myEvent->GetStripVsTime(myTkBuilder.getCluster(), strip_dir);
+  aHisto->GetYaxis()->SetTitleOffset(1.8);
+  aHisto->GetZaxis()->SetTitleOffset(1.5);
+  if(doAutozoom) makeAutozoom(aHisto);
+  return aHisto;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::shared_ptr<TH2D> HistoManager::getRecHitStripVsTime(int strip_dir){
+
   TH2D *h = (TH2D*)myTkBuilder.getRecHits2D(strip_dir).Clone();
-  h->GetYaxis()->SetTitleOffset(1.5);
-  h->GetZaxis()->SetTitleOffset(1.1);
-  return std::shared_ptr<TH2D>(h);//FIX ME avoid object copying
+  std::shared_ptr<TH2D> aHisto(h);
+
+  if(doAutozoom) makeAutozoom(aHisto);
+  aHisto->GetYaxis()->SetTitleOffset(1.8);
+  aHisto->GetZaxis()->SetTitleOffset(1.5);
+
+  return aHisto;//FIX ME avoid object copying
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -140,33 +160,64 @@ TH2D* HistoManager::get2DReconstruction(int strip_dir){
 const TH2D & HistoManager::getHoughAccumulator(int strip_dir, int iPeak){
 
   return myTkBuilder.getHoughtTransform(strip_dir);
-
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void HistoManager::drawTrack3D(TVirtualPad *aPad){
 
   aPad->cd();
+
+  int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN;
+  int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN; 
+  TH3D *h3DFrame = myEvent->Get3DFrame(rebin_space, rebin_time);
+  h3DFrame->GetXaxis()->SetTitleOffset(2.0);
+  h3DFrame->GetYaxis()->SetTitleOffset(2.0);
+  h3DFrame->GetZaxis()->SetTitleOffset(2.0);
+  h3DFrame->Draw();
+  
   const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
   const TrackSegment3DCollection & trackSegments = aTrack3D.getSegments();
   if(!trackSegments.size()) return;
   
-  TPolyLine3D aPolyLine;
-  aPolyLine.SetLineWidth(2);
-  aPolyLine.SetLineColor(2);
-
-  aPolyLine.SetPoint(0,
-		     trackSegments.front().getStart().X(),
-		     trackSegments.front().getStart().Y(),
-		     trackSegments.front().getStart().Z());
-  
+  int iColor = 2;
+  std::vector<double> xVec, yVec, zVec;
    for(auto aSegment: trackSegments){
-     aPolyLine.SetPoint(aPolyLine.GetLastPoint()+1,
+     
+     double totalCharge =  aSegment.getIntegratedCharge(aSegment.getLength());
+     std::cout<<KBLU<<"segment properties: "<<RST<<std::endl;
+     std::cout<<"\t charge: "<<totalCharge<<std::endl;
+     std::cout<<"direction: ";
+     aSegment.getTangent().Print();
+     
+     TPolyLine3D aPolyLine;
+     aPolyLine.SetLineWidth(2);
+     aPolyLine.SetLineColor(iColor++);
+
+     aPolyLine.SetPoint(0,
+			aSegment.getStart().X(),
+			aSegment.getStart().Y(),
+			aSegment.getStart().Z());			
+     aPolyLine.SetPoint(1,
 			aSegment.getEnd().X(),
 			aSegment.getEnd().Y(),
-			aSegment.getEnd().Z());     
+			aSegment.getEnd().Z());
+     aPolyLine.DrawClone();
+     xVec.push_back(aSegment.getStart().X());
+     xVec.push_back(aSegment.getEnd().X());
+     yVec.push_back(aSegment.getStart().Y());
+     yVec.push_back(aSegment.getEnd().Y());
+     zVec.push_back(aSegment.getStart().Z());
+     zVec.push_back(aSegment.getEnd().Z());
    }
-   aPolyLine.DrawClone();
+   double min = *std::min_element(xVec.begin(), xVec.end());
+   double max = *std::max_element(xVec.begin(), xVec.end());
+   h3DFrame->GetXaxis()->SetRangeUser(min, max);
+   min = *std::min_element(yVec.begin(), yVec.end());
+   max = *std::max_element(yVec.begin(), yVec.end());
+   h3DFrame->GetYaxis()->SetRangeUser(min, max);
+   min = *std::min_element(zVec.begin(), zVec.end());
+   max = *std::max_element(zVec.begin(), zVec.end());
+   h3DFrame->GetZaxis()->SetRangeUser(min, max);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -202,7 +253,7 @@ void HistoManager::drawTrack2DSeed(int strip_dir, TVirtualPad *aPad){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void HistoManager::drawTrack3DProjectionTimeStrip(int strip_dir, TVirtualPad *aPad){
+void HistoManager::drawTrack3DProjectionTimeStrip(int strip_dir, TVirtualPad *aPad,  bool zoomIn){
 
   aPad->cd();
   const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
@@ -218,7 +269,7 @@ void HistoManager::drawTrack3DProjectionTimeStrip(int strip_dir, TVirtualPad *aP
     const TrackSegment2D & aSegment2DProjection = aItem.get2DProjection(strip_dir, 0, aItem.getLength());
     const TVector3 & start = aSegment2DProjection.getStart();
     const TVector3 & end = aSegment2DProjection.getEnd();
-    
+
     aSegment2DLine.SetLineColor(2+iSegment);
     aSegment2DLine.DrawLine(start.X(), start.Y(),  end.X(),  end.Y());	
     ++iSegment;
@@ -243,9 +294,10 @@ void HistoManager::drawTrack3DProjectionTimeStrip(int strip_dir, TVirtualPad *aP
   maxX = minX + delta;
   maxY = minY + delta;
 
+  if(!zoomIn) return;
   if(aPad->GetListOfPrimitives()->GetSize()){
     TH2D *hFrame = (TH2D*)aPad->GetListOfPrimitives()->At(0);
-    if(hFrame){
+     if(hFrame){
       hFrame->GetXaxis()->SetRangeUser(minX, maxX);
       hFrame->GetYaxis()->SetRangeUser(minY, maxY);
     }
@@ -271,3 +323,35 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+void HistoManager::makeAutozoom(std::shared_ptr<TH2D>& aHisto){
+
+  if(!aHisto.get()) return;  
+  for(int iAxis=1;iAxis<3;++iAxis){
+    double threshold = 0.8*aHisto->GetMaximum();  
+    int lowBin = aHisto->FindFirstBinAbove(threshold, iAxis) - 30;
+    int highBin = aHisto->FindLastBinAbove(threshold, iAxis) + 30;
+    if(iAxis==1) aHisto->GetXaxis()->SetRange(lowBin, highBin);
+    else if(iAxis==2) aHisto->GetYaxis()->SetRange(lowBin, highBin);
+  }  
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void HistoManager::openOutputStream(const std::string & fileName){
+
+  std::size_t last_dot_position = fileName.find_last_of(".");
+  std::size_t last_slash_position = fileName.find_last_of("//");
+  std::string recoFileName = "Reco_"+fileName.substr(last_slash_position+1,
+						     last_dot_position-last_slash_position-1)+".root";
+  std::cout<<KBLU<<"recoFileName: "<<RST<<recoFileName<<std::endl;
+  myTkBuilder.openOutputStream(recoFileName);  
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void HistoManager::writeSegments(){
+
+  myTkBuilder.fillOutputStream();
+  
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+

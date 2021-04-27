@@ -244,7 +244,7 @@ double EventTPC::GetMaxCharge(int strip_dir) {  // maximal charge from strips of
   return 0.0;    
 }
 
-double EventTPC::GetMaxCharge() {  // maximal charge from all strips
+double EventTPC::GetMaxCharge() const {  // maximal charge from all strips
   if(!IsOK()) return 0.0;
   return glb_max_charge;
 }
@@ -307,7 +307,7 @@ double EventTPC::GetTotalCharge(int strip_dir) {  // charge integral from strips
   return 0.0;    
 }
 
-double EventTPC::GetTotalCharge() {   // charge integral from all strips
+double EventTPC::GetTotalCharge() const {   // charge integral from all strips
   if(!IsOK()) return 0.0;
   return glb_tot_charge;
 }
@@ -849,6 +849,80 @@ std::vector<TH2D*> EventTPC::Get2D(const SigClusterTPC &cluster, double radius, 
   return hvec;
 }
 
+//frame for plotting 3D reconstruction 
+TH3D *EventTPC::Get3DFrame(int rebin_space, int rebin_time) const{
+
+  bool err_flag = false;
+  StripTPC* s[6] = {
+		    myGeometryPtr->GetStripByDir(DIR_U, 1),
+		    myGeometryPtr->GetStripByDir(DIR_U, myGeometryPtr->GetDirNstrips(DIR_U)),
+		    myGeometryPtr->GetStripByDir(DIR_V, 1),
+		    myGeometryPtr->GetStripByDir(DIR_V, myGeometryPtr->GetDirNstrips(DIR_V)),
+		    myGeometryPtr->GetStripByDir(DIR_W, 1),
+		    myGeometryPtr->GetStripByDir(DIR_W, myGeometryPtr->GetDirNstrips(DIR_W))
+  };
+
+  double xmin=1E30;
+  double xmax=-1E30;
+  double ymin=1E30;
+  double ymax=-1E30;
+  double zmin=0.0-0.5;  // time_cell_min;
+  double zmax=511.+0.5; // time_cell_max;
+
+  for(int i=0; i<6; i++) {
+    if(!s[i]) continue;
+    double x, y;
+    TVector2 vec=s[i]->Offset()+myGeometryPtr->GetReferencePoint();
+    x=vec.X();
+    y=vec.Y();
+    if(x>xmax) xmax=x;
+    if(x<xmin) xmin=x;
+    if(y>ymax) ymax=y;
+    if(y<ymin) ymin=y;
+    vec = vec + s[i]->Unit()*s[i]->Length();
+    if(x>xmax) xmax=x;
+    if(x<xmin) xmin=x;
+    if(y>ymax) ymax=y;
+    if(y<ymin) ymin=y;
+    /*
+      if(s[i]->Offset().X()>xmax) xmax=s[i]->Offset().X();
+      if(s[i]->Offset().X()<xmin) xmin=s[i]->Offset().X();
+      if(s[i]->Offset().Y()>ymax) ymax=s[i]->Offset().Y();
+      if(s[i]->Offset().Y()<ymin) ymin=s[i]->Offset().Y();
+    */
+  }
+  xmin-=myGeometryPtr->GetStripPitch()*0.3;
+  xmax+=myGeometryPtr->GetStripPitch()*0.7;
+  ymin-=myGeometryPtr->GetPadPitch()*0.3;
+  ymax+=myGeometryPtr->GetPadPitch()*0.7;
+      
+  int nx = (int)( (xmax-xmin)/myGeometryPtr->GetStripPitch()-1 );
+  int ny = (int)( (ymax-ymin)/myGeometryPtr->GetPadPitch()-1 );
+  int nz = (int)( zmax-zmin );
+
+  zmin = myGeometryPtr->Timecell2pos(zmin, err_flag);
+  zmax = myGeometryPtr->Timecell2pos(zmax, err_flag);
+
+  // rebin in space
+  if(rebin_space>1) {
+    nx /= rebin_space;
+    ny /= rebin_space;
+  }
+
+  // rebin in time
+  if(rebin_time>1) {
+    nz /= rebin_time;
+  }
+
+  std::cout << Form(">>>> XYZ histogram: range=[%lf, %lf] x [%lf, %lf] x [%lf, %lf], nx=%d, ny=%d, nz=%d",
+		    xmin, xmax, ymin, ymax, zmin, zmax, nx, ny, nz) << std::endl;
+
+  TH3D *h = new TH3D( Form("hreco3D_evt%lld", event_id),
+		      Form("Event-%lld: 3D reco in XYZ;X [mm];Y [mm];Z [mm]", event_id),
+		      nx, xmin, xmax, ny, ymin, ymax, nz, zmin, zmax );
+  return h;
+}
+
 
 // get 3D histogram of clustered hits
 TH3D *EventTPC::Get3D(const SigClusterTPC &cluster, double radius, int rebin_space, int rebin_time, int method) {
@@ -916,77 +990,7 @@ TH3D *EventTPC::Get3D(const SigClusterTPC &cluster, double radius, int rebin_spa
     if(hitPos.size()<1) continue;
 
     // book 3D histogram before first fill
-    if(h==NULL) {
-
-      StripTPC* s[6] = {
-	myGeometryPtr->GetStripByDir(DIR_U, 1),
-	myGeometryPtr->GetStripByDir(DIR_U, myGeometryPtr->GetDirNstrips(DIR_U)),
-	myGeometryPtr->GetStripByDir(DIR_V, 1),
-	myGeometryPtr->GetStripByDir(DIR_V, myGeometryPtr->GetDirNstrips(DIR_V)),
-	myGeometryPtr->GetStripByDir(DIR_W, 1),
-	myGeometryPtr->GetStripByDir(DIR_W, myGeometryPtr->GetDirNstrips(DIR_W))
-      };
-
-      double xmin=1E30;
-      double xmax=-1E30;
-      double ymin=1E30;
-      double ymax=-1E30;
-      double zmin=0.0-0.5;  // time_cell_min;
-      double zmax=511.+0.5; // time_cell_max;
-
-      for(int i=0; i<6; i++) {
-	if(!s[i]) continue;
-	double x, y;
-	TVector2 vec=s[i]->Offset()+myGeometryPtr->GetReferencePoint();
-	x=vec.X();
-	y=vec.Y();
-	if(x>xmax) xmax=x;
-	if(x<xmin) xmin=x;
-	if(y>ymax) ymax=y;
-	if(y<ymin) ymin=y;
-	vec = vec + s[i]->Unit()*s[i]->Length();
-	if(x>xmax) xmax=x;
-	if(x<xmin) xmin=x;
-	if(y>ymax) ymax=y;
-	if(y<ymin) ymin=y;
-	/*
-	if(s[i]->Offset().X()>xmax) xmax=s[i]->Offset().X();
-	if(s[i]->Offset().X()<xmin) xmin=s[i]->Offset().X();
-	if(s[i]->Offset().Y()>ymax) ymax=s[i]->Offset().Y();
-	if(s[i]->Offset().Y()<ymin) ymin=s[i]->Offset().Y();
-	*/
-      }
-      xmin-=myGeometryPtr->GetStripPitch()*0.3;
-      xmax+=myGeometryPtr->GetStripPitch()*0.7;
-      ymin-=myGeometryPtr->GetPadPitch()*0.3;
-      ymax+=myGeometryPtr->GetPadPitch()*0.7;
-      
-      int nx = (int)( (xmax-xmin)/myGeometryPtr->GetStripPitch()-1 );
-      int ny = (int)( (ymax-ymin)/myGeometryPtr->GetPadPitch()-1 );
-      int nz = (int)( zmax-zmin );
-
-      zmin = myGeometryPtr->Timecell2pos(zmin, err_flag);
-      zmax = myGeometryPtr->Timecell2pos(zmax, err_flag);
-
-      // rebin in space
-      if(rebin_space>1) {
-	nx /= rebin_space;
-	ny /= rebin_space;
-      }
-
-      // rebin in time
-      if(rebin_time>1) {
-	nz /= rebin_time;
-      }
-
-      std::cout << Form(">>>> XYZ histogram: range=[%lf, %lf] x [%lf, %lf] x [%lf, %lf], nx=%d, ny=%d, nz=%d",
-			xmin, xmax, ymin, ymax, zmin, zmax, nx, ny, nz) << std::endl;
-
-      h = new TH3D( Form("hreco3D_evt%lld", event_id),
-		    Form("Event-%lld: 3D reco in XYZ;X [mm];Y [mm];Z [mm]", event_id),
-		    nx, xmin, xmax, ny, ymin, ymax, nz, zmin, zmax );
-    }
-    
+    if(h==NULL) h = Get3DFrame(rebin_space, rebin_time); 
     // needed for method #2 only:
     // loop over matched hits and update fraction map
     std::map<MultiKey3, double, multikey3_less> fraction[3]; // for U,V,W local charge projections

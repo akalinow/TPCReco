@@ -32,7 +32,8 @@ private:
   EventTPC *aPtr;
   std::string treeName;
   std::shared_ptr<TFile> myFile;
-  std::shared_ptr<TTree> myTree;
+  //std::shared_ptr<TTree> myTree;
+  TTree * myTree;
   
 };
 #endif

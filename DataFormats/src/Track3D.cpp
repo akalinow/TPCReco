@@ -3,10 +3,19 @@
 
 #include "Track3D.h"
 #include "GeometryTPC.h"
+#include "colorText.h"
 
 #include <Fit/Fitter.h>
 #include <Math/Functor.h>
 #include <Math/GenVector/VectorUtil.h>
+
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+Track3D::Track3D(){
+
+  stepAlongTrack = 2.0;//FIXME choose value
+  
+};
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void Track3D::addSegment(const TrackSegment3D & aSegment3D){
@@ -82,17 +91,16 @@ void Track3D::updateChargeProfile(){
   myChargeProfile.Set(0);
   if(getLength()<1.0) return;//FIXME threshold
     
-  double h = 2; // [mm] FIXME optimize
-  int nSteps =  getLength()/h;
+  int nSteps =  getLength()/stepAlongTrack;
   double lambdaCut = 0.0;
   double derivative = 0.0;
   double maxCharge = 0.0;
 
   myChargeProfile.SetPoint(0, 0, 0);
   for(int iStep=1;iStep<=nSteps;++iStep){
-    lambdaCut = iStep*h;
-    derivative = getIntegratedCharge(lambdaCut + h) - getIntegratedCharge(lambdaCut - h);
-    derivative /= 2.0*h;
+    lambdaCut = iStep*stepAlongTrack;
+    derivative = getIntegratedCharge(lambdaCut + stepAlongTrack) - getIntegratedCharge(lambdaCut - stepAlongTrack);
+    derivative /= 2.0*stepAlongTrack;
     myChargeProfile.SetPoint(myChargeProfile.GetN(),  lambdaCut, derivative);
     if(derivative>maxCharge) maxCharge = derivative;
   }
@@ -106,16 +114,15 @@ void Track3D::updateHitDistanceProfile(){
   myHitDistanceProfile.Set(0);
   if(getLength()<1.0) return;//FIXME threshold
     
-  double h = 2; // [mm] FIXME optimize
-  int nSteps =  getLength()/h;
+  int nSteps =  getLength()/stepAlongTrack;
   double lambdaCut = 0.0;
   double derivative = 0.0;
 
   myChargeProfile.SetPoint(0, 0, 0);
   for(int iStep=1;iStep<=nSteps;++iStep){
-    lambdaCut = iStep*h;
-    derivative = getIntegratedHitDistance(lambdaCut + h) - getIntegratedHitDistance(lambdaCut - h);
-    derivative /= 2.0*h;
+    lambdaCut = iStep*stepAlongTrack;
+    derivative = getIntegratedHitDistance(lambdaCut + stepAlongTrack) - getIntegratedHitDistance(lambdaCut - stepAlongTrack);
+    derivative /= 2.0*stepAlongTrack;
     myHitDistanceProfile.SetPoint(myHitDistanceProfile.GetN(),  lambdaCut, derivative);
   }
 }
@@ -144,7 +151,7 @@ double Track3D::getNodesChi2() const{
 
   double chi2 = 0.0;
   std::for_each(nodeHitsChi2.begin(), nodeHitsChi2.end(), [&](auto aItem){chi2 += aItem;});
-  std::for_each(nodeAngleChi2.begin(), nodeAngleChi2.end(), [&](auto aItem){chi2 += aItem;});
+  //TEST std::for_each(nodeAngleChi2.begin(), nodeAngleChi2.end(), [&](auto aItem){chi2 += aItem;});
   return chi2;
 
 }
@@ -267,18 +274,20 @@ void Track3D::extendToWholeChamber(){
 
   if(!mySegments.size()) return;
 
-  double lambda = 500;
-  
   TrackSegment3D & aFirstSegment = mySegments.front();
-  TVector3 aStart = aFirstSegment.getStart() - lambda*aFirstSegment.getTangent();
+  double zMin =  0;//FIXME take from geometry
+  double lambda =  aFirstSegment.getLambdaAtZ(zMin);
+  TVector3 aStart = aFirstSegment.getStart() + lambda*aFirstSegment.getTangent();
   TVector3 aEnd = aFirstSegment.getEnd();
   aFirstSegment.setStartEnd(aStart, aEnd);
-  
+
   TrackSegment3D & aLastSegment = mySegments.back();
+  double zMax =  120;//FIXME take from geometry
+  lambda =  aLastSegment.getLambdaAtZ(zMax);
   aStart = aLastSegment.getStart();
-  aEnd = aLastSegment.getEnd() + lambda*aLastSegment.getTangent();  
+  aEnd = aLastSegment.getStart() + lambda*aLastSegment.getTangent();  
   aLastSegment.setStartEnd(aStart, aEnd);
-  
+    
   update();
 }
 /////////////////////////////////////////////////////////
@@ -286,21 +295,21 @@ void Track3D::extendToWholeChamber(){
 void Track3D::shrinkToHits(){
 
   if(getLength()<1.0) return;//FIXME move to configuration  
-  double minChargeCut = 0.2*getChargeProfile().GetMaximum();//FIXME move to configuration and (dynamically?) optimize
-  double h = 2.0;//FIXME move to configuration.
+  double chargeCut = 0.01*getIntegratedCharge(getLength());//FIXME move to configuration and (dynamically?) optimize
   double charge = 0.0;
-  double lambdaStart = 0.0;
-  while(charge<minChargeCut && lambdaStart<getLength()){
-    lambdaStart +=h;
-    charge = 0.0;
-    for(int i=0;i<3;++i) charge += getChargeProfile().Eval(lambdaStart+i*h);    
+  double lambdaStart = 0;
+  
+  while(charge<chargeCut && lambdaStart<getLength()){
+    lambdaStart +=stepAlongTrack;
+    charge += getChargeProfile().Eval(lambdaStart);
   }
-  double lambdaEnd = lambdaStart;
-  while(charge>minChargeCut && lambdaEnd<getLength()){
-    lambdaEnd +=h;
-    charge = 0.0;
-    for(int i=0;i<3;++i) charge += getChargeProfile().Eval(lambdaEnd+i*h);    
+  double lambdaEnd = getLength()-stepAlongTrack;
+  charge = 0.0;
+  while(charge<chargeCut && lambdaEnd<getLength()){
+    lambdaEnd -=stepAlongTrack;
+    charge += getChargeProfile().Eval(lambdaEnd);
   }
+    
   TrackSegment3D & aFirstSegment = mySegments.front();
   TrackSegment3D & aLastSegment = mySegments.back();
   
@@ -366,10 +375,10 @@ std::ostream & operator << (std::ostream &out, const Track3D &aTrack){
   out << "Number of segments: "<<aTrack.getSegments().size()<<std::endl;
   if(!aTrack.getSegments().size()) return out;
 
-  std::cout<<"\t Path: start->end [chi2]: "<<std::endl;
+  out<<"\t Path: start->end [chi2]: "<<std::endl;
   for(auto aSegment: aTrack.getSegments()) out<<"\t \t"<<aSegment<<std::endl;
 
-  std::cout<<"\t Nodes: node [hits chi2, angle chi2]: "<<std::endl;
+  out<<"\t Nodes: node [hits chi2, angle chi2]: "<<std::endl;
   for(unsigned int iSegment = 0;iSegment<(aTrack.getSegments().size()-1);++iSegment){
     out<<"\t \t ("
        <<aTrack.getSegments().at(iSegment).getEnd().X()<<", "
@@ -379,7 +388,7 @@ std::ostream & operator << (std::ostream &out, const Track3D &aTrack){
        <<", "<<aTrack.getNodeAngleChi2(iSegment)<<"]"
        <<std::endl;
   }
-  std::cout<<"\t Total track chi2: "<<aTrack.getChi2();  
+  out<<"\t Total track chi2: "<<aTrack.getChi2();  
   return out;
 }
 /////////////////////////////////////////////////////////

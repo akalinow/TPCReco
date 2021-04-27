@@ -19,15 +19,19 @@
 #include <TGPicture.h>
 #include <TGButton.h>
 #include <RQ_OBJECT.h>
+
 #include <TCanvas.h>
 #include <TObject.h>
 #include <TClass.h>
+
 #include <TLine.h>
 #include <TArrow.h>
 
-#include "EntryDialog.h"
+#include "GUI_commons.h"
+#include "FileInfoFrame.h"
 #include "SelectionBox.h"
 #include "MarkersManager.h"
+#include "RunConditionsDialog.h"
 
 #include "EventSourceBase.h"
 #include "HistoManager.h"
@@ -35,38 +39,7 @@
 
 #include <boost/property_tree/json_parser.hpp>
 
-enum ETestCommandIdentifiers {
-   M_FILE_OPEN,
-   M_FILE_SAVE,
-   M_FILE_SAVEAS,
-   M_FILE_PRINT,
-   M_FILE_PRINTSETUP,
-   M_FILE_EXIT,
 
-   M_TOGGLE_LOGSCALE,
-   M_DIR_WATCH,
-
-   M_HELP_CONTENTS,
-   M_HELP_SEARCH,
-   M_HELP_ABOUT,
-
-   M_NEXT_EVENT,
-   M_PREVIOUS_EVENT,
-   M_GOTO_EVENT,
-   M_GOTO_ENTRY,
-
-};
-
-enum Messages {
-	       M_DATA_FILE_UPDATED
-	       
-};
-
-enum Modes {
-	    M_ONLINE_MODE,
-	    M_OFFLINE_GRAW_MODE,
-	    M_OFFLINE_ROOT_MODE	       
-};
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 class MainFrame : public TGMainFrame {
@@ -81,6 +54,9 @@ class MainFrame : public TGMainFrame {
   virtual Bool_t ProcessMessage(Long_t msg);
   virtual Bool_t ProcessMessage(const char *);
 
+  void drawRecoFromMarkers(std::vector<double> * segmentsXY);
+  void updateRunConditions(std::vector<double> *runParams);
+
   void HandleEmbeddedCanvas(Int_t event, Int_t x, Int_t y, TObject *sel);
 
   void HandleMenu(Int_t);
@@ -89,28 +65,21 @@ class MainFrame : public TGMainFrame {
 
 private:
 
-  boost::property_tree::ptree myConfig;
-  int myWorkMode = 0;
-  bool isLogScaleOn{false};
-  std::shared_ptr<EventSourceBase> myEventSource;
-  HistoManager myHistoManager;
-
-  DirectoryWatch myDirWatch;
-  std::thread fileWatchThread;
-  std::mutex myMutex; 
-
   void InitializeEventSource();
   void InitializeWindows();
   
   void AddTopMenu();
   void SetTheFrame();
   void AddHistoCanvas();
-  void AddButtons();
-  void AddNumbersDialog();
-  void AddEventTypeDialog(int attach_top);
-  void AddMarkersDialog();
-  void AddGoToEventDialog(int attach_top);
-  void AddGoToFileEntryDialog(int attach_top);
+  
+  int AddButtons(int attach);
+  int AddGoToFileEntryDialog(int attach);
+  int AddGoToEventDialog(int attach);
+  int AddEventTypeDialog(int attach);
+  int AddMarkersDialog(int attach);
+  int AddFileInfoFrame(int attach);
+  int AddRunConditionsDialog(int attach);
+  
   void AddLogos();
 
   void SetCursorTheme();
@@ -118,8 +87,19 @@ private:
   void drawRawHistos();
   void drawRecoHistos();
 
+  void ClearCanvas();
   void Update();
   void UpdateEventLog();
+
+  boost::property_tree::ptree myConfig;
+  int myWorkMode{0};
+  bool isLogScaleOn{false}, isRecoModeOn{false};
+  std::shared_ptr<EventSourceBase> myEventSource;
+  HistoManager myHistoManager;
+
+  DirectoryWatch myDirWatch;
+  std::thread fileWatchThread;
+  std::mutex myMutex; 
 
   TGCompositeFrame   *fFrame;
   TRootEmbeddedCanvas *embeddedCanvas;
@@ -137,13 +117,13 @@ private:
   TGGroupFrame        *fGframe;
   TGButtonGroup *eventTypeButtonGroup;
 
-  MarkersManager *fMarkersManager;  
-  EntryDialog *fEntryDialog;
-  SelectionBox *fSelectionBox;
+  MarkersManager *fMarkersManager{0};  
+  FileInfoFrame *fFileInfoFrame{0};
+  SelectionBox *fSelectionBox{0};
+  RunConditionsDialog *fRunConditionsDialog{0};
 
   TArrow *fArrow;
   TLine *fLine;
-
 
   ClassDef(MainFrame, 0); 
 };

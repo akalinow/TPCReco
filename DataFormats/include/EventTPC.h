@@ -29,7 +29,7 @@ class EventTPC {
   //  friend class SigClusterTPC;
  private:
   Long64_t event_id, run_id;
-  std::shared_ptr<GeometryTPC> myGeometryPtr;
+  std::shared_ptr<GeometryTPC> myGeometryPtr;  //! transient data member
   
   std::map<MultiKey3, double, multikey3_less> chargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
   std::map<MultiKey2, double, multikey2_less> maxChargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024])
@@ -84,14 +84,14 @@ class EventTPC {
   inline int GetTimeRebin() const { return time_rebin; }       
   bool SetTimeRebin(int rebin); // HAS NO EFFECT YET !!!!
 
-  double GetMaxCharge();                   // maximal charge from all strips
+  double GetMaxCharge() const;                   // maximal charge from all strips
   double GetMaxCharge(int strip_dir);      // maximal charge from strips of a given direction
   double GetMaxCharge(int strip_dir, int strip_number);      // maximal charge from single strip of a given direction
   int GetMaxChargeTime(int strip_dir);     // arrival time of the maximal charge from strips of a given direction
   int GetMaxChargeStrip(int strip_dir);    // strip number with the maximal charge in a given direction 
   int GetMaxChargeTime();                  // arrival time of the maximal charge from all strips
   int GetMaxChargeChannel();               // global channel number with the maximal charge from all strips
-  double GetTotalCharge();                 // charge integral from all strips
+  double GetTotalCharge() const;                 // charge integral from all strips
   double GetTotalCharge(int strip_dir);    // charge integral from strips of a given direction 
   double GetTotalCharge(int strip_dir, int strip_number); // charge integral from single strip of a given direction 
   double GetTotalChargeByTimeCell(int strip_dir, int time_cell); // charge integral from a single time cell from all strips in a given direction
@@ -114,6 +114,8 @@ class EventTPC {
 			   int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN, 
 			   int method=EVENTTPC_DEFAULT_RECO_METHOD);  
 
+  TH3D *Get3DFrame(int rebin_space, int rebin_time) const; //frame for plotting 3D reconstruction
+  
   TH3D *Get3D(const SigClusterTPC &cluster, double radius,                       // clustered hits only, 3D view
 	      int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN, 
 	      int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN, 

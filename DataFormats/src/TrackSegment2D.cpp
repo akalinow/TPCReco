@@ -147,4 +147,18 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+std::ostream & operator << (std::ostream &out, const TrackSegment2D &aSegment){
 
+  const TVector3 & start = aSegment.getStart();
+  const TVector3 & end = aSegment.getEnd();
+  
+  out<<"direction: "<<aSegment.getStripDir()
+     <<" ("<<start.X()<<", "<<start.Y()
+     <<" -> "
+     <<"("<<end.X()<<", "<<end.Y()<<") "<<std::endl
+     <<"\t N Hough accumulator hits: "
+     <<"["<<aSegment.getNAccumulatorHits()<<"]";
+  return out;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
