@@ -28,4 +28,10 @@ cd resources
 ../bin/tpcGUI ../config/config_GUI.json
 ```
 
+If you want to override the "dataFile" setting from the config file, please use a command line option:
+
+```
+../bin/tpcGUI ../config/config_GUI.json --dataFile path
+```
+
 Check config file [structure and examples](GUI/config/README.md). 
