@@ -149,7 +149,7 @@ void EventSourceGRAW::findEventFragments(unsigned long int eventIdx, unsigned in
   }
   unsigned int currentEventIdx = 0;
 
-  if(iInitialEntry>5) iInitialEntry-=100;//FIXME Some GRAW files have fragments very more separated than 100 entries
+  if(iInitialEntry>5) iInitialEntry-=5;//FIXME Some GRAW files have fragments very more separated than 10 entries
   else iInitialEntry = 0;
   for(unsigned int iEntry=iInitialEntry;iEntry<nEntries && nFragments<GRAW_EVENT_FRAGMENTS;++iEntry){
     loadGrawFrame(iEntry);
@@ -166,7 +166,7 @@ void EventSourceGRAW::collectEventFragments(unsigned int eventIdx){
   auto it = myFramesMap.find(eventIdx);
   if(it==myFramesMap.end()) return;
   if(it->second.size()!=GRAW_EVENT_FRAGMENTS){
-      std::cerr<<KRED<<" Fragment counts for eventIdx = "<<RST<<eventIdx
+      std::cerr<<KRED<<"Fragment counts for eventIdx = "<<RST<<eventIdx
 	       <<KRED<<" mismatch. Expected: "<<RST<<GRAW_EVENT_FRAGMENTS
 	       <<KRED<<" found: "<<RST<<it->second.size()
 	       <<RST<<std::endl;
