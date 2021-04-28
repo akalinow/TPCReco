@@ -28,8 +28,8 @@ void EventSourceGRAW::setRemovePedestal(bool aFlag){
 /////////////////////////////////////////////////////////
 std::shared_ptr<EventTPC> EventSourceGRAW::getNextEvent(){
 
-  unsigned int currentEventIdx = myCurrentEvent->GetEventId();
-  auto it = myFramesMap.find(currentEventIdx);
+  unsigned long int currentEventId = myCurrentEvent->GetEventId();
+  auto it = myFramesMap.find(currentEventId);
   unsigned int lastEventFrame = *it->second.rbegin();
   if(lastEventFrame<nEntries-1) ++lastEventFrame;
   loadFileEntry(lastEventFrame);
@@ -39,8 +39,8 @@ std::shared_ptr<EventTPC> EventSourceGRAW::getNextEvent(){
 /////////////////////////////////////////////////////////
 std::shared_ptr<EventTPC> EventSourceGRAW::getPreviousEvent(){
 
-  unsigned int currentEventIdx = myCurrentEvent->GetEventId();
-  auto it = myFramesMap.find(currentEventIdx);
+  unsigned int currentEventId = myCurrentEvent->GetEventId();
+  auto it = myFramesMap.find(currentEventId);
   unsigned int firstEventFrame = *it->second.begin();
   if(firstEventFrame>0) --firstEventFrame; 
   loadFileEntry(firstEventFrame);
@@ -60,13 +60,17 @@ void EventSourceGRAW::loadDataFile(const std::string & fileName){
   }
   nEntries = myFile->GetGrawFramesNumber();
   myFramesMap.clear();
+  myASADMap.clear();
+  myReadEntriesSet.clear();
   isFullFileScanned = false;
   /*
   for(unsigned int iEntry=0;iEntry<0.01*nEntries;++iEntry){
     loadGrawFrame(iEntry);
-    int currentEventIdx = myDataFrame.fHeader.fEventIdx;
+    int currentEventId = myDataFrame.fHeader.fEventIdx;
+    int ASAD_idx = myDataFrame.fHeader.fAsadIdx;
     std::cout<<"iEntry: "<<iEntry
-	     <<" currentEventIdx: "<<currentEventIdx
+	     <<" currentEventId: "<<currentEventId
+	     <<" ASAD: "<<ASAD_idx
 	     <<std::endl;      
   }
   std::cout<<KBLU<<"End of file"<<RST<<std::endl;
@@ -94,26 +98,26 @@ bool EventSourceGRAW::loadGrawFrame(unsigned int iEntry){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void EventSourceGRAW::loadEventId(unsigned long int eventIdx){
+void EventSourceGRAW::loadEventId(unsigned long int eventId){
 
   std::cout<<KBLU
-	   <<"Start looking for the event id: "<<eventIdx
+	   <<"Start looking for the event id: "<<eventId
 	   <<RST<<std::endl;
   
-  auto it = myFramesMap.find(eventIdx);
+  auto it = myFramesMap.find(eventId);
 
-  if(it!=myFramesMap.end() &&
+  if(!isFullFileScanned && it!=myFramesMap.end() &&
      it->second.size()<GRAW_EVENT_FRAGMENTS){
     unsigned int iEntry =  *it->second.rbegin();
-    findEventFragments(eventIdx, iEntry);
+    findEventFragments(eventId, iEntry);
   }
-  else if(it==myFramesMap.end()){
-    findEventFragments(eventIdx,0);
+  else if(!isFullFileScanned && it==myFramesMap.end()){
+    findEventFragments(eventId,0);
   }
-  collectEventFragments(eventIdx);
+  collectEventFragments(eventId);
 
   std::cout<<KBLU
-	   <<"Finished looking for the event id: "<<eventIdx
+	   <<"Finished looking for the event id: "<<eventId
 	   <<RST<<std::endl;
 }
 /////////////////////////////////////////////////////////
@@ -122,30 +126,43 @@ void EventSourceGRAW::loadFileEntry(unsigned long int iEntry){
 
   myCurrentEntry = iEntry;
   loadGrawFrame(iEntry);
-  unsigned long int eventIdx = myDataFrame.fHeader.fEventIdx;
+  unsigned long int eventId = myDataFrame.fHeader.fEventIdx;
 
   std::cout<<KBLU
 	   <<"Looking for event fragments from file entry id: "<<RST<<iEntry
-	   <<KBLU<<" event id: "<<RST<<eventIdx
+	   <<KBLU<<" event id: "<<RST<<eventId
 	   <<std::endl;
   
   if(!isFullFileScanned &&
-     (myFramesMap.find(eventIdx)==myFramesMap.end() ||
-      myFramesMap.find(eventIdx)->second.size()<GRAW_EVENT_FRAGMENTS)){
-    findEventFragments(eventIdx, iEntry);
+     (myFramesMap.find(eventId)==myFramesMap.end() ||
+      myFramesMap.find(eventId)->second.size()<GRAW_EVENT_FRAGMENTS)){
+    findEventFragments(eventId, iEntry);
   }
-  collectEventFragments(eventIdx);
+  collectEventFragments(eventId);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void EventSourceGRAW::findEventFragments(unsigned long int eventIdx, unsigned int iInitialEntry){
+void EventSourceGRAW::checkEntryForFragments(unsigned int iEntry){
 
-  auto it=myFramesMap.find(eventIdx);
+  if(myReadEntriesSet.count(iEntry)) return;
+  loadGrawFrame(iEntry);
+  myReadEntriesSet.insert(iEntry);
+  unsigned long int currentEventId = myDataFrame.fHeader.fEventIdx;
+  int ASAD_idx = myDataFrame.fHeader.fAsadIdx;  
+  if(!myASADMap[currentEventId].count(ASAD_idx)) {
+    myFramesMap[currentEventId].insert(iEntry);
+    myASADMap[currentEventId].insert(ASAD_idx);
+  }
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void EventSourceGRAW::findEventFragments(unsigned long int eventId, unsigned int iInitialEntry){
+
+  auto it=myFramesMap.find(eventId);
   unsigned int nFragments = 0;
   if(it!=myFramesMap.end()){
     nFragments = it->second.size();
   }
-  unsigned int currentEventIdx = 0;
 
   bool reachStartOfFile = false;
   bool reachEndOfFile = false;
@@ -153,10 +170,8 @@ void EventSourceGRAW::findEventFragments(unsigned long int eventIdx, unsigned in
   for(unsigned int iEntry=iInitialEntry;
       iEntry>=0 && iEntry<nEntries && nFragments<GRAW_EVENT_FRAGMENTS;
       --iEntry){
-    loadGrawFrame(iEntry);
-    currentEventIdx = myDataFrame.fHeader.fEventIdx;
-    myFramesMap[currentEventIdx].insert(iEntry);
-    nFragments =  myFramesMap[eventIdx].size();
+    checkEntryForFragments(iEntry);
+    nFragments =  myFramesMap[eventId].size();
     reachStartOfFile = (iEntry==0);
     std::cout<<"\r reading file entry: "<<iEntry
 	     <<" fragments found so far: "
@@ -165,10 +180,8 @@ void EventSourceGRAW::findEventFragments(unsigned long int eventIdx, unsigned in
   }
   
   for(unsigned int iEntry=iInitialEntry;iEntry<nEntries && nFragments<GRAW_EVENT_FRAGMENTS;++iEntry){
-    loadGrawFrame(iEntry);
-    currentEventIdx = myDataFrame.fHeader.fEventIdx;
-    myFramesMap[currentEventIdx].insert(iEntry);
-    nFragments =  myFramesMap[eventIdx].size();
+    checkEntryForFragments(iEntry);
+    nFragments =  myFramesMap[eventId].size();
     reachEndOfFile = (iEntry==nEntries-1);
     std::cout<<"\r reading file entry: "<<iEntry
 	     <<" fragments found so far: "
@@ -180,35 +193,35 @@ void EventSourceGRAW::findEventFragments(unsigned long int eventIdx, unsigned in
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void EventSourceGRAW::collectEventFragments(unsigned int eventIdx){
+void EventSourceGRAW::collectEventFragments(unsigned int eventId){
 
-  auto it = myFramesMap.find(eventIdx);
+  auto it = myFramesMap.find(eventId);
   if(it==myFramesMap.end()) return;
   if(it->second.size()!=GRAW_EVENT_FRAGMENTS){
-      std::cerr<<KRED<<"Fragment counts for eventIdx = "<<RST<<eventIdx
+      std::cerr<<KRED<<"Fragment counts for eventId = "<<RST<<eventId
 	       <<KRED<<" mismatch. Expected: "<<RST<<GRAW_EVENT_FRAGMENTS
 	       <<KRED<<" found: "<<RST<<it->second.size()
 	       <<RST<<std::endl;
   }
 
   myCurrentEvent->Clear();
-  myCurrentEvent->SetEventId(eventIdx);
+  myCurrentEvent->SetEventId(eventId);
   myCurrentEvent->SetGeoPtr(myGeometryPtr);
 
-  std::cout<<KYEL<<"Creating a new event with eventIdx: "<<eventIdx<<RST<<std::endl;
+  std::cout<<KYEL<<"Creating a new event with eventId: "<<eventId<<RST<<std::endl;
 
   for(auto aFragment: it->second){
     loadGrawFrame(aFragment);
     int  ASAD_idx = myDataFrame.fHeader.fAsadIdx;
-    unsigned int eventIdx_fromFrame = myDataFrame.fHeader.fEventIdx;
-    if(eventIdx!=eventIdx_fromFrame){
+    unsigned long int eventId_fromFrame = myDataFrame.fHeader.fEventIdx;
+    if(eventId!=eventId_fromFrame){
       std::cerr<<KRED<<__FUNCTION__
-	       <<" Event id mismath!: eventIdx = "<<eventIdx
-	       <<" eventIdx_fromFrame: "<<eventIdx_fromFrame
+	       <<" Event id mismath!: eventId = "<<eventId
+	       <<" eventId_fromFrame: "<<eventId_fromFrame
 	       <<RST<<std::endl;
       return;
     }
-    std::cout<<KBLU<<"Found a frame for eventIdx: "<<RST<<eventIdx
+    std::cout<<KBLU<<"Found a frame for eventId: "<<RST<<eventId
 	     <<KBLU<<" in file entry: "<<RST<<aFragment<<RST
 	     <<KBLU<<" for  ASAD: "<<RST<<ASAD_idx<<RST<<std::endl;
     fillEventFromFrame(myDataFrame);
