@@ -60,9 +60,9 @@ void EventSourceGRAW::loadDataFile(const std::string & fileName){
   }
   nEntries = myFile->GetGrawFramesNumber();
   myFramesMap.clear();
-
+  isFullFileScanned = false;
   /*
-  for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
+  for(unsigned int iEntry=0;iEntry<0.01*nEntries;++iEntry){
     loadGrawFrame(iEntry);
     int currentEventIdx = myDataFrame.fHeader.fEventIdx;
     std::cout<<"iEntry: "<<iEntry
@@ -82,7 +82,7 @@ bool EventSourceGRAW::loadGrawFrame(unsigned int iEntry){
   bool dataFrameRead = getGrawFrame(myFilePath, iEntry+1, myDataFrame);///FIXME getGrawFrame counts frames from 1 (WRRR!)
   std::cout.clear();
 
-  std::cout<<KRED<<__FUNCTION__<<RST<<" iEntry: "<<iEntry<<std::endl;
+  //std::cout<<KRED<<__FUNCTION__<<RST<<" iEntry: "<<iEntry<<std::endl;
   
   if(!dataFrameRead){
     std::cerr <<KRED<< "ERROR: cannot read event " << RST<<iEntry << std::endl;
@@ -125,8 +125,15 @@ void EventSourceGRAW::loadFileEntry(unsigned long int iEntry){
   myCurrentEntry = iEntry;
   loadGrawFrame(iEntry);
   unsigned long int eventIdx = myDataFrame.fHeader.fEventIdx;
-  if(myFramesMap.find(eventIdx)==myFramesMap.end() ||
-     myFramesMap.find(eventIdx)->second.size()<GRAW_EVENT_FRAGMENTS){
+
+  std::cout<<KBLU
+	   <<"Looking for event fragments from file entry id: "<<RST<<iEntry
+	   <<KBLU<<" event id: "<<RST<<eventIdx
+	   <<std::endl;
+  
+  if(!isFullFileScanned &&
+     (myFramesMap.find(eventIdx)==myFramesMap.end() ||
+      myFramesMap.find(eventIdx)->second.size()<GRAW_EVENT_FRAGMENTS)){
     findEventFragments(eventIdx, iEntry);
   }
   collectEventFragments(eventIdx);
@@ -142,13 +149,14 @@ void EventSourceGRAW::findEventFragments(unsigned long int eventIdx, unsigned in
   }
   unsigned int currentEventIdx = 0;
 
-  if(iInitialEntry>5) iInitialEntry-=5;
+  if(iInitialEntry>5) iInitialEntry-=100;//FIXME Some GRAW files have fragments very more separated than 100 entries
   else iInitialEntry = 0;
   for(unsigned int iEntry=iInitialEntry;iEntry<nEntries && nFragments<GRAW_EVENT_FRAGMENTS;++iEntry){
     loadGrawFrame(iEntry);
     currentEventIdx = myDataFrame.fHeader.fEventIdx;
     myFramesMap[currentEventIdx].insert(iEntry);
     nFragments =  myFramesMap[eventIdx].size();
+    if(iEntry==nEntries-1) isFullFileScanned = true;
   }
 }
 /////////////////////////////////////////////////////////
@@ -158,10 +166,9 @@ void EventSourceGRAW::collectEventFragments(unsigned int eventIdx){
   auto it = myFramesMap.find(eventIdx);
   if(it==myFramesMap.end()) return;
   if(it->second.size()!=GRAW_EVENT_FRAGMENTS){
-      std::cerr<<__FUNCTION__
-	       <<KRED<<" Fragment counts for eventIdx = "<<eventIdx
-	       <<" mismatch. Expected: "<<GRAW_EVENT_FRAGMENTS
-	       <<" found: "<<it->second.size()
+      std::cerr<<KRED<<" Fragment counts for eventIdx = "<<RST<<eventIdx
+	       <<KRED<<" mismatch. Expected: "<<RST<<GRAW_EVENT_FRAGMENTS
+	       <<KRED<<" found: "<<RST<<it->second.size()
 	       <<RST<<std::endl;
   }
 
@@ -171,8 +178,8 @@ void EventSourceGRAW::collectEventFragments(unsigned int eventIdx){
 
   std::cout<<KYEL<<"Creating a new event with eventIdx: "<<eventIdx<<RST<<std::endl;
 
-  for(auto aFramgent: it->second){
-    loadGrawFrame(aFramgent);
+  for(auto aFragment: it->second){
+    loadGrawFrame(aFragment);
     int  ASAD_idx = myDataFrame.fHeader.fAsadIdx;
     unsigned int eventIdx_fromFrame = myDataFrame.fHeader.fEventIdx;
     if(eventIdx!=eventIdx_fromFrame){
@@ -182,8 +189,9 @@ void EventSourceGRAW::collectEventFragments(unsigned int eventIdx){
 	       <<RST<<std::endl;
       return;
     }
-    std::cout<<KBLU<<"Found a frame for eventIdx: "<<eventIdx
-	     <<" for  ASAD: "<<ASAD_idx<<RST<<std::endl;
+    std::cout<<KBLU<<"Found a frame for eventIdx: "<<RST<<eventIdx
+	     <<KBLU<<" in file entry: "<<RST<<aFragment<<RST
+	     <<KBLU<<" for  ASAD: "<<RST<<ASAD_idx<<RST<<std::endl;
     fillEventFromFrame(myDataFrame);
   }
 }

@@ -47,6 +47,7 @@ private:
   std::shared_ptr<TGrawFile> myFile;
   std::string myFilePath;
   std::map<unsigned int, std::set<unsigned int> > myFramesMap;
+  bool isFullFileScanned{false};
 
   int minSignalCell;
   int maxSignalCell;
