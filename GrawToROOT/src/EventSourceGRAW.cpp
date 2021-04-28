@@ -76,16 +76,14 @@ void EventSourceGRAW::loadDataFile(const std::string & fileName){
 /////////////////////////////////////////////////////////
 bool EventSourceGRAW::loadGrawFrame(unsigned int iEntry){
 
-  if(iEntry>=nEntries) iEntry = nEntries;
+  if(iEntry>=nEntries) iEntry = nEntries-1;
   if(iEntry<0) iEntry = 0;
   std::cout.setstate(std::ios_base::failbit);
   bool dataFrameRead = getGrawFrame(myFilePath, iEntry+1, myDataFrame);///FIXME getGrawFrame counts frames from 1 (WRRR!)
   std::cout.clear();
-
-  //std::cout<<KRED<<__FUNCTION__<<RST<<" iEntry: "<<iEntry<<std::endl;
   
   if(!dataFrameRead){
-    std::cerr <<KRED<< "ERROR: cannot read event " << RST<<iEntry << std::endl;
+    std::cerr <<KRED<< "ERROR: cannot read file entry: " <<RST<<iEntry << std::endl;
     std::cerr <<KRED
 	      <<"Please check if you are running the application from the resources directory."
 	      <<RST
@@ -149,15 +147,36 @@ void EventSourceGRAW::findEventFragments(unsigned long int eventIdx, unsigned in
   }
   unsigned int currentEventIdx = 0;
 
-  if(iInitialEntry>5) iInitialEntry-=5;//FIXME Some GRAW files have fragments very more separated than 10 entries
-  else iInitialEntry = 0;
+  bool reachStartOfFile = false;
+  bool reachEndOfFile = false;
+  
+  for(unsigned int iEntry=iInitialEntry;
+      iEntry>=0 && iEntry<nEntries && nFragments<GRAW_EVENT_FRAGMENTS;
+      --iEntry){
+    loadGrawFrame(iEntry);
+    currentEventIdx = myDataFrame.fHeader.fEventIdx;
+    myFramesMap[currentEventIdx].insert(iEntry);
+    nFragments =  myFramesMap[eventIdx].size();
+    reachStartOfFile = (iEntry==0);
+    std::cout<<"\r reading file entry: "<<iEntry
+	     <<" fragments found so far: "
+	     <<nFragments
+	     <<" expected: "<<GRAW_EVENT_FRAGMENTS;
+  }
+  
   for(unsigned int iEntry=iInitialEntry;iEntry<nEntries && nFragments<GRAW_EVENT_FRAGMENTS;++iEntry){
     loadGrawFrame(iEntry);
     currentEventIdx = myDataFrame.fHeader.fEventIdx;
     myFramesMap[currentEventIdx].insert(iEntry);
     nFragments =  myFramesMap[eventIdx].size();
-    if(iEntry==nEntries-1) isFullFileScanned = true;
+    reachEndOfFile = (iEntry==nEntries-1);
+    std::cout<<"\r reading file entry: "<<iEntry
+	     <<" fragments found so far: "
+	     <<nFragments
+	     <<" expected: "<<GRAW_EVENT_FRAGMENTS;    
   }
+  std::cout<<std::endl;
+  if(reachStartOfFile && reachEndOfFile) isFullFileScanned = true;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
