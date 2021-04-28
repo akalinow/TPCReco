@@ -40,6 +40,7 @@ private:
   void findEventFragments(unsigned long int eventIdx, unsigned int iInitialEntry);
   void collectEventFragments(unsigned int eventIdx);
   void fillEventFromFrame(GET::GDataFrame & aGrawFrame);
+  void checkEntryForFragments(unsigned int iEntry);
 
   unsigned int GRAW_EVENT_FRAGMENTS;
   PedestalCalculator myPedestalCalculator;
@@ -47,6 +48,9 @@ private:
   std::shared_ptr<TGrawFile> myFile;
   std::string myFilePath;
   std::map<unsigned int, std::set<unsigned int> > myFramesMap;
+  std::map<unsigned int, std::set<unsigned int> > myASADMap;
+  std::set<unsigned int> myReadEntriesSet;
+  bool isFullFileScanned{false};
 
   int minSignalCell;
   int maxSignalCell;

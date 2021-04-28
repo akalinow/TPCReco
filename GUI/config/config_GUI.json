@@ -1,5 +1,6 @@
 {
-    "dataFile": "/data/akalinow/data/neutrons/ROOT/EventTPC_2018-06-19T15:13:33.941_0008.root",
+    "dataFile_1": "/data/akalinow/data/neutrons/ROOT/EventTPC_2018-06-19T15:13:33.941_0008.root",
+    "dataFile": "/data/akalinow/data/neutrons/CoBo_2018-06-19T15:13:33.941_0008.graw",
     "geometryFile": "/data/akalinow/data/neutrons/geometry_mini_eTPC_2018-06-19T10:35:30.853.dat",    
     "resourcesPath":"/home/akalinow/scratch/ELITPC/TPCReco/build/resources/",
     "updateInterval": 3000,

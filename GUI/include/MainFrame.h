@@ -101,29 +101,29 @@ private:
   std::thread fileWatchThread;
   std::mutex myMutex; 
 
-  TGCompositeFrame   *fFrame;
-  TRootEmbeddedCanvas *embeddedCanvas;
-  TCanvas            *fCanvas;
+  TGCompositeFrame   *fFrame{0};
+  TRootEmbeddedCanvas *embeddedCanvas{0};
+  TCanvas            *fCanvas{0};
 
-  TGMenuBar          *fMenuBar;
-  TGPopupMenu        *fMenuFile, *fMenuHelp;
+  TGMenuBar          *fMenuBar{0};
+  TGPopupMenu        *fMenuFile{0}, *fMenuHelp{0};
 
-  TGLayoutHints      *fFrameLayout;
-  TGTableLayoutHints *fTCanvasLayout;
+  TGLayoutHints      *fFrameLayout{0};
+  TGTableLayoutHints *fTCanvasLayout{0};
 
-  TGTransientFrame *fLegendMain;
+  TGTransientFrame *fLegendMain{0};
 
-  TGNumberEntryField *fEventIdEntry, *fFileEntryEntry;
-  TGGroupFrame        *fGframe;
-  TGButtonGroup *eventTypeButtonGroup;
+  TGNumberEntryField *fEventIdEntry{0}, *fFileEntryEntry{0};
+  TGGroupFrame        *fGframe{0};
+  TGButtonGroup *eventTypeButtonGroup{0};
 
   MarkersManager *fMarkersManager{0};  
   FileInfoFrame *fFileInfoFrame{0};
   SelectionBox *fSelectionBox{0};
   RunConditionsDialog *fRunConditionsDialog{0};
 
-  TArrow *fArrow;
-  TLine *fLine;
+  TArrow *fArrow{0};
+  TLine *fLine{0};
 
   ClassDef(MainFrame, 0); 
 };

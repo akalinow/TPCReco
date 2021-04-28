@@ -1,6 +1,7 @@
 ## Installation instructions:
 
 ```
+source /opt/soft/GetSoftware_bin/env_settings.sh
 git clone ssh://git@dracula.hep.fuw.edu.pl:8822/elitpcSoftware/TPCReco.git
 cd TPCReco
 git checkout relevant_tag

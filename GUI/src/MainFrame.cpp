@@ -516,7 +516,10 @@ void MainFrame::ClearCanvas(){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MainFrame::Update(){
-  if(myEventSource==nullptr || !myEventSource->numberOfEvents() ) {return;}
+
+  if(!myEventSource || !myEventSource->numberOfEvents() ||
+     !fFileInfoFrame || !fMarkersManager) {return;}
+  
   fFileInfoFrame->updateFileName(myEventSource->getCurrentPath());
   fFileInfoFrame->updateEventNumbers(myEventSource->numberOfEvents(),
 				   myEventSource->currentEventNumber(),
