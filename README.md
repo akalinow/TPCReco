@@ -11,7 +11,7 @@ cmake ../
 make install -j 4
 ```
 
-##Update instructions
+## Update instructions
 To synchronize the version of software in your working directory with some never tag please do following:
 ```
 cd TPCReco
