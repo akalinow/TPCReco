@@ -1,0 +1,13 @@
+{
+    "dataFile": "/data/edaq/2021/20210428_extTrg_CO2_80mbar",
+    "geometryFile": "./geometry_ELITPC.dat",    
+    "resourcesPath":".",
+    "updateInterval": 3000,
+    "removePedestal": true,
+    "display": {
+	"zLogScale": true,
+        "autoZoom":  false,
+	"recoMode":  false 
+    }
+}
+
