@@ -11,6 +11,33 @@ cmake ../
 make install -j 4
 ```
 
+##Update instructions
+To synchronize the version of software in your working directory with some never tag please do following:
+```
+cd TPCReco
+git checkout newer_tag
+cd build
+cmake ../
+make install -j 4
+```
+
+You can check the tag version fo your working directory with
+
+```
+cd TPCReco
+git branch
+```
+
+the output should looke like this:
+
+```
+akalinow@daqula2:~/1/TPCReco$ git branch
+* (HEAD detached at v0.02_28.04.2021)
+  master
+
+```
+
+
 ## Run instructions:
 
 Update the  config/config_GUI.json with correct values for input date file (ROOT or GRAW), corresponding geometry file,
