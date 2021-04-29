@@ -2,7 +2,7 @@
 
 ```
 source /opt/soft/GetSoftware_bin/env_settings.sh
-git clone ssh://git@dracula.hep.fuw.edu.pl:8822/elitpcSoftware/TPCReco.git
+git clone ssh://git@dracula.hep.fuw.edu.pl:8822/akalinowski/TPCReco.git
 cd TPCReco
 git checkout relevant_tag
 git submodule update --init --recursive
@@ -10,6 +10,33 @@ mkdir build; cd build
 cmake ../
 make install -j 4
 ```
+
+##Update instructions
+To synchronize the version of software in your working directory with some never tag please do following:
+```
+cd TPCReco
+git checkout newer_tag
+cd build
+cmake ../
+make install -j 4
+```
+
+You can check the tag version fo your working directory with
+
+```
+cd TPCReco
+git branch
+```
+
+the output should looke like this:
+
+```
+akalinow@daqula2:~/1/TPCReco$ git branch
+* (HEAD detached at v0.02_28.04.2021)
+  master
+
+```
+
 
 ## Run instructions:
 
@@ -26,6 +53,12 @@ source /opt/soft/GetSoftware_bin/env_settings.sh
 ``` 
 cd resources
 ../bin/tpcGUI ../config/config_GUI.json
+```
+
+If you want to override the "dataFile" setting from the config file, please use a command line option:
+
+```
+../bin/tpcGUI ../config/config_GUI.json --dataFile path
 ```
 
 Check config file [structure and examples](GUI/config/README.md). 

@@ -111,7 +111,7 @@ void MainFrame::InitializeEventSource(){
   
   FileStat_t stat;
   if(gSystem->GetPathInfo(dataFileName.c_str(), stat) != 0){
-    std::cerr<<"Invalid data path. No such file or directory: << "<<dataFileName<<std::endl;
+    std::cerr<<KRED<<"Invalid data path. No such file or directory: "<<RST<<dataFileName<<std::endl;
     return;
   }
 

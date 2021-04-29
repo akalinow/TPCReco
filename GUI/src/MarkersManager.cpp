@@ -39,7 +39,7 @@ MarkersManager::MarkersManager(const TGWindow * p, MainFrame * aFrame)
 void MarkersManager::addButtons(){
 
   std::vector<std::string> button_names = {"Add segment", "Fit segments", "Save segments"};
-  std::vector<std::string> button_tooltips = {"Click to add segments end points. Each point is set by coordinates on two projections",
+  std::vector<std::string> button_tooltips = {"Click to add segments end point. \n All segments share a common vertex - the starting point of the first segment.\n Each point is set by coordinates on two projections",
 					      "Calculate 3D orientation from the 2D projections",
 					      "Save the segments to ROOT file"};
   std::vector<unsigned int> button_id = {M_ADD_SEGMENT, M_FIT_SEGMENT,  M_WRITE_SEGMENT};
@@ -62,6 +62,7 @@ void MarkersManager::addButtons(){
     else aButton->Connect("Clicked()","MarkersManager",this,"DoButton()");
     if(button_names[iButton]!="Add segment") aButton->SetState(kButtonDisabled);
     aButton->ChangeBackground(aColor);
+    aButton->SetToolTipText(button_tooltips[iButton].c_str());
     myButtons[button_names[iButton]] = aButton;
     ++attach_left;
     ++attach_right;
@@ -111,9 +112,17 @@ void MarkersManager::updateSegments(int strip_dir){
     aLine.SetY2(y);
   }
   else{
-    double x = fMarkersContainer.at(strip_dir)->GetX();
-    double y = fMarkersContainer.at(strip_dir)->GetY();
-    TLine aLine(x, y, x, y);
+    double x1 = fMarkersContainer.at(strip_dir)->GetX();
+    double y1 = fMarkersContainer.at(strip_dir)->GetY();
+    double x2 = x1;
+    double y2 = y1;
+    if(aSegmentsContainer.size()){
+      x1 = aSegmentsContainer.front().GetX1();
+      y1 = aSegmentsContainer.front().GetY1();
+      x2 = fMarkersContainer.at(strip_dir)->GetX();
+      y2 = fMarkersContainer.at(strip_dir)->GetY();
+    }
+    TLine aLine(x1, y1, x2, y2);
     aLine.SetLineWidth(3);
     aLine.SetLineStyle(2);
     aLine.SetLineColor(2+aSegmentsContainer.size());
@@ -165,7 +174,6 @@ void MarkersManager::resetMarkers(bool force){
   std::for_each(fMarkersContainer.begin(), fMarkersContainer.end(),
 		[](TMarker *&item){if(item){delete item; item = 0;}});
   firstMarker = 0;
-
   clearHelperLines();
 
   int strip_dir = DIR_U;//FIX ME
@@ -370,6 +378,11 @@ void MarkersManager::sendSegmentsData(std::vector<double> *segmentsXY){
 /////////////////////////////////////////////////////////
 Bool_t MarkersManager::HandleButton(Int_t id){
    switch (id) {
+   case M_ADD_VERTEX:
+    {
+      acceptPoints = true;
+    }
+   break; 
    case M_ADD_SEGMENT:
     {
       acceptPoints = true;
