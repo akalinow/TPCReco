@@ -15,6 +15,7 @@ make install -j 4
 To synchronize the version of software in your working directory with some never tag please do following:
 ```
 cd TPCReco
+git fetch
 git checkout newer_tag
 cd build
 cmake ../
