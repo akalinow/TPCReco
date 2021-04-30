@@ -19,16 +19,19 @@
 #include <TGPicture.h>
 #include <TGButton.h>
 #include <RQ_OBJECT.h>
+
 #include <TCanvas.h>
 #include <TObject.h>
 #include <TClass.h>
+
 #include <TLine.h>
 #include <TArrow.h>
 
 #include "GUI_commons.h"
-#include "EntryDialog.h"
+#include "FileInfoFrame.h"
 #include "SelectionBox.h"
 #include "MarkersManager.h"
+#include "RunConditionsDialog.h"
 
 #include "EventSourceBase.h"
 #include "HistoManager.h"
@@ -52,6 +55,7 @@ class MainFrame : public TGMainFrame {
   virtual Bool_t ProcessMessage(const char *);
 
   void drawRecoFromMarkers(std::vector<double> * segmentsXY);
+  void updateRunConditions(std::vector<double> *runParams);
 
   void HandleEmbeddedCanvas(Int_t event, Int_t x, Int_t y, TObject *sel);
 
@@ -60,16 +64,6 @@ class MainFrame : public TGMainFrame {
   void DoButton();
 
 private:
-
-  boost::property_tree::ptree myConfig;
-  int myWorkMode = 0;
-  bool isLogScaleOn{false}, isRecoModeOn{false};
-  std::shared_ptr<EventSourceBase> myEventSource;
-  HistoManager myHistoManager;
-
-  DirectoryWatch myDirWatch;
-  std::thread fileWatchThread;
-  std::mutex myMutex; 
 
   void InitializeEventSource();
   void InitializeWindows();
@@ -83,7 +77,8 @@ private:
   int AddGoToEventDialog(int attach);
   int AddEventTypeDialog(int attach);
   int AddMarkersDialog(int attach);
-  int AddNumbersDialog(int attach);
+  int AddFileInfoFrame(int attach);
+  int AddRunConditionsDialog(int attach);
   
   void AddLogos();
 
@@ -96,28 +91,39 @@ private:
   void Update();
   void UpdateEventLog();
 
-  TGCompositeFrame   *fFrame;
-  TRootEmbeddedCanvas *embeddedCanvas;
-  TCanvas            *fCanvas;
+  boost::property_tree::ptree myConfig;
+  int myWorkMode{0};
+  bool isLogScaleOn{false}, isRecoModeOn{false};
+  std::shared_ptr<EventSourceBase> myEventSource;
+  HistoManager myHistoManager;
 
-  TGMenuBar          *fMenuBar;
-  TGPopupMenu        *fMenuFile, *fMenuHelp;
+  DirectoryWatch myDirWatch;
+  std::thread fileWatchThread;
+  std::mutex myMutex; 
 
-  TGLayoutHints      *fFrameLayout;
-  TGTableLayoutHints *fTCanvasLayout;
+  TGCompositeFrame   *fFrame{0};
+  TRootEmbeddedCanvas *embeddedCanvas{0};
+  TCanvas            *fCanvas{0};
 
-  TGTransientFrame *fLegendMain;
+  TGMenuBar          *fMenuBar{0};
+  TGPopupMenu        *fMenuFile{0}, *fMenuHelp{0};
 
-  TGNumberEntryField *fEventIdEntry, *fFileEntryEntry;
-  TGGroupFrame        *fGframe;
-  TGButtonGroup *eventTypeButtonGroup;
+  TGLayoutHints      *fFrameLayout{0};
+  TGTableLayoutHints *fTCanvasLayout{0};
 
-  MarkersManager *fMarkersManager;  
-  EntryDialog *fEntryDialog;
-  SelectionBox *fSelectionBox;
+  TGTransientFrame *fLegendMain{0};
 
-  TArrow *fArrow;
-  TLine *fLine;
+  TGNumberEntryField *fEventIdEntry{0}, *fFileEntryEntry{0};
+  TGGroupFrame        *fGframe{0};
+  TGButtonGroup *eventTypeButtonGroup{0};
+
+  MarkersManager *fMarkersManager{0};  
+  FileInfoFrame *fFileInfoFrame{0};
+  SelectionBox *fSelectionBox{0};
+  RunConditionsDialog *fRunConditionsDialog{0};
+
+  TArrow *fArrow{0};
+  TLine *fLine{0};
 
   ClassDef(MainFrame, 0); 
 };

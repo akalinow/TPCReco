@@ -214,7 +214,7 @@ TF1 TrackBuilder::fitTimeWindow(TH1D* hProj){
    }
 
    double sampling_rate = myGeometryPtr->GetSamplingRate();
-   double vdrift = myGeometryPtr->GetVdrift()*10.0;
+   double vdrift = myGeometryPtr->GetDriftVelocity()*10.0;// 10.0: [cm] -> [mm]
    double timeBinToCartesianScale = 1.0/sampling_rate*vdrift;
 
    int maxBin = hProj->GetMaximumBin();

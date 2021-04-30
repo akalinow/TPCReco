@@ -16,6 +16,7 @@
 #include "TH2Poly.h"
 #include "MultiKey.h"
 #include "CommonDefinitions.h"
+#include "RunConditions.h"
 #include "GeometryStats.h"
 #define FPN_CH   3    // FPN channel type index
 #define ERROR    -1   // error result indicator                                                                         
@@ -33,6 +34,7 @@ class GeometryTPC {
   friend class UVWprojector;
 
  private:
+  mutable RunConditions runConditions;
   GeometryStats geometryStats;
   bool initOK;                          // was geometry initialized properly?
   int COBO_N;                           // total # of COBO boards in the system
@@ -57,9 +59,6 @@ class GeometryTPC {
   std::map<int, TVector2> strip_unit_vec; // XY unit vector in [mm] for a given family of strips pointing towards ascending pad numbers of the strip
   std::map<int, TVector2> pitch_unit_vec; // XY unit vector in [mm] for a given family of strips pointing towards ascending strip numbers 
   std::map<int /* TH2Poly bin index [1..1024] */, StripTPC* /* TPC strip */> fStripMap; // maps TH2Poly bin to a given StripTPC object
-  double vdrift;                   // electron drift velocity in [cm / micosecond]
-  double sampling_rate;            // electronics sampling rate in [MHz]
-  double trigger_delay;            // delay in [microseconds] of the external "t0" trigger signal (for accelerator beam) 
   double drift_zmin;               // lower drift cage acceptance limit along Z-axis [mm] (closest to readout PCB)
   double drift_zmax;               // upper drift cage acceptance limit along Z-axis [mm] (farthest from readout PCB)
   TH2Poly* tp;                     // for internal storage of arbitrary strip shapes
@@ -89,7 +88,12 @@ class GeometryTPC {
   inline int GetTH2PolyPartitionY() { return grid_ny; }
   inline void SetDebug(bool flag) { _debug = flag; }
 
+  void setDriftVelocity(double v);
+  void setSamplingRate(double r);
+  void setTriggerDelay(double d);
+  
   // Getter methods
+  const RunConditions & getRunConditions() const { return runConditions;}
 
   inline TH2Poly *GetTH2Poly() { return tp; }   // returns pointer to the underlying TH2Poly
   StripTPC *GetTH2PolyStrip(int ibin);          // returns pointer to StripTPC object corresponding to TH2Poly bin 
@@ -161,13 +165,15 @@ class GeometryTPC {
   inline double GetPadSize() { return pad_size; } // [mm]
   inline double GetPadPitch() { return pad_pitch; } // [mm]
   inline double GetStripPitch() { return strip_pitch; } // [mm]
-  inline double GetVdrift() { return vdrift; } // [cm/us]
-  inline double GetSamplingRate() { return sampling_rate; } // [MHz]
+
+  inline double GetDriftVelocity() { return runConditions.getDriftVelocity(); } // [cm/us]
+  inline double GetSamplingRate() { return runConditions.getSamplingRate(); } // [MHz]
+  inline double GetTriggerDelay() { return runConditions.getTriggerDelay(); } // [us]
+
   inline TVector2 GetReferencePoint() { return reference_point; } // XY ([mm],[mm])
   TVector2 GetStripUnitVector(int dir); // XY ([mm],[mm])
   TVector2 GetStripPitchVector(int dir); // XY ([mm],[mm])
-  TVector3 GetStripPitchVector3D(int dir); // XYZ ([mm],[mm],0)
-  inline double GetTriggerDelay() { return trigger_delay; } // [us]
+  TVector3 GetStripPitchVector3D(int dir); // XYZ ([mm],[mm],0)  
   inline double GetDriftCageZmin() { return drift_zmin; } // [mm]
   inline double GetDriftCageZmax() { return drift_zmax; } // [mm]
 

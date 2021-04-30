@@ -1,5 +1,5 @@
-#ifndef EntryDialog_H
-#define EntryDialog_H
+#ifndef FileInfoFrame_H
+#define FileInfoFrame_H
 
 #include <string>
 
@@ -9,14 +9,14 @@
 
 class MainFrame;
 
-class EntryDialog : public TGCompositeFrame {
+class FileInfoFrame : public TGCompositeFrame {
 
 public:
-   EntryDialog(const TGWindow *p, MainFrame *aFrame);
+   FileInfoFrame(const TGWindow *p, MainFrame *aFrame);
 
    void initialize();
 
-   virtual ~EntryDialog();
+   virtual ~FileInfoFrame();
 
    virtual Bool_t ProcessMessage(Long_t msg, Long_t parm1, Long_t);
 

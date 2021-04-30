@@ -24,9 +24,15 @@ enum CommandIdentifiers {
    M_GOTO_EVENT,
    M_GOTO_ENTRY,
 
+   M_ADD_VERTEX,
    M_ADD_SEGMENT,
    M_FIT_SEGMENT,
    M_WRITE_SEGMENT,
+
+   M_SET_V_DRIFT,
+   M_SET_SAMLING_RATE,
+   M_SET_TRG_DELAY,
+   M_SET_CONDITIONS
 
 };
 

@@ -38,9 +38,9 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h,  const boost::proper
   fArrow = 0;
   fLine = 0;
 
-  InitializeWindows();
   InitializeEventSource();
-
+  InitializeWindows();
+  
   std::string modeLabel = "NONE";
   if(myWorkMode==M_ONLINE_MODE){
     modeLabel = "ONLINE";
@@ -51,7 +51,7 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h,  const boost::proper
   else if(myWorkMode==M_OFFLINE_GRAW_MODE){
     modeLabel = "OFFLINE from GRAW";
   }
-  fEntryDialog->updateModeLabel(modeLabel);
+  fFileInfoFrame->updateModeLabel(modeLabel);
   Update();
 }
 /////////////////////////////////////////////////////////
@@ -66,7 +66,7 @@ MainFrame::~MainFrame(){
   delete fMarkersManager;
 }
 /////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////
 void MainFrame::InitializeWindows(){
 
   SetCleanup(kDeepCleanup);
@@ -86,8 +86,9 @@ void MainFrame::InitializeWindows(){
   attach = AddEventTypeDialog(attach);  
   //Right column
   attach = 0;
-  attach = AddNumbersDialog(attach);  
+  attach = AddFileInfoFrame(attach);  
   attach = AddMarkersDialog(attach);
+  attach = AddRunConditionsDialog(attach);
   AddLogos();
   /////////////
   MapSubwindows();
@@ -110,7 +111,7 @@ void MainFrame::InitializeEventSource(){
   
   FileStat_t stat;
   if(gSystem->GetPathInfo(dataFileName.c_str(), stat) != 0){
-    std::cerr<<"Invalid data path. No such file or directory: << "<<dataFileName<<std::endl;
+    std::cerr<<KRED<<"Invalid data path. No such file or directory: "<<RST<<dataFileName<<std::endl;
     return;
   }
 
@@ -134,20 +135,24 @@ void MainFrame::InitializeEventSource(){
     }
     myDirWatch.Connect("Message(const char *)", "MainFrame", this, "ProcessMessage(const char *)");
   }
+  if(myConfig.find("removePedestal")!=myConfig.not_found() && myEventSource.get()){
+       bool removePedestal = myConfig.get<bool>("removePedestal");
+       EventSourceGRAW* aGrawEventSrc = dynamic_cast<EventSourceGRAW*>(myEventSource.get());
+       if(aGrawEventSrc) aGrawEventSrc->setRemovePedestal(removePedestal);
+  }
 #endif
   else if(!myEventSource){
-    std::cerr<<KRED<<"Input source not known. dataFile: "<<RST
-	     <<dataFileName<<" Exiting."<<std::endl;
+    std::cerr<<KRED<<"Input source not known. dataFile: "<<RST<<dataFileName<<std::endl;
 #ifndef WITH_GET
-    std::cerr<<KRED<<" or GRAW libriaries not set."<<RST<<std::endl;
+    std::cerr<<KRED<<"and GRAW libriaries not set."<<RST<<std::endl;
+#endif
     exit(0);
-#endif    
     return;
   }
 
   if(myWorkMode!=M_ONLINE_MODE){
     myEventSource->loadDataFile(dataFileName);
-    myEventSource->loadFileEntry(1);
+    myEventSource->loadFileEntry(0);
   }
   myHistoManager.setGeometry(myEventSource->getGeometry());
   myHistoManager.openOutputStream(dataFileName);
@@ -161,8 +166,8 @@ void MainFrame::AddTopMenu(){
   TGLayoutHints * menuBarHelpLayout = new TGLayoutHints(kLHintsTop | kLHintsRight);
 
   fMenuFile = new TGPopupMenu(fClient->GetRoot());
-  fMenuFile->AddEntry("&Open...", M_FILE_OPEN);
-  fMenuFile->AddEntry("S&ave as...", M_FILE_SAVEAS);
+  if(myWorkMode!=M_ONLINE_MODE) fMenuFile->AddEntry("&Open...", M_FILE_OPEN);
+  //fMenuFile->AddEntry("S&ave as...", M_FILE_SAVEAS);
   fMenuFile->AddSeparator();
   fMenuFile->AddEntry("E&xit", M_FILE_EXIT);
   fMenuFile->Connect("Activated(Int_t)", "MainFrame", this,"HandleMenu(Int_t)");
@@ -334,9 +339,9 @@ int MainFrame::AddGoToFileEntryDialog(int attach){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-int MainFrame::AddNumbersDialog(int attach){
+int MainFrame::AddFileInfoFrame(int attach){
 
-  fEntryDialog = new EntryDialog(fFrame, this);
+  fFileInfoFrame = new FileInfoFrame(fFrame, this);
 
   TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
   //int nRows = aLayout->fNrows;
@@ -348,8 +353,8 @@ int MainFrame::AddNumbersDialog(int attach){
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 						    kLHintsShrinkX|kLHintsShrinkY|
 						    kLHintsFillX|kLHintsFillY);
-  fEntryDialog->initialize();
-  fFrame->AddFrame(fEntryDialog, tloh);
+  fFileInfoFrame->initialize();
+  fFrame->AddFrame(fFileInfoFrame, tloh);
   return attach_bottom;
  }
 /////////////////////////////////////////////////////////
@@ -394,7 +399,7 @@ int MainFrame::AddMarkersDialog(int attach){
   UInt_t attach_left=nColumns*0.7+1;
   UInt_t attach_right=nColumns;
   UInt_t attach_top=attach;
-  UInt_t attach_bottom=attach_top+nRows*0.3;
+  UInt_t attach_bottom=attach_top+nRows*0.2;
 
   fMarkersManager = new MarkersManager(fFrame, this);
   fMarkersManager->Connect("sendSegmentsData(std::vector<double> *)","MainFrame",
@@ -408,6 +413,37 @@ int MainFrame::AddMarkersDialog(int attach){
   fCanvas->Connect("ProcessedEvent(Int_t,Int_t,Int_t,TObject*)",
 		   "MarkersManager", fMarkersManager,
 		   "HandleMarkerPosition(Int_t,Int_t,Int_t,TObject*)");
+  return attach_bottom; 
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+int MainFrame::AddRunConditionsDialog(int attach){
+
+  TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
+  int nColumns = aLayout->fNcols;
+  int nRows = aLayout->fNcols;
+  UInt_t attach_left=nColumns*0.7+1;
+  UInt_t attach_right=nColumns;
+  UInt_t attach_top=attach;
+  UInt_t attach_bottom=attach_top+nRows*0.35;
+
+  fRunConditionsDialog = new RunConditionsDialog(fFrame, this);
+  fRunConditionsDialog->Connect("updateRunConditions(std::vector<double>*)","MainFrame",
+  			   this,"updateRunConditions(std::vector<double>*)");
+  if(myEventSource && myEventSource->getGeometry()){
+    fRunConditionsDialog->initialize(myEventSource->getGeometry()->getRunConditions());
+  }
+  else{
+    std::cout<<KRED<<"ERROR "<<RST<<"Geometry not available for RunConditionsDialog.";
+    std::cout<<" dialog not added."<<std::endl;
+    return attach_bottom;
+  }
+  TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right,
+						    attach_top, attach_bottom,
+						    kLHintsExpandX|kLHintsExpandY |
+						    kLHintsShrinkX|kLHintsShrinkY|
+						    kLHintsFillX|kLHintsFillY);
+  fFrame->AddFrame(fRunConditionsDialog, tloh);  
   return attach_bottom; 
 }
 /////////////////////////////////////////////////////////
@@ -466,6 +502,7 @@ void MainFrame::CloseWindow(){ gApplication->Terminate(0); }
 /////////////////////////////////////////////////////////
 void MainFrame::ClearCanvas(){
 
+  if(fMarkersManager) fMarkersManager->reset();
   TList *aList = fCanvas->GetListOfPrimitives();
   TText aMessage(0.0, 0.0,"Waiting for data.");
   for(auto obj: *aList){
@@ -479,9 +516,12 @@ void MainFrame::ClearCanvas(){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MainFrame::Update(){
-  if(myEventSource==nullptr || !myEventSource->numberOfEvents() ) {return;}
-  fEntryDialog->updateFileName(myEventSource->getCurrentPath());
-  fEntryDialog->updateEventNumbers(myEventSource->numberOfEvents(),
+
+  if(!myEventSource || !myEventSource->numberOfEvents() ||
+     !fFileInfoFrame || !fMarkersManager) {return;}
+  
+  fFileInfoFrame->updateFileName(myEventSource->getCurrentPath());
+  fFileInfoFrame->updateEventNumbers(myEventSource->numberOfEvents(),
 				   myEventSource->currentEventNumber(),
 				   myEventSource->currentEntryNumber());
   myHistoManager.setEvent(myEventSource->getCurrentEvent());
@@ -585,6 +625,22 @@ void MainFrame::UpdateEventLog(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+void MainFrame::updateRunConditions(std::vector<double> *runParams){
+
+  if(!runParams || !myEventSource ||
+     !myEventSource->getGeometry() ||
+     runParams->size()<3) return;
+  myEventSource->getGeometry()->setDriftVelocity(runParams->at(0));
+  myEventSource->getGeometry()->setSamplingRate(runParams->at(1));
+  myEventSource->getGeometry()->setTriggerDelay(runParams->at(2));
+  std::cout<<myEventSource->getGeometry()->getRunConditions()<<std::endl;
+  if(isRecoModeOn){
+    ClearCanvas();
+    Update();
+  }
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 Bool_t MainFrame::ProcessMessage(Long_t msg, Long_t parm1, Long_t){
    // Handle messages send to the MainFrame object. E.g. all menu button
    // messages.
@@ -622,11 +678,13 @@ Bool_t MainFrame::ProcessMessage(const char * msg){
 /////////////////////////////////////////////////////////
 void MainFrame::HandleMenu(Int_t id){
 
-  const char *filetypes[] = {
-			     "ROOT files",    "*.root",
-			     //"GRAW files",    "*.graw",
-			     //"All files",     "*",
+  const char *filetypes[] = {"ROOT files",    "*.root",
 			     0,               0};
+
+  if(myWorkMode==M_ONLINE_MODE || myWorkMode==M_OFFLINE_GRAW_MODE){
+    filetypes[0] = "GRAW files";
+    filetypes[1] = "*.graw";
+  }
   
   switch (id) {
   case M_FILE_OPEN:
@@ -634,10 +692,14 @@ void MainFrame::HandleMenu(Int_t id){
       TGFileInfo fi;
       fi.fFileTypes = filetypes;
       fi.fIniDir    = StrDup(".");
+      //use std::filesystem::current_path(); when compiled with newer gcc
+      std::string oldDirectory = gSystem->GetWorkingDirectory();
       new TGFileDialog(gClient->GetRoot(), this, kFDOpen, &fi);
       std::string fileName;
       if(fi.fFilename) fileName.append(fi.fFilename);
       else return;
+      gSystem->cd(oldDirectory.c_str());
+      ClearCanvas();
       myEventSource->loadDataFile(fileName);
       myEventSource->loadFileEntry(0);
       Update();
