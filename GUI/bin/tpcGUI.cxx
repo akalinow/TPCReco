@@ -18,7 +18,8 @@ boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
   boost::program_options::options_description cmdLineOptDesc("Allowed options");
   cmdLineOptDesc.add_options()
     ("help", "produce help message")
-    ("dataFile",  boost::program_options::value<std::string>(), "string - path to data file (OFFLINE) or directory (ONLINE). Overrides the value from config file.");
+    ("dataFile",  boost::program_options::value<std::string>(), "string - path to data file (OFFLINE) or directory (ONLINE). Overrides the value from config file.")
+    ("removePedestal",  boost::program_options::value<bool>(), "bool - Flag to control pedestal removal. Overrides the value from config file.");
   
   boost::program_options::variables_map varMap;        
   boost::program_options::store(boost::program_options::parse_command_line(argc, argv, cmdLineOptDesc), varMap);
@@ -45,6 +46,9 @@ int main(int argc, char **argv){
   }
   if (varMap.count("dataFile")) {
     tree.put("dataFile",varMap["dataFile"].as<std::string>());
+  }
+  if (varMap.count("removePedestal")) {
+    tree.put("removePedestal",varMap["removePedestal"].as<bool>());
   }
   
   ROOT::EnableThreadSafety();
