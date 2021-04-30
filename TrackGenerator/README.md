@@ -1,21 +1,15 @@
 # TrackGenerator
 generating Monte Carlo events for ELI-TPC detector
 ## Contents
-This project inlcludes parent abstract class `AbstractGenerator`, two child classes `LineGenerator` (produces simple line shapes) and `FromTransportGenerator` (converts output of Geant4 simulations to event format) and two corresponding executables. Names are subjects to change.
-## Requirements
-Rest of TPCReco package (`GeometryTPC`, `EventTPC`, `UVWProjector`). 
+This project includes parent abstract class `AbstractGenerator`, two child classes `LineGenerator` (produces simple line shapes) and `FromTransportGenerator` (converts output of Geant4 simulations to event format by) and two corresponding executables. Names are subjects to change.
 
-`FromTransportGenerator` needs [SimUtils](https://dracula.hep.fuw.edu.pl:8888/ppodlaski/SimUtils) package by Piotr Podlaski. This dependency is added as git-submodule and cmake external project. If it isn't initliasied run:
+## Building
+
 ```
 git submodule update --init --recursive
+cmake -DBUILD_MC=ON ..
+make
 ```
-
-Input files for `FromTransportGenerator` comes from [MonteCarloSimulations](https://dracula.hep.fuw.edu.pl:8888/ppodlaski/MonteCarloSimulations) package by Piotr Podlaski. You don't need this if you already have input files. Otherwise:
-```
-git clone ssh://git@dracula.hep.fuw.edu.pl:8822/ppodlaski/MonteCarloSimulations.git
-git checkout patch-1
-```
-For rest of instructions go to [MonteCarloSimulations](https://dracula.hep.fuw.edu.pl:8888/ppodlaski/MonteCarloSimulations).
 
 ## Usage
 ### LineGenerator
@@ -62,7 +56,7 @@ LineGenerator.json:
     ]
 }
 ```
-This config will generate 4 events, 2 lines in each, both lines starting at (0,0,0). First line'll have fixed orientation and length, while second line'll be oriented randomly in 4 Pi. 
+This config will generate 4 events, 2 lines in each, both lines starting at (0,0,0). First line will have fixed orientation and length, while second line will be oriented randomly in 4 Pi. 
 ### FromTransportGenerator
 ```
 bin/EventGenerator config/FromTransportGenerator.json 
@@ -101,7 +95,7 @@ Size and bining of the hits histograms is defined by `TranportSimulator`. To cha
 	<zUp>98</zUp>
 </energy_deposit_histogram>
 ```
-and re-run TransportSimulator. To change particles parameters edit `MonteCarloSimulations/Geant4/*.xml`. As of writing MonteCarloSimulations supports GammaBeam background events, ParticleGun (single particles running throught dector) and Photodesintegration.
+and re-run TransportSimulator. To change particles parameters edit `MonteCarloSimulations/Geant4/*.xml`. As of writing MonteCarloSimulations supports GammaBeam background events, ParticleGun (single particles running through detector) and Photodesintegration.
 ## Processing Generator's output
 ### tpcGUI
 Output from `Generators` can be examined in tpcGUI in ROOT mode.
@@ -118,7 +112,7 @@ mcConfig.json :
  }
 ```
 ### TTree branches
-Generator's output is saved as TTree in *.root file. The TTree structure is similar to that used in GrawToRoot with a few addinational branches:
+Generator's output is saved as TTree in *.root file. The TTree structure is similar to that used in GrawToRoot with a few additional branches:
 
 ```
  Event            (EventTPC*)               #Generated event (same as GrawToRoot)
@@ -132,7 +126,5 @@ Generator's output is saved as TTree in *.root file. The TTree structure is simi
  length           (vector<double>*)
 ```
 Size of each vector is equal tracksNo. A, Z, momentum, energy describe particle leaving corresponding track and are only meaningful in case of `FromTransportGenerator`.
-## Remarks
-Works with both `geometry_mini-eTPC` and `geometry_ELI-TPC.dat` (with sections treated as single strip). 
 
 ##### glhf
