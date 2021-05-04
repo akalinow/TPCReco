@@ -51,6 +51,8 @@ public:
   
   std::shared_ptr<TH1D> getRawTimeProjection();
 
+  std::shared_ptr<TH1D> getRawTimeProjection(int strip_dir);
+
   std::shared_ptr<TH1D> getRawStripProjection(int strip_dir);
 
   std::shared_ptr<TH2D> getRawStripVsTime(int strip_dir);

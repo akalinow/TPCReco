@@ -422,8 +422,8 @@ TH1D *EventTPC::GetStripProjection(const SigClusterTPC &cluster, int strip_dir) 
     // fill new histogram
     if(h) {
       //bool res;
-      for(int strip_num=cluster.GetMinStrip(strip_dir); strip_num<=cluster.GetMaxStrip(strip_dir); strip_num++) 
-	for(int icell=cluster.GetMinTime(strip_dir); icell<=cluster.GetMaxTime(strip_dir); icell++) {
+  for(int strip_num=cluster.GetMinStrip(strip_dir); strip_num<=cluster.GetMaxStrip(strip_dir); strip_num++) 
+	  for(int icell=cluster.GetMinTime(strip_dir); icell<=cluster.GetMaxTime(strip_dir); icell++) {
 	  if( cluster.CheckByStrip(strip_dir, strip_num, icell) ) {
 	    h->Fill(1.*strip_num, GetValByStrip(strip_dir, strip_num, icell/*, res*/));
 	}
@@ -454,6 +454,35 @@ TH1D *EventTPC::GetStripProjection(int strip_dir) {  // whole event, valid range
         for(int icell=0; icell<myGeometryPtr->GetAgetNtimecells(); icell++) {
           double val = GetValByStrip(strip_dir, strip_num, icell);
           if(val!=0.0) h->Fill(1.*strip_num, val);
+        }
+      }
+    }
+  }
+  };
+  return h;
+
+}
+
+TH1D *EventTPC::GetTimeProjection(int strip_dir) {  // whole event, valid range [0-2]
+  TH1D *h = nullptr;
+  if(!IsOK()) return h;
+  switch(strip_dir) {
+  case DIR_U:
+  case DIR_V:
+  case DIR_W: {
+    h = new TH1D( Form("hraw_%stime_evt%lld", myGeometryPtr->GetDirName(strip_dir), event_id), 
+                  Form("Event-%lld: Raw signals from %s strips;Time bin [arb.u.];Charge/bin [arb.u.]", 
+                       event_id, myGeometryPtr->GetDirName(strip_dir)),
+                  myGeometryPtr->GetAgetNtimecells(),
+                  1.0 - 0.5,
+                  1.*myGeometryPtr->GetAgetNtimecells()-0.5 );
+    // fill new histogram
+    if(h) {
+      //bool res;
+      for(int strip_num=1; strip_num<=myGeometryPtr->GetDirNstrips(strip_dir); strip_num++) {
+        for(int icell=0; icell<myGeometryPtr->GetAgetNtimecells(); icell++) {
+          double val = GetValByStrip(strip_dir, strip_num, icell);
+          if(val!=0.0) h->Fill(1.*icell, val);
         }
       }
     }

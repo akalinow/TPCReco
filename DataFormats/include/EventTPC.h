@@ -103,6 +103,7 @@ class EventTPC {
   TH1D *GetTimeProjection(const SigClusterTPC &cluster, int strip_dir);     // clustered hits only, valid dir range [0-2]
   TH1D *GetTimeProjection(const SigClusterTPC &cluster);                    // clustered hits only, all strip dirs
   TH1D *GetStripProjection(int strip_dir);                            // whole,event, valid dir range [0-2]
+  TH1D *GetTimeProjection(int strip_dir);                             // whole,event, valid dir range [0-2]
   TH1D *GetTimeProjection();                                          // whole event, all strip dirs
   
   std::shared_ptr<TH2D> GetStripVsTime(const SigClusterTPC &cluster, int strip_dir);        // clustered hits only, valid dir range [0-2]
