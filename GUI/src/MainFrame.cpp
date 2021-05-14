@@ -108,7 +108,6 @@ void MainFrame::InitializeEventSource(){
     exit(1);
     return;
   }
-  
   FileStat_t stat;
   if(gSystem->GetPathInfo(dataFileName.c_str(), stat) != 0){
     std::cerr<<KRED<<"Invalid data path. No such file or directory: "<<RST<<dataFileName<<std::endl;
@@ -689,10 +688,16 @@ void MainFrame::HandleMenu(Int_t id){
   switch (id) {
   case M_FILE_OPEN:
     {
+      // initialising with directory of previously opened file
+      // this is very naive and risky implementation of extracting dir from path
+      // but we don't have std::filesystem c++17 and ROOT 6.08 doesn't have TSystem::GetDirName
+      // this will cause problem if we add changing directories in ONLINE mode 
+      auto currentFilePath=myEventSource->getCurrentPath();
+      auto dirPath=currentFilePath.substr(0, currentFilePath.find_last_of('/'));
       TGFileInfo fi;
       fi.fFileTypes = filetypes;
-      fi.fIniDir    = StrDup(".");
-      //use std::filesystem::current_path(); when compiled with newer gcc
+      fi.fIniDir    = StrDup(dirPath.c_str());
+      //
       std::string oldDirectory = gSystem->GetWorkingDirectory();
       new TGFileDialog(gClient->GetRoot(), this, kFDOpen, &fi);
       std::string fileName;

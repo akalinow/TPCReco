@@ -7,7 +7,7 @@ Currently `tpcGUI` takes [JSON](https://en.wikipedia.org/wiki/JSON#Syntax) forma
 - `dataFile` — a path to a `.graw`, `.root` file (offline mode) or a directory (online mode). 
 - `geometryFile` — a path to geometry `.dat` file. Geometries for **mini-eTPC** and full scale prototype **ELITPC** are available in *resources*,
 - `resourcesPath` — a path to *resources* directory,
-- `updateInterval` — a refresh rate in online mode,
+- `updateInterval` — a refresh rate in ms for online mode,
 - `removePedestal` — flag to control pedestal removal. Has effect only for GRAW input files,
 - `display` — a configuration of toggleable modes:
   - `zLogScale` — displays charge on logarithmic scale on the projection histograms ,

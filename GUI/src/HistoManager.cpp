@@ -80,8 +80,17 @@ std::shared_ptr<TH1D> HistoManager::getRawTimeProjection(){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::shared_ptr<TH1D> HistoManager::getRawStripProjection(int strip_dir){
+  auto aHisto=std::shared_ptr<TH1D>(myEvent->GetStripProjection(strip_dir));
+  aHisto->GetYaxis()->SetTitleOffset(1.8);
+  aHisto->GetZaxis()->SetTitleOffset(1.5);
+  return  aHisto;
+}
 
-  return  std::shared_ptr<TH1D>(myEvent->GetStripProjection(strip_dir));
+std::shared_ptr<TH1D> HistoManager::getRawTimeProjection(int strip_dir){
+  auto aHisto=std::shared_ptr<TH1D>(myEvent->GetTimeProjection(strip_dir));
+  aHisto->GetYaxis()->SetTitleOffset(1.8);
+  aHisto->GetZaxis()->SetTitleOffset(1.5);
+  return  aHisto;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

@@ -66,8 +66,10 @@ add_subdirectory(Reconstruction)
 add_subdirectory(GUI)
 add_subdirectory(Analysis)
 add_subdirectory(ToyMC)
-add_subdirectory(TrackGenerator)
-
+option(BUILD_MC "build MC tools" OFF)
+if(BUILD_MC)
+  add_subdirectory(TrackGenerator)
+endif()
 # Now comes everything we need, to create a package
 # there are a lot more variables you can set, and some
 # you need to set for some package types, but we want to
