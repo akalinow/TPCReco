@@ -213,7 +213,7 @@ double EventTPC::GetValByAgetChannel(int cobo_idx, int asad_idx, int aget_idx, i
 }
 
 double EventTPC::GetValByAgetChannel_raw(int cobo_idx, int asad_idx, int aget_idx, int raw_channel_idx, int time_cell/*, bool &result*/) {  // valid range [0-1][0-3][0-3][0-67][0-511]
-  return GetValByStrip(myGeometryPtr->GetStripByAget(cobo_idx, asad_idx, aget_idx, raw_channel_idx), time_cell); //, result);
+  return GetValByStrip(myGeometryPtr->GetStripByAget_raw(cobo_idx, asad_idx, aget_idx, raw_channel_idx), time_cell); //, result);
 }
 
 double EventTPC::GetMaxCharge(int strip_dir, int strip_number) { // maximal charge from single strip of a given direction 
