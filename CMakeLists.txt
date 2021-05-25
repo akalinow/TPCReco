@@ -35,6 +35,7 @@ endif()
   
 MESSAGE( STATUS "GET_VERSION_DIR:       " ${GET_VERSION_DIR})
 MESSAGE( STATUS "GET libraries:         " ${GET_LIBRARIES} )
+MESSAGE( STATUS "GET includes:          " ${GET_VERSION_DIR}/include )
 MESSAGE( STATUS "GET compile flags:     " ${GET_CXX_FLAGS} )
 #####################################################################
 
