@@ -63,6 +63,8 @@ public:
 
   std::shared_ptr<TH2D> getRecHitStripVsTime(int strip_dir);
 
+  std::shared_ptr<TH2D> getChannels(int cobo_id, int asad_id);
+
   TH3D* get3DReconstruction();
 
   TH2D* get2DReconstruction(int strip_dir);

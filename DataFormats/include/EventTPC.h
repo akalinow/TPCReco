@@ -109,6 +109,7 @@ class EventTPC {
   std::shared_ptr<TH2D> GetStripVsTime(const SigClusterTPC &cluster, int strip_dir);        // clustered hits only, valid dir range [0-2]
   std::shared_ptr<TH2D> GetStripVsTime(int strip_dir);                               // whole event, all strip dirs
   std::shared_ptr<TH2D> GetStripVsTimeInMM(const SigClusterTPC &cluster, int strip_dir);  // valid range [0-2]
+  std::shared_ptr<TH2D> GetChannels(int cobo_idx, int asad_idx); // valid range [0-1][0-3]
 
   std::vector<TH2D*> Get2D(const SigClusterTPC &cluster, double radius,          // clustered hits only,
 			   int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN,   // projections on: XY, XZ, YZ planes

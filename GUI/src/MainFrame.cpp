@@ -543,6 +543,18 @@ void MainFrame::drawRawHistos(){
   myHistoManager.getRawTimeProjection()->DrawClone("hist");
   fCanvas->Update();
 }
+
+
+void MainFrame::drawTechnicalHistos(){
+  auto cobo_id=0;
+  for( int aget_id = 0; aget_id < 3 ; ++aget_id ){ /// magic number, should be geometry->GetAgetNumber()
+    fCanvas->cd(aget_id+1);
+    myHistoManager.getChannels(cobo_id, aget_id)->DrawClone("colz");
+    fCanvas->Update();
+  }  
+  fCanvas->Update();
+}
+
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MainFrame::drawRecoHistos(){

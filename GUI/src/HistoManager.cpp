@@ -102,6 +102,13 @@ std::shared_ptr<TH2D> HistoManager::getRawStripVsTime(int strip_dir){
   aHisto->GetZaxis()->SetTitleOffset(1.5);
   return aHisto;
 }
+
+std::shared_ptr<TH2D> HistoManager::getChannels(int cobo_id, int asad_id){
+  std::shared_ptr<TH2D> aHisto = myEvent->GetChannels(cobo_id, asad_id);  
+  aHisto->GetYaxis()->SetTitleOffset(1.8);
+  aHisto->GetZaxis()->SetTitleOffset(1.5);
+  return aHisto;
+}
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::shared_ptr<TH2D> HistoManager::getRawStripVsTimeInMM(int strip_dir){

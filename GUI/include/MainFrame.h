@@ -86,6 +86,7 @@ private:
 
   void drawRawHistos();
   void drawRecoHistos();
+  void drawTechnicalHistos();
 
   void ClearCanvas();
   void Update();
