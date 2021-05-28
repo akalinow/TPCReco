@@ -56,10 +56,11 @@ cd resources
 ../bin/tpcGUI ../config/config_GUI.json
 ```
 
-If you want to override the "dataFile" setting from the config file, please use a command line option:
+If you want to override the "dataFile" and/or "removePedestal" setting from the config file, 
+please use a command line option:
 
 ```
-../bin/tpcGUI ../config/config_GUI.json --dataFile path
+../bin/tpcGUI ../config/config_GUI.json --dataFile path --removePedestal true
 ```
 
 Check config file [structure and examples](GUI/config/README.md). 
