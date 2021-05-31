@@ -13,8 +13,8 @@ EventSourceGRAW::EventSourceGRAW(const std::string & geometryFileName) {
   GRAW_EVENT_FRAGMENTS = myGeometryPtr->GetAsadNboards();
   myPedestalCalculator.SetGeometryAndInitialize(myGeometryPtr);
 
-  //std::string formatsFilePath = "./CoboFormats.xcfg";
-  //TEST myFrameLoader.initialize(formatsFilePath);
+  std::string formatsFilePath = "./CoboFormats.xcfg";
+  myFrameLoader.initialize(formatsFilePath);
  
   minSignalCell = 51;//FIXME read from config
   maxSignalCell = 500;//FIXME read from config
@@ -86,8 +86,8 @@ bool EventSourceGRAW::loadGrawFrame(unsigned int iEntry, bool readFullEvent){
   if(iEntry>=nEntries) iEntry = nEntries-1;
   if(iEntry<0) iEntry = 0;
   std::cout.setstate(std::ios_base::failbit);
-  //bool dataFrameRead = myFrameLoader.getGrawFrame(myFilePath, iEntry+1, myDataFrame, readFullEvent);///FIXME getGrawFrame counts frames from 1 (WRRR!)
-  bool dataFrameRead = GET::getGrawFrame(myFilePath, iEntry+1, myDataFrame);///FIXME getGrawFrame counts frames from 1 (WRRR!)
+  bool dataFrameRead = myFrameLoader.getGrawFrame(myFilePath, iEntry+1, myDataFrame, readFullEvent);///FIXME getGrawFrame counts frames from 1 (WRRR!)
+  //bool dataFrameRead = GET::getGrawFrame(myFilePath, iEntry+1, myDataFrame);///FIXME getGrawFrame counts frames from 1 (WRRR!)
   std::cout.clear();
   
   if(!dataFrameRead){

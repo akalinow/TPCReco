@@ -10,6 +10,7 @@
 
 #include "EventSourceBase.h"
 #include "PedestalCalculator.h"
+#include "Graw2DataFrame.h"
 
 class EventSourceGRAW: public EventSourceBase {
 
@@ -45,7 +46,7 @@ private:
 
   unsigned int GRAW_EVENT_FRAGMENTS;
   PedestalCalculator myPedestalCalculator;
-  //Graw2DataFrame myFrameLoader;
+  Graw2DataFrame myFrameLoader;
   GET::GDataFrame myDataFrame;
   std::shared_ptr<TGrawFile> myFile;
   std::string myFilePath;
