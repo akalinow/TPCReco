@@ -42,7 +42,7 @@ private:
   TGLabel *fileNameLabel;
   TGLabel *modeLabel;
 
-  unsigned int fileNameLineLength = 36;
+  unsigned int fileNameLineLength = 50;
 
 };
 

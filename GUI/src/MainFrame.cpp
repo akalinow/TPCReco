@@ -538,9 +538,10 @@ void MainFrame::drawRawHistos(){
     fCanvas->cd(strip_dir+1);
     myHistoManager.getRawStripVsTime(strip_dir)->DrawClone("colz");
     fCanvas->Update();
-  }  
+  }
   fCanvas->cd(4);
-  myHistoManager.getRawTimeProjection()->DrawClone("hist");
+  myHistoManager.getEventRateGraph()->Draw("AP");
+  //myHistoManager.getRawTimeProjection()->DrawClone("hist");
   fCanvas->Update();
 }
 
@@ -661,8 +662,6 @@ Bool_t MainFrame::ProcessMessage(Long_t msg, Long_t parm1, Long_t){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 Bool_t MainFrame::ProcessMessage(Long_t msg){
-
-  std::cout<<__FUNCTION__<<" msg: "<<msg<<std::endl;
 
   switch (msg) {
   case M_DATA_FILE_UPDATED:

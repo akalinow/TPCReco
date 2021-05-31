@@ -20,6 +20,7 @@ MESSAGE( STATUS "ROOT_USE_FILE:             " ${ROOT_USE_FILE})
 
 #GET software presence
 set(GET_VERSION_DIR $ENV{GET_DIR}/GetSoftware_bin/$ENV{GET_RELEASE})
+# set(GET_VERSION_DIR /home/akalinow/GetSoftware_bin/$ENV{GET_RELEASE})
 if(EXISTS ${GET_VERSION_DIR})
   set(GET_LIBRARIES ${GET_VERSION_DIR}/lib/libget-root.so ${GET_VERSION_DIR}/lib/libcobo-frame-graw2frame.so ${GET_VERSION_DIR}/lib/libMultiFrame.so)
   set(GET_CXX_FLAGS -Wno-deprecated-declarations -DUTL_LOG_LEVEL=10)
@@ -35,6 +36,7 @@ endif()
   
 MESSAGE( STATUS "GET_VERSION_DIR:       " ${GET_VERSION_DIR})
 MESSAGE( STATUS "GET libraries:         " ${GET_LIBRARIES} )
+MESSAGE( STATUS "GET includes:          " ${GET_VERSION_DIR}/include )
 MESSAGE( STATUS "GET compile flags:     " ${GET_CXX_FLAGS} )
 #####################################################################
 

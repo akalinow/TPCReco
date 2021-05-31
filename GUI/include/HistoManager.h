@@ -46,6 +46,8 @@ public:
   void reconstruct();
 
   void reconstructSegmentsFromMarkers(std::vector<double> * segmentsXY);
+ 
+  TGraph* getEventRateGraph();
 
   TH2Poly *getDetectorLayout() const;
   
@@ -83,17 +85,22 @@ public:
 
 private:
 
+  void updateEventRateGraph();
+
   void makeAutozoom(std::shared_ptr<TH2D> & aHisto);
-  
-    
+      
   std::vector<TH2D*> projectionsInCartesianCoords;
-  TH3D *h3DReco;
+  TH3D *h3DReco{0};
+  TGraph *grEventRate{0};
   TrackBuilder myTkBuilder;
 
   std::shared_ptr<EventTPC> myEvent;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
 
   bool doAutozoom;
+
+  Long64_t previousEventTime{-1};
+  Long64_t previousEventNumber{-1};
 
 };
 #endif

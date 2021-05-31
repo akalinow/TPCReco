@@ -23,7 +23,7 @@ FileInfoFrame::FileInfoFrame(const TGWindow * p, MainFrame * aFrame)
 						 kLHintsFillX|kLHintsFillY, 2, 2, 2, 2);
 
    AddFrame(modeInfoFrame, new TGLayoutHints(kLHintsFillX, 2, 2, 2, 2));
-   AddFrame(fileInfoFrame, new TGLayoutHints(kLHintsFillX, 2, 2, 2, 2));
+   AddFrame(fileInfoFrame, new TGLayoutHints(kLHintsExpandX, 2, 2, 2, 2));
    AddFrame(datasetInfoFrame, aLayoutHints);
    
    TGGroupFrame *totalEventsFrame = new TGGroupFrame(datasetInfoFrame, "Events in the file:");
@@ -45,14 +45,14 @@ FileInfoFrame::FileInfoFrame(const TGWindow * p, MainFrame * aFrame)
    gClient->GetColorByName("red", iColor);
    modeLabel->SetTextColor(iColor); 
 
-   aLayoutHints = new TGLayoutHints(kLHintsTop | kLHintsLeft, 5, 5, 5, 5);
+   aLayoutHints = new TGLayoutHints(kLHintsExpandX, 5, 5, 5, 5);
    totalEventsFrame->AddFrame(totalEventsLabel, aLayoutHints);
    currentEventFrame->AddFrame(currentEventLabel, aLayoutHints);
    currentEntryFrame->AddFrame(currentEntryLabel, aLayoutHints);
    fileNameFrame->AddFrame(fileNameLabel, aLayoutHints);
    modeFrame->AddFrame(modeLabel, aLayoutHints);
 
-   aLayoutHints = new TGLayoutHints(kLHintsTop | kLHintsLeft, 2, 2, 1, 1);
+   aLayoutHints = new TGLayoutHints(kLHintsTop | kLHintsLeft | kLHintsFillX, 2, 2, 1, 1);
    datasetInfoFrame->AddFrame(totalEventsFrame, aLayoutHints);
    datasetInfoFrame->AddFrame(currentEventFrame, aLayoutHints);
    datasetInfoFrame->AddFrame(currentEntryFrame, aLayoutHints);
