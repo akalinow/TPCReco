@@ -102,6 +102,13 @@ std::shared_ptr<TH2D> HistoManager::getRawStripVsTime(int strip_dir){
   aHisto->GetZaxis()->SetTitleOffset(1.5);
   return aHisto;
 }
+
+std::shared_ptr<TH2D> HistoManager::getChannels(int cobo_id, int asad_id){
+  std::shared_ptr<TH2D> aHisto = myEvent->GetChannels(cobo_id, asad_id);  
+  aHisto->GetYaxis()->SetTitleOffset(1.8);
+  aHisto->GetZaxis()->SetTitleOffset(1.5);
+  return aHisto;
+}
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::shared_ptr<TH2D> HistoManager::getRawStripVsTimeInMM(int strip_dir){
@@ -363,4 +370,47 @@ void HistoManager::writeSegments(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+void HistoManager::updateEventRateGraph(){
 
+  if(!grEventRate){
+    grEventRate = new TGraph();
+    grEventRate->SetMarkerColor(4);
+    grEventRate->SetMarkerSize(1.0);
+    grEventRate->SetMarkerStyle(20);
+    grEventRate->GetXaxis()->SetTitle("Time since start of run [s]");
+    grEventRate->GetYaxis()->SetTitle("Event rate [Hz]");
+    grEventRate->GetYaxis()->SetTitleOffset(1.5);
+    grEventRate->GetXaxis()->SetNdivisions(5);
+  }
+  Long64_t currentEventTime = myEvent->GetEventTime()*1E-8;//[s]
+  Long64_t currentEventNumber = myEvent->GetEventId();  
+  if(previousEventTime<0 || previousEventNumber>currentEventNumber){
+    previousEventTime = currentEventTime;
+    previousEventNumber = currentEventNumber;
+  }
+  Long64_t deltaTime = currentEventTime - previousEventTime;
+  Long64_t deltaEventCount = currentEventNumber - previousEventNumber;
+  double rate = double(deltaEventCount)/deltaTime; //[Hz]
+  if(deltaTime==0) rate = 0.0;
+  previousEventTime = currentEventTime;
+  previousEventNumber = currentEventNumber;
+  std::cout<<"currentEventTime: "<<currentEventTime<<" [s]"<<std::endl;
+  std::cout<<"currentEventNumber: "<<currentEventNumber<<std::endl;
+  std::cout<<"deltaTime: "<<deltaTime<<" [s]"<<std::endl;
+  std::cout<<"delta event count: "<<deltaEventCount<<std::endl;
+  std::cout<<"rate: "<<rate<<" [Hz]"<<std::endl;
+  
+  grEventRate->Expand(grEventRate->GetN()+1);
+  grEventRate->SetPoint(grEventRate->GetN(), currentEventTime, rate);
+  grEventRate->GetXaxis()->SetTitle("Time since start of run [s]; ");
+  grEventRate->GetYaxis()->SetTitle("Event rate [Hz]");
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+TGraph* HistoManager::getEventRateGraph(){
+
+  updateEventRateGraph();
+  return grEventRate; 
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////

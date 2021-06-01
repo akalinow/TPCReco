@@ -213,7 +213,7 @@ double EventTPC::GetValByAgetChannel(int cobo_idx, int asad_idx, int aget_idx, i
 }
 
 double EventTPC::GetValByAgetChannel_raw(int cobo_idx, int asad_idx, int aget_idx, int raw_channel_idx, int time_cell/*, bool &result*/) {  // valid range [0-1][0-3][0-3][0-67][0-511]
-  return GetValByStrip(myGeometryPtr->GetStripByAget(cobo_idx, asad_idx, aget_idx, raw_channel_idx), time_cell); //, result);
+  return GetValByStrip(myGeometryPtr->GetStripByAget_raw(cobo_idx, asad_idx, aget_idx, raw_channel_idx), time_cell); //, result);
 }
 
 double EventTPC::GetMaxCharge(int strip_dir, int strip_number) { // maximal charge from single strip of a given direction 
@@ -615,6 +615,29 @@ std::shared_ptr<TH2D> EventTPC::GetStripVsTime(int strip_dir){  // valid range [
     for(int icell=0; icell<myGeometryPtr->GetAgetNtimecells(); icell++) {
       double val = GetValByStrip(strip_dir, strip_num, icell);
       result->Fill(1.*icell, 1.*strip_num, val); 
+    }
+  }
+  return result;
+}
+
+std::shared_ptr<TH2D> EventTPC::GetChannels(int cobo_idx, int asad_idx){ // valid range [0-1][0-3]
+  if(!IsOK()) {return std::shared_ptr<TH2D>();}
+  std::shared_ptr<TH2D> result(new TH2D( Form("hraw_cobo%i_asad%i_signal_evt%lld", cobo_idx, asad_idx,event_id),
+					 Form("Event-%lld: Raw signals from Cobo %i Asad %i;Time bin [arb.u.]; Channel no.;Charge/bin [arb.u.]",
+					      event_id, cobo_idx, asad_idx),
+					 myGeometryPtr->GetAgetNtimecells(),
+					 0.0-0.5, 
+					 1.*myGeometryPtr->GetAgetNtimecells()-0.5, // ends at 511.5 (cells numbered from 0 to 511)
+					myGeometryPtr->GetAgetNchips()*myGeometryPtr->GetAgetNchannels_raw()+1,
+					 -0.5,
+					 myGeometryPtr->GetAgetNchips()*myGeometryPtr->GetAgetNchannels_raw()+0.5 ));
+  // fill new histogram
+  for(int aget_num=0; aget_num<myGeometryPtr->GetAgetNchips(); ++aget_num) {
+    for(int aget_ch=0; aget_ch<myGeometryPtr->GetAgetNchannels_raw();++aget_ch){
+      for(int icell=0; icell<myGeometryPtr->GetAgetNtimecells(); icell++) {
+        double val = GetValByAgetChannel_raw(cobo_idx, asad_idx, aget_num, aget_ch, icell);
+        result->Fill(1.*icell, aget_num*myGeometryPtr->GetAgetNchannels_raw()+aget_ch, val); 
+      }
     }
   }
   return result;

@@ -28,7 +28,7 @@ class SigClusterTPC;
 class EventTPC {
   //  friend class SigClusterTPC;
  private:
-  Long64_t event_id, run_id;
+  Long64_t event_id, event_number, run_id, event_time;
   std::shared_ptr<GeometryTPC> myGeometryPtr;  //! transient data member
   
   std::map<MultiKey3, double, multikey3_less> chargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
@@ -58,6 +58,8 @@ class EventTPC {
 
   void SetGeoPtr(std::shared_ptr<GeometryTPC> aPtr);
   void SetEventId(Long64_t aId) { event_id = aId; };
+  void SetEventNumber(Long64_t aNumber) { event_number = aNumber; };
+  void SetEventTime(Long64_t aTime) { event_time = aTime; };
   void SetRunId(Long64_t aId) { run_id =  aId; };
   // helper methods for inserting data points
   // they return TRUE on success and FALSE on error
@@ -79,6 +81,8 @@ class EventTPC {
 
   inline GeometryTPC * GetGeoPtr() const { return myGeometryPtr.get(); }
   inline Long64_t GetEventId() const { return event_id; }
+  inline Long64_t GetEventTime() const { return event_time; }
+  inline Long64_t GetEventNumber() const { return event_number; }
   inline Long64_t GetRunId() const { return run_id; }
   inline bool IsOK() const { return initOK; }
   inline int GetTimeRebin() const { return time_rebin; }       
@@ -109,6 +113,7 @@ class EventTPC {
   std::shared_ptr<TH2D> GetStripVsTime(const SigClusterTPC &cluster, int strip_dir);        // clustered hits only, valid dir range [0-2]
   std::shared_ptr<TH2D> GetStripVsTime(int strip_dir);                               // whole event, all strip dirs
   std::shared_ptr<TH2D> GetStripVsTimeInMM(const SigClusterTPC &cluster, int strip_dir);  // valid range [0-2]
+  std::shared_ptr<TH2D> GetChannels(int cobo_idx, int asad_idx); // valid range [0-1][0-3]
 
   std::vector<TH2D*> Get2D(const SigClusterTPC &cluster, double radius,          // clustered hits only,
 			   int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN,   // projections on: XY, XZ, YZ planes

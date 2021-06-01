@@ -4,6 +4,7 @@
 #include <map>
 #include <set>
 
+#include "get/graw2dataframe.h"
 #include "get/GDataFrame.h"
 #include "get/TGrawFile.h"
 
@@ -36,7 +37,7 @@ public:
 
 private:
 
-  bool loadGrawFrame(unsigned int iEntry);
+  bool loadGrawFrame(unsigned int iEntry, bool readFullEvent);
   void findEventFragments(unsigned long int eventIdx, unsigned int iInitialEntry);
   void collectEventFragments(unsigned int eventIdx);
   void fillEventFromFrame(GET::GDataFrame & aGrawFrame);
@@ -44,6 +45,7 @@ private:
 
   unsigned int GRAW_EVENT_FRAGMENTS;
   PedestalCalculator myPedestalCalculator;
+  //Graw2DataFrame myFrameLoader;
   GET::GDataFrame myDataFrame;
   std::shared_ptr<TGrawFile> myFile;
   std::string myFilePath;

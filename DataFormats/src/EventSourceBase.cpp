@@ -82,7 +82,6 @@ std::string EventSourceBase::getCurrentPath() const{
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-
 std::shared_ptr<EventTPC> EventSourceBase::getNextEventLoop(){
   unsigned int currentEventIdx;
   do{
@@ -92,7 +91,8 @@ std::shared_ptr<EventTPC> EventSourceBase::getNextEventLoop(){
   while(!eventFilter.pass(*myCurrentEvent) && currentEventIdx!=myCurrentEvent->GetEventId());
   return myCurrentEvent;
 }
-
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 std::shared_ptr<EventTPC> EventSourceBase::getPreviousEventLoop(){
   unsigned int currentEventIdx;
   do{
@@ -102,3 +102,5 @@ std::shared_ptr<EventTPC> EventSourceBase::getPreviousEventLoop(){
   while(!eventFilter.pass(*myCurrentEvent) && currentEventIdx!=myCurrentEvent->GetEventId());
   return myCurrentEvent;
 }
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
