@@ -45,7 +45,7 @@ void PedestalCalculator::InitializeTables(){
 ///////////////////////////////////////////////////////////////
 void PedestalCalculator::ResetTables(){
 
-  prof_pedestal->Clear();
+  prof_pedestal->Reset();
 
   for (int agetId = 0; agetId < myGeometryPtr->GetAgetNchips(); ++agetId){
     for(int cellId=minPedestalCell; cellId<=maxPedestalCell; ++cellId) { 
@@ -72,7 +72,7 @@ double PedestalCalculator::GetPedestalCorrection(int iChannelGlobal, int agetId,
 
   double pedestal = pedestals.at(iChannelGlobal);
   double average = FPN_ave_signal[agetId][iCell];
-
+  
   double correction = pedestal + average;
   return correction;
 }
@@ -103,10 +103,8 @@ void PedestalCalculator::CalculateEventPedestals(const GET::GDataFrame & dataFra
 void PedestalCalculator::ProcessDataFrame(const GET::GDataFrame &dataFrame, bool calculateMean){
   
   double rawVal = 0, corrVal = 0;
-  int globalChannelId = 0;
-  int COBO_idx = 0;
-  int ASAD_idx = 0;
-
+  int  COBO_idx = dataFrame.fHeader.fCoboIdx;
+  int  ASAD_idx = dataFrame.fHeader.fAsadIdx;
   if(calculateMean) ResetTables();
   
   // loop over AGET chips
@@ -118,19 +116,19 @@ void PedestalCalculator::ProcessDataFrame(const GET::GDataFrame &dataFrame, bool
       if (!channel) continue;
 
       for (int aSample = 0; aSample < channel->fNsamples; ++aSample){
-	GET::GDataSample* sample = (GET::GDataSample*) channel->fSamples.At(aSample);	
-	int cellId = sample->fBuckIdx;
-	if(cellId<2 || cellId>509) continue;
-	//Pedestal time-window
-	if(cellId>=minPedestalCell && cellId<=maxPedestalCell){	 
-	    FPN_ave_pedestal[agetId][cellId] += sample->fValue;
-	    FPN_entries_pedestal[agetId][cellId] ++;
-	}
-	//Signal time window
-	if(cellId>=minSignalCell && cellId<=maxSignalCell){
-	  FPN_ave_signal[agetId][cellId] += sample->fValue;
-	  FPN_entries_signal[agetId][cellId] ++;
-	}
+	      GET::GDataSample* sample = (GET::GDataSample*) channel->fSamples.At(aSample);	
+	      int cellId = sample->fBuckIdx;
+	      if(cellId<2 || cellId>509) continue;
+	      //Pedestal time-window
+	      if(cellId>=minPedestalCell && cellId<=maxPedestalCell){	 
+	        FPN_ave_pedestal[agetId][cellId] += sample->fValue;
+	        FPN_entries_pedestal[agetId][cellId] ++;
+	      }
+	      //Signal time window
+	      if(cellId>=minSignalCell && cellId<=maxSignalCell){
+	        FPN_ave_signal[agetId][cellId] += sample->fValue;
+	        FPN_entries_signal[agetId][cellId] ++;
+	      }
       }
     }// end of FPN loop
 
@@ -149,16 +147,20 @@ void PedestalCalculator::ProcessDataFrame(const GET::GDataFrame &dataFrame, bool
       if (!channel) continue;
 
       for (int aSample = 0; aSample < channel->fNsamples; ++aSample){
-	GET::GDataSample* sample = (GET::GDataSample*) channel->fSamples.At(aSample);	
-	int cellId = sample->fBuckIdx;
-	if(cellId<2 || cellId>509) continue;
-	//Pedestal time-window
-	if(cellId>=minPedestalCell && cellId<=maxPedestalCell){
-	  rawVal  = sample->fValue;
-	  corrVal = rawVal - FPN_ave_pedestal[agetId][cellId];
-	  globalChannelId = myGeometryPtr->Global_normal2normal(COBO_idx, ASAD_idx, agetId, channelId);// 0-255 (without FPN)
-	  prof_pedestal->Fill(globalChannelId, corrVal);
-	}
+	      GET::GDataSample* sample = (GET::GDataSample*) channel->fSamples.At(aSample);	
+	      int cellId = sample->fBuckIdx;
+	      if(cellId<2 || cellId>509) continue;
+	      //Pedestal time-window
+	      if(cellId>=minPedestalCell && cellId<=maxPedestalCell){
+	        rawVal  = sample->fValue;
+	        corrVal = rawVal - FPN_ave_pedestal[agetId][cellId];
+	        int globalChannelId = myGeometryPtr->Global_normal2normal(COBO_idx, ASAD_idx, agetId, channelId);// 0-255 (without FPN)
+          // Beware HACK!!!
+          //TProfile (prof_pedestal) with pedestals is only 256 (max chans in frame) long, pedestals are calculated for each frame and reset
+          //to fit into TProfile the global number of first chan in COBO/ASAD has to be substracted from global channel
+          int minChannelGlobal = myGeometryPtr->Global_normal2normal(COBO_idx, ASAD_idx, 0, 0);
+	        prof_pedestal->Fill(globalChannelId-minChannelGlobal, corrVal);
+	      }
       }
     }// end of FPN loop    
   }// end of AGET loop  

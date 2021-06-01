@@ -1,0 +1,30 @@
+#### Angles of U/V/W unit vectors wrt X-axis [deg]
+#
+ANGLES: 0.0 -120.0 -60.0
+#
+#### Length of pad's edges [mm]
+#
+DIAMOND SIZE: 1.0
+#
+#### Offset in [mm] of the reference point wrt X-Y plane origin
+#
+REFERENCE POINT: 0 0
+#
+#### Electron drift velocity [cm/us]
+#
+DRIFT VELOCITY: 1.0
+#
+#### Electronics sampling rate [MHz] (eg. (512 cells)/(25 MHz)/(1cm/us) = 20.48 cm window can be recorded, length of drift cage is 20 cm)
+#
+SAMPLING RATE: 25.0
+#
+#### Electronics beam "t0" trigger delay [us]   (eg. (512 cells/2)/(25 MHz) = 10.24 us delay is needed for the beam entering in the middle of the drift cage at t=0)
+#
+TRIGGER DELAY: 10.24
+#
+#### Acceptance of drift cage along Z-axis (cathode has the highest Z, beam axis has Z=0 by definition)
+#
+DRIFT CAGE ACCEPTANCE: -98.0 98.0
+#
+#### Columns: Strip_direction/ Strip_section / Strip_number/ COBO_id/ ASAD_id / AGET_id / AGET_ch / pad_pitch_offset / strip_pitch_offset / length_in_pads
+#

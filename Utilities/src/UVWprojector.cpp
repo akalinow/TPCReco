@@ -298,7 +298,7 @@ bool UVWprojector::InitTimeMapping() {
   const double h3_zmin = h3->GetZaxis()->GetXmin();  // Z-position [mm] closest to readout PCB
   const double h3_zmax = h3->GetZaxis()->GetXmax();  // Z-position [mm] farthest from readout PCB
   const int h3_nbins = h3->GetNbinsZ(); // number of bins along Z-axis   
-  const double vdrift = geo_ptr->GetVdrift(); // electron drift velocity [cm/us]
+  const double vdrift = geo_ptr->GetDriftVelocity(); // electron drift velocity [cm/us]
   const double drift_zmin = geo_ptr->GetDriftCageZmin(); // drift cage lower acceptance limit [mm]
   const double drift_zmax = geo_ptr->GetDriftCageZmax(); // drift cage upper acceptance limit [mm]
   const double freq = geo_ptr->GetSamplingRate(); // electronics sampling rate [MHz]
@@ -546,7 +546,7 @@ TH1D * UVWprojector::GetStripProfile_TH1D(int dir) {
   }
 
   // Create TH1D with strip numbers for a given direction
-  TH1D *newth1 = new TH1D(Form("h_strips%s", geo_ptr->GetDirName(dir)),
+  TH1D *newth1 = new TH1D("",
 			  Form("Time-integrated charge for %s-strips;%s strip number;Charge [arb.u.]", 
 			       geo_ptr->GetDirName(dir), geo_ptr->GetDirName(dir)),
 			  geo_ptr->GetDirNstrips(dir),
@@ -618,7 +618,7 @@ TH2D* UVWprojector::GetStripVsTime_TH2D(int dir) {
   if(zmin>=zmax || nzbins<=0) return NULL;
   
   // Create TH2D with strip numbers for a given direction
-  TH2D *newth2 = new TH2D(Form("h_strips%s_vs_time", geo_ptr->GetDirName(dir)),
+  TH2D *newth2 = new TH2D("",
 			  Form("Signal(time) for %s-strips;Time cell;%s strip number", 
 			       geo_ptr->GetDirName(dir), geo_ptr->GetDirName(dir)),
 			  geo_ptr->GetAgetNtimecells(),

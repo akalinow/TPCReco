@@ -1,6 +1,10 @@
 #ifndef MainFrame_H
 #define MainFrame_H
 
+#include <thread>
+#include <mutex>
+#include <string>
+
 #include <TGDockableFrame.h>
 #include <TGFrame.h>
 #include <TGCanvas.h>
@@ -9,100 +13,120 @@
 #include <TGMenu.h>
 #include <TRootEmbeddedCanvas.h>
 #include <TGFileDialog.h>
+#include <TGFileBrowser.h>
 #include <TGNumberEntry.h>
 #include <TGIcon.h>
 #include <TGPicture.h>
-
+#include <TGButton.h>
 #include <RQ_OBJECT.h>
+
 #include <TCanvas.h>
 #include <TObject.h>
 #include <TClass.h>
+
 #include <TLine.h>
 #include <TArrow.h>
 
-#include "EntryDialog.h"
+#include "GUI_commons.h"
+#include "FileInfoFrame.h"
 #include "SelectionBox.h"
+#include "MarkersManager.h"
+#include "RunConditionsDialog.h"
 
-#include "DataManager.h"
+#include "EventSourceBase.h"
 #include "HistoManager.h"
+#include "DirectoryWatch.h"
 
-enum ETestCommandIdentifiers {
-   M_FILE_OPEN,
-   M_FILE_SAVE,
-   M_FILE_SAVEAS,
-   M_FILE_PRINT,
-   M_FILE_PRINTSETUP,
-   M_FILE_EXIT,
+#include <boost/property_tree/json_parser.hpp>
 
-   M_HELP_CONTENTS,
-   M_HELP_SEARCH,
-   M_HELP_ABOUT,
 
-   M_NEXT_EVENT,
-   M_PREVIOUS_EVENT,
-   M_GOTO_EVENT,
-
-};
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 class MainFrame : public TGMainFrame {
 
   RQ_OBJECT("MainFrame")
 
-public:
-   MainFrame(const TGWindow *p, UInt_t w, UInt_t h);
-   virtual ~MainFrame();
-   virtual void CloseWindow();
-   virtual Bool_t ProcessMessage(Long_t msg, Long_t parm1, Long_t);
+  public:
+  MainFrame(const TGWindow *p, UInt_t w, UInt_t h, const boost::property_tree::ptree &aConfig);
+  virtual ~MainFrame();
+  virtual void CloseWindow();
+  virtual Bool_t ProcessMessage(Long_t msg, Long_t parm1, Long_t);
+  virtual Bool_t ProcessMessage(Long_t msg);
+  virtual Bool_t ProcessMessage(const char *);
 
-///Process message from EntryDialog
-    virtual Bool_t ProcessMessage(Long_t msg);
+  void drawRecoFromMarkers(std::vector<double> * segmentsXY);
+  void updateRunConditions(std::vector<double> *runParams);
 
-   void HandleEmbeddedCanvas(Int_t event, Int_t x, Int_t y, TObject *sel);
+  void HandleEmbeddedCanvas(Int_t event, Int_t x, Int_t y, TObject *sel);
 
-   void HandleMenu(Int_t);
+  void HandleMenu(Int_t);
 
-   void DoButton();
+  void DoButton();
 
 private:
 
-  DataManager myDataManager;
-  HistoManager myHistoManager;
+  void InitializeEventSource();
+  void InitializeWindows();
   
   void AddTopMenu();
   void SetTheFrame();
   void AddHistoCanvas();
-  void AddButtons();
-  void AddNumbersDialog();
-  void AddGoToEventDialog(int attach_left);
+  
+  int AddButtons(int attach);
+  int AddGoToFileEntryDialog(int attach);
+  int AddGoToEventDialog(int attach);
+  int AddEventTypeDialog(int attach);
+  int AddMarkersDialog(int attach);
+  int AddFileInfoFrame(int attach);
+  int AddRunConditionsDialog(int attach);
+  
   void AddLogos();
 
-   void SetCursorTheme();
+  void SetCursorTheme();
 
+  void drawRawHistos();
+  void drawRecoHistos();
+  void drawTechnicalHistos();
+
+  void ClearCanvas();
   void Update();
+  void UpdateEventLog();
 
-   TGCompositeFrame   *fFrame;
-   TGCanvas           *fCanvasWindow;
-   TCanvas            *fCanvas;
+  boost::property_tree::ptree myConfig;
+  int myWorkMode{0};
+  bool isLogScaleOn{false}, isRecoModeOn{false};
+  std::shared_ptr<EventSourceBase> myEventSource;
+  HistoManager myHistoManager;
 
-   TGMenuBar          *fMenuBar;
-   TGPopupMenu        *fMenuFile, *fMenuHelp;
+  DirectoryWatch myDirWatch;
+  std::thread fileWatchThread;
+  std::mutex myMutex; 
 
-   TGLayoutHints      *fFrameLayout;
-   TGTableLayoutHints *fTCanvasLayout;
+  TGCompositeFrame   *fFrame{0};
+  TRootEmbeddedCanvas *embeddedCanvas{0};
+  TCanvas            *fCanvas{0};
 
-   TGTransientFrame *fLegendMain;
+  TGMenuBar          *fMenuBar{0};
+  TGPopupMenu        *fMenuFile{0}, *fMenuHelp{0};
 
-  TGNumberEntryField *fEventIdEntry;
-  TGGroupFrame        *fGframe;
-  
-  EntryDialog *fEntryDialog;
-  SelectionBox *fSelectionBox;
-  
+  TGLayoutHints      *fFrameLayout{0};
+  TGTableLayoutHints *fTCanvasLayout{0};
 
-   TArrow *fArrow;
-   TLine *fLine;
+  TGTransientFrame *fLegendMain{0};
 
+  TGNumberEntryField *fEventIdEntry{0}, *fFileEntryEntry{0};
+  TGGroupFrame        *fGframe{0};
+  TGButtonGroup *eventTypeButtonGroup{0};
+
+  MarkersManager *fMarkersManager{0};  
+  FileInfoFrame *fFileInfoFrame{0};
+  SelectionBox *fSelectionBox{0};
+  RunConditionsDialog *fRunConditionsDialog{0};
+
+  TArrow *fArrow{0};
+  TLine *fLine{0};
+
+  ClassDef(MainFrame, 0); 
 };
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

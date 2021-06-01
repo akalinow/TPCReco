@@ -12,9 +12,9 @@ class Track3D{
 
 public:
 
-  Track3D(){};
+  Track3D();
 
-  ~Track3D(){};
+  virtual ~Track3D(){};
 
   void addSegment(const TrackSegment3D & aSegment3D);
 
@@ -24,7 +24,7 @@ public:
 
   double getLength() const { return myLenght;}
 
-  double getSegmentLambda(double lambda) const;
+  double getSegmentLambda(double lambda, unsigned int iSegment) const;
 
   double getIntegratedCharge(double lambda) const;
 
@@ -49,7 +49,9 @@ public:
 
   double chi2FromSplitPoint(const double *par);
 
-  double getNodeChi2(unsigned int iNode) const;
+  double getNodeHitsChi2(unsigned int iNode) const;
+
+  double getNodeAngleChi2(unsigned int iNode) const;
 
   void splitSegment(unsigned int iSegment,  double lengthFraction);
 
@@ -70,14 +72,14 @@ private:
   double getNodesChi2() const;
 
   double myLenght, myChi2;
+  double stepAlongTrack;
   std::vector<double> segmentChi2;
   std::vector<double> nodeHitsChi2;
   std::vector<double> nodeAngleChi2;
   
   TrackSegment3DCollection mySegments;
-  TGraph myChargeProfile;
-  TGraph myHitDistanceProfile;
-  
+  TGraph myChargeProfile;              
+  TGraph myHitDistanceProfile;         
 };
 
 typedef std::vector<Track3D> Track3DCollection;

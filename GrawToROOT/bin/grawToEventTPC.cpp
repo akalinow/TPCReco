@@ -6,6 +6,7 @@
 #include "GeometryTPC.h"
 #include "EventTPC.h"
 #include "PedestalCalculator.h"
+#include "EventSourceGRAW.h"
 
 #include "TFile.h"
 #include "TTree.h"
@@ -21,8 +22,6 @@ int main(int argc, char *argv[]) {
 
   if(argc<3) return -1;
 
-  int minSignalCell = 51;
-  int maxSignalCell = 500;
   bool skipEmptyEvents = false;
   
   ///Load TPC geometry
@@ -39,75 +38,71 @@ int main(int argc, char *argv[]) {
     timestamp = std::string(argv[3]);
     std::cout<<"timestamp: "<<timestamp<<std::endl;
   }
-  std::shared_ptr<GeometryTPC> myGeometryPtr = std::make_shared<GeometryTPC>(geomFileName.c_str());
-
-  ///Create event
-  EventTPC myEvent;
-
-  PedestalCalculator myPedestalCalculator;
-  myPedestalCalculator.SetGeometryAndInitialize(myGeometryPtr);
+  EventSourceGRAW myEventSource(geomFileName);
+  myEventSource.loadDataFile(dataFileName);
+  std::shared_ptr<EventTPC> myEventPtr = myEventSource.getCurrentEvent();
 
   ///Create ROOT Tree
-  std::string rootFileName = "EventTPC_"+timestamp+".root";
-  
+  std::string rootFileName = "EventTPC_"+timestamp+".root";  
   TFile aFile(rootFileName.c_str(),"RECREATE");
   TTree aTree("TPCData","");
   
-  EventTPC *persistent_event = &myEvent;
+  EventTPC *persistent_event = myEventPtr.get();
   aTree.Branch("Event", &persistent_event);
 
-  ///Load data
-  GET::GDataFrame dataFrame;
-  TGrawFile f(dataFileName.c_str());
-  long lastevent=f.GetGrawFramesNumber();
-
-  myEvent.SetRunId(0);
-
-  for(long eventId = 0;eventId<lastevent;++eventId){
-    myEvent.Clear();
-    myEvent.SetGeoPtr(myGeometryPtr);
-    myEvent.SetEventId(eventId);
-    bool eventRead = f.GetGrawFrame(dataFrame, eventId);
-    if(!eventRead){
-      std::cerr << "ERROR: cannot read event " << eventId << std::endl;
-      return -1;
-    }
-
-    myPedestalCalculator.CalculateEventPedestals(dataFrame);
-    
-    int COBO_idx = 0;
-    int ASAD_idx = 0;
-    
-    for (Int_t agetId = 0; agetId < myGeometryPtr->GetAgetNchips(); ++agetId){
-	// loop over normal channels and update channel mask for clustering
-	for (Int_t chanId = 0; chanId < myGeometryPtr->GetAgetNchannels(); ++chanId){
-	  int iChannelGlobal     = myGeometryPtr->Global_normal2normal(COBO_idx, ASAD_idx, agetId, chanId);// 0-255 (without FPN)
-	    
-	    GET::GDataChannel* channel = dataFrame.SearchChannel(agetId, myGeometryPtr->Aget_normal2raw(chanId));
-	    if (!channel) continue;
-	    
-	    for (Int_t i = 0; i < channel->fNsamples; ++i){
-		GET::GDataSample* sample = (GET::GDataSample*) channel->fSamples.At(i);
-		// skip cells outside signal time-window
-		Int_t icell = sample->fBuckIdx;
-		if(icell<2 || icell>509 || icell<minSignalCell || icell>maxSignalCell) continue;
-		
-		Double_t rawVal  = sample->fValue;		
-		Double_t corrVal = rawVal - myPedestalCalculator.GetPedestalCorrection(iChannelGlobal, agetId, icell);
-		myEvent.AddValByAgetChannel(COBO_idx, ASAD_idx, agetId, chanId, icell, corrVal);
-		
-	      } // end of loop over time buckets	    
-	  } // end of AGET channels loop	
-      } // end of AGET chips loop
-    myEvent.SetGeoPtr(0);
-
+  long numberOfEntries = myEventSource.numberOfEntries();
+  std::map<unsigned int, bool> eventIdxMap;
+  for(long iFileEntry = 0; iFileEntry<numberOfEntries; ++iFileEntry){
+    myEventSource.loadFileEntry(iFileEntry);
+    myEventPtr->SetGeoPtr(0);
     ///Skip empty events
-    if(skipEmptyEvents && myEvent.GetMaxCharge()<100) continue;
+    if(skipEmptyEvents && myEventPtr->GetMaxCharge()<100) continue;
     /////////////////////
-    aTree.Fill();
+    unsigned int eventIdx = myEventPtr->GetEventId();
+    if(eventIdxMap.find(eventIdx)==eventIdxMap.end()){
+      eventIdxMap[eventIdx] = true;
+      aTree.Fill();
+    }
   }
+  aTree.Print();
 
+  /*
+  std::cout<<"myEventSource.loadFileEntry(0)"<<std::endl;
+  myEventSource.loadFileEntry(0);
+
+  std::cout<<"myEventSource.loadEventId(1)"<<std::endl;
+  myEventSource.loadEventId(0);
+
+  //std::cout<<"myEventSource.getNextEvent()"<<std::endl;
+  //myEventSource.getNextEvent();
+
+  std::cout<<"myEventSource.loadEventId(3)"<<std::endl;
+  myEventSource.loadEventId(3);
+
+  std::cout<<"myEventSource.getPreviousEvent()"<<std::endl;
+  myEventSource.getPreviousEvent();
+
+  std::cout<<"myEventSource.getNextEvent() "<<std::endl;
+  myEventSource.getNextEvent();
+
+  std::cout<<" myEventSource.getLastEvent() "<<std::endl;
+  myEventSource.getLastEvent();
+
+  std::cout<<"myEventSource.getNextEvent() "<<std::endl;
+  myEventSource.getNextEvent();
+
+  std::cout<<"myEventSource.loadEventId(0)"<<std::endl;
+  myEventSource.loadEventId(0);
+
+  std::cout<<"myEventSource.getNextEvent()"<<std::endl;
+  myEventSource.getNextEvent();
+
+  std::cout<<"myEventSource.getPreviousEvent()"<<std::endl;
+  myEventSource.getPreviousEvent();
+  */
+  
   aTree.Write();
   aFile.Close();
+  
   return 0;
 }

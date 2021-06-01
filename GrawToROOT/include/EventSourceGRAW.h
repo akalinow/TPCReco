@@ -1,0 +1,63 @@
+#ifndef _EventSourceGRAW_H_
+#define _EventSourceGRAW_H_
+
+#include <map>
+#include <set>
+
+#include "get/graw2dataframe.h"
+#include "get/GDataFrame.h"
+#include "get/TGrawFile.h"
+
+#include "EventSourceBase.h"
+#include "PedestalCalculator.h"
+
+class EventSourceGRAW: public EventSourceBase {
+
+public:
+
+  EventSourceGRAW(){};
+  
+  EventSourceGRAW(const std::string & geometryFileName);
+  
+  ~EventSourceGRAW();
+
+  void setRemovePedestal(bool aFlag);
+
+  std::shared_ptr<EventTPC> getNextEvent();
+  
+  std::shared_ptr<EventTPC> getPreviousEvent();
+
+  virtual unsigned long int numberOfEvents() const { return nEntries/GRAW_EVENT_FRAGMENTS;}
+
+  void loadDataFile(const std::string & fileName);
+
+  void loadFileEntry(unsigned long int iEntry);
+
+  void loadEventId(unsigned long int eventIdx);
+
+private:
+
+  bool loadGrawFrame(unsigned int iEntry, bool readFullEvent);
+  void findEventFragments(unsigned long int eventIdx, unsigned int iInitialEntry);
+  void collectEventFragments(unsigned int eventIdx);
+  void fillEventFromFrame(GET::GDataFrame & aGrawFrame);
+  void checkEntryForFragments(unsigned int iEntry);
+
+  unsigned int GRAW_EVENT_FRAGMENTS;
+  PedestalCalculator myPedestalCalculator;
+  //Graw2DataFrame myFrameLoader;
+  GET::GDataFrame myDataFrame;
+  std::shared_ptr<TGrawFile> myFile;
+  std::string myFilePath;
+  std::map<unsigned int, std::set<unsigned int> > myFramesMap;
+  std::map<unsigned int, std::set<unsigned int> > myASADMap;
+  std::set<unsigned int> myReadEntriesSet;
+  bool isFullFileScanned{false};
+
+  int minSignalCell;
+  int maxSignalCell;
+  bool removePedestal{true};
+
+};
+#endif
+
