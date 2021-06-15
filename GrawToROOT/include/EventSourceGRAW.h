@@ -42,6 +42,7 @@ private:
   void collectEventFragments(unsigned int eventIdx);
   void fillEventFromFrame(GET::GDataFrame & aGrawFrame);
   void checkEntryForFragments(unsigned int iEntry);
+  void findStartingIndex(unsigned long int size);
 
   unsigned int GRAW_EVENT_FRAGMENTS;
   PedestalCalculator myPedestalCalculator;
@@ -57,6 +58,7 @@ private:
   int minSignalCell;
   int maxSignalCell;
   bool removePedestal{true};
+  unsigned long int startingEventIndex=0;
 
 };
 #endif

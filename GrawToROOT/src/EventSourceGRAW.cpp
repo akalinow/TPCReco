@@ -44,9 +44,9 @@ std::shared_ptr<EventTPC> EventSourceGRAW::getPreviousEvent(){
 
   unsigned int currentEventId = myCurrentEvent->GetEventId();
   auto it = myFramesMap.find(currentEventId);
-  unsigned int firstEventFrame = *it->second.begin();
-  if(firstEventFrame>0) --firstEventFrame; 
-  loadFileEntry(firstEventFrame);
+  unsigned int startingEventIndexFrame = *it->second.begin();
+  if(startingEventIndexFrame>0) --startingEventIndexFrame; 
+  loadFileEntry(startingEventIndexFrame);
   return myCurrentEvent;  
 }
 /////////////////////////////////////////////////////////
@@ -62,6 +62,9 @@ void EventSourceGRAW::loadDataFile(const std::string & fileName){
     exit(1);
   }
   nEntries = myFile->GetGrawFramesNumber();
+
+  findStartingIndex(10);
+
   myFramesMap.clear();
   myASADMap.clear();
   myReadEntriesSet.clear();
@@ -115,8 +118,8 @@ void EventSourceGRAW::loadEventId(unsigned long int eventId){
     unsigned int iEntry =  *it->second.rbegin();
     findEventFragments(eventId, iEntry);
   }
-  else if(!isFullFileScanned && it==myFramesMap.end()){
-    findEventFragments(eventId,0);
+  else if(!isFullFileScanned && it==myFramesMap.end() ){
+    findEventFragments(eventId, GRAW_EVENT_FRAGMENTS *( eventId- startingEventIndex));
   }
   collectEventFragments(eventId);
 
@@ -176,7 +179,7 @@ void EventSourceGRAW::findEventFragments(unsigned long int eventId, unsigned int
 
   //unsigned int lowEndScanRange = 0;
   //unsigned int highEndScanRange = nEntries;
-  
+
   for(unsigned int iEntry=iInitialEntry;
       iEntry>=lowEndScanRange && iEntry<nEntries && nFragments<GRAW_EVENT_FRAGMENTS;
       --iEntry){
@@ -288,3 +291,17 @@ void EventSourceGRAW::fillEventFromFrame(GET::GDataFrame & aGrawFrame){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+
+void EventSourceGRAW::findStartingIndex(unsigned long int size)
+{
+    if(nEntries==0){
+    startingEventIndex=0;
+  }else{
+    auto preloadSize=std::min(nEntries,size);
+    startingEventIndex=std::numeric_limits<UInt_t>::max();
+    for(unsigned long int i=0; i<preloadSize; ++i){
+      myFile->GetGrawFrame(myDataFrame,i);
+      startingEventIndex=std::min(startingEventIndex, static_cast<unsigned long int>(myDataFrame.fHeader.fEventIdx));
+    }
+  }
+}
