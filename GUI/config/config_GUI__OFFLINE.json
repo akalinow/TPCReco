@@ -1,13 +1,13 @@
 {
     "dataFile": "/data/edaq/2021/20210428_extTrg_CO2_80mbar/CoBo_2021-04-28T19:36:51.498_0003.graw",
-    "geometryFile": "./geometry_ELITPC.dat",    
-    "resourcesPath":".",
+    "geometryFile": "./geometry_ELITPC.dat",
+    "resourcesPath": ".",
     "updateInterval": 3000,
     "removePedestal": true,
+    "frameLoadRange": 100,
     "display": {
-	"zLogScale": false,
-        "autoZoom":  false,
-	"recoMode":  false 
+        "zLogScale": false,
+        "autoZoom": false,
+        "recoMode": false
     }
 }
-

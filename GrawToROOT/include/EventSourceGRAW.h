@@ -34,6 +34,7 @@ public:
   void loadFileEntry(unsigned long int iEntry);
 
   void loadEventId(unsigned long int eventIdx);
+  inline void setFrameLoadRange(int range) {frameLoadRange=range;}
 
 private:
 
@@ -58,7 +59,8 @@ private:
   int minSignalCell;
   int maxSignalCell;
   bool removePedestal{true};
-  unsigned long int startingEventIndex=0;
+  unsigned long int startingEventIndex = 0;
+  int frameLoadRange = 100;
 
 };
 #endif

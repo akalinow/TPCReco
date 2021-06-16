@@ -173,9 +173,9 @@ void EventSourceGRAW::findEventFragments(unsigned long int eventId, unsigned int
 
   bool reachStartOfFile = false;
   bool reachEndOfFile = false;
-
-  unsigned int lowEndScanRange = std::max((unsigned int)0, iInitialEntry-100);
-  unsigned int highEndScanRange = std::min((unsigned int)nEntries, iInitialEntry+100);
+  
+  unsigned int lowEndScanRange = std::max((unsigned int)0, iInitialEntry-frameLoadRange);
+  unsigned int highEndScanRange = std::min((unsigned int)nEntries, iInitialEntry+frameLoadRange);
 
   //unsigned int lowEndScanRange = 0;
   //unsigned int highEndScanRange = nEntries;
