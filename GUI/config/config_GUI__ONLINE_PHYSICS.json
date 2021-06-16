@@ -1,12 +1,13 @@
 {
     "dataFile": "/data/edaq/GetSoftware_config",
-    "geometryFile": "./geometry_ELITPC.dat",    
-    "resourcesPath":".",
+    "geometryFile": "./geometry_ELITPC.dat",
+    "resourcesPath": ".",
     "updateInterval": 3000,
     "removePedestal": true,
     "display": {
         "zLogScale": true,
-        "autoZoom":  false,
-        "recoMode":  false 
+        "autoZoom": false,
+        "recoMode": false,
+        "rate": true
     }
 }

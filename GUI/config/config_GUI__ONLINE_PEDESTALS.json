@@ -1,12 +1,13 @@
 {
-    "dataFile": "/data/edaq/2021/pedestals",
-    "geometryFile": "./geometry_ELITPC.dat",    
-    "resourcesPath":".",
-    "updateInterval": 2000,
-    "removePedestal": false,
-    "display": {
-	"zLogScale": false,
-        "autoZoom":  false,
-	"recoMode":  false 
-    }
+  "dataFile": "/data/edaq/2021/pedestals",
+  "geometryFile": "./geometry_ELITPC.dat",
+  "resourcesPath": ".",
+  "updateInterval": 2000,
+  "removePedestal": false,
+  "display": {
+    "zLogScale": false,
+    "autoZoom": false,
+    "recoMode": false,
+    "rate": true
+  }
 }
