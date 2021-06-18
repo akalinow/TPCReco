@@ -16,8 +16,8 @@ EventSourceGRAW::EventSourceGRAW(const std::string & geometryFileName) {
   //std::string formatsFilePath = "./CoboFormats.xcfg";
   //TEST myFrameLoader.initialize(formatsFilePath);
  
-  minSignalCell = 51;//FIXME read from config
-  maxSignalCell = 500;//FIXME read from config
+  //minSignalCell = 2;//FIXME read from config
+ // maxSignalCell = 500;//FIXME read from config
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -271,7 +271,7 @@ void EventSourceGRAW::fillEventFromFrame(GET::GDataFrame & aGrawFrame){
 	GET::GDataSample* sample = (GET::GDataSample*) channel->fSamples.At(i);
 	// skip cells outside signal time-window
 	Int_t icell = sample->fBuckIdx;
-	if(icell<2 || icell>509 || icell<minSignalCell || icell>maxSignalCell) continue;
+	if(icell<2 || icell>509 || icell<myPedestalCalculator.GetMinSignalCell() || icell>myPedestalCalculator.GetMaxSignalCell()) continue;
 	    
 	Double_t rawVal  = sample->fValue;
 	Double_t corrVal = rawVal;

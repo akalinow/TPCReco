@@ -36,6 +36,16 @@ class PedestalCalculator {
 
   void CalculateEventPedestals(const GET::GDataFrame & dataFrame);
 
+  int GetMinSignalCell() const {return minSignalCell;}
+  int GetMaxSignalCell() const {return maxSignalCell;}
+  int GetMinPedestalCell() const {return minPedestalCell;}
+  int GetMaxPedestalCell() const {return maxPedestalCell;}
+
+  void SetMinSignalCell(int minSignalCell ) {this->minSignalCell=minSignalCell;}
+  void SetMaxSignalCell(int maxSignalCell) {this->maxSignalCell=maxSignalCell;}
+  void SetMinPedestalCell(int minPedestalCell) {this->minPedestalCell=minPedestalCell;}
+  void SetMaxPedestalCell(int maxPedestalCell) {this->maxPedestalCell=maxPedestalCell;}
+
  private:
 
   void InitializeTables();

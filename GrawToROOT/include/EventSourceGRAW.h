@@ -56,8 +56,8 @@ private:
   std::set<unsigned int> myReadEntriesSet;
   bool isFullFileScanned{false};
 
-  int minSignalCell;
-  int maxSignalCell;
+ // int minSignalCell;
+ // int maxSignalCell;
   bool removePedestal{true};
   unsigned long int startingEventIndex = 0;
   int frameLoadRange = 100;
