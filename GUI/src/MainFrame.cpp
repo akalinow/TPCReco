@@ -133,9 +133,7 @@ void MainFrame::InitializeEventSource(){
       int updateInterval = myConfig.get<int>("updateInterval");
       myDirWatch.setUpdateInterval(updateInterval);
     }
-    if(myConfig.find("frameLoadRange")!=myConfig.not_found()){
-      dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(myConfig.get("frameLoadRange",10));
-    }
+    dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(myConfig.get("frameLoadRange",10));
     myDirWatch.Connect("Message(const char *)", "MainFrame", this, "ProcessMessage(const char *)");
   }
   if(myConfig.find("removePedestal")!=myConfig.not_found() && myEventSource.get()){

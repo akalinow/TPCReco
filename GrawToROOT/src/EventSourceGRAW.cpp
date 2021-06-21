@@ -63,7 +63,7 @@ void EventSourceGRAW::loadDataFile(const std::string & fileName){
   }
   nEntries = myFile->GetGrawFramesNumber();
 
-  findStartingIndex(10);
+  findStartingIndex(frameLoadRange);
 
   myFramesMap.clear();
   myASADMap.clear();
@@ -292,11 +292,10 @@ void EventSourceGRAW::fillEventFromFrame(GET::GDataFrame & aGrawFrame){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 
-void EventSourceGRAW::findStartingIndex(unsigned long int size)
-{
-    if(nEntries==0){
+void EventSourceGRAW::findStartingIndex(unsigned long int size){
+  if(nEntries==0){
     startingEventIndex=0;
-  }else{
+  } else {
     auto preloadSize=std::min(nEntries,size);
     startingEventIndex=std::numeric_limits<UInt_t>::max();
     for(unsigned long int i=0; i<preloadSize; ++i){
