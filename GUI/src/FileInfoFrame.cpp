@@ -38,6 +38,7 @@ FileInfoFrame::FileInfoFrame(const TGWindow * p, MainFrame * aFrame)
    std::string tmp = "No input.";
    tmp.resize(fileNameLineLength,' ');
    fileNameLabel = new TGLabel(fileNameFrame,tmp.c_str());
+   fileNameLabel->SetWrapLength(280);
 
    std::string mode = "NONE";
    modeLabel = new TGLabel(modeFrame, mode.c_str());
@@ -108,6 +109,7 @@ void FileInfoFrame::updateFileName(const std::string & fileName){
   
   fileNameLabel->SetText(fileNameWithBreaks.c_str());  
   fileInfoFrame->Layout();
+  Resize();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
