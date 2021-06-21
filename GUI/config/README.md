@@ -15,6 +15,11 @@ Currently `tpcGUI` takes [JSON](https://en.wikipedia.org/wiki/JSON#Syntax) forma
   - `autoZoom` - zooms the projection histograms to maximum charge deposits,
   - `recoMode` - enables the reconstruction mode,
   - `rate` - display rate instead of projection plot,
+- `pedestal` - a pedestal calculator configuration:
+  - `minPedestalCell` - an index of a first time cell used to calculate pedestals,
+  - `maxPedestalCell` - an index of a last time cell used to calculate pedestals,
+  - `minSignalCell` - an index of a first time cell used to calculate signals,
+  - `maxSignallCell` - an index of a last time cell used to calculate signals,
 - `eventFilter` - a configuration of filter:
   - `enabled` - toggles filtering,
   - `events` - an array of indices of eligible events,

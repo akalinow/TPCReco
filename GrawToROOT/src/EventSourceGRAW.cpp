@@ -63,7 +63,7 @@ void EventSourceGRAW::loadDataFile(const std::string & fileName){
   }
   nEntries = myFile->GetGrawFramesNumber();
 
-  findStartingIndex(frameLoadRange);
+  findStartingIndex(10);
 
   myFramesMap.clear();
   myASADMap.clear();
@@ -303,4 +303,16 @@ void EventSourceGRAW::findStartingIndex(unsigned long int size){
       startingEventIndex=std::min(startingEventIndex, static_cast<unsigned long int>(myDataFrame.fHeader.fEventIdx));
     }
   }
+}
+
+void EventSourceGRAW::configurePedestal(const boost::property_tree::ptree &config){
+  auto parser=[this, &config](std::string &&parameter, void (PedestalCalculator::*setter)(int)){
+    if(config.find(parameter)!=config.not_found()){
+      (this->myPedestalCalculator.*setter)(config.get<int>(parameter));
+    }
+  };
+  parser("minPedestalCell", &PedestalCalculator::SetMinPedestalCell);
+  parser("maxPedestalCell", &PedestalCalculator::SetMaxPedestalCell);
+  parser("minSignalCell", &PedestalCalculator::SetMinSignalCell);
+  parser("maxSignalCell", &PedestalCalculator::SetMaxSignalCell);
 }

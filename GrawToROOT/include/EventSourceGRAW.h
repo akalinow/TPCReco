@@ -10,6 +10,7 @@
 
 #include "EventSourceBase.h"
 #include "PedestalCalculator.h"
+#include <boost/property_tree/json_parser.hpp>
 
 class EventSourceGRAW: public EventSourceBase {
 
@@ -22,6 +23,7 @@ public:
   ~EventSourceGRAW();
 
   void setRemovePedestal(bool aFlag);
+  void configurePedestal(const boost::property_tree::ptree &config);
 
   std::shared_ptr<EventTPC> getNextEvent();
   

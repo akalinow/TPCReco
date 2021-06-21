@@ -141,6 +141,9 @@ void MainFrame::InitializeEventSource(){
        EventSourceGRAW* aGrawEventSrc = dynamic_cast<EventSourceGRAW*>(myEventSource.get());
        if(aGrawEventSrc) aGrawEventSrc->setRemovePedestal(removePedestal);
   }
+  if(myConfig.find("pedestal")!=myConfig.not_found() && myEventSource.get()){
+    dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(myConfig.find("pedestal")->second);
+  }
 #endif
   else if(!myEventSource){
     std::cerr<<KRED<<"Input source not known. dataFile: "<<RST<<dataFileName<<std::endl;
