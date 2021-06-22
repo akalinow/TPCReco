@@ -55,16 +55,19 @@ void EventSourceGRAW::loadDataFile(const std::string & fileName){
 
   EventSourceBase::loadDataFile(fileName);
 
-  myFilePath = fileName;
   myFile =  std::make_shared<TGrawFile>(fileName.c_str());
   if(!myFile){
     std::cerr<<KRED<<"Can not open file: "<<fileName<<"!"<<RST<<std::endl;
     exit(1);
   }
   nEntries = myFile->GetGrawFramesNumber();
+  
+  const int firstEventSize=10;
+  if(fileName!=myFilePath || nEntries<firstEventSize){
+    findStartingIndex(firstEventSize);
+  }
 
-  findStartingIndex(10);
-
+  myFilePath = fileName;
   myFramesMap.clear();
   myASADMap.clear();
   myReadEntriesSet.clear();
