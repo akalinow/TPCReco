@@ -317,7 +317,7 @@ int MainFrame::AddGoToEventDialog(int attach){
 /////////////////////////////////////////////////////////
 int MainFrame::AddGoToFileEntryDialog(int attach){
 
-  fGframe = new TGGroupFrame(this, "Go to file entry.");
+  fGframe = new TGGroupFrame(this, "Go to frame.");
   fFileEntryEntry = new TGNumberEntryField(fGframe, M_GOTO_ENTRY, 0,
 					 TGNumberFormat::kNESInteger,
 					 TGNumberFormat::kNEANonNegative,
