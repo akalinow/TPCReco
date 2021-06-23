@@ -414,3 +414,9 @@ TGraph* HistoManager::getEventRateGraph(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+
+void HistoManager::resetEventRateGraph(){
+ if(grEventRate){
+   grEventRate->Set(0);
+  }
+}

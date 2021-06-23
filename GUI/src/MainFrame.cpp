@@ -236,6 +236,12 @@ int MainFrame::AddButtons(int attach){
 					      "Close the application"};
   std::vector<unsigned int> button_id = {M_NEXT_EVENT, M_PREVIOUS_EVENT,  M_RESET_EVENT, M_FILE_EXIT};
 
+  if(myWorkMode == M_ONLINE_MODE){
+    button_names.insert(--button_names.end(),"Reset rate");
+    button_tooltips.insert(--button_tooltips.end(),"Clear rate graph");
+    button_id.insert(--button_id.end(),M_RESET_RATE);
+  }
+
   ULong_t aColor = TColor::RGB2Pixel(195,195,250);
 
   TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
@@ -532,8 +538,12 @@ void MainFrame::Update(){
   fMarkersManager->reset();
   fMarkersManager->setEnabled(isRecoModeOn);
 
-  if(!isRecoModeOn) drawRawHistos();
-  else drawRecoHistos();
+  if(!isRecoModeOn){
+    drawRawHistos();
+  }
+  else {
+    drawRecoHistos();
+  }
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -760,6 +770,12 @@ void MainFrame::HandleMenu(Int_t id){
     break;
    case M_RESET_EVENT:
     {
+      Update();
+    }
+    break;
+    case M_RESET_RATE:
+    {
+      myHistoManager.resetEventRateGraph();
       Update();
     }
     break;

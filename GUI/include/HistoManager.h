@@ -47,6 +47,8 @@ public:
 
   void reconstructSegmentsFromMarkers(std::vector<double> * segmentsXY);
  
+  void resetEventRateGraph();
+
   TGraph* getEventRateGraph();
 
   TH2Poly *getDetectorLayout() const;
