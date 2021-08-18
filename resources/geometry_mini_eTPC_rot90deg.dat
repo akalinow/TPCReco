@@ -14,7 +14,7 @@ REFERENCE POINT: -52.395 53.250
 #
 DRIFT VELOCITY: 1.0
 #
-#### Electronics sampling rate [MHz] (eg. (512 cells)/(25 MHz)/(1cm/us) = 20.48 cm window can be recorded, length of drift cage is 20 cm)
+#### Electronics sampling rate [MHz] (eg. (512 cells)/(25 MHz)*(1cm/us) = 20.48 cm window can be recorded, length of drift cage is 20 cm)
 #
 SAMPLING RATE: 25.0
 #
