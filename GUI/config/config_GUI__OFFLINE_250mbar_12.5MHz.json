@@ -1,0 +1,19 @@
+{
+    "dataFile": "/data/edaq/2021/20210617_extTrg_CO2_250mbar_DT1470ET/CoBo_ALL_AsAd_ALL_2021-06-17T15:02:59.030_0000.graw",
+    "geometryFile": "./geometry_ELITPC_250mbar_12.5MHz.dat",
+    "resourcesPath": ".",
+    "updateInterval": 3000,
+    "removePedestal": true,
+    "frameLoadRange": 100,
+    "display": {
+        "zLogScale": true,
+        "autoZoom": false,
+        "recoMode": false
+    },
+    "pedestal": {
+        "minPedestalCell": 10,
+        "maxPedestalCell": 50,
+        "minSignalCell": 2,
+        "maxSignalCell": 500
+    }
+}
