@@ -73,75 +73,217 @@ TH2Poly * HistoManager::getDetectorLayout() const{
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::shared_ptr<TH1D> HistoManager::getRawTimeProjection(){
-  TH1D *h = myEvent->GetTimeProjection();
-  h->GetYaxis()->SetTitleOffset(2.0);
-  return std::shared_ptr<TH1D>(h);
+  auto aHisto=std::shared_ptr<TH1D>(myEvent->GetTimeProjection());
+  if(aHisto) {
+    aHisto->GetXaxis()->SetTitleOffset(1.5);
+    aHisto->GetYaxis()->SetTitleOffset(1.6);
+    aHisto->SetDrawOption("HIST0");
+  }
+  return aHisto;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::shared_ptr<TH1D> HistoManager::getRawTimeProjectionInMM(){ // added by MC - 4 Aug 2021
+  auto aHisto=std::shared_ptr<TH1D>(myEvent->GetTimeProjectionInMM());
+  if(aHisto) {
+    aHisto->GetXaxis()->SetTitleOffset(1.5);
+    aHisto->GetYaxis()->SetTitleOffset(1.6);
+    aHisto->SetDrawOption("HIST0");
+  }
+  return aHisto;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::shared_ptr<TH1D> HistoManager::getRawTimeProjectionInMM(int strip_dir){ // added by MC - 4 Aug 2021
+  auto aHisto=std::shared_ptr<TH1D>(myEvent->GetTimeProjectionInMM(strip_dir));
+  if(aHisto) {
+    aHisto->GetXaxis()->SetTitleOffset(1.5);
+    aHisto->GetYaxis()->SetTitleOffset(1.6);
+    aHisto->SetDrawOption("HIST0");
+  }
+  return aHisto;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::shared_ptr<TH1D> HistoManager::getRawStripProjection(int strip_dir){
   auto aHisto=std::shared_ptr<TH1D>(myEvent->GetStripProjection(strip_dir));
-  aHisto->GetYaxis()->SetTitleOffset(1.8);
-  aHisto->GetZaxis()->SetTitleOffset(1.5);
-  return  aHisto;
+  if(aHisto) {
+    aHisto->GetXaxis()->SetTitleOffset(1.5);
+    aHisto->GetYaxis()->SetTitleOffset(1.6);
+    aHisto->SetDrawOption("HIST0");
+  }
+  return aHisto;
 }
-
-std::shared_ptr<TH1D> HistoManager::getRawTimeProjection(int strip_dir){
-  auto aHisto=std::shared_ptr<TH1D>(myEvent->GetTimeProjection(strip_dir));
-  aHisto->GetYaxis()->SetTitleOffset(1.8);
-  aHisto->GetZaxis()->SetTitleOffset(1.5);
-  return  aHisto;
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::shared_ptr<TH1D> HistoManager::getRawStripProjectionInMM(int strip_dir){ // added by MC - 4 Aug 2021
+  auto aHisto=std::shared_ptr<TH1D>(myEvent->GetStripProjectionInMM(strip_dir));
+  if(aHisto) {
+    aHisto->GetXaxis()->SetTitleOffset(1.5);
+    aHisto->GetYaxis()->SetTitleOffset(1.6); 
+    aHisto->SetDrawOption("HIST0");
+  }
+  return aHisto;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::shared_ptr<TH2D> HistoManager::getRawStripVsTime(int strip_dir){
-
-  std::shared_ptr<TH2D> aHisto = myEvent->GetStripVsTime(strip_dir);  
-  if(doAutozoom) makeAutozoom(aHisto);
-  aHisto->GetYaxis()->SetTitleOffset(1.8);
-  aHisto->GetZaxis()->SetTitleOffset(1.5);
-  return aHisto;
-}
-
-std::shared_ptr<TH2D> HistoManager::getChannels(int cobo_id, int asad_id){
-  std::shared_ptr<TH2D> aHisto = myEvent->GetChannels(cobo_id, asad_id);  
-  aHisto->GetYaxis()->SetTitleOffset(1.8);
-  aHisto->GetZaxis()->SetTitleOffset(1.5);
+  auto aHisto=std::shared_ptr<TH2D>(myEvent->GetStripVsTime(strip_dir));
+  if(aHisto) {
+    if(doAutozoom) makeAutozoom(aHisto);
+    aHisto->GetXaxis()->SetTitleOffset(1.5);
+    aHisto->GetYaxis()->SetTitleOffset(1.5);
+    aHisto->GetZaxis()->SetTitleOffset(1.5);
+    aHisto->SetDrawOption("COLZ");
+    //  aHisto->SetMinimum(1);
+  }
   return aHisto;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::shared_ptr<TH2D> HistoManager::getRawStripVsTimeInMM(int strip_dir){
-
+  auto aHisto=std::shared_ptr<TH2D>(myEvent->GetStripVsTimeInMM(strip_dir)); // modified by MC - 4 Aug 2021
+  if(aHisto) {
+    if(doAutozoom) makeAutozoom(aHisto);
+    aHisto->GetXaxis()->SetTitleOffset(1.5);
+    aHisto->GetYaxis()->SetTitleOffset(1.5);
+    aHisto->GetZaxis()->SetTitleOffset(1.5);
+    aHisto->SetDrawOption("COLZ");
+    //  aHisto->SetMinimum(1);
+  }
+  return aHisto;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::shared_ptr<TH1D> HistoManager::getClusterTimeProjection(){ // added by MC - 4 Aug 2021
+  auto aHisto=std::shared_ptr<TH1D>(myEvent->GetTimeProjection(myTkBuilder.getCluster()));
+  if(aHisto) {
+    aHisto->GetXaxis()->SetTitleOffset(1.5);
+    aHisto->GetYaxis()->SetTitleOffset(1.6);
+    aHisto->SetDrawOption("HIST0");
+  }
+  return aHisto;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::shared_ptr<TH1D> HistoManager::getClusterTimeProjectionInMM(){ // added by MC - 4 Aug 2021
+  auto aHisto=std::shared_ptr<TH1D>(myEvent->GetTimeProjectionInMM(myTkBuilder.getCluster()));
+  if(aHisto) {
+    aHisto->GetXaxis()->SetTitleOffset(1.5);
+    aHisto->GetYaxis()->SetTitleOffset(1.6);
+    aHisto->SetDrawOption("HIST0");
+  }
+  return aHisto;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::shared_ptr<TH1D> HistoManager::getClusterTimeProjection(int strip_dir){ // added by MC - 4 Aug 2021
+  auto aHisto=std::shared_ptr<TH1D>(myEvent->GetTimeProjection(myTkBuilder.getCluster(), strip_dir));
+  if(aHisto) {
+    aHisto->GetXaxis()->SetTitleOffset(1.5);
+    aHisto->GetYaxis()->SetTitleOffset(1.6);
+    aHisto->SetDrawOption("HIST0");
+  }
+  return aHisto;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::shared_ptr<TH1D> HistoManager::getClusterTimeProjectionInMM(int strip_dir){ // added by MC - 4 Aug 2021
+  auto aHisto=std::shared_ptr<TH1D>(myEvent->GetTimeProjectionInMM(myTkBuilder.getCluster(), strip_dir));
+  if(aHisto) {
+    aHisto->GetXaxis()->SetTitleOffset(1.5);
+    aHisto->GetYaxis()->SetTitleOffset(1.6);
+    aHisto->SetDrawOption("HIST0");
+  }
+  return aHisto;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::shared_ptr<TH1D> HistoManager::getClusterStripProjection(int strip_dir){ // added by MC - 4 Aug 2021
+  auto aHisto=std::shared_ptr<TH1D>(myEvent->GetStripProjection(myTkBuilder.getCluster(), strip_dir));
+  if(aHisto) {
+    aHisto->GetXaxis()->SetTitleOffset(1.5);
+    aHisto->GetYaxis()->SetTitleOffset(1.6);
+    aHisto->SetDrawOption("HIST0");
+  }
+  return aHisto;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::shared_ptr<TH1D> HistoManager::getClusterStripProjectionInMM(int strip_dir){ // added by MC - 4 Aug 2021
+  auto aHisto=std::shared_ptr<TH1D>(myEvent->GetStripProjectionInMM(myTkBuilder.getCluster(), strip_dir));
+  if(aHisto) {
+    aHisto->GetXaxis()->SetTitleOffset(1.5);
+    aHisto->GetYaxis()->SetTitleOffset(1.6);
+    aHisto->SetDrawOption("HIST0");
+  }
+  return aHisto;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::shared_ptr<TH2D> HistoManager::getClusterStripVsTime(int strip_dir){ // added by MC - 4 Aug 2021
+  auto aHisto=std::shared_ptr<TH2D>(myEvent->GetStripVsTime(myTkBuilder.getCluster(), strip_dir));
+  if(aHisto) {
+    if(doAutozoom) makeAutozoom(aHisto);
+    aHisto->GetXaxis()->SetTitleOffset(1.5);
+    aHisto->GetYaxis()->SetTitleOffset(1.5);
+    aHisto->GetZaxis()->SetTitleOffset(1.5);
+    aHisto->SetDrawOption("COLZ");
+    //  aHisto->SetMinimum(1);
+  }
+  return aHisto;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::shared_ptr<TH2D> HistoManager::getClusterStripVsTimeInMM(int strip_dir){ // added by MC - 4 Aug 2021
   std::shared_ptr<TH2D> aHisto = myEvent->GetStripVsTimeInMM(myTkBuilder.getCluster(), strip_dir);
-  aHisto->GetYaxis()->SetTitleOffset(1.8);
-  aHisto->GetZaxis()->SetTitleOffset(1.5);
-  if(doAutozoom) makeAutozoom(aHisto);
+  if(aHisto) {
+    if(doAutozoom) makeAutozoom(aHisto);
+    aHisto->GetXaxis()->SetTitleOffset(1.5);
+    aHisto->GetYaxis()->SetTitleOffset(1.5);
+    aHisto->GetZaxis()->SetTitleOffset(1.5);
+    aHisto->SetDrawOption("COLZ");
+    //  aHisto->SetMinimum(1);
+  }
+  return aHisto;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::shared_ptr<TH2D> HistoManager::getChannels(int cobo_id, int asad_id){
+  auto aHisto=std::shared_ptr<TH2D>(myEvent->GetChannels(cobo_id, asad_id));
+  if(aHisto) {
+    aHisto->GetXaxis()->SetTitleOffset(1.5);
+    aHisto->GetYaxis()->SetTitleOffset(1.5);
+    aHisto->GetZaxis()->SetTitleOffset(1.5);
+    aHisto->SetDrawOption("COLZ");
+    //  aHisto->SetMinimum(1);
+  }
   return aHisto;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::shared_ptr<TH2D> HistoManager::getFilteredStripVsTime(int strip_dir){
-
-  std::shared_ptr<TH2D> aHisto = myEvent->GetStripVsTime(myTkBuilder.getCluster(), strip_dir);
-  aHisto->GetYaxis()->SetTitleOffset(1.8);
-  aHisto->GetZaxis()->SetTitleOffset(1.5);
-  if(doAutozoom) makeAutozoom(aHisto);
+  auto aHisto=std::shared_ptr<TH2D>(myEvent->GetStripVsTime(myTkBuilder.getCluster(), strip_dir));
+  if(aHisto) {
+    if(doAutozoom) makeAutozoom(aHisto);
+    aHisto->GetYaxis()->SetTitleOffset(1.8);
+    aHisto->GetZaxis()->SetTitleOffset(1.5);
+  }
   return aHisto;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::shared_ptr<TH2D> HistoManager::getRecHitStripVsTime(int strip_dir){
-
   TH2D *h = (TH2D*)myTkBuilder.getRecHits2D(strip_dir).Clone();
   std::shared_ptr<TH2D> aHisto(h);
-
-  if(doAutozoom) makeAutozoom(aHisto);
-  aHisto->GetYaxis()->SetTitleOffset(1.8);
-  aHisto->GetZaxis()->SetTitleOffset(1.5);
-
+  if(aHisto) {
+    if(doAutozoom) makeAutozoom(aHisto);
+    aHisto->GetYaxis()->SetTitleOffset(1.8);
+    aHisto->GetZaxis()->SetTitleOffset(1.5);
+  }
   return aHisto;//FIX ME avoid object copying
 }
+
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 TH3D* HistoManager::get3DReconstruction(){

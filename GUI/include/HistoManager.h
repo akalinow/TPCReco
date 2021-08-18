@@ -57,7 +57,13 @@ public:
 
   std::shared_ptr<TH1D> getRawTimeProjection(int strip_dir);
 
+  std::shared_ptr<TH1D> getRawTimeProjectionInMM(); // added by MC - 4 Aug 2021
+
+  std::shared_ptr<TH1D> getRawTimeProjectionInMM(int strip_dir); // added by MC - 4 Aug 2021
+
   std::shared_ptr<TH1D> getRawStripProjection(int strip_dir);
+
+  std::shared_ptr<TH1D> getRawStripProjectionInMM(int strip_dir); // added by MC - 4 Aug 2021
 
   std::shared_ptr<TH2D> getRawStripVsTime(int strip_dir);
 
@@ -68,6 +74,22 @@ public:
   std::shared_ptr<TH2D> getRecHitStripVsTime(int strip_dir);
 
   std::shared_ptr<TH2D> getChannels(int cobo_id, int asad_id);
+
+  std::shared_ptr<TH1D> getClusterTimeProjection(); // added by MC - 4 Aug 2021
+
+  std::shared_ptr<TH1D> getClusterTimeProjectionInMM(); // added by MC - 4 Aug 2021
+
+  std::shared_ptr<TH1D> getClusterTimeProjection(int strip_dir); // added by MC - 4 Aug 2021
+
+  std::shared_ptr<TH1D> getClusterTimeProjectionInMM(int strip_dir); // added by MC - 4 Aug 2021
+
+  std::shared_ptr<TH1D> getClusterStripProjection(int strip_dir); // added by MC - 4 Aug 2021
+
+  std::shared_ptr<TH1D> getClusterStripProjectionInMM(int strip_dir); // added by MC - 4 Aug 2021
+
+  std::shared_ptr<TH2D> getClusterStripVsTime(int strip_dir); // added by MC - 4 Aug 2021
+
+  std::shared_ptr<TH2D> getClusterStripVsTimeInMM(int strip_dir); // added by MC - 4 Aug 2021
 
   TH3D* get3DReconstruction();
 
