@@ -30,4 +30,5 @@ build/
 # Editor files
 ###################
 *~
+\#*#
 .vscode
