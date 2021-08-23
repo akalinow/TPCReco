@@ -481,6 +481,59 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   int nHits_V = segmentV.getNAccumulatorHits();
   int nHits_W = segmentW.getNAccumulatorHits();
 
+  TVector2 startXY_fromUV;
+  bool res1=myGeometryPtr->GetUVWCrossPointInMM(segmentU.getStripDir(), segmentU.getStart().Y(), segmentV.getStripDir(), segmentV.getStart().Y(), startXY_fromUV);
+  TVector2 startXY_fromVW;
+  bool res2=myGeometryPtr->GetUVWCrossPointInMM(segmentV.getStripDir(), segmentV.getStart().Y(), segmentW.getStripDir(), segmentW.getStart().Y(), startXY_fromVW);
+  TVector2 startXY_fromWU;
+  bool res3=myGeometryPtr->GetUVWCrossPointInMM(segmentW.getStripDir(), segmentW.getStart().Y(), segmentU.getStripDir(), segmentU.getStart().Y(), startXY_fromWU);
+
+  ///////// DEBUG
+  assert(res1|res2|res3);
+  ///////// DEBUG
+  
+  const TVector2 startXY=( (int)res1*startXY_fromUV + (int)res2*startXY_fromVW + (int)res3*startXY_fromWU)/( (int)res1 + (int)res2 + (int)res3 );
+  double startZ_fromU = segmentU.getStart().X();
+  double startZ_fromV = segmentV.getStart().X();
+  double startZ_fromW = segmentW.getStart().X();
+  double startZ = (startZ_fromU*nHits_U + startZ_fromV*nHits_V + startZ_fromW*nHits_W)/(nHits_U+nHits_V+nHits_W);
+  TVector3 aStart( startXY.X(), startXY.Y(), startZ);
+
+  TVector2 endXY_fromUV;
+  bool res4=myGeometryPtr->GetUVWCrossPointInMM(segmentU.getStripDir(), segmentU.getEnd().Y(), segmentV.getStripDir(), segmentV.getEnd().Y(), endXY_fromUV);
+  TVector2 endXY_fromVW;
+  bool res5=myGeometryPtr->GetUVWCrossPointInMM(segmentV.getStripDir(), segmentV.getEnd().Y(), segmentW.getStripDir(), segmentW.getEnd().Y(), endXY_fromVW);
+  TVector2 endXY_fromWU;
+  bool res6=myGeometryPtr->GetUVWCrossPointInMM(segmentW.getStripDir(), segmentW.getEnd().Y(), segmentU.getStripDir(), segmentU.getEnd().Y(), endXY_fromWU);
+
+  ///////// DEBUG
+  assert(res4|res5|res6);
+  ///////// DEBUG
+
+  const TVector2 endXY=( (int)res4*endXY_fromUV + (int)res5*endXY_fromVW + (int)res6*endXY_fromWU)/( (int)res4 + (int)res5 + (int)res6 );
+  double endZ_fromU = segmentU.getEnd().X();
+  double endZ_fromV = segmentV.getEnd().X();
+  double endZ_fromW = segmentW.getEnd().X();
+  double endZ = (endZ_fromU*nHits_U + endZ_fromV*nHits_V + endZ_fromW*nHits_W)/(nHits_U+nHits_V+nHits_W);
+  TVector3 aEnd( endXY.X(), endXY.Y(), endZ);
+
+  TrackSegment3D a3DSeed;
+  a3DSeed.setGeometry(myGeometryPtr);
+  a3DSeed.setStartEnd(aStart, aEnd);
+  a3DSeed.setRecHits(myRecHits);
+  return a3DSeed;
+}
+/*
+TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
+	     
+  const TrackSegment2D & segmentU = my2DSeeds[DIR_U][iTrack2DSeed];
+  const TrackSegment2D & segmentV = my2DSeeds[DIR_V][iTrack2DSeed];
+  const TrackSegment2D & segmentW = my2DSeeds[DIR_W][iTrack2DSeed];
+
+  int nHits_U = segmentU.getNAccumulatorHits();
+  int nHits_V = segmentV.getNAccumulatorHits();
+  int nHits_W = segmentW.getNAccumulatorHits();
+
   double bX_fromU = (segmentU.getBiasAtT0().Y())*cos(phiPitchDirection[DIR_U]);
   double bX = bX_fromU;
   
@@ -513,6 +566,7 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   a3DSeed.setRecHits(myRecHits);
   return a3DSeed;
 }
+*/
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{

@@ -161,6 +161,7 @@ class GeometryTPC {
   //  inline int Global_strip2raw(int dir, int num);                    //legacy for section =0, valid range [0-2][1-1024]
 
   bool GetCrossPoint(StripTPC *strip1, StripTPC *strip2, TVector2 &point);
+  bool GetUVWCrossPointInMM(int dir1, double UVW_pos1, int dir2, double UVW_pos2, TVector2 &point);
   bool MatchCrossPoint(StripTPC *strip1, StripTPC *strip2, StripTPC *strip3, double radius, TVector2 &point);
 
   inline double GetPadSize() { return pad_size; } // [mm]

@@ -1113,8 +1113,7 @@ int GeometryTPC::Global_strip2raw(int dir, int section,
 //}
 
 // Checks if 2 strips (single electronic channel) are crossing inside the active area of TPC,
-// on success (true) also returns the calculated offset vector wrt ORIGIN POINT
-// (0,0)
+// on success (true) also returns the calculated offset vector wrt ORIGIN POINT (0,0)
 bool GeometryTPC::GetCrossPoint(StripTPC *strip1, StripTPC *strip2,
                                 TVector2 &point) {
   if (!strip1 || !strip2)
@@ -1138,6 +1137,27 @@ bool GeometryTPC::GetCrossPoint(StripTPC *strip1, StripTPC *strip2,
   point.Set(strip1->Offset().X() + len1 * strip1->Unit().X(),
             strip1->Offset().Y() + len1 * strip1->Unit().Y());
   point = point + reference_point;
+  return true;
+}
+
+// Finds 2D crossing point of two lines defined by 2 of 3 redundant UVW coordinates expressed in millimiters
+// (e.g. calculated by Strip2posUVW), on success (true) calculates offset vector wrt ORIGIN POINT (0,0)
+bool GeometryTPC::GetUVWCrossPointInMM(int dir1, double UVW_pos1, int dir2, double UVW_pos2, TVector2 &point) {
+  const TVector2 unit_vec[2] = { GetStripUnitVector(dir1), GetStripUnitVector(dir2) };
+  const TVector2 offset_vec[2] = { GetStripPitchVector(dir1)*UVW_pos1, GetStripPitchVector(dir2)*UVW_pos2 };
+
+  // sanity check (not parallel AND not empty)
+  double W = -unit_vec[0].X() * unit_vec[1].Y() + unit_vec[0].Y() * unit_vec[1].X();
+  if (fabs(W) < NUM_TOLERANCE)
+    return false;
+  
+  const double offset[2] = {offset_vec[1].X() - offset_vec[0].X(),
+                            offset_vec[1].Y() - offset_vec[0].Y()};
+  double W1 = -offset[0] * unit_vec[1].Y() + offset[1] * unit_vec[1].X();
+  // double W2 = unit_vec[0].X() * offset[1] - unit_vec[0].Y() * offset[0]; // not needed
+  double len1 = W1 / W; 
+  //  double len2 = W2 / W; // not needed
+  point = offset_vec[0] + unit_vec[0]*len1; // postion wrt ORIGIN POINT (0,0)
   return true;
 }
 
