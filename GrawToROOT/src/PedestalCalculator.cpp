@@ -25,7 +25,7 @@ void PedestalCalculator::SetGeometryAndInitialize(std::shared_ptr<GeometryTPC> a
 ///////////////////////////////////////////////////////////////
 void PedestalCalculator::InitializeTables(){
 
-  minSignalCell = 51;
+  minSignalCell = 2;
   maxSignalCell = 500;
 
   minPedestalCell=10;

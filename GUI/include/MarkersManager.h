@@ -11,6 +11,7 @@
 #include <RQ_OBJECT.h>
 
 #include "GUI_commons.h"
+#include "GeometryTPC.h" // added by MC - 19 Aug 2021
 
 class MainFrame;
 class TGCanvas;
@@ -29,6 +30,7 @@ public:
   void reset();
   void DoButton();  
   void HandleMarkerPosition(Int_t,Int_t,Int_t,TObject*);
+  void setGeometry(GeometryTPC *geo); // added by MC - 19 Aug 2021
   
 private:
 
@@ -55,6 +57,7 @@ private:
   MainFrame *fParentFrame;
   TGGroupFrame *fHeaderFrame;
   TGCanvas *fMarkerGCanvas;
+  GeometryTPC *fGeometryTPC; // added by MC - 19 Aug 2021
 
   std::map<std::string, TGTextButton*> myButtons;
 

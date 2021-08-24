@@ -12,6 +12,7 @@ enum CommandIdentifiers {
    M_TOGGLE_LOGSCALE,
    M_TOGGLE_AUTOZOOM,
    M_TOGGLE_RECOMODE,
+   M_TOGGLE_RATE,
    M_DIR_WATCH,
 
    M_HELP_CONTENTS,
@@ -23,7 +24,8 @@ enum CommandIdentifiers {
    M_RESET_EVENT,
    M_GOTO_EVENT,
    M_GOTO_ENTRY,
-
+   M_RESET_RATE,
+   
    M_ADD_VERTEX,
    M_ADD_SEGMENT,
    M_FIT_SEGMENT,

@@ -1,4 +1,6 @@
 #include "GeometryStats.h"
+#include <algorithm> // added by MC - 4 Aug 2021, for std::find()
+#include <iostream>
 
 void GeometryStats::FillSections(int dir,int section, int num){
     auto dirStat=directionsStats.find(dir);
@@ -19,7 +21,16 @@ void GeometryStats::FillSections(int dir,int section, int num){
             sectStat->second.max=num;
         }
     }
-
+    // added by MC - 4 Aug 2021
+    auto dirIndex=directionsSectionIndexList.find(dir);
+    if(dirIndex==directionsSectionIndexList.end()){
+      directionsSectionIndexList.insert(std::pair<int,SectionIndexList>(dir,SectionIndexList()));
+      dirIndex=directionsSectionIndexList.find(dir);      
+    }
+    auto secIndex=std::find( dirIndex->second.begin(), dirIndex->second.end(), section);
+    if(secIndex==dirIndex->second.end()){
+      dirIndex->second.push_back(section);
+    }
 }
 
 //this works only with directions without gaps

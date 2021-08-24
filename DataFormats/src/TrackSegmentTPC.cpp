@@ -449,7 +449,7 @@ bool TrackSegment2D::SetCluster(SigClusterTPC &cluster, int dir) { // cluster = 
 
   // Loop over 2D cluster hits and update statistics
   // key=(TIME_CELL [0-511], STRIP_NUM [1-1024])
-  std::vector<MultiKey2> cluster_hits=cluster.GetHitListByDir(dir); 
+  std::vector<MultiKey2> cluster_hits=cluster.GetHitListByDirMerged(dir); // all sections
   std::vector<MultiKey2>::iterator it;
   bool err_flag;
 
@@ -460,7 +460,7 @@ bool TrackSegment2D::SetCluster(SigClusterTPC &cluster, int dir) { // cluster = 
     const double z =
       geo_ptr->Timecell2pos( ((*it).key1+0.5), err_flag); // Z [mm] - middle of the time cell
     const double val =
-      cluster.GetEvtPtr()->GetValByStrip(dir, (*it).key2, (*it).key1);
+      cluster.GetEvtPtr()->GetValByStripMerged(dir, (*it).key2, (*it).key1); // all sections
 
     AddHit2D( uvw_proj, z, val);
     
