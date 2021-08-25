@@ -412,7 +412,7 @@ int MainFrame::AddMarkersDialog(int attach){
   UInt_t attach_bottom=attach_top+nRows*0.2;
 
   fMarkersManager = new MarkersManager(fFrame, this);
-  fMarkersManager->setGeometry(myEventSource->getCurrentEvent()->GetGeoPtr()); // Added by MC - 19 Aug 2021
+  fMarkersManager->setGeometry(myEventSource->getGeometry()); // Added by MC - 19 Aug 2021
   fMarkersManager->Connect("sendSegmentsData(std::vector<double> *)","MainFrame",
 			   this,"drawRecoFromMarkers(std::vector<double> *)");
 

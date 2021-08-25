@@ -30,7 +30,7 @@ public:
   void reset();
   void DoButton();  
   void HandleMarkerPosition(Int_t,Int_t,Int_t,TObject*);
-  void setGeometry(GeometryTPC *geo); // added by MC - 19 Aug 2021
+  void setGeometry(std::shared_ptr<GeometryTPC> geo); // added by MC - 19 Aug 2021
   
 private:
 
@@ -57,7 +57,7 @@ private:
   MainFrame *fParentFrame;
   TGGroupFrame *fHeaderFrame;
   TGCanvas *fMarkerGCanvas;
-  GeometryTPC *fGeometryTPC; // added by MC - 19 Aug 2021
+  std::shared_ptr<GeometryTPC> fGeometryTPC; // added by MC - 19 Aug 2021
 
   std::map<std::string, TGTextButton*> myButtons;
 
