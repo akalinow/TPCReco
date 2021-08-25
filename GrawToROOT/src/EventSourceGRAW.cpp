@@ -16,8 +16,8 @@ EventSourceGRAW::EventSourceGRAW(const std::string & geometryFileName) {
   //std::string formatsFilePath = "./CoboFormats.xcfg";
   //TEST myFrameLoader.initialize(formatsFilePath);
  
-  minSignalCell = 51;//FIXME read from config
-  maxSignalCell = 500;//FIXME read from config
+  //minSignalCell = 2;//FIXME read from config
+ // maxSignalCell = 500;//FIXME read from config
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -44,9 +44,9 @@ std::shared_ptr<EventTPC> EventSourceGRAW::getPreviousEvent(){
 
   unsigned int currentEventId = myCurrentEvent->GetEventId();
   auto it = myFramesMap.find(currentEventId);
-  unsigned int firstEventFrame = *it->second.begin();
-  if(firstEventFrame>0) --firstEventFrame; 
-  loadFileEntry(firstEventFrame);
+  unsigned int startingEventIndexFrame = *it->second.begin();
+  if(startingEventIndexFrame>0) --startingEventIndexFrame; 
+  loadFileEntry(startingEventIndexFrame);
   return myCurrentEvent;  
 }
 /////////////////////////////////////////////////////////
@@ -55,13 +55,19 @@ void EventSourceGRAW::loadDataFile(const std::string & fileName){
 
   EventSourceBase::loadDataFile(fileName);
 
-  myFilePath = fileName;
   myFile =  std::make_shared<TGrawFile>(fileName.c_str());
   if(!myFile){
     std::cerr<<KRED<<"Can not open file: "<<fileName<<"!"<<RST<<std::endl;
     exit(1);
   }
   nEntries = myFile->GetGrawFramesNumber();
+  
+  const int firstEventSize=10;
+  if(fileName!=myFilePath || nEntries<firstEventSize){
+    findStartingIndex(firstEventSize);
+  }
+
+  myFilePath = fileName;
   myFramesMap.clear();
   myASADMap.clear();
   myReadEntriesSet.clear();
@@ -115,8 +121,8 @@ void EventSourceGRAW::loadEventId(unsigned long int eventId){
     unsigned int iEntry =  *it->second.rbegin();
     findEventFragments(eventId, iEntry);
   }
-  else if(!isFullFileScanned && it==myFramesMap.end()){
-    findEventFragments(eventId,0);
+  else if(!isFullFileScanned && it==myFramesMap.end() ){
+    findEventFragments(eventId, GRAW_EVENT_FRAGMENTS *( eventId- startingEventIndex));
   }
   collectEventFragments(eventId);
 
@@ -170,13 +176,13 @@ void EventSourceGRAW::findEventFragments(unsigned long int eventId, unsigned int
 
   bool reachStartOfFile = false;
   bool reachEndOfFile = false;
-
-  unsigned int lowEndScanRange = std::max((unsigned int)0, iInitialEntry-100);
-  unsigned int highEndScanRange = std::min((unsigned int)nEntries, iInitialEntry+100);
+  
+  unsigned int lowEndScanRange = std::max((unsigned int)0, iInitialEntry-frameLoadRange);
+  unsigned int highEndScanRange = std::min((unsigned int)nEntries, iInitialEntry+frameLoadRange);
 
   //unsigned int lowEndScanRange = 0;
   //unsigned int highEndScanRange = nEntries;
-  
+
   for(unsigned int iEntry=iInitialEntry;
       iEntry>=lowEndScanRange && iEntry<nEntries && nFragments<GRAW_EVENT_FRAGMENTS;
       --iEntry){
@@ -268,7 +274,7 @@ void EventSourceGRAW::fillEventFromFrame(GET::GDataFrame & aGrawFrame){
 	GET::GDataSample* sample = (GET::GDataSample*) channel->fSamples.At(i);
 	// skip cells outside signal time-window
 	Int_t icell = sample->fBuckIdx;
-	if(icell<2 || icell>509 || icell<minSignalCell || icell>maxSignalCell) continue;
+	if(icell<2 || icell>509 || icell<myPedestalCalculator.GetMinSignalCell() || icell>myPedestalCalculator.GetMaxSignalCell()) continue;
 	    
 	Double_t rawVal  = sample->fValue;
 	Double_t corrVal = rawVal;
@@ -288,3 +294,28 @@ void EventSourceGRAW::fillEventFromFrame(GET::GDataFrame & aGrawFrame){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+
+void EventSourceGRAW::findStartingIndex(unsigned long int size){
+  if(nEntries==0){
+    startingEventIndex=0;
+  } else {
+    auto preloadSize=std::min(nEntries,size);
+    startingEventIndex=std::numeric_limits<UInt_t>::max();
+    for(unsigned long int i=0; i<preloadSize; ++i){
+      myFile->GetGrawFrame(myDataFrame,i);
+      startingEventIndex=std::min(startingEventIndex, static_cast<unsigned long int>(myDataFrame.fHeader.fEventIdx));
+    }
+  }
+}
+
+void EventSourceGRAW::configurePedestal(const boost::property_tree::ptree &config){
+  auto parser=[this, &config](std::string &&parameter, void (PedestalCalculator::*setter)(int)){
+    if(config.find(parameter)!=config.not_found()){
+      (this->myPedestalCalculator.*setter)(config.get<int>(parameter));
+    }
+  };
+  parser("minPedestalCell", &PedestalCalculator::SetMinPedestalCell);
+  parser("maxPedestalCell", &PedestalCalculator::SetMaxPedestalCell);
+  parser("minSignalCell", &PedestalCalculator::SetMinSignalCell);
+  parser("maxSignalCell", &PedestalCalculator::SetMaxSignalCell);
+}

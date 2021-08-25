@@ -32,7 +32,7 @@ void TrackSegment3D::setBiasTangent(const TVector3 & aBias, const TVector3 & aTa
   myTangent = aTangent.Unit();
 
   double lambda = 10;
-  myStart = myBias-lambda*myTangent;
+  myStart = myBias; // -lambda*myTangent; // Modified by MC - 20 Aug 2021
   myEnd = myBias+lambda*myTangent;  
   initialize();
 }

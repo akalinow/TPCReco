@@ -10,6 +10,7 @@
 
 #include "EventSourceBase.h"
 #include "PedestalCalculator.h"
+#include <boost/property_tree/json_parser.hpp>
 
 class EventSourceGRAW: public EventSourceBase {
 
@@ -22,6 +23,7 @@ public:
   ~EventSourceGRAW();
 
   void setRemovePedestal(bool aFlag);
+  void configurePedestal(const boost::property_tree::ptree &config);
 
   std::shared_ptr<EventTPC> getNextEvent();
   
@@ -34,6 +36,7 @@ public:
   void loadFileEntry(unsigned long int iEntry);
 
   void loadEventId(unsigned long int eventIdx);
+  inline void setFrameLoadRange(int range) {frameLoadRange=range;}
 
 private:
 
@@ -42,6 +45,7 @@ private:
   void collectEventFragments(unsigned int eventIdx);
   void fillEventFromFrame(GET::GDataFrame & aGrawFrame);
   void checkEntryForFragments(unsigned int iEntry);
+  void findStartingIndex(unsigned long int size);
 
   unsigned int GRAW_EVENT_FRAGMENTS;
   PedestalCalculator myPedestalCalculator;
@@ -54,9 +58,11 @@ private:
   std::set<unsigned int> myReadEntriesSet;
   bool isFullFileScanned{false};
 
-  int minSignalCell;
-  int maxSignalCell;
+ // int minSignalCell;
+ // int maxSignalCell;
   bool removePedestal{true};
+  unsigned long int startingEventIndex = 0;
+  int frameLoadRange = 100;
 
 };
 #endif
