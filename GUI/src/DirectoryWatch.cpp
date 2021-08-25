@@ -52,8 +52,8 @@ void DirectoryWatch::watch(const std::string & dirName){
     while(eventIndex < nbytesRead) {
       struct inotify_event *event = ( struct inotify_event * ) &buffer[eventIndex];
       if(event->len && !(event->mask & IN_ISDIR)){
-	fName = std::string(event->name);
-	if(fName.find(".graw")!=std::string::npos){
+	  fName = std::string(event->name);
+    if(fName.substr(fName.find_last_of(".") + 1) == "graw"){
 	  std::this_thread::sleep_for(std::chrono::milliseconds(updateIterval));
 	  fullPath = dirName+"/"+fName;
 	  Message(fullPath.c_str());

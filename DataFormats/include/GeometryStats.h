@@ -1,7 +1,7 @@
 #ifndef __GEOMETRYSTATS_H__
 #define __GEOMETRYSTATS_H__
 #include <map>
-#include <iostream>
+#include <vector> // added by MC - 4 Aug 2021
 
 //Helper struct holding strip numbers of min/max strips and number of strips
 struct SectionStats{
@@ -12,9 +12,10 @@ struct SectionStats{
 };
 
 typedef std::map<int,SectionStats> DirectionStats;
+typedef std::vector<int> SectionIndexList; // added by MC - 4 Aug 2021
 
 //Wrapper around stats maps. 
-//Provides interface for strip number for min/max strip and number of strips in direcction->section 
+//Provides interface for strip number for min/max strip and number of strips in direction->section 
 //or direction with merged sections
 class GeometryStats{
   public:
@@ -22,7 +23,8 @@ class GeometryStats{
     inline  void Fill(int dir,int section,int num){FillSections(dir,section,num);FillMerged(dir,num);}
     void print();
 
-
+    inline  SectionIndexList GetDirSectionIndexList(int dir){return directionsSectionIndexList.at(dir);} // added by MC - 4 Aug 2021
+    
     inline  int GetDirNStrips(int dir,int section){return directionsStats.at(dir).at(section).n;}
     inline  int GetDirMinStrip(int dir,int section){return directionsStats.at(dir).at(section).min;}
     inline  int GetDirMaxStrip(int dir,int section){return directionsStats.at(dir).at(section).max;}
@@ -31,12 +33,11 @@ class GeometryStats{
     inline  int GetDirMaxStripMerged(int dir){return mergedStats.at(dir).max;}
 private:
   std::map<int,DirectionStats> directionsStats;
+  std::map<int,SectionIndexList> directionsSectionIndexList; // added by MC - 4 Aug 2021
   DirectionStats mergedStats;
   void FillSections(int dir, int section,int num);
   //this works only with directions without gaps
   void FillMerged(int dir,int num);
 };
 
-
-#define __GEOMETRYSTATS_H__
 #endif

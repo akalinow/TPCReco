@@ -931,15 +931,14 @@ StripTPC *GeometryTPC::GetStripByGlobal_raw(
   return NULL; // ERROR
 }
 
-StripTPC *
-GeometryTPC::GetStripByDir(int dir, int section,
+StripTPC *GeometryTPC::GetStripByDir(int dir, int section,
                            int num) { // valid range [0-2][0-2][1-1024]
   return this->GetStripByGlobal(Global_strip2normal(dir, section, num));
 }
-StripTPC *GeometryTPC::GetStripByDir(
-    int dir, int num) { // legacy for section=0, valid range [0-2][1-1024]
-  return GetStripByDir(dir, 0, num);
-}
+//StripTPC *GeometryTPC::GetStripByDir(
+//    int dir, int num) { // legacy for section=0, valid range [0-2][1-1024]
+//  return GetStripByDir(dir, 0, num);
+//}
 
 int GeometryTPC::Aget_normal2raw(int channel_idx) { // valid range [0-63]
   if (/*!IsOK() || */ channel_idx < 0 || channel_idx >= AGET_Nchan)
@@ -1091,10 +1090,10 @@ int GeometryTPC::Global_strip2normal(int dir, int section,
     return (it->second)->GlobalCh();
   return ERROR;
 }
-int GeometryTPC::Global_strip2normal(
-    int dir, int num) { // legacy for section=0, valid range [0-2][1-92]
-  return Global_strip2normal(dir, 0, num);
-}
+//int GeometryTPC::Global_strip2normal(
+//    int dir, int num) { // legacy for section=0, valid range [0-2][1-92]
+//  return Global_strip2normal(dir, 0, num);
+//}
 
 int GeometryTPC::Global_strip2raw(StripTPC *s) {
   return Global_strip2raw(s->Dir(), s->Section(), s->Num());
@@ -1108,14 +1107,13 @@ int GeometryTPC::Global_strip2raw(int dir, int section,
     return (it->second)->GlobalCh_raw();
   return ERROR;
 }
-int GeometryTPC::Global_strip2raw(
-    int dir, int num) { // legacy for section=0, valid range [0-2][1-92]
-  return Global_strip2raw(dir, 0, num);
-}
+//int GeometryTPC::Global_strip2raw(
+//    int dir, int num) { // legacy for section=0, valid range [0-2][1-92]
+//  return Global_strip2raw(dir, 0, num);
+//}
 
-// Checks if 2 strips are crossing inside the active area of TPC,
-// on success (true) also returns the calculated offset vector wrt ORIGIN POINT
-// (0,0)
+// Checks if 2 strips (single electronic channel) are crossing inside the active area of TPC,
+// on success (true) also returns the calculated offset vector wrt ORIGIN POINT (0,0)
 bool GeometryTPC::GetCrossPoint(StripTPC *strip1, StripTPC *strip2,
                                 TVector2 &point) {
   if (!strip1 || !strip2)
@@ -1142,7 +1140,28 @@ bool GeometryTPC::GetCrossPoint(StripTPC *strip1, StripTPC *strip2,
   return true;
 }
 
-// Checks if 3 strips are crossing inside the active area of TPC within a given
+// Finds 2D crossing point of two lines defined by 2 of 3 redundant UVW coordinates expressed in millimiters
+// (e.g. calculated by Strip2posUVW), on success (true) calculates offset vector wrt ORIGIN POINT (0,0)
+bool GeometryTPC::GetUVWCrossPointInMM(int dir1, double UVW_pos1, int dir2, double UVW_pos2, TVector2 &point) {
+  const TVector2 unit_vec[2] = { GetStripUnitVector(dir1), GetStripUnitVector(dir2) };
+  const TVector2 offset_vec[2] = { GetStripPitchVector(dir1)*UVW_pos1, GetStripPitchVector(dir2)*UVW_pos2 };
+
+  // sanity check (not parallel AND not empty)
+  double W = -unit_vec[0].X() * unit_vec[1].Y() + unit_vec[0].Y() * unit_vec[1].X();
+  if (fabs(W) < NUM_TOLERANCE)
+    return false;
+  
+  const double offset[2] = {offset_vec[1].X() - offset_vec[0].X(),
+                            offset_vec[1].Y() - offset_vec[0].Y()};
+  double W1 = -offset[0] * unit_vec[1].Y() + offset[1] * unit_vec[1].X();
+  // double W2 = unit_vec[0].X() * offset[1] - unit_vec[0].Y() * offset[0]; // not needed
+  double len1 = W1 / W; 
+  //  double len2 = W2 / W; // not needed
+  point = offset_vec[0] + unit_vec[0]*len1; // postion wrt ORIGIN POINT (0,0)
+  return true;
+}
+
+// Checks if 3 strips (single electronic channel) are crossing inside the active area of TPC within a given
 // tolerance (radius in [mm]), on success (true) also returns the average
 // calculated offset vector wrt ORIGIN POINT (0,0)
 bool GeometryTPC::MatchCrossPoint(StripTPC *strip1, StripTPC *strip2,
@@ -1194,18 +1213,28 @@ TVector3 GeometryTPC::GetStripPitchVector3D(int dir) {
   return TVector3(GetStripPitchVector(dir).X(), GetStripPitchVector(dir).Y(), 0);
 }
 
-double GeometryTPC::Strip2posUVW(int dir, int section, int num,
-                                 bool &err_flag) {
-  return this->Strip2posUVW(this->GetStripByDir(dir, section, num), err_flag);
-}
 // Calculates (signed) distance in [mm] of projection of point (X=0,Y=0) from
-// projection of the central axis of the existing strip (DIR, NUM) on
+// projection of the central axis of the existing strip (DIR, SECTION, NUM) on
 // the strip pitch axis for a given DIR family.
 // The "err_flag" is set to TRUE if:
 // - geometry has not been initialized properly, or
 // - input strip DIR and/or NUM are invalid
-double GeometryTPC::Strip2posUVW(int dir, int num, bool &err_flag) {
-  return Strip2posUVW(dir, 0, num, err_flag);
+double GeometryTPC::Strip2posUVW(int dir, int section, int num, bool &err_flag) { // (per section)
+                                 
+  return this->Strip2posUVW(this->GetStripByDir(dir, section, num), err_flag);
+}
+double GeometryTPC::Strip2posUVW(int dir, int num, bool &err_flag) { // (all sections)
+  double x=0.0;
+  for(unsigned int isec=0; isec<this->GetDirSectionIndexList(dir).size(); isec++) {
+    x = Strip2posUVW(dir, this->GetDirSectionIndexList(dir).at(isec), num, err_flag);
+    /////// DEBUG
+    //      if(dir==DIR_U) std::cout << "Strip2pos: dir=" << dir << ", strip=" << num << ", section=" << this->GetDirSectionIndexList(dir).at(isec)
+    //			       << ": X[mm]=" << x << ", err_flag=" << err_flag << std::endl;
+    /////// DEBUG
+    if(!err_flag) return x; // find first section that contains the given strip number
+  }
+  err_flag = true;
+  return 0.0; // ERROR
 }
 
 // Calculates (signed) distance in [mm] of projection of point (X=0,Y=0) from
@@ -1286,6 +1315,14 @@ double GeometryTPC::Pos2timecell(double z, bool &err_flag) {
 }
 
 std::tuple<double, double, double, double> GeometryTPC::rangeXY() {
+  if(!isOK_TH2Poly) return std::tuple<double, double, double, double>(0.0, 0.0, 0.0, 0.0); // ERROR
+  return std::tuple<double, double, double, double>(tp->GetXaxis()->GetXmin(),
+						    tp->GetXaxis()->GetXmax(),
+						    tp->GetYaxis()->GetXmin(),
+						    tp->GetYaxis()->GetXmax());
+}
+/*
+std::tuple<double, double, double, double> GeometryTPC::rangeXY() {
 
   StripTPC *s[6] = {
       GetStripByDir(DIR_U, 1), GetStripByDir(DIR_U, GetDirNstrips(DIR_U)),
@@ -1329,6 +1366,55 @@ std::tuple<double, double, double, double> GeometryTPC::rangeXY() {
 
   return std::tuple<double, double, double, double>(xmin, xmax, ymin, ymax);
 }
+*/
+
+// [mm] min/max (signed) distance between projection of outermost strip's central axis and
+// projection of the origin (X=0,Y=0) point on the U/V/W pitch axis for a given direction (per section)
+std::tuple<double, double> GeometryTPC::rangeStripSectionInMM(int dir, int section) {
+  double minStripInMM=1E30;
+  double maxStripInMM=-1E30;
+
+  double distance1, distance2; 
+  StripTPC *firstStrip = GetStripByDir(dir, section,
+				       GetDirMinStrip(dir, section));
+  StripTPC *lastStrip = GetStripByDir(dir, section,
+				      GetDirMaxStrip(dir, section));
+  if(firstStrip && lastStrip) {
+    distance1 = (firstStrip->Offset() + GetReferencePoint())*GetStripPitchVector(dir);
+    distance2 = (lastStrip->Offset() + GetReferencePoint())*GetStripPitchVector(dir);
+    if(distance1>maxStripInMM) maxStripInMM=distance1;
+    if(distance1<minStripInMM) minStripInMM=distance1;
+    if(distance2>maxStripInMM) maxStripInMM=distance2;
+    if(distance2<minStripInMM) minStripInMM=distance2;
+  }
+  
+  //////// DEBUG
+  //  std::cout << "rangeStripSectionInMM: DIR=" << GetDirName(dir) << ", Section=" << section << ", range[mm]=[" << minStripInMM << ", " << maxStripInMM << "]" << std::endl;
+  //////// DEBUG
+  return std::tuple<double, double>( minStripInMM, maxStripInMM );
+}
+
+// [mm] min/max (signed) distance between projection of outermost strip's central axis and
+// projection of the origin (X=0,Y=0) point on the U/V/W pitch axis for a given direction (all sections)
+std::tuple<double, double> GeometryTPC::rangeStripDirInMM(int dir) {
+  double minStripInMM=1E30;
+  double maxStripInMM=-1E30;
+
+  // - loop over all sections in a given strip direction
+  for(auto &i : GetDirSectionIndexList(dir)) {
+    double distance1, distance2;
+    std::tie(distance1, distance2) = rangeStripSectionInMM(dir, i);
+    if(distance1>maxStripInMM) maxStripInMM=distance1;
+    if(distance1<minStripInMM) minStripInMM=distance1;
+    if(distance2>maxStripInMM) maxStripInMM=distance2;
+    if(distance2<minStripInMM) minStripInMM=distance2;
+  }
+  //////// DEBUG
+  //  std::cout << "rangeStripDirInMM: DIR=" << GetDirName(dir) << ", range[mm]=[" << minStripInMM << ", " << maxStripInMM << "]" << std::endl;
+  //////// DEBUG
+  return std::tuple<double, double>( minStripInMM, maxStripInMM );
+}
+
 void GeometryTPC::Debug() {
   for (auto &i : mapByStrip) {
     auto s = i.second;
