@@ -40,7 +40,8 @@ class EventTPC {
   std::map<int, double> totalChargeMap3; // key=TIME_CELL [0-511]
   std::map<MultiKey3, double, multikey3_less> totalChargeMap4; // key=(STRIP_DIR [0-2], SECTION [0-2], STRIP_NUM [1-1024])
   std::map<MultiKey3, double, multikey3_less> totalChargeMap5; // key=(STRIP_DIR [0-2], SECTION [0-2], TIME_CELL [0-511])
-
+  std::map<MultiKey2, int, multikey2_less> asadMap; // key=(COBO_id, ASAD_id [0-3])
+    
   bool initOK;      // is geometry valid?
   int time_rebin;   // how many raw data time bins to merge (default=1, i.e. none)
 
@@ -73,7 +74,8 @@ class EventTPC {
   bool AddValByGlobalChannel_raw(int glb_raw_channel_idx, int time_cell, double val); // valid range [0-1023+4*N][0-511]
   bool AddValByAgetChannel(int cobo_idx, int asad_idx, int aget_idx, int channel_idx, int time_cell, double val); // valid range [0-1][0-3][0-3][0-63][0-511]
   bool AddValByAgetChannel_raw(int cobo_idx, int asad_idx, int aget_idx, int raw_channel_idx, int time_cell, double val); // valid range [0-1][0-3][0-3][0-67][0-511]
-  
+  bool CheckAsadNboards(); // verifies that all AsAd boards are present in this event
+    
   // helper methods for extracting data points
   // they return 0.0 for non-existing data points
   double GetValByStrip(StripTPC* strip, int time_cell/*, bool &result*/);                   // valid range [0-511]

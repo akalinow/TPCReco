@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
     //    myEventSource = std::make_shared<EventSourceGRAW>();
     //    myEventSource->loadGeometry(geometryFileName);
     myEventSource->loadDataFile(dataFileName);
-    std::cout << "File with " << myEventSource->numberOfEntries() << " loaded."
+    std::cout << "File with " << myEventSource->numberOfEntries() << " frames loaded."
               << std::endl;
   } else {
     std::cout << "Wrong input arguments. Should be:" << std::endl

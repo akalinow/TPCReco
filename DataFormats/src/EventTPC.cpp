@@ -50,7 +50,8 @@ void EventTPC::Clear(){
   maxChargeMap.clear();    // 2-key map: strip_dir, strip_number
   maxChargeMap2.clear();   // 3-key map: strip_dir, strip_section, strip_number 
   chargeMap.clear();
-  chargeMap2.clear();  
+  chargeMap2.clear();
+  asadMap.clear();
 }
 
 
@@ -203,8 +204,22 @@ bool EventTPC::AddValByStrip(int strip_dir, int strip_section, int strip_number,
       // update already existing max value per strip
       if(new_val2 > it_maxval2->second) it_maxval2->second = new_val2;
     }
+
+    // update {COBO_idx, ASAD_idx} map
+    StripTPC *strip=myGeometryPtr->GetStripByDir(strip_dir, strip_section, strip_number);
+    if(strip) {
+      MultiKey2 mkey_asad( strip->CoboId(), strip->AsadId() );
+      std::map<MultiKey2, int, multikey2_less>::iterator it_asad;
+      if( (it_asad=asadMap.find(mkey_asad))==asadMap.end() ) {
+	// add new {COBO_idx, ASAD_idx} pair to asadMap
+	asadMap[mkey_asad]=1;
+      } else {
+	// update already existing asadMap
+	it_asad->second++;
+      }
+    }
     
-    return true;
+    return true;    
   }
   };
   return false;  
@@ -226,6 +241,11 @@ bool EventTPC::AddValByAgetChannel(int cobo_idx, int asad_idx, int aget_idx, int
 }
 bool EventTPC::AddValByAgetChannel_raw(int cobo_idx, int asad_idx, int aget_idx, int raw_channel_idx, int time_cell, double val) {  // valid range [0-1][0-3][0-3][0-67][0-511]
   return AddValByStrip(myGeometryPtr->GetStripByAget_raw(cobo_idx, asad_idx, aget_idx, raw_channel_idx), time_cell, val);
+}
+
+bool EventTPC::CheckAsadNboards() {
+  if (IsOK() && myGeometryPtr->GetAsadNboards()==(int)asadMap.size()) return true;
+  return false;
 }
 
 double EventTPC::GetValByStripMerged(int strip_dir, int strip_number, int time_cell/*, bool &result*/){  // valid range [0-2][1-1024][0-511]

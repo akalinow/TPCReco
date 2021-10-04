@@ -5,6 +5,7 @@
 #include <vector>
 #include <memory>
 
+#include "TFile.h"
 #include "TLine.h"
 #include "TGraph.h"
 #include "TH2Poly.h"
@@ -12,6 +13,7 @@
 
 #include "SigClusterTPC.h"
 #include "TrackBuilder.h"
+#include "DotFinder.h"
 
 #include "CommonDefinitions.h"
 
@@ -107,6 +109,13 @@ public:
 
   void drawChargeAlongTrack3D(TVirtualPad *aPad);
 
+  // Dot-like events usful for neutron flux monitoring
+  void initializeDotFinder(unsigned int hitThr, // unsigned int maxStripsPerDir, unsigned int maxTimecellsPerDir,
+			   unsigned int totalChargeThr, 
+			   double matchRadiusInMM, const std::string & fileName);
+  void runDotFinder();
+  void finalizeDotFinder();
+
 private:
 
   void updateEventRateGraph();
@@ -117,6 +126,7 @@ private:
   TH3D *h3DReco{0};
   TGraph *grEventRate{0};
   TrackBuilder myTkBuilder;
+  DotFinder myDotFinder;
 
   std::shared_ptr<EventTPC> myEvent;
   std::shared_ptr<GeometryTPC> myGeometryPtr;

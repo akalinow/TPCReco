@@ -501,7 +501,13 @@ void HistoManager::openOutputStream(const std::string & fileName){
   std::string recoFileName = "Reco_"+fileName.substr(last_slash_position+1,
 						     last_dot_position-last_slash_position-1)+".root";
   std::cout<<KBLU<<"recoFileName: "<<RST<<recoFileName<<std::endl;
-  myTkBuilder.openOutputStream(recoFileName);  
+  myTkBuilder.openOutputStream(recoFileName);
+  /*
+  std::string fluxFileName = "Flux_"+fileName.substr(last_slash_position+1,
+						     last_dot_position-last_slash_position-1)+".root";
+  std::cout<<KBLU<<"fluxFileName: "<<RST<<recoFileName<<std::endl;
+  myDotFinder.openOutputStream(fluxFileName);
+  */
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -561,4 +567,33 @@ void HistoManager::resetEventRateGraph(){
  if(grEventRate){
    grEventRate->Set(0);
   }
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+// Dot-like events usful for neutron flux monitoring
+/////////////////////////////////////////////////////////
+void HistoManager::initializeDotFinder(unsigned int hitThr,
+				       //				       unsigned int maxStripsPerDir,
+				       //				       unsigned int maxTimecellsPerDir,
+				       unsigned int totalChargeThr,
+				       double matchRadiusInMM,
+				       const std::string & fileName) {
+  myDotFinder.openOutputStream(fileName);
+  myDotFinder.setCuts(hitThr, /* maxStripsPerDir, maxTimecellsPerDir,*/ totalChargeThr, matchRadiusInMM);
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+// Dot-like events usful for neutron flux monitoring
+/////////////////////////////////////////////////////////
+void HistoManager::runDotFinder() {
+  myDotFinder.setEvent(myEvent);
+  myDotFinder.reconstruct();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+// Dot-like events usful for neutron flux monitoring
+/////////////////////////////////////////////////////////
+void HistoManager::finalizeDotFinder() {
+  myDotFinder.fillOutputStream();
+  myDotFinder.closeOutputStream();
 }

@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
     myEventSource = std::make_shared<EventSourceROOT>();
     myEventSource->loadGeometry(geometryFileName);
     myEventSource->loadDataFile(dataFileName);
-    std::cout<<"File with "<<myEventSource->numberOfEntries()<<" loaded."<<std::endl;
+    std::cout<<"File with "<<myEventSource->numberOfEntries()<<" frames loaded."<<std::endl;
   }
   else{
     std::cout<<"Wrong input file: "<<dataFileName<<std::endl;
