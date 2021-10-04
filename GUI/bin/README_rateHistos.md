@@ -2,7 +2,7 @@
 
 ## Description
 
-The "dumpRateHistos" executable processes a single GRAW file and finds dot-like evvents according to specified cuts.
+The "dumpRateHistos" executable processes a single GRAW file and finds dot-like events according to specified cuts.
 It prepares several histograms that are useful to estimate event rate, dead time and distribution of dot-like events on the readout plane:  
 - time difference between events (all events, dot eventts)
 - distribution of dots on XY plane.
