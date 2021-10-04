@@ -40,7 +40,7 @@ where available options are:
 --outputDir    [NEW_OUTPUT_DIRECTORY]       default=./
 
 ```
-A new files "results_<timestamp>.list" 
+A new ROOT file with merged jobs will be called "results_YYYYDDMM_hhmmss.root" and the list of all ROOT files used to produce this merged file will be stored in "results_YYYYMMDD_hhmmss.list".
 
 In this example, the script will process all GRAW files listed in "/tmp/listfile" using default hit criteria and then merge all resulting ROOT files using up to parallel 8 proceses at the same time.
 A nice-looking PDF plot from combined ROOT files can be created using "plot_results_dotrate.C" macro. 
