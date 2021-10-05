@@ -24,7 +24,7 @@ export outputPrefix=RateDot_
 export hitThr=50      # ADC units after pedestal subtraction
 export minCharge=200  # ADC units
 export maxRadius=25.0 # [mm]
-export binDir=../bin
+export binDir=$( dirname $0 )/../../bin
 export geometryFile=./geometry_ELITPC_80mbar_12.5MHz.dat
 export fileList=
 export dataFile=
@@ -188,7 +188,7 @@ batchjob() {
 #
 # Process single job or multi job mode:
 #
-if [ $njobs -eq 1 ]
+if [ $mode -eq 1 ]
 then
     batchjob 1 ${dataFile}
 else
