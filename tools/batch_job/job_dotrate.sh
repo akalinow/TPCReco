@@ -192,7 +192,8 @@ if [ $njobs -eq 1 ]
 then
     batchjob 1 ${dataFile}
 else
-    cat -n "${fileList}" | head -32 | xargs -n 2 | xargs -P ${ncpu} -I @ bash -c "$(declare -f batchjob); echo @ ; batchjob @"
+    cat -n "${fileList}" | xargs -n 2 | xargs -P ${ncpu} -I @ bash -c "$(declare -f batchjob); echo @ ; batchjob @"
+#   cat -n "${fileList}" | head -32 | xargs -n 2 | xargs -P ${ncpu} -I @ bash -c "$(declare -f batchjob); echo @ ; batchjob @"
 fi
 #
 # Merge results of all jobs using ROTT's hadd executable

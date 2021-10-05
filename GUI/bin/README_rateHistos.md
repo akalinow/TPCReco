@@ -11,7 +11,7 @@ It prepares several histograms that are useful to estimate event rate, dead time
 
 ```
 cd build/resources
-../bin/dumpRateHistos <GRAW_data_file> <hit_threshold [ADC units]> <minimal_charge [ADC units]> <maximal_radius [mm]> <geometry_file> <ROOT_output_file>
+../bin/dumpRateHistos <input_file.graw> <hit_threshold> <total_charge_threshold> <matching_R_in_mm> <geometry_file.dat> <result_file.root>
 ```
 
 For example:
@@ -25,7 +25,7 @@ For example:
 In roder to process multiple files GRAW files correspoinding to same TPC geometry the following BASH script can be used:
 ```
 cd build/resources
-./job_dotrate.sh --optionName value [--optionName value [--optionName value]]
+../tools/batch_job/job_dotrate.sh --optionName value [--optionName value [--optionName value]]
 ```
 where available options are:
 ```
@@ -46,7 +46,7 @@ In this example, the script will process all GRAW files listed in "/tmp/listfile
 A nice-looking PDF plot from combined ROOT files can be created using "plot_results_dotrate.C" macro. 
 ```
 cd build/resources
-time ./job_dotrate.sh --fileList /tmp/listoffiles --maxcpu 8 --geometryFile ./geometry_ELITPC_80mbar_12.5MHz.dat --outputDir /tmp/newResultDir
-root -q -b 'plot_results_dotrate.C('/tmp/newResultDir/results_YYYYMMDD_HHMMSS.root")'
+time ../tools/batch_job/job_dotrate.sh --fileList /tmp/listoffiles --maxcpu 8 --geometryFile ./geometry_ELITPC_80mbar_12.5MHz.dat --outputDir /tmp/newResultDir
+root -q -b '../tools/batch_job/plot_results_dotrate.C('/tmp/newResultDir/results_YYYYMMDD_HHMMSS.root")'
 
 ```

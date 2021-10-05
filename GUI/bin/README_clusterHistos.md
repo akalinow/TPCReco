@@ -2,7 +2,7 @@
 
 ## Description
 
-The "dumpClusterHistos" executable extracts single event from the GRAW file and performs clusterization of the hits.
+The "dumpClusterHistos" executable extracts single event from the GRAW file and performs clusterization of hits.
 The resulting histograms are written to the ROOT file of choice.
 Use correct geometry_XXX.dat file for a given TPC detector (ELITPC, mini-TPC).
 
@@ -10,7 +10,7 @@ Use correct geometry_XXX.dat file for a given TPC detector (ELITPC, mini-TPC).
 
 ```
 cd build/resources
-../bin/dumpClusterHistos <GRAW_data_file> <frame_number_within_file> <geometry_file> <ROOT_output_file>
+../bin/dumpClusterHistos <input_file.graw> <file_entry_number> <geometry_file.dat> <result_file.root>
 ```
 
 Example to process frame no.100 (event id 25) for ELITPC raw-data file:

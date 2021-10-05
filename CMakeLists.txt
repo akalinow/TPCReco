@@ -55,6 +55,11 @@ if(NOT IS_DIRECTORY ${CMAKE_INSTALL_PREFIX}/resources) # needs full path!
 else()
   MESSAGE( STATUS "RESOURCES dir already exists in the installation dir" )
 endif()
+if(NOT IS_DIRECTORY ${CMAKE_INSTALL_PREFIX}/tools) # needs full path!
+  install(DIRECTORY tools DESTINATION ${CMAKE_INSTALL_PREFIX})
+else()
+  MESSAGE( STATUS "AUXILIARY TOOLS dir already exists in the installation dir" )
+endif()
 
 set(CMAKE_CXX_FLAGS "${ROOT_CXX_FLAGS} -Wall -Werror -O3 -std=c++17 -pthread")
 #Set RPATH to install dir, so user do not have to set the LD_LIBRARY_PATH
