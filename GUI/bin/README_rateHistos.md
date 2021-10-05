@@ -36,7 +36,7 @@ where available options are:
 --maxRadius    [number>0]                   default=25.0 mm
 --geometryFile [ALTERNATIVE_GEOMETRY_FILE]  default=./geometry_ELITPC_80mbar_12.5MHz.dat
 --binDir       [ALTERNATIVE_EXEC_DIRECTORY] default=../bin
---ncpu         [number>0]                   default=
+--ncpu         [number>0]                   default=1
 --outputDir    [NEW_OUTPUT_DIRECTORY]       default=./
 
 ```
@@ -46,7 +46,7 @@ In this example, the script will process all GRAW files listed in "/tmp/listfile
 A nice-looking PDF plot from combined ROOT files can be created using "plot_results_dotrate.C" macro. 
 ```
 cd build/resources
-time ../tools/batch_job/job_dotrate.sh --fileList /tmp/listoffiles --maxcpu 8 --geometryFile ./geometry_ELITPC_80mbar_12.5MHz.dat --outputDir /tmp/newResultDir
+time ../tools/batch_job/job_dotrate.sh --fileList /tmp/listoffiles --ncpu 8 --geometryFile ./geometry_ELITPC_80mbar_12.5MHz.dat --outputDir /tmp/newResultDir
 root -q -b '../tools/batch_job/plot_results_dotrate.C('/tmp/newResultDir/results_YYYYMMDD_HHMMSS.root")'
 
 ```
