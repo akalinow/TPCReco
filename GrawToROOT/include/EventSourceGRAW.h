@@ -46,13 +46,14 @@ private:
   void fillEventFromFrame(GET::GDataFrame & aGrawFrame);
   void checkEntryForFragments(unsigned int iEntry);
   void findStartingIndex(unsigned long int size);
+  std::string getNextFilePath();
 
   unsigned int GRAW_EVENT_FRAGMENTS;
   PedestalCalculator myPedestalCalculator;
   //Graw2DataFrame myFrameLoader;
   GET::GDataFrame myDataFrame;
   std::shared_ptr<TGrawFile> myFile;
-  std::string myFilePath;
+  std::string myFilePath, myNextFilePath;
   std::map<unsigned int, std::set<unsigned int> > myFramesMap;
   std::map<unsigned int, std::set<unsigned int> > myASADMap;
   std::set<unsigned int> myReadEntriesSet;
@@ -62,7 +63,7 @@ private:
  // int maxSignalCell;
   bool removePedestal{true};
   unsigned long int startingEventIndex = 0;
-  int frameLoadRange = 100;
+  unsigned int frameLoadRange = 100;
 
 };
 #endif
