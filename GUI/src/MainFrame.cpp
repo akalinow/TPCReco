@@ -108,7 +108,6 @@ void MainFrame::InitializeEventSource(){
     exit(1);
     return;
   }
-  
   FileStat_t stat;
   if(gSystem->GetPathInfo(dataFileName.c_str(), stat) != 0){
     std::cerr<<KRED<<"Invalid data path. No such file or directory: "<<RST<<dataFileName<<std::endl;
@@ -124,6 +123,7 @@ void MainFrame::InitializeEventSource(){
   else if( ( (stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG) && dataFileName.find(".graw")!=std::string::npos){
     myWorkMode = M_OFFLINE_GRAW_MODE;
     myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
+    dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(myConfig.get("frameLoadRange",100));
   }
   else if( (stat.fMode & EFileModeMask::kS_IFDIR) == EFileModeMask::kS_IFDIR) {
     myWorkMode = M_ONLINE_MODE;
@@ -133,12 +133,16 @@ void MainFrame::InitializeEventSource(){
       int updateInterval = myConfig.get<int>("updateInterval");
       myDirWatch.setUpdateInterval(updateInterval);
     }
+    dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(myConfig.get("frameLoadRange",10));
     myDirWatch.Connect("Message(const char *)", "MainFrame", this, "ProcessMessage(const char *)");
   }
   if(myConfig.find("removePedestal")!=myConfig.not_found() && myEventSource.get()){
        bool removePedestal = myConfig.get<bool>("removePedestal");
        EventSourceGRAW* aGrawEventSrc = dynamic_cast<EventSourceGRAW*>(myEventSource.get());
        if(aGrawEventSrc) aGrawEventSrc->setRemovePedestal(removePedestal);
+  }
+  if(myConfig.find("pedestal")!=myConfig.not_found() && myEventSource.get()){
+    dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(myConfig.find("pedestal")->second);
   }
 #endif
   else if(!myEventSource){
@@ -232,6 +236,12 @@ int MainFrame::AddButtons(int attach){
 					      "Close the application"};
   std::vector<unsigned int> button_id = {M_NEXT_EVENT, M_PREVIOUS_EVENT,  M_RESET_EVENT, M_FILE_EXIT};
 
+  if(myWorkMode == M_ONLINE_MODE){
+    button_names.insert(--button_names.end(),"Reset rate");
+    button_tooltips.insert(--button_tooltips.end(),"Clear rate graph");
+    button_id.insert(--button_id.end(),M_RESET_RATE);
+  }
+
   ULong_t aColor = TColor::RGB2Pixel(195,195,250);
 
   TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
@@ -256,12 +266,12 @@ int MainFrame::AddButtons(int attach){
     ++attach_bottom;
    }
 
-  std::vector<std::string> checkbox_names = {"Set Z logscale", "Set auto zoom", "Set reco mode"};
+  std::vector<std::string> checkbox_names = {"Set Z logscale", "Set auto zoom", "Set reco mode", "Display rate"};
   std::vector<std::string> checkbox_tooltips = {"Enables the logscale on Z axis",
 						"Enables automatic zoom in on region with deposits",
-						"Converts data to SI units and enables segment creation and fit"};
-  std::vector<std::string> checkbox_config = {"zLogScale", "autoZoom", "recoMode"};
-  std::vector<unsigned int> checkbox_id = {M_TOGGLE_LOGSCALE, M_TOGGLE_AUTOZOOM, M_TOGGLE_RECOMODE};
+						"Converts data to SI units and enables segment creation and fit", "Display rate plot"};
+  std::vector<std::string> checkbox_config = {"zLogScale", "autoZoom", "recoMode", "rate"};
+  std::vector<unsigned int> checkbox_id = {M_TOGGLE_LOGSCALE, M_TOGGLE_AUTOZOOM, M_TOGGLE_RECOMODE, M_TOGGLE_RATE};
   
   auto displayConfig=myConfig.find("display");
   for (unsigned int iCheckbox = 0; iCheckbox < checkbox_names.size(); ++iCheckbox) {
@@ -313,7 +323,7 @@ int MainFrame::AddGoToEventDialog(int attach){
 /////////////////////////////////////////////////////////
 int MainFrame::AddGoToFileEntryDialog(int attach){
 
-  fGframe = new TGGroupFrame(this, "Go to file entry.");
+  fGframe = new TGGroupFrame(this, "Go to frame.");
   fFileEntryEntry = new TGNumberEntryField(fGframe, M_GOTO_ENTRY, 0,
 					 TGNumberFormat::kNESInteger,
 					 TGNumberFormat::kNEANonNegative,
@@ -402,8 +412,10 @@ int MainFrame::AddMarkersDialog(int attach){
   UInt_t attach_bottom=attach_top+nRows*0.2;
 
   fMarkersManager = new MarkersManager(fFrame, this);
+  fMarkersManager->setGeometry(myEventSource->getGeometry()); // Added by MC - 19 Aug 2021
   fMarkersManager->Connect("sendSegmentsData(std::vector<double> *)","MainFrame",
 			   this,"drawRecoFromMarkers(std::vector<double> *)");
+
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right,
 						    attach_top, attach_bottom,
 						    kLHintsExpandX|kLHintsExpandY |
@@ -528,8 +540,12 @@ void MainFrame::Update(){
   fMarkersManager->reset();
   fMarkersManager->setEnabled(isRecoModeOn);
 
-  if(!isRecoModeOn) drawRawHistos();
-  else drawRecoHistos();
+  if(!isRecoModeOn){
+    drawRawHistos();
+  }
+  else {
+    drawRecoHistos();
+  }
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -541,10 +557,25 @@ void MainFrame::drawRawHistos(){
     fCanvas->Update();
   }
   fCanvas->cd(4);
-  myHistoManager.getEventRateGraph()->Draw("AP");
-  //myHistoManager.getRawTimeProjection()->DrawClone("hist");
+  if(isRateDisplayOn){
+    myHistoManager.getEventRateGraph()->Draw("AP");
+  } else{
+    myHistoManager.getRawTimeProjection()->DrawClone("hist");
+  }
   fCanvas->Update();
 }
+
+
+void MainFrame::drawTechnicalHistos(){
+  auto cobo_id=0;
+  for( int aget_id = 0; aget_id < 3 ; ++aget_id ){ /// magic number, should be geometry->GetAgetNumber()
+    fCanvas->cd(aget_id+1);
+    myHistoManager.getChannels(cobo_id, aget_id)->DrawClone("colz");
+    fCanvas->Update();
+  }  
+  fCanvas->Update();
+}
+
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MainFrame::drawRecoHistos(){
@@ -688,10 +719,16 @@ void MainFrame::HandleMenu(Int_t id){
   switch (id) {
   case M_FILE_OPEN:
     {
+      // initialising with directory of previously opened file
+      // this is very naive and risky implementation of extracting dir from path
+      // but we don't have std::filesystem c++17 and ROOT 6.08 doesn't have TSystem::GetDirName
+      // this will cause problem if we add changing directories in ONLINE mode 
+      auto currentFilePath=myEventSource->getCurrentPath();
+      auto dirPath=currentFilePath.substr(0, currentFilePath.find_last_of('/'));
       TGFileInfo fi;
       fi.fFileTypes = filetypes;
-      fi.fIniDir    = StrDup(".");
-      //use std::filesystem::current_path(); when compiled with newer gcc
+      fi.fIniDir    = StrDup(dirPath.c_str());
+      //
       std::string oldDirectory = gSystem->GetWorkingDirectory();
       new TGFileDialog(gClient->GetRoot(), this, kFDOpen, &fi);
       std::string fileName;
@@ -738,6 +775,12 @@ void MainFrame::HandleMenu(Int_t id){
       Update();
     }
     break;
+    case M_RESET_RATE:
+    {
+      myHistoManager.resetEventRateGraph();
+      Update();
+    }
+    break;
   case M_TOGGLE_AUTOZOOM:
     {
       myHistoManager.toggleAutozoom();
@@ -756,6 +799,13 @@ void MainFrame::HandleMenu(Int_t id){
   case M_TOGGLE_RECOMODE:
     {
       isRecoModeOn=!isRecoModeOn;
+      ClearCanvas();
+      Update();
+    }
+    break;
+    case M_TOGGLE_RATE:
+    {
+      isRateDisplayOn=!isRateDisplayOn;
       ClearCanvas();
       Update();
     }

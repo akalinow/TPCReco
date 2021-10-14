@@ -1,5 +1,7 @@
 #include <cstdlib>
 #include <iostream>
+#include <ostream>
+#include <iomanip>
 #include <iterator>
 
 #include "EventSourceGRAW.h"
@@ -16,8 +18,8 @@ EventSourceGRAW::EventSourceGRAW(const std::string & geometryFileName) {
   std::string formatsFilePath = "./CoboFormats.xcfg";
   myFrameLoader.initialize(formatsFilePath);
  
-  minSignalCell = 51;//FIXME read from config
-  maxSignalCell = 500;//FIXME read from config
+  //minSignalCell = 2;//FIXME read from config
+ // maxSignalCell = 500;//FIXME read from config
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -44,9 +46,9 @@ std::shared_ptr<EventTPC> EventSourceGRAW::getPreviousEvent(){
 
   unsigned int currentEventId = myCurrentEvent->GetEventId();
   auto it = myFramesMap.find(currentEventId);
-  unsigned int firstEventFrame = *it->second.begin();
-  if(firstEventFrame>0) --firstEventFrame; 
-  loadFileEntry(firstEventFrame);
+  unsigned int startingEventIndexFrame = *it->second.begin();
+  if(startingEventIndexFrame>0) --startingEventIndexFrame; 
+  loadFileEntry(startingEventIndexFrame);
   return myCurrentEvent;  
 }
 /////////////////////////////////////////////////////////
@@ -55,13 +57,20 @@ void EventSourceGRAW::loadDataFile(const std::string & fileName){
 
   EventSourceBase::loadDataFile(fileName);
 
-  myFilePath = fileName;
   myFile =  std::make_shared<TGrawFile>(fileName.c_str());
   if(!myFile){
     std::cerr<<KRED<<"Can not open file: "<<fileName<<"!"<<RST<<std::endl;
     exit(1);
   }
   nEntries = myFile->GetGrawFramesNumber();
+  
+  const int firstEventSize=10;
+  if(fileName!=myFilePath || nEntries<firstEventSize){
+    findStartingIndex(firstEventSize);
+  }
+
+  myFilePath = fileName;
+  myNextFilePath = getNextFilePath();
   myFramesMap.clear();
   myASADMap.clear();
   myReadEntriesSet.clear();
@@ -77,23 +86,30 @@ void EventSourceGRAW::loadDataFile(const std::string & fileName){
 	     <<std::endl;
   }
   std::cout<<KBLU<<"End of file"<<RST<<std::endl;  
-  */
+  */ 
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 bool EventSourceGRAW::loadGrawFrame(unsigned int iEntry, bool readFullEvent){
 
-  if(iEntry>=nEntries) iEntry = nEntries-1;
-  if(iEntry<0) iEntry = 0;
+  std::string tmpFilePath = myFilePath;
+  if(iEntry>=nEntries){
+    tmpFilePath = myNextFilePath;
+    iEntry -= nEntries;
+  }
+  //TESK AK if(iEntry>=nEntries) iEntry = nEntries-1;
   std::cout.setstate(std::ios_base::failbit);
-  bool dataFrameRead = myFrameLoader.getGrawFrame(myFilePath, iEntry+1, myDataFrame, readFullEvent);///FIXME getGrawFrame counts frames from 1 (WRRR!)
-  //bool dataFrameRead = GET::getGrawFrame(myFilePath, iEntry+1, myDataFrame);///FIXME getGrawFrame counts frames from 1 (WRRR!)
+  bool dataFrameRead = GET::getGrawFrame(tmpFilePath, iEntry+1, myDataFrame);///FIXME getGrawFrame counts frames from 1 (WRRR!)
   std::cout.clear();
   
   if(!dataFrameRead){
-    std::cerr <<KRED<< "ERROR: cannot read file entry: " <<RST<<iEntry << std::endl;
+    std::cerr <<KRED<<std::endl<<"ERROR: cannot read file entry: " <<RST<<iEntry<<std::endl
+	      <<KRED<<"from file: "<<std::endl
+	      <<RST<<tmpFilePath
+	      << std::endl;
     std::cerr <<KRED
 	      <<"Please check if you are running the application from the resources directory."
+	      <<std::endl<<"or if the data file is missing."
 	      <<RST
 	      <<std::endl;
     exit(1);
@@ -115,8 +131,8 @@ void EventSourceGRAW::loadEventId(unsigned long int eventId){
     unsigned int iEntry =  *it->second.rbegin();
     findEventFragments(eventId, iEntry);
   }
-  else if(!isFullFileScanned && it==myFramesMap.end()){
-    findEventFragments(eventId,0);
+  else if(!isFullFileScanned && it==myFramesMap.end() ){
+    findEventFragments(eventId, GRAW_EVENT_FRAGMENTS *( eventId- startingEventIndex));
   }
   collectEventFragments(eventId);
 
@@ -168,38 +184,45 @@ void EventSourceGRAW::findEventFragments(unsigned long int eventId, unsigned int
     nFragments = it->second.size();
   }
 
-  bool reachStartOfFile = false;
-  bool reachEndOfFile = false;
+  //bool reachStartOfFile = false;
+  //bool reachEndOfFile = false;
+  
+  unsigned int lowEndScanRange = std::max((unsigned int)0, iInitialEntry-frameLoadRange);
+  unsigned int highEndScanRange = std::min((unsigned int)nEntries, iInitialEntry+frameLoadRange);
 
-  unsigned int lowEndScanRange = std::max((unsigned int)0, iInitialEntry-100);
-  unsigned int highEndScanRange = std::min((unsigned int)nEntries, iInitialEntry+100);
-
-  //unsigned int lowEndScanRange = 0;
-  //unsigned int highEndScanRange = nEntries;
+  std::cout<<__FUNCTION__<<std::endl;
   
   for(unsigned int iEntry=iInitialEntry;
       iEntry>=lowEndScanRange && iEntry<nEntries && nFragments<GRAW_EVENT_FRAGMENTS;
       --iEntry){
     checkEntryForFragments(iEntry);
     nFragments =  myFramesMap[eventId].size();
-    reachStartOfFile = (iEntry==0);
-    std::cout<<"\r reading file entry: "<<iEntry
+    //reachStartOfFile = (iEntry==0);
+    std::cout<<"\r going backward and reading file entry: "<<iEntry
 	     <<" fragments found so far: "
 	     <<nFragments
 	     <<" expected: "<<GRAW_EVENT_FRAGMENTS;
   }
-  
   for(unsigned int iEntry=iInitialEntry;iEntry<highEndScanRange && nFragments<GRAW_EVENT_FRAGMENTS;++iEntry){
     checkEntryForFragments(iEntry);
     nFragments =  myFramesMap[eventId].size();
-    reachEndOfFile = (iEntry==nEntries);
-    std::cout<<"\r reading file entry: "<<iEntry
+    //reachEndOfFile = (iEntry==nEntries);
+    std::cout<<"\r going forward and reading file entry: "<<iEntry
 	     <<" fragments found so far: "
 	     <<nFragments
 	     <<" expected: "<<GRAW_EVENT_FRAGMENTS;        
   }
+  for(unsigned int iEntry=0;iEntry<frameLoadRange && nFragments<GRAW_EVENT_FRAGMENTS;++iEntry){
+    checkEntryForFragments(iEntry+nEntries);
+    nFragments =  myFramesMap[eventId].size();
+    std::cout<<"\r going to next run file and reading file entry: "<<iEntry
+	     <<" fragments found so far: "
+	     <<nFragments
+	     <<" expected: "<<GRAW_EVENT_FRAGMENTS;        
+  }
+  
   std::cout<<std::endl;
-  if(reachStartOfFile && reachEndOfFile) isFullFileScanned = true;
+  if(myFramesMap.size()>=nEntries) isFullFileScanned = true;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -234,9 +257,10 @@ void EventSourceGRAW::collectEventFragments(unsigned int eventId){
 	       <<RST<<std::endl;
       return;
     }
-    std::cout<<KBLU<<"Found a frame for eventId: "<<RST<<eventId
-	     <<KBLU<<" in file entry: "<<RST<<aFragment<<RST
-	     <<KBLU<<" for  ASAD: "<<RST<<ASAD_idx<<RST<<std::endl;
+    std::cout<<KBLU<<"Found a frame for eventId: "<<RST<<eventId;
+    if(aFragment<nEntries) std::cout<<KBLU<<" in file entry: "<<RST<<aFragment<<RST;
+    else std::cout<<KBLU<<" in next file entry: "<<RST<<aFragment-nEntries<<RST;
+    std::cout<<KBLU<<" for  ASAD: "<<RST<<ASAD_idx<<RST<<std::endl;
     fillEventFromFrame(myDataFrame);
   }
 }
@@ -268,7 +292,7 @@ void EventSourceGRAW::fillEventFromFrame(GET::GDataFrame & aGrawFrame){
 	GET::GDataSample* sample = (GET::GDataSample*) channel->fSamples.At(i);
 	// skip cells outside signal time-window
 	Int_t icell = sample->fBuckIdx;
-	if(icell<2 || icell>509 || icell<minSignalCell || icell>maxSignalCell) continue;
+	if(icell<2 || icell>509 || icell<myPedestalCalculator.GetMinSignalCell() || icell>myPedestalCalculator.GetMaxSignalCell()) continue;
 	    
 	Double_t rawVal  = sample->fValue;
 	Double_t corrVal = rawVal;
@@ -285,6 +309,52 @@ void EventSourceGRAW::fillEventFromFrame(GET::GDataFrame & aGrawFrame){
       }
     }
   }
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void EventSourceGRAW::findStartingIndex(unsigned long int size){
+  if(nEntries==0){
+    startingEventIndex=0;
+  } else {
+    auto preloadSize=std::min(nEntries,size);
+    startingEventIndex=std::numeric_limits<UInt_t>::max();
+    for(unsigned long int i=0; i<preloadSize; ++i){
+      myFile->GetGrawFrame(myDataFrame,i);
+      startingEventIndex=std::min(startingEventIndex, static_cast<unsigned long int>(myDataFrame.fHeader.fEventIdx));
+    }
+  }
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void EventSourceGRAW::configurePedestal(const boost::property_tree::ptree &config){
+  auto parser=[this, &config](std::string &&parameter, void (PedestalCalculator::*setter)(int)){
+    if(config.find(parameter)!=config.not_found()){
+      (this->myPedestalCalculator.*setter)(config.get<int>(parameter));
+    }
+  };
+  parser("minPedestalCell", &PedestalCalculator::SetMinPedestalCell);
+  parser("maxPedestalCell", &PedestalCalculator::SetMaxPedestalCell);
+  parser("minSignalCell", &PedestalCalculator::SetMinSignalCell);
+  parser("maxSignalCell", &PedestalCalculator::SetMaxSignalCell);
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::string EventSourceGRAW::getNextFilePath(){
+
+  std::string token = "_";
+  int index = myFilePath.rfind(token);
+  int fieldLength = 4;
+  std::string fileIndex = myFilePath.substr(index+token.size(), fieldLength);
+  int nextFileIndex = std::stoi(fileIndex) + 1;  
+  ///
+  token = "_";
+  index = myFilePath.rfind(token);
+  std::string fileNamePrefix = myFilePath.substr(0,index+token.size());
+  ///
+  std::ostringstream ostr;
+  ostr<<fileNamePrefix<<std::setfill('0') <<std::setw(4)<<nextFileIndex<<".graw";
+  std::string nextFilePath = ostr.str();
+  return nextFilePath;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

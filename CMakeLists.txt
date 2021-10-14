@@ -55,6 +55,11 @@ if(NOT IS_DIRECTORY ${CMAKE_INSTALL_PREFIX}/resources) # needs full path!
 else()
   MESSAGE( STATUS "RESOURCES dir already exists in the installation dir" )
 endif()
+if(NOT IS_DIRECTORY ${CMAKE_INSTALL_PREFIX}/tools) # needs full path!
+  install(DIRECTORY tools DESTINATION ${CMAKE_INSTALL_PREFIX})
+else()
+  MESSAGE( STATUS "AUXILIARY TOOLS dir already exists in the installation dir" )
+endif()
 
 set(CMAKE_CXX_FLAGS "${ROOT_CXX_FLAGS} -Wall -Werror -O3 -std=c++17 -pthread")
 #Set RPATH to install dir, so user do not have to set the LD_LIBRARY_PATH
@@ -68,8 +73,10 @@ add_subdirectory(Reconstruction)
 add_subdirectory(GUI)
 add_subdirectory(Analysis)
 add_subdirectory(ToyMC)
-add_subdirectory(TrackGenerator)
-
+option(BUILD_MC "build MC tools" OFF)
+if(BUILD_MC)
+  add_subdirectory(TrackGenerator)
+endif()
 # Now comes everything we need, to create a package
 # there are a lot more variables you can set, and some
 # you need to set for some package types, but we want to

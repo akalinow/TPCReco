@@ -85,6 +85,7 @@ void MarkersManager::initialize(){
   firstMarker = 0;
   acceptPoints = false;
   setEnabled(false);
+  fGeometryTPC = NULL;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -304,10 +305,65 @@ int MarkersManager::findMissingMarkerDir(){
 /////////////////////////////////////////////////////////
 double MarkersManager::getMissingYCoordinate(unsigned int missingMarkerDir){
 
+  bool err_flag=false;
+  assert(fGeometryTPC); // DEBUG - TPC geometry should be defined at this point
+
+  // find crossing point of 2 lines defined by 2 UVW coordinates (from 2 TMarkers)
+  int dir[2] = { -1, -1 };
+  double pos[2];
+  int counter=0;
+  for(unsigned int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+    TMarker *item = fMarkersContainer.at(strip_dir);
+    if(!item || strip_dir==missingMarkerDir) continue;
+    dir[counter] = strip_dir;    // UVW direction index
+    pos[counter] = item->GetY(); // UVW coordinate [mm]
+    counter++;
+  }
+  if(counter!=2) {
+    /////// DEBUG
+    std::cout << "getMissingYCoordinate: 3rd_dir=" << missingMarkerDir << ": ERROR: Number of TMarkers <2" << std::endl;
+    /////// DEBUG
+    err_flag=true;
+  }
+  TVector2 point;
+
+  if(!err_flag && fGeometryTPC->GetUVWCrossPointInMM(dir[0], pos[0], dir[1], pos[1], point)) {
+    /////// DEBUG
+    //    std::cout << "getMissingYCoordinate: 3rd_dir=" << missingMarkerDir << ":"
+    //	      << " 1st_dir=" << dir[0] << ", 1st_coord[mm]=" << pos[0]
+    //	      << ", 2nd_dir=" << dir[1] << ", 2nd_coord[mm]=" << pos[1]
+    //	      << " Cartesian intersection point (X[mm],Y[mm])=("
+    //	      << point.X() << ", " << point.Y() << ")" << std::endl;
+    /////// DEBUG
+  } else {
+    /////// DEBUG
+    std::cout << "getMissingYCoordinate: 3rd_dir=" << missingMarkerDir << ": ERROR: Cannot calculate intersection point from 2 UVW coordinates" << std::endl;
+    /////// DEBUG
+    err_flag=true;
+  }
+
+  if(!err_flag) {
+    double strip_posUVW = fGeometryTPC->Cartesian2posUVW(point, missingMarkerDir, err_flag); // in [mm]
+    if(!err_flag) {
+      /////// DEBUG
+      //      std::cout << "getMissingYCoordinate: 3rd_dir=" << missingMarkerDir << ": 3rd_coord[mm]=" << strip_posUVW << std::endl;
+      /////// DEBUG
+      return strip_posUVW;
+    }
+  }
+
+  /////// DEBUG
+  std::cout << "getMissingYCoordinate: 3rd_dir=" << missingMarkerDir << ": ERROR: Cannot calculate 3rd UVW coordinate" << std::endl;
+  /////// DEBUG
+  return 0;
+}
+/*
+double MarkersManager::getMissingYCoordinate(unsigned int missingMarkerDir){
+
   ///Not implemented yet.
   //#ANGLES: 90.0 -30.0 30.0
   const std::vector<double> phiPitchDirection = {M_PI, -M_PI/6.0 + M_PI/2.0, M_PI/6.0 - M_PI/2.0};
-
+  
   double x = 0.0, y = 0.0;
   double xDenominator = 0.0, yDenominator = 0.0;
   int sign = 1;
@@ -331,6 +387,7 @@ double MarkersManager::getMissingYCoordinate(unsigned int missingMarkerDir){
     y*sin(phiPitchDirection[missingMarkerDir]);
   return strip_value; 
 }
+*/
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MarkersManager::HandleMarkerPosition(Int_t event, Int_t x, Int_t y, TObject *sel){
@@ -421,6 +478,11 @@ bool MarkersManager::isLastSegmentComplete(int strip_dir){
   return !aSegmentsContainer.size() ||
     (std::abs(aSegmentsContainer.back().GetX1() - aSegmentsContainer.back().GetX2())>1E-3 &&
      std::abs(aSegmentsContainer.back().GetY1() - aSegmentsContainer.back().GetY2())>1E-3);
+}
+////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////// Added by MC - 19 Aug 2021
+void MarkersManager::setGeometry(std::shared_ptr<GeometryTPC>geo){
+    fGeometryTPC=geo;
 }
 ////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
