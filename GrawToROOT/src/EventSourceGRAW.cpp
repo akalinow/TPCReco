@@ -15,8 +15,8 @@ EventSourceGRAW::EventSourceGRAW(const std::string & geometryFileName) {
   GRAW_EVENT_FRAGMENTS = myGeometryPtr->GetAsadNboards();
   myPedestalCalculator.SetGeometryAndInitialize(myGeometryPtr);
 
-  //std::string formatsFilePath = "./CoboFormats.xcfg";
-  //TEST myFrameLoader.initialize(formatsFilePath);
+  std::string formatsFilePath = "./CoboFormats.xcfg";
+  myFrameLoader.initialize(formatsFilePath);
  
   //minSignalCell = 2;//FIXME read from config
  // maxSignalCell = 500;//FIXME read from config
