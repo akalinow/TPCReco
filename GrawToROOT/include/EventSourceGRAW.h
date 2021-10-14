@@ -8,6 +8,8 @@
 #include "get/GDataFrame.h"
 #include "get/TGrawFile.h"
 
+#include "Graw2DataFrame.h"
+
 #include "EventSourceBase.h"
 #include "PedestalCalculator.h"
 #include <boost/property_tree/json_parser.hpp>
