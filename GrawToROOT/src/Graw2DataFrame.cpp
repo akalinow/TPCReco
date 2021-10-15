@@ -7,10 +7,7 @@
 #include <mfm/Exception.h>
 #include <utl/Logging.h>
 #include "get/GDataFrame.h"
-#include "get/GDataChannel.h"
-#include "get/GDataSample.h"
-#include "get/CoBoEvent.h"
-#include "get/Channel.h"
+#include "get/graw2dataframe.h"
 
 #include <cerrno>
 #include <cstring>
@@ -59,11 +56,28 @@ bool Graw2DataFrame::getGrawFrame(const std::string & filePath,
 				  size_t frameOffset, GET::GDataFrame & dataFrame,
 				  bool readFullEvent){
 
+  if(readFullEvent) return getGrawFrameFull(filePath, frameOffset, dataFrame);
+  else return getGrawFrameHeader(filePath, frameOffset, dataFrame);
+  
+  return false;
+}
+////////////////////////////////////
+////////////////////////////////////
+bool Graw2DataFrame::getGrawFrameFull(const std::string & filePath,
+				      size_t frameOffset, GET::GDataFrame & dataFrame){
+  
+  return GET::getGrawFrame(filePath, frameOffset, dataFrame);
+  
+}
+////////////////////////////////////
+////////////////////////////////////
+bool Graw2DataFrame::getGrawFrameHeader(const std::string & filePath,
+					size_t frameOffset, GET::GDataFrame & dataFrame){
+
   size_t frameCount = (frameOffset>0 ? frameOffset : 0 );
   bool accepted=false;
   if(!loadFile(filePath)) return accepted;
   frameCount -= lastFrameRead;
-  std::cout<<" frameCount: "<<frameCount<<std::endl;
     		  
   // Loop over frames in input file
   try {
@@ -107,69 +121,17 @@ bool Graw2DataFrame::getGrawFrame(const std::string & filePath,
     } while(true);
 
     if(accepted) {
-      // Decode frame
-      get::CoBoEvent event;
-      event.fromFrame(*frame.get());
       // Reset ROOT frame
       dataFrame.Clear();
       // Get meta-data
       dataFrame.fHeader.fRevision = frame->header().revision();
       dataFrame.fHeader.fDataSource = frame->header().dataSource();
-      dataFrame.fHeader.fEventTime = event.eventTime();
-      dataFrame.fHeader.fEventIdx = event.eventIdx();
-      dataFrame.fHeader.fCoboIdx = event.coboIdx();
-      dataFrame.fHeader.fAsadIdx = event.asadIdx();
-      dataFrame.fHeader.fReadOffset = event.readOffset();
-      dataFrame.fHeader.fStatus = event.status();
-
-      if(!readFullEvent) return accepted;
-		    
-      for (size_t agetId=0; agetId < 4u; ++agetId)
-	{
-	  const mfm::DynamicBitset & pattern = event.hitPattern(agetId);
-	  for (size_t chanId=0; chanId < GET::GFrameHeader::MAX_CHANNELS; ++chanId)
-	    {
-	      dataFrame.fHeader.fHitPatterns[agetId].SetBit(chanId, pattern[chanId]);
-	    }
-	  dataFrame.fHeader.fMult[agetId] = event.multiplicity(agetId);
-	}
-      dataFrame.fHeader.fWindowOut = event.windowOut();
-      for (size_t agetId=0; agetId < 4u; ++agetId)
-	{
-	  dataFrame.fHeader.fLastCellIdx[agetId] = event.lastCell(agetId);
-	}
-		  
-      // Loop over items
-      const uint32_t maxAget = 4u;
-      const size_t maxChanPerAget = 68u;
-      for (size_t chanIdx=0; chanIdx < maxChanPerAget; ++chanIdx)
-	{
-	  for (size_t agetIdx=0; agetIdx < maxAget; ++agetIdx)
-	    {
-	      try
-		{
-		  // The const version of CoBoEvent::channel throws an exception for non-existing channels
-		  // while the non-const version creates the channel
-		  const get::CoBoEvent & constEvent = event;
-		  const get::Channel & channel = constEvent.channel(chanIdx, agetIdx);
-			      
-		  GET::GDataChannel* chan = dataFrame.FindChannel(agetIdx, chanIdx);
-			      
-		  const std::vector< uint16_t > & bucketIndexes = channel.buckIndexes();
-		  const std::vector< uint16_t > & values = channel.sampleValues();
-		  const size_t numBuckets = channel.sampleCount();
-		  for (size_t buckIdx=0; buckIdx < numBuckets; ++buckIdx)
-		    {
-		      GET::GDataSample* sample = dataFrame.AddSample();
-		      sample->Set(bucketIndexes[buckIdx], values[buckIdx]);
-		      chan->AddSample(sample);
-		    };
-		}
-	      catch (const get::CoBoEvent::ChannelNotFound &)
-		{
-		}
-	    }
-	}
+      dataFrame.fHeader.fEventTime = frame->headerField("eventTime").value<uint64_t>();
+      dataFrame.fHeader.fEventIdx = frame->headerField("eventIdx").value<uint32_t>();
+      dataFrame.fHeader.fCoboIdx = frame->headerField("coboIdx").value<uint8_t>();
+      dataFrame.fHeader.fAsadIdx = frame->headerField("asadIdx").value<uint8_t>();
+      dataFrame.fHeader.fReadOffset = frame->headerField("readOffset").value<uint16_t>();
+      dataFrame.fHeader.fStatus = frame->headerField("status").value<uint8_t>();
     }
   }
   catch (const std::exception & e)
@@ -201,8 +163,6 @@ bool Graw2DataFrame::loadFile(const std::string & filePath){
 ////////////////////////////////////
 ////////////////////////////////////
 
-////////////////////////////////////
-////////////////////////////////////
 
 
 

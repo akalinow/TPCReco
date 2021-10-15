@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
   Long64_t currentEventIdx=-1;
 
   ////// DEBUG
-  //  Long64_t counter=0;
+  //Long64_t counter=0;
   ////// DEBUG
 
   do {
@@ -89,7 +89,7 @@ int main(int argc, char *argv[]) {
     myEventSource->getNextEvent();
 
     ////// DEBUG
-    //    if(++counter==5) break;
+    //if(++counter==100) break;
     ////// DEBUG
   }
   while(currentEventIdx!=(Long64_t)myEventSource->currentEventNumber()); // myCurrentEvent->GetEventId());

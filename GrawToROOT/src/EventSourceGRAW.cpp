@@ -7,6 +7,8 @@
 #include "EventSourceGRAW.h"
 #include "colorText.h"
 
+
+#include "get/graw2dataframe.h"
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 EventSourceGRAW::EventSourceGRAW(const std::string & geometryFileName) {
@@ -97,9 +99,8 @@ bool EventSourceGRAW::loadGrawFrame(unsigned int iEntry, bool readFullEvent){
     tmpFilePath = myNextFilePath;
     iEntry -= nEntries;
   }
-  //TESK AK if(iEntry>=nEntries) iEntry = nEntries-1;
   std::cout.setstate(std::ios_base::failbit);
-  bool dataFrameRead = GET::getGrawFrame(tmpFilePath, iEntry+1, myDataFrame);///FIXME getGrawFrame counts frames from 1 (WRRR!)
+  bool dataFrameRead = myFrameLoader.getGrawFrame(tmpFilePath, iEntry+1, myDataFrame, readFullEvent);///FIXME getGrawFrame counts frames from 1 (WRRR!)
   std::cout.clear();
   
   if(!dataFrameRead){
@@ -190,8 +191,6 @@ void EventSourceGRAW::findEventFragments(unsigned long int eventId, unsigned int
   unsigned int lowEndScanRange = std::max((unsigned int)0, iInitialEntry-frameLoadRange);
   unsigned int highEndScanRange = std::min((unsigned int)nEntries, iInitialEntry+frameLoadRange);
 
-  std::cout<<__FUNCTION__<<std::endl;
-  
   for(unsigned int iEntry=iInitialEntry;
       iEntry>=lowEndScanRange && iEntry<nEntries && nFragments<GRAW_EVENT_FRAGMENTS;
       --iEntry){
@@ -256,11 +255,11 @@ void EventSourceGRAW::collectEventFragments(unsigned int eventId){
 	       <<" eventId_fromFrame: "<<eventId_fromFrame
 	       <<RST<<std::endl;
       return;
-    }
+    }     
     std::cout<<KBLU<<"Found a frame for eventId: "<<RST<<eventId;
     if(aFragment<nEntries) std::cout<<KBLU<<" in file entry: "<<RST<<aFragment<<RST;
     else std::cout<<KBLU<<" in next file entry: "<<RST<<aFragment-nEntries<<RST;
-    std::cout<<KBLU<<" for  ASAD: "<<RST<<ASAD_idx<<RST<<std::endl;
+    std::cout<<KBLU<<" for  ASAD: "<<RST<<ASAD_idx<<RST<<std::endl;      
     fillEventFromFrame(myDataFrame);
   }
 }

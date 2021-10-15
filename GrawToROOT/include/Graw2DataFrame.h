@@ -17,14 +17,21 @@ public:
 
   bool initialize(const std::string & formatsPath);
 
-  //size_t getGrawFramesNumber(const std::string & filePath);
+  bool getGrawFrame(const std::string & filePath,
+		    size_t frameOffset, GET::GDataFrame & dataFrame,
+		    bool readFullEvent);
 
-  bool getGrawFrame(const std::string & filePath, size_t frameOffset, 
-		    GET::GDataFrame &dataFrame, bool readFullEvent=true);
+  //size_t getGrawFramesNumber(const std::string & filePath);
 
 private:
 
   bool loadFile(const std::string & filePath);
+
+  bool getGrawFrameHeader(const std::string & filePath,
+			  size_t frameOffset, GET::GDataFrame & dataFrame);
+
+  bool getGrawFrameFull(const std::string & filePath,
+			size_t frameOffset, GET::GDataFrame & dataFrame);
 
   std::ifstream inputFile;
   std::string inputFilePath{""};
