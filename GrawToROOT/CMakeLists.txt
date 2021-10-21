@@ -57,7 +57,7 @@ if(EXISTS ${GET_VERSION_DIR})
   install(DIRECTORY DESTINATION results)
   install(PROGRAMS $<1:${PROJECT_SOURCE_DIR}/${MODULE_NAME}/python/> DESTINATION python)
   
-  else()
+else()
     MESSAGE( WARNING "No GET software found. " ${MODULE_NAME} " will not be build.")
 
 endif()  

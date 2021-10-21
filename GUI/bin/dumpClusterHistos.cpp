@@ -1,3 +1,4 @@
+#ifdef WITH_GET
 
 #include "TFile.h"
 
@@ -165,3 +166,14 @@ int main(int argc, char *argv[]) {
 
   return 0;
 }
+#else
+
+#include "colorText.h"
+#include <iostream>
+
+int main(){
+  std::cout<<KRED<<"TPCReco was compiled without GET libraries."<<RST
+	    <<" This application requires GET libraries."<<std::endl;
+  return -1;
+}
+#endif
