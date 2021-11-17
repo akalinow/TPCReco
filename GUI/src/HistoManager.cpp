@@ -49,7 +49,7 @@ void HistoManager::setEvent(std::shared_ptr<EventTPC> aEvent){
 /////////////////////////////////////////////////////////
 void HistoManager::reconstruct(){
   myTkBuilder.setEvent(myEvent);
-  //myTkBuilder.reconstruct();
+  myTkBuilder.reconstruct();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -359,7 +359,7 @@ void HistoManager::drawTrack3D(TVirtualPad *aPad){
 			aSegment.getEnd().X(),
 			aSegment.getEnd().Y(),
 			aSegment.getEnd().Z());
-     aPolyLine.DrawClone();
+     //TEST aPolyLine.DrawClone();
      xVec.push_back(aSegment.getStart().X());
      xVec.push_back(aSegment.getEnd().X());
      yVec.push_back(aSegment.getStart().Y());
@@ -390,7 +390,7 @@ void HistoManager::drawTrack3DProjectionXY(TVirtualPad *aPad){
   for(const auto & aItem: aTrack3D.getSegments()){
     const TVector3 & start = aItem.getStart();
     const TVector3 & end = aItem.getEnd();
-    aSegment2DLine.SetLineColor(2+iSegment);
+    aSegment2DLine.SetLineColor(1+iSegment);
     aSegment2DLine.DrawLine(start.X(), start.Y(),  end.X(),  end.Y());	
     ++iSegment;
   }
@@ -428,7 +428,7 @@ void HistoManager::drawTrack3DProjectionTimeStrip(int strip_dir, TVirtualPad *aP
     const TVector3 & start = aSegment2DProjection.getStart();
     const TVector3 & end = aSegment2DProjection.getEnd();
 
-    aSegment2DLine.SetLineColor(2+iSegment);
+    aSegment2DLine.SetLineColor(3+iSegment);
     aSegment2DLine.DrawLine(start.X(), start.Y(),  end.X(),  end.Y());	
     ++iSegment;
 

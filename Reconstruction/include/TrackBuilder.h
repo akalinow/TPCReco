@@ -1,10 +1,6 @@
 #ifndef _TrackBuilder_H_
 #define _TrackBuilder_H_
 
-#define TRACKBUILDER_DEFAULT_THR     35 // added by MC - 4 Aug 2021
-#define TRACKBUILDER_DEFAULT_DSTRIPS 3  // added by MC - 4 Aug 2021
-#define TRACKBUILDER_DEFAULT_DCELLS  25 // added by MC - 4 Aug 2021
-
 #include <string>
 #include <vector>
 #include <memory>

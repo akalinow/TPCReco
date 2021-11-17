@@ -38,7 +38,7 @@ public:
 
   void splitWorseChi2Segment(double lenghtFraction);
 
-  void extendToWholeChamber();
+  void extendToZMinMax(double zMin, double zMax);
 
   ///Shrink track to actual hits range.
   void shrinkToHits();

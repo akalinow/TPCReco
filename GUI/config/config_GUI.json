@@ -1,6 +1,6 @@
 {
-    "dataFile": "/scratch/akalinow/ELITPC/data/Krakow_2021/ROOT/EventTPC_2021-09-10T12:08:25.751.root",
-    "geometryFile": "geometry_ELITPC_80mbar_50MHz.dat",    
+    "dataFile": "/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210622_extTrg_CO2_250mbar_DT1470ET/EventTPC_2021-06-22T12:01:56.568_0.root",
+    "geometryFile": "geometry_ELITPC_250mbar_12.5MHz.dat",    
     "resourcesPath":"/home/akalinow/scratch/ELITPC/TPCReco/build/resources/",
     "updateInterval": 3000,
     "removePedestal": true,
@@ -10,7 +10,7 @@
 	"recoMode":  true
     },
     "eventFilter": {
-	"enabled": true,
+	"enabled": false,
         "totalChargeLowerBound": 1200
     }
 }

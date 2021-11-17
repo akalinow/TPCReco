@@ -270,19 +270,17 @@ void Track3D::splitSegment(unsigned int iSegment, double lenghtFraction){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void Track3D::extendToWholeChamber(){
+void Track3D::extendToZMinMax(double zMin, double zMax){
 
   if(!mySegments.size()) return;
 
   TrackSegment3D & aFirstSegment = mySegments.front();
-  double zMin =  0;//FIXME take from geometry
   double lambda =  aFirstSegment.getLambdaAtZ(zMin);
   TVector3 aStart = aFirstSegment.getStart() + lambda*aFirstSegment.getTangent();
   TVector3 aEnd = aFirstSegment.getEnd();
   aFirstSegment.setStartEnd(aStart, aEnd);
 
   TrackSegment3D & aLastSegment = mySegments.back();
-  double zMax =  120;//FIXME take from geometry
   lambda =  aLastSegment.getLambdaAtZ(zMax);
   aStart = aLastSegment.getStart();
   aEnd = aLastSegment.getStart() + lambda*aLastSegment.getTangent();  
@@ -312,7 +310,7 @@ void Track3D::shrinkToHits(){
     
   TrackSegment3D & aFirstSegment = mySegments.front();
   TrackSegment3D & aLastSegment = mySegments.back();
-  
+
   TVector3 aStart = aFirstSegment.getStart() + getSegmentLambda(lambdaStart, 0)*aFirstSegment.getTangent();  
   TVector3 aEnd = aLastSegment.getStart() + getSegmentLambda(lambdaEnd, mySegments.size()-1)*aLastSegment.getTangent();  
 

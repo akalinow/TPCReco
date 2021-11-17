@@ -115,37 +115,16 @@ void TrackBuilder::setEvent(EventTPC* aEvent){
 
   myEvent = aEvent;
 
-  // modified by MC - 4 Aug 2021
-  //  double eventMaxCharge = myEvent->GetMaxCharge();
-  double chargeThreshold = TRACKBUILDER_DEFAULT_THR; //-0.15*eventMaxCharge;
-  int delta_timecells = TRACKBUILDER_DEFAULT_DCELLS; //15;
-  int delta_strips = TRACKBUILDER_DEFAULT_DSTRIPS; // 2;
-  //  delta_timecells = 0;
-  //  delta_strips = 0;
-  // modified by MC - 4 Aug 2021
-
-  //////// DEBUG
-  std::cout << "TrackBuilder::setEvent: myEvent thr=" << chargeThreshold << std::endl << std::flush; // added by MC - 4 Aug 2021
-  //////// DEBUG
+  double chargeThreshold = 35;//0.15*myEvent->GetMaxCharge();
+  int delta_timecells = 25;
+  int delta_strips = 3;
+  
   myCluster = myEvent->GetOneCluster(chargeThreshold, delta_strips, delta_timecells);
-  //////// DEBUG
-  std::cout << "TrackBuilder::setEvent: myCluster hits=" << myCluster.GetNhits() << std::endl << std::flush; // added by MC - 4 Aug 2021
-  //////// DEBUG
 
   std::string hName, hTitle;
   if(!myHistoInitialized){     
     for(int iDir = 0; iDir<3;++iDir){
-      std::shared_ptr<TH2D> hRawHits = myEvent->GetStripVsTimeInMM(/*myCluster*/ getCluster(), iDir);
-      /*
-      double maxX = hRawHits->GetXaxis()->GetXmax();
-      double maxY = hRawHits->GetYaxis()->GetXmax();
-      double rho = sqrt( maxX*maxX + maxY*maxY);
-      hName = "hAccumulator_"+std::to_string(iDir);
-      hTitle = "Hough accumulator for direction: "+std::to_string(iDir)+";#theta;#rho";
-      TH2D hAccumulator(hName.c_str(), hTitle.c_str(), nAccumulatorPhiBins,
-			-M_PI, M_PI, nAccumulatorRhoBins, 0, rho);   
-      */
-      // modified by MC - 8 Aug 2021
+      std::shared_ptr<TH2D> hRawHits = myEvent->GetStripVsTimeInMM(/*myCluster*/ getCluster(), iDir);    
       double minX = hRawHits->GetXaxis()->GetXmin();
       double minY = hRawHits->GetYaxis()->GetXmin();
       double maxX = hRawHits->GetXaxis()->GetXmax();
@@ -199,7 +178,7 @@ void TrackBuilder::setEvent(EventTPC* aEvent){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void TrackBuilder::reconstruct(){
-
+  
   for(int iDir=DIR_U;iDir<=DIR_W;++iDir){
     makeRecHits(iDir);
     fillHoughAccumulator(iDir);
@@ -215,11 +194,15 @@ void TrackBuilder::makeRecHits(int iDir){
   std::shared_ptr<TH2D> hRawHits = myEvent->GetStripVsTimeInMM(getCluster(), iDir);
   TH2D & hRecHits = myRecHits[iDir];
   hRecHits.Reset();
-  std::string tmpTitle(hRecHits.GetTitle());
-  if(tmpTitle.find("Event")!=std::string::npos){
-    tmpTitle.replace(tmpTitle.find("Event"), 24,"Rec hits"); 
+  std::string tmpTitle(hRawHits->GetTitle());
+  if(tmpTitle.find("from")!=std::string::npos){
+    std::string eventNumber = tmpTitle.substr(0,tmpTitle.find(":"));
+    tmpTitle.replace(0,tmpTitle.find("from"),"");
+    tmpTitle = eventNumber+": Reco hits "+tmpTitle;
     hRecHits.SetTitle(tmpTitle.c_str());
   }
+  hRecHits.Add(hRawHits.get());//TEST
+  return;//TEST
 
   TH1D *hProj;
   double hitWirePos = -999.0;
@@ -371,7 +354,7 @@ void TrackBuilder::fillHoughAccumulator(int iDir){
       for(int iBinTheta=1;iBinTheta<myAccumulators[iDir].GetNbinsX();++iBinTheta){
 	theta = myAccumulators[iDir].GetXaxis()->GetBinCenter(iBinTheta);
 	rho = x*cos(theta) + y*sin(theta);
-	charge = 1.0; //FIX me study how to include the charge. 
+	charge = 1.0; //FIXME: study how to include the charge. 
 	myAccumulators[iDir].Fill(theta, rho, charge);
       }
     }
@@ -481,84 +464,48 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   int nHits_V = segmentV.getNAccumulatorHits();
   int nHits_W = segmentW.getNAccumulatorHits();
 
-  TVector2 startXY_fromUV;
-  bool res1=myGeometryPtr->GetUVWCrossPointInMM(segmentU.getStripDir(), segmentU.getStart().Y(), segmentV.getStripDir(), segmentV.getStart().Y(), startXY_fromUV);
-  TVector2 startXY_fromVW;
-  bool res2=myGeometryPtr->GetUVWCrossPointInMM(segmentV.getStripDir(), segmentV.getStart().Y(), segmentW.getStripDir(), segmentW.getStart().Y(), startXY_fromVW);
-  TVector2 startXY_fromWU;
-  bool res3=myGeometryPtr->GetUVWCrossPointInMM(segmentW.getStripDir(), segmentW.getStart().Y(), segmentU.getStripDir(), segmentU.getStart().Y(), startXY_fromWU);
-
-  ///////// DEBUG
+  TVector2 biasXY_fromUV;
+  bool res1=myGeometryPtr->GetUVWCrossPointInMM(segmentU.getStripDir(), segmentU.getBiasAtT0().Y(),
+						segmentV.getStripDir(), segmentV.getBiasAtT0().Y(),
+						biasXY_fromUV);
+  TVector2 biasXY_fromVW;
+  bool res2=myGeometryPtr->GetUVWCrossPointInMM(segmentV.getStripDir(), segmentV.getBiasAtT0().Y(),
+						segmentW.getStripDir(), segmentW.getBiasAtT0().Y(),
+						biasXY_fromVW);
+  TVector2 biasXY_fromWU;
+  bool res3=myGeometryPtr->GetUVWCrossPointInMM(segmentW.getStripDir(), segmentW.getBiasAtT0().Y(),
+						segmentU.getStripDir(), segmentU.getBiasAtT0().Y(),
+						biasXY_fromWU);
   assert(res1|res2|res3);
-  ///////// DEBUG
   
-  const TVector2 startXY=( (int)res1*startXY_fromUV + (int)res2*startXY_fromVW + (int)res3*startXY_fromWU)/( (int)res1 + (int)res2 + (int)res3 );
-  double startZ_fromU = segmentU.getStart().X();
-  double startZ_fromV = segmentV.getStart().X();
-  double startZ_fromW = segmentW.getStart().X();
-  double startZ = (startZ_fromU*nHits_U + startZ_fromV*nHits_V + startZ_fromW*nHits_W)/(nHits_U+nHits_V+nHits_W);
-  TVector3 aStart( startXY.X(), startXY.Y(), startZ);
+  const TVector2 biasXY=( (int)res1*biasXY_fromUV + (int)res2*biasXY_fromVW + (int)res3*biasXY_fromWU)/( (int)res1 + (int)res2 + (int)res3 );
+  double biasZ_fromU = segmentU.getBiasAtT0().X();
+  double biasZ_fromV = segmentV.getBiasAtT0().X();
+  double biasZ_fromW = segmentW.getBiasAtT0().X();
+  double biasZ = (biasZ_fromU*nHits_U + biasZ_fromV*nHits_V + biasZ_fromW*nHits_W)/(nHits_U+nHits_V+nHits_W);
+  TVector3 aBias( biasXY.X(), biasXY.Y(), biasZ);
 
-  TVector2 endXY_fromUV;
-  bool res4=myGeometryPtr->GetUVWCrossPointInMM(segmentU.getStripDir(), segmentU.getEnd().Y(), segmentV.getStripDir(), segmentV.getEnd().Y(), endXY_fromUV);
-  TVector2 endXY_fromVW;
-  bool res5=myGeometryPtr->GetUVWCrossPointInMM(segmentV.getStripDir(), segmentV.getEnd().Y(), segmentW.getStripDir(), segmentW.getEnd().Y(), endXY_fromVW);
-  TVector2 endXY_fromWU;
-  bool res6=myGeometryPtr->GetUVWCrossPointInMM(segmentW.getStripDir(), segmentW.getEnd().Y(), segmentU.getStripDir(), segmentU.getEnd().Y(), endXY_fromWU);
-
-  ///////// DEBUG
+  
+  TVector2 tangentXY_fromUV;
+  bool res4=myGeometryPtr->GetUVWCrossPointInMM(segmentU.getStripDir(), segmentU.getTangentWithT1().Y(),
+						segmentV.getStripDir(), segmentV.getTangentWithT1().Y(),
+						tangentXY_fromUV);
+  TVector2 tangentXY_fromVW;
+  bool res5=myGeometryPtr->GetUVWCrossPointInMM(segmentV.getStripDir(), segmentV.getTangentWithT1().Y(),
+						segmentW.getStripDir(), segmentW.getTangentWithT1().Y(),
+						tangentXY_fromVW);
+  TVector2 tangentXY_fromWU;
+  bool res6=myGeometryPtr->GetUVWCrossPointInMM(segmentW.getStripDir(), segmentW.getTangentWithT1().Y(),
+						segmentU.getStripDir(), segmentU.getTangentWithT1().Y(),
+						tangentXY_fromWU);
   assert(res4|res5|res6);
-  ///////// DEBUG
 
-  const TVector2 endXY=( (int)res4*endXY_fromUV + (int)res5*endXY_fromVW + (int)res6*endXY_fromWU)/( (int)res4 + (int)res5 + (int)res6 );
-  double endZ_fromU = segmentU.getEnd().X();
-  double endZ_fromV = segmentV.getEnd().X();
-  double endZ_fromW = segmentW.getEnd().X();
-  double endZ = (endZ_fromU*nHits_U + endZ_fromV*nHits_V + endZ_fromW*nHits_W)/(nHits_U+nHits_V+nHits_W);
-  TVector3 aEnd( endXY.X(), endXY.Y(), endZ);
-
-  TrackSegment3D a3DSeed;
-  a3DSeed.setGeometry(myGeometryPtr);
-  a3DSeed.setStartEnd(aStart, aEnd);
-  a3DSeed.setRecHits(myRecHits);
-  return a3DSeed;
-}
-/*
-TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
-	     
-  const TrackSegment2D & segmentU = my2DSeeds[DIR_U][iTrack2DSeed];
-  const TrackSegment2D & segmentV = my2DSeeds[DIR_V][iTrack2DSeed];
-  const TrackSegment2D & segmentW = my2DSeeds[DIR_W][iTrack2DSeed];
-
-  int nHits_U = segmentU.getNAccumulatorHits();
-  int nHits_V = segmentV.getNAccumulatorHits();
-  int nHits_W = segmentW.getNAccumulatorHits();
-
-  double bX_fromU = (segmentU.getBiasAtT0().Y())*cos(phiPitchDirection[DIR_U]);
-  double bX = bX_fromU;
-  
-  double bY_fromV = (segmentV.getBiasAtT0().Y() - bX_fromU*cos(phiPitchDirection[DIR_V]))/sin(phiPitchDirection[DIR_V]);
-  double bY_fromW = (segmentW.getBiasAtT0().Y() - bX_fromU*cos(phiPitchDirection[DIR_W]))/sin(phiPitchDirection[DIR_W]);  
-  double bY = (bY_fromV*nHits_V + bY_fromW*nHits_W)/(nHits_V+nHits_W);
-
-  double bZ_fromU = segmentU.getBiasAtT0().X();
-  double bZ_fromV = segmentV.getBiasAtT0().X();
-  double bZ_fromW = segmentW.getBiasAtT0().X();
-  double bZ = (bZ_fromU*nHits_U + bZ_fromV*nHits_V + bZ_fromW*nHits_W)/(nHits_U+nHits_V+nHits_W);
-  TVector3 aBias(bX, bY, bZ);
-
-  double tX_fromU = segmentU.getTangentWithT1().Y()*cos(phiPitchDirection[DIR_U]);
-  double tX = tX_fromU;
-
-  double tY_fromV = (segmentV.getTangentWithT1().Y() - tX_fromU*cos(phiPitchDirection[DIR_V]))/sin(phiPitchDirection[DIR_V]);
-  double tY_fromW = (segmentW.getTangentWithT1().Y() - tX_fromU*cos(phiPitchDirection[DIR_W]))/sin(phiPitchDirection[DIR_W]);
-  double tY = (tY_fromV*nHits_V + tY_fromW*nHits_W)/(nHits_V+nHits_W);
-  
-  double tZ_fromU = segmentU.getTangentWithT1().X();
-  double tZ_fromV = segmentV.getTangentWithT1().X();
-  double tZ_fromW = segmentW.getTangentWithT1().X();
-  double tZ = (tZ_fromU*nHits_U + tZ_fromV*nHits_V + tZ_fromW*nHits_W)/(nHits_U+nHits_V+nHits_W);
-  TVector3 aTangent(tX, tY, tZ);
+  const TVector2 tangentXY=( (int)res4*tangentXY_fromUV + (int)res5*tangentXY_fromVW + (int)res6*tangentXY_fromWU)/( (int)res4 + (int)res5 + (int)res6 );
+  double tangentZ_fromU = segmentU.getTangentWithT1().X();
+  double tangentZ_fromV = segmentV.getTangentWithT1().X();
+  double tangentZ_fromW = segmentW.getTangentWithT1().X();
+  double tangentZ = (tangentZ_fromU*nHits_U + tangentZ_fromV*nHits_V + tangentZ_fromW*nHits_W)/(nHits_U+nHits_V+nHits_W);
+  TVector3 aTangent( tangentXY.X(), tangentXY.Y(), tangentZ);
 
   TrackSegment3D a3DSeed;
   a3DSeed.setGeometry(myGeometryPtr);
@@ -566,14 +513,13 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   a3DSeed.setRecHits(myRecHits);
   return a3DSeed;
 }
-*/
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
 
   Track3D aTrackCandidate;
   aTrackCandidate.addSegment(aTrackSegment);
-  aTrackCandidate.extendToWholeChamber();
+  aTrackCandidate.extendToZMinMax(myGeometryPtr->GetDriftCageZmin(),  myGeometryPtr->GetDriftCageZmax());
   aTrackCandidate = fitTrackNodes(aTrackCandidate);
   aTrackCandidate.shrinkToHits();  
   return aTrackCandidate;//TEST
@@ -697,7 +643,7 @@ double TrackBuilder::fitTrackSplitPoint(const Track3D& aTrack) const{
     const ROOT::Fit::FitResult & result = fitter.Result();
     aTrackCandidate.chi2FromNodesList(result.GetParams());
     aTrackCandidate.removeEmptySegments();
-    aTrackCandidate.extendToWholeChamber();
+    aTrackCandidate.extendToZMinMax(myGeometryPtr->GetDriftCageZmin(),  myGeometryPtr->GetDriftCageZmax());
     aTrackCandidate.shrinkToHits();
     
     if(aTrackCandidate.getChi2()<currentBestChi2){

@@ -31,7 +31,7 @@ std::shared_ptr<GeometryTPC> loadGeometry(const std::string fileName){
 Track3D *loadRecoEvent(const std::string fileName){
 
   if (!gROOT->GetClass("Track3D")){
-    R__LOAD_LIBRARY(/home/akalinow/TPCReco/build/lib/libDataFormats.so);
+    R__LOAD_LIBRARY(/home/user1/scratch/akalinow/ELITPC/TPCReco/build/lib/libDataFormats.so);
   }
   
   TFile *aFile = new TFile(fileName.c_str());
@@ -47,9 +47,9 @@ Track3D *loadRecoEvent(const std::string fileName){
 void analyze3Alpha(){
 
   ///Data and geometry loading.
-  std::string fileName = "Reco_CoBo_2018-06-19T15:13:33.941_0008.root";
+  std::string fileName = "Reco_EventTPC_2021-06-22T12:01:56.568_0.root";
   Track3D *aTrack = loadRecoEvent(fileName);
-  fileName = "/home/akalinow/scratch/data/neutrons/geometry_mini_eTPC_2018-06-19T10:35:30.853.dat";
+  fileName = "/home/user1/scratch/akalinow/ELITPC/TPCReco/build/resources/geometry_ELITPC_250mbar_12.5MHz.dat";
   std::shared_ptr<GeometryTPC> aGeometry = loadGeometry(fileName);
   std::cout<<*aTrack<<std::endl;
 
@@ -59,8 +59,14 @@ void analyze3Alpha(){
 
   double atomicMassUnit = 931.49410242; //MeV/c^2
   double alphaMass = 4*atomicMassUnit + 2.4249; //A*u + Delta MeV/c2
+  double carbonMass = 12*atomicMassUnit;
   TLorentzVector totalP4;
-    
+
+  std::vector<double> chargeProfile;
+  std::vector<double> profilePosition;
+  double totalLength = 0;
+  double maxCharge = 0;
+  double stepSize = 2; //[mm]
   for(auto aSegment: aTrack->getSegments()){
     aSegment.setGeometry(aGeometry);
     const TVector3 & direction = (aSegment.getEnd() - aSegment.getStart());
@@ -77,17 +83,30 @@ void analyze3Alpha(){
 	     <<"\t kin. energy [MeV] = "<<kineticEnergy<<std::endl
 	     <<"\t total Charge: "<<aSegment.getIntegratedCharge(length)<<std::endl
 	     <<"\t kin. energy/charge: "<<kineticEnergy/aSegment.getIntegratedCharge(length)<<std::endl
-	     <<"\t charge along track: ";
-    double stepAlongTrack = aSegment.getLength()/10.0;
+	     <<"\t charge along track: "; 
+    int nSteps = length/stepSize;
     double sum = 0.0;
-    for(int iStep=1;iStep<=10;++iStep){
-      double charge = aSegment.getIntegratedCharge(iStep*stepAlongTrack) -
-	aSegment.getIntegratedCharge((iStep-1)*stepAlongTrack);
+    for(int iStep=1;iStep<=nSteps;++iStep){
+      double charge = aSegment.getIntegratedCharge(iStep*stepSize) -
+	aSegment.getIntegratedCharge((iStep-1)*stepSize);
       std::cout<<charge<<", ";
       sum += charge;
+      chargeProfile.push_back(charge);
+      profilePosition.push_back(iStep*stepSize+totalLength);
+      maxCharge = std::max(charge, maxCharge);
     }
     std::cout<<" sum: "<<sum<<std::endl;
+    totalLength += length;
   }
+  TCanvas *aCanvas = new TCanvas("aCanvas","",700,500);
+  TGraph *chargeProfileGraph = new TGraph(profilePosition.size(), profilePosition.data(), chargeProfile.data());
+  TH1F *hFrame = new TH1F("hFrame","Charge profile;length [mm]; charge [arbitrary units]",1,0,totalLength);
+  hFrame->SetMinimum(0.0);
+  hFrame->SetMaximum(1.2*maxCharge);
+  hFrame->Draw();
+  chargeProfileGraph->SetMarkerStyle(22);
+  chargeProfileGraph->Draw("P");
+  
   std::cout<<std::endl;
   std::cout<<"Total energy [MeV]:             "<<totalP4.E()<<std::endl
 	   <<"Total kin energy [MeV]:         "<<totalP4.E() - 3*alphaMass<<std::endl
@@ -96,21 +115,19 @@ void analyze3Alpha(){
 }
 //////////////////////////
 //////////////////////////
-void plotTrack(){
+void plotTrackSegment(int strip_dir, const std::string & dataFileName, const std::string & geometryFileName){
 
   ///Data and geometry loading.
-  std::string fileName = "Reco_CoBo_2018-06-19T15:13:33.941_0008.root";
-  Track3D *aTrack = loadRecoEvent(fileName);
-  fileName = "/home/akalinow/scratch/data/neutrons/geometry_mini_eTPC_2018-06-19T10:35:30.853.dat";
-  std::shared_ptr<GeometryTPC> aGeometry = loadGeometry(fileName);
+  Track3D *aTrack = loadRecoEvent(dataFileName);
+  std::shared_ptr<GeometryTPC> aGeometry = loadGeometry(geometryFileName);
   std::cout<<*aTrack<<std::endl;
 
   ///Fetching tracks segments from the full track.
   TrackSegment3D aSegment = aTrack->getSegments().front();
+  aSegment = aTrack->getSegments().back();
   aSegment.setGeometry(aGeometry);
 
   ///Choose the U direction and get the 2D segment
-  int strip_dir = 0;
   double startLambda = 0;
   double endLambda = aSegment.getLength();
   TrackSegment2D aStripProjection = aSegment.get2DProjection(strip_dir, startLambda, endLambda);
@@ -119,9 +136,9 @@ void plotTrack(){
   std::cout<<aStripProjection<<std::endl;
 
   ///Some simple plots for the 2D segment.
-  TH2F *hProjection = new TH2F("hProjection",";x [mm]; y[mm]; charge",120, 0, 120, 120, -60, 60);
+  TH2F *hProjection = new TH2F("hProjection",";x [mm]; y[mm]; charge",100,start.X(), end.X(), 100, start.Y(), end.Y());
   hProjection->SetStats(false);
-  TH1D *hDistance = new TH1D("hDistance",";hit distance [mm];charge",20,0,100);
+  TH1D *hDistance = new TH1D("hDistance",";hit distance [mm];charge",10,0,10);
   hDistance->SetStats(false);
   TVector3 aPoint;
   double distance = 0.0;
@@ -131,12 +148,14 @@ void plotTrack(){
     double charge = aHit.getCharge();
     aPoint.SetXYZ(x,y,0);
     distance = aStripProjection.getPointTransverseDistance(aPoint);
-    if(distance>0){
+    //std::cout<<"x,y: "<<x<<", "<<y<<" charge: "<<charge<<" distance: "<<distance<<std::endl;
+
+    if(distance>0 && distance<10){
       hProjection->Fill(x,y,charge);
     }
     hDistance->Fill(distance,charge);
   }
-  TCanvas *aCanvas = new TCanvas("aCanvas","",700,600);
+  TCanvas *aCanvas = new TCanvas("aCanvas","",700,500);
   TLine *aSegment2DLine = new TLine(start.X(), start.Y(),  end.X(),  end.Y());
   aSegment2DLine->SetLineColor(2);
   aSegment2DLine->SetLineWidth(2);

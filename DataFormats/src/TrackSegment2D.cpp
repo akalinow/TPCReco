@@ -10,7 +10,7 @@ void TrackSegment2D::setBiasTangent(const TVector3 & aBias, const TVector3 & aTa
   myTangent = aTangent.Unit();
 
   double lambda = 10;//FIXME what value should be here?
-  myStart = myBias; // -lambda*myTangent; // Modified by MC - 20 Aug 2021
+  myStart = myBias; 
   myEnd = myBias+lambda*myTangent;
   initialize();
 }
@@ -153,7 +153,7 @@ std::ostream & operator << (std::ostream &out, const TrackSegment2D &aSegment){
   const TVector3 & end = aSegment.getEnd();
   
   out<<"direction: "<<aSegment.getStripDir()
-     <<" ("<<start.X()<<", "<<start.Y()
+     <<" ("<<start.X()<<", "<<start.Y()<<")"
      <<" -> "
      <<"("<<end.X()<<", "<<end.Y()<<") "<<std::endl
      <<"\t N Hough accumulator hits: "
