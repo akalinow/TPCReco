@@ -117,14 +117,13 @@ void TrackBuilder::setEvent(EventTPC* aEvent){
 
   double chargeThreshold = 35;//0.15*myEvent->GetMaxCharge();
   int delta_timecells = 25;
-  int delta_strips = 3;
-  
+  int delta_strips = 5;
   myCluster = myEvent->GetOneCluster(chargeThreshold, delta_strips, delta_timecells);
-
+  
   std::string hName, hTitle;
   if(!myHistoInitialized){     
     for(int iDir = 0; iDir<3;++iDir){
-      std::shared_ptr<TH2D> hRawHits = myEvent->GetStripVsTimeInMM(/*myCluster*/ getCluster(), iDir);    
+      std::shared_ptr<TH2D> hRawHits = myEvent->GetStripVsTimeInMM(getCluster(), iDir);
       double minX = hRawHits->GetXaxis()->GetXmin();
       double minY = hRawHits->GetYaxis()->GetXmin();
       double maxX = hRawHits->GetXaxis()->GetXmax();
@@ -477,8 +476,11 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
 						segmentU.getStripDir(), segmentU.getBiasAtT0().Y(),
 						biasXY_fromWU);
   assert(res1|res2|res3);
-  
-  const TVector2 biasXY=( (int)res1*biasXY_fromUV + (int)res2*biasXY_fromVW + (int)res3*biasXY_fromWU)/( (int)res1 + (int)res2 + (int)res3 );
+
+  int weight_fromUV = res1*(nHits_U + nHits_V);
+  int weight_fromVW = res2*(nHits_V + nHits_W);
+  int weight_fromWU = res3*(nHits_W + nHits_U);
+  const TVector2 biasXY=(weight_fromUV*biasXY_fromUV + weight_fromVW*biasXY_fromVW + weight_fromWU*biasXY_fromWU)/(weight_fromUV+weight_fromVW+weight_fromWU);
   double biasZ_fromU = segmentU.getBiasAtT0().X();
   double biasZ_fromV = segmentV.getBiasAtT0().X();
   double biasZ_fromW = segmentW.getBiasAtT0().X();
@@ -500,7 +502,10 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
 						tangentXY_fromWU);
   assert(res4|res5|res6);
 
-  const TVector2 tangentXY=( (int)res4*tangentXY_fromUV + (int)res5*tangentXY_fromVW + (int)res6*tangentXY_fromWU)/( (int)res4 + (int)res5 + (int)res6 );
+  weight_fromUV = res4*(nHits_U + nHits_V);
+  weight_fromVW = res5*(nHits_V + nHits_W);
+  weight_fromWU = res6*(nHits_W + nHits_U);
+  const TVector2 tangentXY=(weight_fromUV*tangentXY_fromUV + weight_fromVW*tangentXY_fromVW + weight_fromWU*tangentXY_fromWU)/(weight_fromUV+weight_fromVW+weight_fromWU);
   double tangentZ_fromU = segmentU.getTangentWithT1().X();
   double tangentZ_fromV = segmentV.getTangentWithT1().X();
   double tangentZ_fromW = segmentW.getTangentWithT1().X();
@@ -520,10 +525,12 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
   Track3D aTrackCandidate;
   aTrackCandidate.addSegment(aTrackSegment);
   aTrackCandidate.extendToZMinMax(myGeometryPtr->GetDriftCageZmin(),  myGeometryPtr->GetDriftCageZmax());
-  aTrackCandidate = fitTrackNodes(aTrackCandidate);
+  //TEST aTrackCandidate = fitTrackNodes(aTrackCandidate);
+  aTrackCandidate.extendToZMinMax(myGeometryPtr->GetDriftCageZmin(),  myGeometryPtr->GetDriftCageZmax());
   aTrackCandidate.shrinkToHits();  
-  return aTrackCandidate;//TEST
+  return aTrackCandidate;
   
+  ///Line splitting does not work yet.
   TGraph aGraph = aTrackCandidate.getHitDistanceProfile();
   double maxValue = 0.0;
   double bestSplit = 0.5;

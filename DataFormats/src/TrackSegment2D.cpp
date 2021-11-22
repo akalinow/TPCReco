@@ -76,14 +76,16 @@ double TrackSegment2D::getIntegratedHitDistance(double lambdaCut, const Hit2DCol
   double distance = 0.0;
   double sum = 0.0;
   TVector3 aPoint;
+  //const TVector3 & tangent = getTangentWithT1();
   
   for(const auto aHit:aRecHits){
     x = aHit.getPosTime();
     y = aHit.getPosWire();
     aPoint.SetXYZ(x, y, 0.0);    
     distance = getPointTransverseDistance(aPoint);
-    if(distance>0){
-      sum += distance*aHit.getCharge();
+    if(distance>0 && distance<5){
+      int sign = 1.0;//std::copysign(1.0,tangent.Cross(aPoint).Z());
+      sum += distance*sign*aHit.getCharge();
       totalCharge += aHit.getCharge();
     }
   }
@@ -134,8 +136,7 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
     charge = aHit.getCharge();
     aPoint.SetXYZ(x, y, 0.0);
     distance = getPointTransverseDistance(aPoint);
-    if(distance>10) continue;//Ignore far away hits. FIXME optimize threshold
-    if(distance<0) continue;    
+    if(distance<0 || distance>10) continue;//Ignore far away hits. FIXME optimize threshold
     ++pointCount;    
     chi2 += std::pow(distance, 2)*charge;
     chargeSum +=charge;

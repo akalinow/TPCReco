@@ -83,7 +83,7 @@ std::shared_ptr<TH1D> HistoManager::getRawTimeProjection(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<TH1D> HistoManager::getRawTimeProjectionInMM(){ // added by MC - 4 Aug 2021
+std::shared_ptr<TH1D> HistoManager::getRawTimeProjectionInMM(){
   auto aHisto=std::shared_ptr<TH1D>(myEvent->GetTimeProjectionInMM());
   if(aHisto) {
     aHisto->GetXaxis()->SetTitleOffset(1.5);
@@ -94,7 +94,7 @@ std::shared_ptr<TH1D> HistoManager::getRawTimeProjectionInMM(){ // added by MC -
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<TH1D> HistoManager::getRawTimeProjectionInMM(int strip_dir){ // added by MC - 4 Aug 2021
+std::shared_ptr<TH1D> HistoManager::getRawTimeProjectionInMM(int strip_dir){
   auto aHisto=std::shared_ptr<TH1D>(myEvent->GetTimeProjectionInMM(strip_dir));
   if(aHisto) {
     aHisto->GetXaxis()->SetTitleOffset(1.5);
@@ -116,7 +116,7 @@ std::shared_ptr<TH1D> HistoManager::getRawStripProjection(int strip_dir){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<TH1D> HistoManager::getRawStripProjectionInMM(int strip_dir){ // added by MC - 4 Aug 2021
+std::shared_ptr<TH1D> HistoManager::getRawStripProjectionInMM(int strip_dir){
   auto aHisto=std::shared_ptr<TH1D>(myEvent->GetStripProjectionInMM(strip_dir));
   if(aHisto) {
     aHisto->GetXaxis()->SetTitleOffset(1.5);
@@ -142,7 +142,7 @@ std::shared_ptr<TH2D> HistoManager::getRawStripVsTime(int strip_dir){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::shared_ptr<TH2D> HistoManager::getRawStripVsTimeInMM(int strip_dir){
-  auto aHisto=std::shared_ptr<TH2D>(myEvent->GetStripVsTimeInMM(strip_dir)); // modified by MC - 4 Aug 2021
+  auto aHisto=std::shared_ptr<TH2D>(myEvent->GetStripVsTimeInMM(strip_dir)); 
   if(aHisto) {
     if(doAutozoom) makeAutozoom(aHisto);
     aHisto->GetXaxis()->SetTitleOffset(1.5);
@@ -155,7 +155,7 @@ std::shared_ptr<TH2D> HistoManager::getRawStripVsTimeInMM(int strip_dir){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<TH1D> HistoManager::getClusterTimeProjection(){ // added by MC - 4 Aug 2021
+std::shared_ptr<TH1D> HistoManager::getClusterTimeProjection(){
   auto aHisto=std::shared_ptr<TH1D>(myEvent->GetTimeProjection(myTkBuilder.getCluster()));
   if(aHisto) {
     aHisto->GetXaxis()->SetTitleOffset(1.5);
@@ -166,7 +166,7 @@ std::shared_ptr<TH1D> HistoManager::getClusterTimeProjection(){ // added by MC -
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<TH1D> HistoManager::getClusterTimeProjectionInMM(){ // added by MC - 4 Aug 2021
+std::shared_ptr<TH1D> HistoManager::getClusterTimeProjectionInMM(){
   auto aHisto=std::shared_ptr<TH1D>(myEvent->GetTimeProjectionInMM(myTkBuilder.getCluster()));
   if(aHisto) {
     aHisto->GetXaxis()->SetTitleOffset(1.5);
@@ -177,7 +177,7 @@ std::shared_ptr<TH1D> HistoManager::getClusterTimeProjectionInMM(){ // added by 
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<TH1D> HistoManager::getClusterTimeProjection(int strip_dir){ // added by MC - 4 Aug 2021
+std::shared_ptr<TH1D> HistoManager::getClusterTimeProjection(int strip_dir){
   auto aHisto=std::shared_ptr<TH1D>(myEvent->GetTimeProjection(myTkBuilder.getCluster(), strip_dir));
   if(aHisto) {
     aHisto->GetXaxis()->SetTitleOffset(1.5);
@@ -188,7 +188,7 @@ std::shared_ptr<TH1D> HistoManager::getClusterTimeProjection(int strip_dir){ // 
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<TH1D> HistoManager::getClusterTimeProjectionInMM(int strip_dir){ // added by MC - 4 Aug 2021
+std::shared_ptr<TH1D> HistoManager::getClusterTimeProjectionInMM(int strip_dir){
   auto aHisto=std::shared_ptr<TH1D>(myEvent->GetTimeProjectionInMM(myTkBuilder.getCluster(), strip_dir));
   if(aHisto) {
     aHisto->GetXaxis()->SetTitleOffset(1.5);
@@ -199,7 +199,7 @@ std::shared_ptr<TH1D> HistoManager::getClusterTimeProjectionInMM(int strip_dir){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<TH1D> HistoManager::getClusterStripProjection(int strip_dir){ // added by MC - 4 Aug 2021
+std::shared_ptr<TH1D> HistoManager::getClusterStripProjection(int strip_dir){
   auto aHisto=std::shared_ptr<TH1D>(myEvent->GetStripProjection(myTkBuilder.getCluster(), strip_dir));
   if(aHisto) {
     aHisto->GetXaxis()->SetTitleOffset(1.5);
@@ -210,7 +210,7 @@ std::shared_ptr<TH1D> HistoManager::getClusterStripProjection(int strip_dir){ //
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<TH1D> HistoManager::getClusterStripProjectionInMM(int strip_dir){ // added by MC - 4 Aug 2021
+std::shared_ptr<TH1D> HistoManager::getClusterStripProjectionInMM(int strip_dir){
   auto aHisto=std::shared_ptr<TH1D>(myEvent->GetStripProjectionInMM(myTkBuilder.getCluster(), strip_dir));
   if(aHisto) {
     aHisto->GetXaxis()->SetTitleOffset(1.5);
@@ -221,7 +221,7 @@ std::shared_ptr<TH1D> HistoManager::getClusterStripProjectionInMM(int strip_dir)
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<TH2D> HistoManager::getClusterStripVsTime(int strip_dir){ // added by MC - 4 Aug 2021
+std::shared_ptr<TH2D> HistoManager::getClusterStripVsTime(int strip_dir){
   auto aHisto=std::shared_ptr<TH2D>(myEvent->GetStripVsTime(myTkBuilder.getCluster(), strip_dir));
   if(aHisto) {
     if(doAutozoom) makeAutozoom(aHisto);
@@ -235,7 +235,7 @@ std::shared_ptr<TH2D> HistoManager::getClusterStripVsTime(int strip_dir){ // add
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<TH2D> HistoManager::getClusterStripVsTimeInMM(int strip_dir){ // added by MC - 4 Aug 2021
+std::shared_ptr<TH2D> HistoManager::getClusterStripVsTimeInMM(int strip_dir){
   std::shared_ptr<TH2D> aHisto = myEvent->GetStripVsTimeInMM(myTkBuilder.getCluster(), strip_dir);
   if(aHisto) {
     if(doAutozoom) makeAutozoom(aHisto);
@@ -418,7 +418,7 @@ void HistoManager::drawTrack3DProjectionTimeStrip(int strip_dir, TVirtualPad *aP
 
   int iSegment = 0;
   TLine aSegment2DLine;
-  aSegment2DLine.SetLineWidth(3);
+  aSegment2DLine.SetLineWidth(1);
   double minX = 999.0, minY = 999.0;
   double maxX = -999.0, maxY = -999.0;
   double tmp = 0.0;
@@ -428,7 +428,7 @@ void HistoManager::drawTrack3DProjectionTimeStrip(int strip_dir, TVirtualPad *aP
     const TVector3 & start = aSegment2DProjection.getStart();
     const TVector3 & end = aSegment2DProjection.getEnd();
 
-    aSegment2DLine.SetLineColor(3+iSegment);
+    aSegment2DLine.SetLineColor(1+iSegment);
     aSegment2DLine.DrawLine(start.X(), start.Y(),  end.X(),  end.Y());	
     ++iSegment;
 
@@ -471,8 +471,8 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
 
   aPad->cd();
-  TGraph aGr = aTrack3D.getChargeProfile();
-  //TGraph aGr = aTrack3D.getHitDistanceProfile();
+  //TGraph aGr = aTrack3D.getChargeProfile();
+  TGraph aGr = aTrack3D.getHitDistanceProfile();
   aGr.SetTitle("Charge distribution along track.;d[track length];charge[arbitrary units]");
   aGr.SetLineWidth(2);
   aGr.SetLineColor(2);
@@ -597,3 +597,5 @@ void HistoManager::finalizeDotFinder() {
   myDotFinder.fillOutputStream();
   myDotFinder.closeOutputStream();
 }
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////

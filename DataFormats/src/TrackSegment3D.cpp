@@ -32,7 +32,7 @@ void TrackSegment3D::setBiasTangent(const TVector3 & aBias, const TVector3 & aTa
   myTangent = aTangent.Unit();
 
   double lambda = 10;
-  myStart = myBias; // -lambda*myTangent; // Modified by MC - 20 Aug 2021
+  myStart = myBias; 
   myEnd = myBias+lambda*myTangent;  
   initialize();
 }
@@ -148,7 +148,8 @@ double TrackSegment3D::getIntegratedHitDistance(double lambdaCut) const{
   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
     TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, lambdaCut);
     const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
-    sum += aTrack2DProjection.getIntegratedHitDistance(lambdaCut, aRecHits);    
+    sum += aTrack2DProjection.getIntegratedHitDistance(lambdaCut, aRecHits);
+    break;//TEST
   } 
   return sum;
 }

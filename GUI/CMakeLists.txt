@@ -41,8 +41,8 @@ add_library(${MODULE_NAME} SHARED ${sources} G__${MODULE_NAME}.cxx)
 
 add_executable(tpcGUI bin/tpcGUI.cxx)
 add_executable(dumpProjectionHistos bin/dumpProjectionHistos.cpp)
-add_executable(dumpClusterHistos bin/dumpClusterHistos.cpp) # added by MC - 4 Aug 2021
-add_executable(dumpRateHistos bin/dumpRateHistos.cpp) # added by MC - 5 Sep 2021
+add_executable(dumpClusterHistos bin/dumpClusterHistos.cpp)
+add_executable(dumpRateHistos bin/dumpRateHistos.cpp)
 # Compiler flags.
 #
 target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
@@ -59,8 +59,8 @@ target_link_libraries(dumpRateHistos PUBLIC DataFormats Utilities ${GRAW_TO_ROOT
 install(TARGETS ${MODULE_NAME} LIBRARY DESTINATION lib)
 install(TARGETS tpcGUI RUNTIME DESTINATION bin)
 install(TARGETS dumpProjectionHistos RUNTIME DESTINATION bin)
-install(TARGETS dumpClusterHistos RUNTIME DESTINATION bin) # added by MC - 4 Aug 2021
-install(TARGETS dumpRateHistos RUNTIME DESTINATION bin) # added by MC - 5 Sep 2021
+install(TARGETS dumpClusterHistos RUNTIME DESTINATION bin) 
+install(TARGETS dumpRateHistos RUNTIME DESTINATION bin)
 install(FILES ${CMAKE_BINARY_DIR}/${MODULE_NAME}/lib${MODULE_NAME}_rdict.pcm DESTINATION lib)
 install(FILES ${CMAKE_BINARY_DIR}/${MODULE_NAME}/lib${MODULE_NAME}.rootmap DESTINATION lib)
 install(FILES $<1:${PROJECT_SOURCE_DIR}/${MODULE_NAME}/config/> DESTINATION config)

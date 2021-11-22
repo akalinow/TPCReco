@@ -613,14 +613,14 @@ void MainFrame::drawRecoHistos(){
     myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("colz");
     //myHistoManager.getRawStripVsTimeInMM(strip_dir)->DrawClone("colz");
     //myHistoManager.getHoughAccumulator(strip_dir).DrawClone("colz");
-    myHistoManager.drawTrack2DSeed(strip_dir, aPad);
+    //myHistoManager.drawTrack2DSeed(strip_dir, aPad);
     myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
     //fCanvas->Update();
   }
    TVirtualPad *aPad = fCanvas->cd(4);
    std::cout<<"aPad: "<<aPad<<std::endl;
    myHistoManager.drawChargeAlongTrack3D(aPad);
-   //myHistoManager.getRawTimeProjection()->DrawClone("hist");
+   //myHistoManager.getRawTimeProjectionInMM()->DrawClone("hist");
    fCanvas->Update();
 }
 /////////////////////////////////////////////////////////
