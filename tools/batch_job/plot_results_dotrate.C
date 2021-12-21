@@ -46,6 +46,8 @@ int plot_results_dotrate(const char *input_root="results.root", const char *outp
     if(cname=="TH1D") { 
       TH1D *h=(TH1D*) f.Get(hname);
       if (h) {
+	// Change minimum
+	h->SetMinimum(0.);
 	// Change axis labels for rate plots
 	if(hname.BeginsWith("h_timediff")) {
 	  h->SetXTitle("Time difference [s]");
@@ -73,6 +75,22 @@ int plot_results_dotrate(const char *input_root="results.root", const char *outp
 	h->SetFillColor(kBlue);
 	h->Draw(""); 
 	c->Print(out.c_str()); 
+	if(hname.BeginsWith("h_x_") || hname.BeginsWith("h_y_")) {
+	  TH1D *hnew=(TH1D*)(h->Rebin(2, ((std::string)(h->GetName())+"_rebin2").c_str() )); 
+	  if (hnew) {
+	    hnew->SetLineColor(kBlue);
+	    hnew->SetFillColor(kBlue);
+	    hnew->DrawClone(""); 
+	    c->Print(out.c_str()); 
+	  }
+	  TH1D *hnew2=(TH1D*)(h->Rebin(4, ((std::string)(h->GetName())+"_rebin4").c_str() )); 
+	  if (hnew2) {
+	    hnew2->SetLineColor(kBlue);
+	    hnew2->SetFillColor(kBlue);
+	    hnew2->DrawClone(""); 
+	    c->Print(out.c_str()); 
+	  }
+	}
       }
     } 
     //    if(cname=="TH1F") { 
@@ -86,6 +104,8 @@ int plot_results_dotrate(const char *input_root="results.root", const char *outp
     if(cname=="TH2D") { 
       TH2D *h=(TH2D*) f.Get(hname);
       if (h) {
+	// Change minimum
+	h->SetMinimum(0.);
 	if(hname.BeginsWith("h_xy_")) {
 	  h->SetXTitle("Vertex X [mm]");
 	  h->SetYTitle("Vertex Y [mm]");
@@ -98,9 +118,22 @@ int plot_results_dotrate(const char *input_root="results.root", const char *outp
 	h->Draw("COLZ"); 
 	gPad->SetRightMargin(0.125);
 	c->Print(out.c_str()); 
-	TH2D *hnew=(TH2D*)(h->Rebin2D(8, 8, ((std::string)(h->GetName())+"_rebin8").c_str() )); 
+	TH2D *hnew=(TH2D*)(h->Rebin2D(2, 2, ((std::string)(h->GetName())+"_rebin2").c_str() )); 
 	if (hnew) {
-	  hnew->Draw("COLZ"); 
+	  hnew->DrawClone("COLZ"); 
+	  gPad->SetRightMargin(0.125);
+	  c->Print(out.c_str()); 
+	}
+	TH2D *hnew2=(TH2D*)(h->Rebin2D(4, 4, ((std::string)(h->GetName())+"_rebin4").c_str() )); 
+	if (hnew2) {
+	  hnew2->DrawClone("COLZ"); 
+	  gPad->SetRightMargin(0.125);
+	  c->Print(out.c_str()); 
+	}
+	TH2D *hnew3=(TH2D*)(h->Rebin2D(8, 8, ((std::string)(h->GetName())+"_rebin8").c_str() )); 
+	if (hnew3) {
+	  hnew3->DrawClone("COLZ"); 
+	  gPad->SetRightMargin(0.125);
 	  c->Print(out.c_str()); 
 	}
       }
@@ -121,6 +154,8 @@ int plot_results_dotrate(const char *input_root="results.root", const char *outp
     if(cname=="TProfile") { 
       TProfile *h=(TProfile*) f.Get(hname); 
       if (h) {
+	// Change minimum
+	h->SetMinimum(0.);
 	if(hname.BeginsWith("prof_deltaz_x_")) {
 	  h->SetXTitle("Vertex X [mm]");
 	  h->SetYTitle("Average #DeltaZ [mm]");
@@ -138,7 +173,7 @@ int plot_results_dotrate(const char *input_root="results.root", const char *outp
 	c->Print(out.c_str()); 
 	TProfile *hnew=(TProfile*)(h->RebinX(8, ((std::string)(h->GetName())+"_rebin8").c_str() )); 
 	if (hnew) {
-	  hnew->Draw(); 
+	  hnew->DrawClone(); 
 	  c->Print(out.c_str()); 
 	}
       }
@@ -158,9 +193,22 @@ int plot_results_dotrate(const char *input_root="results.root", const char *outp
 	h->Draw("COLZ"); 
 	gPad->SetRightMargin(0.125);
 	c->Print(out.c_str()); 
-	TProfile2D *hnew=(TProfile2D*)(h->Rebin2D(8, 8, ((std::string)(h->GetName())+"_rebin8").c_str() )); 
+	TProfile2D *hnew=(TProfile2D*)(h->Rebin2D(2, 2, ((std::string)(h->GetName())+"_rebin2").c_str() )); 
 	if (hnew) {
-	  hnew->Draw("COLZ"); 
+	  hnew->DrawClone("COLZ"); 
+	  gPad->SetRightMargin(0.125);
+	  c->Print(out.c_str()); 
+	}
+	TProfile2D *hnew2=(TProfile2D*)(h->Rebin2D(4, 4, ((std::string)(h->GetName())+"_rebin4").c_str() )); 
+	if (hnew2) {
+	  hnew2->DrawClone("COLZ"); 
+	  gPad->SetRightMargin(0.125);
+	  c->Print(out.c_str()); 
+	}
+	TProfile2D *hnew3=(TProfile2D*)(h->Rebin2D(8, 8, ((std::string)(h->GetName())+"_rebin8").c_str() )); 
+	if (hnew3) {
+	  hnew3->DrawClone("COLZ"); 
+	  gPad->SetRightMargin(0.125);
 	  c->Print(out.c_str()); 
 	}
       }

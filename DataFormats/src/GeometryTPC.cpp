@@ -966,6 +966,61 @@ int GeometryTPC::Aget_raw2normal(int raw_channel_idx) { // valid range [0-67]
   return channel_idx;
 }
 
+int GeometryTPC::Asad_normal2raw(
+   int asad_channel_idx) { // valid range [0-255]
+  int aget_raw_channel_idx = Aget_normal2raw(asad_channel_idx % AGET_Nchan);
+  int AGET_idx = (int)(asad_channel_idx / AGET_Nchan); // relative AGET index
+  if (aget_raw_channel_idx == ERROR) return ERROR;
+  return AGET_idx * AGET_Nchan_raw + aget_raw_channel_idx;
+}
+
+int GeometryTPC::Asad_normal2raw(
+    int aget_idx,
+    int channel_idx) { // valid range [0-3][0-63]
+  int aget_raw_channel_idx = Aget_normal2raw(channel_idx);
+  if (aget_raw_channel_idx == ERROR || 
+      aget_idx < 0 ||
+      aget_idx >= AGET_Nchips) return ERROR;
+  return aget_idx * AGET_Nchan_raw + aget_raw_channel_idx;
+}
+
+int GeometryTPC::Asad_normal2normal(
+    int aget_idx,
+    int channel_idx) { // valid range [0-3][0-63]
+  if(/*!IsOK() || */
+     aget_idx<0 || aget_idx>=AGET_Nchips ||
+     channel_idx<0 || channel_idx>=AGET_Nchan ) return ERROR;
+  return aget_idx * AGET_Nchan + channel_idx;
+}
+
+int GeometryTPC::Asad_raw2normal(
+    int aget_idx,
+    int raw_channel_idx) { // valid range [0-3][0-67]
+  int aget_channel_idx = Aget_raw2normal(raw_channel_idx);
+  if (aget_channel_idx == ERROR ||
+      aget_idx < 0 ||
+      aget_idx >= AGET_Nchips)
+    return ERROR;
+  return aget_idx * AGET_Nchan + aget_channel_idx;
+}
+
+int GeometryTPC::Asad_raw2normal(
+    int asad_raw_channel_idx) { // valid range [0-(1023+4*4)]
+  int aget_channel_idx = Aget_raw2normal(asad_raw_channel_idx % AGET_Nchan_raw);
+  int AGET_idx = (int)(asad_raw_channel_idx / AGET_Nchan_raw); // relative AGET index
+  if (aget_channel_idx == ERROR) return ERROR;
+  return AGET_idx * AGET_Nchan + aget_channel_idx;
+}
+
+int GeometryTPC::Asad_raw2raw(
+    int aget_idx,
+    int raw_channel_idx) { // valid range [0-3][0-67]
+  if (/*!IsOK() || */
+      aget_idx < 0 || aget_idx >= AGET_Nchips ||
+      raw_channel_idx < 0 || raw_channel_idx >= AGET_Nchan_raw) return ERROR;
+  return aget_idx * AGET_Nchan_raw + raw_channel_idx;
+}
+
 int GeometryTPC::Global_normal2raw(
     int COBO_idx, int ASAD_idx, int aget_idx,
     int channel_idx) { // valid range [0-1][0-3][0-3][0-63]
@@ -1429,3 +1484,4 @@ void GeometryTPC::Debug() {
 
 // ClassImp(StripTPC)
 // ClassImp(GeometryTPC)
+

@@ -3,7 +3,7 @@
 
 /// TPC event class.
 ///
-/// VERSION: 05 May 2018
+/// VERSION: 18 Oct 2021
 
 #include <cstdlib>
 #include <vector>
@@ -28,7 +28,8 @@ class SigClusterTPC;
 class EventTPC {
   //  friend class SigClusterTPC;
  private:
-  Long64_t event_id, event_number, run_id, event_time;
+  Long64_t event_id, //event_number,
+    run_id, event_time;
   std::shared_ptr<GeometryTPC> myGeometryPtr;  //! transient data member
   
   std::map<MultiKey3, double, multikey3_less> chargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
@@ -63,7 +64,7 @@ class EventTPC {
 
   void SetGeoPtr(std::shared_ptr<GeometryTPC> aPtr);
   void SetEventId(Long64_t aId) { event_id = aId; };
-  void SetEventNumber(Long64_t aNumber) { event_number = aNumber; };
+  //  void SetEventNumber(Long64_t aNumber) { event_number = aNumber; };
   void SetEventTime(Long64_t aTime) { event_time = aTime; };
   void SetRunId(Long64_t aId) { run_id =  aId; };
   // helper methods for inserting data points
@@ -89,7 +90,7 @@ class EventTPC {
   inline GeometryTPC * GetGeoPtr() const { return myGeometryPtr.get(); }
   inline Long64_t GetEventId() const { return event_id; }
   inline Long64_t GetEventTime() const { return event_time; }
-  inline Long64_t GetEventNumber() const { return event_number; }
+  //  inline Long64_t GetEventNumber() const { return event_number; }
   inline Long64_t GetRunId() const { return run_id; }
   inline bool IsOK() const { return initOK; }
   inline int GetTimeRebin() const { return time_rebin; }       
@@ -148,6 +149,7 @@ class EventTPC {
   TH2D *GetXY_TestUV(TH2D *h=NULL); // auxillary functions for x-check 
   TH2D *GetXY_TestVW(TH2D *h=NULL); // auxillary functions for x-check 
   TH2D *GetXY_TestWU(TH2D *h=NULL); // auxillary functions for x-check 
-    
+
+  friend std::ostream& operator<<(std::ostream& os, const EventTPC& e);
 };
 #endif

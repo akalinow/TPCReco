@@ -1,9 +1,10 @@
 #ifndef __MULTIKEY_H__
 
 #include<functional>
+#include<cstdint>
 
 // Allows to define multi-keyword maps.
-// VERSION: 11 Feb 2018
+// VERSION: 18 Oct 2021
 
 /* ================ 2-key version ================= */ 
 //
@@ -86,6 +87,53 @@ class MultiKey3 {
 struct multikey3_less : public std::binary_function<MultiKey3, MultiKey3, bool>
 {
   bool operator()(const MultiKey3 &mkey1, const MultiKey3 &mkey2 ) const 
+  {
+    return mkey1.operator<(mkey2); // mkey1 < mkey2;
+  }
+};
+
+
+/* ================ 3-key version (unsigned char) ================= */ 
+//
+// Example of use:
+//
+// std::map<MultiKey3_uint8, uint8_t, multikey3_unit8_less> mymap3;
+//
+class MultiKey3_uint8 {
+ public:
+  uint8_t  key1;
+  uint8_t  key2;
+  uint8_t  key3;
+    
+  MultiKey3_uint8(uint8_t k1=0, uint8_t k2=0, uint8_t k3=0)
+    : key1(k1), key2(k2), key3(k3) {}
+
+  bool operator<(const MultiKey3_uint8 &right) const 
+  {
+    if ( key1 == right.key1 ) {
+      if ( key2 == right.key2 ) {
+	return key3 < right.key3;
+      }
+      else {
+	return key2 < right.key2;
+      }
+    }
+    else {
+      return key1 < right.key1;
+    }
+  }    
+  bool operator()(const MultiKey3_uint8 &right) const 
+  {
+    if ( key1 == right.key1 && 
+	 key2 == right.key2 &&
+	 key3 == right.key3    ) return true;
+    return false;
+  }    
+};
+
+struct multikey3_uint8_less : public std::binary_function<MultiKey3_uint8, MultiKey3_uint8, bool>
+{
+  bool operator()(const MultiKey3_uint8 &mkey1, const MultiKey3_uint8 &mkey2 ) const 
   {
     return mkey1.operator<(mkey2); // mkey1 < mkey2;
   }
