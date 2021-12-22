@@ -66,27 +66,6 @@ int main(int argc, char *argv[]) {
   TrackData track_data;
   tree->Branch("track",&track_data,"length:energy:charge:cosTheta:phi:x0:y0:z0:x1:y1:z1");
   
-  TH2F hTrackChargeVsLength("hTrackChargeVsLength",
-			    "Track charge vs length distribution; d[mm]; charge [arbitrary units]",
-			    100,0,200, 100, 1000, 100000);
-
-  TH2F hTrackCosThetaVsLength("hTrackCosThetaVsLength",
-			       "Track direction vs length distribution: cos(#theta); d[mm]; cos(#theta)",
-			       100,0,200, 20, -1, 1);
-
-  TH2F hTrackPhiVsLength("hTrackPhiVsLength",
-			 "Track direction vs length distribution: #varphi; d[mm]; #varphi",
-			 100,0,200, 20, -TMath::Pi(), TMath::Pi());
-
-  TH2F hTrackEndPointsXY("hTrackEndPointsXY",
-		       "Track endpoints; x [mm]; y [mm]",
-		       300,-150,150,
-		       300,-150,150);
-
-  TH1F hTrackEndPointsZ("hTrackEndPoints",
-		       "Track endpoints; z [mm]",
-		       300,-150,150);
-  
   std::shared_ptr<EventSourceBase> myEventSource;
   myEventSource = std::make_shared<EventSourceROOT>();
   myEventSource->loadGeometry(geometryFileName);
@@ -145,15 +124,6 @@ int main(int argc, char *argv[]) {
      
       //std::cout<<aTrack3D<<std::endl;      
       //std::cout<<"length: "<<length<<" charge: "<<charge<<std::endl;
-      hTrackChargeVsLength.Fill(length, charge);
-      hTrackCosThetaVsLength.Fill(length, cosTheta);
-      hTrackPhiVsLength.Fill(length, phi);
-      if(std::abs(length-100)<10){
-	hTrackEndPointsXY.Fill(start.X(), start.Y());
-	hTrackEndPointsXY.Fill(end.X(), end.Y());
-	hTrackEndPointsZ.Fill(start.Z(), start.Z());
-	hTrackEndPointsZ.Fill(end.Z(), end.Z());
-      }
     }
   }
 
