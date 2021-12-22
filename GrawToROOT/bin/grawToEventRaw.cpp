@@ -97,7 +97,7 @@ int main(int argc, char *argv[]) {
   eventraw::EventData *persistent_eventData = (eventraw::EventData*)persistent_eventRaw;
   aTree.Branch("EventInfo", &persistent_eventInfo);
   aTree.Branch("EventData", &persistent_eventData);
-  //  aTree.Branch("EventRaw", persistent_eventRaw);
+  //aTree.Branch("EventRaw", persistent_eventRaw);
 
   // loop over ALL frames and fill "EventRaw" tree with EventRaw objects
   Long64_t currentEventIdx=-1;
@@ -167,9 +167,7 @@ int main(int argc, char *argv[]) {
   aTree.Print();
 
   // build index based on: majorname=EventId, minorname=NONE
-  std::cout <<KBLU<<"Building TTree index"<<RST<<std::endl;
-  aTree.BuildIndex("EventInfo.eventId");
-  std::cout <<KBLU<<"Done"<<RST<<std::endl;
+  //aTree.BuildIndex("eventId");
   aTree.Write("", TObject::kOverwrite); // save only the new version of the tree
   aFile.Close();
 
@@ -219,6 +217,6 @@ int main(int argc, char *argv[]) {
   std::cout<<"myEventSource.getPreviousEvent()"<<std::endl;
   myEventSource.getPreviousEvent();
   */
-  
+
   return 0;
 }

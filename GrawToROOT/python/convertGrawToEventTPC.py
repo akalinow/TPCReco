@@ -48,6 +48,6 @@ for aTimestamp, aRunFileList in grawFileList.items():
     for chunkId, aFile in enumerate(aRunFileList):
         arguments = aFile+" "+geometryFile+" EventRaw_"+aTimestamp+"_"+str(chunkId)+".root"
         print(aFile, aTimestamp, arguments)
-        os.system(command+" "+arguments)        
+        os.system(command+" "+arguments)
         if chunkId>5:
             break
