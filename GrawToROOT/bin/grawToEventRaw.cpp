@@ -19,8 +19,6 @@
 #include "get/TGrawFile.h"
 #include "mfm/FrameDictionary.h"
 
-#define DEBUG
-
 #ifdef DEBUG
 #include "EventSourceROOT.h" // DEBUG - read back test
 #include "EventTPC.h" // DEBUG - read back test
