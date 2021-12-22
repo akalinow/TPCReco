@@ -9,7 +9,7 @@
 #include "MultiKey.h"
 
 namespace eventraw {
-  
+
   class ChannelRaw {
   public:
     
@@ -79,6 +79,12 @@ namespace eventraw {
 
     friend std::ostream& operator<<(std::ostream& os, const eventraw::EventRaw& eraw);
   };
+
+  std::ostream& operator<<(std::ostream& os, const eventraw::AgetRaw& araw);
+  std::ostream& operator<<(std::ostream& os, const eventraw::EventInfo& einfo);
+  std::ostream& operator<<(std::ostream& os, const eventraw::ChannelRaw& craw);
+  std::ostream& operator<<(std::ostream& os, const eventraw::EventData& edata);  
+  std::ostream& operator<<(std::ostream& os, const eventraw::EventRaw& eraw);
 
 }
 #endif
