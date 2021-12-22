@@ -246,7 +246,7 @@ void EventSourceGRAW::collectEventFragments(unsigned int eventId){
   //long int eventNumberInFile = std::distance(myFramesMap.begin(), it);
 
   switch(fillEventType) {
-  case 1:  // fill EventRaw class (skip EventTPC)
+  case raw:  
     myCurrentEventRaw->eventId=eventId;
     myCurrentEvent->SetEventId(eventId); // for compatibility with EventSourceBase::currentEventNumber()
     std::cout<<KYEL<<"Creating a new EventRaw with eventId: "<<eventId<<RST<<std::endl;
@@ -270,7 +270,7 @@ void EventSourceGRAW::collectEventFragments(unsigned int eventId){
     fillEventRawFromFrame(myDataFrame);
     }
     break;
-  case 0:  // fill EventTPC class (skip EventRaw)
+  case tpc:  // fill EventTPC class (skip EventRaw)
   default:
     myCurrentEvent->Clear();
     myCurrentEvent->SetEventId(eventId);

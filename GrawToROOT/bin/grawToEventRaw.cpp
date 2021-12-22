@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
     //    dynamic_cast<EventSourceGRAW *>(myEventSource.get())
     //      ->setFrameLoadRange(160); // 160 frames
     myEventSource->setFrameLoadRange(160); // 160 frames
-    myEventSource->setFillEventType(EventSourceROOT::raw); // EventRaw
+    myEventSource->setFillEventType(EventSourceBase::raw);
     myEventSource->loadDataFile(dataFileName);
 
     std::cout << "File with " << myEventSource->numberOfEntries() << " frames opened."
@@ -139,7 +139,7 @@ int main(int argc, char *argv[]) {
 
 #ifdef DEBUG
     ////// DEBUG
-    if( eventIdxMap.size()==100 ) break;
+    if( eventIdxMap.size()==3 ) break;
     ////// DEBUG
 #endif
 

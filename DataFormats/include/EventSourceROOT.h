@@ -13,8 +13,6 @@ class EventSourceROOT: public EventSourceBase {
   
 public:
 
-  enum EventType {raw = 0, tpc = 1};
-
   EventSourceROOT(){};
 
   EventSourceROOT(const std::string & geometryFileName);

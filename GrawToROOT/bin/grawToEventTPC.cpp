@@ -63,7 +63,6 @@ int main(int argc, char *argv[]) {
     //    dynamic_cast<EventSourceGRAW *>(myEventSource.get())
     //      ->setFrameLoadRange(160); // 160 frames
     myEventSource->setFrameLoadRange(160); // 160 frames
-    myEventSource->setFillEventType(0); // EventTPC
     myEventSource->loadDataFile(dataFileName);
 
     std::cout << "File with " << myEventSource->numberOfEntries() << " frames opened."
