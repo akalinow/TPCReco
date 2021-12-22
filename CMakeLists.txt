@@ -61,6 +61,12 @@ else()
 endif()
 
 set(CMAKE_CXX_FLAGS "${ROOT_CXX_FLAGS} -Wall -Werror -O3 -std=c++17 -pthread")
+option(DEBUG "Define DEBUG variable" OFF)
+if(DEBUG)
+  MESSAGE( STATUS "DEBUG enabled" )
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG")
+endif()  
+  
 #Set RPATH to install dir, so user do not have to set the LD_LIBRARY_PATH
 set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 
