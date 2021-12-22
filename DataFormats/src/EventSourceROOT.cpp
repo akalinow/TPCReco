@@ -8,8 +8,6 @@
 #include "EventSourceROOT.h"
 #include "PedestalCalculator.h"
 
-#define DEBUG
-
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 EventSourceROOT::EventSourceROOT(const std::string & geometryFileName) {

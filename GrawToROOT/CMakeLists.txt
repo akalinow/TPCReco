@@ -35,6 +35,8 @@ if(EXISTS ${GET_VERSION_DIR})
   add_executable(grawToEventRaw bin/grawToEventRaw.cpp)
   # Compiler flags.
   #
+  MESSAGE( STATUS ${GET_CXX_FLAGS})
+  
   target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS} ${GET_CXX_FLAGS})
   target_compile_options(grawToEventTPC PUBLIC ${CMAKE_ROOT_CFLAGS} ${GET_CXX_FLAGS})
   target_compile_options(testEventTPCread PUBLIC ${CMAKE_ROOT_CFLAGS})
