@@ -10,6 +10,10 @@ class TFile;
 class TTree;
 
 class EventSourceROOT: public EventSourceBase {
+
+  enum EventType {raw = 0, tpc = 1};
+
+  
 public:
   
   EventSourceROOT(){};
@@ -38,7 +42,7 @@ public:
 
   void loadGeometry(const std::string & fileName);
   
-  inline void setReadEventType(int type) {readEventType=(type==0 ? 0 : 1);}
+  inline void setReadEventType(EventType type) {readEventType=type;}
 
  private:
 

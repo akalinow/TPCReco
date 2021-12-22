@@ -55,7 +55,10 @@ int main(int argc, char *argv[]) {
   std::string dataFileNamePrefix = "";
   //dataFileNamePrefix = "/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210622_extTrg_CO2_250mbar_DT1470ET/EventTPC_2021-06-22T12:01:56.568";
   //dataFileNamePrefix = "/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210622_extTrg_CO2_250mbar_DT1470ET/EventTPC_2021-06-22T14:11:08.614";
-  dataFileNamePrefix = "/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210617_extTrg_CO2_250mbar_DT1470ET/EventTPC_2021-06-17T11:54:38.000";
+  //dataFileNamePrefix = "/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210617_extTrg_CO2_250mbar_DT1470ET/EventTPC_2021-06-17T11:54:38.000";
+
+  dataFileNamePrefix = "/scratch/akalinow/ELITPC/data/calibration/2021-11-25T13/EventRaw_2021-11-25T13:53:16.129";
+
   int index = dataFileNamePrefix.find("EventTPC")+9;
   std::string timestamp = dataFileNamePrefix.substr(index, 23);
   std::string rootFileName = "TrackAnalysis_"+timestamp+ ".root";
@@ -69,6 +72,7 @@ int main(int argc, char *argv[]) {
   std::shared_ptr<EventSourceBase> myEventSource;
   myEventSource = std::make_shared<EventSourceROOT>();
   myEventSource->loadGeometry(geometryFileName);
+  myEventSource->setReadEventType(1);
   
   HistoManager myHistoManager;
   TrackBuilder myTkBuilder;

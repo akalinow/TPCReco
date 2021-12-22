@@ -8,8 +8,6 @@
 #include "EventSourceROOT.h"
 #include "PedestalCalculator.h"
 
-#define DEBUG
-
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 EventSourceROOT::EventSourceROOT(const std::string & geometryFileName) {
@@ -29,13 +27,13 @@ EventSourceROOT::EventSourceROOT(const std::string & geometryFileName) {
 void EventSourceROOT::setTreePointers() {
 
   switch(readEventType) {
-  case 1: // read EventRaw object and convert it into EventTPC later
+  case raw: 
     treeName = "TPCDataRaw";
     aPtrEventInfo = (eventraw::EventInfo*)(myCurrentEventRaw.get());
     aPtrEventData = (eventraw::EventData*)(myCurrentEventRaw.get());
     aPtr=NULL;
     break;
-  case 0: // read EventTPC object
+  case tpc: 
   default:
     treeName = "TPCData";
     aPtr = myCurrentEvent.get();

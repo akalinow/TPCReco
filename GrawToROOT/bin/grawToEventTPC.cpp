@@ -18,8 +18,6 @@
 #include "get/TGrawFile.h"
 #include "mfm/FrameDictionary.h"
 
-#define DEBUG
-
 #ifdef DEBUG
 #include "EventSourceROOT.h" // DEBUG - read back test
 #include "EventTPC.h" // DEBUG - read back test
@@ -178,7 +176,7 @@ int main(int argc, char *argv[]) {
   ///// DEBUG - READ BACK TEST
   std::shared_ptr<EventSourceROOT> myEventSourceRoot;
   myEventSourceRoot = std::make_shared<EventSourceROOT>(geometryFileName);
-  myEventSourceRoot->setReadEventType(0); // EventTPC
+  myEventSourceRoot->setReadEventType(EventSourceROOT::tpc); // EventTPC
   myEventSourceRoot->loadDataFile(rootFileName);
   std::cout<<"myEventSourceRoot.loadEventId(3)"<<std::endl;
   myEventSourceRoot->loadEventId(3);
