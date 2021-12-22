@@ -19,6 +19,8 @@
 #include "get/TGrawFile.h"
 #include "mfm/FrameDictionary.h"
 
+#include "colorText.h"
+
 #ifdef DEBUG
 #include "EventSourceROOT.h" // DEBUG - read back test
 #include "EventTPC.h" // DEBUG - read back test
@@ -165,7 +167,9 @@ int main(int argc, char *argv[]) {
   aTree.Print();
 
   // build index based on: majorname=EventId, minorname=NONE
+  std::cout <<KBLU<<"Building TTree index"<<RST<<std::endl;
   aTree.BuildIndex("EventInfo.eventId");
+  std::cout <<KBLU<<"Done"<<RST<<std::endl;
   aTree.Write("", TObject::kOverwrite); // save only the new version of the tree
   aFile.Close();
 
