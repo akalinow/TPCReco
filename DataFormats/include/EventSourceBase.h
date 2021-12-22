@@ -45,8 +45,6 @@ public:
   unsigned long int currentEntryNumber() const;
 
   std::shared_ptr<GeometryTPC> getGeometry() const;
-
-  virtual inline void setReadEventType(int type) {;}
     
   inline EventFilter & getEventFilter() {return eventFilter;}
 protected:

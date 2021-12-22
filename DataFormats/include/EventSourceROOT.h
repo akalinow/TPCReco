@@ -10,12 +10,11 @@ class TFile;
 class TTree;
 
 class EventSourceROOT: public EventSourceBase {
+  
+public:
 
   enum EventType {raw = 0, tpc = 1};
 
-  
-public:
-  
   EventSourceROOT(){};
 
   EventSourceROOT(const std::string & geometryFileName);
@@ -42,8 +41,6 @@ public:
 
   void loadGeometry(const std::string & fileName);
   
-  inline void setReadEventType(EventType type) {readEventType=type;}
-
  private:
 
   EventTPC *aPtr; // for TBranch
@@ -55,10 +52,10 @@ public:
   //std::shared_ptr<TTree> myTree;
   TTree * myTree;
   bool removePedestal{true};
-  unsigned int readEventType{0}; // EventTPC=0(default), EventRaw=1
+  EventType readEventType{raw};
 
-  PedestalCalculator myPedestalCalculator;
-  void setTreePointers();
+  PedestalCalculator myPedestalCalculator;  
+  void setTreePointers(const std::string & fileName);
   void fillEventFromEventRaw();
 
 };

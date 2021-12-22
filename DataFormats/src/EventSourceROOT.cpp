@@ -14,17 +14,13 @@ EventSourceROOT::EventSourceROOT(const std::string & geometryFileName) {
 
   loadGeometry(geometryFileName);
   myPedestalCalculator.SetGeometryAndInitialize(myGeometryPtr);
-
-  setTreePointers();
-  //  treeName = "TPCData";
-  //  aPtr = myCurrentEvent.get();
-  //  treeName = "TPCDataRaw";
-  //  aPtrEventInfo = (eventraw::EventInfo*)(myCurrentEventRaw.get());
-  //  aPtrEventData = (eventraw::EventData*)(myCurrentEventRaw.get());
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void EventSourceROOT::setTreePointers() {
+void EventSourceROOT::setTreePointers(const std::string & fileName) {
+
+  readEventType = raw;
+  if(fileName.find("EventTPC")!=std::string::npos) readEventType = tpc;
 
   switch(readEventType) {
   case raw: 
@@ -39,6 +35,7 @@ void EventSourceROOT::setTreePointers() {
     aPtr = myCurrentEvent.get();
     aPtrEventInfo=NULL;
     aPtrEventData=NULL;
+    break;
   };
 
 #ifdef DEBUG
@@ -83,7 +80,7 @@ void EventSourceROOT::loadDataFile(const std::string & fileName){
     exit(1);
   }
 
-  setTreePointers();
+  setTreePointers(fileName);
   myTree = (TTree*)myFile->Get(treeName.c_str());
   if(!myTree){
     std::cout<<KRED<<"ERROR "<<RST<<"TTree with name: "<<treeName
@@ -94,14 +91,15 @@ void EventSourceROOT::loadDataFile(const std::string & fileName){
   }
 
   switch(readEventType) {
-  case 1:
+  case raw:
     myTree->SetBranchAddress("EventInfo", &aPtrEventInfo);
     myTree->SetBranchAddress("EventData", &aPtrEventData);
     break;
 
-  case 0:
+  case tpc:
   default:
     myTree->SetBranchAddress("Event", &aPtr);
+    break;
   };
   
   nEntries = myTree->GetEntries();
@@ -127,25 +125,17 @@ void EventSourceROOT::loadFileEntry(unsigned long int iEntry){
   if((long int)iEntry>=myTree->GetEntries()) iEntry = myTree->GetEntries() - 1;
 
   switch(readEventType) {
-  case 1: // read EventRaw and convert it into EventTPC later
-
-    // update myCurrentEventRaw
+  case raw: 
     myTree->GetEntry(iEntry);
-
-    // update myCurrentEvent
     fillEventFromEventRaw();
     break;
 
-  case 0: // read EventTPC directly
+  case tpc: 
   default:
-    // reset geometry pointer
     myCurrentEvent->SetGeoPtr(0);
-    
-    // update myCurrentEvent
     myTree->GetEntry(iEntry);
-
-    // set correct geometry pointer
     myCurrentEvent->SetGeoPtr(myGeometryPtr);
+    break;
   };
   
   myCurrentEntry = iEntry;
@@ -180,14 +170,13 @@ void EventSourceROOT::loadEventId(unsigned long int iEvent){
     return;
   }
   // assumes that TTree::BuildIndex() was performed while storing myTree
-  loadFileEntry(myTree->GetEntryNumberWithIndex(iEvent));
-  /*
+  //loadFileEntry(myTree->GetEntryNumberWithIndex(iEvent));
+  
   unsigned long int iEntry = 0;
   while(currentEventNumber()!=iEvent && iEntry<nEntries){  
     loadFileEntry(iEntry);
     ++iEntry;
   }
-  */
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -201,7 +190,7 @@ void EventSourceROOT::loadGeometry(const std::string & fileName){
 void EventSourceROOT::fillEventFromEventRaw(){
 
   // sanity checks
-  if(readEventType!=1) {
+  if(readEventType!=raw) {
     std::cout << KRED << __FUNCTION__
 	      << ": Read flag mismatch! "
 	      << "Expected EventRaw instead of EventTPC. Entry skipped." << RST << std::endl;
@@ -228,6 +217,10 @@ void EventSourceROOT::fillEventFromEventRaw(){
   myCurrentEvent->SetEventId(myCurrentEventRaw->eventId);
   myCurrentEvent->SetEventTime(myCurrentEventRaw->timestamp);
   myCurrentEvent->SetGeoPtr(myGeometryPtr);
+
+  std::cout<<"myCurrentEventRaw->data().size(): "<<myCurrentEventRaw->data.size()
+	   <<" (unsigned int)myGeometryPtr->GetAsadNboards(): "<<(unsigned int)myGeometryPtr->GetAsadNboards()
+	   <<std::endl;
   
   // loop over AGET chips
   for(auto it=myCurrentEventRaw->data.begin(); it!=myCurrentEventRaw->data.end(); it++) {

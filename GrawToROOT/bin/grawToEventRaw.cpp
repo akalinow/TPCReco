@@ -7,7 +7,7 @@
 #include "EventRaw.h"
 #include "PedestalCalculator.h"
 #include "EventSourceGRAW.h"
-
+#include "SigClusterTPC.h"
 
 #include "TFile.h"
 #include "TTree.h"
@@ -175,11 +175,14 @@ int main(int argc, char *argv[]) {
   ///// DEBUG - READ BACK TEST
   std::shared_ptr<EventSourceROOT> myEventSourceRoot;
   myEventSourceRoot = std::make_shared<EventSourceROOT>(geometryFileName);
-  myEventSourceRoot->setReadEventType(1); // EventRaw
   myEventSourceRoot->loadDataFile(rootFileName);
   std::cout<<"myEventSourceRoot.loadEventId(3)"<<std::endl;
   myEventSourceRoot->loadEventId(3);
   std::cout<<*(myEventSourceRoot->getCurrentEvent())<<std::endl;
+  double chargeThreshold = 35;
+  int delta_timecells = 25;
+  int delta_strips = 5;
+  SigClusterTPC myCluster = myEventSourceRoot->getCurrentEvent()->GetOneCluster(chargeThreshold, delta_strips, delta_timecells);
   ///// DEBUG - READ BACK TEST
 #endif
   

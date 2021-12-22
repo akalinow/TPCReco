@@ -55,11 +55,13 @@ int main(int argc, char *argv[]) {
   std::string dataFileNamePrefix = "";
   //dataFileNamePrefix = "/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210622_extTrg_CO2_250mbar_DT1470ET/EventTPC_2021-06-22T12:01:56.568";
   //dataFileNamePrefix = "/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210622_extTrg_CO2_250mbar_DT1470ET/EventTPC_2021-06-22T14:11:08.614";
+
   //dataFileNamePrefix = "/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210617_extTrg_CO2_250mbar_DT1470ET/EventTPC_2021-06-17T11:54:38.000";
 
-  dataFileNamePrefix = "/scratch/akalinow/ELITPC/data/calibration/2021-11-25T13/EventRaw_2021-11-25T13:53:16.129";
+  dataFileNamePrefix = "/scratch/akalinow/ELITPC/data/calibration/2021-11-25T13/EventTPC_2021-11-25T13:53:16.129";
+  //dataFileNamePrefix = "/scratch/akalinow/ELITPC/data/calibration/2021-11-25T13/EventRaw_2021-11-25T13:53:16.129";
 
-  int index = dataFileNamePrefix.find("EventTPC")+9;
+  int index = dataFileNamePrefix.find("Event")+9;
   std::string timestamp = dataFileNamePrefix.substr(index, 23);
   std::string rootFileName = "TrackAnalysis_"+timestamp+ ".root";
   TFile outputROOTFile(rootFileName.c_str(),"RECREATE");
@@ -70,16 +72,14 @@ int main(int argc, char *argv[]) {
   tree->Branch("track",&track_data,"length:energy:charge:cosTheta:phi:x0:y0:z0:x1:y1:z1");
   
   std::shared_ptr<EventSourceBase> myEventSource;
-  myEventSource = std::make_shared<EventSourceROOT>();
-  myEventSource->loadGeometry(geometryFileName);
-  myEventSource->setReadEventType(1);
+  myEventSource = std::make_shared<EventSourceROOT>(geometryFileName);
   
   HistoManager myHistoManager;
   TrackBuilder myTkBuilder;
   myHistoManager.setGeometry(myEventSource->getGeometry());
   myTkBuilder.setGeometry(myEventSource->getGeometry());
 
-  for(int chunkId=0;chunkId<7;++chunkId){
+  for(int chunkId=0;chunkId<1;++chunkId){
     std::string suffix = "_"+std::to_string(chunkId);
     std::string dataFileName = dataFileNamePrefix+suffix+".root";
     if(dataFileName.find(".root")!=std::string::npos){
@@ -93,7 +93,7 @@ int main(int argc, char *argv[]) {
 
     //Event loop
     unsigned int nEntries = myEventSource->numberOfEntries();
-    //nEntries = 10;
+    nEntries = 1;
     for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
       myEventSource->loadFileEntry(iEntry);
       std::cout<<"EventID: "<<myEventSource->currentEventNumber()<<std::endl;
@@ -101,6 +101,8 @@ int main(int argc, char *argv[]) {
 	std::cout<<"Noisy event - skipping."<<std::endl;
 	continue;
       }
+
+      std::cout<<*myEventSource->getCurrentEvent()<<std::endl;
       myTkBuilder.setEvent(myEventSource->getCurrentEvent());
       myTkBuilder.reconstruct();      
       myHistoManager.setEvent(myEventSource->getCurrentEvent());
