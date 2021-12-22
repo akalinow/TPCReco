@@ -23,6 +23,10 @@ geometryFile = "/home/akalinow/scratch/TPCReco/build/resources/geometry_ELITPC_2
 #command = "../bin/grawToEventTPC"
 command = "../bin/grawToEventRaw"
 
+filePrefix = "EventTPC"
+if command.find("EventRaw")!=-1:
+    filePrefix = "EventRaw"
+
 grawFileList = {}
 
 for root, dirs, files in os.walk(path):
@@ -46,7 +50,7 @@ for aTimestamp, aRunFileList in grawFileList.items():
     print(aRunFileList)
 
     for chunkId, aFile in enumerate(aRunFileList):
-        arguments = aFile+" "+geometryFile+" EventRaw_"+aTimestamp+"_"+str(chunkId)+".root"
+        arguments = aFile+" "+geometryFile+" "+filePrefix+"_"+aTimestamp+"_"+str(chunkId)+".root"
         print(aFile, aTimestamp, arguments)
         os.system(command+" "+arguments)
         if chunkId>-5:

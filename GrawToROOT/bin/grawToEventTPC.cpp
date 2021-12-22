@@ -139,7 +139,7 @@ int main(int argc, char *argv[]) {
     
 #ifdef DEBUG
     ////// DEBUG
-    if( eventIdxMap.size()==100 ) break;
+    if( eventIdxMap.size()==10 ) break;
     ////// DEBUG
 #endif
     
