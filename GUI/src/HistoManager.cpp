@@ -469,6 +469,8 @@ void HistoManager::drawTrack3DProjectionTimeStrip(int strip_dir, TVirtualPad *aP
 void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
 
   const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
+  std::cout<<aTrack3D<<std::endl;
+  
 
   aPad->cd();
   //TGraph aGr = aTrack3D.getChargeProfile();

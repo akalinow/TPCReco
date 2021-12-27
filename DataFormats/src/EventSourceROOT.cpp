@@ -217,10 +217,6 @@ void EventSourceROOT::fillEventFromEventRaw(){
   myCurrentEvent->SetEventId(myCurrentEventRaw->eventId);
   myCurrentEvent->SetEventTime(myCurrentEventRaw->timestamp);
   myCurrentEvent->SetGeoPtr(myGeometryPtr);
-
-  std::cout<<"myCurrentEventRaw->data().size(): "<<myCurrentEventRaw->data.size()
-	   <<" (unsigned int)myGeometryPtr->GetAsadNboards(): "<<(unsigned int)myGeometryPtr->GetAsadNboards()
-	   <<std::endl;
   
   // loop over AGET chips
   for(auto it=myCurrentEventRaw->data.begin(); it!=myCurrentEventRaw->data.end(); it++) {

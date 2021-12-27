@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
   myHistoManager.setGeometry(myEventSource->getGeometry());
   myTkBuilder.setGeometry(myEventSource->getGeometry());
 
-  for(int chunkId=0;chunkId<1;++chunkId){
+  for(int chunkId=0;chunkId<7;++chunkId){
     std::string suffix = "_"+std::to_string(chunkId);
     std::string dataFileName = dataFileNamePrefix+suffix+".root";
     if(dataFileName.find(".root")!=std::string::npos){
@@ -93,7 +93,7 @@ int main(int argc, char *argv[]) {
 
     //Event loop
     unsigned int nEntries = myEventSource->numberOfEntries();
-    nEntries = 1;
+    //nEntries = 1;
     for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
       myEventSource->loadFileEntry(iEntry);
       std::cout<<"EventID: "<<myEventSource->currentEventNumber()<<std::endl;
