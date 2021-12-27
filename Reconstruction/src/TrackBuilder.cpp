@@ -448,7 +448,8 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
     aTrackCandidate.addSegment(a3DSeed);
   }
 
-  myFittedTrack = aTrackCandidate;
+  //myFittedTrack = aTrackCandidate;
+  myFittedTrack = fitTrackNodes(aTrackCandidate);
   myFittedTrackPtr = &myFittedTrack;
 }
 /////////////////////////////////////////////////////////
@@ -525,7 +526,7 @@ Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
   Track3D aTrackCandidate;
   aTrackCandidate.addSegment(aTrackSegment);
   aTrackCandidate.extendToZMinMax(myGeometryPtr->GetDriftCageZmin(),  myGeometryPtr->GetDriftCageZmax());
-  //TEST aTrackCandidate = fitTrackNodes(aTrackCandidate);
+  aTrackCandidate = fitTrackNodes(aTrackCandidate);
   aTrackCandidate.extendToZMinMax(myGeometryPtr->GetDriftCageZmin(),  myGeometryPtr->GetDriftCageZmax());
   aTrackCandidate.shrinkToHits();  
   return aTrackCandidate;
@@ -578,8 +579,6 @@ Track3D TrackBuilder::fitTrackNodes(const Track3D & aTrack) const{
 
   double minChi2 = 1E10;
   for(unsigned int iStep=1;iStep<2;++iStep){
-    
-    std::cout<<__FUNCTION__<<" iStep: "<<iStep<<std::endl;   
     params = aTrackCandidate.getSegmentsStartEndXYZ();
     nParams = params.size();
     for (int iPar = 0; iPar < nParams; ++iPar){
@@ -587,7 +586,7 @@ Track3D TrackBuilder::fitTrackNodes(const Track3D & aTrack) const{
       fitter.Config().ParSettings(iPar).SetStepSize(1.0/(2*iStep));
       fitter.Config().ParSettings(iPar).SetLimits(params[iPar]-20.0/iStep, params[iPar]+20.0/iStep);
     }  
-    std::cout<<"Pre-fit: "<<std::endl; 
+    std::cout<<KBLU<<"Pre-fit: "<<RST<<std::endl; 
     std::cout<<aTrackCandidate<<std::endl;
     
     bool fitStatus = fitter.FitFCN();
@@ -599,7 +598,7 @@ Track3D TrackBuilder::fitTrackNodes(const Track3D & aTrack) const{
     const ROOT::Fit::FitResult & result = fitter.Result();
     aTrackCandidate.chi2FromNodesList(result.GetParams());
 
-    std::cout<<"Post-fit: "<<std::endl;
+    std::cout<<KBLU<<"Post-fit: "<<RST<<std::endl;
     std::cout<<aTrackCandidate<<std::endl;
     
     if(aTrackCandidate.getChi2()<minChi2){

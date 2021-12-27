@@ -224,7 +224,8 @@ std::ostream & operator << (std::ostream &out, const TrackSegment3D &aSegment){
   out<<"("<<start.X()<<", "<<start.Y()<<", "<<start.Z()<<")"
        <<" -> "
      <<"("<<end.X()<<", "<<end.Y()<<", "<<end.Z()<<") "
-     <<"["<<aSegment.getRecHitChi2()<<"]";
+     <<" chi2: ["<<aSegment.getRecHitChi2()<<"]"
+     <<" charge: ("<<aSegment.getIntegratedCharge(aSegment.getLength())<<")";
 
   return out;
 }

@@ -620,6 +620,7 @@ void MainFrame::drawRecoHistos(){
    TVirtualPad *aPad = fCanvas->cd(4);
    std::cout<<"aPad: "<<aPad<<std::endl;
    myHistoManager.drawChargeAlongTrack3D(aPad);
+   //myHistoManager.drawTrack3D(aPad);
    //myHistoManager.getRawTimeProjectionInMM()->DrawClone("hist");
    fCanvas->Update();
 }
@@ -633,10 +634,12 @@ void MainFrame::drawRecoFromMarkers(std::vector<double> * segmentsXY){
     myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
     fCanvas->Update();
   }
-  TVirtualPad *aPad = fCanvas->cd(4);
+  //TVirtualPad *aPad = fCanvas->cd(4);
   //TCanvas *a3dCanvas = new TCanvas("a3dCanvas","3D Canvas", 500, 500);
   //TVirtualPad *aPad = a3dCanvas->cd();
-  myHistoManager.drawTrack3D(aPad);
+  //myHistoManager.drawTrack3D(aPad);
+  std::cout<<KRED<<"3D track drawing disabled. Work in progress."<<RST<<std::endl;
+  //myHistoManager.drawChargeAlongTrack3D(aPad);
   fCanvas->Update();
 }
 /////////////////////////////////////////////////////////
