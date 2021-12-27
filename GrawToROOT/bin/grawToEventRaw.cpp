@@ -56,20 +56,10 @@ int main(int argc, char *argv[]) {
   rootFileName = std::string(argv[3]);
   std::cout<<"rootFileName: "<<rootFileName<<std::endl;
 
-  std::shared_ptr<EventSourceGRAW> myEventSource;
+
   if (dataFileName.find(".graw") != std::string::npos &&
       geometryFileName.find(".dat") != std::string::npos &&
       rootFileName.find(".root") != std::string::npos) {
-
-    myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
-    //    dynamic_cast<EventSourceGRAW *>(myEventSource.get())
-    //      ->setFrameLoadRange(160); // 160 frames
-    myEventSource->setFrameLoadRange(160); // 160 frames
-    myEventSource->setFillEventType(EventSourceROOT::raw); // EventRaw
-    myEventSource->loadDataFile(dataFileName);
-
-    std::cout << "File with " << myEventSource->numberOfEntries() << " frames opened."
-              << std::endl;
   } else {
     std::cout << "One or more of the input arguments is/are weong. " << std::endl
 	      << "Check that GRAW and geometry files are correct. " << std::endl
@@ -77,10 +67,7 @@ int main(int argc, char *argv[]) {
               << std::endl;
     return -1;
   }
-
-  //  EventSourceGRAW myEventSource(geomFileName);
-  //  myEventSource.loadDataFile(dataFileName);
-  std::shared_ptr<eventraw::EventRaw> myEventRawPtr = myEventSource->getCurrentEventRaw();
+    
   
 #ifdef DEBUG
   ////// DEBUG
@@ -91,6 +78,15 @@ int main(int argc, char *argv[]) {
   
   ///Create ROOT Tree
   TFile aFile(rootFileName.c_str(),"RECREATE");
+
+  auto myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
+  myEventSource->setFrameLoadRange(160);
+  myEventSource->setFillEventType(EventSourceBase::raw);
+  myEventSource->loadDataFile(dataFileName);
+  std::cout << "File with " << myEventSource->numberOfEntries() << " frames opened." << std::endl;
+  
+  std::shared_ptr<eventraw::EventRaw> myEventRawPtr = myEventSource->getCurrentEventRaw();
+
   TTree aTree("TPCDataRaw","");
   eventraw::EventRaw  *persistent_eventRaw = myEventRawPtr.get();
   eventraw::EventInfo *persistent_eventInfo = (eventraw::EventInfo*)persistent_eventRaw;
@@ -139,7 +135,7 @@ int main(int argc, char *argv[]) {
 
 #ifdef DEBUG
     ////// DEBUG
-    if( eventIdxMap.size()==100 ) break;
+    if( eventIdxMap.size()==3 ) break;
     ////// DEBUG
 #endif
 
@@ -167,7 +163,7 @@ int main(int argc, char *argv[]) {
   aTree.Print();
 
   // build index based on: majorname=EventId, minorname=NONE
-  //aTree.BuildIndex("eventId");
+  aTree.BuildIndex("eventId");
   aTree.Write("", TObject::kOverwrite); // save only the new version of the tree
   aFile.Close();
 

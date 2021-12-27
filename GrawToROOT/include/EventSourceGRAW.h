@@ -43,7 +43,7 @@ public:
   
   inline void setFrameLoadRange(int range) {frameLoadRange=range;}
 
-  inline void setFillEventType(int type) {fillEventType=(type==0 ? 0 : 1);}
+  inline void setFillEventType(EventType type) {fillEventType=type;}
   
 private:
 
@@ -73,7 +73,7 @@ private:
   bool removePedestal{true};
   unsigned long int startingEventIndex{0};
   unsigned int frameLoadRange{100};
-  unsigned int fillEventType{0}; // EventTPC=0(default), EventRaw=1
+  EventType fillEventType{tpc};
 
 };
 #endif
