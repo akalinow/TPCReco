@@ -67,15 +67,7 @@ int main(int argc, char *argv[]) {
               << std::endl;
     return -1;
   }
-    
-  
-#ifdef DEBUG
-  ////// DEBUG
-  std::cout << "==== GrawToEventRaw INITIALIZATION: myPtr_EventRaw="
-	    << myEventRawPtr << " ====" << std::endl;
-  ////// DEBUG
-#endif
-  
+      
   ///Create ROOT Tree
   TFile aFile(rootFileName.c_str(),"RECREATE");
 
@@ -86,6 +78,13 @@ int main(int argc, char *argv[]) {
   std::cout << "File with " << myEventSource->numberOfEntries() << " frames opened." << std::endl;
   
   std::shared_ptr<eventraw::EventRaw> myEventRawPtr = myEventSource->getCurrentEventRaw();
+
+  #ifdef DEBUG
+  ////// DEBUG
+  std::cout << "==== GrawToEventRaw INITIALIZATION: myPtr_EventRaw="
+	    << myEventRawPtr << " ====" << std::endl;
+  ////// DEBUG
+  #endif
 
   TTree aTree("TPCDataRaw","");
   eventraw::EventRaw  *persistent_eventRaw = myEventRawPtr.get();

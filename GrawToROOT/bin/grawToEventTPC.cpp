@@ -65,14 +65,7 @@ int main(int argc, char *argv[]) {
               << std::endl;
     return -1;
   }
-
-#ifdef DEBUG
-  ////// DEBUG
-  std::cout << "==== GrawToEvenTPC INITIALIZATION: myPtr_EventTPC="
-	    << myEventPtr << " ====" << std::endl;
-  ////// DEBUG
-#endif
-
+  
   // Create ROOT Tree
   TFile aFile(rootFileName.c_str(),"RECREATE");
   
@@ -82,6 +75,13 @@ int main(int argc, char *argv[]) {
   std::cout << "File with " << myEventSource->numberOfEntries() << " frames opened." << std::endl;
   
   std::shared_ptr<EventTPC> myEventPtr = myEventSource->getCurrentEvent();
+
+  #ifdef DEBUG
+  ////// DEBUG
+  std::cout << "==== GrawToEvenTPC INITIALIZATION: myPtr_EventTPC="
+	    << myEventPtr << " ====" << std::endl;
+  ////// DEBUG
+  #endif
 
   TTree aTree("TPCData","");
   EventTPC *persistent_event = myEventPtr.get();
