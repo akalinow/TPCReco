@@ -29,6 +29,7 @@ TrackBuilder::TrackBuilder() {
   myAccumulators.resize(3);
   my2DSeeds.resize(3);
   myRecHits.resize(3);
+  myRawHits.resize(3);
 
   fitter.Config().MinimizerOptions().SetMinimizerType("GSLSimAn");
   //fitter.Config().MinimizerOptions().SetMinimizerType("Minuit2");
@@ -122,7 +123,7 @@ void TrackBuilder::setEvent(EventTPC* aEvent){
   
   std::string hName, hTitle;
   if(!myHistoInitialized){     
-    for(int iDir = 0; iDir<3;++iDir){
+    for(int iDir=DIR_U;iDir<=DIR_W;++iDir){
       std::shared_ptr<TH2D> hRawHits = myEvent->GetStripVsTimeInMM(getCluster(), iDir);
       double minX = hRawHits->GetXaxis()->GetXmin();
       double minY = hRawHits->GetYaxis()->GetXmin();
@@ -166,10 +167,10 @@ void TrackBuilder::setEvent(EventTPC* aEvent){
       //////// DEBUG
       std::cout << ": rhoMIN/rhoMAX[mm]=" << rhoMIN << "/" << rhoMAX << std::endl;
       //////// DEBUG
-      // modified by MC - 8 Aug 2021
-
       myAccumulators[iDir] = hAccumulator;
-      myRecHits[iDir] = *hRawHits;
+      myRawHits[iDir] = *hRawHits;
+      myRecHits[iDir] = *((TH2D*)hRawHits->Clone());
+      if(iDir==DIR_U) hTimeProjection = *hRawHits->ProjectionX();
     }
     myHistoInitialized = true;
   } 
@@ -177,31 +178,36 @@ void TrackBuilder::setEvent(EventTPC* aEvent){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void TrackBuilder::reconstruct(){
-  
+
+  hTimeProjection.Reset();  
   for(int iDir=DIR_U;iDir<=DIR_W;++iDir){
     makeRecHits(iDir);
     fillHoughAccumulator(iDir);
     my2DSeeds[iDir] = findSegment2DCollection(iDir);    
   }
+  myZRange = getTimeProjectionEdges();
+  
   myTrack3DSeed = buildSegment3D();
-  *(&myFittedTrack) = fitTrack3D(myTrack3DSeed);
+  Track3D aTrackCandidate;
+  aTrackCandidate.addSegment(myTrack3DSeed);
+  aTrackCandidate.extendToZRange(std::get<0>(myZRange),std::get<1>(myZRange));
+  fitTrack3D(aTrackCandidate);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void TrackBuilder::makeRecHits(int iDir){ 
+void TrackBuilder::makeRecHits(int iDir){
 
-  std::shared_ptr<TH2D> hRawHits = myEvent->GetStripVsTimeInMM(getCluster(), iDir);
+  myRawHits[iDir] =  *(myEvent->GetStripVsTimeInMM(getCluster(), iDir));
+  const TH2D & hRawHits = myRawHits[iDir];
   TH2D & hRecHits = myRecHits[iDir];
   hRecHits.Reset();
-  std::string tmpTitle(hRawHits->GetTitle());
+  std::string tmpTitle(hRawHits.GetTitle());
   if(tmpTitle.find("from")!=std::string::npos){
     std::string eventNumber = tmpTitle.substr(0,tmpTitle.find(":"));
     tmpTitle.replace(0,tmpTitle.find("from"),"");
     tmpTitle = eventNumber+": Reco hits "+tmpTitle;
     hRecHits.SetTitle(tmpTitle.c_str());
   }
-  hRecHits.Add(hRawHits.get());//TEST
-  return;//TEST
 
   TH1D *hProj;
   double hitWirePos = -999.0;
@@ -209,10 +215,10 @@ void TrackBuilder::makeRecHits(int iDir){
   double hitTimePosError = -999.0;
   double hitCharge = -999.0;
   for(int iBinY=1;iBinY<hRecHits.GetNbinsY();++iBinY){
-    hProj = hRawHits->ProjectionX("hProj",iBinY, iBinY);
+    hProj = hRawHits.ProjectionX("hProj",iBinY, iBinY);
     TF1 timeResponseShape = fitTimeWindow(hProj);
 
-    hitWirePos = hRawHits->GetYaxis()->GetBinCenter(iBinY);
+    hitWirePos = hRawHits.GetYaxis()->GetBinCenter(iBinY);
     for(int iSet=0;iSet<timeResponseShape.GetNpar();iSet+=3){
       hitTimePos = timeResponseShape.GetParameter(iSet+1);
       hitTimePosError = timeResponseShape.GetParameter(iSet+2);
@@ -230,6 +236,7 @@ void TrackBuilder::makeRecHits(int iDir){
       hRecHits.SetBinContent(iBin, 0.0);
     }
   }
+  hTimeProjection.Add(hRecHits.ProjectionX());
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -304,9 +311,48 @@ TF1 TrackBuilder::fitTimeWindow(TH1D* hProj){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+std::tuple<double, double> TrackBuilder::getTimeProjectionEdges() const{
+  
+  int iBinStart = -1;
+  int iBinEnd = -1;
+  double histoSum = hTimeProjection.Integral();
+  double sum = 0.0;
+  double threshold = 0.01;
+
+  for(auto iBin=0;iBin<hTimeProjection.GetNbinsX();++iBin){
+    sum += hTimeProjection.GetBinContent(iBin);
+    if(sum/histoSum>threshold && iBinStart<0) iBinStart = iBin;
+    else if(sum/histoSum>1.0-threshold && iBinEnd<0) {
+      iBinEnd = iBin;
+      break;
+    }
+  }
+    
+  double start = hTimeProjection.GetXaxis()->GetBinCenter(iBinStart-1);
+  double end =  hTimeProjection.GetXaxis()->GetBinCenter(iBinEnd+1);
+
+  hTimeProjection.Print();
+  std::cout<<KRED<<"getTimeProjectionEdges "<<RST
+	   <<" threshold: "<<threshold
+    	   <<" start bin: "<<iBinStart
+	   <<" end bin: "<<iBinEnd
+	   <<" start: "<<start
+	   <<" end: "<<end
+	   <<std::endl;
+  
+  return std::make_tuple(start, end);
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 const TH2D & TrackBuilder::getRecHits2D(int iDir) const{
 
   return myRecHits[iDir];  
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+const TH1D & TrackBuilder::getRecHitsTimeProjection() const{
+
+  return hTimeProjection;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -353,7 +399,6 @@ void TrackBuilder::fillHoughAccumulator(int iDir){
       for(int iBinTheta=1;iBinTheta<myAccumulators[iDir].GetNbinsX();++iBinTheta){
 	theta = myAccumulators[iDir].GetXaxis()->GetBinCenter(iBinTheta);
 	rho = x*cos(theta) + y*sin(theta);
-	charge = 1.0; //FIXME: study how to include the charge. 
 	myAccumulators[iDir].Fill(theta, rho, charge);
       }
     }
@@ -447,10 +492,8 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
     a3DSeed.setStartEnd(start, end);
     aTrackCandidate.addSegment(a3DSeed);
   }
-
-  //myFittedTrack = aTrackCandidate;
-  myFittedTrack = fitTrackNodes(aTrackCandidate);
-  myFittedTrackPtr = &myFittedTrack;
+  aTrackCandidate.extendToZRange(std::get<0>(myZRange),std::get<1>(myZRange));
+  fitTrack3D(aTrackCandidate);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -521,49 +564,18 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-Track3D TrackBuilder::fitTrack3D(const TrackSegment3D & aTrackSegment) const{
+void TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
 
-  Track3D aTrackCandidate;
-  aTrackCandidate.addSegment(aTrackSegment);
-  aTrackCandidate.extendToZMinMax(myGeometryPtr->GetDriftCageZmin(),  myGeometryPtr->GetDriftCageZmax());
-  aTrackCandidate = fitTrackNodes(aTrackCandidate);
-  aTrackCandidate.extendToZMinMax(myGeometryPtr->GetDriftCageZmin(),  myGeometryPtr->GetDriftCageZmax());
-  aTrackCandidate.shrinkToHits();  
-  return aTrackCandidate;
-  
-  ///Line splitting does not work yet.
-  TGraph aGraph = aTrackCandidate.getHitDistanceProfile();
-  double maxValue = 0.0;
-  double bestSplit = 0.5;
-  int nDivisions = 200;
-  for(int iDivision=1;iDivision<nDivisions;++iDivision){
-    double val = aGraph.Eval((double)iDivision/nDivisions*aTrackCandidate.getLength());
-    if(val>maxValue){
-      maxValue = val;
-      bestSplit = (double)iDivision/nDivisions;
-    }
-  }
-  std::cout<<"bestSplit: "<<bestSplit<<std::endl;
-  aTrackCandidate.splitWorseChi2Segment(bestSplit);
-  
-  std::cout<<"after split: "<<std::endl;
+  std::cout<<KBLU<<"Pre-fit: "<<RST<<std::endl; 
   std::cout<<aTrackCandidate<<std::endl;
 
-  aTrackCandidate = fitTrackNodes(aTrackCandidate);
-  return aTrackCandidate;
-  /*
-  if(aTrackCandidate.getLength()<1.0) return aTrackCandidate;//FIX me move threshold to configuration
+  myFittedTrack = fitTrackNodes(aTrackCandidate);
+  myFittedTrack.extendToZRange(std::get<0>(myZRange),std::get<1>(myZRange));
+  myFittedTrack.shrinkToHits();
+  myFittedTrackPtr = &myFittedTrack;
 
-  bestSplit = fitTrackSplitPoint(aTrackCandidate);
-  aTrackCandidate.splitWorseChi2Segment(bestSplit);
-  aTrackCandidate = fitTrackNodes(aTrackCandidate);
-  
-  bestSplit = fitTrackSplitPoint(aTrackCandidate);
-  aTrackCandidate.splitWorseChi2Segment(bestSplit);
-  aTrackCandidate = fitTrackNodes(aTrackCandidate);
-  
-  return aTrackCandidate;
-  */
+  std::cout<<KBLU<<"Post-fit: "<<RST<<std::endl;
+  std::cout<<myFittedTrack<<std::endl;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -577,18 +589,18 @@ Track3D TrackBuilder::fitTrackNodes(const Track3D & aTrack) const{
   ROOT::Math::Functor fcn(&aTrackCandidate, &Track3D::chi2FromNodesList, nParams);
   fitter.SetFCN(fcn, params.data());
 
-  double minChi2 = 1E10;
-  for(unsigned int iStep=1;iStep<2;++iStep){
+  //double minChi2 = 1E10;
+  double paramWindowWidth = 100.0;
+  for(int iStep=-1;iStep<0;++iStep){
+    aTrackCandidate.enableProjectionForChi2(iStep);
     params = aTrackCandidate.getSegmentsStartEndXYZ();
     nParams = params.size();
     for (int iPar = 0; iPar < nParams; ++iPar){
       fitter.Config().ParSettings(iPar).SetValue(params[iPar]);
-      fitter.Config().ParSettings(iPar).SetStepSize(1.0/(2*iStep));
-      fitter.Config().ParSettings(iPar).SetLimits(params[iPar]-20.0/iStep, params[iPar]+20.0/iStep);
-    }  
-    std::cout<<KBLU<<"Pre-fit: "<<RST<<std::endl; 
-    std::cout<<aTrackCandidate<<std::endl;
-    
+      fitter.Config().ParSettings(iPar).SetStepSize(1.0);
+      fitter.Config().ParSettings(iPar).SetLimits(params[iPar]-paramWindowWidth,
+						  params[iPar]+paramWindowWidth);
+    }      
     bool fitStatus = fitter.FitFCN();
     if (!fitStatus) {
       Error(__FUNCTION__, "Track3D Fit failed");
@@ -597,14 +609,10 @@ Track3D TrackBuilder::fitTrackNodes(const Track3D & aTrack) const{
     }
     const ROOT::Fit::FitResult & result = fitter.Result();
     aTrackCandidate.chi2FromNodesList(result.GetParams());
-
-    std::cout<<KBLU<<"Post-fit: "<<RST<<std::endl;
-    std::cout<<aTrackCandidate<<std::endl;
-    
-    if(aTrackCandidate.getChi2()<minChi2){
-      minChi2 =  aTrackCandidate.getChi2();
+    //if(aTrackCandidate.getChi2()<minChi2){
+    //minChi2 =  aTrackCandidate.getChi2();
       bestParams = aTrackCandidate.getSegmentsStartEndXYZ();
-    }
+      //}
   }
   aTrackCandidate.chi2FromNodesList(bestParams.data());
   return aTrackCandidate;
@@ -649,7 +657,7 @@ double TrackBuilder::fitTrackSplitPoint(const Track3D& aTrack) const{
     const ROOT::Fit::FitResult & result = fitter.Result();
     aTrackCandidate.chi2FromNodesList(result.GetParams());
     aTrackCandidate.removeEmptySegments();
-    aTrackCandidate.extendToZMinMax(myGeometryPtr->GetDriftCageZmin(),  myGeometryPtr->GetDriftCageZmax());
+    aTrackCandidate.extendToZRange(myGeometryPtr->GetDriftCageZmin(),  myGeometryPtr->GetDriftCageZmax());
     aTrackCandidate.shrinkToHits();
     
     if(aTrackCandidate.getChi2()<currentBestChi2){

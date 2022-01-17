@@ -54,7 +54,7 @@ double TrackSegment2D::getIntegratedCharge(double lambdaCut, const Hit2DCollecti
 
   double x = 0.0, y = 0.0;
   double totalCharge = 0.0;
-  double radiusCut = 2.0;//FIXME put into configuration
+  double radiusCut = 4.0;//FIXME put into configuration. Value 4.0 abtaine looking athe plots.
   double distance = 0.0;
   TVector3 aPoint;
   
@@ -126,9 +126,11 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
   double chargeSum = 0.0;
   double distance = 0.0;
   int pointCount = 0;
+  double sigma = 1.0; //TEST FIX ME: abritrary value taken
   
   double x = 0.0, y = 0.0;
   double charge = 0.0;
+  double weight = 0.0;
 
   for(const auto aHit:aRecHits){
     x = aHit.getPosTime();
@@ -136,10 +138,11 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
     charge = aHit.getCharge();
     aPoint.SetXYZ(x, y, 0.0);
     distance = getPointTransverseDistance(aPoint);
-    if(distance<0 || distance>10) continue;//Ignore far away hits. FIXME optimize threshold
+    weight = exp(-distance*distance/(2.0*sigma*sigma));
+    if(distance<0) continue;
     ++pointCount;    
-    chi2 += std::pow(distance, 2)*charge;
-    chargeSum +=charge;
+    chi2 += std::pow(distance, 2)*charge*weight;
+    chargeSum +=charge*weight;
   }
   if(!pointCount) return dummyChi2;
 

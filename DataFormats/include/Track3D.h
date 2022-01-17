@@ -38,13 +38,15 @@ public:
 
   void splitWorseChi2Segment(double lenghtFraction);
 
-  void extendToZMinMax(double zMin, double zMax);
+  void extendToZRange(double zMin, double zMax);
 
   ///Shrink track to actual hits range.
   void shrinkToHits();
 
   void removeEmptySegments();
 
+  void enableProjectionForChi2(int iProjection);
+  
   double chi2FromNodesList(const double *par);
 
   double chi2FromSplitPoint(const double *par);
@@ -71,6 +73,7 @@ private:
 
   double getNodesChi2() const;
 
+  int iProjectionForChi2{-1};
   double myLenght, myChi2;
   double stepAlongTrack;
   std::vector<double> segmentChi2;

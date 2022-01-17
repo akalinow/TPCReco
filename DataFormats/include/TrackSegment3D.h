@@ -76,7 +76,7 @@ public:
 
   const std::vector<Hit2DCollection> & getRecHits() const { return myRecHits;}
 
-  double getRecHitChi2() const;
+  double getRecHitChi2(int iProjection=-1) const;
   
   ///Operator needed for fitting.
   double operator() (const double *par);

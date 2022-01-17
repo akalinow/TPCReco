@@ -75,6 +75,8 @@ public:
 
   std::shared_ptr<TH2D> getRecHitStripVsTime(int strip_dir);
 
+  std::shared_ptr<TH1D> getRecHitTimeProjection();
+
   std::shared_ptr<TH2D> getChannels(int cobo_id, int asad_id);
 
   std::shared_ptr<TH1D> getClusterTimeProjection(); // added by MC - 4 Aug 2021

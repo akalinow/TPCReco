@@ -43,6 +43,8 @@ public:
 
   const TH2D & getRecHits2D(int iDir) const;
 
+  const TH1D & getRecHitsTimeProjection() const;
+
   const TH2D & getHoughtTransform(int iDir) const;
   
   const TrackSegment2D & getSegment2D(int iDir, unsigned int iTrack=0) const;
@@ -66,12 +68,14 @@ private:
   TrackSegment2D findSegment2D(int iDir, int iPeak) const;
   
   TrackSegment3D buildSegment3D(int iTrackSeed=0) const;
-  
-  Track3D fitTrack3D(const TrackSegment3D & aTrackSeedSegment) const;
 
+  void fitTrack3D(const Track3D & aTrackCandidate);
+  
   Track3D fitTrackNodes(const Track3D & aTrack) const;
 
   double fitTrackSplitPoint(const Track3D& aTrackCandidate) const;
+
+  std::tuple<double, double> getTimeProjectionEdges() const;
    
   EventTPC *myEvent;
   SigClusterTPC myCluster;
@@ -83,8 +87,10 @@ private:
 
   TVector3 aHoughOffest;
   std::vector<TH2D> myAccumulators;
-  std::vector<TH2D> myRecHits;
+  std::vector<TH2D> myRecHits, myRawHits;
+  TH1D hTimeProjection;
   std::vector<TrackSegment2DCollection> my2DSeeds;
+  std::tuple<double, double> myZRange;
 
   TrackSegment2D dummySegment2D;
   TrackSegment3D myTrack3DSeed, dummySegment3D;

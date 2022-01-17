@@ -284,7 +284,14 @@ std::shared_ptr<TH2D> HistoManager::getRecHitStripVsTime(int strip_dir){
   }
   return aHisto;//FIX ME avoid object copying
 }
-
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::shared_ptr<TH1D> HistoManager::getRecHitTimeProjection(){
+  TH1D *h = (TH1D*)myTkBuilder.getRecHitsTimeProjection().Clone();
+  auto aHisto=std::shared_ptr<TH1D>(h);
+  aHisto->SetLineColor(2);
+  return aHisto;//FIX ME avoid object copying
+}
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 TH3D* HistoManager::get3DReconstruction(){
@@ -618,7 +625,7 @@ void HistoManager::resetEventRateGraph(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-// Dot-like events usful for neutron flux monitoring
+// Dot-like events useful for neutron flux monitoring
 /////////////////////////////////////////////////////////
 void HistoManager::initializeDotFinder(unsigned int hitThr,
 				       //				       unsigned int maxStripsPerDir,

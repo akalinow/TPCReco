@@ -156,7 +156,7 @@ void MainFrame::InitializeEventSource(){
 
   if(myWorkMode!=M_ONLINE_MODE){
     myEventSource->loadDataFile(dataFileName);
-    myEventSource->loadFileEntry(0);
+    myEventSource->loadFileEntry(16); //TEST
   }
   myHistoManager.setGeometry(myEventSource->getGeometry());
   myHistoManager.openOutputStream(dataFileName);
@@ -569,7 +569,9 @@ void MainFrame::drawRawHistos(){
 /////////////////////////////////////////////////////////
 void MainFrame::drawTechnicalHistos(){
   auto cobo_id=0;
-  for( int aget_id = 0; aget_id < 3 ; ++aget_id ){ /// magic number, should be geometry->GetAgetNumber()
+  for( int aget_id = 0;
+       aget_id <myEventSource->getGeometry()->GetAgetNchips();
+       ++aget_id ){
     fCanvas->cd(aget_id+1);
     myHistoManager.getChannels(cobo_id, aget_id)->DrawClone("colz");
     fCanvas->Update();
@@ -609,19 +611,18 @@ void MainFrame::drawRecoHistos(){
   /////
    for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
     TVirtualPad *aPad = fCanvas->cd(strip_dir+1);
-    std::cout<<" aPad: "<<aPad<<std::endl;
     myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("colz");
     //myHistoManager.getRawStripVsTimeInMM(strip_dir)->DrawClone("colz");
     //myHistoManager.getHoughAccumulator(strip_dir).DrawClone("colz");
-    //myHistoManager.drawTrack2DSeed(strip_dir, aPad);
+    myHistoManager.drawTrack2DSeed(strip_dir, aPad);
     myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
-    //fCanvas->Update();
   }
-   TVirtualPad *aPad = fCanvas->cd(4);
-   std::cout<<"aPad: "<<aPad<<std::endl;
-   myHistoManager.drawChargeAlongTrack3D(aPad);
-   //myHistoManager.drawTrack3D(aPad);
-   //myHistoManager.getRawTimeProjectionInMM()->DrawClone("hist");
+   fCanvas->cd(4);
+   //myHistoManager.drawChargeAlongTrack3D(fCanvas->cd(4));
+   //myHistoManager.drawTrack3D(fCanvas->cd(4));
+   
+   myHistoManager.getRawTimeProjectionInMM()->DrawClone("hist");
+   myHistoManager.getRecHitTimeProjection()->DrawClone("hist same");
    fCanvas->Update();
 }
 /////////////////////////////////////////////////////////
@@ -632,14 +633,11 @@ void MainFrame::drawRecoFromMarkers(std::vector<double> * segmentsXY){
   for(int strip_dir=0;strip_dir<3;++strip_dir){
     TVirtualPad *aPad = fCanvas->cd(strip_dir+1);
     myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
-    fCanvas->Update();
   }
-  //TVirtualPad *aPad = fCanvas->cd(4);
-  //TCanvas *a3dCanvas = new TCanvas("a3dCanvas","3D Canvas", 500, 500);
-  //TVirtualPad *aPad = a3dCanvas->cd();
-  //myHistoManager.drawTrack3D(aPad);
+  //myHistoManager.drawTrack3D(fCanvas->cd(4));
   std::cout<<KRED<<"3D track drawing disabled. Work in progress."<<RST<<std::endl;
   //myHistoManager.drawChargeAlongTrack3D(aPad);
+  //myHistoManager.drawChargeAlongTrack3D(fCanvas->cd(4));
   fCanvas->Update();
 }
 /////////////////////////////////////////////////////////

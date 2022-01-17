@@ -128,6 +128,13 @@ void Track3D::updateHitDistanceProfile(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+void Track3D::enableProjectionForChi2(int iProjection){
+
+  iProjectionForChi2 = iProjection;
+  
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 double Track3D::getChi2() const{
 
   double chi2 = 0.0;
@@ -151,7 +158,7 @@ double Track3D::getNodesChi2() const{
 
   double chi2 = 0.0;
   std::for_each(nodeHitsChi2.begin(), nodeHitsChi2.end(), [&](auto aItem){chi2 += aItem;});
-  //TEST std::for_each(nodeAngleChi2.begin(), nodeAngleChi2.end(), [&](auto aItem){chi2 += aItem;});
+  std::for_each(nodeAngleChi2.begin(), nodeAngleChi2.end(), [&](auto aItem){chi2 += aItem;});
   return chi2;
 
 }
@@ -171,7 +178,7 @@ void Track3D::updateNodesChi2(int strip_dir){
 
     sum = 0.0;
     nodeChi2 = 0.0;
-    
+  
     TVector3 node3D = aSegment->getEnd();
     TVector3 formerTangent3D = aSegment->getTangent();
     TVector3 latterTangent3D = (aSegment+1)->getTangent();
@@ -181,12 +188,9 @@ void Track3D::updateNodesChi2(int strip_dir){
     TVector3 formerTransverse2D(-formerTangent3D*stripPitchDirection, formerTangent3D.Z(), 0.0);    
     TVector3 latterTransverse2D(-latterTangent3D*stripPitchDirection, latterTangent3D.Z(), 0.0);
     double deltaPhi = ROOT::Math::VectorUtil::DeltaPhi(formerTransverse2D, latterTransverse2D);
-
     nodeAngleChi2[iNode] = 0.1*(std::pow(deltaPhi,2));//FIX me optimize the coefficient value
-    
-
     if(ROOT::Math::VectorUtil::DeltaPhi(formerTransverse2D, latterTransverse2D)<0) std::swap(formerTransverse2D, latterTransverse2D);
-
+    
     for(const auto aHit:mySegments.front().getRecHits().at(strip_dir)){
       charge = aHit.getCharge();
       aPoint.SetXYZ(aHit.getPosTime(), aHit.getPosWire(), 0.0);
@@ -209,9 +213,10 @@ void Track3D::updateChi2(){
 
   segmentChi2.clear();
   for(auto aItem: mySegments){
-    segmentChi2.push_back(aItem.getRecHitChi2());
+    segmentChi2.push_back(aItem.getRecHitChi2(iProjectionForChi2));
   }
 
+  /* Nodes not active yet
   nodeHitsChi2.clear();
   if(mySegments.size()) nodeHitsChi2.resize(mySegments.size()-1);
 
@@ -221,6 +226,7 @@ void Track3D::updateChi2(){
   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
     updateNodesChi2(strip_dir);
   }
+  */
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -270,7 +276,7 @@ void Track3D::splitSegment(unsigned int iSegment, double lenghtFraction){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void Track3D::extendToZMinMax(double zMin, double zMax){
+void Track3D::extendToZRange(double zMin, double zMax){
 
   if(!mySegments.size()) return;
 
