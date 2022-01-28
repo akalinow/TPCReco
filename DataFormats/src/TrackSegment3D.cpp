@@ -170,7 +170,7 @@ double TrackSegment3D::getIntegratedCharge(double lambdaCut) const{
 double TrackSegment3D::getRecHitChi2(int iProjection) const{
 
   double chi2 = 0.0;
-  if(iProjection<DIR_U || iProjection>DIR_W){
+  if(iProjection<DIR_U || iProjection>DIR_W){   
     std::for_each(myProjectionsChi2.begin(), myProjectionsChi2.end(), [&](auto aItem){chi2 += aItem;});
   }
   else{

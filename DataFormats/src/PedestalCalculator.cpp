@@ -18,6 +18,8 @@ void PedestalCalculator::SetGeometryAndInitialize(std::shared_ptr<GeometryTPC> a
 
   myGeometryPtr = aPtr;
 
+  std::cout<<__FUNCTION__<<" myGeometryPtr: "<<myGeometryPtr<<std::endl;
+
   InitializeTables();
   InitializeMonitoringHistos();
 }
@@ -284,6 +286,7 @@ void PedestalCalculator::CalculateEventPedestals(const std::shared_ptr<eventraw:
 
   calculateMean = false;
   ProcessEventRaw(eRaw, calculateMean);
+
 
   // update vector with pedestals
   for(int coboId = 0; coboId < myGeometryPtr->GetCoboNboards(); coboId++) {

@@ -615,6 +615,16 @@ Track3D TrackBuilder::fitTrackNodes(const Track3D & aTrack) const{
       //}
   }
   aTrackCandidate.chi2FromNodesList(bestParams.data());
+
+  //////TEST
+  for(int iDir=DIR_U;iDir<=DIR_W;++iDir){
+    aTrackCandidate.enableProjectionForChi2(iDir);
+    std::cout<<KBLU<<"chi2 for dir: "<<RST<<iDir
+	     <<" "<<aTrackCandidate.getChi2()
+	     <<std::endl;
+  }
+  ///////////
+  
   return aTrackCandidate;
 }
 /////////////////////////////////////////////////////////

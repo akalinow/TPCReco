@@ -131,7 +131,7 @@ void Track3D::updateHitDistanceProfile(){
 void Track3D::enableProjectionForChi2(int iProjection){
 
   iProjectionForChi2 = iProjection;
-  
+  updateChi2();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

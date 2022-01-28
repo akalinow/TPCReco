@@ -126,7 +126,6 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
   double chargeSum = 0.0;
   double distance = 0.0;
   int pointCount = 0;
-  double sigma = 1.0; //TEST FIX ME: abritrary value taken
   
   double x = 0.0, y = 0.0;
   double charge = 0.0;
@@ -138,7 +137,7 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
     charge = aHit.getCharge();
     aPoint.SetXYZ(x, y, 0.0);
     distance = getPointTransverseDistance(aPoint);
-    weight = exp(-distance*distance/(2.0*sigma*sigma));
+    weight = 1.0;//Place holder for something more complicated
     if(distance<0) continue;
     ++pointCount;    
     chi2 += std::pow(distance, 2)*charge*weight;

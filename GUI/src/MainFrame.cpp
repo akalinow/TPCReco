@@ -116,8 +116,7 @@ void MainFrame::InitializeEventSource(){
 
   if( ( (stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG) && dataFileName.find(".root")!=std::string::npos){
     myWorkMode = M_OFFLINE_ROOT_MODE;
-    myEventSource = std::make_shared<EventSourceROOT>();
-    myEventSource->loadGeometry(geometryFileName); 
+    myEventSource = std::make_shared<EventSourceROOT>(geometryFileName);
   }
 #ifdef WITH_GET
   else if( ( (stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG) && dataFileName.find(".graw")!=std::string::npos){
@@ -156,7 +155,7 @@ void MainFrame::InitializeEventSource(){
 
   if(myWorkMode!=M_ONLINE_MODE){
     myEventSource->loadDataFile(dataFileName);
-    myEventSource->loadFileEntry(16); //TEST
+    myEventSource->loadFileEntry(0);
   }
   myHistoManager.setGeometry(myEventSource->getGeometry());
   myHistoManager.openOutputStream(dataFileName);

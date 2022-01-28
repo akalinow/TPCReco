@@ -54,11 +54,11 @@ int main(int argc, char *argv[]) {
   std::string geometryFileName = "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat";
   std::string dataFileNamePrefix = "";
   //dataFileNamePrefix = "/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210622_extTrg_CO2_250mbar_DT1470ET/EventTPC_2021-06-22T12:01:56.568";
-  //dataFileNamePrefix = "/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210622_extTrg_CO2_250mbar_DT1470ET/EventTPC_2021-06-22T14:11:08.614";
+  dataFileNamePrefix = "/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210622_extTrg_CO2_250mbar_DT1470ET/EventTPC_2021-06-22T14:11:08.614";
 
   //dataFileNamePrefix = "/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210617_extTrg_CO2_250mbar_DT1470ET/EventTPC_2021-06-17T11:54:38.000";
 
-  dataFileNamePrefix = "/scratch/akalinow/ELITPC/data/calibration/2021-11-25T13/EventTPC_2021-11-25T13:53:16.129";
+  //dataFileNamePrefix = "/scratch/akalinow/ELITPC/data/calibration/2021-11-25T13/EventTPC_2021-11-25T13:53:16.129";
   //dataFileNamePrefix = "/scratch/akalinow/ELITPC/data/calibration/2021-11-25T13/EventRaw_2021-11-25T13:53:16.129";
 
   int index = dataFileNamePrefix.find("Event")+9;
@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
   myHistoManager.setGeometry(myEventSource->getGeometry());
   myTkBuilder.setGeometry(myEventSource->getGeometry());
 
-  for(int chunkId=0;chunkId<7;++chunkId){
+  for(int chunkId=0;chunkId<5;++chunkId){
     std::string suffix = "_"+std::to_string(chunkId);
     std::string dataFileName = dataFileNamePrefix+suffix+".root";
     if(dataFileName.find(".root")!=std::string::npos){

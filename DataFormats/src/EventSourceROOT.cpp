@@ -125,7 +125,7 @@ void EventSourceROOT::loadFileEntry(unsigned long int iEntry){
   if((long int)iEntry>=myTree->GetEntries()) iEntry = myTree->GetEntries() - 1;
 
   switch(readEventType) {
-  case raw: 
+  case raw:
     myTree->GetEntry(iEntry);
     fillEventFromEventRaw();
     break;
@@ -204,7 +204,6 @@ void EventSourceROOT::fillEventFromEventRaw(){
 
   // calculate pedestals
   if(removePedestal) myPedestalCalculator.CalculateEventPedestals(myCurrentEventRaw);
-
   // update event header
   myCurrentEvent->Clear();
 
@@ -213,6 +212,8 @@ void EventSourceROOT::fillEventFromEventRaw(){
 	    << ": eventId=" << myCurrentEventRaw->eventId
 	    << ", time=" << myCurrentEventRaw->timestamp << std::endl;
 #endif
+
+  
   
   myCurrentEvent->SetEventId(myCurrentEventRaw->eventId);
   myCurrentEvent->SetEventTime(myCurrentEventRaw->timestamp);
