@@ -500,16 +500,16 @@ double EventTPC::GetTotalChargeByTimeCell(int time_cell) { // charge integral fr
   return 0.0;
 }
 
-SigClusterTPC EventTPC::GetOneCluster(double thr, int delta_strips, int delta_timecells) {  // applies clustering threshold to all space-time data points
+void EventTPC::MakeOneCluster(double thr, int delta_strips, int delta_timecells) {  // applies clustering threshold to all space-time data points
 
-  SigClusterTPC cluster(this);
+  myCluster = SigClusterTPC(this);
 
   // getting cluster seed hits (per section)
   std::map<MultiKey4, double, multikey4_less>::iterator it;
   for( it=chargeMap2.begin(); it!=chargeMap2.end(); ++it ) {
-    if( it->second > thr ) cluster.AddByStrip( (it->first).key1, (it->first).key2, (it->first).key3, (it->first).key4);
+    if( it->second > thr ) myCluster.AddByStrip( (it->first).key1, (it->first).key2, (it->first).key3, (it->first).key4);
     // debug - dump the whole event as a single cluster
-    //    cluster.AddByStrip( (it->first).key1, (it->first).key2, (it->first).key3, (it->first).key4);
+    //    myCluster.AddByStrip( (it->first).key1, (it->first).key2, (it->first).key3, (it->first).key4);
     // debug - dump the whole event as a single cluster
   }
 
@@ -517,13 +517,13 @@ SigClusterTPC EventTPC::GetOneCluster(double thr, int delta_strips, int delta_ti
   //  std::cout << ">>>> GetSigCluster: nhits=" << cluster.GetNhits() << ", chargeMap2.size=" << chargeMap2.size() << std::endl;
   std::cout << Form(">>>> GetSigCluster: BEFORE ENVELOPE: nhits(%d)/nhits(%d)/nhits(%d)=%ld/%ld/%ld",
 	       DIR_U, DIR_V, DIR_W,
-	       cluster.GetNhits(DIR_U), 
-	       cluster.GetNhits(DIR_V), 
-	       cluster.GetNhits(DIR_W) ) << std::endl;
+	       myCluster.GetNhits(DIR_U), 
+	       myCluster.GetNhits(DIR_V), 
+	       myCluster.GetNhits(DIR_W) ) << std::endl;
   // debug
 
   // adding envelope to the seed hits (per section)
-  std::vector<MultiKey4> oldList = cluster.GetHitList(); // make a copy of list of SEED-hits
+  std::vector<MultiKey4> oldList = myCluster.GetHitList(); // make a copy of list of SEED-hits
   std::vector<MultiKey4>::iterator it2;
 
   // loop thru SEED-hits (per section)
@@ -546,7 +546,7 @@ SigClusterTPC EventTPC::GetOneCluster(double thr, int delta_strips, int delta_ti
 	if(chargeMap2.find(mkey4)->second<0) continue; // exclude negative values (due to pedestal subtraction)
 	// add new space-time point
 	if(find_if(oldList.begin(), oldList.end(), mkey4)==oldList.end()) {
-	  cluster.AddByStrip( strip_dir, strip_sec, istrip, icell );
+	  myCluster.AddByStrip( strip_dir, strip_sec, istrip, icell );
 	} 
       } 
     } 
@@ -555,13 +555,18 @@ SigClusterTPC EventTPC::GetOneCluster(double thr, int delta_strips, int delta_ti
   // debug
   std::cout << Form(">>>> GetSigCluster: AFTER ENVELOPE:  nhits(%d)/nhits(%d)/nhits(%d)=%ld/%ld/%ld",
 	       DIR_U, DIR_V, DIR_W,
-	       cluster.GetNhits(DIR_U), 
-	       cluster.GetNhits(DIR_V), 
-	       cluster.GetNhits(DIR_W) ) << std::endl;
+	       myCluster.GetNhits(DIR_U), 
+	       myCluster.GetNhits(DIR_V), 
+	       myCluster.GetNhits(DIR_W) ) << std::endl;
   // debug
-
-  return cluster;
 }
+
+
+const SigClusterTPC & EventTPC::GetOneCluster() const {  
+
+  return myCluster;
+}
+
 
 std::shared_ptr<TH1D> EventTPC::GetStripProjection(const SigClusterTPC &cluster, int strip_dir) {  // valid range [0-2]
   auto h=std::shared_ptr<TH1D>();

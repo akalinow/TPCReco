@@ -28,6 +28,8 @@ public:
 
   void setBiasTangent(const TVector3 & aBias, const TVector3 & aTangent);
 
+  void setBiasTangent(const double *par);
+
   void setStartEnd(const TVector3 & aStart, const TVector3 & aEnd);
 
   void setStartEnd(const double *par);
@@ -63,6 +65,9 @@ public:
   ///Return packed cartesian coordinates of the segment start/end points.
   std::vector<double> getStartEndXYZ() const;
 
+  ///Return packed coordinates of the segment bias (x, Y, Z) and tangent(Theta, Phi).
+  std::vector<double> getBiasTangentCoords() const;
+
   ///Return 2D projection for stripPitchDirection corresponding to start and end lambdas
   ///along the 3D segment.
   TrackSegment2D get2DProjection(int strip_dir, double start, double end) const;
@@ -70,9 +75,9 @@ public:
   ///Return the full lenght of the segment.
   double getLength() const { return myLenght;}
 
+  TGraph getChargeProfile() const;
+  
   double getIntegratedCharge(double lambda) const;
-
-  double getIntegratedHitDistance(double lambda) const;
 
   const std::vector<Hit2DCollection> & getRecHits() const { return myRecHits;}
 

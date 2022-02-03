@@ -5,9 +5,9 @@
 /////////////////////////////////////////////////////////
 std::ostream & operator << (std::ostream &out, const Hit2D &aHit){
 
-  out <<" (time, wire, charge): ("
+  out <<" (time, strip, charge): ("
       <<aHit.getPosTime()<<", "
-      <<aHit.getPosWire()<<", "
+      <<aHit.getPosStrip()<<", "
       <<aHit.getCharge()<<")";
     
   return out;

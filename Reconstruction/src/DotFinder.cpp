@@ -359,7 +359,8 @@ void DotFinder::reconstruct(){
   // sanity check
   if(!myHistogramsInitialized || !myEvent) return;
 
-  SigClusterTPC aCluster = myEvent->GetOneCluster(myHitThr, 0, 0);
+  myEvent->MakeOneCluster(myHitThr, 0, 0);
+  SigClusterTPC aCluster = myEvent->GetOneCluster();
   
   //////// DEBUG
   std::cout << "DotFinder::reconstruct: myCluster thr=" << myHitThr << ", hits=" << aCluster.GetNhits() << std::endl << std::flush;

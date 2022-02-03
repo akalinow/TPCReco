@@ -4,8 +4,10 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <tuple>
 
 #include "TVector3.h"
+#include "TGraph.h"
 #include "Hit2D.h"
 #include "CommonDefinitions.h"
 
@@ -47,14 +49,14 @@ public:
   ///Tangent vector along time arrow, normalised to unit value along time.
   const TVector3 & getTangentWithT1() const { return myTangentWithT1;}
 
-  ///Bias vector with Wire=0.
-  const TVector3 & getBiasAtWire0() const { return myBiasAtWire0;}
+  ///Bias vector with Strip=0.
+  const TVector3 & getBiasAtStrip0() const { return myBiasAtStrip0;}
 
   double getLength() const { return myLenght;}
 
-  double getIntegratedCharge(double lambda, const Hit2DCollection & aRecHits) const;
+  const TGraph& getChargeProfile(const Hit2DCollection & aRecHits, double radiusCut=4.0);
 
-  double getIntegratedHitDistance(double lambdaCut, const Hit2DCollection & aRecHits) const;
+  double getIntegratedCharge(double lambda, const Hit2DCollection & aRecHits) const;
 
   ///Rec hits assigned to this projection.
   const Hit2DCollection & getRecHits() const {return myRecHits;}
@@ -62,8 +64,8 @@ public:
   ///Return rec hits chi2.
   double getRecHitChi2(const Hit2DCollection & aRecHits) const;
 
-  ///Calculate transvere distance from point to the segment.
-  double getPointTransverseDistance(const TVector3 & aPoint) const;
+  ///Calculate transverse distance from point to the segment, and doistance along the segment
+  std::tuple<double,double> getPointLambdaAndDistance(const TVector3 & aPoint) const;
 
 private:
 
@@ -75,12 +77,12 @@ private:
 
   TVector3 myTangent, myBias;
   TVector3 myStart, myEnd;    
-  TVector3 myBiasAtT0, myBiasAtWire0;
+  TVector3 myBiasAtT0, myBiasAtStrip0;
   TVector3 myTangentWithT1;
 
-  Hit2DCollection myRecHits;
-
+  TGraph myChargeProfile;
   int nAccumulatorHits{0};
+  Hit2DCollection  myRecHits;
     
 };
 

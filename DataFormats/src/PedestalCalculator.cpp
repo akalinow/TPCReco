@@ -18,8 +18,6 @@ void PedestalCalculator::SetGeometryAndInitialize(std::shared_ptr<GeometryTPC> a
 
   myGeometryPtr = aPtr;
 
-  std::cout<<__FUNCTION__<<" myGeometryPtr: "<<myGeometryPtr<<std::endl;
-
   InitializeTables();
   InitializeMonitoringHistos();
 }

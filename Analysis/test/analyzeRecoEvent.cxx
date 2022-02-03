@@ -144,7 +144,7 @@ void plotTrackSegment(int strip_dir, const std::string & dataFileName, const std
   double distance = 0.0;
   for(auto aHit: aSegment.getRecHits().at(strip_dir)){
     double x = aHit.getPosTime();
-    double y = aHit.getPosWire();
+    double y = aHit.getPosStrip();
     double charge = aHit.getCharge();
     aPoint.SetXYZ(x,y,0);
     distance = aStripProjection.getPointTransverseDistance(aPoint);

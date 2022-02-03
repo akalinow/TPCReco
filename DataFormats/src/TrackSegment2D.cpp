@@ -10,7 +10,7 @@ void TrackSegment2D::setBiasTangent(const TVector3 & aBias, const TVector3 & aTa
   myTangent = aTangent.Unit();
 
   double lambda = 10;//FIXME what value should be here?
-  myStart = myBias; 
+  myStart = myBias;
   myEnd = myBias+lambda*myTangent;
   initialize();
 }
@@ -34,7 +34,7 @@ void TrackSegment2D::initialize(){
   myBiasAtT0 = myBias + lambda*myTangent;
   
   lambda = -myBias.Y()/myTangent.Y();
-  myBiasAtWire0 = myBias + lambda*myTangent;
+  myBiasAtStrip0 = myBias + lambda*myTangent;
 
   ///Set tangent direction along time arrow with unit time component,
   ///so vector components can be compared between projections.
@@ -50,60 +50,56 @@ void TrackSegment2D::initialize(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+const TGraph & TrackSegment2D::getChargeProfile(const Hit2DCollection & aRecHits, double radiusCut){
+
+  double x = 0.0, y = 0.0;
+  double distance = 0.0;
+  double lambda = 0.0;
+  TVector3 aPoint;
+  myChargeProfile.Set(0);
+  
+  for(const auto aHit:aRecHits){
+    x = aHit.getPosTime();
+    y = aHit.getPosStrip();
+    aPoint.SetXYZ(x, y, 0.0);
+    std::tie(lambda, distance) = getPointLambdaAndDistance(aPoint);
+    if(lambda>0 && lambda<getLength() && distance<radiusCut){
+      myChargeProfile.SetPoint(myChargeProfile.GetN(), lambda,  aHit.getCharge());
+    }
+  }
+  return myChargeProfile;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 double TrackSegment2D::getIntegratedCharge(double lambdaCut, const Hit2DCollection & aRecHits) const{
 
   double x = 0.0, y = 0.0;
   double totalCharge = 0.0;
-  double radiusCut = 4.0;//FIXME put into configuration. Value 4.0 abtaine looking athe plots.
+  double radiusCut = 4.0;//FIXME put into configuration. Value 4.0 abtained by  looking at the plots.
   double distance = 0.0;
+  double lambda = 0.0;
   TVector3 aPoint;
   
   for(const auto aHit:aRecHits){
     x = aHit.getPosTime();
-    y = aHit.getPosWire();
+    y = aHit.getPosStrip();
     aPoint.SetXYZ(x, y, 0.0);    
-    distance = getPointTransverseDistance(aPoint);
-    if(distance>0 && distance<radiusCut) totalCharge += aHit.getCharge();
+    std::tie(lambda, distance) = getPointLambdaAndDistance(aPoint);
+    if(lambda>0 && lambda<getLength() && distance>0 && distance<radiusCut) totalCharge += aHit.getCharge();
   }
   return totalCharge;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-double TrackSegment2D::getIntegratedHitDistance(double lambdaCut, const Hit2DCollection & aRecHits) const{
-
-  double x = 0.0, y = 0.0;
-  double totalCharge = 0.0;
-  double distance = 0.0;
-  double sum = 0.0;
-  TVector3 aPoint;
-  //const TVector3 & tangent = getTangentWithT1();
-  
-  for(const auto aHit:aRecHits){
-    x = aHit.getPosTime();
-    y = aHit.getPosWire();
-    aPoint.SetXYZ(x, y, 0.0);    
-    distance = getPointTransverseDistance(aPoint);
-    if(distance>0 && distance<5){
-      int sign = 1.0;//std::copysign(1.0,tangent.Cross(aPoint).Z());
-      sum += distance*sign*aHit.getCharge();
-      totalCharge += aHit.getCharge();
-    }
-  }
-  //FIXME divide by total segment charge, not total charge up to lambda
-  return sum;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-double TrackSegment2D::getPointTransverseDistance(const TVector3 & aPoint) const{
+std::tuple<double,double> TrackSegment2D::getPointLambdaAndDistance(const TVector3 & aPoint) const{
 
   const TVector3 & bias = getBias();
   const TVector3 & tangent = getTangent();
   const TVector3 & start = getStart();
 
   double lambda = (aPoint - start)*tangent/tangent.Mag();
-  if(lambda<0 || lambda>getLength()) return -999;
   TVector3 transverseComponent = aPoint - bias - lambda*tangent;
-  return transverseComponent.Mag();
+  return std::make_tuple(lambda, transverseComponent.Mag());
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -125,6 +121,7 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
   double chi2 = 0.0;
   double chargeSum = 0.0;
   double distance = 0.0;
+  double lambda = 0.0;
   int pointCount = 0;
   
   double x = 0.0, y = 0.0;
@@ -133,12 +130,12 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
 
   for(const auto aHit:aRecHits){
     x = aHit.getPosTime();
-    y = aHit.getPosWire();
+    y = aHit.getPosStrip();
     charge = aHit.getCharge();
     aPoint.SetXYZ(x, y, 0.0);
-    distance = getPointTransverseDistance(aPoint);
+    std::tie(lambda,distance) = getPointLambdaAndDistance(aPoint);
     weight = 1.0;//Place holder for something more complicated
-    if(distance<0) continue;
+    if(lambda<0 || lambda>getLength()) continue;
     ++pointCount;    
     chi2 += std::pow(distance, 2)*charge*weight;
     chargeSum +=charge*weight;

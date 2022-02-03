@@ -47,14 +47,14 @@ double getKineticEnergyForRange(double range, int type){
 }
 /////////////////////////
 // Define some simple structures
-typedef struct {Float_t length, energy, charge, cosTheta, phi, x0, y0, z0, x1, y1, z1;} TrackData;
+typedef struct {Float_t eventId, length, energy, charge, cosTheta, phi, x0, y0, z0, x1, y1, z1;} TrackData;
 /////////////////////////
 int main(int argc, char *argv[]) {
 
   std::string geometryFileName = "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat";
   std::string dataFileNamePrefix = "";
-  //dataFileNamePrefix = "/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210622_extTrg_CO2_250mbar_DT1470ET/EventTPC_2021-06-22T12:01:56.568";
-  dataFileNamePrefix = "/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210622_extTrg_CO2_250mbar_DT1470ET/EventTPC_2021-06-22T14:11:08.614";
+  dataFileNamePrefix = "/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210622_extTrg_CO2_250mbar_DT1470ET/EventTPC_2021-06-22T12:01:56.568";
+  //dataFileNamePrefix = "/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210622_extTrg_CO2_250mbar_DT1470ET/EventTPC_2021-06-22T14:11:08.614";
 
   //dataFileNamePrefix = "/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210617_extTrg_CO2_250mbar_DT1470ET/EventTPC_2021-06-17T11:54:38.000";
 
@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
   // Define some simple structures
   TTree *tree = new TTree("trackTree", "Track tree");
   TrackData track_data;
-  tree->Branch("track",&track_data,"length:energy:charge:cosTheta:phi:x0:y0:z0:x1:y1:z1");
+  tree->Branch("track",&track_data,"eventId:length:energy:charge:cosTheta:phi:x0:y0:z0:x1:y1:z1");
   
   std::shared_ptr<EventSourceBase> myEventSource;
   myEventSource = std::make_shared<EventSourceROOT>(geometryFileName);
@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
   myHistoManager.setGeometry(myEventSource->getGeometry());
   myTkBuilder.setGeometry(myEventSource->getGeometry());
 
-  for(int chunkId=0;chunkId<5;++chunkId){
+  for(int chunkId=0;chunkId<4;++chunkId){
     std::string suffix = "_"+std::to_string(chunkId);
     std::string dataFileName = dataFileNamePrefix+suffix+".root";
     if(dataFileName.find(".root")!=std::string::npos){
@@ -97,7 +97,8 @@ int main(int argc, char *argv[]) {
     for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
       myEventSource->loadFileEntry(iEntry);
       std::cout<<"EventID: "<<myEventSource->currentEventNumber()<<std::endl;
-      if(myEventSource->getCurrentEvent()->GetOneCluster(35, 0, 0).GetNhits()>20000){
+      myEventSource->getCurrentEvent()->MakeOneCluster(35, 0, 0);
+      if(myEventSource->getCurrentEvent()->GetOneCluster().GetNhits()>20000){
 	std::cout<<"Noisy event - skipping."<<std::endl;
 	continue;
       }
@@ -115,6 +116,7 @@ int main(int argc, char *argv[]) {
       const TVector3 & start = aTrack3D.getSegments().front().getStart();
       const TVector3 & end = aTrack3D.getSegments().front().getEnd();
 
+      track_data.eventId = iEntry;
       track_data.length = length;
       track_data.charge = charge;
       track_data.cosTheta = cosTheta;

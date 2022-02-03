@@ -31,8 +31,8 @@ void TrackSegment3D::setBiasTangent(const TVector3 & aBias, const TVector3 & aTa
   myBias = aBias;
   myTangent = aTangent.Unit();
 
-  double lambda = 10;
-  myStart = myBias; 
+  double lambda = 1500;
+  myStart = myBias-lambda*myTangent;   
   myEnd = myBias+lambda*myTangent;  
   initialize();
 }
@@ -44,8 +44,8 @@ void TrackSegment3D::setStartEnd(const TVector3 & aStart, const TVector3 & aEnd)
   myEnd = aEnd;
 
   myTangent = (myEnd - myStart).Unit();
-  myBias = myStart;
-
+  myBias = myStart + 0.5*(myEnd - myStart);
+  myBias = myBias - myTangent.Dot(myBias)*myTangent;//TEST
   initialize();
 }
 /////////////////////////////////////////////////////////
@@ -55,6 +55,21 @@ void TrackSegment3D::setStartEnd(const double *par){
   TVector3 start(par[0], par[1], par[2]);
   TVector3 end(par[3], par[4], par[5]);  
   setStartEnd(start, end);
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void TrackSegment3D::setBiasTangent(const double *par){
+  /*
+  TVector3 delta_bias = getTangent().Orthogonal().Unit();
+  double length = par[0];
+  //double phi = par[1];
+  //delta_bias.Rotate(phi, par[1]*getTangent().Unit());
+  delta_bias *=length;
+  */
+  TVector3 bias = getBias();// + delta_bias;
+  TVector3 tangent;
+  tangent.SetMagThetaPhi(1.0, par[2], par[3]);  
+  setBiasTangent(bias, tangent);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -108,6 +123,20 @@ std::vector<double> TrackSegment3D::getStartEndXYZ() const{
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+std::vector<double> TrackSegment3D::getBiasTangentCoords() const{
+
+  std::vector<double> coordinates(4);
+  double *data = coordinates.data();
+
+  data[0] = 0.0;
+  data[1] = 0.0;
+  data[2] = getTangent().Theta();
+  data[3] = getTangent().Phi();
+
+  return coordinates;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 double TrackSegment3D::getLambdaAtZ(double z) const {
   return (z - myStart.Z())/myTangent.Z();
 }
@@ -120,9 +149,9 @@ TVector3 TrackSegment3D::getPointOn2DProjection(double lambda,
   const TVector3 & tangent = getTangent();
   TVector3 aPointOnLine = start + lambda*tangent;
   double projectionTime = aPointOnLine.Z();
-  double projectionWire = aPointOnLine*stripPitchDirection;
+  double projectionStrip = aPointOnLine*stripPitchDirection;
 
-  return TVector3(projectionTime, projectionWire, 0.0);
+  return TVector3(projectionTime, projectionStrip, 0.0);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -142,20 +171,43 @@ TrackSegment2D TrackSegment3D::get2DProjection(int strip_dir, double lambdaStart
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-double TrackSegment3D::getIntegratedHitDistance(double lambdaCut) const{
+TGraph TrackSegment3D::getChargeProfile() const{
 
-  double sum = 0.0;
+  TGraph chargeProfile;
+  Double_t x = 0, y = 0;
+  double radiusCut = 2.0;
+  double timeProjection = getTangent().Unit().Z();
+
+  chargeProfile.SetPoint(chargeProfile.GetN(),0.0, 0.0);
   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
-    TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, lambdaCut);
+    TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, getLength());
+    const TVector3 & stripPitchDirection = myGeometryPtr->GetStripPitchVector3D(strip_dir);
     const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
-    sum += aTrack2DProjection.getIntegratedHitDistance(lambdaCut, aRecHits);
-    break;//TEST
-  } 
-  return sum;
+    const TGraph & chargeProfileProjection = aTrack2DProjection.getChargeProfile(aRecHits, radiusCut);
+    double dirProjection = std::abs(stripPitchDirection.Unit().Dot(getTangent().Unit()));
+    double cosPhiProjectionAngle = sqrt(dirProjection*dirProjection +
+					timeProjection*timeProjection);
+    std::cout<<KBLU<<"cosPhiProjectionAngle: "<<RST
+	     <<" strip_dir: "<<strip_dir<<" "
+	     <<cosPhiProjectionAngle
+      	     <<" 3D segment length: "<<getLength()
+	     <<" 2D segment length: "<<aTrack2DProjection.getLength()
+	     <<std::endl;
+    for (Int_t i = 0 ; i < chargeProfileProjection.GetN(); i++) {
+      chargeProfileProjection.GetPoint(i, x, y);
+      chargeProfile.SetPoint(chargeProfile.GetN(), x/cosPhiProjectionAngle, y);
+    }
+    break;
+  }
+  chargeProfile.SetPoint(chargeProfile.GetN(), getLength(), 0.0);
+  chargeProfile.Sort();
+  return chargeProfile;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 double TrackSegment3D::getIntegratedCharge(double lambdaCut) const{
+
+  if(lambdaCut<0) return 0;
 
   double charge = 0.0;
   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
@@ -182,7 +234,6 @@ double TrackSegment3D::getRecHitChi2(int iProjection) const{
 /////////////////////////////////////////////////////////
 void TrackSegment3D::calculateRecHitChi2(){
 
-  //#pragma omp parallel for
   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
     TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, getLength());
     const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
@@ -197,27 +248,6 @@ double TrackSegment3D::operator() (const double *par) {
   TVector3 end(par[3], par[4], par[5]);  
   setStartEnd(start, end);
   return getRecHitChi2();
-  ///////////////////////////
-  
-  /*
-  double tangentTheta = par[0];
-  double tangentPhi = par[1];
-
-  double biasComponentA = par[2];
-  double biasComponentB = par[3];
-
-  TVector3 perpPlaneBaseUnitA, perpPlaneBaseUnitB;
-    
-  perpPlaneBaseUnitA.SetMagThetaPhi(1.0, M_PI/2.0 + tangentTheta, tangentPhi);
-  perpPlaneBaseUnitB.SetMagThetaPhi(1.0, M_PI/2.0, M_PI/2.0 + tangentPhi);
-  
-  TVector3 aBias = perpPlaneBaseUnitA*biasComponentA + perpPlaneBaseUnitB*biasComponentB;
-  TVector3 aTangent;
-  aTangent.SetMagThetaPhi(1.0, tangentTheta, tangentPhi);
-  setBiasTangent(aBias, aTangent);
-  
-  return getRecHitChi2();
-  */
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -225,13 +255,23 @@ std::ostream & operator << (std::ostream &out, const TrackSegment3D &aSegment){
 
   const TVector3 & start = aSegment.getStart();
   const TVector3 & end = aSegment.getEnd();
+
+  const TVector3 & bias = aSegment.getBias();
+  const TVector3 & tangent = aSegment.getTangent();
   
   out<<"("<<start.X()<<", "<<start.Y()<<", "<<start.Z()<<")"
        <<" -> "
      <<"("<<end.X()<<", "<<end.Y()<<", "<<end.Z()<<") "
-     <<" chi2: ["<<aSegment.getRecHitChi2()<<"]"
-     <<" charge: ("<<aSegment.getIntegratedCharge(aSegment.getLength())<<")";
-
+     <<std::endl
+     <<"\t\t chi2: "<<aSegment.getRecHitChi2()<<""
+     <<" charge [arb. u.]: "<<aSegment.getIntegratedCharge(aSegment.getLength())
+     <<" length [mm]: "<<aSegment.getLength()
+     <<std::endl
+     <<"\t bias (X,Y,Z): "
+     <<"("<<bias.X()<<", "<<bias.Y()<<", "<<bias.Z()<<")"
+     <<"\t tangent (R, Theta, Phi): "
+     <<"("<<tangent.Mag()<<", "<<tangent.Theta()<<", "<<tangent.Phi()<<")";
+    
   return out;
 }
 /////////////////////////////////////////////////////////

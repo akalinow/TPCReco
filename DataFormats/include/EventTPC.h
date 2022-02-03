@@ -16,6 +16,7 @@
 #include "TH3F.h"
 
 #include "GeometryTPC.h"
+#include "SigClusterTPC.h"
 
 #define EVENTTPC_DEFAULT_RECO_METHOD 1  // 0 = equal charge division along the strip
                                         // 1 = weighted charge division from complementary strip directions
@@ -23,7 +24,6 @@
 #define EVENTTPC_DEFAULT_TIME_REBIN  5  // number of time cells to rebin [1-512]
 
 class TrackSegment3D;
-class SigClusterTPC;
 
 class EventTPC {
   //  friend class SigClusterTPC;
@@ -31,6 +31,7 @@ class EventTPC {
   Long64_t event_id, //event_number,
     run_id, event_time;
   std::shared_ptr<GeometryTPC> myGeometryPtr;  //! transient data member
+  SigClusterTPC myCluster;                     //! transient data member
   
   std::map<MultiKey3, double, multikey3_less> chargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
   std::map<MultiKey4, double, multikey4_less> chargeMap2; // key=(STRIP_DIR [0-2], SECTION [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
@@ -112,7 +113,8 @@ class EventTPC {
   double GetTotalChargeByTimeCell(int strip_dir, int time_cell); // charge integral from a single time cell from all merged strips in a given direction (all sections)
   double GetTotalChargeByTimeCell(int strip_dir, int strip_section, int time_cell); // charge integral from a single time cell from all strips in a given direction (per section)
 
-  SigClusterTPC GetOneCluster(double thr, int delta_strips, int delta_timecells); // applies clustering threshold to all space-time data points 
+  void MakeOneCluster(double thr, int delta_strips, int delta_timecells); // applies clustering threshold to all space-time data points 
+  const SigClusterTPC & GetOneCluster() const; 
   
   std::shared_ptr<TH1D> GetStripProjection(const SigClusterTPC &cluster, int strip_dir);    // clustered hits only, valid dir range [0-2]
   TH1D *GetTimeProjection(const SigClusterTPC &cluster, int strip_dir);     // clustered hits only, valid dir range [0-2]

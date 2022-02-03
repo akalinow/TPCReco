@@ -23,7 +23,7 @@ TrackBuilder::TrackBuilder() {
   myEvent = 0;
 
   nAccumulatorRhoBins = 50;//FIX ME move to configuarable
-  nAccumulatorPhiBins = 2.0*M_PI/0.1;//FIX ME move to configuarable
+  nAccumulatorPhiBins = 2.0*M_PI/0.025;//FIX ME move to configuarable
 
   myHistoInitialized = false;
   myAccumulators.resize(3);
@@ -31,13 +31,9 @@ TrackBuilder::TrackBuilder() {
   myRecHits.resize(3);
   myRawHits.resize(3);
 
-  fitter.Config().MinimizerOptions().SetMinimizerType("GSLSimAn");
-  //fitter.Config().MinimizerOptions().SetMinimizerType("Minuit2");
-  fitter.Config().MinimizerOptions().SetMaxFunctionCalls(1E4);
-  fitter.Config().MinimizerOptions().SetMaxIterations(1E4);
-  fitter.Config().MinimizerOptions().SetTolerance(1E-3);
+  fitter.Config().MinimizerOptions().SetMinimizerType("Minuit2");
   fitter.Config().MinimizerOptions().Print(std::cout);
-  fitter.Config().MinimizerOptions().SetPrintLevel(0);
+  fitter.Config().MinimizerOptions().SetPrintLevel(1);
 
   ///An offset used for filling the Hough transformation.
   ///to avoid having very small rho parameters, as
@@ -119,7 +115,8 @@ void TrackBuilder::setEvent(EventTPC* aEvent){
   double chargeThreshold = 35;//0.15*myEvent->GetMaxCharge();
   int delta_timecells = 25;
   int delta_strips = 5;
-  myCluster = myEvent->GetOneCluster(chargeThreshold, delta_strips, delta_timecells);
+  myEvent->MakeOneCluster(chargeThreshold, delta_strips, delta_timecells);
+  myCluster = myEvent->GetOneCluster();
   
   std::string hName, hTitle;
   if(!myHistoInitialized){     
@@ -186,6 +183,8 @@ void TrackBuilder::reconstruct(){
     my2DSeeds[iDir] = findSegment2DCollection(iDir);    
   }
   myZRange = getTimeProjectionEdges();
+  //myZRange = std::make_tuple(myGeometryPtr->GetDriftCageZmin(),
+  //			     myGeometryPtr->GetDriftCageZmax());//TEST
   
   myTrack3DSeed = buildSegment3D();
   Track3D aTrackCandidate;
@@ -210,7 +209,7 @@ void TrackBuilder::makeRecHits(int iDir){
   }
 
   TH1D *hProj;
-  double hitWirePos = -999.0;
+  double hitStripPos = -999.0;
   double hitTimePos = -999.0;
   double hitTimePosError = -999.0;
   double hitCharge = -999.0;
@@ -218,13 +217,13 @@ void TrackBuilder::makeRecHits(int iDir){
     hProj = hRawHits.ProjectionX("hProj",iBinY, iBinY);
     TF1 timeResponseShape = fitTimeWindow(hProj);
 
-    hitWirePos = hRawHits.GetYaxis()->GetBinCenter(iBinY);
+    hitStripPos = hRawHits.GetYaxis()->GetBinCenter(iBinY);
     for(int iSet=0;iSet<timeResponseShape.GetNpar();iSet+=3){
       hitTimePos = timeResponseShape.GetParameter(iSet+1);
       hitTimePosError = timeResponseShape.GetParameter(iSet+2);
       hitCharge = timeResponseShape.GetParameter(iSet);
       hitCharge *= sqrt(2.0)*M_PI*hitTimePosError;//the gausian fits are made without the normalisation factor
-      hRecHits.Fill(hitTimePos, hitWirePos, hitCharge);
+      hRecHits.Fill(hitTimePos, hitStripPos, hitCharge);
     }      
     delete hProj;
   }
@@ -236,6 +235,7 @@ void TrackBuilder::makeRecHits(int iDir){
       hRecHits.SetBinContent(iBin, 0.0);
     }
   }
+
   hTimeProjection.Add(hRecHits.ProjectionX());
 }
 /////////////////////////////////////////////////////////
@@ -395,7 +395,7 @@ void TrackBuilder::fillHoughAccumulator(int iDir){
       x = hRecHits.GetXaxis()->GetBinCenter(iBinX) + aHoughOffest.X();
       y = hRecHits.GetYaxis()->GetBinCenter(iBinY) + aHoughOffest.Y();
       charge = hRecHits.GetBinContent(iBinX, iBinY);
-      if(charge<0.2*maxCharge) continue;
+      if(charge<0.05*maxCharge) continue;
       for(int iBinTheta=1;iBinTheta<myAccumulators[iDir].GetNbinsX();++iBinTheta){
 	theta = myAccumulators[iDir].GetXaxis()->GetBinCenter(iBinTheta);
 	rho = x*cos(theta) + y*sin(theta);
@@ -549,17 +549,59 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   weight_fromUV = res4*(nHits_U + nHits_V);
   weight_fromVW = res5*(nHits_V + nHits_W);
   weight_fromWU = res6*(nHits_W + nHits_U);
-  const TVector2 tangentXY=(weight_fromUV*tangentXY_fromUV + weight_fromVW*tangentXY_fromVW + weight_fromWU*tangentXY_fromWU)/(weight_fromUV+weight_fromVW+weight_fromWU);
+  TVector2 tangentXY=(weight_fromUV*tangentXY_fromUV + weight_fromVW*tangentXY_fromVW + weight_fromWU*tangentXY_fromWU)/(weight_fromUV+weight_fromVW+weight_fromWU);
   double tangentZ_fromU = segmentU.getTangentWithT1().X();
   double tangentZ_fromV = segmentV.getTangentWithT1().X();
   double tangentZ_fromW = segmentW.getTangentWithT1().X();
+  // TEST
+  /*
+  std::cout<<KRED<<__FUNCTION__<<RST
+	   <<" nHits_fromU: "<<nHits_U
+    	   <<" nHits_fromV: "<<nHits_V
+    	   <<" nHits_fromW: "<<nHits_W
+	   <<std::endl;
+  
+  std::cout<<KRED<<" tangent U: "<<RST;
+  segmentU.getTangentWithT1().Print();
+  std::cout<<KRED<<" tangent V: "<<RST;
+  segmentV.getTangentWithT1().Print();
+  std::cout<<KRED<<" tangent W: "<<RST;
+  segmentW.getTangentWithT1().Print();
+  std::cout<<KRED<<" from UV: "<<RST;
+  tangentXY_fromUV.Print();
+  std::cout<<KRED<<" from VW: "<<RST;
+  tangentXY_fromVW.Print();
+  std::cout<<KRED<<" from WU: "<<RST;
+  tangentXY_fromWU.Print();
+  std::cout<<KRED<<" from average: "<<RST;
+  tangentXY.Print();
+  std::cout<<KRED<<" hardcoded: "<<RST;
+  */
+  ////////
   double tangentZ = (tangentZ_fromU*nHits_U + tangentZ_fromV*nHits_V + tangentZ_fromW*nHits_W)/(nHits_U+nHits_V+nHits_W);
-  TVector3 aTangent( tangentXY.X(), tangentXY.Y(), tangentZ);
+  TVector3 aTangent(tangentXY.X(), tangentXY.Y(), tangentZ);
+
+  //aTangent.SetMagThetaPhi(1, 1.52218, 1.34371);
+  //aBias.SetXYZ(-4.0881, 82.3946, -57.6058);
+
 
   TrackSegment3D a3DSeed;
-  a3DSeed.setGeometry(myGeometryPtr);
+  a3DSeed.setGeometry(myGeometryPtr);  
   a3DSeed.setBiasTangent(aBias, aTangent);
-  a3DSeed.setRecHits(myRecHits);
+  a3DSeed.setRecHits(myRecHits);//TEST
+  /*
+  std::cout<<KRED<<"tagent from track: "<<RST;
+  a3DSeed.getTangent().Print();
+  
+  std::cout<<KRED<<"tagent from track, U proj.: "<<RST;
+  a3DSeed.get2DProjection(DIR_U, 0, 1).getTangentWithT1().Print();
+
+  std::cout<<KRED<<"tagent from track, V proj.: "<<RST;
+  a3DSeed.get2DProjection(DIR_V, 0, 1).getTangentWithT1().Print();
+
+  std::cout<<KRED<<"tagent from track, W proj.: "<<RST;
+  a3DSeed.get2DProjection(DIR_W, 0, 1).getTangentWithT1().Print();
+  */
   return a3DSeed;
 }
 /////////////////////////////////////////////////////////
@@ -568,8 +610,8 @@ void TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
 
   std::cout<<KBLU<<"Pre-fit: "<<RST<<std::endl; 
   std::cout<<aTrackCandidate<<std::endl;
-
-  myFittedTrack = fitTrackNodes(aTrackCandidate);
+  //myFittedTrack = fitTrackNodesStartEnd(aTrackCandidate);
+  myFittedTrack = fitTrackNodesBiasTangent(aTrackCandidate);
   myFittedTrack.extendToZRange(std::get<0>(myZRange),std::get<1>(myZRange));
   myFittedTrack.shrinkToHits();
   myFittedTrackPtr = &myFittedTrack;
@@ -579,52 +621,92 @@ void TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-Track3D TrackBuilder::fitTrackNodes(const Track3D & aTrack) const{
+Track3D TrackBuilder::fitTrackNodesStartEnd(const Track3D & aTrack) const{
 
   Track3D aTrackCandidate = aTrack;
-  std::vector<double> bestParams = aTrackCandidate.getSegmentsStartEndXYZ();
+  aTrackCandidate.setFitMode(Track3D::FIT_START_STOP);
   std::vector<double> params = aTrackCandidate.getSegmentsStartEndXYZ();
   int nParams = params.size();
   
   ROOT::Math::Functor fcn(&aTrackCandidate, &Track3D::chi2FromNodesList, nParams);
   fitter.SetFCN(fcn, params.data());
-
-  //double minChi2 = 1E10;
-  double paramWindowWidth = 100.0;
-  for(int iStep=-1;iStep<0;++iStep){
-    aTrackCandidate.enableProjectionForChi2(iStep);
-    params = aTrackCandidate.getSegmentsStartEndXYZ();
-    nParams = params.size();
-    for (int iPar = 0; iPar < nParams; ++iPar){
-      fitter.Config().ParSettings(iPar).SetValue(params[iPar]);
-      fitter.Config().ParSettings(iPar).SetStepSize(1.0);
-      fitter.Config().ParSettings(iPar).SetLimits(params[iPar]-paramWindowWidth,
-						  params[iPar]+paramWindowWidth);
-    }      
-    bool fitStatus = fitter.FitFCN();
-    if (!fitStatus) {
-      Error(__FUNCTION__, "Track3D Fit failed");
-      fitter.Result().Print(std::cout);
-      return aTrack;
-    }
-    const ROOT::Fit::FitResult & result = fitter.Result();
-    aTrackCandidate.chi2FromNodesList(result.GetParams());
-    //if(aTrackCandidate.getChi2()<minChi2){
-    //minChi2 =  aTrackCandidate.getChi2();
-      bestParams = aTrackCandidate.getSegmentsStartEndXYZ();
-      //}
+  
+  double paramWindowWidth = 50.0;
+  for (int iPar = 0; iPar < nParams; ++iPar){
+    fitter.Config().ParSettings(iPar).SetValue(params[iPar]);
+    fitter.Config().ParSettings(iPar).SetStepSize(1);
+    fitter.Config().ParSettings(iPar).SetLimits(params[iPar]-paramWindowWidth,
+						params[iPar]+paramWindowWidth);
+  }      
+  bool fitStatus = fitter.FitFCN();
+  if (!fitStatus) {
+    Error(__FUNCTION__, "Track3D Fit failed");
+    std::cout<<KRED<<"Track3D Fit failed"<<RST<<std::endl;
+    fitter.Result().Print(std::cout);
+    return aTrack;
   }
-  aTrackCandidate.chi2FromNodesList(bestParams.data());
+  const ROOT::Fit::FitResult & result = fitter.Result();
+  aTrackCandidate.chi2FromNodesList(result.GetParams());
+  return aTrackCandidate;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+Track3D TrackBuilder::fitTrackNodesBiasTangent(const Track3D & aTrack) const{
+
+  Track3D aTrackCandidate = aTrack;
+  aTrackCandidate.setFitMode(Track3D::FIT_BIAS_TANGENT);
+  std::vector<double> params = aTrackCandidate.getSegmentsBiasTangentCoords();
+  int nParams = params.size();
+  
+  ROOT::Math::Functor fcn(&aTrackCandidate, &Track3D::chi2FromNodesList, nParams);
+  fitter.SetFCN(fcn, params.data());
 
   //////TEST
-  for(int iDir=DIR_U;iDir<=DIR_W;++iDir){
-    aTrackCandidate.enableProjectionForChi2(iDir);
-    std::cout<<KBLU<<"chi2 for dir: "<<RST<<iDir
-	     <<" "<<aTrackCandidate.getChi2()
-	     <<std::endl;
+  /*
+  aTrackCandidate.getSegments().front().getTangent().Unit().Print();
+  aTrackCandidate.getSegments().front().getTangent().Orthogonal().Unit().Print();
+  for(int i=1;i<=1;++i){
+    params[0] = -150;
+    aTrackCandidate.chi2FromNodesList(params.data());
+    //std::cout<<aTrackCandidate<<std::endl;    
   }
-  ///////////
-  
+  return aTrackCandidate;
+  */
+  /////
+
+
+
+  //double paramWindowWidth = 1;
+  for (int iPar = 0; iPar < nParams; ++iPar){
+    fitter.Config().ParSettings(iPar).SetValue(params[iPar]);
+
+    fitter.Config().ParSettings(0).Fix();
+    fitter.Config().ParSettings(1).Fix();
+    //fitter.Config().ParSettings(2).Fix();
+    //fitter.Config().ParSettings(3).Fix();
+
+    if(iPar==0){ //delta bias length
+    fitter.Config().ParSettings(iPar).SetStepSize(1E-3);
+    fitter.Config().ParSettings(iPar).SetLimits(-1-1E-2, 1+1E-2);
+    }
+    if(iPar==1 || iPar==3){ //azimuthal angles for delta bias and tangent
+      fitter.Config().ParSettings(iPar).SetStepSize(0.05);
+      fitter.Config().ParSettings(iPar).SetLimits(-M_PI, M_PI);
+    }
+    if(iPar==2){ //tangent polar angle
+      fitter.Config().ParSettings(iPar).SetStepSize(0.05);
+      fitter.Config().ParSettings(iPar).SetLimits(0, M_PI);
+    }
+  }      
+  bool fitStatus = fitter.FitFCN();
+  if (!fitStatus) {
+    Error(__FUNCTION__, "Track3D Fit failed");
+    std::cout<<KRED<<"Track3D Fit failed"<<RST<<std::endl;
+    fitter.Result().Print(std::cout);
+    return aTrack;
+  }
+  const ROOT::Fit::FitResult & result = fitter.Result();
+  aTrackCandidate.chi2FromNodesList(result.GetParams());
   return aTrackCandidate;
 }
 /////////////////////////////////////////////////////////

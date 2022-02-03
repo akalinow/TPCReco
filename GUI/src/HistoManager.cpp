@@ -11,6 +11,9 @@
 #include "TView.h"
 #include "TVirtualViewer3D.h"
 
+#include "TF1.h"
+
+
 #include "GeometryTPC.h"
 #include "EventTPC.h"
 #include "colorText.h"
@@ -459,7 +462,8 @@ void HistoManager::drawTrack3DProjectionTimeStrip(int strip_dir, TVirtualPad *aP
 
   int iSegment = 0;
   TLine aSegment2DLine;
-  aSegment2DLine.SetLineWidth(1);
+  aSegment2DLine.SetLineWidth(3);
+  aSegment2DLine.SetLineStyle(2);
   double minX = 999.0, minY = 999.0;
   double maxX = -999.0, maxY = -999.0;
   double tmp = 0.0;
@@ -469,7 +473,7 @@ void HistoManager::drawTrack3DProjectionTimeStrip(int strip_dir, TVirtualPad *aP
     const TVector3 & start = aSegment2DProjection.getStart();
     const TVector3 & end = aSegment2DProjection.getEnd();
 
-    aSegment2DLine.SetLineColor(1+iSegment);
+    aSegment2DLine.SetLineColor(kCyan+iSegment);
     aSegment2DLine.DrawLine(start.X(), start.Y(),  end.X(),  end.Y());	
     ++iSegment;
 
@@ -513,26 +517,24 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   
   aPad->cd();
   TGraph aGr = aTrack3D.getChargeProfile();
-  aGr.SetTitle("Charge distribution along track.;l[track length];charge[arbitrary units]");
+  aGr.SetTitle("Integrated charge along track.;l[track length];charge[arbitrary units]");
   aGr.SetLineWidth(2);
   aGr.SetLineColor(2);
   aGr.GetYaxis()->SetTitleOffset(1.5);
   aGr.DrawClone("AL");
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void HistoManager::drawHitDistanceAlongTrack3D(TVirtualPad *aPad){
+  /*
+  double xMin = -10;
+  double xMax = aGr.GetPointX(aGr.GetN()-1);
+  TF1 *fitFunc = new TF1("fitFunc","cheb9",xMin, xMax);
+  TFitResultPtr fitResult = aGr.Fit(fitFunc,"S");
+  fitFunc->SetLineColor(1);
+  TGraph *grDerivative = (TGraph*)fitFunc->DrawDerivative("");
+  grDerivative->SetLineColor(4);
 
-  const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
-
-  aPad->cd();
-  TGraph aGr = aTrack3D.getHitDistanceProfile();
-  aGr.SetTitle("Hit deviation from track along track.;l[track length]; d_{transverse}[mm]");
-
-  aGr.SetLineWidth(2);
-  aGr.SetLineColor(2);
-  aGr.GetYaxis()->SetTitleOffset(1.5);
   aGr.DrawClone("AL");
+  fitFunc->Draw("same");
+  //grDerivative->Draw("");
+  */
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

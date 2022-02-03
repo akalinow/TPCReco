@@ -12,6 +12,10 @@ class Track3D{
 
 public:
 
+  enum fit_modes{FIT_START_STOP,
+		 FIT_BIAS_TANGENT
+  };
+
   Track3D();
 
   virtual ~Track3D(){};
@@ -20,19 +24,21 @@ public:
 
   const TrackSegment3DCollection & getSegments() const { return mySegments;}
 
+  std::vector<double> getSegmentsBiasTangentCoords() const;
+
   std::vector<double> getSegmentsStartEndXYZ() const;
 
   double getLength() const { return myLenght;}
 
   double getSegmentLambda(double lambda, unsigned int iSegment) const;
 
+  TGraph getChargeProfile() const { return mySegments.front().getChargeProfile();}
+
   double getIntegratedCharge(double lambda) const;
 
-  double getIntegratedHitDistance(double lambda) const;
+  const TGraph & getIntegratedChargeProfile() const { return myIntegratedChargeProfile;}
 
-  const TGraph & getChargeProfile() const { return myChargeProfile;}
-
-  const TGraph & getHitDistanceProfile() const { return myHitDistanceProfile;}
+  //const TGraph & getChargeProfile() const { return myChargeProfile;}
 
   double getChi2() const;
 
@@ -46,6 +52,8 @@ public:
   void removeEmptySegments();
 
   void enableProjectionForChi2(int iProjection);
+
+  void setFitMode(fit_modes aMode){myFitMode = aMode;}
   
   double chi2FromNodesList(const double *par);
 
@@ -73,16 +81,17 @@ private:
 
   double getNodesChi2() const;
 
+  fit_modes myFitMode{FIT_START_STOP};
   int iProjectionForChi2{-1};
   double myLenght, myChi2;
-  double stepAlongTrack;
+  double stepLengthAlongTrack{1}; //[mm]
+
   std::vector<double> segmentChi2;
   std::vector<double> nodeHitsChi2;
   std::vector<double> nodeAngleChi2;
   
   TrackSegment3DCollection mySegments;
-  TGraph myChargeProfile;              
-  TGraph myHitDistanceProfile;         
+  TGraph myChargeProfile, myIntegratedChargeProfile;              
 };
 
 typedef std::vector<Track3D> Track3DCollection;

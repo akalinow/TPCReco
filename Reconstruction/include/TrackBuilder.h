@@ -71,7 +71,9 @@ private:
 
   void fitTrack3D(const Track3D & aTrackCandidate);
   
-  Track3D fitTrackNodes(const Track3D & aTrack) const;
+  Track3D fitTrackNodesStartEnd(const Track3D & aTrack) const;
+
+  Track3D fitTrackNodesBiasTangent(const Track3D & aTrack) const;
 
   double fitTrackSplitPoint(const Track3D& aTrackCandidate) const;
 

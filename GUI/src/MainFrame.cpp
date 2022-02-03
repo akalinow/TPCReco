@@ -155,7 +155,7 @@ void MainFrame::InitializeEventSource(){
 
   if(myWorkMode!=M_ONLINE_MODE){
     myEventSource->loadDataFile(dataFileName);
-    myEventSource->loadFileEntry(0);
+    myEventSource->loadFileEntry(28);//TEST
   }
   myHistoManager.setGeometry(myEventSource->getGeometry());
   myHistoManager.openOutputStream(dataFileName);
@@ -609,19 +609,24 @@ void MainFrame::drawRecoHistos(){
   */
   /////
    for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
-    TVirtualPad *aPad = fCanvas->cd(strip_dir+1);
+     //fCanvas->cd(strip_dir+1);
+     TVirtualPad *aPad = fCanvas->cd(strip_dir+1);
     myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("colz");
     //myHistoManager.getRawStripVsTimeInMM(strip_dir)->DrawClone("colz");
+    //myHistoManager.getClusterStripVsTimeInMM(strip_dir)->DrawClone("colz");
+    //myHistoManager.getClusterStripVsTimeInMM(strip_dir)->ProjectionY()->DrawClone("colz");
+    //myHistoManager.getRecHitStripVsTime(strip_dir)->ProjectionY()->DrawClone("E0");
     //myHistoManager.getHoughAccumulator(strip_dir).DrawClone("colz");
-    myHistoManager.drawTrack2DSeed(strip_dir, aPad);
+    //myHistoManager.drawTrack2DSeed(strip_dir, aPad);
     myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
   }
    fCanvas->cd(4);
-   //myHistoManager.drawChargeAlongTrack3D(fCanvas->cd(4));
+   myHistoManager.drawChargeAlongTrack3D(fCanvas->cd(4));
    //myHistoManager.drawTrack3D(fCanvas->cd(4));
    
-   myHistoManager.getRawTimeProjectionInMM()->DrawClone("hist");
-   myHistoManager.getRecHitTimeProjection()->DrawClone("hist same");
+   //myHistoManager.getClusterTimeProjectionInMM()->DrawClone("hist");
+   //myHistoManager.getRecHitTimeProjection()->DrawClone("hist same");
+
    fCanvas->Update();
 }
 /////////////////////////////////////////////////////////

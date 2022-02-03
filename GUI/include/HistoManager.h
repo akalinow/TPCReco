@@ -111,8 +111,6 @@ public:
 
   void drawChargeAlongTrack3D(TVirtualPad *aPad);
 
-  void drawHitDistanceAlongTrack3D(TVirtualPad *aPad);
-
   // Dot-like events usful for neutron flux monitoring
   void initializeDotFinder(unsigned int hitThr, // unsigned int maxStripsPerDir, unsigned int maxTimecellsPerDir,
 			   unsigned int totalChargeThr, 
