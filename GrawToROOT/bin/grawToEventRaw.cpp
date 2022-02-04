@@ -177,44 +177,9 @@ int main(int argc, char *argv[]) {
   double chargeThreshold = 35;
   int delta_timecells = 25;
   int delta_strips = 5;
-  SigClusterTPC myCluster = myEventSourceRoot->getCurrentEvent()->GetOneCluster(chargeThreshold, delta_strips, delta_timecells);
+  myEventSourceRoot->getCurrentEvent()->MakeOneCluster(chargeThreshold, delta_strips, delta_timecells);
   ///// DEBUG - READ BACK TEST
 #endif
   
-  /*
-  std::cout<<"myEventSource.loadFileEntry(0)"<<std::endl;
-  myEventSource.loadFileEntry(0);
-
-  std::cout<<"myEventSource.loadEventId(1)"<<std::endl;
-  myEventSource.loadEventId(0);
-
-  //std::cout<<"myEventSource.getNextEvent()"<<std::endl;
-  //myEventSource.getNextEvent();
-
-  std::cout<<"myEventSource.loadEventId(3)"<<std::endl;
-  myEventSource->loadEventId(3);
-
-  std::cout<<"myEventSource.getPreviousEvent()"<<std::endl;
-  myEventSource.getPreviousEvent();
-
-  std::cout<<"myEventSource.getNextEvent() "<<std::endl;
-  myEventSource.getNextEvent();
-
-  std::cout<<" myEventSource.getLastEvent() "<<std::endl;
-  myEventSource.getLastEvent();
-
-  std::cout<<"myEventSource.getNextEvent() "<<std::endl;
-  myEventSource.getNextEvent();
-
-  std::cout<<"myEventSource.loadEventId(0)"<<std::endl;
-  myEventSource.loadEventId(0);
-
-  std::cout<<"myEventSource.getNextEvent()"<<std::endl;
-  myEventSource.getNextEvent();
-
-  std::cout<<"myEventSource.getPreviousEvent()"<<std::endl;
-  myEventSource.getPreviousEvent();
-  */
-
   return 0;
 }

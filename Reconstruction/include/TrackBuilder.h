@@ -12,6 +12,8 @@
 #include "TrackSegment3D.h"
 #include "Track3D.h"
 
+#include "EventTPC.h"
+
 class TH2D;
 class TF1;
 class TTree;
@@ -19,6 +21,7 @@ class TFile;
 
 class GeometryTPC;
 class EventTPC;
+class SigClusterTPC;
 
 class TrackBuilder {
 public:
@@ -39,7 +42,7 @@ public:
 
   void reconstruct();
 
-  const SigClusterTPC & getCluster() const { return myCluster;}
+  const SigClusterTPC & getCluster() const { return myEvent->GetOneCluster();}
 
   const TH2D & getRecHits2D(int iDir) const;
 
@@ -80,7 +83,6 @@ private:
   std::tuple<double, double> getTimeProjectionEdges() const;
    
   EventTPC *myEvent;
-  SigClusterTPC myCluster;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
   std::vector<double> phiPitchDirection;
 

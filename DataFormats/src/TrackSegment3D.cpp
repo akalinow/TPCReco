@@ -45,7 +45,6 @@ void TrackSegment3D::setStartEnd(const TVector3 & aStart, const TVector3 & aEnd)
 
   myTangent = (myEnd - myStart).Unit();
   myBias = myStart + 0.5*(myEnd - myStart);
-  myBias = myBias - myTangent.Dot(myBias)*myTangent;//TEST
   initialize();
 }
 /////////////////////////////////////////////////////////
@@ -59,16 +58,11 @@ void TrackSegment3D::setStartEnd(const double *par){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void TrackSegment3D::setBiasTangent(const double *par){
-  /*
-  TVector3 delta_bias = getTangent().Orthogonal().Unit();
-  double length = par[0];
-  //double phi = par[1];
-  //delta_bias.Rotate(phi, par[1]*getTangent().Unit());
-  delta_bias *=length;
-  */
-  TVector3 bias = getBias();// + delta_bias;
+  
+  TVector3 bias(par[0], par[1], par[2]);
   TVector3 tangent;
-  tangent.SetMagThetaPhi(1.0, par[2], par[3]);  
+  tangent.SetMagThetaPhi(1.0, par[3], par[4]);  
+
   setBiasTangent(bias, tangent);
 }
 /////////////////////////////////////////////////////////
@@ -125,13 +119,12 @@ std::vector<double> TrackSegment3D::getStartEndXYZ() const{
 /////////////////////////////////////////////////////////
 std::vector<double> TrackSegment3D::getBiasTangentCoords() const{
 
-  std::vector<double> coordinates(4);
+  std::vector<double> coordinates(5);
   double *data = coordinates.data();
 
-  data[0] = 0.0;
-  data[1] = 0.0;
-  data[2] = getTangent().Theta();
-  data[3] = getTangent().Phi();
+  getBias().GetXYZ(data);
+  data[3] = getTangent().Theta();
+  data[4] = getTangent().Phi();
 
   return coordinates;
 }
@@ -197,7 +190,6 @@ TGraph TrackSegment3D::getChargeProfile() const{
       chargeProfileProjection.GetPoint(i, x, y);
       chargeProfile.SetPoint(chargeProfile.GetN(), x/cosPhiProjectionAngle, y);
     }
-    break;
   }
   chargeProfile.SetPoint(chargeProfile.GetN(), getLength(), 0.0);
   chargeProfile.Sort();
@@ -213,7 +205,8 @@ double TrackSegment3D::getIntegratedCharge(double lambdaCut) const{
   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
     TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, lambdaCut);
     const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
-    charge += aTrack2DProjection.getIntegratedCharge(lambdaCut, aRecHits);    
+    charge += aTrack2DProjection.getIntegratedCharge(lambdaCut, aRecHits);
+    break;
   } 
   return charge;
 }

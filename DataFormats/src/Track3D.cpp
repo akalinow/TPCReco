@@ -169,7 +169,7 @@ void Track3D::updateNodesChi2(int strip_dir){
       charge = aHit.getCharge();
       aPoint.SetXYZ(aHit.getPosTime(), aHit.getPosStrip(), 0.0);
       aPoint -= node2D;
-      double deltaHit = ROOT::Math::VectorUtil::DeltaPhi(formerTransverse2D, aPoint);//DeltaPhi(a, b) = b - a 
+      double deltaHit = ROOT::Math::VectorUtil::Angle(formerTransverse2D, aPoint);
       double nodeOpeningAngle = ROOT::Math::VectorUtil::DeltaPhi(formerTransverse2D, latterTransverse2D);      
       bool belongsToNode = deltaHit < nodeOpeningAngle && deltaHit>0.0;
       if(belongsToNode){
@@ -273,7 +273,7 @@ void Track3D::extendToZRange(double zMin, double zMax){
 void Track3D::shrinkToHits(){
 
   if(getLength()<1.0) return;
-  double chargeCut = 0.02*getIntegratedCharge(getLength());
+  double chargeCut = 0.05*getIntegratedCharge(getLength());
   double charge = 0.0;
   double lambdaStart = 0;
   

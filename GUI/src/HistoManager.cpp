@@ -473,7 +473,7 @@ void HistoManager::drawTrack3DProjectionTimeStrip(int strip_dir, TVirtualPad *aP
     const TVector3 & start = aSegment2DProjection.getStart();
     const TVector3 & end = aSegment2DProjection.getEnd();
 
-    aSegment2DLine.SetLineColor(kCyan+iSegment);
+    aSegment2DLine.SetLineColor(kRed+2+iSegment);
     aSegment2DLine.DrawLine(start.X(), start.Y(),  end.X(),  end.Y());	
     ++iSegment;
 
@@ -516,7 +516,7 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
   
   aPad->cd();
-  TGraph aGr = aTrack3D.getChargeProfile();
+  TGraph aGr = aTrack3D.getIntegratedChargeProfile();
   aGr.SetTitle("Integrated charge along track.;l[track length];charge[arbitrary units]");
   aGr.SetLineWidth(2);
   aGr.SetLineColor(2);

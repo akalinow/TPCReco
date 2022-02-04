@@ -27,18 +27,23 @@ if(EXISTS ${GET_VERSION_DIR})
   set(GRAW_TO_ROOT_LIBRARY GrawToROOT)
   include_directories(${GET_VERSION_DIR}/include)
 else()
-    MESSAGE(WARNING "No GET software found. ")
+    MESSAGE(WARNING "No GET software found. GET dependent packages will not be built.")
     set(GET_LIBRARIES "")
     set(GET_CXX_FLAGS "")
     set(GRAW_TO_ROOT_LIBRARY "")
-endif()  
+endif()
   
 MESSAGE( STATUS "GET_VERSION_DIR:       " ${GET_VERSION_DIR})
 MESSAGE( STATUS "GET libraries:         " ${GET_LIBRARIES} )
 MESSAGE( STATUS "GET includes:          " ${GET_VERSION_DIR}/include )
 MESSAGE( STATUS "GET compile flags:     " ${GET_CXX_FLAGS} )
 #####################################################################
-
+find_package(Boost 1.45.0 COMPONENTS program_options REQUIRED)
+if(Boost_FOUND)
+  MESSAGE(STATUS "Boost verion found:" ${Boost_VERSION_STRING})
+else()
+  MESSAGE(FATAL_ERROR "No Boost found.")
+endif()  
 ###############################################################################
 ## packaging ##################################################################
 ###############################################################################

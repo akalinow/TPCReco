@@ -11,7 +11,6 @@
 #include "Math/Functor.h"
 
 #include "GeometryTPC.h"
-#include "EventTPC.h"
 #include "SigClusterTPC.h"
 
 #include "TrackBuilder.h"
@@ -33,8 +32,7 @@ TrackBuilder::TrackBuilder() {
 
   fitter.Config().MinimizerOptions().SetMinimizerType("Minuit2");
   fitter.Config().MinimizerOptions().Print(std::cout);
-  fitter.Config().MinimizerOptions().SetPrintLevel(1);
-
+  fitter.Config().MinimizerOptions().SetPrintLevel(0);
   ///An offset used for filling the Hough transformation.
   ///to avoid having very small rho parameters, as
   ///orignally many tracks traverse close to X=0, Time=0
@@ -116,7 +114,6 @@ void TrackBuilder::setEvent(EventTPC* aEvent){
   int delta_timecells = 25;
   int delta_strips = 5;
   myEvent->MakeOneCluster(chargeThreshold, delta_strips, delta_timecells);
-  myCluster = myEvent->GetOneCluster();
   
   std::string hName, hTitle;
   if(!myHistoInitialized){     
@@ -588,7 +585,7 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   TrackSegment3D a3DSeed;
   a3DSeed.setGeometry(myGeometryPtr);  
   a3DSeed.setBiasTangent(aBias, aTangent);
-  a3DSeed.setRecHits(myRecHits);//TEST
+  a3DSeed.setRecHits(myRecHits);
   /*
   std::cout<<KRED<<"tagent from track: "<<RST;
   a3DSeed.getTangent().Print();
@@ -615,7 +612,6 @@ void TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
   myFittedTrack.extendToZRange(std::get<0>(myZRange),std::get<1>(myZRange));
   myFittedTrack.shrinkToHits();
   myFittedTrackPtr = &myFittedTrack;
-
   std::cout<<KBLU<<"Post-fit: "<<RST<<std::endl;
   std::cout<<myFittedTrack<<std::endl;
 }
@@ -661,49 +657,47 @@ Track3D TrackBuilder::fitTrackNodesBiasTangent(const Track3D & aTrack) const{
   ROOT::Math::Functor fcn(&aTrackCandidate, &Track3D::chi2FromNodesList, nParams);
   fitter.SetFCN(fcn, params.data());
 
-  //////TEST
-  /*
-  aTrackCandidate.getSegments().front().getTangent().Unit().Print();
-  aTrackCandidate.getSegments().front().getTangent().Orthogonal().Unit().Print();
-  for(int i=1;i<=1;++i){
-    params[0] = -150;
-    aTrackCandidate.chi2FromNodesList(params.data());
-    //std::cout<<aTrackCandidate<<std::endl;    
-  }
-  return aTrackCandidate;
-  */
-  /////
-
-
-
-  //double paramWindowWidth = 1;
+  for(int iIter=1;iIter<4;++iIter){
   for (int iPar = 0; iPar < nParams; ++iPar){
-    fitter.Config().ParSettings(iPar).SetValue(params[iPar]);
+    if(iIter==1){
+      fitter.Config().ParSettings(iPar).SetValue(params[iPar]);
+      if(iPar<3){//bias coordinates
+	fitter.Config().ParSettings(iPar).SetStepSize(1);
+	fitter.Config().ParSettings(iPar).SetLimits(-200, 200);
+      }
+      if(iPar==3){ //tangent azimuthal angle 
+	fitter.Config().ParSettings(iPar).SetStepSize(0.05);
+	fitter.Config().ParSettings(iPar).SetLimits(-M_PI, M_PI);
+      }
+      if(iPar==4){ //tangent polar angle
+	fitter.Config().ParSettings(iPar).SetStepSize(0.05);
+	fitter.Config().ParSettings(iPar).SetLimits(0, M_PI);
+      }
+    }
 
-    fitter.Config().ParSettings(0).Fix();
-    fitter.Config().ParSettings(1).Fix();
-    //fitter.Config().ParSettings(2).Fix();
-    //fitter.Config().ParSettings(3).Fix();
-
-    if(iPar==0){ //delta bias length
-    fitter.Config().ParSettings(iPar).SetStepSize(1E-3);
-    fitter.Config().ParSettings(iPar).SetLimits(-1-1E-2, 1+1E-2);
+    if(iIter%2==1){
+      fitter.Config().ParSettings(0).Release();
+      fitter.Config().ParSettings(1).Release();
+      fitter.Config().ParSettings(2).Release();
+      fitter.Config().ParSettings(3).Fix();
+      fitter.Config().ParSettings(4).Fix();
     }
-    if(iPar==1 || iPar==3){ //azimuthal angles for delta bias and tangent
-      fitter.Config().ParSettings(iPar).SetStepSize(0.05);
-      fitter.Config().ParSettings(iPar).SetLimits(-M_PI, M_PI);
-    }
-    if(iPar==2){ //tangent polar angle
-      fitter.Config().ParSettings(iPar).SetStepSize(0.05);
-      fitter.Config().ParSettings(iPar).SetLimits(0, M_PI);
-    }
-  }      
+    else{
+      fitter.Config().ParSettings(0).Fix();
+      fitter.Config().ParSettings(1).Fix();
+      fitter.Config().ParSettings(2).Fix();
+      fitter.Config().ParSettings(3).Release();
+      fitter.Config().ParSettings(4).Release();
+    }   
+  }
   bool fitStatus = fitter.FitFCN();
   if (!fitStatus) {
     Error(__FUNCTION__, "Track3D Fit failed");
     std::cout<<KRED<<"Track3D Fit failed"<<RST<<std::endl;
     fitter.Result().Print(std::cout);
-    return aTrack;
+    //return aTrack;
+  }
+  //fitter.Result().Print(std::cout);//TEST
   }
   const ROOT::Fit::FitResult & result = fitter.Result();
   aTrackCandidate.chi2FromNodesList(result.GetParams());
