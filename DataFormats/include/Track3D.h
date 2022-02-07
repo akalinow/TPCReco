@@ -23,6 +23,7 @@ public:
   void addSegment(const TrackSegment3D & aSegment3D);
 
   const TrackSegment3DCollection & getSegments() const { return mySegments;}
+  TrackSegment3DCollection & getSegments() { return mySegments;}//TEST
 
   std::vector<double> getSegmentsBiasTangentCoords() const;
 

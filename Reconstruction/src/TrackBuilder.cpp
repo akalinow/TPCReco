@@ -318,9 +318,9 @@ std::tuple<double, double> TrackBuilder::getTimeProjectionEdges() const{
 
   for(auto iBin=0;iBin<hTimeProjection.GetNbinsX();++iBin){
     sum += hTimeProjection.GetBinContent(iBin);
-    if(sum/histoSum>threshold && iBinStart<0) iBinStart = iBin;
+    if(sum/histoSum>threshold && iBinStart<0) iBinStart = iBin-2;
     else if(sum/histoSum>1.0-threshold && iBinEnd<0) {
-      iBinEnd = iBin;
+      iBinEnd = iBin+2;
       break;
     }
   }
@@ -609,7 +609,7 @@ void TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
   std::cout<<aTrackCandidate<<std::endl;
   //myFittedTrack = fitTrackNodesStartEnd(aTrackCandidate);
   myFittedTrack = fitTrackNodesBiasTangent(aTrackCandidate);
-  myFittedTrack.extendToZRange(std::get<0>(myZRange),std::get<1>(myZRange));
+  myFittedTrack.extendToZRange(std::get<0>(myZRange), std::get<1>(myZRange));
   myFittedTrack.shrinkToHits();
   myFittedTrackPtr = &myFittedTrack;
   std::cout<<KBLU<<"Post-fit: "<<RST<<std::endl;
@@ -663,7 +663,7 @@ Track3D TrackBuilder::fitTrackNodesBiasTangent(const Track3D & aTrack) const{
       fitter.Config().ParSettings(iPar).SetValue(params[iPar]);
       if(iPar<3){//bias coordinates
 	fitter.Config().ParSettings(iPar).SetStepSize(1);
-	fitter.Config().ParSettings(iPar).SetLimits(-200, 200);
+	fitter.Config().ParSettings(iPar).SetLimits(-300, 300);
       }
       if(iPar==3){ //tangent azimuthal angle 
 	fitter.Config().ParSettings(iPar).SetStepSize(0.05);
@@ -700,6 +700,7 @@ Track3D TrackBuilder::fitTrackNodesBiasTangent(const Track3D & aTrack) const{
   //fitter.Result().Print(std::cout);//TEST
   }
   const ROOT::Fit::FitResult & result = fitter.Result();
+  aTrackCandidate.getSegments().front().setRecHits(myRawHits);//TEST
   aTrackCandidate.chi2FromNodesList(result.GetParams());
   return aTrackCandidate;
 }
