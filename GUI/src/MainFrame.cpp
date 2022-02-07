@@ -597,7 +597,7 @@ void MainFrame::drawRecoHistos(){
     myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
   }
    fCanvas->cd(4);
-   myHistoManager.drawChargeAlongTrack3D(fCanvas->cd(4));
+   //myHistoManager.drawChargeAlongTrack3D(fCanvas->cd(4));
    //myHistoManager.drawTrack3D(fCanvas->cd(4));
    //myHistoManager.getClusterTimeProjectionInMM()->DrawClone("hist");
    //myHistoManager.getRecHitTimeProjection()->DrawClone("hist same");

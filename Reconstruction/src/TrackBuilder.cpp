@@ -585,7 +585,7 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   TrackSegment3D a3DSeed;
   a3DSeed.setGeometry(myGeometryPtr);  
   a3DSeed.setBiasTangent(aBias, aTangent);
-  a3DSeed.setRecHits(myRecHits);
+  a3DSeed.setRecHits(myRecHits);//TEST
   /*
   std::cout<<KRED<<"tagent from track: "<<RST;
   a3DSeed.getTangent().Print();
@@ -609,6 +609,7 @@ void TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
   std::cout<<aTrackCandidate<<std::endl;
   //myFittedTrack = fitTrackNodesStartEnd(aTrackCandidate);
   myFittedTrack = fitTrackNodesBiasTangent(aTrackCandidate);
+  //myFittedTrack = aTrackCandidate;
   myFittedTrack.extendToZRange(std::get<0>(myZRange), std::get<1>(myZRange));
   myFittedTrack.shrinkToHits();
   myFittedTrackPtr = &myFittedTrack;
@@ -665,13 +666,13 @@ Track3D TrackBuilder::fitTrackNodesBiasTangent(const Track3D & aTrack) const{
 	fitter.Config().ParSettings(iPar).SetStepSize(1);
 	fitter.Config().ParSettings(iPar).SetLimits(-300, 300);
       }
-      if(iPar==3){ //tangent azimuthal angle 
-	fitter.Config().ParSettings(iPar).SetStepSize(0.05);
-	fitter.Config().ParSettings(iPar).SetLimits(-M_PI, M_PI);
-      }
-      if(iPar==4){ //tangent polar angle
+      if(iPar==3){ //tangent polar angle
 	fitter.Config().ParSettings(iPar).SetStepSize(0.05);
 	fitter.Config().ParSettings(iPar).SetLimits(0, M_PI);
+      }
+      if(iPar==4){ //tangent azimuthal angle 
+	fitter.Config().ParSettings(iPar).SetStepSize(0.05);
+	fitter.Config().ParSettings(iPar).SetLimits(-M_PI, M_PI);
       }
     }
 

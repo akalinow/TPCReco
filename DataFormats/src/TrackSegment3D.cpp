@@ -190,6 +190,7 @@ TGraph TrackSegment3D::getChargeProfile() const{
       chargeProfileProjection.GetPoint(i, x, y);
       chargeProfile.SetPoint(chargeProfile.GetN(), x/cosPhiProjectionAngle, y);
     }
+    break;//TEST
   }
   chargeProfile.SetPoint(chargeProfile.GetN(), getLength(), 0.0);
   chargeProfile.Sort();
@@ -206,7 +207,7 @@ double TrackSegment3D::getIntegratedCharge(double lambdaCut) const{
     TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, lambdaCut);
     const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
     charge += aTrack2DProjection.getIntegratedCharge(lambdaCut, aRecHits);
-    break;
+    break;//TEST
   } 
   return charge;
 }

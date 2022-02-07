@@ -516,7 +516,7 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
   
   aPad->cd();
-  TGraph aGr = aTrack3D.getIntegratedChargeProfile();
+  TGraph aGr = aTrack3D.getChargeProfile();
   aGr.SetTitle("Integrated charge along track.;l[track length];charge[arbitrary units]");
   aGr.SetLineWidth(2);
   aGr.SetLineColor(2);
