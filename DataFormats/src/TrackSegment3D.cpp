@@ -31,7 +31,7 @@ void TrackSegment3D::setBiasTangent(const TVector3 & aBias, const TVector3 & aTa
   myBias = aBias;
   myTangent = aTangent.Unit();
 
-  double lambda = 1500;
+  double lambda = 100;
   myStart = myBias-lambda*myTangent;   
   myEnd = myBias+lambda*myTangent;  
   initialize();
@@ -44,7 +44,7 @@ void TrackSegment3D::setStartEnd(const TVector3 & aStart, const TVector3 & aEnd)
   myEnd = aEnd;
 
   myTangent = (myEnd - myStart).Unit();
-  myBias = myStart + 0.5*(myEnd - myStart);
+  myBias = (myStart + myEnd)*0.5;
   initialize();
 }
 /////////////////////////////////////////////////////////
@@ -75,8 +75,8 @@ void TrackSegment3D::setRecHits(const std::vector<TH2D> & aRecHits){
   double x=-999.0, y=-999.0, charge=-999.0;
   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
     const TH2D & hRecHits = aRecHits[strip_dir];
-    for(int iBinX=1;iBinX<hRecHits.GetNbinsX();++iBinX){
-      for(int iBinY=1;iBinY<hRecHits.GetNbinsY();++iBinY){
+    for(int iBinX=1;iBinX<=hRecHits.GetNbinsX();++iBinX){
+      for(int iBinY=1;iBinY<=hRecHits.GetNbinsY();++iBinY){
 	charge = hRecHits.GetBinContent(iBinX, iBinY);
 	x = hRecHits.GetXaxis()->GetBinCenter(iBinX);
 	y = hRecHits.GetYaxis()->GetBinCenter(iBinY);
@@ -190,7 +190,6 @@ TGraph TrackSegment3D::getChargeProfile() const{
       chargeProfileProjection.GetPoint(i, x, y);
       chargeProfile.SetPoint(chargeProfile.GetN(), x/cosPhiProjectionAngle, y);
     }
-    break;//TEST
   }
   chargeProfile.SetPoint(chargeProfile.GetN(), getLength(), 0.0);
   chargeProfile.Sort();
@@ -207,7 +206,6 @@ double TrackSegment3D::getIntegratedCharge(double lambdaCut) const{
     TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, lambdaCut);
     const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
     charge += aTrack2DProjection.getIntegratedCharge(lambdaCut, aRecHits);
-    break;//TEST
   } 
   return charge;
 }

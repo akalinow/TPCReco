@@ -155,7 +155,7 @@ void MainFrame::InitializeEventSource(){
 
   if(myWorkMode!=M_ONLINE_MODE){
     myEventSource->loadDataFile(dataFileName);
-    myEventSource->loadFileEntry(0);
+    myEventSource->loadFileEntry(0);//TEST
   }
   myHistoManager.setGeometry(myEventSource->getGeometry());
   myHistoManager.openOutputStream(dataFileName);
@@ -590,14 +590,14 @@ void MainFrame::drawRecoHistos(){
    for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
      //fCanvas->cd(strip_dir+1);
      TVirtualPad *aPad = fCanvas->cd(strip_dir+1);
-     //myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("colz");
+     myHistoManager.getClusterStripVsTimeInMM(strip_dir)->DrawClone("colz");
+     myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("box same");
     //myHistoManager.getRawStripVsTimeInMM(strip_dir)->DrawClone("colz");
-    myHistoManager.getClusterStripVsTimeInMM(strip_dir)->DrawClone("colz");
     //myHistoManager.drawTrack2DSeed(strip_dir, aPad);
     myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
   }
    fCanvas->cd(4);
-   //myHistoManager.drawChargeAlongTrack3D(fCanvas->cd(4));
+   myHistoManager.drawChargeAlongTrack3D(fCanvas->cd(4));
    //myHistoManager.drawTrack3D(fCanvas->cd(4));
    //myHistoManager.getClusterTimeProjectionInMM()->DrawClone("hist");
    //myHistoManager.getRecHitTimeProjection()->DrawClone("hist same");
@@ -613,10 +613,9 @@ void MainFrame::drawRecoFromMarkers(std::vector<double> * segmentsXY){
     TVirtualPad *aPad = fCanvas->cd(strip_dir+1);
     myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
   }
-  std::cout<<KRED<<"3D track drawing disabled. Work in progress."<<RST<<std::endl;
   //myHistoManager.drawTrack3D(fCanvas->cd(4));
   //myHistoManager.drawChargeAlongTrack3D(aPad);
-  myHistoManager.drawChargeAlongTrack3D(fCanvas->cd(4));
+  //myHistoManager.drawChargeAlongTrack3D(fCanvas->cd(4));
   fCanvas->Update();
 }
 /////////////////////////////////////////////////////////

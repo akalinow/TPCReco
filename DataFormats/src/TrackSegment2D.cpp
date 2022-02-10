@@ -22,7 +22,7 @@ void TrackSegment2D::setStartEnd(const TVector3 & aStart, const TVector3 & aEnd)
   myEnd = aEnd;
 
   myTangent = (myEnd - myStart).Unit();
-  myBias = myStart;
+  myBias = (myStart + myEnd)*0.5;
 
   initialize();
 }
@@ -44,7 +44,10 @@ void TrackSegment2D::initialize(){
   if(std::abs(myTangentWithT1.X())>1E-5){
     myTangentWithT1 *= 1.0/myTangentWithT1.X();
   }
-  else myTangentWithT1 *=0.0;
+  else{
+    myTangentWithT1.SetZ(0.0);
+    myTangentWithT1 = myTangentWithT1.Unit();
+  }
   
   myLenght = (myEnd - myStart).Mag();
 }
@@ -93,12 +96,12 @@ double TrackSegment2D::getIntegratedCharge(double lambdaCut, const Hit2DCollecti
 /////////////////////////////////////////////////////////
 std::tuple<double,double> TrackSegment2D::getPointLambdaAndDistance(const TVector3 & aPoint) const{
 
-  const TVector3 & bias = getBias();
   const TVector3 & tangent = getTangent();
   const TVector3 & start = getStart();
 
-  double lambda = (aPoint - start)*tangent/tangent.Mag();
-  TVector3 transverseComponent = aPoint - bias - lambda*tangent;
+  TVector3 delta = aPoint - start;
+  double lambda = delta*tangent/tangent.Mag();
+  TVector3 transverseComponent = delta - lambda*tangent;
   return std::make_tuple(lambda, transverseComponent.Mag());
 }
 /////////////////////////////////////////////////////////
@@ -119,14 +122,17 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
 
   TVector3 aPoint;
   double chi2 = 0.0;
+  double biasDistance = 0.0;
   double chargeSum = 0.0;
   double distance = 0.0;
   double lambda = 0.0;
+  double minLambda = 0.0;
+  double maxLambda = 0.0;
+  double deltaLambda = 0.0;
   int pointCount = 0;
   
   double x = 0.0, y = 0.0;
   double charge = 0.0;
-  double weight = 0.0;
 
   for(const auto aHit:aRecHits){
     x = aHit.getPosTime();
@@ -134,16 +140,22 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
     charge = aHit.getCharge();
     aPoint.SetXYZ(x, y, 0.0);
     std::tie(lambda,distance) = getPointLambdaAndDistance(aPoint);
-    weight = 1.0;//Place holder for something more complicated
     if(lambda<0 || lambda>getLength()) continue;
-    ++pointCount;    
-    chi2 += std::pow(distance, 2)*charge*weight;
-    chargeSum +=charge*weight;
+    ++pointCount;
+    chi2 += std::pow(distance, 2)*charge;
+    chargeSum +=charge;
+    biasDistance += (aPoint - getBias()).Mag();
+    if(lambda<minLambda) minLambda = lambda;
+    if(lambda>maxLambda) maxLambda = lambda;
   }
   if(!pointCount) return dummyChi2;
 
   chi2 /= chargeSum;
-  return chi2;
+  biasDistance /= chargeSum;
+  deltaLambda = std::abs(maxLambda - minLambda);
+  deltaLambda = 0;
+  //biasDistance = 0;
+  return chi2 + biasDistance + deltaLambda;//TEST
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

@@ -55,6 +55,8 @@ public:
   void enableProjectionForChi2(int iProjection);
 
   void setFitMode(fit_modes aMode){myFitMode = aMode;}
+
+  double hitDistanceFromBias(const double *par);
   
   double chi2FromNodesList(const double *par);
 
@@ -66,9 +68,9 @@ public:
 
   void splitSegment(unsigned int iSegment,  double lengthFraction);
 
-private:
-
   void update();
+
+private:
 
   void updateChi2();
 
@@ -85,7 +87,7 @@ private:
   fit_modes myFitMode{FIT_START_STOP};
   int iProjectionForChi2{-1};
   double myLenght, myChi2;
-  double stepLengthAlongTrack{1}; //[mm]
+  double stepLengthAlongTrack{0.5}; //[mm]
 
   std::vector<double> segmentChi2;
   std::vector<double> nodeHitsChi2;

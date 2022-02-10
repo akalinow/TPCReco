@@ -84,15 +84,13 @@ void Track3D::updateChargeProfile(){
   myIntegratedChargeProfile.Set(0);
   if(getLength()<1.0) return;//FIXME threshold
 
-  int marginSteps = 0;
   int nSteps =  getLength()/stepLengthAlongTrack;
   double lambdaCut = 0.0;
   double charge = 0.0;
   double maxCharge = 0.0;
-
   myChargeProfile.SetPoint(0, 0, 0);
   
-  for(int iStep=-marginSteps;iStep<=nSteps+marginSteps;++iStep){
+  for(int iStep=0;iStep<=nSteps;++iStep){
     lambdaCut = iStep*stepLengthAlongTrack;
     charge = getIntegratedCharge(lambdaCut);
     myIntegratedChargeProfile.SetPoint(myIntegratedChargeProfile.GetN(), lambdaCut, charge);
@@ -255,6 +253,7 @@ void Track3D::extendToZRange(double zMin, double zMax){
   if(!mySegments.size()) return;
 
   TrackSegment3D & aFirstSegment = mySegments.front();
+  
   double lambda =  aFirstSegment.getLambdaAtZ(zMin);
   TVector3 aStart = aFirstSegment.getStart() + lambda*aFirstSegment.getTangent();
   TVector3 aEnd = aFirstSegment.getEnd();
@@ -273,16 +272,15 @@ void Track3D::extendToZRange(double zMin, double zMax){
 void Track3D::shrinkToHits(){
 
   if(getLength()<1.0) return;
-  double chargeCut = 0.05*getIntegratedCharge(getLength());
+  double chargeCut = 0.02*getIntegratedCharge(getLength());
   double charge = 0.0;
-  double lambdaStart = 0;
-  
+  double lambdaStart = -stepLengthAlongTrack;
+
   while(charge<chargeCut && lambdaStart<getLength()){
     lambdaStart +=stepLengthAlongTrack;
     charge = getIntegratedChargeProfile().Eval(lambdaStart);
   }
-  
-  double lambdaEnd = getLength();  
+  double lambdaEnd = getLength() + stepLengthAlongTrack;  
   chargeCut = 0.98*getIntegratedCharge(getLength());
   charge = getIntegratedCharge(getLength());
   while(charge>chargeCut && lambdaEnd>lambdaStart){
@@ -344,6 +342,17 @@ double Track3D::chi2FromNodesList(const double *par){
   updateChi2();
   return getChi2();
 }
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+/*
+double Track3D::hitDistanceFromBias(const double *par){
+
+  for(unsigned int iSegment=0;iSegment<mySegments.size();++iSegment){
+    const double *segmentParameters = par+2*iSegment;
+    mySegments.at(iSegment).setBiasTangent(segmentParameters);
+  }
+}
+*/
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 double Track3D::chi2FromSplitPoint(const double *par){

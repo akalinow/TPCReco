@@ -282,6 +282,10 @@ std::shared_ptr<TH2D> HistoManager::getRecHitStripVsTime(int strip_dir){
   std::shared_ptr<TH2D> aHisto(h);
   if(aHisto) {
     if(doAutozoom) makeAutozoom(aHisto);
+    aHisto->SetMarkerStyle(24);
+    aHisto->SetMarkerColorAlpha(kRed, 0.1);
+    aHisto->SetFillColorAlpha(kRed, 0.1);
+    aHisto->SetLineColorAlpha(kRed, 0.1);
     aHisto->GetYaxis()->SetTitleOffset(1.8);
     aHisto->GetZaxis()->SetTitleOffset(1.5);
   }

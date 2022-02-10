@@ -113,7 +113,7 @@ class EventTPC {
   double GetTotalChargeByTimeCell(int strip_dir, int time_cell); // charge integral from a single time cell from all merged strips in a given direction (all sections)
   double GetTotalChargeByTimeCell(int strip_dir, int strip_section, int time_cell); // charge integral from a single time cell from all strips in a given direction (per section)
 
-  void MakeOneCluster(double thr, int delta_strips, int delta_timecells); // applies clustering threshold to all space-time data points 
+  void MakeOneCluster(double thr=-1, int delta_strips=5, int delta_timecells=25); // applies clustering threshold to all space-time data points 
   const SigClusterTPC & GetOneCluster() const; 
   
   std::shared_ptr<TH1D> GetStripProjection(const SigClusterTPC &cluster, int strip_dir);    // clustered hits only, valid dir range [0-2]

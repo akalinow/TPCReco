@@ -513,21 +513,21 @@ void EventTPC::MakeOneCluster(double thr, int delta_strips, int delta_timecells)
     // debug - dump the whole event as a single cluster
   }
 
-  // debug 
+  // debug
+  /*
   //  std::cout << ">>>> GetSigCluster: nhits=" << cluster.GetNhits() << ", chargeMap2.size=" << chargeMap2.size() << std::endl;
   std::cout << Form(">>>> GetSigCluster: BEFORE ENVELOPE: nhits(%d)/nhits(%d)/nhits(%d)=%ld/%ld/%ld",
 	       DIR_U, DIR_V, DIR_W,
 	       myCluster.GetNhits(DIR_U), 
 	       myCluster.GetNhits(DIR_V), 
 	       myCluster.GetNhits(DIR_W) ) << std::endl;
-  // debug
-
+  */
   // adding envelope to the seed hits (per section)
   std::vector<MultiKey4> oldList = myCluster.GetHitList(); // make a copy of list of SEED-hits
   std::vector<MultiKey4>::iterator it2;
 
   // loop thru SEED-hits (per section)
-  for( it2=oldList.begin(); it2!=oldList.end(); ++it2 ) {
+  for( it2=oldList.begin(); it2!=oldList.end() && true; ++it2 ) {
 
     // unpack coordinates
     const int strip_dir = (*it2).key1;
@@ -553,12 +553,13 @@ void EventTPC::MakeOneCluster(double thr, int delta_strips, int delta_timecells)
   }
 
   // debug
+  /*
   std::cout << Form(">>>> GetSigCluster: AFTER ENVELOPE:  nhits(%d)/nhits(%d)/nhits(%d)=%ld/%ld/%ld",
 	       DIR_U, DIR_V, DIR_W,
 	       myCluster.GetNhits(DIR_U), 
 	       myCluster.GetNhits(DIR_V), 
 	       myCluster.GetNhits(DIR_W) ) << std::endl;
-  // debug
+  */
 }
 
 

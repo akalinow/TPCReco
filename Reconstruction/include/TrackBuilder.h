@@ -76,7 +76,7 @@ private:
   
   Track3D fitTrackNodesStartEnd(const Track3D & aTrack) const;
 
-  Track3D fitTrackNodesBiasTangent(const Track3D & aTrack) const;
+  ROOT::Fit::FitResult fitTrackNodesBiasTangent(const Track3D & aTrack, double offset=0) const;
 
   double fitTrackSplitPoint(const Track3D& aTrackCandidate) const;
 
