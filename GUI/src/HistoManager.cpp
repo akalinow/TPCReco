@@ -430,6 +430,10 @@ void HistoManager::drawTrack3D(TVirtualPad *aPad){
 void HistoManager::drawTrack3DProjectionXY(TVirtualPad *aPad){
 
   aPad->cd();
+  myGeometryPtr->GetTH2Poly()->SetTitle("");
+  myGeometryPtr->GetTH2Poly()->ChangePartition(10,10);
+  myGeometryPtr->GetTH2Poly()->Draw();
+  
   const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
 
   int iSegment = 0;
@@ -438,7 +442,8 @@ void HistoManager::drawTrack3DProjectionXY(TVirtualPad *aPad){
   for(const auto & aItem: aTrack3D.getSegments()){
     const TVector3 & start = aItem.getStart();
     const TVector3 & end = aItem.getEnd();
-    aSegment2DLine.SetLineColor(1+iSegment);
+    aSegment2DLine.SetLineColor(kRed+iSegment);
+    aSegment2DLine.SetLineWidth(3);
     aSegment2DLine.DrawLine(start.X(), start.Y(),  end.X(),  end.Y());	
     ++iSegment;
   }
@@ -520,25 +525,18 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
   
   aPad->cd();
-  TGraph aGr = aTrack3D.getChargeProfile();
-  aGr.SetTitle("Integrated charge along track.;l[track length];charge[arbitrary units]");
-  aGr.SetLineWidth(2);
-  aGr.SetLineColor(2);
-  aGr.GetYaxis()->SetTitleOffset(1.5);
-  aGr.DrawClone("AL");
-  /*
-  double xMin = -10;
-  double xMax = aGr.GetPointX(aGr.GetN()-1);
-  TF1 *fitFunc = new TF1("fitFunc","cheb9",xMin, xMax);
-  TFitResultPtr fitResult = aGr.Fit(fitFunc,"S");
-  fitFunc->SetLineColor(1);
-  TGraph *grDerivative = (TGraph*)fitFunc->DrawDerivative("");
-  grDerivative->SetLineColor(4);
 
-  aGr.DrawClone("AL");
-  fitFunc->Draw("same");
-  //grDerivative->Draw("");
-  */
+  TH1F hChargeProfile = aTrack3D.getSegments().front().getChargeProfile();
+  hChargeProfile.SetLineWidth(2);
+  hChargeProfile.SetLineColor(2);
+  hChargeProfile.SetMarkerColor(2);
+  hChargeProfile.SetMarkerSize(1.0);
+  hChargeProfile.SetMarkerStyle(20);
+  hChargeProfile.SetMinimum(0.0);
+  hChargeProfile.GetYaxis()->SetTitleOffset(1.5);
+  hChargeProfile.DrawClone("HIST P");
+  hChargeProfile.Print();
+
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

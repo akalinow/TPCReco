@@ -29,7 +29,6 @@ void Track3D::update(){
     myLenght += aSegment.getLength();
   }
   updateChi2();
-  updateChargeProfile();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -64,7 +63,6 @@ std::vector<double> Track3D::getSegmentsBiasTangentCoords() const{
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 double Track3D::getIntegratedCharge(double lambda) const{
-
   double charge = 0.0;
   double pastSegmentsLambda = 0.0;
   double segmentLambda = 0.0;
@@ -76,27 +74,6 @@ double Track3D::getIntegratedCharge(double lambda) const{
     if(segmentLambda<aSegment.getLength()) break;
   }
   return charge;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void Track3D::updateChargeProfile(){
-
-  myIntegratedChargeProfile.Set(0);
-  if(getLength()<1.0) return;//FIXME threshold
-
-  int nSteps =  getLength()/stepLengthAlongTrack;
-  double lambdaCut = 0.0;
-  double charge = 0.0;
-  double maxCharge = 0.0;
-  myChargeProfile.SetPoint(0, 0, 0);
-  
-  for(int iStep=0;iStep<=nSteps;++iStep){
-    lambdaCut = iStep*stepLengthAlongTrack;
-    charge = getIntegratedCharge(lambdaCut);
-    myIntegratedChargeProfile.SetPoint(myIntegratedChargeProfile.GetN(), lambdaCut, charge);
-    if(charge>maxCharge) maxCharge = charge;
-  }
-  myIntegratedChargeProfile.SetMaximum(1.1*maxCharge);    
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -273,23 +250,18 @@ void Track3D::shrinkToHits(){
 
   if(getLength()<1.0) return;
   double chargeCut = 0.02*getIntegratedCharge(getLength());
-  double charge = 0.0;
-  double lambdaStart = -stepLengthAlongTrack;
-
-  while(charge<chargeCut && lambdaStart<getLength()){
-    lambdaStart +=stepLengthAlongTrack;
-    charge = getIntegratedChargeProfile().Eval(lambdaStart);
-  }
-  double lambdaEnd = getLength() + stepLengthAlongTrack;  
-  chargeCut = 0.98*getIntegratedCharge(getLength());
-  charge = getIntegratedCharge(getLength());
-  while(charge>chargeCut && lambdaEnd>lambdaStart){
-    lambdaEnd -=stepLengthAlongTrack;
-    charge = getIntegratedChargeProfile().Eval(lambdaEnd);
-  }
-    
+  
   TrackSegment3D & aFirstSegment = mySegments.front();
   TrackSegment3D & aLastSegment = mySegments.back();
+
+  TH1F hChargeProfileStart = aFirstSegment.getChargeProfile();
+  chargeCut = 0.02*hChargeProfileStart.GetMaximum();//TEST
+  int startBin = hChargeProfileStart.FindFirstBinAbove(chargeCut);
+  double lambdaStart = hChargeProfileStart.GetBinCenter(startBin);
+
+  TH1F hChargeProfileEnd = aLastSegment.getChargeProfile();
+  int endBin = hChargeProfileEnd.FindLastBinAbove(chargeCut);
+  double lambdaEnd = hChargeProfileEnd.GetBinCenter(endBin);
 
   TVector3 aStart = aFirstSegment.getStart() + getSegmentLambda(lambdaStart, 0)*aFirstSegment.getTangent();  
   TVector3 aEnd = aLastSegment.getStart() + getSegmentLambda(lambdaEnd, mySegments.size()-1)*aLastSegment.getTangent();  
@@ -342,17 +314,6 @@ double Track3D::chi2FromNodesList(const double *par){
   updateChi2();
   return getChi2();
 }
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-/*
-double Track3D::hitDistanceFromBias(const double *par){
-
-  for(unsigned int iSegment=0;iSegment<mySegments.size();++iSegment){
-    const double *segmentParameters = par+2*iSegment;
-    mySegments.at(iSegment).setBiasTangent(segmentParameters);
-  }
-}
-*/
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 double Track3D::chi2FromSplitPoint(const double *par){

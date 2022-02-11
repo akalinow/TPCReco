@@ -23,6 +23,7 @@ TrackBuilder::TrackBuilder() {
 
   nAccumulatorRhoBins = 50;//FIX ME move to configuarable
   nAccumulatorPhiBins = 2.0*M_PI/0.025;//FIX ME move to configuarable
+  nAccumulatorPhiBins = 2.0*M_PI/0.1;//FIX ME move to configuarable
 
   myHistoInitialized = false;
   myAccumulators.resize(3);
@@ -181,9 +182,6 @@ void TrackBuilder::reconstruct(){
     my2DSeeds[iDir] = findSegment2DCollection(iDir);    
   }
   myZRange = getTimeProjectionEdges();
-  //myZRange = std::make_tuple(myGeometryPtr->GetDriftCageZmin(),
-  //			     myGeometryPtr->GetDriftCageZmax());//TEST
-  
   myTrack3DSeed = buildSegment3D();
   Track3D aTrackCandidate;
   aTrackCandidate.addSegment(myTrack3DSeed);
@@ -340,9 +338,9 @@ std::tuple<double, double> TrackBuilder::getTimeProjectionEdges() const{
 
   for(auto iBin=0;iBin<hTimeProjection.GetNbinsX();++iBin){
     sum += hTimeProjection.GetBinContent(iBin);
-    if(sum/histoSum>threshold && iBinStart<0) iBinStart = iBin-2;
+    if(sum/histoSum>threshold && iBinStart<0) iBinStart = iBin-10;
     else if(sum/histoSum>1.0-threshold && iBinEnd<0) {
-      iBinEnd = iBin+2;
+      iBinEnd = iBin+10;
       break;
     }
   }
@@ -515,30 +513,42 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   int nHits_V = segmentV.getNAccumulatorHits();
   int nHits_W = segmentW.getNAccumulatorHits();
 
+
+  double bias_time = (segmentU.getMinBias().X()*(nHits_U>0) +
+		      segmentV.getMinBias().X()*(nHits_V>0) +
+		      segmentW.getMinBias().X()*(nHits_W>0))/((nHits_U>0) + (nHits_V>0) + (nHits_W>0));
+  bias_time =  segmentV.getMinBias().X();
+  TVector3 bias_U = segmentU.getBiasAtT(bias_time);
+  TVector3 bias_V = segmentV.getBiasAtT(bias_time);
+  TVector3 bias_W = segmentW.getBiasAtT(bias_time);
+ 
   TVector2 biasXY_fromUV;
-  bool res1=myGeometryPtr->GetUVWCrossPointInMM(segmentU.getStripDir(), segmentU.getBiasAtT0().Y(),
-						segmentV.getStripDir(), segmentV.getBiasAtT0().Y(),
+  bool res1=myGeometryPtr->GetUVWCrossPointInMM(segmentU.getStripDir(), bias_U.Y(),
+						segmentV.getStripDir(), bias_V.Y(),
 						biasXY_fromUV);
   TVector2 biasXY_fromVW;
-  bool res2=myGeometryPtr->GetUVWCrossPointInMM(segmentV.getStripDir(), segmentV.getBiasAtT0().Y(),
-						segmentW.getStripDir(), segmentW.getBiasAtT0().Y(),
+  bool res2=myGeometryPtr->GetUVWCrossPointInMM(segmentV.getStripDir(), bias_V.Y(),
+						segmentW.getStripDir(), bias_W.Y(),
 						biasXY_fromVW);
   TVector2 biasXY_fromWU;
-  bool res3=myGeometryPtr->GetUVWCrossPointInMM(segmentW.getStripDir(), segmentW.getBiasAtT0().Y(),
-						segmentU.getStripDir(), segmentU.getBiasAtT0().Y(),
+  bool res3=myGeometryPtr->GetUVWCrossPointInMM(segmentW.getStripDir(), bias_W.Y(),
+						segmentU.getStripDir(), bias_U.Y(),
 						biasXY_fromWU);
   assert(res1|res2|res3);
 
-  int weight_fromUV = res1*(nHits_U + nHits_V);
-  int weight_fromVW = res2*(nHits_V + nHits_W);
-  int weight_fromWU = res3*(nHits_W + nHits_U);
-  const TVector2 biasXY=(weight_fromUV*biasXY_fromUV + weight_fromVW*biasXY_fromVW + weight_fromWU*biasXY_fromWU)/(weight_fromUV+weight_fromVW+weight_fromWU);
-  double biasZ_fromU = segmentU.getBiasAtT0().X();
-  double biasZ_fromV = segmentV.getBiasAtT0().X();
-  double biasZ_fromW = segmentW.getBiasAtT0().X();
-  double biasZ = (biasZ_fromU*nHits_U + biasZ_fromV*nHits_V + biasZ_fromW*nHits_W)/(nHits_U+nHits_V+nHits_W);
-  TVector3 aBias( biasXY.X(), biasXY.Y(), biasZ);
+  int weight_fromUV = res1*(nHits_U + nHits_V)*(nHits_U>0)*(nHits_W>0);
+  int weight_fromVW = res2*(nHits_V + nHits_W)*(nHits_V>0)*(nHits_W>0);
+  int weight_fromWU = res3*(nHits_W + nHits_U)*(nHits_W>0)*(nHits_U>0);
+  int weight_sum = weight_fromUV+ weight_fromVW+weight_fromWU;
+  const TVector2 biasXY=(weight_fromUV*biasXY_fromUV + weight_fromVW*biasXY_fromVW + weight_fromWU*biasXY_fromWU)/weight_sum;
 
+  int weight_fromU = res1*nHits_U;
+  int weight_fromV = res2*nHits_V;
+  int weight_fromW = res3*nHits_W;
+  weight_sum = weight_fromU+ weight_fromV+weight_fromW;
+
+  double biasZ = (bias_U.X()*weight_fromU +  bias_V.X()*weight_fromV +  bias_W.X()*weight_fromW)/weight_sum;  
+  TVector3 aBias( biasXY.X(), biasXY.Y(), biasZ);
   
   TVector2 tangentXY_fromUV;
   bool res4=myGeometryPtr->GetUVWCrossPointInMM(segmentU.getStripDir(), segmentU.getTangentWithT1().Y(),
@@ -554,9 +564,9 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
 						tangentXY_fromWU);
   assert(res4|res5|res6);
 
-  weight_fromUV = res4*(nHits_U + nHits_V);
-  weight_fromVW = res5*(nHits_V + nHits_W);
-  weight_fromWU = res6*(nHits_W + nHits_U);
+  weight_fromUV = res4*(nHits_U + nHits_V)*(nHits_U>0)*(nHits_V>0);
+  weight_fromVW = res5*(nHits_V + nHits_W)*(nHits_V>0)*(nHits_W>0);
+  weight_fromWU = res6*(nHits_W + nHits_U)*(nHits_W>0)*(nHits_U>0);
   TVector2 tangentXY=(weight_fromUV*tangentXY_fromUV + weight_fromVW*tangentXY_fromVW + weight_fromWU*tangentXY_fromWU)/(weight_fromUV+weight_fromVW+weight_fromWU);
   double tangentZ_fromU = segmentU.getTangentWithT1().X();
   double tangentZ_fromV = segmentV.getTangentWithT1().X();
@@ -586,6 +596,13 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   tangentXY_fromWU.Print();
   std::cout<<KRED<<" from average: "<<RST;
   tangentXY.Print();
+  std::cout<<KBLU<<" bias time: "<<bias_time<<std::endl;
+  std::cout<<KRED<<" bias U: "<<RST;
+  bias_U.Print();
+  std::cout<<KRED<<" bias V: "<<RST;
+  bias_V.Print();
+  std::cout<<KRED<<" bias W: "<<RST;
+  bias_W.Print();
   std::cout<<KRED<<"bias from average: "<<RST;
   aBias.Print();
   ////////
@@ -638,7 +655,8 @@ void TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
   if(bestFitResult.IsValid() && bestFitResult.MinFcnValue()<candidateChi2){
     myFittedTrack.setFitMode(Track3D::FIT_BIAS_TANGENT);
     myFittedTrack.chi2FromNodesList(bestFitResult.GetParams());
-  }  
+  }
+  //myFittedTrack.getSegments().front().setRecHits(myRawHits);
   myFittedTrack.extendToZRange(std::get<0>(myZRange), std::get<1>(myZRange));
   myFittedTrack.shrinkToHits();
   myFittedTrackPtr = &myFittedTrack;
@@ -724,7 +742,10 @@ ROOT::Fit::FitResult TrackBuilder::fitTrackNodesBiasTangent(const Track3D & aTra
     bool fitStatus = fitter.FitFCN();
     if (!fitStatus) {
       Error(__FUNCTION__, "Track3D Fit failed");
-      std::cout<<KRED<<"Track3D Fit failed"<<RST<<std::endl;
+      std::cout<<KRED<<"Track3D Fit failed."<<RST
+	       <<" iteration "<<iIter
+	       <<" phi offset "<<offset
+	       <<RST<<std::endl;
       fitter.Result().Print(std::cout);
       return fitter.Result();
     }

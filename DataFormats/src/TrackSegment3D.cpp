@@ -159,55 +159,62 @@ TrackSegment2D TrackSegment3D::get2DProjection(int strip_dir, double lambdaStart
   TVector3 start = getPointOn2DProjection(lambdaStart, stripPitchDirection);
   TVector3 end = getPointOn2DProjection(lambdaEnd, stripPitchDirection);
   a2DProjection.setStartEnd(start, end);
-
+  a2DProjection.setGeometry(myGeometryPtr);
   return a2DProjection;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TGraph TrackSegment3D::getChargeProfile() const{
-
-  TGraph chargeProfile;
-  Double_t x = 0, y = 0;
-  double radiusCut = 2.0;
-  double timeProjection = getTangent().Unit().Z();
-
-  chargeProfile.SetPoint(chargeProfile.GetN(),0.0, 0.0);
+double TrackSegment3D::getIntegratedCharge(double lambda) const{
+  if(lambda<0) return 0;
+  double charge = 0.0;
   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
-    TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, getLength());
-    const TVector3 & stripPitchDirection = myGeometryPtr->GetStripPitchVector3D(strip_dir);
+    TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, lambda);
     const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
-    const TGraph & chargeProfileProjection = aTrack2DProjection.getChargeProfile(aRecHits, radiusCut);
-    double dirProjection = std::abs(stripPitchDirection.Unit().Dot(getTangent().Unit()));
-    double cosPhiProjectionAngle = sqrt(dirProjection*dirProjection +
-					timeProjection*timeProjection);
-    std::cout<<KBLU<<"cosPhiProjectionAngle: "<<RST
-	     <<" strip_dir: "<<strip_dir<<" "
-	     <<cosPhiProjectionAngle
-      	     <<" 3D segment length: "<<getLength()
-	     <<" 2D segment length: "<<aTrack2DProjection.getLength()
-	     <<std::endl;
-    for (Int_t i = 0 ; i < chargeProfileProjection.GetN(); i++) {
-      chargeProfileProjection.GetPoint(i, x, y);
-      chargeProfile.SetPoint(chargeProfile.GetN(), x/cosPhiProjectionAngle, y);
-    }
-  }
-  chargeProfile.SetPoint(chargeProfile.GetN(), getLength(), 0.0);
-  chargeProfile.Sort();
-  return chargeProfile;
+    charge += aTrack2DProjection.getIntegratedCharge(lambda, aRecHits);
+  } 
+  return charge;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-double TrackSegment3D::getIntegratedCharge(double lambdaCut) const{
+TH1F TrackSegment3D::getChargeProfile() const{
 
-  if(lambdaCut<0) return 0;
-
-  double charge = 0.0;
+  double radiusCut = 2.0;
+  double timeProjection = getTangent().Unit().Z();
+  
+  std::vector<TH1F> projections;
+  std::vector<double> cosPhiProjectionAngles;
+  double binWidth = 999.0;
+  double tmpWidth = 999.0;
+  
   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
-    TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, lambdaCut);
+    TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, getLength());
+    const TVector3 & stripPitchDirection = myGeometryPtr->GetStripPitchVector3D(strip_dir);
+    double dirProjection = std::abs(stripPitchDirection.Unit().Dot(getTangent().Unit()));
+    double cosPhiProjectionAngle = sqrt(dirProjection*dirProjection +
+					timeProjection*timeProjection);
     const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
-    charge += aTrack2DProjection.getIntegratedCharge(lambdaCut, aRecHits);
-  } 
-  return charge;
+    projections.push_back(aTrack2DProjection.getChargeProfile(aRecHits, radiusCut));
+    cosPhiProjectionAngles.push_back(cosPhiProjectionAngle);
+    tmpWidth = projections.back().GetXaxis()->GetBinWidth(1)/cosPhiProjectionAngles.back();
+    if(tmpWidth<binWidth) binWidth = tmpWidth;
+  }
+  int nBins = getLength()/binWidth;
+  double x = 0.0;
+  double charge = 0.0;
+  double tmpBin = 0.0;
+  TH1F hChargeProfile("hChargeProfile",";d [mm];charge/mm",nBins, 0, getLength());
+  for(int iBin=1;iBin<=hChargeProfile.GetNbinsX();++iBin){
+    x = hChargeProfile.GetBinCenter(iBin);
+    charge = 0.0;
+    for(int strip_dir=DIR_V;strip_dir<=DIR_W;++strip_dir){
+      double cosPhiProjectionAngle = cosPhiProjectionAngles[strip_dir];
+      TH1F & aHisto = projections[strip_dir];
+      tmpBin = aHisto.FindBin(x*cosPhiProjectionAngle);
+      charge += aHisto.GetBinContent(tmpBin);
+    }
+    hChargeProfile.Fill(x, charge); 
+  }
+  return hChargeProfile;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

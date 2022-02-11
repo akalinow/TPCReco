@@ -1,5 +1,7 @@
 #include "TrackSegment2D.h"
+#include "GeometryTPC.h"
 #include "colorText.h"
+
 #include <iostream>
 
 /////////////////////////////////////////////////////////
@@ -9,8 +11,8 @@ void TrackSegment2D::setBiasTangent(const TVector3 & aBias, const TVector3 & aTa
   myBias = aBias;
   myTangent = aTangent.Unit();
 
-  double lambda = 10;//FIXME what value should be here?
-  myStart = myBias;
+  double lambda = 100;
+  myStart = myBias-lambda*myTangent;
   myEnd = myBias+lambda*myTangent;
   initialize();
 }
@@ -23,17 +25,19 @@ void TrackSegment2D::setStartEnd(const TVector3 & aStart, const TVector3 & aEnd)
 
   myTangent = (myEnd - myStart).Unit();
   myBias = (myStart + myEnd)*0.5;
-
   initialize();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void TrackSegment2D::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
+  
+  myGeometryPtr = aGeometryPtr;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void TrackSegment2D::initialize(){
   
-  double lambda = -myBias.X()/myTangent.X();
-  myBiasAtT0 = myBias + lambda*myTangent;
-  
-  lambda = -myBias.Y()/myTangent.Y();
+  double lambda = -myBias.Y()/myTangent.Y();
   myBiasAtStrip0 = myBias + lambda*myTangent;
 
   ///Set tangent direction along time arrow with unit time component,
@@ -53,24 +57,51 @@ void TrackSegment2D::initialize(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-const TGraph & TrackSegment2D::getChargeProfile(const Hit2DCollection & aRecHits, double radiusCut){
+TVector3 TrackSegment2D::getMinBias() const{
+
+  double lambda = myBias.Dot(myTangent);
+  return myBias - lambda*myTangent;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+TVector3 TrackSegment2D::getBiasAtT(double time) const{
+
+if(std::abs(myTangent.X())<1E-3)
+  {
+    return getMinBias();
+  }
+ else{
+   double lambda = (time-myBias.X())/myTangent.X();
+   return myBias + lambda*myTangent;
+ }
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+TH1F TrackSegment2D::getChargeProfile(const Hit2DCollection & aRecHits, double radiusCut){
 
   double x = 0.0, y = 0.0;
   double distance = 0.0;
   double lambda = 0.0;
   TVector3 aPoint;
-  myChargeProfile.Set(0);
-  
+
+  double timeCellWidth = myGeometryPtr->GetTimeBinWidth();
+  double stripPitch = myGeometryPtr->GetStripPitch();
+  TVector3 diamondDiagonal(timeCellWidth,stripPitch,0.0);
+			   
+  double diamondProjectionOnTrack = std::abs(diamondDiagonal.Dot(myTangent));
+  int nBins = getLength()/diamondProjectionOnTrack;
+  TH1F hChargeProfile2D("hChargeProfile2D",";d [mm];charge/mm",nBins+1, -diamondProjectionOnTrack/2.0, getLength()+diamondProjectionOnTrack/2.0);
+    
   for(const auto aHit:aRecHits){
     x = aHit.getPosTime();
     y = aHit.getPosStrip();
     aPoint.SetXYZ(x, y, 0.0);
     std::tie(lambda, distance) = getPointLambdaAndDistance(aPoint);
-    if(lambda>0 && lambda<getLength() && distance<radiusCut){
-      myChargeProfile.SetPoint(myChargeProfile.GetN(), lambda,  aHit.getCharge());
+    if(distance<radiusCut && lambda>0 && lambda<getLength()){
+      hChargeProfile2D.Fill(lambda,  aHit.getCharge()/diamondProjectionOnTrack);
     }
-  }
-  return myChargeProfile;
+  }  
+  return hChargeProfile2D;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -108,6 +139,7 @@ std::tuple<double,double> TrackSegment2D::getPointLambdaAndDistance(const TVecto
 /////////////////////////////////////////////////////////
 double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
 
+  if(!aRecHits.size()) return 0.0;
   double dummyChi2 = 1E9;
 
   if(getTangent().Mag()<1E-3){

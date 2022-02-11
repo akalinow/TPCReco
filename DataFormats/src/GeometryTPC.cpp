@@ -1351,7 +1351,7 @@ double GeometryTPC::Timecell2pos(double position_in_cells, bool &err_flag) {
     return 0.0; // ERROR
   if (position_in_cells >= 0.0 && position_in_cells <= AGET_Ntimecells)
     err_flag = false; // check range
-  return (position_in_cells - AGET_Ntimecells) / GetSamplingRate() *  GetDriftVelocity()* 10.0 +
+  return (position_in_cells - AGET_Ntimecells)*GetTimeBinWidth() +
     GetTriggerDelay() * GetDriftVelocity() * 10.0; // [mm]
 }
 

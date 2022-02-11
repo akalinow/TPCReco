@@ -70,7 +70,7 @@ int main(int argc, char **argv){
 /////////////////////////////
 ////////////////////////////
 // Define some simple structures
-typedef struct {Float_t eventId, length, energy, charge, cosTheta, phi, chi2, x0, y0, z0, x1, y1, z1;} TrackData;
+typedef struct {Float_t frameId, length, energy, charge, cosTheta, phi, chi2, x0, y0, z0, x1, y1, z1;} TrackData;
 /////////////////////////
 int makeTrackTree(const  std::string & geometryFileName,
 		  const  std::string & dataFileName) {
@@ -83,7 +83,7 @@ int makeTrackTree(const  std::string & geometryFileName,
   // Define some simple structures
   TTree *tree = new TTree("trackTree", "Track tree");
   TrackData track_data;
-  tree->Branch("track",&track_data,"eventId:length:energy:charge:cosTheta:phi:chi2:x0:y0:z0:x1:y1:z1");
+  tree->Branch("track",&track_data,"frameId:length:energy:charge:cosTheta:phi:chi2:x0:y0:z0:x1:y1:z1");
   
   std::shared_ptr<EventSourceBase> myEventSource;
   myEventSource = std::make_shared<EventSourceROOT>(geometryFileName);
@@ -102,7 +102,6 @@ int makeTrackTree(const  std::string & geometryFileName,
 
   //Event loop
   unsigned int nEntries = myEventSource->numberOfEntries();
-  nEntries = 100;
   for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
     myEventSource->loadFileEntry(iEntry);
     myEventSource->getCurrentEvent()->MakeOneCluster(35, 0, 0);
@@ -122,7 +121,7 @@ int makeTrackTree(const  std::string & geometryFileName,
     const TVector3 & start = aTrack3D.getSegments().front().getStart();
     const TVector3 & end = aTrack3D.getSegments().front().getEnd();
     
-    track_data.eventId = iEntry;
+    track_data.frameId = iEntry;
     track_data.length = length;
     track_data.charge = charge;
     track_data.cosTheta = cosTheta;

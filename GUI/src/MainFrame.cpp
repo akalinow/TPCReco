@@ -592,12 +592,15 @@ void MainFrame::drawRecoHistos(){
      TVirtualPad *aPad = fCanvas->cd(strip_dir+1);
      myHistoManager.getClusterStripVsTimeInMM(strip_dir)->DrawClone("colz");
      myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("box same");
-    //myHistoManager.getRawStripVsTimeInMM(strip_dir)->DrawClone("colz");
-    //myHistoManager.drawTrack2DSeed(strip_dir, aPad);
-    myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
+     //myHistoManager.getRawStripVsTimeInMM(strip_dir)->DrawClone("colz");
+     //myHistoManager.drawTrack2DSeed(strip_dir, aPad);
+     myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
+     //myHistoManager.getHoughAccumulator(strip_dir,0).DrawClone("colz");
+	  
   }
-   fCanvas->cd(4);
-   myHistoManager.drawChargeAlongTrack3D(fCanvas->cd(4));
+   //fCanvas->cd(4);
+   myHistoManager.drawTrack3DProjectionXY(fCanvas->cd(4));
+   //myHistoManager.drawChargeAlongTrack3D(fCanvas->cd(4));
    //myHistoManager.drawTrack3D(fCanvas->cd(4));
    //myHistoManager.getClusterTimeProjectionInMM()->DrawClone("hist");
    //myHistoManager.getRecHitTimeProjection()->DrawClone("hist same");

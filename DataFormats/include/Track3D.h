@@ -33,13 +33,9 @@ public:
 
   double getSegmentLambda(double lambda, unsigned int iSegment) const;
 
-  TGraph getChargeProfile() const { return mySegments.front().getChargeProfile();}
-
   double getIntegratedCharge(double lambda) const;
 
-  const TGraph & getIntegratedChargeProfile() const { return myIntegratedChargeProfile;}
-
-  //const TGraph & getChargeProfile() const { return myChargeProfile;}
+  TH1F getChargeProfile() const { return mySegments.front().getChargeProfile();}
 
   double getChi2() const;
 

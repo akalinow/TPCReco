@@ -75,8 +75,8 @@ public:
   ///Return the full lenght of the segment.
   double getLength() const { return myLenght;}
 
-  TGraph getChargeProfile() const;
-  
+  TH1F getChargeProfile() const;
+
   double getIntegratedCharge(double lambda) const;
 
   const std::vector<Hit2DCollection> & getRecHits() const { return myRecHits;}

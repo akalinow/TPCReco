@@ -179,6 +179,7 @@ class GeometryTPC {
   inline double GetDriftVelocity() { return runConditions.getDriftVelocity(); } // [cm/us]
   inline double GetSamplingRate() { return runConditions.getSamplingRate(); } // [MHz]
   inline double GetTriggerDelay() { return runConditions.getTriggerDelay(); } // [us]
+  inline double GetTimeBinWidth() { return  1.0/GetSamplingRate()*GetDriftVelocity()*10.0; } // [mm]
 
   inline TVector2 GetReferencePoint() { return reference_point; } // XY ([mm],[mm])
   TVector2 GetStripUnitVector(int dir); // XY ([mm],[mm])
