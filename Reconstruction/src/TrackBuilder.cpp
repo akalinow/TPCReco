@@ -112,7 +112,8 @@ void TrackBuilder::setEvent(EventTPC* aEvent){
 
   myEvent = aEvent;
 
-  double chargeThreshold = 35;//0.15*myEvent->GetMaxCharge();
+  double chargeThreshold = 35;
+  //chargeThreshold = 0.3*myEvent->GetMaxCharge();
   int delta_timecells = 25;
   int delta_strips = 5;
   myEvent->MakeOneCluster(chargeThreshold, delta_strips, delta_timecells);
@@ -262,7 +263,7 @@ TF1 TrackBuilder::fitTimeWindow(TH1D* hProj){
    TFitResultPtr fitResult;
    TF1 timeResponseShape;
    TF1 bestTimeResponseShape;
-   double bestChi2OverNDF = 1E10;
+   double bestChi2 = 1E10;
 
    if(!hProj){
      std::cerr<<__FUNCTION__<<" NULL hProj"<<std::endl; 
@@ -273,16 +274,25 @@ TF1 TrackBuilder::fitTimeWindow(TH1D* hProj){
      return bestTimeResponseShape;
    }
 
-   double sampling_rate = myGeometryPtr->GetSamplingRate();
-   double vdrift = myGeometryPtr->GetDriftVelocity()*10.0;// 10.0: [cm] -> [mm]
-   double timeBinToCartesianScale = 1.0/sampling_rate*vdrift;
-
+   double timeBinToCartesianScale = myGeometryPtr->GetTimeBinWidth();
    int maxBin = hProj->GetMaximumBin();
    double maxValue = hProj->GetMaximum();
    double maxPos = hProj->GetBinCenter(maxBin);
-   double windowIntegral = hProj->Integral(maxBin-25*timeBinToCartesianScale, maxBin+25*timeBinToCartesianScale);
-   if(maxValue<25 || windowIntegral<50) return bestTimeResponseShape;//FIXME how to choose the thresholds?
+   int windowHalfSize = 25;
+   double windowIntegral = hProj->Integral(maxBin-windowHalfSize*timeBinToCartesianScale,
+					   maxBin+windowHalfSize*timeBinToCartesianScale);
+   if(maxValue<35 || windowIntegral<2*35) return bestTimeResponseShape;//FIXME how to choose the thresholds?
 
+   TF1 noiseShape("noiseShape","pol0");
+   noiseShape.SetRange(maxPos-windowHalfSize*timeBinToCartesianScale,
+		       maxPos+windowHalfSize*timeBinToCartesianScale);
+   TFitResultPtr noiseFitResult = hProj->Fit(&noiseShape, "QRBSWN");
+   double noiseChi2 = 0.0;
+   double x = 0.0;
+   for(int iBinX=1;iBinX<=hProj->GetNbinsX();++iBinX){
+     x = hProj->GetBinCenter(iBinX);
+     noiseChi2 += (hProj->GetBinContent(iBinX)>0)*std::pow(hProj->GetBinContent(iBinX) - noiseShape.Eval(x), 2);
+   }
    std::string formula = "";
    for(int iComponent=0;iComponent<1;++iComponent){
      if(iComponent==0){
@@ -293,34 +303,27 @@ TF1 TrackBuilder::fitTimeWindow(TH1D* hProj){
 
      }
      TF1 timeResponseShape("timeResponseShape",formula.c_str());        
-     timeResponseShape.SetRange(maxPos-25*timeBinToCartesianScale, maxPos+25*timeBinToCartesianScale);   
+     timeResponseShape.SetRange(maxPos-windowHalfSize*timeBinToCartesianScale,
+				maxPos+windowHalfSize*timeBinToCartesianScale);   
      for(int iSet=0;iSet<timeResponseShape.GetNpar();iSet+=3){
-       timeResponseShape.SetParameter(iSet, maxValue*2);
+       timeResponseShape.SetParameter(iSet, maxValue);
        timeResponseShape.SetParameter(iSet+1, maxPos);
-       timeResponseShape.SetParameter(iSet+2, 2.0*timeBinToCartesianScale);
+       timeResponseShape.SetParameter(iSet+2, 2*timeBinToCartesianScale);
        ///     
-       timeResponseShape.SetParLimits(iSet, 0.1*maxValue, maxValue*2);
-       timeResponseShape.SetParLimits(iSet+1, maxPos-15*timeBinToCartesianScale, maxPos+15*timeBinToCartesianScale);   
-       timeResponseShape.SetParLimits(iSet+2, 0.5*timeBinToCartesianScale, 8*timeBinToCartesianScale);
+       timeResponseShape.SetParLimits(iSet, 0.5*maxValue, maxValue*1.5);
+       timeResponseShape.SetParLimits(iSet+1, maxPos-windowHalfSize*timeBinToCartesianScale,
+				      maxPos+windowHalfSize*timeBinToCartesianScale);   
+       timeResponseShape.SetParLimits(iSet+2, timeBinToCartesianScale, 4*timeBinToCartesianScale);
      } 
      fitResult = hProj->Fit(&timeResponseShape, "QRBSWN");   
 
      double chi2 = 0.0;
-     double x = 0.0;
      for(int iBinX=1;iBinX<hProj->GetNbinsX();++iBinX){
        x = hProj->GetBinCenter(iBinX);
-       chi2 += std::pow(hProj->GetBinContent(iBinX) - timeResponseShape.Eval(x), 2);
+       chi2 += (hProj->GetBinContent(iBinX)>0)*std::pow(hProj->GetBinContent(iBinX) - timeResponseShape.Eval(x), 2);
      }
-     /*
-     std::cout<<"nComponents: "<<iComponent+1
-	      <<" histogram chi2: "<<chi2
-	      <<" ndf: "<<fitResult->Ndf()
-	      <<" NFreeParameters: "<<fitResult->NFreeParameters()
-	      <<" chi2/ndf: "<<chi2/fitResult->Ndf()
-	      <<std::endl;
-     */
-     if(fitResult->Ndf() && chi2/fitResult->Ndf() < bestChi2OverNDF){
-       bestChi2OverNDF = chi2/fitResult->Ndf();
+     if(fitResult->IsValid() && chi2<noiseChi2 && chi2<bestChi2){
+       bestChi2 = chi2;
        timeResponseShape.Copy(bestTimeResponseShape);
      }
    }
@@ -640,6 +643,7 @@ void TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
   myFittedTrack = aTrackCandidate;
   std::cout<<KBLU<<"Pre-fit: "<<RST<<std::endl; 
   std::cout<<myFittedTrack<<std::endl;
+  
   int nOffsets = 4;
   double offset = 0.0;
   double candidateChi2 = aTrackCandidate.getChi2();
