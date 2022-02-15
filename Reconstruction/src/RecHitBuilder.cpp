@@ -1,0 +1,208 @@
+#include "TH2D.h"
+#include "TF1.h"
+
+#include "GeometryTPC.h"
+#include "RecHitBuilder.h"
+
+#include "colorText.h"
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+RecHitBuilder::RecHitBuilder(){
+
+  noiseShape = TF1("noiseShape","pol0");
+  signalShape = TF1("signalShape","gaus");
+  emptyShape = TF1("emptyShape","0");
+
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+RecHitBuilder::~RecHitBuilder(){}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void RecHitBuilder::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
+
+  myGeometryPtr = aGeometryPtr;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+const TH2D & RecHitBuilder::makeRecHits(const TH2D & hProjection){
+
+  hRecHits = hProjection;
+  hRecHits.Reset();
+  hRecHits.SetTitle(adaptHistoTitle(hProjection.GetTitle()).c_str());
+
+  if(!myGeometryPtr){
+    std::cerr<<__FUNCTION__<<KRED<<" NULL myGeometryPtr"<<RST<<std::endl; 
+    return hRecHits;
+  }
+  
+  makeTimeProjectionRecHits(hProjection);
+  if(hRecHits.GetEntries()<5){
+    makeStripProjectionRecHits(hProjection);
+  }
+  cleanRecHits();
+    
+  return hRecHits;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+const TH2D & RecHitBuilder::makeTimeProjectionRecHits(const TH2D & hProjection){
+
+  TH1D *h1DProj;
+  double hitStripPos = -999.0;
+  double hitTimePos = -999.0;
+  double hitTimePosError = -999.0;
+  double hitCharge = -999.0;
+  double timeBinToCartesianScale = myGeometryPtr->GetTimeBinWidth();
+  for(int iBinY=1;iBinY<=hProjection.GetNbinsY();++iBinY){
+    h1DProj = hProjection.ProjectionX("h1DProjX",iBinY, iBinY);
+    const TF1 &fittedShape = fit1DProjection(h1DProj, timeBinToCartesianScale);
+    if(fittedShape.GetNpar()<3) continue;
+    hitCharge = fittedShape.GetParameter(0);
+    hitTimePos = fittedShape.GetParameter(1);
+    hitTimePosError = fittedShape.GetParameter(2);
+    hitStripPos = hProjection.GetYaxis()->GetBinCenter(iBinY);    
+    hitCharge *= sqrt(2.0)*M_PI*hitTimePosError;
+    hRecHits.Fill(hitTimePos, hitStripPos, hitCharge);    
+    delete h1DProj;
+  }
+  return hRecHits;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+const TH2D & RecHitBuilder::makeStripProjectionRecHits(const TH2D & hProjection){
+
+  TH1D *h1DProj;
+  double hitStripPos = -999.0;
+  double hitTimePos = -999.0;
+  double hitStripPosError = -999.0;
+  double hitCharge = -999.0;
+  double stripPitch = myGeometryPtr->GetStripPitch();
+  for(int iBinX=1;iBinX<=hProjection.GetNbinsX();++iBinX){
+    h1DProj = hProjection.ProjectionY("h1DProjY",iBinX, iBinX);
+    const TF1 &fittedShape = fit1DProjection(h1DProj, stripPitch);
+    if(fittedShape.GetNpar()<3) continue;
+    hitCharge = fittedShape.GetParameter(0);
+    hitStripPos = fittedShape.GetParameter(1);
+    hitStripPosError = fittedShape.GetParameter(2);
+    hitTimePos = hProjection.GetXaxis()->GetBinCenter(iBinX);    
+    hitCharge *= sqrt(2.0)*M_PI*hitStripPosError;
+    hRecHits.Fill(hitTimePos, hitStripPos, hitCharge);      
+    delete h1DProj;
+  }
+  return hRecHits;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+const TF1 & RecHitBuilder::fit1DProjection(TH1D* hProj, double initialSigma){
+
+  int maxValueBin = hProj->GetMaximumBin();
+  double maxValue = hProj->GetBinContent(maxValueBin);
+  
+  int lowBin = hProj->FindFirstBinAbove(maxValue/4.0, 1, maxValueBin-projection1DHalfSize);
+  int highBin = hProj->FindLastBinAbove(maxValue/4.0, 1, maxValueBin+projection1DHalfSize);
+  if(lowBin<0) lowBin = maxValueBin-projection1DHalfSize;
+  if(highBin<0) highBin = maxValueBin+projection1DHalfSize;
+  int delta = std::max(std::abs(lowBin-maxValueBin),
+		       std::abs(highBin-maxValueBin));
+  
+  lowBin = maxValueBin-delta;
+  highBin= maxValueBin+delta;
+  
+  if(lowBin<0) lowBin = 1;
+  if(highBin>hProj->GetNbinsX()) highBin = hProj->GetNbinsX();
+  
+  double minX = hProj->GetBinCenter(lowBin);
+  double maxX = hProj->GetBinCenter(highBin);
+  double windowIntegral = hProj->Integral(lowBin, highBin);
+
+  hProj->GetXaxis()->SetRange(lowBin, highBin);
+  hProj->SetMaximum(1.1*maxValue);
+
+  if(maxValue<maxValueThr || windowIntegral<windowIntegralThr) return emptyShape;
+  
+  const TF1 & noiseFit = fitNoise(hProj, minX, maxX);
+  const TF1 & singleHitFit = fitSingleHit(hProj, minX, maxX, maxValue, initialSigma);
+
+  double noiseMSE = getMSE(*hProj, noiseFit);
+  double singleHitMSE = getMSE(*hProj, singleHitFit);
+ 
+  if(singleHitMSE/noiseMSE<0.9) return singleHitFit;
+  return noiseFit;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+const TF1 & RecHitBuilder::fitNoise(TH1D* hProj, double minX, double maxX){
+
+  noiseShape.SetRange(minX, maxX);
+  TFitResultPtr noiseFitResult = hProj->Fit(&noiseShape, "QRBSWN");
+  return noiseShape;  
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+const TF1 & RecHitBuilder::fitSingleHit(TH1D* hProj,
+					double minX, double maxX,
+					double initialMax,
+					double initialSigma){
+ 
+  double meanX = (minX+maxX)/2.0;
+  double minMeanX = meanX - (maxX - minX)*0.5*0.8;
+  double maxMeanX = meanX + (maxX - minX)*0.5*0.8;
+  signalShape.SetRange(minX, maxX);
+  
+  signalShape.SetParameter(0, initialMax);
+  signalShape.SetParameter(1, meanX);
+  signalShape.SetParameter(2, initialSigma);
+
+  signalShape.SetParLimits(0, 0.5*initialMax, initialMax*1.5);
+  signalShape.SetParLimits(1, minMeanX, maxMeanX);   
+  signalShape.SetParLimits(2, 0.5*initialSigma, 2.0*initialSigma);
+  
+  TFitResultPtr fitResult = hProj->Fit(&signalShape, "QBRSWN");
+  return signalShape;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void RecHitBuilder::cleanRecHits(){
+
+ double maxCharge = hRecHits.GetMaximum();
+  double threshold = 0.1*maxCharge;//FIX ME optimize threshold
+
+  for(int iBin=0;iBin<hRecHits.GetNcells();++iBin){
+    if(hRecHits.GetBinContent(iBin)<threshold){
+      hRecHits.SetBinContent(iBin, 0.0);
+    }
+  }
+  
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+double RecHitBuilder::getMSE(const TH1D &hProj, const TF1 & aFunc) const{
+
+  double mse = 0.0;
+  double value = 0.0;
+  double x = 0.0;
+  int nBins = hProj.GetXaxis()->GetLast() - hProj.GetXaxis()->GetFirst() + 1;
+  for(int iBinX=hProj.GetXaxis()->GetFirst();
+      iBinX<=hProj.GetXaxis()->GetLast();++iBinX){
+    x = hProj.GetBinCenter(iBinX);
+    value = hProj.GetBinContent(iBinX);
+    mse += (value>0)*std::pow(value - aFunc.Eval(x), 2);
+  }
+  
+  return mse/nBins; 
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::string RecHitBuilder::adaptHistoTitle(const std::string title) const{
+
+  std::string adaptedTitle = title;
+  if(adaptedTitle.find("from")!=std::string::npos){
+    std::string eventNumber = title.substr(0,title.find(":"));
+    adaptedTitle.replace(0, title.find("from"),"");
+    adaptedTitle = eventNumber+": Reco hits "+adaptedTitle;
+  }
+  return adaptedTitle;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////

@@ -11,6 +11,7 @@
 #include "TrackSegment2D.h"
 #include "TrackSegment3D.h"
 #include "Track3D.h"
+#include "RecHitBuilder.h"
 
 #include "EventTPC.h"
 
@@ -20,7 +21,6 @@ class TTree;
 class TFile;
 
 class GeometryTPC;
-class EventTPC;
 class SigClusterTPC;
 
 class TrackBuilder {
@@ -84,6 +84,7 @@ private:
    
   EventTPC *myEvent;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
+  RecHitBuilder myRecHitBuilder;
   std::vector<double> phiPitchDirection;
 
   bool myHistoInitialized;

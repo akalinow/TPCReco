@@ -96,6 +96,8 @@ void TrackBuilder::fillOutputStream(){
 void TrackBuilder::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
   
   myGeometryPtr = aGeometryPtr;
+  myRecHitBuilder.setGeometry(aGeometryPtr);
+  
   phiPitchDirection.resize(3);
   phiPitchDirection[DIR_U] = myGeometryPtr->GetStripPitchVector(DIR_U).Phi();
   phiPitchDirection[DIR_V] = myGeometryPtr->GetStripPitchVector(DIR_V).Phi();
@@ -113,7 +115,6 @@ void TrackBuilder::setEvent(EventTPC* aEvent){
   myEvent = aEvent;
 
   double chargeThreshold = 35;
-  //chargeThreshold = 0.3*myEvent->GetMaxCharge();
   int delta_timecells = 25;
   int delta_strips = 5;
   myEvent->MakeOneCluster(chargeThreshold, delta_strips, delta_timecells);
@@ -194,67 +195,8 @@ void TrackBuilder::reconstruct(){
 void TrackBuilder::makeRecHits(int iDir){
 
   myRawHits[iDir] =  *(myEvent->GetStripVsTimeInMM(getCluster(), iDir));
-  const TH2D & hRawHits = myRawHits[iDir];
-  TH2D & hRecHits = myRecHits[iDir];
-  hRecHits.Reset();
-  std::string tmpTitle(hRawHits.GetTitle());
-  if(tmpTitle.find("from")!=std::string::npos){
-    std::string eventNumber = tmpTitle.substr(0,tmpTitle.find(":"));
-    tmpTitle.replace(0,tmpTitle.find("from"),"");
-    tmpTitle = eventNumber+": Reco hits "+tmpTitle;
-    hRecHits.SetTitle(tmpTitle.c_str());
-  }
-  
-  TH1D *hProj;
-  double hitStripPos = -999.0;
-  double hitTimePos = -999.0;
-  double hitTimePosError = -999.0;
-  double hitCharge = -999.0;
-  for(int iBinY=1;iBinY<=hRecHits.GetNbinsY();++iBinY){
-    hProj = hRawHits.ProjectionX("hProj",iBinY, iBinY);
-    TF1 timeResponseShape = fitTimeWindow(hProj);
-    hitStripPos = hRawHits.GetYaxis()->GetBinCenter(iBinY);
-    for(int iSet=0;iSet<timeResponseShape.GetNpar();iSet+=3){
-      hitTimePos = timeResponseShape.GetParameter(iSet+1);
-      hitTimePosError = timeResponseShape.GetParameter(iSet+2);
-      hitCharge = timeResponseShape.GetParameter(iSet);
-      hitCharge *= sqrt(2.0)*M_PI*hitTimePosError;//the gausian fits are made without the normalisation factor
-      hRecHits.Fill(hitTimePos, hitStripPos, hitCharge);
-    }      
-    delete hProj;
-  }
-  
-  /*
-  TH1D *hProj;
-  double hitStripPos = -999.0;
-  double hitTimePos = -999.0;
-  double hitStripPosError = -999.0;
-  double hitCharge = -999.0;
-  for(int iBinX=1;iBinX<=hRecHits.GetNbinsX();++iBinX){
-    hProj = hRawHits.ProjectionY("hProj",iBinX, iBinX);
-    TF1 timeResponseShape = fitTimeWindow(hProj);
-    hitTimePos = hRawHits.GetXaxis()->GetBinCenter(iBinX);
-    for(int iSet=0;iSet<timeResponseShape.GetNpar();iSet+=3){
-      hitStripPos = timeResponseShape.GetParameter(iSet+1);
-      hitStripPosError = timeResponseShape.GetParameter(iSet+2);
-      hitCharge = timeResponseShape.GetParameter(iSet);
-      hitCharge *= sqrt(2.0)*M_PI*hitStripPosError;//the gausian fits are made without the normalisation factor
-      hRecHits.Fill(hitTimePos, hitStripPos, hitCharge);
-    }      
-    delete hProj;
-  }
-*/
-  
-  double maxCharge = hRecHits.GetMaximum();
-  double threshold = 0.1*maxCharge;//FIX ME optimize threshold
-
-  for(int iBin=0;iBin<hRecHits.GetNcells();++iBin){
-    if(hRecHits.GetBinContent(iBin)<threshold){
-      hRecHits.SetBinContent(iBin, 0.0);
-    }
-  }
-
-  hTimeProjection.Add(hRecHits.ProjectionX());
+  myRecHits[iDir] = myRecHitBuilder.makeRecHits(myRawHits[iDir]);
+  hTimeProjection.Add(myRecHits[iDir].ProjectionX());
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -266,11 +208,11 @@ TF1 TrackBuilder::fitTimeWindow(TH1D* hProj){
    double bestChi2 = 1E10;
 
    if(!hProj){
-     std::cerr<<__FUNCTION__<<" NULL hProj"<<std::endl; 
+     std::cerr<<__FUNCTION__<<KRED<<" NULL hProj"<<RST<<std::endl; 
      return bestTimeResponseShape;
    }
    if(!myGeometryPtr){
-     std::cerr<<__FUNCTION__<<" NULL myGeometryPtr"<<std::endl; 
+     std::cerr<<__FUNCTION__<<KRED<<" NULL myGeometryPtr"<<RST<<std::endl; 
      return bestTimeResponseShape;
    }
 
@@ -315,14 +257,13 @@ TF1 TrackBuilder::fitTimeWindow(TH1D* hProj){
 				      maxPos+windowHalfSize*timeBinToCartesianScale);   
        timeResponseShape.SetParLimits(iSet+2, timeBinToCartesianScale, 4*timeBinToCartesianScale);
      } 
-     fitResult = hProj->Fit(&timeResponseShape, "QRBSWN");   
-
+     fitResult = hProj->Fit(&timeResponseShape, "QRBSWN");
      double chi2 = 0.0;
      for(int iBinX=1;iBinX<hProj->GetNbinsX();++iBinX){
        x = hProj->GetBinCenter(iBinX);
        chi2 += (hProj->GetBinContent(iBinX)>0)*std::pow(hProj->GetBinContent(iBinX) - timeResponseShape.Eval(x), 2);
      }
-     if(fitResult->IsValid() && chi2<noiseChi2 && chi2<bestChi2){
+     if(fitResult->IsValid() && chi2/noiseChi2<0.9 && chi2<bestChi2){
        bestChi2 = chi2;
        timeResponseShape.Copy(bestTimeResponseShape);
      }
