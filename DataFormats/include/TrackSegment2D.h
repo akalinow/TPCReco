@@ -19,11 +19,9 @@ class TrackSegment2D{
 
 public:
 
-  TrackSegment2D(int strip_dir = DIR_U){ myStripDir = strip_dir;};
+  TrackSegment2D(int strip_dir=DIR_U, std::shared_ptr<GeometryTPC> aGeometryPtr=0);
 
   ~TrackSegment2D() {};
-
-  void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);
 
   void setBiasTangent(const TVector3 & aBias, const TVector3 & aTangent);
 

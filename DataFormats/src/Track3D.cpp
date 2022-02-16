@@ -249,26 +249,37 @@ void Track3D::extendToZRange(double zMin, double zMax){
 void Track3D::shrinkToHits(){
 
   if(getLength()<1.0) return;
-  double chargeCut = 0.02*getIntegratedCharge(getLength());
   
   TrackSegment3D & aFirstSegment = mySegments.front();
   TrackSegment3D & aLastSegment = mySegments.back();
 
-  TH1F hChargeProfileStart = aFirstSegment.getChargeProfile();
-  chargeCut = 0.02*hChargeProfileStart.GetMaximum();//TEST
-  int startBin = hChargeProfileStart.FindFirstBinAbove(chargeCut);
-  double lambdaStart = hChargeProfileStart.GetBinCenter(startBin);
+  TH2F hChargeProfileStart = aFirstSegment.getChargeProfile();
+  TH2F hChargeProfileEnd = aLastSegment.getChargeProfile();
+  TH1D * hProj = 0;
+  double chargeCut = 0.0;
 
-  TH1F hChargeProfileEnd = aLastSegment.getChargeProfile();
-  int endBin = hChargeProfileEnd.FindLastBinAbove(chargeCut);
-  double lambdaEnd = hChargeProfileEnd.GetBinCenter(endBin);
-
+  int startBin = 0;
+  int endBin = 1E6;
+  int binTmp = 0;
+  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+    hProj = hChargeProfileStart.ProjectionX("hProj",strip_dir+1, strip_dir+1);
+    chargeCut = 0.02*hProj->GetMaximum();
+    binTmp = hProj->FindFirstBinAbove(chargeCut);
+    if(binTmp>startBin) startBin = binTmp;
+    ///
+    hProj = hChargeProfileEnd.ProjectionX("hProj",strip_dir+1, strip_dir+1);
+    chargeCut = 0.02*hProj->GetMaximum();
+    binTmp = hProj->FindLastBinAbove(chargeCut);
+    if(binTmp<endBin) endBin = binTmp;
+  }
+  double lambdaStart = hChargeProfileStart.ProjectionX("hProj",DIR_U, DIR_U)->GetBinCenter(startBin);
+  double lambdaEnd = hChargeProfileEnd.ProjectionX("hProj",DIR_U, DIR_U)->GetBinCenter(endBin);
+  
   TVector3 aStart = aFirstSegment.getStart() + getSegmentLambda(lambdaStart, 0)*aFirstSegment.getTangent();  
-  TVector3 aEnd = aLastSegment.getStart() + getSegmentLambda(lambdaEnd, mySegments.size()-1)*aLastSegment.getTangent();  
+  TVector3 aEnd = aLastSegment.getStart() + getSegmentLambda(lambdaEnd, mySegments.size()-1)*aLastSegment.getTangent();
 
   aFirstSegment.setStartEnd(aStart, aFirstSegment.getEnd());
   aLastSegment.setStartEnd(aLastSegment.getStart(), aEnd);
-
   update();
 }
 /////////////////////////////////////////////////////////

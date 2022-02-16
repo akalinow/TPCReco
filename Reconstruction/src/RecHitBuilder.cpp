@@ -37,11 +37,11 @@ const TH2D & RecHitBuilder::makeRecHits(const TH2D & hProjection){
   }
   
   makeTimeProjectionRecHits(hProjection);
-  if(hRecHits.GetEntries()<5){
-    makeStripProjectionRecHits(hProjection);
-  }
+  double recHitsSum = hRecHits.Integral();
+  double clusterSum = hProjection.Integral();
+  double ratio = recHitsSum/clusterSum;
+  if(ratio<0.2) makeStripProjectionRecHits(hProjection);
   cleanRecHits();
-    
   return hRecHits;
 }
 /////////////////////////////////////////////////////////
@@ -53,10 +53,10 @@ const TH2D & RecHitBuilder::makeTimeProjectionRecHits(const TH2D & hProjection){
   double hitTimePos = -999.0;
   double hitTimePosError = -999.0;
   double hitCharge = -999.0;
-  double timeBinToCartesianScale = myGeometryPtr->GetTimeBinWidth();
+  double initialSigma = 2*myGeometryPtr->GetTimeBinWidth();//1* for 12.5MHz, 2* for 25.0 MHz
   for(int iBinY=1;iBinY<=hProjection.GetNbinsY();++iBinY){
     h1DProj = hProjection.ProjectionX("h1DProjX",iBinY, iBinY);
-    const TF1 &fittedShape = fit1DProjection(h1DProj, timeBinToCartesianScale);
+    const TF1 &fittedShape = fit1DProjection(h1DProj, initialSigma);
     if(fittedShape.GetNpar()<3) continue;
     hitCharge = fittedShape.GetParameter(0);
     hitTimePos = fittedShape.GetParameter(1);
@@ -77,10 +77,10 @@ const TH2D & RecHitBuilder::makeStripProjectionRecHits(const TH2D & hProjection)
   double hitTimePos = -999.0;
   double hitStripPosError = -999.0;
   double hitCharge = -999.0;
-  double stripPitch = myGeometryPtr->GetStripPitch();
+  double initialSigma = myGeometryPtr->GetStripPitch();
   for(int iBinX=1;iBinX<=hProjection.GetNbinsX();++iBinX){
     h1DProj = hProjection.ProjectionY("h1DProjY",iBinX, iBinX);
-    const TF1 &fittedShape = fit1DProjection(h1DProj, stripPitch);
+    const TF1 &fittedShape = fit1DProjection(h1DProj, initialSigma);
     if(fittedShape.GetNpar()<3) continue;
     hitCharge = fittedShape.GetParameter(0);
     hitStripPos = fittedShape.GetParameter(1);
@@ -156,7 +156,7 @@ const TF1 & RecHitBuilder::fitSingleHit(TH1D* hProj,
 
   signalShape.SetParLimits(0, 0.5*initialMax, initialMax*1.5);
   signalShape.SetParLimits(1, minMeanX, maxMeanX);   
-  signalShape.SetParLimits(2, 0.5*initialSigma, 2.0*initialSigma);
+  signalShape.SetParLimits(2, initialSigma, 2.0*initialSigma);
   
   TFitResultPtr fitResult = hProj->Fit(&signalShape, "QBRSWN");
   return signalShape;
@@ -165,15 +165,18 @@ const TF1 & RecHitBuilder::fitSingleHit(TH1D* hProj,
 /////////////////////////////////////////////////////////
 void RecHitBuilder::cleanRecHits(){
 
- double maxCharge = hRecHits.GetMaximum();
-  double threshold = 0.1*maxCharge;//FIX ME optimize threshold
-
+  double maxCharge = hRecHits.GetMaximum();
+  double threshold = 0.1*maxCharge+1E-3;//FIX ME optimize threshold
+  int nEntries = 0;
   for(int iBin=0;iBin<hRecHits.GetNcells();++iBin){
     if(hRecHits.GetBinContent(iBin)<threshold){
       hRecHits.SetBinContent(iBin, 0.0);
     }
+    else{
+      ++nEntries;
+    }
   }
-  
+  hRecHits.SetEntries(nEntries);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

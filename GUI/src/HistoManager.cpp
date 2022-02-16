@@ -471,8 +471,8 @@ void HistoManager::drawTrack3DProjectionTimeStrip(int strip_dir, TVirtualPad *aP
 
   int iSegment = 0;
   TLine aSegment2DLine;
-  aSegment2DLine.SetLineWidth(3);
-  aSegment2DLine.SetLineStyle(2);
+  aSegment2DLine.SetLineWidth(4);
+  aSegment2DLine.SetLineStyle(8);
   double minX = 999.0, minY = 999.0;
   double maxX = -999.0, maxY = -999.0;
   double tmp = 0.0;
@@ -526,7 +526,7 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   
   aPad->cd();
 
-  TH1F hChargeProfile = aTrack3D.getSegments().front().getChargeProfile();
+  TH2F hChargeProfile = aTrack3D.getSegments().front().getChargeProfile();
   hChargeProfile.SetLineWidth(2);
   hChargeProfile.SetLineColor(2);
   hChargeProfile.SetMarkerColor(2);
@@ -534,9 +534,8 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   hChargeProfile.SetMarkerStyle(20);
   hChargeProfile.SetMinimum(0.0);
   hChargeProfile.GetYaxis()->SetTitleOffset(1.5);
-  hChargeProfile.DrawClone("HIST P");
-  hChargeProfile.Print();
-
+  //hChargeProfile.DrawClone("HIST P");
+  hChargeProfile.DrawClone("colz");
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

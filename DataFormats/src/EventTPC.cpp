@@ -1147,7 +1147,7 @@ std::shared_ptr<TH2D> EventTPC::GetStripVsTimeInMM(const SigClusterTPC &cluster,
 	y = myGeometryPtr->Strip2posUVW(strip_dir, strip_num, err_flag);	
 	if(err_flag) continue;
 	double val = GetValByStripMerged(strip_dir, strip_num, icell);
-	result->Fill(x, y, val);
+	if(val>0) result->Fill(x, y, val);///HACK AK
       }
     }
   }

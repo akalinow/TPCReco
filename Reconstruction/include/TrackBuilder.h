@@ -62,8 +62,6 @@ private:
 
   void makeRecHits(int iDir);
 
-  TF1 fitTimeWindow(TH1D* hProj);
- 
   void fillHoughAccumulator(int iDir);
 
   TrackSegment2DCollection findSegment2DCollection(int iDir);
@@ -77,8 +75,6 @@ private:
   Track3D fitTrackNodesStartEnd(const Track3D & aTrack) const;
 
   ROOT::Fit::FitResult fitTrackNodesBiasTangent(const Track3D & aTrack, double offset=0) const;
-
-  double fitTrackSplitPoint(const Track3D& aTrackCandidate) const;
 
   std::tuple<double, double> getTimeProjectionEdges() const;
    

@@ -35,7 +35,7 @@ public:
 
   double getIntegratedCharge(double lambda) const;
 
-  TH1F getChargeProfile() const { return mySegments.front().getChargeProfile();}
+  TH2F getChargeProfile() const { return mySegments.front().getChargeProfile();}
 
   double getChi2() const;
 

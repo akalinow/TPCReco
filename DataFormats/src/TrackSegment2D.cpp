@@ -4,6 +4,12 @@
 
 #include <iostream>
 
+TrackSegment2D::TrackSegment2D(int strip_dir, std::shared_ptr<GeometryTPC> aGeometryPtr){
+
+  myStripDir = strip_dir;
+  myGeometryPtr = aGeometryPtr;
+  
+}
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void TrackSegment2D::setBiasTangent(const TVector3 & aBias, const TVector3 & aTangent){
@@ -29,12 +35,6 @@ void TrackSegment2D::setStartEnd(const TVector3 & aStart, const TVector3 & aEnd)
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void TrackSegment2D::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
-  
-  myGeometryPtr = aGeometryPtr;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
 void TrackSegment2D::initialize(){
   
   double lambda = -myBias.Y()/myTangent.Y();
@@ -43,14 +43,16 @@ void TrackSegment2D::initialize(){
   ///Set tangent direction along time arrow with unit time component,
   ///so vector components can be compared between projections.
   myTangentWithT1 = myTangent;
-  if(myTangentWithT1.X()<0) myTangentWithT1 *= -1;
   
-  if(std::abs(myTangentWithT1.X())>1E-5){
+  if(std::abs(myTangentWithT1.X())>1E-2){
+    if(myTangentWithT1.X()<0) myTangentWithT1 *= -1;
     myTangentWithT1 *= 1.0/myTangentWithT1.X();
   }
   else{
-    myTangentWithT1.SetZ(0.0);
-    myTangentWithT1 = myTangentWithT1.Unit();
+    double phi = myGeometryPtr->GetStripPitchVector(myStripDir).Phi();
+    double cosPhi = cos(phi);
+    if(myTangentWithT1.Y()<0) myTangentWithT1 *= -1;
+    myTangentWithT1 *= cosPhi/myTangentWithT1.Y();
   }
   
   myLenght = (myEnd - myStart).Mag();
@@ -84,21 +86,22 @@ TH1F TrackSegment2D::getChargeProfile(const Hit2DCollection & aRecHits, double r
   double lambda = 0.0;
   TVector3 aPoint;
 
-  double timeCellWidth = myGeometryPtr->GetTimeBinWidth();
-  double stripPitch = myGeometryPtr->GetStripPitch();
-  TVector3 diamondDiagonal(timeCellWidth,stripPitch,0.0);
-			   
-  double diamondProjectionOnTrack = std::abs(diamondDiagonal.Dot(myTangent));
-  int nBins = getLength()/diamondProjectionOnTrack;
-  TH1F hChargeProfile2D("hChargeProfile2D",";d [mm];charge/mm",nBins+1, -diamondProjectionOnTrack/2.0, getLength()+diamondProjectionOnTrack/2.0);
-    
+  TVector3 cellDiagonal(myGeometryPtr->GetTimeBinWidth(), myGeometryPtr->GetStripPitch(), 0);
+  double cellProjectionOnSegment2D = cellDiagonal.Dot(getTangent().Unit());
+  double binWidth = std::abs(cellProjectionOnSegment2D)/getLength();
+  int nBins = 2.0/binWidth;
+
+  TH1F hChargeProfile2D("hChargeProfile2D",";d/L;charge",nBins+1,
+			-binWidth/2.0,
+			1.0+binWidth/2.0);
   for(const auto aHit:aRecHits){
     x = aHit.getPosTime();
     y = aHit.getPosStrip();
     aPoint.SetXYZ(x, y, 0.0);
     std::tie(lambda, distance) = getPointLambdaAndDistance(aPoint);
-    if(distance<radiusCut && lambda>0 && lambda<getLength()){
-      hChargeProfile2D.Fill(lambda,  aHit.getCharge()/diamondProjectionOnTrack);
+    lambda /= getLength();
+    if(distance<radiusCut && lambda>-binWidth/2.0 && lambda<getLength()+binWidth/2.0){
+      hChargeProfile2D.Fill(lambda,aHit.getCharge());
     }
   }  
   return hChargeProfile2D;
@@ -140,7 +143,7 @@ std::tuple<double,double> TrackSegment2D::getPointLambdaAndDistance(const TVecto
 double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
 
   if(!aRecHits.size()) return 0.0;
-  double dummyChi2 = 1E9;
+  double dummyChi2 = 1;//1E9;
 
   if(getTangent().Mag()<1E-3){
     std::cout<<__FUNCTION__<<KRED<< " TrackSegment2D has null tangent "<<RST

@@ -75,7 +75,9 @@ public:
   ///Return the full lenght of the segment.
   double getLength() const { return myLenght;}
 
-  TH1F getChargeProfile() const;
+  ///Return charge profile along the track. Each projection is returned in separate
+  ///histogram row
+  TH2F getChargeProfile() const;
 
   double getIntegratedCharge(double lambda) const;
 
