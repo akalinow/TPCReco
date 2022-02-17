@@ -43,6 +43,9 @@ public:
 
   void extendToZRange(double zMin, double zMax);
 
+  void shrinkToXYRange(double xMin, double xMax,
+		       double yMin, double yMax);
+
   ///Shrink track to actual hits range.
   void shrinkToHits();
 

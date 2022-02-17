@@ -31,7 +31,7 @@ void TrackSegment3D::setBiasTangent(const TVector3 & aBias, const TVector3 & aTa
   myBias = aBias;
   myTangent = aTangent.Unit();
 
-  double lambda = 100;
+  double lambda = 200;
   myStart = myBias-lambda*myTangent;   
   myEnd = myBias+lambda*myTangent;  
   initialize();
@@ -127,6 +127,16 @@ std::vector<double> TrackSegment3D::getBiasTangentCoords() const{
   data[4] = getTangent().Phi();
 
   return coordinates;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+double TrackSegment3D::getLambdaAtX(double x) const {
+  return (x - myStart.X())/myTangent.X();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+double TrackSegment3D::getLambdaAtY(double y) const {
+  return (y - myStart.Y())/myTangent.Y();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

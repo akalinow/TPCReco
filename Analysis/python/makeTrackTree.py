@@ -15,15 +15,22 @@ geometryFile = "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mb
 #dataPath = "/scratch/akalinow/ELITPC/data/calibration/2021-11-25T14-20/";
 #geometryFile = "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_25.0MHz.dat"
 
-command = "time ../bin/makeTrackTree"
+command = "time ../../bin/makeTrackTree"
 
 for root, dirs, files in os.walk(dataPath):
     for aFile in files:
         if aFile.find(".root")!=-1 and aFile.find("EventTPC")!=-1:
                 filePath =  os.path.join(dataPath, aFile)
                 outputName = aFile + ".out"
+                timestamp_index = aFile.rfind("EventTPC_")
+                timestamp = aFile[timestamp_index+9:timestamp_index+32]
+                timestamp = timestamp.replace(":","-")
+                if not os.path.isdir(timestamp):
+                    os.mkdir(timestamp)
                 arguments = " --geometryFile " + geometryFile + " --dataFile " + filePath + " >& "+outputName+" &"
                 print("Running job for file:"+aFile)
+                os.chdir(timestamp)
                 os.system(command+arguments)
+                os.chdir("../")
 
 

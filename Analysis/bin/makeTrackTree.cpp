@@ -4,12 +4,14 @@
 
 #include "TFile.h"
 #include "TTree.h"
+#include "TCanvas.h"
 
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/program_options.hpp>
 
 #include "TrackBuilder.h"
+#include "HistoManager.h"
 #include "EventSourceROOT.h"
 #include "SigClusterTPC.h"
 #include "EventTPC.h"
@@ -70,7 +72,10 @@ int main(int argc, char **argv){
 /////////////////////////////
 ////////////////////////////
 // Define some simple structures
-typedef struct {Float_t frameId, length, energy, charge, cosTheta, phi, chi2, x0, y0, z0, x1, y1, z1;} TrackData;
+typedef struct {Float_t eventId, frameId, length,
+    horizontalLostLength, verticalLostLength,
+    energy, charge, cosTheta, phi, chi2,
+    x0, y0, z0, x1, y1, z1;} TrackData;
 /////////////////////////
 int makeTrackTree(const  std::string & geometryFileName,
 		  const  std::string & dataFileName) {
@@ -83,7 +88,7 @@ int makeTrackTree(const  std::string & geometryFileName,
   // Define some simple structures
   TTree *tree = new TTree("trackTree", "Track tree");
   TrackData track_data;
-  tree->Branch("track",&track_data,"frameId:length:energy:charge:cosTheta:phi:chi2:x0:y0:z0:x1:y1:z1");
+  tree->Branch("track",&track_data,"eventId:frameId:length:horizontalLostLength:verticalLostLength:energy:charge:cosTheta:phi:chi2:x0:y0:z0:x1:y1:z1");
   
   std::shared_ptr<EventSourceBase> myEventSource;
   myEventSource = std::make_shared<EventSourceROOT>(geometryFileName);
@@ -91,6 +96,11 @@ int makeTrackTree(const  std::string & geometryFileName,
   TrackBuilder myTkBuilder;
   myTkBuilder.setGeometry(myEventSource->getGeometry());
 
+  HistoManager myHistoManager;
+  myHistoManager.setGeometry(myEventSource->getGeometry());
+  TCanvas *aCanvas = new TCanvas("aCanvas","Histograms",1000,1000);
+  aCanvas->Divide(2,2);
+ 
   if(dataFileName.find(".root")!=std::string::npos){
     myEventSource->loadDataFile(dataFileName);
     std::cout<<KBLU<<"File with "<<RST<<myEventSource->numberOfEntries()<<" frames loaded."<<std::endl;
@@ -110,8 +120,9 @@ int makeTrackTree(const  std::string & geometryFileName,
       continue;
     }			      
     myTkBuilder.setEvent(myEventSource->getCurrentEvent());
-    myTkBuilder.reconstruct();      
-    
+    myTkBuilder.reconstruct();
+
+    int eventId = myEventSource->getCurrentEvent()->GetEventId();
     const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);      
     double length = aTrack3D.getLength();
     double charge = aTrack3D.getIntegratedCharge(length);
@@ -120,9 +131,18 @@ int makeTrackTree(const  std::string & geometryFileName,
     double chi2 = aTrack3D.getChi2();
     const TVector3 & start = aTrack3D.getSegments().front().getStart();
     const TVector3 & end = aTrack3D.getSegments().front().getEnd();
+    const TVector3 & tangent = aTrack3D.getSegments().front().getTangent();
+    TVector3 horizontal(0,-1,0);
+    double horizontalTrackLostPart = 73.4/std::abs(horizontal.Dot(tangent));
+
+    TVector3 vertical(0,0,-1);
+    double verticalTrackLostPart = 6.0/std::abs(vertical.Dot(tangent));
     
     track_data.frameId = iEntry;
+    track_data.eventId = eventId;
     track_data.length = length;
+    track_data.horizontalLostLength = horizontalTrackLostPart;
+    track_data.verticalLostLength = verticalTrackLostPart;
     track_data.charge = charge;
     track_data.cosTheta = cosTheta;
     track_data.phi = phi;
@@ -135,6 +155,18 @@ int makeTrackTree(const  std::string & geometryFileName,
     track_data.z1 = end.Z();
     track_data.energy = 0.0;//getKineticEnergyForRange(length, 0);
     tree->Fill();
+
+    ///Draw anomaly events
+    if(chi2>5){
+      myHistoManager.setEvent(myEventSource->getCurrentEvent());
+      for(int strip_dir=0;strip_dir<3;++strip_dir){
+	aCanvas->cd(strip_dir+1);
+	myHistoManager.getClusterStripVsTimeInMM(strip_dir)->DrawClone("colz");
+	//myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("box same");
+      }
+      std::string plotFileName = "Clusters_"+dataFileName.substr(index)+".png";
+      aCanvas->Print(plotFileName.c_str());
+    }
   }
   outputROOTFile.Write();
   return 0;

@@ -183,7 +183,11 @@ void TrackBuilder::reconstruct(){
   myTrack3DSeed = buildSegment3D();
   Track3D aTrackCandidate;
   aTrackCandidate.addSegment(myTrack3DSeed);
-  aTrackCandidate.extendToZRange(std::get<0>(myZRange),std::get<1>(myZRange));
+
+  auto rangeXY = myGeometryPtr->rangeXY();
+  aTrackCandidate.extendToZRange(std::get<0>(myZRange),std::get<1>(myZRange));  
+  aTrackCandidate.shrinkToXYRange(std::get<2>(rangeXY), std::get<3>(rangeXY),
+				  std::get<0>(rangeXY), std::get<1>(rangeXY));
   fitTrack3D(aTrackCandidate);
 }
 /////////////////////////////////////////////////////////
@@ -514,7 +518,7 @@ void TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
   double candidateChi2 = aTrackCandidate.getChi2();
   ROOT::Fit::FitResult bestFitResult;
   for(int iOffset=-nOffsets;iOffset<=nOffsets;++iOffset){
-    if(iOffset==0) offset = aTrackCandidate.getSegments().front().getTangent().Phi();//+iOffset*M_PI/2.0;
+    if(iOffset==0) offset = aTrackCandidate.getSegments().front().getTangent().Phi();
     else offset = iOffset*M_PI/6.0;    
     auto fitResult = fitTrackNodesBiasTangent(aTrackCandidate, offset);
     if(fitResult.IsValid() &&
@@ -528,6 +532,9 @@ void TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
   }
   //myFittedTrack.getSegments().front().setRecHits(myRawHits);
   myFittedTrack.extendToZRange(std::get<0>(myZRange), std::get<1>(myZRange));
+  auto rangeXY = myGeometryPtr->rangeXY();  
+  myFittedTrack.shrinkToXYRange(std::get<0>(rangeXY), std::get<1>(rangeXY),
+				std::get<2>(rangeXY), std::get<3>(rangeXY));  
   myFittedTrack.shrinkToHits();
   myFittedTrackPtr = &myFittedTrack;
   std::cout<<KBLU<<"Post-fit: "<<RST<<std::endl;

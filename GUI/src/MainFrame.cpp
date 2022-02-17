@@ -591,12 +591,9 @@ void MainFrame::drawRecoHistos(){
      //fCanvas->cd(strip_dir+1);
      TVirtualPad *aPad = fCanvas->cd(strip_dir+1);
      myHistoManager.getClusterStripVsTimeInMM(strip_dir)->DrawClone("colz");
-     myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("box same");
+     //myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("box same");
      //myHistoManager.getRawStripVsTimeInMM(strip_dir)->DrawClone("colz");
-     //myHistoManager.drawTrack2DSeed(strip_dir, aPad);
      myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
-     //myHistoManager.getHoughAccumulator(strip_dir,0).DrawClone("colz");
-	  
   }
    //fCanvas->cd(4);
    myHistoManager.drawTrack3DProjectionXY(fCanvas->cd(4));
@@ -616,8 +613,8 @@ void MainFrame::drawRecoFromMarkers(std::vector<double> * segmentsXY){
     TVirtualPad *aPad = fCanvas->cd(strip_dir+1);
     myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
   }
+   myHistoManager.drawTrack3DProjectionXY(fCanvas->cd(4));
   //myHistoManager.drawTrack3D(fCanvas->cd(4));
-  //myHistoManager.drawChargeAlongTrack3D(aPad);
   //myHistoManager.drawChargeAlongTrack3D(fCanvas->cd(4));
   fCanvas->Update();
 }

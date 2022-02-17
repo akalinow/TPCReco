@@ -228,20 +228,75 @@ void Track3D::splitSegment(unsigned int iSegment, double lenghtFraction){
 void Track3D::extendToZRange(double zMin, double zMax){
 
   if(!mySegments.size()) return;
-
+  
   TrackSegment3D & aFirstSegment = mySegments.front();
   
   double lambda =  aFirstSegment.getLambdaAtZ(zMin);
-  TVector3 aStart = aFirstSegment.getStart() + lambda*aFirstSegment.getTangent();
+  TVector3 aStart = aFirstSegment.getStart() + lambda*aFirstSegment.getTangent(); 
   TVector3 aEnd = aFirstSegment.getEnd();
   aFirstSegment.setStartEnd(aStart, aEnd);
 
   TrackSegment3D & aLastSegment = mySegments.back();
   lambda =  aLastSegment.getLambdaAtZ(zMax);
   aStart = aLastSegment.getStart();
-  aEnd = aLastSegment.getStart() + lambda*aLastSegment.getTangent();  
+  aEnd = aStart + lambda*aLastSegment.getTangent();  
   aLastSegment.setStartEnd(aStart, aEnd);
     
+  update();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void Track3D::shrinkToXYRange(double xMin, double xMax,
+			      double yMin, double yMax){
+
+  if(!mySegments.size()) return;
+  double lambda =  0;  
+  TrackSegment3D & aFirstSegment = mySegments.front();
+  TVector3 aStart = aFirstSegment.getStart();
+
+  if(aStart.X()>xMax){
+    lambda = aFirstSegment.getLambdaAtX(xMax);
+    aStart =  aFirstSegment.getStart() + lambda*aFirstSegment.getTangent();
+  }
+  else if(aStart.X()<xMin){
+    lambda = aFirstSegment.getLambdaAtX(xMin);
+    aStart =  aFirstSegment.getStart() + lambda*aFirstSegment.getTangent();
+  }
+  
+  if(aStart.Y()>yMax){
+    lambda = aFirstSegment.getLambdaAtY(yMax);
+    aStart =  aFirstSegment.getStart() + lambda*aFirstSegment.getTangent();
+  }
+  else if(aStart.Y()<yMin){
+    lambda = aFirstSegment.getLambdaAtY(yMin);
+    aStart =  aFirstSegment.getStart() + lambda*aFirstSegment.getTangent();
+  }  
+  TVector3 aEnd = aFirstSegment.getEnd();
+  aFirstSegment.setStartEnd(aStart, aEnd);
+
+  lambda = getLength();
+  TrackSegment3D & aLastSegment = mySegments.back();
+  aStart = aLastSegment.getStart();
+  aEnd = aLastSegment.getEnd();
+  
+  if(aEnd.X()>xMax){
+    lambda = aLastSegment.getLambdaAtX(xMax);
+    if(lambda>0) aEnd = aStart + lambda*aLastSegment.getTangent();
+  }
+  else if(aEnd.X()<xMin){
+    lambda = aLastSegment.getLambdaAtX(xMin);
+    if(lambda>0) aEnd = aStart + lambda*aLastSegment.getTangent();
+  }
+  
+  if(aEnd.Y()>yMax){
+    lambda = aLastSegment.getLambdaAtY(yMax);
+    if(lambda>0) aEnd = aStart + lambda*aLastSegment.getTangent();    
+  }
+  else if(aEnd.Y()<yMin){
+    lambda = aLastSegment.getLambdaAtY(yMin);
+    if(lambda>0) aEnd = aStart + lambda*aLastSegment.getTangent();    
+  }
+  aLastSegment.setStartEnd(aStart, aEnd);
   update();
 }
 /////////////////////////////////////////////////////////

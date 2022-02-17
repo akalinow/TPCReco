@@ -42,17 +42,18 @@ void HistoManager::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
 void HistoManager::setEvent(EventTPC* aEvent){
   if(!aEvent) return;
   myEvent.reset(aEvent);
+  myTkBuilder.setEvent(myEvent);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void HistoManager::setEvent(std::shared_ptr<EventTPC> aEvent){
   if(!aEvent) return;
   myEvent = aEvent;
+  myTkBuilder.setEvent(myEvent);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void HistoManager::reconstruct(){
-  myTkBuilder.setEvent(myEvent);
   myTkBuilder.reconstruct();
 }
 /////////////////////////////////////////////////////////
@@ -247,7 +248,6 @@ std::shared_ptr<TH2D> HistoManager::getClusterStripVsTimeInMM(int strip_dir){
     aHisto->GetYaxis()->SetTitleOffset(1.5);
     aHisto->GetZaxis()->SetTitleOffset(1.5);
     aHisto->SetDrawOption("COLZ");
-    //  aHisto->SetMinimum(1);
   }
   return aHisto;
 }
@@ -620,7 +620,6 @@ TGraph* HistoManager::getEventRateGraph(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-
 void HistoManager::resetEventRateGraph(){
  if(grEventRate){
    grEventRate->Set(0);

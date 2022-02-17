@@ -49,9 +49,9 @@ void TrackSegment2D::initialize(){
     myTangentWithT1 *= 1.0/myTangentWithT1.X();
   }
   else{
-    double phi = myGeometryPtr->GetStripPitchVector(myStripDir).Phi();
-    double cosPhi = cos(phi);
     if(myTangentWithT1.Y()<0) myTangentWithT1 *= -1;
+    double phi = myGeometryPtr->GetStripPitchVector(myStripDir).Phi();
+    double cosPhi = cos(phi);    
     myTangentWithT1 *= cosPhi/myTangentWithT1.Y();
   }
   
@@ -143,7 +143,7 @@ std::tuple<double,double> TrackSegment2D::getPointLambdaAndDistance(const TVecto
 double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
 
   if(!aRecHits.size()) return 0.0;
-  double dummyChi2 = 1;//1E9;
+  double dummyChi2 = 0;//1E9;
 
   if(getTangent().Mag()<1E-3){
     std::cout<<__FUNCTION__<<KRED<< " TrackSegment2D has null tangent "<<RST
@@ -161,9 +161,6 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
   double chargeSum = 0.0;
   double distance = 0.0;
   double lambda = 0.0;
-  double minLambda = 0.0;
-  double maxLambda = 0.0;
-  double deltaLambda = 0.0;
   int pointCount = 0;
   
   double x = 0.0, y = 0.0;
@@ -175,22 +172,17 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
     charge = aHit.getCharge();
     aPoint.SetXYZ(x, y, 0.0);
     std::tie(lambda,distance) = getPointLambdaAndDistance(aPoint);
-    if(lambda<0 || lambda>getLength()) continue;
+    //if(lambda<0 || lambda>getLength()) continue;
     ++pointCount;
     chi2 += std::pow(distance, 2)*charge;
     chargeSum +=charge;
     biasDistance += (aPoint - getBias()).Mag();
-    if(lambda<minLambda) minLambda = lambda;
-    if(lambda>maxLambda) maxLambda = lambda;
   }
   if(!pointCount) return dummyChi2;
 
   chi2 /= chargeSum;
   biasDistance /= chargeSum;
-  deltaLambda = std::abs(maxLambda - minLambda);
-  deltaLambda = 0;
-  //biasDistance = 0;
-  return chi2 + biasDistance + deltaLambda;//TEST
+  return chi2 + biasDistance;//TEST
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

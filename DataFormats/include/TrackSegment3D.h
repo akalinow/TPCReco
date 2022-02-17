@@ -53,6 +53,12 @@ public:
   ///Bias vector with Z=0.
   const TVector3 & getBiasAtZ0() const { return myBiasAtZ0;}
 
+  ///Lambda value for given X with current start and stop points
+  double getLambdaAtX(double x) const;
+
+  ///Lambda value for given Y with current start and stop points
+  double getLambdaAtY(double y) const;
+
   ///Lambda value for given Z (corresponding to time) with current start and stop points
   double getLambdaAtZ(double z) const;
 
