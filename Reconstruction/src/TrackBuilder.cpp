@@ -114,7 +114,7 @@ void TrackBuilder::setEvent(EventTPC* aEvent){
 
   myEvent = aEvent;
 
-  double chargeThreshold = 35*3;
+  double chargeThreshold = std::max(35.0, 0.1*aEvent->GetMaxCharge());
   int delta_timecells = 25;
   int delta_strips = 5;
   myEvent->MakeOneCluster(chargeThreshold, delta_strips, delta_timecells);
@@ -185,9 +185,11 @@ void TrackBuilder::reconstruct(){
   aTrackCandidate.addSegment(myTrack3DSeed);
 
   auto rangeXY = myGeometryPtr->rangeXY();
-  aTrackCandidate.extendToZRange(std::get<0>(myZRange),std::get<1>(myZRange));  
+  aTrackCandidate.extendToZRange(std::get<0>(myZRange),std::get<1>(myZRange));
+  
   aTrackCandidate.shrinkToXYRange(std::get<2>(rangeXY), std::get<3>(rangeXY),
 				  std::get<0>(rangeXY), std::get<1>(rangeXY));
+  
   fitTrack3D(aTrackCandidate);
 }
 /////////////////////////////////////////////////////////
@@ -209,16 +211,17 @@ std::tuple<double, double> TrackBuilder::getTimeProjectionEdges() const{
   double threshold = 0.01;
 
   for(auto iBin=0;iBin<hTimeProjection.GetNbinsX();++iBin){
-    sum += hTimeProjection.GetBinContent(iBin);
-    if(sum/histoSum>threshold && iBinStart<0) iBinStart = iBin-10;
+    sum += hTimeProjection.GetBinContent(iBin); 
+    if(sum/histoSum>threshold && iBinStart<0) iBinStart = iBin;
     else if(sum/histoSum>1.0-threshold && iBinEnd<0) {
-      iBinEnd = iBin+10;
+      iBinEnd = iBin;
       break;
     }
   }
-    
-  double start = hTimeProjection.GetXaxis()->GetBinCenter(iBinStart-1);
-  double end =  hTimeProjection.GetXaxis()->GetBinCenter(iBinEnd+1);  
+
+  
+  double start = hTimeProjection.GetXaxis()->GetBinCenter(iBinStart-10);
+  double end =  hTimeProjection.GetXaxis()->GetBinCenter(iBinEnd+10);  
   return std::make_tuple(start, end);
 }
 /////////////////////////////////////////////////////////
@@ -510,6 +513,7 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
 void TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
 
   myFittedTrack = aTrackCandidate;
+  myFittedTrackPtr = &myFittedTrack;
   std::cout<<KBLU<<"Pre-fit: "<<RST<<std::endl; 
   std::cout<<myFittedTrack<<std::endl;
   
@@ -530,13 +534,15 @@ void TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
     myFittedTrack.setFitMode(Track3D::FIT_BIAS_TANGENT);
     myFittedTrack.chi2FromNodesList(bestFitResult.GetParams());
   }
-  //myFittedTrack.getSegments().front().setRecHits(myRawHits);
+ 
+  myFittedTrack.getSegments().front().setRecHits(myRawHits);
   myFittedTrack.extendToZRange(std::get<0>(myZRange), std::get<1>(myZRange));
+  
   auto rangeXY = myGeometryPtr->rangeXY();  
   myFittedTrack.shrinkToXYRange(std::get<0>(rangeXY), std::get<1>(rangeXY),
 				std::get<2>(rangeXY), std::get<3>(rangeXY));  
+  
   myFittedTrack.shrinkToHits();
-  myFittedTrackPtr = &myFittedTrack;
   std::cout<<KBLU<<"Post-fit: "<<RST<<std::endl;
   std::cout<<myFittedTrack<<std::endl;
 }

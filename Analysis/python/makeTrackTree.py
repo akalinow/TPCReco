@@ -3,14 +3,20 @@
 
 import os
 
-#dataPath = "/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210622_extTrg_CO2_250mbar_DT1470ET/"
+#dataPath = "/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210616_extTrg_CO2_250mbar_DT1470ET"
 #geometryFile = "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"
+
+#dataPath = "/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210617_extTrg_CO2_250mbar_DT1470ET"
+#geometryFile = "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"
+
+dataPath = "/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210622_extTrg_CO2_250mbar_DT1470ET/"
+geometryFile = "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"
   
 #dataPath = "/scratch/akalinow/ELITPC/data/calibration/2021-11-25T13/";
 #geometryFile = "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"
 
-dataPath = "/scratch/akalinow/ELITPC/data/calibration/2021-11-25T14/";
-geometryFile = "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_25.0MHz.dat"
+#dataPath = "/scratch/akalinow/ELITPC/data/calibration/2021-11-25T14/";
+#geometryFile = "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_25.0MHz.dat"
 
 #dataPath = "/scratch/akalinow/ELITPC/data/calibration/2021-11-25T14-20/";
 #geometryFile = "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_25.0MHz.dat"

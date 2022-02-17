@@ -51,8 +51,8 @@ void TrackSegment2D::initialize(){
   else{
     if(myTangentWithT1.Y()<0) myTangentWithT1 *= -1;
     double phi = myGeometryPtr->GetStripPitchVector(myStripDir).Phi();
-    double cosPhi = cos(phi);    
-    myTangentWithT1 *= cosPhi/myTangentWithT1.Y();
+    double cosPhi = cos(phi);
+    if(std::abs(myTangentWithT1.Y())>1E-2) myTangentWithT1 *= cosPhi/myTangentWithT1.Y();
   }
   
   myLenght = (myEnd - myStart).Mag();
@@ -182,7 +182,7 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
 
   chi2 /= chargeSum;
   biasDistance /= chargeSum;
-  return chi2 + biasDistance;//TEST
+  return chi2 + biasDistance;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
