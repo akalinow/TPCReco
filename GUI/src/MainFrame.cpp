@@ -155,7 +155,7 @@ void MainFrame::InitializeEventSource(){
 
   if(myWorkMode!=M_ONLINE_MODE){
     myEventSource->loadDataFile(dataFileName);
-    myEventSource->loadFileEntry(0);//TEST
+    myEventSource->loadFileEntry(0);
   }
   myHistoManager.setGeometry(myEventSource->getGeometry());
   myHistoManager.openOutputStream(dataFileName);
@@ -590,9 +590,9 @@ void MainFrame::drawRecoHistos(){
    for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
      //fCanvas->cd(strip_dir+1);
      TVirtualPad *aPad = fCanvas->cd(strip_dir+1);
-     myHistoManager.getClusterStripVsTimeInMM(strip_dir)->DrawClone("colz");
-     myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("box same");
-     //myHistoManager.getRawStripVsTimeInMM(strip_dir)->DrawClone("colz");
+     //myHistoManager.getClusterStripVsTimeInMM(strip_dir)->DrawClone("colz");
+     //myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("box same");
+     myHistoManager.getRawStripVsTimeInMM(strip_dir)->DrawClone("colz");
      myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
   }
    //fCanvas->cd(4);

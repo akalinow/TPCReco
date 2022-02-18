@@ -143,7 +143,7 @@ std::tuple<double,double> TrackSegment2D::getPointLambdaAndDistance(const TVecto
 double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
 
   if(!aRecHits.size()) return 0.0;
-  double dummyChi2 = 0;//1E9;
+  double dummyChi2 = 3.0;//1E9;
 
   if(getTangent().Mag()<1E-3){
     std::cout<<__FUNCTION__<<KRED<< " TrackSegment2D has null tangent "<<RST
@@ -159,6 +159,7 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
   double chi2 = 0.0;
   double biasDistance = 0.0;
   double chargeSum = 0.0;
+  double totalChargeSum = 0.0;
   double distance = 0.0;
   double lambda = 0.0;
   int pointCount = 0;
@@ -172,7 +173,8 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
     charge = aHit.getCharge();
     aPoint.SetXYZ(x, y, 0.0);
     std::tie(lambda,distance) = getPointLambdaAndDistance(aPoint);
-    //if(lambda<0 || lambda>getLength()) continue;
+    totalChargeSum += charge;
+    if(distance>10) continue;
     ++pointCount;
     chi2 += std::pow(distance, 2)*charge;
     chargeSum +=charge;
@@ -182,7 +184,8 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
 
   chi2 /= chargeSum;
   biasDistance /= chargeSum;
-  return chi2 + biasDistance;
+  chargeSum /= totalChargeSum;
+  return chi2 + biasDistance - chargeSum;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

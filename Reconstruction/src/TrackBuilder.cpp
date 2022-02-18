@@ -115,8 +115,8 @@ void TrackBuilder::setEvent(EventTPC* aEvent){
   myEvent = aEvent;
 
   double chargeThreshold = std::max(35.0, 0.1*aEvent->GetMaxCharge());
-  int delta_timecells = 25;
-  int delta_strips = 5;
+  int delta_timecells = 5;
+  int delta_strips = 2;
   myEvent->MakeOneCluster(chargeThreshold, delta_strips, delta_timecells);
   
   std::string hName, hTitle;
@@ -184,12 +184,12 @@ void TrackBuilder::reconstruct(){
   Track3D aTrackCandidate;
   aTrackCandidate.addSegment(myTrack3DSeed);
 
-  auto rangeXY = myGeometryPtr->rangeXY();
   aTrackCandidate.extendToZRange(std::get<0>(myZRange),std::get<1>(myZRange));
-  
+  /*
+  auto rangeXY = myGeometryPtr->rangeXY();
   aTrackCandidate.shrinkToXYRange(std::get<2>(rangeXY), std::get<3>(rangeXY),
 				  std::get<0>(rangeXY), std::get<1>(rangeXY));
-  
+  */
   fitTrack3D(aTrackCandidate);
 }
 /////////////////////////////////////////////////////////
@@ -516,7 +516,6 @@ void TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
   myFittedTrackPtr = &myFittedTrack;
   std::cout<<KBLU<<"Pre-fit: "<<RST<<std::endl; 
   std::cout<<myFittedTrack<<std::endl;
-  
   int nOffsets = 3;
   double offset = 0.0;
   double candidateChi2 = aTrackCandidate.getChi2();
@@ -531,50 +530,21 @@ void TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
     }
   }
   if(bestFitResult.IsValid() && bestFitResult.MinFcnValue()<candidateChi2){
+    std::cout<<" bestFitResult.MinFcnValue(): "<< bestFitResult.MinFcnValue()
+	     <<" candidateChi2: "<<candidateChi2
+	     <<std::endl;
     myFittedTrack.setFitMode(Track3D::FIT_BIAS_TANGENT);
     myFittedTrack.chi2FromNodesList(bestFitResult.GetParams());
   }
- 
   myFittedTrack.getSegments().front().setRecHits(myRawHits);
   myFittedTrack.extendToZRange(std::get<0>(myZRange), std::get<1>(myZRange));
-  
   auto rangeXY = myGeometryPtr->rangeXY();  
   myFittedTrack.shrinkToXYRange(std::get<0>(rangeXY), std::get<1>(rangeXY),
 				std::get<2>(rangeXY), std::get<3>(rangeXY));  
-  
   myFittedTrack.shrinkToHits();
+  
   std::cout<<KBLU<<"Post-fit: "<<RST<<std::endl;
   std::cout<<myFittedTrack<<std::endl;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-Track3D TrackBuilder::fitTrackNodesStartEnd(const Track3D & aTrack) const{
-
-  Track3D aTrackCandidate = aTrack;
-  aTrackCandidate.setFitMode(Track3D::FIT_START_STOP);
-  std::vector<double> params = aTrackCandidate.getSegmentsStartEndXYZ();
-  int nParams = params.size();
-  
-  ROOT::Math::Functor fcn(&aTrackCandidate, &Track3D::chi2FromNodesList, nParams);
-  fitter.SetFCN(fcn, params.data());
-  
-  double paramWindowWidth = 100.0;
-  for (int iPar = 0; iPar < nParams; ++iPar){
-    fitter.Config().ParSettings(iPar).SetValue(params[iPar]);
-    fitter.Config().ParSettings(iPar).SetStepSize(1);
-    fitter.Config().ParSettings(iPar).SetLimits(params[iPar]-paramWindowWidth,
-						params[iPar]+paramWindowWidth);
-  }      
-  bool fitStatus = fitter.FitFCN();
-  if (!fitStatus) {
-    Error(__FUNCTION__, "Track3D Fit failed");
-    std::cout<<KRED<<"Track3D Fit failed"<<RST<<std::endl;
-    fitter.Result().Print(std::cout);
-    return aTrack;
-  }
-  const ROOT::Fit::FitResult & result = fitter.Result();
-  aTrackCandidate.chi2FromNodesList(result.GetParams());
-  return aTrackCandidate;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -629,11 +599,41 @@ ROOT::Fit::FitResult TrackBuilder::fitTrackNodesBiasTangent(const Track3D & aTra
 	       <<" iteration "<<iIter
 	       <<" phi offset "<<offset
 	       <<RST<<std::endl;
-      fitter.Result().Print(std::cout);
+      //fitter.Result().Print(std::cout);
       return fitter.Result();
     }
   }
   return fitter.Result();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+Track3D TrackBuilder::fitTrackNodesStartEnd(const Track3D & aTrack) const{
+
+  Track3D aTrackCandidate = aTrack;
+  aTrackCandidate.setFitMode(Track3D::FIT_START_STOP);
+  std::vector<double> params = aTrackCandidate.getSegmentsStartEndXYZ();
+  int nParams = params.size();
+  
+  ROOT::Math::Functor fcn(&aTrackCandidate, &Track3D::chi2FromNodesList, nParams);
+  fitter.SetFCN(fcn, params.data());
+  
+  double paramWindowWidth = 100.0;
+  for (int iPar = 0; iPar < nParams; ++iPar){
+    fitter.Config().ParSettings(iPar).SetValue(params[iPar]);
+    fitter.Config().ParSettings(iPar).SetStepSize(1);
+    fitter.Config().ParSettings(iPar).SetLimits(params[iPar]-paramWindowWidth,
+						params[iPar]+paramWindowWidth);
+  }      
+  bool fitStatus = fitter.FitFCN();
+  if (!fitStatus) {
+    Error(__FUNCTION__, "Track3D Fit failed");
+    std::cout<<KRED<<"Track3D Fit failed"<<RST<<std::endl;
+    //fitter.Result().Print(std::cout);
+    return aTrack;
+  }
+  const ROOT::Fit::FitResult & result = fitter.Result();
+  aTrackCandidate.chi2FromNodesList(result.GetParams());
+  return aTrackCandidate;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

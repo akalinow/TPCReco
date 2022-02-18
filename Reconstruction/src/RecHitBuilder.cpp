@@ -99,8 +99,8 @@ const TF1 & RecHitBuilder::fit1DProjection(TH1D* hProj, double initialSigma){
   int maxValueBin = hProj->GetMaximumBin();
   double maxValue = hProj->GetBinContent(maxValueBin);
   
-  int lowBin = hProj->FindFirstBinAbove(maxValue/4.0, 1, maxValueBin-projection1DHalfSize);
-  int highBin = hProj->FindLastBinAbove(maxValue/4.0, 1, maxValueBin+projection1DHalfSize);
+  int lowBin = FindFirstBinAbove(hProj, maxValue/4.0, 1, maxValueBin-projection1DHalfSize);
+  int highBin = FindLastBinAbove(hProj, maxValue/4.0, 1, maxValueBin+projection1DHalfSize);
   if(lowBin<0) lowBin = maxValueBin-projection1DHalfSize;
   if(highBin<0) highBin = maxValueBin+projection1DHalfSize;
   int delta = std::max(std::abs(lowBin-maxValueBin),
@@ -206,6 +206,46 @@ std::string RecHitBuilder::adaptHistoTitle(const std::string title) const{
     adaptedTitle = eventNumber+": Reco hits "+adaptedTitle;
   }
   return adaptedTitle;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+Int_t RecHitBuilder::FindFirstBinAbove(TH1* histo, Double_t threshold,
+				       Int_t axis, Int_t firstBin, Int_t lastBin) const{
+
+  if(!histo) return -1;
+
+  if (firstBin < 1) {
+    firstBin = 1;
+  }
+  
+  if (axis == 1) {
+    if (lastBin < 0 || lastBin > histo->GetNbinsX()) {
+      lastBin = histo->GetNbinsX();
+    }
+    for (Int_t binx = firstBin; binx <= lastBin; binx++) {
+      if (histo->GetBinContent(binx) > threshold) return binx;
+    }
+  }
+  return -1;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+Int_t RecHitBuilder::FindLastBinAbove(TH1* histo, Double_t threshold,
+				      Int_t axis, Int_t firstBin, Int_t lastBin) const{
+
+  if(!histo) return -1;
+
+  if (firstBin < 1) {
+    firstBin = 1;
+  }
+
+  if (lastBin < 0 || lastBin > histo->GetNbinsX()) {
+    lastBin = histo->GetNbinsX();
+  }
+  for (Int_t binx = lastBin; binx >= firstBin; binx--) {
+    if (histo->GetBinContent(binx) > threshold) return binx;
+  } 
+  return -1;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

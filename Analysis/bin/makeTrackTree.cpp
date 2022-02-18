@@ -157,14 +157,16 @@ int makeTrackTree(const  std::string & geometryFileName,
     tree->Fill();
 
     ///Draw anomaly events
-    if(chi2>5){
+    if(chi2>8){
       myHistoManager.setEvent(myEventSource->getCurrentEvent());
       for(int strip_dir=0;strip_dir<3;++strip_dir){
 	aCanvas->cd(strip_dir+1);
-	myHistoManager.getClusterStripVsTimeInMM(strip_dir)->DrawClone("colz");
-	//myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("box same");
+	std::shared_ptr<TH2D> hProjection = myHistoManager.getClusterStripVsTimeInMM(strip_dir);
+	hProjection->SetStats(kFALSE);
+	hProjection->DrawCopy("colz");
+	//myHistoManager.getRecHitStripVsTime(strip_dir)->Draw("box same");
       }
-      std::string plotFileName = "Clusters_"+dataFileName.substr(index)+".png";
+      std::string plotFileName = "Clusters_"+std::to_string(eventId)+"_"+dataFileName.substr(index)+".png";
       aCanvas->Print(plotFileName.c_str());
     }
   }

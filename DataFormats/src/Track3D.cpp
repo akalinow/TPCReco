@@ -318,12 +318,12 @@ void Track3D::shrinkToHits(){
   int binTmp = 0;
   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
     hProj = hChargeProfileStart.ProjectionX("hProj",strip_dir+1, strip_dir+1);
-    chargeCut = 0.02*hProj->GetMaximum();
+    chargeCut = 0.1*hProj->GetMaximum();
     binTmp = hProj->FindFirstBinAbove(chargeCut);
     if(binTmp>startBin) startBin = binTmp;
     ///
     hProj = hChargeProfileEnd.ProjectionX("hProj",strip_dir+1, strip_dir+1);
-    chargeCut = 0.02*hProj->GetMaximum();
+    chargeCut = 0.1*hProj->GetMaximum();
     binTmp = hProj->FindLastBinAbove(chargeCut);
     if(binTmp<endBin) endBin = binTmp;
   }

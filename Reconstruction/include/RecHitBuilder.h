@@ -49,8 +49,13 @@ private:
   void cleanRecHits();
 
   std::string adaptHistoTitle(const std::string title) const;
+
+  Int_t FindFirstBinAbove(TH1* histo=0, Double_t threshold=0,
+			  Int_t axis=1, Int_t firstBin=-1, Int_t lastBin=-1) const;
   
-   
+  Int_t FindLastBinAbove(TH1* histo=0, Double_t threshold=0,
+			 Int_t axis=1, Int_t firstBin=-1, Int_t lastBin=-1) const;
+  
 };
 #endif
 
