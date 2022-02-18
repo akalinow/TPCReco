@@ -1,45 +1,94 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import os
+import os, time
+import psutil
 
-#dataPath = "/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210616_extTrg_CO2_250mbar_DT1470ET"
-#geometryFile = "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"
+################################################################
+################################################################
+runs = [ ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210616_extTrg_CO2_250mbar_DT1470ET",
+          "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
+         ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210622_extTrg_CO2_250mbar_DT1470ET/",
+          "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
+         ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210623_extTrg_CO2_250mbar_DT1470ET/",
+          "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
+         ("/scratch/akalinow/ELITPC/data/calibration/2021-11-25T13/",
+          "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
+         ("/scratch/akalinow/ELITPC/data/calibration/2021-11-25T14/",
+          "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_25.0MHz.dat"),
+         ("/scratch/akalinow/ELITPC/data/calibration/2021-11-25T14-20/",
+          "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_25.0MHz.dat")
+]
+################################################################
+################################################################
+def countRunningProcesses(procName):
+    counter = 0
+    for proc in psutil.process_iter(attrs=['name'], ad_value=None):
+                    counter += proc.info["name"].find("makeTrackTree")>-1
+    return counter                
+################################################################
+################################################################
+def waintUnitilProcCount(procName, procCount):
 
-#dataPath = "/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210617_extTrg_CO2_250mbar_DT1470ET"
-#geometryFile = "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"
+     counter = countRunningProcesses("makeTrackTree")
+     while counter>procCount:
+         counter = countRunningProcesses("makeTrackTree")                
+         if counter>10:
+             print("Number of jobs running:",counter," Waiting one minutue.")
+             time.sleep(60)    
+################################################################
+################################################################
+def analyzeSingleFile(dataPath, fileName, geometryFile, command):
 
-#dataPath = "/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210622_extTrg_CO2_250mbar_DT1470ET/"
-#geometryFile = "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"
+    filePath =  os.path.join(dataPath, fileName)
+    outputName = fileName + ".out"
+    timestamp_index = fileName.rfind("EventTPC_")
+    timestamp = fileName[timestamp_index+9:timestamp_index+32]
+    timestamp = timestamp.replace(":","-")
+    if not os.path.isdir(timestamp):
+        os.mkdir(timestamp)
+    arguments = " --geometryFile " + geometryFile + " --dataFile " + filePath + " >& "+outputName+" &"
+    print("Running job for file:"+fileName)                    
+    os.chdir(timestamp)
+    os.system(command+arguments)
+    os.chdir("../")
+################################################################
+################################################################
+def analyzeDataInDirectory(dataPath, geometryFile):
 
-#dataPath = "/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210623_extTrg_CO2_250mbar_DT1470ET/"
-#geometryFile = "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"
-  
-#dataPath = "/scratch/akalinow/ELITPC/data/calibration/2021-11-25T13/";
-#geometryFile = "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"
+    procName = "makeTrackTree"
+    command = "time ../../bin/"+procName
+    procCount = 10
 
-#dataPath = "/scratch/akalinow/ELITPC/data/calibration/2021-11-25T14/";
-#geometryFile = "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_25.0MHz.dat"
+    for root, dirs, files in os.walk(dataPath):
+        for fileName in files:
+            if fileName.find(".root")!=-1 and fileName.find("EventTPC")!=-1:
+                waintUnitilProcCount(procName, procCount)
+                analyzeSingleFile(dataPath, fileName, geometryFile, command)
+################################################
+################################################                
+runs = [ ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210616_extTrg_CO2_250mbar_DT1470ET",
+          "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
+         ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210622_extTrg_CO2_250mbar_DT1470ET/",
+          "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
+         ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210623_extTrg_CO2_250mbar_DT1470ET/",
+          "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
+         ("/scratch/akalinow/ELITPC/data/calibration/2021-11-25T13/",
+          "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
+         ("/scratch/akalinow/ELITPC/data/calibration/2021-11-25T14/",
+          "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_25.0MHz.dat"),
+         ("/scratch/akalinow/ELITPC/data/calibration/2021-11-25T14-20/",
+          "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_25.0MHz.dat")
+]
 
-#dataPath = "/scratch/akalinow/ELITPC/data/calibration/2021-11-25T14-20/";
-#geometryFile = "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_25.0MHz.dat"
+runs = [ ("/scratch/akalinow/ELITPC/data/calibration/2021-11-25T14/",
+          "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_25.0MHz.dat"),
+    ]
+################################################
+################################################      
+for dataPath, geometryFile in runs:
+    analyzeDataInDirectory(dataPath, geometryFile)
 
-command = "time ../../bin/makeTrackTree"
 
-for root, dirs, files in os.walk(dataPath):
-    for aFile in files:
-        if aFile.find(".root")!=-1 and aFile.find("EventTPC")!=-1:
-                filePath =  os.path.join(dataPath, aFile)
-                outputName = aFile + ".out"
-                timestamp_index = aFile.rfind("EventTPC_")
-                timestamp = aFile[timestamp_index+9:timestamp_index+32]
-                timestamp = timestamp.replace(":","-")
-                if not os.path.isdir(timestamp):
-                    os.mkdir(timestamp)
-                arguments = " --geometryFile " + geometryFile + " --dataFile " + filePath + " >& "+outputName+" &"
-                print("Running job for file:"+aFile)
-                os.chdir(timestamp)
-                os.system(command+arguments)
-                os.chdir("../")
 
 
