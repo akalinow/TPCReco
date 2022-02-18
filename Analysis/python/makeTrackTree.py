@@ -33,7 +33,7 @@ def waintUnitilProcCount(procName, procCount):
      counter = countRunningProcesses("makeTrackTree")
      while counter>procCount:
          counter = countRunningProcesses("makeTrackTree")                
-         if counter>10:
+         if counter>=10:
              print("Number of jobs running:",counter," Waiting one minutue.")
              time.sleep(60)    
 ################################################################
@@ -69,21 +69,31 @@ def analyzeDataInDirectory(dataPath, geometryFile):
 ################################################                
 runs = [ ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210616_extTrg_CO2_250mbar_DT1470ET",
           "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
+         ##
+          ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210617_extTrg_CO2_250mbar_DT1470ET",
+          "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
+         ##
          ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210622_extTrg_CO2_250mbar_DT1470ET/",
           "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
+         ##
          ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210623_extTrg_CO2_250mbar_DT1470ET/",
           "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
+         ##
          ("/scratch/akalinow/ELITPC/data/calibration/2021-11-25T13/",
           "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
+         ##
          ("/scratch/akalinow/ELITPC/data/calibration/2021-11-25T14/",
           "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_25.0MHz.dat"),
+         ##
          ("/scratch/akalinow/ELITPC/data/calibration/2021-11-25T14-20/",
           "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_25.0MHz.dat")
 ]
 
-runs = [ ("/scratch/akalinow/ELITPC/data/calibration/2021-11-25T14/",
-          "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_25.0MHz.dat"),
+'''
+runs = [ ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210622_extTrg_CO2_250mbar_DT1470ET/",
+          "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
     ]
+'''
 ################################################
 ################################################      
 for dataPath, geometryFile in runs:

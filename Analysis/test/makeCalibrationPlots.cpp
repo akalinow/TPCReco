@@ -104,7 +104,7 @@ void makeCalibrationPlots(std::string fileName){
 		      TString::Format("#mu= %3.2f #sigma= %3.2f", mu, sigma));  
   aLeg->Draw();
   aLabel->Draw();
-  aCanvas->Print("Plots_set0.png");
+  aCanvas->Print("Calibration_plots_set0.png");
 
   int horizontalTkCount = trackTree->GetEntries(cut0);
   int verticalTkCount = trackTree->GetEntries(cut1);
@@ -170,7 +170,7 @@ void makeCalibrationPlots(std::string fileName){
   hChi2Cut1->SetLineColor(2);
   hChi2Cut1->DrawNormalized("same");
 
-  aCanvas->Print("Plots_set1.png");
+  aCanvas->Print("Calibration_plots_set1.png");
   //////////////////////////////////////
   //////////////////////////////////////
   aCanvas->Clear();
@@ -199,7 +199,7 @@ void makeCalibrationPlots(std::string fileName){
   aLeg->AddEntry(hPosX, "cos(#theta)<0.5","l");
   aLeg->Draw();
 
-  aCanvas->Print("Plots_set2.png");
+  aCanvas->Print("Calibration_plots_set2.png");
   //////////////////////////////////////
   //////////////////////////////////////
 }
