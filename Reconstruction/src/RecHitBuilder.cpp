@@ -35,8 +35,9 @@ const TH2D & RecHitBuilder::makeRecHits(const TH2D & hProjection){
     std::cerr<<__FUNCTION__<<KRED<<" NULL myGeometryPtr"<<RST<<std::endl; 
     return hRecHits;
   }
-  
-  makeTimeProjectionRecHits(hProjection);
+
+  TH2D hCleanClusters = makeCleanCluster(hProjection);
+  makeTimeProjectionRecHits(hCleanClusters);
   double recHitsSum = hRecHits.Integral();
   double clusterSum = hProjection.Integral();
   double ratio = recHitsSum/clusterSum;
@@ -194,6 +195,85 @@ double RecHitBuilder::getMSE(const TH1D &hProj, const TF1 & aFunc) const{
   }
   
   return mse/nBins; 
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::vector<int> RecHitBuilder::fillClusterAndGetBonduary(const std::vector<int> & neighboursBinsIndices,
+						     const TH2D & aHisto,
+						     TH2D & aCluster){
+
+  std::vector<int> bounduaryBins;
+  double binValue = 0.0;
+  
+  for(auto iGlobalBin: neighboursBinsIndices){
+    binValue = aHisto.GetBinContent(iGlobalBin);
+    if(aCluster.GetBinContent(iGlobalBin)<emptyBinThreshold && binValue>emptyBinThreshold){
+      aCluster.SetBinContent(iGlobalBin, binValue);
+      bounduaryBins.push_back(iGlobalBin);
+    }
+  }
+  return bounduaryBins;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::vector<int> RecHitBuilder::getKernelIndices(int iBin, const TH2D & aHisto){
+
+  std::vector<int> kernelIndices;
+  int windowSizeX = 3;
+  int windowSizeY = 3;
+
+  int iGlobalBin;
+  int iBinX, iBinY, iBinZ;
+  aHisto.GetBinXYZ(iBin, iBinX, iBinY, iBinZ);
+  
+  for(int iStepX=-windowSizeX/2;iStepX<=windowSizeX/2;++iStepX){
+    for(int iStepY=-windowSizeY/2;iStepY<=windowSizeY/2;++iStepY){
+      iGlobalBin = aHisto.GetBin(iBinX+iStepX,
+				 iBinY+iStepY,
+				 iBinZ);
+      kernelIndices.push_back(iGlobalBin);
+    }
+  }
+  return kernelIndices;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+double RecHitBuilder::getKernelSum(const std::vector<int> & kernelBins, const TH2D & aHisto){
+
+  double sum = 0.0;
+  for(auto iBin :kernelBins){
+    sum+=aHisto.GetBinContent(iBin);
+  }
+  return sum;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+TH2D RecHitBuilder::makeCleanCluster(const TH2D & aHisto){
+
+  TH2D aClusterHisto(aHisto);
+  aClusterHisto.Reset();
+
+  std::vector<int> tmpVec;
+  std::vector<int> bounduaryBins;
+  std::vector<int> newBounduaryBins;
+  std::vector<int> kernelBins;
+  double kernelSum = 0.0;
+  int maxValueBin = aHisto.GetMaximumBin();
+  bounduaryBins.push_back(maxValueBin);
+
+  while(bounduaryBins.size()){
+    for(auto iGlobalBin: bounduaryBins){
+      kernelBins = getKernelIndices(iGlobalBin, aHisto);
+      kernelSum = getKernelSum(kernelBins, aHisto);
+      if(kernelSum<kernelSumThreshold) continue;
+      tmpVec = fillClusterAndGetBonduary(kernelBins, aHisto, aClusterHisto);
+      newBounduaryBins.insert(newBounduaryBins.end(),tmpVec.begin(),tmpVec.end());	    
+    }
+    bounduaryBins = newBounduaryBins;
+    newBounduaryBins.clear();
+  }
+
+  return aClusterHisto;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

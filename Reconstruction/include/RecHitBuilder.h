@@ -30,6 +30,9 @@ private:
   double maxValueThr{20};
   double windowIntegralThr{40};
   int projection1DHalfSize{10};
+  
+  double emptyBinThreshold{1.0};
+  double kernelSumThreshold{3*35};
 
   const TH2D & makeTimeProjectionRecHits(const TH2D & hProjection);
 
@@ -45,6 +48,16 @@ private:
 			   double minX, double maxX,
 			   double initialMax,
 			   double initialSigma);
+
+  std::vector<int> fillClusterAndGetBonduary(const std::vector<int> & neighboursBinsIndices,
+					     const TH2D & aHisto,
+					     TH2D & aCluster);
+
+  std::vector<int> getKernelIndices(int iBin, const TH2D & aHisto);
+
+  double getKernelSum(const std::vector<int> & kernelBins, const TH2D & aHisto);
+
+  TH2D makeCleanCluster(const TH2D & aHisto);
 
   void cleanRecHits();
 
