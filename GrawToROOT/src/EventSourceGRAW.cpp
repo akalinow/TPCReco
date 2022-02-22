@@ -25,12 +25,12 @@ EventSourceGRAW::EventSourceGRAW(const std::string & geometryFileName) {
   std::string formatsFilePath = "./CoboFormats.xcfg";
   myFrameLoader.initialize(formatsFilePath);
  
-  //minSignalCell = 2;//FIXME read from config
- // maxSignalCell = 500;//FIXME read from config
+  // minSignalCell = 2;//FIXME read from config
+  // maxSignalCell = 500;//FIXME read from config
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-EventSourceGRAW::~EventSourceGRAW() { }
+EventSourceGRAW::~EventSourceGRAW() {}
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void EventSourceGRAW::setRemovePedestal(bool aFlag){
@@ -77,7 +77,11 @@ void EventSourceGRAW::loadDataFile(const std::string & fileName){
   }
 
   myFilePath = fileName;
+#ifdef EVENTSOURCEGRAW_NEXT_FILE_DISABLE  
+  myNextFilePath = fileName;
+#else
   myNextFilePath = getNextFilePath();
+#endif  
   myFramesMap.clear();
   myASADMap.clear();
   myReadEntriesSet.clear();
@@ -100,6 +104,7 @@ void EventSourceGRAW::loadDataFile(const std::string & fileName){
 bool EventSourceGRAW::loadGrawFrame(unsigned int iEntry, bool readFullEvent){
 
   std::string tmpFilePath = myFilePath;
+#ifndef EVENTSOURCEGRAW_NEXT_FILE_DISABLE  
   if(iEntry>=nEntries){
     tmpFilePath = myNextFilePath;
     iEntry -= nEntries;
@@ -107,7 +112,7 @@ bool EventSourceGRAW::loadGrawFrame(unsigned int iEntry, bool readFullEvent){
   std::cout.setstate(std::ios_base::failbit);
   bool dataFrameRead = myFrameLoader.getGrawFrame(tmpFilePath, iEntry+1, myDataFrame, readFullEvent);///FIXME getGrawFrame counts frames from 1 (WRRR!)
   std::cout.clear();
-  
+
   if(!dataFrameRead){
     std::cerr <<KRED<<std::endl<<"ERROR: cannot read file entry: " <<RST<<iEntry<<std::endl
 	      <<KRED<<"from file: "<<std::endl
@@ -120,6 +125,22 @@ bool EventSourceGRAW::loadGrawFrame(unsigned int iEntry, bool readFullEvent){
 	      <<std::endl;
     exit(1);
   }
+#else
+  bool dataFrameRead = false;
+  if(iEntry<nEntries) {
+    std::cout.setstate(std::ios_base::failbit);
+    dataFrameRead = myFrameLoader.getGrawFrame(tmpFilePath, iEntry+1, myDataFrame, readFullEvent);///FIXME getGrawFrame counts frames from 1 (WRRR!)
+    std::cout.clear();
+  }
+    
+  if(!dataFrameRead){
+    std::cerr <<KRED<<std::endl<<"ERROR: cannot read file entry: " <<RST<<iEntry<<std::endl
+	      <<KRED<<"from file: "<<std::endl
+	      <<RST<<tmpFilePath
+	      << std::endl;
+  }
+#endif
+  
   return dataFrameRead;
 }
 /////////////////////////////////////////////////////////

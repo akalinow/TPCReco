@@ -46,21 +46,32 @@ public:
   inline void setFillEventType(EventType type) {fillEventType=type;}
   
 private:
-
+  
   bool loadGrawFrame(unsigned int iEntry, bool readFullEvent);
   void findEventFragments(unsigned long int eventIdx, unsigned int iInitialEntry);
   void collectEventFragments(unsigned int eventIdx);
+
+protected: // needed for EventSourceMultiGRAW
+
   void fillEventFromFrame(GET::GDataFrame & aGrawFrame);
   void fillEventRawFromFrame(GET::GDataFrame & aGrawFrame);
   void checkEntryForFragments(unsigned int iEntry);
-  void findStartingIndex(unsigned long int size);
-  std::string getNextFilePath();
 
+private:
+
+  void findStartingIndex(unsigned long int size);
+
+protected: // needed for EventSourceMultiGRAW
+
+  std::string getNextFilePath();
   unsigned int GRAW_EVENT_FRAGMENTS;
   PedestalCalculatorGRAW myPedestalCalculator;
   Graw2DataFrame myFrameLoader;
   GET::GDataFrame myDataFrame;
   std::shared_ptr<eventraw::EventRaw> myCurrentEventRaw{std::make_shared<eventraw::EventRaw>()};
+
+private:
+
   std::shared_ptr<TGrawFile> myFile;
   std::string myFilePath, myNextFilePath;
   std::map<unsigned int, std::set<unsigned int> > myFramesMap;
@@ -68,11 +79,17 @@ private:
   std::set<unsigned int> myReadEntriesSet;
   bool isFullFileScanned{false};
 
- // int minSignalCell;
- // int maxSignalCell;
+protected: // needed for EventSourceMultiGRAW
+
+  // int minSignalCell;
+  // int maxSignalCell;  
   bool removePedestal{true};
+
+private:
   unsigned long int startingEventIndex{0};
   unsigned int frameLoadRange{100};
+
+protected: // needed for EventSourceMultiGRAW
   EventType fillEventType{tpc};
 
 };

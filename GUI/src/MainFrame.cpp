@@ -22,6 +22,7 @@
 
 #ifdef WITH_GET
 #include "EventSourceGRAW.h"
+#include "EventSourceMultiGRAW.h"
 #endif
 #include "EventSourceROOT.h"
 
@@ -42,13 +43,13 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h,  const boost::proper
   InitializeWindows();
   
   std::string modeLabel = "NONE";
-  if(myWorkMode==M_ONLINE_MODE){
+  if(myWorkMode==M_ONLINE_GRAW_MODE || myWorkMode==M_ONLINE_NGRAW_MODE){
     modeLabel = "ONLINE";
   }
   else if(myWorkMode==M_OFFLINE_ROOT_MODE){
     modeLabel = "OFFLINE from ROOT";
   }
-  else if(myWorkMode==M_OFFLINE_GRAW_MODE){
+  else if(myWorkMode==M_OFFLINE_GRAW_MODE || myWorkMode==M_OFFLINE_NGRAW_MODE){
     modeLabel = "OFFLINE from GRAW";
   }
   fFileInfoFrame->updateModeLabel(modeLabel);
@@ -120,19 +121,50 @@ void MainFrame::InitializeEventSource(){
   }
 #ifdef WITH_GET
   else if( ( (stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG) && dataFileName.find(".graw")!=std::string::npos){
+
     myWorkMode = M_OFFLINE_GRAW_MODE;
-    myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
-    dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(myConfig.get("frameLoadRange",100));
+    if(myConfig.find("singleAsadGrawFile")!=myConfig.not_found()) {
+      bool singleAsadGrawFile = myConfig.get<bool>("singleAsadGrawFile");
+      if(singleAsadGrawFile) {
+	myWorkMode = M_OFFLINE_NGRAW_MODE;
+      }
+    }
+    switch(myWorkMode) {
+    case M_OFFLINE_GRAW_MODE:
+      myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
+      dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(myConfig.get("frameLoadRange",100));
+      break;
+    case M_OFFLINE_NGRAW_MODE:
+      myEventSource = std::make_shared<EventSourceMultiGRAW>(geometryFileName);
+      break;
+    default:;
+    };
+      
   }
   else if( (stat.fMode & EFileModeMask::kS_IFDIR) == EFileModeMask::kS_IFDIR) {
-    myWorkMode = M_ONLINE_MODE;
-    myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
+
+    myWorkMode = M_ONLINE_GRAW_MODE;
+    if(myConfig.find("singleAsadGrawFile")!=myConfig.not_found()) {
+      bool singleAsadGrawFile = myConfig.get<bool>("singleAsadGrawFile");
+      if(singleAsadGrawFile) {
+	myWorkMode = M_ONLINE_NGRAW_MODE;
+      }
+    }
+    switch(myWorkMode) {
+    case M_ONLINE_GRAW_MODE:
+      myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
+      dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(myConfig.get("frameLoadRange",10));
+      break;
+    case M_ONLINE_NGRAW_MODE:
+      myEventSource = std::make_shared<EventSourceMultiGRAW>(geometryFileName);
+      break;
+    default:;
+    };
     fileWatchThread = std::thread(&DirectoryWatch::watch, &myDirWatch, dataFileName);
     if(myConfig.find("updateInterval")!=myConfig.not_found()){
       int updateInterval = myConfig.get<int>("updateInterval");
       myDirWatch.setUpdateInterval(updateInterval);
     }
-    dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(myConfig.get("frameLoadRange",10));
     myDirWatch.Connect("Message(const char *)", "MainFrame", this, "ProcessMessage(const char *)");
   }
   if(myConfig.find("removePedestal")!=myConfig.not_found() && myEventSource.get()){
@@ -153,7 +185,7 @@ void MainFrame::InitializeEventSource(){
     return;
   }
 
-  if(myWorkMode!=M_ONLINE_MODE){
+  if(myWorkMode!=M_ONLINE_GRAW_MODE && myWorkMode!=M_ONLINE_NGRAW_MODE){
     myEventSource->loadDataFile(dataFileName);
     myEventSource->loadFileEntry(0);
   }
@@ -169,7 +201,7 @@ void MainFrame::AddTopMenu(){
   TGLayoutHints * menuBarHelpLayout = new TGLayoutHints(kLHintsTop | kLHintsRight);
 
   fMenuFile = new TGPopupMenu(fClient->GetRoot());
-  if(myWorkMode!=M_ONLINE_MODE) fMenuFile->AddEntry("&Open...", M_FILE_OPEN);
+  if(myWorkMode!=M_ONLINE_GRAW_MODE && myWorkMode!=M_ONLINE_NGRAW_MODE) fMenuFile->AddEntry("&Open...", M_FILE_OPEN);
   //fMenuFile->AddEntry("S&ave as...", M_FILE_SAVEAS);
   fMenuFile->AddSeparator();
   fMenuFile->AddEntry("E&xit", M_FILE_EXIT);
@@ -235,7 +267,7 @@ int MainFrame::AddButtons(int attach){
 					      "Close the application"};
   std::vector<unsigned int> button_id = {M_NEXT_EVENT, M_PREVIOUS_EVENT,  M_RESET_EVENT, M_FILE_EXIT};
 
-  if(myWorkMode == M_ONLINE_MODE){
+  if(myWorkMode == M_ONLINE_GRAW_MODE || myWorkMode == M_ONLINE_NGRAW_MODE){
     button_names.insert(--button_names.end(),"Reset rate");
     button_tooltips.insert(--button_tooltips.end(),"Clear rate graph");
     button_id.insert(--button_id.end(),M_RESET_RATE);
@@ -700,8 +732,9 @@ Bool_t MainFrame::ProcessMessage(Long_t msg){
 /////////////////////////////////////////////////////////
 Bool_t MainFrame::ProcessMessage(const char * msg){
 
+#ifdef DEBUG
   std::cout<<__FUNCTION__<<" msg: "<<msg<<std::endl;
-
+#endif
   myMutex.lock();
   myEventSource->loadDataFile(std::string(msg));
   myEventSource->getLastEvent();
@@ -716,7 +749,7 @@ void MainFrame::HandleMenu(Int_t id){
   const char *filetypes[] = {"ROOT files",    "*.root",
 			     0,               0};
 
-  if(myWorkMode==M_ONLINE_MODE || myWorkMode==M_OFFLINE_GRAW_MODE){
+  if(myWorkMode==M_ONLINE_GRAW_MODE || myWorkMode==M_OFFLINE_NGRAW_MODE){
     filetypes[0] = "GRAW files";
     filetypes[1] = "*.graw";
   }

@@ -17,7 +17,7 @@ public:
 
 private:
 
-  int updateIterval;// [ms]
+  int updateInterval;// [ms]
 
 };
 
