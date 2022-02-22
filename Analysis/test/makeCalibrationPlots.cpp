@@ -27,7 +27,7 @@ void makeCalibrationPlots(std::string fileName){
   TH1D *hPhiCut0 = (TH1D*)hPhi->Clone("hPhiCut0");
   hPhiCut0->SetStats(kFALSE);
 
-  TH1D *hChi2 = new TH1D("hChi2","Track loss function;loss function;Number of events",20,0,10);
+  TH1D *hChi2 = new TH1D("hChi2","Track loss function;loss function;Number of events",50,-5,20);
   TH1D *hChi2Cut0 = (TH1D*)hChi2->Clone("hChi2Cut0");
   TH1D *hChi2Cut1 = (TH1D*)hChi2->Clone("hChi2Cut1");
   hChi2Cut0->SetStats(kFALSE);
@@ -40,10 +40,11 @@ void makeCalibrationPlots(std::string fileName){
   
   TH3D *hPosXYZCut1 = (TH3D*)hPosXYZCut0->Clone("hPosXYZCut1");
   hPosXYZCut1->SetStats(kFALSE);
-						
-  TCut cut0 = "cosTheta<0.5";
-  TCut cut1 = "cosTheta>0.9";
-  TCut cut2 = "abs(x0-127)<25 && abs(y0-76)<25";
+
+  TCut qualityCut = "chi2>-100 && chi2<10 && length>0";
+  TCut cut0 = "cosTheta<0.5"&&qualityCut;
+  TCut cut1 = "cosTheta>0.9"&&qualityCut;
+  TCut cut2 = "abs(x0-127)<25 && abs(y0-76)<25"&&qualityCut;
 
   trackTree->Draw("charge:length>>hChargeVsLength","", "goff");
   trackTree->Draw("cosTheta:length>>hCosThetaVsLength","", "goff");
@@ -71,6 +72,7 @@ void makeCalibrationPlots(std::string fileName){
 
 
   aCanvas->cd(3);
+  hLengthCut0->SetTitle("Track length +  73.4/cos(#alpha)");
   hLengthCut0->SetLineColor(4);
   hLengthCut0->SetLineStyle(2);
   hLengthCut0->SetLineWidth(3);
@@ -89,15 +91,16 @@ void makeCalibrationPlots(std::string fileName){
   aLeg->Draw();
 
   aCanvas->cd(4);
+  hLengthCut1->SetTitle("Track length +  6.0/cos(#alpha)");
   hLengthCut1->SetLineColor(4);
   hLengthCut1->SetLineStyle(2);
   hLengthCut1->SetLineWidth(3);
-  hLengthCut1->SetMaximum(15);
+  hLengthCut1->SetMaximum(1.5*hLengthCut1->GetMaximum());
   hLengthCut1->Draw("same");
    
   aLeg = new TLegend(0.35, 0.75, 0.9, 0.9);
   aLeg->AddEntry(hLengthCut1, "cos(#theta)>0.9","l");
-  fitResult = hLengthCut1->Fit("gaus", "s", "",75, 120);
+  fitResult = hLengthCut1->Fit("gaus", "s", "",80, 120);
   mu = fitResult->Parameter(1);
   sigma = fitResult->Parameter(2);
   aLabel = new TLatex(100, hLengthCut1->GetMaximum()*0.7,
@@ -177,7 +180,7 @@ void makeCalibrationPlots(std::string fileName){
   aCanvas->Divide(2,2);
 
   aCanvas->cd(1);
-  hPosXYZCut0->Project3D("xy")->Draw("colz");
+  hPosXYZCut0->Project3D("yx")->Draw("colz");
   aLeg = new TLegend(0.1, 0.8, 0.6, 0.9);
   aLeg->AddEntry(hPosX, "cos(#theta)<0.5","l");
   aLeg->Draw();

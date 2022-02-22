@@ -536,7 +536,7 @@ void TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
     myFittedTrack.setFitMode(Track3D::FIT_BIAS_TANGENT);
     myFittedTrack.chi2FromNodesList(bestFitResult.GetParams());
   }
-  myFittedTrack.getSegments().front().setRecHits(myRawHits);
+  //myFittedTrack.getSegments().front().setRecHits(myRawHits);
   myFittedTrack.extendToZRange(std::get<0>(myZRange), std::get<1>(myZRange));
   auto rangeXY = myGeometryPtr->rangeXY();  
   myFittedTrack.shrinkToXYRange(std::get<0>(rangeXY), std::get<1>(rangeXY),

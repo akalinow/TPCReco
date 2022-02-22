@@ -185,6 +185,7 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
   chi2 /= chargeSum;
   biasDistance /= chargeSum;
   chargeSum /= totalChargeSum;
+  if(!pointCount) return -100.0;
   return chi2 + biasDistance - chargeSum;
 }
 /////////////////////////////////////////////////////////

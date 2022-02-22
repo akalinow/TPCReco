@@ -159,7 +159,7 @@ int makeTrackTree(const  std::string & geometryFileName,
     ///Draw anomaly events
     /// 1.5 - calibration
     /// 40 - Kraków data
-    if(chi2>40){
+    if(chi2>5){
       myHistoManager.setEvent(myEventSource->getCurrentEvent());
       for(int strip_dir=0;strip_dir<3;++strip_dir){
 	aCanvas->cd(strip_dir+1);

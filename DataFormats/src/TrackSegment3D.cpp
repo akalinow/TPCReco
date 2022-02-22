@@ -209,7 +209,10 @@ TH2F TrackSegment3D::getChargeProfile() const{
   }
   int nBins = 2.0/binWidth;
   if(nBins>2000) nBins = 2000;//FIXME
-  TH2F hChargeProfile("hChargeProfile",";d [mm];charge/mm",nBins, 0, getLength(), 3, -0.5, 2.5);
+  double minX = -0.1*getLength();
+  double maxX = 1.1*getLength();
+  nBins += 0.2*getLength()/(binWidth/2.0);
+  TH2F hChargeProfile("hChargeProfile",";d [mm];charge/mm",nBins, minX, maxX, 3, -0.5, 2.5);
 
   double xLow, xCenter, xHigh;
   int binLow, binCenter, binHigh;

@@ -536,6 +536,7 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   hChargeProfile.GetYaxis()->SetTitleOffset(1.5);
   //hChargeProfile.DrawClone("HIST P");
   hChargeProfile.DrawClone("colz");
+  //hChargeProfile.ProjectionX("px",2,2)->DrawClone("colz");
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -543,7 +544,7 @@ void HistoManager::makeAutozoom(std::shared_ptr<TH2D>& aHisto){
 
   if(!aHisto.get()) return;  
   for(int iAxis=1;iAxis<3;++iAxis){
-    double threshold = 0.8*aHisto->GetMaximum();  
+    double threshold = 0.3*aHisto->GetMaximum();  
     int lowBin = aHisto->FindFirstBinAbove(threshold, iAxis) - 30;
     int highBin = aHisto->FindLastBinAbove(threshold, iAxis) + 30;
     if(iAxis==1) aHisto->GetXaxis()->SetRange(lowBin, highBin);
