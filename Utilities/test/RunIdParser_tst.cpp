@@ -24,4 +24,14 @@ TEST(RunIdParser_GETFormat_Test, RunId) {
   EXPECT_EQ(RunIdParser("CoBo0_AsAd0_2018-04-19T16:39:05.506_0001.graw").runId(), 20180419163905);
 }
 
+TEST(RunIdParser_GETFormat_Test, CoBoId) {
+  EXPECT_EQ(RunIdParser("CoBo_ALL_AsAd_ALL_2021-09-08T09:25:36.627_0015.graw.gz").CoBoId(), -1);
+  EXPECT_EQ(RunIdParser("CoBo_2018-06-06T16:59:32.375_0000.graw").CoBoId(), -1);
+  EXPECT_EQ(RunIdParser("CoBo0_AsAd0_2018-04-19T16:39:05.506_0001.graw").CoBoId(), 0);
+}
 
+TEST(RunIdParser_GETFormat_Test, AsAdId) {
+  EXPECT_EQ(RunIdParser("CoBo_ALL_AsAd_ALL_2021-09-08T09:25:36.627_0015.graw.gz").AsadId(), -1);
+  EXPECT_EQ(RunIdParser("CoBo_2018-06-06T16:59:32.375_0000.graw").AsadId(), -1);
+  EXPECT_EQ(RunIdParser("CoBo0_AsAd0_2018-04-19T16:39:05.506_0001.graw").runId(), 0);
+}

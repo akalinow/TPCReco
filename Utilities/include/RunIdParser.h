@@ -9,10 +9,14 @@ public:
   RunIdParser(const std::string &name);
   size_t runId() const { return rundId_; }
   size_t fileId() const { return fileId_; }
+  int AsadId() const { return AsAdId_; };
+  int CoBoId() const { return CoBoId_; };
 
 private:
   size_t rundId_;
   size_t fileId_;
+  int AsAdId_ = -1;
+  int CoBoId_ = -1;
 
   class Positions {
   public:
