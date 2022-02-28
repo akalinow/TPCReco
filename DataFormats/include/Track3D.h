@@ -12,6 +12,10 @@ class Track3D{
 
 public:
 
+  enum fit_modes{FIT_START_STOP,
+		 FIT_BIAS_TANGENT
+  };
+
   Track3D();
 
   virtual ~Track3D(){};
@@ -19,6 +23,9 @@ public:
   void addSegment(const TrackSegment3D & aSegment3D);
 
   const TrackSegment3DCollection & getSegments() const { return mySegments;}
+  TrackSegment3DCollection & getSegments() { return mySegments;}//TEST
+
+  std::vector<double> getSegmentsBiasTangentCoords() const;
 
   std::vector<double> getSegmentsStartEndXYZ() const;
 
@@ -28,23 +35,28 @@ public:
 
   double getIntegratedCharge(double lambda) const;
 
-  double getIntegratedHitDistance(double lambda) const;
-
-  const TGraph & getChargeProfile() const { return myChargeProfile;}
-
-  const TGraph & getHitDistanceProfile() const { return myHitDistanceProfile;}
+  TH2F getChargeProfile() const { return mySegments.front().getChargeProfile();}
 
   double getChi2() const;
 
   void splitWorseChi2Segment(double lenghtFraction);
 
-  void extendToWholeChamber();
+  void extendToZRange(double zMin, double zMax);
+
+  void shrinkToXYRange(double xMin, double xMax,
+		       double yMin, double yMax);
 
   ///Shrink track to actual hits range.
   void shrinkToHits();
 
   void removeEmptySegments();
 
+  void enableProjectionForChi2(int iProjection);
+
+  void setFitMode(fit_modes aMode){myFitMode = aMode;}
+
+  double hitDistanceFromBias(const double *par);
+  
   double chi2FromNodesList(const double *par);
 
   double chi2FromSplitPoint(const double *par);
@@ -55,9 +67,9 @@ public:
 
   void splitSegment(unsigned int iSegment,  double lengthFraction);
 
-private:
-
   void update();
+
+private:
 
   void updateChi2();
 
@@ -71,15 +83,17 @@ private:
 
   double getNodesChi2() const;
 
+  fit_modes myFitMode{FIT_START_STOP};
+  int iProjectionForChi2{-1};
   double myLenght, myChi2;
-  double stepAlongTrack;
+  double stepLengthAlongTrack{0.5}; //[mm]
+
   std::vector<double> segmentChi2;
   std::vector<double> nodeHitsChi2;
   std::vector<double> nodeAngleChi2;
   
   TrackSegment3DCollection mySegments;
-  TGraph myChargeProfile;              
-  TGraph myHitDistanceProfile;         
+  TGraph myChargeProfile, myIntegratedChargeProfile;              
 };
 
 typedef std::vector<Track3D> Track3DCollection;

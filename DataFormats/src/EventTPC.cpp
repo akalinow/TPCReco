@@ -50,7 +50,8 @@ void EventTPC::Clear(){
   maxChargeMap.clear();    // 2-key map: strip_dir, strip_number
   maxChargeMap2.clear();   // 3-key map: strip_dir, strip_section, strip_number 
   chargeMap.clear();
-  chargeMap2.clear();  
+  chargeMap2.clear();
+  asadMap.clear();
 }
 
 
@@ -203,8 +204,21 @@ bool EventTPC::AddValByStrip(int strip_dir, int strip_section, int strip_number,
       // update already existing max value per strip
       if(new_val2 > it_maxval2->second) it_maxval2->second = new_val2;
     }
+    // update {COBO_idx, ASAD_idx} map
+    StripTPC *strip=myGeometryPtr->GetStripByDir(strip_dir, strip_section, strip_number);
+    if(strip) {
+      MultiKey2 mkey_asad( strip->CoboId(), strip->AsadId() );
+      std::map<MultiKey2, int, multikey2_less>::iterator it_asad;
+      if( (it_asad=asadMap.find(mkey_asad))==asadMap.end() ) {
+	// add new {COBO_idx, ASAD_idx} pair to asadMap
+	asadMap[mkey_asad]=1;
+      } else {
+	// update already existing asadMap
+	it_asad->second++;
+      }
+    }
     
-    return true;
+    return true;    
   }
   };
   return false;  
@@ -226,6 +240,11 @@ bool EventTPC::AddValByAgetChannel(int cobo_idx, int asad_idx, int aget_idx, int
 }
 bool EventTPC::AddValByAgetChannel_raw(int cobo_idx, int asad_idx, int aget_idx, int raw_channel_idx, int time_cell, double val) {  // valid range [0-1][0-3][0-3][0-67][0-511]
   return AddValByStrip(myGeometryPtr->GetStripByAget_raw(cobo_idx, asad_idx, aget_idx, raw_channel_idx), time_cell, val);
+}
+
+bool EventTPC::CheckAsadNboards() {
+  if (IsOK() && myGeometryPtr->GetAsadNboards()==(int)asadMap.size()) return true;
+  return false;
 }
 
 double EventTPC::GetValByStripMerged(int strip_dir, int strip_number, int time_cell/*, bool &result*/){  // valid range [0-2][1-1024][0-511]
@@ -480,35 +499,34 @@ double EventTPC::GetTotalChargeByTimeCell(int time_cell) { // charge integral fr
   return 0.0;
 }
 
-SigClusterTPC EventTPC::GetOneCluster(double thr, int delta_strips, int delta_timecells) {  // applies clustering threshold to all space-time data points
+void EventTPC::MakeOneCluster(double thr, int delta_strips, int delta_timecells) {  // applies clustering threshold to all space-time data points
 
-  SigClusterTPC cluster(this);
+  myCluster = SigClusterTPC(this);
 
   // getting cluster seed hits (per section)
   std::map<MultiKey4, double, multikey4_less>::iterator it;
   for( it=chargeMap2.begin(); it!=chargeMap2.end(); ++it ) {
-    if( it->second > thr ) cluster.AddByStrip( (it->first).key1, (it->first).key2, (it->first).key3, (it->first).key4);
+    if( it->second > thr ) myCluster.AddByStrip( (it->first).key1, (it->first).key2, (it->first).key3, (it->first).key4);
     // debug - dump the whole event as a single cluster
-    //    cluster.AddByStrip( (it->first).key1, (it->first).key2, (it->first).key3, (it->first).key4);
+    //    myCluster.AddByStrip( (it->first).key1, (it->first).key2, (it->first).key3, (it->first).key4);
     // debug - dump the whole event as a single cluster
   }
 
-  // debug 
+  // debug
+  /*
   //  std::cout << ">>>> GetSigCluster: nhits=" << cluster.GetNhits() << ", chargeMap2.size=" << chargeMap2.size() << std::endl;
   std::cout << Form(">>>> GetSigCluster: BEFORE ENVELOPE: nhits(%d)/nhits(%d)/nhits(%d)=%ld/%ld/%ld",
 	       DIR_U, DIR_V, DIR_W,
-	       cluster.GetNhits(DIR_U), 
-	       cluster.GetNhits(DIR_V), 
-	       cluster.GetNhits(DIR_W) ) << std::endl;
-  // debug
-
+	       myCluster.GetNhits(DIR_U), 
+	       myCluster.GetNhits(DIR_V), 
+	       myCluster.GetNhits(DIR_W) ) << std::endl;
+  */
   // adding envelope to the seed hits (per section)
-  std::vector<MultiKey4> oldList = cluster.GetHitList(); // make a copy of list of SEED-hits
+  std::vector<MultiKey4> oldList = myCluster.GetHitList(); // make a copy of list of SEED-hits
   std::vector<MultiKey4>::iterator it2;
 
   // loop thru SEED-hits (per section)
-  for( it2=oldList.begin(); it2!=oldList.end(); ++it2 ) {
-
+  for( it2=oldList.begin(); it2!=oldList.end() && true; ++it2 ) {
     // unpack coordinates
     const int strip_dir = (*it2).key1;
     const int strip_sec = (*it2).key2;
@@ -526,21 +544,26 @@ SigClusterTPC EventTPC::GetOneCluster(double thr, int delta_strips, int delta_ti
 	if(chargeMap2.find(mkey4)->second<0) continue; // exclude negative values (due to pedestal subtraction)
 	// add new space-time point
 	if(find_if(oldList.begin(), oldList.end(), mkey4)==oldList.end()) {
-	  cluster.AddByStrip( strip_dir, strip_sec, istrip, icell );
+	  myCluster.AddByStrip( strip_dir, strip_sec, istrip, icell );
 	} 
       } 
     } 
   }
 
   // debug
+  /*
   std::cout << Form(">>>> GetSigCluster: AFTER ENVELOPE:  nhits(%d)/nhits(%d)/nhits(%d)=%ld/%ld/%ld",
 	       DIR_U, DIR_V, DIR_W,
-	       cluster.GetNhits(DIR_U), 
-	       cluster.GetNhits(DIR_V), 
-	       cluster.GetNhits(DIR_W) ) << std::endl;
-  // debug
+	       myCluster.GetNhits(DIR_U), 
+	       myCluster.GetNhits(DIR_V), 
+	       myCluster.GetNhits(DIR_W) ) << std::endl;
+  */
+}
 
-  return cluster;
+
+const SigClusterTPC & EventTPC::GetOneCluster() const {  
+
+  return myCluster;
 }
 
 std::shared_ptr<TH1D> EventTPC::GetStripProjection(const SigClusterTPC &cluster, int strip_dir) {  // valid range [0-2]
@@ -1121,7 +1144,7 @@ std::shared_ptr<TH2D> EventTPC::GetStripVsTimeInMM(const SigClusterTPC &cluster,
 	y = myGeometryPtr->Strip2posUVW(strip_dir, strip_num, err_flag);	
 	if(err_flag) continue;
 	double val = GetValByStripMerged(strip_dir, strip_num, icell);
-	result->Fill(x, y, val);
+	if(val>0) result->Fill(x, y, val);///HACK AK
       }
     }
   }
@@ -1555,7 +1578,6 @@ TH3D *EventTPC::Get3D(const SigClusterTPC &cluster, double radius, int rebin_spa
       hitListByTimeDirMerged.find(MultiKey2(icell, DIR_U))->second,
       hitListByTimeDirMerged.find(MultiKey2(icell, DIR_V))->second,
       hitListByTimeDirMerged.find(MultiKey2(icell, DIR_W))->second};
-
     /*
       const std::map<MultiKey2, std::vector<int>, multikey2_less> & hitListByTimeDir = cluster.GetHitListByTimeDir();
       
@@ -1570,7 +1592,6 @@ TH3D *EventTPC::Get3D(const SigClusterTPC &cluster, double radius, int rebin_spa
       hitListByTimeDir.find(MultiKey2(icell, DIR_V))->second,
       hitListByTimeDir.find(MultiKey2(icell, DIR_W))->second};
     */
-
     ////////// DEBUG 
     //   std::cout << Form(">>>> Number of hits: time cell=%d: U=%d / V=%d / W=%d",
     //		      icell, (int)hits[DIR_U].size(), (int)hits[DIR_V].size(), (int)hits[DIR_W].size()) << std::endl;
@@ -1927,6 +1948,13 @@ TH2D *EventTPC::GetXY_TestWU(TH2D *h) { // test (unphysical) histogram
   ////////// DEBUG
 
   return h;
+}
+/////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////
+// overloading << operator
+std::ostream& operator<<(std::ostream& os, const EventTPC& e) {
+  os << "EventTPC: id=" << e.GetEventId() << ", timestamp=" << e.GetEventTime();
+  return os;
 }
 /////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////

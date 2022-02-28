@@ -10,7 +10,10 @@
 #include "GeometryTPC.h"
 
 class EventSourceBase {
+
 public:
+
+  enum EventType {raw = 0, tpc = 1};
   
   EventSourceBase();
   

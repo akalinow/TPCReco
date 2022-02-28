@@ -1,10 +1,6 @@
 #ifndef _TrackBuilder_H_
 #define _TrackBuilder_H_
 
-#define TRACKBUILDER_DEFAULT_THR     35 // added by MC - 4 Aug 2021
-#define TRACKBUILDER_DEFAULT_DSTRIPS 3  // added by MC - 4 Aug 2021
-#define TRACKBUILDER_DEFAULT_DCELLS  25 // added by MC - 4 Aug 2021
-
 #include <string>
 #include <vector>
 #include <memory>
@@ -15,6 +11,9 @@
 #include "TrackSegment2D.h"
 #include "TrackSegment3D.h"
 #include "Track3D.h"
+#include "RecHitBuilder.h"
+
+#include "EventTPC.h"
 
 class TH2D;
 class TF1;
@@ -22,7 +21,7 @@ class TTree;
 class TFile;
 
 class GeometryTPC;
-class EventTPC;
+class SigClusterTPC;
 
 class TrackBuilder {
 public:
@@ -43,9 +42,11 @@ public:
 
   void reconstruct();
 
-  const SigClusterTPC & getCluster() const { return myCluster;}
+  const SigClusterTPC & getCluster() const { return myEvent->GetOneCluster();}
 
   const TH2D & getRecHits2D(int iDir) const;
+
+  const TH1D & getRecHitsTimeProjection() const;
 
   const TH2D & getHoughtTransform(int iDir) const;
   
@@ -61,8 +62,6 @@ private:
 
   void makeRecHits(int iDir);
 
-  TF1 fitTimeWindow(TH1D* hProj);
- 
   void fillHoughAccumulator(int iDir);
 
   TrackSegment2DCollection findSegment2DCollection(int iDir);
@@ -70,16 +69,18 @@ private:
   TrackSegment2D findSegment2D(int iDir, int iPeak) const;
   
   TrackSegment3D buildSegment3D(int iTrackSeed=0) const;
+
+  void fitTrack3D(const Track3D & aTrackCandidate);
   
-  Track3D fitTrack3D(const TrackSegment3D & aTrackSeedSegment) const;
+  Track3D fitTrackNodesStartEnd(const Track3D & aTrack) const;
 
-  Track3D fitTrackNodes(const Track3D & aTrack) const;
+  ROOT::Fit::FitResult fitTrackNodesBiasTangent(const Track3D & aTrack, double offset=0) const;
 
-  double fitTrackSplitPoint(const Track3D& aTrackCandidate) const;
+  std::tuple<double, double> getTimeProjectionEdges() const;
    
   EventTPC *myEvent;
-  SigClusterTPC myCluster;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
+  RecHitBuilder myRecHitBuilder;
   std::vector<double> phiPitchDirection;
 
   bool myHistoInitialized;
@@ -87,8 +88,10 @@ private:
 
   TVector3 aHoughOffest;
   std::vector<TH2D> myAccumulators;
-  std::vector<TH2D> myRecHits;
+  std::vector<TH2D> myRecHits, myRawHits;
+  TH1D hTimeProjection;
   std::vector<TrackSegment2DCollection> my2DSeeds;
+  std::tuple<double, double> myZRange;
 
   TrackSegment2D dummySegment2D;
   TrackSegment3D myTrack3DSeed, dummySegment3D;

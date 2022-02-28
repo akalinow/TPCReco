@@ -10,18 +10,18 @@ class Hit2D {
 
 public:
 
-  Hit2D() : posWire(-999), posTime(-999), charge(-999) { }
+  Hit2D() : posStrip(-999), posTime(-999), charge(-999) { }
   
-  Hit2D(double aPosTime, double aPosWire, double aCharge) : posWire(aPosWire), posTime(aPosTime), charge(aCharge) { }
+  Hit2D(double aPosTime, double aPosStrip, double aCharge) : posStrip(aPosStrip), posTime(aPosTime), charge(aCharge) { }
 
-  double getPosWire() const { return posWire;}
+  double getPosStrip() const { return posStrip;}
 
   double getPosTime() const { return posTime;}
 
   double getCharge() const {return charge;}
   
 private:
-  double posWire, posTime;
+  double posStrip, posTime;
   double charge;
 
 };

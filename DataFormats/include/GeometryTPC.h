@@ -145,9 +145,17 @@ class GeometryTPC {
   int Aget_raw2normal(int raw_channel_idx);                  // valid range [0-67]
   int Aget_fpn2raw(int FPN_idx);                             // valid range [0-3]
 
+  int Asad_normal2raw(int aget_idx, int channel_idx);        // valid range [0-3][0-63]
+  int Asad_normal2raw(int asad_channel_idx);                 // valid range [0-255]
+  int Asad_normal2normal(int aget_idx, int channel_idx);     // valid range [0-3][0-63]
+  int Asad_raw2normal(int aget_idx, int raw_channel_idx);        // valid range [0-3][0-67]
+  int Asad_raw2normal(int asad_raw_channel_idx);             // valid range [0-271]
+  int Asad_raw2raw(int aget_idx, int raw_channel_idx);           // valid range [0-3][0-67]
+
   int Global_normal2raw(int COBO_idx, int ASAD_idx, int aget_idx, int channel_idx);      // valid range [0-1][0-3][0-3][0-63]
   int Global_normal2raw(int glb_channel_idx);                                            // valid range [0-1024]
   int Global_normal2normal(int COBO_idx, int ASAD_idx, int aget_idx, int channel_idx);   // valid range [0-1][0-3][0-3][0-63]
+
   int Global_raw2normal(int COBO_idx, int ASAD_idx, int aget_idx, int raw_channel_idx);  // valid range [0-1][0-3][0-3][0-67]
   int Global_raw2normal(int glb_raw_channel_idx);                                        // valid range [0-(1023+4*ASAD_N*COBO_N)]
   int Global_raw2raw(int COBO_idx, int ASAD_idx, int aget_idx, int raw_channel_idx);     // valid range [0-1][0-3][0-3][0-67]
@@ -171,6 +179,7 @@ class GeometryTPC {
   inline double GetDriftVelocity() { return runConditions.getDriftVelocity(); } // [cm/us]
   inline double GetSamplingRate() { return runConditions.getSamplingRate(); } // [MHz]
   inline double GetTriggerDelay() { return runConditions.getTriggerDelay(); } // [us]
+  inline double GetTimeBinWidth() { return  1.0/GetSamplingRate()*GetDriftVelocity()*10.0; } // [mm]
 
   inline TVector2 GetReferencePoint() { return reference_point; } // XY ([mm],[mm])
   TVector2 GetStripUnitVector(int dir); // XY ([mm],[mm])

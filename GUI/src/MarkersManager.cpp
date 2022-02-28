@@ -15,7 +15,6 @@
 #include "MarkersManager.h"
 #include "MainFrame.h"
 #include "HistoManager.h"
-#include "ScrollFrame.h"
 #include "CommonDefinitions.h"
 
 /////////////////////////////////////////////////////////

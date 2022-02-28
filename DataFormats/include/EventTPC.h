@@ -3,7 +3,7 @@
 
 /// TPC event class.
 ///
-/// VERSION: 05 May 2018
+/// VERSION: 18 Oct 2021
 
 #include <cstdlib>
 #include <vector>
@@ -16,6 +16,7 @@
 #include "TH3F.h"
 
 #include "GeometryTPC.h"
+#include "SigClusterTPC.h"
 
 #define EVENTTPC_DEFAULT_RECO_METHOD 1  // 0 = equal charge division along the strip
                                         // 1 = weighted charge division from complementary strip directions
@@ -23,13 +24,14 @@
 #define EVENTTPC_DEFAULT_TIME_REBIN  5  // number of time cells to rebin [1-512]
 
 class TrackSegment3D;
-class SigClusterTPC;
 
 class EventTPC {
   //  friend class SigClusterTPC;
  private:
-  Long64_t event_id, event_number, run_id, event_time;
+  Long64_t event_id, //event_number,
+    run_id, event_time;
   std::shared_ptr<GeometryTPC> myGeometryPtr;  //! transient data member
+  SigClusterTPC myCluster;                     //! transient data member
   
   std::map<MultiKey3, double, multikey3_less> chargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
   std::map<MultiKey4, double, multikey4_less> chargeMap2; // key=(STRIP_DIR [0-2], SECTION [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
@@ -40,7 +42,8 @@ class EventTPC {
   std::map<int, double> totalChargeMap3; // key=TIME_CELL [0-511]
   std::map<MultiKey3, double, multikey3_less> totalChargeMap4; // key=(STRIP_DIR [0-2], SECTION [0-2], STRIP_NUM [1-1024])
   std::map<MultiKey3, double, multikey3_less> totalChargeMap5; // key=(STRIP_DIR [0-2], SECTION [0-2], TIME_CELL [0-511])
-
+  std::map<MultiKey2, int, multikey2_less> asadMap; // key=(COBO_id, ASAD_id [0-3])
+    
   bool initOK;      // is geometry valid?
   int time_rebin;   // how many raw data time bins to merge (default=1, i.e. none)
 
@@ -62,7 +65,7 @@ class EventTPC {
 
   void SetGeoPtr(std::shared_ptr<GeometryTPC> aPtr);
   void SetEventId(Long64_t aId) { event_id = aId; };
-  void SetEventNumber(Long64_t aNumber) { event_number = aNumber; };
+  //  void SetEventNumber(Long64_t aNumber) { event_number = aNumber; };
   void SetEventTime(Long64_t aTime) { event_time = aTime; };
   void SetRunId(Long64_t aId) { run_id =  aId; };
   // helper methods for inserting data points
@@ -73,7 +76,8 @@ class EventTPC {
   bool AddValByGlobalChannel_raw(int glb_raw_channel_idx, int time_cell, double val); // valid range [0-1023+4*N][0-511]
   bool AddValByAgetChannel(int cobo_idx, int asad_idx, int aget_idx, int channel_idx, int time_cell, double val); // valid range [0-1][0-3][0-3][0-63][0-511]
   bool AddValByAgetChannel_raw(int cobo_idx, int asad_idx, int aget_idx, int raw_channel_idx, int time_cell, double val); // valid range [0-1][0-3][0-3][0-67][0-511]
-  
+  bool CheckAsadNboards(); // verifies that all AsAd boards are present in this event
+    
   // helper methods for extracting data points
   // they return 0.0 for non-existing data points
   double GetValByStrip(StripTPC* strip, int time_cell/*, bool &result*/);                   // valid range [0-511]
@@ -87,7 +91,7 @@ class EventTPC {
   inline GeometryTPC * GetGeoPtr() const { return myGeometryPtr.get(); }
   inline Long64_t GetEventId() const { return event_id; }
   inline Long64_t GetEventTime() const { return event_time; }
-  inline Long64_t GetEventNumber() const { return event_number; }
+  //  inline Long64_t GetEventNumber() const { return event_number; }
   inline Long64_t GetRunId() const { return run_id; }
   inline bool IsOK() const { return initOK; }
   inline int GetTimeRebin() const { return time_rebin; }       
@@ -109,7 +113,8 @@ class EventTPC {
   double GetTotalChargeByTimeCell(int strip_dir, int time_cell); // charge integral from a single time cell from all merged strips in a given direction (all sections)
   double GetTotalChargeByTimeCell(int strip_dir, int strip_section, int time_cell); // charge integral from a single time cell from all strips in a given direction (per section)
 
-  SigClusterTPC GetOneCluster(double thr, int delta_strips, int delta_timecells); // applies clustering threshold to all space-time data points 
+  void MakeOneCluster(double thr=-1, int delta_strips=5, int delta_timecells=25); // applies clustering threshold to all space-time data points 
+  const SigClusterTPC & GetOneCluster() const; 
   
   std::shared_ptr<TH1D> GetStripProjection(const SigClusterTPC &cluster, int strip_dir);    // clustered hits only, valid dir range [0-2]
   TH1D *GetTimeProjection(const SigClusterTPC &cluster, int strip_dir);     // clustered hits only, valid dir range [0-2]
@@ -146,6 +151,7 @@ class EventTPC {
   TH2D *GetXY_TestUV(TH2D *h=NULL); // auxillary functions for x-check 
   TH2D *GetXY_TestVW(TH2D *h=NULL); // auxillary functions for x-check 
   TH2D *GetXY_TestWU(TH2D *h=NULL); // auxillary functions for x-check 
-    
+
+  friend std::ostream& operator<<(std::ostream& os, const EventTPC& e);
 };
 #endif

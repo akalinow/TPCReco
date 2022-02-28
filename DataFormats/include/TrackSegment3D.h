@@ -28,6 +28,8 @@ public:
 
   void setBiasTangent(const TVector3 & aBias, const TVector3 & aTangent);
 
+  void setBiasTangent(const double *par);
+
   void setStartEnd(const TVector3 & aStart, const TVector3 & aEnd);
 
   void setStartEnd(const double *par);
@@ -51,6 +53,12 @@ public:
   ///Bias vector with Z=0.
   const TVector3 & getBiasAtZ0() const { return myBiasAtZ0;}
 
+  ///Lambda value for given X with current start and stop points
+  double getLambdaAtX(double x) const;
+
+  ///Lambda value for given Y with current start and stop points
+  double getLambdaAtY(double y) const;
+
   ///Lambda value for given Z (corresponding to time) with current start and stop points
   double getLambdaAtZ(double z) const;
 
@@ -63,6 +71,9 @@ public:
   ///Return packed cartesian coordinates of the segment start/end points.
   std::vector<double> getStartEndXYZ() const;
 
+  ///Return packed coordinates of the segment bias (x, Y, Z) and tangent(Theta, Phi).
+  std::vector<double> getBiasTangentCoords() const;
+
   ///Return 2D projection for stripPitchDirection corresponding to start and end lambdas
   ///along the 3D segment.
   TrackSegment2D get2DProjection(int strip_dir, double start, double end) const;
@@ -70,13 +81,15 @@ public:
   ///Return the full lenght of the segment.
   double getLength() const { return myLenght;}
 
-  double getIntegratedCharge(double lambda) const;
+  ///Return charge profile along the track. Each projection is returned in separate
+  ///histogram row
+  TH2F getChargeProfile() const;
 
-  double getIntegratedHitDistance(double lambda) const;
+  double getIntegratedCharge(double lambda) const;
 
   const std::vector<Hit2DCollection> & getRecHits() const { return myRecHits;}
 
-  double getRecHitChi2() const;
+  double getRecHitChi2(int iProjection=-1) const;
   
   ///Operator needed for fitting.
   double operator() (const double *par);
