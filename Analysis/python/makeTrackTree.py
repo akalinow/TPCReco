@@ -17,10 +17,10 @@ def countRunningProcesses(procName):
 def waintUnitilProcCount(procName, procCount):
 
      counter = countRunningProcesses("makeTrackTree")
-     while counter>procCount:
-         counter = countRunningProcesses("makeTrackTree")                
+     while counter>=procCount:
          print("Number of jobs running:",counter," Waiting one minutue.")
-         time.sleep(60)    
+         time.sleep(60)
+         counter = countRunningProcesses("makeTrackTree")                
 ################################################################
 ################################################################
 def analyzeSingleFile(dataPath, fileName, geometryFile, command):
@@ -52,7 +52,7 @@ def analyzeDataInDirectory(dataPath, geometryFile):
 
     procName = "makeTrackTree"
     command = "time ../../bin/"+procName
-    procCount = 4
+    procCount = 1
 
     for root, dirs, files in os.walk(dataPath):
         for fileName in files:
@@ -80,7 +80,8 @@ runs = [ ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210616_extTrg_CO2_25
           "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_25.0MHz.dat"),
          ##
 ]
-
+###
+###
 runs = [
     ("/mnt/NAS_STORAGE_BIG/IFJ_VdG_20210630/20210621_extTrg_CO2_250mbar_DT1470ET/",
      "../geometry_ELITPC_250mbar_12.5MHz.dat"),

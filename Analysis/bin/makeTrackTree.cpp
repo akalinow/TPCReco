@@ -96,7 +96,7 @@ int makeTrackTree(const  std::string & geometryFileName,
     myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
     dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(160);
     index = dataFileName.find("AsAd_ALL_")+9;
-    timestamp = dataFileName.substr(index, 29);
+    timestamp = dataFileName.substr(index, 26);
     #endif
   }
   else if(dataFileName.find(".root")!=std::string::npos){
@@ -109,7 +109,8 @@ int makeTrackTree(const  std::string & geometryFileName,
     return -1;
   }
 
-  std::string rootFileName = "TrackTree_"+dataFileName.substr(index);  
+  int npos = dataFileName.size()-index-5;
+  std::string rootFileName = "TrackTree_"+dataFileName.substr(index, npos)+".root";
   TFile outputROOTFile(rootFileName.c_str(),"RECREATE");
 
   TrackBuilder myTkBuilder;
