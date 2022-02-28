@@ -49,8 +49,8 @@ target_compile_options(tpcGUI PUBLIC ${CMAKE_ROOT_CFLAGS})
 target_link_libraries(${MODULE_NAME} DataFormats Reconstruction ${GRAW_TO_ROOT_LIBRARY} ${ROOT_LIBRARIES})
 target_link_libraries(tpcGUI PUBLIC DataFormats Utilities Reconstruction ${Boost_LIBRARIES} ${GRAW_TO_ROOT_LIBRARY} ${MODULE_NAME})
 target_link_libraries(dumpProjectionHistos PUBLIC DataFormats Utilities Reconstruction ${GRAW_TO_ROOT_LIBRARY} ${MODULE_NAME})
-target_link_libraries(dumpClusterHistos PUBLIC DataFormats Utilities Reconstruction ${GRAW_TO_ROOT_LIBRARY} ${MODULE_NAME}) # added by MC - 4 Aug 2021
-target_link_libraries(dumpRateHistos PUBLIC DataFormats Utilities ${GRAW_TO_ROOT_LIBRARY} ${MODULE_NAME}) # added by MC - 5 Sep 2021
+target_link_libraries(dumpClusterHistos PUBLIC DataFormats Utilities Reconstruction ${GRAW_TO_ROOT_LIBRARY} ${MODULE_NAME})
+target_link_libraries(dumpRateHistos PUBLIC DataFormats Utilities ${GRAW_TO_ROOT_LIBRARY} ${MODULE_NAME})
 
 # All install commands get the same destination. this allows us to use paths
 # relative to the executable.

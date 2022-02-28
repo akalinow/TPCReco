@@ -13,6 +13,9 @@
 #include "TrackBuilder.h"
 #include "HistoManager.h"
 #include "EventSourceROOT.h"
+#ifdef WITH_GET
+#include "EventSourceGRAW.h"
+#endif
 #include "SigClusterTPC.h"
 #include "EventTPC.h"
 #include "colorText.h"
@@ -91,8 +94,20 @@ int makeTrackTree(const  std::string & geometryFileName,
   tree->Branch("track",&track_data,"eventId:frameId:length:horizontalLostLength:verticalLostLength:energy:charge:cosTheta:phi:chi2:x0:y0:z0:x1:y1:z1");
   
   std::shared_ptr<EventSourceBase> myEventSource;
-  myEventSource = std::make_shared<EventSourceROOT>(geometryFileName);
-  
+  if(dataFileName.find(".graw")!=std::string::npos){
+    #ifdef WITH_GET
+    myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
+    dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(160);
+    #endif
+  }
+  else if(dataFileName.find(".root")!=std::string::npos){
+    myEventSource = std::make_shared<EventSourceROOT>(geometryFileName);
+  }
+  else{
+    std::cout<<KRED<<"Wrong input file: "<<RST<<dataFileName<<std::endl;
+    return -1;
+  }
+
   TrackBuilder myTkBuilder;
   myTkBuilder.setGeometry(myEventSource->getGeometry());
 
@@ -101,19 +116,14 @@ int makeTrackTree(const  std::string & geometryFileName,
   TCanvas *aCanvas = new TCanvas("aCanvas","Histograms",1000,1000);
   aCanvas->Divide(2,2);
  
-  if(dataFileName.find(".root")!=std::string::npos){
-    myEventSource->loadDataFile(dataFileName);
-    std::cout<<KBLU<<"File with "<<RST<<myEventSource->numberOfEntries()<<" frames loaded."<<std::endl;
-  }
-  else{
-    std::cout<<KRED<<"Wrong input file: "<<RST<<dataFileName<<std::endl;
-    return -1;
-  }
+  myEventSource->loadDataFile(dataFileName);
+  std::cout<<KBLU<<"File with "<<RST<<myEventSource->numberOfEntries()<<" frames loaded."<<std::endl;
 
   //Event loop
   unsigned int nEntries = myEventSource->numberOfEntries();
   for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
     myEventSource->loadFileEntry(iEntry);
+    std::cout<<"Here"<<std::endl;
     myEventSource->getCurrentEvent()->MakeOneCluster(35, 0, 0);
     if(myEventSource->getCurrentEvent()->GetOneCluster().GetNhits()>20000){
       std::cout<<KRED<<"Noisy event - skipping."<<RST<<std::endl;
@@ -159,7 +169,7 @@ int makeTrackTree(const  std::string & geometryFileName,
     ///Draw anomaly events
     /// 1.5 - calibration
     /// 40 - Kraków data
-    if(chi2>5){
+    if(chi2>1E6){
       myHistoManager.setEvent(myEventSource->getCurrentEvent());
       for(int strip_dir=0;strip_dir<3;++strip_dir){
 	aCanvas->cd(strip_dir+1);
