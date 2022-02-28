@@ -162,7 +162,7 @@ int main(int argc, char *argv[]) {
   aTree.Print();
 
   // build index based on: majorname=EventId, minorname=NONE
-  aTree.BuildIndex("eventId");
+  //aTree.BuildIndex("eventId");
   aTree.Write("", TObject::kOverwrite); // save only the new version of the tree
   aFile.Close();
 

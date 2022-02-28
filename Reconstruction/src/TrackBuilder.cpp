@@ -516,6 +516,7 @@ void TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
   myFittedTrackPtr = &myFittedTrack;
   std::cout<<KBLU<<"Pre-fit: "<<RST<<std::endl; 
   std::cout<<myFittedTrack<<std::endl;
+  
   int nOffsets = 3;
   double offset = 0.0;
   double candidateChi2 = aTrackCandidate.getChi2();
@@ -536,7 +537,7 @@ void TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
     myFittedTrack.setFitMode(Track3D::FIT_BIAS_TANGENT);
     myFittedTrack.chi2FromNodesList(bestFitResult.GetParams());
   }
-  //myFittedTrack.getSegments().front().setRecHits(myRawHits);
+  myFittedTrack.getSegments().front().setRecHits(myRawHits);
   myFittedTrack.extendToZRange(std::get<0>(myZRange), std::get<1>(myZRange));
   auto rangeXY = myGeometryPtr->rangeXY();  
   myFittedTrack.shrinkToXYRange(std::get<0>(rangeXY), std::get<1>(rangeXY),

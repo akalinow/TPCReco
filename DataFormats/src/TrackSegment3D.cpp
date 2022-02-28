@@ -180,6 +180,7 @@ double TrackSegment3D::getIntegratedCharge(double lambda) const{
     TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, lambda);
     const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
     charge += aTrack2DProjection.getIntegratedCharge(lambda, aRecHits);
+    //break;//TEST
   } 
   return charge;
 }
@@ -187,16 +188,15 @@ double TrackSegment3D::getIntegratedCharge(double lambda) const{
 /////////////////////////////////////////////////////////
 TH2F TrackSegment3D::getChargeProfile() const{
 
-  double radiusCut = 2.0;
+  double radiusCut = 0.5;
   double timeProjection = getTangent().Unit().Z();
   
-  std::vector<TH1F> projections;
+  std::vector<TGraphErrors> projections;
   std::vector<double> cosPhiProjectionAngles;
-  double binWidth = 999.0;
-  double tmpWidth = 999.0;
   
   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
     TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, getLength());
+    std::cout<<aTrack2DProjection<<std::endl;
     const TVector3 & stripPitchDirection = myGeometryPtr->GetStripPitchVector3D(strip_dir);
     double dirProjection = std::abs(stripPitchDirection.Unit().Dot(getTangent().Unit()));
     double cosPhiProjectionAngle = sqrt(dirProjection*dirProjection +
@@ -204,47 +204,38 @@ TH2F TrackSegment3D::getChargeProfile() const{
     const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
     projections.push_back(aTrack2DProjection.getChargeProfile(aRecHits, radiusCut));
     cosPhiProjectionAngles.push_back(cosPhiProjectionAngle);
-    tmpWidth = projections.back().GetXaxis()->GetBinWidth(1)/cosPhiProjectionAngles.back();
-    if(tmpWidth<binWidth) binWidth = tmpWidth;
   }
-  int nBins = 2.0/binWidth;
-  if(nBins>2000) nBins = 2000;//FIXME
+
+  double binWidth = 0.5;  
+  int nBins = 1.2*getLength()/binWidth;
+  if(nBins>200){
+    nBins = 200;
+    binWidth = 1.2*getLength()/nBins;
+  }
+  
   double minX = -0.1*getLength();
   double maxX = 1.1*getLength();
-  nBins += 0.2*getLength()/(binWidth/2.0);
   TH2F hChargeProfile("hChargeProfile",";d [mm];charge/mm",nBins, minX, maxX, 3, -0.5, 2.5);
 
-  double xLow, xCenter, xHigh;
-  int binLow, binCenter, binHigh;
+  double xCenter;
   double charge = 0.0;
+  double cosPhiProjectionAngle = 1.0;
   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
-      TH1F & aHisto = projections[strip_dir];
-      //aHisto.Print();
-      for(int iBin=1;iBin<=aHisto.GetNbinsX();++iBin){
-	charge = aHisto.GetBinContent(iBin);
-	if(charge<1E-3) continue;
-	xLow = aHisto.GetXaxis()->GetBinLowEdge(iBin)*getLength();
-	xCenter = aHisto.GetXaxis()->GetBinCenter(iBin)*getLength();
-	xHigh = aHisto.GetXaxis()->GetBinUpEdge(iBin)*getLength();
-	binLow = hChargeProfile.GetXaxis()->FindBin(xLow);
-	binCenter = hChargeProfile.GetXaxis()->FindBin(xCenter);
-	binHigh = hChargeProfile.GetXaxis()->FindBin(xHigh);
-	hChargeProfile.SetBinContent(binLow, strip_dir+1, charge/(binHigh-binLow+1));
-	hChargeProfile.SetBinContent(binCenter, strip_dir+1, charge/(binHigh-binLow+1));
-	hChargeProfile.SetBinContent(binHigh, strip_dir+1, charge/(binHigh-binLow+1));
-	/*
-	for(int iBinTmp=binLow;iBinTmp<=binHigh;++iBinTmp){
-	  x = hChargeProfile.GetXaxis()->GetBinCenter(iBinTmp);
-	  std::cout<<"x: "<<x<<" charge: "<<charge/(binHigh-binLow+1)<<std::endl;
-	  //hChargeProfile.Fill(x, strip_dir, charge/(binHigh-binLow+1));
-	  hChargeProfile.SetBinContent(iBinTmp, strip_dir+1, charge/(binHigh-binLow+1));
-	}
-	*/
-      }
+    TGraphErrors & aGraph = projections[strip_dir];
+    double graphInt = aGraph.Integral();
+    std::cout<<"graphInt: "<<graphInt<<std::endl;
+    cosPhiProjectionAngle = cosPhiProjectionAngles[strip_dir];
+    std::cout<<"cosPhiProjectionAngle: "<<cosPhiProjectionAngle<<std::endl;
+    for(int iBin=1;iBin<=hChargeProfile.GetNbinsX();++iBin){
+      xCenter = hChargeProfile.GetXaxis()->GetBinCenter(iBin)/getLength();
+      charge = aGraph.Eval(xCenter)*cosPhiProjectionAngle;
+      if(charge<1E-3) continue;
+      hChargeProfile.SetBinContent(iBin, strip_dir+1, charge);
     }
-  //hChargeProfile.ProjectionX("px",1,1)->Print();
-  //hChargeProfile.ProjectionX("px",2,2)->Print();
-  //hChargeProfile.ProjectionX("px",3,3)->Print();
+  }
+  hChargeProfile.ProjectionX("px",1,1)->Print();
+  hChargeProfile.ProjectionX("px",2,2)->Print();
+  hChargeProfile.ProjectionX("px",3,3)->Print();
   return hChargeProfile;
 }
 /////////////////////////////////////////////////////////

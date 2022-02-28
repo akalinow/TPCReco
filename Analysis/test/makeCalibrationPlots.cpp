@@ -100,7 +100,7 @@ void makeCalibrationPlots(std::string fileName){
    
   aLeg = new TLegend(0.35, 0.75, 0.9, 0.9);
   aLeg->AddEntry(hLengthCut1, "cos(#theta)>0.9","l");
-  fitResult = hLengthCut1->Fit("gaus", "s", "",80, 120);
+  fitResult = hLengthCut1->Fit("gaus", "s", "",80, 100);
   mu = fitResult->Parameter(1);
   sigma = fitResult->Parameter(2);
   aLabel = new TLatex(100, hLengthCut1->GetMaximum()*0.7,

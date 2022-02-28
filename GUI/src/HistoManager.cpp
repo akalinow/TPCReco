@@ -431,7 +431,6 @@ void HistoManager::drawTrack3DProjectionXY(TVirtualPad *aPad){
 
   aPad->cd();
   myGeometryPtr->GetTH2Poly()->SetTitle("");
-  myGeometryPtr->GetTH2Poly()->ChangePartition(10,10);
   myGeometryPtr->GetTH2Poly()->Draw();
   
   const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);

@@ -83,11 +83,12 @@ private:
 
   void SetCursorTheme();
 
-  void drawRawHistos();
-  void drawRecoHistos();
-  void drawTechnicalHistos();
+  void drawRawHistos(TCanvas *aCanvas);
+  void drawRecoHistos(TCanvas *aCanvas);
+  void drawTechnicalHistos(TCanvas *aCanvas);
 
-  void ClearCanvas();
+  void ClearCanvases();
+  void ClearCanvas(TCanvas *aCanvas);
   void Update();
   void UpdateEventLog();
 
@@ -106,6 +107,7 @@ private:
   TGCompositeFrame *fFrame{0};
   TRootEmbeddedCanvas *embeddedCanvas{0};
   TCanvas *fCanvas{0};
+  TCanvas *fCanvas_Reco{0};
 
   TGMenuBar *fMenuBar{0};
   TGPopupMenu *fMenuFile{0}, *fMenuHelp{0};

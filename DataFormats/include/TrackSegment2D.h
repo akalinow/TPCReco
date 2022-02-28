@@ -7,7 +7,7 @@
 #include <tuple>
 
 #include "TVector3.h"
-#include "TGraph.h"
+#include "TGraphErrors.h"
 #include "TH1F.h"
 
 #include "Hit2D.h"
@@ -61,7 +61,7 @@ public:
 
   double getLength() const { return myLenght;}
 
-  TH1F getChargeProfile(const Hit2DCollection & aRecHits, double radiusCut=4.0);
+  TGraphErrors getChargeProfile(const Hit2DCollection & aRecHits, double radiusCut=4.0);
 
   double getIntegratedCharge(double lambda, const Hit2DCollection & aRecHits) const;
 
