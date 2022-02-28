@@ -19,10 +19,8 @@ def waintUnitilProcCount(procName, procCount):
      counter = countRunningProcesses("makeTrackTree")
      while counter>procCount:
          counter = countRunningProcesses("makeTrackTree")                
-         if counter>=10:
-             print("Number of jobs running:",counter," Waiting one minutue.")
-             exit(0)
-             time.sleep(60)    
+         print("Number of jobs running:",counter," Waiting one minutue.")
+         time.sleep(60)    
 ################################################################
 ################################################################
 def analyzeSingleFile(dataPath, fileName, geometryFile, command):
@@ -39,6 +37,7 @@ def analyzeSingleFile(dataPath, fileName, geometryFile, command):
     arguments = " --geometryFile " + geometryFile + " --dataFile " + filePath + " > "+outputName+" 2>&1 &"
     print("Running job for file:"+fileName)                    
     os.chdir(timestamp)
+    os.system("ln -s ../*Formats* ./")
     os.system(command+arguments)
     os.chdir("../")
 ################################################################

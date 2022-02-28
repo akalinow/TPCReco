@@ -123,7 +123,6 @@ int makeTrackTree(const  std::string & geometryFileName,
   unsigned int nEntries = myEventSource->numberOfEntries();
   for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
     myEventSource->loadFileEntry(iEntry);
-    std::cout<<"Here"<<std::endl;
     myEventSource->getCurrentEvent()->MakeOneCluster(35, 0, 0);
     if(myEventSource->getCurrentEvent()->GetOneCluster().GetNhits()>20000){
       std::cout<<KRED<<"Noisy event - skipping."<<RST<<std::endl;
