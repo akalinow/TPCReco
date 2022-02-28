@@ -104,7 +104,7 @@ TGraphErrors TrackSegment2D::getChargeProfile(const Hit2DCollection & aRecHits, 
     std::tie(lambda, distance) = getPointLambdaAndDistance(aPoint);
     lambda /= getLength();
     if(distance<radiusCut){
-      grChargeProfile2D.AddPoint(lambda, aHit.getCharge()/binWidth);
+      grChargeProfile2D.SetPoint(grChargeProfile2D.GetN(),lambda, aHit.getCharge()/binWidth);
       grChargeProfile2D.SetPointError(grChargeProfile2D.GetN()-1,binWidth,0.0);
     }
   }  
