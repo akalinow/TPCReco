@@ -27,16 +27,22 @@ def analyzeSingleFile(dataPath, fileName, geometryFile, command):
 
     filePath =  os.path.join(dataPath, fileName)
     timestamp_index = fileName.rfind("EventTPC_")
+    file_timestamp = fileName[timestamp_index+9:timestamp_index+32]
+        
     if timestamp_index<0:
         timestamp_index = fileName.rfind("AsAd_ALL_")
-    timestamp = fileName[timestamp_index+9:timestamp_index+32]
-    timestamp = timestamp.replace(":","-")
-    outputName = timestamp + ".out"        
-    if not os.path.isdir(timestamp):
-        os.mkdir(timestamp)
+        file_timestamp = fileName[timestamp_index+9:timestamp_index+37]
+
+    run_timestamp = fileName[timestamp_index+9:timestamp_index+32]
+    run_timestamp = run_timestamp.replace(":","-")    
+    if not os.path.isdir(run_timestamp):
+        os.mkdir(run_timestamp)
+
+    file_timestamp = file_timestamp.replace(":","-")    
+    outputName = file_timestamp + ".out"            
     arguments = " --geometryFile " + geometryFile + " --dataFile " + filePath + " > "+outputName+" 2>&1 &"
     print("Running job for file:"+fileName)                    
-    os.chdir(timestamp)
+    os.chdir(run_timestamp)
     os.system("ln -s ../*Formats* ./")
     os.system(command+arguments)
     os.chdir("../")
