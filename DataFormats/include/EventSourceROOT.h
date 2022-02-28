@@ -2,15 +2,21 @@
 #define _EventSourceROOT_H_
 
 #include "EventSourceBase.h"
+#include "EventRaw.h"
+#include "PedestalCalculator.h"
+#include <boost/property_tree/json_parser.hpp>
 
 class TFile;
 class TTree;
 
 class EventSourceROOT: public EventSourceBase {
+  
 public:
-  
-  EventSourceROOT();
-  
+
+  EventSourceROOT(){};
+
+  EventSourceROOT(const std::string & geometryFileName);
+
   ~EventSourceROOT();
 
   void loadFileEntry(unsigned long int iEntry);
@@ -27,14 +33,29 @@ public:
 
   unsigned long int numberOfEvents() const;
 
-private:
+  void setRemovePedestal(bool aFlag);
 
-  EventTPC *aPtr;
+  void configurePedestal(const boost::property_tree::ptree &config);
+
+  void loadGeometry(const std::string & fileName);
+  
+ private:
+
+  EventTPC *aPtr; // for TBranch
+  eventraw::EventInfo *aPtrEventInfo; // for TBranch
+  eventraw::EventData *aPtrEventData; // for TBranch
+  std::shared_ptr<eventraw::EventRaw> myCurrentEventRaw{std::make_shared<eventraw::EventRaw>()};
   std::string treeName;
   std::shared_ptr<TFile> myFile;
   //std::shared_ptr<TTree> myTree;
   TTree * myTree;
-  
+  bool removePedestal{true};
+  EventType readEventType{raw};
+
+  PedestalCalculator myPedestalCalculator;  
+  void setTreePointers(const std::string & fileName);
+  void fillEventFromEventRaw();
+
 };
 #endif
 
