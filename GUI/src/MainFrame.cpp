@@ -819,7 +819,7 @@ void MainFrame::HandleMenu(Int_t id){
       ClearCanvases();
       Update();
     }
-    break;
+    break;   
     case M_TOGGLE_RATE:
     {
       isRateDisplayOn=!isRateDisplayOn;

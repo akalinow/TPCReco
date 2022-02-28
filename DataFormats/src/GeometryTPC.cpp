@@ -1207,8 +1207,7 @@ bool GeometryTPC::GetUVWCrossPointInMM(int dir1, double UVW_pos1, int dir2, doub
     return false;
   
   const double offset[2] = {offset_vec[1].X() - offset_vec[0].X(),
-			    offset_vec[1].Y() - offset_vec[0].Y()};
-  
+			    offset_vec[1].Y() - offset_vec[0].Y()};  
   double W1 = -offset[0] * unit_vec[1].Y() + offset[1] * unit_vec[1].X();
   // double W2 = unit_vec[0].X() * offset[1] - unit_vec[0].Y() * offset[0]; // not needed
   double len1 = W1 / W; 
