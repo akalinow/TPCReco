@@ -36,10 +36,9 @@ def analyzeSingleFile(dataPath, fileName, geometryFile, command):
     outputName = timestamp + ".out"        
     if not os.path.isdir(timestamp):
         os.mkdir(timestamp)
-    arguments = " --geometryFile " + geometryFile + " --dataFile " + filePath + " >& "+outputName+" &"
+    arguments = " --geometryFile " + geometryFile + " --dataFile " + filePath + " > "+outputName+" 2>&1 &"
     print("Running job for file:"+fileName)                    
     os.chdir(timestamp)
-    print(command+arguments)
     os.system(command+arguments)
     os.chdir("../")
 ################################################################
@@ -79,7 +78,7 @@ runs = [ ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210616_extTrg_CO2_25
 
 runs = [
     ("/mnt/NAS_STORAGE_BIG/IFJ_VdG_20210630/20210621_extTrg_CO2_250mbar_DT1470ET/",
-     "../resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
+     "../geometry_ELITPC_250mbar_12.5MHz.dat"),
 ]
 ################################################
 ################################################      
