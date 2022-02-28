@@ -40,7 +40,7 @@ public:
   void loadFileEntry(unsigned long int iEntry);
 
   void loadEventId(unsigned long int eventIdx);
-  
+
   inline void setFrameLoadRange(int range) {frameLoadRange=range;}
 
   inline void setFillEventType(EventType type) {fillEventType=type;}
@@ -55,7 +55,6 @@ private:
   void checkEntryForFragments(unsigned int iEntry);
   void findStartingIndex(unsigned long int size);
   std::string getNextFilePath();
-
   unsigned int GRAW_EVENT_FRAGMENTS;
   PedestalCalculatorGRAW myPedestalCalculator;
   Graw2DataFrame myFrameLoader;

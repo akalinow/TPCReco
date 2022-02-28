@@ -108,7 +108,6 @@ private:
   TRootEmbeddedCanvas *embeddedCanvas{0};
   TCanvas *fCanvas{0};
   TCanvas *fCanvas_Reco{0};
-
   TGMenuBar *fMenuBar{0};
   TGPopupMenu *fMenuFile{0}, *fMenuHelp{0};
 

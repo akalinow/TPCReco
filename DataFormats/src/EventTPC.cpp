@@ -204,7 +204,6 @@ bool EventTPC::AddValByStrip(int strip_dir, int strip_section, int strip_number,
       // update already existing max value per strip
       if(new_val2 > it_maxval2->second) it_maxval2->second = new_val2;
     }
-
     // update {COBO_idx, ASAD_idx} map
     StripTPC *strip=myGeometryPtr->GetStripByDir(strip_dir, strip_section, strip_number);
     if(strip) {
@@ -528,7 +527,6 @@ void EventTPC::MakeOneCluster(double thr, int delta_strips, int delta_timecells)
 
   // loop thru SEED-hits (per section)
   for( it2=oldList.begin(); it2!=oldList.end() && true; ++it2 ) {
-
     // unpack coordinates
     const int strip_dir = (*it2).key1;
     const int strip_sec = (*it2).key2;
@@ -567,7 +565,6 @@ const SigClusterTPC & EventTPC::GetOneCluster() const {
 
   return myCluster;
 }
-
 
 std::shared_ptr<TH1D> EventTPC::GetStripProjection(const SigClusterTPC &cluster, int strip_dir) {  // valid range [0-2]
   auto h=std::shared_ptr<TH1D>();
@@ -1581,7 +1578,6 @@ TH3D *EventTPC::Get3D(const SigClusterTPC &cluster, double radius, int rebin_spa
       hitListByTimeDirMerged.find(MultiKey2(icell, DIR_U))->second,
       hitListByTimeDirMerged.find(MultiKey2(icell, DIR_V))->second,
       hitListByTimeDirMerged.find(MultiKey2(icell, DIR_W))->second};
-
     /*
       const std::map<MultiKey2, std::vector<int>, multikey2_less> & hitListByTimeDir = cluster.GetHitListByTimeDir();
       
@@ -1596,7 +1592,6 @@ TH3D *EventTPC::Get3D(const SigClusterTPC &cluster, double radius, int rebin_spa
       hitListByTimeDir.find(MultiKey2(icell, DIR_V))->second,
       hitListByTimeDir.find(MultiKey2(icell, DIR_W))->second};
     */
-
     ////////// DEBUG 
     //   std::cout << Form(">>>> Number of hits: time cell=%d: U=%d / V=%d / W=%d",
     //		      icell, (int)hits[DIR_U].size(), (int)hits[DIR_V].size(), (int)hits[DIR_W].size()) << std::endl;

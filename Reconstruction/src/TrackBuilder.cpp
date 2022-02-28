@@ -388,7 +388,6 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   int nHits_V = segmentV.getNAccumulatorHits();
   int nHits_W = segmentW.getNAccumulatorHits();
 
-
   double bias_time = (segmentU.getMinBias().X()*(nHits_U>0) +
 		      segmentV.getMinBias().X()*(nHits_V>0) +
 		      segmentW.getMinBias().X()*(nHits_W>0))/((nHits_U>0) + (nHits_V>0) + (nHits_W>0));
