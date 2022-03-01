@@ -1,41 +1,56 @@
 #ifndef RUN_ID_PARSER_H_
 #define RUN_ID_PARSER_H_
 #include <array>
+#include <chrono>
 #include <regex>
 #include <utility>
-
 class RunIdParser {
 public:
   RunIdParser(const std::string &name);
-  size_t runId() const { return rundId_; }
-  size_t fileId() const { return fileId_; }
+
+  using time_point = std::chrono::time_point<std::chrono::system_clock>;
+
+  inline size_t runId() const noexcept { return rundId_; }
+  inline size_t fileId() const noexcept { return fileId_; }
   // AsAd id
   // returns -1 if no information
-  int AsadId() const { return AsAdId_; };
+  inline int AsadId() const noexcept { return AsAdId_; };
   // CoBoid
   // returns -1 if no information
-  int CoBoId() const { return CoBoId_; };
+  inline int CoBoId() const noexcept { return CoBoId_; };
+
+  inline time_point timePoint() const noexcept { return timePoint_; }
+
+  template <class Rep, class Period>
+  bool isClose(const RunIdParser &other,
+              std::chrono::duration<Rep, Period> delay) const {
+    return (timePoint_ > other.timePoint_ ? timePoint_ - other.timePoint_
+                                  : other.timePoint_ - timePoint_) <= delay;
+  }
 
 private:
   size_t rundId_;
   size_t fileId_;
   int AsAdId_ = -1;
   int CoBoId_ = -1;
+  time_point timePoint_;
 
   class Positions {
   public:
     Positions(size_t year, size_t month, size_t day, size_t hour,
-              size_t minutes, size_t seconds, size_t fileId, size_t cobo, size_t asad);
+              size_t minutes, size_t seconds, size_t miliseconds, size_t fileId,
+              size_t cobo, size_t asad);
     const size_t year;
     const size_t month;
     const size_t day;
     const size_t hour;
     const size_t minutes;
     const size_t seconds;
+    const size_t miliseconds;
     const size_t fileId;
     const size_t cobo;
     const size_t asad;
-    size_t max() const { return max_; }
+    inline size_t max() const noexcept { return max_; }
 
   private:
     size_t max_;
