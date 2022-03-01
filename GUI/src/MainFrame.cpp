@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
+#include <vector>
 
 #include <TApplication.h>
 #include "MainFrame.h"
@@ -10,7 +11,10 @@
 #include "colorText.h"
 
 #include <TSystem.h>
+#include <TObjArray.h> // for string tokens
+#include <TObjString.h> // for string tokens
 #include <TStyle.h>
+#include <TString.h> // for string tokens
 #include <TFrame.h>
 #include <TVirtualX.h>
 #include <TImage.h>
@@ -110,17 +114,54 @@ void MainFrame::InitializeEventSource(){
     return;
   }
   FileStat_t stat;
-  if(gSystem->GetPathInfo(dataFileName.c_str(), stat) != 0){
-    std::cerr<<KRED<<"Invalid data path. No such file or directory: "<<RST<<dataFileName<<std::endl;
-    return;
-  }
 
-  if( ( (stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG) && dataFileName.find(".root")!=std::string::npos){
-    myWorkMode = M_OFFLINE_ROOT_MODE;
-    myEventSource = std::make_shared<EventSourceROOT>(geometryFileName);
-  }
+  // parse dataFile string for comma separated files
+  std::vector<std::string> dataFileVec;
+  //  vector<std::string> basenameVec;
+  //  vector<std::string> dirnameVec;
+  TString list=dataFileName;
+  TObjArray *token = list.Tokenize(",");
+  //  token->Print();
 #ifdef WITH_GET
-  else if( ( (stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG) && dataFileName.find(".graw")!=std::string::npos){
+  bool all_graw=false;
+#endif
+  for (Int_t itoken = 0; itoken < token->GetEntries(); itoken++) {
+    //    TString list2=((TObjString *)(token->At(itoken)))->String(); // path + name of single file
+    std::string list2( ((TObjString *)(token->At(itoken)))->String().Data() );
+    if(gSystem->GetPathInfo(list2.c_str(), stat) != 0){
+      std::cerr<<KRED<<"Invalid data path. No such file or directory: "<<RST<<list2<<std::endl;
+      return;
+    }
+#ifdef WITH_GET
+    if( ((stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG) && list2.find(".graw")!=std::string::npos){
+      all_graw=true;
+    } else {
+      all_graw=false;
+    }
+#endif
+    dataFileVec.push_back(list2);
+    //   TObjArray *token2 = list2.Tokenize("/");
+    //    TString dirName;
+    //    for (Int_t itoken2=0; itoken2 < token2->GetEntries()-1; itoken2++) {
+    //      dirName=((TObjString *)(token2->At(itoken2)))->String()+"/"; // path
+    //    }
+    //    TString baseName;
+    //    if(token2->GetEntries()-1 > 0) baseName=((TObjString *)(token2->At(token2-GetEntries()-1)))->String(); // basename
+    //    dirnameVec.push_back(dirName);
+    //    basenameVec.push_back(baseName);
+  }
+  
+  //  if(gSystem->GetPathInfo(dataFileName.c_str(), stat) != 0){
+  //    std::cerr<<KRED<<"Invalid data path. No such file or directory: "<<RST<<dataFileName<<std::endl;
+  //   return;
+  //  }
+  
+  if( dataFileVec.size()==1 && ((stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG) && dataFileName.find(".root")!=std::string::npos){
+      myWorkMode = M_OFFLINE_ROOT_MODE;
+      myEventSource = std::make_shared<EventSourceROOT>(geometryFileName);
+    }
+#ifdef WITH_GET
+  else if( all_graw ) { //(stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG) && dataFileName.find(".graw")!=std::string::npos){
 
     myWorkMode = M_OFFLINE_GRAW_MODE;
     if(myConfig.find("singleAsadGrawFile")!=myConfig.not_found()) {
@@ -133,15 +174,25 @@ void MainFrame::InitializeEventSource(){
     case M_OFFLINE_GRAW_MODE:
       myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
       dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(myConfig.get("frameLoadRange",100));
+      if (dataFileVec.size()>1) {
+	std::cerr<<KRED<<"Provided too many GRAW files. Expected 1. dataFile: "<<RST<<dataFileName<<std::endl;
+	return;
+      }
       break;
     case M_OFFLINE_NGRAW_MODE:
       myEventSource = std::make_shared<EventSourceMultiGRAW>(geometryFileName);
+      { unsigned int AsadNboards=dynamic_cast<EventSourceGRAW*>(myEventSource.get())->getGeometry()->GetAsadNboards();
+	if (dataFileVec.size()>AsadNboards) {
+	  std::cerr<<KRED<<"Provided too many GRAW files. Expected up to "<<AsadNboards<<".dataFile: "<<RST<<dataFileName<<std::endl;
+	  return;
+	}
+      }
       break;
     default:;
     };
       
   }
-  else if( (stat.fMode & EFileModeMask::kS_IFDIR) == EFileModeMask::kS_IFDIR) {
+  else if( dataFileVec.size()==1 && (stat.fMode & EFileModeMask::kS_IFDIR) == EFileModeMask::kS_IFDIR) {
 
     myWorkMode = M_ONLINE_GRAW_MODE;
     if(myConfig.find("singleAsadGrawFile")!=myConfig.not_found()) {

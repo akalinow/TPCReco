@@ -35,7 +35,7 @@ void DirectoryWatch::watch(const std::string & dirName){
 		    *100L/* MAX expected rate in Hz */
 		    *updateInterval/1000L/* interval in seconds */
 		    ); //  32; /*Max. number of events to process at one go*/
-  int LEN_NAME = 32; /*Assuming that the length of the filename won't exceed 16 bytes*/
+  int LEN_NAME = 50; /*Assuming that the length of the filename won't exceed 16 bytes*/
   int EVENT_SIZE = ( sizeof (struct inotify_event) ); /*size of one event*/
   int BUF_LEN =    ( MAX_EVENTS * ( EVENT_SIZE + LEN_NAME )); /*buffer to store the data of events*/  
   //#ifdef DEBUG
