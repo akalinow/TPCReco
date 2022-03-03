@@ -185,11 +185,11 @@ void TrackBuilder::reconstruct(){
   aTrackCandidate.addSegment(myTrack3DSeed);
 
   aTrackCandidate.extendToZRange(std::get<0>(myZRange),std::get<1>(myZRange));
-  /*
+  
   auto rangeXY = myGeometryPtr->rangeXY();
   aTrackCandidate.shrinkToXYRange(std::get<2>(rangeXY), std::get<3>(rangeXY),
 				  std::get<0>(rangeXY), std::get<1>(rangeXY));
-  */
+  
   fitTrack3D(aTrackCandidate);
 }
 /////////////////////////////////////////////////////////
@@ -198,6 +198,8 @@ void TrackBuilder::makeRecHits(int iDir){
 
   myRawHits[iDir] =  *(myEvent->GetStripVsTimeInMM(getCluster(), iDir));
   myRecHits[iDir] = myRecHitBuilder.makeRecHits(myRawHits[iDir]);
+  std::shared_ptr<TH2D> h = myEvent->GetStripVsTimeInMM(getCluster(), iDir);//TEST
+  myRawHits[iDir] = myRecHitBuilder.makeCleanCluster(*h); //TEST
   hTimeProjection.Add(myRecHits[iDir].ProjectionX());
 }
 /////////////////////////////////////////////////////////
@@ -218,11 +220,16 @@ std::tuple<double, double> TrackBuilder::getTimeProjectionEdges() const{
       break;
     }
   }
-
   
   double start = hTimeProjection.GetXaxis()->GetBinCenter(iBinStart-10);
   double end =  hTimeProjection.GetXaxis()->GetBinCenter(iBinEnd+10);  
   return std::make_tuple(start, end);
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+const TH2D & TrackBuilder::getCluster2D(int iDir) const{
+
+  return myRawHits[iDir];  
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -291,7 +298,8 @@ void TrackBuilder::fillHoughAccumulator(int iDir){
 TrackSegment2DCollection TrackBuilder::findSegment2DCollection(int iDir){
 
   TrackSegment2DCollection aTrackCollection;
-  for(int iPeak=0;iPeak<2;++iPeak){
+  int nPeaks = 1;
+  for(int iPeak=0;iPeak<nPeaks;++iPeak){
     TrackSegment2D aTrackSegment = findSegment2D(iDir, iPeak);
     aTrackCollection.push_back(aTrackSegment);
   }
@@ -329,7 +337,7 @@ TrackSegment2D TrackBuilder::findSegment2D(int iDir, int iPeak) const{
   aX = -rho*sin(theta);
   aY = rho*cos(theta);
   aTangent.SetXYZ(aX, aY, 0.0);
-  
+
   TrackSegment2D aSegment2D(iDir, myGeometryPtr);
   aSegment2D.setBiasTangent(aBias, aTangent);
   aSegment2D.setNAccumulatorHits(nHits);
@@ -423,28 +431,40 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
 
   double biasZ = (bias_U.X()*weight_fromU +  bias_V.X()*weight_fromV +  bias_W.X()*weight_fromW)/weight_sum;  
   TVector3 aBias( biasXY.X(), biasXY.Y(), biasZ);
+
+  TVector3 tangent_U = segmentU.getNormalisedTangent();
+  TVector3 tangent_V = segmentV.getNormalisedTangent();
+  TVector3 tangent_W = segmentW.getNormalisedTangent();
+  
+  if(std::abs(tangent_U.Y())>1E-3 && 
+     tangent_U.Y()*tangent_V.Y()>0 &&
+     tangent_U.Y()*tangent_W.Y()>0 &&
+     tangent_V.Y()*tangent_W.Y()>0){
+    tangent_U.SetY(-tangent_U.Y());
+  }
   
   TVector2 tangentXY_fromUV;
-  bool res4=myGeometryPtr->GetUVWCrossPointInMM(segmentU.getStripDir(), segmentU.getTangentWithT1().Y(),
-						segmentV.getStripDir(), segmentV.getTangentWithT1().Y(),
+  bool res4=myGeometryPtr->GetUVWCrossPointInMM(segmentU.getStripDir(), tangent_U.Y(),
+						segmentV.getStripDir(), tangent_V.Y(),
 						tangentXY_fromUV);
   TVector2 tangentXY_fromVW;
-  bool res5=myGeometryPtr->GetUVWCrossPointInMM(segmentV.getStripDir(), segmentV.getTangentWithT1().Y(),
-						segmentW.getStripDir(), segmentW.getTangentWithT1().Y(),
+  bool res5=myGeometryPtr->GetUVWCrossPointInMM(segmentV.getStripDir(), tangent_V.Y(),
+						segmentW.getStripDir(), tangent_W.Y(),
 						tangentXY_fromVW);
   TVector2 tangentXY_fromWU;
-  bool res6=myGeometryPtr->GetUVWCrossPointInMM(segmentW.getStripDir(), segmentW.getTangentWithT1().Y(),
-						segmentU.getStripDir(), segmentU.getTangentWithT1().Y(),
+  bool res6=myGeometryPtr->GetUVWCrossPointInMM(segmentW.getStripDir(), tangent_W.Y(),
+						segmentU.getStripDir(), tangent_U.Y(),
 						tangentXY_fromWU);
   assert(res4|res5|res6);
 
   weight_fromUV = res4*(nHits_U + nHits_V)*(nHits_U>0)*(nHits_V>0);
   weight_fromVW = res5*(nHits_V + nHits_W)*(nHits_V>0)*(nHits_W>0);
   weight_fromWU = res6*(nHits_W + nHits_U)*(nHits_W>0)*(nHits_U>0);
+  
   TVector2 tangentXY=(weight_fromUV*tangentXY_fromUV + weight_fromVW*tangentXY_fromVW + weight_fromWU*tangentXY_fromWU)/(weight_fromUV+weight_fromVW+weight_fromWU);
-  double tangentZ_fromU = segmentU.getTangentWithT1().X();
-  double tangentZ_fromV = segmentV.getTangentWithT1().X();
-  double tangentZ_fromW = segmentW.getTangentWithT1().X();
+  double tangentZ_fromU = tangent_U.X();
+  double tangentZ_fromV = tangent_V.X();
+  double tangentZ_fromW = tangent_W.X();
   double tangentZ = (tangentZ_fromU*nHits_U + tangentZ_fromV*nHits_V + tangentZ_fromW*nHits_W)/(nHits_U+nHits_V+nHits_W);
   TVector3 aTangent(tangentXY.X(), tangentXY.Y(), tangentZ);
 
@@ -457,11 +477,11 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
 	   <<std::endl;
   
   std::cout<<KRED<<" tangent U: "<<RST;
-  segmentU.getTangentWithT1().Print();
+  tangent_U.Print();
   std::cout<<KRED<<" tangent V: "<<RST;
-  segmentV.getTangentWithT1().Print();
+  tangent_V.Print();
   std::cout<<KRED<<" tangent W: "<<RST;
-  segmentW.getTangentWithT1().Print();
+  tangent_W.Print();
   std::cout<<KRED<<" from UV: "<<RST;
   tangentXY_fromUV.Print();
   std::cout<<KRED<<" from VW: "<<RST;
@@ -493,13 +513,13 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   a3DSeed.getTangent().Print();
   
   std::cout<<KRED<<"tagent from track, U proj.: "<<RST;
-  a3DSeed.get2DProjection(DIR_U, 0, 1).getTangentWithT1().Print();
+  a3DSeed.get2DProjection(DIR_U, 0, 1).getTangent().Print();
 
   std::cout<<KRED<<"tagent from track, V proj.: "<<RST;
-  a3DSeed.get2DProjection(DIR_V, 0, 1).getTangentWithT1().Print();
+  a3DSeed.get2DProjection(DIR_V, 0, 1).getTangent().Print();
 
   std::cout<<KRED<<"tagent from track, W proj.: "<<RST;
-  a3DSeed.get2DProjection(DIR_W, 0, 1).getTangentWithT1().Print();
+  a3DSeed.get2DProjection(DIR_W, 0, 1).getTangent().Print();
 
   std::cout<<KRED<<"bias from track: "<<RST;
   a3DSeed.getBias().Print();

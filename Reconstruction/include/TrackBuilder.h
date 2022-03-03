@@ -44,6 +44,8 @@ public:
 
   const SigClusterTPC & getCluster() const { return myEvent->GetOneCluster();}
 
+  const TH2D & getCluster2D(int iDir) const;
+
   const TH2D & getRecHits2D(int iDir) const;
 
   const TH1D & getRecHitsTimeProjection() const;

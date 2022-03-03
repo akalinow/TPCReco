@@ -230,13 +230,16 @@ void Track3D::extendToZRange(double zMin, double zMax){
   if(!mySegments.size()) return;
   
   TrackSegment3D & aFirstSegment = mySegments.front();
+  TrackSegment3D & aLastSegment = mySegments.back();
+  
+  if(std::abs(aFirstSegment.getTangent().Z()<1E-3) ||
+     std::abs(aLastSegment.getTangent().Z()<1E-3)) return;
   
   double lambda =  aFirstSegment.getLambdaAtZ(zMin);
   TVector3 aStart = aFirstSegment.getStart() + lambda*aFirstSegment.getTangent(); 
   TVector3 aEnd = aFirstSegment.getEnd();
   aFirstSegment.setStartEnd(aStart, aEnd);
 
-  TrackSegment3D & aLastSegment = mySegments.back();
   lambda =  aLastSegment.getLambdaAtZ(zMax);
   aStart = aLastSegment.getStart();
   aEnd = aStart + lambda*aLastSegment.getTangent();  

@@ -36,26 +36,29 @@ void TrackSegment2D::setStartEnd(const TVector3 & aStart, const TVector3 & aEnd)
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void TrackSegment2D::initialize(){
-  
-  double lambda = -myBias.Y()/myTangent.Y();
-  myBiasAtStrip0 = myBias + lambda*myTangent;
 
-  ///Set tangent direction along time arrow with unit time component,
-  ///so vector components can be compared between projections.
-  myTangentWithT1 = myTangent;
-  
-  if(std::abs(myTangentWithT1.X())>1E-2){
-    if(myTangentWithT1.X()<0) myTangentWithT1 *= -1;
-    myTangentWithT1 *= 1.0/myTangentWithT1.X();
-  }
-  else{
-    if(myTangentWithT1.Y()<0) myTangentWithT1 *= -1;
-    double phi = myGeometryPtr->GetStripPitchVector(myStripDir).Phi();
-    double cosPhi = cos(phi);
-    if(std::abs(myTangentWithT1.Y())>1E-2) myTangentWithT1 *= cosPhi/myTangentWithT1.Y();
-  }
-  
+  myTangent = myTangent.Unit();
   myLenght = (myEnd - myStart).Mag();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+TVector3 TrackSegment2D::getNormalisedTangent() const{
+  
+  TVector3 normalizedTangent = myTangent.Unit();
+  double phi = myGeometryPtr->GetStripPitchVector(myStripDir).Phi();
+  double cosPhi = cos(phi);
+  
+  if(std::abs(normalizedTangent.X())>1E-2){
+    if(normalizedTangent.X()<0) normalizedTangent *= -1;
+    normalizedTangent *= 1.0/normalizedTangent.X();
+  }
+  else if(std::abs(normalizedTangent.Y())>1E-2){
+    normalizedTangent.SetX(0.0);
+    if(normalizedTangent.Y()<0) normalizedTangent *= -1;
+    normalizedTangent *= cosPhi/normalizedTangent.Y();
+  }
+  
+  return normalizedTangent;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -82,6 +85,7 @@ if(std::abs(myTangent.X())<1E-3)
 TGraphErrors TrackSegment2D::getChargeProfile(const Hit2DCollection & aRecHits, double radiusCut){
 
   double x = 0.0, y = 0.0;
+  double ex = 0.0;
   double distance = 0.0;
   double lambda = 0.0;
   TVector3 aPoint;
@@ -107,7 +111,16 @@ TGraphErrors TrackSegment2D::getChargeProfile(const Hit2DCollection & aRecHits, 
       grChargeProfile2D.SetPoint(grChargeProfile2D.GetN(),lambda, aHit.getCharge()/binWidth);
       grChargeProfile2D.SetPointError(grChargeProfile2D.GetN()-1,binWidth,0.0);
     }
-  }  
+  }
+  grChargeProfile2D.GetPoint(grChargeProfile2D.GetN()-1,x,y);
+  ex = grChargeProfile2D.GetErrorX(grChargeProfile2D.GetN()-1);
+  grChargeProfile2D.SetPoint(grChargeProfile2D.GetN(),x+ex,0.0);
+
+  grChargeProfile2D.GetPoint(2,x,y);
+  ex = grChargeProfile2D.GetErrorX(2);
+  grChargeProfile2D.SetPoint(grChargeProfile2D.GetN(),x-ex,0.0);
+  //std::cout<<"x: "<<x<<" ex: "<<ex<<std::endl;
+
   return grChargeProfile2D;
 }
 /////////////////////////////////////////////////////////

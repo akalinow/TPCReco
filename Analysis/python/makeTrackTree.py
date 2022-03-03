@@ -39,7 +39,7 @@ def analyzeSingleFile(dataPath, fileName, geometryFile, command):
         os.mkdir(run_timestamp)
 
     file_timestamp = file_timestamp.replace(":","-")    
-    outputName = file_timestamp + ".out"            
+    outputName = file_timestamp + ".out"
     arguments = " --geometryFile " + geometryFile + " --dataFile " + filePath + " > "+outputName+" 2>&1 &"
     print("Running job for file:"+fileName)                    
     os.chdir(run_timestamp)
@@ -48,17 +48,71 @@ def analyzeSingleFile(dataPath, fileName, geometryFile, command):
     os.chdir("../")
 ################################################################
 ################################################################
+def finalize():
+
+    procName = "makeTrackTree"
+    procCount = 1
+    waintUnitilProcCount(procName, procCount)
+
+    samples_calibration_12MHz = [
+        "2021-11-25T13-53-16.129",
+        "2021-11-25T15-00-32.273",
+        "2021-11-25T15-21-05.094",
+        "2021-11-25T16-29-22.081"        
+    ]
+    
+    samples_calibration_25MHz = [
+        "2021-11-25T14-07-04.200",
+        "2021-11-25T14-33-41.411",
+        "2021-11-25T16-12-14.995"
+    ]
+    
+    samples_IFJ_VdG = [
+    "2021-06-16T17-46-28.582",
+    "2021-06-22T12-01-56.568",
+    "2021-06-23T14-16-30.884",  
+    "2021-06-23T19-24-16.737",
+    "2021-06-17T11-54-38.000",
+    "2021-06-22T14-11-08.614",
+    "2021-06-23T18-39-39.905",
+    ]
+
+    command = "mkdir 2021-11-25_12.5MHz  2021-11-25_25.0MHz  IFJ_VdG"
+    os.system(command)
+    
+    for item in samples_calibration_12MHz:
+        command = "mv "+item+" 2021-11-25_12.5MHz"
+        os.system(command)
+        command = "hadd -f 2021-11-25_12.5MHz/12.5MHz.root 2021-11-25_12.5MHz/*/*.root"
+        os.system(command)
+
+    for item in samples_calibration_25MHz:
+        command = "mv "+item+" 2021-11-25_25MHz"
+        os.system(command)
+        command = "hadd -f 2021-11-25_25.0MHz/25.0MHz.root 2021-11-25_25.0MHz/*/*.root"
+        os.system(command)
+
+    for item in IFJ_VdG:
+        command = "mv "+item+" IFJ_VdG"
+        os.system(command)
+        command = "hadd -f IFJ_VdG/IFJ_VdG.root IFJ_VdG/*/*.root"
+        os.system(command)
+
+################################################
+################################################
 def analyzeDataInDirectory(dataPath, geometryFile):
 
     procName = "makeTrackTree"
     command = "time ../../bin/"+procName
-    procCount = 1
+    procCount = 10
 
     for root, dirs, files in os.walk(dataPath):
         for fileName in files:
             if (fileName.find(".root")!=-1 and fileName.find("EventTPC")!=-1) or (fileName.find(".graw")!=-1 and fileName.find("CoBo")!=-1):
                 waintUnitilProcCount(procName, procCount)
                 analyzeSingleFile(dataPath, fileName, geometryFile, command)
+
+    finalize()
 ################################################
 ################################################                
 runs = [ ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210616_extTrg_CO2_250mbar_DT1470ET",
@@ -79,18 +133,35 @@ runs = [ ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210616_extTrg_CO2_25
          ("/scratch/akalinow/ELITPC/data/calibration/2021-11-25_25MHz/",
           "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_25.0MHz.dat"),
          ##
+          ("/scratch/akalinow/ELITPC/data/calibration/2018/",
+          "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_mini_eTPC.dat"),
 ]
 ###
 ###
+'''
+runs = [
+     ("/scratch/akalinow/ELITPC/data/2018/",
+      "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_mini_eTPC.dat"),
+]
+'''
+
+'''
 runs = [
     ("/mnt/NAS_STORAGE_BIG/IFJ_VdG_20210630/20210621_extTrg_CO2_250mbar_DT1470ET/",
      "../geometry_ELITPC_250mbar_12.5MHz.dat"),
 ]
+
+runs = [  ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210616_extTrg_CO2_250mbar_DT1470ET",
+          "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
+    ]
+'''
 ################################################
 ################################################      
+
 for dataPath, geometryFile in runs:
     analyzeDataInDirectory(dataPath, geometryFile)
 
-
-
+################################################
+################################################      
+              
 
