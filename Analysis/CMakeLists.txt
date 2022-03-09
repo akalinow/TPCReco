@@ -17,6 +17,7 @@ file(GLOB_RECURSE sources       ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/src/*.cpp)
 include_directories(${ROOTINCDIR})
 include_directories(${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include)
 include_directories(${PROJECT_SOURCE_DIR}/DataFormats/include)
+include_directories(${PROJECT_SOURCE_DIR}/GrawToROOT/include)
 include_directories(${PROJECT_SOURCE_DIR}/GUI/include)
 include_directories(${PROJECT_SOURCE_DIR}/Reconstruction/include)
 include_directories(${PROJECT_SOURCE_DIR}/Utilities/include)
@@ -32,7 +33,7 @@ target_compile_options(analysis_IFJ_VdG PUBLIC ${CMAKE_ROOT_CFLAGS})
 target_link_libraries(analysis_IFJ_VdG PUBLIC DataFormats Utilities Reconstruction GUI ${Boost_LIBRARIES})
 
 target_compile_options(makeTrackTree PUBLIC ${CMAKE_ROOT_CFLAGS})
-target_link_libraries(makeTrackTree PUBLIC DataFormats Utilities Reconstruction GUI ${Boost_LIBRARIES})
+target_link_libraries(makeTrackTree PUBLIC DataFormats ${GRAW_TO_ROOT_LIBRARY} Utilities Reconstruction GUI ${Boost_LIBRARIES})
 
 # All install commands get the same destination. this allows us to use paths
 # relative to the executable.

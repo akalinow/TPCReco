@@ -219,7 +219,7 @@ void EventSourceGRAW::findEventFragments(unsigned long int eventId, unsigned int
     lowEndScanRange = iInitialEntry-frameLoadRange;
   }  
   unsigned int highEndScanRange = std::min((unsigned int)nEntries, iInitialEntry+frameLoadRange);
-
+  
   for(unsigned int iEntry=iInitialEntry;
       iEntry>=lowEndScanRange && iEntry<nEntries && nFragments<GRAW_EVENT_FRAGMENTS;
       --iEntry){

@@ -29,8 +29,9 @@ void makePlots(std::string fileName){
   hPosXYZCut1->SetStats(kFALSE);
 						
 
-  TCut cut0 = "cosTheta>0.9 && abs(x0-127)<25 && abs(y0-76)<25 && chi2<9";
-  TCut cut1 = "!(abs(x0-127)<25 && abs(y0-76)<25) && chi2<9 && length>0";
+  TCut qualityCut = "chi2<10 && charge>100 && length>0";
+  TCut cut0 = "cosTheta>0.9 && abs(x0-127)<25 && abs(y0-76)<25"&&qualityCut;
+  TCut cut1 = "!(abs(x0-127)<25 && abs(y0-76)<25)"&&qualityCut;
 
   trackTree->Draw("charge:length>>hChargeVsLength","", "goff");
   trackTree->Draw("cosTheta:length>>hCosThetaVsLength","", "goff");
@@ -70,13 +71,20 @@ void makePlots(std::string fileName){
   aLeg->Draw();
   ////////////////////////////////
   aCanvas->cd(3);
-  hPosXYZCut1->Project3D("xy")->Draw("colz");
-  
+  hPosXYZCut1->Project3D("yx")->Draw("colz");
   aLeg = new TLegend(0.45, 0.8, 0.9, 0.9);
   aLeg->AddEntry(hLengthCut0, "signal start pos.","l");
   aLeg->Draw();
   //aLabel->Draw();
   ////////////////
+  aCanvas->cd(4);
+  hPosXYZCut1->Project3D("y")->Draw("colz");
+  aLeg = new TLegend(0.1, 0.8, 0.6, 0.9);
+  aLeg->AddEntry(hLengthCut0, "signal start pos.","l");
+  aLeg->Draw();
+  ////////////////
+  
+  
   aCanvas->Print("Plots_set0.png");
   ////////////////
   ////////////////

@@ -13,6 +13,9 @@
 #include "TrackBuilder.h"
 #include "HistoManager.h"
 #include "EventSourceROOT.h"
+#ifdef WITH_GET
+#include "EventSourceGRAW.h"
+#endif
 #include "SigClusterTPC.h"
 #include "EventTPC.h"
 #include "colorText.h"
@@ -80,19 +83,36 @@ typedef struct {Float_t eventId, frameId, length,
 int makeTrackTree(const  std::string & geometryFileName,
 		  const  std::string & dataFileName) {
 
-  int index = dataFileName.find("Event")+9;
-  std::string timestamp = dataFileName.substr(index, 23);
-  std::string rootFileName = "TrackTree_"+dataFileName.substr(index);
-  TFile outputROOTFile(rootFileName.c_str(),"RECREATE");
-
   // Define some simple structures
   TTree *tree = new TTree("trackTree", "Track tree");
   TrackData track_data;
+  int index = -1;
+  std::string timestamp;
   tree->Branch("track",&track_data,"eventId:frameId:length:horizontalLostLength:verticalLostLength:energy:charge:cosTheta:phi:chi2:x0:y0:z0:x1:y1:z1");
   
   std::shared_ptr<EventSourceBase> myEventSource;
-  myEventSource = std::make_shared<EventSourceROOT>(geometryFileName);
-  
+  if(dataFileName.find(".graw")!=std::string::npos){
+    #ifdef WITH_GET
+    myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
+    dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(160);
+    index = dataFileName.find("AsAd_ALL_")+9;
+    timestamp = dataFileName.substr(index, 26);
+    #endif
+  }
+  else if(dataFileName.find(".root")!=std::string::npos){
+    myEventSource = std::make_shared<EventSourceROOT>(geometryFileName);
+    index = dataFileName.find("EventTPC_")+9;
+    timestamp = dataFileName.substr(index, 23);
+  }
+  else{
+    std::cout<<KRED<<"Wrong input file: "<<RST<<dataFileName<<std::endl;
+    return -1;
+  }
+
+  int npos = dataFileName.size()-index-5;
+  std::string rootFileName = "TrackTree_"+dataFileName.substr(index, npos)+".root";
+  TFile outputROOTFile(rootFileName.c_str(),"RECREATE");
+
   TrackBuilder myTkBuilder;
   myTkBuilder.setGeometry(myEventSource->getGeometry());
 
@@ -101,14 +121,8 @@ int makeTrackTree(const  std::string & geometryFileName,
   TCanvas *aCanvas = new TCanvas("aCanvas","Histograms",1000,1000);
   aCanvas->Divide(2,2);
  
-  if(dataFileName.find(".root")!=std::string::npos){
-    myEventSource->loadDataFile(dataFileName);
-    std::cout<<KBLU<<"File with "<<RST<<myEventSource->numberOfEntries()<<" frames loaded."<<std::endl;
-  }
-  else{
-    std::cout<<KRED<<"Wrong input file: "<<RST<<dataFileName<<std::endl;
-    return -1;
-  }
+  myEventSource->loadDataFile(dataFileName);
+  std::cout<<KBLU<<"File with "<<RST<<myEventSource->numberOfEntries()<<" frames loaded."<<std::endl;
 
   //Event loop
   unsigned int nEntries = myEventSource->numberOfEntries();
@@ -159,7 +173,7 @@ int makeTrackTree(const  std::string & geometryFileName,
     ///Draw anomaly events
     /// 1.5 - calibration
     /// 40 - Kraków data
-    if(chi2>40){
+    if(chi2>1E6){
       myHistoManager.setEvent(myEventSource->getCurrentEvent());
       for(int strip_dir=0;strip_dir<3;++strip_dir){
 	aCanvas->cd(strip_dir+1);

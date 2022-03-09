@@ -5,23 +5,26 @@
 import os, commands
 
 
-#path = "/mnt/NAS_STORAGE_SMALL/IFJ_VdG_20210630/20210616_extTrg_CO2_250mbar_DT1470ET/"
+#path = "/mnt/NAS_STORAGE_BIG/IFJ_VdG_20210630/20210616_extTrg_CO2_250mbar_DT1470ET/"
 #geometryFile = "/home/akalinow/scratch/TPCReco/build/resources/geometry_ELITPC_250mbar_12.5MHz.dat"
 
-#path = "/mnt/NAS_STORAGE_SMALL/IFJ_VdG_20210630/20210622_extTrg_CO2_250mbar_DT1470ET/"
+#path = "/mnt/NAS_STORAGE_BIG/IFJ_VdG_20210630/20210617_extTrg_CO2_250mbar_DT1470ET/";
 #geometryFile = "/home/akalinow/scratch/TPCReco/build/resources/geometry_ELITPC_250mbar_12.5MHz.dat"
 
-#path = "/mnt/NAS_STORAGE_SMALL/IFJ_VdG_20210630/20210621_extTrg_CO2_250mbar_DT1470ET/"
-#geometryFile = "/home/akalinow/scratch/TPCReco/build/resources/geometry_ELITPC_250mbar_12.5MHz.dat"
-
-#path = "/mnt/NAS_STORAGE_SMALL/IFJ_VdG_20210630/20210617_extTrg_CO2_250mbar_DT1470ET/";
-#geometryFile = "/home/akalinow/scratch/TPCReco/build/resources/geometry_ELITPC_250mbar_12.5MHz.dat"
-
-path = "/data/edaq/2021/20211125_extTrg_CO2_250mbar_DT1470ET/"
+path = "/mnt/NAS_STORAGE_BIG/IFJ_VdG_20210630/20210621_extTrg_CO2_250mbar_DT1470ET/"
 geometryFile = "/home/akalinow/scratch/TPCReco/build/resources/geometry_ELITPC_250mbar_12.5MHz.dat"
 
-#command = "../bin/grawToEventTPC"
-command = "../bin/grawToEventRaw"
+#path = "/mnt/NAS_STORAGE_BIG/IFJ_VdG_20210630/20210622_extTrg_CO2_250mbar_DT1470ET/"
+#geometryFile = "/home/akalinow/scratch/TPCReco/build/resources/geometry_ELITPC_250mbar_12.5MHz.dat"
+
+#path = "/mnt/NAS_STORAGE_BIG/IFJ_VdG_20210630/20210623_extTrg_CO2_250mbar_DT1470ET/"
+#geometryFile = "/home/akalinow/scratch/TPCReco/build/resources/geometry_ELITPC_250mbar_12.5MHz.dat"
+
+#path = "/data/edaq/2021/20211125_extTrg_CO2_250mbar_DT1470ET/"
+#geometryFile = "/home/akalinow/scratch/TPCReco/build/resources/geometry_ELITPC_250mbar_12.5MHz.dat"
+
+command = "../bin/grawToEventTPC"
+#command = "../bin/grawToEventRaw"
 
 filePrefix = "EventTPC"
 if command.find("EventRaw")!=-1:
@@ -44,8 +47,8 @@ runId = 0
 for aTimestamp, aRunFileList in grawFileList.items():
     runId += 1
     aRunFileList.sort()
-    if aTimestamp!="2021-11-25T13:53:16.129":
-        continue
+    #if aTimestamp!="2021-06-23T19:24:16.737":
+    #    continue
     
     print(aRunFileList)
 
@@ -53,5 +56,5 @@ for aTimestamp, aRunFileList in grawFileList.items():
         arguments = aFile+" "+geometryFile+" "+filePrefix+"_"+aTimestamp+"_"+str(chunkId)+".root"
         print(aFile, aTimestamp, arguments)
         os.system(command+" "+arguments)
-        if chunkId>-5:
+        if chunkId>500:
             break

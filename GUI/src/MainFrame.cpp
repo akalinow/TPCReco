@@ -305,7 +305,8 @@ void MainFrame::AddHistoCanvas(){
   fCanvas = embeddedCanvas->GetCanvas();
   fCanvas->MoveOpaque(kFALSE);
   fCanvas->Divide(2,2, 0.02, 0.02);
-  ClearCanvas();
+    
+  ClearCanvases();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -594,10 +595,18 @@ void MainFrame::HandleEmbeddedCanvas(Int_t event, Int_t x, Int_t y, TObject *sel
 void MainFrame::CloseWindow(){ gApplication->Terminate(0); }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void MainFrame::ClearCanvas(){
+void MainFrame::ClearCanvases(){
 
+  ClearCanvas(fCanvas);
+  
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void MainFrame::ClearCanvas(TCanvas *aCanvas){
+
+  if(!aCanvas) return;
   if(fMarkersManager) fMarkersManager->reset();
-  TList *aList = fCanvas->GetListOfPrimitives();
+  TList *aList = aCanvas->GetListOfPrimitives();
   TText aMessage(0.0, 0.0,"Waiting for data.");
   for(auto obj: *aList){
     TPad *aPad = (TPad*)(obj);
@@ -624,68 +633,71 @@ void MainFrame::Update(){
   fMarkersManager->setEnabled(isRecoModeOn);
 
   if(!isRecoModeOn){
-    drawRawHistos();
+    drawRawHistos(fCanvas);
   }
   else {
-    drawRecoHistos();
+    drawRecoHistos(fCanvas);
   }
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void MainFrame::drawRawHistos(){
+void MainFrame::drawRawHistos(TCanvas *aCanvas){
+
+  aCanvas->Clear();
+  aCanvas->Divide(2,2);
 
   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
-    fCanvas->cd(strip_dir+1);
+    aCanvas->cd(strip_dir+1);
     myHistoManager.getRawStripVsTime(strip_dir)->DrawClone("colz");
-    fCanvas->Update();
   }
-  fCanvas->cd(4);
+  aCanvas->cd(4);
   if(isRateDisplayOn){
     myHistoManager.getEventRateGraph()->Draw("AP");
   } else{
     myHistoManager.getRawTimeProjection()->DrawClone("hist");
   }
-  fCanvas->Update();
+  aCanvas->Update();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void MainFrame::drawTechnicalHistos(){
+void MainFrame::drawTechnicalHistos(TCanvas *aCanvas){
+
+  aCanvas->Clear();
+  aCanvas->Divide(2,2);
+  
   auto cobo_id=0;
   for( int aget_id = 0;
        aget_id <myEventSource->getGeometry()->GetAgetNchips();
        ++aget_id ){
-    fCanvas->cd(aget_id+1);
+    aCanvas->cd(aget_id+1);
     myHistoManager.getChannels(cobo_id, aget_id)->DrawClone("colz");
-    fCanvas->Update();
   }  
-  fCanvas->Update();
+  aCanvas->Update();
 }
-
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void MainFrame::drawRecoHistos(){
-
+void MainFrame::drawRecoHistos(TCanvas *aCanvas){
+    
   myHistoManager.reconstruct();
+  aCanvas->Clear();
+  aCanvas->Divide(2,2);
 
-  fCanvas->Clear();
-  fCanvas->Divide(2,2);
 
    for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
-     //fCanvas->cd(strip_dir+1);
-     TVirtualPad *aPad = fCanvas->cd(strip_dir+1);
-     //myHistoManager.getClusterStripVsTimeInMM(strip_dir)->DrawClone("colz");
+     //aCanvas->cd(strip_dir+1);
+     TVirtualPad *aPad = aCanvas->cd(strip_dir+1);
+     myHistoManager.getClusterStripVsTimeInMM(strip_dir)->DrawClone("colz");
      //myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("box same");
-     myHistoManager.getRawStripVsTimeInMM(strip_dir)->DrawClone("colz");
+     //myHistoManager.getRawStripVsTimeInMM(strip_dir)->DrawClone("colz");
      myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
   }
-   //fCanvas->cd(4);
-   myHistoManager.drawTrack3DProjectionXY(fCanvas->cd(4));
-   //myHistoManager.drawChargeAlongTrack3D(fCanvas->cd(4));
-   //myHistoManager.drawTrack3D(fCanvas->cd(4));
+   //aCanvas->cd(4);
+   myHistoManager.drawTrack3DProjectionXY(aCanvas->cd(4));
+   //myHistoManager.drawChargeAlongTrack3D(aCanvas->cd(4));
+   //myHistoManager.drawTrack3D(aCanvas->cd(4));
    //myHistoManager.getClusterTimeProjectionInMM()->DrawClone("hist");
    //myHistoManager.getRecHitTimeProjection()->DrawClone("hist same");
-
-   fCanvas->Update();
+   aCanvas->Update();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -755,7 +767,7 @@ void MainFrame::updateRunConditions(std::vector<double> *runParams){
   myEventSource->getGeometry()->setTriggerDelay(runParams->at(2));
   std::cout<<myEventSource->getGeometry()->getRunConditions()<<std::endl;
   if(isRecoModeOn){
-    ClearCanvas();
+    ClearCanvases();
     Update();
   }
 }
@@ -824,7 +836,7 @@ void MainFrame::HandleMenu(Int_t id){
       if(fi.fFilename) fileName.append(fi.fFilename);
       else return;
       gSystem->cd(oldDirectory.c_str());
-      ClearCanvas();
+      ClearCanvases();
       myEventSource->loadDataFile(fileName);
       myEventSource->loadFileEntry(0);
       Update();
@@ -846,7 +858,7 @@ void MainFrame::HandleMenu(Int_t id){
   case M_NEXT_EVENT:
     {
       UpdateEventLog();
-      ClearCanvas();
+      ClearCanvases();
       myEventSource->getNextEventLoop();
       Update();
     }
@@ -854,7 +866,7 @@ void MainFrame::HandleMenu(Int_t id){
   case M_PREVIOUS_EVENT:
     {
       UpdateEventLog();
-      ClearCanvas();
+      ClearCanvases();
       myEventSource->getPreviousEventLoop();
       Update();
     }
@@ -888,21 +900,21 @@ void MainFrame::HandleMenu(Int_t id){
   case M_TOGGLE_RECOMODE:
     {
       isRecoModeOn=!isRecoModeOn;
-      ClearCanvas();
+      ClearCanvases();
       Update();
     }
-    break;
+    break;   
     case M_TOGGLE_RATE:
     {
       isRateDisplayOn=!isRateDisplayOn;
-      ClearCanvas();
+      ClearCanvases();
       Update();
     }
     break;
   case M_GOTO_EVENT:
     {
       int eventId = fEventIdEntry->GetIntNumber();
-      ClearCanvas();
+      ClearCanvases();
       myEventSource->loadEventId(eventId);
       Update();
     }
@@ -910,7 +922,7 @@ void MainFrame::HandleMenu(Int_t id){
   case M_GOTO_ENTRY:
     {
       int fileEntry = fFileEntryEntry->GetIntNumber();
-      ClearCanvas();
+      ClearCanvases();
       myEventSource->loadFileEntry(fileEntry);
       Update();
     }

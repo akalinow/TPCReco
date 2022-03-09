@@ -79,7 +79,7 @@ if(std::abs(myTangent.X())<1E-3)
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TH1F TrackSegment2D::getChargeProfile(const Hit2DCollection & aRecHits, double radiusCut){
+TGraphErrors TrackSegment2D::getChargeProfile(const Hit2DCollection & aRecHits, double radiusCut){
 
   double x = 0.0, y = 0.0;
   double distance = 0.0;
@@ -87,24 +87,28 @@ TH1F TrackSegment2D::getChargeProfile(const Hit2DCollection & aRecHits, double r
   TVector3 aPoint;
 
   TVector3 cellDiagonal(myGeometryPtr->GetTimeBinWidth(), myGeometryPtr->GetStripPitch(), 0);
-  double cellProjectionOnSegment2D = cellDiagonal.Dot(getTangent().Unit());
+  TVector3 cellDiagonal1(myGeometryPtr->GetTimeBinWidth(), -myGeometryPtr->GetStripPitch(), 0);
+  double cellProjectionOnSegment2D = std::max(cellDiagonal.Dot(getTangent().Unit()),
+					      cellDiagonal1.Dot(getTangent().Unit()));
+  
   double binWidth = std::abs(cellProjectionOnSegment2D)/getLength();
-  int nBins = 2.0/binWidth;
+  TGraphErrors grChargeProfile2D(0);
 
-  TH1F hChargeProfile2D("hChargeProfile2D",";d/L;charge",nBins+1,
-			-binWidth/2.0,
-			1.0+binWidth/2.0);
+  grChargeProfile2D.SetPoint(grChargeProfile2D.GetN(),-0.1, 0);
+  grChargeProfile2D.SetPoint(grChargeProfile2D.GetN(),1.1, 0);
+
   for(const auto aHit:aRecHits){
     x = aHit.getPosTime();
     y = aHit.getPosStrip();
     aPoint.SetXYZ(x, y, 0.0);
     std::tie(lambda, distance) = getPointLambdaAndDistance(aPoint);
     lambda /= getLength();
-    if(distance<radiusCut && lambda>-binWidth/2.0 && lambda<getLength()+binWidth/2.0){
-      hChargeProfile2D.Fill(lambda,aHit.getCharge());
+    if(distance<radiusCut){
+      grChargeProfile2D.SetPoint(grChargeProfile2D.GetN(),lambda, aHit.getCharge()/binWidth);
+      grChargeProfile2D.SetPointError(grChargeProfile2D.GetN()-1,binWidth,0.0);
     }
   }  
-  return hChargeProfile2D;
+  return grChargeProfile2D;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -185,6 +189,7 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
   chi2 /= chargeSum;
   biasDistance /= chargeSum;
   chargeSum /= totalChargeSum;
+  if(!pointCount) return -100.0;
   return chi2 + biasDistance - chargeSum;
 }
 /////////////////////////////////////////////////////////
