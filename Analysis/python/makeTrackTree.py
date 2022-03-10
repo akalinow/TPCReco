@@ -77,9 +77,13 @@ def finalize():
     "2021-06-23T18-39-39.905",
     ]
 
-    command = "mkdir 2021-11-25_12.5MHz  2021-11-25_25.0MHz  IFJ_VdG"
+    command = "mkdir 2021-11-25_12.5MHz 2021-11-25_25.0MHz IFJ_VdG 2018"
     os.system(command)
-    
+
+    command = "mv 2018-* 2018"
+    os.system(command)
+    command = "hadd -f 2018/2018.root 2018/*/*.root"
+
     for item in samples_calibration_12MHz:
         command = "mv "+item+" 2021-11-25_12.5MHz"
         os.system(command)
@@ -87,12 +91,12 @@ def finalize():
         os.system(command)
 
     for item in samples_calibration_25MHz:
-        command = "mv "+item+" 2021-11-25_25MHz"
+        command = "mv "+item+" 2021-11-25_25.0MHz"
         os.system(command)
         command = "hadd -f 2021-11-25_25.0MHz/25.0MHz.root 2021-11-25_25.0MHz/*/*.root"
         os.system(command)
 
-    for item in IFJ_VdG:
+    for item in samples_IFJ_VdG:
         command = "mv "+item+" IFJ_VdG"
         os.system(command)
         command = "hadd -f IFJ_VdG/IFJ_VdG.root IFJ_VdG/*/*.root"
@@ -111,8 +115,6 @@ def analyzeDataInDirectory(dataPath, geometryFile):
             if (fileName.find(".root")!=-1 and fileName.find("EventTPC")!=-1) or (fileName.find(".graw")!=-1 and fileName.find("CoBo")!=-1):
                 waintUnitilProcCount(procName, procCount)
                 analyzeSingleFile(dataPath, fileName, geometryFile, command)
-
-    finalize()
 ################################################
 ################################################                
 runs = [ ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210616_extTrg_CO2_250mbar_DT1470ET",
@@ -133,7 +135,7 @@ runs = [ ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210616_extTrg_CO2_25
          ("/scratch/akalinow/ELITPC/data/calibration/2021-11-25_25MHz/",
           "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_25.0MHz.dat"),
          ##
-          ("/scratch/akalinow/ELITPC/data/calibration/2018/",
+          ("/scratch/akalinow/ELITPC/data/2018/",
           "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_mini_eTPC.dat"),
 ]
 ###
@@ -145,12 +147,11 @@ runs = [
 ]
 '''
 
-'''
 runs = [
-    ("/mnt/NAS_STORAGE_BIG/IFJ_VdG_20210630/20210621_extTrg_CO2_250mbar_DT1470ET/",
+    ("/scratch/akalinow/ELITPC/data/calibration/2021-11-25_12.5MHz/",
      "../geometry_ELITPC_250mbar_12.5MHz.dat"),
 ]
-
+'''
 runs = [  ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210616_extTrg_CO2_250mbar_DT1470ET",
           "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
     ]
@@ -160,7 +161,7 @@ runs = [  ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210616_extTrg_CO2_2
 
 for dataPath, geometryFile in runs:
     analyzeDataInDirectory(dataPath, geometryFile)
-
+finalize()
 ################################################
 ################################################      
               

@@ -41,10 +41,11 @@ void makeCalibrationPlots(std::string fileName){
   TH3D *hPosXYZCut1 = (TH3D*)hPosXYZCut0->Clone("hPosXYZCut1");
   hPosXYZCut1->SetStats(kFALSE);
 
-  TCut qualityCut = "chi2>-100 && chi2<10 && length>0";
+  TCut qualityCut = "chi2>-100 && length>0";
+  TCut sourcePositionCut = "abs(x0-127)<25 && abs(y0-76)<25";
   TCut cut0 = "cosTheta<0.5"&&qualityCut;
   TCut cut1 = "cosTheta>0.9"&&qualityCut;
-  TCut cut2 = "abs(x0-127)<25 && abs(y0-76)<25"&&qualityCut;
+  TCut cut2 = cut1&&qualityCut&&sourcePositionCut;
 
   trackTree->Draw("charge:length>>hChargeVsLength","", "goff");
   trackTree->Draw("cosTheta:length>>hCosThetaVsLength","", "goff");
@@ -52,9 +53,10 @@ void makeCalibrationPlots(std::string fileName){
   trackTree->Draw("phi>>hPhiCut0",cut0, "goff");
   trackTree->Draw("length+horizontalLostLength>>hLengthCut0",cut0, "goff");
   trackTree->Draw("length+verticalLostLength>>hLengthCut1",cut1, "goff");
+  trackTree->Draw("length>>hLengthCut1",cut2, "goff");
   trackTree->Draw("z0:y0:x0>>hPosXYZCut0",cut0, "goff");
   trackTree->Draw("z0:y0:x0>>hPosXYZCut1",cut1, "goff");
-  trackTree->Draw("chi2>>hChi2Cut0",cut2, "goff");
+  trackTree->Draw("chi2>>hChi2Cut0",cut0, "goff");
   trackTree->Draw("chi2>>hChi2Cut1",cut1, "goff");
   //trackTree->Scan("frameId:eventId:chi2","chi2>2");
   ///////////////////////////////////////////////////
@@ -110,7 +112,7 @@ void makeCalibrationPlots(std::string fileName){
   aCanvas->Print("Calibration_plots_set0.png");
 
   int horizontalTkCount = trackTree->GetEntries(cut0);
-  int verticalTkCount = trackTree->GetEntries(cut1);
+  int verticalTkCount = trackTree->GetEntries(cut2);
   double ratio = (double)verticalTkCount/horizontalTkCount;
   double ratioError = ratio*sqrt(1.0/horizontalTkCount +  1.0/verticalTkCount);
   std::cout<<"Vertical Tk count: "<<verticalTkCount<<std::endl;

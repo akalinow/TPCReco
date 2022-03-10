@@ -48,13 +48,11 @@ TVector3 TrackSegment2D::getNormalisedTangent() const{
   double phi = myGeometryPtr->GetStripPitchVector(myStripDir).Phi();
   double cosPhi = cos(phi);
   
-  if(std::abs(normalizedTangent.X())>1E-2){
-    if(normalizedTangent.X()<0) normalizedTangent *= -1;
+  if(std::abs(normalizedTangent.X())>1E-3){
     normalizedTangent *= 1.0/normalizedTangent.X();
   }
   else if(std::abs(normalizedTangent.Y())>1E-2){
     normalizedTangent.SetX(0.0);
-    if(normalizedTangent.Y()<0) normalizedTangent *= -1;
     normalizedTangent *= cosPhi/normalizedTangent.Y();
   }
   
@@ -96,10 +94,8 @@ TGraphErrors TrackSegment2D::getChargeProfile(const Hit2DCollection & aRecHits, 
 					      cellDiagonal1.Dot(getTangent().Unit()));
   
   double binWidth = std::abs(cellProjectionOnSegment2D)/getLength();
+  binWidth = 1.0/getLength();
   TGraphErrors grChargeProfile2D(0);
-
-  grChargeProfile2D.SetPoint(grChargeProfile2D.GetN(),-0.1, 0);
-  grChargeProfile2D.SetPoint(grChargeProfile2D.GetN(),1.1, 0);
 
   for(const auto aHit:aRecHits){
     x = aHit.getPosTime();
@@ -109,18 +105,19 @@ TGraphErrors TrackSegment2D::getChargeProfile(const Hit2DCollection & aRecHits, 
     lambda /= getLength();
     if(distance<radiusCut){
       grChargeProfile2D.SetPoint(grChargeProfile2D.GetN(),lambda, aHit.getCharge()/binWidth);
-      grChargeProfile2D.SetPointError(grChargeProfile2D.GetN()-1,binWidth,0.0);
+      grChargeProfile2D.SetPointError(grChargeProfile2D.GetN()-1,binWidth/2.0,0.0);
     }
   }
+  grChargeProfile2D.Sort();
+  
   grChargeProfile2D.GetPoint(grChargeProfile2D.GetN()-1,x,y);
   ex = grChargeProfile2D.GetErrorX(grChargeProfile2D.GetN()-1);
   grChargeProfile2D.SetPoint(grChargeProfile2D.GetN(),x+ex,0.0);
 
-  grChargeProfile2D.GetPoint(2,x,y);
-  ex = grChargeProfile2D.GetErrorX(2);
+  grChargeProfile2D.GetPoint(0,x,y);
+  ex = grChargeProfile2D.GetErrorX(0);
   grChargeProfile2D.SetPoint(grChargeProfile2D.GetN(),x-ex,0.0);
-  //std::cout<<"x: "<<x<<" ex: "<<ex<<std::endl;
-
+  grChargeProfile2D.Sort();
   return grChargeProfile2D;
 }
 /////////////////////////////////////////////////////////

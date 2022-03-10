@@ -184,12 +184,9 @@ void TrackBuilder::reconstruct(){
   Track3D aTrackCandidate;
   aTrackCandidate.addSegment(myTrack3DSeed);
 
-  aTrackCandidate.extendToZRange(std::get<0>(myZRange),std::get<1>(myZRange));
-  
-  auto rangeXY = myGeometryPtr->rangeXY();
-  aTrackCandidate.shrinkToXYRange(std::get<2>(rangeXY), std::get<3>(rangeXY),
-				  std::get<0>(rangeXY), std::get<1>(rangeXY));
-  
+  auto xyRange = myGeometryPtr->rangeXY();
+  aTrackCandidate.extendToChamberRange(xyRange, myZRange);
+
   fitTrack3D(aTrackCandidate);
 }
 /////////////////////////////////////////////////////////
@@ -381,7 +378,8 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
     a3DSeed.setStartEnd(start, end);
     aTrackCandidate.addSegment(a3DSeed);
   }
-  aTrackCandidate.extendToZRange(std::get<0>(myZRange),std::get<1>(myZRange));
+  auto xyRange = myGeometryPtr->rangeXY();
+  aTrackCandidate.extendToChamberRange(xyRange, myZRange);
   fitTrack3D(aTrackCandidate);
 }
 /////////////////////////////////////////////////////////
@@ -438,10 +436,9 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   
   if(std::abs(tangent_U.Y())>1E-3 && 
      tangent_U.Y()*tangent_V.Y()>0 &&
-     tangent_U.Y()*tangent_W.Y()>0 &&
-     tangent_V.Y()*tangent_W.Y()>0){
+     tangent_U.Y()*tangent_W.Y()>0){
     tangent_U.SetY(-tangent_U.Y());
-  }
+    }
   
   TVector2 tangentXY_fromUV;
   bool res4=myGeometryPtr->GetUVWCrossPointInMM(segmentU.getStripDir(), tangent_U.Y(),
@@ -469,7 +466,6 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   TVector3 aTangent(tangentXY.X(), tangentXY.Y(), tangentZ);
 
    // TEST
-  /*
   std::cout<<KRED<<__FUNCTION__<<RST
 	   <<" nHits_fromU: "<<nHits_U
     	   <<" nHits_fromV: "<<nHits_V
@@ -490,7 +486,6 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   tangentXY_fromWU.Print();
   std::cout<<KRED<<" from average: "<<RST;
   tangentXY.Print();
-  std::cout<<KBLU<<" bias time: "<<bias_time<<std::endl;
   std::cout<<KRED<<" bias U: "<<RST;
   bias_U.Print();
   std::cout<<KRED<<" bias V: "<<RST;
@@ -502,7 +497,7 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   ////////
   //aTangent.SetMagThetaPhi(1, 1.52218, 1.34371);
   //aTangent.SetXYZ(0.318140,-0.948024,0.006087);
-  */
+  
 
   TrackSegment3D a3DSeed;
   a3DSeed.setGeometry(myGeometryPtr);  
@@ -557,10 +552,9 @@ void TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
     myFittedTrack.chi2FromNodesList(bestFitResult.GetParams());
   }
   myFittedTrack.getSegments().front().setRecHits(myRawHits);
-  myFittedTrack.extendToZRange(std::get<0>(myZRange), std::get<1>(myZRange));
-  auto rangeXY = myGeometryPtr->rangeXY();  
-  myFittedTrack.shrinkToXYRange(std::get<0>(rangeXY), std::get<1>(rangeXY),
-				std::get<2>(rangeXY), std::get<3>(rangeXY));  
+
+  auto xyRange = myGeometryPtr->rangeXY();
+  myFittedTrack.extendToChamberRange(xyRange, myZRange);
   myFittedTrack.shrinkToHits();
   
   std::cout<<KBLU<<"Post-fit: "<<RST<<std::endl;

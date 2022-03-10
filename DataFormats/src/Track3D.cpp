@@ -225,15 +225,26 @@ void Track3D::splitSegment(unsigned int iSegment, double lenghtFraction){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void Track3D::extendToZRange(double zMin, double zMax){
+void Track3D::extendToChamberRange(const std::tuple<double, double, double, double> & xyRange,
+				   const std::tuple<double, double> & zRange){
 
-  if(!mySegments.size()) return;
+  bool extended = extendToZRange(std::get<0>(zRange),std::get<1>(zRange));
+  if(!extended){
+    extendToXYRange(std::get<2>(xyRange), std::get<3>(xyRange),
+		    std::get<0>(xyRange), std::get<1>(xyRange));
+  }
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+bool Track3D::extendToZRange(double zMin, double zMax){
+
+  if(!mySegments.size()) return false;
   
   TrackSegment3D & aFirstSegment = mySegments.front();
   TrackSegment3D & aLastSegment = mySegments.back();
   
   if(std::abs(aFirstSegment.getTangent().Z()<1E-3) ||
-     std::abs(aLastSegment.getTangent().Z()<1E-3)) return;
+     std::abs(aLastSegment.getTangent().Z()<1E-3)) return false;
   
   double lambda =  aFirstSegment.getLambdaAtZ(zMin);
   TVector3 aStart = aFirstSegment.getStart() + lambda*aFirstSegment.getTangent(); 
@@ -246,10 +257,11 @@ void Track3D::extendToZRange(double zMin, double zMax){
   aLastSegment.setStartEnd(aStart, aEnd);
     
   update();
+  return true;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void Track3D::shrinkToXYRange(double xMin, double xMax,
+void Track3D::extendToXYRange(double xMin, double xMax,
 			      double yMin, double yMax){
 
   if(!mySegments.size()) return;
@@ -311,27 +323,23 @@ void Track3D::shrinkToHits(){
   TrackSegment3D & aFirstSegment = mySegments.front();
   TrackSegment3D & aLastSegment = mySegments.back();
 
-  TH2F hChargeProfileStart = aFirstSegment.getChargeProfile();
-  TH2F hChargeProfileEnd = aLastSegment.getChargeProfile();
-  TH1D * hProj = 0;
+  TH1F hChargeProfileStart = aFirstSegment.getChargeProfile();
+  TH1F hChargeProfileEnd = aLastSegment.getChargeProfile();
   double chargeCut = 0.0;
 
   int startBin = 0;
   int endBin = 1E6;
   int binTmp = 0;
-  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
-    hProj = hChargeProfileStart.ProjectionX("hProj",strip_dir+1, strip_dir+1);
-    chargeCut = 0.1*hProj->GetMaximum();
-    binTmp = hProj->FindFirstBinAbove(chargeCut);
-    if(binTmp>startBin) startBin = binTmp;
-    ///
-    hProj = hChargeProfileEnd.ProjectionX("hProj",strip_dir+1, strip_dir+1);
-    chargeCut = 0.1*hProj->GetMaximum();
-    binTmp = hProj->FindLastBinAbove(chargeCut);
-    if(binTmp<endBin) endBin = binTmp;
-  }
-  double lambdaStart = hChargeProfileStart.ProjectionX("hProj",DIR_U, DIR_U)->GetBinCenter(startBin);
-  double lambdaEnd = hChargeProfileEnd.ProjectionX("hProj",DIR_U, DIR_U)->GetBinCenter(endBin);
+  chargeCut = 0.05*hChargeProfileStart.GetMaximum();  
+  binTmp = hChargeProfileStart.FindFirstBinAbove(chargeCut);
+  if(binTmp>startBin) startBin = binTmp;
+  ///
+  chargeCut = 0.05*hChargeProfileEnd.GetMaximum();
+  binTmp = hChargeProfileEnd.FindLastBinAbove(chargeCut);
+  if(binTmp<endBin) endBin = binTmp;
+  
+  double lambdaStart = hChargeProfileStart.GetBinCenter(startBin)*getLength();
+  double lambdaEnd = hChargeProfileEnd.GetBinCenter(endBin)*getLength();
   
   TVector3 aStart = aFirstSegment.getStart() + getSegmentLambda(lambdaStart, 0)*aFirstSegment.getTangent();  
   TVector3 aEnd = aLastSegment.getStart() + getSegmentLambda(lambdaEnd, mySegments.size()-1)*aLastSegment.getTangent();

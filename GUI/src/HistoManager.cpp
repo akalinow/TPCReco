@@ -531,7 +531,7 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   
   aPad->cd();
 
-  TH2F hChargeProfile = aTrack3D.getSegments().front().getChargeProfile();
+  TH1F hChargeProfile = aTrack3D.getSegments().front().getChargeProfile();
   hChargeProfile.SetLineWidth(2);
   hChargeProfile.SetLineColor(2);
   hChargeProfile.SetMarkerColor(2);
@@ -539,9 +539,7 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   hChargeProfile.SetMarkerStyle(20);
   hChargeProfile.SetMinimum(0.0);
   hChargeProfile.GetYaxis()->SetTitleOffset(1.5);
-  //hChargeProfile.DrawClone("HIST P");
-  hChargeProfile.DrawClone("colz");
-  //hChargeProfile.ProjectionX("px",2,2)->DrawClone("colz");
+  hChargeProfile.DrawClone("HIST P");
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
