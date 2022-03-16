@@ -31,7 +31,7 @@ std::shared_ptr<GeometryTPC> loadGeometry(const std::string fileName){
 Track3D *loadRecoEvent(const std::string fileName){
 
   if (!gROOT->GetClass("Track3D")){
-    R__LOAD_LIBRARY(/home/user1/scratch/akalinow/ELITPC/TPCReco/build/lib/libDataFormats.so);
+    R__LOAD_LIBRARY(/scratch/akalinow/scratch/akalinow/ELITPC/TPCReco/build/lib/libDataFormats.so);
   }
   
   TFile *aFile = new TFile(fileName.c_str());

@@ -44,6 +44,7 @@ def analyzeSingleFile(dataPath, fileName, geometryFile, command):
     print("Running job for file:"+fileName)                    
     os.chdir(run_timestamp)
     os.system("ln -s ../*Formats* ./")
+    os.system("ln -s ../*.dat ./")
     os.system(command+arguments)
     os.chdir("../")
 ################################################################
@@ -146,7 +147,7 @@ runs = [
       "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_mini_eTPC.dat"),
 ]
 '''
-
+'''
 runs = [
     ("/scratch/akalinow/ELITPC/data/calibration/2021-11-25_12.5MHz/",
      "../geometry_ELITPC_250mbar_12.5MHz.dat"),
@@ -155,7 +156,6 @@ runs = [
 runs = [  ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210616_extTrg_CO2_250mbar_DT1470ET",
           "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
     ]
-'''
 ################################################
 ################################################      
 

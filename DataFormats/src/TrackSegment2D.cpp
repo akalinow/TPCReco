@@ -82,6 +82,8 @@ if(std::abs(myTangent.X())<1E-3)
 /////////////////////////////////////////////////////////
 TGraphErrors TrackSegment2D::getChargeProfile(const Hit2DCollection & aRecHits, double radiusCut){
 
+  if(getLength()<1) return TGraphErrors(0);
+
   double x = 0.0, y = 0.0;
   double ex = 0.0;
   double distance = 0.0;
@@ -96,6 +98,7 @@ TGraphErrors TrackSegment2D::getChargeProfile(const Hit2DCollection & aRecHits, 
   double binWidth = std::abs(cellProjectionOnSegment2D)/getLength();
   binWidth = 1.0/getLength();
   TGraphErrors grChargeProfile2D(0);
+
 
   for(const auto aHit:aRecHits){
     x = aHit.getPosTime();

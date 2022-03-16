@@ -308,9 +308,8 @@ void TrackSegment3D::addProjection(TH1F &histo, TGraphErrors &graph) const{
   for(int iPoint=0;iPoint<graph.GetN();++iPoint){
     graph.GetPoint(iPoint, x,y);
     ex = graph.GetErrorX(iPoint);
-    binLow = histo.FindBin(x-ex);
-    binHigh = histo.
-      FindBin(x+ex);
+    binLow = histo.FindBin((x-ex)*getLength());
+    binHigh = histo.FindBin((x+ex)*getLength());
     y *= binWidth*graph.GetN();
     for(int iBin=binLow;iBin<=binHigh;++iBin){
       value = histo.GetBinContent(iBin);
@@ -322,7 +321,7 @@ void TrackSegment3D::addProjection(TH1F &histo, TGraphErrors &graph) const{
 /////////////////////////////////////////////////////////
 TH1F TrackSegment3D::getChargeProfile() const{
 
-  double radiusCut = 5;  
+  double radiusCut = 2;  
   std::vector<TGraphErrors> projections;
   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
     TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, getLength());
@@ -330,10 +329,11 @@ TH1F TrackSegment3D::getChargeProfile() const{
     projections.push_back(aTrack2DProjection.getChargeProfile(aRecHits, radiusCut));
   }
 
-  int nBins = 1000;
-  double minX = -0.1;
-  double maxX = 1.1;
-  TH1F hChargeProfile("hChargeProfile",";d [mm];charge/mm",nBins, minX, maxX);
+  int nBins = 1200;
+  double minX = -0.2*getLength();
+  double maxX = 1.2*getLength();
+  TH1F hChargeProfile("hChargeProfile",";d [mm];charge",nBins, minX, maxX);
+  if(getLength()<1) return hChargeProfile;
 
   int maxPoints = 0;
   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
@@ -353,7 +353,7 @@ TH1F TrackSegment3D::getChargeProfile() const{
   
   hChargeProfile.Rebin(rebinFactor);
   hChargeProfile.Scale(getIntegratedCharge(getLength())/hChargeProfile.Integral());
-    
+  //hChargeProfile.SaveAs("density_histo.root");
   return hChargeProfile;
 }
 /////////////////////////////////////////////////////////

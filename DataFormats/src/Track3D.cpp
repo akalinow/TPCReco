@@ -338,8 +338,8 @@ void Track3D::shrinkToHits(){
   binTmp = hChargeProfileEnd.FindLastBinAbove(chargeCut);
   if(binTmp<endBin) endBin = binTmp;
   
-  double lambdaStart = hChargeProfileStart.GetBinCenter(startBin)*getLength();
-  double lambdaEnd = hChargeProfileEnd.GetBinCenter(endBin)*getLength();
+  double lambdaStart = hChargeProfileStart.GetBinCenter(startBin);
+  double lambdaEnd = hChargeProfileEnd.GetBinCenter(endBin);
   
   TVector3 aStart = aFirstSegment.getStart() + getSegmentLambda(lambdaStart, 0)*aFirstSegment.getTangent();  
   TVector3 aEnd = aLastSegment.getStart() + getSegmentLambda(lambdaEnd, mySegments.size()-1)*aLastSegment.getTangent();

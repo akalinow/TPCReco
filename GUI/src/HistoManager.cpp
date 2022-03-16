@@ -36,6 +36,7 @@ void HistoManager::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
   
   myGeometryPtr = aGeometryPtr;
   myTkBuilder.setGeometry(aGeometryPtr);
+
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -532,6 +533,7 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   aPad->cd();
 
   TH1F hChargeProfile = aTrack3D.getSegments().front().getChargeProfile();
+  /*
   hChargeProfile.SetLineWidth(2);
   hChargeProfile.SetLineColor(2);
   hChargeProfile.SetMarkerColor(2);
@@ -540,6 +542,31 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   hChargeProfile.SetMinimum(0.0);
   hChargeProfile.GetYaxis()->SetTitleOffset(1.5);
   hChargeProfile.DrawClone("HIST P");
+  */
+  mydEdxFitter.fitHisto(hChargeProfile);
+  TH1F histo = mydEdxFitter.getFittedHisto();
+  TF1 func = mydEdxFitter.getFittedModel();
+  double carbonScale = func.GetParameter("carbonScale");
+  histo.DrawCopy();
+  func.DrawCopy("same");
+
+  func.SetParameter("carbonScale",0.0);
+  func.SetLineColor(kRed);
+  func.SetLineStyle(2);
+  func.SetLineWidth(2);
+  func.DrawCopy("same");
+
+  func.SetParameter("alphaScale",0.0);
+  func.SetParameter("carbonScale",carbonScale);
+  func.SetLineColor(kBlue-9);
+  func.SetLineStyle(2);
+  func.SetLineWidth(2);
+  func.DrawCopy("same");
+  
+  std::cout<<"Best fit event type: "<<mydEdxFitter.getBestFitEventType()<<std::endl;
+  std::cout<<"Fitted function: "<<func.GetName()<<std::endl;
+  std::cout<<"Alpha energy [MeV]: "<<mydEdxFitter.getAlphaEnergy()/1E6<<std::endl;
+  std::cout<<"Carbon energy [MeV]: "<<mydEdxFitter.getCarbonEnergy()/1E6<<std::endl;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

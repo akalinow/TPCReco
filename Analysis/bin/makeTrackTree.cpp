@@ -12,6 +12,7 @@
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/program_options.hpp>
 
+#include "dEdxFitter.h"
 #include "TrackBuilder.h"
 #include "HistoManager.h"
 #include "EventSourceROOT.h"
@@ -77,7 +78,9 @@ int main(int argc, char **argv){
 /////////////////////////////
 ////////////////////////////
 // Define some simple structures
-typedef struct {Float_t eventId, frameId, length,
+typedef struct {Float_t eventId, frameId,
+    eventType,
+    length,
     horizontalLostLength, verticalLostLength,
     energy, charge, cosTheta, phi, chi2,
     x0, y0, z0, x1, y1, z1;} TrackData;
@@ -112,10 +115,12 @@ int makeTrackTree(const  std::string & geometryFileName,
   TFile outputROOTFile(rootFileName.c_str(),"RECREATE");
   TTree *tree = new TTree("trackTree", "Track tree");
   TrackData track_data;
-  tree->Branch("track",&track_data,"eventId:frameId:length:horizontalLostLength:verticalLostLength:energy:charge:cosTheta:phi:chi2:x0:y0:z0:x1:y1:z1");
+  tree->Branch("track",&track_data,"eventId:frameId:eventType:length:horizontalLostLength:verticalLostLength:energy:charge:cosTheta:phi:chi2:x0:y0:z0:x1:y1:z1");
   
   TrackBuilder myTkBuilder;
   myTkBuilder.setGeometry(myEventSource->getGeometry());
+
+  dEdxFitter mydEdxFitter;
 
   HistoManager myHistoManager;
   myHistoManager.setGeometry(myEventSource->getGeometry());
@@ -158,10 +163,22 @@ int makeTrackTree(const  std::string & geometryFileName,
 
     TVector3 vertical(0,0,-1);
     double verticalTrackLostPart = 6.0/std::abs(vertical.Dot(tangent));
-    
+
+    TH1F hChargeProfile = aTrack3D.getSegments().front().getChargeProfile();
+    int eventType = 0;
+    double alphaEnergy = 0.0;
+    double carbonEnergy = 0.0;
+    if(charge>100 && length>50){
+      mydEdxFitter.fitHisto(hChargeProfile);
+      eventType = mydEdxFitter.getBestFitEventType();
+      alphaEnergy = mydEdxFitter.getAlphaEnergy();
+      carbonEnergy = mydEdxFitter.getCarbonEnergy();
+    }
+      
     track_data.frameId = iEntry;
     track_data.eventId = eventId;
-    track_data.length = length;
+    track_data.eventType = eventType;
+    track_data.length = length;    
     track_data.horizontalLostLength = horizontalTrackLostPart;
     track_data.verticalLostLength = verticalTrackLostPart;
     track_data.charge = charge;
@@ -174,7 +191,7 @@ int makeTrackTree(const  std::string & geometryFileName,
     track_data.x1 = end.X();
     track_data.y1 = end.Y();
     track_data.z1 = end.Z();
-    track_data.energy = 0.0;//getKineticEnergyForRange(length, 0);
+    track_data.energy = alphaEnergy + carbonEnergy;
     tree->Fill();
 
     ///Draw anomaly events

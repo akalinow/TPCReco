@@ -378,9 +378,11 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
     a3DSeed.setStartEnd(start, end);
     aTrackCandidate.addSegment(a3DSeed);
   }
-  auto xyRange = myGeometryPtr->rangeXY();
-  aTrackCandidate.extendToChamberRange(xyRange, myZRange);
-  fitTrack3D(aTrackCandidate);
+  //auto xyRange = myGeometryPtr->rangeXY();
+  //aTrackCandidate.extendToChamberRange(xyRange, myZRange);
+  //fitTrack3D(aTrackCandidate);
+  myFittedTrack = aTrackCandidate;
+  myFittedTrackPtr = &myFittedTrack;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -466,6 +468,7 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   TVector3 aTangent(tangentXY.X(), tangentXY.Y(), tangentZ);
 
    // TEST
+  /*
   std::cout<<KRED<<__FUNCTION__<<RST
 	   <<" nHits_fromU: "<<nHits_U
     	   <<" nHits_fromV: "<<nHits_V
@@ -497,7 +500,7 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   ////////
   //aTangent.SetMagThetaPhi(1, 1.52218, 1.34371);
   //aTangent.SetXYZ(0.318140,-0.948024,0.006087);
-  
+  */
 
   TrackSegment3D a3DSeed;
   a3DSeed.setGeometry(myGeometryPtr);  

@@ -14,6 +14,7 @@
 #include "SigClusterTPC.h"
 #include "TrackBuilder.h"
 #include "DotFinder.h"
+#include "dEdxFitter.h"
 
 #include "CommonDefinitions.h"
 
@@ -129,6 +130,7 @@ private:
   TGraph *grEventRate{0};
   TrackBuilder myTkBuilder;
   DotFinder myDotFinder;
+  dEdxFitter mydEdxFitter;
 
   std::shared_ptr<EventTPC> myEvent;
   std::shared_ptr<GeometryTPC> myGeometryPtr;

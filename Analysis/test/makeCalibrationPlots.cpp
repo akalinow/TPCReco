@@ -52,8 +52,7 @@ void makeCalibrationPlots(std::string fileName){
   trackTree->Draw("length>>hLength","", "goff");
   trackTree->Draw("phi>>hPhiCut0",cut0, "goff");
   trackTree->Draw("length+horizontalLostLength>>hLengthCut0",cut0, "goff");
-  trackTree->Draw("length+verticalLostLength>>hLengthCut1",cut1, "goff");
-  trackTree->Draw("length>>hLengthCut1",cut2, "goff");
+  trackTree->Draw("length+verticalLostLength>>hLengthCut1",cut2, "goff");
   trackTree->Draw("z0:y0:x0>>hPosXYZCut0",cut0, "goff");
   trackTree->Draw("z0:y0:x0>>hPosXYZCut1",cut1, "goff");
   trackTree->Draw("chi2>>hChi2Cut0",cut0, "goff");
@@ -71,7 +70,6 @@ void makeCalibrationPlots(std::string fileName){
   TLegend *aLeg = new TLegend(0.1, 0.1, 0.5, 0.3);
   aLeg->AddEntry(hLengthCut0, "cos(#theta)>0.9","l");
   aLeg->Draw();
-
 
   aCanvas->cd(3);
   hLengthCut0->SetTitle("Track length +  73.4/cos(#alpha)");
@@ -102,7 +100,7 @@ void makeCalibrationPlots(std::string fileName){
    
   aLeg = new TLegend(0.35, 0.75, 0.9, 0.9);
   aLeg->AddEntry(hLengthCut1, "cos(#theta)>0.9","l");
-  fitResult = hLengthCut1->Fit("gaus", "s", "",80, 100);
+  fitResult = hLengthCut1->Fit("gaus", "s", "",80, 120);
   mu = fitResult->Parameter(1);
   sigma = fitResult->Parameter(2);
   aLabel = new TLatex(100, hLengthCut1->GetMaximum()*0.7,
