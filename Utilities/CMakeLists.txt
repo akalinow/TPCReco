@@ -9,6 +9,7 @@ MESSAGE( STATUS "Adding CMake fragment for module:         " ${MODULE_NAME} )
 # invoked and put all files that match the pattern in the variable
 # `sources`
 #
+find_package(Boost COMPONENTS filesystem REQUIRED)
 file(GLOB_RECURSE sources       ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/src/*.cpp)
 
 ###############################################################################
@@ -24,7 +25,7 @@ include_directories(${PROJECT_SOURCE_DIR}/DataFormats/include)
 # files are invisible when they are not explicitly part of the project.
 #
 add_library(${MODULE_NAME} SHARED ${sources})
-target_link_libraries(${MODULE_NAME} ${ROOT_LIBRARIES} DataFormats)
+target_link_libraries(${MODULE_NAME} ${ROOT_LIBRARIES} DataFormats Boost::filesystem)
 # Compiler flags.
 #
 target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
