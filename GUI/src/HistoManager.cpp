@@ -13,7 +13,7 @@
 
 #include "TF1.h"
 
-
+#include "MakeUniqueName.h"
 #include "GeometryTPC.h"
 #include "EventTPC.h"
 #include "colorText.h"
@@ -557,8 +557,8 @@ void HistoManager::openOutputStream(const std::string & fileName){
 
   std::size_t last_dot_position = fileName.find_last_of(".");
   std::size_t last_slash_position = fileName.find_last_of("//");
-  std::string recoFileName = "Reco_"+fileName.substr(last_slash_position+1,
-						     last_dot_position-last_slash_position-1)+".root";
+  std::string recoFileName = MakeUniqueName("Reco_"+fileName.substr(last_slash_position+1,
+						     last_dot_position-last_slash_position-1)+".root");
   std::cout<<KBLU<<"recoFileName: "<<RST<<recoFileName<<std::endl;
   myTkBuilder.openOutputStream(recoFileName);
   /*
