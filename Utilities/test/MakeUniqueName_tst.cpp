@@ -23,8 +23,8 @@ public:
 
     createFile("Reco_CoBo_ALL_AsAd_ALL_2021-07-12T11:02:15.328_0000.root");
     createFile("Reco_CoBo_ALL_AsAd_ALL_2021-07-12T11:02:15.328_0001.root");
-    createFile("Reco_CoBo_ALL_AsAd_ALL_2021-07-12T11:02:15.328_0001(1).root");
-    createFile("Reco_CoBo_ALL_AsAd_ALL_2021-07-12T11:02:15.328_0001(2).root");
+    createFile("Reco_CoBo_ALL_AsAd_ALL_2021-07-12T11:02:15.328_0001-1.root");
+    createFile("Reco_CoBo_ALL_AsAd_ALL_2021-07-12T11:02:15.328_0001-2.root");
   }
 };
 
@@ -43,10 +43,10 @@ TEST_F(MakeUniqueNameTest, Exists) {
                 directory +
                 "Reco_CoBo_ALL_AsAd_ALL_2021-07-12T11:02:15.328_0000.root"),
             directory +
-                "Reco_CoBo_ALL_AsAd_ALL_2021-07-12T11:02:15.328_0000(1).root");
+                "Reco_CoBo_ALL_AsAd_ALL_2021-07-12T11:02:15.328_0000-1.root");
   EXPECT_EQ(MakeUniqueName(
                 directory +
                 "Reco_CoBo_ALL_AsAd_ALL_2021-07-12T11:02:15.328_0001.root"),
             directory +
-                "Reco_CoBo_ALL_AsAd_ALL_2021-07-12T11:02:15.328_0001(3).root");
+                "Reco_CoBo_ALL_AsAd_ALL_2021-07-12T11:02:15.328_0001-3.root");
 }

@@ -25,7 +25,7 @@ include_directories(${PROJECT_SOURCE_DIR}/DataFormats/include)
 # files are invisible when they are not explicitly part of the project.
 #
 add_library(${MODULE_NAME} SHARED ${sources})
-target_link_libraries(${MODULE_NAME} ${ROOT_LIBRARIES} DataFormats Boost::filesystem)
+target_link_libraries(${MODULE_NAME} PUBLIC ${ROOT_LIBRARIES} DataFormats Boost::filesystem)
 # Compiler flags.
 #
 target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})

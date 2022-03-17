@@ -5,4 +5,4 @@
 
 std::string MakeUniqueName(const std::string &filename);
 
-#endif //UTILITIS_MAKE_UNIQUE_NAME_H_
+#endif // UTILITIS_MAKE_UNIQUE_NAME_H_

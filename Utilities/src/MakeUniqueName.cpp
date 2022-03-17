@@ -10,8 +10,8 @@ std::string MakeUniqueName(const std::string &filename) {
   fs::path proposedPath = "";
   do {
     ++i;
-    auto proposedFilename = path.stem().string() + "(" + std::to_string(i) +
-                            ")" + path.extension().string();
+    auto proposedFilename = path.stem().string() + "-" + std::to_string(i) +
+                            path.extension().string();
     proposedPath = path.parent_path() / fs::path(proposedFilename);
   } while (fs::exists(proposedPath));
   return proposedPath.string();
