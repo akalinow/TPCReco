@@ -5,6 +5,9 @@ project(TPCSoft)                   # this sets the project name
 ## dependencies ###############################################################
 ###############################################################################
 
+set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+include(Tests)
+
 #ROOT 
 list(APPEND CMAKE_PREFIX_PATH $ENV{ROOTSYS})
 list(APPEND CMAKE_MODULE_PATH $ENV{ROOTSYS}/etc/cmake)

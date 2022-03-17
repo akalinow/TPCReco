@@ -24,7 +24,7 @@ include_directories(${PROJECT_SOURCE_DIR}/DataFormats/include)
 # files are invisible when they are not explicitly part of the project.
 #
 add_library(${MODULE_NAME} SHARED ${sources})
-target_link_libraries(${MODULE_NAME} ${ROOT_LIBRARIES})
+target_link_libraries(${MODULE_NAME} ${ROOT_LIBRARIES} DataFormats)
 # Compiler flags.
 #
 target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
@@ -33,3 +33,4 @@ target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
 # relative to the executable.
 install(TARGETS ${MODULE_NAME} LIBRARY DESTINATION lib)
 
+reco_add_test_subdirector(test)
