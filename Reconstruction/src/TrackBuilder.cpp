@@ -89,7 +89,7 @@ void TrackBuilder::fillOutputStream(){
      return;
   }
   myOutputTreePtr->Fill();
-  myOutputTreePtr->Write();
+  myOutputTreePtr->Write("", TObject::kOverwrite);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -374,7 +374,8 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
     aTrackCandidate.addSegment(a3DSeed);
   }
   aTrackCandidate.extendToZRange(std::get<0>(myZRange),std::get<1>(myZRange));
-  fitTrack3D(aTrackCandidate);
+  myFittedTrack = aTrackCandidate;
+  myFittedTrackPtr = &myFittedTrack;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

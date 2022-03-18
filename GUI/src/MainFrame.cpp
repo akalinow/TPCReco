@@ -603,9 +603,9 @@ void MainFrame::drawRecoHistos(TCanvas *aCanvas){
    for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
      //aCanvas->cd(strip_dir+1);
      TVirtualPad *aPad = aCanvas->cd(strip_dir+1);
-     myHistoManager.getClusterStripVsTimeInMM(strip_dir)->DrawClone("colz");
+     //myHistoManager.getClusterStripVsTimeInMM(strip_dir)->DrawClone("colz");
      //myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("box same");
-     //myHistoManager.getRawStripVsTimeInMM(strip_dir)->DrawClone("colz");
+     myHistoManager.getRawStripVsTimeInMM(strip_dir)->DrawClone("colz");
      myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
   }
    //aCanvas->cd(4);

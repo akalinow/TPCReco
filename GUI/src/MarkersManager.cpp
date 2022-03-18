@@ -96,7 +96,8 @@ void MarkersManager::setEnabled(bool enable){
     myButtons.find("Add segment")->second->SetState(kButtonDisabled);
     myButtons.find("Fit segments")->second->SetState(kButtonDisabled);
     myButtons.find("Save segments")->second->SetState(kButtonDisabled);
-  }    
+  }
+  myButtons.find("Save segments")->second->SetState(kButtonUp);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
