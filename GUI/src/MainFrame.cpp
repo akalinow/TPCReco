@@ -532,6 +532,7 @@ void MainFrame::ClearCanvas(TCanvas *aCanvas){
     aPad->cd();
     aMessage.DrawTextNDC(0.3, 0.5,"Waiting for data.");
     aPad->Update();
+    aPad->SetLogz(isLogScaleOn);
   }
 }
 /////////////////////////////////////////////////////////
@@ -562,6 +563,9 @@ void MainFrame::drawRawHistos(TCanvas *aCanvas){
 
   aCanvas->Clear();
   aCanvas->Divide(2,2);
+  for(int iPad=1;iPad<=3;++iPad){
+    fCanvas->cd(iPad)->SetLogz(isLogScaleOn);
+  }
 
   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
     aCanvas->cd(strip_dir+1);
@@ -581,6 +585,9 @@ void MainFrame::drawTechnicalHistos(TCanvas *aCanvas){
 
   aCanvas->Clear();
   aCanvas->Divide(2,2);
+  for(int iPad=1;iPad<=3;++iPad){
+    fCanvas->cd(iPad)->SetLogz(isLogScaleOn);
+  }
   
   auto cobo_id=0;
   for( int aget_id = 0;
@@ -598,6 +605,9 @@ void MainFrame::drawRecoHistos(TCanvas *aCanvas){
   myHistoManager.reconstruct();
   aCanvas->Clear();
   aCanvas->Divide(2,2);
+  for(int iPad=1;iPad<=3;++iPad){
+    fCanvas->cd(iPad)->SetLogz(isLogScaleOn);
+  }
 
 
    for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
