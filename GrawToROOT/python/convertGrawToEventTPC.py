@@ -21,10 +21,11 @@ import os, commands
 #geometryFile = "/home/akalinow/scratch/TPCReco/build/resources/geometry_ELITPC_250mbar_12.5MHz.dat"
 
 #path = "/data/edaq/2021/20211125_extTrg_CO2_250mbar_DT1470ET/"
-#geometryFile = "/home/akalinow/scratch/TPCReco/build/resources/geometry_ELITPC_250mbar_12.5MHz.dat"
+path = "/scratch_elitpc/2021/20211125_extTrg_CO2_250mbar_DT1470ET/"
+geometryFile = "/home/akalinow/scratch/TPCReco/build/resources/geometry_ELITPC_250mbar_12.5MHz.dat"
 
-path = "/mnt/NAS_STORAGE_BIG/dump_20180625/data_edaq_20180625/"
-geometryFile = "/home/akalinow/scratch/TPCReco/build/resources/geometry_mini_eTPC.dat"
+#path = "/mnt/NAS_STORAGE_BIG/dump_20180625/data_edaq_20180625/"
+#geometryFile = "/home/akalinow/scratch/TPCReco/build/resources/geometry_mini_eTPC.dat"
 
 command = "../bin/grawToEventTPC"
 #command = "../bin/grawToEventRaw"
