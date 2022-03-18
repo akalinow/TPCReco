@@ -533,7 +533,6 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   aPad->cd();
 
   TH1F hChargeProfile = aTrack3D.getSegments().front().getChargeProfile();
-  /*
   hChargeProfile.SetLineWidth(2);
   hChargeProfile.SetLineColor(2);
   hChargeProfile.SetMarkerColor(2);
@@ -542,7 +541,8 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   hChargeProfile.SetMinimum(0.0);
   hChargeProfile.GetYaxis()->SetTitleOffset(1.5);
   hChargeProfile.DrawClone("HIST P");
-  */
+  
+  /*
   mydEdxFitter.fitHisto(hChargeProfile);
   TH1F histo = mydEdxFitter.getFittedHisto();
   TF1 func = mydEdxFitter.getFittedModel();
@@ -567,6 +567,7 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   std::cout<<"Fitted function: "<<func.GetName()<<std::endl;
   std::cout<<"Alpha energy [MeV]: "<<mydEdxFitter.getAlphaEnergy()/1E6<<std::endl;
   std::cout<<"Carbon energy [MeV]: "<<mydEdxFitter.getCarbonEnergy()/1E6<<std::endl;
+  */
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
