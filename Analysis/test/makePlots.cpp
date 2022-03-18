@@ -27,7 +27,12 @@ void makePlots(std::string fileName){
   
   TH3D *hPosXYZCut1 = (TH3D*)hPosXYZ->Clone("hPosXYZCut1");
   hPosXYZCut1->SetStats(kFALSE);
-						
+
+  TH1D *hChi2 = new TH1D("hChi2","Track loss function;loss function;Number of events",50,-5,20);
+  TH1D *hChi2Cut0 = (TH1D*)hChi2->Clone("hChi2Cut0");
+  TH1D *hChi2Cut1 = (TH1D*)hChi2->Clone("hChi2Cut1");
+  hChi2Cut0->SetStats(kFALSE);
+  hChi2Cut1->SetStats(kFALSE);
 
   TCut qualityCut = "chi2<10 && charge>100 && length>0";
   TCut cut0 = "cosTheta>0.9 && abs(x0-127)<25 && abs(y0-76)<25"&&qualityCut;
@@ -39,6 +44,8 @@ void makePlots(std::string fileName){
   trackTree->Draw("length>>hLengthCut1",cut1, "goff");
   trackTree->Draw("z0:y0:x0>>hPosXYZCut1",cut1, "goff");
   trackTree->Draw("z1:y1:x1>>+hPosXYZCut1",cut1, "goff");
+  trackTree->Draw("chi2>>hChi2Cut0",cut0, "goff");
+  trackTree->Draw("chi2>>hChi2Cut1",cut1, "goff");
   ///////////////////////////////////////////////////
   TLegend *aLeg = new TLegend(0.1, 0.1, 0.5, 0.3);
   TCanvas *aCanvas = new TCanvas("aCanvas","",700,700);
@@ -82,10 +89,24 @@ void makePlots(std::string fileName){
   aLeg = new TLegend(0.1, 0.8, 0.6, 0.9);
   aLeg->AddEntry(hLengthCut0, "signal start pos.","l");
   aLeg->Draw();
-  ////////////////
-  
-  
+  ////////////////  
   aCanvas->Print("Plots_set0.png");
+  ////////////////
+  ////////////////
+  aCanvas->Clear();
+  aCanvas->Divide(2,2);
+
+  aCanvas->cd(1);
+  hChi2Cut1->SetLineColor(2);
+  hChi2Cut1->SetMaximum(1.2*hChi2Cut1->GetMaximum());
+  hChi2Cut1->DrawNormalized();
+  hChi2Cut0->DrawNormalized("same");
+  aLeg = new TLegend(0.1, 0.8, 0.6, 0.9);
+  aLeg->AddEntry(hChi2Cut0, "calibration tk..","l");
+  aLeg->AddEntry(hChi2Cut1, "signal tk.","l");
+  aLeg->Draw();
+
+  aCanvas->Print("Plots_set1.png");
   ////////////////
   ////////////////
 }

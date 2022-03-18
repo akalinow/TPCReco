@@ -373,7 +373,6 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
     a3DSeed.setStartEnd(start, end);
     aTrackCandidate.addSegment(a3DSeed);
   }
-  aTrackCandidate.extendToZRange(std::get<0>(myZRange),std::get<1>(myZRange));
   myFittedTrack = aTrackCandidate;
   myFittedTrackPtr = &myFittedTrack;
 }

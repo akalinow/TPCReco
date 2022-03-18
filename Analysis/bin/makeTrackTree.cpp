@@ -5,6 +5,8 @@
 #include "TFile.h"
 #include "TTree.h"
 #include "TCanvas.h"
+#include "TLatex.h"
+#include "TString.h"
 
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/xml_parser.hpp>
@@ -75,7 +77,9 @@ int main(int argc, char **argv){
 /////////////////////////////
 ////////////////////////////
 // Define some simple structures
-typedef struct {Float_t eventId, frameId, length,
+typedef struct {Float_t eventId, frameId,
+    eventType,
+    length,
     horizontalLostLength, verticalLostLength,
     energy, charge, cosTheta, phi, chi2,
     x0, y0, z0, x1, y1, z1;} TrackData;
@@ -83,13 +87,9 @@ typedef struct {Float_t eventId, frameId, length,
 int makeTrackTree(const  std::string & geometryFileName,
 		  const  std::string & dataFileName) {
 
-  // Define some simple structures
-  TTree *tree = new TTree("trackTree", "Track tree");
-  TrackData track_data;
   int index = -1;
   std::string timestamp;
-  tree->Branch("track",&track_data,"eventId:frameId:length:horizontalLostLength:verticalLostLength:energy:charge:cosTheta:phi:chi2:x0:y0:z0:x1:y1:z1");
-  
+
   std::shared_ptr<EventSourceBase> myEventSource;
   if(dataFileName.find(".graw")!=std::string::npos){
     #ifdef WITH_GET
@@ -112,14 +112,25 @@ int makeTrackTree(const  std::string & geometryFileName,
   int npos = dataFileName.size()-index-5;
   std::string rootFileName = "TrackTree_"+dataFileName.substr(index, npos)+".root";
   TFile outputROOTFile(rootFileName.c_str(),"RECREATE");
-
+  TTree *tree = new TTree("trackTree", "Track tree");
+  TrackData track_data;
+  tree->Branch("track",&track_data,"eventId:frameId:eventType:length:horizontalLostLength:verticalLostLength:energy:charge:cosTheta:phi:chi2:x0:y0:z0:x1:y1:z1");
+  
   TrackBuilder myTkBuilder;
   myTkBuilder.setGeometry(myEventSource->getGeometry());
 
+
+
   HistoManager myHistoManager;
   myHistoManager.setGeometry(myEventSource->getGeometry());
+  myHistoManager.toggleAutozoom();
   TCanvas *aCanvas = new TCanvas("aCanvas","Histograms",1000,1000);
   aCanvas->Divide(2,2);
+  TH1F *hFrame = new TH1F("hFrame","",1,0,1);
+  hFrame->SetMaximum(1.0);
+  hFrame->SetStats(kFALSE);
+  TLatex *aLatex = new TLatex(0,0,"");
+  TString  aString;
  
   myEventSource->loadDataFile(dataFileName);
   std::cout<<KBLU<<"File with "<<RST<<myEventSource->numberOfEntries()<<" frames loaded."<<std::endl;
@@ -151,10 +162,15 @@ int makeTrackTree(const  std::string & geometryFileName,
 
     TVector3 vertical(0,0,-1);
     double verticalTrackLostPart = 6.0/std::abs(vertical.Dot(tangent));
-    
+
+    int eventType = 0;
+    double alphaEnergy = 0.0;
+    double carbonEnergy = 0.0;
+      
     track_data.frameId = iEntry;
     track_data.eventId = eventId;
-    track_data.length = length;
+    track_data.eventType = eventType;
+    track_data.length = length;    
     track_data.horizontalLostLength = horizontalTrackLostPart;
     track_data.verticalLostLength = verticalTrackLostPart;
     track_data.charge = charge;
@@ -167,13 +183,11 @@ int makeTrackTree(const  std::string & geometryFileName,
     track_data.x1 = end.X();
     track_data.y1 = end.Y();
     track_data.z1 = end.Z();
-    track_data.energy = 0.0;//getKineticEnergyForRange(length, 0);
+    track_data.energy = alphaEnergy + carbonEnergy;
     tree->Fill();
 
     ///Draw anomaly events
-    /// 1.5 - calibration
-    /// 40 - Kraków data
-    if(chi2>1E6){
+    if(chi2>10 && charge>100){
       myHistoManager.setEvent(myEventSource->getCurrentEvent());
       for(int strip_dir=0;strip_dir<3;++strip_dir){
 	aCanvas->cd(strip_dir+1);
@@ -182,6 +196,20 @@ int makeTrackTree(const  std::string & geometryFileName,
 	hProjection->DrawCopy("colz");
 	//myHistoManager.getRecHitStripVsTime(strip_dir)->Draw("box same");
       }
+      aCanvas->cd(4);
+      hFrame->Draw();
+      aString.Form("fit loss: %3.2f",chi2);
+      aLatex->DrawLatex(0.1,0.85, aString.Data());
+
+      aString.Form("track charge: %3.2f",charge);
+      aLatex->DrawLatex(0.1,0.75, aString.Data());
+
+      aString.Form("track length: %3.2f",length);
+      aLatex->DrawLatex(0.1,0.65, aString.Data());
+
+      aString.Form("frame id: %d",iEntry);
+      aLatex->DrawLatex(0.1,0.55, aString.Data());
+
       std::string plotFileName = "Clusters_"+std::to_string(eventId)+"_"+dataFileName.substr(index)+".png";
       aCanvas->Print(plotFileName.c_str());
     }
