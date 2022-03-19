@@ -119,7 +119,6 @@ int makeTrackTree(const  std::string & geometryFileName,
   
   TrackBuilder myTkBuilder;
   myTkBuilder.setGeometry(myEventSource->getGeometry());
-
   dEdxFitter mydEdxFitter;
 
   HistoManager myHistoManager;

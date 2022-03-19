@@ -96,7 +96,8 @@ void MarkersManager::setEnabled(bool enable){
     myButtons.find("Add segment")->second->SetState(kButtonDisabled);
     myButtons.find("Fit segments")->second->SetState(kButtonDisabled);
     myButtons.find("Save segments")->second->SetState(kButtonDisabled);
-  }    
+  }
+  myButtons.find("Save segments")->second->SetState(kButtonUp);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -352,41 +353,10 @@ double MarkersManager::getMissingYCoordinate(unsigned int missingMarkerDir){
   }
 
   /////// DEBUG
-  std::cout << "getMissingYCoordinate: 3rd_dir=" << missingMarkerDir << ": ERROR: Cannot calculate 3rd UVW coordinate" << std::endl;
+  //std::cout << "getMissingYCoordinate: 3rd_dir=" << missingMarkerDir << ": ERROR: Cannot calculate 3rd UVW coordinate" << std::endl;
   /////// DEBUG
   return 0;
 }
-/*
-double MarkersManager::getMissingYCoordinate(unsigned int missingMarkerDir){
-
-  ///Not implemented yet.
-  //#ANGLES: 90.0 -30.0 30.0
-  const std::vector<double> phiPitchDirection = {M_PI, -M_PI/6.0 + M_PI/2.0, M_PI/6.0 - M_PI/2.0};
-  
-  double x = 0.0, y = 0.0;
-  double xDenominator = 0.0, yDenominator = 0.0;
-  int sign = 1;
-  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
-    TMarker *item = fMarkersContainer.at(strip_dir);
-    if(!item) continue;     
-    unsigned int next_strip_dir = (strip_dir+1)%3;
-    if(next_strip_dir==missingMarkerDir){ next_strip_dir = (next_strip_dir+1)%3;}
-    
-    x += sign*item->GetY()*sin(phiPitchDirection[next_strip_dir]);					   
-    xDenominator += sign*cos(phiPitchDirection[strip_dir])*sin(phiPitchDirection[next_strip_dir]);
-
-    y += sign*item->GetY()*cos(phiPitchDirection[next_strip_dir]);					   
-    yDenominator += sign*sin(phiPitchDirection[strip_dir])*cos(phiPitchDirection[next_strip_dir]);
-   
-    sign *=-1;
-  }
-  x /= xDenominator;
-  y /= yDenominator;
-  double strip_value = x*cos(phiPitchDirection[missingMarkerDir]) +
-    y*sin(phiPitchDirection[missingMarkerDir]);
-  return strip_value; 
-}
-*/
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MarkersManager::HandleMarkerPosition(Int_t event, Int_t x, Int_t y, TObject *sel){

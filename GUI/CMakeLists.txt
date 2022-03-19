@@ -46,7 +46,7 @@ add_executable(dumpRateHistos bin/dumpRateHistos.cpp)
 target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
 target_compile_options(tpcGUI PUBLIC ${CMAKE_ROOT_CFLAGS})
 
-target_link_libraries(${MODULE_NAME} DataFormats Reconstruction ${GRAW_TO_ROOT_LIBRARY} ${ROOT_LIBRARIES})
+target_link_libraries(${MODULE_NAME} DataFormats Reconstruction Utilities ${GRAW_TO_ROOT_LIBRARY} ${ROOT_LIBRARIES})
 target_link_libraries(tpcGUI PUBLIC DataFormats Utilities Reconstruction ${Boost_LIBRARIES} ${GRAW_TO_ROOT_LIBRARY} ${MODULE_NAME})
 target_link_libraries(dumpProjectionHistos PUBLIC DataFormats Utilities Reconstruction ${GRAW_TO_ROOT_LIBRARY} ${MODULE_NAME})
 target_link_libraries(dumpClusterHistos PUBLIC DataFormats Utilities Reconstruction ${GRAW_TO_ROOT_LIBRARY} ${MODULE_NAME})

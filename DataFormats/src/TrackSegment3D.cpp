@@ -233,11 +233,6 @@ TH2F TrackSegment3D::getChargeProfile1() const{
       hChargeProfile.SetBinContent(iBin, strip_dir+1, charge);
     }
   }
-  /*
-  hChargeProfile.ProjectionX("px",1,1)->Print();
-  hChargeProfile.ProjectionX("px",2,2)->Print();
-  hChargeProfile.ProjectionX("px",3,3)->Print();
-  */
   return hChargeProfile;
 }
 /////////////////////////////////////////////////////////

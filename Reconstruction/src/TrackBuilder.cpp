@@ -89,7 +89,7 @@ void TrackBuilder::fillOutputStream(){
      return;
   }
   myOutputTreePtr->Fill();
-  myOutputTreePtr->Write();
+  myOutputTreePtr->Write("", TObject::kOverwrite);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
