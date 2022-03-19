@@ -50,6 +50,8 @@ public:
   MainFrame(const TGWindow *p, UInt_t w, UInt_t h, const boost::property_tree::ptree &aConfig);
   virtual ~MainFrame();
   virtual void CloseWindow();
+
+  virtual Bool_t ProcessMessage();
   virtual Bool_t ProcessMessage(Long_t msg, Long_t parm1, Long_t);
   virtual Bool_t ProcessMessage(Long_t msg);
   virtual Bool_t ProcessMessage(const char *);
@@ -106,8 +108,9 @@ private:
 
   TGCompositeFrame *fFrame{0};
   TRootEmbeddedCanvas *embeddedCanvas{0};
-  TCanvas *fCanvas{0};
-  TCanvas *fCanvas_Reco{0};
+  TCanvas *fHistosCanvas{0};
+  TCanvas *fRawHistosCanvas{0};
+  TCanvas *fTechHistosCanvas{0};
   TGMenuBar *fMenuBar{0};
   TGPopupMenu *fMenuFile{0}, *fMenuHelp{0};
 
@@ -127,6 +130,7 @@ private:
 
   TArrow *fArrow{0};
   TLine *fLine{0};
+  std::vector<TObject*> fObjClones;
 
   ClassDef(MainFrame, 0);
 };

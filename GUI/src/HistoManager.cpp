@@ -348,7 +348,7 @@ void HistoManager::drawTrack3D(TVirtualPad *aPad){
   h3DFrame->GetZaxis()->SetTitleOffset(2.0);
   h3DFrame->Draw("box");
 
-  TVirtualViewer3D * view3D = gPad->GetViewer3D("pad");
+  TVirtualViewer3D * view3D = aPad->GetViewer3D("pad");
   view3D->BeginScene();
   
   const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
@@ -374,9 +374,6 @@ void HistoManager::drawTrack3D(TVirtualPad *aPad){
 			aSegment.getEnd().X(),
 			aSegment.getEnd().Y(),
 			aSegment.getEnd().Z());    
-     std::cout<<"aPad->GetView(): "<<gPad->GetView()<<std::endl;
-     std::cout<<"gPad->GetView(): "<<aPad->GetView()<<std::endl;
-     //std::cout<<"view3D->GetView(): "<<view3D->GetView()<<std::endl;
 
      aPolyLine.Print();
      aPolyLine.DrawClone();
@@ -601,12 +598,13 @@ void HistoManager::updateEventRateGraph(){
   if(deltaTime==0) rate = 0.0;
   previousEventTime = currentEventTime;
   previousEventNumber = currentEventNumber;
+  /*
   std::cout<<"currentEventTime: "<<currentEventTime<<" [s]"<<std::endl;
   std::cout<<"currentEventNumber: "<<currentEventNumber<<std::endl;
   std::cout<<"deltaTime: "<<deltaTime<<" [s]"<<std::endl;
   std::cout<<"delta event count: "<<deltaEventCount<<std::endl;
   std::cout<<"rate: "<<rate<<" [Hz]"<<std::endl;
-  
+  */
   grEventRate->Expand(grEventRate->GetN()+1);
   grEventRate->SetPoint(grEventRate->GetN(), currentEventTime, rate);
   grEventRate->GetXaxis()->SetTitle("Time since start of run [s]; ");

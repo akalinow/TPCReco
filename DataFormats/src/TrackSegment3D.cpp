@@ -196,7 +196,6 @@ TH2F TrackSegment3D::getChargeProfile() const{
   
   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
     TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, getLength());
-    std::cout<<aTrack2DProjection<<std::endl;
     const TVector3 & stripPitchDirection = myGeometryPtr->GetStripPitchVector3D(strip_dir);
     double dirProjection = std::abs(stripPitchDirection.Unit().Dot(getTangent().Unit()));
     double cosPhiProjectionAngle = sqrt(dirProjection*dirProjection +
@@ -222,10 +221,7 @@ TH2F TrackSegment3D::getChargeProfile() const{
   double cosPhiProjectionAngle = 1.0;
   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
     TGraphErrors & aGraph = projections[strip_dir];
-    double graphInt = aGraph.Integral();
-    std::cout<<"graphInt: "<<graphInt<<std::endl;
     cosPhiProjectionAngle = cosPhiProjectionAngles[strip_dir];
-    std::cout<<"cosPhiProjectionAngle: "<<cosPhiProjectionAngle<<std::endl;
     for(int iBin=1;iBin<=hChargeProfile.GetNbinsX();++iBin){
       xCenter = hChargeProfile.GetXaxis()->GetBinCenter(iBin)/getLength();
       charge = aGraph.Eval(xCenter)*cosPhiProjectionAngle;
@@ -233,9 +229,6 @@ TH2F TrackSegment3D::getChargeProfile() const{
       hChargeProfile.SetBinContent(iBin, strip_dir+1, charge);
     }
   }
-  hChargeProfile.ProjectionX("px",1,1)->Print();
-  hChargeProfile.ProjectionX("px",2,2)->Print();
-  hChargeProfile.ProjectionX("px",3,3)->Print();
   return hChargeProfile;
 }
 /////////////////////////////////////////////////////////
