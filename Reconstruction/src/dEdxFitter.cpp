@@ -146,13 +146,13 @@ TFitResult dEdxFitter::fitHisto(TH1F & aHisto){
     theFittedHisto = aReflectedHisto;
     bestFitEventType = ALPHA;
   }
-  if(carbon_alphaResult.MinFcnValue()<theFitResult.MinFcnValue()){
+  if(false && carbon_alphaResult.MinFcnValue()<theFitResult.MinFcnValue()){
     theFitResult = carbon_alphaResult;
     theFittedModel = carbon_alphaModel;
     theFittedHisto = aHisto;
     bestFitEventType = C12_ALPHA;
   }
-  if(carbon_alphaResult_reflected.MinFcnValue()<theFitResult.MinFcnValue()){
+  if(false && carbon_alphaResult_reflected.MinFcnValue()<theFitResult.MinFcnValue()){
     theFitResult = carbon_alphaResult_reflected;
     theFittedHisto = aReflectedHisto;
     theFittedModel = carbon_alphaModel;

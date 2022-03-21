@@ -35,8 +35,6 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h,  const boost::proper
   myConfig = aConfig;
  
   fSelectionBox = 0;
-  fArrow = 0;
-  fLine = 0;
 
   InitializeEventSource();
   InitializeWindows();
@@ -435,7 +433,7 @@ int MainFrame::AddMarkersDialog(int attach){
   fMarkersManager = new MarkersManager(fFrame, this);
   fMarkersManager->setGeometry(myEventSource->getGeometry()); 
   fMarkersManager->Connect("sendSegmentsData(std::vector<double> *)","MainFrame",
-			   this,"drawRecoFromMarkers(std::vector<double> *)");
+			   this,"processSegmentData(std::vector<double> *)");
 
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right,
 						    attach_top, attach_bottom,
@@ -524,44 +522,23 @@ void MainFrame::AddLogos(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+/*
 void MainFrame::HandleEmbeddedCanvas(Int_t event, Int_t x, Int_t y, TObject *sel){
 
   std::cout<<KBLU<<__FUNCTION__<<RST<<std::endl;
 }
+*/
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MainFrame::CloseWindow(){ gApplication->Terminate(0); }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MainFrame::ClearCanvases(){
-
-  ClearCanvas(fHistosCanvas);
-  ClearCanvas(fRawHistosCanvas);
-  ClearCanvas(fTechHistosCanvas);
-
-  for(auto aObj : fObjClones) delete aObj;
-  fObjClones.clear();
-
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void MainFrame::ClearCanvas(TCanvas *aCanvas){
-
-  if(!aCanvas) return;
-  if(fMarkersManager) fMarkersManager->reset();
   
-  TList *aList = aCanvas->GetListOfPrimitives();
-  TText aMessage(0.0, 0.0,"Waiting for data.");
-  for(auto obj: *aList){
-    TPad *aPad = (TPad*)(obj);
-    if(!aPad) continue;
-    aPad->Clear();
-    aPad->cd();
-    fObjClones.push_back(aMessage.DrawTextNDC(0.3, 0.5,"Waiting for data."));
-    aPad->SetLogz(isLogScaleOn);
-  }
-  aCanvas->Modified();  
-  aCanvas->Update();
+  myHistoManager.clearCanvas(fHistosCanvas, isLogScaleOn);
+  myHistoManager.clearCanvas(fRawHistosCanvas, isLogScaleOn);
+  myHistoManager.clearCanvas(fTechHistosCanvas, isLogScaleOn);
+
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -579,114 +556,23 @@ void MainFrame::Update(){
   fMarkersManager->setEnabled(isRecoModeOn);
 
   ClearCanvases();
-  drawRawHistos(fRawHistosCanvas);
-  drawTechnicalHistos(fTechHistosCanvas);
+  myHistoManager.drawRawHistos(fRawHistosCanvas, isRateDisplayOn);
+  myHistoManager.drawTechnicalHistos(fTechHistosCanvas, myEventSource->getGeometry()->GetAgetNchips());
 
   if(!isRecoModeOn){
-    drawRawHistos(fHistosCanvas);
+    myHistoManager.drawRawHistos(fHistosCanvas, isRateDisplayOn);
   }
   else {
-    drawRecoHistos(fHistosCanvas);
+    myHistoManager.drawRecoHistos(fHistosCanvas);
   }
 }
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void MainFrame::drawRawHistos(TCanvas *aCanvas){
 
-  if(!aCanvas) return;
-  int padNumberOffset = 0;
-  if(std::string(aCanvas->GetName())=="fRawHistosCanvas") padNumberOffset = 100;
-  
-  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
-    TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
-    if(!aPad) return;
-    aPad->cd();
-    aCanvas->Modified();
-    aCanvas->Update();
-    fObjClones.push_back(myHistoManager.getRawStripVsTime(strip_dir)->DrawClone("colz"));
-  }
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void MainFrame::processSegmentData(std::vector<double> * segmentsXY){
 
-  int strip_dir=3;
-  TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
-  if(!aPad) return;
-  aPad->cd();
-  aCanvas->Modified();
-  aCanvas->Update();
-  if(isRateDisplayOn){
-    fObjClones.push_back(myHistoManager.getEventRateGraph()->DrawClone("AP"));
-  } else{
-    fObjClones.push_back(myHistoManager.getRawTimeProjection()->DrawClone("hist"));
-  }
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void MainFrame::drawTechnicalHistos(TCanvas *aCanvas){
+  myHistoManager.drawRecoFromMarkers(fHistosCanvas, segmentsXY);
 
-  if(!aCanvas) return;
-  int padNumberOffset = 0;
-  if(std::string(aCanvas->GetName())=="fTechHistosCanvas") padNumberOffset = 200;
-  
-  auto cobo_id=0;
-  for( int aget_id = 0;
-       aget_id <myEventSource->getGeometry()->GetAgetNchips();
-       ++aget_id ){
-    TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+aget_id+1);
-    if(!aPad) return;
-    aPad->cd();
-    aCanvas->Modified();
-    aCanvas->Update();
-    fObjClones.push_back(myHistoManager.getChannels(cobo_id, aget_id)->DrawClone("colz"));
-  }
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void MainFrame::drawRecoHistos(TCanvas *aCanvas){
-
-  if(!aCanvas) return;
-  int padNumberOffset = 0;
-  if(std::string(aCanvas->GetName())=="Histograms") padNumberOffset = 0;
-  
-  myHistoManager.reconstruct();
-
-   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
-     TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
-     if(!aPad) return;
-     aPad->cd();
-     aCanvas->Modified();
-     aCanvas->Update();
-     //fObjClones.push_back(myHistoManager.getClusterStripVsTimeInMM(strip_dir)->DrawClone("colz"));
-     //fObjClones.push_back(myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("box same"));
-     fObjClones.push_back(myHistoManager.getRawStripVsTimeInMM(strip_dir)->DrawClone("colz"));
-     myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
-  }
-   int strip_dir=3;
-   TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
-   if(!aPad) return;
-   aPad->cd();
-   myHistoManager.drawTrack3DProjectionXY(aPad);
-   //myHistoManager.drawChargeAlongTrack3D(aPad));
-   //myHistoManager.drawTrack3D(aPad);
-   //fObjClones.push_back(myHistoManager.getClusterTimeProjectionInMM()->DrawClone("hist"));
-   //fObjClones.push_back(myHistoManager.getRecHitTimeProjection()->DrawClone("hist same"));
-   aCanvas->Modified();
-   aCanvas->Update();
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void MainFrame::drawRecoFromMarkers(std::vector<double> * segmentsXY){
-
-  myHistoManager.reconstructSegmentsFromMarkers(segmentsXY);
-  for(int strip_dir=0;strip_dir<3;++strip_dir){
-    TVirtualPad *aPad = fHistosCanvas->cd(strip_dir+1);
-    fHistosCanvas->Modified();
-    fHistosCanvas->Update();
-    myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
-  }
-   myHistoManager.drawTrack3DProjectionXY(fHistosCanvas->cd(4));
-  //myHistoManager.drawTrack3D(fHistosCanvas->cd(4));
-  //myHistoManager.drawChargeAlongTrack3D(fHistosCanvas->cd(4));
-   fHistosCanvas->Modified();
-   fHistosCanvas->Update();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -749,16 +635,12 @@ void MainFrame::updateRunConditions(std::vector<double> *runParams){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 Bool_t MainFrame::ProcessMessage(Long_t msg, Long_t parm1, Long_t){
-   // Handle messages send to the MainFrame object. E.g. all menu button
-   // messages.
 
    return kTRUE;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 Bool_t MainFrame::ProcessMessage(){
-
-  std::cout<<__FUNCTION__<<std::endl;
 
   return kTRUE;
 }

@@ -10,8 +10,9 @@
 #include "TPolyLine3D.h"
 #include "TView.h"
 #include "TVirtualViewer3D.h"
-
 #include "TF1.h"
+#include "TLegend.h"
+#include "TText.h"
 
 #include "MakeUniqueName.h"
 #include "GeometryTPC.h"
@@ -62,6 +63,141 @@ void HistoManager::reconstruct(){
 void HistoManager::reconstructSegmentsFromMarkers(std::vector<double> * segmentsXY){
 
   myTkBuilder.getSegment2DCollectionFromGUI(*segmentsXY);  
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void HistoManager::drawRawHistos(TCanvas *aCanvas, bool isRateDisplayOn){
+
+  if(!aCanvas) return;
+  int padNumberOffset = 0;
+  if(std::string(aCanvas->GetName())=="fRawHistosCanvas") padNumberOffset = 100;
+  
+  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+    TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
+    if(!aPad) return;
+    aPad->cd();
+    aCanvas->Modified();
+    aCanvas->Update();
+    getRawStripVsTime(strip_dir)->DrawCopy("colz");
+  }
+
+  int strip_dir=3;
+  TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
+  if(!aPad) return;
+  aPad->cd();
+  aCanvas->Modified();
+  aCanvas->Update();
+  if(isRateDisplayOn){
+    fObjClones.push_back(getEventRateGraph()->DrawClone("AP"));
+  } else{
+    getRawTimeProjection()->DrawCopy("hist");
+  }
+  aCanvas->Modified();
+  aCanvas->Update();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void HistoManager::drawTechnicalHistos(TCanvas *aCanvas, int nAgetChips){
+
+  if(!aCanvas) return;
+  int padNumberOffset = 0;
+  if(std::string(aCanvas->GetName())=="fTechHistosCanvas") padNumberOffset = 200;
+  
+  auto cobo_id=0;
+  for( int aget_id = 0; aget_id <nAgetChips; ++aget_id ){
+    TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+aget_id+1);
+    if(!aPad) return;
+    aPad->cd();
+    aCanvas->Modified();
+    aCanvas->Update();
+    getChannels(cobo_id, aget_id)->DrawCopy("colz");
+    aCanvas->Modified();
+    aCanvas->Update();
+  }
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void HistoManager::drawRecoHistos(TCanvas *aCanvas){
+
+  if(!aCanvas) return;
+  int padNumberOffset = 0;
+  if(std::string(aCanvas->GetName())=="Histograms") padNumberOffset = 0;
+  
+  reconstruct();
+
+   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+     TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
+     if(!aPad) return;
+     aPad->cd();
+     aCanvas->Modified();
+     aCanvas->Update();
+     //getClusterStripVsTimeInMM(strip_dir)->DrawCopy("colz");
+     //getRecHitStripVsTime(strip_dir)->DrawCopy("box same");
+     getRawStripVsTimeInMM(strip_dir)->DrawCopy("colz");
+     drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
+     //if(strip_dir==DIR_W) getClusterTimeProjectionInMM()->DrawCopy("hist");
+     //else getRawStripVsTimeInMM(strip_dir)->DrawCopy("colz");
+  }
+   int strip_dir=3;
+   TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
+   if(!aPad) return;
+   aPad->cd();
+   aCanvas->Modified();
+   aCanvas->Update();
+   drawTrack3DProjectionXY(aPad);
+   //drawChargeAlongTrack3D(aPad);
+   //myHistoManager.drawTrack3D(aPad);
+   //getClusterTimeProjectionInMM()->DrawCopy("hist");
+   //getClusterTimeProjectionInMM()->DrawCopy("hist");
+   //getRecHitTimeProjection()->DrawCopy("hist same");
+   aCanvas->Modified();
+   aCanvas->Update();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void HistoManager::drawRecoFromMarkers(TCanvas *aCanvas, std::vector<double> * segmentsXY){
+
+  reconstructSegmentsFromMarkers(segmentsXY);
+  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+    TVirtualPad *aPad = aCanvas->cd(strip_dir+1);
+    aCanvas->Modified();
+    aCanvas->Update();
+    drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
+  }
+   int strip_dir=3;
+   TVirtualPad *aPad = aCanvas->GetPad(strip_dir+1);
+   if(!aPad) return;
+   aPad->cd();
+   aCanvas->Modified();
+   aCanvas->Update();
+   drawTrack3DProjectionXY(aPad);
+  //myHistoManager.drawTrack3D(aPad);
+  //myHistoManager.drawChargeAlongTrack3D(aPad);
+   aCanvas->Modified();
+   aCanvas->Update();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void HistoManager::clearCanvas(TCanvas *aCanvas, bool isLogScaleOn){
+
+  if(!aCanvas) return;
+  
+  TList *aList = aCanvas->GetListOfPrimitives();
+  TText aMessage(0.0, 0.0,"Waiting for data.");
+  for(auto obj: *aList){
+    TPad *aPad = (TPad*)(obj);
+    if(!aPad) continue;
+    aPad->Clear();
+    aPad->cd();
+    fObjClones.push_back(aMessage.DrawTextNDC(0.3, 0.5,"Waiting for data."));
+    aPad->SetLogz(isLogScaleOn);
+  }
+  aCanvas->Modified();  
+  aCanvas->Update();
+
+  for(auto aObj : fObjClones) delete aObj;
+  fObjClones.clear();
+
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -243,10 +379,8 @@ std::shared_ptr<TH2D> HistoManager::getClusterStripVsTime(int strip_dir){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::shared_ptr<TH2D> HistoManager::getClusterStripVsTimeInMM(int strip_dir){
+  
   std::shared_ptr<TH2D> aHisto = myEvent->GetStripVsTimeInMM(myTkBuilder.getCluster(), strip_dir);
-
-  //TH2D *h = (TH2D*)myTkBuilder.getCluster2D(strip_dir).Clone();//TEST
-  //std::shared_ptr<TH2D> aHisto(h);//TEST
   
   if(aHisto) {
     if(doAutozoom) makeAutozoom(aHisto);
@@ -381,8 +515,7 @@ void HistoManager::drawTrack3D(TVirtualPad *aPad){
 			aSegment.getEnd().Y(),
 			aSegment.getEnd().Z());    
 
-     aPolyLine.Print();
-     aPolyLine.DrawClone();
+     fObjClones.push_back(aPolyLine.DrawClone());
 
      xVec.push_back(aSegment.getStart().X());
      xVec.push_back(aSegment.getEnd().X());
@@ -410,7 +543,7 @@ void HistoManager::drawTrack3D(TVirtualPad *aPad){
    maxCoords.push_back(max);
    
    aPolyLine.DrawOutlineCube(&outlineList, minCoords.data(), maxCoords.data());
-   aPolyLine.DrawClone();
+   aPolyLine.DrawCopy();
    view3D->EndScene();
    return;
      */
@@ -525,10 +658,9 @@ void HistoManager::drawTrack3DProjectionTimeStrip(int strip_dir, TVirtualPad *aP
 /////////////////////////////////////////////////////////
 void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
 
-  const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
-  
   aPad->cd();
 
+  const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
   TH1F hChargeProfile = aTrack3D.getSegments().front().getChargeProfile();
   hChargeProfile.SetLineWidth(2);
   hChargeProfile.SetLineColor(2);
@@ -537,28 +669,32 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   hChargeProfile.SetMarkerStyle(20);
   hChargeProfile.SetMinimum(0.0);
   hChargeProfile.GetYaxis()->SetTitleOffset(1.5);
-  hChargeProfile.DrawClone("HIST P");
-  
+  hChargeProfile.DrawCopy("HIST P");
+
+  TLegend *aLegend = new TLegend(0.75, 0.8, 0.95,0.95);
+  fObjClones.push_back(aLegend);
   /*
   mydEdxFitter.fitHisto(hChargeProfile);
   TH1F histo = mydEdxFitter.getFittedHisto();
   TF1 func = mydEdxFitter.getFittedModel();
   double carbonScale = func.GetParameter("carbonScale");
   histo.DrawCopy();
-  func.DrawCopy("same");
 
   func.SetParameter("carbonScale",0.0);
   func.SetLineColor(kRed);
   func.SetLineStyle(2);
   func.SetLineWidth(2);
-  func.DrawCopy("same");
+  TObject *aObj = func.DrawCopy("same");
+  aLegend->AddEntry(aObj,"#alpha","l");
 
   func.SetParameter("alphaScale",0.0);
   func.SetParameter("carbonScale",carbonScale);
   func.SetLineColor(kBlue-9);
   func.SetLineStyle(2);
   func.SetLineWidth(2);
-  func.DrawCopy("same");
+  TObject *aObj1  = func.DrawCopy("same");
+  aLegend->AddEntry(aObj1,"^{12}C","l");
+  aLegend->Draw();
   
   std::cout<<"Best fit event type: "<<mydEdxFitter.getBestFitEventType()<<std::endl;
   std::cout<<"Fitted function: "<<func.GetName()<<std::endl;

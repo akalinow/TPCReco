@@ -14,6 +14,7 @@
 #include "RecHitBuilder.h"
 
 #include "EventTPC.h"
+#include "EventInfo.h"
 
 class TH2D;
 class TF1;
@@ -100,8 +101,10 @@ private:
   Track3D myFittedTrack;
   Track3D *myFittedTrackPtr;
 
+  
   std::shared_ptr<TFile> myOutputFilePtr;
   std::shared_ptr<TTree> myOutputTreePtr;
+  eventraw::EventInfo myEventInfo;
 
   mutable ROOT::Fit::Fitter fitter;
   

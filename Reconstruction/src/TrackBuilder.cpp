@@ -64,7 +64,7 @@ void TrackBuilder::openOutputStream(const std::string & fileName){
   myOutputFilePtr = std::make_shared<TFile>(fileName.c_str(),"RECREATE");
   myOutputTreePtr = std::make_shared<TTree>(treeName.c_str(),"");
   myOutputTreePtr->Branch("RecoEvent", "Track3D", &myFittedTrackPtr);
-  //myOutputTreePtr->Branch("DetEvent", "EventTPC", &myEvent);
+  myOutputTreePtr->Branch("EventInfo", "EventInfo", &myEventInfo);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
