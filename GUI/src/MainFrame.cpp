@@ -210,7 +210,7 @@ void MainFrame::AddHistoCanvas(){
 
   
 
-  fRawHistosCanvas = new TCanvas("fRawHistosCanvas","Diagnostic Histograms",850,800);
+  fRawHistosCanvas = new TCanvas("fRawHistosCanvas","Raw Histograms",850,800);
   fRawHistosCanvas->MoveOpaque(kFALSE);
   fRawHistosCanvas->Divide(2,2, 0.02, 0.02);
   TList *aList = fRawHistosCanvas->GetListOfPrimitives();
