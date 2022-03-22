@@ -5,21 +5,27 @@
 #include <memory>
 #include <bitset>
 
+class EventTPC;
+
 namespace eventraw {
 
   class EventInfo {
   public:
     EventInfo(){};
 
+    EventInfo(std::shared_ptr<EventTPC> aEventTPC);
+
     ~EventInfo(){};
 
-    time_t getRunId() const {return runId;}
+    void set(std::shared_ptr<EventTPC> aEventTPC);
 
-    uint32_t getEventId() const {return eventId;}
+    time_t GetRunId() const {return runId;}
 
-    uint64_t getEventTimestamp() const {return timestamp;}
+    uint32_t GetEventId() const {return eventId;}
 
-    std::bitset<64> getEventType() const {return std::bitset<64>(eventType);}
+    uint64_t GetEventTimestamp() const {return timestamp;}
+
+    std::bitset<64> GetEventType() const {return std::bitset<64>(eventType);}
 
     void SetRunId(time_t aRunId) {runId = aRunId;}
 
@@ -30,10 +36,10 @@ namespace eventraw {
     void SetEventType(unsigned long aEventType) {eventType = aEventType;}
 
     inline EventInfo(std::shared_ptr<EventInfo> &einfo) {
-      runId = einfo->getRunId();
-      eventId = einfo->getEventId();
-      timestamp = einfo->getEventTimestamp();
-      eventType = einfo->getEventType().to_ulong();
+      runId = einfo->GetRunId();
+      eventId = einfo->GetEventId();
+      timestamp = einfo->GetEventTimestamp();
+      eventType = einfo->GetEventType().to_ulong();
     }
 
   private:

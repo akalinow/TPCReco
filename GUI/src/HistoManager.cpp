@@ -17,6 +17,7 @@
 #include "MakeUniqueName.h"
 #include "GeometryTPC.h"
 #include "EventTPC.h"
+#include "RunIdParser.h"
 #include "colorText.h"
 
 #include "HistoManager.h"
@@ -25,6 +26,7 @@
 HistoManager::HistoManager() {
 
   myEvent = 0;
+  myEventInfo = std::make_shared<eventraw::EventInfo>();
   doAutozoom = false;
 
 }
@@ -45,6 +47,7 @@ void HistoManager::setEvent(EventTPC* aEvent){
   if(!aEvent) return;
   myEvent.reset(aEvent);
   myTkBuilder.setEvent(myEvent);
+  myEventInfo->set(myEvent);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -52,6 +55,7 @@ void HistoManager::setEvent(std::shared_ptr<EventTPC> aEvent){
   if(!aEvent) return;
   myEvent = aEvent;
   myTkBuilder.setEvent(myEvent);
+  myEventInfo->set(myEvent);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -723,8 +727,9 @@ void HistoManager::openOutputStream(const std::string & fileName){
   std::size_t last_slash_position = fileName.find_last_of("//");
   std::string recoFileName = MakeUniqueName("Reco_"+fileName.substr(last_slash_position+1,
 						     last_dot_position-last_slash_position-1)+".root");
-  std::cout<<KBLU<<"recoFileName: "<<RST<<recoFileName<<std::endl;
-  myTkBuilder.openOutputStream(recoFileName);
+  myRecoOuput.open(recoFileName);
+  RunIdParser runParser(fileName);
+  myEventInfo->SetRunId(runParser.runId());
   /*
   std::string fluxFileName = "Flux_"+fileName.substr(last_slash_position+1,
 						     last_dot_position-last_slash_position-1)+".root";
@@ -734,10 +739,11 @@ void HistoManager::openOutputStream(const std::string & fileName){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void HistoManager::writeSegments(){
+void HistoManager::writeRecoData(){
 
-  myTkBuilder.fillOutputStream();
-  
+  myRecoOuput.setRecTrack(myTkBuilder.getTrack3D(0));
+  myRecoOuput.setEventInfo(myEventInfo);
+  myRecoOuput.update();  
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

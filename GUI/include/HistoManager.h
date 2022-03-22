@@ -15,6 +15,7 @@
 #include "TrackBuilder.h"
 #include "DotFinder.h"
 #include "dEdxFitter.h"
+#include "RecoOutput.h"
 
 #include "CommonDefinitions.h"
 
@@ -42,7 +43,7 @@ public:
 
   void openOutputStream(const std::string & fileName);
 
-  void writeSegments();
+  void writeRecoData();
 
   void toggleAutozoom() { doAutozoom = !doAutozoom;};
  
@@ -141,12 +142,14 @@ public:
   TH3D *h3DReco{0};
   TGraph *grEventRate{0};
   TrackBuilder myTkBuilder;
+  RecoOutput myRecoOuput;
   DotFinder myDotFinder;
   dEdxFitter mydEdxFitter;
 
   std::shared_ptr<EventTPC> myEvent;
+  std::shared_ptr<eventraw::EventInfo> myEventInfo;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
-
+  
   std::vector<TObject*> fObjClones;
 
   bool doAutozoom;

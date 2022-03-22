@@ -793,7 +793,7 @@ void MainFrame::HandleMenu(Int_t id){
     break;
   case M_WRITE_SEGMENT:
     {
-      myHistoManager.writeSegments();
+      myHistoManager.writeRecoData();
     }
     break;
   }

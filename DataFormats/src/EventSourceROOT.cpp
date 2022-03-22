@@ -213,8 +213,8 @@ void EventSourceROOT::fillEventFromEventRaw(){
 	    << ", time=" << myCurrentEventRaw->getEventTimestamp() << std::endl;
 #endif
   
-  myCurrentEvent->SetEventId(myCurrentEventRaw->getEventId());
-  myCurrentEvent->SetEventTime(myCurrentEventRaw->getEventTimestamp());
+  myCurrentEvent->SetEventId(myCurrentEventRaw->GetEventId());
+  myCurrentEvent->SetEventTime(myCurrentEventRaw->GetEventTimestamp());
   myCurrentEvent->SetGeoPtr(myGeometryPtr);
   
   // loop over AGET chips

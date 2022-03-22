@@ -42,55 +42,10 @@ TrackBuilder::TrackBuilder() {
   aHoughOffest.SetX(50.0);
   aHoughOffest.SetY(50.0);
   aHoughOffest.SetZ(0.0);
-
-  myFittedTrackPtr = &myFittedTrack;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TrackBuilder::~TrackBuilder() {
-  closeOutputStream();
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void TrackBuilder::openOutputStream(const std::string & fileName){
-
-  if(!myFittedTrackPtr){
-    std::cout<<KRED<<__FUNCTION__<<RST
-	     <<" pointer to fitted track not set!"
-	     <<std::endl;
-    return;
-  }
-  std::string treeName = "TPCRecoData";
-  myOutputFilePtr = std::make_shared<TFile>(fileName.c_str(),"RECREATE");
-  myOutputTreePtr = std::make_shared<TTree>(treeName.c_str(),"");
-  myOutputTreePtr->Branch("RecoEvent", "Track3D", &myFittedTrackPtr);
-  myOutputTreePtr->Branch("EventInfo", "EventInfo", &myEventInfo);
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void TrackBuilder::closeOutputStream(){
-
-  if(!myOutputFilePtr){
-     std::cout<<KRED<<__FUNCTION__<<RST
-	     <<" pointer to output file not set!"
-	     <<std::endl;
-     return;
-  }
-  myOutputFilePtr->Close();
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void TrackBuilder::fillOutputStream(){
-
-  if(!myOutputTreePtr){
-     std::cout<<KRED<<__FUNCTION__<<RST
-	     <<" pointer to output tree not set!"
-	     <<std::endl;
-     return;
-  }
-  myOutputTreePtr->Fill();
-  myOutputTreePtr->Write("", TObject::kOverwrite);
-}
+TrackBuilder::~TrackBuilder() { }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void TrackBuilder::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
@@ -382,7 +337,6 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
   //aTrackCandidate.extendToChamberRange(xyRange, myZRange);
   //fitTrack3D(aTrackCandidate);
   myFittedTrack = aTrackCandidate;
-  myFittedTrackPtr = &myFittedTrack;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -530,7 +484,6 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
 void TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
 
   myFittedTrack = aTrackCandidate;
-  myFittedTrackPtr = &myFittedTrack;
   std::cout<<KBLU<<"Pre-fit: "<<RST<<std::endl; 
   std::cout<<myFittedTrack<<std::endl;
   

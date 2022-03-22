@@ -31,10 +31,6 @@ public:
   
   ~TrackBuilder();
 
-  void openOutputStream(const std::string & fileName);
-  void closeOutputStream();
-  void fillOutputStream();
-
   void setEvent(EventTPC* aEvent);
 
   void setEvent(std::shared_ptr<EventTPC> aEvent);
@@ -99,13 +95,7 @@ private:
   TrackSegment2D dummySegment2D;
   TrackSegment3D myTrack3DSeed, dummySegment3D;
   Track3D myFittedTrack;
-  Track3D *myFittedTrackPtr;
-
   
-  std::shared_ptr<TFile> myOutputFilePtr;
-  std::shared_ptr<TTree> myOutputTreePtr;
-  eventraw::EventInfo myEventInfo;
-
   mutable ROOT::Fit::Fitter fitter;
   
 };
