@@ -86,7 +86,7 @@ private:
 
   void ClearCanvases();
   void Update();
-  void UpdateEventLog();
+  unsigned long UpdateEventLog();
 
   boost::property_tree::ptree myConfig;
   int myWorkMode{0};

@@ -38,7 +38,7 @@ void RecoOutput::setEventInfo(const eventraw::EventInfo & aEventInfo){
 void RecoOutput::open(const std::string & fileName){
 
   if(!myTrackPtr){
-    std::cout<<KRED<<__FUNCTION__<<RST
+    std::cout<<KRED<<"RecoOutput::open"<<RST
 	     <<" pointer to fitted track not set!"
 	     <<std::endl;
     return;
@@ -57,7 +57,7 @@ void RecoOutput::open(const std::string & fileName){
 void RecoOutput::close(){
 
   if(!myOutputFilePtr){
-     std::cout<<KRED<<__FUNCTION__<<RST
+     std::cout<<KRED<<"RecoOutput::close"<<RST
 	     <<" pointer to output file not set!"
 	     <<std::endl;
      return;
@@ -69,7 +69,7 @@ void RecoOutput::close(){
 void RecoOutput::update(){
 
   if(!myOutputTreePtr){
-     std::cout<<KRED<<__FUNCTION__<<RST
+     std::cout<<KRED<<"RecoOutput::update"<<RST
 	     <<" pointer to output tree not set!"
 	     <<std::endl;
      return;

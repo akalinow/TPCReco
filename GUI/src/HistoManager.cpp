@@ -27,6 +27,7 @@ HistoManager::HistoManager() {
 
   myEvent = 0;
   myEventInfo = std::make_shared<eventraw::EventInfo>();
+  myRecoOuput.setEventInfo(myEventInfo);				   
   doAutozoom = false;
 
 }
@@ -739,10 +740,11 @@ void HistoManager::openOutputStream(const std::string & fileName){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void HistoManager::writeRecoData(){
+void HistoManager::writeRecoData(unsigned long eventType){
 
   myRecoOuput.setRecTrack(myTkBuilder.getTrack3D(0));
-  myRecoOuput.setEventInfo(myEventInfo);
+  myEventInfo->SetEventType(eventType);				   
+  myRecoOuput.setEventInfo(myEventInfo);				   
   myRecoOuput.update();  
 }
 /////////////////////////////////////////////////////////

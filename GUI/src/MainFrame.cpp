@@ -205,9 +205,7 @@ void MainFrame::AddHistoCanvas(){
   gStyle->SetPalette(57);
   gStyle->SetPadLeftMargin(0.15);
   gStyle->SetPadRightMargin(0.15);
-
-  
-
+  /*
   fRawHistosCanvas = new TCanvas("fRawHistosCanvas","Raw Histograms",850,800);
   fRawHistosCanvas->MoveOpaque(kFALSE);
   fRawHistosCanvas->Divide(2,2, 0.02, 0.02);
@@ -225,7 +223,7 @@ void MainFrame::AddHistoCanvas(){
     TPad *aPad = (TPad*)(obj);
     aPad->SetNumber(200 + aPad->GetNumber());
   }
-
+  */
   embeddedCanvas = new TRootEmbeddedCanvas("embeddedCanvas",fFrame,1000,1000);
   TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
   int nRows = aLayout->fNrows;
@@ -573,7 +571,7 @@ void MainFrame::processSegmentData(std::vector<double> * segmentsXY){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void MainFrame::UpdateEventLog(){
+unsigned long MainFrame::UpdateEventLog(){
 
   int index =  myEventSource->getCurrentPath().find_last_of("/");
   int pathLength =  myEventSource->getCurrentPath().size();
@@ -602,7 +600,7 @@ void MainFrame::UpdateEventLog(){
   
   if(!eventTypeButtonGroup){
     std::cerr<<"eventTypeButtonGroup not initialised!";
-    return;
+    return 0;
   }
 
   out<<myEventSource->currentEventNumber()<<" \t\t "
@@ -615,6 +613,7 @@ void MainFrame::UpdateEventLog(){
     }
   out<<eventType.to_ulong()<<std::endl;
   out.close();
+  return eventType.to_ulong();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -720,8 +719,9 @@ void MainFrame::HandleMenu(Int_t id){
     
   case M_NEXT_EVENT:
     {
-      UpdateEventLog();
+      unsigned int eventType = UpdateEventLog();
       myEventSource->getNextEventLoop();
+      myHistoManager.writeRecoData(eventType);
       Update();
     }
     break;
@@ -789,11 +789,6 @@ void MainFrame::HandleMenu(Int_t id){
   case M_FILE_EXIT:
     {
       CloseWindow();   // terminate theApp no need to use SendCloseMessage()
-    }
-    break;
-  case M_WRITE_SEGMENT:
-    {
-      myHistoManager.writeRecoData();
     }
     break;
   }

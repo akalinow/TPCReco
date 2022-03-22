@@ -1,3 +1,30 @@
+#====== H (10) into Layer 1                      =======
+#        SRIM-2013.00
+#========================================
+#      Ion and Recoil IONIZATION     
+# See SRIM Outputs\TDATA.txt for details   
+#========================================
+#--------------------------------------------------------------------
+#    Recoil/Damage Calculations made with Kinchin-Pease Estimates    
+#--------------------------------------------------------------------
+# See file :  SRIM Outputs\TDATA.txt   for calculation data
+# Ion    = He   Energy = 10000 keV
+#============= TARGET MATERIAL ======================================
+#Layer 1 : Carbon Dioxide (ICRU-134)
+#Layer Width = 50000.E+05 A ;
+#  Layer # 1- Density = 1.890E19 atoms/cm3 = .0004 g/cm3
+#  Layer # 1-  C = 33.3 Atomic Percent = 27.2 Mass Percent
+#  Layer # 1-  O = 66.6 Atomic Percent = 72.7 Mass Percent
+#====================================================================
+# Total Ions calculated =004000.00
+#===============================================================
+#  Ionization Energy Units are  >>>>  eV /(Angstrom-Ion)  <<<<  
+#===============================================================
+#
+#  TARGET       IONIZ.       IONIZ.  
+#  DEPTH         by           by     
+#  (Ang)        IONS         RECOILS 
+#-----------  -----------  -----------
 350000.E+02  2133.11E-06  3243.49E-10
 700000.E+02  2134.14E-06  9912.76E-11
 105000.E+03  2146.84E-06  1645.59E-10

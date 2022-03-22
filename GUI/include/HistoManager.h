@@ -43,7 +43,7 @@ public:
 
   void openOutputStream(const std::string & fileName);
 
-  void writeRecoData();
+  void writeRecoData(unsigned long  eventType);
 
   void toggleAutozoom() { doAutozoom = !doAutozoom;};
  

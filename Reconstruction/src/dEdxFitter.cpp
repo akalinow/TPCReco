@@ -2,8 +2,8 @@
 
 #include "TFitResultPtr.h"
 
-TGraph* dEdxFitter::braggGraph_alpha = new TGraph("dEdx_alpha_10000keV_250mbar_CO2_no_header.dat", "%lg %lg %*lg");
-TGraph* dEdxFitter::braggGraph_12C = new TGraph("dEdx_12C_2500keV_250mbar_CO2_no_header.dat", "%lg %lg %*lg");
+TGraph* dEdxFitter::braggGraph_alpha = new TGraph("dEdx_alpha_10000keV_250mbar_CO2.dat", "%lg %lg %*lg");
+TGraph* dEdxFitter::braggGraph_12C = new TGraph("dEdx_12C_2500keV_250mbar_CO2.dat", "%lg %lg %*lg");
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 dEdxFitter::dEdxFitter(){

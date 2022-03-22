@@ -37,10 +37,9 @@ MarkersManager::MarkersManager(const TGWindow * p, MainFrame * aFrame)
 /////////////////////////////////////////////////////////
 void MarkersManager::addButtons(){
 
-  std::vector<std::string> button_names = {"Add segment", "Fit segments", "Save segments"};
+  std::vector<std::string> button_names = {"Add segment", "Fit segments"};
   std::vector<std::string> button_tooltips = {"Click to add segments end point. \n All segments share a common vertex - the starting point of the first segment.\n Each point is set by coordinates on two projections",
-					      "Calculate 3D orientation from the 2D projections",
-					      "Save the segments to ROOT file"};
+					      "Calculate 3D orientation from the 2D projections"};
   std::vector<unsigned int> button_id = {M_ADD_SEGMENT, M_FIT_SEGMENT,  M_WRITE_SEGMENT};
 
   ULong_t aColor = TColor::RGB2Pixel(255, 255, 26);
