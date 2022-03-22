@@ -32,3 +32,8 @@ build/
 *~
 \#*#
 .vscode
+
+
+# Containers
+#############
+*.sif
