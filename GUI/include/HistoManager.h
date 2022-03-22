@@ -62,7 +62,6 @@ public:
 
   std::shared_ptr<TH2D> getClusterStripVsTimeInMM(int strip_dir); 
 
-private:
 
   void reconstruct();
 
@@ -108,6 +107,15 @@ private:
 
   std::shared_ptr<TH2D> getClusterStripVsTime(int strip_dir);
 
+  // Dot-like events usful for neutron flux monitoring
+  void initializeDotFinder(unsigned int hitThr, // unsigned int maxStripsPerDir, unsigned int maxTimecellsPerDir,
+			   unsigned int totalChargeThr, 
+			   double matchRadiusInMM, const std::string & fileName);
+
+  void runDotFinder();
+  void finalizeDotFinder();
+
+  private:
 
   TH3D* get3DReconstruction();
 
@@ -124,13 +132,6 @@ private:
   void drawTrack3DProjectionXY(TVirtualPad *aPad);
 
   void drawChargeAlongTrack3D(TVirtualPad *aPad);
-
-  // Dot-like events usful for neutron flux monitoring
-  void initializeDotFinder(unsigned int hitThr, // unsigned int maxStripsPerDir, unsigned int maxTimecellsPerDir,
-			   unsigned int totalChargeThr, 
-			   double matchRadiusInMM, const std::string & fileName);
-  void runDotFinder();
-  void finalizeDotFinder();
 
   void updateEventRateGraph();
 

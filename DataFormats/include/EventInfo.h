@@ -19,16 +19,15 @@ namespace eventraw {
 
     uint64_t getEventTimestamp() const {return timestamp;}
 
-    auto getEventType() const {return std::bitset<eventraw::EventInfo::eventTypeBits>(eventType);}
+    std::bitset<64> getEventType() const {return std::bitset<64>(eventType);}
 
-    
-    void setRunId(time_t aRunId) {runId = aRunId;}
+    void SetRunId(time_t aRunId) {runId = aRunId;}
 
-    void setEventId(uint32_t aEventId) {eventId = aEventId;}
+    void SetEventId(uint32_t aEventId) {eventId = aEventId;}
 
-    void setEventTimestamp(uint64_t aTimestamp) {timestamp = aTimestamp;}
+    void SetEventTimestamp(uint64_t aTimestamp) {timestamp = aTimestamp;}
 
-    void setEventType(unsigned long aEventType) {eventType = aEventType;}
+    void SetEventType(unsigned long aEventType) {eventType = aEventType;}
 
     inline EventInfo(std::shared_ptr<EventInfo> &einfo) {
       runId = einfo->getRunId();
