@@ -393,16 +393,13 @@ int MainFrame::AddEventTypeDialog(int attach){
   eventTypeButtonGroup = new TGButtonGroup(fFrame,
 					   7, 1, 1.0, 1.0,
 					   "Event type");
-  eventTypeButtonGroup->SetExclusive(kTRUE);
+  eventTypeButtonGroup->SetExclusive(kFALSE);
   std::vector<TGCheckButton*> buttonsContainer;
-  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Empty")));
   buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Noise")));
-  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Dot")));
-  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("1 track")));
-  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("2 tracks")));
-  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("3 tracks")));
+  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Multi-vertex")));
+  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Fractured track")));
+  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Good event")));
   buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Other")));
-  buttonsContainer.front()->SetState(kButtonDown);
 
   TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
   int nColumns = aLayout->fNcols;
@@ -586,15 +583,17 @@ void MainFrame::UpdateEventLog(){
 
   ///Log header
   if(!out.is_open()){
-    out.open(logFileName, std::ofstream::app);    
+    out.open(logFileName, std::ofstream::app);
+    out<<"Event type bits:"<<std::endl;
     for(int iButton=1;iButton<=eventTypeButtonGroup->GetCount();++iButton){
       TGTextButton *aButton = (TGTextButton*)eventTypeButtonGroup->GetButton(iButton);
       if(!aButton){
 	std::cerr<<__FUNCTION__<<" Coversion to TGTextButton failed!"<<std::endl;
 	continue;
       }
-      out<<iButton<<" - "<<aButton->GetString()<<std::endl;
+      out<<iButton-1<<" - "<<aButton->GetString()<<std::endl;
     }
+    out<<"\n";
     out<<"Event Id \t entry number \t Event type"<<std::endl;
   }
   /////
@@ -605,16 +604,17 @@ void MainFrame::UpdateEventLog(){
     std::cerr<<"eventTypeButtonGroup not initialised!";
     return;
   }
+
+  out<<myEventSource->currentEventNumber()<<" \t\t "
+     <<myEventSource->currentEntryNumber()<<" \t\t ";
+
+  std::bitset<64> eventType;
   for(int iButton=1;iButton<=eventTypeButtonGroup->GetCount();++iButton){
-    if(eventTypeButtonGroup->GetButton(iButton)->IsOn()){
-      out<<myEventSource->currentEventNumber()<<" \t\t "
-	 <<myEventSource->currentEntryNumber()<<" \t\t "
-	 <<iButton<<std::endl;
-      break;
+      eventType.set(iButton-1, eventTypeButtonGroup->GetButton(iButton)->IsOn());
+      eventTypeButtonGroup->GetButton(iButton)->SetOn(kFALSE);
     }
-  }
+  out<<eventType.to_ulong()<<std::endl;
   out.close();
-  eventTypeButtonGroup->SetButton(1, kTRUE);  
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
