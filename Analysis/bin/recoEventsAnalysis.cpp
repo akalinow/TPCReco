@@ -19,7 +19,7 @@
 
 #include "colorText.h"
 
-int analyzeRecoEvents(const  std::string & geometryFileName,
+int analyzeRecoEvents(const  std::string & geometryFileName, 
 		      const  std::string & dataFileName,
 		      const  float & beamEnergy,
 		      const  TVector3 & beamDir);
@@ -32,7 +32,7 @@ boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
     ("help", "produce help message")
     ("geometryFile",  boost::program_options::value<std::string>(), "string - path to the geometry file")
     ("dataFile",  boost::program_options::value<std::string>(), "string - path to data file")
-    ("beamEnergy", boost::program_options::value<float>(), "float - LAB gamma beam energy [keV]")
+    ("beamEnergy", boost::program_options::value<float>(), "float - LAB gamma beam energy [MeV]")
     ("beamDir", boost::program_options::value<std::string>(), "string - LAB gamma beam direction [\"x\" xor \"-x\"]");
   
   boost::program_options::variables_map varMap;        
@@ -49,7 +49,7 @@ boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
 /////////////////////////////////////
 int main(int argc, char **argv){
 
-  float beamEnergy=0.0; // keV
+  float beamEnergy=0.0; // MeV
   TVector3 beamDir(0,0,0); // dimensionless, in detector LAB coordinates
   std::string geometryFileName, dataFileName;
   boost::program_options::variables_map varMap = parseCmdLineArgs(argc, argv);
@@ -83,7 +83,7 @@ int main(int argc, char **argv){
     std::cout<<KRED<<"Configuration not complete: "<<RST
 	     <<" geometryFile: "<<geometryFileName<<"\n"
 	     <<" dataFile: "<<dataFileName<<"\n"
-	     <<" beamEnergy: "<<beamEnergy<<" keV\n"
+	     <<" beamEnergy: "<<beamEnergy<<" MeV\n"
 	     <<" beamDir: ["<<beamDir.X()<<", "<<beamDir.Y()<<", "<<beamDir.Z()<<"]"
 	     <<std::endl;
   }
@@ -116,7 +116,7 @@ int analyzeRecoEvents(const  std::string & geometryFileName,
     return -1;
   }
   if(beamEnergy<=0) {
-    std::cout<<KRED<<"Wrong beam energy: "<<RST<<beamEnergy<<" keV"
+    std::cout<<KRED<<"Wrong beam energy: "<<RST<<beamEnergy<<" MeV"
 	     <<std::endl;
     return -1;
   }

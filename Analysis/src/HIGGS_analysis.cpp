@@ -6,16 +6,15 @@
 #include "TFile.h"
 #include "TVector3.h"
 
-
+#include "GeometryTPC.h"
 #include "Track3D.h"
 #include "HIGGS_analysis.h"
-#include "GeometryTPC.h"
 
 ///////////////////////////////
 ///////////////////////////////
 HIGGS_analysis::HIGGS_analysis(std::shared_ptr<GeometryTPC> aGeometryPtr, // definition of LAB detector coordinates
-			       float beamEnergy,             // nominal gamma beam energy [keV] in detector LAB frame
-			       TVector3 beamDir) {            // nominal gamma beam direction in detector LAB frame
+			       float beamEnergy,   // nominal gamma beam energy [MeV] in detector LAB frame
+			       TVector3 beamDir) { // nominal gamma beam direction in detector LAB frame
   setGeometry(aGeometryPtr);
   setBeamProperties(beamEnergy, beamDir);
   bookHistos();
@@ -309,7 +308,7 @@ void HIGGS_analysis::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
 }
 ///////////////////////////////
 ///////////////////////////////
-void HIGGS_analysis::setBeamProperties(float beamEnergy, // nominal gamma beam energy [keV] in detector LAB frame
+void HIGGS_analysis::setBeamProperties(float beamEnergy,   // nominal gamma beam energy [MeV] in detector LAB frame
 				       TVector3 beamDir) { // nominal gamma beam direction in detector LAB frame
   gammaEnergy = fabs(beamEnergy);
   gammaUnitVec = beamDir.Unit();
