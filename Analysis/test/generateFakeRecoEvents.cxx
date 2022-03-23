@@ -1,6 +1,13 @@
+#ifndef __ROOTLOGON__
+R__ADD_INCLUDE_PATH(../../DataFormats/include)
+R__ADD_INCLUDE_PATH(../../Reconstruction/include)
+R__ADD_LIBRARY_PATH(../lib)
+#endif
 #include "TROOT.h"
-#include "../../DataFormats/include/Track3D.h"
-#include "../../DataFormats/include/GeometryTPC.h"
+#include "Track3D.h"
+#include "MultiKey.h"
+#include "GeometryTPC.h"
+#include "IonRangeCalculator.h"
 //////////////////////////
 //
 // root
@@ -10,16 +17,16 @@
 //
 //
 //////////////////////////
-double getKineticEnergyForRange(double range){
+std::shared_ptr<IonRangeCalculator> loadRangeCalculator(){
+  //IonRangeCalculator* loadRangeCalculator(){
 
-  //range [mm] Energy [MeV]
-  std::vector<double> params = {0.0075, 0.00308, 0.00106, -1.60361E-5, 7.63072E-8, 1.9926E-10, -1.95833E-12};
+    std::shared_ptr<IonRangeCalculator> db = std::make_shared<IonRangeCalculator>();
+    //  IonRangeCalculator* db = new IonRangeCalculator();
 
-  double result = 0.0;
-  for(int iPower=0;iPower<params.size();++iPower){
-    result += params.at(iPower)*std::pow(range, iPower);
-  }
-  return result; 
+  // set current conditions: gas=CO2, pressure=250 mbar, temperature=20C
+  db->setGasConditions(IonRangeCalculator::CO2, 250.0, 273.15+20);
+  
+  return db;
 }
 /////////////////////////
 /////////////////////////
@@ -47,7 +54,8 @@ bool isFullyContainedEvent(Track3D & aTrack){
 }
 //////////////////////////
 //////////////////////////
-Track3D generateFake3AlphaEvent(std::shared_ptr<GeometryTPC> aGeometry, bool debug_flag=false){
+Track3D generateFake3AlphaEvent(std::shared_ptr<GeometryTPC> aGeometry, std::shared_ptr<IonRangeCalculator> aRangeCalculator, bool debug_flag=false){
+  //Track3D generateFake3AlphaEvent(std::shared_ptr<GeometryTPC> aGeometry, IonRangeCalculator *aRangeCalculator, bool debug_flag=false){
 
   //  auto r=new Trandom3();
   auto r=gRandom; // use global ROOT pointer
@@ -190,10 +198,10 @@ Track3D generateFake3AlphaEvent(std::shared_ptr<GeometryTPC> aGeometry, bool deb
     std::cout<<"Alpha mass in DET/LAB: "<<alpha1_P4_DET.M()<<" "<<alpha2_P4_DET.M()<<" "<<alpha3_P4_DET.M()<<std::endl; // DEBUG
   }
 
-  // calculate alpha ranges in [mm]
-  double range1_DET=50.0*T1_CMS/Qvalue_CMS; // energy2range("alpha_250mbar", alpha1_P4_DET.E() ); // mm
-  double range2_DET=50.0*T2_CMS/Qvalue_CMS; // energy2range("alpha_250mbar", alpha2_P4_DET.E() ); // mm
-  double range3_DET=50.0*T3_CMS/Qvalue_CMS; // energy2range("alpha_250mbar", alpha3_P4_DET.E() ); // mm
+  // calculate alpha ranges [mm] in LAB/DET frame
+  double range1_DET=aRangeCalculator->getIonRangeMM(IonRangeCalculator::ALPHA, alpha1_P4_DET.E()-alpha1_P4_DET.M()); // mm
+  double range2_DET=aRangeCalculator->getIonRangeMM(IonRangeCalculator::ALPHA, alpha2_P4_DET.E()-alpha2_P4_DET.M()); // mm
+  double range3_DET=aRangeCalculator->getIonRangeMM(IonRangeCalculator::ALPHA, alpha3_P4_DET.E()-alpha3_P4_DET.M()); // mm
 
   // create list of tracks
   std::vector<TVector3> list;
@@ -241,13 +249,21 @@ Track3D generateFake3AlphaEvent(std::shared_ptr<GeometryTPC> aGeometry, bool deb
 void generateFakeRecoEvents(const std::string geometryName, bool debug_flag=false){
 
   if (!gROOT->GetClass("Track3D")){
-    R__LOAD_LIBRARY(../../build/lib/libDataFormats.so);
+    R__LOAD_LIBRARY(libDataFormats.so);
+  }
+  if (!gROOT->GetClass("IonRangeCalculator")){
+    R__LOAD_LIBRARY(libReconstruction.so);
   }
 
   const std::string fileName="Reco_FakeEvents.root";
   auto myGeometry=loadGeometry(geometryName);
   if(!myGeometry->IsOK()) {
     std::cerr<<"ERROR: Wrong geometry file!"<<std::endl;
+    return;
+  }
+  auto myRangeCalculator=loadRangeCalculator();
+  if(!myRangeCalculator->IsOK()) {
+    std::cerr<<"ERROR: Cannot initialize range/energy calculator!"<<std::endl;
     return;
   }
   
@@ -263,11 +279,11 @@ void generateFakeRecoEvents(const std::string geometryName, bool debug_flag=fals
 
   for(auto i=0L; i<10000L; i++) {
     if(debug_flag || (i<1000L && (i%100L)==0L) || (i%1000L)==0L ) std::cout<<"Generating fake track i="<<i<<std::endl;
-    *aTrack = generateFake3AlphaEvent(myGeometry, debug_flag);
+    *aTrack = generateFake3AlphaEvent(myGeometry, myRangeCalculator, debug_flag);
 
     // skip bad or parially contained events
     if(aTrack->getSegments().size()==0) {
-      if(debug_flag) std::cout<<"Fake track i="<<i<<" rejected!"<<std::endl;
+      if(debug_flag) std::cout<<"Fake event i="<<i<<" rejected!"<<std::endl;
       continue; 
     }
     aTree->Fill();
@@ -275,119 +291,3 @@ void generateFakeRecoEvents(const std::string geometryName, bool debug_flag=fals
   aTree->Write("",TObject::kOverwrite);
   aFile->Close();
 }
-  
-/*
-  std::vector<TLorentzVector> vectorP4_CM(3); // [MeV, MeV, MeV, MeV]
-  for(auto aP4: vectorP4) {
-    
-  }
-  
-  
-  double totalLength = 0;
-  double maxCharge = 0;
-  double stepSize = 2; //[mm]
-  for(auto aSegment: aTrack->getSegments()){
-    aSegment.setGeometry(aGeometry);
-    const TVector3 & direction = (aSegment.getEnd() - aSegment.getStart());
-    double length = aSegment.getLength();
-    double kineticEnergy = getKineticEnergyForRange(length);
-    double energy = kineticEnergy + alphaMass;
-    double momentum = sqrt(energy*energy - alphaMass*alphaMass);
-    TLorentzVector aP4(direction.Unit()*momentum, energy);
-    totalP4 += aP4;
-    std::cout<<"Segment:"
-	     <<" direction (phi, theta): "
-	     << direction.Phi()<<", "<<direction.Theta()<<std::endl
-	     <<"\t length [mm] = "<<aSegment.getLength()<<std::endl
-	     <<"\t kin. energy [MeV] = "<<kineticEnergy<<std::endl
-	     <<"\t total Charge: "<<aSegment.getIntegratedCharge(length)<<std::endl
-	     <<"\t kin. energy/charge: "<<kineticEnergy/aSegment.getIntegratedCharge(length)<<std::endl
-	     <<"\t charge along track: "; 
-    int nSteps = length/stepSize;
-    double sum = 0.0;
-    for(int iStep=1;iStep<=nSteps;++iStep){
-      double charge = aSegment.getIntegratedCharge(iStep*stepSize) -
-	aSegment.getIntegratedCharge((iStep-1)*stepSize);
-      std::cout<<charge<<", ";
-      sum += charge;
-      chargeProfile.push_back(charge);
-      profilePosition.push_back(iStep*stepSize+totalLength);
-      maxCharge = std::max(charge, maxCharge);
-    }
-    std::cout<<" sum: "<<sum<<std::endl;
-    totalLength += length;
-  }
-  TCanvas *aCanvas = new TCanvas("aCanvas","",700,500);
-  TGraph *chargeProfileGraph = new TGraph(profilePosition.size(), profilePosition.data(), chargeProfile.data());
-  TH1F *hFrame = new TH1F("hFrame","Charge profile;length [mm]; charge [arbitrary units]",1,0,totalLength);
-  hFrame->SetMinimum(0.0);
-  hFrame->SetMaximum(1.2*maxCharge);
-  hFrame->Draw();
-  chargeProfileGraph->SetMarkerStyle(22);
-  chargeProfileGraph->Draw("P");
-  
-  std::cout<<std::endl;
-  std::cout<<"Total energy [MeV]:             "<<totalP4.E()<<std::endl
-	   <<"Total kin energy [MeV]:         "<<totalP4.E() - 3*alphaMass<<std::endl
-	   <<"      momentum [MeV/c]:         "<<totalP4.P()<<std::endl
-    	   <<"      invariant mass [MeV/c^2]: "<<totalP4.M()<<std::endl;
-
-}
-*/
-//////////////////////////
-//////////////////////////
-/*
-void plotTrackSegment(int strip_dir, const std::string & dataFileName, const std::string & geometryFileName){
-
-  ///Data and geometry loading.
-  Track3D *aTrack = loadRecoEvent(dataFileName);
-  std::shared_ptr<GeometryTPC> aGeometry = loadGeometry(geometryFileName);
-  std::cout<<*aTrack<<std::endl;
-
-  ///Fetching tracks segments from the full track.
-  TrackSegment3D aSegment = aTrack->getSegments().front();
-  aSegment = aTrack->getSegments().back();
-  aSegment.setGeometry(aGeometry);
-
-  ///Choose the U direction and get the 2D segment
-  double startLambda = 0;
-  double endLambda = aSegment.getLength();
-  TrackSegment2D aStripProjection = aSegment.get2DProjection(strip_dir, startLambda, endLambda);
-  const TVector3 & start = aStripProjection.getStart();
-  const TVector3 & end = aStripProjection.getEnd();
-  std::cout<<aStripProjection<<std::endl;
-
-  ///Some simple plots for the 2D segment.
-  TH2F *hProjection = new TH2F("hProjection",";x [mm]; y[mm]; charge",100,start.X(), end.X(), 100, start.Y(), end.Y());
-  hProjection->SetStats(false);
-  TH1D *hDistance = new TH1D("hDistance",";hit distance [mm];charge",10,0,10);
-  hDistance->SetStats(false);
-  TVector3 aPoint;
-  double distance = 0.0;
-  for(auto aHit: aSegment.getRecHits().at(strip_dir)){
-    double x = aHit.getPosTime();
-    double y = aHit.getPosStrip();
-    double charge = aHit.getCharge();
-    aPoint.SetXYZ(x,y,0);
-    distance = aStripProjection.getPointTransverseDistance(aPoint);
-    //std::cout<<"x,y: "<<x<<", "<<y<<" charge: "<<charge<<" distance: "<<distance<<std::endl;
-
-    if(distance>0 && distance<10){
-      hProjection->Fill(x,y,charge);
-    }
-    hDistance->Fill(distance,charge);
-  }
-  TCanvas *aCanvas = new TCanvas("aCanvas","",700,500);
-  TLine *aSegment2DLine = new TLine(start.X(), start.Y(),  end.X(),  end.Y());
-  aSegment2DLine->SetLineColor(2);
-  aSegment2DLine->SetLineWidth(2);
-  aCanvas->Divide(2,1);
-  aCanvas->cd(1);
-  hProjection->Draw("colz");
-  aSegment2DLine->Draw();
-  aCanvas->cd(2);
-  hDistance->Draw("colz");
-}
-//////////////////////////
-//////////////////////////
-*/

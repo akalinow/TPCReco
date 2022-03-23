@@ -1,6 +1,10 @@
+#ifndef __ROOTLOGON__
+R__ADD_INCLUDE_PATH(../../DataFormats/include)
+R__ADD_LIBRARY_PATH(../lib)
+#endif
 #include "TROOT.h"
-#include "../../DataFormats/include/Track3D.h"
-#include "../../DataFormats/include/GeometryTPC.h"
+#include "Track3D.h"
+#include "GeometryTPC.h"
 //////////////////////////
 //
 // root
@@ -31,7 +35,7 @@ std::shared_ptr<GeometryTPC> loadGeometry(const std::string fileName){
 Track3D *loadRecoEvent(const std::string fileName){
 
   if (!gROOT->GetClass("Track3D")){
-    R__LOAD_LIBRARY(/scratch/akalinow/scratch/akalinow/ELITPC/TPCReco/build/lib/libDataFormats.so);
+    R__LOAD_LIBRARY(libDataFormats.so);
   }
   
   TFile *aFile = new TFile(fileName.c_str());
