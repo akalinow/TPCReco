@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////
 IonRangeCalculator::IonRangeCalculator(gas_mixture_type gas, double p_mbar, double T_Kelvin){ // input: GAS index, pressure [mbar], temperature [K]
 
-  addIonRangeCurve(IonRangeCalculator::ALPHA,     IonRangeCalculator::CO2, 250.0, 273.15+20, "range_alpha_in_CO2_250mbar_with_header.dat");
-  addIonRangeCurve(IonRangeCalculator::CARBON_12, IonRangeCalculator::CO2, 250.0, 273.15+20, "range_12C_in_CO2_250mbar_with_header.dat");
-  addIonRangeCurve(IonRangeCalculator::CARBON_14, IonRangeCalculator::CO2, 250.0, 273.15+20, "range_14C_in_CO2_250mbar_with_header.dat");
+  addIonRangeCurve(IonRangeCalculator::ALPHA,     IonRangeCalculator::CO2, 250.0, 273.15+20, "range_alpha_in_CO2_250mbar.dat");
+  addIonRangeCurve(IonRangeCalculator::CARBON_12, IonRangeCalculator::CO2, 250.0, 273.15+20, "range_12C_in_CO2_250mbar.dat");
+  addIonRangeCurve(IonRangeCalculator::CARBON_14, IonRangeCalculator::CO2, 250.0, 273.15+20, "range_14C_in_CO2_250mbar.dat");
 
   setGasConditions(gas, p_mbar, T_Kelvin);
 }
@@ -94,7 +94,7 @@ double IonRangeCalculator::getIonRangeMM(pid_type ion, double E_MeV){ // interpo
   }
   
   // rescale output range to current {p, T} values assuming ideal gas pV=nRT formula
-  double ref_range=(it->second)->Eval(E_MeV); // mm
+  double ref_range=1E-3*(it->second)->Eval(E_MeV*1E3); // mm
   //  std::cout<<__FUNCTION__<<": non-scaled range="<<ref_range<<" mm, "
   //	   <<"T_ref="<<refGasTemperatureMap[it->first]<<" K, "
   //	   <<"p_ref="<<refGasPressureMap[it->first]<<" mbar"<<std::endl;
@@ -120,7 +120,7 @@ double IonRangeCalculator::getIonEnergyMeV(pid_type ion, double range_mm){ // in
   //  std::cout<<__FUNCTION__<<": non-scaled range="<<ref_range<<" mm, "
   //	   <<"T_ref="<<refGasTemperatureMap[it->first]<<" K, "
   //	   <<"p_ref="<<refGasPressureMap[it->first]<<" mbar"<<std::endl;
-  return (it->second)->Eval(ref_range); // result in [MeV]
+  return 1E-3*(it->second)->Eval(ref_range*1E3); // result in [MeV]
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
@@ -141,7 +141,9 @@ void IonRangeCalculator::addIonRangeCurve(pid_type ion, gas_mixture_type gas, do
 
   // add new map elements
   if(it==refGasRangeCurveMap.end()) {
-    refGasRangeCurveMap[mkey2]=new TGraph(datafile);
+    refGasRangeCurveMap[mkey2]=new TGraph(datafile, "%lg %*s  %*lg  %*lg %lg %*lg");
+    refGasRangeCurveMap[mkey2]->SetPoint(refGasRangeCurveMap[mkey2]->GetN(), 0.0, 0.0);
+    refGasRangeCurveMap[mkey2]->Sort();
     if(refGasRangeCurveMap[mkey2]->GetN()<2) {
 	std::cerr<<__FUNCTION__<<": ERROR: Wrong initialization of range vs energy TGraph using datafile="<<datafile<<"!"<<std::endl;
 	exit(-1);
