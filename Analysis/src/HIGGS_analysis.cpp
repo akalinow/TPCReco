@@ -111,13 +111,13 @@ void HIGGS_analysis::bookHistos(){
 							  maxLengthMM/binSizeMM, 0, maxLengthMM);
       // TRACK DELTA_X/Y/Z : per category / per track
       histos1D[(prefix+pid+"_deltaX").c_str()] = new TH1F((prefix+pid+"_deltaX").c_str(),
-							  Form("%s;%s track #DeltX_{DET} [mm];%s", info, pidLatex, perTrackTitle),
+							  Form("%s;%s track #DeltaX_{DET} [mm];%s", info, pidLatex, perTrackTitle),
 							  maxLengthMM/binSizeMM, -0.5*maxLengthMM, 0.5*maxLengthMM);
       histos1D[(prefix+pid+"_deltaY").c_str()] = new TH1F((prefix+pid+"_deltaY").c_str(),
-							  Form("%s;%s track #DeltY_{DET} [mm];%s", info, pidLatex, perTrackTitle),
+							  Form("%s;%s track #DeltaY_{DET} [mm];%s", info, pidLatex, perTrackTitle),
 							  maxLengthMM/binSizeMM, -0.5*maxLengthMM, 0.5*maxLengthMM);
       histos1D[(prefix+pid+"_deltaZ").c_str()] = new TH1F((prefix+pid+"_deltaZ").c_str(),
-							  Form("%s;%s track #DeltZ_{DET} [mm];%s", info, pidLatex, perTrackTitle),
+							  Form("%s;%s track #DeltaZ_{DET} [mm];%s", info, pidLatex, perTrackTitle),
 							  maxLengthMM/binSizeMM, -0.5*maxLengthMM, 0.5*maxLengthMM);
       // TRACK END_X/Y/Z : per category / per track
       histos1D[(prefix+pid+"_endX").c_str()] = new TH1F((prefix+pid+"_endX").c_str(),
@@ -206,6 +206,7 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     histos1D["all_thetaDET"]->Fill(track.getTangent().Theta());
     histos1D["all_cosThetaDET"]->Fill(track.getTangent().CosTheta());
   }
+  
   // 1-prong (alpha)
   if(ntracks==1) {
     histos1D["1prong_vertexX"]->Fill(vertexPos.X());
@@ -214,17 +215,17 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     histos2D["1prong_vertexXY"]->Fill(vertexPos.X(), vertexPos.Y());
     auto track=list.front();
     float len=track.getLength();
-    histos1D["1prong_length"]->Fill(len);
-    histos1D["1prong_deltaX"]->Fill(len*track.getTangent().X());
-    histos1D["1prong_deltaY"]->Fill(len*track.getTangent().Y());
-    histos1D["1prong_deltaZ"]->Fill(len*track.getTangent().Z());
-    histos1D["1prong_endX"]->Fill(track.getEnd().X());
-    histos1D["1prong_endY"]->Fill(track.getEnd().Y());
-    histos1D["1prong_endZ"]->Fill(track.getEnd().Z());
-    histos2D["1prong_endXY"]->Fill(track.getEnd().X(), track.getEnd().Y());
-    histos1D["1prong_phiDET"]->Fill(track.getTangent().Phi());
-    histos1D["1prong_thetaDET"]->Fill(track.getTangent().Theta());
-    histos1D["1prong_cosThetaDET"]->Fill(track.getTangent().CosTheta());
+    histos1D["1prong_alpha_length"]->Fill(len);
+    histos1D["1prong_alpha_deltaX"]->Fill(len*track.getTangent().X());
+    histos1D["1prong_alpha_deltaY"]->Fill(len*track.getTangent().Y());
+    histos1D["1prong_alpha_deltaZ"]->Fill(len*track.getTangent().Z());
+    histos1D["1prong_alpha_endX"]->Fill(track.getEnd().X());
+    histos1D["1prong_alpha_endY"]->Fill(track.getEnd().Y());
+    histos1D["1prong_alpha_endZ"]->Fill(track.getEnd().Z());
+    histos2D["1prong_alpha_endXY"]->Fill(track.getEnd().X(), track.getEnd().Y());
+    histos1D["1prong_alpha_phiDET"]->Fill(track.getTangent().Phi());
+    histos1D["1prong_alpha_thetaDET"]->Fill(track.getTangent().Theta());
+    histos1D["1prong_alpha_cosThetaDET"]->Fill(track.getTangent().CosTheta());
   }
   
   // 2-prong (alpha+carbon)

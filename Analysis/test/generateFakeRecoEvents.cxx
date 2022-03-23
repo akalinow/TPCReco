@@ -18,10 +18,8 @@ R__ADD_LIBRARY_PATH(../lib)
 //
 //////////////////////////
 std::shared_ptr<IonRangeCalculator> loadRangeCalculator(){
-  //IonRangeCalculator* loadRangeCalculator(){
 
-    std::shared_ptr<IonRangeCalculator> db = std::make_shared<IonRangeCalculator>();
-    //  IonRangeCalculator* db = new IonRangeCalculator();
+  std::shared_ptr<IonRangeCalculator> db = std::make_shared<IonRangeCalculator>();
 
   // set current conditions: gas=CO2, pressure=250 mbar, temperature=20C
   db->setGasConditions(IonRangeCalculator::CO2, 250.0, 273.15+20);
