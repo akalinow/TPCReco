@@ -8,6 +8,8 @@
 #include <iostream>
 #include "MultiKey.h"
 
+#include "EventInfo.h"
+
 namespace eventraw {
 
   class ChannelRaw {
@@ -34,23 +36,6 @@ namespace eventraw {
   
   typedef std::map< MultiKey3_uint8, AgetRaw, multikey3_uint8_less > AgetRawMap_t; // index = { cobo[>=0], asad[0-3], aget[0-3] }
  
-  class EventInfo {
-  public:
-    EventInfo(){};
-
-    ~EventInfo(){};
-
-    inline EventInfo(std::shared_ptr<EventInfo> &einfo) {
-      eventId = einfo->eventId;
-      timestamp = einfo->timestamp;
-    }
-    
-    uint32_t eventId{0};   // 4-bytes
-    uint64_t timestamp{0}; // 6-bytes in 10ns CLK units (100 MHz)
-
-    friend std::ostream& operator<<(std::ostream& os, const eventraw::EventInfo& einfo);
-  };
-
   class EventData {
   public:
     EventData(){};
@@ -71,17 +56,14 @@ namespace eventraw {
 
     ~EventRaw(){};
     
-    inline EventRaw(std::shared_ptr<EventInfo> &einfo, std::shared_ptr<EventData> &edata) {
-      this->eventId = einfo->eventId;
-      this->timestamp = einfo->timestamp;
-      this->data = edata->data;
+    inline EventRaw(std::shared_ptr<EventInfo> &einfo, std::shared_ptr<EventData> &edata):EventInfo(einfo) {
+      data = edata->data;
     };
 
     friend std::ostream& operator<<(std::ostream& os, const eventraw::EventRaw& eraw);
   };
 
   std::ostream& operator<<(std::ostream& os, const eventraw::AgetRaw& araw);
-  std::ostream& operator<<(std::ostream& os, const eventraw::EventInfo& einfo);
   std::ostream& operator<<(std::ostream& os, const eventraw::ChannelRaw& craw);
   std::ostream& operator<<(std::ostream& os, const eventraw::EventData& edata);  
   std::ostream& operator<<(std::ostream& os, const eventraw::EventRaw& eraw);

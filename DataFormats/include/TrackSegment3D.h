@@ -83,7 +83,8 @@ public:
 
   ///Return charge profile along the track. Each projection is returned in separate
   ///histogram row
-  TH2F getChargeProfile() const;
+  TH2F getChargeProfile1() const;
+  TH1F getChargeProfile() const;
 
   double getIntegratedCharge(double lambda) const;
 
@@ -104,6 +105,8 @@ private:
 
   ///Calculate and store chi2 for all projections.
   void calculateRecHitChi2();
+
+  void addProjection(TH1F &histo, TGraphErrors &graph) const;
 
   std::shared_ptr<GeometryTPC> myGeometryPtr; //! transient data member
   TVector3 myTangent, myBias;

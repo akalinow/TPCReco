@@ -11,8 +11,8 @@ import os, commands
 #path = "/mnt/NAS_STORAGE_BIG/IFJ_VdG_20210630/20210617_extTrg_CO2_250mbar_DT1470ET/";
 #geometryFile = "/home/akalinow/scratch/TPCReco/build/resources/geometry_ELITPC_250mbar_12.5MHz.dat"
 
-path = "/mnt/NAS_STORAGE_BIG/IFJ_VdG_20210630/20210621_extTrg_CO2_250mbar_DT1470ET/"
-geometryFile = "/home/akalinow/scratch/TPCReco/build/resources/geometry_ELITPC_250mbar_12.5MHz.dat"
+#path = "/mnt/NAS_STORAGE_BIG/IFJ_VdG_20210630/20210621_extTrg_CO2_250mbar_DT1470ET/"
+#geometryFile = "/home/akalinow/scratch/TPCReco/build/resources/geometry_ELITPC_250mbar_12.5MHz.dat"
 
 #path = "/mnt/NAS_STORAGE_BIG/IFJ_VdG_20210630/20210622_extTrg_CO2_250mbar_DT1470ET/"
 #geometryFile = "/home/akalinow/scratch/TPCReco/build/resources/geometry_ELITPC_250mbar_12.5MHz.dat"
@@ -21,7 +21,11 @@ geometryFile = "/home/akalinow/scratch/TPCReco/build/resources/geometry_ELITPC_2
 #geometryFile = "/home/akalinow/scratch/TPCReco/build/resources/geometry_ELITPC_250mbar_12.5MHz.dat"
 
 #path = "/data/edaq/2021/20211125_extTrg_CO2_250mbar_DT1470ET/"
-#geometryFile = "/home/akalinow/scratch/TPCReco/build/resources/geometry_ELITPC_250mbar_12.5MHz.dat"
+path = "/scratch_elitpc/2021/20211125_extTrg_CO2_250mbar_DT1470ET/"
+geometryFile = "/home/akalinow/scratch/TPCReco/build/resources/geometry_ELITPC_250mbar_12.5MHz.dat"
+
+#path = "/mnt/NAS_STORAGE_BIG/dump_20180625/data_edaq_20180625/"
+#geometryFile = "/home/akalinow/scratch/TPCReco/build/resources/geometry_mini_eTPC.dat"
 
 command = "../bin/grawToEventTPC"
 #command = "../bin/grawToEventRaw"
@@ -36,6 +40,8 @@ for root, dirs, files in os.walk(path):
     for aFile in files:
         if aFile.find(".graw")!=-1 and aFile.find("CoBo")!=-1:
             timestamp_index = aFile.rfind("ALL_")
+            if timestamp_index<0:
+                timestamp_index = aFile.rfind("oBo_")
             timestamp = aFile[timestamp_index+4:timestamp_index+27]
             print("timestamp:",timestamp)
             if timestamp in grawFileList.keys():

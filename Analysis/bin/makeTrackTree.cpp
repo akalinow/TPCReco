@@ -12,6 +12,7 @@
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/program_options.hpp>
 
+#include "dEdxFitter.h"
 #include "TrackBuilder.h"
 #include "HistoManager.h"
 #include "EventSourceROOT.h"
@@ -118,8 +119,7 @@ int makeTrackTree(const  std::string & geometryFileName,
   
   TrackBuilder myTkBuilder;
   myTkBuilder.setGeometry(myEventSource->getGeometry());
-
-
+  dEdxFitter mydEdxFitter;
 
   HistoManager myHistoManager;
   myHistoManager.setGeometry(myEventSource->getGeometry());
@@ -163,9 +163,16 @@ int makeTrackTree(const  std::string & geometryFileName,
     TVector3 vertical(0,0,-1);
     double verticalTrackLostPart = 6.0/std::abs(vertical.Dot(tangent));
 
+    TH1F hChargeProfile = aTrack3D.getSegments().front().getChargeProfile();
     int eventType = 0;
     double alphaEnergy = 0.0;
     double carbonEnergy = 0.0;
+    if(charge>100 && length>50){
+      mydEdxFitter.fitHisto(hChargeProfile);
+      eventType = mydEdxFitter.getBestFitEventType();
+      alphaEnergy = mydEdxFitter.getAlphaEnergy();
+      carbonEnergy = mydEdxFitter.getCarbonEnergy();
+    }
       
     track_data.frameId = iEntry;
     track_data.eventId = eventId;

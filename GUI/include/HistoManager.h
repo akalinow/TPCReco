@@ -14,6 +14,8 @@
 #include "SigClusterTPC.h"
 #include "TrackBuilder.h"
 #include "DotFinder.h"
+#include "dEdxFitter.h"
+#include "RecoOutput.h"
 
 #include "CommonDefinitions.h"
 
@@ -39,35 +41,48 @@ public:
 
   void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);
 
-  void openOutputStream(const std::string & fileName);
+  void openOutputStream(const std::string & filePath);
 
-  void writeSegments();
+  void writeRecoData(unsigned long  eventType);
 
   void toggleAutozoom() { doAutozoom = !doAutozoom;};
+ 
+  void resetEventRateGraph();
+
+  void drawRawHistos(TCanvas *aCanvas, bool isRateDisplayOn);
+
+  void drawRecoHistos(TCanvas *aCanvas);
+
+  void drawTechnicalHistos(TCanvas *aCanvas, int nAgetChips);
+
+  void drawRecoFromMarkers(TCanvas *aCanvas, std::vector<double> * segmentsXY);
+
+  void clearCanvas(TCanvas *aCanvas, bool isLogScaleOn);
+
+  std::shared_ptr<TH2D> getRawStripVsTime(int strip_dir);
+
+  std::shared_ptr<TH2D> getClusterStripVsTimeInMM(int strip_dir); 
+
 
   void reconstruct();
 
   void reconstructSegmentsFromMarkers(std::vector<double> * segmentsXY);
- 
-  void resetEventRateGraph();
 
   TGraph* getEventRateGraph();
-
+  
   TH2Poly *getDetectorLayout() const;
   
   std::shared_ptr<TH1D> getRawTimeProjection();
 
   std::shared_ptr<TH1D> getRawTimeProjection(int strip_dir);
 
-  std::shared_ptr<TH1D> getRawTimeProjectionInMM(); // added by MC - 4 Aug 2021
+  std::shared_ptr<TH1D> getRawTimeProjectionInMM(); 
 
-  std::shared_ptr<TH1D> getRawTimeProjectionInMM(int strip_dir); // added by MC - 4 Aug 2021
+  std::shared_ptr<TH1D> getRawTimeProjectionInMM(int strip_dir);
 
   std::shared_ptr<TH1D> getRawStripProjection(int strip_dir);
 
-  std::shared_ptr<TH1D> getRawStripProjectionInMM(int strip_dir); // added by MC - 4 Aug 2021
-
-  std::shared_ptr<TH2D> getRawStripVsTime(int strip_dir);
+  std::shared_ptr<TH1D> getRawStripProjectionInMM(int strip_dir);
 
   std::shared_ptr<TH2D> getRawStripVsTimeInMM(int strip_dir);
 
@@ -79,21 +94,29 @@ public:
 
   std::shared_ptr<TH2D> getChannels(int cobo_id, int asad_id);
 
-  std::shared_ptr<TH1D> getClusterTimeProjection(); // added by MC - 4 Aug 2021
+  std::shared_ptr<TH1D> getClusterTimeProjection();
 
-  std::shared_ptr<TH1D> getClusterTimeProjectionInMM(); // added by MC - 4 Aug 2021
+  std::shared_ptr<TH1D> getClusterTimeProjectionInMM();
 
-  std::shared_ptr<TH1D> getClusterTimeProjection(int strip_dir); // added by MC - 4 Aug 2021
+  std::shared_ptr<TH1D> getClusterTimeProjection(int strip_dir);
 
-  std::shared_ptr<TH1D> getClusterTimeProjectionInMM(int strip_dir); // added by MC - 4 Aug 2021
+  std::shared_ptr<TH1D> getClusterTimeProjectionInMM(int strip_dir);
 
-  std::shared_ptr<TH1D> getClusterStripProjection(int strip_dir); // added by MC - 4 Aug 2021
+  std::shared_ptr<TH1D> getClusterStripProjection(int strip_dir);
 
-  std::shared_ptr<TH1D> getClusterStripProjectionInMM(int strip_dir); // added by MC - 4 Aug 2021
+  std::shared_ptr<TH1D> getClusterStripProjectionInMM(int strip_dir); 
 
-  std::shared_ptr<TH2D> getClusterStripVsTime(int strip_dir); // added by MC - 4 Aug 2021
+  std::shared_ptr<TH2D> getClusterStripVsTime(int strip_dir);
 
-  std::shared_ptr<TH2D> getClusterStripVsTimeInMM(int strip_dir); // added by MC - 4 Aug 2021
+  // Dot-like events usful for neutron flux monitoring
+  void initializeDotFinder(unsigned int hitThr, // unsigned int maxStripsPerDir, unsigned int maxTimecellsPerDir,
+			   unsigned int totalChargeThr, 
+			   double matchRadiusInMM, const std::string & filePath);
+
+  void runDotFinder();
+  void finalizeDotFinder();
+
+  private:
 
   TH3D* get3DReconstruction();
 
@@ -111,15 +134,6 @@ public:
 
   void drawChargeAlongTrack3D(TVirtualPad *aPad);
 
-  // Dot-like events usful for neutron flux monitoring
-  void initializeDotFinder(unsigned int hitThr, // unsigned int maxStripsPerDir, unsigned int maxTimecellsPerDir,
-			   unsigned int totalChargeThr, 
-			   double matchRadiusInMM, const std::string & fileName);
-  void runDotFinder();
-  void finalizeDotFinder();
-
-private:
-
   void updateEventRateGraph();
 
   void makeAutozoom(std::shared_ptr<TH2D> & aHisto);
@@ -128,12 +142,18 @@ private:
   TH3D *h3DReco{0};
   TGraph *grEventRate{0};
   TrackBuilder myTkBuilder;
+  RecoOutput myRecoOuput;
   DotFinder myDotFinder;
+  dEdxFitter mydEdxFitter;
 
-  std::shared_ptr<EventTPC> myEvent;
+  std::shared_ptr<EventTPC> myEventPtr;
+  std::shared_ptr<eventraw::EventInfo> myEventInfo;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
+  
+  std::vector<TObject*> fObjClones;
 
-  bool doAutozoom;
+  bool doAutozoom{false};
+  bool openOutputStreamInitialized{false};
 
   Long64_t previousEventTime{-1};
   Long64_t previousEventNumber{-1};

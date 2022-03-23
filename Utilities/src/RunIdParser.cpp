@@ -11,7 +11,7 @@ const std::array<std::pair<std::regex, RunIdParser::Positions>, 2>
                        "2}):(\\d{2}):(\\d{2})\\.(\\d{3})_(\\d{4}).+$"),
             Positions{3, 4, 5, 6, 7, 8, 9, 10, 1, 2}),
         std::make_pair(std::regex("^.*(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):("
-                                  "\\d{2}):(\\d{2})\\.(\\d{3})_(\\d{4}).*$"),
+                                  "\\d{2}):(\\d{2})\\.(\\d{3})_(\\d{1,4}).*$"),
                        Positions{1, 2, 3, 4, 5, 6, 7, 8, 0, 0})
 
 };
@@ -29,7 +29,7 @@ RunIdParser::RunIdParser(const std::string &name) {
       return;
     }
   }
-  throw std::logic_error("Couldn't parse " + name);
+  throw std::logic_error("RunIdParser: Couldn't parse file name:" + name);
 }
 
 void RunIdParser::matchResults(const std::smatch &match,
@@ -68,7 +68,7 @@ RunIdParser::Positions::Positions(size_t year, size_t month, size_t day,
   auto it = std::find_if(elements.begin(), elements.end(),
                          [](size_t i) { return i > 0; });
   if (it == elements.end()) {
-    throw std::logic_error("No non-zero position");
+    throw std::logic_error("RunIdParser: No non-zero position.");
   }
   max_ = *std::max_element(elements.begin(), elements.end());
 }

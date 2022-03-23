@@ -180,15 +180,14 @@ double TrackSegment3D::getIntegratedCharge(double lambda) const{
     TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, lambda);
     const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
     charge += aTrack2DProjection.getIntegratedCharge(lambda, aRecHits);
-    //break;//TEST
   } 
   return charge;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TH2F TrackSegment3D::getChargeProfile() const{
+TH2F TrackSegment3D::getChargeProfile1() const{
 
-  double radiusCut = 0.5;
+  double radiusCut = 5;
   double timeProjection = getTangent().Unit().Z();
   
   std::vector<TGraphErrors> projections;
@@ -218,13 +217,18 @@ TH2F TrackSegment3D::getChargeProfile() const{
 
   double xCenter;
   double charge = 0.0;
-  double cosPhiProjectionAngle = 1.0;
   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
     TGraphErrors & aGraph = projections[strip_dir];
-    cosPhiProjectionAngle = cosPhiProjectionAngles[strip_dir];
+    std::string name = "density_graph_"+std::to_string(strip_dir);
+    aGraph.SetName(name.c_str());
+    name +=".root";
+    aGraph.SaveAs(name.c_str());
+    //double graphInt = aGraph.Integral();
+    //std::cout<<"graphInt: "<<graphInt<<std::endl;
+    //std::cout<<"cosPhiProjectionAngle: "<<cosPhiProjectionAngle<<std::endl;
     for(int iBin=1;iBin<=hChargeProfile.GetNbinsX();++iBin){
       xCenter = hChargeProfile.GetXaxis()->GetBinCenter(iBin)/getLength();
-      charge = aGraph.Eval(xCenter)*cosPhiProjectionAngle;
+      charge = aGraph.Eval(xCenter);
       if(charge<1E-3) continue;
       hChargeProfile.SetBinContent(iBin, strip_dir+1, charge);
     }
@@ -287,6 +291,65 @@ std::ostream & operator << (std::ostream &out, const TrackSegment3D &aSegment){
      <<"("<<tangent.Mag()<<", "<<tangent.Theta()<<", "<<tangent.Phi()<<")";
     
   return out;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void TrackSegment3D::addProjection(TH1F &histo, TGraphErrors &graph) const{
+  
+  double x, y, ex;
+  double value=0;
+  int binLow, binHigh;
+  double binWidth = histo.GetBinWidth(1);
+  for(int iPoint=0;iPoint<graph.GetN();++iPoint){
+    graph.GetPoint(iPoint, x,y);
+    ex = graph.GetErrorX(iPoint);
+    binLow = histo.FindBin((x-ex)*getLength());
+    binHigh = histo.FindBin((x+ex)*getLength());
+    y *= binWidth*graph.GetN();
+    for(int iBin=binLow;iBin<=binHigh;++iBin){
+      value = histo.GetBinContent(iBin);
+      histo.SetBinContent(iBin, value+y);
+    }
+  }
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+TH1F TrackSegment3D::getChargeProfile() const{
+
+  double radiusCut = 2;  
+  std::vector<TGraphErrors> projections;
+  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+    TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, getLength());
+    const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
+    projections.push_back(aTrack2DProjection.getChargeProfile(aRecHits, radiusCut));
+  }
+
+  int nBins = 1200;
+  double minX = -0.2*getLength();
+  double maxX = 1.2*getLength();
+  TH1F hChargeProfile("hChargeProfile",";d [mm];charge",nBins, minX, maxX);
+  if(getLength()<1) return hChargeProfile;
+
+  int maxPoints = 0;
+  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+    TGraphErrors & aGraph = projections[strip_dir];
+    if(aGraph.GetN()>maxPoints) maxPoints = aGraph.GetN();
+    std::string name = "density_graph_"+std::to_string(strip_dir);
+    aGraph.SetName(name.c_str());
+    name +=".root";
+    //aGraph.SaveAs(name.c_str());
+    addProjection(hChargeProfile, aGraph);
+  }
+    
+  int rebinFactor = 20.0*sqrt(1000.0/maxPoints);
+  int tmp = hChargeProfile.GetNbinsX()/rebinFactor;
+  rebinFactor = hChargeProfile.GetNbinsX()/tmp;
+  std::cout<<"rebinFactor: "<<rebinFactor<<std::endl;
+  
+  hChargeProfile.Rebin(rebinFactor);
+  hChargeProfile.Scale(getIntegratedCharge(getLength())/hChargeProfile.Integral());
+  //hChargeProfile.SaveAs("density_histo.root");
+  return hChargeProfile;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

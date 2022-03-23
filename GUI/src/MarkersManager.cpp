@@ -36,19 +36,18 @@ MarkersManager::MarkersManager(const TGWindow * p, MainFrame * aFrame)
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MarkersManager::addButtons(){
-
-  std::vector<std::string> button_names = {"Add segment", "Fit segments", "Save segments"};
+  
+  std::vector<std::string> button_names = {"Add segment", "Fit segments"};
   std::vector<std::string> button_tooltips = {"Click to add segments end point. \n All segments share a common vertex - the starting point of the first segment.\n Each point is set by coordinates on two projections",
-					      "Calculate 3D orientation from the 2D projections",
-					      "Save the segments to ROOT file"};
-  std::vector<unsigned int> button_id = {M_ADD_SEGMENT, M_FIT_SEGMENT,  M_WRITE_SEGMENT};
+					      "Calculate 3D orientation from the 2D projections"};
+  std::vector<unsigned int> button_id = {M_ADD_SEGMENT, M_FIT_SEGMENT};
 
   ULong_t aColor = TColor::RGB2Pixel(255, 255, 26);
   UInt_t attach_left=0;
   UInt_t attach_right=attach_left+1;
   UInt_t attach_top=0;
   UInt_t attach_bottom=attach_top+1;
-  
+
   for (unsigned int iButton = 0; iButton < button_names.size(); ++iButton) {
     TGTextButton* aButton = new TGTextButton(fHeaderFrame,
 					    button_names[iButton].c_str(),
@@ -57,8 +56,7 @@ void MarkersManager::addButtons(){
     						      kLHintsFillX | kLHintsFillY);
 
     fHeaderFrame->AddFrame(aButton,tloh);
-    if(button_names[iButton]=="Save segments") aButton->Connect("Clicked()","MainFrame",fParentFrame,"DoButton()");
-    else aButton->Connect("Clicked()","MarkersManager",this,"DoButton()");
+    aButton->Connect("Clicked()","MarkersManager",this,"DoButton()");
     if(button_names[iButton]!="Add segment") aButton->SetState(kButtonDisabled);
     aButton->ChangeBackground(aColor);
     aButton->SetToolTipText(button_tooltips[iButton].c_str());
@@ -80,24 +78,22 @@ void MarkersManager::initialize(){
   fMarkersContainer.resize(3);
   fHelperLinesContainer.resize(3);
   fSegmentsContainer.resize(3);
-  
+
   firstMarker = 0;
   acceptPoints = false;
   setEnabled(false);
   fGeometryTPC = NULL;
+
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MarkersManager::setEnabled(bool enable){
   
   if(!enable && myButtons.find("Add segment")!=myButtons.end() &&
-     myButtons.find("Fit segments")!=myButtons.end() &&
-     myButtons.find("Save segments")!=myButtons.end()){
+     myButtons.find("Fit segments")!=myButtons.end()){
     myButtons.find("Add segment")->second->SetState(kButtonDisabled);
     myButtons.find("Fit segments")->second->SetState(kButtonDisabled);
-    myButtons.find("Save segments")->second->SetState(kButtonDisabled);
   }
-  myButtons.find("Save segments")->second->SetState(kButtonUp);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -181,12 +177,10 @@ void MarkersManager::resetMarkers(bool force){
   if(force || isLastSegmentComplete(strip_dir)){
     acceptPoints = false;
     if(myButtons.find("Add segment")!=myButtons.end() &&
-       myButtons.find("Fit segments")!=myButtons.end() &&
-       myButtons.find("Save segments")!=myButtons.end()){
+       myButtons.find("Fit segments")!=myButtons.end()){
       myButtons.find("Add segment")->second->SetState(kButtonUp);
       if(!force) myButtons.find("Fit segments")->second->SetState(kButtonUp);
       else myButtons.find("Fit segments")->second->SetState(kButtonDisabled);
-      myButtons.find("Save segments")->second->SetState(kButtonDisabled);
     }
   }
 }
@@ -423,9 +417,6 @@ Bool_t MarkersManager::HandleButton(Int_t id){
      {
        repackSegmentsData();
        sendSegmentsData(&fSegmentsXY);
-       if(myButtons.find("Save segments")!=myButtons.end()){
-	 myButtons.find("Save segments")->second->SetState(kButtonUp);
-       }
      }     
      break;
    }

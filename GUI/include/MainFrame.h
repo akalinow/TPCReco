@@ -41,12 +41,12 @@
 
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-class MainFrame : public TGMainFrame
-{
+class MainFrame : public TGMainFrame{
 
   RQ_OBJECT("MainFrame")
 
 public:
+  
   MainFrame(const TGWindow *p, UInt_t w, UInt_t h, const boost::property_tree::ptree &aConfig);
   virtual ~MainFrame();
   virtual void CloseWindow();
@@ -56,16 +56,15 @@ public:
   virtual Bool_t ProcessMessage(Long_t msg);
   virtual Bool_t ProcessMessage(const char *);
 
-  void drawRecoFromMarkers(std::vector<double> *segmentsXY);
+  void processSegmentData(std::vector<double> *segmentsXY);
   void updateRunConditions(std::vector<double> *runParams);
-
-  void HandleEmbeddedCanvas(Int_t event, Int_t x, Int_t y, TObject *sel);
 
   void HandleMenu(Int_t);
 
   void DoButton();
 
 private:
+  
   void InitializeEventSource();
   void InitializeWindows();
 
@@ -85,14 +84,9 @@ private:
 
   void SetCursorTheme();
 
-  void drawRawHistos(TCanvas *aCanvas);
-  void drawRecoHistos(TCanvas *aCanvas);
-  void drawTechnicalHistos(TCanvas *aCanvas);
-
   void ClearCanvases();
-  void ClearCanvas(TCanvas *aCanvas);
   void Update();
-  void UpdateEventLog();
+  unsigned long UpdateEventLog();
 
   boost::property_tree::ptree myConfig;
   int myWorkMode{0};
@@ -127,10 +121,6 @@ private:
   FileInfoFrame *fFileInfoFrame{0};
   SelectionBox *fSelectionBox{0};
   RunConditionsDialog *fRunConditionsDialog{0};
-
-  TArrow *fArrow{0};
-  TLine *fLine{0};
-  std::vector<TObject*> fObjClones;
 
   ClassDef(MainFrame, 0);
 };
