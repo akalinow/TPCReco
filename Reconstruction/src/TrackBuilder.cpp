@@ -337,6 +337,8 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
   //aTrackCandidate.extendToChamberRange(xyRange, myZRange);
   //fitTrack3D(aTrackCandidate);
   myFittedTrack = aTrackCandidate;
+  std::cout<<KBLU<<"Hand cliked track: "<<RST<<std::endl;
+  std::cout<<myFittedTrack<<std::endl;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

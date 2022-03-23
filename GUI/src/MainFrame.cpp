@@ -398,8 +398,8 @@ int MainFrame::AddEventTypeDialog(int attach){
   buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Noise")));
   buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Multi-vertex")));
   buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Fractured track")));
-  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Good event")));
-  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Other")));
+  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Pretty event")));
+  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Weird event")));
 
   TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
   int nColumns = aLayout->fNcols;
@@ -499,7 +499,7 @@ void MainFrame::AddLogos(){
   UInt_t attach_bottom=nRows;
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom);
   fFrame->AddFrame(icon, tloh);
-
+  
   filePath = myConfig.get<std::string>("resourcesPath")+"/ELITEPC_znak.png";
   img = TImage::Open(filePath.c_str());
   if(!img->IsValid()) return;
