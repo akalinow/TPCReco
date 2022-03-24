@@ -37,10 +37,11 @@ MarkersManager::MarkersManager(const TGWindow * p, MainFrame * aFrame)
 /////////////////////////////////////////////////////////
 void MarkersManager::addButtons(){
   
-  std::vector<std::string> button_names = {"Add segment", "Fit segments"};
-  std::vector<std::string> button_tooltips = {"Click to add segments end point. \n All segments share a common vertex - the starting point of the first segment.\n Each point is set by coordinates on two projections",
+  std::vector<std::string> button_names = {"Clear track", "Add segment", "Fit segments"};
+  std::vector<std::string> button_tooltips = {"Remove tracks from images. If \"Fit segments\" will NOT be clicked, \n the track will still be saved to the reco file",
+					      "Click to add segments end point. \n All segments share a common vertex - the starting point of the first segment.\n Each point is set by coordinates on two projections",
 					      "Calculate 3D orientation from the 2D projections"};
-  std::vector<unsigned int> button_id = {M_ADD_SEGMENT, M_FIT_SEGMENT};
+  std::vector<unsigned int> button_id = {M_CLEAR_TRACKS, M_ADD_SEGMENT, M_FIT_SEGMENT};
 
   ULong_t aColor = TColor::RGB2Pixel(255, 255, 26);
   UInt_t attach_left=0;
@@ -58,6 +59,7 @@ void MarkersManager::addButtons(){
     fHeaderFrame->AddFrame(aButton,tloh);
     aButton->Connect("Clicked()","MarkersManager",this,"DoButton()");
     if(button_names[iButton]!="Add segment") aButton->SetState(kButtonDisabled);
+    if(button_names[iButton]=="Clear track") aButton->SetState(kButtonUp);
     aButton->ChangeBackground(aColor);
     aButton->SetToolTipText(button_tooltips[iButton].c_str());
     myButtons[button_names[iButton]] = aButton;
@@ -172,6 +174,9 @@ void MarkersManager::resetMarkers(bool force){
 		[](TMarker *&item){if(item){delete item; item = 0;}});
   firstMarker = 0;
   clearHelperLines();
+
+  for(auto aObj : fObjClones) delete aObj;
+  fObjClones.clear();
 
   int strip_dir = DIR_U;//FIX ME
   if(force || isLastSegmentComplete(strip_dir)){
@@ -345,7 +350,6 @@ double MarkersManager::getMissingYCoordinate(unsigned int missingMarkerDir){
       return strip_posUVW;
     }
   }
-
   /////// DEBUG
   //std::cout << "getMissingYCoordinate: 3rd_dir=" << missingMarkerDir << ": ERROR: Cannot calculate 3rd UVW coordinate" << std::endl;
   /////// DEBUG
@@ -398,6 +402,11 @@ void MarkersManager::sendSegmentsData(std::vector<double> *segmentsXY){
 /////////////////////////////////////////////////////////
 Bool_t MarkersManager::HandleButton(Int_t id){
    switch (id) {
+   case M_CLEAR_TRACKS:
+    {
+     Emit("HandleButton(Int_t)", id); 
+    }
+   break; 
    case M_ADD_VERTEX:
     {
       acceptPoints = true;
@@ -417,6 +426,7 @@ Bool_t MarkersManager::HandleButton(Int_t id){
      {
        repackSegmentsData();
        sendSegmentsData(&fSegmentsXY);
+       reset();
      }     
      break;
    }

@@ -59,6 +59,8 @@ public:
 
   void clearCanvas(TCanvas *aCanvas, bool isLogScaleOn);
 
+  void clearTracks();
+
   std::shared_ptr<TH2D> getRawStripVsTime(int strip_dir);
 
   std::shared_ptr<TH2D> getClusterStripVsTimeInMM(int strip_dir); 
@@ -151,6 +153,7 @@ public:
   std::shared_ptr<GeometryTPC> myGeometryPtr;
   
   std::vector<TObject*> fObjClones;
+  std::vector<TObject*> fTrackLines;
 
   bool doAutozoom{false};
   bool openOutputStreamInitialized{false};

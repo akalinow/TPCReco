@@ -236,11 +236,11 @@ void MainFrame::AddHistoCanvas(){
   fTCanvasLayout = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 					  kLHintsFillX|kLHintsFillY);
   fFrame->AddFrame(embeddedCanvas, fTCanvasLayout);
-  fHistosCanvas = embeddedCanvas->GetCanvas();
-  fHistosCanvas->SetTitle("Reco Histograms");
-  fHistosCanvas->SetName("Histograms");  
-  fHistosCanvas->MoveOpaque(kFALSE);
-  fHistosCanvas->Divide(2,2, 0.02, 0.02);
+  fMainCanvas = embeddedCanvas->GetCanvas();
+  fMainCanvas->SetTitle("Reco Histograms");
+  fMainCanvas->SetName("Histograms");  
+  fMainCanvas->MoveOpaque(kFALSE);
+  fMainCanvas->Divide(2,2, 0.02, 0.02);
     
   ClearCanvases();
 }
@@ -391,7 +391,7 @@ int MainFrame::AddFileInfoFrame(int attach){
 int MainFrame::AddEventTypeDialog(int attach){
 
   eventTypeButtonGroup = new TGButtonGroup(fFrame,
-					   7, 1, 1.0, 1.0,
+					   10, 1, 1.0, 1.0,
 					   "Event type");
   eventTypeButtonGroup->SetExclusive(kFALSE);
   std::vector<TGCheckButton*> buttonsContainer;
@@ -400,6 +400,9 @@ int MainFrame::AddEventTypeDialog(int attach){
   buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Fractured track")));
   buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Pretty event")));
   buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Weird event")));
+  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Spare cat. 1")));
+  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Spare cat. 2")));
+  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Spare cat. 3")));
 
   TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
   int nColumns = aLayout->fNcols;
@@ -428,9 +431,11 @@ int MainFrame::AddMarkersDialog(int attach){
   UInt_t attach_bottom=attach_top+nRows*0.2;
 
   fMarkersManager = new MarkersManager(fFrame, this);
-  fMarkersManager->setGeometry(myEventSource->getGeometry());
+  fMarkersManager->setGeometry(myEventSource->getGeometry()); 
   fMarkersManager->Connect("sendSegmentsData(std::vector<double> *)","MainFrame",
 			   this,"processSegmentData(std::vector<double> *)");
+  fMarkersManager->Connect("HandleButton(Int_t)","MainFrame",
+			   this,"ProcessMessage(Long_t)");
 
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right,
 						    attach_top, attach_bottom,
@@ -438,7 +443,7 @@ int MainFrame::AddMarkersDialog(int attach){
 						    kLHintsShrinkX|kLHintsShrinkY|
 						    kLHintsFillX|kLHintsFillY);
   fFrame->AddFrame(fMarkersManager, tloh);  
-  fHistosCanvas->Connect("ProcessedEvent(Int_t,Int_t,Int_t,TObject*)",
+  fMainCanvas->Connect("ProcessedEvent(Int_t,Int_t,Int_t,TObject*)",
 		   "MarkersManager", fMarkersManager,
 		   "HandleMarkerPosition(Int_t,Int_t,Int_t,TObject*)");
   return attach_bottom;
@@ -481,6 +486,7 @@ void MainFrame::AddLogos(){
   std::string filePath = myConfig.get<std::string>("resourcesPath")+"/FUW_znak.png";
   TImage *img = TImage::Open(filePath.c_str());
   if(!img->IsValid()) return;
+  
   double ratio = img->GetWidth()/img->GetHeight();
   double height = 80;
   double width = ratio*height;
@@ -497,6 +503,7 @@ void MainFrame::AddLogos(){
   UInt_t attach_right=attach_left+1;
   UInt_t attach_top=nRows*0.9;
   UInt_t attach_bottom=nRows;
+    
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom);
   fFrame->AddFrame(icon, tloh);
   
@@ -519,20 +526,12 @@ void MainFrame::AddLogos(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-/*
-void MainFrame::HandleEmbeddedCanvas(Int_t event, Int_t x, Int_t y, TObject *sel){
-
-  std::cout<<KBLU<<__FUNCTION__<<RST<<std::endl;
-}
-*/
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
 void MainFrame::CloseWindow(){ gApplication->Terminate(0); }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MainFrame::ClearCanvases(){
   
-  myHistoManager.clearCanvas(fHistosCanvas, isLogScaleOn);
+  myHistoManager.clearCanvas(fMainCanvas, isLogScaleOn);
   myHistoManager.clearCanvas(fRawHistosCanvas, isLogScaleOn);
   myHistoManager.clearCanvas(fTechHistosCanvas, isLogScaleOn);
 
@@ -557,10 +556,10 @@ void MainFrame::Update(){
   myHistoManager.drawTechnicalHistos(fTechHistosCanvas, myEventSource->getGeometry()->GetAgetNchips());
 
   if(!isRecoModeOn){
-    myHistoManager.drawRawHistos(fHistosCanvas, isRateDisplayOn);
+    myHistoManager.drawRawHistos(fMainCanvas, isRateDisplayOn);
   }
   else {
-    myHistoManager.drawRecoHistos(fHistosCanvas);
+    myHistoManager.drawRecoHistos(fMainCanvas);
   }
 }
 
@@ -568,7 +567,7 @@ void MainFrame::Update(){
 /////////////////////////////////////////////////////////
 void MainFrame::processSegmentData(std::vector<double> * segmentsXY){
 
-  myHistoManager.drawRecoFromMarkers(fHistosCanvas, segmentsXY);
+  myHistoManager.drawRecoFromMarkers(fMainCanvas, segmentsXY);
 
 }
 /////////////////////////////////////////////////////////
@@ -650,12 +649,18 @@ Bool_t MainFrame::ProcessMessage(){
 Bool_t MainFrame::ProcessMessage(Long_t msg){
 
   switch (msg) {
+  case M_CLEAR_TRACKS:
+    {
+      myHistoManager.clearTracks();
+      fMainCanvas->Update();
+    }
+    break;
   case M_DATA_FILE_UPDATED:
     {
     }
     break;
   }
-    return kTRUE;
+  return kTRUE;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
