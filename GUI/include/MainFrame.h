@@ -102,7 +102,7 @@ private:
 
   TGCompositeFrame *fFrame{0};
   TRootEmbeddedCanvas *embeddedCanvas{0};
-  TCanvas *fHistosCanvas{0};
+  TCanvas *fMainCanvas{0};
   TCanvas *fRawHistosCanvas{0};
   TCanvas *fTechHistosCanvas{0};
   TGMenuBar *fMenuBar{0};

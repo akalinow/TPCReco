@@ -66,7 +66,7 @@ void HistoManager::reconstruct(){
 /////////////////////////////////////////////////////////
 void HistoManager::reconstructSegmentsFromMarkers(std::vector<double> * segmentsXY){
 
-  myTkBuilder.getSegment2DCollectionFromGUI(*segmentsXY);  
+  myTkBuilder.getSegment2DCollectionFromGUI(*segmentsXY);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -148,11 +148,10 @@ void HistoManager::drawRecoHistos(TCanvas *aCanvas){
    aPad->cd();
    aCanvas->Modified();
    aCanvas->Update();
-   drawTrack3DProjectionXY(aPad);
+   //drawTrack3DProjectionXY(aPad);
    //drawChargeAlongTrack3D(aPad);
    //myHistoManager.drawTrack3D(aPad);
-   //getClusterTimeProjectionInMM()->DrawCopy("hist");
-   //getClusterTimeProjectionInMM()->DrawCopy("hist");
+   getClusterTimeProjectionInMM()->DrawCopy("hist");
    //getRecHitTimeProjection()->DrawCopy("hist same");
    aCanvas->Modified();
    aCanvas->Update();
@@ -177,6 +176,7 @@ void HistoManager::drawRecoFromMarkers(TCanvas *aCanvas, std::vector<double> * s
    drawTrack3DProjectionXY(aPad);
   //myHistoManager.drawTrack3D(aPad);
   //myHistoManager.drawChargeAlongTrack3D(aPad);
+   //getClusterTimeProjectionInMM()->DrawCopy("hist");
    aCanvas->Modified();
    aCanvas->Update();
 }
@@ -202,6 +202,14 @@ void HistoManager::clearCanvas(TCanvas *aCanvas, bool isLogScaleOn){
   for(auto aObj : fObjClones) delete aObj;
   fObjClones.clear();
 
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void HistoManager::clearTracks(){
+
+  for(auto aObj : fTrackLines) delete aObj;
+  fTrackLines.clear();
+  
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -582,9 +590,9 @@ void HistoManager::drawTrack3DProjectionXY(TVirtualPad *aPad){
   for(const auto & aItem: aTrack3D.getSegments()){
     const TVector3 & start = aItem.getStart();
     const TVector3 & end = aItem.getEnd();
-    aSegment2DLine.SetLineColor(kRed+iSegment);
+    aSegment2DLine.SetLineColor(2 + iSegment);
     aSegment2DLine.SetLineWidth(3);
-    aSegment2DLine.DrawLine(start.X(), start.Y(),  end.X(),  end.Y());	
+    fTrackLines.push_back(aSegment2DLine.DrawLine(start.X(), start.Y(),  end.X(),  end.Y()));	
     ++iSegment;
   }
 }
@@ -622,8 +630,8 @@ void HistoManager::drawTrack3DProjectionTimeStrip(int strip_dir, TVirtualPad *aP
     const TVector3 & start = aSegment2DProjection.getStart();
     const TVector3 & end = aSegment2DProjection.getEnd();
 
-    aSegment2DLine.SetLineColor(kRed+2+iSegment);
-    aSegment2DLine.DrawLine(start.X(), start.Y(),  end.X(),  end.Y());	
+    aSegment2DLine.SetLineColor(2+iSegment);
+    fTrackLines.push_back(aSegment2DLine.DrawLine(start.X(), start.Y(),  end.X(),  end.Y()));	
     ++iSegment;
 
     tmp = std::min(start.Y(), end.Y());
