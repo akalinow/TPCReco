@@ -185,6 +185,8 @@ void HistoManager::drawRecoFromMarkers(TCanvas *aCanvas, std::vector<double> * s
 void HistoManager::clearCanvas(TCanvas *aCanvas, bool isLogScaleOn){
 
   if(!aCanvas) return;
+
+  clearTracks();
   
   TList *aList = aCanvas->GetListOfPrimitives();
   TText aMessage(0.0, 0.0,"Waiting for data.");
