@@ -237,7 +237,7 @@ void MarkersManager::addMarkerFrame(int iMarker){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MarkersManager::processClickCoordinates(int strip_dir, float x, float y){
-
+  /*
   if(strip_dir==3){
     if(!timeMarker){
       timeMarker = new TMarker(x, y, 1);
@@ -246,10 +246,10 @@ void MarkersManager::processClickCoordinates(int strip_dir, float x, float y){
       drawFixedTimeLines(DIR_W, x);
     }
   }
-    
+  */
   if(strip_dir<DIR_U || strip_dir>=(int)fMarkersContainer.size() || fMarkersContainer.at(strip_dir)) return;
-  if(timeMarker){ x = timeMarker->GetX(); }
-  else if(firstMarker){ x = firstMarker->GetX(); }
+  //if(timeMarker){ x = timeMarker->GetX(); }
+  if(firstMarker){ x = firstMarker->GetX(); }
   
 
   int iMarkerColor = 2;
