@@ -36,3 +36,7 @@ build/
 CMakeFiles
 cmake_install.cmake
 Makefile
+
+# Containers
+#############
+*.sif

@@ -5,6 +5,9 @@ project(TPCSoft)                   # this sets the project name
 ## dependencies ###############################################################
 ###############################################################################
 
+set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+include(Tests)
+
 #ROOT 
 list(APPEND CMAKE_PREFIX_PATH $ENV{ROOTSYS})
 list(APPEND CMAKE_MODULE_PATH $ENV{ROOTSYS}/etc/cmake)
@@ -47,7 +50,14 @@ endif()
 ###############################################################################
 ## packaging ##################################################################
 ###############################################################################
-set(CMAKE_INSTALL_PREFIX "$ENV{PWD}") # install in the current directory
+
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)  # install in the current directory
+  set(CMAKE_INSTALL_PREFIX
+      "$ENV{PWD}"
+      CACHE PATH "..." FORCE)
+endif()
+
+
 MESSAGE( STATUS "CMAKE_INSTALL_PREFIX:         " ${CMAKE_INSTALL_PREFIX} )
 
 # This is basically a repeat of the file copy instruction that copies the
