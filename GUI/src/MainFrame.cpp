@@ -655,6 +655,12 @@ Bool_t MainFrame::ProcessMessage(Long_t msg){
       fMainCanvas->Update();
     }
     break;
+  case M_FIT_SEGMENT:
+    {
+      myHistoManager.clearTracks();
+    }
+    break;
+    
   case M_DATA_FILE_UPDATED:
     {
     }

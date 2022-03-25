@@ -207,7 +207,9 @@ void HistoManager::clearCanvas(TCanvas *aCanvas, bool isLogScaleOn){
 /////////////////////////////////////////////////////////
 void HistoManager::clearTracks(){
 
-  for(auto aObj : fTrackLines) delete aObj;
+  for(auto aObj : fTrackLines){
+    if(aObj) delete aObj;
+  }
   fTrackLines.clear();
   
 }

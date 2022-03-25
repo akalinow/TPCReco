@@ -82,6 +82,7 @@ void MarkersManager::initialize(){
   fSegmentsContainer.resize(3);
 
   firstMarker = 0;
+  timeMarker = 0;
   acceptPoints = false;
   setEnabled(false);
   fGeometryTPC = NULL;
@@ -90,12 +91,10 @@ void MarkersManager::initialize(){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MarkersManager::setEnabled(bool enable){
-  
-  if(!enable && myButtons.find("Add segment")!=myButtons.end() &&
-     myButtons.find("Fit segments")!=myButtons.end()){
-    myButtons.find("Add segment")->second->SetState(kButtonDisabled);
-    myButtons.find("Fit segments")->second->SetState(kButtonDisabled);
-  }
+
+    for(auto item: myButtons){
+        if(!enable) item.second->SetState(kButtonDisabled);	
+    }
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -173,6 +172,7 @@ void MarkersManager::resetMarkers(bool force){
   std::for_each(fMarkersContainer.begin(), fMarkersContainer.end(),
 		[](TMarker *&item){if(item){delete item; item = 0;}});
   firstMarker = 0;
+  timeMarker = 0;
   clearHelperLines();
 
   for(auto aObj : fObjClones) delete aObj;
@@ -182,8 +182,10 @@ void MarkersManager::resetMarkers(bool force){
   if(force || isLastSegmentComplete(strip_dir)){
     acceptPoints = false;
     if(myButtons.find("Add segment")!=myButtons.end() &&
-       myButtons.find("Fit segments")!=myButtons.end()){
+       myButtons.find("Fit segments")!=myButtons.end() &&
+       myButtons.find("Clear track")!=myButtons.end()){
       myButtons.find("Add segment")->second->SetState(kButtonUp);
+      myButtons.find("Clear track")->second->SetState(kButtonUp);
       if(!force) myButtons.find("Fit segments")->second->SetState(kButtonUp);
       else myButtons.find("Fit segments")->second->SetState(kButtonDisabled);
     }
@@ -235,9 +237,20 @@ void MarkersManager::addMarkerFrame(int iMarker){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MarkersManager::processClickCoordinates(int strip_dir, float x, float y){
+
+  if(strip_dir==3){
+    if(!timeMarker){
+      timeMarker = new TMarker(x, y, 1);
+      drawFixedTimeLines(DIR_U, x);
+      drawFixedTimeLines(DIR_W, x);
+      drawFixedTimeLines(DIR_W, x);
+    }
+  }
+    
+  if(strip_dir<DIR_U || strip_dir>=(int)fMarkersContainer.size() || fMarkersContainer.at(strip_dir)) return;
+  if(timeMarker){ x = timeMarker->GetX(); }
+  else if(firstMarker){ x = firstMarker->GetX(); }
   
-  if(strip_dir<DIR_U || strip_dir>=(int)fMarkersContainer.size() || fMarkersContainer.at(strip_dir)) return;  
-  if(firstMarker){ x = firstMarker->GetX(); }
 
   int iMarkerColor = 2;
   int iMarkerStyle = 8;
@@ -426,6 +439,7 @@ Bool_t MarkersManager::HandleButton(Int_t id){
      {
        repackSegmentsData();
        sendSegmentsData(&fSegmentsXY);
+       Emit("HandleButton(Int_t)", id);
        reset();
      }     
      break;

@@ -61,7 +61,8 @@ private:
 
   std::map<std::string, TGTextButton*> myButtons;
 
-  TMarker *firstMarker;
+  
+  TMarker *firstMarker, *timeMarker;
   std::vector<TMarker*> fMarkersContainer;
   std::vector<TLine*> fHelperLinesContainer;
   std::vector<std::vector<TLine>> fSegmentsContainer;
