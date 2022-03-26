@@ -344,7 +344,6 @@ TH1F TrackSegment3D::getChargeProfile() const{
   int rebinFactor = 20.0*sqrt(1000.0/maxPoints);
   int tmp = hChargeProfile.GetNbinsX()/rebinFactor;
   rebinFactor = hChargeProfile.GetNbinsX()/tmp;
-  std::cout<<"rebinFactor: "<<rebinFactor<<std::endl;
   
   hChargeProfile.Rebin(rebinFactor);
   hChargeProfile.Scale(getIntegratedCharge(getLength())/hChargeProfile.Integral());

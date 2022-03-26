@@ -148,10 +148,9 @@ void TrackBuilder::reconstruct(){
 /////////////////////////////////////////////////////////
 void TrackBuilder::makeRecHits(int iDir){
 
-  myRawHits[iDir] =  *(myEvent->GetStripVsTimeInMM(getCluster(), iDir));
-  myRecHits[iDir] = myRecHitBuilder.makeRecHits(myRawHits[iDir]);
-  std::shared_ptr<TH2D> h = myEvent->GetStripVsTimeInMM(getCluster(), iDir);//TEST
-  myRawHits[iDir] = myRecHitBuilder.makeCleanCluster(*h); //TEST
+  std::shared_ptr<TH2D> hProj = myEvent->GetStripVsTimeInMM(getCluster(), iDir);
+  myRecHits[iDir] = myRecHitBuilder.makeRecHits(*hProj);
+  myRawHits[iDir] = myRecHitBuilder.makeCleanCluster(*hProj);
   hTimeProjection.Add(myRecHits[iDir].ProjectionX());
 }
 /////////////////////////////////////////////////////////

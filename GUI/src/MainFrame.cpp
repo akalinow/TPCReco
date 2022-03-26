@@ -307,6 +307,10 @@ int MainFrame::AddButtons(int attach){
     if(displayConfig!=myConfig.not_found() &&  displayConfig->second.get(checkbox_config[iCheckbox],false)){
       aCheckbox->SetState(kButtonDown, true);
     }
+    if(checkbox_names[iCheckbox]=="Set reco mode" && M_ONLINE_MODE){
+      aCheckbox->SetState(kButtonUp, true);
+      aCheckbox->SetState(kButtonDisabled);
+    }
    }
   return attach_bottom;
  }

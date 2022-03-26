@@ -140,7 +140,7 @@ public:
 
   void updateEventRateGraph();
 
-  void makeAutozoom(std::shared_ptr<TH2D> & aHisto);
+  void makeAutozoom(TH1 * aHisto);
 
   void setDetLayout();
       
