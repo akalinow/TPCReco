@@ -39,7 +39,8 @@ void HistoManager::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
   
   myGeometryPtr = aGeometryPtr;
   myTkBuilder.setGeometry(aGeometryPtr);
-
+  setDetLayout();
+  
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -217,16 +218,55 @@ void HistoManager::clearTracks(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TH2Poly * HistoManager::getDetectorLayout() const{
+void HistoManager::setDetLayout(){
 
-  if(!myGeometryPtr) return 0;
+  if(!myGeometryPtr) return;
+  TH2Poly* aPtr =   myGeometryPtr->GetTH2Poly();
+  TH2F hDetLayoutTmp("hDetLayoutTmp",";x [mm]; y [mm]",200, -200,200, 200,-120, 120);
+  hDetLayout = (TH2F*)hDetLayoutTmp.Clone("hDetLayout");
+  
+  int nBinsX = hDetLayoutTmp.GetNbinsX();
+  int nBinsY = hDetLayoutTmp.GetNbinsY();
+  double x, y;
+  int iBinPoly;
+  for(int iBinX=1;iBinX<nBinsX;++iBinX){
+    x = hDetLayoutTmp.GetXaxis()->GetBinCenter(iBinX);
+    for(int iBinY=1;iBinY<nBinsY;++iBinY){
+      y = hDetLayoutTmp.GetYaxis()->GetBinCenter(iBinY);    
+      iBinPoly = aPtr->FindBin(x,y);
+      if(iBinPoly>0){
+	hDetLayoutTmp.SetBinContent(iBinX,iBinY, 1.0);
+      }
+    }
+  }
 
-  TH2Poly* aPtr = (TH2Poly*)myGeometryPtr->GetTH2Poly()->Clone();
-  int nBins = aPtr->GetNumberOfBins(); 
-  for(int iBin=1;iBin<nBins;iBin+=nBins/50){
-    aPtr->SetBinContent(iBin, 1.0);
-  }  
-  return aPtr;
+  int value = 0;
+  for(int iBinX=1;iBinX<nBinsX;++iBinX){
+    for(int iBinY=1;iBinY<nBinsY;++iBinY){
+      value = 0;
+      for(int iNeigbourX=-1;iNeigbourX<=1;++iNeigbourX){
+	for(int iNeigbourY=-1;iNeigbourY<=1;++iNeigbourY){
+	  value += hDetLayoutTmp.GetBinContent(iBinX+iNeigbourX, iBinY+iNeigbourY);
+	}
+      }
+      if(value>0 && value<4){
+	y = hDetLayoutTmp.GetYaxis()->GetBinCenter(iBinY);    
+	x = hDetLayoutTmp.GetXaxis()->GetBinCenter(iBinX);
+	hDetLayout->SetBinContent(iBinX, iBinY, 1.0);
+      }
+    }
+  }
+  
+  hDetLayout->SetStats(kFALSE);
+  hDetLayout->GetYaxis()->SetTitleOffset(1.4);
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void HistoManager::drawDetLayout(){
+
+  if(!hDetLayout) return;
+  hDetLayout->DrawCopy("box");  
+
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -583,8 +623,12 @@ void HistoManager::drawTrack3D(TVirtualPad *aPad){
 void HistoManager::drawTrack3DProjectionXY(TVirtualPad *aPad){
 
   aPad->cd();
+  /*
+  if(!myGeometryPtr || myGeometryPtr->GetTH2Poly()) return;
   myGeometryPtr->GetTH2Poly()->SetTitle("");
   myGeometryPtr->GetTH2Poly()->Draw();
+  */
+  drawDetLayout();
   
   const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
 

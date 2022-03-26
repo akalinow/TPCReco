@@ -136,9 +136,13 @@ public:
 
   void drawChargeAlongTrack3D(TVirtualPad *aPad);
 
+  void drawDetLayout();
+
   void updateEventRateGraph();
 
   void makeAutozoom(std::shared_ptr<TH2D> & aHisto);
+
+  void setDetLayout();
       
   std::vector<TH2D*> projectionsInCartesianCoords;
   TH3D *h3DReco{0};
@@ -151,6 +155,8 @@ public:
   std::shared_ptr<EventTPC> myEventPtr;
   std::shared_ptr<eventraw::EventInfo> myEventInfo;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
+
+  TH2F *hDetLayout{0};
   
   std::vector<TObject*> fObjClones;
   std::vector<TObject*> fTrackLines;
