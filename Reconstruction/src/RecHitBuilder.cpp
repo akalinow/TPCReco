@@ -272,19 +272,18 @@ TH2D RecHitBuilder::makeCleanCluster(const TH2D & aHisto){
     bounduaryBins = newBounduaryBins;
     newBounduaryBins.clear();
   }
-
+  /*  
   double value = 0.0;
   for(auto iBin=0;iBin<aClusterHisto.GetNcells();++iBin){
     value = aClusterHisto.GetBinContent(iBin);
     if(value<emptyBinThreshold) aClusterHisto.SetBinContent(iBin, 1E-10);
   }
-
+  */
   return aClusterHisto;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::string RecHitBuilder::adaptHistoTitle(const std::string title) const{
-
   std::string adaptedTitle = title;
   if(adaptedTitle.find("from")!=std::string::npos){
     std::string eventNumber = title.substr(0,title.find(":"));

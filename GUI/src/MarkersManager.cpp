@@ -413,11 +413,11 @@ void MarkersManager::sendSegmentsData(std::vector<double> *segmentsXY){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-Bool_t MarkersManager::HandleButton(Int_t id){
+Bool_t MarkersManager::HandleButton(Long_t id){
    switch (id) {
    case M_CLEAR_TRACKS:
     {
-     Emit("HandleButton(Int_t)", id); 
+      Emit("HandleButton(Long_t)", id); 
     }
    break; 
    case M_ADD_VERTEX:

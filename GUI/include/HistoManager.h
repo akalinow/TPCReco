@@ -157,6 +157,7 @@ public:
   std::shared_ptr<GeometryTPC> myGeometryPtr;
 
   TH2F *hDetLayout{0};
+  TH2F *hPlotBackground{0};
   
   std::vector<TObject*> fObjClones;
   std::vector<TObject*> fTrackLines;

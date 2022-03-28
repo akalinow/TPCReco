@@ -502,9 +502,6 @@ void TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
     }
   }
   if(bestFitResult.IsValid() && bestFitResult.MinFcnValue()<candidateChi2){
-    std::cout<<" bestFitResult.MinFcnValue(): "<< bestFitResult.MinFcnValue()
-	     <<" candidateChi2: "<<candidateChi2
-	     <<std::endl;
     myFittedTrack.setFitMode(Track3D::FIT_BIAS_TANGENT);
     myFittedTrack.chi2FromNodesList(bestFitResult.GetParams());
   }

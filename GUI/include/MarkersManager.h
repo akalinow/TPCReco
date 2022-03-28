@@ -52,7 +52,7 @@ private:
   void repackSegmentsData();
   void sendSegmentsData(std::vector<double> *segmentsXY);
   
-  Bool_t HandleButton(Int_t id);
+  Bool_t HandleButton(Long_t id);
 
   MainFrame *fParentFrame;
   TGGroupFrame *fHeaderFrame;

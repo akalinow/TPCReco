@@ -438,7 +438,7 @@ int MainFrame::AddMarkersDialog(int attach){
   fMarkersManager->setGeometry(myEventSource->getGeometry()); 
   fMarkersManager->Connect("sendSegmentsData(std::vector<double> *)","MainFrame",
 			   this,"processSegmentData(std::vector<double> *)");
-  fMarkersManager->Connect("HandleButton(Int_t)","MainFrame",
+  fMarkersManager->Connect("HandleButton(Long_t)","MainFrame",
 			   this,"ProcessMessage(Long_t)");
 
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right,
@@ -534,7 +534,7 @@ void MainFrame::CloseWindow(){ gApplication->Terminate(0); }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MainFrame::ClearCanvases(){
-  
+
   myHistoManager.clearCanvas(fMainCanvas, isLogScaleOn);
   myHistoManager.clearCanvas(fRawHistosCanvas, isLogScaleOn);
   myHistoManager.clearCanvas(fTechHistosCanvas, isLogScaleOn);
@@ -555,7 +555,7 @@ void MainFrame::Update(){
   fMarkersManager->reset();
   fMarkersManager->setEnabled(isRecoModeOn);
 
-  ClearCanvases();
+  ClearCanvases();      
   myHistoManager.drawRawHistos(fRawHistosCanvas, isRateDisplayOn);
   myHistoManager.drawTechnicalHistos(fTechHistosCanvas, myEventSource->getGeometry()->GetAgetNchips());
 
