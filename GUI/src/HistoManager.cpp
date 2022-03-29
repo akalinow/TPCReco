@@ -85,6 +85,7 @@ void HistoManager::drawRawHistos(TCanvas *aCanvas, bool isRateDisplayOn){
     aCanvas->Modified();
     aCanvas->Update();
     getRawStripVsTime(strip_dir)->DrawCopy("colz");
+    aPad->RedrawAxis();
   }
 
   int strip_dir=3;
@@ -138,10 +139,12 @@ void HistoManager::drawRecoHistos(TCanvas *aCanvas){
      aCanvas->Modified();
      aCanvas->Update();
 
-     getClusterStripVsTimeInMM(strip_dir)->DrawCopy("colz");
+     auto h1 = getClusterStripVsTimeInMM(strip_dir)->DrawCopy("colz");
+     if(aPad->GetLogz()) h1->SetMinimum(1.0);
      hPlotBackground->Draw("col same");
-     getClusterStripVsTimeInMM(strip_dir)->DrawCopy("same colz");
-         
+     aPad->RedrawAxis();  // repaints both axes & fixes X-axis zooming issue
+     h1->Draw("same colz");
+
      //getRecHitStripVsTime(strip_dir)->DrawCopy("box same");
      //getRawStripVsTimeInMM(strip_dir)->DrawCopy("colz");
      drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
@@ -227,7 +230,17 @@ void HistoManager::setDetLayout(){
 
   if(!myGeometryPtr) return;
   TH2Poly* aPtr =   myGeometryPtr->GetTH2Poly();
-  TH2F hDetLayoutTmp("hDetLayoutTmp",";x [mm]; y [mm]",200, -200,200, 200,-200, 200);
+
+  // calculates optimal range for special histogram depicting UVW active area
+  // - preserves 1:1 aspect ratio
+  // - adds +/-5% margin to the longest dimension
+  // - bin area = 1 mm x 1 mm
+  float xmin, xmax, ymin, ymax;
+  std::tie(xmin, xmax, ymin, ymax)=myGeometryPtr->rangeXY();
+  float best_width = 1.1*std::max(xmax-xmin, ymax-ymin);
+  TH2F hDetLayoutTmp("hDetLayoutTmp",";x [mm];y [mm]",
+		     (int)(best_width+0.5), 0.5*(xmin+xmax)-0.5*best_width, 0.5*(xmin+xmax)+0.5*best_width,
+		     (int)(best_width+0.5), 0.5*(ymin+ymax)-0.5*best_width, 0.5*(ymin+ymax)+0.5*best_width);
   hDetLayout = (TH2F*)hDetLayoutTmp.Clone("hDetLayout");
   
   int nBinsX = hDetLayoutTmp.GetNbinsX();
@@ -262,10 +275,29 @@ void HistoManager::setDetLayout(){
     }
   }
 
-  hPlotBackground = new TH2F("hPlotBackground","",1, -200, 200, 1, -200,200);
-  hPlotBackground->Fill(0.0,0.0, 10.0);
-  double contours[] = {0,11, 20, 30};
-  hPlotBackground->SetContour(3, contours);
+  // calculates optimal ranges for special background 2D histogram:
+  // - UVW STRIP projection range from all directions
+  // - DRIFT projection range
+  float strip_min, strip_max;
+  std::tie(strip_min, strip_max)=myGeometryPtr->rangeStripDirInMM(DIR_U);
+  for(auto idir=DIR_U+1; idir<=DIR_W; ++idir) {
+    float a, b;
+    std::tie(a, b)=myGeometryPtr->rangeStripDirInMM(idir);
+    if(a<strip_min) strip_min=a;
+    if(b>strip_max) strip_max=b;
+  }
+  float drift_min=myGeometryPtr->GetDriftCageZmin();
+  float drift_max=myGeometryPtr->GetDriftCageZmax();
+  hPlotBackground = new TH2F("hPlotBackground","",
+			     1, drift_min-0.05*(drift_max-drift_min), drift_max+0.05*(drift_max-drift_min),
+			     1, strip_min-0.05*(strip_max-strip_min), strip_max+0.05*(strip_max-strip_min));
+
+  // set background color to 25% of the linear full color scale
+  const float bkg_min=1.0;
+  hPlotBackground->Fill(0.5*(drift_min+drift_max), 0.5*(strip_min+strip_max), bkg_min);
+  double contours[] = {0, 11, 20, 30};
+  hPlotBackground->SetContour(4, contours);
+  hPlotBackground->SetStats(kFALSE);
   
   hDetLayout->SetStats(kFALSE);
   hDetLayout->GetYaxis()->SetTitleOffset(1.4);
