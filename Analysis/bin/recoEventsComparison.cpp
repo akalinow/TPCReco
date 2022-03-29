@@ -15,7 +15,7 @@
 
 #include "GeometryTPC.h"
 #include "Track3D.h"
-#include "HIGGS_analysis.h"
+#include "EventInfo.h"
 
 #include "colorText.h"
 
@@ -85,17 +85,51 @@ std::shared_ptr<GeometryTPC> loadGeometry(const std::string fileName){
 }
 ////////////////////////////
 ////////////////////////////
-//makeEventsList(){
-//}
+int setBranchAdresses(TTree *&aTree, eventraw::EventInfo *&aEventInfo, Track3D *&aTrack){
+  
+ TBranch *aBranch  = aTree->GetBranch("RecoEvent");
+ if(!aBranch) {
+   std::cerr<<KRED<<"ERROR: "<<RST
+	    <<"Cannot find 'RecoEvent' branch!"<<std::endl;
+   return -1;
+ }
+ aBranch->SetAddress(&aTrack);
+
+ std::cout<<"&aRefTrack: "<<&aTrack<<std::endl;
+  
+ aBranch  = aTree->GetBranch("EventInfo");
+ if(!aBranch) {
+   std::cerr<<KRED<<"ERROR: "<<RST
+	    <<"Cannot find 'EventInfo' branch!"<<std::endl;
+   return -1;
+ }
+ aBranch->SetAddress(&aEventInfo);
+
+ aTree->BuildIndex("eventId","20210622120156%(10000000000)");
+
+ return 0;
+}
+////////////////////////////
+////////////////////////////
+/*
+std::vector<int> makeEventsList(TTree *&aTree){
+
+  std::map<int> eventsList;
+  
+  unsigned int nEntries = aTree->GetEntries();
+  for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
+    aTree->GetEntry(iEntry);
+  }
+}
+*/
 ////////////////////////////
 ////////////////////////////
 int compareRecoEvents(const  std::string & geometryFileName,
 		      const  std::string & referenceDataFileName,
 		      const  std::string & testDataFileName){
 
-
-  TFile *aReferenceFile = new TFile(referenceDataFileName.c_str());
-  if(!aReferenceFile || !aReferenceFile->IsOpen()){
+  TFile *aRefFile = new TFile(referenceDataFileName.c_str());
+  if(!aRefFile || !aRefFile->IsOpen()){
     std::cout<<KRED<<"Input file: "<<RST<<referenceDataFileName
 	     <<KRED<<" not found!"<<RST
 	     <<std::endl;
@@ -117,8 +151,8 @@ int compareRecoEvents(const  std::string & geometryFileName,
   }
   
   //Comp_analysis myAnalysis(aGeometry, beamEnergy, beamDir); // need TPC geometry for proper histogram ranges
-  TTree *aReferenceTree = (TTree*)aReferenceFile->Get("TPCRecoData");
-  if(!aReferenceTree) {
+  TTree *aRefTree = (TTree*)aRefFile->Get("TPCRecoData");
+  if(!aRefTree) {
     std::cerr<<KRED<<"ERROR: "<<RST
 	     <<" Cannot find 'TPCRecoData' tree from reference file!"<<std::endl;
     return -1;
@@ -130,7 +164,33 @@ int compareRecoEvents(const  std::string & geometryFileName,
 	     <<" Cannot find 'TPCRecoData' tree from test file!"<<std::endl;
     return -1;
   }
-  		    
+
+  Track3D *aRefTrack = new Track3D();
+  Track3D *aTestTrack = new Track3D();
+
+  eventraw::EventInfo *aRefEventInfo = new eventraw::EventInfo();
+  eventraw::EventInfo *aTestEventInfo = new eventraw::EventInfo();
+
+  std::cout<<"&aRefTrack: "<<&aRefTrack<<std::endl;
+  int status = setBranchAdresses(aRefTree, aRefEventInfo, aRefTrack);
+  if(status<0) return 1;
+
+  std::cout<<"&aRefTrack: "<<&aTestTrack<<std::endl;
+  status = setBranchAdresses(aTestTree, aTestEventInfo, aTestTrack);
+  if(status<0) return 1;
+
+  aRefTree->AddFriend(aTestTree,"TestEvents");
+  /*
+  int iEntry = 0;
+  aRefTree->GetEntry(iEntry);
+  std::cout<<*aRefEventInfo<<std::endl;
+  */
+  int bytesRead = aRefTree->GetEntryWithIndex(8, 20210622120156%(10000000000));
+  std::cout<<"bytesRead: "<<bytesRead<<std::endl;
+
+  std::cout<<*aRefEventInfo<<std::endl;
+  std::cout<<*aTestEventInfo<<std::endl;
+
   return 0;
 }
 /////////////////////////////

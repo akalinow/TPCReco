@@ -162,7 +162,7 @@ TrackSegment2D TrackSegment3D::get2DProjection(int strip_dir, double lambdaStart
 
   TrackSegment2D a2DProjection(strip_dir, myGeometryPtr);
   if(!myGeometryPtr){
-    std::cout<<__FUNCTION__<<KRED<<" No valid geometry pointer!"<<std::endl;
+    std::cout<<__FUNCTION__<<KRED<<" No valid geometry pointer!"<<RST<<std::endl;
     return a2DProjection;
   }
   const TVector3 & stripPitchDirection = myGeometryPtr->GetStripPitchVector3D(strip_dir);

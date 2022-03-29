@@ -23,7 +23,7 @@ void eventraw::EventInfo::set(std::shared_ptr<EventTPC> aEventTPC){
 std::ostream& eventraw::operator<<(std::ostream& os, const eventraw::EventInfo& einfo) {
   os << "EventInfo: "
      <<" run timestamp: "<<einfo.GetRunId()
-     <<" id=" << einfo.GetEventId() << ", timestamp=" << einfo.GetEventTimestamp()
+     <<" event id=" << einfo.GetEventId() << ", timestamp=" << einfo.GetEventTimestamp()
      <<" type: "<<einfo.GetEventType().to_string();
   return os;
 }

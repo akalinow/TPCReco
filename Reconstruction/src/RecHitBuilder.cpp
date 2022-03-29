@@ -272,13 +272,7 @@ TH2D RecHitBuilder::makeCleanCluster(const TH2D & aHisto){
     bounduaryBins = newBounduaryBins;
     newBounduaryBins.clear();
   }
-  /*  
-  double value = 0.0;
-  for(auto iBin=0;iBin<aClusterHisto.GetNcells();++iBin){
-    value = aClusterHisto.GetBinContent(iBin);
-    if(value<emptyBinThreshold) aClusterHisto.SetBinContent(iBin, 1E-10);
-  }
-  */
+ 
   return aClusterHisto;
 }
 /////////////////////////////////////////////////////////
