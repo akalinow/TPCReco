@@ -53,7 +53,7 @@ FileInfoFrame::FileInfoFrame(const TGWindow * p, MainFrame * aFrame)
    fileNameFrame->AddFrame(fileNameLabel, aLayoutHints);
    modeFrame->AddFrame(modeLabel, aLayoutHints);
 
-   aLayoutHints = new TGLayoutHints(kLHintsTop | kLHintsLeft | kLHintsFillX, 2, 2, 1, 1);
+   aLayoutHints = new TGLayoutHints(kLHintsTop | kLHintsLeft | kLHintsFillX, 2, 2, -5, -5);
    datasetInfoFrame->AddFrame(totalEventsFrame, aLayoutHints);
    datasetInfoFrame->AddFrame(currentEventFrame, aLayoutHints);
    datasetInfoFrame->AddFrame(currentEntryFrame, aLayoutHints);
