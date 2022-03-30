@@ -1,12 +1,14 @@
 #include <cstdlib>
 #include <iostream>
 #include <vector>
+#include <algorithm>
 
 #include "TFile.h"
 #include "TTree.h"
 #include "TCanvas.h"
 #include "TLatex.h"
 #include "TString.h"
+#include "TTreeIndex.h"
 
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/xml_parser.hpp>
@@ -16,6 +18,7 @@
 #include "GeometryTPC.h"
 #include "Track3D.h"
 #include "EventInfo.h"
+#include "Comp_analysis.h"
 
 #include "colorText.h"
 
@@ -85,43 +88,30 @@ std::shared_ptr<GeometryTPC> loadGeometry(const std::string fileName){
 }
 ////////////////////////////
 ////////////////////////////
-int setBranchAdresses(TTree *&aTree, eventraw::EventInfo *&aEventInfo, Track3D *&aTrack){
+std::vector<Long64_t> setBranchAdressesAndIndex(TTree *&aTree, eventraw::EventInfo *&aEventInfo, Track3D *&aTrack){
   
  TBranch *aBranch  = aTree->GetBranch("RecoEvent");
  if(!aBranch) {
    std::cerr<<KRED<<"ERROR: "<<RST
 	    <<"Cannot find 'RecoEvent' branch!"<<std::endl;
-   return -1;
+   return std::vector<Long64_t>();
  }
  aBranch->SetAddress(&aTrack);
-
- std::cout<<"&aRefTrack: "<<&aTrack<<std::endl;
-  
+ 
  aBranch  = aTree->GetBranch("EventInfo");
  if(!aBranch) {
    std::cerr<<KRED<<"ERROR: "<<RST
 	    <<"Cannot find 'EventInfo' branch!"<<std::endl;
-   return -1;
+   return std::vector<Long64_t>();
  }
  aBranch->SetAddress(&aEventInfo);
 
- aTree->BuildIndex("eventId","20210622120156%(10000000000)");
-
- return 0;
+ aTree->BuildIndex("eventId");
+ TTreeIndex *aIndex = (TTreeIndex*)aTree->GetTreeIndex();
+ Long64_t *indexValues = aIndex->GetIndexValues();   
+ std::vector<Long64_t> indexValuesVec(indexValues, indexValues+aTree->GetEntries());
+ return indexValuesVec;
 }
-////////////////////////////
-////////////////////////////
-/*
-std::vector<int> makeEventsList(TTree *&aTree){
-
-  std::map<int> eventsList;
-  
-  unsigned int nEntries = aTree->GetEntries();
-  for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
-    aTree->GetEntry(iEntry);
-  }
-}
-*/
 ////////////////////////////
 ////////////////////////////
 int compareRecoEvents(const  std::string & geometryFileName,
@@ -150,7 +140,6 @@ int compareRecoEvents(const  std::string & geometryFileName,
     return -1;
   }
   
-  //Comp_analysis myAnalysis(aGeometry, beamEnergy, beamDir); // need TPC geometry for proper histogram ranges
   TTree *aRefTree = (TTree*)aRefFile->Get("TPCRecoData");
   if(!aRefTree) {
     std::cerr<<KRED<<"ERROR: "<<RST
@@ -171,26 +160,53 @@ int compareRecoEvents(const  std::string & geometryFileName,
   eventraw::EventInfo *aRefEventInfo = new eventraw::EventInfo();
   eventraw::EventInfo *aTestEventInfo = new eventraw::EventInfo();
 
-  std::cout<<"&aRefTrack: "<<&aRefTrack<<std::endl;
-  int status = setBranchAdresses(aRefTree, aRefEventInfo, aRefTrack);
-  if(status<0) return 1;
+  std::vector<Long64_t> refTreeIndex = setBranchAdressesAndIndex(aRefTree, aRefEventInfo, aRefTrack);
+  if(!refTreeIndex.size()) return 1;
 
-  std::cout<<"&aRefTrack: "<<&aTestTrack<<std::endl;
-  status = setBranchAdresses(aTestTree, aTestEventInfo, aTestTrack);
-  if(status<0) return 1;
+  std::vector<Long64_t> testTreeIndex = setBranchAdressesAndIndex(aTestTree, aTestEventInfo, aTestTrack);
+  if(!testTreeIndex.size()) return 1;
 
-  aRefTree->AddFriend(aTestTree,"TestEvents");
-  /*
-  int iEntry = 0;
-  aRefTree->GetEntry(iEntry);
-  std::cout<<*aRefEventInfo<<std::endl;
-  */
-  int bytesRead = aRefTree->GetEntryWithIndex(8, 20210622120156%(10000000000));
-  std::cout<<"bytesRead: "<<bytesRead<<std::endl;
+  aRefTree->GetEntry(0);
+  aTestTree->GetEntry(0);
 
-  std::cout<<*aRefEventInfo<<std::endl;
-  std::cout<<*aTestEventInfo<<std::endl;
+  if(aRefEventInfo->GetRunId()!=aTestEventInfo->GetRunId()){
+    std::cout<<KRED<<"Data files have uncompatible run ids: \n"<<RST
+	     <<"  reference file: "<<aRefEventInfo->GetRunId()<<std::endl
+	     <<"  test file:      "<<aTestEventInfo->GetRunId()
+	     <<std::endl;
+    return -1;
+  }
 
+  std::sort(refTreeIndex.begin(), refTreeIndex.end());
+  std::sort(testTreeIndex.begin(), testTreeIndex.end());
+  std::vector<Long64_t> mergedTreeIndex = refTreeIndex;
+  mergedTreeIndex.insert(mergedTreeIndex.end(), testTreeIndex.begin(), testTreeIndex.end());
+  std::sort(mergedTreeIndex.begin(), mergedTreeIndex.end());
+  mergedTreeIndex.erase(std::unique(mergedTreeIndex.begin(), mergedTreeIndex.end()), mergedTreeIndex.end());
+
+  TTree *theTree = aRefTree;
+  if(aTestTree->GetEntries()>aRefTree->GetEntries()){
+    theTree = aTestTree;
+    theTree->AddFriend(aRefTree,"TestEvents");
+  }
+  else{    
+    theTree->AddFriend(aTestTree,"TestEvents");
+  }
+
+  Comp_analysis myAnalysis(aGeometry); 
+  for(auto entryIndex: mergedTreeIndex){
+
+    aRefEventInfo->reset();
+    aTestEventInfo->reset();
+    
+    theTree->GetEntryWithIndex(entryIndex);    
+    for (auto & aSegment: aRefTrack->getSegments())  aSegment.setGeometry(aGeometry);
+    for (auto & aSegment: aTestTrack->getSegments())  aSegment.setGeometry(aGeometry);
+
+    myAnalysis.fillHistos(aRefTrack, aRefEventInfo,
+			  aTestTrack, aTestEventInfo);
+  }
+  
   return 0;
 }
 /////////////////////////////

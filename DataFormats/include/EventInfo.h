@@ -19,6 +19,8 @@ namespace eventraw {
 
     void set(std::shared_ptr<EventTPC> aEventTPC);
 
+    void reset();
+
     time_t GetRunId() const {return runId;}
 
     uint32_t GetEventId() const {return eventId;}
