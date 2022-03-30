@@ -280,7 +280,7 @@ void HistoManager::setDetLayout(){
   // - DRIFT projection range
   float strip_min, strip_max;
   std::tie(strip_min, strip_max)=myGeometryPtr->rangeStripDirInMM(DIR_U);
-  for(auto idir=DIR_U+1; idir<=DIR_W; ++idir) {
+  for(int idir=DIR_V; idir<=DIR_W; ++idir) {
     float a, b;
     std::tie(a, b)=myGeometryPtr->rangeStripDirInMM(idir);
     if(a<strip_min) strip_min=a;
