@@ -272,13 +272,12 @@ TH2D RecHitBuilder::makeCleanCluster(const TH2D & aHisto){
     bounduaryBins = newBounduaryBins;
     newBounduaryBins.clear();
   }
-
+ 
   return aClusterHisto;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::string RecHitBuilder::adaptHistoTitle(const std::string title) const{
-
   std::string adaptedTitle = title;
   if(adaptedTitle.find("from")!=std::string::npos){
     std::string eventNumber = title.substr(0,title.find(":"));

@@ -22,6 +22,8 @@ public:
 
   const TH2D & makeRecHits(const TH2D & hProjection);
 
+  TH2D makeCleanCluster(const TH2D & aHisto);
+
 private:
 
   std::shared_ptr<GeometryTPC> myGeometryPtr;
@@ -56,8 +58,6 @@ private:
   std::vector<int> getKernelIndices(int iBin, const TH2D & aHisto);
 
   double getKernelSum(const std::vector<int> & kernelBins, const TH2D & aHisto);
-
-  TH2D makeCleanCluster(const TH2D & aHisto);
 
   void cleanRecHits();
 

@@ -20,6 +20,7 @@ include_directories(${PROJECT_SOURCE_DIR}/DataFormats/include)
 include_directories(${PROJECT_SOURCE_DIR}/Reconstruction/include)
 include_directories(${PROJECT_SOURCE_DIR}/GrawToROOT/include)
 include_directories(${PROJECT_SOURCE_DIR}/Utilities/include)
+include_directories(${PROJECT_SOURCE_DIR}/Analysis/include)
 
 find_package(ROOT REQUIRED COMPONENTS RIO GenVector Gui)
 ###############################################################################
@@ -46,11 +47,11 @@ add_executable(dumpRateHistos bin/dumpRateHistos.cpp)
 target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
 target_compile_options(tpcGUI PUBLIC ${CMAKE_ROOT_CFLAGS})
 
-target_link_libraries(${MODULE_NAME} DataFormats Reconstruction Utilities ${GRAW_TO_ROOT_LIBRARY} ${ROOT_LIBRARIES})
-target_link_libraries(tpcGUI PUBLIC DataFormats Utilities Reconstruction ${Boost_LIBRARIES} ${GRAW_TO_ROOT_LIBRARY} ${MODULE_NAME})
-target_link_libraries(dumpProjectionHistos PUBLIC DataFormats Utilities Reconstruction ${GRAW_TO_ROOT_LIBRARY} ${MODULE_NAME})
-target_link_libraries(dumpClusterHistos PUBLIC DataFormats Utilities Reconstruction ${GRAW_TO_ROOT_LIBRARY} ${MODULE_NAME})
-target_link_libraries(dumpRateHistos PUBLIC DataFormats Utilities ${GRAW_TO_ROOT_LIBRARY} ${MODULE_NAME})
+target_link_libraries(${MODULE_NAME} DataFormats Reconstruction Utilities Analysis ${GRAW_TO_ROOT_LIBRARY} ${ROOT_LIBRARIES})
+target_link_libraries(tpcGUI PUBLIC DataFormats Utilities Reconstruction Analysis ${Boost_LIBRARIES} ${GRAW_TO_ROOT_LIBRARY} ${MODULE_NAME})
+target_link_libraries(dumpProjectionHistos PUBLIC DataFormats Utilities Reconstruction Analysis ${GRAW_TO_ROOT_LIBRARY} ${MODULE_NAME})
+target_link_libraries(dumpClusterHistos PUBLIC DataFormats Utilities Reconstruction Analysis ${GRAW_TO_ROOT_LIBRARY} ${MODULE_NAME})
+target_link_libraries(dumpRateHistos PUBLIC DataFormats Utilities Analysis ${GRAW_TO_ROOT_LIBRARY} ${MODULE_NAME})
 
 # All install commands get the same destination. this allows us to use paths
 # relative to the executable.

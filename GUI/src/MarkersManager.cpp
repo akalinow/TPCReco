@@ -36,19 +36,19 @@ MarkersManager::MarkersManager(const TGWindow * p, MainFrame * aFrame)
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MarkersManager::addButtons(){
-
-  std::vector<std::string> button_names = {"Add segment", "Fit segments", "Save segments"};
-  std::vector<std::string> button_tooltips = {"Click to add segments end point. \n All segments share a common vertex - the starting point of the first segment.\n Each point is set by coordinates on two projections",
-					      "Calculate 3D orientation from the 2D projections",
-					      "Save the segments to ROOT file"};
-  std::vector<unsigned int> button_id = {M_ADD_SEGMENT, M_FIT_SEGMENT,  M_WRITE_SEGMENT};
+  
+  std::vector<std::string> button_names = {"Clear track", "Add segment", "Fit segments"};
+  std::vector<std::string> button_tooltips = {"Remove tracks from images. If \"Fit segments\" will NOT be clicked, \n the track will still be saved to the reco file",
+					      "Click to add segments end point. \n All segments share a common vertex - the starting point of the first segment.\n Each point is set by coordinates on two projections",
+					      "Calculate 3D orientation from the 2D projections"};
+  std::vector<unsigned int> button_id = {M_CLEAR_TRACKS, M_ADD_SEGMENT, M_FIT_SEGMENT};
 
   ULong_t aColor = TColor::RGB2Pixel(255, 255, 26);
   UInt_t attach_left=0;
   UInt_t attach_right=attach_left+1;
   UInt_t attach_top=0;
   UInt_t attach_bottom=attach_top+1;
-  
+
   for (unsigned int iButton = 0; iButton < button_names.size(); ++iButton) {
     TGTextButton* aButton = new TGTextButton(fHeaderFrame,
 					    button_names[iButton].c_str(),
@@ -57,9 +57,9 @@ void MarkersManager::addButtons(){
     						      kLHintsFillX | kLHintsFillY);
 
     fHeaderFrame->AddFrame(aButton,tloh);
-    if(button_names[iButton]=="Save segments") aButton->Connect("Clicked()","MainFrame",fParentFrame,"DoButton()");
-    else aButton->Connect("Clicked()","MarkersManager",this,"DoButton()");
+    aButton->Connect("Clicked()","MarkersManager",this,"DoButton()");
     if(button_names[iButton]!="Add segment") aButton->SetState(kButtonDisabled);
+    if(button_names[iButton]=="Clear track") aButton->SetState(kButtonUp);
     aButton->ChangeBackground(aColor);
     aButton->SetToolTipText(button_tooltips[iButton].c_str());
     myButtons[button_names[iButton]] = aButton;
@@ -80,23 +80,21 @@ void MarkersManager::initialize(){
   fMarkersContainer.resize(3);
   fHelperLinesContainer.resize(3);
   fSegmentsContainer.resize(3);
-  
+
   firstMarker = 0;
+  timeMarker = 0;
   acceptPoints = false;
   setEnabled(false);
   fGeometryTPC = NULL;
+
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MarkersManager::setEnabled(bool enable){
-  
-  if(!enable && myButtons.find("Add segment")!=myButtons.end() &&
-     myButtons.find("Fit segments")!=myButtons.end() &&
-     myButtons.find("Save segments")!=myButtons.end()){
-    myButtons.find("Add segment")->second->SetState(kButtonDisabled);
-    myButtons.find("Fit segments")->second->SetState(kButtonDisabled);
-    myButtons.find("Save segments")->second->SetState(kButtonDisabled);
-  }    
+
+    for(auto item: myButtons){
+        if(!enable) item.second->SetState(kButtonDisabled);	
+    }
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -174,18 +172,22 @@ void MarkersManager::resetMarkers(bool force){
   std::for_each(fMarkersContainer.begin(), fMarkersContainer.end(),
 		[](TMarker *&item){if(item){delete item; item = 0;}});
   firstMarker = 0;
+  timeMarker = 0;
   clearHelperLines();
+
+  for(auto aObj : fObjClones) delete aObj;
+  fObjClones.clear();
 
   int strip_dir = DIR_U;//FIX ME
   if(force || isLastSegmentComplete(strip_dir)){
     acceptPoints = false;
     if(myButtons.find("Add segment")!=myButtons.end() &&
        myButtons.find("Fit segments")!=myButtons.end() &&
-       myButtons.find("Save segments")!=myButtons.end()){
+       myButtons.find("Clear track")!=myButtons.end()){
       myButtons.find("Add segment")->second->SetState(kButtonUp);
+      myButtons.find("Clear track")->second->SetState(kButtonUp);
       if(!force) myButtons.find("Fit segments")->second->SetState(kButtonUp);
       else myButtons.find("Fit segments")->second->SetState(kButtonDisabled);
-      myButtons.find("Save segments")->second->SetState(kButtonDisabled);
     }
   }
 }
@@ -235,9 +237,20 @@ void MarkersManager::addMarkerFrame(int iMarker){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MarkersManager::processClickCoordinates(int strip_dir, float x, float y){
-  
-  if(strip_dir<DIR_U || strip_dir>=(int)fMarkersContainer.size() || fMarkersContainer.at(strip_dir)) return;  
+  /*
+  if(strip_dir==3){
+    if(!timeMarker){
+      timeMarker = new TMarker(x, y, 1);
+      drawFixedTimeLines(DIR_U, x);
+      drawFixedTimeLines(DIR_W, x);
+      drawFixedTimeLines(DIR_W, x);
+    }
+  }
+  */
+  if(strip_dir<DIR_U || strip_dir>=(int)fMarkersContainer.size() || fMarkersContainer.at(strip_dir)) return;
+  //if(timeMarker){ x = timeMarker->GetX(); }
   if(firstMarker){ x = firstMarker->GetX(); }
+  
 
   int iMarkerColor = 2;
   int iMarkerStyle = 8;
@@ -350,43 +363,11 @@ double MarkersManager::getMissingYCoordinate(unsigned int missingMarkerDir){
       return strip_posUVW;
     }
   }
-
   /////// DEBUG
-  std::cout << "getMissingYCoordinate: 3rd_dir=" << missingMarkerDir << ": ERROR: Cannot calculate 3rd UVW coordinate" << std::endl;
+  //std::cout << "getMissingYCoordinate: 3rd_dir=" << missingMarkerDir << ": ERROR: Cannot calculate 3rd UVW coordinate" << std::endl;
   /////// DEBUG
   return 0;
 }
-/*
-double MarkersManager::getMissingYCoordinate(unsigned int missingMarkerDir){
-
-  ///Not implemented yet.
-  //#ANGLES: 90.0 -30.0 30.0
-  const std::vector<double> phiPitchDirection = {M_PI, -M_PI/6.0 + M_PI/2.0, M_PI/6.0 - M_PI/2.0};
-  
-  double x = 0.0, y = 0.0;
-  double xDenominator = 0.0, yDenominator = 0.0;
-  int sign = 1;
-  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
-    TMarker *item = fMarkersContainer.at(strip_dir);
-    if(!item) continue;     
-    unsigned int next_strip_dir = (strip_dir+1)%3;
-    if(next_strip_dir==missingMarkerDir){ next_strip_dir = (next_strip_dir+1)%3;}
-    
-    x += sign*item->GetY()*sin(phiPitchDirection[next_strip_dir]);					   
-    xDenominator += sign*cos(phiPitchDirection[strip_dir])*sin(phiPitchDirection[next_strip_dir]);
-
-    y += sign*item->GetY()*cos(phiPitchDirection[next_strip_dir]);					   
-    yDenominator += sign*sin(phiPitchDirection[strip_dir])*cos(phiPitchDirection[next_strip_dir]);
-   
-    sign *=-1;
-  }
-  x /= xDenominator;
-  y /= yDenominator;
-  double strip_value = x*cos(phiPitchDirection[missingMarkerDir]) +
-    y*sin(phiPitchDirection[missingMarkerDir]);
-  return strip_value; 
-}
-*/
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MarkersManager::HandleMarkerPosition(Int_t event, Int_t x, Int_t y, TObject *sel){
@@ -432,8 +413,13 @@ void MarkersManager::sendSegmentsData(std::vector<double> *segmentsXY){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-Bool_t MarkersManager::HandleButton(Int_t id){
+Bool_t MarkersManager::HandleButton(Long_t id){
    switch (id) {
+   case M_CLEAR_TRACKS:
+    {
+      Emit("HandleButton(Long_t)", id); 
+    }
+   break; 
    case M_ADD_VERTEX:
     {
       acceptPoints = true;
@@ -453,9 +439,8 @@ Bool_t MarkersManager::HandleButton(Int_t id){
      {
        repackSegmentsData();
        sendSegmentsData(&fSegmentsXY);
-       if(myButtons.find("Save segments")!=myButtons.end()){
-	 myButtons.find("Save segments")->second->SetState(kButtonUp);
-       }
+       Emit("HandleButton(Int_t)", id);
+       reset();
      }     
      break;
    }

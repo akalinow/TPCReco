@@ -53,11 +53,9 @@ public:
   ///Bias vector with fixed T.
   TVector3 getBiasAtT(double time) const;
 
-  ///Tangent vector along time arrow, normalised to unit value along time.
-  const TVector3 & getTangentWithT1() const { return myTangentWithT1;}
-
-  ///Bias vector with Strip=0.
-  const TVector3 & getBiasAtStrip0() const { return myBiasAtStrip0;}
+  ///Tangent vector normalised to unit value along time it time component non zero
+  ///other wise assume time component is zero, and normalise to 1 along X.
+  TVector3 getNormalisedTangent() const;
 
   double getLength() const { return myLenght;}
 
@@ -86,8 +84,6 @@ private:
 
   TVector3 myTangent, myBias;
   TVector3 myStart, myEnd;    
-  TVector3 myBiasAtStrip0;
-  TVector3 myTangentWithT1;
 
   int nAccumulatorHits{0};
   Hit2DCollection  myRecHits;

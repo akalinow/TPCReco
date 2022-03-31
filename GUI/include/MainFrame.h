@@ -41,29 +41,30 @@
 
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-class MainFrame : public TGMainFrame
-{
+class MainFrame : public TGMainFrame{
 
   RQ_OBJECT("MainFrame")
 
 public:
+  
   MainFrame(const TGWindow *p, UInt_t w, UInt_t h, const boost::property_tree::ptree &aConfig);
   virtual ~MainFrame();
   virtual void CloseWindow();
+
+  virtual Bool_t ProcessMessage();
   virtual Bool_t ProcessMessage(Long_t msg, Long_t parm1, Long_t);
   virtual Bool_t ProcessMessage(Long_t msg);
   virtual Bool_t ProcessMessage(const char *);
 
-  void drawRecoFromMarkers(std::vector<double> *segmentsXY);
+  void processSegmentData(std::vector<double> *segmentsXY);
   void updateRunConditions(std::vector<double> *runParams);
-
-  void HandleEmbeddedCanvas(Int_t event, Int_t x, Int_t y, TObject *sel);
 
   void HandleMenu(Int_t);
 
   void DoButton();
 
 private:
+  
   void InitializeEventSource();
   void InitializeWindows();
 
@@ -83,14 +84,9 @@ private:
 
   void SetCursorTheme();
 
-  void drawRawHistos(TCanvas *aCanvas);
-  void drawRecoHistos(TCanvas *aCanvas);
-  void drawTechnicalHistos(TCanvas *aCanvas);
-
   void ClearCanvases();
-  void ClearCanvas(TCanvas *aCanvas);
   void Update();
-  void UpdateEventLog();
+  unsigned long UpdateEventLog();
 
   boost::property_tree::ptree myConfig;
   int myWorkMode{0};
@@ -106,8 +102,9 @@ private:
 
   TGCompositeFrame *fFrame{0};
   TRootEmbeddedCanvas *embeddedCanvas{0};
-  TCanvas *fCanvas{0};
-  TCanvas *fCanvas_Reco{0};
+  TCanvas *fMainCanvas{0};
+  TCanvas *fRawHistosCanvas{0};
+  TCanvas *fTechHistosCanvas{0};
   TGMenuBar *fMenuBar{0};
   TGPopupMenu *fMenuFile{0}, *fMenuHelp{0};
 
@@ -124,9 +121,6 @@ private:
   FileInfoFrame *fFileInfoFrame{0};
   SelectionBox *fSelectionBox{0};
   RunConditionsDialog *fRunConditionsDialog{0};
-
-  TArrow *fArrow{0};
-  TLine *fLine{0};
 
   ClassDef(MainFrame, 0);
 };
