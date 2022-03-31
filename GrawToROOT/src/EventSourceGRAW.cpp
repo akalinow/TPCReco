@@ -268,13 +268,13 @@ void EventSourceGRAW::collectEventFragments(unsigned int eventId){
 
   switch(fillEventType) {
   case raw:  
-    myCurrentEventRaw->eventId=eventId;
+    myCurrentEventRaw->SetEventId(eventId);
     myCurrentEvent->SetEventId(eventId); // for compatibility with EventSourceBase::currentEventNumber()
     std::cout<<KYEL<<"Creating a new EventRaw with eventId: "<<eventId<<RST<<std::endl;
     
     for(auto aFragment: it->second){
       loadGrawFrame(aFragment, true);
-      myCurrentEventRaw->timestamp=myDataFrame.fHeader.fEventTime;
+      myCurrentEventRaw->SetEventTimestamp(myDataFrame.fHeader.fEventTime);
       int  ASAD_idx = myDataFrame.fHeader.fAsadIdx;
       unsigned long int eventId_fromFrame = myDataFrame.fHeader.fEventIdx;
       if(eventId!=eventId_fromFrame){
@@ -411,8 +411,8 @@ void EventSourceGRAW::fillEventRawFromFrame(GET::GDataFrame & aGrawFrame){
   // optimized for data size
   // no pedestal subtracion (can be done later using raw data stored in the container class
 
-  myCurrentEventRaw->eventId = (uint64_t)aGrawFrame.fHeader.fEventIdx;
-  myCurrentEventRaw->timestamp = (uint32_t)aGrawFrame.fHeader.fEventTime;
+  myCurrentEventRaw->SetEventId((uint64_t)aGrawFrame.fHeader.fEventIdx);
+  myCurrentEventRaw->SetEventTimestamp((uint32_t)aGrawFrame.fHeader.fEventTime);
   
   uint8_t COBO_idx = (uint8_t)aGrawFrame.fHeader.fCoboIdx;
   uint8_t ASAD_idx = (uint8_t)aGrawFrame.fHeader.fAsadIdx;

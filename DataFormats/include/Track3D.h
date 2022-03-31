@@ -35,16 +35,14 @@ public:
 
   double getIntegratedCharge(double lambda) const;
 
-  TH2F getChargeProfile() const { return mySegments.front().getChargeProfile();}
+  TH1F getChargeProfile() const { return mySegments.front().getChargeProfile();}
 
   double getChi2() const;
 
   void splitWorseChi2Segment(double lenghtFraction);
 
-  void extendToZRange(double zMin, double zMax);
-
-  void shrinkToXYRange(double xMin, double xMax,
-		       double yMin, double yMax);
+  void extendToChamberRange(const std::tuple<double, double, double, double> & xyRange,
+			    const std::tuple<double, double> & zRange);
 
   ///Shrink track to actual hits range.
   void shrinkToHits();
@@ -82,6 +80,11 @@ private:
   double getSegmentsChi2() const;
 
   double getNodesChi2() const;
+
+  bool extendToZRange(double zMin, double zMax);
+
+  void extendToXYRange(double xMin, double xMax,
+		       double yMin, double yMax);
 
   fit_modes myFitMode{FIT_START_STOP};
   int iProjectionForChi2{-1};

@@ -30,7 +30,8 @@ ROOT_GENERATE_DICTIONARY(G__${MODULE_NAME}
   ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/TrackSegment3D.h
   ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/TrackSegment2D.h  
   ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/MultiKey.h 
-  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/EventRaw.h 
+  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/EventRaw.h
+  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/EventInfo.h
   LINKDEF ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/LinkDef.h)
 
 # The data is just added to the executable, because in some IDEs (QtCreator) 

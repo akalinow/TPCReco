@@ -19,7 +19,11 @@ MESSAGE( STATUS "CMAKE_MODULE_PATH:         " ${CMAKE_MODULE_PATH} )
 MESSAGE( STATUS "ROOTSYS:                   " $ENV{ROOTSYS} )
 MESSAGE( STATUS "ROOT_INCLUDE_DIRS:         " ${ROOT_INCLUDE_DIRS} )
 MESSAGE( STATUS "ROOT_LIBRARIES:            " ${ROOT_LIBRARIES} )
+MESSAGE( STATUS "ROOT_CFLAGS:               " ${CMAKE_ROOT_CFLAGS})
 MESSAGE( STATUS "ROOT_USE_FILE:             " ${ROOT_USE_FILE})
+
+MESSAGE( STATUS "CMAKE_CXX_FLAGS:             " ${CMAKE_CXX_FLAGS})
+
 
 #GET software presence
 set(GET_VERSION_DIR $ENV{GET_DIR}/GetSoftware_bin/$ENV{GET_RELEASE})
@@ -76,6 +80,8 @@ else()
 endif()
 
 set(CMAKE_CXX_FLAGS "${ROOT_CXX_FLAGS} -Wall -Werror -O3 -std=c++17 -pthread")
+MESSAGE( STATUS "CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS})
+
 option(DEBUG "Define DEBUG variable" OFF)
 if(DEBUG)
   MESSAGE( STATUS "DEBUG enabled" )
