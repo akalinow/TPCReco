@@ -75,7 +75,44 @@ TEST(RunIdParser_Test, timeComparison) {
 
   EXPECT_TRUE(
       RunIdParser("CoBo_ALL_AsAd_ALL_2021-09-08T09:26:36.627_0015.graw.gz")
-          .isClose(RunIdParser(
-                      "CoBo_ALL_AsAd_ALL_2021-09-08T09:26:36.620_0015.graw.gz"),
-                  std::chrono::milliseconds(10)));
+          .isClose(
+              RunIdParser(
+                  "CoBo_ALL_AsAd_ALL_2021-09-08T09:26:36.620_0015.graw.gz"),
+              std::chrono::milliseconds(10)));
+}
+
+TEST(RunIdParser_Test, RootFiles) {
+  EXPECT_NO_THROW(RunIdParser("EventTPC_2021-06-22T12:01:56.568_1.root"));
+  EXPECT_EQ(
+      RunIdParser("EventTPC_2021-06-22T12:01:56.568_1.root").fileId(), 1);
+  EXPECT_EQ(RunIdParser("EventTPC_2021-06-22T12:01:56.568_1.root").runId(),
+            20210622120156);
+  EXPECT_EQ(
+      RunIdParser("EventTPC_2021-06-22T12:01:56.568_1.root").CoBoId(), -1);
+  EXPECT_EQ(
+      RunIdParser("EventTPC_2021-06-22T12:01:56.568_1.root").AsadId(), -1);
+}
+
+TEST(RunIdParser_Test, RecoFiles) {
+  EXPECT_NO_THROW(RunIdParser("Reco_EventTPC_2021-06-22T12:01:56.568_1.root"));
+  EXPECT_EQ(
+      RunIdParser("Reco_EventTPC_2021-06-22T12:01:56.568_1.root").fileId(), 1);
+  EXPECT_EQ(RunIdParser("Reco_EventTPC_2021-06-22T12:01:56.568_1.root").runId(),
+            20210622120156);
+  EXPECT_EQ(
+      RunIdParser("Reco_EventTPC_2021-06-22T12:01:56.568_1.root").CoBoId(), -1);
+  EXPECT_EQ(
+      RunIdParser("Reco_EventTPC_2021-06-22T12:01:56.568_1.root").AsadId(), -1);
+}
+
+TEST(RunIdParser_Test, RecoFilesAppended) {
+  EXPECT_NO_THROW(RunIdParser("Reco_EventTPC_2021-06-22T12:01:56.568_1-2.root"));
+  EXPECT_EQ(
+      RunIdParser("Reco_EventTPC_2021-06-22T12:01:56.568_1-2.root").fileId(), 1);
+  EXPECT_EQ(RunIdParser("Reco_EventTPC_2021-06-22T12:01:56.568_1-2.root").runId(),
+            20210622120156);
+  EXPECT_EQ(
+      RunIdParser("Reco_EventTPC_2021-06-22T12:01:56.568_1-2.root").CoBoId(), -1);
+  EXPECT_EQ(
+      RunIdParser("Reco_EventTPC_2021-06-22T12:01:56.568_1-2.root").AsadId(), -1);
 }
