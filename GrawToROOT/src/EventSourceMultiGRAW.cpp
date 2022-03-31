@@ -569,14 +569,14 @@ void EventSourceMultiGRAW::collectEventFragments(unsigned int eventId){
     case raw:
       {	
 	if(nFragments==0) {
-	  myCurrentEventRaw->eventId=eventId;
+	  myCurrentEventRaw->SetEventId(eventId);
 	  myCurrentEvent->SetEventId(eventId); // for compatibility with EventSourceBase::currentEventNumber()
 	  std::cout<<KYEL<<"Creating a new EventRaw with eventId: "<<eventId<<RST<<std::endl;
 	}
 	auto aFragment = it->second;
 	loadGrawFrame(aFragment, true, streamIndex); // HOTFIX => fills myDataFrame
 	
-	myCurrentEventRaw->timestamp=myDataFrame.fHeader.fEventTime; // HOTFIX !!!
+	myCurrentEventRaw->SetEventTimestamp(myDataFrame.fHeader.fEventTime); // HOTFIX !!!
 	int ASAD_idx = myDataFrame.fHeader.fAsadIdx; // HOTFIX !!!
 	int COBO_idx = myDataFrame.fHeader.fCoboIdx; // HOTFIX !!!
 	unsigned long int eventId_fromFrame = myDataFrame.fHeader.fEventIdx; // HOTFIX !!!
