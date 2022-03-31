@@ -99,7 +99,6 @@ TGraphErrors TrackSegment2D::getChargeProfile(const Hit2DCollection & aRecHits, 
   binWidth = 1.0/getLength();
   TGraphErrors grChargeProfile2D(0);
 
-
   for(const auto aHit:aRecHits){
     x = aHit.getPosTime();
     y = aHit.getPosStrip();

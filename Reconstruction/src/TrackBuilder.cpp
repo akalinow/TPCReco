@@ -507,7 +507,8 @@ void TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
   }
   myFittedTrack.getSegments().front().setRecHits(myRawHits);
 
-  auto xyRange = myGeometryPtr->rangeXY();
+  //auto xyRange = myGeometryPtr->rangeXY(); TH2Poly axis ranges returns too small values
+  auto xyRange = std::make_tuple(-99, 99, -165, 165);
   myFittedTrack.extendToChamberRange(xyRange, myZRange);
   myFittedTrack.shrinkToHits();
   

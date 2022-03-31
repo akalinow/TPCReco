@@ -144,12 +144,7 @@ void HistoManager::drawRecoHistos(TCanvas *aCanvas){
      hPlotBackground->Draw("col same");
      aPad->RedrawAxis();  // repaints both axes & fixes X-axis zooming issue
      h1->Draw("same colz");
-
-     //getRecHitStripVsTime(strip_dir)->DrawCopy("box same");
-     //getRawStripVsTimeInMM(strip_dir)->DrawCopy("colz");
      drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
-     //if(strip_dir==DIR_W) getClusterTimeProjectionInMM()->DrawCopy("hist");
-     //else getRawStripVsTimeInMM(strip_dir)->DrawCopy("colz");
   }
    int strip_dir=3;
    TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
@@ -157,11 +152,7 @@ void HistoManager::drawRecoHistos(TCanvas *aCanvas){
    aPad->cd();
    aCanvas->Modified();
    aCanvas->Update();
-   //drawTrack3DProjectionXY(aPad);
-   //drawChargeAlongTrack3D(aPad);
-   //myHistoManager.drawTrack3D(aPad);
    getClusterTimeProjectionInMM()->DrawCopy("hist");
-   //getRecHitTimeProjection()->DrawCopy("hist same");
    aCanvas->Modified();
    aCanvas->Update();
 }
@@ -183,9 +174,49 @@ void HistoManager::drawRecoFromMarkers(TCanvas *aCanvas, std::vector<double> * s
    aCanvas->Modified();
    aCanvas->Update();
    drawTrack3DProjectionXY(aPad);
-  //myHistoManager.drawTrack3D(aPad);
-  //myHistoManager.drawChargeAlongTrack3D(aPad);
+   aCanvas->Modified();
+   aCanvas->Update();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void HistoManager::drawDevelHistos(TCanvas *aCanvas){
+
+  if(!aCanvas) return;
+  int padNumberOffset = 0;
+  if(std::string(aCanvas->GetName())=="Histograms") padNumberOffset = 0;
+  
+  reconstruct();
+
+   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+     TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
+     if(!aPad) return;
+     aPad->cd();
+     aCanvas->Modified();
+     aCanvas->Update();
+     
+     auto h1 = getClusterStripVsTimeInMM(strip_dir)->DrawCopy("colz");
+     if(aPad->GetLogz()) h1->SetMinimum(1.0);
+     hPlotBackground->Draw("col same");
+     aPad->RedrawAxis();  // repaints both axes & fixes X-axis zooming issue
+     h1->Draw("same colz");
+     
+     //getRecHitStripVsTime(strip_dir)->DrawCopy("box same");     
+     //getRawStripVsTimeInMM(strip_dir)->DrawCopy("colz");
+     drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
+     //drawTrack2DSeed(strip_dir, aPad);
+     //if(strip_dir==DIR_W) getClusterTimeProjectionInMM()->DrawCopy("hist");
+  }
+   int strip_dir=3;
+   TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
+   if(!aPad) return;
+   aPad->cd();
+   aCanvas->Modified();
+   aCanvas->Update();
+   drawTrack3DProjectionXY(aPad);
+   //drawChargeAlongTrack3D(aPad);
+   //myHistoManager.drawTrack3D(aPad);
    //getClusterTimeProjectionInMM()->DrawCopy("hist");
+   //getRecHitTimeProjection()->DrawCopy("hist same");
    aCanvas->Modified();
    aCanvas->Update();
 }

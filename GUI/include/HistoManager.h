@@ -53,6 +53,8 @@ public:
 
   void drawRecoHistos(TCanvas *aCanvas);
 
+  void drawDevelHistos(TCanvas *aCanvas);
+
   void drawTechnicalHistos(TCanvas *aCanvas, int nAgetChips);
 
   void drawRecoFromMarkers(TCanvas *aCanvas, std::vector<double> * segmentsXY);
