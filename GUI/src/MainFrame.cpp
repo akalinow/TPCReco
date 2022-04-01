@@ -35,8 +35,6 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h,  const boost::proper
   myConfig = aConfig;
  
   fSelectionBox = 0;
-  fArrow = 0;
-  fLine = 0;
 
   InitializeEventSource();
   InitializeWindows();
@@ -158,7 +156,7 @@ void MainFrame::InitializeEventSource(){
     myEventSource->loadFileEntry(0);
   }
   myHistoManager.setGeometry(myEventSource->getGeometry());
-  myHistoManager.openOutputStream(dataFileName);
+  if(isRecoModeOn) myHistoManager.openOutputStream(dataFileName);
   myEventSource->getEventFilter().setConditions(myConfig);
 }
 /////////////////////////////////////////////////////////
@@ -208,7 +206,27 @@ void MainFrame::AddHistoCanvas(){
   gStyle->SetPadLeftMargin(0.15);
   gStyle->SetPadRightMargin(0.15);
 
-  embeddedCanvas = new TRootEmbeddedCanvas("Histograms",fFrame,1000,1000);
+  /*
+  fRawHistosCanvas = new TCanvas("fRawHistosCanvas","Raw Histograms",850,800);
+  fRawHistosCanvas->MoveOpaque(kFALSE);
+  fRawHistosCanvas->Divide(2,2, 0.02, 0.02);
+  TList *aList = fRawHistosCanvas->GetListOfPrimitives();
+  for(auto obj: *aList){
+    TPad *aPad = (TPad*)(obj);
+    aPad->SetNumber(100 + aPad->GetNumber());
+  }
+
+  fTechHistosCanvas = new TCanvas("fTechHistosCanvas","Diagnostic Histograms",850,800);
+  fTechHistosCanvas->MoveOpaque(kFALSE);
+  fTechHistosCanvas->Divide(2,2, 0.02, 0.02);
+  TList *aList1 = fTechHistosCanvas->GetListOfPrimitives();
+  for(auto obj: *aList1){
+    TPad *aPad = (TPad*)(obj);
+    aPad->SetNumber(200 + aPad->GetNumber());
+  }
+  */
+  
+  embeddedCanvas = new TRootEmbeddedCanvas("embeddedCanvas",fFrame,1000,1000);
   TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
   int nRows = aLayout->fNrows;
   int nColumns = aLayout->fNcols;
@@ -218,10 +236,11 @@ void MainFrame::AddHistoCanvas(){
   fTCanvasLayout = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 					  kLHintsFillX|kLHintsFillY);
   fFrame->AddFrame(embeddedCanvas, fTCanvasLayout);
-
-  fCanvas = embeddedCanvas->GetCanvas();
-  fCanvas->MoveOpaque(kFALSE);
-  fCanvas->Divide(2,2, 0.02, 0.02);
+  fMainCanvas = embeddedCanvas->GetCanvas();
+  fMainCanvas->SetTitle("Reco Histograms");
+  fMainCanvas->SetName("Histograms");  
+  fMainCanvas->MoveOpaque(kFALSE);
+  fMainCanvas->Divide(2,2, 0.02, 0.02);
     
   ClearCanvases();
 }
@@ -287,6 +306,10 @@ int MainFrame::AddButtons(int attach){
     ++attach_bottom;
     if(displayConfig!=myConfig.not_found() &&  displayConfig->second.get(checkbox_config[iCheckbox],false)){
       aCheckbox->SetState(kButtonDown, true);
+    }
+    if(checkbox_names[iCheckbox]=="Set reco mode" && myWorkMode==M_ONLINE_MODE){
+      aCheckbox->SetState(kButtonUp, true);
+      aCheckbox->SetState(kButtonDisabled);
     }
    }
   return attach_bottom;
@@ -372,18 +395,18 @@ int MainFrame::AddFileInfoFrame(int attach){
 int MainFrame::AddEventTypeDialog(int attach){
 
   eventTypeButtonGroup = new TGButtonGroup(fFrame,
-					   7, 1, 1.0, 1.0,
+					   10, 1, 1.0, 1.0,
 					   "Event type");
-  eventTypeButtonGroup->SetExclusive(kTRUE);
+  eventTypeButtonGroup->SetExclusive(kFALSE);
   std::vector<TGCheckButton*> buttonsContainer;
-  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Empty")));
   buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Noise")));
-  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Dot")));
-  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("1 track")));
-  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("2 tracks")));
-  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("3 tracks")));
-  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Other")));
-  buttonsContainer.front()->SetState(kButtonDown);
+  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Multi-vertex")));
+  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Fractured track")));
+  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Pretty event")));
+  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Weird event")));
+  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Spare cat. 1")));
+  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Spare cat. 2")));
+  buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Spare cat. 3")));
 
   TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
   int nColumns = aLayout->fNcols;
@@ -412,9 +435,11 @@ int MainFrame::AddMarkersDialog(int attach){
   UInt_t attach_bottom=attach_top+nRows*0.2;
 
   fMarkersManager = new MarkersManager(fFrame, this);
-  fMarkersManager->setGeometry(myEventSource->getGeometry()); // Added by MC - 19 Aug 2021
+  fMarkersManager->setGeometry(myEventSource->getGeometry()); 
   fMarkersManager->Connect("sendSegmentsData(std::vector<double> *)","MainFrame",
-			   this,"drawRecoFromMarkers(std::vector<double> *)");
+			   this,"processSegmentData(std::vector<double> *)");
+  fMarkersManager->Connect("HandleButton(Long_t)","MainFrame",
+			   this,"ProcessMessage(Long_t)");
 
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right,
 						    attach_top, attach_bottom,
@@ -422,10 +447,10 @@ int MainFrame::AddMarkersDialog(int attach){
 						    kLHintsShrinkX|kLHintsShrinkY|
 						    kLHintsFillX|kLHintsFillY);
   fFrame->AddFrame(fMarkersManager, tloh);  
-  fCanvas->Connect("ProcessedEvent(Int_t,Int_t,Int_t,TObject*)",
+  fMainCanvas->Connect("ProcessedEvent(Int_t,Int_t,Int_t,TObject*)",
 		   "MarkersManager", fMarkersManager,
 		   "HandleMarkerPosition(Int_t,Int_t,Int_t,TObject*)");
-  return attach_bottom; 
+  return attach_bottom;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -465,6 +490,7 @@ void MainFrame::AddLogos(){
   std::string filePath = myConfig.get<std::string>("resourcesPath")+"/FUW_znak.png";
   TImage *img = TImage::Open(filePath.c_str());
   if(!img->IsValid()) return;
+  
   double ratio = img->GetWidth()/img->GetHeight();
   double height = 80;
   double width = ratio*height;
@@ -481,9 +507,10 @@ void MainFrame::AddLogos(){
   UInt_t attach_right=attach_left+1;
   UInt_t attach_top=nRows*0.9;
   UInt_t attach_bottom=nRows;
+    
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom);
   fFrame->AddFrame(icon, tloh);
-
+  
   filePath = myConfig.get<std::string>("resourcesPath")+"/ELITEPC_znak.png";
   img = TImage::Open(filePath.c_str());
   if(!img->IsValid()) return;
@@ -503,36 +530,15 @@ void MainFrame::AddLogos(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void MainFrame::HandleEmbeddedCanvas(Int_t event, Int_t x, Int_t y, TObject *sel){
-
-  std::cout<<KBLU<<__FUNCTION__<<RST<<std::endl;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
 void MainFrame::CloseWindow(){ gApplication->Terminate(0); }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MainFrame::ClearCanvases(){
 
-  ClearCanvas(fCanvas);
-  
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void MainFrame::ClearCanvas(TCanvas *aCanvas){
+  myHistoManager.clearCanvas(fMainCanvas, isLogScaleOn);
+  myHistoManager.clearCanvas(fRawHistosCanvas, isLogScaleOn);
+  myHistoManager.clearCanvas(fTechHistosCanvas, isLogScaleOn);
 
-  if(!aCanvas) return;
-  if(fMarkersManager) fMarkersManager->reset();
-  TList *aList = aCanvas->GetListOfPrimitives();
-  TText aMessage(0.0, 0.0,"Waiting for data.");
-  for(auto obj: *aList){
-    TPad *aPad = (TPad*)(obj);
-    if(!aPad) continue;
-    aPad->Clear();
-    aPad->cd();
-    aMessage.DrawTextNDC(0.3, 0.5,"Waiting for data.");
-    aPad->Update();
-  }
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -549,90 +555,28 @@ void MainFrame::Update(){
   fMarkersManager->reset();
   fMarkersManager->setEnabled(isRecoModeOn);
 
+  ClearCanvases();      
+  myHistoManager.drawRawHistos(fRawHistosCanvas, isRateDisplayOn);
+  myHistoManager.drawTechnicalHistos(fTechHistosCanvas, myEventSource->getGeometry()->GetAgetNchips());
+
   if(!isRecoModeOn){
-    drawRawHistos(fCanvas);
+    myHistoManager.drawRawHistos(fMainCanvas, isRateDisplayOn);
   }
   else {
-    drawRecoHistos(fCanvas);
+    myHistoManager.drawRecoHistos(fMainCanvas);
   }
+}
+
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void MainFrame::processSegmentData(std::vector<double> * segmentsXY){
+
+  myHistoManager.drawRecoFromMarkers(fMainCanvas, segmentsXY);
+
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void MainFrame::drawRawHistos(TCanvas *aCanvas){
-
-  aCanvas->Clear();
-  aCanvas->Divide(2,2);
-
-  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
-    aCanvas->cd(strip_dir+1);
-    myHistoManager.getRawStripVsTime(strip_dir)->DrawClone("colz");
-  }
-  aCanvas->cd(4);
-  if(isRateDisplayOn){
-    myHistoManager.getEventRateGraph()->Draw("AP");
-  } else{
-    myHistoManager.getRawTimeProjection()->DrawClone("hist");
-  }
-  aCanvas->Update();
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void MainFrame::drawTechnicalHistos(TCanvas *aCanvas){
-
-  aCanvas->Clear();
-  aCanvas->Divide(2,2);
-  
-  auto cobo_id=0;
-  for( int aget_id = 0;
-       aget_id <myEventSource->getGeometry()->GetAgetNchips();
-       ++aget_id ){
-    aCanvas->cd(aget_id+1);
-    myHistoManager.getChannels(cobo_id, aget_id)->DrawClone("colz");
-  }  
-  aCanvas->Update();
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void MainFrame::drawRecoHistos(TCanvas *aCanvas){
-    
-  myHistoManager.reconstruct();
-  aCanvas->Clear();
-  aCanvas->Divide(2,2);
-
-
-   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
-     //aCanvas->cd(strip_dir+1);
-     TVirtualPad *aPad = aCanvas->cd(strip_dir+1);
-     myHistoManager.getClusterStripVsTimeInMM(strip_dir)->DrawClone("colz");
-     //myHistoManager.getRecHitStripVsTime(strip_dir)->DrawClone("box same");
-     //myHistoManager.getRawStripVsTimeInMM(strip_dir)->DrawClone("colz");
-     myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
-  }
-   //aCanvas->cd(4);
-   myHistoManager.drawTrack3DProjectionXY(aCanvas->cd(4));
-   //myHistoManager.drawChargeAlongTrack3D(aCanvas->cd(4));
-   //myHistoManager.drawTrack3D(aCanvas->cd(4));
-   //myHistoManager.getClusterTimeProjectionInMM()->DrawClone("hist");
-   //myHistoManager.getRecHitTimeProjection()->DrawClone("hist same");
-   aCanvas->Update();
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void MainFrame::drawRecoFromMarkers(std::vector<double> * segmentsXY){
-
-  myHistoManager.reconstructSegmentsFromMarkers(segmentsXY);
-  for(int strip_dir=0;strip_dir<3;++strip_dir){
-    TVirtualPad *aPad = fCanvas->cd(strip_dir+1);
-    myHistoManager.drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
-  }
-   myHistoManager.drawTrack3DProjectionXY(fCanvas->cd(4));
-  //myHistoManager.drawTrack3D(fCanvas->cd(4));
-  //myHistoManager.drawChargeAlongTrack3D(fCanvas->cd(4));
-  fCanvas->Update();
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void MainFrame::UpdateEventLog(){
+unsigned long MainFrame::UpdateEventLog(){
 
   int index =  myEventSource->getCurrentPath().find_last_of("/");
   int pathLength =  myEventSource->getCurrentPath().size();
@@ -642,15 +586,17 @@ void MainFrame::UpdateEventLog(){
 
   ///Log header
   if(!out.is_open()){
-    out.open(logFileName, std::ofstream::app);    
+    out.open(logFileName, std::ofstream::app);
+    out<<"Event type bits:"<<std::endl;
     for(int iButton=1;iButton<=eventTypeButtonGroup->GetCount();++iButton){
       TGTextButton *aButton = (TGTextButton*)eventTypeButtonGroup->GetButton(iButton);
       if(!aButton){
 	std::cerr<<__FUNCTION__<<" Coversion to TGTextButton failed!"<<std::endl;
 	continue;
       }
-      out<<iButton<<" - "<<aButton->GetString()<<std::endl;
+      out<<iButton-1<<" - "<<aButton->GetString()<<std::endl;
     }
+    out<<"\n";
     out<<"Event Id \t entry number \t Event type"<<std::endl;
   }
   /////
@@ -659,18 +605,20 @@ void MainFrame::UpdateEventLog(){
   
   if(!eventTypeButtonGroup){
     std::cerr<<"eventTypeButtonGroup not initialised!";
-    return;
+    return 0;
   }
+
+  out<<myEventSource->currentEventNumber()<<" \t\t "
+     <<myEventSource->currentEntryNumber()<<" \t\t ";
+
+  std::bitset<64> eventType;
   for(int iButton=1;iButton<=eventTypeButtonGroup->GetCount();++iButton){
-    if(eventTypeButtonGroup->GetButton(iButton)->IsOn()){
-      out<<myEventSource->currentEventNumber()<<" \t\t "
-	 <<myEventSource->currentEntryNumber()<<" \t\t "
-	 <<iButton<<std::endl;
-      break;
+      eventType.set(iButton-1, eventTypeButtonGroup->GetButton(iButton)->IsOn());
+      eventTypeButtonGroup->GetButton(iButton)->SetOn(kFALSE);
     }
-  }
+  out<<eventType.to_ulong()<<std::endl;
   out.close();
-  eventTypeButtonGroup->SetButton(1, kTRUE);  
+  return eventType.to_ulong();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -691,22 +639,38 @@ void MainFrame::updateRunConditions(std::vector<double> *runParams){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 Bool_t MainFrame::ProcessMessage(Long_t msg, Long_t parm1, Long_t){
-   // Handle messages send to the MainFrame object. E.g. all menu button
-   // messages.
 
    return kTRUE;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+Bool_t MainFrame::ProcessMessage(){
+
+  return kTRUE;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 Bool_t MainFrame::ProcessMessage(Long_t msg){
 
   switch (msg) {
+  case M_CLEAR_TRACKS:
+    {
+      myHistoManager.clearTracks();
+      fMainCanvas->Update();
+    }
+    break;
+  case M_FIT_SEGMENT:
+    {
+      myHistoManager.clearTracks();
+    }
+    break;
+    
   case M_DATA_FILE_UPDATED:
     {
     }
     break;
   }
-    return kTRUE;
+  return kTRUE;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -752,7 +716,6 @@ void MainFrame::HandleMenu(Int_t id){
       if(fi.fFilename) fileName.append(fi.fFilename);
       else return;
       gSystem->cd(oldDirectory.c_str());
-      ClearCanvases();
       myEventSource->loadDataFile(fileName);
       myEventSource->loadFileEntry(0);
       Update();
@@ -773,16 +736,15 @@ void MainFrame::HandleMenu(Int_t id){
     
   case M_NEXT_EVENT:
     {
-      UpdateEventLog();
-      ClearCanvases();
+      unsigned int eventType = UpdateEventLog();
       myEventSource->getNextEventLoop();
+      if(isRecoModeOn) myHistoManager.writeRecoData(eventType);
       Update();
     }
     break;
   case M_PREVIOUS_EVENT:
     {
       UpdateEventLog();
-      ClearCanvases();
       myEventSource->getPreviousEventLoop();
       Update();
     }
@@ -807,30 +769,26 @@ void MainFrame::HandleMenu(Int_t id){
   case M_TOGGLE_LOGSCALE:
     {
       isLogScaleOn=!isLogScaleOn;
-      for(int iPad=1;iPad<=3;++iPad){
-        fCanvas->cd(iPad)->SetLogz(isLogScaleOn);
-      }
-      fCanvas->Update();
+      Update();
     }
     break;
   case M_TOGGLE_RECOMODE:
     {
       isRecoModeOn=!isRecoModeOn;
-      ClearCanvases();
+      std::string dataFileName = myConfig.get("dataFile","");
+      if(isRecoModeOn) myHistoManager.openOutputStream(dataFileName);
       Update();
     }
     break;   
     case M_TOGGLE_RATE:
     {
       isRateDisplayOn=!isRateDisplayOn;
-      ClearCanvases();
       Update();
     }
     break;
   case M_GOTO_EVENT:
     {
       int eventId = fEventIdEntry->GetIntNumber();
-      ClearCanvases();
       myEventSource->loadEventId(eventId);
       Update();
     }
@@ -838,7 +796,6 @@ void MainFrame::HandleMenu(Int_t id){
   case M_GOTO_ENTRY:
     {
       int fileEntry = fFileEntryEntry->GetIntNumber();
-      ClearCanvases();
       myEventSource->loadFileEntry(fileEntry);
       Update();
     }
@@ -851,11 +808,6 @@ void MainFrame::HandleMenu(Int_t id){
   case M_FILE_EXIT:
     {
       CloseWindow();   // terminate theApp no need to use SendCloseMessage()
-    }
-    break;
-  case M_WRITE_SEGMENT:
-    {
-      myHistoManager.writeSegments();
     }
     break;
   }

@@ -33,10 +33,7 @@ std::ostream& eventraw::operator<<(std::ostream& os, const eventraw::AgetRaw& ar
   }
   return os;
 }
-std::ostream& eventraw::operator<<(std::ostream& os, const eventraw::EventInfo& einfo) {
-  os << "EventInfo: id=" << einfo.eventId << ", timestamp=" << einfo.timestamp;
-  return os;
-}
+
 std::ostream& eventraw::operator<<(std::ostream& os, const eventraw::EventData& edata) {
   os << "EventData: AgetRawMap.size=" << edata.data.size();
   for(auto it=edata.data.begin(); it!=edata.data.end(); it++) {

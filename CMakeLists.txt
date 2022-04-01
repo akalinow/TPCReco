@@ -5,6 +5,9 @@ project(TPCSoft)                   # this sets the project name
 ## dependencies ###############################################################
 ###############################################################################
 
+set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+include(Tests)
+
 #ROOT 
 list(APPEND CMAKE_PREFIX_PATH $ENV{ROOTSYS})
 list(APPEND CMAKE_MODULE_PATH $ENV{ROOTSYS}/etc/cmake)
@@ -16,7 +19,11 @@ MESSAGE( STATUS "CMAKE_MODULE_PATH:         " ${CMAKE_MODULE_PATH} )
 MESSAGE( STATUS "ROOTSYS:                   " $ENV{ROOTSYS} )
 MESSAGE( STATUS "ROOT_INCLUDE_DIRS:         " ${ROOT_INCLUDE_DIRS} )
 MESSAGE( STATUS "ROOT_LIBRARIES:            " ${ROOT_LIBRARIES} )
+MESSAGE( STATUS "ROOT_CFLAGS:               " ${CMAKE_ROOT_CFLAGS})
 MESSAGE( STATUS "ROOT_USE_FILE:             " ${ROOT_USE_FILE})
+
+MESSAGE( STATUS "CMAKE_CXX_FLAGS:             " ${CMAKE_CXX_FLAGS})
+
 
 #GET software presence
 set(GET_VERSION_DIR $ENV{GET_DIR}/GetSoftware_bin/$ENV{GET_RELEASE})
@@ -47,7 +54,14 @@ endif()
 ###############################################################################
 ## packaging ##################################################################
 ###############################################################################
-set(CMAKE_INSTALL_PREFIX "$ENV{PWD}") # install in the current directory
+
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)  # install in the current directory
+  set(CMAKE_INSTALL_PREFIX
+      "$ENV{PWD}"
+      CACHE PATH "..." FORCE)
+endif()
+
+
 MESSAGE( STATUS "CMAKE_INSTALL_PREFIX:         " ${CMAKE_INSTALL_PREFIX} )
 
 # This is basically a repeat of the file copy instruction that copies the
@@ -66,6 +80,8 @@ else()
 endif()
 
 set(CMAKE_CXX_FLAGS "${ROOT_CXX_FLAGS} -Wall -Werror -O3 -std=c++17 -pthread")
+MESSAGE( STATUS "CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS})
+
 option(DEBUG "Define DEBUG variable" OFF)
 if(DEBUG)
   MESSAGE( STATUS "DEBUG enabled" )
