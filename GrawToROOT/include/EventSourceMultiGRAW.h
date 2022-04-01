@@ -34,7 +34,7 @@ public:
 
   //  std::shared_ptr<eventraw::EventRaw> getCurrentEventRaw() { return myCurrentEventRaw; }
 
-  //  virtual unsigned long int numberOfEvents() const { return nEntries/GRAW_EVENT_FRAGMENTS;} /// BEWARE: THIS METHOD IS WRONG !!!
+  unsigned long int numberOfEvents() const { return nEntries; } // the lowest number of frames among all GRAW_EVENT_FRAGMENTS files
 
   void loadDataFile(const std::string & commaSeparatedFileNames); // OVERLOADED to accept list of comma separated files (one file per ASAD)
 

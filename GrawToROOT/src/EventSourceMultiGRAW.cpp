@@ -495,7 +495,7 @@ void EventSourceMultiGRAW::checkEntryForFragments(unsigned int iEntry, unsigned 
   myCoboMapList[streamIndex][currentEventId] = COBO_idx;
   myFramesMapList[streamIndex][currentEventId] = iEntry;
   myReadEntriesSetList[streamIndex].insert(iEntry);
-  
+
   //#ifdef DEBUG
   std::cout<<__FUNCTION__<<": END ---> stream="<<streamIndex<<", frame_check="<<iEntry<<std::endl<<std::flush;
   //#endif
@@ -580,6 +580,11 @@ void EventSourceMultiGRAW::collectEventFragments(unsigned int eventId){
 	int ASAD_idx = myDataFrame.fHeader.fAsadIdx; // HOTFIX !!!
 	int COBO_idx = myDataFrame.fHeader.fCoboIdx; // HOTFIX !!!
 	unsigned long int eventId_fromFrame = myDataFrame.fHeader.fEventIdx; // HOTFIX !!!
+	myCurrentEntry=aFragment; // update current event frame index for EventSourceBase::currententryNumber()
+
+	//	std::cout<<KGRN<<__FUNCTION__
+	//		 <<": myCurrentEntry="<<aFragment<<", BASE->getCurrentEntry()="<<this->currentEntryNumber()<<RST<<std::endl;
+
 	//	myCurrentEventRaw->timestamp=myDataFrameList[streamIndex].fHeader.fEventTime;
 	//	int ASAD_idx = myDataFrameList[streamIndex].fHeader.fAsadIdx;
 	//	int COBO_idx = myDataFrameList[streamIndex].fHeader.fCoboIdx;
@@ -624,6 +629,11 @@ void EventSourceMultiGRAW::collectEventFragments(unsigned int eventId){
 	int ASAD_idx = myDataFrame.fHeader.fAsadIdx; // HOTFIX !!!
 	int COBO_idx = myDataFrame.fHeader.fCoboIdx; // HOTFIX !!!
 	unsigned long int eventId_fromFrame = myDataFrame.fHeader.fEventIdx; // HOTFIX !!!
+	myCurrentEntry=aFragment; // update current event frame index for EventSourceBase::currententryNumber()
+
+	//	std::cout<<KGRN<<__FUNCTION__
+	//		 <<": myCurrentEntry="<<aFragment<<", BASE->getCurrentEntry()="<<this->currentEntryNumber()<<RST<<std::endl;
+
 	//	myCurrentEvent->SetEventTime(myDataFrameList[streamIndex].fHeader.fEventTime);
 	//	int ASAD_idx = myDataFrameList[streamIndex].fHeader.fAsadIdx;
 	//	int COBO_idx = myDataFrameList[streamIndex].fHeader.fCoboIdx;
