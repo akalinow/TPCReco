@@ -135,7 +135,7 @@ void EventSourceMultiGRAW::loadDataFileList(const std::set<std::string> & fileNa
     auto myFile = std::make_shared<TGrawFile>(fileName.c_str());
     if(!myFile){
       std::cerr<<KRED<<__FUNCTION__
-	       <<": ERROR: Can not open file: "<<fileName<<"!"<<RST<<std::endl;
+	       <<": ERROR: Can not open file: "<<RST<<fileName<<std::endl;
       exit(1);
     }
     myFileList.push_back(myFile);
@@ -184,7 +184,9 @@ void EventSourceMultiGRAW::loadDataFileList(const std::set<std::string> & fileNa
 bool EventSourceMultiGRAW::loadGrawFrame(unsigned int iEntry, bool readFullEvent, unsigned int streamIndex){
 
   //#ifdef DEBUG
-  std::cout<<__FUNCTION__<<": START ---> stream="<<streamIndex<<", frame_check="<<iEntry<<", readFull="<<readFullEvent<<std::endl<<std::flush;
+  std::cout<<__FUNCTION__<<KBLU<<": Start loading the file entry: "<<RST<<iEntry
+	   <<KBLU<<" from the GRAW stream id: "<<RST<<streamIndex
+	   <<KBLU<<" with option readFull="<<RST<<readFullEvent<<std::endl;
   //#endif
 
   if(streamIndex>=myFilePathList.size() || streamIndex>=myNextFilePathList.size()) { // HOTFIX!!! // || streamIndex>=myDataFrameList.size()) {
@@ -196,7 +198,7 @@ bool EventSourceMultiGRAW::loadGrawFrame(unsigned int iEntry, bool readFullEvent
   std::string tmpFilePath = myFilePathList[streamIndex];
 
   //#ifdef DEBUG
-  std::cout<<__FUNCTION__<<": AFTER tmpFilePath ---> stream="<<streamIndex<<", frame_check="<<iEntry<<", readFull="<<readFullEvent<<std::endl<<std::flush;
+  //  std::cout<<__FUNCTION__<<": AFTER tmpFilePath ---> stream="<<streamIndex<<", frame_check="<<iEntry<<", readFull="<<readFullEvent<<std::endl<<std::flush;
   //#endif
 
   std::cout.setstate(std::ios_base::failbit);
@@ -208,11 +210,11 @@ bool EventSourceMultiGRAW::loadGrawFrame(unsigned int iEntry, bool readFullEvent
   }
 
   //#ifdef DEBUG
-  std::cout<<__FUNCTION__<<": BEFORE getGrawFrame(path="<<tmpFilePath
-	   <<", frame="<<iEntry<<"+1"
-	   <<", dataFrame="<<&myDataFrame // HOTFIX!!!!! // &myDataFrameList[streamIndex]
-	   <<", readFullFrame="<<readFullEvent<<")"
-	   <<std::endl<<std::flush;
+  //  std::cout<<__FUNCTION__<<": BEFORE getGrawFrame(path="<<tmpFilePath
+  //	   <<", frame="<<iEntry<<"+1"
+  //	   <<", dataFrame="<<&myDataFrame // HOTFIX!!!!! // &myDataFrameList[streamIndex]
+  //	   <<", readFullFrame="<<readFullEvent<<")"
+  //	   <<std::endl<<std::flush;
   //#endif
   
   //  bool dataFrameRead = myFrameLoader.getGrawFrame(tmpFilePath, iEntry+1, myDataFrameList[streamIndex], readFullEvent);///FIXME getGrawFrame counts frames from 1 (WRRR!)
@@ -220,11 +222,11 @@ bool EventSourceMultiGRAW::loadGrawFrame(unsigned int iEntry, bool readFullEvent
   ///FIXME getGrawFrame counts frames from 1 (WRRR!)
 
   //#ifdef DEBUG
-  std::cout<<__FUNCTION__<<": AFTER getGrawFrame(path="<<tmpFilePath
-	   <<", frame="<<iEntry<<"+1"
-	   <<", dataFrame="<<&myDataFrame // HOTFIX!!!!! // &myDataFrameList[streamIndex]
-	   <<", readFullFrame="<<readFullEvent<<")"
-	   <<std::endl<<std::flush;
+  //  std::cout<<__FUNCTION__<<": AFTER getGrawFrame(path="<<tmpFilePath
+  //	   <<", frame="<<iEntry<<"+1"
+  //	   <<", dataFrame="<<&myDataFrame // HOTFIX!!!!! // &myDataFrameList[streamIndex]
+  //	   <<", readFullFrame="<<readFullEvent<<")"
+  //	   <<std::endl<<std::flush;
   //#endif
   
 #else
@@ -233,25 +235,25 @@ bool EventSourceMultiGRAW::loadGrawFrame(unsigned int iEntry, bool readFullEvent
   if(iEntry<nEntries) {
    
     //#ifdef DEBUG
-    std::cout<<__FUNCTION__<<": BEFORE calling getGrawFrame(path="<<tmpFilePath
-	   <<", frame="<<iEntry<<"+1"
-	   <<", dataFrame="<<&myDataFrame // HOTFIX!!!!! // &myDataFrameList[streamIndex]
-	   <<", readFullFrame="<<readFullEvent<<")"
-	   <<std::endl<<std::flush;
+    //    std::cout<<__FUNCTION__<<": BEFORE calling getGrawFrame(path="<<tmpFilePath
+    //	   <<", frame="<<iEntry<<"+1"
+    //	   <<", dataFrame="<<&myDataFrame // HOTFIX!!!!! // &myDataFrameList[streamIndex]
+    //	   <<", readFullFrame="<<readFullEvent<<")"
+    //	   <<std::endl<<std::flush;
     //#endif
 
     //  dataFrameRead = myFrameLoader.getGrawFrame(tmpFilePath, iEntry+1, myDataFrameList[streamIndex], readFullEvent);///FIXME getGrawFrame counts frames from 1 (WRRR!)
     dataFrameRead = myFrameLoader.getGrawFrame(tmpFilePath, iEntry+1, myDataFrame, readFullEvent); // HOTFIX!!!!! => fills myDataFrame
     ///FIXME getGrawFrame counts frames from 1 (WRRR!)
   
-  //#ifdef DEBUG
-  std::cout<<__FUNCTION__<<": AFTER calling getGrawFrame(path="<<tmpFilePath
-	   <<", frame="<<iEntry<<"+1"
-	   <<", datAFrame="<<&myDataFrame // HOTFIX!!!!! // &myDataFrameList[streamIndex]
-	   <<", readFullFrame="<<readFullEvent<<")"
-	   <<std::endl;
-  std::cout<<std::flush;
-  //#endif
+    //#ifdef DEBUG
+    //  std::cout<<__FUNCTION__<<": AFTER calling getGrawFrame(path="<<tmpFilePath
+    //	   <<", frame="<<iEntry<<"+1"
+    //	   <<", datAFrame="<<&myDataFrame // HOTFIX!!!!! // &myDataFrameList[streamIndex]
+    //	   <<", readFullFrame="<<readFullEvent<<")"
+    //	   <<std::endl;
+    //  std::cout<<std::flush;
+    //#endif
 
   }
 #endif
@@ -272,8 +274,9 @@ bool EventSourceMultiGRAW::loadGrawFrame(unsigned int iEntry, bool readFullEvent
   }
   
   //#ifdef DEBUG
-  std::cout<<__FUNCTION__<<": END ---> stream="<<streamIndex<<", frame_check="<<iEntry<<", readFull="<<readFullEvent
-	   <<", dataFrameRead="<<dataFrameRead<<std::endl<<std::flush;
+  std::cout<<__FUNCTION__<<KBLU<<": Finished loading the file entry: "<<RST<<iEntry
+	   <<KBLU<<" from the GRAW stream id: "<<RST<<streamIndex
+	   <<KBLU<<" with option readFull="<<RST<<readFullEvent<<std::endl;
   //#endif
 
   return dataFrameRead;
@@ -284,9 +287,9 @@ bool EventSourceMultiGRAW::loadGrawFrame(unsigned int iEntry, bool readFullEvent
 /////////////////////////////////////////////////////////
 void EventSourceMultiGRAW::loadEventId(unsigned long int eventId){
 
-  std::cout<<KBLU
-	   <<"Start looking for the event id: "<<eventId
-	   <<RST<<std::endl;
+  std::cout<<__FUNCTION__<<KBLU
+	   <<": Start looking for the event id: "<<RST<<eventId
+	   <<std::endl;
 
   // find corresponding file entry for each GRAW file
   for( unsigned int streamIndex=0; streamIndex<myFramesMapList.size() ; streamIndex++) {
@@ -295,22 +298,21 @@ void EventSourceMultiGRAW::loadEventId(unsigned long int eventId){
     auto it2 = myFramesMapList[streamIndex].find(eventId);
     if(it2!=myFramesMapList[streamIndex].end()) {
       unsigned int eventIndexFrame = it2->second;
-      std::cout <<KBLU<<std::endl<<"Found file entry: "<<RST<<eventIndexFrame<<KBLU<<" for GRAW stream id: "<<RST<<streamIndex
-		<<KBLU<<", eventId: "<<RST<<eventId
-		<< std::endl;
+      std::cout <<__FUNCTION__<<KBLU<<": Found file entry: "<<RST<<eventIndexFrame<<KBLU<<" for the GRAW stream id: "<<RST<<streamIndex
+		<<KBLU<<", event id: "<<RST<<eventId<<std::endl;
     } else {
       // count remaining frames of a given GRAW file
       for(auto iEntry=nEntries-1; iEntry>0; iEntry--) {
 
 	//#ifdef DEBUG
-	std::cout<<__FUNCTION__<<": before calling checkEntryForFragments(iEntry="<<iEntry<<", streamIndex="<<streamIndex<<")"
-		 <<std::endl<<std::flush;
+	//	std::cout<<__FUNCTION__<<": before calling checkEntryForFragments(iEntry="<<iEntry<<", streamIndex="<<streamIndex<<")"
+	//		 <<std::endl<<std::flush;
 	//#endif
 	checkEntryForFragments(iEntry, streamIndex);
 
 	//#ifdef DEBUG
-	std::cout<<__FUNCTION__<<": after calling checkEntryForFragments(iEntry="<<iEntry<<", streamIndex="<<streamIndex<<")"
-		 <<std::endl<<std::flush;
+	//	std::cout<<__FUNCTION__<<": after calling checkEntryForFragments(iEntry="<<iEntry<<", streamIndex="<<streamIndex<<")"
+	//		 <<std::endl<<std::flush;
 	//#endif    
 
 	if(myFramesMapList[streamIndex].find(eventId)!=myFramesMapList[streamIndex].end()) break;
@@ -320,20 +322,20 @@ void EventSourceMultiGRAW::loadEventId(unsigned long int eventId){
 
   // fill myCurrentEvent object using existing GRAW frame mapping
   //#ifdef DEBUG
-  std::cout<<__FUNCTION__<<": before calling collectEventFragments(eventId="<<eventId<<")"
-	   <<std::endl<<std::flush;
+  //  std::cout<<__FUNCTION__<<": before calling collectEventFragments(eventId="<<eventId<<")"
+  //	   <<std::endl<<std::flush;
   //#endif    
 
   collectEventFragments(eventId);
 
   //#ifdef DEBUG
-  std::cout<<__FUNCTION__<<": after calling collectEventFragments(eventId="<<eventId<<")"
-	   <<std::endl<<std::flush;
+  //  std::cout<<__FUNCTION__<<": after calling collectEventFragments(eventId="<<eventId<<")"
+  //	   <<std::endl<<std::flush;
   //#endif    
 
-  std::cout<<KBLU
-	   <<"Finished looking for the event id: "<<eventId
-	   <<RST<<std::endl;
+  std::cout<<__FUNCTION__<<KBLU
+	   <<": Finished looking for the event id: "<<RST<<eventId
+	   <<std::endl;
 }
 /////////////////////////////////////////////////////////
 // Finds eventId corresponding to a given frame index of the GRAW file for {COBO=0, ASAD=0}.
@@ -342,45 +344,45 @@ void EventSourceMultiGRAW::loadEventId(unsigned long int eventId){
 /////////////////////////////////////////////////////////
 void EventSourceMultiGRAW::loadFileEntry(unsigned long int iEntry){
 
-  std::cout<<KBLU
-	   <<"Start looking for the file entry: "<<iEntry
-	   <<RST<<std::endl;
+  std::cout<<__FUNCTION__<<KBLU
+	   <<": Start looking for the file entry: "<<RST<<iEntry
+	   <<std::endl;
 
   bool result = false;
   unsigned long int matchEventId = 0;
   unsigned int matchStreamIndex = 0;
 
   ///////////////////////////////////////////////////////////////
-  std::cout<<__FUNCTION__<<": myReadEntriesSetList.size="<<myReadEntriesSetList.size()
-	   <<RST<<std::endl<<std::flush;
+  //  std::cout<<__FUNCTION__<<": myReadEntriesSetList.size="<<myReadEntriesSetList.size()
+  //	   <<RST<<std::endl<<std::flush;
   ///////////////////////////////////////////////////////////////
   
   // find eventId for {ASAD=0, COBO=0}
   for( unsigned int streamIndex=0; streamIndex<myReadEntriesSetList.size() ; streamIndex++) {
 
     ///////////////////////////////////////////////////////////////
-    std::cout<<__FUNCTION__<<": stream="<<streamIndex
-	     <<RST<<std::endl<<std::flush;
+    //    std::cout<<__FUNCTION__<<": stream="<<streamIndex
+    //	     <<RST<<std::endl<<std::flush;
     ///////////////////////////////////////////////////////////////
 
-      //#ifdef DEBUG
-    std::cout<<__FUNCTION__<<": before calling checkEntryForFragments(iEntry="<<iEntry<<", streamIndex="<<streamIndex<<")"
-	     <<std::endl<<std::flush;
+    //#ifdef DEBUG
+    //    std::cout<<__FUNCTION__<<": before calling checkEntryForFragments(iEntry="<<iEntry<<", streamIndex="<<streamIndex<<")"
+    //	     <<std::endl<<std::flush;
     //#endif
 
     checkEntryForFragments(iEntry, streamIndex);
 
     //#ifdef DEBUG
-    std::cout<<__FUNCTION__<<": after calling checkEntryForFragments(iEntry="<<iEntry<<", streamIndex="<<streamIndex<<")"
-	     <<std::endl<<std::flush;
+    //    std::cout<<__FUNCTION__<<": after calling checkEntryForFragments(iEntry="<<iEntry<<", streamIndex="<<streamIndex<<")"
+    //	     <<std::endl<<std::flush;
     //#endif
 
     // check map [eventId, frameIndex] for a given GRAW file
     for(auto const &it: myFramesMapList[streamIndex]) {
 
       ///////////////////////////////////////////////////////////////
-      std::cout<<__FUNCTION__<<": stream="<<streamIndex<<", frame="<<it.second<<", frame_check="<<iEntry
-	       <<RST<<std::endl<<std::flush;
+      //      std::cout<<__FUNCTION__<<": stream="<<streamIndex<<", frame="<<it.second<<", frame_check="<<iEntry
+      //	       <<RST<<std::endl<<std::flush;
       ///////////////////////////////////////////////////////////////
 
       if( it.second == iEntry ) {
@@ -393,10 +395,9 @@ void EventSourceMultiGRAW::loadFileEntry(unsigned long int iEntry){
 	int COBO_idx = it3->second;
 
 	///////////////////////////////////////////////////////////////
-	std::cout<<__FUNCTION__<<": stream="<<streamIndex<<", frame="<<it.second<<", event="<<EventId<<", cobo="<<COBO_idx<<", asad="<<ASAD_idx
-		 <<RST<<std::endl<<std::flush;
+	//	std::cout<<__FUNCTION__<<": stream="<<streamIndex<<", frame="<<it.second<<", event="<<EventId<<", cobo="<<COBO_idx<<", asad="<<ASAD_idx
+	//		 <<RST<<std::endl<<std::flush;
 	///////////////////////////////////////////////////////////////
-
 	
 	// use only {ASAD=0, COBO=0} for frame counting purpose
 	if( ASAD_idx==0 && COBO_idx==0) {
@@ -411,77 +412,79 @@ void EventSourceMultiGRAW::loadFileEntry(unsigned long int iEntry){
   }
   if(!result) {
     std::cerr <<KRED<<__FUNCTION__
-	      <<": WARNING: can not find GRAW stream with {ASAD=0, COBO=0} for file entry: " <<RST<<iEntry
-	      << std::endl;
+	      <<": WARNING: can not find any GRAW streams with {ASAD=0, COBO=0} for the file entry: "<<RST<<iEntry
+	      <<std::endl;
     return;
   }
-  std::cout <<KBLU<<std::endl<<"Found GRAW stream id: "<<RST<<matchStreamIndex
-	    <<KBLU<<" corresponding to {ASAD=0, COBO=0}, file entry: " <<RST<<iEntry
-	    <<KBLU<<", eventId: "<<RST<<matchEventId
-	    << std::endl;    
+  std::cout<<__FUNCTION__<<KBLU<<": Found the GRAW stream id: "<<RST<<matchStreamIndex
+	   <<KBLU<<" corresponding to {ASAD=0, COBO=0}, file entry: "<<RST<<iEntry
+	   <<KBLU<<", event id: "<<RST<<matchEventId<<std::endl;    
 
   // check frames corresponding to matched event ID
-  for( unsigned int streamIndex=0; streamIndex<myReadEntriesSetList.size() ; streamIndex++) {
+  for(unsigned int streamIndex=0; streamIndex<myReadEntriesSetList.size() ; streamIndex++) {
     if(streamIndex!=matchStreamIndex) {
       auto it = myFramesMapList[streamIndex].find(matchEventId);
       if(it!=myFramesMapList[streamIndex].end()) continue; 
+
+      // strategy 1: check same frame index for matched event ID
+      checkEntryForFragments(iEntry, streamIndex);
+      if(myFramesMapList[streamIndex].find(matchEventId)!=myFramesMapList[streamIndex].end()) break;
       
-      // count remaining frames corresponding to matched event ID
-      for(auto iEntry=nEntries-1; iEntry>0; iEntry--) {
-	checkEntryForFragments(iEntry, streamIndex);
+      // strategy 2: scan all remaining frames for matched event ID
+      for(unsigned long int iEntry2=0; iEntry2<=nEntries-1; ++iEntry2) {
+	checkEntryForFragments(iEntry2, streamIndex);
 	if(myFramesMapList[streamIndex].find(matchEventId)!=myFramesMapList[streamIndex].end()) break;
       }
     }
   }
 
   //#ifdef DEBUG
-  std::cout<<__FUNCTION__<<": before calling collectEventFragments(eventId="<<matchEventId<<")"
-	   <<std::endl<<std::flush;
+  //  std::cout<<__FUNCTION__<<": before calling collectEventFragments(eventId="<<matchEventId<<")"
+  //	   <<std::endl<<std::flush;
   //#endif    
 
   // fill myCurrentEvent object using existing GRAW frame mapping
   collectEventFragments(matchEventId);
 
   //#ifdef DEBUG
-  std::cout<<__FUNCTION__<<": after calling collectEventFragments(eventId="<<matchEventId<<")"
-	   <<std::endl<<std::flush;
+  //  std::cout<<__FUNCTION__<<": after calling collectEventFragments(eventId="<<matchEventId<<")"
+  //	   <<std::endl<<std::flush;
   //#endif
 
-  std::cout<<KBLU
-	   <<"Finished looking for the file entry: "<<iEntry
-	   <<RST<<std::endl;
+  std::cout<<__FUNCTION__<<KBLU
+	   <<": Finished looking for the file entry: "<<RST<<iEntry
+	   <<std::endl;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void EventSourceMultiGRAW::checkEntryForFragments(unsigned int iEntry, unsigned int streamIndex){
 
   //#ifdef DEBUG
-  std::cout<<__FUNCTION__<<": START ---> stream="<<streamIndex<<", frame_check="<<iEntry<<std::endl<<std::flush;
+  //  std::cout<<__FUNCTION__<<": START ---> stream="<<streamIndex<<", frame_check="<<iEntry<<std::endl<<std::flush;
   //#endif
 
   if(streamIndex>=myReadEntriesSetList.size()) { // HOTFIX!!!!! // || streamIndex>=myDataFrameList.size()) {
     std::cerr<<KRED<<__FUNCTION__
-	       <<": ERROR: wrong GRAW stream id: "<<RST<<streamIndex<<KRED<<" for file entry: "<<RST<<iEntry
-	       <<std::endl;
+	       <<": ERROR: wrong GRAW stream id: "<<RST<<streamIndex<<KRED<<" for file entry: "<<RST<<iEntry<<std::endl;
       exit(1);
   }
   if(myReadEntriesSetList[streamIndex].count(iEntry)) return; // nothing to do
 
   //#ifdef DEBUG
-  std::cout<<__FUNCTION__<<": before calling loadGrawFrame(iEntry="<<iEntry
-	   <<", readFullFrame="<<false
-	   <<", streamIndex="<<streamIndex<<")"
-	   <<std::endl<<std::flush;
+  //  std::cout<<__FUNCTION__<<": before calling loadGrawFrame(iEntry="<<iEntry
+  //	   <<", readFullFrame="<<false
+  //	   <<", streamIndex="<<streamIndex<<")"
+  //	   <<std::endl<<std::flush;
   //#endif
 
   // check new frame header
   loadGrawFrame(iEntry, false, streamIndex); // HOTFIX!!!!! => fills myDataFrame
 
   //#ifdef DEBUG
-  std::cout<<__FUNCTION__<<": after calling loadGrawFrame(iEntry="<<iEntry
-	   <<", readFullFrame="<<false
-	   <<", streamIndex="<<streamIndex<<")"
-	   <<std::endl<<std::flush;
+  //  std::cout<<__FUNCTION__<<": after calling loadGrawFrame(iEntry="<<iEntry
+  //	   <<", readFullFrame="<<false
+  //	   <<", streamIndex="<<streamIndex<<")"
+  //	   <<std::endl<<std::flush;
   //#endif    
 
   unsigned long int currentEventId = myDataFrame.fHeader.fEventIdx; // HOTFIX!!!!!
@@ -497,7 +500,7 @@ void EventSourceMultiGRAW::checkEntryForFragments(unsigned int iEntry, unsigned 
   myReadEntriesSetList[streamIndex].insert(iEntry);
 
   //#ifdef DEBUG
-  std::cout<<__FUNCTION__<<": END ---> stream="<<streamIndex<<", frame_check="<<iEntry<<std::endl<<std::flush;
+  //  std::cout<<__FUNCTION__<<": END ---> stream="<<streamIndex<<", frame_check="<<iEntry<<std::endl<<std::flush;
   //#endif
 
 }
@@ -571,7 +574,7 @@ void EventSourceMultiGRAW::collectEventFragments(unsigned int eventId){
 	if(nFragments==0) {
 	  myCurrentEventRaw->SetEventId(eventId);
 	  myCurrentEvent->SetEventId(eventId); // for compatibility with EventSourceBase::currentEventNumber()
-	  std::cout<<KYEL<<"Creating a new EventRaw with eventId: "<<eventId<<RST<<std::endl;
+	  std::cout<<KYEL<<"Creating a new EventRaw with event id: "<<eventId<<RST<<std::endl;
 	}
 	auto aFragment = it->second;
 	loadGrawFrame(aFragment, true, streamIndex); // HOTFIX => fills myDataFrame
@@ -590,13 +593,12 @@ void EventSourceMultiGRAW::collectEventFragments(unsigned int eventId){
 	//	int COBO_idx = myDataFrameList[streamIndex].fHeader.fCoboIdx;
 	//	unsigned long int eventId_fromFrame = myDataFrameList[streamIndex].fHeader.fEventIdx;
 	if(eventId!=eventId_fromFrame){
-	  std::cerr<<KRED<<__FUNCTION__
-		   <<": WARNING: event id mismatch! eventId="<<eventId
-		   <<", eventId_fromFrame="<<eventId_fromFrame
-		   <<RST<<std::endl;
+	  std::cerr<<KRED<<__FUNCTION__<<KRED
+		   <<": WARNING: event id mismatch! eventId="<<RST<<eventId
+		   <<KRED<<", eventId_fromFrame="<<RST<<eventId_fromFrame<<RST<<std::endl;
 	  return;
 	}
-	std::cout<<KBLU<<"Found a frame for eventId: "<<RST<<eventId;
+	std::cout<<__FUNCTION__<<KBLU<<": Found a frame for event id: "<<RST<<eventId;
 	if(aFragment<nEntries) {
 	  std::cout<<KBLU<<" in file entry: "<<RST<<aFragment<<RST;
 	} else {
@@ -620,7 +622,7 @@ void EventSourceMultiGRAW::collectEventFragments(unsigned int eventId){
 	  myCurrentEvent->SetEventId(eventId);
 	  myCurrentEvent->SetGeoPtr(myGeometryPtr);
 	
-	  std::cout<<KYEL<<"Creating a new EventTPC with eventId: "<<eventId<<RST<<std::endl;
+	  std::cout<<KYEL<<"Creating a new EventTPC with event id: "<<eventId<<RST<<std::endl;
 	}
 	auto aFragment = it->second;
 	loadGrawFrame(aFragment, true, streamIndex); // HOTFIX => fills myDataFrame
@@ -640,12 +642,11 @@ void EventSourceMultiGRAW::collectEventFragments(unsigned int eventId){
 	//	unsigned long int eventId_fromFrame = myDataFrameList[streamIndex].fHeader.fEventIdx;
 	if(eventId!=eventId_fromFrame){
 	  std::cerr<<KRED<<__FUNCTION__
-		   <<": WARNING: event id mismatch!: eventId="<<eventId
-		   <<", eventId_fromFrame="<<eventId_fromFrame
-		   <<RST<<std::endl;
+		   <<": WARNING: event id mismatch!: eventId="<<RST<<eventId
+		   <<KRED<<", eventId_fromFrame="<<RST<<eventId_fromFrame<<std::endl;
 	  return;
 	}     
-	std::cout<<KBLU<<"Found a frame for eventId: "<<RST<<eventId;
+	std::cout<<__FUNCTION__<<KBLU<<": Found a frame for event id: "<<RST<<eventId;
 	if(aFragment<nEntries) {
 	  std::cout<<KBLU<<" in file entry: "<<RST<<aFragment<<RST;
 	} else {
@@ -664,10 +665,9 @@ void EventSourceMultiGRAW::collectEventFragments(unsigned int eventId){
   
   if(nFragments!=GRAW_EVENT_FRAGMENTS) {
     std::cerr<<KRED<<__FUNCTION__
-	     <<": WARNING: Fragment counts for eventId: "<<RST<<eventId
+	     <<": WARNING: Fragment counts for event id: "<<RST<<eventId
 	     <<KRED<<" mismatch. Expected: "<<RST<<GRAW_EVENT_FRAGMENTS
-	     <<KRED<<" found: "<<RST<<nFragments
-	     <<RST<<std::endl;
+	     <<KRED<<" found: "<<RST<<nFragments<<std::endl;
   }
   //long int eventNumberInFile = std::distance(myFramesMap.begin(), it);
 }
@@ -870,8 +870,7 @@ std::string EventSourceMultiGRAW::getNextFilePath(unsigned int streamIndex){
 
   if(streamIndex>=myFilePathList.size()) {
     std::cerr <<KRED<<__FUNCTION__
-	      <<": ERROR: wrong GRAW stream index: " <<RST<<streamIndex<<std::endl
-	      <<std::endl;
+	      <<": ERROR: wrong GRAW stream id: " <<RST<<streamIndex<<std::endl;
     exit(1);    
   }
   auto myFilePath = myFilePathList[streamIndex];
