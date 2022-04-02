@@ -302,7 +302,7 @@ void EventSourceMultiGRAW::loadEventId(unsigned long int eventId){
 		<<KBLU<<", event id: "<<RST<<eventId<<std::endl;
     } else {
       // count remaining frames of a given GRAW file
-      for(auto iEntry=nEntries-1; iEntry>0; iEntry--) {
+      for(auto iEntry=nEntries-1; iEntry>=0; --iEntry) {  // TODO: optimize for speed!!! (eg. check same frame index first and only then try to scan the whole file)
 
 	//#ifdef DEBUG
 	//	std::cout<<__FUNCTION__<<": before calling checkEntryForFragments(iEntry="<<iEntry<<", streamIndex="<<streamIndex<<")"
