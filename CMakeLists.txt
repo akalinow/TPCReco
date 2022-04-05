@@ -54,7 +54,14 @@ endif()
 ###############################################################################
 ## packaging ##################################################################
 ###############################################################################
-set(CMAKE_INSTALL_PREFIX "$ENV{PWD}") # install in the current directory
+
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)  # install in the current directory
+  set(CMAKE_INSTALL_PREFIX
+      "$ENV{PWD}"
+      CACHE PATH "..." FORCE)
+endif()
+
+
 MESSAGE( STATUS "CMAKE_INSTALL_PREFIX:         " ${CMAKE_INSTALL_PREFIX} )
 
 # This is basically a repeat of the file copy instruction that copies the
