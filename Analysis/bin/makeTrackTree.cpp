@@ -194,15 +194,29 @@ int makeTrackTree(const  std::string & geometryFileName,
     tree->Fill();
 
     ///Draw anomaly events
-    if(chi2>10 && charge>100){
+    if(charge>100){
+      aCanvas->Divide(2,2);
+      bool drawEvent = false;
       myHistoManager.setEvent(myEventSource->getCurrentEvent());
       for(int strip_dir=0;strip_dir<3;++strip_dir){
+	//std::shared_ptr<TH2D> hProjection = myHistoManager.getClusterStripVsTimeInMM(strip_dir);
+	std::shared_ptr<TH2D> hProjection = myHistoManager.getRawStripVsTime(strip_dir);
+	double cov_xx = hProjection->GetCovariance(1,1)*12/std::pow(hProjection->GetNbinsX(),2);
+	double cov_yy = hProjection->GetCovariance(2,2)*12/std::pow(hProjection->GetNbinsY(),2);
+	double cov_xy = hProjection->GetCovariance(1,2)*12/(hProjection->GetNbinsX()*hProjection->GetNbinsY());
+	drawEvent |= (cov_xx<0.85 || cov_yy<0.85 || std::abs(cov_xy)>9990.5);
+	if(drawEvent){
+	  std::cout<<"cov_xx: "<<cov_xx
+		   <<" cov_yy: "<<cov_yy
+		   <<" cov_xy: "<< cov_xy
+		   <<std::endl;
+	}
+
 	aCanvas->cd(strip_dir+1);
-	std::shared_ptr<TH2D> hProjection = myHistoManager.getClusterStripVsTimeInMM(strip_dir);
 	hProjection->SetStats(kFALSE);
+	hProjection->SetMinimum(1.0);
 	hProjection->DrawCopy("colz");
-	//myHistoManager.getRecHitStripVsTime(strip_dir)->Draw("box same");
-      }
+      }      
       aCanvas->cd(4);
       hFrame->Draw();
       aString.Form("fit loss: %3.2f",chi2);
@@ -216,9 +230,12 @@ int makeTrackTree(const  std::string & geometryFileName,
 
       aString.Form("frame id: %d",iEntry);
       aLatex->DrawLatex(0.1,0.55, aString.Data());
-
+      
       std::string plotFileName = "Clusters_"+std::to_string(eventId)+"_"+dataFileName.substr(index)+".png";
-      aCanvas->Print(plotFileName.c_str());
+      if(drawEvent){
+	aCanvas->Print(plotFileName.c_str());
+	aCanvas->Clear();
+      }
     }
   }
   outputROOTFile.Write();

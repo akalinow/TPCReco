@@ -151,11 +151,10 @@ runs = [
     ("/scratch/akalinow/ELITPC/data/calibration/2021-11-25_12.5MHz/",
      "../geometry_ELITPC_250mbar_12.5MHz.dat"),
 ]
-'''
 runs = [  ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210616_extTrg_CO2_250mbar_DT1470ET",
           "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
     ]
-'''
+
 ################################################
 ################################################      
 

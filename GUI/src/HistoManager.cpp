@@ -204,7 +204,7 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
      //getRawStripVsTimeInMM(strip_dir)->DrawCopy("colz");
      drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
      //drawTrack2DSeed(strip_dir, aPad);
-     //if(strip_dir==DIR_W) getClusterTimeProjectionInMM()->DrawCopy("hist");
+     if(strip_dir==DIR_W) getClusterTimeProjectionInMM()->DrawCopy("hist");
   }
    int strip_dir=3;
    TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
@@ -212,8 +212,8 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
    aPad->cd();
    aCanvas->Modified();
    aCanvas->Update();
-   drawTrack3DProjectionXY(aPad);
-   //drawChargeAlongTrack3D(aPad);
+   //drawTrack3DProjectionXY(aPad);
+   drawChargeAlongTrack3D(aPad);
    //myHistoManager.drawTrack3D(aPad);
    //getClusterTimeProjectionInMM()->DrawCopy("hist");
    //getRecHitTimeProjection()->DrawCopy("hist same");
