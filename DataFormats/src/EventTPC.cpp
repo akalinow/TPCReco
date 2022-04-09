@@ -27,6 +27,7 @@ void EventTPC::Clear(){
   SetGeoPtr(0);
   initOK = false;
 
+  SetPedestalSubstracted(false);
   event_id = -1;
   run_id = -1;
 
@@ -40,8 +41,8 @@ void EventTPC::Clear(){
     max_charge[idir]=0.0;
     max_charge_timing[idir]=-1;
     max_charge_strip[idir]=-1;
-    tot_charge[idir]=0.0;
-  }
+    tot_charge[idir]=0.0;   
+  }  
   totalChargeMap.clear();  // 2-key map: strip_dir, strip_number
   totalChargeMap2.clear();  // 2-key map: strip_dir, time_cell
   totalChargeMap3.clear();  // 1-key map: time_cell

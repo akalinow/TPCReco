@@ -428,12 +428,12 @@ void EventSourceMultiGRAW::loadFileEntry(unsigned long int iEntry){
 
       // strategy 1: check same frame index for matched event ID
       checkEntryForFragments(iEntry, streamIndex);
-      if(myFramesMapList[streamIndex].find(matchEventId)!=myFramesMapList[streamIndex].end()) continue;
+      if(myFramesMapList[streamIndex].find(matchEventId)!=myFramesMapList[streamIndex].end()) continue; // break;
       
       // strategy 2: scan all remaining frames for matched event ID
       for(unsigned long int iEntry2=0; iEntry2<=nEntries-1; ++iEntry2) {
 	checkEntryForFragments(iEntry2, streamIndex);
-	if(myFramesMapList[streamIndex].find(matchEventId)!=myFramesMapList[streamIndex].end()) continue;
+	if(myFramesMapList[streamIndex].find(matchEventId)!=myFramesMapList[streamIndex].end()) continue; // break;
       }
     }
   }
