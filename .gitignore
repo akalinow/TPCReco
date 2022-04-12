@@ -40,3 +40,4 @@ Makefile
 # Containers
 #############
 *.sif
+*.tar
