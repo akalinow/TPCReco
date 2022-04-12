@@ -116,3 +116,69 @@ TEST(RunIdParser_Test, RecoFilesAppended) {
   EXPECT_EQ(
       RunIdParser("Reco_EventTPC_2021-06-22T12:01:56.568_1-2.root").AsadId(), -1);
 }
+
+TEST(RunIdParser_Test, OtherFormatsMinus) {
+  EXPECT_EQ(
+      RunIdParser("CoBo0_AsAd2_2021-06-22T12-01-56.568_0003.graw").fileId(), 3);
+  EXPECT_EQ(RunIdParser("CoBo0_AsAd2_2021-06-22T12-01-56.568_0003.graw").runId(),
+            20210622120156);
+  EXPECT_EQ(
+      RunIdParser("CoBo_2021-06-22T12-01-56.568_0003.graw").CoBoId(), -1);
+  EXPECT_EQ(
+      RunIdParser("CoBo_2021-06-22T12-01-56.568_0003.graw").AsadId(), -1);
+}
+
+TEST(RunIdParser_Test, OtherFormatsMinus_multigraw) {
+  EXPECT_EQ(
+      RunIdParser("CoBo0_AsAd2_2021-06-22T12-01-56.568_0003.graw").fileId(), 3);
+  EXPECT_EQ(RunIdParser("CoBo0_AsAd2_2021-06-22T12-01-56.568_0003.graw").runId(),
+            20210622120156);
+  EXPECT_EQ(
+      RunIdParser("CoBo0_AsAd2_2021-06-22T12-01-56.568_0003.graw").CoBoId(), 0);
+  EXPECT_EQ(
+      RunIdParser("CoBo0_AsAd2_2021-06-22T12-01-56.568_0003.graw").AsadId(), 2);
+}
+
+TEST(RunIdParser_Test, OtherFormatsUnderscore) {
+  EXPECT_EQ(
+      RunIdParser("CoBo_2021-06-22T12_01_56.568_0003.graw").fileId(), 3);
+  EXPECT_EQ(RunIdParser("CoBo_2021-06-22T12_01_56.568_0003.graw").runId(),
+            20210622120156);
+  EXPECT_EQ(
+      RunIdParser("CoBo_2021-06-22T12_01_56.568_0003.graw").CoBoId(), -1);
+  EXPECT_EQ(
+      RunIdParser("CoBo_2021-06-22T12_01_56.568_0003.graw").AsadId(), -1);
+}
+
+TEST(RunIdParser_Test, OtherFormatsUnderscore_multigraw) {
+  EXPECT_EQ(
+      RunIdParser("CoBo0_AsAd2_2021-06-22T12_01_56.568_0003.graw").fileId(), 3);
+  EXPECT_EQ(RunIdParser("CoBo0_AsAd2_2021-06-22T12_01_56.568_0003.graw").runId(),
+            20210622120156);
+  EXPECT_EQ(
+      RunIdParser("CoBo0_AsAd2_2021-06-22T12_01_56.568_0003.graw").CoBoId(), 0);
+  EXPECT_EQ(
+      RunIdParser("CoBo0_AsAd2_2021-06-22T12_01_56.568_0003.graw").AsadId(), 2);
+}
+
+TEST(RunIdParser_Test, OtherFormatsSpace) {
+  EXPECT_EQ(
+      RunIdParser("CoBo_2021-06-22T12 01 56.568_0003.graw").fileId(), 3);
+  EXPECT_EQ(RunIdParser("CoBo_2021-06-22T12 01 56.568_0003.graw").runId(),
+            20210622120156);
+  EXPECT_EQ(
+      RunIdParser("CoBo_2021-06-22T12 01 56.568_0003.graw").CoBoId(), -1);
+  EXPECT_EQ(
+      RunIdParser("CoBo_2021-06-22T12 01 56.568_0003.graw").AsadId(), -1);
+}
+
+TEST(RunIdParser_Test, OtherFormatsSpace_multigraw) {
+  EXPECT_EQ(
+      RunIdParser("CoBo0_AsAd2_2021-06-22T12 01 56.568_0003.graw").fileId(), 3);
+  EXPECT_EQ(RunIdParser("CoBo0_AsAd2_2021-06-22T12 01 56.568_0003.graw").runId(),
+            20210622120156);
+  EXPECT_EQ(
+      RunIdParser("CoBo0_AsAd2_2021-06-22T12 01 56.568_0003.graw").CoBoId(), 0);
+  EXPECT_EQ(
+      RunIdParser("CoBo0_AsAd2_2021-06-22T12 01 56.568_0003.graw").AsadId(), 2);
+}
