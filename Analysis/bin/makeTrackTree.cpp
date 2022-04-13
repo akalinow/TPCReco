@@ -18,6 +18,7 @@
 #include "EventSourceROOT.h"
 #ifdef WITH_GET
 #include "EventSourceGRAW.h"
+#include "EventSourceMultiGRAW.h"
 #endif
 #include "SigClusterTPC.h"
 #include "EventTPC.h"
@@ -94,9 +95,11 @@ int makeTrackTree(const  std::string & geometryFileName,
   std::shared_ptr<EventSourceBase> myEventSource;
   if(dataFileName.find(".graw")!=std::string::npos){
     #ifdef WITH_GET
-    myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
-    dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(160);
+    myEventSource = std::make_shared<EventSourceMultiGRAW>(geometryFileName);
     index = dataFileName.find("AsAd_ALL_")+9;
+    //myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
+    //dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(160);
+    index = dataFileName.find("AsAd")+6;
     timestamp = dataFileName.substr(index, 26);
     #endif
   }
@@ -111,6 +114,7 @@ int makeTrackTree(const  std::string & geometryFileName,
   }
 
   int npos = dataFileName.size()-index-5;
+  npos = 19; //HACK!
   std::string rootFileName = "TrackTree_"+dataFileName.substr(index, npos)+".root";
   TFile outputROOTFile(rootFileName.c_str(),"RECREATE");
   TTree *tree = new TTree("trackTree", "Track tree");

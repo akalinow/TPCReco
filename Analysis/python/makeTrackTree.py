@@ -2,15 +2,16 @@
 # -*- coding: utf-8 -*-
 
 import os, time
-import psutil
+#import psutil
 
 ################################################################
 ################################################################
 def countRunningProcesses(procName):
     counter = 0
+    '''
     for proc in psutil.process_iter():
         counter += proc.name().find("makeTrackTree")>-1
-
+    '''
     return counter                
 ################################################################
 ################################################################
@@ -78,7 +79,11 @@ def finalize():
     "2021-06-23T18-39-39.905",
     ]
 
-    command = "mkdir 2021-11-25_12.5MHz 2021-11-25_25.0MHz IFJ_VdG 2018"
+    samples_HIGGS = [
+        "2022-04-12T15-28-17.188"
+    ]
+
+    command = "mkdir 2021-11-25_12.5MHz 2021-11-25_25.0MHz IFJ_VdG 2018 HIgS_2022"
     os.system(command)
 
     command = "mv 2018-* 2018"
@@ -103,6 +108,12 @@ def finalize():
         command = "hadd -f IFJ_VdG/IFJ_VdG.root IFJ_VdG/*/*.root"
         os.system(command)
 
+    for item in samples_HIGGS:
+        command = "mv "+item+" HIgS_2022"
+        os.system(command)
+        command = "hadd -f HIgS_2022/HIgS_2022.root HIgS_2022/*/*.root"
+        os.system(command)    
+
 ################################################
 ################################################
 def analyzeDataInDirectory(dataPath, geometryFile):
@@ -115,7 +126,8 @@ def analyzeDataInDirectory(dataPath, geometryFile):
         for fileName in files:
             if (fileName.find(".root")!=-1 and fileName.find("EventTPC")!=-1) or (fileName.find(".graw")!=-1 and fileName.find("CoBo")!=-1):
                 waintUnitilProcCount(procName, procCount)
-                analyzeSingleFile(dataPath, fileName, geometryFile, command)
+                print(fileName)
+                #analyzeSingleFile(dataPath, fileName, geometryFile, command)
 ################################################
 ################################################                
 runs = [ ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210616_extTrg_CO2_250mbar_DT1470ET",
@@ -138,30 +150,23 @@ runs = [ ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210616_extTrg_CO2_25
          ##
           ("/scratch/akalinow/ELITPC/data/2018/",
           "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_mini_eTPC.dat"),
+         ##
+          ("/scratch_elitpc/HIgS_2022_tmp/4th_batch/",
+          "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_25.0MHz.dat"),
 ]
 ###
 ###
-'''
 runs = [
-     ("/scratch/akalinow/ELITPC/data/2018/",
-      "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_mini_eTPC.dat"),
+       ("/scratch_elitpc/HIgS_2022_tmp/4th_batch/",
+        "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_25.0MHz.dat"),
 ]
-'''
-runs = [
-    ("/scratch/akalinow/ELITPC/data/calibration/2021-11-25_12.5MHz/",
-     "../geometry_ELITPC_250mbar_12.5MHz.dat"),
-]
-'''
-runs = [  ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210616_extTrg_CO2_250mbar_DT1470ET",
-          "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
-    ]
-'''
 ################################################
 ################################################      
 
 for dataPath, geometryFile in runs:
     analyzeDataInDirectory(dataPath, geometryFile)
-finalize()
+    
+#finalize()
 ################################################
 ################################################      
               
