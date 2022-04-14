@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os, time
+import glob
 #import psutil
 
 ################################################################
@@ -17,11 +18,57 @@ def countRunningProcesses(procName):
 ################################################################
 def waintUnitilProcCount(procName, procCount):
 
-     counter = countRunningProcesses("makeTrackTree")
-     while counter>=procCount:
-         print("Number of jobs running:",counter," Waiting one minutue.")
-         time.sleep(60)
-         counter = countRunningProcesses("makeTrackTree")                
+    counter = countRunningProcesses("makeTrackTree")
+    while counter>=procCount:
+        print("Number of jobs running:",counter," Waiting one minutue.")
+        time.sleep(60)
+        counter = countRunningProcesses("makeTrackTree")                
+################################################################
+################################################################
+def getRunTimeStamp(fileName):
+
+    timestamp_index = fileName.rfind("EventTPC_")
+    run_timestamp = "Unknown_timestamp"
+
+    if timestamp_index>-1:
+        run_timestamp = fileName[timestamp_index+9:timestamp_index+32]
+    elif timestamp_index<0 and fileName.rfind("AsAd_ALL_")>-1:
+        timestamp_index = fileName.rfind("AsAd_ALL_")
+        run_timestamp = fileName[timestamp_index+9:timestamp_index+32]
+    elif timestamp_index<0 and fileName.rfind("AsAd")>-1:
+        timestamp_index = fileName.rfind("AsAd")
+        run_timestamp = fileName[timestamp_index+6:timestamp_index+29]
+
+    return run_timestamp
+################################################################
+################################################################
+def analyzeSingleBatch(dataPath, fileName, geometryFile, command):
+
+    run_timestamp = getRunTimeStamp(fileName)
+    batchNumber = "0000"
+    filePattern = "*"+run_timestamp[:-5]+"*_"+batchNumber+".*"
+    fileList = glob.glob(dataPath+filePattern)
+    fileListString = ""
+    for f in fileList:
+        fileListString+= f+","
+    fileListString = fileListString.rstrip(",")  
+
+    run_timestamp = run_timestamp.replace(":","-")    
+    if not os.path.isdir(run_timestamp):
+        os.mkdir(run_timestamp)
+    '''
+    outputName = run_timestamp + batchNumber + ".out"
+    arguments = " --geometryFile " + geometryFile + " --dataFile " + fileListString + " > "+outputName+" 2>&1 &"
+    print("Running job for file (batch):"+fileName)                    
+    os.chdir(run_timestamp)
+    os.system("ln -s ../*Formats* ./")
+    os.system("ln -s ../*.dat ./")
+    #os.system(command+arguments)
+    os.chdir("../")    
+    '''
+    print("run_timestamp:",run_timestamp)
+    print("fileList:",fileList)
+    print("fileListString:",fileListString)
 ################################################################
 ################################################################
 def analyzeSingleFile(dataPath, fileName, geometryFile, command):
@@ -34,7 +81,7 @@ def analyzeSingleFile(dataPath, fileName, geometryFile, command):
         timestamp_index = fileName.rfind("AsAd_ALL_")
         file_timestamp = fileName[timestamp_index+9:timestamp_index+37]
 
-    run_timestamp = fileName[timestamp_index+9:timestamp_index+32]
+    run_timestamp = getRunTimeStamp(fileName)
     run_timestamp = run_timestamp.replace(":","-")    
     if not os.path.isdir(run_timestamp):
         os.mkdir(run_timestamp)
@@ -126,8 +173,7 @@ def analyzeDataInDirectory(dataPath, geometryFile):
         for fileName in files:
             if (fileName.find(".root")!=-1 and fileName.find("EventTPC")!=-1) or (fileName.find(".graw")!=-1 and fileName.find("CoBo")!=-1):
                 waintUnitilProcCount(procName, procCount)
-                print(fileName)
-                #analyzeSingleFile(dataPath, fileName, geometryFile, command)
+                analyzeSingleBatch(dataPath, fileName, geometryFile, command)
 ################################################
 ################################################                
 runs = [ ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210616_extTrg_CO2_250mbar_DT1470ET",
@@ -159,6 +205,8 @@ runs = [ ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210616_extTrg_CO2_25
 runs = [
        ("/scratch_elitpc/HIgS_2022_tmp/4th_batch/",
         "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_25.0MHz.dat"),
+        #("/scratch/akalinow/ELITPC/data/2018/",
+        #  "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_mini_eTPC.dat"),
 ]
 ################################################
 ################################################      

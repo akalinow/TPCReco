@@ -148,7 +148,7 @@ public:
   TH3D *h3DReco{0};
   TGraph *grEventRate{0};
   TrackBuilder myTkBuilder;
-  RecoOutput myRecoOuput;
+  RecoOutput myRecoOutput;
   DotFinder myDotFinder;
   dEdxFitter mydEdxFitter;
 

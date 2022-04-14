@@ -22,6 +22,9 @@
 #endif
 #include "SigClusterTPC.h"
 #include "EventTPC.h"
+#include "RecoOutput.h"
+#include "RunIdParser.h"
+#include "InputFileHelper.h"
 #include "colorText.h"
 
 int makeTrackTree(const  std::string & geometryFileName,
@@ -128,6 +131,19 @@ int makeTrackTree(const  std::string & geometryFileName,
   HistoManager myHistoManager;
   myHistoManager.setGeometry(myEventSource->getGeometry());
   myHistoManager.toggleAutozoom();
+
+  RecoOutput myRecoOutput;
+  std::string fileName = InputFileHelper::discoverFilesCSV(dataFileName, std::chrono::milliseconds(30))[0];
+  std::string recoFileName = "Reco.root";
+  
+  std::shared_ptr<eventraw::EventInfo> myEventInfo = std::make_shared<eventraw::EventInfo>();
+  RunIdParser runParser(fileName);
+  std::cout<<"fileName: "<<fileName<<std::endl;
+  //myEventInfo->SetRunId(runParser.runId());
+  myRecoOutput.setEventInfo(myEventInfo);
+  myRecoOutput.open(recoFileName);
+
+  
   TCanvas *aCanvas = new TCanvas("aCanvas","Histograms",1000,1000);
   aCanvas->Divide(2,2);
   TH1F *hFrame = new TH1F("hFrame","",1,0,1);
@@ -141,6 +157,7 @@ int makeTrackTree(const  std::string & geometryFileName,
 
   //Event loop
   unsigned int nEntries = myEventSource->numberOfEntries();
+  nEntries = 10;
   for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
     myEventSource->loadFileEntry(iEntry);
     myEventSource->getCurrentEvent()->MakeOneCluster(35, 0, 0);
@@ -152,7 +169,13 @@ int makeTrackTree(const  std::string & geometryFileName,
     myTkBuilder.reconstruct();
 
     int eventId = myEventSource->getCurrentEvent()->GetEventId();
-    const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);      
+    const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
+
+    myRecoOutput.setRecTrack(aTrack3D);
+    myEventInfo->SetEventId(eventId);
+    myRecoOutput.setEventInfo(myEventInfo);				   
+    myRecoOutput.update(); 
+    
     double length = aTrack3D.getLength();
     double charge = aTrack3D.getIntegratedCharge(length);
     double cosTheta = cos(aTrack3D.getSegments().front().getTangent().Theta());
