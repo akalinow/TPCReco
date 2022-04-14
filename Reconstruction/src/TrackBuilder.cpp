@@ -66,9 +66,11 @@ void TrackBuilder::setEvent(std::shared_ptr<EventTPC> aEvent){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void TrackBuilder::setEvent(EventTPC* aEvent){
-
+  if(!aEvent->GetPedestalSubstracted()){
+    throw std::logic_error("Pedestals not removed. Working without removed pedestals not implemented yet.");
+  }
   myEvent = aEvent;
-
+  
   double chargeThreshold = std::max(35.0, 0.1*aEvent->GetMaxCharge());
   int delta_timecells = 5;
   int delta_strips = 2;

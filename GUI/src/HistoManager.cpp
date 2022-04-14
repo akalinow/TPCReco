@@ -48,7 +48,9 @@ void HistoManager::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
 void HistoManager::setEvent(EventTPC* aEvent){
   if(!aEvent) return;
   myEventPtr.reset(aEvent);
-  myTkBuilder.setEvent(myEventPtr);
+  if(aEvent->GetPedestalSubstracted()){
+    myTkBuilder.setEvent(myEventPtr);
+  }
   myEventInfo->set(myEventPtr);
 }
 /////////////////////////////////////////////////////////
@@ -56,7 +58,9 @@ void HistoManager::setEvent(EventTPC* aEvent){
 void HistoManager::setEvent(std::shared_ptr<EventTPC> aEvent){
   if(!aEvent) return;
   myEventPtr = aEvent;
-  myTkBuilder.setEvent(myEventPtr);
+  if(aEvent->GetPedestalSubstracted()){
+    myTkBuilder.setEvent(myEventPtr);
+  }
   myEventInfo->set(myEventPtr);
 }
 /////////////////////////////////////////////////////////

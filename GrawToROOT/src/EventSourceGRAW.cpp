@@ -395,6 +395,10 @@ void EventSourceGRAW::fillEventFromFrame(GET::GDataFrame & aGrawFrame){
       }
     }
   }
+
+  if(removePedestal){
+    myCurrentEvent->SetPedestalSubstracted(true);
+  }
   ////// DEBUG
   //  std::shared_ptr<TProfile> tp=myPedestalCalculator.GetPedestalProfilePerAsad(COBO_idx, ASAD_idx);
   //  std::cout << __FUNCTION__ << ": TProfile[Cobo=" << COBO_idx
