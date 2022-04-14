@@ -25,6 +25,7 @@
 #include "RecoOutput.h"
 #include "RunIdParser.h"
 #include "InputFileHelper.h"
+#include "MakeUniqueName.h"
 #include "colorText.h"
 
 int makeTrackTree(const  std::string & geometryFileName,
@@ -133,16 +134,16 @@ int makeTrackTree(const  std::string & geometryFileName,
   myHistoManager.toggleAutozoom();
 
   RecoOutput myRecoOutput;
-  std::string fileName = InputFileHelper::discoverFilesCSV(dataFileName, std::chrono::milliseconds(30))[0];
-  std::string recoFileName = "Reco.root";
-  
+  std::string fileName = InputFileHelper::tokenize(dataFileName)[0];
+  std::size_t last_dot_position = fileName.find_last_of(".");
+  std::size_t last_slash_position = fileName.find_last_of("//");
+  std::string recoFileName = MakeUniqueName("Reco_"+fileName.substr(last_slash_position+1,
+						     last_dot_position-last_slash_position-1)+".root");
   std::shared_ptr<eventraw::EventInfo> myEventInfo = std::make_shared<eventraw::EventInfo>();
   RunIdParser runParser(fileName);
-  std::cout<<"fileName: "<<fileName<<std::endl;
-  //myEventInfo->SetRunId(runParser.runId());
+  myEventInfo->SetRunId(runParser.runId());
   myRecoOutput.setEventInfo(myEventInfo);
   myRecoOutput.open(recoFileName);
-
   
   TCanvas *aCanvas = new TCanvas("aCanvas","Histograms",1000,1000);
   aCanvas->Divide(2,2);
@@ -157,7 +158,6 @@ int makeTrackTree(const  std::string & geometryFileName,
 
   //Event loop
   unsigned int nEntries = myEventSource->numberOfEntries();
-  nEntries = 10;
   for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
     myEventSource->loadFileEntry(iEntry);
     myEventSource->getCurrentEvent()->MakeOneCluster(35, 0, 0);
@@ -221,7 +221,7 @@ int makeTrackTree(const  std::string & geometryFileName,
     tree->Fill();
 
     ///Draw anomaly events
-    if(chi2>10 && charge>100){
+    if(false && chi2>10 && charge>100){
       myHistoManager.setEvent(myEventSource->getCurrentEvent());
       for(int strip_dir=0;strip_dir<3;++strip_dir){
 	aCanvas->cd(strip_dir+1);
