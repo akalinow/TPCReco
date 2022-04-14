@@ -87,7 +87,7 @@ TEST_F(InputFileHelperTest, FileDiscovery) {
            directory + "CoBo0_AsAd3_2021-07-12T12:03:41.001_0000.graw"}));
 }
 
-TEST_F(InputFileHelperTest, FileDiscovery2) {
+TEST_F(InputFileHelperTest, FileDiscoveryCSV) {
   auto files = discoverFilesCSV(
       directory + "CoBo0_AsAd0_2021-07-12T12:03:40.978_0000.graw",
       std::chrono::milliseconds(30));
