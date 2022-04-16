@@ -506,59 +506,67 @@ void EventTPC::MakeOneCluster(double thr, int delta_strips, int delta_timecells)
 
   // getting cluster seed hits (per section)
   std::map<MultiKey4, double, multikey4_less>::iterator it;
-  for( it=chargeMap2.begin(); it!=chargeMap2.end(); ++it ) {
-    if( it->second > thr ) myCluster.AddByStrip( (it->first).key1, (it->first).key2, (it->first).key3, (it->first).key4);
-    // debug - dump the whole event as a single cluster
-    //    myCluster.AddByStrip( (it->first).key1, (it->first).key2, (it->first).key3, (it->first).key4);
-    // debug - dump the whole event as a single cluster
-  }
 
-  // debug
-  /*
-  //  std::cout << ">>>> GetSigCluster: nhits=" << cluster.GetNhits() << ", chargeMap2.size=" << chargeMap2.size() << std::endl;
-  std::cout << Form(">>>> GetSigCluster: BEFORE ENVELOPE: nhits(%d)/nhits(%d)/nhits(%d)=%ld/%ld/%ld",
-	       DIR_U, DIR_V, DIR_W,
-	       myCluster.GetNhits(DIR_U), 
-	       myCluster.GetNhits(DIR_V), 
-	       myCluster.GetNhits(DIR_W) ) << std::endl;
-  */
-  // adding envelope to the seed hits (per section)
-  std::vector<MultiKey4> oldList = myCluster.GetHitList(); // make a copy of list of SEED-hits
-  std::vector<MultiKey4>::iterator it2;
+  if(thr<=0 && delta_strips<=0 && delta_timecells<=0) { // dump the whole event as a single cluster
 
-  // loop thru SEED-hits (per section)
-  for( it2=oldList.begin(); it2!=oldList.end() && true; ++it2 ) {
-    // unpack coordinates
-    const int strip_dir = (*it2).key1;
-    const int strip_sec = (*it2).key2;
-    const int strip_num = (*it2).key3;
-    const int time_cell = (*it2).key4;
-    const int strip_range[2] = { MAXIMUM(1, strip_num - delta_strips), 
-				 MINIMUM(myGeometryPtr->GetDirNstrips(strip_dir), strip_num + delta_strips) };
-    const int timecell_range[2] = { MAXIMUM(0, time_cell - delta_timecells), 
-				    MINIMUM(myGeometryPtr->GetAgetNtimecells()-1, time_cell + delta_timecells) };
-    for(int icell=timecell_range[0]; icell<=timecell_range[1]; icell++) {
-      for(int istrip=strip_range[0]; istrip<=strip_range[1]; istrip++) {
-	if(icell==time_cell && istrip==strip_num) continue; // exclude existing seed hits
-	MultiKey4 mkey4(strip_dir, strip_sec, istrip, icell);
-	if(chargeMap2.find(mkey4)==chargeMap2.end()) continue; // exclude non-existing space-time coordinates
-	if(chargeMap2.find(mkey4)->second<0) continue; // exclude negative values (due to pedestal subtraction)
-	// add new space-time point
-	if(find_if(oldList.begin(), oldList.end(), mkey4)==oldList.end()) {
-	  myCluster.AddByStrip( strip_dir, strip_sec, istrip, icell );
+    for( it=chargeMap2.begin(); it!=chargeMap2.end(); ++it ) {
+      myCluster.AddByStrip( (it->first).key1, (it->first).key2, (it->first).key3, (it->first).key4);
+    }
+    
+  } else { // find seed hits and envelope around seed hits
+    
+    for( it=chargeMap2.begin(); it!=chargeMap2.end(); ++it ) {
+      if( it->second > thr ) myCluster.AddByStrip( (it->first).key1, (it->first).key2, (it->first).key3, (it->first).key4);
+    }
+
+    // DEBUG
+    /*
+    //  std::cout << ">>>> GetSigCluster: nhits=" << cluster.GetNhits() << ", chargeMap2.size=" << chargeMap2.size() << std::endl;
+    std::cout << Form(">>>> GetSigCluster: BEFORE ENVELOPE: nhits(%d)/nhits(%d)/nhits(%d)=%ld/%ld/%ld",
+    DIR_U, DIR_V, DIR_W,
+    myCluster.GetNhits(DIR_U), 
+    myCluster.GetNhits(DIR_V), 
+    myCluster.GetNhits(DIR_W) ) << std::endl;
+    */
+    
+    // adding envelope to the seed hits (per section)
+    std::vector<MultiKey4> oldList = myCluster.GetHitList(); // make a copy of list of SEED-hits
+    std::vector<MultiKey4>::iterator it2;
+
+    // loop thru SEED-hits (per section)
+    for( it2=oldList.begin(); it2!=oldList.end() && true; ++it2 ) {
+      // unpack coordinates
+      const int strip_dir = (*it2).key1;
+      const int strip_sec = (*it2).key2;
+      const int strip_num = (*it2).key3;
+      const int time_cell = (*it2).key4;
+      const int strip_range[2] = { MAXIMUM(1, strip_num - delta_strips), 
+				   MINIMUM(myGeometryPtr->GetDirNstrips(strip_dir), strip_num + delta_strips) };
+      const int timecell_range[2] = { MAXIMUM(0, time_cell - delta_timecells), 
+				      MINIMUM(myGeometryPtr->GetAgetNtimecells()-1, time_cell + delta_timecells) };
+      for(int icell=timecell_range[0]; icell<=timecell_range[1]; icell++) {
+	for(int istrip=strip_range[0]; istrip<=strip_range[1]; istrip++) {
+	  if(icell==time_cell && istrip==strip_num) continue; // exclude existing seed hits
+	  MultiKey4 mkey4(strip_dir, strip_sec, istrip, icell);
+	  if(chargeMap2.find(mkey4)==chargeMap2.end()) continue; // exclude non-existing space-time coordinates
+	  //	  if(chargeMap2.find(mkey4)->second<0) continue; // exclude negative values (due to pedestal subtraction)
+	  // add new space-time point
+	  if(find_if(oldList.begin(), oldList.end(), mkey4)==oldList.end()) {
+	    myCluster.AddByStrip( strip_dir, strip_sec, istrip, icell );
+	  } 
 	} 
       } 
-    } 
-  }
-
-  // debug
-  /*
-  std::cout << Form(">>>> GetSigCluster: AFTER ENVELOPE:  nhits(%d)/nhits(%d)/nhits(%d)=%ld/%ld/%ld",
-	       DIR_U, DIR_V, DIR_W,
-	       myCluster.GetNhits(DIR_U), 
-	       myCluster.GetNhits(DIR_V), 
-	       myCluster.GetNhits(DIR_W) ) << std::endl;
-  */
+    }
+    
+    // DEBUG
+    /*
+      std::cout << Form(">>>> GetSigCluster: AFTER ENVELOPE:  nhits(%d)/nhits(%d)/nhits(%d)=%ld/%ld/%ld",
+      DIR_U, DIR_V, DIR_W,
+      myCluster.GetNhits(DIR_U), 
+      myCluster.GetNhits(DIR_V), 
+      myCluster.GetNhits(DIR_W) ) << std::endl;
+    */
+  } // end of if(...) statement
 }
 
 

@@ -234,6 +234,33 @@ void MainFrame::InitializeEventSource(){
     return;
   }
 
+  // sets RECO cluster parameters
+  bool recoClusterEnable=myHistoManager.getRecoClusterEnable(); // get defaults
+  double recoClusterThreshold=myHistoManager.getRecoClusterThreshold(); // get defaults
+  int recoClusterDeltaStrips=myHistoManager.getRecoClusterDeltaStrips(); // get defaults
+  int recoClusterDeltaTimeCells=myHistoManager.getRecoClusterDeltaTimeCells(); // get defaults
+
+  if(myConfig.find("recoClusterEnable")!=myConfig.not_found()){
+    recoClusterEnable = myConfig.get<bool>("recoClusterEnable"); // set changes
+  }
+  if(myConfig.find("recoClusterThreshold")!=myConfig.not_found()){
+    recoClusterThreshold = fabs(myConfig.get<double>("recoClusterThreshold")); // set changes
+  }
+  if(myConfig.find("recoClusterDeltaStrips")!=myConfig.not_found()){
+    recoClusterDeltaStrips = abs(myConfig.get<int>("recoClusterDeltaStrips")); // set changes
+  }
+  if(myConfig.find("recoClusterDeltaTimeCells")!=myConfig.not_found()){
+    recoClusterDeltaTimeCells = abs(myConfig.get<int>("recoClusterDeltaTimeCells")); // set changes
+  }
+  myHistoManager.setRecoClusterParameters(recoClusterEnable, recoClusterThreshold, recoClusterDeltaStrips, recoClusterDeltaTimeCells);
+
+  ////// DEBUG
+  std::cout << __FUNCTION__ << ": myHistoManager.recoClusterEnable = " << myHistoManager.getRecoClusterEnable() << std::endl;
+  std::cout << __FUNCTION__ << ": myHistoManager.recoClusterThreshold = " << myHistoManager.getRecoClusterThreshold() << std::endl;
+  std::cout << __FUNCTION__ << ": myHistoManager.recoClusterDeltaStrips = " << myHistoManager.getRecoClusterDeltaStrips() << std::endl;
+  std::cout << __FUNCTION__ << ": myHistoManager.recoClusterDeltaTimeCells = " << myHistoManager.getRecoClusterDeltaTimeCells() << std::endl;
+  ////// DEBUG
+  
   if(myWorkMode!=M_ONLINE_GRAW_MODE && myWorkMode!=M_ONLINE_NGRAW_MODE){
     myEventSource->loadDataFile(dataFileName);
     myEventSource->loadFileEntry(0);

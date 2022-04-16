@@ -41,6 +41,8 @@ public:
 
   void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);
 
+  void setRecoClusterParameters(bool recoClusterEnable, double recoClusterThreshold, int recoClusterDeltaStrips, int recoClusterDetlaTimeCells);
+
   void openOutputStream(const std::string & filePath);
 
   void writeRecoData(unsigned long  eventType);
@@ -110,6 +112,11 @@ public:
 
   std::shared_ptr<TH2D> getClusterStripVsTime(int strip_dir);
 
+  bool getRecoClusterEnable();
+  double getRecoClusterThreshold();
+  int getRecoClusterDeltaStrips();
+  int getRecoClusterDeltaTimeCells();
+  
   // Dot-like events usful for neutron flux monitoring
   void initializeDotFinder(unsigned int hitThr, // unsigned int maxStripsPerDir, unsigned int maxTimecellsPerDir,
 			   unsigned int totalChargeThr, 
@@ -167,6 +174,11 @@ public:
 
   Long64_t previousEventTime{-1};
   Long64_t previousEventNumber{-1};
+
+  bool recoClusterEnable{true};
+  double recoClusterThreshold{35};
+  int recoClusterDeltaStrips{2};
+  int recoClusterDeltaTimeCells{5};
 
 };
 #endif

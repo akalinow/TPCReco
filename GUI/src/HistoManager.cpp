@@ -45,6 +45,15 @@ void HistoManager::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+void HistoManager::setRecoClusterParameters(bool recoClusterEnable, double recoClusterThreshold, int recoClusterDeltaStrips, int recoClusterDeltaTimeCells) {
+
+  this->recoClusterEnable = recoClusterEnable;
+  this->recoClusterThreshold = recoClusterThreshold;
+  this->recoClusterDeltaStrips = recoClusterDeltaStrips;
+  this->recoClusterDeltaTimeCells = recoClusterDeltaTimeCells;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 void HistoManager::setEvent(EventTPC* aEvent){
   if(!aEvent) return;
   myEventPtr.reset(aEvent);
@@ -59,7 +68,7 @@ void HistoManager::setEvent(std::shared_ptr<EventTPC> aEvent){
   if(!aEvent) return;
   myEventPtr = aEvent;
   if(aEvent->GetPedestalSubstracted()){
-    myTkBuilder.setEvent(myEventPtr);
+    myTkBuilder.setEvent(myEventPtr, this->getRecoClusterThreshold(), this->getRecoClusterDeltaStrips(), this->getRecoClusterDeltaTimeCells());
   }
   myEventInfo->set(myEventPtr);
 }
@@ -143,15 +152,21 @@ void HistoManager::drawRecoHistos(TCanvas *aCanvas){
      aCanvas->Modified();
      aCanvas->Update();
 
-     auto h1 = getClusterStripVsTimeInMM(strip_dir)->DrawCopy("colz");
-     if(aPad->GetLogz()) h1->SetMinimum(1.0);
-     hPlotBackground->Draw("col same");
-     aPad->RedrawAxis();  // repaints both axes & fixes X-axis zooming issue
-     h1->Draw("same colz");
+     if(getRecoClusterEnable()) {
+       auto h1 = getClusterStripVsTimeInMM(strip_dir)->DrawCopy("colz");
+       if(aPad->GetLogz()) h1->SetMinimum(1.0);
+       hPlotBackground->Draw("col same");
+       aPad->RedrawAxis();  // repaints both axes & fixes X-axis zooming issue
+       h1->Draw("same colz");
 
+       drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
+
+     } else {
+       getRawStripVsTimeInMM(strip_dir)->DrawCopy("colz");
+     }
      //getRecHitStripVsTime(strip_dir)->DrawCopy("box same");
      //getRawStripVsTimeInMM(strip_dir)->DrawCopy("colz");
-     drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
+     //     drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
      //if(strip_dir==DIR_W) getClusterTimeProjectionInMM()->DrawCopy("hist");
      //else getRawStripVsTimeInMM(strip_dir)->DrawCopy("colz");
   }
@@ -164,7 +179,11 @@ void HistoManager::drawRecoHistos(TCanvas *aCanvas){
    //drawTrack3DProjectionXY(aPad);
    //drawChargeAlongTrack3D(aPad);
    //myHistoManager.drawTrack3D(aPad);
-   getClusterTimeProjectionInMM()->DrawCopy("hist");
+   if(getRecoClusterEnable()) {
+     getClusterTimeProjectionInMM()->DrawCopy("hist");
+   } else {
+     getRawTimeProjectionInMM()->DrawCopy("hist");
+   }
    //getRecHitTimeProjection()->DrawCopy("hist same");
    aCanvas->Modified();
    aCanvas->Update();
@@ -512,6 +531,26 @@ std::shared_ptr<TH2D> HistoManager::getClusterStripVsTimeInMM(int strip_dir){
     aHisto->SetDrawOption("COLZ");
   }
   return aHisto;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+bool HistoManager::getRecoClusterEnable(){
+  return recoClusterEnable;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+double HistoManager::getRecoClusterThreshold(){
+  return recoClusterThreshold;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+int HistoManager::getRecoClusterDeltaStrips(){
+  return recoClusterDeltaStrips;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+int HistoManager::getRecoClusterDeltaTimeCells(){
+  return recoClusterDeltaTimeCells;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
