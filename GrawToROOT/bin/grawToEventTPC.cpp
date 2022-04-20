@@ -12,6 +12,7 @@
 #include "EventTPC.h"
 #include "PedestalCalculator.h"
 #include "EventSourceGRAW.h"
+#include "EventSourceMultiGRAW.h"
 #include "SigClusterTPC.h"
 
 #include "TFile.h"
@@ -130,9 +131,15 @@ int convertGRAWFile(const  std::string & geometryFileName,
 
   std::string rootFileName = createROOTFileName(grawFileName);
   TFile aFile(rootFileName.c_str(),"RECREATE");
-  
-  auto myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
-  myEventSource->setFrameLoadRange(160);
+
+  std::shared_ptr<EventSourceBase> myEventSource;
+  if(grawFileName.find(",")!=std::string::npos){
+    myEventSource = std::make_shared<EventSourceMultiGRAW>(geometryFileName);
+  }
+  else{
+    myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
+    dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(160);
+  }
   myEventSource->loadDataFile(grawFileName);
   std::cout << "File with " << myEventSource->numberOfEntries() << " frames opened." << std::endl;
   
@@ -181,7 +188,6 @@ int convertGRAWFile(const  std::string & geometryFileName,
       aTree.Fill();
     }
 
-    if( eventIdxMap.size()==10 ) break;//TEST
 #ifdef DEBUG
     if( eventIdxMap.size()==10 ) break;
 #endif
