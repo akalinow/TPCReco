@@ -28,6 +28,43 @@
 #include "MakeUniqueName.h"
 #include "colorText.h"
 
+
+/////////////////////////////////////
+/////////////////////////////////////
+std::string createROOTFileName(const  std::string & grawFileName){
+
+  std::string rootFileName;
+  unsigned int index = grawFileName.find(",");
+  if(index!=std::string::npos){
+    rootFileName = grawFileName.substr(0,index);
+  }
+  index = rootFileName.rfind("/");
+  rootFileName = rootFileName.substr(index,-1);
+
+  
+  if(rootFileName.find("CoBo_ALL_AsAd_ALL")!=std::string::npos){
+    rootFileName = rootFileName.replace(0,std::string("CoBo_ALL_AsAd_ALL").size()+1,"TrackTree");
+  }
+  else if(rootFileName.find("CoBo0_AsAd")!=std::string::npos){
+    rootFileName = rootFileName.replace(0,std::string("CoBo0_AsAd").size()+2,"TrackTree");
+  }
+  else if(rootFileName.find("EventTPC")!=std::string::npos){
+    rootFileName = rootFileName.replace(0,std::string("EventTPC").size()+1,"TrackTree");
+  }
+  else{
+    std::cout<<KRED<<"File format unknown: "<<RST<<rootFileName<<std::endl;
+    exit(1);
+  }
+  index = rootFileName.rfind("graw");
+  rootFileName = rootFileName.replace(index,-1,"root");
+
+  std::cout<<"rootFileName: "<<rootFileName<<std::endl;
+  exit(0);
+  
+  return rootFileName;
+}
+/////////////////////////////////////
+/////////////////////////////////////
 int makeTrackTree(const  std::string & geometryFileName,
 		  const  std::string & dataFileName);
 
@@ -93,33 +130,27 @@ typedef struct {Float_t eventId, frameId,
 int makeTrackTree(const  std::string & geometryFileName,
 		  const  std::string & dataFileName) {
 
-  int index = -1;
-  std::string timestamp;
-
   std::shared_ptr<EventSourceBase> myEventSource;
   if(dataFileName.find(".graw")!=std::string::npos){
     #ifdef WITH_GET
-    myEventSource = std::make_shared<EventSourceMultiGRAW>(geometryFileName);
-    index = dataFileName.find("AsAd_ALL_")+9;
-    //myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
-    //dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(160);
-    index = dataFileName.find("AsAd")+6;
-    timestamp = dataFileName.substr(index, 26);
-    #endif
+    if(dataFileName.find(",")!=std::string::npos){
+      myEventSource = std::make_shared<EventSourceMultiGRAW>(geometryFileName);
+    }
+    else{
+      myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
+      dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(160);
+    }
+     #endif
   }
   else if(dataFileName.find(".root")!=std::string::npos){
     myEventSource = std::make_shared<EventSourceROOT>(geometryFileName);
-    index = dataFileName.find("EventTPC_")+9;
-    timestamp = dataFileName.substr(index, 23);
   }
   else{
     std::cout<<KRED<<"Wrong input file: "<<RST<<dataFileName<<std::endl;
     return -1;
   }
 
-  int npos = dataFileName.size()-index-5;
-  npos = 19; //HACK!
-  std::string rootFileName = "TrackTree_"+dataFileName.substr(index, npos)+".root";
+  std::string rootFileName = createROOTFileName(dataFileName);
   TFile outputROOTFile(rootFileName.c_str(),"RECREATE");
   TTree *tree = new TTree("trackTree", "Track tree");
   TrackData track_data;
@@ -145,14 +176,6 @@ int makeTrackTree(const  std::string & geometryFileName,
   myRecoOutput.setEventInfo(myEventInfo);
   myRecoOutput.open(recoFileName);
   
-  TCanvas *aCanvas = new TCanvas("aCanvas","Histograms",1000,1000);
-  aCanvas->Divide(2,2);
-  TH1F *hFrame = new TH1F("hFrame","",1,0,1);
-  hFrame->SetMaximum(1.0);
-  hFrame->SetStats(kFALSE);
-  TLatex *aLatex = new TLatex(0,0,"");
-  TString  aString;
- 
   myEventSource->loadDataFile(dataFileName);
   std::cout<<KBLU<<"File with "<<RST<<myEventSource->numberOfEntries()<<" frames loaded."<<std::endl;
 
@@ -218,35 +241,7 @@ int makeTrackTree(const  std::string & geometryFileName,
     track_data.y1 = end.Y();
     track_data.z1 = end.Z();
     track_data.energy = alphaEnergy + carbonEnergy;
-    tree->Fill();
-
-    ///Draw anomaly events
-    if(false && chi2>10 && charge>100){
-      myHistoManager.setEvent(myEventSource->getCurrentEvent());
-      for(int strip_dir=0;strip_dir<3;++strip_dir){
-	aCanvas->cd(strip_dir+1);
-	std::shared_ptr<TH2D> hProjection = myHistoManager.getClusterStripVsTimeInMM(strip_dir);
-	hProjection->SetStats(kFALSE);
-	hProjection->DrawCopy("colz");
-	//myHistoManager.getRecHitStripVsTime(strip_dir)->Draw("box same");
-      }
-      aCanvas->cd(4);
-      hFrame->Draw();
-      aString.Form("fit loss: %3.2f",chi2);
-      aLatex->DrawLatex(0.1,0.85, aString.Data());
-
-      aString.Form("track charge: %3.2f",charge);
-      aLatex->DrawLatex(0.1,0.75, aString.Data());
-
-      aString.Form("track length: %3.2f",length);
-      aLatex->DrawLatex(0.1,0.65, aString.Data());
-
-      aString.Form("frame id: %d",iEntry);
-      aLatex->DrawLatex(0.1,0.55, aString.Data());
-
-      std::string plotFileName = "Clusters_"+std::to_string(eventId)+"_"+dataFileName.substr(index)+".png";
-      aCanvas->Print(plotFileName.c_str());
-    }
+    tree->Fill();    
   }
   outputROOTFile.Write();
   return 0;

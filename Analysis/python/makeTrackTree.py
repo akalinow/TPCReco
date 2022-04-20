@@ -1,107 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import os, time
-import glob
-#import psutil
+from fileLoop import *
 
 ################################################################
 ################################################################
-def countRunningProcesses(procName):
-    counter = 0
-    '''
-    for proc in psutil.process_iter():
-        counter += proc.name().find("makeTrackTree")>-1
-    '''
-    return counter                
-################################################################
-################################################################
-def waintUnitilProcCount(procName, procCount):
+def finalizeFunc():
 
-    counter = countRunningProcesses("makeTrackTree")
-    while counter>=procCount:
-        print("Number of jobs running:",counter," Waiting one minutue.")
-        time.sleep(60)
-        counter = countRunningProcesses("makeTrackTree")                
-################################################################
-################################################################
-def getRunTimeStamp(fileName):
-
-    timestamp_index = fileName.rfind("EventTPC_")
-    run_timestamp = "Unknown_timestamp"
-
-    if timestamp_index>-1:
-        run_timestamp = fileName[timestamp_index+9:timestamp_index+32]
-    elif timestamp_index<0 and fileName.rfind("AsAd_ALL_")>-1:
-        timestamp_index = fileName.rfind("AsAd_ALL_")
-        run_timestamp = fileName[timestamp_index+9:timestamp_index+32]
-    elif timestamp_index<0 and fileName.rfind("AsAd")>-1:
-        timestamp_index = fileName.rfind("AsAd")
-        run_timestamp = fileName[timestamp_index+6:timestamp_index+29]
-
-    return run_timestamp
-################################################################
-################################################################
-def analyzeSingleBatch(dataPath, fileName, geometryFile, command):
-
-    run_timestamp = getRunTimeStamp(fileName)
-    batchNumber = "0000"
-    filePattern = "*"+run_timestamp[:-5]+"*_"+batchNumber+".*"
-    fileList = glob.glob(dataPath+filePattern)
-    fileListString = ""
-    for f in fileList:
-        fileListString+= f+","
-    fileListString = fileListString.rstrip(",")  
-
-    run_timestamp = run_timestamp.replace(":","-")    
-    if not os.path.isdir(run_timestamp):
-        os.mkdir(run_timestamp)
-    '''
-    outputName = run_timestamp + batchNumber + ".out"
-    arguments = " --geometryFile " + geometryFile + " --dataFile " + fileListString + " > "+outputName+" 2>&1 &"
-    print("Running job for file (batch):"+fileName)                    
-    os.chdir(run_timestamp)
-    os.system("ln -s ../*Formats* ./")
-    os.system("ln -s ../*.dat ./")
-    #os.system(command+arguments)
-    os.chdir("../")    
-    '''
-    print("run_timestamp:",run_timestamp)
-    print("fileList:",fileList)
-    print("fileListString:",fileListString)
-################################################################
-################################################################
-def analyzeSingleFile(dataPath, fileName, geometryFile, command):
-
-    filePath =  os.path.join(dataPath, fileName)
-    timestamp_index = fileName.rfind("EventTPC_")
-    file_timestamp = fileName[timestamp_index+9:timestamp_index+32]
-        
-    if timestamp_index<0:
-        timestamp_index = fileName.rfind("AsAd_ALL_")
-        file_timestamp = fileName[timestamp_index+9:timestamp_index+37]
-
-    run_timestamp = getRunTimeStamp(fileName)
-    run_timestamp = run_timestamp.replace(":","-")    
-    if not os.path.isdir(run_timestamp):
-        os.mkdir(run_timestamp)
-
-    file_timestamp = file_timestamp.replace(":","-")    
-    outputName = file_timestamp + ".out"
-    arguments = " --geometryFile " + geometryFile + " --dataFile " + filePath + " > "+outputName+" 2>&1 &"
-    print("Running job for file:"+fileName)                    
-    os.chdir(run_timestamp)
-    os.system("ln -s ../*Formats* ./")
-    os.system("ln -s ../*.dat ./")
-    os.system(command+arguments)
-    os.chdir("../")
-################################################################
-################################################################
-def finalize():
-
-    procName = "makeTrackTree"
-    procCount = 1
-    waintUnitilProcCount(procName, procCount)
+    return
 
     samples_calibration_12MHz = [
         "2021-11-25T13-53-16.129",
@@ -162,19 +68,6 @@ def finalize():
         os.system(command)    
 
 ################################################
-################################################
-def analyzeDataInDirectory(dataPath, geometryFile):
-
-    procName = "makeTrackTree"
-    command = "time ../../bin/"+procName
-    procCount = 10
-
-    for root, dirs, files in os.walk(dataPath):
-        for fileName in files:
-            if (fileName.find(".root")!=-1 and fileName.find("EventTPC")!=-1) or (fileName.find(".graw")!=-1 and fileName.find("CoBo")!=-1):
-                waintUnitilProcCount(procName, procCount)
-                analyzeSingleBatch(dataPath, fileName, geometryFile, command)
-################################################
 ################################################                
 runs = [ ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210616_extTrg_CO2_250mbar_DT1470ET",
           "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
@@ -204,18 +97,22 @@ runs = [ ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210616_extTrg_CO2_25
 ###
 runs = [
        ("/scratch_elitpc/HIgS_2022_tmp/4th_batch/",
-        "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_25.0MHz.dat"),
+        "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
+       #("/scratch_elitpc/IFJ_VdG_20210630/20210616_extTrg_CO2_250mbar_DT1470ET/",
+       # "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
         #("/scratch/akalinow/ELITPC/data/2018/",
         #  "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_mini_eTPC.dat"),
 ]
 ################################################
-################################################      
-
-for dataPath, geometryFile in runs:
-    analyzeDataInDirectory(dataPath, geometryFile)
-    
-#finalize()
 ################################################
-################################################      
+###
+###
+procName = "makeTrackTree"
+################################################
+################################################
+runLoop(runs, procName, finalizeFunc)
+################################################
+################################################
+
               
 
