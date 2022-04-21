@@ -29,6 +29,7 @@
 
 #include "GUI_commons.h"
 #include "FileInfoFrame.h"
+#include "TrackInfoFrame.h"
 #include "SelectionBox.h"
 #include "MarkersManager.h"
 #include "RunConditionsDialog.h"
@@ -78,6 +79,7 @@ private:
   int AddEventTypeDialog(int attach);
   int AddMarkersDialog(int attach);
   int AddFileInfoFrame(int attach);
+  int AddTrackInfoFrame(int attach);
   int AddRunConditionsDialog(int attach);
 
   void AddLogos();
@@ -119,6 +121,7 @@ private:
 
   MarkersManager *fMarkersManager{0};
   FileInfoFrame *fFileInfoFrame{0};
+  TrackInfoFrame* fTrackInfoFrame{ 0 };
   SelectionBox *fSelectionBox{0};
   RunConditionsDialog *fRunConditionsDialog{0};
 

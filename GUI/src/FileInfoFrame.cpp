@@ -29,7 +29,7 @@ FileInfoFrame::FileInfoFrame(const TGWindow * p, MainFrame * aFrame)
    TGGroupFrame *totalEventsFrame = new TGGroupFrame(datasetInfoFrame, "Events in the file:");
    TGGroupFrame *currentEventFrame = new TGGroupFrame(datasetInfoFrame, "Event id.:");
    TGGroupFrame *currentEntryFrame = new TGGroupFrame(datasetInfoFrame, "Frame:");
-   TGGroupFrame *fileNameFrame = new TGGroupFrame(fileInfoFrame, "Processing file:");
+   TGGroupFrame *fileNameFrame = new TGGroupFrame(fileInfoFrame, "Reconstruction data:");
    TGGroupFrame *modeFrame = new TGGroupFrame(modeInfoFrame, "Mode:");
    
    totalEventsLabel = new TGLabel(totalEventsFrame, "No input.");

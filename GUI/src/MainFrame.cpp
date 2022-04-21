@@ -50,6 +50,7 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h,  const boost::proper
     modeLabel = "OFFLINE from GRAW";
   }
   fFileInfoFrame->updateModeLabel(modeLabel);
+  fTrackInfoFrame->updateModeLabel(modeLabel);
   Update();
 }
 /////////////////////////////////////////////////////////
@@ -84,9 +85,10 @@ void MainFrame::InitializeWindows(){
   attach = AddEventTypeDialog(attach);  
   //Right column
   attach = 0;
-  attach = AddFileInfoFrame(attach);  
+  attach = AddFileInfoFrame(attach);
   attach = AddMarkersDialog(attach);
   attach = AddRunConditionsDialog(attach);
+  attach = AddTrackInfoFrame(attach);
   AddLogos();
   /////////////
   MapSubwindows();
@@ -392,6 +394,28 @@ int MainFrame::AddFileInfoFrame(int attach){
  }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+
+int MainFrame::AddTrackInfoFrame(int attach) {
+
+    fTrackInfoFrame = new TrackInfoFrame(fFrame, this);
+
+    TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
+    //int nRows = aLayout->fNrows;
+    int nColumns = aLayout->fNcols;
+    UInt_t attach_left = nColumns * 0.7 + 1;
+    UInt_t attach_right = nColumns;
+    UInt_t attach_top = attach;
+    UInt_t attach_bottom = attach_top + 5;
+    TGTableLayoutHints* tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
+        kLHintsShrinkX | kLHintsShrinkY |
+        kLHintsFillX | kLHintsFillY);
+    fTrackInfoFrame->initialize();
+    fFrame->AddFrame(fTrackInfoFrame, tloh);
+    return attach_bottom;
+}
+
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 int MainFrame::AddEventTypeDialog(int attach){
 
   eventTypeButtonGroup = new TGButtonGroup(fFrame,
@@ -547,15 +571,19 @@ void MainFrame::Update(){
   if(!myEventSource || !myEventSource->numberOfEvents() ||
      !fFileInfoFrame || !fMarkersManager) {return;}
   
+
   fFileInfoFrame->updateFileName(myEventSource->getCurrentPath());
   fFileInfoFrame->updateEventNumbers(myEventSource->numberOfEvents(),
-				   myEventSource->currentEventNumber(),
-				   myEventSource->currentEntryNumber());
+      myEventSource->currentEventNumber(),
+      myEventSource->currentEntryNumber());
+
+  fTrackInfoFrame->updateFileName(myEventSource->getCurrentPath());
+
   myHistoManager.setEvent(myEventSource->getCurrentEvent());
   fMarkersManager->reset();
   fMarkersManager->setEnabled(isRecoModeOn);
 
-  ClearCanvases();      
+  ClearCanvases();
   myHistoManager.drawRawHistos(fRawHistosCanvas, isRateDisplayOn);
   myHistoManager.drawTechnicalHistos(fTechHistosCanvas, myEventSource->getGeometry()->GetAgetNchips());
 
