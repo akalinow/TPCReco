@@ -22,7 +22,7 @@ TrackInfoFrame::TrackInfoFrame(const TGWindow * p, MainFrame * aFrame)
 
    AddFrame(trackInfoFrame, new TGLayoutHints(kLHintsExpandX, 2, 2, 2, 2));
 
-   TGGroupFrame *fileNameFrame = new TGGroupFrame(trackInfoFrame, "kekapepega:");
+   TGGroupFrame *fileNameFrame = new TGGroupFrame(trackInfoFrame, "Reconstruction data:");
 
    std::string tmp = "No input.";
    tmp.resize(fileNameLineLength,' ');
