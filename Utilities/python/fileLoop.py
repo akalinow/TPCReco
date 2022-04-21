@@ -19,6 +19,7 @@ def analyzeSingleBatch(runId, fileCSV, geometryFile, command):
     os.chdir(runId)
     os.system("ln -s ../*Formats* ./")
     os.system("ln -s ../*.dat ./")
+    print(command+arguments)
     os.system(command+arguments)
     os.chdir("../")
 ################################################

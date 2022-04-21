@@ -33,33 +33,32 @@
 /////////////////////////////////////
 std::string createROOTFileName(const  std::string & grawFileName){
 
-  std::string rootFileName;
-  unsigned int index = grawFileName.find(",");
+  std::string rootFileName = grawFileName;
+  std::string::size_type index = rootFileName.find(",");
   if(index!=std::string::npos){
     rootFileName = grawFileName.substr(0,index);
   }
   index = rootFileName.rfind("/");
-  rootFileName = rootFileName.substr(index,-1);
-
-  
+  if(index!=std::string::npos){
+    rootFileName = rootFileName.substr(index+1,-1);
+  }
   if(rootFileName.find("CoBo_ALL_AsAd_ALL")!=std::string::npos){
-    rootFileName = rootFileName.replace(0,std::string("CoBo_ALL_AsAd_ALL").size()+1,"TrackTree");
+    rootFileName = rootFileName.replace(0,std::string("CoBo_ALL_AsAd_ALL").size(),"TrackTree");
   }
   else if(rootFileName.find("CoBo0_AsAd")!=std::string::npos){
-    rootFileName = rootFileName.replace(0,std::string("CoBo0_AsAd").size()+2,"TrackTree");
+    rootFileName = rootFileName.replace(0,std::string("CoBo0_AsAd").size()+1,"TrackTree");
   }
   else if(rootFileName.find("EventTPC")!=std::string::npos){
-    rootFileName = rootFileName.replace(0,std::string("EventTPC").size()+1,"TrackTree");
+    rootFileName = rootFileName.replace(0,std::string("EventTPC").size(),"TrackTree");
   }
   else{
     std::cout<<KRED<<"File format unknown: "<<RST<<rootFileName<<std::endl;
     exit(1);
   }
   index = rootFileName.rfind("graw");
-  rootFileName = rootFileName.replace(index,-1,"root");
-
-  std::cout<<"rootFileName: "<<rootFileName<<std::endl;
-  exit(0);
+  if(index!=std::string::npos){
+    rootFileName = rootFileName.replace(index,-1,"root");
+  }
   
   return rootFileName;
 }
@@ -217,7 +216,7 @@ int makeTrackTree(const  std::string & geometryFileName,
     int eventType = 0;
     double alphaEnergy = 0.0;
     double carbonEnergy = 0.0;
-    if(charge>100 && length>50){
+    if(false && charge>100 && length>50){
       mydEdxFitter.fitHisto(hChargeProfile);
       eventType = mydEdxFitter.getBestFitEventType();
       alphaEnergy = mydEdxFitter.getAlphaEnergy();

@@ -96,7 +96,9 @@ runs = [ ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210616_extTrg_CO2_25
 ###
 ###
 runs = [
-       ("/scratch_elitpc/HIgS_2022_tmp/4th_batch/",
+       #("/scratch_elitpc/HIgS_2022_tmp/4th_batch/",
+       # "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
+       ("/scratch/akalinow/ELITPC/data/HIgS_2022/EventTPC/",
         "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
        #("/scratch_elitpc/IFJ_VdG_20210630/20210616_extTrg_CO2_250mbar_DT1470ET/",
        # "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
