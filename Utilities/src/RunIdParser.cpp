@@ -30,7 +30,7 @@ RunIdParser::RunIdParser(const std::string &name) {
       return;
     }
   }
-  throw std::logic_error("RunIdParser: Couldn't parse file name:" + name);
+  throw std::logic_error("RunIdParser: Couldn't parse file name: " + name);
 }
 
 void RunIdParser::matchResults(const std::smatch &match,

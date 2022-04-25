@@ -24,14 +24,17 @@ include_directories(${PROJECT_SOURCE_DIR}/DataFormats/include)
 # The data is just added to the executable, because in some IDEs (QtCreator) 
 # files are invisible when they are not explicitly part of the project.
 #
+add_executable(grawls bin/grawls.cpp)
 add_library(${MODULE_NAME} SHARED ${sources})
 target_link_libraries(${MODULE_NAME} PUBLIC ${ROOT_LIBRARIES} DataFormats Boost::filesystem)
+target_link_libraries(grawls PRIVATE ${MODULE_NAME} Boost::program_options)
 # Compiler flags.
 #
 target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
 
 # All install commands get the same destination. this allows us to use paths
 # relative to the executable.
+install(TARGETS grawls RUNTIME DESTINATION bin)
 install(TARGETS ${MODULE_NAME} LIBRARY DESTINATION lib)
 install(PROGRAMS $<1:${PROJECT_SOURCE_DIR}/${MODULE_NAME}/python/> DESTINATION python)
 
