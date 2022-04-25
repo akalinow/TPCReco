@@ -4,6 +4,7 @@
     "resourcesPath": ".",
     "updateInterval": 3000,
     "removePedestal": true,
+    "recoClusterEnable": false,
     "frameLoadRange": 100,
     "singleAsadGrawFile": true,
     "display": {
