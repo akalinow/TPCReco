@@ -34,18 +34,22 @@ void makePlots(std::string fileName){
   hChi2Cut0->SetStats(kFALSE);
   hChi2Cut1->SetStats(kFALSE);
 
-  TCut qualityCut = "chi2<10 && charge>100 && length>0";
-  TCut cut0 = "cosTheta>0.9 && abs(x0-127)<25 && abs(y0-76)<25"&&qualityCut;
-  TCut cut1 = "!(abs(x0-127)<25 && abs(y0-76)<25)"&&qualityCut;
+  //TCut qualityCut = "chi2<10 && charge>100 && length>0";
+  //TCut cut0 = "cosTheta>0.9 && abs(x0-127)<25 && abs(y0-76)<25"&&qualityCut;
+  //TCut cut1 = "!(abs(x0-127)<25 && abs(y0-76)<25)"&&qualityCut;
+
+  std::string qualityCut = "chi2<10 && charge>100 && length>0";
+  std::string cut0 = "cosTheta>0.9 && abs(x0-127)<25 && abs(y0-76)<25"+std::string("&&")+qualityCut;
+  std::string cut1 = "!(abs(x0-127)<25 && abs(y0-76)<25)"+std::string("&&")+qualityCut;
 
   trackTree->Draw("charge:length>>hChargeVsLength","", "goff");
   trackTree->Draw("cosTheta:length>>hCosThetaVsLength","", "goff");
-  trackTree->Draw("length+verticalLostLength>>hLengthCut0",cut0, "goff");
-  trackTree->Draw("length>>hLengthCut1",cut1, "goff");
-  trackTree->Draw("z0:y0:x0>>hPosXYZCut1",cut1, "goff");
-  trackTree->Draw("z1:y1:x1>>+hPosXYZCut1",cut1, "goff");
-  trackTree->Draw("chi2>>hChi2Cut0",cut0, "goff");
-  trackTree->Draw("chi2>>hChi2Cut1",cut1, "goff");
+  trackTree->Draw("length+verticalLostLength>>hLengthCut0",cut0.c_str(), "goff");
+  trackTree->Draw("length>>hLengthCut1",cut1.c_str(), "goff");
+  trackTree->Draw("z0:y0:x0>>hPosXYZCut1",cut1.c_str(), "goff");
+  trackTree->Draw("z1:y1:x1>>+hPosXYZCut1",cut1.c_str(), "goff");
+  trackTree->Draw("chi2>>hChi2Cut0",cut0.c_str(), "goff");
+  trackTree->Draw("chi2>>hChi2Cut1",cut1.c_str(), "goff");
   ///////////////////////////////////////////////////
   TLegend *aLeg = new TLegend(0.1, 0.1, 0.5, 0.3);
   TCanvas *aCanvas = new TCanvas("aCanvas","",700,700);

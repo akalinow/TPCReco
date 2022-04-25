@@ -1,59 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import os, time
-import psutil
+from fileLoop import *
 
 ################################################################
 ################################################################
-def countRunningProcesses(procName):
-    counter = 0
-    for proc in psutil.process_iter():
-        counter += proc.name().find("makeTrackTree")>-1
+def finalizeFunc():
 
-    return counter                
-################################################################
-################################################################
-def waintUnitilProcCount(procName, procCount):
-
-     counter = countRunningProcesses("makeTrackTree")
-     while counter>=procCount:
-         print("Number of jobs running:",counter," Waiting one minutue.")
-         time.sleep(60)
-         counter = countRunningProcesses("makeTrackTree")                
-################################################################
-################################################################
-def analyzeSingleFile(dataPath, fileName, geometryFile, command):
-
-    filePath =  os.path.join(dataPath, fileName)
-    timestamp_index = fileName.rfind("EventTPC_")
-    file_timestamp = fileName[timestamp_index+9:timestamp_index+32]
-        
-    if timestamp_index<0:
-        timestamp_index = fileName.rfind("AsAd_ALL_")
-        file_timestamp = fileName[timestamp_index+9:timestamp_index+37]
-
-    run_timestamp = fileName[timestamp_index+9:timestamp_index+32]
-    run_timestamp = run_timestamp.replace(":","-")    
-    if not os.path.isdir(run_timestamp):
-        os.mkdir(run_timestamp)
-
-    file_timestamp = file_timestamp.replace(":","-")    
-    outputName = file_timestamp + ".out"
-    arguments = " --geometryFile " + geometryFile + " --dataFile " + filePath + " > "+outputName+" 2>&1 &"
-    print("Running job for file:"+fileName)                    
-    os.chdir(run_timestamp)
-    os.system("ln -s ../*Formats* ./")
-    os.system("ln -s ../*.dat ./")
-    os.system(command+arguments)
-    os.chdir("../")
-################################################################
-################################################################
-def finalize():
-
-    procName = "makeTrackTree"
-    procCount = 1
-    waintUnitilProcCount(procName, procCount)
+    return
 
     samples_calibration_12MHz = [
         "2021-11-25T13-53-16.129",
@@ -78,7 +32,11 @@ def finalize():
     "2021-06-23T18-39-39.905",
     ]
 
-    command = "mkdir 2021-11-25_12.5MHz 2021-11-25_25.0MHz IFJ_VdG 2018"
+    samples_HIGGS = [
+        "2022-04-12T15-28-17.188"
+    ]
+
+    command = "mkdir 2021-11-25_12.5MHz 2021-11-25_25.0MHz IFJ_VdG 2018 HIgS_2022"
     os.system(command)
 
     command = "mv 2018-* 2018"
@@ -103,19 +61,12 @@ def finalize():
         command = "hadd -f IFJ_VdG/IFJ_VdG.root IFJ_VdG/*/*.root"
         os.system(command)
 
-################################################
-################################################
-def analyzeDataInDirectory(dataPath, geometryFile):
+    for item in samples_HIGGS:
+        command = "mv "+item+" HIgS_2022"
+        os.system(command)
+        command = "hadd -f HIgS_2022/HIgS_2022.root HIgS_2022/*/*.root"
+        os.system(command)    
 
-    procName = "makeTrackTree"
-    command = "time ../../bin/"+procName
-    procCount = 10
-
-    for root, dirs, files in os.walk(dataPath):
-        for fileName in files:
-            if (fileName.find(".root")!=-1 and fileName.find("EventTPC")!=-1) or (fileName.find(".graw")!=-1 and fileName.find("CoBo")!=-1):
-                waintUnitilProcCount(procName, procCount)
-                analyzeSingleFile(dataPath, fileName, geometryFile, command)
 ################################################
 ################################################                
 runs = [ ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210616_extTrg_CO2_250mbar_DT1470ET",
@@ -138,31 +89,32 @@ runs = [ ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210616_extTrg_CO2_25
          ##
           ("/scratch/akalinow/ELITPC/data/2018/",
           "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_mini_eTPC.dat"),
+         ##
+          ("/scratch_elitpc/HIgS_2022_tmp/4th_batch/",
+          "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_25.0MHz.dat"),
 ]
 ###
 ###
-'''
 runs = [
-     ("/scratch/akalinow/ELITPC/data/2018/",
-      "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_mini_eTPC.dat"),
+       #("/scratch_elitpc/HIgS_2022_tmp/4th_batch/",
+       # "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
+       ("/scratch/akalinow/ELITPC/data/HIgS_2022/EventTPC/",
+        "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
+       #("/scratch_elitpc/IFJ_VdG_20210630/20210616_extTrg_CO2_250mbar_DT1470ET/",
+       # "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
+        #("/scratch/akalinow/ELITPC/data/2018/",
+        #  "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_mini_eTPC.dat"),
 ]
-'''
-runs = [
-    ("/scratch/akalinow/ELITPC/data/calibration/2021-11-25_12.5MHz/",
-     "../geometry_ELITPC_250mbar_12.5MHz.dat"),
-]
-'''
-runs = [  ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210616_extTrg_CO2_250mbar_DT1470ET",
-          "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
-    ]
-'''
 ################################################
-################################################      
+################################################
+###
+###
+procName = "makeTrackTree"
+################################################
+################################################
+runLoop(runs, procName, finalizeFunc)
+################################################
+################################################
 
-for dataPath, geometryFile in runs:
-    analyzeDataInDirectory(dataPath, geometryFile)
-finalize()
-################################################
-################################################      
               
 

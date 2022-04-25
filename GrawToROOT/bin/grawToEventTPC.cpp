@@ -3,14 +3,22 @@
 #include <string>
 #include <memory>
 
+#include <boost/property_tree/json_parser.hpp>
+#include <boost/property_tree/xml_parser.hpp>
+#include <boost/program_options.hpp>
+
+
 #include "GeometryTPC.h"
 #include "EventTPC.h"
 #include "PedestalCalculator.h"
 #include "EventSourceGRAW.h"
+#include "EventSourceMultiGRAW.h"
 #include "SigClusterTPC.h"
 
 #include "TFile.h"
 #include "TTree.h"
+
+#include "colorText.h"
 
 #include "utl/Logging.h"
 #include "get/GDataSample.h"
@@ -20,74 +28,132 @@
 #include "mfm/FrameDictionary.h"
 
 #ifdef DEBUG
-#include "EventSourceROOT.h" // DEBUG - read back test
-#include "EventTPC.h" // DEBUG - read back test
+#include "EventSourceROOT.h" 
+#include "EventTPC.h" 
 #endif
 
+/////////////////////////////////////
+/////////////////////////////////////
+std::string createROOTFileName(const  std::string & grawFileName){
+
+  std::string rootFileName;
+  unsigned int index = grawFileName.find(",");
+  if(index!=std::string::npos){
+    rootFileName = grawFileName.substr(0,index);
+  }
+  index = rootFileName.rfind("/");
+  rootFileName = rootFileName.substr(index,-1);
+
+  
+  if(rootFileName.find("CoBo_ALL_AsAd_ALL")!=std::string::npos){
+    rootFileName = rootFileName.replace(0,std::string("CoBo_ALL_AsAd_ALL").size()+1,"EventTPC");
+  }
+  else if(rootFileName.find("CoBo0_AsAd")!=std::string::npos){
+    rootFileName = rootFileName.replace(0,std::string("CoBo0_AsAd").size()+2,"EventTPC");
+  }
+  else{
+    std::cout<<KRED<<"File format unknown: "<<RST<<rootFileName<<std::endl;
+    exit(1);
+  }
+  index = rootFileName.rfind("graw");
+  rootFileName = rootFileName.replace(index,-1,"root");
+  
+  return rootFileName;
+}
+/////////////////////////////////////
+/////////////////////////////////////
+int convertGRAWFile(const  std::string & geometryFileName,
+		    const  std::string & grawFileName);
+/////////////////////////////////////
+/////////////////////////////////////
+boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
+
+  boost::program_options::options_description cmdLineOptDesc("Allowed options");
+  cmdLineOptDesc.add_options()
+    ("help", "produce help message")
+    ("geometryFile",  boost::program_options::value<std::string>(), "string - path to the geometry file.")
+    ("dataFile",  boost::program_options::value<std::string>(), "string - path to GRAW data file.");
+  
+  boost::program_options::variables_map varMap;        
+  boost::program_options::store(boost::program_options::parse_command_line(argc, argv, cmdLineOptDesc), varMap);
+  boost::program_options::notify(varMap); 
+
+  if (varMap.count("help")) {
+    std::cout<<cmdLineOptDesc<<std::endl;
+    exit(1);
+  }
+  return varMap;
+}
+/////////////////////////////////////
+/////////////////////////////////////
 int main(int argc, char *argv[]) {
 
-  if(argc!=4) {
-    std::cerr << std::endl
-	      << "Creates TTree \"TPCData\" with EventTPC objects out of the specified GRAW file." << std::endl << std::endl
-	      << "Usage: " << std::endl
-	      << argv[0] << " <input_file.graw> <geometry_file.dat> <result_file.root>" << std::endl << std::endl
-	      << "where:" << std::endl
-	      << " - input_file.graw = input GRAW file name in \"name_NNNN.graw\" format" << std::endl
-	      << " - geometry_file.dat = TPC geometry file name" << std::endl
-	      << " - result_file.root = output ROOT file name" << std::endl << std::endl;
-    return -1;
+  std::string geometryFileName, dataFileName;
+  boost::program_options::variables_map varMap = parseCmdLineArgs(argc, argv);
+  boost::property_tree::ptree tree;
+  if(argc<3){
+    char text[] = "--help";
+    char *argvTmp[] = {text, text};
+    parseCmdLineArgs(2,argvTmp);
+    return 1;
   }
-  
-  //  bool skipEmptyEvents = false;
-  
-  ///Load TPC geometry
-  std::string dataFileName; //  =  "/data/edaq/CoBo_2018-05-11T14:23:14.736_0000.graw";
-  std::string geometryFileName; //  = "geometry_mini_eTPC.dat";
-  std::string rootFileName; //  = "";
+  if (varMap.count("geometryFile")) {
+    geometryFileName = varMap["geometryFile"].as<std::string>();
+  }
+  if (varMap.count("dataFile")) {
+    dataFileName = varMap["dataFile"].as<std::string>();
+  }
 
-  dataFileName = std::string(argv[1]);
-  std::cout<<"dataFileName: "<<dataFileName<<std::endl;
+  if(dataFileName.size() && geometryFileName.size()){
+    convertGRAWFile(geometryFileName, dataFileName);
+  }
+  else{
+    std::cout<<KRED<<"Configuration not complete: "<<RST
+	     <<" geometryFile: "<<geometryFileName<<"\n"
+	     <<" dataFile: "<<dataFileName
+	     <<std::endl;
+  }
+  return 0;
+}
+/////////////////////////////////////
+/////////////////////////////////////
+int convertGRAWFile(const  std::string & geometryFileName,
+		    const  std::string & grawFileName){
   
-  geometryFileName = std::string(argv[2]);
-  std::cout<<"geometryFileName: "<<geometryFileName<<std::endl;
-  
-  rootFileName = std::string(argv[3]);
-  std::cout<<"rootFileName: "<<rootFileName<<std::endl;
-
-
-  if (dataFileName.find(".graw") != std::string::npos &&
-      geometryFileName.find(".dat") != std::string::npos &&
-      rootFileName.find(".root") != std::string::npos) {
-  } else {
-    std::cout << "One or more of the input arguments is/are weong. " << std::endl
+  if(grawFileName.find(".graw") == std::string::npos ||
+     geometryFileName.find(".dat") == std::string::npos){
+    std::cout <<KRED<<"One or more of the input arguments is/are wrong. "<<RST<<std::endl
 	      << "Check that GRAW and geometry files are correct. " << std::endl
-              << std::endl
-              << std::endl;
+	      << std::endl
+	      << std::endl;
     return -1;
   }
-  
-  // Create ROOT Tree
+
+  std::string rootFileName = createROOTFileName(grawFileName);
   TFile aFile(rootFileName.c_str(),"RECREATE");
-  
-  auto myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
-  myEventSource->setFrameLoadRange(160);
-  myEventSource->loadDataFile(dataFileName);
+
+  std::shared_ptr<EventSourceBase> myEventSource;
+  if(grawFileName.find(",")!=std::string::npos){
+    myEventSource = std::make_shared<EventSourceMultiGRAW>(geometryFileName);
+  }
+  else{
+    myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
+    dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(160);
+  }
+  myEventSource->loadDataFile(grawFileName);
   std::cout << "File with " << myEventSource->numberOfEntries() << " frames opened." << std::endl;
   
   std::shared_ptr<EventTPC> myEventPtr = myEventSource->getCurrentEvent();
 
   #ifdef DEBUG
-  ////// DEBUG
   std::cout << "==== GrawToEvenTPC INITIALIZATION: myPtr_EventTPC="
 	    << myEventPtr << " ====" << std::endl;
-  ////// DEBUG
   #endif
 
   TTree aTree("TPCData","");
   EventTPC *persistent_event = myEventPtr.get();
   aTree.Branch("Event", &persistent_event);
   
-  // loop over ALL frames and fill "Event" tree with EventTPC objects
   Long64_t currentEventIdx=-1;
   std::map<unsigned int, bool> eventIdxMap;
   do {
@@ -97,70 +163,39 @@ int main(int argc, char *argv[]) {
     }
 
 #ifdef DEBUG
-    ////// DEBUG
     std::cout << "==== GrawToEventTPC X-CHECK: EventSourceGRAW EventID= "
     	      << myEventSource->currentEventNumber()
     	      << ", EventTPC EventID="
     	      << myEventPtr->GetEventId()
      	      << "====" << std::endl;
-    ////// DEBUG
 #endif
     
-    // Skip empty events
-    //    if(skipEmptyEvents && myEventPtr->GetMaxCharge()<100) continue;
-    /////////////////////
-
     unsigned int eventIdx = myEventPtr->GetEventId();
     if(eventIdxMap.find(eventIdx)==eventIdxMap.end()){
       eventIdxMap[eventIdx] = true;
 
 #ifdef DEBUG
-      ///////// DEBUG
       std::cout << "==== GrawToEventTPC LOOP: persistentPtr_EventTPC="
 		<< persistent_event << " ====" << std::endl;
       std::cout << "---- EventTPC content start ----" << std::endl;
       std::cout << *persistent_event << std::endl;
       std::cout << "---- EventTPC content end ----" << std::endl;
-      ///////// DEBUG
 #endif
 
       // temporarily reset geometry pointer while filling TTree
       //      std::shared_ptr<GeometryTPC> gPtr(myEventPtr->GetGeoPtr());
-      myEventPtr->SetGeoPtr(0);
-      
+      myEventPtr->SetGeoPtr(0);      
       aTree.Fill();
-      //      myEventPtr->SetGeoPtr(gPtr);
     }
-    
+
 #ifdef DEBUG
-    ////// DEBUG
     if( eventIdxMap.size()==10 ) break;
-    ////// DEBUG
 #endif
-    
-    // load next event (if any)
+
     currentEventIdx=myEventSource->currentEventNumber();
     myEventSource->getNextEvent();
   }
-  while(currentEventIdx!=(Long64_t)myEventSource->currentEventNumber());
-  /*
-  long numberOfEntries = myEventSource.numberOfEntries();
-  std::map<unsigned int, bool> eventIdxMap;
-  for(long iFileEntry = 0; iFileEntry<numberOfEntries; ++iFileEntry){
-    myEventSource.loadFileEntry(iFileEntry);
-    ///Skip empty events
-    if(skipEmptyEvents && myEventPtr->GetMaxCharge()<100) continue;
-    /////////////////////
-    unsigned int eventIdx = myEventPtr->GetEventId();
-    if(eventIdxMap.find(eventIdx)==eventIdxMap.end()){
-      eventIdxMap[eventIdx] = true;
-      //Reset geometry pointer for writing to ROOT file
-      myEventPtr->SetGeoPtr(0);
-      aTree.Fill();
-    }
-    if( iFileEntry>10) break;
-  }
-  */
+  while(currentEventIdx!=(Long64_t)myEventSource->currentEventNumber());  
   aTree.Print();
   // build index based on: majorname=EventId, minorname=NONE
   //aTree.BuildIndex("Event.event_id");
@@ -168,7 +203,6 @@ int main(int argc, char *argv[]) {
   aFile.Close();
   
  #ifdef DEBUG
-  ///// DEBUG - READ BACK TEST
   std::shared_ptr<EventSourceROOT> myEventSourceRoot;
   myEventSourceRoot = std::make_shared<EventSourceROOT>(geometryFileName);
   myEventSourceRoot->loadDataFile(rootFileName);
@@ -179,8 +213,9 @@ int main(int argc, char *argv[]) {
   int delta_timecells = 25;
   int delta_strips = 5;
   myEventSourceRoot->getCurrentEvent()->MakeOneCluster(chargeThreshold, delta_strips, delta_timecells);
-  ///// DEBUG - READ BACK TEST
 #endif
 
   return 0;
 }
+/////////////////////////////////////
+/////////////////////////////////////
