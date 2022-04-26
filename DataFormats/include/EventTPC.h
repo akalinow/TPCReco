@@ -56,6 +56,8 @@ class EventTPC {
   double tot_charge[3];       // integral per strip direction
   double glb_tot_charge;      // integral per event
 
+  bool isPedestalSubtracted{false}; // flag useful for reco/clustering 
+
  public:
   EventTPC();
 
@@ -114,7 +116,9 @@ class EventTPC {
   double GetTotalChargeByTimeCell(int strip_dir, int strip_section, int time_cell); // charge integral from a single time cell from all strips in a given direction (per section)
 
   void MakeOneCluster(double thr=-1, int delta_strips=5, int delta_timecells=25); // applies clustering threshold to all space-time data points 
-  const SigClusterTPC & GetOneCluster() const; 
+  const SigClusterTPC & GetOneCluster() const;
+  inline bool GetPedestalSubstracted() const {return isPedestalSubtracted;}
+  inline void SetPedestalSubstracted(bool isPedestalSubtracted){this->isPedestalSubtracted=isPedestalSubtracted;}
   
   std::shared_ptr<TH1D> GetStripProjection(const SigClusterTPC &cluster, int strip_dir);    // clustered hits only, valid dir range [0-2]
   TH1D *GetTimeProjection(const SigClusterTPC &cluster, int strip_dir);     // clustered hits only, valid dir range [0-2]

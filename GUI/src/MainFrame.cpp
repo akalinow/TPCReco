@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
+#include <vector>
 
 #include <TApplication.h>
 #include "MainFrame.h"
@@ -10,7 +11,10 @@
 #include "colorText.h"
 
 #include <TSystem.h>
+#include <TObjArray.h> // for string tokens
+#include <TObjString.h> // for string tokens
 #include <TStyle.h>
+#include <TString.h> // for string tokens
 #include <TFrame.h>
 #include <TVirtualX.h>
 #include <TImage.h>
@@ -22,6 +26,7 @@
 
 #ifdef WITH_GET
 #include "EventSourceGRAW.h"
+#include "EventSourceMultiGRAW.h"
 #endif
 #include "EventSourceROOT.h"
 
@@ -40,13 +45,13 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h,  const boost::proper
   InitializeWindows();
   
   std::string modeLabel = "NONE";
-  if(myWorkMode==M_ONLINE_MODE){
+  if(myWorkMode==M_ONLINE_GRAW_MODE || myWorkMode==M_ONLINE_NGRAW_MODE){
     modeLabel = "ONLINE";
   }
   else if(myWorkMode==M_OFFLINE_ROOT_MODE){
     modeLabel = "OFFLINE from ROOT";
   }
-  else if(myWorkMode==M_OFFLINE_GRAW_MODE){
+  else if(myWorkMode==M_OFFLINE_GRAW_MODE || myWorkMode==M_OFFLINE_NGRAW_MODE){
     modeLabel = "OFFLINE from GRAW";
   }
   fFileInfoFrame->updateModeLabel(modeLabel);
@@ -107,30 +112,108 @@ void MainFrame::InitializeEventSource(){
     return;
   }
   FileStat_t stat;
-  if(gSystem->GetPathInfo(dataFileName.c_str(), stat) != 0){
-    std::cerr<<KRED<<"Invalid data path. No such file or directory: "<<RST<<dataFileName<<std::endl;
-    return;
-  }
 
-  if( ( (stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG) && dataFileName.find(".root")!=std::string::npos){
-    myWorkMode = M_OFFLINE_ROOT_MODE;
-    myEventSource = std::make_shared<EventSourceROOT>(geometryFileName);
-  }
+  // parse dataFile string for comma separated files
+  std::vector<std::string> dataFileVec;
+  //  vector<std::string> basenameVec;
+  //  vector<std::string> dirnameVec;
+  TString list=dataFileName;
+  TObjArray *token = list.Tokenize(",");
+  //  token->Print();
 #ifdef WITH_GET
-  else if( ( (stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG) && dataFileName.find(".graw")!=std::string::npos){
-    myWorkMode = M_OFFLINE_GRAW_MODE;
-    myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
-    dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(myConfig.get("frameLoadRange",100));
+  bool all_graw=false;
+#endif
+  for (Int_t itoken = 0; itoken < token->GetEntries(); itoken++) {
+    //    TString list2=((TObjString *)(token->At(itoken)))->String(); // path + name of single file
+    std::string list2( ((TObjString *)(token->At(itoken)))->String().Data() );
+    if(gSystem->GetPathInfo(list2.c_str(), stat) != 0){
+      std::cerr<<KRED<<"Invalid data path. No such file or directory: "<<RST<<list2<<std::endl;
+      return;
+    }
+#ifdef WITH_GET
+    if( ((stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG) && list2.find(".graw")!=std::string::npos){
+      all_graw=true;
+    } else {
+      all_graw=false;
+    }
+#endif
+    dataFileVec.push_back(list2);
+    //   TObjArray *token2 = list2.Tokenize("/");
+    //    TString dirName;
+    //    for (Int_t itoken2=0; itoken2 < token2->GetEntries()-1; itoken2++) {
+    //      dirName=((TObjString *)(token2->At(itoken2)))->String()+"/"; // path
+    //    }
+    //    TString baseName;
+    //    if(token2->GetEntries()-1 > 0) baseName=((TObjString *)(token2->At(token2-GetEntries()-1)))->String(); // basename
+    //    dirnameVec.push_back(dirName);
+    //    basenameVec.push_back(baseName);
   }
-  else if( (stat.fMode & EFileModeMask::kS_IFDIR) == EFileModeMask::kS_IFDIR) {
-    myWorkMode = M_ONLINE_MODE;
-    myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
+  
+  //  if(gSystem->GetPathInfo(dataFileName.c_str(), stat) != 0){
+  //    std::cerr<<KRED<<"Invalid data path. No such file or directory: "<<RST<<dataFileName<<std::endl;
+  //   return;
+  //  }
+  
+  if( dataFileVec.size()==1 && ((stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG) && dataFileName.find(".root")!=std::string::npos){
+      myWorkMode = M_OFFLINE_ROOT_MODE;
+      myEventSource = std::make_shared<EventSourceROOT>(geometryFileName);
+    }
+#ifdef WITH_GET
+  else if( all_graw ) { //(stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG) && dataFileName.find(".graw")!=std::string::npos){
+
+    myWorkMode = M_OFFLINE_GRAW_MODE;
+    if(myConfig.find("singleAsadGrawFile")!=myConfig.not_found()) {
+      bool singleAsadGrawFile = myConfig.get<bool>("singleAsadGrawFile");
+      if(singleAsadGrawFile) {
+	myWorkMode = M_OFFLINE_NGRAW_MODE;
+      }
+    }
+    switch(myWorkMode) {
+    case M_OFFLINE_GRAW_MODE:
+      myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
+      dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(myConfig.get("frameLoadRange",100));
+      if (dataFileVec.size()>1) {
+	std::cerr<<KRED<<"Provided too many GRAW files. Expected 1. dataFile: "<<RST<<dataFileName<<std::endl;
+	return;
+      }
+      break;
+    case M_OFFLINE_NGRAW_MODE:
+      myEventSource = std::make_shared<EventSourceMultiGRAW>(geometryFileName);
+      { unsigned int AsadNboards=dynamic_cast<EventSourceGRAW*>(myEventSource.get())->getGeometry()->GetAsadNboards();
+	if (dataFileVec.size()>AsadNboards) {
+	  std::cerr<<KRED<<"Provided too many GRAW files. Expected up to "<<AsadNboards<<".dataFile: "<<RST<<dataFileName<<std::endl;
+	  return;
+	}
+      }
+      break;
+    default:;
+    };
+      
+  }
+  else if( dataFileVec.size()==1 && (stat.fMode & EFileModeMask::kS_IFDIR) == EFileModeMask::kS_IFDIR) {
+
+    myWorkMode = M_ONLINE_GRAW_MODE;
+    if(myConfig.find("singleAsadGrawFile")!=myConfig.not_found()) {
+      bool singleAsadGrawFile = myConfig.get<bool>("singleAsadGrawFile");
+      if(singleAsadGrawFile) {
+	myWorkMode = M_ONLINE_NGRAW_MODE;
+      }
+    }
+    switch(myWorkMode) {
+    case M_ONLINE_GRAW_MODE:
+      myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
+      dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(myConfig.get("frameLoadRange",10));
+      break;
+    case M_ONLINE_NGRAW_MODE:
+      myEventSource = std::make_shared<EventSourceMultiGRAW>(geometryFileName);
+      break;
+    default:;
+    };
     fileWatchThread = std::thread(&DirectoryWatch::watch, &myDirWatch, dataFileName);
     if(myConfig.find("updateInterval")!=myConfig.not_found()){
       int updateInterval = myConfig.get<int>("updateInterval");
       myDirWatch.setUpdateInterval(updateInterval);
     }
-    dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(myConfig.get("frameLoadRange",10));
     myDirWatch.Connect("Message(const char *)", "MainFrame", this, "ProcessMessage(const char *)");
   }
   if(myConfig.find("removePedestal")!=myConfig.not_found() && myEventSource.get()){
@@ -151,7 +234,7 @@ void MainFrame::InitializeEventSource(){
     return;
   }
 
-  if(myWorkMode!=M_ONLINE_MODE){
+  if(myWorkMode!=M_ONLINE_GRAW_MODE && myWorkMode!=M_ONLINE_NGRAW_MODE){
     myEventSource->loadDataFile(dataFileName);
     myEventSource->loadFileEntry(0);
   }
@@ -167,7 +250,7 @@ void MainFrame::AddTopMenu(){
   TGLayoutHints * menuBarHelpLayout = new TGLayoutHints(kLHintsTop | kLHintsRight);
 
   fMenuFile = new TGPopupMenu(fClient->GetRoot());
-  if(myWorkMode!=M_ONLINE_MODE) fMenuFile->AddEntry("&Open...", M_FILE_OPEN);
+  if(myWorkMode!=M_ONLINE_GRAW_MODE && myWorkMode!=M_ONLINE_NGRAW_MODE) fMenuFile->AddEntry("&Open...", M_FILE_OPEN);
   //fMenuFile->AddEntry("S&ave as...", M_FILE_SAVEAS);
   fMenuFile->AddSeparator();
   fMenuFile->AddEntry("E&xit", M_FILE_EXIT);
@@ -255,7 +338,7 @@ int MainFrame::AddButtons(int attach){
 					      "Close the application"};
   std::vector<unsigned int> button_id = {M_NEXT_EVENT, M_PREVIOUS_EVENT,  M_RESET_EVENT, M_FILE_EXIT};
 
-  if(myWorkMode == M_ONLINE_MODE){
+  if(myWorkMode == M_ONLINE_GRAW_MODE || myWorkMode == M_ONLINE_NGRAW_MODE){
     button_names.insert(--button_names.end(),"Reset rate");
     button_tooltips.insert(--button_tooltips.end(),"Clear rate graph");
     button_id.insert(--button_id.end(),M_RESET_RATE);
@@ -307,7 +390,8 @@ int MainFrame::AddButtons(int attach){
     if(displayConfig!=myConfig.not_found() &&  displayConfig->second.get(checkbox_config[iCheckbox],false)){
       aCheckbox->SetState(kButtonDown, true);
     }
-    if(checkbox_names[iCheckbox]=="Set reco mode" && myWorkMode==M_ONLINE_MODE){
+    if(checkbox_names[iCheckbox]=="Set reco mode" &&
+       (myWorkMode == M_ONLINE_GRAW_MODE || myWorkMode == M_ONLINE_NGRAW_MODE)){
       aCheckbox->SetState(kButtonUp, true);
       aCheckbox->SetState(kButtonDisabled);
     }
@@ -677,8 +761,9 @@ Bool_t MainFrame::ProcessMessage(Long_t msg){
 /////////////////////////////////////////////////////////
 Bool_t MainFrame::ProcessMessage(const char * msg){
 
+#ifdef DEBUG
   std::cout<<__FUNCTION__<<" msg: "<<msg<<std::endl;
-
+#endif
   myMutex.lock();
   myEventSource->loadDataFile(std::string(msg));
   myEventSource->getLastEvent();
@@ -693,7 +778,7 @@ void MainFrame::HandleMenu(Int_t id){
   const char *filetypes[] = {"ROOT files",    "*.root",
 			     0,               0};
 
-  if(myWorkMode==M_ONLINE_MODE || myWorkMode==M_OFFLINE_GRAW_MODE){
+  if(myWorkMode==M_ONLINE_GRAW_MODE || myWorkMode==M_OFFLINE_NGRAW_MODE){
     filetypes[0] = "GRAW files";
     filetypes[1] = "*.graw";
   }

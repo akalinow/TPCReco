@@ -52,11 +52,11 @@ TEST(RunIdParser_GETFormat_Test, CoBoId) {
 TEST(RunIdParser_GETFormat_Test, AsAdId) {
   EXPECT_EQ(
       RunIdParser("CoBo_ALL_AsAd_ALL_2021-09-08T09:25:36.627_0015.graw.gz")
-          .AsadId(),
+          .AsAdId(),
       -1);
-  EXPECT_EQ(RunIdParser("CoBo_2018-06-06T16:59:32.375_0000.graw").AsadId(), -1);
+  EXPECT_EQ(RunIdParser("CoBo_2018-06-06T16:59:32.375_0000.graw").AsAdId(), -1);
   EXPECT_EQ(
-      RunIdParser("CoBo1_AsAd2_2018-04-19T16:39:05.506_0001.graw").AsadId(), 2);
+      RunIdParser("CoBo1_AsAd2_2018-04-19T16:39:05.506_0001.graw").AsAdId(), 2);
 }
 
 TEST(RunIdParser_Test, timeComparison) {
@@ -90,7 +90,7 @@ TEST(RunIdParser_Test, RootFiles) {
   EXPECT_EQ(
       RunIdParser("EventTPC_2021-06-22T12:01:56.568_1.root").CoBoId(), -1);
   EXPECT_EQ(
-      RunIdParser("EventTPC_2021-06-22T12:01:56.568_1.root").AsadId(), -1);
+      RunIdParser("EventTPC_2021-06-22T12:01:56.568_1.root").AsAdId(), -1);
 }
 
 TEST(RunIdParser_Test, RecoFiles) {
@@ -102,7 +102,7 @@ TEST(RunIdParser_Test, RecoFiles) {
   EXPECT_EQ(
       RunIdParser("Reco_EventTPC_2021-06-22T12:01:56.568_1.root").CoBoId(), -1);
   EXPECT_EQ(
-      RunIdParser("Reco_EventTPC_2021-06-22T12:01:56.568_1.root").AsadId(), -1);
+      RunIdParser("Reco_EventTPC_2021-06-22T12:01:56.568_1.root").AsAdId(), -1);
 }
 
 TEST(RunIdParser_Test, RecoFilesAppended) {
@@ -114,5 +114,71 @@ TEST(RunIdParser_Test, RecoFilesAppended) {
   EXPECT_EQ(
       RunIdParser("Reco_EventTPC_2021-06-22T12:01:56.568_1-2.root").CoBoId(), -1);
   EXPECT_EQ(
-      RunIdParser("Reco_EventTPC_2021-06-22T12:01:56.568_1-2.root").AsadId(), -1);
+      RunIdParser("Reco_EventTPC_2021-06-22T12:01:56.568_1-2.root").AsAdId(), -1);
+}
+
+TEST(RunIdParser_Test, OtherFormatsMinus) {
+  EXPECT_EQ(
+      RunIdParser("CoBo0_AsAd2_2021-06-22T12-01-56.568_0003.graw").fileId(), 3);
+  EXPECT_EQ(RunIdParser("CoBo0_AsAd2_2021-06-22T12-01-56.568_0003.graw").runId(),
+            20210622120156);
+  EXPECT_EQ(
+      RunIdParser("CoBo_2021-06-22T12-01-56.568_0003.graw").CoBoId(), -1);
+  EXPECT_EQ(
+      RunIdParser("CoBo_2021-06-22T12-01-56.568_0003.graw").AsAdId(), -1);
+}
+
+TEST(RunIdParser_Test, OtherFormatsMinus_multigraw) {
+  EXPECT_EQ(
+      RunIdParser("CoBo0_AsAd2_2021-06-22T12-01-56.568_0003.graw").fileId(), 3);
+  EXPECT_EQ(RunIdParser("CoBo0_AsAd2_2021-06-22T12-01-56.568_0003.graw").runId(),
+            20210622120156);
+  EXPECT_EQ(
+      RunIdParser("CoBo0_AsAd2_2021-06-22T12-01-56.568_0003.graw").CoBoId(), 0);
+  EXPECT_EQ(
+      RunIdParser("CoBo0_AsAd2_2021-06-22T12-01-56.568_0003.graw").AsAdId(), 2);
+}
+
+TEST(RunIdParser_Test, OtherFormatsUnderscore) {
+  EXPECT_EQ(
+      RunIdParser("CoBo_2021-06-22T12_01_56.568_0003.graw").fileId(), 3);
+  EXPECT_EQ(RunIdParser("CoBo_2021-06-22T12_01_56.568_0003.graw").runId(),
+            20210622120156);
+  EXPECT_EQ(
+      RunIdParser("CoBo_2021-06-22T12_01_56.568_0003.graw").CoBoId(), -1);
+  EXPECT_EQ(
+      RunIdParser("CoBo_2021-06-22T12_01_56.568_0003.graw").AsAdId(), -1);
+}
+
+TEST(RunIdParser_Test, OtherFormatsUnderscore_multigraw) {
+  EXPECT_EQ(
+      RunIdParser("CoBo0_AsAd2_2021-06-22T12_01_56.568_0003.graw").fileId(), 3);
+  EXPECT_EQ(RunIdParser("CoBo0_AsAd2_2021-06-22T12_01_56.568_0003.graw").runId(),
+            20210622120156);
+  EXPECT_EQ(
+      RunIdParser("CoBo0_AsAd2_2021-06-22T12_01_56.568_0003.graw").CoBoId(), 0);
+  EXPECT_EQ(
+      RunIdParser("CoBo0_AsAd2_2021-06-22T12_01_56.568_0003.graw").AsAdId(), 2);
+}
+
+TEST(RunIdParser_Test, OtherFormatsSpace) {
+  EXPECT_EQ(
+      RunIdParser("CoBo_2021-06-22T12 01 56.568_0003.graw").fileId(), 3);
+  EXPECT_EQ(RunIdParser("CoBo_2021-06-22T12 01 56.568_0003.graw").runId(),
+            20210622120156);
+  EXPECT_EQ(
+      RunIdParser("CoBo_2021-06-22T12 01 56.568_0003.graw").CoBoId(), -1);
+  EXPECT_EQ(
+      RunIdParser("CoBo_2021-06-22T12 01 56.568_0003.graw").AsAdId(), -1);
+}
+
+TEST(RunIdParser_Test, OtherFormatsSpace_multigraw) {
+  EXPECT_EQ(
+      RunIdParser("CoBo0_AsAd2_2021-06-22T12 01 56.568_0003.graw").fileId(), 3);
+  EXPECT_EQ(RunIdParser("CoBo0_AsAd2_2021-06-22T12 01 56.568_0003.graw").runId(),
+            20210622120156);
+  EXPECT_EQ(
+      RunIdParser("CoBo0_AsAd2_2021-06-22T12 01 56.568_0003.graw").CoBoId(), 0);
+  EXPECT_EQ(
+      RunIdParser("CoBo0_AsAd2_2021-06-22T12 01 56.568_0003.graw").AsAdId(), 2);
 }

@@ -33,9 +33,11 @@ public:
 
   double getSegmentLambda(double lambda, unsigned int iSegment) const;
 
+  void setChargeProfile(const TH1F &hProfile) {myChargeProfile = hProfile;} 
+
   double getIntegratedCharge(double lambda) const;
 
-  TH1F getChargeProfile() const { return mySegments.front().getChargeProfile();}
+  TH1F getChargeProfile() const { return myChargeProfile;}
 
   double getChi2() const;
 
@@ -96,7 +98,7 @@ private:
   std::vector<double> nodeAngleChi2;
   
   TrackSegment3DCollection mySegments;
-  TGraph myChargeProfile, myIntegratedChargeProfile;              
+  TH1F myChargeProfile;
 };
 
 typedef std::vector<Track3D> Track3DCollection;

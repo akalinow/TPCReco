@@ -1,0 +1,19 @@
+{
+    "dataFile": "PLACEHOLDER_FOR_DATAFILE",
+    "geometryFile": "./geometry_ELITPC_190mbar_3626Vdrift_25MHz.dat",
+    "resourcesPath": ".",
+    "updateInterval": 3000,
+    "removePedestal": true,
+    "frameLoadRange": 100,
+    "display": {
+        "zLogScale": true,
+        "autoZoom": false,
+        "recoMode": false
+    },
+    "pedestal": {
+        "minPedestalCell": 5,
+        "maxPedestalCell": 25,
+        "minSignalCell": 5,
+        "maxSignalCell": 506
+    }
+}

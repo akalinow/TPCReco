@@ -38,6 +38,8 @@ public:
 
   void setRecHits(const std::vector<Hit2DCollection> & aRecHits) {myRecHits = aRecHits;}
 
+  void setPID(pid_type aPID){ pid = aPID;}
+
   ///Unit tangential vector along segment.
   const TVector3 & getTangent() const { return myTangent;}
 
@@ -81,6 +83,9 @@ public:
   ///Return the full lenght of the segment.
   double getLength() const { return myLenght;}
 
+  ///Return the particle identification.
+  pid_type getPID() const { return pid;}
+
   ///Return charge profile along the track. Each projection is returned in separate
   ///histogram row
   TH2F getChargeProfile1() const;
@@ -112,7 +117,8 @@ private:
   TVector3 myTangent, myBias;
   TVector3 myBiasAtX0, myBiasAtY0, myBiasAtZ0;
   TVector3 myStart, myEnd;
-  double myLenght;
+  double myLenght{0};
+  pid_type pid{pid_type::UNKNOWN};
 
   std::vector<Hit2DCollection> myRecHits;
   std::vector<double> myProjectionsChi2;

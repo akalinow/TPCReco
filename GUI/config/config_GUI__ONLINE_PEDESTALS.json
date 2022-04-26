@@ -1,8 +1,9 @@
 {
-  "dataFile": "/data/edaq/2021/pedestals",
+  "dataFile": "/data/edaq/2022/HIgS_2022/pedestals",
   "geometryFile": "./geometry_ELITPC.dat",
   "resourcesPath": ".",
-  "updateInterval": 2000,
+  "updateInterval": 3000,
+  "frameLoadRange": 10,
   "removePedestal": false,
   "display": {
     "zLogScale": false,

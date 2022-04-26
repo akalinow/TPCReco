@@ -219,10 +219,12 @@ TH2F TrackSegment3D::getChargeProfile1() const{
   double charge = 0.0;
   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
     TGraphErrors & aGraph = projections[strip_dir];
+    /*
     std::string name = "density_graph_"+std::to_string(strip_dir);
     aGraph.SetName(name.c_str());
     name +=".root";
     aGraph.SaveAs(name.c_str());
+    */
     //double graphInt = aGraph.Integral();
     //std::cout<<"graphInt: "<<graphInt<<std::endl;
     //std::cout<<"cosPhiProjectionAngle: "<<cosPhiProjectionAngle<<std::endl;
@@ -269,31 +271,6 @@ double TrackSegment3D::operator() (const double *par) {
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::ostream & operator << (std::ostream &out, const TrackSegment3D &aSegment){
-
-  const TVector3 & start = aSegment.getStart();
-  const TVector3 & end = aSegment.getEnd();
-
-  const TVector3 & bias = aSegment.getBias();
-  const TVector3 & tangent = aSegment.getTangent();
-  
-  out<<"("<<start.X()<<", "<<start.Y()<<", "<<start.Z()<<")"
-       <<" -> "
-     <<"("<<end.X()<<", "<<end.Y()<<", "<<end.Z()<<") "
-     <<std::endl
-     <<"\t\t chi2: "<<aSegment.getRecHitChi2()<<""
-     <<" charge [arb. u.]: "<<aSegment.getIntegratedCharge(aSegment.getLength())
-     <<" length [mm]: "<<aSegment.getLength()
-     <<std::endl
-     <<"\t bias (X,Y,Z): "
-     <<"("<<bias.X()<<", "<<bias.Y()<<", "<<bias.Z()<<")"
-     <<"\t tangent (R, Theta, Phi): "
-     <<"("<<tangent.Mag()<<", "<<tangent.Theta()<<", "<<tangent.Phi()<<")";
-    
-  return out;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
 void TrackSegment3D::addProjection(TH1F &histo, TGraphErrors &graph) const{
   
   double x, y, ex;
@@ -305,7 +282,7 @@ void TrackSegment3D::addProjection(TH1F &histo, TGraphErrors &graph) const{
     ex = graph.GetErrorX(iPoint);
     binLow = histo.FindBin((x-ex)*getLength());
     binHigh = histo.FindBin((x+ex)*getLength());
-    y *= binWidth*graph.GetN();
+    y *= binWidth/getLength();
     for(int iBin=binLow;iBin<=binHigh;++iBin){
       value = histo.GetBinContent(iBin);
       histo.SetBinContent(iBin, value+y);
@@ -334,18 +311,51 @@ TH1F TrackSegment3D::getChargeProfile() const{
   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
     TGraphErrors & aGraph = projections[strip_dir];
     if(aGraph.GetN()>maxPoints) maxPoints = aGraph.GetN();
+    /*
     std::string name = "density_graph_"+std::to_string(strip_dir);
     aGraph.SetName(name.c_str());
     name +=".root";
-    //aGraph.SaveAs(name.c_str());
+    aGraph.SaveAs(name.c_str());
+    */
     addProjection(hChargeProfile, aGraph);
   }
 
-  int rebinFactor = 8*hChargeProfile.GetNbinsX()/maxPoints;  
+  int rebinFactor = 8*hChargeProfile.GetNbinsX()/maxPoints;
+  if(rebinFactor%2 && rebinFactor>1){
+    rebinFactor-=1;
+  }
   hChargeProfile.Rebin(rebinFactor);
-  hChargeProfile.Scale(getIntegratedCharge(getLength())/hChargeProfile.Integral());
+  //hChargeProfile.Scale(getIntegratedCharge(getLength())/hChargeProfile.Integral());
   //hChargeProfile.SaveAs("density_histo.root");
+  std::cout<<"hChargeProfile.Integral(): "<<hChargeProfile.Integral()<<std::endl;
   return hChargeProfile;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::ostream & operator << (std::ostream &out, const TrackSegment3D &aSegment){
+
+  const TVector3 & start = aSegment.getStart();
+  const TVector3 & end = aSegment.getEnd();
+
+  const TVector3 & bias = aSegment.getBias();
+  const TVector3 & tangent = aSegment.getTangent();
+  
+  out<<"Segment:"<<std::endl
+     <<"\t\t START -> END: ("<<start.X()<<", "<<start.Y()<<", "<<start.Z()<<")"
+       <<" -> "
+     <<"("<<end.X()<<", "<<end.Y()<<", "<<end.Z()<<") "
+     <<std::endl
+     <<"\t\t chi2: "<<aSegment.getRecHitChi2()<<""
+     <<" charge [arb. u.]: "<<aSegment.getIntegratedCharge(aSegment.getLength())
+     <<" length [mm]: "<<aSegment.getLength()
+     <<std::endl
+     <<"\t\t bias (X,Y,Z): "
+     <<"("<<bias.X()<<", "<<bias.Y()<<", "<<bias.Z()<<")"
+     <<std::endl
+     <<"\t\t tangent (R, Theta, Phi): "
+     <<"("<<tangent.Mag()<<", "<<tangent.Theta()<<", "<<tangent.Phi()<<")";
+    
+  return out;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

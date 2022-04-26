@@ -10,17 +10,15 @@
 #include "TF1Convolution.h"
 #include "TFitResult.h"
 
+#include "CommonDefinitions.h"
+
 class dEdxFitter{
 
 public:
 
-  enum event_type{
-		  UNKNOWN=0,
-		  C12_ALPHA=1,
-		  ALPHA=2
-  };
+  dEdxFitter(double aPressure=250);
 
-  dEdxFitter();
+  void setPressure(double aPressure) {pressure = aPressure;}
 
   TFitResult fitHisto(TH1F & aHisto);
 
@@ -36,17 +34,25 @@ public:
 
   TF1* getAlphaModel() const { return alphaModel;}
 
+  bool getIsReflected() const { return isReflected;}
+
   double getAlphaEnergy() const;
 
   double getCarbonEnergy() const;
-  
-  event_type getBestFitEventType() const { return bestFitEventType;}
+
+  double getAlphaRange() const;
+
+  double getCarbonRange() const;
+    
+  pid_type getBestFitEventType() const { return bestFitEventType;}
   
   
 private:
 
   static TGraph *braggGraph_alpha;
   static TGraph *braggGraph_12C;
+  double pressure{250};
+  bool isReflected{false};
 
   TF1 *alpha_ionisation; 
   TF1 *carbon_ionisation;
@@ -73,7 +79,7 @@ private:
   
   TFitResult fitHypothesis(TF1 *fModel, TH1F & aHisto);
 
-  event_type bestFitEventType{UNKNOWN};
+  pid_type bestFitEventType{pid_type::UNKNOWN};
 };
 
 #endif

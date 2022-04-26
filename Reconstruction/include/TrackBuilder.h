@@ -12,6 +12,7 @@
 #include "TrackSegment3D.h"
 #include "Track3D.h"
 #include "RecHitBuilder.h"
+#include "dEdxFitter.h"
 
 #include "EventTPC.h"
 #include "EventInfo.h"
@@ -57,6 +58,8 @@ public:
 
   const Track3D & getTrack3D(unsigned int iSegment) const;
 
+  TF1 getdEdx() const {return mydEdxFitter.getFittedModel();};
+
 private:
 
   void makeRecHits(int iDir);
@@ -69,7 +72,9 @@ private:
   
   TrackSegment3D buildSegment3D(int iTrackSeed=0) const;
 
-  void fitTrack3D(const Track3D & aTrackCandidate);
+  Track3D fitTrack3D(const Track3D & aTrackCandidate);
+
+  Track3D fitEventHypothesis(const Track3D & aTrackCandidate);
   
   Track3D fitTrackNodesStartEnd(const Track3D & aTrack) const;
 
@@ -80,6 +85,8 @@ private:
   EventTPC *myEvent;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
   RecHitBuilder myRecHitBuilder;
+  dEdxFitter mydEdxFitter;
+  
   std::vector<double> phiPitchDirection;
 
   bool myHistoInitialized;
@@ -93,8 +100,8 @@ private:
   std::tuple<double, double> myZRange;
 
   TrackSegment2D dummySegment2D;
-  TrackSegment3D myTrack3DSeed, dummySegment3D;
-  Track3D myFittedTrack;
+  TrackSegment3D myTrack3DSeed, dummySegment3D;  
+  Track3D myTmpTrack, myFittedTrack;
   
   mutable ROOT::Fit::Fitter fitter;
   

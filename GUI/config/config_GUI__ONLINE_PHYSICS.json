@@ -3,11 +3,18 @@
     "geometryFile": "./geometry_ELITPC.dat",
     "resourcesPath": ".",
     "updateInterval": 3000,
+    "frameLoadRange": 10,
     "removePedestal": true,
     "display": {
         "zLogScale": true,
         "autoZoom": false,
         "recoMode": false,
         "rate": true
+    },
+    "pedestal": {
+        "minPedestalCell": 5,
+        "maxPedestalCell": 25,
+        "minSignalCell": 5,
+        "maxSignalCell": 506
     }
 }

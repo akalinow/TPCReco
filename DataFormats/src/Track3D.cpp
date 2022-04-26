@@ -316,9 +316,6 @@ void Track3D::shrinkToHits(){
   TH1F hChargeProfileStart = aFirstSegment.getChargeProfile();
   TH1F hChargeProfileEnd = aLastSegment.getChargeProfile();
   double chargeCut = 0.0;
-
-  std::cout<<"Here 2"<<std::endl;
-  hChargeProfileStart.Print("all");
   
   int startBin = 0;
   int endBin = 1E6;
@@ -406,9 +403,13 @@ std::ostream & operator << (std::ostream &out, const Track3D &aTrack){
   out << "Number of segments: "<<aTrack.getSegments().size()<<std::endl;
   if(!aTrack.getSegments().size()) return out;
 
-  out<<"\t Path: start->end [chi2]: "<<std::endl;
-  for(auto aSegment: aTrack.getSegments()) out<<"\t \t"<<aSegment<<std::endl;
-
+  out<<"\t Segments:"<<std::endl;
+  out<<KBLU<<"-----------------------------------"<<RST<<std::endl;
+  for(auto aSegment: aTrack.getSegments()){
+    out<<"\t \t"<<aSegment<<std::endl;
+    out<<KBLU<<"-----------------------------------"<<RST<<std::endl;
+  }
+  /*
   out<<"\t Nodes: node [hits chi2, angle chi2]: "<<std::endl;
   for(unsigned int iSegment = 0;iSegment<(aTrack.getSegments().size()-1);++iSegment){
     out<<"\t \t ("
@@ -420,7 +421,10 @@ std::ostream & operator << (std::ostream &out, const Track3D &aTrack){
        <<", "<<aTrack.getNodeAngleChi2(iSegment)<<"]"
        <<std::endl;
   }
-  out<<"\t Total track chi2: "<<aTrack.getChi2();  
+  */
+  out<<"\t Total track length: "<<aTrack.getLength()<<std::endl;
+  out<<"\t Total track chi2: "<<aTrack.getChi2()<<std::endl;
+  out<<KBLU<<"-----------------------------------"<<RST<<std::endl;
   return out;
 }
 /////////////////////////////////////////////////////////

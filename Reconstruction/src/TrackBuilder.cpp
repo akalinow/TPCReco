@@ -1,5 +1,6 @@
 #include <cstdlib>
 #include <iostream>
+#include <algorithm>
 
 #include "TVector3.h"
 #include "TProfile.h"
@@ -42,6 +43,8 @@ TrackBuilder::TrackBuilder() {
   aHoughOffest.SetX(50.0);
   aHoughOffest.SetY(50.0);
   aHoughOffest.SetZ(0.0);
+
+  mydEdxFitter.setPressure(190);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -66,10 +69,14 @@ void TrackBuilder::setEvent(std::shared_ptr<EventTPC> aEvent){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void TrackBuilder::setEvent(EventTPC* aEvent){
-
+  /*
+  if(!aEvent->GetPedestalSubstracted()){
+    throw std::logic_error("Pedestals not removed. Working without removed pedestals not implemented yet.");
+  }
+  */
   myEvent = aEvent;
-
-  double chargeThreshold = std::max(35.0, 0.1*aEvent->GetMaxCharge());
+  
+  double chargeThreshold = std::max(35.0, 0.05*aEvent->GetMaxCharge());
   int delta_timecells = 5;
   int delta_strips = 2;
   myEvent->MakeOneCluster(chargeThreshold, delta_strips, delta_timecells);
@@ -142,12 +149,15 @@ void TrackBuilder::reconstruct(){
   auto xyRange = myGeometryPtr->rangeXY();
   aTrackCandidate.extendToChamberRange(xyRange, myZRange);
 
-  fitTrack3D(aTrackCandidate);
+  aTrackCandidate = fitTrack3D(aTrackCandidate);
+  aTrackCandidate = fitEventHypothesis(aTrackCandidate);
+  myFittedTrack = aTrackCandidate;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void TrackBuilder::makeRecHits(int iDir){
 
+  myEvent->GetStripVsTimeInMM(getCluster(), iDir);
   std::shared_ptr<TH2D> hProj = myEvent->GetStripVsTimeInMM(getCluster(), iDir);
   myRecHits[iDir] = myRecHitBuilder.makeRecHits(*hProj);
   myRawHits[iDir] = myRecHitBuilder.makeCleanCluster(*hProj);
@@ -334,7 +344,7 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
   }
   //auto xyRange = myGeometryPtr->rangeXY();
   //aTrackCandidate.extendToChamberRange(xyRange, myZRange);
-  //fitTrack3D(aTrackCandidate);
+  //myFittedTrack = fitTrack3D(aTrackCandidate);
   myFittedTrack = aTrackCandidate;
   std::cout<<KBLU<<"Hand cliked track: "<<RST<<std::endl;
   std::cout<<myFittedTrack<<std::endl;
@@ -482,11 +492,11 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
+Track3D TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
 
-  myFittedTrack = aTrackCandidate;
+  Track3D aFittedTrack = aTrackCandidate;  
   std::cout<<KBLU<<"Pre-fit: "<<RST<<std::endl; 
-  std::cout<<myFittedTrack<<std::endl;
+  std::cout<<aFittedTrack<<std::endl;
   
   int nOffsets = 3;
   double offset = 0.0;
@@ -502,18 +512,19 @@ void TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
     }
   }
   if(bestFitResult.IsValid() && bestFitResult.MinFcnValue()<candidateChi2){
-    myFittedTrack.setFitMode(Track3D::FIT_BIAS_TANGENT);
-    myFittedTrack.chi2FromNodesList(bestFitResult.GetParams());
+    aFittedTrack.setFitMode(Track3D::FIT_BIAS_TANGENT);
+    aFittedTrack.chi2FromNodesList(bestFitResult.GetParams());
   }
-  myFittedTrack.getSegments().front().setRecHits(myRawHits);
+  aFittedTrack.getSegments().front().setRecHits(myRawHits);
 
   //auto xyRange = myGeometryPtr->rangeXY(); TH2Poly axis ranges returns too small values
   auto xyRange = std::make_tuple(-99, 99, -165, 165);
-  myFittedTrack.extendToChamberRange(xyRange, myZRange);
-  myFittedTrack.shrinkToHits();
+  aFittedTrack.extendToChamberRange(xyRange, myZRange);
+  aFittedTrack.shrinkToHits();
   
   std::cout<<KBLU<<"Post-fit: "<<RST<<std::endl;
-  std::cout<<myFittedTrack<<std::endl;
+  std::cout<<aFittedTrack<<std::endl;
+  return aFittedTrack;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -603,6 +614,54 @@ Track3D TrackBuilder::fitTrackNodesStartEnd(const Track3D & aTrack) const{
   const ROOT::Fit::FitResult & result = fitter.Result();
   aTrackCandidate.chi2FromNodesList(result.GetParams());
   return aTrackCandidate;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
+
+  const TrackSegment3D & aSegment = aTrackCandidate.getSegments().front();
+  TH1F hChargeProfile = aSegment.getChargeProfile();
+  
+  hChargeProfile.Scale(1.0/hChargeProfile.GetMaximum());
+  mydEdxFitter.fitHisto(hChargeProfile);
+
+  pid_type eventType = mydEdxFitter.getBestFitEventType();
+  bool isReflected = mydEdxFitter.getIsReflected();
+  double alphaRange = mydEdxFitter.getAlphaRange();
+  double carbonRange = mydEdxFitter.getCarbonRange();
+  std::cout<<"length: "<<aTrackCandidate.getLength()<<std::endl;
+  std::cout<<"alphaRange+carbonRange: "<<alphaRange+carbonRange<<std::endl;
+
+  TVector3 alphaEnd =  aSegment.getEnd();
+  TVector3 carbonEnd =  aSegment.getStart();
+  TVector3 tangent =  aSegment.getTangent();
+  if(isReflected){
+    std::swap(alphaEnd, carbonEnd);
+    tangent *=-1;
+  }
+  const TVector3 vertex = carbonEnd + carbonRange*tangent;
+
+  Track3D aSplitTrackCandidate;
+  aSplitTrackCandidate.setChargeProfile(mydEdxFitter.getFittedHisto());
+  TrackSegment3D alphaSegment;
+  alphaSegment.setGeometry(myGeometryPtr);  
+  alphaSegment.setStartEnd(vertex, alphaEnd);
+  alphaSegment.setRecHits(myRecHits);
+  alphaSegment.setPID(pid_type::ALPHA);
+  aSplitTrackCandidate.addSegment(alphaSegment);
+  
+  if(eventType==C12_ALPHA){   
+    TrackSegment3D carbonSegment;
+    carbonSegment.setGeometry(myGeometryPtr);  
+    carbonSegment.setStartEnd(vertex, carbonEnd);
+    carbonSegment.setRecHits(myRecHits);
+    carbonSegment.setPID(pid_type::CARBON_12);
+    aSplitTrackCandidate.addSegment(carbonSegment);
+  }
+
+  std::cout<<KBLU<<"Post-split: "<<RST<<std::endl;
+  std::cout<<aSplitTrackCandidate<<std::endl;
+  return aSplitTrackCandidate;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

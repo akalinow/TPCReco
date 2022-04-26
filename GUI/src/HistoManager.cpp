@@ -15,6 +15,8 @@
 #include "TText.h"
 #include "TPaletteAxis.h"
 
+#include "CommonDefinitions.h"
+#include "IonRangeCalculator.h"
 #include "MakeUniqueName.h"
 #include "GeometryTPC.h"
 #include "EventTPC.h"
@@ -28,8 +30,8 @@ HistoManager::HistoManager() {
 
   myEventPtr = 0;
   myEventInfo = std::make_shared<eventraw::EventInfo>();
-  myRecoOuput.setEventInfo(myEventInfo);				   
-
+  myRecoOutput.setEventInfo(myEventInfo);
+  mydEdxFitter.setPressure(190);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -184,7 +186,6 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
   if(!aCanvas) return;
   int padNumberOffset = 0;
   if(std::string(aCanvas->GetName())=="Histograms") padNumberOffset = 0;
-  
   reconstruct();
 
    for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
@@ -204,7 +205,7 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
      //getRawStripVsTimeInMM(strip_dir)->DrawCopy("colz");
      drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
      //drawTrack2DSeed(strip_dir, aPad);
-     if(strip_dir==DIR_W) getClusterTimeProjectionInMM()->DrawCopy("hist");
+     //if(strip_dir==DIR_W) getClusterTimeProjectionInMM()->DrawCopy("hist");
   }
    int strip_dir=3;
    TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
@@ -812,46 +813,96 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   aPad->cd();
 
   const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
-  TH1F hChargeProfile = aTrack3D.getSegments().front().getChargeProfile();
+  TH1F hFrame("hFrame",";charge [arb. units]; d [mm]",2,-20, 20+aTrack3D.getLength());
+  hFrame.GetYaxis()->SetTitleOffset(2.0);
+  hFrame.SetMinimum(0.0);
+
+  TH1F hAlphaChargeProfile = aTrack3D.getSegments().front().getChargeProfile();
+  hAlphaChargeProfile.SetLineWidth(2);
+  hAlphaChargeProfile.SetLineColor(kBlue-9);
+  hAlphaChargeProfile.SetMarkerColor(kBlue-9);
+  hAlphaChargeProfile.SetMarkerSize(1.0);
+  hAlphaChargeProfile.SetMarkerStyle(20);
+
+  TH1F hCarbonChargeProfile = aTrack3D.getSegments().back().getChargeProfile();
+  hCarbonChargeProfile.SetLineWidth(2);
+  hCarbonChargeProfile.SetLineColor(2);
+  hCarbonChargeProfile.SetMarkerColor(2);
+  hCarbonChargeProfile.SetMarkerSize(1.0);
+  hCarbonChargeProfile.SetMarkerStyle(20);
+
+  TH1F hChargeProfile = aTrack3D.getChargeProfile();
+  hChargeProfile.Scale(1.0/hChargeProfile.GetMaximum());
   hChargeProfile.SetLineWidth(2);
   hChargeProfile.SetLineColor(2);
   hChargeProfile.SetMarkerColor(2);
   hChargeProfile.SetMarkerSize(1.0);
   hChargeProfile.SetMarkerStyle(20);
-  hChargeProfile.SetMinimum(0.0);
-  hChargeProfile.GetYaxis()->SetTitleOffset(1.5);
-  hChargeProfile.DrawCopy("HIST P");
-
-  TLegend *aLegend = new TLegend(0.75, 0.8, 0.95,0.95);
-  fObjClones.push_back(aLegend);
-  /*
-  mydEdxFitter.fitHisto(hChargeProfile);
-  TH1F histo = mydEdxFitter.getFittedHisto();
-  TF1 func = mydEdxFitter.getFittedModel();
-  double carbonScale = func.GetParameter("carbonScale");
-  histo.DrawCopy();
-
-  func.SetParameter("carbonScale",0.0);
-  func.SetLineColor(kRed);
-  func.SetLineStyle(2);
-  func.SetLineWidth(2);
-  TObject *aObj = func.DrawCopy("same");
-  aLegend->AddEntry(aObj,"#alpha","l");
-
-  func.SetParameter("alphaScale",0.0);
-  func.SetParameter("carbonScale",carbonScale);
-  func.SetLineColor(kBlue-9);
-  func.SetLineStyle(2);
-  func.SetLineWidth(2);
-  TObject *aObj1  = func.DrawCopy("same");
-  aLegend->AddEntry(aObj1,"^{12}C","l");
-  aLegend->Draw();
   
+  //double maxCharge = hAlphaChargeProfile.GetMaximum();
+  //maxCharge = std::max(maxCharge, hCarbonChargeProfile.GetMaximum());
+  //maxCharge = 1.0;
+  //hFrame.SetMaximum(1.1*maxCharge);
+  hFrame.DrawCopy();
+  hChargeProfile.DrawCopy("same HIST P");
+  //hAlphaChargeProfile.DrawCopy("same HIST P");
+  //hCarbonChargeProfile.DrawCopy("same HIST P");
+
+  
+  TLegend *aLegend = new TLegend(0.7, 0.75, 0.95,0.95);
+  fObjClones.push_back(aLegend);
+  
+  TF1 dEdx = myTkBuilder.getdEdx();
+  double carbonScale = dEdx.GetParameter("carbonScale");
+
+  dEdx.SetLineColor(kBlack);
+  dEdx.SetLineStyle(1);
+  dEdx.SetLineWidth(3);
+  TObject *aObj = dEdx.DrawCopy("same");
+  aLegend->AddEntry(aObj,"^{12}C + #alpha","l");
+  fObjClones.push_back(aObj);
+
+  dEdx.SetParameter("carbonScale",0.0);
+  dEdx.SetLineColor(kRed);
+  dEdx.SetLineStyle(2);
+  dEdx.SetLineWidth(2);
+  TObject *aObj1 = dEdx.DrawCopy("same");
+  aLegend->AddEntry(aObj1,"#alpha","l");
+  fObjClones.push_back(aObj1);
+  
+  dEdx.SetParameter("alphaScale",0.0);
+  dEdx.SetParameter("carbonScale",carbonScale);
+  dEdx.SetLineColor(kBlue-9);
+  dEdx.SetLineStyle(2);
+  dEdx.SetLineWidth(2);
+  TObject *aObj2  = dEdx.DrawCopy("same");
+  aLegend->AddEntry(aObj2,"^{12}C","l");
+  fObjClones.push_back(aObj2);
+  aLegend->Draw();
+  /*
+  IonRangeCalculator myRangeCalculator(gas_mixture_type::CO2,190.0,293.15);
+  
+  double alphaRange = mydEdxFitter.getAlphaRange();
+  double carbonRange = mydEdxFitter.getCarbonRange();
+  if(alphaRange<0 || carbonRange<0) return;
+  
+  double alphaEnergy = myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA,
+							 alphaRange); 
+  
+  double carbonEnergy = myRangeCalculator.getIonEnergyMeV(pid_type::CARBON_12,
+							  carbonRange);
+
   std::cout<<"Best fit event type: "<<mydEdxFitter.getBestFitEventType()<<std::endl;
   std::cout<<"Fitted function: "<<func.GetName()<<std::endl;
-  std::cout<<"Alpha energy [MeV]: "<<mydEdxFitter.getAlphaEnergy()/1E6<<std::endl;
-  std::cout<<"Carbon energy [MeV]: "<<mydEdxFitter.getCarbonEnergy()/1E6<<std::endl;
+  std::cout<<"Alpha energy [MeV]: "<<alphaEnergy<< " "<<mydEdxFitter.getAlphaEnergy()/1E6<<std::endl;
+  std::cout<<"Carbon energy [MeV]: "<<carbonEnergy<< " "<<mydEdxFitter.getCarbonEnergy()/1E6<<std::endl;
+  std::cout<<"Total energy [MeV]: "<<alphaEnergy+carbonEnergy<<std::endl;
+
+  std::cout<<"Alpha range [mm]: "<<alphaRange<<std::endl;
+  std::cout<<"Carbon range [mm]: "<<carbonRange<<std::endl;
+  std::cout<<"Total range [mm]: "<<alphaRange+carbonRange<<std::endl;
   */
+  //Dla tej energi gamm E(12C)+E(alpha) = 5.133 MeV natomiast E(14C)+E(alpha) = 6.06916 MeV.
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -880,7 +931,7 @@ void HistoManager::openOutputStream(const std::string & filePath){
   std::size_t last_slash_position = filePath.find_last_of("//");
   std::string recoFileName = MakeUniqueName("Reco_"+filePath.substr(last_slash_position+1,
 						     last_dot_position-last_slash_position-1)+".root");
-  myRecoOuput.open(recoFileName);
+  myRecoOutput.open(recoFileName);
 
   std::string fileName = filePath.substr(last_slash_position+1);
   if(fileName.find("CoBo")==std::string::npos){
@@ -899,10 +950,10 @@ void HistoManager::openOutputStream(const std::string & filePath){
 /////////////////////////////////////////////////////////
 void HistoManager::writeRecoData(unsigned long eventType){
 
-  myRecoOuput.setRecTrack(myTkBuilder.getTrack3D(0));
+  myRecoOutput.setRecTrack(myTkBuilder.getTrack3D(0));
   myEventInfo->SetEventType(eventType);				   
-  myRecoOuput.setEventInfo(myEventInfo);				   
-  myRecoOuput.update();  
+  myRecoOutput.setEventInfo(myEventInfo);				   
+  myRecoOutput.update();  
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
