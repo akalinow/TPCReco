@@ -7,6 +7,7 @@
 #include "TCanvas.h"
 #include "TLatex.h"
 #include "TString.h"
+#include "TStopwatch.h"
 
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/xml_parser.hpp>
@@ -67,7 +68,8 @@ std::string createROOTFileName(const  std::string & grawFileName){
 /////////////////////////////////////
 int makeTrackTree(const  std::string & geometryFileName,
 		  const  std::string & dataFileName);
-
+/////////////////////////////////////
+/////////////////////////////////////
 boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
 
   boost::program_options::options_description cmdLineOptDesc("Allowed options");
@@ -90,6 +92,9 @@ boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
 /////////////////////////////////////
 int main(int argc, char **argv){
 
+  TStopwatch aStopwatch;
+  aStopwatch.Start();
+
   std::string geometryFileName, dataFileName;
   boost::program_options::variables_map varMap = parseCmdLineArgs(argc, argv);
   boost::property_tree::ptree tree;
@@ -106,8 +111,9 @@ int main(int argc, char **argv){
     dataFileName = varMap["dataFile"].as<std::string>();
   }
 
+  int nEntriesProcessed = 0;
   if(dataFileName.size() && geometryFileName.size()){
-    makeTrackTree(geometryFileName, dataFileName);
+    nEntriesProcessed = makeTrackTree(geometryFileName, dataFileName);
   }
   else{
     std::cout<<KRED<<"Configuration not complete: "<<RST
@@ -115,6 +121,11 @@ int main(int argc, char **argv){
 	     <<" dataFile: "<<dataFileName
 	     <<std::endl;
   }
+
+  aStopwatch.Stop();
+  std::cout<<KBLU<<"Real time:       "<<RST<<aStopwatch.RealTime()<<" s"<<std::endl;
+  std::cout<<KBLU<<"CPU time:        "<<RST<<aStopwatch.CpuTime()<<" s"<<std::endl;
+  std::cout<<KBLU<<"Processing rate: "<<RST<<nEntriesProcessed/aStopwatch.RealTime()<< " ev./s"<<std::endl;
   return 0;
 }
 /////////////////////////////
@@ -199,7 +210,6 @@ int makeTrackTree(const  std::string & geometryFileName,
   for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
     if(nEntries>10 && iEntry%(nEntries/10)==0){
       std::cout<<KBLU<<"Processed: "<<int(100*(double)iEntry/nEntries)<<" % events"<<RST<<std::endl;
-      tree->Write("", TObject::kOverwrite);
     }
     myEventSource->loadFileEntry(iEntry);
     myEventSource->getCurrentEvent()->MakeOneCluster(35, 0, 0);
@@ -228,7 +238,7 @@ int makeTrackTree(const  std::string & geometryFileName,
     const TVector3 & carbonEnd = aTrack3D.getSegments().back().getEnd();
     
     const TVector3 & tangent = aTrack3D.getSegments().front().getTangent();
-    double phi = acos(tangent.Y()/sqrt(tangent.Z() + tangent.Y()));
+    double phi = atan2(tangent.Y(),tangent.Z());
     double cosTheta = tangent.X();
 
     TVector3 horizontal(0,-1,0);
@@ -275,9 +285,9 @@ int makeTrackTree(const  std::string & geometryFileName,
     track_data.carbonRange = carbonRange;
     tree->Fill();    
   }
-  tree->Write("",TObject::kOverwrite);
+  outputROOTFile.Write();
   outputROOTFile.Close();
-  return 0;
+  return nEntries;
 }
 /////////////////////////////
 ////////////////////////////

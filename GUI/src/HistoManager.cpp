@@ -14,6 +14,8 @@
 #include "TLegend.h"
 #include "TText.h"
 #include "TPaletteAxis.h"
+#include "TLatex.h"
+#include "TLorentzVector.h"
 
 #include "CommonDefinitions.h"
 #include "IonRangeCalculator.h"
@@ -813,7 +815,7 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   aPad->cd();
 
   const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
-  TH1F hFrame("hFrame",";charge [arb. units]; d [mm]",2,-20, 20+aTrack3D.getLength());
+  TH1F hFrame("hFrame",";d [mm];charge [arb. units]",2,-20, 20+aTrack3D.getLength());
   hFrame.GetYaxis()->SetTitleOffset(2.0);
   hFrame.SetMinimum(0.0);
 
@@ -879,29 +881,55 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   aLegend->AddEntry(aObj2,"^{12}C","l");
   fObjClones.push_back(aObj2);
   aLegend->Draw();
-  /*
-  IonRangeCalculator myRangeCalculator(gas_mixture_type::CO2,190.0,293.15);
-  
-  double alphaRange = mydEdxFitter.getAlphaRange();
-  double carbonRange = mydEdxFitter.getCarbonRange();
-  if(alphaRange<0 || carbonRange<0) return;
-  
-  double alphaEnergy = myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA,
-							 alphaRange); 
-  
-  double carbonEnergy = myRangeCalculator.getIonEnergyMeV(pid_type::CARBON_12,
-							  carbonRange);
 
-  std::cout<<"Best fit event type: "<<mydEdxFitter.getBestFitEventType()<<std::endl;
-  std::cout<<"Fitted function: "<<func.GetName()<<std::endl;
-  std::cout<<"Alpha energy [MeV]: "<<alphaEnergy<< " "<<mydEdxFitter.getAlphaEnergy()/1E6<<std::endl;
-  std::cout<<"Carbon energy [MeV]: "<<carbonEnergy<< " "<<mydEdxFitter.getCarbonEnergy()/1E6<<std::endl;
+  IonRangeCalculator myRangeCalculator(gas_mixture_type::CO2,190.0,293.15);  
+  double alphaRange = aTrack3D.getSegments().front().getLength();
+  double carbonRange = aTrack3D.getSegments().back().getLength();
+  double alphaEnergy = myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA,alphaRange);   
+  double carbonEnergy = myRangeCalculator.getIonEnergyMeV(pid_type::CARBON_12,carbonRange);
+  
+  TLatex aLatex;
+  double x = 0.35*aTrack3D.getLength();
+  double y = 0.75;
+  aLatex.DrawLatex(x,y,TString::Format("Track length: %3.0f mm",aTrack3D.getLength()));
+  y = 0.68;
+  aLatex.DrawLatex(x,y,TString::Format("Total E: %2.1f MeV",alphaEnergy+carbonEnergy));
+  
+  std::cout<<"Alpha energy [MeV]: "<<alphaEnergy<<std::endl;
+  std::cout<<"Carbon energy [MeV]: "<<carbonEnergy<<std::endl;
   std::cout<<"Total energy [MeV]: "<<alphaEnergy+carbonEnergy<<std::endl;
 
   std::cout<<"Alpha range [mm]: "<<alphaRange<<std::endl;
   std::cout<<"Carbon range [mm]: "<<carbonRange<<std::endl;
   std::cout<<"Total range [mm]: "<<alphaRange+carbonRange<<std::endl;
-  */
+
+  double atomicMassUnit = 931.49410242; //MeV/c^2
+  double alphaMass = 4*atomicMassUnit + 2.4249; //A*u + Delta MeV/c2
+  double carbon12Mass = 12*atomicMassUnit;
+  double carbon13Mass = 13*atomicMassUnit + 3.1250093323;
+  double oxygen16Mass = 16*atomicMassUnit - 4.7370022;
+  double oxygen18Mass = 18*atomicMassUnit - 0.7828163;
+
+  double energy = alphaEnergy + alphaMass;
+  double momentum = sqrt(energy*energy - alphaMass*alphaMass);
+  TLorentzVector alphaP4(aTrack3D.getSegments().front().getTangent()*momentum, energy);
+
+  energy = carbonEnergy + carbon12Mass;
+  momentum = sqrt(energy*energy - carbon12Mass*carbon12Mass);
+  TLorentzVector carbon12P4(aTrack3D.getSegments().back().getTangent()*momentum, energy);
+
+  energy = carbonEnergy + carbon13Mass;
+  momentum = sqrt(energy*energy - carbon13Mass*carbon13Mass);
+  TLorentzVector carbon13P4(aTrack3D.getSegments().back().getTangent()*momentum, energy);
+
+  std::cout<<"---------------------------------"<<std::endl;
+  TLorentzVector totalP4 = alphaP4+carbon12P4;
+  totalP4.Print();
+  (alphaP4+carbon13P4).Print();
+  std::cout<<"oxygen16Mass: "<<oxygen16Mass<<std::endl;
+  std::cout<<"oxygen18Mass: "<<oxygen18Mass<<std::endl;
+  std::cout<<"---------------------------------"<<std::endl;
+  
   //Dla tej energi gamm E(12C)+E(alpha) = 5.133 MeV natomiast E(14C)+E(alpha) = 6.06916 MeV.
 }
 /////////////////////////////////////////////////////////

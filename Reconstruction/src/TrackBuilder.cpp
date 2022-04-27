@@ -627,10 +627,8 @@ Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
 
   pid_type eventType = mydEdxFitter.getBestFitEventType();
   bool isReflected = mydEdxFitter.getIsReflected();
-  double alphaRange = mydEdxFitter.getAlphaRange();
+  //double alphaRange = mydEdxFitter.getAlphaRange();
   double carbonRange = mydEdxFitter.getCarbonRange();
-  std::cout<<"length: "<<aTrackCandidate.getLength()<<std::endl;
-  std::cout<<"alphaRange+carbonRange: "<<alphaRange+carbonRange<<std::endl;
 
   TVector3 alphaEnd =  aSegment.getEnd();
   TVector3 carbonEnd =  aSegment.getStart();
