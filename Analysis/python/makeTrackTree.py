@@ -101,12 +101,11 @@ runs = [
        #("/scratch/akalinow/ELITPC/data/HIgS_2022/EventTPC/",
        # "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
 
-       ("/scratch_ssd/akalinow/ELITPC/data/HIgS_2022/EventTPC/",
-        "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat"),
-       #("/scratch_elitpc/IFJ_VdG_20210630/20210616_extTrg_CO2_250mbar_DT1470ET/",
-       # "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
-        #("/scratch/akalinow/ELITPC/data/2018/",
-        #  "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_mini_eTPC.dat"),
+       #("/scratch_ssd/akalinow/ELITPC/data/HIgS_2022/EventTPC/",
+      #"/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat"),
+    
+       ("/scratch/akalinow/Zajecia/2021-2022/Lato/PracowniaFizycznaIIStopnia/MariannaGlazewska/data/",
+        "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
 ]
 ################################################
 ################################################

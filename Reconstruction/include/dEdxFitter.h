@@ -57,20 +57,21 @@ private:
   bool isReflected{false};
   double bestFitChi2{999.0};
 
-  TF1 *alpha_ionisation; 
-  TF1 *carbon_ionisation;
-  TF1 *carbon_alpha_ionisation;
+  TF1 dummyFunc;
+  TF1 *alpha_ionisation{0}; 
+  TF1 *carbon_ionisation{0};
+  TF1 *carbon_alpha_ionisation{0};
 
-  TF1 *alphaModel;
-  TF1 *carbon_alphaModel;
+  TF1 *alphaModel{0};
+  TF1 *carbon_alphaModel{0};
 
-  TF1Convolution *carbon_alpha_ionisation_smeared;
-  TF1Convolution *alpha_ionisation_smeared;
+  TF1Convolution *carbon_alpha_ionisation_smeared{0};
+  TF1Convolution *alpha_ionisation_smeared{0};
 
   TFitResult theFitResult;
   TH1F theFittedHisto;
   TH1F emptyHisto;
-  TF1 *theFittedModel;
+  TF1 *theFittedModel{0};
 
   void reset();
 

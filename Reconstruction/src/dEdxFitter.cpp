@@ -61,6 +61,8 @@ dEdxFitter::dEdxFitter(double aPressure){
   ROOT::Math::MinimizerOptions::SetDefaultMinimizer("Minuit" ,"Scan");
   ROOT::Math::MinimizerOptions::SetDefaultStrategy(0);
   ROOT::Math::MinimizerOptions::PrintDefault("",std::cout);
+
+  reset();
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////

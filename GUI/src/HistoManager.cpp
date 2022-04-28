@@ -815,6 +815,8 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   aPad->cd();
 
   const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
+  if(!aTrack3D.getSegments().size()) return;
+  
   TH1F hFrame("hFrame",";d [mm];charge [arb. units]",2,-20, 20+aTrack3D.getLength());
   hFrame.GetYaxis()->SetTitleOffset(2.0);
   hFrame.SetMinimum(0.0);
@@ -840,7 +842,7 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   hChargeProfile.SetMarkerColor(2);
   hChargeProfile.SetMarkerSize(1.0);
   hChargeProfile.SetMarkerStyle(20);
-  
+
   //double maxCharge = hAlphaChargeProfile.GetMaximum();
   //maxCharge = std::max(maxCharge, hCarbonChargeProfile.GetMaximum());
   //maxCharge = 1.0;
@@ -849,13 +851,14 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   hChargeProfile.DrawCopy("same HIST P");
   //hAlphaChargeProfile.DrawCopy("same HIST P");
   //hCarbonChargeProfile.DrawCopy("same HIST P");
-
   
   TLegend *aLegend = new TLegend(0.7, 0.75, 0.95,0.95);
   fObjClones.push_back(aLegend);
   
   TF1 dEdx = myTkBuilder.getdEdx();
+  if(!dEdx.GetNpar()) return;
   double carbonScale = dEdx.GetParameter("carbonScale");
+  return;
 
   dEdx.SetLineColor(kBlack);
   dEdx.SetLineStyle(1);

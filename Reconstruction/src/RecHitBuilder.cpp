@@ -58,7 +58,10 @@ const TH2D & RecHitBuilder::makeTimeProjectionRecHits(const TH2D & hProjection){
   for(int iBinY=1;iBinY<=hProjection.GetNbinsY();++iBinY){
     h1DProj = hProjection.ProjectionX("h1DProjX",iBinY, iBinY);
     const TF1 &fittedShape = fit1DProjection(h1DProj, initialSigma);
-    if(fittedShape.GetNpar()<3) continue;
+    if(fittedShape.GetNpar()<3){
+      delete h1DProj;
+      continue;      
+    }
     hitCharge = fittedShape.GetParameter(0);
     hitTimePos = fittedShape.GetParameter(1);
     hitTimePosError = fittedShape.GetParameter(2);

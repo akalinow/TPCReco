@@ -279,13 +279,11 @@ void Track3D::extendToXYRange(double xMin, double xMax,
     lambda = aLastSegment.getLambdaAtX(xMin);
     aEnd =  aLastSegment.getStart() + lambda*aLastSegment.getTangent();
     aLastSegment.setStartEnd(aLastSegment.getStart(), aEnd);
-    aEnd.Print();
   }
   else{
     lambda = aFirstSegment.getLambdaAtX(xMin);
     aStart =  aFirstSegment.getStart() + lambda*aFirstSegment.getTangent();
     aFirstSegment.setStartEnd(aStart, aFirstSegment.getEnd());
-    aStart.Print();
   }
   
   aStart = aFirstSegment.getStart();

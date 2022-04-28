@@ -207,7 +207,7 @@ int makeTrackTree(const  std::string & geometryFileName,
 
   //Event loop
   unsigned int nEntries = myEventSource->numberOfEntries();
-  //nEntries = 100;
+  //nEntries = 10;
   for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
     if(nEntries>10 && iEntry%(nEntries/10)==0){
       std::cout<<KBLU<<"Processed: "<<int(100*(double)iEntry/nEntries)<<" % events"<<RST<<std::endl;
@@ -231,8 +231,6 @@ int makeTrackTree(const  std::string & geometryFileName,
     
     double length = aTrack3D.getLength();
     double charge = aTrack3D.getIntegratedCharge(length);
-    
-
     double chi2 = aTrack3D.getChi2();
     double hypothesisChi2 = aTrack3D.getHypothesisFitChi2();
     const TVector3 & vertex = aTrack3D.getSegments().front().getStart();
@@ -250,9 +248,6 @@ int makeTrackTree(const  std::string & geometryFileName,
     double verticalTrackLostPart = 6.0/std::abs(vertical.Dot(tangent));
 
     int eventType = aTrack3D.getSegments().front().getPID()+aTrack3D.getSegments().back().getPID();
-    std::cout<<" aTrack3D.getSegments().front().getPID(): "<< aTrack3D.getSegments().front().getPID()
-	     <<" aTrack3D.getSegments().back().getPID(): "<<aTrack3D.getSegments().back().getPID()
-	     <<std::endl;
     double alphaRange =  aTrack3D.getSegments().front().getLength();
     double carbonRange =  aTrack3D.getSegments().back().getPID()== pid_type::CARBON_12 ? aTrack3D.getSegments().back().getLength(): 0.0;
     double alphaEnergy = alphaRange>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA,alphaRange):0.0;
@@ -289,7 +284,7 @@ int makeTrackTree(const  std::string & geometryFileName,
     tree->Fill();    
   }
   outputROOTFile.Write();
-  outputROOTFile.Close();
+  myRecoOutput.close();
   return nEntries;
 }
 /////////////////////////////

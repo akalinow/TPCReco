@@ -150,7 +150,7 @@ void TrackBuilder::reconstruct(){
   aTrackCandidate.extendToChamberRange(xyRange, myZRange);
 
   aTrackCandidate = fitTrack3D(aTrackCandidate);
-  aTrackCandidate = fitEventHypothesis(aTrackCandidate);
+  //aTrackCandidate = fitEventHypothesis(aTrackCandidate);
   myFittedTrack = aTrackCandidate;
 }
 /////////////////////////////////////////////////////////
@@ -161,7 +161,7 @@ void TrackBuilder::makeRecHits(int iDir){
   std::shared_ptr<TH2D> hProj = myEvent->GetStripVsTimeInMM(getCluster(), iDir);
   myRecHits[iDir] = myRecHitBuilder.makeRecHits(*hProj);
   myRawHits[iDir] = myRecHitBuilder.makeCleanCluster(*hProj);
-  hTimeProjection.Add(myRecHits[iDir].ProjectionX());
+  hTimeProjection.Add(myRecHits[iDir].ProjectionX("hTimeProjection"));
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

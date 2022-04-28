@@ -22,8 +22,8 @@ FileInfoFrame::FileInfoFrame(const TGWindow * p, MainFrame * aFrame)
 						 kLHintsShrinkX|kLHintsShrinkY |
 						 kLHintsFillX|kLHintsFillY, 2, 2, 2, 2);
 
-   AddFrame(modeInfoFrame, new TGLayoutHints(kLHintsFillX, 2, 2, 5, 5));
-   AddFrame(fileInfoFrame, new TGLayoutHints(kLHintsExpandX, 2, 2, 5, 5));
+   AddFrame(modeInfoFrame, new TGLayoutHints(kLHintsFillX, 2, 2, 2, 5));
+   AddFrame(fileInfoFrame, new TGLayoutHints(kLHintsExpandX, 2, 2, 2, 5));
    AddFrame(datasetInfoFrame, aLayoutHints);
    
    TGGroupFrame *totalEventsFrame = new TGGroupFrame(datasetInfoFrame, "Events in the file:");
@@ -53,7 +53,7 @@ FileInfoFrame::FileInfoFrame(const TGWindow * p, MainFrame * aFrame)
    fileNameFrame->AddFrame(fileNameLabel, aLayoutHints);
    modeFrame->AddFrame(modeLabel, aLayoutHints);
 
-   aLayoutHints = new TGLayoutHints(kLHintsTop | kLHintsLeft | kLHintsFillX, 2, 2, -5, -5);
+   aLayoutHints = new TGLayoutHints(kLHintsTop | kLHintsLeft | kLHintsFillX, 2, 2, 2, 2);
    datasetInfoFrame->AddFrame(totalEventsFrame, aLayoutHints);
    datasetInfoFrame->AddFrame(currentEventFrame, aLayoutHints);
    datasetInfoFrame->AddFrame(currentEntryFrame, aLayoutHints);

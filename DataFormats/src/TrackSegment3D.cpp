@@ -214,6 +214,7 @@ TH2F TrackSegment3D::getChargeProfile1() const{
   double minX = -0.1*getLength();
   double maxX = 1.1*getLength();
   TH2F hChargeProfile("hChargeProfile",";d [mm];charge/mm",nBins, minX, maxX, 3, -0.5, 2.5);
+  hChargeProfile.SetDirectory(0);
 
   double xCenter;
   double charge = 0.0;
@@ -305,6 +306,7 @@ TH1F TrackSegment3D::getChargeProfile() const{
   double minX = -0.2*getLength();
   double maxX = 1.2*getLength();
   TH1F hChargeProfile("hChargeProfile",";d [mm];charge",nBins, minX, maxX);
+  hChargeProfile.SetDirectory(0);
   if(getLength()<1) return hChargeProfile;
 
   int maxPoints = 0;
@@ -321,13 +323,13 @@ TH1F TrackSegment3D::getChargeProfile() const{
   }
 
   int rebinFactor = 8*hChargeProfile.GetNbinsX()/maxPoints;
-  if(rebinFactor%2 && rebinFactor>1){
-    rebinFactor-=1;
+  while(nBins%rebinFactor){
+    ++rebinFactor;
   }
   hChargeProfile.Rebin(rebinFactor);
   //hChargeProfile.Scale(getIntegratedCharge(getLength())/hChargeProfile.Integral());
   //hChargeProfile.SaveAs("density_histo.root");
-  std::cout<<"hChargeProfile.Integral(): "<<hChargeProfile.Integral()<<std::endl;
+  //std::cout<<"hChargeProfile.Integral(): "<<hChargeProfile.Integral()<<std::endl;
   return hChargeProfile;
 }
 /////////////////////////////////////////////////////////
