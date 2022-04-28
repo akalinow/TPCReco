@@ -34,6 +34,8 @@ public:
 
   TF1* getAlphaModel() const { return alphaModel;}
 
+  double getChi2() const { return bestFitChi2;}
+
   bool getIsReflected() const { return isReflected;}
 
   double getAlphaEnergy() const;
@@ -51,8 +53,9 @@ private:
 
   static TGraph *braggGraph_alpha;
   static TGraph *braggGraph_12C;
-  double pressure{250};
+  static double pressure;
   bool isReflected{false};
+  double bestFitChi2{999.0};
 
   TF1 *alpha_ionisation; 
   TF1 *carbon_ionisation;

@@ -928,6 +928,7 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   (alphaP4+carbon13P4).Print();
   std::cout<<"oxygen16Mass: "<<oxygen16Mass<<std::endl;
   std::cout<<"oxygen18Mass: "<<oxygen18Mass<<std::endl;
+  std::cout<<"hypothesis chi2: "<<aTrack3D.getHypothesisFitChi2()<<std::endl;
   std::cout<<"---------------------------------"<<std::endl;
   
   //Dla tej energi gamm E(12C)+E(alpha) = 5.133 MeV natomiast E(14C)+E(alpha) = 6.06916 MeV.

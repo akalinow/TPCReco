@@ -138,6 +138,7 @@ typedef struct {Float_t eventId, frameId,
     alphaEnergy, carbonEnergy,
     alphaRange, carbonRange,
     charge, cosTheta, phi, chi2,
+    hypothesisChi2,
     xVtx, yVtx, zVtx,
     xAlphaEnd, yAlphaEnd, zAlphaEnd,
     xCarbonEnd, yCarbonEnd, zCarbonEnd;
@@ -174,7 +175,7 @@ int makeTrackTree(const  std::string & geometryFileName,
   leafNames += "eventId:frameId:eventType:";
   leafNames += "length:horizontalLostLength:verticalLostLength:";
   leafNames += "alphaEnergy:carbonEnergy:alphaRange:carbonRange:";
-  leafNames += "charge:cosTheta:phi:chi2:";
+  leafNames += "charge:cosTheta:phi:chi2:hypothesisChi2:";
   leafNames += "xVtx:yVtx:zVtx:";
   leafNames += "xAlphaEnd:yAlphaEnd:zAlphaEnd:";
   leafNames += "xCarbonEnd:yCarbonEnd:zCarbonEnd";
@@ -206,7 +207,7 @@ int makeTrackTree(const  std::string & geometryFileName,
 
   //Event loop
   unsigned int nEntries = myEventSource->numberOfEntries();
-  //nEntries = 500;
+  //nEntries = 100;
   for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
     if(nEntries>10 && iEntry%(nEntries/10)==0){
       std::cout<<KBLU<<"Processed: "<<int(100*(double)iEntry/nEntries)<<" % events"<<RST<<std::endl;
@@ -233,12 +234,13 @@ int makeTrackTree(const  std::string & geometryFileName,
     
 
     double chi2 = aTrack3D.getChi2();
+    double hypothesisChi2 = aTrack3D.getHypothesisFitChi2();
     const TVector3 & vertex = aTrack3D.getSegments().front().getStart();
     const TVector3 & alphaEnd = aTrack3D.getSegments().front().getEnd();
     const TVector3 & carbonEnd = aTrack3D.getSegments().back().getEnd();
     
     const TVector3 & tangent = aTrack3D.getSegments().front().getTangent();
-    double phi = atan2(tangent.Y(),tangent.Z());
+    double phi = atan2(tangent.Z(),tangent.Y());
     double cosTheta = tangent.X();
 
     TVector3 horizontal(0,-1,0);
@@ -266,6 +268,7 @@ int makeTrackTree(const  std::string & geometryFileName,
     track_data.cosTheta = cosTheta;
     track_data.phi = phi;
     track_data.chi2 = chi2;
+    track_data.hypothesisChi2 = hypothesisChi2;
     
     track_data.xVtx = vertex.X();
     track_data.yVtx = vertex.Y();

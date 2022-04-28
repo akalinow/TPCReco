@@ -641,6 +641,7 @@ Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
 
   Track3D aSplitTrackCandidate;
   aSplitTrackCandidate.setChargeProfile(mydEdxFitter.getFittedHisto());
+  aSplitTrackCandidate.setHypothesisFitChi2(mydEdxFitter.getChi2());
   TrackSegment3D alphaSegment;
   alphaSegment.setGeometry(myGeometryPtr);  
   alphaSegment.setStartEnd(vertex, alphaEnd);

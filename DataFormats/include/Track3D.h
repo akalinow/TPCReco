@@ -55,6 +55,10 @@ public:
 
   void setFitMode(fit_modes aMode){myFitMode = aMode;}
 
+  void setHypothesisFitChi2(double chi2){ hypothesisFitChi2 = chi2;};
+
+  double getHypothesisFitChi2() const {return hypothesisFitChi2;}
+
   double hitDistanceFromBias(const double *par);
   
   double chi2FromNodesList(const double *par);
@@ -99,6 +103,7 @@ private:
   
   TrackSegment3DCollection mySegments;
   TH1F myChargeProfile;
+  double hypothesisFitChi2{99};
 };
 
 typedef std::vector<Track3D> Track3DCollection;

@@ -2,9 +2,11 @@
 #include "colorText.h"
 
 #include "TFitResultPtr.h"
+#include "Math/MinimizerOptions.h"
 
 TGraph* dEdxFitter::braggGraph_alpha = new TGraph("dEdx_alpha_10000keV_250mbar_CO2.dat", "%lg %lg %*lg");
 TGraph* dEdxFitter::braggGraph_12C = new TGraph("dEdx_12C_2500keV_250mbar_CO2.dat", "%lg %lg %*lg");
+double dEdxFitter::pressure = 250.0;
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 dEdxFitter::dEdxFitter(double aPressure){
@@ -46,12 +48,19 @@ dEdxFitter::dEdxFitter(double aPressure){
   carbon_alphaModel->FixParameter(4, 2.2E-6);//2.2366e-06
   carbon_alphaModel->FixParameter(5, 0.0);
   carbon_alphaModel->FixParameter(6, 1.5);
+  carbon_alphaModel->SetParLimits(6, 1, 3);
   carbon_alphaModel->SetParameters(5, 250, 1.0, 0.5,  2.2E-6, 0, 1.28);
 
   alphaModel = new TF1(*carbon_alphaModel);
   alphaModel->SetName("alphaModel");
   alphaModel->FixParameter(3, 0.0);
   alphaModel->SetParameters(0, 250, 1.0, 0.0, 2.2E-6, 0, 1.28);
+
+
+  //ROOT::Math::MinimizerOptions::SetMinimizerType("Minuit2");
+  ROOT::Math::MinimizerOptions::SetDefaultMinimizer("Minuit" ,"Scan");
+  ROOT::Math::MinimizerOptions::SetDefaultStrategy(0);
+  ROOT::Math::MinimizerOptions::PrintDefault("",std::cout);
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
@@ -64,16 +73,17 @@ void dEdxFitter::reset(){
   theFittedHisto = emptyHisto;
   bestFitEventType = pid_type::UNKNOWN;
   isReflected = false;
+  bestFitChi2 = 999.0;
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 double dEdxFitter::bragg_alpha(double *x, double *params) {
-  return 1E7*braggGraph_alpha->Eval((190/250.0)*x[0]*1E7);
+  return 1E7*braggGraph_alpha->Eval((pressure/250.0)*x[0]*1E7);
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 double dEdxFitter::bragg_12C(double *x, double *params) {
-  return 1E7*braggGraph_12C->Eval((190/250.0)*x[0]*1E7);
+  return 1E7*braggGraph_12C->Eval((pressure/250.0)*x[0]*1E7);
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
@@ -148,11 +158,12 @@ TFitResult dEdxFitter::fitHisto(TH1F & aHisto){
   TFitResult alphaResult = fitHypothesis(alphaModel, aHisto);
   if(alphaResult.IsEmpty()) return theFitResult;
 
-  TFitResult alphaResult_reflected = fitHypothesis(alphaModel, aReflectedHisto);
-									 
+
+  TFitResult alphaResult_reflected = fitHypothesis(alphaModel, aReflectedHisto);									 
   TFitResult carbon_alphaResult = fitHypothesis(carbon_alphaModel, aHisto);
   TFitResult carbon_alphaResult_reflected = fitHypothesis(carbon_alphaModel, aReflectedHisto);
 
+  bestFitChi2 = alphaResult.MinFcnValue();
   theFitResult = alphaResult;
   theFittedModel = alphaModel;
   theFittedHisto = aHisto;
@@ -160,6 +171,7 @@ TFitResult dEdxFitter::fitHisto(TH1F & aHisto){
   isReflected = false;
   
   if(alphaResult_reflected.MinFcnValue()<theFitResult.MinFcnValue()){
+    bestFitChi2 = alphaResult_reflected.MinFcnValue();
     theFitResult = alphaResult_reflected;
     theFittedModel = alphaModel;
     theFittedHisto = aReflectedHisto;
@@ -167,6 +179,7 @@ TFitResult dEdxFitter::fitHisto(TH1F & aHisto){
     isReflected = true;
   }
   if(carbon_alphaResult.MinFcnValue()<theFitResult.MinFcnValue()){
+    bestFitChi2 = carbon_alphaResult.MinFcnValue();
     theFitResult = carbon_alphaResult;
     theFittedModel = carbon_alphaModel;
     theFittedHisto = aHisto;
@@ -174,6 +187,7 @@ TFitResult dEdxFitter::fitHisto(TH1F & aHisto){
     isReflected = false;
   }
   if(carbon_alphaResult_reflected.MinFcnValue()<theFitResult.MinFcnValue()){
+    bestFitChi2 = carbon_alphaResult_reflected.MinFcnValue();
     theFitResult = carbon_alphaResult_reflected;
     theFittedHisto = aReflectedHisto;
     theFittedModel = carbon_alphaModel;
