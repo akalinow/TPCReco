@@ -50,7 +50,6 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h,  const boost::proper
     modeLabel = "OFFLINE from GRAW";
   }
   fFileInfoFrame->updateModeLabel(modeLabel);
-  fTrackInfoFrame->updateModeLabel(modeLabel);
   Update();
 }
 /////////////////////////////////////////////////////////

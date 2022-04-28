@@ -22,8 +22,6 @@ public:
 
   void updateFileName(const std::string & fileName);
 
-  void updateModeLabel(const std::string & aMode);
-
 private:
 
   MainFrame *theMainFrame;
@@ -32,7 +30,6 @@ private:
   TGHorizontalFrame* modeInfoFrame;
   
   TGLabel *fileNameLabel;
-  TGLabel *modeLabel;
 
   unsigned int fileNameLineLength = 50;
 

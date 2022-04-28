@@ -72,13 +72,7 @@ void TrackInfoFrame::updateFileName(const std::string & fileName){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void TrackInfoFrame::updateModeLabel(const std::string& aMode) {
 
-    modeLabel->SetText(aMode.c_str());
-    modeInfoFrame->Layout();
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
 Bool_t TrackInfoFrame::ProcessMessage(Long_t msg, Long_t parm1, Long_t /*parm2*/){
    switch (GET_MSG(msg)) {
    case kC_COMMAND:
