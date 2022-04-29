@@ -241,10 +241,10 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     histos1D["2prong_alpha_deltaX"]->Fill(alpha_len*list.front().getTangent().X());
     histos1D["2prong_alpha_deltaY"]->Fill(alpha_len*list.front().getTangent().Y());
     histos1D["2prong_alpha_deltaZ"]->Fill(alpha_len*list.front().getTangent().Z());
-    histos1D["2prong_alpha_endX"]->Fill(alpha_len*list.front().getEnd().X());
-    histos1D["2prong_alpha_endY"]->Fill(alpha_len*list.front().getEnd().Y());
-    histos1D["2prong_alpha_endZ"]->Fill(alpha_len*list.front().getEnd().Z());
-    histos2D["2prong_alpha_endXY"]->Fill(alpha_len*list.front().getEnd().X(), alpha_len*list.front().getEnd().Y());
+    histos1D["2prong_alpha_endX"]->Fill(list.front().getEnd().X());
+    histos1D["2prong_alpha_endY"]->Fill(list.front().getEnd().Y());
+    histos1D["2prong_alpha_endZ"]->Fill(list.front().getEnd().Z());
+    histos2D["2prong_alpha_endXY"]->Fill(list.front().getEnd().X(), list.front().getEnd().Y());
     histos1D["2prong_alpha_phiDET"]->Fill(list.front().getTangent().Phi());
     histos1D["2prong_alpha_thetaDET"]->Fill(list.front().getTangent().Theta());
     histos1D["2prong_alpha_cosThetaDET"]->Fill(list.front().getTangent().CosTheta());
@@ -256,7 +256,7 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     histos1D["2prong_carbon_endX"]->Fill(list.back().getEnd().X());
     histos1D["2prong_carbon_endY"]->Fill(list.back().getEnd().Y());
     histos1D["2prong_carbon_endZ"]->Fill(list.back().getEnd().Z());
-    histos2D["2prong_carbon_endXY"]->Fill(carbon_len*list.back().getEnd().X(), carbon_len*list.back().getEnd().Y());
+    histos2D["2prong_carbon_endXY"]->Fill(list.back().getEnd().X(), list.back().getEnd().Y());
     histos1D["2prong_carbon_phiDET"]->Fill(list.back().getTangent().Phi());
     histos1D["2prong_carbon_thetaDET"]->Fill(list.back().getTangent().Theta());
     histos1D["2prong_carbon_cosThetaDET"]->Fill(list.back().getTangent().CosTheta());
