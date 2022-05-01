@@ -202,8 +202,8 @@ class GeometryTPC {
   double Timecell2pos(double position_in_cells, bool &err_flag); // [mm] output: position along Z-axis
   double Pos2timecell(double z, bool &err_flag); // output: time-cell number, valid range [0-511]
 
-  TGraph GetActiveAreaConvexHull(double vetoFraction=0.0); // get convex hull [mm] of the entire UVW active area
-                                                           // (optionally) excludes outer VETO band (0<=vetoFraction<1)
+  TGraph GetActiveAreaConvexHull(double vetoBand=0); // get convex hull [mm] of the entire UVW active area
+                                                     // with (optionally) excluded outer VETO band [mm]
 
   std::tuple<double, double> rangeX(); //min/max X [mm] cartesian coordinates covered by UVW active area
   std::tuple<double, double> rangeY(); //min/max Y [mm] cartesian coordinates covered by UVW active area
