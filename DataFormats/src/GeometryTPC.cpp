@@ -16,7 +16,7 @@
 #include "TROOT.h"
 #include "TVector2.h"
 #include "TVector3.h"
-//#include "TRandom3.h" // DEBUG
+#include "TRandom3.h" // DEBUG
 
 #include "colorText.h"
 #include "GeometryTPC.h"
@@ -766,13 +766,13 @@ bool GeometryTPC::InitActiveAreaConvexHull(TGraph *g) {
 
   //  if(g) { g->Set(0); } else { g=new TGraph(); } // DEBUG
   //  auto rand=new TRandom3(0);
-  //  for(auto ipoint=0u; ipoint<150u; ipoint++) {
+  //  for(auto ipoint=0u; ipoint<50u; ipoint++) {
   //    g->SetPoint(ipoint, rand->Uniform(-100, 100), rand->Uniform(-100, 100));
   //  } // DEBUG
-
+  
   if(!tp || !g) {
     if (_debug) {
-      std::cerr << "GeometryTPC::SetActiveAreaShape - Abort" << std::flush << std::endl;
+      std::cerr << __FUNCTION__ << ": Wrong input TGraph - Abort" << std::flush << std::endl;
     }
     return false;
   }
@@ -894,7 +894,7 @@ bool GeometryTPC::InitActiveAreaConvexHull(TGraph *g) {
   //    }
   //  } // DEBUG
 
-  // For each point[i] :
+  // For every point[i]:
   // 1. Keep removing points from the stack while orientation of the triplet of points
   //    {P1, P2, P3} := {next-to-top, top, point[i]} is clockwise (rigth-turn) or colinear
   // 2. Place point[i] on top of the stack.
@@ -951,7 +951,7 @@ bool GeometryTPC::InitActiveAreaConvexHull(TGraph *g) {
 ////////////////////////////////////////////////////////////
 //
 // Returns the stored convex hull of the entire UVW active area
-// Optionally excludes outer VETO band (0<=vetoFraction<1)
+// Optionally excludes outer VETO band [mm]
 //
 // Result can be converted to TH2PolyBin:
 // $ auto hull=GetActiveAreaConvexHull(0.0);
@@ -960,22 +960,31 @@ bool GeometryTPC::InitActiveAreaConvexHull(TGraph *g) {
 // $ bin->GetPolygon()->Draw("AL*");
 // $ cout << "Is (x=0, y=0) inside polygon: " << bin->IsInside(0,0) << endl;
 //
-TGraph GeometryTPC::GetActiveAreaConvexHull(double vetoFraction){
+TGraph GeometryTPC::GetActiveAreaConvexHull(double vetoBand){
 
-  TGraph result = *tp_convex;
-  if(vetoFraction<0 || vetoFraction>=1) {
+  if(vetoBand<0.0) {
     if (_debug) {
-      std::cerr << __FUNCTION__ << ": Wrong VETO fraction - assumed value 0 instead!" << std::endl;
+      std::cerr << __FUNCTION__ << ": VETO band must not be negative - Abort(1)" << std::endl;
     }
-    vetoFraction=0.0;
+    return TGraph(); // dummy TGraph()
   }
-
-  unsigned int grN=result.GetN();
-  if(grN>0) {
-
-    // compute central point of the figure
-    auto grX=result.GetX();
-    auto grY=result.GetY();
+  TGraph result = *tp_convex;
+  if(vetoBand==0.0) {
+    return result;
+  }
+  result.Set(result.GetN()-1); // get rid of the very last (duplicted) point closing the loop
+  
+  // iterate while number of points >=3 and new edges were rejected
+  auto counter=0u; // number of iterations
+  auto remaining_offset=vetoBand; // requested offset [mm]
+  while(result.GetN()>2 && fabs(remaining_offset)>NUM_TOLERANCE) {
+    counter++;
+    auto input=result;
+    
+    // compute central point of the input figure
+    unsigned int grN=input.GetN();
+    auto grX=input.GetX();
+    auto grY=input.GetY();
     auto xcenter=grX[0];
     auto ycenter=grY[0];
     for(auto ipoint=1u; ipoint<grN; ipoint++) {
@@ -985,11 +994,116 @@ TGraph GeometryTPC::GetActiveAreaConvexHull(double vetoFraction){
     xcenter /= grN;
     ycenter /= grN;
 
-    // rescale the figure wrt its central point
+    // for each vertex calculate respective bisector line
+    // (NOTE: use TVector3 for cross product)
+    std::vector<TVector3> bi_dir;    // bisector direction
+    std::vector<TVector3> bi_pos;    // bisector vertex relative to central point
+    std::vector<TVector3> edge_dir;  // edge direction
+    std::vector<TVector3> edge_pos;  // edge vertex relative to central point
     for(auto ipoint=0u; ipoint<grN; ipoint++) {
-      result.SetPoint(ipoint, xcenter+(grX[ipoint]-xcenter)*(1.0-vetoFraction), ycenter+(grY[ipoint]-ycenter)*(1.0-vetoFraction));
+      auto ipoint2=(ipoint+1)%grN;
+      auto ipoint3=(ipoint+2)%grN;
+      auto point1_pos=TVector3(grX[ipoint]-xcenter, grY[ipoint]-ycenter, 0); // [mm]
+      auto point2_pos=TVector3(grX[ipoint2]-xcenter, grY[ipoint2]-ycenter, 0); // [mm]
+      auto point3_pos=TVector3(grX[ipoint3]-xcenter, grY[ipoint3]-ycenter, 0); // [mm]
+      auto edge12_dir=point2_pos-point1_pos;
+      auto edge23_dir=point3_pos-point2_pos;
+      bi_pos.push_back( point2_pos );
+      bi_dir.push_back( (-1.0*edge12_dir.Unit()+edge23_dir.Unit()).Unit() );
+      edge_pos.push_back( point2_pos );
+      edge_dir.push_back( edge23_dir.Unit() );
     }
+
+    // for each edge calculate crossing point of bisector lines corresponding to each vertex
+    // and store the distance of the caluclated point from the edge
+    TGraph grSort;
+    for(auto ipoint=0u; ipoint<grN; ipoint++) {
+      auto ipoint2=(ipoint+1)%grN;
+      auto pos1=bi_pos[ipoint];
+      auto dir1=bi_dir[ipoint];
+      auto pos2=bi_pos[ipoint2];
+      auto dir2=bi_dir[ipoint2];
+      auto A=dir1;
+      auto B=dir2*(-1.0);
+      auto C=pos2-pos1;
+      auto detW   = A.X()*B.Y()-A.Y()*B.X();
+      auto detW12 = C.X()*B.Y()-C.Y()*B.X();
+      if(detW==0.0) {
+	if(_debug) {
+	  std::cerr << __FUNCTION__ << " Wrong VETO band - Abort(2)" << std::endl;
+	}
+	return TGraph(); // dummy TGraph
+      }
+      auto bi_cross_pos=TVector3(pos1.X()+dir1.X()*detW12/detW, pos1.Y()+dir1.Y()*detW12/detW, 0);
+      auto rel_pos1=edge_pos[ipoint]-bi_cross_pos;
+      auto cross_dist1=(rel_pos1-(rel_pos1*edge_dir[ipoint])*edge_dir[ipoint]).Mag();
+      grSort.SetPoint(grSort.GetN(), cross_dist1, ipoint);
+    }
+    // sort by distance
+    grSort.Sort();
+
+    // check all calculated distances and compute safe offset value
+    std::set<unsigned int> rejectSet;
+    auto prev_dist=0.0;
+    auto safe_offset=remaining_offset;
+    for (auto grIndex=0u; grIndex<grN; grIndex++) {
+      double x, y;
+      grSort.GetPoint(grIndex, x, y);
+      auto ipoint=(unsigned int)y;
+      auto dist=(double)x;
+
+      //      if(_debug) { // DEBUG
+      //	std::cout << __FUNCTION__ << ": iter=" << counter
+      //		  << ", edge " << ipoint << "-" << (ipoint+1)%grN
+      //		  << " dist=" << dist << ", prev_dist=" << prev_dist
+      //		  << ", safe_offset=" << safe_offset << std::endl;
+      //      } // DEBUG
+
+      if(grIndex>0 && fabs(prev_dist-dist)>NUM_TOLERANCE) break;
+      prev_dist=dist;
+
+      // reduce number of points if needed
+      if( dist-safe_offset<NUM_TOLERANCE) { // less or nearly equal
+	safe_offset=dist;
+	rejectSet.insert(ipoint);
+	
+	//	if(_debug) { // DEBUG
+	//	  std::cout << __FUNCTION__ << ": iter=" << counter
+	//		    << ", safe_offset=" << safe_offset
+	//		    << ", rejected edge " << ipoint << "-" << (ipoint+1)%grN << std::endl;
+	//	} // DEBUG
+	
+      }
+    }
+    remaining_offset -= safe_offset;
+    
+    // prepare resulting polygon / input for next iteration
+    result.Set(0);
+    for(auto ipoint=0u; ipoint<grN; ipoint++) {
+      if(rejectSet.find(ipoint)!=rejectSet.end()) continue;
+      auto sinus=(edge_dir[ipoint].Cross(bi_dir[ipoint])).Mag();
+      auto new_pos=edge_pos[ipoint]+bi_dir[ipoint]*(safe_offset/sinus);
+      result.SetPoint(result.GetN(), xcenter+new_pos.X(), ycenter+new_pos.Y());
+    }
+    
+  }; // end of iteration loop
+
+  if(result.GetN()<3) {
+    if(_debug) {
+      std::cerr << __FUNCTION__ << " Wrong VETO band - Abort(3)" << std::endl;
+    }
+    return TGraph(); // dummy TGraph
   }
+
+  // duplicate first point to close the loop
+  double x0, y0;
+  result.GetPoint(0, x0, y0);
+  result.SetPoint(result.GetN(), x0, y0);
+
+  if(_debug) { // DEBUG
+    std::cout << __FUNCTION__ << ": Created TGraph with " << result.GetN() << " points, "
+	      << "and starting point (X0=" << x0 << "mm, Y0="<< y0 << "mm)" << std::endl;
+  } // DEBUG
 
   return result;
 }
