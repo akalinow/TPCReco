@@ -150,6 +150,7 @@ public:
   void makeAutozoom(TH1 * aHisto);
 
   void setDetLayout();
+  void setDetLayoutVetoBand(double distance); // [mm]
       
   std::vector<TH2D*> projectionsInCartesianCoords;
   TH3D *h3DReco{0};
@@ -163,8 +164,11 @@ public:
   std::shared_ptr<eventraw::EventInfo> myEventInfo;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
 
-  TH2F *hDetLayout{0};
+  TH2F *hDetLayout{0};        // dummy histogram with optimal XY ranges
   TH2F *hPlotBackground{0};
+  TGraph *grDetLayoutAll{0};  // polygon with convex hull of UVW area
+  TGraph *grDetLayoutVeto{0}; // similar polygon with excluded outer veto band
+  double grVetoBand{10.0};    // width [mm] of exclusion zone around UVW perimeter
   
   std::vector<TObject*> fObjClones;
   std::vector<TObject*> fTrackLines;

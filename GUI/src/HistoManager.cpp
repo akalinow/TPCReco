@@ -250,9 +250,13 @@ void HistoManager::clearTracks(){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void HistoManager::setDetLayout(){
-
-  if(!myGeometryPtr) return;
-  TH2Poly* aPtr =   myGeometryPtr->GetTH2Poly();
+  if(!myGeometryPtr) {
+    return;
+  }
+  if(grDetLayoutAll) { delete grDetLayoutAll; grDetLayoutAll=0; } // reset TGraph
+  if(grDetLayoutVeto) { delete grDetLayoutVeto; grDetLayoutVeto=0; } // reset TGraph
+  grDetLayoutAll = new TGraph(myGeometryPtr->GetActiveAreaConvexHull());
+  grDetLayoutVeto = new TGraph(myGeometryPtr->GetActiveAreaConvexHull(grVetoBand));
 
   // calculates optimal range for special histogram depicting UVW active area
   // - preserves 1:1 aspect ratio
@@ -266,38 +270,6 @@ void HistoManager::setDetLayout(){
 		     (int)(best_width+0.5), 0.5*(ymin+ymax)-0.5*best_width, 0.5*(ymin+ymax)+0.5*best_width);
   hDetLayout = (TH2F*)hDetLayoutTmp.Clone("hDetLayout");
   
-  int nBinsX = hDetLayoutTmp.GetNbinsX();
-  int nBinsY = hDetLayoutTmp.GetNbinsY();
-  double x, y;
-  int iBinPoly;
-  for(int iBinX=1;iBinX<nBinsX;++iBinX){
-    x = hDetLayoutTmp.GetXaxis()->GetBinCenter(iBinX);
-    for(int iBinY=1;iBinY<nBinsY;++iBinY){
-      y = hDetLayoutTmp.GetYaxis()->GetBinCenter(iBinY);    
-      iBinPoly = aPtr->FindBin(x,y);
-      if(iBinPoly>0){
-	hDetLayoutTmp.SetBinContent(iBinX,iBinY, 1.0);
-      }
-    }
-  }
-
-  int value = 0;
-  for(int iBinX=1;iBinX<nBinsX;++iBinX){
-    for(int iBinY=1;iBinY<nBinsY;++iBinY){
-      value = 0;
-      for(int iNeigbourX=-1;iNeigbourX<=1;++iNeigbourX){
-	for(int iNeigbourY=-1;iNeigbourY<=1;++iNeigbourY){
-	  value += hDetLayoutTmp.GetBinContent(iBinX+iNeigbourX, iBinY+iNeigbourY);
-	}
-      }
-      if(value>0 && value<4){
-	y = hDetLayoutTmp.GetYaxis()->GetBinCenter(iBinY);    
-	x = hDetLayoutTmp.GetXaxis()->GetBinCenter(iBinX);
-	hDetLayout->SetBinContent(iBinX, iBinY, 1.0);
-      }
-    }
-  }
-
   // calculates optimal ranges for special background 2D histogram:
   // - UVW STRIP projection range from all directions
   // - DRIFT projection range
@@ -309,8 +281,8 @@ void HistoManager::setDetLayout(){
     if(a<strip_min) strip_min=a;
     if(b>strip_max) strip_max=b;
   }
-  float drift_min=myGeometryPtr->GetDriftCageZmin();
-  float drift_max=myGeometryPtr->GetDriftCageZmax();
+  float drift_min, drift_max;
+  std::tie(drift_min, drift_max)=myGeometryPtr->rangeZ();
   hPlotBackground = new TH2F("hPlotBackground","",
 			     1, drift_min-0.05*(drift_max-drift_min), drift_max+0.05*(drift_max-drift_min),
 			     1, strip_min-0.05*(strip_max-strip_min), strip_max+0.05*(strip_max-strip_min));
@@ -330,8 +302,28 @@ void HistoManager::setDetLayout(){
 void HistoManager::drawDetLayout(){
 
   if(!hDetLayout) return;
-  hDetLayout->DrawCopy("box");  
-
+  hDetLayout->DrawCopy();
+  if(grDetLayoutAll) {
+    grDetLayoutAll->SetLineColor(kBlack);
+    grDetLayoutAll->SetLineWidth(2);
+    grDetLayoutAll->SetLineStyle(kSolid);
+    grDetLayoutAll->DrawClone("L");
+  }
+  if(grDetLayoutVeto) {
+    grDetLayoutVeto->SetLineColor(kBlack);
+    grDetLayoutVeto->SetLineWidth(1);
+    grDetLayoutVeto->SetLineStyle(kDashed);
+    grDetLayoutVeto->DrawClone("L");
+  }
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void HistoManager::setDetLayoutVetoBand(double distance){ // [mm]
+  if(distance<0) distance=0;
+  if(distance!=grVetoBand) { // update upon distance change
+    grVetoBand=distance;
+    setDetLayout();
+  }
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
