@@ -67,12 +67,13 @@ void HIGGS_analysis::bookHistos(){
   std::string outputFileName = "Histos.root";
   outputFile = new TFile(outputFileName.c_str(),"RECREATE");
 
-  const float binSizeMM = 2.0;
-  const float maxLengthMM = 200.0;
+  const float binSizeMM = 0.5; // [mm]
+  const float maxLengthMM = 200.0; // [mm]
   float xmin, xmax, ymin, ymax, zmin, zmax; // [mm]
   std::tie(xmin, xmax, ymin, ymax) = myGeometryPtr->rangeXY();
-  zmin = myGeometryPtr->GetDriftCageZmin();
-  zmax = myGeometryPtr->GetDriftCageZmax();
+  std::tie(zmin, zmax) = myGeometryPtr->rangeZ();
+  //  zmin = myGeometryPtr->GetDriftCageZmin();
+  //  zmax = myGeometryPtr->GetDriftCageZmax();
 
   // GLOBAL HISTOGRAMS
   //
@@ -100,6 +101,10 @@ void HIGGS_analysis::bookHistos(){
     histos2D[(prefix+"_vertexXY").c_str()] = new TH2F((prefix+"_vertexXY").c_str(),
 						      Form("%s;Vertex position X_{DET} [mm];Vertex position Y_{DET} [mm];%s", info, perEventTitle),
 						      (xmax-xmin)/binSizeMM, xmin, xmax, (ymax-ymin)/binSizeMM, ymin, ymax);
+    histos2D[(prefix+"_vertexYZ").c_str()] = new TH2F((prefix+"_vertexYZ").c_str(),
+						      Form("%s;Vertex position Y_{DET} [mm];Vertex position Z_{DET} [mm];%s", info, perEventTitle),
+						      (ymax-ymin)/binSizeMM, ymin, ymax, (zmax-zmin)/binSizeMM, zmin, zmax);
+
     // HISTOGRAMS PER TRACK
     for(auto t=0U; t<categoryPIDhname[c].size(); ++t) {
       auto pid=categoryPIDhname[c].at(t);
@@ -135,25 +140,37 @@ void HIGGS_analysis::bookHistos(){
       // TRACK PHI_DET/THETA_DET/cos(THETA_DET) : per category / per track
       histos1D[(prefix+pid+"_phiDET").c_str()] = new TH1F((prefix+pid+"_phiDET").c_str(),
 							  Form("%s;%s track #phi_{DET} [rad];%s", info, pidLatex, perTrackTitle),
-							  50, -TMath::Pi(), TMath::Pi());
+							  100, -TMath::Pi(), TMath::Pi());
       histos1D[(prefix+pid+"_thetaDET").c_str()] = new TH1F((prefix+pid+"_thetaDET").c_str(),
 							    Form("%s;%s track #theta_{DET} [rad];%s", info, pidLatex, perTrackTitle),
-							    50, 0, TMath::Pi());
+							    100, 0, TMath::Pi());
       histos1D[(prefix+pid+"_cosThetaDET").c_str()] = new TH1F((prefix+pid+"_cosThetaDET").c_str(),
 							       Form("%s;%s track cos(#theta_{DET}) [rad];%s", info, pidLatex, perTrackTitle),
-							       50, -1, 1);
+							       100, -1, 1);
+      // TRACK PHI_BEAM/THETA_BEAM/cos(THETA_BEAM) : per category / per track
+      histos1D[(prefix+pid+"_phiBEAM_LAB").c_str()] = new TH1F((prefix+pid+"_phiBEAM_LAB").c_str(),
+							       Form("%s;%s track #phi_{BEAM}^{LAB} [rad];%s", info, pidLatex, perTrackTitle),
+							       100, -TMath::Pi(), TMath::Pi());
+      histos1D[(prefix+pid+"_thetaBEAM_LAB").c_str()] = new TH1F((prefix+pid+"_thetaBEAM_LAB").c_str(),
+								 Form("%s;%s track #theta_{BEAM}^{LAB} [rad];%s", info, pidLatex, perTrackTitle),
+								 100, 0, TMath::Pi());
+      histos1D[(prefix+pid+"_cosThetaBEAM_LAB").c_str()] = new TH1F((prefix+pid+"_cosThetaBEAM_LAB").c_str(),
+								    Form("%s;%s track cos(#theta_{BEAM}^{LAB});%s", info, pidLatex, perTrackTitle),
+								    100, -1, 1);
+
       // HISTOGRAMS PER TRACK-TRACK PAIR
       for(auto t2=t+1; t2<categoryPIDhname[c].size(); ++t2) {
 	auto pid2=categoryPIDhname[c].at(t2);
 	auto pidLatex2=categoryPIDlatex[c].at(t2).c_str();
-	
+
 	// TRACK-TRACK THETA_DET/cos(THETA_DET) : per category / per track pair
-	histos1D[(prefix+pid+pid2+"_thetaDET").c_str()] = new TH1F((prefix+pid+pid2+"_thetaDET").c_str(),
-								   Form("%s;%s %s track pair #theta_{DET} [rad];%s", info, pidLatex, pidLatex2, perTrackTitle),
-								   50, 0, TMath::Pi());
-	histos1D[(prefix+pid+pid2+"_cosThetaDET").c_str()] = new TH1F((prefix+pid+pid2+"_cosThetaDET").c_str(),
-								 Form("%s;%s %s track pair cos(#theta_{DET}) [rad];%s", info, pidLatex, pidLatex2, perTrackTitle),
-								 50, -1, 1);
+	histos1D[(prefix+pid+pid2+"_delta_LAB").c_str()] = new TH1F((prefix+pid+pid2+"_delta_LAB").c_str(),
+								   Form("%s;%s %s track pair #delta^{LAB} [rad];%s", info, pidLatex, pidLatex2, perTrackTitle),
+								   100, 0, TMath::Pi());
+	histos1D[(prefix+pid+pid2+"_cosDelta_LAB").c_str()] = new TH1F((prefix+pid+pid2+"_cosDelta_LAB").c_str(),
+								 Form("%s;%s %s track pair cos(#delta^{LAB}) [rad];%s", info, pidLatex, pidLatex2, perTrackTitle),
+								 100, -1, 1);
+
 	// special histogram(s) for 2-prong events
 	if(categoryPIDhname[c].size()==2) {
 	  histos1D[(prefix+pid+pid2+"_lengthSUM").c_str()] = new TH1F((prefix+pid+pid2+"_lengthSUM").c_str(),
@@ -181,10 +198,10 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
 
   // get sorted list of tracks (descending order by track length)
   TrackSegment3DCollection list = aTrack->getSegments();
-  std::sort(list.begin(), list.end(),
+    std::sort(list.begin(), list.end(),
 	    [](const TrackSegment3D& a, const TrackSegment3D& b) {
-      return a.getLength() > b.getLength();
-    });
+        return a.getLength() > b.getLength();
+      });
 
   // ALL event categories
   TVector3 vertexPos = list.front().getStart();
@@ -192,8 +209,9 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
   histos1D["all_vertexY"]->Fill(vertexPos.Y());
   histos1D["all_vertexZ"]->Fill(vertexPos.Z());
   histos2D["all_vertexXY"]->Fill(vertexPos.X(), vertexPos.Y());
+  histos2D["all_vertexYZ"]->Fill(vertexPos.Y(), vertexPos.Z());
   for(auto & track: list) {
-    float len=track.getLength();
+    const double len=track.getLength();
     histos1D["all_length"]->Fill(len);
     histos1D["all_deltaX"]->Fill(len*track.getTangent().X());
     histos1D["all_deltaY"]->Fill(len*track.getTangent().Y());
@@ -205,6 +223,11 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     histos1D["all_phiDET"]->Fill(track.getTangent().Phi());
     histos1D["all_thetaDET"]->Fill(track.getTangent().Theta());
     histos1D["all_cosThetaDET"]->Fill(track.getTangent().CosTheta());
+    double phi_BEAM_LAB=atan2(track.getTangent().Z(), -track.getTangent().Y()); // [rad], azimuthal angle from horizontal axis
+    double cosTheta_BEAM_LAB=track.getTangent()*gammaUnitVec; // polar angle wrt beam axis
+    histos1D["all_phiBEAM_LAB"]->Fill(phi_BEAM_LAB);
+    histos1D["all_thetaBEAM_LAB"]->Fill(acos(cosTheta_BEAM_LAB));
+    histos1D["all_cosThetaBEAM_LAB"]->Fill(cosTheta_BEAM_LAB);
   }
   
   // 1-prong (alpha)
@@ -214,7 +237,7 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     histos1D["1prong_vertexZ"]->Fill(vertexPos.Z());
     histos2D["1prong_vertexXY"]->Fill(vertexPos.X(), vertexPos.Y());
     auto track=list.front();
-    float len=track.getLength();
+    const double len=track.getLength(); // [mm]
     histos1D["1prong_alpha_length"]->Fill(len);
     histos1D["1prong_alpha_deltaX"]->Fill(len*track.getTangent().X());
     histos1D["1prong_alpha_deltaY"]->Fill(len*track.getTangent().Y());
@@ -226,6 +249,23 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     histos1D["1prong_alpha_phiDET"]->Fill(track.getTangent().Phi());
     histos1D["1prong_alpha_thetaDET"]->Fill(track.getTangent().Theta());
     histos1D["1prong_alpha_cosThetaDET"]->Fill(track.getTangent().CosTheta());
+
+    // calculate angles in DET/LAB frame
+    double phi_BEAM_LAB=atan2(track.getTangent().Z(), -track.getTangent().Y()); // [rad], azimuthal angle from horizontal axis
+    double cosTheta_BEAM_LAB=track.getTangent()*gammaUnitVec; // polar angle wrt beam axis
+    histos1D["1prong_alpha_phiBEAM_LAB"]->Fill(phi_BEAM_LAB);
+    histos1D["1prong_alpha_thetaBEAM_LAB"]->Fill(acos(cosTheta_BEAM_LAB));
+    histos1D["1prong_alpha_cosThetaBEAM_LAB"]->Fill(cosTheta_BEAM_LAB);
+
+    // reconstruct kinetic energy from particle range [mm]
+    //    double T_LAB=aRangeCalculator->getIonEnergyMeV(IonRangeCalculator::ALPHA, len);
+    //    double p_LAB=sqrt(T_LAB*(T_LAB+2*alphaMass));
+    // construct TLorentzVector in DET/LAB frame
+    //    TLorentzVector P4_LAB(p_LAB*track.getTangent(), alphaMass+T_LAB);
+    // boost P4 from DET/LAB frame to CMS frame (see TLorentzVector::Boost() convention!)
+    //    TLorentzVector P4_CMS(P4_DET); // TODO
+    //    P4_CMS.Boost(-1.0*beta_DET); // TODO
+    //    histos1D["1prong_alpha_E_LAB"]->Fill(T_LAB);
   }
   
   // 2-prong (alpha+carbon)
@@ -235,8 +275,8 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     histos1D["2prong_vertexZ"]->Fill(vertexPos.Z());
     histos2D["2prong_vertexXY"]->Fill(vertexPos.X(), vertexPos.Y());
 
-    const float alpha_len = list.front().getLength(); // longest = alpha
-    const float carbon_len = list.back().getLength(); // shortest = carbon
+    const double alpha_len = list.front().getLength(); // longest = alpha
+    const double carbon_len = list.back().getLength(); // shortest = carbon
     histos1D["2prong_alpha_length"]->Fill(alpha_len);
     histos1D["2prong_alpha_deltaX"]->Fill(alpha_len*list.front().getTangent().X());
     histos1D["2prong_alpha_deltaY"]->Fill(alpha_len*list.front().getTangent().Y());
@@ -260,11 +300,34 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     histos1D["2prong_carbon_phiDET"]->Fill(list.back().getTangent().Phi());
     histos1D["2prong_carbon_thetaDET"]->Fill(list.back().getTangent().Theta());
     histos1D["2prong_carbon_cosThetaDET"]->Fill(list.back().getTangent().CosTheta());
-    
-    histos1D["2prong_alpha_carbon_thetaDET"]->Fill(list.front().getTangent().Angle(list.back().getTangent()));
-    histos1D["2prong_alpha_carbon_cosThetaDET"]->Fill(cos(list.front().getTangent().Angle(list.back().getTangent())));
-
+    double delta=list.front().getTangent().Angle(list.back().getTangent()); // [rad]
+    histos1D["2prong_alpha_carbon_delta_LAB"]->Fill(delta);
+    histos1D["2prong_alpha_carbon_cosDelta_LAB"]->Fill(cos(delta));
     histos1D["2prong_alpha_carbon_lengthSUM"]->Fill(alpha_len+carbon_len);
+
+    // calculate angles in DET/LAB frame
+    double alpha_phi_BEAM_LAB=atan2(list.front().getTangent().Z(), -list.front().getTangent().Y()); // [rad], azimuthal angle from horizontal axis
+    double carbon_phi_BEAM_LAB=atan2(list.back().getTangent().Z(), -list.back().getTangent().Y()); // [rad], azimuthal angle from horizontal axis
+    double alpha_cosTheta_BEAM_LAB=list.front().getTangent()*gammaUnitVec; // polar angle wrt beam axis
+    double carbon_cosTheta_BEAM_LAB=list.back().getTangent()*gammaUnitVec; // polar angle wrt beam axis
+    histos1D["2prong_alpha_phiBEAM_LAB"]->Fill(alpha_phi_BEAM_LAB);
+    histos1D["2prong_alpha_thetaBEAM_LAB"]->Fill(acos(alpha_cosTheta_BEAM_LAB));
+    histos1D["2prong_alpha_cosThetaBEAM_LAB"]->Fill(alpha_cosTheta_BEAM_LAB);
+    histos1D["2prong_carbon_phiBEAM_LAB"]->Fill(carbon_phi_BEAM_LAB);
+    histos1D["2prong_carbon_thetaBEAM_LAB"]->Fill(acos(carbon_cosTheta_BEAM_LAB));
+    histos1D["2prong_carbon_cosThetaBEAM_LAB"]->Fill(carbon_cosTheta_BEAM_LAB);
+
+    // reconstruct kinetic energy from particle range [mm]
+    //    double alpha_T_LAB=aRangeCalculator->getIonEnergyMeV(IonRangeCalculator::ALPHA, alpha_len);
+    //    double carbon_T_LAB=aRangeCalculator->getIonEnergyMeV(IonRangeCalculator::CARBON_12, carbon_len);
+    //    double alpha_p_LAB=sqrt(alpha_T_LAB*(alpha_T_LAB+2*alphaMass));
+    //    double carbon_p_LAB=sqrt(carbon_T_LAB*(carbon_T_LAB+2*carbonMass));
+
+    // construct TLorentzVector in DET/LAB frame
+    //    TLorentzVector alphaP4_LAB(alpha_p_LAB*list.front().getTangent(), alphaMass+alpha_T_LAB);
+    //    TLorentzVector carbonP4_LAB(p_alpha_LAB*list.back().getTangent(), carbonMass+carbon_T_LAB);
+    //    histos1D["2prong_alpha_E_LAB"]->Fill(alpha_T_LAB);
+    //    histos1D["2prong_carbon_E_LAB"]->Fill(carbon_T_LAB);
   }
   
   // 3-prong (triple alpha)
@@ -275,21 +338,34 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     histos2D["3prong_vertexXY"]->Fill(vertexPos.X(), vertexPos.Y());
 
     for(auto i=0;i<3;i++) {
-      const float alpha_len = list.at(i).getLength();
+      auto track=list.at(i);
+      const double alpha_len = track.getLength();
       histos1D[Form("3prong_alpha%d_length",i+1)]->Fill(alpha_len);
-      histos1D[Form("3prong_alpha%d_deltaX",i+1)]->Fill(alpha_len*list.at(i).getTangent().X());
-      histos1D[Form("3prong_alpha%d_deltaY",i+1)]->Fill(alpha_len*list.at(i).getTangent().Y());
-      histos1D[Form("3prong_alpha%d_deltaZ",i+1)]->Fill(alpha_len*list.at(i).getTangent().Z());
-      histos1D[Form("3prong_alpha%d_endX",i+1)]->Fill(list.at(i).getEnd().X());
-      histos1D[Form("3prong_alpha%d_endY",i+1)]->Fill(list.at(i).getEnd().Y());
-      histos1D[Form("3prong_alpha%d_endZ",i+1)]->Fill(list.at(i).getEnd().Z());
-      histos2D[Form("3prong_alpha%d_endXY",i+1)]->Fill(list.at(i).getEnd().X(), list.at(i).getEnd().Y());
-      histos1D[Form("3prong_alpha%d_phiDET",i+1)]->Fill(list.at(i).getTangent().Phi());
-      histos1D[Form("3prong_alpha%d_thetaDET",i+1)]->Fill(list.at(i).getTangent().Theta());
-      histos1D[Form("3prong_alpha%d_cosThetaDET",i+1)]->Fill(list.at(i).getTangent().CosTheta());
+      histos1D[Form("3prong_alpha%d_deltaX",i+1)]->Fill(alpha_len*track.getTangent().X());
+      histos1D[Form("3prong_alpha%d_deltaY",i+1)]->Fill(alpha_len*track.getTangent().Y());
+      histos1D[Form("3prong_alpha%d_deltaZ",i+1)]->Fill(alpha_len*track.getTangent().Z());
+      histos1D[Form("3prong_alpha%d_endX",i+1)]->Fill(track.getEnd().X());
+      histos1D[Form("3prong_alpha%d_endY",i+1)]->Fill(track.getEnd().Y());
+      histos1D[Form("3prong_alpha%d_endZ",i+1)]->Fill(track.getEnd().Z());
+      histos2D[Form("3prong_alpha%d_endXY",i+1)]->Fill(track.getEnd().X(), track.getEnd().Y());
+      histos1D[Form("3prong_alpha%d_phiDET",i+1)]->Fill(track.getTangent().Phi());
+      histos1D[Form("3prong_alpha%d_thetaDET",i+1)]->Fill(track.getTangent().Theta());
+      histos1D[Form("3prong_alpha%d_cosThetaDET",i+1)]->Fill(track.getTangent().CosTheta());
+      
+      // reconstruct kinetic energy from particle range [mm]
+      //      double alpha_T_LAB=aRangeCalculator->getIonEnergyMeV(IonRangeCalculator::ALPHA, alpha_len);
+      //      double alpha_p_LAB=sqrt(alpha_T_LAB*(alpha_T_LAB+2*alphaMass));
+      // construct TLorentzVector in DET/LAB frame
+      //      TLorentzVector P4_LAB(p_LAB*track.getTangent(), alphaMass+T_LAB);
+      // boost P4 from DET/LAB frame to CMS frame (see TLorentzVector::Boost() convention!)
+      //      TLorentzVector P4_CMS(P4_DET); // TODO
+      //      P4_CMS.Boost(-1.0*beta_DET); // TODO
+      //      histos1D[]->Fill(Form("3prong_alpha%d_E_LAB",i+1), T_LAB);
+      
       for(auto i2=i+1;i2<3;i2++) {
-	histos1D[Form("3prong_alpha%d_alpha%d_thetaDET",i+1,i2+1)]->Fill(list.at(i).getTangent().Angle(list.at(i2).getTangent()));
-	histos1D[Form("3prong_alpha%d_alpha%d_cosThetaDET",i+1,i2+1)]->Fill(cos(list.at(i).getTangent().Angle(list.at(i2).getTangent())));
+	double delta=track.getTangent().Angle(list.at(i2).getTangent()); // [rad]
+	histos1D[Form("3prong_alpha%d_alpha%d_delta_LAB",i+1,i2+1)]->Fill(delta);
+	histos1D[Form("3prong_alpha%d_alpha%d_cosDelta_LAB",i+1,i2+1)]->Fill(cos(delta));
       }
     }
 
