@@ -1,42 +1,54 @@
+import os
 import glob
 import datetime
 import time
-#import psutil
+import psutil
+
+
 ################################################################
 ################################################################
 def countRunningProcesses(procName):
-    counter = 0
-    '''
+    counter = 0    
     for proc in psutil.process_iter():
-        counter += proc.name().find("makeTrackTree")>-1
-    '''
+        counter += proc.name().find(procName)>-1    
     return counter                
 ################################################################
 ################################################################
 def waintUnitilProcCount(procName, procCount):
 
-    counter = countRunningProcesses("makeTrackTree")
+    counter = countRunningProcesses(procName)
     while counter>=procCount:
         print("Number of jobs running:",counter," Waiting one minutue.")
-        time.sleep(60)
-        counter = countRunningProcesses("makeTrackTree")         
+        time.sleep(2*60)
+        counter = countRunningProcesses(procName)         
 ################################################################
 ################################################################
 def getTimeFileDict(dataPath, filePattern):
     fileDict = {}
     fileList = glob.glob(dataPath+"/"+filePattern)
     for aFile in fileList:
+        oldFileName = aFile
         index = aFile.rfind("/")+1
         aFile = aFile[index:]
-        year = 2019
+        ##
+        #aFile = aFile.replace(aFile[25],":")
+        #aFile = aFile.replace(aFile[28],":")
+        #command = "mv "+oldFileName+" "+dataPath+"/"+aFile
+        #os.system(command)
+        ##
+        index = aFile.find("AsAd")
+        asadId = aFile[index+4:index+5]
+        
         index = -1
+        year = 2019
         while index<0:
             index = aFile.rfind(str(year))
             year += 1
         timestamp_length = 28
         timestamp = aFile[index:index+timestamp_length]
         timestamp = timestamp.replace(":","-")
-        fileDict[timestamp] = dataPath+"/"+aFile
+        fileId = timestamp+"_"+asadId
+        fileDict[fileId] = dataPath+"/"+aFile
     return fileDict
 ################################################################
 ################################################################

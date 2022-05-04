@@ -15,7 +15,7 @@ void makePlots(std::string fileName){
   TTree *trackTree = (TTree*)aFile->Get("trackTree");
 
   TH1D *hEnergy = new TH1D("hEnergy", "#alpha + ^{12}C energy;E(#alpha + ^{12}C) [MeV]; Number of events",50,4,9);  
-  TH1D *hLength = new TH1D("hLength", "Track length; d[mm]; Number of events", 200,0,200);
+  TH1D *hLength = new TH1D("hLength", "Track length; d[mm]; Number of events", 400,0,200);
   TH1D *hLengthCut0 = (TH1D*)hLength->Clone("hLengthCut0");
   TH1D *hLengthCut1 = (TH1D*)hLength->Clone("hLengthCut1");
 
@@ -33,8 +33,10 @@ void makePlots(std::string fileName){
   
   TH3D *hVtxXYZCut1 = (TH3D*)hVtxXYZ->Clone("hVtxXYZCut1");
   TH3D *hVtxYCorrCut1 = (TH3D*)hVtxXYZ->Clone("hVtxYCorrCut1");
+  TH3D *hAlphaEndXYZCut1 = (TH3D*)hVtxXYZ->Clone("hAlphaEndXYZCut1");
   hVtxXYZCut1->SetStats(kFALSE);
   hVtxYCorrCut1->SetStats(kFALSE);
+  hAlphaEndXYZCut1->SetStats(kFALSE);
 
   TH1D *hChi2 = new TH1D("hChi2","Track loss function;loss function;Number of events",60,-10,20);
   TH1D *hChi2Cut0 = (TH1D*)hChi2->Clone("hChi2Cut0");
@@ -42,25 +44,31 @@ void makePlots(std::string fileName){
   hChi2Cut0->SetStats(kFALSE);
   hChi2Cut1->SetStats(kFALSE);
 
-  TH1D *hPhi = new TH1D("hPhi","Track azimuthal angle wrt. beam line;#varphi;Number of events",20,-M_PI,M_PI);
+  TH2D *hPhiVsZ = new TH2D("hPhiVsZ",";#varphi_{BEAM};zVtx [mm]",20,-M_PI,M_PI, 60, -60, 60);
+  
+  TH1D *hPhi = new TH1D("hPhi","Track azimuthal angle wrt. beam line;#varphi_{BEAM};Number of events",20,-M_PI,M_PI);
   TH1D *hPhiRaw = (TH1D*)hPhi->Clone("hPhiRaw");
   TH1D *hPhiCorr = (TH1D*)hPhi->Clone("hPhiCorr");
   
-  TH1D *hCosTheta = new TH1D("hCosTheta","Track polar angle wrt. beam line;cos(#theta);Number of events",20,-1,1);
+  TH1D *hCosTheta = new TH1D("hCosTheta","Track polar angle wrt. beam line;cos(#theta_{BEAM});Number of events",20,-1,1);
   TH1D *hCosThetaCut1 = (TH1D*)hCosTheta->Clone("hCosThetaCut1");
   hCosThetaCut1->SetStats(kFALSE);
 
   
-  std::string qualityCut = "chi2<10 && charge>1000 && length>50 && eventType==3 && hypothesisChi2>5";
-  std::string fiducialXYCut = "abs(xAlphaEnd)<160 && abs(yAlphaEnd)<100 && abs(xCarbonEnd)<160 && abs(yCarbonEnd)<100";
-  std::string fiducialZCut = "abs(zAlphaEnd-zVtx)<100";
-  std::string vertexCut = "abs(yVtx+2)<7";
+  std::string qualityCut = "chi2<10 && charge>1000 && length>50 && eventType==3 && hypothesisChi2<5";
+  std::string fiducialXYCut = "abs(xAlphaEnd)<160 && abs(yAlphaEnd)<80 && abs(xCarbonEnd)<160 && abs(yCarbonEnd)<80";
+  std::string fiducialZCut = "abs(zCarbonEnd - zAlphaEnd)<180";
+  std::string vertexCut = "abs(yVtx+2)<6";
   std::string cut0 = qualityCut;
   std::string cut1 = "1";
   cut1 += std::string("&&")+qualityCut;
   cut1 += std::string("&&")+vertexCut;
   cut1 += std::string("&&")+fiducialXYCut;
   cut1 += std::string("&&")+fiducialZCut;
+
+  std::string cut2 = cut1;
+  std::string cosThetaCut = "abs(cosTheta)<0.2";
+  cut2 += std::string("&&")+cosThetaCut;
   
   trackTree->Draw("zVtx:yVtx:xVtx>>hVtxXYZCut1",cut0.c_str(), "goff");
   
@@ -71,11 +79,12 @@ void makePlots(std::string fileName){
   trackTree->Draw("carbonRange>>hCarbonRange",cut1.c_str(), "goff");
   trackTree->Draw("alphaEnergy+carbonEnergy>>hEnergy",cut1.c_str(), "goff");
   trackTree->Draw("phi>>hPhiRaw",cut1.c_str(), "goff");
-  trackTree->Draw("cosTheta>>hCosThetaCut1",cut1.c_str(), "goff");
-
+  trackTree->Draw("cosTheta>>hCosThetaCut1",cut1.c_str(), "goff");  
+  trackTree->Draw("yAlphaEnd-yVtx:zAlphaEnd-zVtx:xAlphaEnd-xVtx>>hAlphaEndXYZCut1",cut2.c_str(), "goff");
+  
   trackTree->Draw("hypothesisChi2>>hChi2Cut0",cut0.c_str(), "goff");
   trackTree->Draw("hypothesisChi2>>hChi2Cut1",cut1.c_str(), "goff");
-  trackTree->Scan("eventId:hypothesisChi2",cut1.c_str());
+  //trackTree->Scan("eventId:hypothesisChi2",cut1.c_str());
   ///////////////////////////////////////////////////
   TLegend *aLeg = new TLegend(0.1, 0.1, 0.5, 0.3);
   TCanvas *aCanvas = new TCanvas("aCanvas","",700,700);
@@ -93,8 +102,9 @@ void makePlots(std::string fileName){
   TH1 *hProfile = ((TH2F*)hProj)->ProfileX("hProfile");
   hProfile->SetTitle("Vertex Y position vs X");
   hProfile->SetYTitle("y [mm]");
+  hProfile->GetYaxis()->SetRangeUser(-3,-1);
   hProfile->Draw();
-  TFitResultPtr aFitPtr = hProfile->Fit("pol1","RS","",-100,100);
+  TFitResultPtr aFitPtr = hProfile->Fit("pol1","RS","",-150,150);
   double vtxCorr_p0 = aFitPtr->GetParams()[0];
   double vtxCorr_p1 = aFitPtr->GetParams()[1];
   std::stringstream aStringStream;
@@ -103,7 +113,7 @@ void makePlots(std::string fileName){
   std::string yCorrString = aStringStream.str();
   std::string columns = "0:yVtx-"+yCorrString+":0>>hVtxYCorrCut1";  
   trackTree->Draw(columns.c_str(),cut0.c_str(), "goff");
-  //columns = "atan2(zAlphaEnd-zVtx,-(xAlphaEnd-xVtx)*sin(0.00284276) + (yAlphaEnd-yVtx)*cos(0.00284276))";
+  columns = "atan2(zAlphaEnd-zVtx,-(xAlphaEnd-xVtx)*sin(0.00315905) + (yAlphaEnd-yVtx)*cos(0.00315905))";
   columns +=">>hPhiCorr";
   trackTree->Draw(columns.c_str(),cut1.c_str(), "goff");
   ////////////////////////////////
@@ -134,6 +144,7 @@ void makePlots(std::string fileName){
   ////////////////  
   aCanvas->Print("Plots_set0.png");
   ////////////////
+  //return;
   ////////////////
   aCanvas->Clear();
   aCanvas->Divide(2,2);
@@ -158,9 +169,9 @@ void makePlots(std::string fileName){
   hLengthCut0->Draw("same");
   gPad->SetLogy();
 
-  aLeg = new TLegend(0.1, 0.65, 0.5, 0.9);
+  aLeg = new TLegend(0.1, 0.65, 0.53, 0.9);
   aLeg->AddEntry(hLengthCut0, "NO cut on vtx.","l");
-  aLeg->AddEntry(hLengthCut1, "#splitline{|y-2|<6 && z<-60}{#splitline{end_{X}<160 &&  end_{Y}<100}{|#alpha_{Z} - VTX_{Z}|<100}}","l");
+  aLeg->AddEntry(hLengthCut1, "#splitline{|y-2|<6}{#splitline{|end_{X}|<160 &&  |end_{Y}|<80}{|C_{Z} - #alpha_{Z}|<180}}","l");
   aLeg->Draw();
   ////////////////////////////////
   
@@ -168,6 +179,8 @@ void makePlots(std::string fileName){
   hAlphaRange->SetTitle("#alpha track length");
   hAlphaRange->SetLineColor(4);
   hAlphaRange->SetLineWidth(3);
+  hAlphaRange->Fit("gaus","RS","",80,110); 
+  hAlphaRange->SetStats(kTRUE);
   hAlphaRange->SetMaximum(1.5*hAlphaRange->GetMaximum());
   hAlphaRange->GetXaxis()->SetRangeUser(80,150);
   hAlphaRange->Draw("");
@@ -191,6 +204,8 @@ void makePlots(std::string fileName){
   ////////////////
   aCanvas->Print("Plots_set1.png");
   ////////////////
+  //return;
+  ////////////////
   aCanvas->Clear();
   aCanvas->Divide(2,2);
 
@@ -201,6 +216,7 @@ void makePlots(std::string fileName){
   hPhiRaw->SetLineColor(1);
   hPhiRaw->SetLineStyle(2);
   hPhiRaw->SetMaximum(1.5*hPhiRaw->GetMaximum());
+  hPhiRaw->SetMaximum(6000);
   hPhiRaw->SetMinimum(0.0);
   hPhiRaw->Draw();
   
@@ -210,7 +226,11 @@ void makePlots(std::string fileName){
   aLeg = new TLegend(0.43, 0.65, 0.9, 0.9);
   aLeg->AddEntry(hPhiRaw, "#varphi from det. coordinates","l");
   aLeg->AddEntry(hPhiCorr, "#splitline{#varphi corrected for}{the beam direction}","l");
-  aLeg->Draw();
+  hPhiRaw->Print();
+  for(int iBin=1;iBin<hPhiRaw->GetNbinsX();++iBin){
+    std::cout<<hPhiRaw->GetBinCenter(iBin)<<"\t"<<hPhiRaw->GetBinContent(iBin)<<std::endl;
+  }
+  //aLeg->Draw();
   ////////////////////////////////
   aCanvas->cd(2);
 
@@ -220,7 +240,15 @@ void makePlots(std::string fileName){
   
   ////////////////////////////////
   aCanvas->cd(3);
-  
+
+  hProj = hAlphaEndXYZCut1->Project3D("yz");
+  hProj->GetXaxis()->SetRangeUser(-100,100);
+  hProj->GetYaxis()->SetRangeUser(-100,100);
+  hProj->DrawCopy("colz");
+
+
+  //return;
+  /*
   hChi2Cut1->SetLineColor(2);
   hChi2Cut1->SetMaximum(1.2*hChi2Cut1->GetMaximum());
   hChi2Cut1->DrawNormalized();
@@ -229,7 +257,7 @@ void makePlots(std::string fileName){
   aLeg->AddEntry(hChi2Cut0, "all tracks","l");
   aLeg->AddEntry(hChi2Cut1, "length>110","l");
   aLeg->Draw();
-  
+  */
   aCanvas->Print("Plots_set2.png");
   ////////////////
   ////////////////

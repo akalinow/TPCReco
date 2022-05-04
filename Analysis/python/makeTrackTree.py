@@ -7,8 +7,6 @@ from fileLoop import *
 ################################################################
 def finalizeFunc():
 
-    return
-
     samples_calibration_12MHz = [
         "2021-11-25T13-53-16.129",
         "2021-11-25T15-00-32.273",
@@ -33,11 +31,33 @@ def finalizeFunc():
     ]
 
     samples_HIGGS = [
-        "2022-04-12T15-28-17.188"
+        "2022-04-12T00:20:27",
+        "2022-04-12T01:36:08",
+        "2022-04-12T02:39:59",
+        "2022-04-12T03:46:08",
+        "2022-04-12T04:59:35",
+        "2022-04-12T06:47:52",
+        "2022-04-12T08:03:44",
+        "2022-04-12T10:35:16",
+        "2022-04-12T11:59:23",
+        "2022-04-12T13:19:04",
+        "2022-04-12T15:28:17",
+        "2022-04-12T17:39:06",
+        "2022-04-12T18:43:08",
+        "2022-04-12T20:05:29",
+        "2022-04-12T21:15:46",
     ]
 
     command = "mkdir 2021-11-25_12.5MHz 2021-11-25_25.0MHz IFJ_VdG 2018 HIgS_2022"
     os.system(command)
+
+    for item in samples_HIGGS:
+        command = "mv "+item+" HIgS_2022"
+        os.system(command)
+        command = "hadd -f HIgS_2022/HIgS_2022.root HIgS_2022/*/*.root"
+        os.system(command)
+
+    return    
 
     command = "mv 2018-* 2018"
     os.system(command)
@@ -60,13 +80,7 @@ def finalizeFunc():
         os.system(command)
         command = "hadd -f IFJ_VdG/IFJ_VdG.root IFJ_VdG/*/*.root"
         os.system(command)
-
-    for item in samples_HIGGS:
-        command = "mv "+item+" HIgS_2022"
-        os.system(command)
-        command = "hadd -f HIgS_2022/HIgS_2022.root HIgS_2022/*/*.root"
-        os.system(command)    
-
+        
 ################################################
 ################################################                
 runs = [ ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210616_extTrg_CO2_250mbar_DT1470ET",
@@ -96,16 +110,17 @@ runs = [ ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210616_extTrg_CO2_25
 ###
 ###
 runs = [
-       #("/scratch_elitpc/HIgS_2022_tmp/4th_batch/",
-       # "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
-       #("/scratch/akalinow/ELITPC/data/HIgS_2022/EventTPC/",
-       # "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
-
-       #("/scratch_ssd/akalinow/ELITPC/data/HIgS_2022/EventTPC/",
-      #"/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat"),
+       #("/qnap/20220412_extTrg_CO2_190mbar_DT1470ET/",
+       #"/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat"),
     
-       ("/scratch/akalinow/Zajecia/2021-2022/Lato/PracowniaFizycznaIIStopnia/MariannaGlazewska/data/",
-        "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
+       #("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220412_extTrg_CO2_190mbar_DT1470ET/12.3MeV/GRAW/",
+       #"/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat"),
+
+       ("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220412_extTrg_CO2_190mbar_DT1470ET/12.3MeV/EventTPC/",
+        "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat"),
+
+       #("/scratch/akalinow/Zajecia/2021-2022/Lato/PracowniaFizycznaIIStopnia/MariannaGlazewska/data/",
+       # "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
 ]
 ################################################
 ################################################

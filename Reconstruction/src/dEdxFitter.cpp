@@ -21,7 +21,7 @@ dEdxFitter::dEdxFitter(double aPressure){
   carbon_alpha_ionisation->SetParName(2,"alpha_shift");
   carbon_alpha_ionisation->SetParName(3,"alpha_scale");
   carbon_alpha_ionisation->SetParName(4,"carbon_scale");
-  carbon_alpha_ionisation->SetParameters(pressure, 10.0, 5, 1.0, 1.0);
+  carbon_alpha_ionisation->SetParameters(10.0, 10.0, 5, 1.0, 1.0);
 
   carbon_alpha_ionisation_smeared = new TF1Convolution("carbon_alpha_ionisation", "gaus",-20, 350, true);
   carbon_alpha_ionisation_smeared->SetRange(-20, 350);
@@ -44,7 +44,6 @@ dEdxFitter::dEdxFitter(double aPressure){
   carbon_alphaModel->SetParLimits(1, 240, 290.0);
   carbon_alphaModel->FixParameter(2, 1.0);
   carbon_alphaModel->FixParameter(3, 0.46);
-  //carbon_alphaModel->SetParLimits(4, 2E-6, 3E-6);//2.2366e-06
   carbon_alphaModel->FixParameter(4, 2.2E-6);//2.2366e-06
   carbon_alphaModel->FixParameter(5, 0.0);
   carbon_alphaModel->FixParameter(6, 1.5);
@@ -56,12 +55,10 @@ dEdxFitter::dEdxFitter(double aPressure){
   alphaModel->FixParameter(3, 0.0);
   alphaModel->SetParameters(0, 250, 1.0, 0.0, 2.2E-6, 0, 1.28);
 
-
-  //ROOT::Math::MinimizerOptions::SetMinimizerType("Minuit2");
-  ROOT::Math::MinimizerOptions::SetDefaultMinimizer("Minuit" ,"Scan");
-  ROOT::Math::MinimizerOptions::SetDefaultStrategy(0);
+  ROOT::Math::MinimizerOptions::SetDefaultMinimizer("Minuit2");
+  //ROOT::Math::MinimizerOptions::SetDefaultMinimizer("Minuit" ,"Scan");
+  //ROOT::Math::MinimizerOptions::SetDefaultStrategy(0);
   ROOT::Math::MinimizerOptions::PrintDefault("",std::cout);
-
   reset();
 }
 ////////////////////////////////////////////////
@@ -134,6 +131,7 @@ TFitResult dEdxFitter::fitHypothesis(TF1 *fModel, TH1F & aHisto){
 
   std::cout<<"---------------------------------"<<std::endl;
   TFitResultPtr theResultPtr = aHisto.Fit(fModel,"BRWSM");
+  //TFitResultPtr theResultPtr = aHisto.Fit("carbon_alphaModel","BRWSM");
   if(theResultPtr.Get()) theResult = *theResultPtr.Get();
   else{
     std::cout<<KRED<<"No fit result"<<RST<<std::endl;

@@ -10,24 +10,25 @@ def analyzeSingleBatch(runId, fileCSV, geometryFile, command):
 
     outputName = runId + ".out"
     
-    runId = runId[:-5]
+    runId = runId[:-9]
     if not os.path.isdir(runId):
         os.mkdir(runId)
-        
-    arguments = " --geometryFile " + geometryFile + " --dataFile " + fileCSV + " > "+outputName+" 2>&1"
+
+    arguments = " --geometryFile " + geometryFile + " --dataFile " + fileCSV + " > "+outputName+" 2>&1 &"
     print("Running job id:",runId,"\nfor file(s):\n\t"+ fileCSV.replace(",","\n\t"))
     os.chdir(runId)
     os.system("ln -s ../*Formats* ./")
     os.system("ln -s ../*.dat ./")
     print(command+arguments)
     os.system(command+arguments)
+    time.sleep(1)
     os.chdir("../")
 ################################################
 ################################################
 def analyzeDataInDirectory(dataPath, geometryFile, procName):
     
     command = "../../bin/"+procName
-    procCount = 1
+    procCount = 4
 
     runDataList = getCSVinputList(dataPath)
 

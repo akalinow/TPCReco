@@ -150,7 +150,7 @@ void TrackBuilder::reconstruct(){
   aTrackCandidate.extendToChamberRange(xyRange, myZRange);
 
   aTrackCandidate = fitTrack3D(aTrackCandidate);
-  //aTrackCandidate = fitEventHypothesis(aTrackCandidate);
+  aTrackCandidate = fitEventHypothesis(aTrackCandidate);
   myFittedTrack = aTrackCandidate;
 }
 /////////////////////////////////////////////////////////
