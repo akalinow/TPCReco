@@ -63,7 +63,8 @@ void discoverFiles(const std::string &input,
 
 template <class Rep, class Period>
 std::string discoverFilesCSV(const std::string &input,
-                             std::chrono::duration<Rep, Period> delay) {
+                             std::chrono::duration<Rep, Period> delay,
+                             std::string separator = ",") {
   std::vector<std::string> files;
   discoverFiles(input, delay, std::back_inserter(files));
   std::sort(files.begin(), files.end(), [](auto lhs, auto rhs) {
@@ -72,7 +73,7 @@ std::string discoverFilesCSV(const std::string &input,
     return std::make_tuple(lParser.CoBoId(), lParser.AsAdId()) <
            std::make_tuple(rParser.CoBoId(), rParser.AsAdId());
   });
-  return boost::algorithm::join(files, ",");
+  return boost::algorithm::join(files, separator);
 }
 
 } // namespace InputFileHelper

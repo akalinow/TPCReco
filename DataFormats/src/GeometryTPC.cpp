@@ -4,16 +4,20 @@
 #include <iostream> // for: cout, cerr, endl
 #include <iterator>
 #include <map>
+#include <set>
 #include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
+#include <tuple>
 
 #include "TGraph.h"
 #include "TH2Poly.h"
 #include "TMath.h"
 #include "TROOT.h"
 #include "TVector2.h"
+#include "TVector3.h"
+#include "TRandom3.h" // DEBUG
 
 #include "colorText.h"
 #include "GeometryTPC.h"
@@ -54,6 +58,7 @@ GeometryTPC::GeometryTPC(const char *fname, bool debug)
 
   tp = new TH2Poly();
   tp->SetName("h_uvw_dummy");
+  tp_convex = new TGraph();
 
   // default REFERENCE POINT position on XY plane
   reference_point.Set(0., 0.);
@@ -603,6 +608,7 @@ bool GeometryTPC::InitTH2Poly() {
   }
   tp->SetFloat(true); // allow to expand outside of the current limits
 
+  auto gr=new TGraph(); // collection of initial points for calculating perimeter of the active area
   for (auto &i : mapByStrip) {
 
     auto *s = i.second;
@@ -618,7 +624,6 @@ bool GeometryTPC::InitTH2Poly() {
     TVector2 point0 =
         reference_point + s->Offset() - s->Unit() * 0.5 * pad_pitch;
     int npads = s->Npads();
-    //  const int npads =int( s->Length()/pad_pitch );
     const int npoints = npads * offset_vec.size();
     TGraph *g = new TGraph(npoints);
     int ipoint = 0;
@@ -627,6 +632,7 @@ bool GeometryTPC::InitTH2Poly() {
         TVector2 corner =
             point0 + s->Unit() * ipad * pad_pitch + offset_vec[icorner];
         g->SetPoint(ipoint, corner.X(), corner.Y());
+	if(ipad==0 || ipad==npads-1) gr->SetPoint(gr->GetN(), corner.X(), corner.Y()); // first and last pad
         ipoint++;
       }
     }
@@ -638,6 +644,7 @@ bool GeometryTPC::InitTH2Poly() {
         TVector2 corner =
             point0 + s->Unit() * ipad * pad_pitch + offset_vec[icorner];
         g->SetPoint(ipoint, corner.X(), corner.Y());
+	if(ipad==0 || ipad==npads-1) gr->SetPoint(gr->GetN(), corner.X(), corner.Y()); // first and last pad
         ipoint++;
       }
     }
@@ -650,11 +657,11 @@ bool GeometryTPC::InitTH2Poly() {
     }
     // DEBUG
 
-    // primary method:
+    // primary implementation (safe for ROOT version >=6.12):
     //      const int ibin = tp->AddBin(g);
 
-    // alternative method due to bin endexing bug in TH2Poly::AddBin()
-    // implementation:
+    // alternative implementation due to bin indexing bug in TH2Poly::AddBin()
+    // (safe for ROOT version <6.12):
     const int nbins_old = tp->GetNumberOfBins();
     int ibin = tp->AddBin(g);
     const int nbins_new = tp->GetNumberOfBins();
@@ -715,7 +722,7 @@ bool GeometryTPC::InitTH2Poly() {
   }
 
   // final result
-  if (fStripMap.size() > 0)
+  if (fStripMap.size()>0 && InitActiveAreaConvexHull(gr))
     isOK_TH2Poly = true;
 
   if (_debug) {
@@ -744,6 +751,362 @@ void GeometryTPC::SetTH2PolyPartition(int nx, int ny) {
 void GeometryTPC::SetTH2PolyStrip(int ibin, StripTPC *s) {
   if (s)
     fStripMap[ibin] = s;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Computes a convex hull of the entire UVW active area.
+//
+// Employs Graham scan algorithm for finding 2D convex hull for set of 2D points.
+// Algorithm is based on the code published in:
+// T.H.Cormen, Ch.E.Leiserson, R.L.Rivest, C.Stein
+// "Introduction to Algorithms" (2nd ed.), 2001, MIT Press and McGraw-Hill.
+//
+////////////////////////////////////////////////////////////////////////////////
+bool GeometryTPC::InitActiveAreaConvexHull(TGraph *g) {
+
+  //  if(g) { g->Set(0); } else { g=new TGraph(); } // DEBUG
+  //  auto rand=new TRandom3(0);
+  //  for(auto ipoint=0u; ipoint<50u; ipoint++) {
+  //    g->SetPoint(ipoint, rand->Uniform(-100, 100), rand->Uniform(-100, 100));
+  //  } // DEBUG
+  
+  if(!tp || !g) {
+    if (_debug) {
+      std::cerr << __FUNCTION__ << ": Wrong input TGraph - Abort" << std::flush << std::endl;
+    }
+    return false;
+  }
+
+  // find point P0 with lowest X and lowest Y
+  unsigned int grN=g->GetN();
+  auto grX=g->GetX();
+  auto grY=g->GetY();
+  auto ipoint0=0u;
+  auto x0=grX[ipoint0];
+  auto y0=grY[ipoint0];
+  for(auto ipoint=1u; ipoint<grN; ++ipoint) {
+    auto x=grX[ipoint];
+    auto y=grY[ipoint];
+    if(y<y0 || (y==y0 && x<x0)) {
+      y0=y;
+      x0=x;
+      ipoint0=ipoint;
+    }
+  }
+
+  // convert cartesian coordinates to polar angle and radius
+  auto gr2 = new TGraph();
+  auto index=0u;
+  gr2->SetPoint(index, 0., 0.); // Place P0 at the beginning. By definition Phi=0, R=0 for this point.
+
+  //  if(_debug) { //DEBUG
+  //    std::cout << __FUNCTION__ << ": TGRAPH UNSORTED index=" << index << " Phi=" << gr2->GetX()[index] << " rad, R=" << gr2->GetY()[index] << " mm" << std::endl;
+  //  } // DEBUG
+
+  for(auto ipoint=1u; ipoint<grN; ++ipoint) {
+    if(ipoint==ipoint0) continue; // skip P0 as it is already inserted at the beginning
+    index++;
+    double dx=grX[ipoint]-x0; // [mm]
+    double dy=grY[ipoint]-y0; // [mm]
+    double rad = TMath::Sqrt( dx*dx + dy*dy ); // radius [mm]
+    double phi=0.0; // polar angle [rad]
+    if(dx!=0 && dy!=0) {
+      phi = TMath::ATan2( dy, dx );
+    }
+
+    //    if(_debug) { //DEBUG
+    //      std::cout << __FUNCTION__ << ": TGRAPH UNSORTED index=" << index << " Phi=" << phi << " rad, R=" << rad << " mm" << std::endl;
+    //    } // DEBUG
+
+    gr2->SetPoint(index, phi, rad);
+  }
+
+  // sort points by polar angle wrt P0 in ascending order, starting from index=1 (not 0)
+  // NOTE: this is important due to numerical tolerances for angles close to zero
+  gr2->Sort(TGraph::CompareX, true, 1);
+
+  //  if(_debug) { // DEBUG
+  //    unsigned int grN=gr2->GetN();
+  //    auto grX=gr2->GetX(); // [rad]
+  //    auto grY=gr2->GetY(); // [mm]
+  //    for(auto ipoint=0u; ipoint<grN; ++ipoint) {
+  //      std::cout << __FUNCTION__ << Form(": TGRAPH SORTED index=%d, Phi=%25.18le rad, R=%25.18le mm", ipoint, grX[ipoint], grY[ipoint]) << std::endl;
+  //    }
+  //  } // DEBUG
+
+  // for points with the same polar angle keep only the farthest point from P0
+  grN=gr2->GetN();
+  grX=gr2->GetX(); // [rad]
+  grY=gr2->GetY(); // [mm]
+  std::set<unsigned int> grSet;
+  for(auto ipoint=0u; ipoint<grN-1; ++ipoint) {
+    for(auto ipoint2=ipoint+1u; ipoint2<grN; ipoint2++) {
+
+      //      if(_debug) { // DEBUG
+      //	std::cout << __FUNCTION__ << Form(": TGRAPH SORTED DIFF %d-to-%d, d_Phi=%25.18le rad, d_R=%25.18le mm", ipoint2, ipoint, grX[ipoint2]-grX[ipoint], grY[ipoint2]-grY[ipoint]) << std::endl;
+      //      } // DEBUG
+
+      if(fabs(grX[ipoint2]-grX[ipoint])<NUM_TOLERANCE) { // grX[ipoint2]==grX[ipoint] &&
+	if( grY[ipoint2]<=grY[ipoint] ) {
+	  grSet.insert(ipoint2); // mark to be excluded
+	} else {
+	  if(ipoint>0) grSet.insert(ipoint); // mark to be excluded
+	}
+      } else break;
+    }
+  }
+
+  // convert polar coordinates to cartesian coordinates
+  auto gr3=new TGraph(grN-grSet.size());
+  index=0u;
+  for(auto ipoint=0u; ipoint<grN; ++ipoint) {
+    if(grSet.find(ipoint)!=grSet.end()) continue;
+
+    //    if(_debug) { // DEBUG
+    //      std::cout << __FUNCTION__ << Form(": TGRAPH SORTED, NO-DUPLICATES index=%d, Phi=%25.18le rad, R=%25.18le mm", index, grX[ipoint], grY[ipoint]) << std::endl;
+    //    } // DEBUG
+
+    gr3->SetPoint(index++, x0+grY[ipoint]*cos(grX[ipoint]), y0+grY[ipoint]*sin(grX[ipoint])); // [mm]
+  }
+  delete gr2; // gr2->Set(0);
+
+  //  if(_debug) { // DEBUG
+  //    unsigned int grN=gr3->GetN();
+  //    auto grX=gr3->GetX();
+  //    auto grY=gr3->GetY();
+  //    for(auto ipoint=0u; ipoint<grN; ipoint++) {
+  //      std::cout << __FUNCTION__ << Form(": TGRAPH INITIAL CARTESIAN, SORTED, NO-DUPLICATES index=%d, X=%25.18le mm, Y=%25.18le mm", ipoint, grX[ipoint], grY[ipoint]) << std::endl;
+  //    }
+  //  } // DEBUG
+
+  // perform counter-clockwise scan starting from P0
+  grN=gr3->GetN();
+  grX=gr3->GetX(); // [mm]
+  grY=gr3->GetY(); // [mm]
+  std::vector<unsigned int> stack;
+  stack.push_back(0); // point[0] always belongs to convex hull
+  stack.push_back(1); // point[1] always belongs to convex hull
+  stack.push_back(2);
+
+  //  if(_debug) { // DEBUG
+  //    for(auto i=0u; i<stack.size(); i++) {
+  //      std::cout << __FUNCTION__ << Form(": TGRAPH INITIAL STACK index=%d, X=%25.18le mm, Y=%25.18le mm", i, grX[stack[i]], grY[stack[i]]) << std::endl;
+  //    }
+  //  } // DEBUG
+
+  // For every point[i]:
+  // 1. Keep removing points from the stack while orientation of the triplet of points
+  //    {P1, P2, P3} := {next-to-top, top, point[i]} is clockwise (rigth-turn) or colinear
+  // 2. Place point[i] on top of the stack.
+  for(auto ipoint=3u; ipoint<grN; ++ipoint) {
+    auto P3=TVector3(grX[ipoint], grY[ipoint], 0); // point[i] (POINT 3 of the triplet)
+    while(stack.size()>1) {
+      auto ipointN=stack[stack.size()-2];  // next-to-top of the stack (POINT 1 of the triplet)
+      auto ipointT=stack[stack.size()-1];  // top of the stack (POINT 2 of the triplet)
+      auto P1=TVector3(grX[ipointN], grY[ipointN], 0);
+      auto P2=TVector3(grX[ipointT], grY[ipointT], 0);
+
+      // orientation <0  :CCW rotation => exit while loop
+      // orientation >=0 :CW rotation or colinear => remove from top of the stack
+      double orientation=-((P2-P1).Cross(P3-P2)).Z();
+      if( orientation<-NUM_TOLERANCE ) break;
+      //      if( orientation<(double)0.0 ) break;
+      stack.pop_back();
+
+    }; // end of while loop
+
+    // add point[i] to the stack
+    stack.push_back(ipoint);
+  }
+
+  // create TGraph from points left in the stack
+  auto gr4=new TGraph(stack.size());
+  for(auto ipoint=0u; ipoint<stack.size(); ++ipoint) {
+    gr4->SetPoint(ipoint, grX[stack[ipoint]], grY[stack[ipoint]]);
+
+    //    if(_debug) { // DEBUG
+    //      std::cout << __FUNCTION__ << Form(": TGRAPH CONVEX HULL index=%d, X=%25.18le mm, Y=%25.18le mm", ipoint, grX[stack[ipoint]], grY[stack[ipoint]]) << std::endl;
+    //   } // DEBUG
+  }
+  delete gr3; // gr3->Set(0);
+
+  // duplicate first point to close the loop
+  gr4->SetPoint(gr4->GetN(), x0, y0);
+
+  // store convex hull as TGraph (easily convertible to TH2PolyBin)
+  if(tp_convex) {
+    tp_convex->Delete();
+    tp_convex = NULL;
+  }
+  tp_convex = new TGraph(gr4->GetN(), gr4->GetX(), gr4->GetY());
+
+  if(_debug) { // DEBUG
+    std::cout << __FUNCTION__ << ": Created TGraph with " << tp_convex->GetN() << " points, "
+	      << "and starting point (X0=" << x0 << "mm, Y0="<< y0 << "mm)" << std::endl;
+  } // DEBUG
+
+  return true;
+}
+
+////////////////////////////////////////////////////////////
+//
+// Returns the stored convex hull of the entire UVW active area
+// Optionally excludes outer VETO band [mm]
+//
+// Result can be converted to TH2PolyBin:
+// $ auto hull=GetActiveAreaConvexHull(0.0);
+// $ gr->Draw("AL*");
+// $ auto bin=new TH2PolyBin(&hull, 1);
+// $ bin->GetPolygon()->Draw("AL*");
+// $ cout << "Is (x=0, y=0) inside polygon: " << bin->IsInside(0,0) << endl;
+//
+TGraph GeometryTPC::GetActiveAreaConvexHull(double vetoBand){
+
+  if(vetoBand<0.0) {
+    if (_debug) {
+      std::cerr << __FUNCTION__ << ": VETO band must not be negative - Abort(1)" << std::endl;
+    }
+    return TGraph(); // dummy TGraph()
+  }
+  TGraph result = *tp_convex;
+  if(vetoBand==0.0) {
+    return result;
+  }
+  result.Set(result.GetN()-1); // get rid of the very last (duplicted) point closing the loop
+  
+  // iterate while number of points >=3 and new edges were rejected
+  auto counter=0u; // number of iterations
+  auto remaining_offset=vetoBand; // requested offset [mm]
+  while(result.GetN()>2 && fabs(remaining_offset)>NUM_TOLERANCE) {
+    counter++;
+    auto input=result;
+    
+    // compute central point of the input figure
+    unsigned int grN=input.GetN();
+    auto grX=input.GetX();
+    auto grY=input.GetY();
+    auto xcenter=grX[0];
+    auto ycenter=grY[0];
+    for(auto ipoint=1u; ipoint<grN; ipoint++) {
+      xcenter += grX[ipoint];
+      ycenter += grY[ipoint];
+    }
+    xcenter /= grN;
+    ycenter /= grN;
+
+    // for each vertex calculate respective bisector line
+    // (NOTE: use TVector3 for cross product)
+    std::vector<TVector3> bi_dir;    // bisector direction
+    std::vector<TVector3> bi_pos;    // bisector vertex relative to central point
+    std::vector<TVector3> edge_dir;  // edge direction
+    std::vector<TVector3> edge_pos;  // edge vertex relative to central point
+    for(auto ipoint=0u; ipoint<grN; ipoint++) {
+      auto ipoint2=(ipoint+1)%grN;
+      auto ipoint3=(ipoint+2)%grN;
+      auto point1_pos=TVector3(grX[ipoint]-xcenter, grY[ipoint]-ycenter, 0); // [mm]
+      auto point2_pos=TVector3(grX[ipoint2]-xcenter, grY[ipoint2]-ycenter, 0); // [mm]
+      auto point3_pos=TVector3(grX[ipoint3]-xcenter, grY[ipoint3]-ycenter, 0); // [mm]
+      auto edge12_dir=point2_pos-point1_pos;
+      auto edge23_dir=point3_pos-point2_pos;
+      bi_pos.push_back( point2_pos );
+      bi_dir.push_back( (-1.0*edge12_dir.Unit()+edge23_dir.Unit()).Unit() );
+      edge_pos.push_back( point2_pos );
+      edge_dir.push_back( edge23_dir.Unit() );
+    }
+
+    // for each edge calculate crossing point of bisector lines corresponding to each vertex
+    // and store the distance of the caluclated point from the edge
+    TGraph grSort;
+    for(auto ipoint=0u; ipoint<grN; ipoint++) {
+      auto ipoint2=(ipoint+1)%grN;
+      auto pos1=bi_pos[ipoint];
+      auto dir1=bi_dir[ipoint];
+      auto pos2=bi_pos[ipoint2];
+      auto dir2=bi_dir[ipoint2];
+      auto A=dir1;
+      auto B=dir2*(-1.0);
+      auto C=pos2-pos1;
+      auto detW   = A.X()*B.Y()-A.Y()*B.X();
+      auto detW12 = C.X()*B.Y()-C.Y()*B.X();
+      if(detW==0.0) {
+	if(_debug) {
+	  std::cerr << __FUNCTION__ << " Wrong VETO band - Abort(2)" << std::endl;
+	}
+	return TGraph(); // dummy TGraph
+      }
+      auto bi_cross_pos=TVector3(pos1.X()+dir1.X()*detW12/detW, pos1.Y()+dir1.Y()*detW12/detW, 0);
+      auto rel_pos1=edge_pos[ipoint]-bi_cross_pos;
+      auto cross_dist1=(rel_pos1-(rel_pos1*edge_dir[ipoint])*edge_dir[ipoint]).Mag();
+      grSort.SetPoint(grSort.GetN(), cross_dist1, ipoint);
+    }
+    // sort by distance
+    grSort.Sort();
+
+    // check all calculated distances and compute safe offset value
+    std::set<unsigned int> rejectSet;
+    auto prev_dist=0.0;
+    auto safe_offset=remaining_offset;
+    for (auto grIndex=0u; grIndex<grN; grIndex++) {
+      double x, y;
+      grSort.GetPoint(grIndex, x, y);
+      auto ipoint=(unsigned int)y;
+      auto dist=(double)x;
+
+      //      if(_debug) { // DEBUG
+      //	std::cout << __FUNCTION__ << ": iter=" << counter
+      //		  << ", edge " << ipoint << "-" << (ipoint+1)%grN
+      //		  << " dist=" << dist << ", prev_dist=" << prev_dist
+      //		  << ", safe_offset=" << safe_offset << std::endl;
+      //      } // DEBUG
+
+      if(grIndex>0 && fabs(prev_dist-dist)>NUM_TOLERANCE) break;
+      prev_dist=dist;
+
+      // reduce number of points if needed
+      if( dist-safe_offset<NUM_TOLERANCE) { // less or nearly equal
+	safe_offset=dist;
+	rejectSet.insert(ipoint);
+	
+	//	if(_debug) { // DEBUG
+	//	  std::cout << __FUNCTION__ << ": iter=" << counter
+	//		    << ", safe_offset=" << safe_offset
+	//		    << ", rejected edge " << ipoint << "-" << (ipoint+1)%grN << std::endl;
+	//	} // DEBUG
+	
+      }
+    }
+    remaining_offset -= safe_offset;
+    
+    // prepare resulting polygon / input for next iteration
+    result.Set(0);
+    for(auto ipoint=0u; ipoint<grN; ipoint++) {
+      if(rejectSet.find(ipoint)!=rejectSet.end()) continue;
+      auto sinus=(edge_dir[ipoint].Cross(bi_dir[ipoint])).Mag();
+      auto new_pos=edge_pos[ipoint]+bi_dir[ipoint]*(safe_offset/sinus);
+      result.SetPoint(result.GetN(), xcenter+new_pos.X(), ycenter+new_pos.Y());
+    }
+    
+  }; // end of iteration loop
+
+  if(result.GetN()<3) {
+    if(_debug) {
+      std::cerr << __FUNCTION__ << " Wrong VETO band - Abort(3)" << std::endl;
+    }
+    return TGraph(); // dummy TGraph
+  }
+
+  // duplicate first point to close the loop
+  double x0, y0;
+  result.GetPoint(0, x0, y0);
+  result.SetPoint(result.GetN(), x0, y0);
+
+  if(_debug) { // DEBUG
+    std::cout << __FUNCTION__ << ": Created TGraph with " << result.GetN() << " points, "
+	      << "and starting point (X0=" << x0 << "mm, Y0="<< y0 << "mm)" << std::endl;
+  } // DEBUG
+
+  return result;
 }
 
 void GeometryTPC::setDriftVelocity(double v){
@@ -1369,6 +1732,26 @@ double GeometryTPC::Pos2timecell(double z, bool &err_flag) {
   return position_in_cells;
 }
 
+// min/max X [mm] cartesian coordinates covered by UVW active area
+std::tuple<double, double> GeometryTPC::rangeX() {
+  if(!isOK_TH2Poly) return std::tuple<double, double>(0.0, 0.0); // ERROR
+  return std::tuple<double, double>(tp->GetXaxis()->GetXmin(),
+				    tp->GetXaxis()->GetXmax());
+}
+
+// min/max Y [mm] cartesian coordinates covered by UVW active area
+std::tuple<double, double> GeometryTPC::rangeY() {
+  if(!isOK_TH2Poly) return std::tuple<double, double>(0.0, 0.0); // ERROR
+  return std::tuple<double, double>(tp->GetYaxis()->GetXmin(),
+				    tp->GetYaxis()->GetXmax());
+}
+
+// min/max Z [mm] cartesian coordinates covered by drift cage
+std::tuple<double, double> GeometryTPC::rangeZ() {
+  return std::tuple<double, double>(drift_zmin, drift_zmax);
+}
+
+// min/max X and Y [mm] cartesian coordinates covered by UVW active area
 std::tuple<double, double, double, double> GeometryTPC::rangeXY() {
   if(!isOK_TH2Poly) return std::tuple<double, double, double, double>(0.0, 0.0, 0.0, 0.0); // ERROR
   return std::tuple<double, double, double, double>(tp->GetXaxis()->GetXmin(),
@@ -1376,54 +1759,20 @@ std::tuple<double, double, double, double> GeometryTPC::rangeXY() {
 						    tp->GetYaxis()->GetXmin(),
 						    tp->GetYaxis()->GetXmax());
 }
-/*
-std::tuple<double, double, double, double> GeometryTPC::rangeXY() {
 
-  StripTPC *s[6] = {
-      GetStripByDir(DIR_U, 1), GetStripByDir(DIR_U, GetDirNstrips(DIR_U)),
-      GetStripByDir(DIR_V, 1), GetStripByDir(DIR_V, GetDirNstrips(DIR_V)),
-      GetStripByDir(DIR_W, 1), GetStripByDir(DIR_W, GetDirNstrips(DIR_W))};
-
-  double xmin = 1E30;
-  double xmax = -1E30;
-  double ymin = 1E30;
-  double ymax = -1E30;
-
-  for (int i = 0; i < 6; i++) {
-    if (!s[i])
-      continue;
-    double x, y;
-    TVector2 vec = s[i]->Offset() + GetReferencePoint();
-    x = vec.X();
-    y = vec.Y();
-    if (x > xmax)
-      xmax = x;
-    if (x < xmin)
-      xmin = x;
-    if (y > ymax)
-      ymax = y;
-    if (y < ymin)
-      ymin = y;
-    vec = vec + s[i]->Unit() * s[i]->Length();
-    if (x > xmax)
-      xmax = x;
-    if (x < xmin)
-      xmin = x;
-    if (y > ymax)
-      ymax = y;
-    if (y < ymin)
-      ymin = y;
-  }
-  xmin -= GetStripPitch() * 0.3;
-  xmax += GetStripPitch() * 0.7;
-  ymin -= GetPadPitch() * 0.3;
-  ymax += GetPadPitch() * 0.7;
-
-  return std::tuple<double, double, double, double>(xmin, xmax, ymin, ymax);
+// min/max X and Y [mm] cartesian coordinates covered by UVW active area
+// and min/max Z [mm] cartesian coordinates covered by drift cage
+std::tuple<double, double, double, double, double, double> GeometryTPC::rangeXYZ() {
+  if(!isOK_TH2Poly) return std::tuple<double, double, double, double, double, double>(0.0, 0.0, 0.0, 0.0, drift_zmin, drift_zmax); // ERROR
+  return std::tuple<double, double, double, double, double, double>
+    (tp->GetXaxis()->GetXmin(),
+     tp->GetXaxis()->GetXmax(),
+     tp->GetYaxis()->GetXmin(),
+     tp->GetYaxis()->GetXmax(),
+     drift_zmin, drift_zmax);
 }
-*/
 
-// [mm] min/max (signed) distance between projection of outermost strip's central axis and
+// min/max (signed) distance [mm] between projection of outermost strip's central axis and
 // projection of the origin (X=0,Y=0) point on the U/V/W pitch axis for a given direction (per section)
 std::tuple<double, double> GeometryTPC::rangeStripSectionInMM(int dir, int section) {
   double minStripInMM=1E30;
@@ -1449,7 +1798,7 @@ std::tuple<double, double> GeometryTPC::rangeStripSectionInMM(int dir, int secti
   return std::tuple<double, double>( minStripInMM, maxStripInMM );
 }
 
-// [mm] min/max (signed) distance between projection of outermost strip's central axis and
+// min/max (signed) distance [mm] between projection of outermost strip's central axis and
 // projection of the origin (X=0,Y=0) point on the U/V/W pitch axis for a given direction (all sections)
 std::tuple<double, double> GeometryTPC::rangeStripDirInMM(int dir) {
   double minStripInMM=1E30;

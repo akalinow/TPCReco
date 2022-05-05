@@ -32,9 +32,9 @@ public:
   
   ~TrackBuilder();
 
-  void setEvent(EventTPC* aEvent);
+  void setEvent(EventTPC* aEvent, const double chargeThreshold, const int delta_timecells, const int delta_strips);
 
-  void setEvent(std::shared_ptr<EventTPC> aEvent);
+  void setEvent(std::shared_ptr<EventTPC> aEvent, const double chargeThreshold=35, const int delta_timecells=5, const int delta_strips=2);
 
   void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);
 

@@ -8,10 +8,7 @@
 #include "TLatex.h"
 #include "TString.h"
 
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/property_tree/xml_parser.hpp>
 #include <boost/program_options.hpp>
-#include <boost/algorithm/string.hpp>
 
 #include "GeometryTPC.h"
 #include "Track3D.h"
@@ -23,70 +20,74 @@ int analyzeRecoEvents(const  std::string & geometryFileName,
 		      const  std::string & dataFileName,
 		      const  float & beamEnergy,
 		      const  TVector3 & beamDir);
-/////////////////////////////////////
-/////////////////////////////////////
+
+enum class BeamDirection{
+  X,
+  MINUS_X
+};
+
+std::istream& operator>>(std::istream& in, BeamDirection& direction){
+  std::string token;
+  in >> token;
+  if (token == "x" || token == "X"){
+     direction = BeamDirection::X;
+  }
+  else if (token == "-x" || token == "-X"){
+    direction = BeamDirection::MINUS_X;
+  } 
+  else
+    in.setstate(std::ios_base::failbit);
+  return in;
+  }
+
 boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
 
   boost::program_options::options_description cmdLineOptDesc("Allowed options");
   cmdLineOptDesc.add_options()
     ("help", "produce help message")
-    ("geometryFile",  boost::program_options::value<std::string>(), "string - path to the geometry file")
-    ("dataFile",  boost::program_options::value<std::string>(), "string - path to data file")
-    ("beamEnergy", boost::program_options::value<float>(), "float - LAB gamma beam energy [MeV]")
-    ("beamDir", boost::program_options::value<std::string>(), "string - LAB gamma beam direction [\"x\" xor \"-x\"]");
+    ("geometryFile",  boost::program_options::value<std::string>()->required(), "string - path to the geometry file")
+    ("dataFile",  boost::program_options::value<std::string>()->required(), "string - path to data file")
+    ("beamEnergy", boost::program_options::value<float>()->required(), "float - LAB gamma beam energy [MeV]")
+    ("beamDir", boost::program_options::value<BeamDirection>()->required(), "string - LAB gamma beam direction [\"x\" xor \"-x\"]");
   
-  boost::program_options::variables_map varMap;        
-  boost::program_options::store(boost::program_options::parse_command_line(argc, argv, cmdLineOptDesc), varMap);
-  boost::program_options::notify(varMap); 
+  boost::program_options::variables_map varMap;  
 
-  if (varMap.count("help")) {
-    std::cout<<cmdLineOptDesc<<std::endl;
+  try {     
+    boost::program_options::store(boost::program_options::parse_command_line(argc, argv, cmdLineOptDesc), varMap);
+    if (varMap.count("help")) {
+      std::cout << "recoEventAnalysis" << "\n\n";
+      std::cout << cmdLineOptDesc << std::endl;
+      exit(1);
+    }
+    boost::program_options::notify(varMap);
+  } catch (const std::exception &e) {
+    std::cerr << e.what() << '\n';
+    std::cout << cmdLineOptDesc << std::endl;
     exit(1);
   }
+
   return varMap;
 }
 /////////////////////////////////////
 /////////////////////////////////////
 int main(int argc, char **argv){
 
-  float beamEnergy=0.0; // MeV
-  TVector3 beamDir(0,0,0); // dimensionless, in detector LAB coordinates
-  std::string geometryFileName, dataFileName;
-  boost::program_options::variables_map varMap = parseCmdLineArgs(argc, argv);
-  boost::property_tree::ptree tree;
-  if(argc<5){
-    char text[] = "--help";
-    char *argvTmp[] = {text, text};
-    parseCmdLineArgs(2,argvTmp);
-    return 1;
+  auto varMap = parseCmdLineArgs(argc, argv);
+  auto geometryFileName = varMap["geometryFile"].as<std::string>();
+  auto dataFileName = varMap["dataFile"].as<std::string>();
+  auto beamEnergy = varMap["beamEnergy"].as<float>();
+  TVector3 beamDir;
+  switch(varMap["beamDir"].as<BeamDirection>()){
+    case BeamDirection::X : 
+      beamDir = TVector3(1,0,0);
+      break;
+    case BeamDirection::MINUS_X : 
+      beamDir = TVector3(-1,0,0);
+      break;
+    default:
+      return 1;
   }
-  if (varMap.count("geometryFile")) {
-    geometryFileName = varMap["geometryFile"].as<std::string>();
-  }
-  if (varMap.count("dataFile")) {
-    dataFileName = varMap["dataFile"].as<std::string>();
-  }
-  if (varMap.count("beamEnergy")) {
-    beamEnergy = varMap["beamEnergy"].as<float>();
-  }
-  if (varMap.count("beamDir")) {
-    std::string str = varMap["beamDir"].as<std::string>();
-    boost::to_upper(str);
-    if(str=="X")       beamDir=TVector3(1,0,0);
-    else if(str=="-X") beamDir=TVector3(-1,0,0);
-  }
-
-  if(dataFileName.size() && geometryFileName.size() && beamEnergy>0 && beamDir.Mag2()>0) {
-    analyzeRecoEvents(geometryFileName, dataFileName, beamEnergy, beamDir);
-  }
-  else{
-    std::cout<<KRED<<"Configuration not complete: "<<RST
-	     <<" geometryFile: "<<geometryFileName<<"\n"
-	     <<" dataFile: "<<dataFileName<<"\n"
-	     <<" beamEnergy: "<<beamEnergy<<" MeV\n"
-	     <<" beamDir: ["<<beamDir.X()<<", "<<beamDir.Y()<<", "<<beamDir.Z()<<"]"
-	     <<std::endl;
-  }
+  analyzeRecoEvents(geometryFileName, dataFileName, beamEnergy, beamDir);
   return 0;
 }
 /////////////////////////////

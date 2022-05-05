@@ -49,6 +49,15 @@ void HistoManager::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+void HistoManager::setRecoClusterParameters(bool recoClusterEnable, double recoClusterThreshold, int recoClusterDeltaStrips, int recoClusterDeltaTimeCells) {
+
+  this->recoClusterEnable = recoClusterEnable;
+  this->recoClusterThreshold = recoClusterThreshold;
+  this->recoClusterDeltaStrips = recoClusterDeltaStrips;
+  this->recoClusterDeltaTimeCells = recoClusterDeltaTimeCells;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 void HistoManager::setEvent(EventTPC* aEvent){
   if(!aEvent) return;
   myEventPtr.reset(aEvent);
@@ -60,7 +69,13 @@ void HistoManager::setEvent(EventTPC* aEvent){
 void HistoManager::setEvent(std::shared_ptr<EventTPC> aEvent){
   if(!aEvent) return;
   myEventPtr = aEvent;
+<<<<<<< HEAD
   myTkBuilder.setEvent(myEventPtr);
+=======
+  if(aEvent->GetPedestalSubstracted()){
+    myTkBuilder.setEvent(myEventPtr, this->getRecoClusterThreshold(), this->getRecoClusterDeltaStrips(), this->getRecoClusterDeltaTimeCells());
+  }
+>>>>>>> c41b7bbcd6c95aefca0d75f1041ebc1a2d994fc6
   myEventInfo->set(myEventPtr);
 }
 /////////////////////////////////////////////////////////
@@ -143,12 +158,32 @@ void HistoManager::drawRecoHistos(TCanvas *aCanvas){
      aCanvas->Modified();
      aCanvas->Update();
 
+<<<<<<< HEAD
      auto h1 = getClusterStripVsTimeInMM(strip_dir)->DrawCopy("colz");
      if(aPad->GetLogz()) h1->SetMinimum(1.0);
      hPlotBackground->Draw("col same");
      aPad->RedrawAxis();  // repaints both axes & fixes X-axis zooming issue
      h1->Draw("same colz");
      drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
+=======
+     if(getRecoClusterEnable()) {
+       auto h1 = getClusterStripVsTimeInMM(strip_dir)->DrawCopy("colz");
+       if(aPad->GetLogz()) h1->SetMinimum(1.0);
+       hPlotBackground->Draw("col same");
+       aPad->RedrawAxis();  // repaints both axes & fixes X-axis zooming issue
+       h1->Draw("same colz");
+
+       drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
+
+     } else {
+       getRawStripVsTimeInMM(strip_dir)->DrawCopy("colz");
+     }
+     //getRecHitStripVsTime(strip_dir)->DrawCopy("box same");
+     //getRawStripVsTimeInMM(strip_dir)->DrawCopy("colz");
+     //     drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
+     //if(strip_dir==DIR_W) getClusterTimeProjectionInMM()->DrawCopy("hist");
+     //else getRawStripVsTimeInMM(strip_dir)->DrawCopy("colz");
+>>>>>>> c41b7bbcd6c95aefca0d75f1041ebc1a2d994fc6
   }
    int strip_dir=3;
    TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
@@ -156,7 +191,19 @@ void HistoManager::drawRecoHistos(TCanvas *aCanvas){
    aPad->cd();
    aCanvas->Modified();
    aCanvas->Update();
+<<<<<<< HEAD
    getClusterTimeProjectionInMM()->DrawCopy("hist");
+=======
+   //drawTrack3DProjectionXY(aPad);
+   //drawChargeAlongTrack3D(aPad);
+   //myHistoManager.drawTrack3D(aPad);
+   if(getRecoClusterEnable()) {
+     getClusterTimeProjectionInMM()->DrawCopy("hist");
+   } else {
+     getRawTimeProjectionInMM()->DrawCopy("hist");
+   }
+   //getRecHitTimeProjection()->DrawCopy("hist same");
+>>>>>>> c41b7bbcd6c95aefca0d75f1041ebc1a2d994fc6
    aCanvas->Modified();
    aCanvas->Update();
 }
@@ -261,9 +308,13 @@ void HistoManager::clearTracks(){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void HistoManager::setDetLayout(){
-
-  if(!myGeometryPtr) return;
-  TH2Poly* aPtr =   myGeometryPtr->GetTH2Poly();
+  if(!myGeometryPtr) {
+    return;
+  }
+  if(grDetLayoutAll) { delete grDetLayoutAll; grDetLayoutAll=0; } // reset TGraph
+  if(grDetLayoutVeto) { delete grDetLayoutVeto; grDetLayoutVeto=0; } // reset TGraph
+  grDetLayoutAll = new TGraph(myGeometryPtr->GetActiveAreaConvexHull());
+  grDetLayoutVeto = new TGraph(myGeometryPtr->GetActiveAreaConvexHull(grVetoBand));
 
   // calculates optimal range for special histogram depicting UVW active area
   // - preserves 1:1 aspect ratio
@@ -277,38 +328,6 @@ void HistoManager::setDetLayout(){
 		     (int)(best_width+0.5), 0.5*(ymin+ymax)-0.5*best_width, 0.5*(ymin+ymax)+0.5*best_width);
   hDetLayout = (TH2F*)hDetLayoutTmp.Clone("hDetLayout");
   
-  int nBinsX = hDetLayoutTmp.GetNbinsX();
-  int nBinsY = hDetLayoutTmp.GetNbinsY();
-  double x, y;
-  int iBinPoly;
-  for(int iBinX=1;iBinX<nBinsX;++iBinX){
-    x = hDetLayoutTmp.GetXaxis()->GetBinCenter(iBinX);
-    for(int iBinY=1;iBinY<nBinsY;++iBinY){
-      y = hDetLayoutTmp.GetYaxis()->GetBinCenter(iBinY);    
-      iBinPoly = aPtr->FindBin(x,y);
-      if(iBinPoly>0){
-	hDetLayoutTmp.SetBinContent(iBinX,iBinY, 1.0);
-      }
-    }
-  }
-
-  int value = 0;
-  for(int iBinX=1;iBinX<nBinsX;++iBinX){
-    for(int iBinY=1;iBinY<nBinsY;++iBinY){
-      value = 0;
-      for(int iNeigbourX=-1;iNeigbourX<=1;++iNeigbourX){
-	for(int iNeigbourY=-1;iNeigbourY<=1;++iNeigbourY){
-	  value += hDetLayoutTmp.GetBinContent(iBinX+iNeigbourX, iBinY+iNeigbourY);
-	}
-      }
-      if(value>0 && value<4){
-	y = hDetLayoutTmp.GetYaxis()->GetBinCenter(iBinY);    
-	x = hDetLayoutTmp.GetXaxis()->GetBinCenter(iBinX);
-	hDetLayout->SetBinContent(iBinX, iBinY, 1.0);
-      }
-    }
-  }
-
   // calculates optimal ranges for special background 2D histogram:
   // - UVW STRIP projection range from all directions
   // - DRIFT projection range
@@ -320,8 +339,8 @@ void HistoManager::setDetLayout(){
     if(a<strip_min) strip_min=a;
     if(b>strip_max) strip_max=b;
   }
-  float drift_min=myGeometryPtr->GetDriftCageZmin();
-  float drift_max=myGeometryPtr->GetDriftCageZmax();
+  float drift_min, drift_max;
+  std::tie(drift_min, drift_max)=myGeometryPtr->rangeZ();
   hPlotBackground = new TH2F("hPlotBackground","",
 			     1, drift_min-0.05*(drift_max-drift_min), drift_max+0.05*(drift_max-drift_min),
 			     1, strip_min-0.05*(strip_max-strip_min), strip_max+0.05*(strip_max-strip_min));
@@ -341,8 +360,28 @@ void HistoManager::setDetLayout(){
 void HistoManager::drawDetLayout(){
 
   if(!hDetLayout) return;
-  hDetLayout->DrawCopy("box");  
-
+  hDetLayout->DrawCopy();
+  if(grDetLayoutAll) {
+    grDetLayoutAll->SetLineColor(kBlack);
+    grDetLayoutAll->SetLineWidth(2);
+    grDetLayoutAll->SetLineStyle(kSolid);
+    grDetLayoutAll->DrawClone("L");
+  }
+  if(grDetLayoutVeto) {
+    grDetLayoutVeto->SetLineColor(kBlack);
+    grDetLayoutVeto->SetLineWidth(1);
+    grDetLayoutVeto->SetLineStyle(kDashed);
+    grDetLayoutVeto->DrawClone("L");
+  }
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void HistoManager::setDetLayoutVetoBand(double distance){ // [mm]
+  if(distance<0) distance=0;
+  if(distance!=grVetoBand) { // update upon distance change
+    grVetoBand=distance;
+    setDetLayout();
+  }
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -542,6 +581,26 @@ std::shared_ptr<TH2D> HistoManager::getClusterStripVsTimeInMM(int strip_dir){
     aHisto->SetDrawOption("COLZ");
   }
   return aHisto;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+bool HistoManager::getRecoClusterEnable(){
+  return recoClusterEnable;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+double HistoManager::getRecoClusterThreshold(){
+  return recoClusterThreshold;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+int HistoManager::getRecoClusterDeltaStrips(){
+  return recoClusterDeltaStrips;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+int HistoManager::getRecoClusterDeltaTimeCells(){
+  return recoClusterDeltaTimeCells;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

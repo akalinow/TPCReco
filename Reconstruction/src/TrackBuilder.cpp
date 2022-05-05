@@ -63,22 +63,33 @@ void TrackBuilder::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void TrackBuilder::setEvent(std::shared_ptr<EventTPC> aEvent){
-  setEvent(aEvent.get());
+void TrackBuilder::setEvent(std::shared_ptr<EventTPC> aEvent, const double chargeThreshold, const int delta_timecells, const int delta_strips){
+  setEvent(aEvent.get(), chargeThreshold, delta_timecells, delta_strips);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+<<<<<<< HEAD
 void TrackBuilder::setEvent(EventTPC* aEvent){
   /*
+=======
+void TrackBuilder::setEvent(EventTPC* aEvent, const double chargeThreshold, const int delta_timecells, const int delta_strips){
+>>>>>>> c41b7bbcd6c95aefca0d75f1041ebc1a2d994fc6
   if(!aEvent->GetPedestalSubstracted()){
     throw std::logic_error("Pedestals not removed. Working without removed pedestals not implemented yet.");
   }
   */
   myEvent = aEvent;
   
+<<<<<<< HEAD
   double chargeThreshold = std::max(35.0, 0.05*aEvent->GetMaxCharge());
   int delta_timecells = 5;
   int delta_strips = 2;
+=======
+  // double chargeThreshold = std::max(35.0, 0.1*aEvent->GetMaxCharge());
+  // double chargeThreshold = 15;
+  // int delta_timecells = 5;
+  // int delta_strips = 2;
+>>>>>>> c41b7bbcd6c95aefca0d75f1041ebc1a2d994fc6
   myEvent->MakeOneCluster(chargeThreshold, delta_strips, delta_timecells);
   
   std::string hName, hTitle;

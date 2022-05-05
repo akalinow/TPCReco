@@ -10,10 +10,8 @@
 #include "TString.h"
 #include "TTreeIndex.h"
 
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/property_tree/xml_parser.hpp>
+
 #include <boost/program_options.hpp>
-#include <boost/algorithm/string.hpp>
 
 #include "GeometryTPC.h"
 #include "Track3D.h"
@@ -32,53 +30,36 @@ boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
   boost::program_options::options_description cmdLineOptDesc("Allowed options");
   cmdLineOptDesc.add_options()
     ("help", "produce help message")
-    ("geometryFile",  boost::program_options::value<std::string>(), "string - path to the geometry file")
-    ("referenceDataFile",  boost::program_options::value<std::string>(), "string - path to reference data file")
-    ("testDataFile",  boost::program_options::value<std::string>(), "string - path to test data file");
+    ("geometryFile",  boost::program_options::value<std::string>()->required(), "string - path to the geometry file")
+    ("referenceDataFile",  boost::program_options::value<std::string>()->required(), "string - path to reference data file")
+    ("testDataFile",  boost::program_options::value<std::string>()->required(), "string - path to test data file");
   
   boost::program_options::variables_map varMap;        
-  boost::program_options::store(boost::program_options::parse_command_line(argc, argv, cmdLineOptDesc), varMap);
-  boost::program_options::notify(varMap); 
-
-  if (varMap.count("help")) {
-    std::cout<<cmdLineOptDesc<<std::endl;
+  try {     
+    boost::program_options::store(boost::program_options::parse_command_line(argc, argv, cmdLineOptDesc), varMap);
+    if (varMap.count("help")) {
+      std::cout << "recoEventsComparison" << "\n\n";
+      std::cout << cmdLineOptDesc << std::endl;
+      exit(1);
+    }
+    boost::program_options::notify(varMap);
+  } catch (const std::exception &e) {
+    std::cerr << e.what() << '\n';
+    std::cout << cmdLineOptDesc << std::endl;
     exit(1);
   }
+
   return varMap;
 }
 /////////////////////////////////////
 /////////////////////////////////////
 int main(int argc, char **argv){
 
-  std::string geometryFileName, referenceDataFileName, testDataFileName;
-  boost::program_options::variables_map varMap = parseCmdLineArgs(argc, argv);
-  boost::property_tree::ptree tree;
-  if(argc<4){
-    char text[] = "--help";
-    char *argvTmp[] = {text, text};
-    parseCmdLineArgs(2,argvTmp);
-    return 1;
-  }
-  if (varMap.count("geometryFile")) {
-    geometryFileName = varMap["geometryFile"].as<std::string>();
-  }
-  if (varMap.count("referenceDataFile")) {
-    referenceDataFileName = varMap["referenceDataFile"].as<std::string>();
-  }
-   if (varMap.count("testDataFile")) {
-    testDataFileName = varMap["testDataFile"].as<std::string>();
-  }
-  if(referenceDataFileName.size() &&
-     testDataFileName.size() && geometryFileName.size()) {
-    compareRecoEvents(geometryFileName, referenceDataFileName, testDataFileName);
-  }
-  else{
-    std::cout<<KRED<<"Configuration not complete: "<<RST
-	     <<" geometryFile: "<<geometryFileName<<"\n"
-	     <<" referenceDataFile: "<<referenceDataFileName<<"\n"
-	     <<" testDataFile: "<<testDataFileName<<"\n"
-	     <<std::endl;
-  }
+  auto varMap = parseCmdLineArgs(argc, argv);
+  auto geometryFileName = varMap["geometryFile"].as<std::string>();
+  auto referenceDataFileName = varMap["referenceDataFile"].as<std::string>();
+  auto testDataFileName = varMap["testDataFile"].as<std::string>();
+  compareRecoEvents(geometryFileName, referenceDataFileName, testDataFileName);
   return 0;
 }
 /////////////////////////////

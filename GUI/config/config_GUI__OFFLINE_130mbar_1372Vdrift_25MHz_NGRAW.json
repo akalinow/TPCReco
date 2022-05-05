@@ -1,13 +1,14 @@
 {
-    "dataFile": "PLACEHOLDER_FOR_DATAFILE",
-    "geometryFile": "./geometry_ELITPC.dat",
+    "dataFile": "PLACEHOLDER_FOR_COMMA_SEPARATED_DATAFILE_LIST",
+    "geometryFile": "./geometry_ELITPC_130mbar_1372Vdrift_25MHz.dat",
     "resourcesPath": ".",
     "updateInterval": 3000,
     "removePedestal": true,
     "recoClusterEnable": false,
-    "frameLoadRange": 100,
+    "frameLoadRange": 10,
+    "singleAsadGrawFile": true,
     "display": {
-        "zLogScale": false,
+        "zLogScale": true,
         "autoZoom": false,
         "recoMode": false
     },

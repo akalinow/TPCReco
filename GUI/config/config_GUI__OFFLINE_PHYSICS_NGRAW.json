@@ -6,6 +6,7 @@
     "geometryFile": "./geometry_ELITPC.dat",
     "resourcesPath": ".",
     "removePedestal": true,
+    "recoClusterEnable": false,
     "singleAsadGrawFile": true,
     "display": {
         "zLogScale": true,

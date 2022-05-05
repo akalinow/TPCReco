@@ -9,8 +9,6 @@
 #include "TString.h"
 #include "TStopwatch.h"
 
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/property_tree/xml_parser.hpp>
 #include <boost/program_options.hpp>
 
 #include "IonRangeCalculator.h"
@@ -75,17 +73,24 @@ boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
   boost::program_options::options_description cmdLineOptDesc("Allowed options");
   cmdLineOptDesc.add_options()
     ("help", "produce help message")
-    ("geometryFile",  boost::program_options::value<std::string>(), "string - path to the geometry file.")
-    ("dataFile",  boost::program_options::value<std::string>(), "string - path to data file.");
+    ("geometryFile",  boost::program_options::value<std::string>()->required(), "string - path to the geometry file.")
+    ("dataFile",  boost::program_options::value<std::string>()->required(), "string - path to data file.");
   
   boost::program_options::variables_map varMap;        
-  boost::program_options::store(boost::program_options::parse_command_line(argc, argv, cmdLineOptDesc), varMap);
-  boost::program_options::notify(varMap); 
-
-  if (varMap.count("help")) {
-    std::cout<<cmdLineOptDesc<<std::endl;
+try {     
+    boost::program_options::store(boost::program_options::parse_command_line(argc, argv, cmdLineOptDesc), varMap);
+    if (varMap.count("help")) {
+      std::cout << "makeTrackTree" << "\n\n";
+      std::cout << cmdLineOptDesc << std::endl;
+      exit(1);
+    }
+    boost::program_options::notify(varMap);
+  } catch (const std::exception &e) {
+    std::cerr << e.what() << '\n';
+    std::cout << cmdLineOptDesc << std::endl;
     exit(1);
   }
+
   return varMap;
 }
 /////////////////////////////////////
@@ -126,6 +131,7 @@ int main(int argc, char **argv){
   std::cout<<KBLU<<"Real time:       "<<RST<<aStopwatch.RealTime()<<" s"<<std::endl;
   std::cout<<KBLU<<"CPU time:        "<<RST<<aStopwatch.CpuTime()<<" s"<<std::endl;
   std::cout<<KBLU<<"Processing rate: "<<RST<<nEntriesProcessed/aStopwatch.RealTime()<< " ev./s"<<std::endl;
+
   return 0;
 }
 /////////////////////////////
