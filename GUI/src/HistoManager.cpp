@@ -26,6 +26,8 @@
 #include "colorText.h"
 
 #include "HistoManager.h"
+
+#include "CoordinateConverter.h"
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 HistoManager::HistoManager() {
@@ -69,13 +71,7 @@ void HistoManager::setEvent(EventTPC* aEvent){
 void HistoManager::setEvent(std::shared_ptr<EventTPC> aEvent){
   if(!aEvent) return;
   myEventPtr = aEvent;
-<<<<<<< HEAD
-  myTkBuilder.setEvent(myEventPtr);
-=======
-  if(aEvent->GetPedestalSubstracted()){
-    myTkBuilder.setEvent(myEventPtr, this->getRecoClusterThreshold(), this->getRecoClusterDeltaStrips(), this->getRecoClusterDeltaTimeCells());
-  }
->>>>>>> c41b7bbcd6c95aefca0d75f1041ebc1a2d994fc6
+  myTkBuilder.setEvent(myEventPtr, this->getRecoClusterThreshold(), this->getRecoClusterDeltaStrips(), this->getRecoClusterDeltaTimeCells());
   myEventInfo->set(myEventPtr);
 }
 /////////////////////////////////////////////////////////
@@ -158,14 +154,6 @@ void HistoManager::drawRecoHistos(TCanvas *aCanvas){
      aCanvas->Modified();
      aCanvas->Update();
 
-<<<<<<< HEAD
-     auto h1 = getClusterStripVsTimeInMM(strip_dir)->DrawCopy("colz");
-     if(aPad->GetLogz()) h1->SetMinimum(1.0);
-     hPlotBackground->Draw("col same");
-     aPad->RedrawAxis();  // repaints both axes & fixes X-axis zooming issue
-     h1->Draw("same colz");
-     drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
-=======
      if(getRecoClusterEnable()) {
        auto h1 = getClusterStripVsTimeInMM(strip_dir)->DrawCopy("colz");
        if(aPad->GetLogz()) h1->SetMinimum(1.0);
@@ -183,17 +171,13 @@ void HistoManager::drawRecoHistos(TCanvas *aCanvas){
      //     drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
      //if(strip_dir==DIR_W) getClusterTimeProjectionInMM()->DrawCopy("hist");
      //else getRawStripVsTimeInMM(strip_dir)->DrawCopy("colz");
->>>>>>> c41b7bbcd6c95aefca0d75f1041ebc1a2d994fc6
-  }
+   }
    int strip_dir=3;
    TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
    if(!aPad) return;
    aPad->cd();
    aCanvas->Modified();
    aCanvas->Update();
-<<<<<<< HEAD
-   getClusterTimeProjectionInMM()->DrawCopy("hist");
-=======
    //drawTrack3DProjectionXY(aPad);
    //drawChargeAlongTrack3D(aPad);
    //myHistoManager.drawTrack3D(aPad);
@@ -203,7 +187,6 @@ void HistoManager::drawRecoHistos(TCanvas *aCanvas){
      getRawTimeProjectionInMM()->DrawCopy("hist");
    }
    //getRecHitTimeProjection()->DrawCopy("hist same");
->>>>>>> c41b7bbcd6c95aefca0d75f1041ebc1a2d994fc6
    aCanvas->Modified();
    aCanvas->Update();
 }
@@ -917,8 +900,7 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   TF1 dEdx = myTkBuilder.getdEdx();
   if(!dEdx.GetNpar()) return;
   double carbonScale = dEdx.GetParameter("carbonScale");
-  return;
-
+  
   dEdx.SetLineColor(kBlack);
   dEdx.SetLineStyle(1);
   dEdx.SetLineWidth(3);
@@ -957,43 +939,8 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   y = 0.68;
   aLatex.DrawLatex(x,y,TString::Format("Total E: %2.1f MeV",alphaEnergy+carbonEnergy));
   
-  std::cout<<"Alpha energy [MeV]: "<<alphaEnergy<<std::endl;
-  std::cout<<"Carbon energy [MeV]: "<<carbonEnergy<<std::endl;
-  std::cout<<"Total energy [MeV]: "<<alphaEnergy+carbonEnergy<<std::endl;
-
-  std::cout<<"Alpha range [mm]: "<<alphaRange<<std::endl;
-  std::cout<<"Carbon range [mm]: "<<carbonRange<<std::endl;
-  std::cout<<"Total range [mm]: "<<alphaRange+carbonRange<<std::endl;
-
-  double atomicMassUnit = 931.49410242; //MeV/c^2
-  double alphaMass = 4*atomicMassUnit + 2.4249; //A*u + Delta MeV/c2
-  double carbon12Mass = 12*atomicMassUnit;
-  double carbon13Mass = 13*atomicMassUnit + 3.1250093323;
-  double oxygen16Mass = 16*atomicMassUnit - 4.7370022;
-  double oxygen18Mass = 18*atomicMassUnit - 0.7828163;
-
-  double energy = alphaEnergy + alphaMass;
-  double momentum = sqrt(energy*energy - alphaMass*alphaMass);
-  TLorentzVector alphaP4(aTrack3D.getSegments().front().getTangent()*momentum, energy);
-
-  energy = carbonEnergy + carbon12Mass;
-  momentum = sqrt(energy*energy - carbon12Mass*carbon12Mass);
-  TLorentzVector carbon12P4(aTrack3D.getSegments().back().getTangent()*momentum, energy);
-
-  energy = carbonEnergy + carbon13Mass;
-  momentum = sqrt(energy*energy - carbon13Mass*carbon13Mass);
-  TLorentzVector carbon13P4(aTrack3D.getSegments().back().getTangent()*momentum, energy);
-
-  std::cout<<"---------------------------------"<<std::endl;
-  TLorentzVector totalP4 = alphaP4+carbon12P4;
-  totalP4.Print();
-  (alphaP4+carbon13P4).Print();
-  std::cout<<"oxygen16Mass: "<<oxygen16Mass<<std::endl;
-  std::cout<<"oxygen18Mass: "<<oxygen18Mass<<std::endl;
-  std::cout<<"hypothesis chi2: "<<aTrack3D.getHypothesisFitChi2()<<std::endl;
-  std::cout<<"---------------------------------"<<std::endl;
-  
-  //Dla tej energi gamm E(12C)+E(alpha) = 5.133 MeV natomiast E(14C)+E(alpha) = 6.06916 MeV.
+  CoordinateConverter myConv;
+  std::cout<<myConv<<std::endl;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

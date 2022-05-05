@@ -40,11 +40,11 @@ dEdxFitter::dEdxFitter(double aPressure){
   carbon_alphaModel->SetParName(5, "gaussMean");
   carbon_alphaModel->SetParName(6, "gaussSigma");
 
-  carbon_alphaModel->SetParLimits(0, 1, 20.0);
-  carbon_alphaModel->SetParLimits(1, 240, 290.0);
+  carbon_alphaModel->SetParLimits(0, 5, 20.0);
+  carbon_alphaModel->SetParLimits(1, 240, 360.0);
   carbon_alphaModel->FixParameter(2, 1.0);
   carbon_alphaModel->FixParameter(3, 0.46);
-  carbon_alphaModel->FixParameter(4, 2.2E-6);//2.2366e-06
+  carbon_alphaModel->FixParameter(4, 2.2E-6);
   carbon_alphaModel->FixParameter(5, 0.0);
   carbon_alphaModel->FixParameter(6, 1.5);
   carbon_alphaModel->SetParLimits(6, 1, 3);

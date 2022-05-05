@@ -58,7 +58,7 @@ void makePlots(std::string fileName){
   std::string qualityCut = "chi2<10 && charge>1000 && length>50 && eventType==3 && hypothesisChi2<5";
   std::string fiducialXYCut = "abs(xAlphaEnd)<160 && abs(yAlphaEnd)<80 && abs(xCarbonEnd)<160 && abs(yCarbonEnd)<80";
   std::string fiducialZCut = "abs(zCarbonEnd - zAlphaEnd)<180";
-  std::string vertexCut = "abs(yVtx+2)<6 && alphaRange>85";
+  std::string vertexCut = "abs(yVtx+2)<6";
   std::string cut0 = qualityCut;
   std::string cut1 = "1";
   cut1 += std::string("&&")+qualityCut;
@@ -174,7 +174,7 @@ void makePlots(std::string fileName){
 
   aLeg = new TLegend(0.1, 0.65, 0.53, 0.9);
   aLeg->AddEntry(hLengthCut0, "NO cut on vtx.","l");
-  aLeg->AddEntry(hLengthCut1, "#splitline{|y-2|<6}{#splitline{|end_{X}|<160 &&  |end_{Y}|<80}{|C_{Z} - #alpha_{Z}|<180}}","l");
+  aLeg->AddEntry(hLengthCut1, "#splitline{|y-yVtx|<6}{#splitline{|end_{X}|<160 &&  |end_{Y}|<80}{|C_{Z} - #alpha_{Z}|<180}}","l");
   aLeg->Draw();
   ////////////////////////////////
   
