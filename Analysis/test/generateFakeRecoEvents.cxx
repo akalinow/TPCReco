@@ -11,19 +11,31 @@
 // Below are parameters and flags that control behaviour of
 // the toy Monte Carlo generator:
 //
-#define SIMUL_CONTAINMENT_FLAG  true    // skip partially contained events?
-#define SIMUL_EXT_TRG_FLAG      true    // simulate external trigger?
-#define SIMUL_EXT_TRG_ARRIVAL   0.1     // trigger postion on time scale [0-1]
+#define SIMUL_CONTAINMENT_FLAG   false    // skip partially contained events?
+#define SIMUL_EXT_TRG_FLAG       true    // simulate external trigger?
+#define SIMUL_EXT_TRG_ARRIVAL    0.1     // trigger postion on time scale [0-1]
 //#define SIMUL_BEAM_E            7.164    // [MeV] energy peak, O-16 threshold
-#define SIMUL_BEAM_E            11.5    // [MeV] energy peak
+//#define SIMUL_BEAM_E             11.5    // [MeV] energy peak
+#define SIMUL_BEAM_E             12.3    // [MeV] energy peak
 //#define SIMUL_BEAM_E_RESOL      0       // no energy smearing
-#define SIMUL_BEAM_E_RESOL      0.018   // 200keV = 1.8%, energy sigma [0-1]
+#define SIMUL_BEAM_E_RESOL       0.005   // 150keV = 1.5%, energy sigma [0-1]
+//#define SIMUL_BEAM_E_RESOL       0.018   // 200keV = 1.8%, energy sigma [0-1]
 //#define SIMUL_BEAM_E_RESOL      0.026   // 300keV = 2.6%, energy sigma [0-1]
 //#define SIMUL_BEAM_E_RESOL      0.035   // 400keV = 3.5%, energy sigma [0-1]
-#define SIMUL_BEAM_SPREAD_R     5.5     // [mm] flat top intentsity radius
-#define SIMUL_BEAM_SPREAD_SIGMA 1.0     // [mm] intensity tail sigma
-#define SIMUL_PRESSURE          190.0   // [mbar] CO2 pressure
-#define SIMUL_N                 100000L // number of events to generate
+#define SIMUL_BEAM_SPREAD_R      5.25     // [mm] flat top intentsity radius
+#define SIMUL_BEAM_SPREAD_SIGMA  1.0     // [mm] intensity tail sigma
+#define SIMUL_PRESSURE           190.0   // [mbar] CO2 pressure
+#define SIMUL_OXYGEN_E1E2_FLAG   true    // use anisotropic theta distribution for O-16?
+#define SIMUL_OXYGEN_E1E2_SIGMA1 1       // sigma_E1 cross section [nb]
+#define SIMUL_OXYGEN_E1E2_SIGMA2 0       // sigma_E2 cross section [nb]
+#define SIMUL_OXYGEN_E1E2_PHI12  0       // E1/E2 mixing phase [rad]
+//#define SIMUL_OXYGEN_E1E2_SIGMA1 0.16    // sigma_E1 cross section [nb]
+//#define SIMUL_OXYGEN_E1E2_SIGMA2 0.15    // sigma_E2 cross section [nb]
+//#define SIMUL_OXYGEN_E1E2_PHI12  54/180*TMath::Pi() // E1/E2 mixing phase [rad]
+#define SIMUL_POLARISATION_FLAG  true   // use unpolarised or partially polarized beam?
+#define SIMUL_POLARISATION_FRAC  0.33    // degree of linear polarization of gamma beam
+#define SIMUL_POLARISATION_ANGLE 60/180*TMath::Pi()  // polarization plane (CKW wrt horizontal axis)
+#define SIMUL_N                  100000L // total number of events to generate
 
 #ifndef __ROOTLOGON__
 R__ADD_INCLUDE_PATH(../../DataFormats/include)
@@ -44,6 +56,8 @@ R__ADD_LIBRARY_PATH(../lib)
 #include "TFile.h"
 #include "TTree.h"
 #include "TF2.h"
+#include "TMath.h"
+#include "Math/IFunction.h" // needed for ROOT::Math::legendre
 #include "MultiKey.h"
 #include "GeometryTPC.h"
 #include "IonRangeCalculator.h"
@@ -65,6 +79,43 @@ double beamProfile2D(double *x, double *par)
    return par[1]*exp(-0.5*(r-par[0])*(r-par[0])/par[2]/par[2]);
 }
 TF2 beamProfileTF2("beamProfileTF2", beamProfile2D, -100, 100, -100, 100, 3);
+//
+//////////////////////////
+//////////////////////////
+// 1D angular distribution to be used with TF1::GetRandom
+// f=0 - circular polarized gamma beam
+// f=1 - 100% linearly polarized gamma beam
+//
+// x[0] = phi_BEAM alpha-particle emission angle wrt horizontal axis, CKW [rad]
+// par[0] = A - normalisation constant
+// par[1] = f - degree of polaristation [0-1]
+// par[2] = phi_0 - angle of polarization plane wrt horizontal axis, CKW [rad]
+//
+TF1 phiEmissionTF1("phiEmissionTF1", "[0]*(1+[1]*cos(2*(x+[2])))", 0.0, TMath::TwoPi());
+//
+//////////////////////////
+//////////////////////////
+// 1D angular distribution to be used with TF1::GetRandom
+// Non-siotropic angular distrubution of alpha-particle emission angle wrt gamma beam
+// with E1 abd E2 components for Oxygen-16 photodisintegration reaction
+//
+// x[0] = CMS theta_BEAM alpha-particle emission angle wrt gamma beam [rad]
+// par[0] = normalisation constant
+// par[1] = sigma_E1 - E1 cross section parameter [nb]
+// par[2] = sigma_E2 - E2 cross section parameter [nb]
+// par[3] = phase_12 - phase angle responsible for mixing E1/E2 [rad]
+//
+double thetaEmission(double *x, double *par)
+{
+  double c = cos(x[0]);
+  double L[5];
+  for(auto i=0; i<=4; i++) L[i]=ROOT::Math::legendre(i, c);
+  double WE1 = L[0] - L[2];
+  double WE2 = L[0] + (5./7.)*L[2] - (12./7.)*L[4];
+  double W12 = 6./sqrt(5.0)*( L[1] - L[3] );
+  return par[0]*( par[1]*WE1 + par[2]*WE2 + sqrt(par[1]*par[2])*cos(par[3])*W12 );
+}
+TF1 thetaEmissionTF1("thetaEmissionTF1", thetaEmission, 0.0, TMath::Pi(), 3);
 //////////////////////////
 //////////////////////////
 std::shared_ptr<IonRangeCalculator> loadRangeCalculator(){
@@ -165,12 +216,30 @@ Track3D generateFakeAlphaCarbonGenericEvent(std::shared_ptr<GeometryTPC> aGeomet
   double p_carbon_CMS=p_alpha_CMS;
   double T_carbon_CMS=sqrt(p_carbon_CMS*p_carbon_CMS+carbonMass*carbonMass)-carbonMass;
 
-  // distribute isotropically alpha particles in CMS frame
-  double phi=r->Uniform(0, TMath::TwoPi()); // rad
-  double theta=acos(r->Uniform(-1, 1)); // rad, dOmega=dPhi*d(cosTheta)
-  TLorentzVector alphaP4_CMS(p_alpha_CMS*TVector3(0, 0, 1), alphaMass+T_alpha_CMS); // initial = along Z
-  alphaP4_CMS.RotateY(theta); // rotate by theta about Y axis
-  alphaP4_CMS.RotateZ(phi); // rotate by phi about Z axis
+  double phi_BEAM, theta_BEAM;
+  // pick polar alpha-particle emission angle according to specific model
+  if(SIMUL_OXYGEN_E1E2_FLAG) {
+    // distribute anisotropically, mixture of E1 and E2 components
+    theta_BEAM=thetaEmissionTF1.GetRandom();
+  } else {
+    // distribute isotropically alpha particles in CMS frame
+    theta_BEAM=acos(r->Uniform(-1, 1)); // rad, dOmega=dPhi*d(cosTheta)
+  }
+  // pick azimuthal alpha-particle emission angle according to specific model
+  if(SIMUL_POLARISATION_FLAG) {
+    // distribute anisotropically, mix of circular and linear polarisation
+    phi_BEAM=phiEmissionTF1.GetRandom();
+  } else {
+    // distribute isotropically alpha particles in CMS frame
+    phi_BEAM=r->Uniform(0, TMath::TwoPi()); // rad
+  }
+  TLorentzVector alphaP4_CMS(p_alpha_CMS*beamDir_DET.Unit(), alphaMass+T_alpha_CMS); // initial = along gamma beam
+  alphaP4_CMS.RotateZ(theta_BEAM); // rotate by theta_BEAM about detector Z axis (vertical)
+  alphaP4_CMS.Rotate(phi_BEAM, beamDir_DET); // rotate by phi_BEAM about beam axis
+
+  //  TLorentzVector alphaP4_CMS(p_alpha_CMS*TVector3(0, 0, 1), alphaMass+T_alpha_CMS); // initial = along Z
+  //  alphaP4_CMS.RotateY(theta); // rotate by theta about Y axis
+  //  alphaP4_CMS.RotateZ(phi); // rotate by phi about Z axis
 
   // calculate momentum of carbon recoil (back-to-back) in CMs frame
   TLorentzVector carbonP4_CMS;
@@ -483,6 +552,8 @@ void generateFakeRecoEvents(const std::string geometryName, double brOxygen16=1,
   if (!gROOT->GetClass("IonRangeCalculator")){
     R__LOAD_LIBRARY(libReconstruction.so);
   }
+  R__LOAD_LIBRARY(libMathMore.so);
+  
   // construct partial sum of BRs, normalized to 1
   std::vector<double> brSum;
   brSum.push_back(fabs(brOxygen16));
@@ -530,8 +601,20 @@ void generateFakeRecoEvents(const std::string geometryName, double brOxygen16=1,
 
   // initialize beam profile parameters
   beamProfileTF2.SetParameters(SIMUL_BEAM_SPREAD_R, 1, SIMUL_BEAM_SPREAD_SIGMA);
-  beamProfileTF2.SetNpx(100);
-  beamProfileTF2.SetNpy(100);
+  beamProfileTF2.SetNpx(500);
+  beamProfileTF2.SetNpy(500);
+
+  // initialize THETA anistoropic distribution in CMS frame
+  if(SIMUL_OXYGEN_E1E2_FLAG) {
+    thetaEmissionTF1.SetParameters(1.0, SIMUL_OXYGEN_E1E2_SIGMA1, SIMUL_OXYGEN_E1E2_SIGMA2, SIMUL_OXYGEN_E1E2_PHI12);
+    thetaEmissionTF1.SetNpx(10000);
+  }
+
+  // initialize PHI anistoropic distribution in CMS frame
+  if(SIMUL_POLARISATION_FLAG) {
+    phiEmissionTF1.SetParameters(1.0, SIMUL_POLARISATION_FRAC, SIMUL_POLARISATION_ANGLE);
+    phiEmissionTF1.SetNpx(10000);
+  }
 
   Track3D (*func)(std::shared_ptr<GeometryTPC>, std::shared_ptr<IonRangeCalculator>, bool);
 
