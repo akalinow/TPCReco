@@ -185,12 +185,14 @@ int convertGRAWFile(const  std::string & geometryFileName,
       // temporarily reset geometry pointer while filling TTree
       //      std::shared_ptr<GeometryTPC> gPtr(myEventPtr->GetGeoPtr());
       myEventPtr->SetGeoPtr(0);      
-      aTree.Fill();
+      //aTree.Fill();
+      if(eventIdxMap.size()%100==0) aTree.FlushBaskets();
     }
 
 #ifdef DEBUG
     if( eventIdxMap.size()==10 ) break;
 #endif
+    if( eventIdxMap.size()==300 ) break;
 
     currentEventIdx=myEventSource->currentEventNumber();
     myEventSource->getNextEvent();

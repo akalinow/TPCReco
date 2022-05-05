@@ -238,8 +238,8 @@ int makeTrackTree(const  std::string & geometryFileName,
     const TVector3 & carbonEnd = aTrack3D.getSegments().back().getEnd();
     
     const TVector3 & tangent = aTrack3D.getSegments().front().getTangent();
-    double phi = atan2(tangent.Z(),tangent.Y());
-    double cosTheta = tangent.X();
+    double phi = atan2(tangent.Z(),-tangent.Y());
+    double cosTheta = -tangent.X();
 
     TVector3 horizontal(0,-1,0);
     double horizontalTrackLostPart = 73.4/std::abs(horizontal.Dot(tangent));

@@ -183,11 +183,11 @@ void EventSourceMultiGRAW::loadDataFileList(const std::set<std::string> & fileNa
 /////////////////////////////////////////////////////////
 bool EventSourceMultiGRAW::loadGrawFrame(unsigned int iEntry, bool readFullEvent, unsigned int streamIndex){
 
-  //#ifdef DEBUG
+  #ifdef DEBUG
   std::cout<<__FUNCTION__<<KBLU<<": Start loading the file entry: "<<RST<<iEntry
 	   <<KBLU<<" from the GRAW stream id: "<<RST<<streamIndex
 	   <<KBLU<<" with option readFull="<<RST<<readFullEvent<<std::endl;
-  //#endif
+  #endif
 
   if(streamIndex>=myFilePathList.size() || streamIndex>=myNextFilePathList.size()) { // HOTFIX!!! // || streamIndex>=myDataFrameList.size()) {
     std::cerr<<KRED<<__FUNCTION__
@@ -273,11 +273,11 @@ bool EventSourceMultiGRAW::loadGrawFrame(unsigned int iEntry, bool readFullEvent
     exit(1);
   }
   
-  //#ifdef DEBUG
+  #ifdef DEBUG
   std::cout<<__FUNCTION__<<KBLU<<": Finished loading the file entry: "<<RST<<iEntry
 	   <<KBLU<<" from the GRAW stream id: "<<RST<<streamIndex
 	   <<KBLU<<" with option readFull="<<RST<<readFullEvent<<std::endl;
-  //#endif
+  #endif
 
   return dataFrameRead;
 }
@@ -287,9 +287,11 @@ bool EventSourceMultiGRAW::loadGrawFrame(unsigned int iEntry, bool readFullEvent
 /////////////////////////////////////////////////////////
 void EventSourceMultiGRAW::loadEventId(unsigned long int eventId){
 
+  #ifdef DEBUG
   std::cout<<__FUNCTION__<<KBLU
 	   <<": Start looking for the event id: "<<RST<<eventId
 	   <<std::endl;
+  #endif
 
   // find corresponding file entry for each GRAW file
   for( unsigned int streamIndex=0; streamIndex<myFramesMapList.size() ; streamIndex++) {
@@ -297,9 +299,11 @@ void EventSourceMultiGRAW::loadEventId(unsigned long int eventId){
     // check map [eventId, frameIndex] for a given GRAW file
     auto it2 = myFramesMapList[streamIndex].find(eventId);
     if(it2!=myFramesMapList[streamIndex].end()) {
+      #ifdef DEBUG
       unsigned int eventIndexFrame = it2->second;
       std::cout <<__FUNCTION__<<KBLU<<": Found file entry: "<<RST<<eventIndexFrame<<KBLU<<" for the GRAW stream id: "<<RST<<streamIndex
 		<<KBLU<<", event id: "<<RST<<eventId<<std::endl;
+       #endif
     } else {
       // count remaining frames of a given GRAW file
       for(auto iEntry=nEntries-1; iEntry>=0; --iEntry) {  // TODO: optimize for speed!!! (eg. check same frame index first and only then try to scan the whole file)
@@ -332,10 +336,11 @@ void EventSourceMultiGRAW::loadEventId(unsigned long int eventId){
   //  std::cout<<__FUNCTION__<<": after calling collectEventFragments(eventId="<<eventId<<")"
   //	   <<std::endl<<std::flush;
   //#endif    
-
+  #ifdef DEBUG
   std::cout<<__FUNCTION__<<KBLU
 	   <<": Finished looking for the event id: "<<RST<<eventId
 	   <<std::endl;
+  #endif    
 }
 /////////////////////////////////////////////////////////
 // Finds eventId corresponding to a given frame index of the GRAW file for {COBO=0, ASAD=0}.
@@ -344,9 +349,11 @@ void EventSourceMultiGRAW::loadEventId(unsigned long int eventId){
 /////////////////////////////////////////////////////////
 void EventSourceMultiGRAW::loadFileEntry(unsigned long int iEntry){
 
+  #ifdef DEBUG
   std::cout<<__FUNCTION__<<KBLU
 	   <<": Start looking for the file entry: "<<RST<<iEntry
 	   <<std::endl;
+  #endif
 
   bool result = false;
   unsigned long int matchEventId = 0;
@@ -450,10 +457,11 @@ void EventSourceMultiGRAW::loadFileEntry(unsigned long int iEntry){
   //  std::cout<<__FUNCTION__<<": after calling collectEventFragments(eventId="<<matchEventId<<")"
   //	   <<std::endl<<std::flush;
   //#endif
-
+  #ifdef DEBUG
   std::cout<<__FUNCTION__<<KBLU
 	   <<": Finished looking for the file entry: "<<RST<<iEntry
 	   <<std::endl;
+  #endif
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

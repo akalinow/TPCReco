@@ -58,7 +58,7 @@ void makePlots(std::string fileName){
   std::string qualityCut = "chi2<10 && charge>1000 && length>50 && eventType==3 && hypothesisChi2<5";
   std::string fiducialXYCut = "abs(xAlphaEnd)<160 && abs(yAlphaEnd)<80 && abs(xCarbonEnd)<160 && abs(yCarbonEnd)<80";
   std::string fiducialZCut = "abs(zCarbonEnd - zAlphaEnd)<180";
-  std::string vertexCut = "abs(yVtx+2)<6";
+  std::string vertexCut = "abs(yVtx+2)<6 && alphaRange>85";
   std::string cut0 = qualityCut;
   std::string cut1 = "1";
   cut1 += std::string("&&")+qualityCut;
@@ -67,7 +67,7 @@ void makePlots(std::string fileName){
   cut1 += std::string("&&")+fiducialZCut;
 
   std::string cut2 = cut1;
-  std::string cosThetaCut = "abs(cosTheta)<0.2";
+  std::string cosThetaCut = "abs(cosTheta)<10.2";
   cut2 += std::string("&&")+cosThetaCut;
   
   trackTree->Draw("zVtx:yVtx:xVtx>>hVtxXYZCut1",cut0.c_str(), "goff");
@@ -162,11 +162,14 @@ void makePlots(std::string fileName){
   hLengthCut1->SetLineColor(4);
   hLengthCut1->SetLineStyle(2);
   hLengthCut1->SetLineWidth(3);
-  hLengthCut1->Fit("gaus","RS","",90,120); 
+  //hLengthCut1->Fit("gaus","RS","",90,120);
+  //hLengthCut1->Fit("gaus","RS","",60,100);
+  //hLengthCut1->Fit("gaus","RS","",90,100);
   hLengthCut1->SetStats(kTRUE);
   hLengthCut1->SetMaximum(100*hLengthCut1->GetMaximum());
   hLengthCut1->Draw("same");
   hLengthCut0->Draw("same");
+  hLengthCut1->Draw();
   gPad->SetLogy();
 
   aLeg = new TLegend(0.1, 0.65, 0.53, 0.9);
@@ -179,10 +182,11 @@ void makePlots(std::string fileName){
   hAlphaRange->SetTitle("#alpha track length");
   hAlphaRange->SetLineColor(4);
   hAlphaRange->SetLineWidth(3);
-  hAlphaRange->Fit("gaus","RS","",80,110); 
+  //hAlphaRange->Fit("gaus","RS","",80,110);
+  hAlphaRange->Fit("gaus","RS","",80,100); 
   hAlphaRange->SetStats(kTRUE);
   hAlphaRange->SetMaximum(1.5*hAlphaRange->GetMaximum());
-  hAlphaRange->GetXaxis()->SetRangeUser(80,150);
+  hAlphaRange->GetXaxis()->SetRangeUser(50,110);
   hAlphaRange->Draw("");
   ////////////////////////////////
   
@@ -191,7 +195,7 @@ void makePlots(std::string fileName){
   hCarbonRange->SetLineColor(4);
   hCarbonRange->SetLineWidth(3);
   hCarbonRange->SetMaximum(1.5*hCarbonRange->GetMaximum());
-  hCarbonRange->GetXaxis()->SetRangeUser(0,20);
+  hCarbonRange->GetXaxis()->SetRangeUser(0,25);
   hCarbonRange->Draw("");
   ////////////////////////////////
   aCanvas->cd(4);
@@ -204,7 +208,7 @@ void makePlots(std::string fileName){
   ////////////////
   aCanvas->Print("Plots_set1.png");
   ////////////////
-  //return;
+  return;
   ////////////////
   aCanvas->Clear();
   aCanvas->Divide(2,2);
@@ -216,7 +220,6 @@ void makePlots(std::string fileName){
   hPhiRaw->SetLineColor(1);
   hPhiRaw->SetLineStyle(2);
   hPhiRaw->SetMaximum(1.5*hPhiRaw->GetMaximum());
-  hPhiRaw->SetMaximum(6000);
   hPhiRaw->SetMinimum(0.0);
   hPhiRaw->Draw();
   
