@@ -5,8 +5,9 @@
 #include <vector>
 #include <map>
 
-#include "TH1D.h"
-#include "TH2D.h"
+#include "TH1F.h"
+#include "TH2F.h"
+#include "TProfile.h"
 
 class TH1F;
 class TH2F;
@@ -24,6 +25,7 @@ public:
   ~HIGGS_analysis();
 
   void fillHistos(Track3D *aTrack);
+  bool eventFilter(Track3D *aTrack); // 1 = pass, 0 = reject
   
  private:
 
@@ -38,6 +40,7 @@ public:
   TFile *outputFile;
   std::map<std::string, TH1F*> histos1D;
   std::map<std::string, TH2F*> histos2D;
+  std::map<std::string, TProfile*> profiles1D;
   std::shared_ptr<GeometryTPC> myGeometryPtr; //! transient data member
   TVector3 gammaUnitVec; // dimensionless, Cartesian detector LAB frame
   float gammaEnergy;  // MeV
