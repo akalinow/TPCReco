@@ -47,9 +47,9 @@ TrackInfoFrame::~TrackInfoFrame(){
 void TrackInfoFrame::initialize(){ }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void TrackInfoFrame::updateFileName(const std::string & fileName){
+void TrackInfoFrame::updateTrackInfo(const std::string & trackInfo){
 
-  std::string fileNameWithBreaks = fileName;
+  std::string fileNameWithBreaks = trackInfo;
   size_t previousBreakPoint = 0;
   for(size_t iPos=0;iPos<fileNameWithBreaks.size();){
     iPos = fileNameWithBreaks.find("/",iPos+1);

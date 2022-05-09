@@ -20,7 +20,7 @@ public:
 
    virtual Bool_t ProcessMessage(Long_t msg, Long_t parm1, Long_t);
 
-  void updateFileName(const std::string & fileName);
+  void updateTrackInfo(const std::string & trackInfo);
 
 private:
 
