@@ -8,10 +8,16 @@
 #include "TH1F.h"
 #include "TH2F.h"
 #include "TProfile.h"
+//////// DEBUG
+//#include "TCanvas.h"
+//////// DEBUG
 
 class TH1F;
 class TH2F;
 class Track3D;
+//////// DEBUG
+class TCanvas;
+//////// DEBUG
 class GeometryTPC;
 
 class HIGGS_analysis{
@@ -38,6 +44,9 @@ public:
 			 TVector3 beamDir); // nominal gamma beam direction in detector LAB frame
 
   TFile *outputFile;
+  //////// DEBUG
+  //  TCanvas *outputCanvas; // DEBUG
+  //////// DEBUG
   std::map<std::string, TH1F*> histos1D;
   std::map<std::string, TH2F*> histos2D;
   std::map<std::string, TProfile*> profiles1D;

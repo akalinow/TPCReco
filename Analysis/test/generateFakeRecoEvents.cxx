@@ -11,35 +11,38 @@
 // Below are parameters and flags that control behaviour of
 // the toy Monte Carlo generator:
 //
-#define SIMUL_CONTAINMENT_FLAG   false    // skip partially contained events?
-#define SIMUL_EXT_TRG_FLAG       true    // simulate external trigger?
-#define SIMUL_EXT_TRG_ARRIVAL    0.1     // trigger postion on time scale [0-1]
-//#define SIMUL_BEAM_E            7.164    // [MeV] energy peak, O-16 threshold
-//#define SIMUL_BEAM_E             11.5    // [MeV] energy peak
-#define SIMUL_BEAM_E             12.3    // [MeV] energy peak
-//#define SIMUL_BEAM_E_RESOL      0       // no energy smearing
-#define SIMUL_BEAM_E_RESOL       0.005   // 150keV = 1.5%, energy sigma [0-1]
-//#define SIMUL_BEAM_E_RESOL       0.018   // 200keV = 1.8%, energy sigma [0-1]
-//#define SIMUL_BEAM_E_RESOL      0.026   // 300keV = 2.6%, energy sigma [0-1]
-//#define SIMUL_BEAM_E_RESOL      0.035   // 400keV = 3.5%, energy sigma [0-1]
-#define SIMUL_BEAM_SPREAD_R      5.25     // [mm] flat top intentsity radius
-#define SIMUL_BEAM_SPREAD_SIGMA  1.0     // [mm] intensity tail sigma
-#define SIMUL_PRESSURE           190.0   // [mbar] CO2 pressure
-#define SIMUL_OXYGEN_E1E2_FLAG   true    // use anisotropic theta distribution for O-16?
-#define SIMUL_OXYGEN_E1E2_SIGMA1 1       // sigma_E1 cross section [nb]
-#define SIMUL_OXYGEN_E1E2_SIGMA2 0       // sigma_E2 cross section [nb]
-#define SIMUL_OXYGEN_E1E2_PHI12  0       // E1/E2 mixing phase [rad]
+#define SIMUL_CONTAINMENT_FLAG   false     // skip partially contained events?
+#define SIMUL_TRUNCATE_FLAG      true      // truncate partially contained tracks?
+#define SIMUL_EXT_TRG_FLAG       true      // simulate external trigger?
+#define SIMUL_EXT_TRG_ARRIVAL    0.1       // trigger postion on time scale [0-1]
+//#define SIMUL_BEAM_E           7.164     // [MeV] energy peak, O-16 threshold
+#define SIMUL_BEAM_E             11.5      // [MeV] energy peak
+//#define SIMUL_BEAM_E           12.3      // [MeV] energy peak
+//#define SIMUL_BEAM_E_RESOL     0         // no energy smearing
+//#define SIMUL_BEAM_E_RESOL     0.00369   // [0-1] 0.369% energy sigma, fwhm=100 keV
+#define SIMUL_BEAM_E_RESOL       0.00554   // [0-1] 0.554% energy sigma, fwhm=150 keV
+//#define SIMUL_BEAM_E_RESOL     0.00738   // [0-1] 0.738% energy sigma, fwhm=200 keV
+//#define SIMUL_BEAM_E_RESOL     0.0107    // [0-1] 1.107% energy sigma, fwhm=300 keV
+//#define SIMUL_BEAM_E_RESOL     0.0148    // [0-1] 1.480% energy sigma, fwhm=400 keV
+#define SIMUL_BEAM_SPREAD_R      5.25      // [mm] flat top intentsity radius
+#define SIMUL_BEAM_SPREAD_SIGMA  1.0       // [mm] intensity tail sigma
+#define SIMUL_PRESSURE           190.0     // [mbar] CO2 pressure
+#define SIMUL_OXYGEN_E1E2_FLAG   true      // use anisotropic theta distribution for O-16?
+#define SIMUL_OXYGEN_E1E2_SIGMA1 0         // sigma_E1 cross section [nb]
+#define SIMUL_OXYGEN_E1E2_SIGMA2 1         // sigma_E2 cross section [nb]
+#define SIMUL_OXYGEN_E1E2_PHI12  0         // E1/E2 mixing phase [rad]
 //#define SIMUL_OXYGEN_E1E2_SIGMA1 0.16    // sigma_E1 cross section [nb]
 //#define SIMUL_OXYGEN_E1E2_SIGMA2 0.15    // sigma_E2 cross section [nb]
-//#define SIMUL_OXYGEN_E1E2_PHI12  54/180*TMath::Pi() // E1/E2 mixing phase [rad]
-#define SIMUL_POLARISATION_FLAG  true   // use unpolarised or partially polarized beam?
-#define SIMUL_POLARISATION_FRAC  0.33    // degree of linear polarization of gamma beam
-#define SIMUL_POLARISATION_ANGLE 60/180*TMath::Pi()  // polarization plane (CKW wrt horizontal axis)
-#define SIMUL_N                  100000L // total number of events to generate
+//#define SIMUL_OXYGEN_E1E2_PHI12  54./180.*TMath::Pi() // E1/E2 mixing phase [rad]
+#define SIMUL_POLARISATION_FLAG  false     // use unpolarised or partially polarized beam?
+#define SIMUL_POLARISATION_FRAC  0.33      // degree of linear polarization of gamma beam
+#define SIMUL_POLARISATION_ANGLE 60./180.*TMath::Pi()  // polarization plane (CKW wrt horizontal axis)
+#define SIMUL_PLOT3D_FLAG        false     // create 3D debug plot with all tracks?
 
 #ifndef __ROOTLOGON__
 R__ADD_INCLUDE_PATH(../../DataFormats/include)
 R__ADD_INCLUDE_PATH(../../Reconstruction/include)
+R__ADD_INCLUDE_PATH(../../Utilities/include)
 R__ADD_LIBRARY_PATH(../lib)
 #endif
 
@@ -57,11 +60,16 @@ R__ADD_LIBRARY_PATH(../lib)
 #include "TTree.h"
 #include "TF2.h"
 #include "TMath.h"
+#include "TCanvas.h"
+#include "TView.h"
+#include "TPolyLine3D.h"
+
 #include "Math/IFunction.h" // needed for ROOT::Math::legendre
 #include "MultiKey.h"
 #include "GeometryTPC.h"
 #include "IonRangeCalculator.h"
 #include "Track3D.h"
+#include "UtilsMath.h"
 
 //////////////////////////
 //////////////////////////
@@ -97,7 +105,8 @@ TF1 phiEmissionTF1("phiEmissionTF1", "[0]*(1+[1]*cos(2*(x+[2])))", 0.0, TMath::T
 //////////////////////////
 // 1D angular distribution to be used with TF1::GetRandom
 // Non-siotropic angular distrubution of alpha-particle emission angle wrt gamma beam
-// with E1 abd E2 components for Oxygen-16 photodisintegration reaction
+// with E1 abd E2 components for Oxygen-16 photodisintegration reaction.
+// Ref: M.Assuncao et al., PRC 73 055801 (2006).
 //
 // x[0] = CMS theta_BEAM alpha-particle emission angle wrt gamma beam [rad]
 // par[0] = normalisation constant
@@ -137,21 +146,198 @@ std::shared_ptr<GeometryTPC> loadGeometry(const std::string fileName){
 bool isFullyContainedEvent(Track3D & aTrack){
   if(aTrack.getSegments().size()==0) return false;
   std::shared_ptr<GeometryTPC> aGeometry=aTrack.getSegments().front().getGeometry();
-  double zmin, zmax;
-  zmin=aGeometry->GetDriftCageZmin();
-  zmax=aGeometry->GetDriftCageZmax();
-  TGraph gr=aGeometry->GetActiveAreaConvexHull();
-  auto area=new TH2PolyBin(&gr, 1);
-  
   for(auto & aSegment: aTrack.getSegments()) {
-    auto pack = aSegment.getStartEndXYZ(); // size = 6
-    if( !(area->IsInside(pack[0],   pack[1]))   || // (x,y) start
-        !(area->IsInside(pack[0+3], pack[1+3])) || // (x,y) end
-	pack[2]<zmin || pack[2]>zmax || // z start
-	pack[2+3]<zmin || pack[2+3]>zmax) // z end
-      return false;
+    if(!aGeometry->IsInsideActiveVolume(aSegment.getStart()) ||
+       !aGeometry->IsInsideActiveVolume(aSegment.getEnd())) return false;
   }
   return true;
+}
+//////////////////////////
+//////////////////////////
+void truncateTracks(Track3D & aTrack, bool debug_flag){
+  if(aTrack.getSegments().size()==0) return;
+  std::shared_ptr<GeometryTPC> aGeometry=aTrack.getSegments().front().getGeometry();
+
+  // construct list of active volume's faces
+  // - first two represent (infinite) XY plane at different Z levels
+  // - remaining ones represent (finite) vertical faces with orthogonal base vectors
+  std::vector<TVector3> basepoint_vec, span1_vec, span2_vec;
+  std::vector<bool> isHorizontal_vec;
+  double xmin, xmax, ymin, ymax, zmin, zmax;
+  std::tie(xmin, xmax, ymin, ymax, zmin, zmax)=aGeometry->rangeXYZ();
+  basepoint_vec.push_back(TVector3(xmin, ymin, zmin));
+  basepoint_vec.push_back(TVector3(xmin, ymin, zmax));
+  span1_vec.push_back(TVector3(1, 0, 0)*(xmax-xmin));
+  span1_vec.push_back(span1_vec.back());
+  span2_vec.push_back(TVector3(0, 1, 0)*(ymax-ymin));
+  span2_vec.push_back(span2_vec.back());
+  isHorizontal_vec.push_back(true);
+  isHorizontal_vec.push_back(true);
+  TGraph gr=aGeometry->GetActiveAreaConvexHull();
+  for(auto iedge=0; iedge<gr.GetN()-1; iedge++) {
+    basepoint_vec.push_back(TVector3(gr.GetX()[iedge], gr.GetY()[iedge], zmin));
+    span1_vec.push_back(TVector3(gr.GetX()[iedge+1], gr.GetY()[iedge+1], zmin)-basepoint_vec.back());
+    span2_vec.push_back(TVector3(0, 0, 1)*(zmax-zmin));
+    isHorizontal_vec.push_back(false);
+  }
+  const auto nwalls=basepoint_vec.size();
+
+  std::set<unsigned int> eraseSet; // tracks marked for deletion
+  for(auto index_seg=0u; index_seg<aTrack.getSegments().size(); index_seg++) {
+    TrackSegment3D & aSegment=aTrack.getSegments().at(index_seg);
+    auto offset=aSegment.getStart();
+    auto tangent=aSegment.getEnd()-offset;
+    const bool keep_start=aGeometry->IsInsideActiveVolume(offset);
+    const bool keep_end=aGeometry->IsInsideActiveVolume(offset+tangent);
+
+    // both inside => nothing to do
+    if(keep_start && keep_end) {
+      ///////// DEBUG
+      //      std::cout << __FUNCTION__ << ": erasing track of index=" << index_seg << " from colllection of size=" << aTrack.getSegments().size() << std::endl << std::flush;
+      //      eraseSet.insert(index_seg);  // just for DEBUG
+      ///////// DEBUG
+      continue;
+    }
+    auto isTruncated=false;
+    // one inside, one outside => find one intersection point
+    if(keep_start || keep_end) {
+      TVector3 p;
+      for(auto iwall=0u; iwall<nwalls; iwall++) { // loop through all detector's faces
+
+	double t1=-9999, t2=-9999;
+	if(!Utils::intersectionEdgePlane(offset, tangent, basepoint_vec[iwall],
+					 span1_vec[iwall], span2_vec[iwall], p, t1, t2) ||
+	   !( (isHorizontal_vec[iwall] && aGeometry->IsInsideActiveArea(TVector2(p.X(), p.Y()))) ||
+	      (!isHorizontal_vec[iwall] && t1>=0 && t1<=1 && t2>=0 && t2<=1) ) ) {
+	  continue; // next wall
+	}
+	///////// DEBUG
+	//	bool res1=false, res2=false, res3=false, res4=false;
+	//	res1=Utils::intersectionEdgePlane(offset, tangent,
+	//					  basepoint_vec[iwall], span1_vec[iwall], span2_vec[iwall], p, t1, t2);
+	//	res2=isHorizontal_vec[iwall];
+	//	res3=(res1 && res2 && aGeometry->IsInsideActiveArea(TVector2(p.X(), p.Y())));
+	//	res4=(res1 && !res2 && (t1>=0 && t1<=1 && t2>=0 && t2<=1));
+	//	std::cout << __FUNCTION__ << ": detector face=" << iwall << ", found=" << res1 << ", inside_horizontal=" << res3 << ", inside_vertical=" << res4 << ", t1/t2=" << t1 << "/" << t2  << std::endl;
+	//	if(!res1 || !(res3 || res4)) continue; // next wall
+	///////// DEBUG
+
+	if(keep_start) {
+	  isTruncated=true;
+	  aSegment.setStartEnd(offset, p); // truncate and keep start-point
+
+	  ///////// DEBUG
+	  if(debug_flag) std::cout<<__FUNCTION__<<": inside/outside, truncated new END=["
+				  << aSegment.getEnd().X() << ", "
+				  << aSegment.getEnd().Y() << ", "
+				  << aSegment.getEnd().Z() << "]" << std::endl;
+	  //	  eraseSet.insert(index_seg); // just for DEBUG
+	  ///////// DEBUG
+	} else {
+	  isTruncated=true;
+	  aSegment.setStartEnd(p, offset+tangent); // truncate and keep end-point
+
+	  ///////// DEBUG
+	  if(debug_flag) std::cout<<__FUNCTION__<<": inside/outside truncated new START=["
+				  << aSegment.getStart().X() << ", "
+				  << aSegment.getStart().Y() << ", "
+				  << aSegment.getStart().Z() << "]" << std::endl;
+	  //	  eraseSet.insert(index_seg); // just for DEBUG
+	  ///////// DEBUG
+	}
+	break; // stop after finding first intersection point (works for convex volumes)
+      }
+
+      if(debug_flag && !isTruncated) {
+	std::cerr << __FUNCTION__ << ": ERROR: inside/outside, no intersections found after checking "
+		  << nwalls << " faces, "
+		  << "START=[" << offset.X() << ", " << offset.Y() << ", " << offset.Z()
+		  << "], END=[" << (offset+tangent).X() << ", " << (offset+tangent).Y() << ", " << (offset+tangent).Z() << "]" << std::endl;
+	///////// DEBUG
+	//    std::cout << __FUNCTION__ << ": erasing track of index=" << index_seg << " from colllection of size=" << aTrack.getSegments().size() << std::endl << std::flush;
+	//	eraseSet.insert(index_seg); // just for DEBUG
+	///////// DEBUG
+      }
+      continue; // next segment
+    }
+
+    ///////// DEBUG
+    //    std::cout << __FUNCTION__ << ": erasing track of index=" << index_seg << " from colllection of size=" << aTrack.getSegments().size() << std::endl;
+    //    eraseSet.insert(index_seg); // just for DEBUG
+    //    continue;
+    ///////// DEBUG
+
+    // both outside => find 2 intersection points (if any)
+    std::vector<TVector3> list;
+    for(auto iwall=0u; iwall<nwalls; iwall++) { // loopt through all detector's faces
+
+      // update track start/end points due to clipping to the previous detector face
+      offset=aSegment.getStart();
+      tangent=aSegment.getEnd()-offset;
+
+      TVector3 p;
+      double t1=9999, t2=9999;
+      if(!Utils::intersectionEdgePlane(offset, tangent, basepoint_vec[iwall],
+				       span1_vec[iwall], span2_vec[iwall], p, t1, t2) ||
+	 !( (isHorizontal_vec[iwall] && aGeometry->IsInsideActiveArea(TVector2(p.X(), p.Y()))) ||
+	    (!isHorizontal_vec[iwall] && t1>=0 && t1<=1 && t2>=0 && t2<=1) ) ) {
+	continue; // next wall
+      }
+      list.push_back(p);
+    }
+
+    ///////// DEBUG
+    if(debug_flag) std::cout << __FUNCTION__ << ": outside/outside, found " << list.size()
+			     << " intersection(s) after checking "<< nwalls << " faces, START=["
+			     << offset.X() << ", "
+			     << offset.Y() << ", "
+			     << offset.Z() << "], END=["
+			     << (offset+tangent).X() << ", "
+			     << (offset+tangent).Y() << ", "
+			     << (offset+tangent).Z() << "]" << std::endl;
+    ///////// DEBUG
+
+    // reject track if there were not enough intersection points
+    if(list.size()<2) {
+
+      ///////// DEBUG
+      if(debug_flag) std::cout << __FUNCTION__
+			       << ": outside/outside, rejected, not enough intersections" << std::endl;
+      ///////// DEBUG
+
+      isTruncated=true;
+      eraseSet.insert(index_seg);
+      continue; // next segment
+    }
+
+    // sort list in ascending order according to distance from track's start-point
+    std::sort(list.begin(), list.end(),
+	      [&offset](const TVector3& a, const TVector3& b) {
+		return (a-offset).Mag2() < (b-offset).Mag2();
+	      });
+    // pick the first and the last solution (works for convex volumes)
+    isTruncated=true;
+    aSegment.setStartEnd(list.front(), list.back());
+
+    ///////// DEBUG
+    if(debug_flag) std::cout << __FUNCTION__ << ": outside/outside, truncated new START=["
+			     << aSegment.getStart().X() << ", "
+			     << aSegment.getStart().Y() << ", "
+			     << aSegment.getStart().Z() << "], new END=["
+			     << aSegment.getEnd().X() << ", "
+			     << aSegment.getEnd().Y() << ", "
+			     << aSegment.getEnd().Z() << "]" << std::endl;
+    ///////// DEBUG
+  }
+
+  // skip segments marked for deletion
+  Track3D myTrack;
+  for(auto index_seg=0u; index_seg<aTrack.getSegments().size(); index_seg++) {
+    if(eraseSet.find(index_seg)==eraseSet.end())
+      myTrack.addSegment(aTrack.getSegments().at(index_seg));
+  }
+  aTrack=myTrack;
+  return;
 }
 //////////////////////////
 //////////////////////////
@@ -218,8 +404,8 @@ Track3D generateFakeAlphaCarbonGenericEvent(std::shared_ptr<GeometryTPC> aGeomet
 
   double phi_BEAM, theta_BEAM;
   // pick polar alpha-particle emission angle according to specific model
-  if(SIMUL_OXYGEN_E1E2_FLAG) {
-    // distribute anisotropically, mixture of E1 and E2 components
+  if(!Oxygen18_flag && SIMUL_OXYGEN_E1E2_FLAG) {
+    // distribute anisotropically, mixture of E1 and E2 components for O-16
     theta_BEAM=thetaEmissionTF1.GetRandom();
   } else {
     // distribute isotropically alpha particles in CMS frame
@@ -293,11 +479,6 @@ Track3D generateFakeAlphaCarbonGenericEvent(std::shared_ptr<GeometryTPC> aGeomet
   std::vector<TVector3> list;
   list.push_back(alphaP4_DET.Vect().Unit()*rangeAlpha_DET); // 1st track direction
   list.push_back(carbonP4_DET.Vect().Unit()*rangeCarbon_DET); // 2nd track direction
-  // sort tracks in ascending Z-coordinate order
-  std::sort(list.begin(), list.end(),
-	    [](const TVector3& a, const TVector3& b) {
-	      return a.Z() < b.Z();
-	    });
 
   // smear vertex position in XYZ
   // - assume gaussian spread of beam profile
@@ -314,12 +495,11 @@ Track3D generateFakeAlphaCarbonGenericEvent(std::shared_ptr<GeometryTPC> aGeomet
   // employs TF2::GetRandom2()
   double y_rnd=0, z_rnd=0;
   beamProfileTF2.GetRandom2(y_rnd, z_rnd); // newer ROOT: (y_rnd, z_rnd, r);
-  TVector3 vertex( r->Uniform(xmin, xmax), y_rnd, z_rnd);
 
-  // simulates triggering on the 1st track (arrival at 10% of TIME scale)
-  if(SIMUL_EXT_TRG_FLAG) {
-    vertex.SetZ(zmin+SIMUL_EXT_TRG_ARRIVAL*(zmax-zmin)-list.front().Z());
-  }
+  //  TVector3 vertex( r->Uniform(xmin, xmax), y_rnd, z_rnd);
+  ///////// DEBUG
+  TVector3 vertex( r->Uniform(xmin-10, xmax+10), y_rnd, z_rnd); // extend by +/- 10 mm
+  ///////// DEBUG
 
   // create TrackSegment3D collection
   Track3D aTrack;
@@ -329,14 +509,6 @@ Track3D generateFakeAlphaCarbonGenericEvent(std::shared_ptr<GeometryTPC> aGeomet
     aSegment.setStartEnd(vertex, vertex+seg);
     aTrack.addSegment(aSegment);
   }
-
-  // check if all segments are contained
-  if(SIMUL_CONTAINMENT_FLAG && !isFullyContainedEvent(aTrack)) {
-    if(debug_flag) std::cout<<"Event is not fully contained inside the active volume!"<<std::endl;
-    return empty_result;
-  }
-
-  // accept event
   return aTrack;
 }
 //////////////////////////
@@ -494,11 +666,6 @@ Track3D generateFake3AlphaEvent(std::shared_ptr<GeometryTPC> aGeometry, std::sha
   list.push_back(alpha1_P4_DET.Vect().Unit()*range1_DET); // 1st track direction
   list.push_back(alpha2_P4_DET.Vect().Unit()*range2_DET); // 2nd track direction
   list.push_back(alpha3_P4_DET.Vect().Unit()*range3_DET); // 3rd track direction
-  // sort tracks in ascending Z-coordinate order
-  std::sort(list.begin(), list.end(),
-	    [](const TVector3& a, const TVector3& b) {
-      return a.Z() < b.Z();
-    });
 
   // smear vertex position in XYZ
   // - assume gaussian spread of beam profile
@@ -519,11 +686,6 @@ Track3D generateFake3AlphaEvent(std::shared_ptr<GeometryTPC> aGeometry, std::sha
   beamProfileTF2.GetRandom2(y_rnd, z_rnd); // (y_rnd, z_rnf, r);
   TVector3 vertex( r->Uniform(xmin, xmax), y_rnd, z_rnd);
 
-  // simulates triggering on the 1st track (arrival at 10% of TIME scale)
-  if(SIMUL_EXT_TRG_FLAG) {
-    vertex.SetZ(zmin+SIMUL_EXT_TRG_ARRIVAL*(zmax-zmin)-list.front().Z());
-  }
-  
   // create TrackSegment3D collection
   Track3D aTrack;
   TrackSegment3D aSegment;
@@ -532,19 +694,11 @@ Track3D generateFake3AlphaEvent(std::shared_ptr<GeometryTPC> aGeometry, std::sha
     aSegment.setStartEnd(vertex, vertex+seg);
     aTrack.addSegment(aSegment);
   }
-
-  // check if all segments are fully contained
-  if(SIMUL_CONTAINMENT_FLAG && !isFullyContainedEvent(aTrack)) {
-    if(debug_flag) std::cout<<"Event is not fully contained inside the active volume!"<<std::endl;
-    return empty_result;
-  }	
-
-  // accept event
   return aTrack;
 }
 //////////////////////////
 //////////////////////////
-void generateFakeRecoEvents(const std::string geometryName, double brOxygen16=1, double brOxygen18=0, double brCarbon12_3alpha=0, bool debug_flag=false){
+void generateFakeRecoEvents(const std::string geometryName, unsigned int nEvents, double brOxygen16=1, double brOxygen18=0, double brCarbon12_3alpha=0, bool debug_flag=false){
 
   if (!gROOT->GetClass("Track3D")){
     R__LOAD_LIBRARY(libDataFormats.so);
@@ -552,6 +706,7 @@ void generateFakeRecoEvents(const std::string geometryName, double brOxygen16=1,
   if (!gROOT->GetClass("IonRangeCalculator")){
     R__LOAD_LIBRARY(libReconstruction.so);
   }
+  R__LOAD_LIBRARY(libUtilities.so);
   R__LOAD_LIBRARY(libMathMore.so);
   
   // construct partial sum of BRs, normalized to 1
@@ -561,6 +716,10 @@ void generateFakeRecoEvents(const std::string geometryName, double brOxygen16=1,
   brSum.push_back(fabs(brCarbon12_3alpha));
   for(auto i=1u; i<brSum.size(); i++) {
     brSum[i] += brSum[i-1];
+  }
+  if(brSum.back()==0) {
+    std::cerr<<"ERROR: Wrong branching ratios!"<<std::endl;
+    return;
   }
   // normalize sum to 1
   for(auto i=0u; i<brSum.size(); i++) {
@@ -590,6 +749,34 @@ void generateFakeRecoEvents(const std::string geometryName, double brOxygen16=1,
     std::cerr<<"ERROR: Cannot create output file!"<<std::endl;
     return;
   }
+
+  // auxiliary canvas with all generated tracks (optional)
+  TCanvas *outputCanvas=0;
+  if(SIMUL_PLOT3D_FLAG) {
+    outputCanvas = new TCanvas("c", "all events", 500, 500);
+    outputCanvas->cd();
+    TView *view=TView::CreateView(1);
+    double xmin, xmax, ymin, ymax, zmin, zmax;
+    std::tie(xmin, xmax, ymin, ymax, zmin, zmax)=myGeometry->rangeXYZ();
+    auto view_span=0.8*std::max(std::max(xmax-xmin, ymax-ymin), zmax-zmin);
+    view->SetRange(0.5*(xmax+xmin)-0.5*view_span, 0.5*(ymax+ymin)-0.5*view_span, 0.5*(zmax+zmin)-0.5*view_span,
+		   0.5*(xmax+xmin)+0.5*view_span, 0.5*(ymax+ymin)+0.5*view_span, 0.5*(zmax+zmin)+0.5*view_span);
+    // plot active volume's faces
+    TGraph gr=myGeometry->GetActiveAreaConvexHull();
+    TPolyLine3D l(5*(gr.GetN()-1));
+    for(auto iedge=0; iedge<gr.GetN()-1; iedge++) {
+      l.SetPoint(iedge*5+0, gr.GetX()[iedge], gr.GetY()[iedge], zmin);
+      l.SetPoint(iedge*5+1, gr.GetX()[iedge+1], gr.GetY()[iedge+1], zmin);
+      l.SetPoint(iedge*5+2, gr.GetX()[iedge+1], gr.GetY()[iedge+1], zmax);
+      l.SetPoint(iedge*5+3, gr.GetX()[iedge], gr.GetY()[iedge], zmax);
+      l.SetPoint(iedge*5+4, gr.GetX()[iedge], gr.GetY()[iedge], zmin);
+    }
+    l.SetLineColor(kBlue);
+    l.DrawClone();
+    outputCanvas->Update();
+    outputCanvas->Modified();
+  }
+
   aFile->cd();
   TTree *aTree = new TTree("TPCRecoData","");
   Track3D *aTrack = new Track3D();
@@ -618,38 +805,105 @@ void generateFakeRecoEvents(const std::string geometryName, double brOxygen16=1,
 
   Track3D (*func)(std::shared_ptr<GeometryTPC>, std::shared_ptr<IonRangeCalculator>, bool);
 
-  for(auto i=0L; i<SIMUL_N; i++) {
+  for(auto i=0L; i<nEvents; i++) {
 
+    int color=kBlack; // track color on 3D plot (optional)
     auto br = r->Uniform(brSum.back());
-    if(br<brSum[0]) { // Oygen-16 to alpha + Carbon-12
+    if(br<brSum[0]) { // Oxygen-16 to alpha + Carbon-12
       func=generateFakeAlphaCarbon12Event;
+      color=kRed-3;
       if(debug_flag) std::cout<<"a+C12"<<std::endl;
     } else if(br<brSum[1]) { // Oxygen-18 to alpha + Carbon-14
       func=generateFakeAlphaCarbon14Event;
+      color=kGray+2; //Orange+10; //kMagenta-4;
       if(debug_flag) std::cout<<"a+C14"<<std::endl;
     } else { // Carbon-12 to three alphas
       func=generateFake3AlphaEvent;
+      color=kGreen+3;
       if(debug_flag) std::cout<<"3a"<<std::endl;
     }
 
     if(debug_flag || (i<1000L && (i%100L)==0L) || (i%1000L)==0L ) std::cout<<"Generating fake track i="<<i<<std::endl;
     *aTrack = func(myGeometry, myRangeCalculator, debug_flag);
 
+    // check if all segments are fully contained
+    if( (SIMUL_CONTAINMENT_FLAG || SIMUL_TRUNCATE_FLAG) &&
+	!isFullyContainedEvent(*aTrack) ) {
+
+      if(debug_flag) { // DEBUG
+	std::cout<<"Event is not fully contained inside the active volume!"<<std::endl;
+      } // DEBUG
+
+      if(SIMUL_CONTAINMENT_FLAG) {
+	*aTrack=Track3D(); // return empty event
+      } else {
+	if(SIMUL_TRUNCATE_FLAG) {
+	  Track3D copy(*aTrack);
+	  truncateTracks(copy, debug_flag); // truncate tracks to detector's volume
+	  *aTrack=copy;
+	}
+      }
+    }
+
     // skip bad or parially contained events
     if(aTrack->getSegments().size()==0) {
       if(debug_flag) std::cout<<"Fake event i="<<i<<" rejected!"<<std::endl;
       continue; 
     }
+
+    // simulates triggering on the 1st track (arrival at 10% of TIME scale)
+    if(SIMUL_EXT_TRG_FLAG) {
+
+      // sort a copy of the track collection in ascending Z-coordinate order
+      auto list(aTrack->getSegments());
+      std::sort(list.begin(), list.end(),
+		[](const TrackSegment3D& a, const TrackSegment3D& b) {
+		  return std::min(a.getEnd().Z(), a.getStart().Z()) < std::min(b.getEnd().Z(), b.getStart().Z());
+		});
+      auto zmin=myGeometry->GetDriftCageZmin();
+      auto zmax=myGeometry->GetDriftCageZmax();
+      const double true_zmin=std::min(list.front().getStart().Z(), list.front().getEnd().Z());
+      for(auto &seg: aTrack->getSegments()) {
+	seg.setStartEnd(TVector3(seg.getStart().X(), seg.getStart().Y(),
+				 seg.getStart().Z()-true_zmin+zmin+SIMUL_EXT_TRG_ARRIVAL*(zmax-zmin)),
+			TVector3(seg.getEnd().X(), seg.getEnd().Y(),
+				 seg.getEnd().Z()-true_zmin+zmin+SIMUL_EXT_TRG_ARRIVAL*(zmax-zmin)));
+      }
+    }
     aTree->Fill();
-  }
+
+    // make 3D plot (optional)
+    if(SIMUL_PLOT3D_FLAG && outputCanvas) {
+      auto list=aTrack->getSegments();
+      const int ntracks=list.size();
+      //      auto l = new TPolyLine3D(ntracks*3);
+      for(auto i=0; i<ntracks; i++) {
+        TPolyLine3D l(2);
+	l.SetPoint(0, list.at(i).getStart().X(), list.at(i).getStart().Y(), list.at(i).getStart().Z());
+	l.SetPoint(1, list.at(i).getEnd().X(), list.at(i).getEnd().Y(), list.at(i).getEnd().Z());
+	l.SetLineColor(color);
+	l.SetLineWidth(2);
+	if(list.at(i).getLength()>1.0) l.DrawClone(); // skip tracks below 1mm
+      }
+    }
+
+  } // end of event loop
+
   aTree->Write("",TObject::kOverwrite);
   aFile->Close();
+
+  if(SIMUL_PLOT3D_FLAG && outputCanvas) {
+    outputCanvas->Modified();
+    outputCanvas->Update();
+    outputCanvas->Print("GeneratorLevel_FakeEvents3D.C");
+  }
+
 }
 //////////////////////////
 //////////////////////////
 int main (const int argc, const char *args[]) {
 
-  if(argc!=4) return -1;
-  generateFakeRecoEvents(args[1], atof(args[2]), atof(args[3]));
+  if(argc!=6) return -1;
+  generateFakeRecoEvents(args[1], atol(args[2]), atof(args[3]), atof(args[4]), atof(args[5]));
   return 0;
 }
