@@ -6,6 +6,11 @@
 #include "TProfile.h"
 #include "TFile.h"
 #include "TVector3.h"
+//////// DEBUG
+//#include "TCanvas.h"
+//#include "TView.h"
+//#include "TPolyLine3D.h"
+//////// DEBUG
 
 #include "GeometryTPC.h"
 #include "Track3D.h"
@@ -69,14 +74,52 @@ void HIGGS_analysis::bookHistos(){
   outputFile = new TFile(outputFileName.c_str(),"RECREATE");
 
   const float binSizeMM = 0.5; // [mm]
-  const float binSizeMM_2d = 1.0; // [mm]
-  const float binSizeMM_prof = 2.0; // [mm]
+  const float binSizeMM_2d = 1.5; // [mm]
+  const float binSizeMM_prof = 3.0; // [mm]
   const float maxLengthMM = 200.0; // [mm]
   float xmin, xmax, ymin, ymax, zmin, zmax; // [mm]
   std::tie(xmin, xmax, ymin, ymax) = myGeometryPtr->rangeXY();
   std::tie(zmin, zmax) = myGeometryPtr->rangeZ();
   //  zmin = myGeometryPtr->GetDriftCageZmin();
   //  zmax = myGeometryPtr->GetDriftCageZmax();
+
+  ///////// DEBUG
+  //  outputCanvas = new TCanvas("c", "all events", 500, 500);
+  //  TView *view = TView::CreateView(1);
+  //  view->SetRange(xmin-0.5*(xmax-xmin), ymin-0.5*(ymax-ymin), zmin-0.5*(zmax-zmin),
+  //		 xmax+0.5*(xmax-xmin), ymax+0.5*(ymax-ymin), zmax+0.5*(zmax-zmin));
+  //
+  //  // plot active volume's faces
+  //  TGraph gr=myGeometryPtr->GetActiveAreaConvexHull();
+  //  auto l=new TPolyLine3D(5*(gr.GetN()-1));
+  //  for(auto iedge=0; iedge<gr.GetN()-1; iedge++) {
+  //    l->SetPoint(iedge*5+0,
+  //		gr.GetX()[iedge],
+  //		gr.GetY()[iedge],
+  //		zmin);
+  //    l->SetPoint(iedge*5+1,
+  //		gr.GetX()[iedge+1],
+  //		gr.GetY()[iedge+1],
+  //		zmin);
+  //    l->SetPoint(iedge*5+2,
+  //		gr.GetX()[iedge+1],
+  //		gr.GetY()[iedge+1],
+  //		zmax);
+  //   l->SetPoint(iedge*5+3,
+  //		gr.GetX()[iedge],
+  //		gr.GetY()[iedge],
+  //		zmax);
+  //    l->SetPoint(iedge*5+4,
+  //		gr.GetX()[iedge],
+  //		gr.GetY()[iedge],
+  //		zmin);
+  //  }
+  //  l->SetLineColor(kBlue);
+  //  l->Draw();
+  //  outputCanvas->Update();
+  //  outputCanvas->Modified();
+  //  outputCanvas->Print("aaa.root");
+  ///////// DEBUG
 
   // GLOBAL HISTOGRAMS
   //
@@ -410,14 +453,23 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
 	histos1D[Form("h_3prong_alpha%d_alpha%d_cosDelta_LAB",i+1,i2+1)]->Fill(cos(delta));
       }
     }
-
   }
+  //////// DEBUG
+  //  auto l = new TPolyLine3D(ntracks*3);
+  //  for(auto i=0; i<ntracks; i++) {
+  //    l->SetPoint(i*3, list.at(i).getStart().X(), list.at(i).getStart().Y(), list.at(i).getStart().Z());
+  //    l->SetPoint(i*3+1, list.at(i).getEnd().X(), list.at(i).getEnd().Y(), list.at(i).getEnd().Z());
+  //    l->SetPoint(i*3+2, list.at(i).getStart().X(), list.at(i).getStart().Y(), list.at(i).getStart().Z());
+  //  }
+  //  l->SetLineColor(kBlack);
+  //  l->Draw();
+  //////// DEBUG
 }
 ///////////////////////////////
 ///////////////////////////////
 bool HIGGS_analysis::eventFilter(Track3D *aTrack){
 
-  //return true; // always pass, no cuts
+  return true; // always pass, no cuts
 
   // reject empty events
   TrackSegment3DCollection list = aTrack->getSegments();
@@ -446,6 +498,25 @@ bool HIGGS_analysis::eventFilter(Track3D *aTrack){
 ///////////////////////////////
 void HIGGS_analysis::finalize(){
 
+  for (auto &h : histos1D) {
+    h.second->SetTitleOffset(1.3, "X");
+    h.second->SetTitleOffset(1.4, "Y");
+    h.second->SetOption("COLZ");
+  }
+  for (auto &h : histos2D) {
+    h.second->SetTitleOffset(1.4, "X");
+    h.second->SetTitleOffset(1.4, "Y");
+    h.second->SetOption("COLZ");
+  }
+  for (auto &p : profiles1D) {
+    p.second->SetTitleOffset(1.4, "X");
+    p.second->SetTitleOffset(1.4, "Y");
+  }
+  ////////// DEBUG
+  //  outputCanvas->Update();
+  //  outputCanvas->Modified();
+  //  outputCanvas->Write();
+  ////////// DEBUG
   outputFile->Write();
 }
 ///////////////////////////////
