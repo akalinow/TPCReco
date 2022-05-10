@@ -17,14 +17,25 @@ class IonRangeCalculator{
  public:
 
   enum pid_type{
-    ALPHA=1,          // Helium 4
-    CARBON_12,        // Carbon 12
-    CARBON_14,        // Carbon 14
+    PROTON=1,         // Hydrogen-2
+    ALPHA,            // Helium-4
+    CARBON_12,        // Carbon-12
+    CARBON_13,        // Carbon-13
+    CARBON_14,        // Carbon-14
+    NITROGEN_15,      // Nitrogen-15
+    OXYGEN_16,        // Oxygen-16
+    OXYGEN_17,        // Oxygen-17
+    OXYGEN_18,        // Oxygen-18
     HELIUM_4=ALPHA,   // alias
     C_12=CARBON_12,   // alias
+    C_13=CARBON_13,   // alias
     C_14=CARBON_14,   // alias
-    PID_MIN=ALPHA,    // alias
-    PID_MAX=CARBON_14 // alias
+    N_15=NITROGEN_15, // alias
+    O_16=OXYGEN_16,   // alias
+    O_17=OXYGEN_17,   // alias
+    O_18=OXYGEN_18,   // alias
+    PID_MIN=PROTON,   // alias
+    PID_MAX=OXYGEN_18 // alias
   };
 
   enum gas_mixture_type{
@@ -55,6 +66,8 @@ class IonRangeCalculator{
 
   double getIonEnergyMeV(pid_type ion, double range_mm); // interpolated result in [MeV] for the current {gas, p, T}
 
+  double getIonMassMeV(pid_type ion); // particle or isotope mass in [MeV/c^2]
+
   bool IsOK(); // check if there is at least one valid range/energy curve
     
  private:
@@ -63,7 +76,8 @@ class IonRangeCalculator{
   std::map<MultiKey2, TGraph*> refEnergyCurveMap; // reference inverted curve for given {gas, ion} pair
   std::map<MultiKey2, double>  refGasPressureMap;    // reference pressure for given {gas, ion} pair
   std::map<MultiKey2, double>  refGasTemperatureMap; // reference temperature for given {gas, ion} pair
-
+  std::map<IonRangeCalculator::pid_type, double> massTableMap; // particle or isotope mass table in [MeV/c^2]
+  
   IonRangeCalculator::gas_mixture_type myGasMixture{IonRangeCalculator::GAS_MIN};   // GAS index 
   double myGasTemperature{0}; // Kelvins
   double myGasPressure{0};    // mbar
