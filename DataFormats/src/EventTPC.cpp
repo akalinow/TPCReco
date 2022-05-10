@@ -77,16 +77,10 @@ bool EventTPC::AddValByStrip(int strip_dir, int strip_section, int strip_number,
   case DIR_W: {
     MultiKey3 mkey(strip_dir, strip_number, time_cell);
     MultiKey4 mkey2(strip_dir, strip_section, strip_number, time_cell);
-    MultiKey2 mkey_total(strip_dir, strip_number);
-    MultiKey2 mkey_total2(strip_dir, time_cell);
-    MultiKey3 mkey_total4(strip_dir, strip_section, time_cell);
-    MultiKey3 mkey_total5(strip_dir, strip_section, time_cell);
-    MultiKey2 mkey_maxval(strip_dir, strip_number);
-    MultiKey3 mkey_maxval2(strip_dir, strip_section, strip_number);
-
-    // chargeMap - check if hit is unique
+   
+    // chargeMap - check if hit is unique    
     std::map<MultiKey3, double, multikey3_less>::iterator it;
-    double new_val=0.0;
+    double new_val=0.0;    
     if( (it=chargeMap.find(mkey))==chargeMap.end() ) {
 
       // add new hit
@@ -100,7 +94,7 @@ bool EventTPC::AddValByStrip(int strip_dir, int strip_section, int strip_number,
       new_val=it->second; // merged (all sections)
 
     }
-
+    
     // chargeMap2 - check if hit is unique
     std::map<MultiKey4, double, multikey4_less>::iterator it2;
     double new_val2=0.0;
@@ -117,8 +111,15 @@ bool EventTPC::AddValByStrip(int strip_dir, int strip_section, int strip_number,
       new_val2=it2->second; // per section
 
     }
+    //return true;//TEST
 
     // update charge integrals
+    MultiKey2 mkey_total(strip_dir, strip_number);
+    MultiKey2 mkey_total2(strip_dir, time_cell);
+    MultiKey3 mkey_total4(strip_dir, strip_section, time_cell);
+    MultiKey3 mkey_total5(strip_dir, strip_section, time_cell);
+    MultiKey2 mkey_maxval(strip_dir, strip_number);
+    MultiKey3 mkey_maxval2(strip_dir, strip_section, strip_number);
 
     tot_charge[strip_dir] += val;
     glb_tot_charge += val;

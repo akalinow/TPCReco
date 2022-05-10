@@ -230,8 +230,8 @@ void Track3D::extendToChamberRange(const std::tuple<double, double, double, doub
   bool extended = extendToZRange(std::get<0>(zRange),std::get<1>(zRange));
 
   if(!extended){
-    extendToXYRange(std::get<2>(xyRange), std::get<3>(xyRange),
-		    std::get<0>(xyRange), std::get<1>(xyRange));
+    extendToXYRange(std::get<0>(xyRange), std::get<1>(xyRange),
+		    std::get<2>(xyRange), std::get<3>(xyRange));
   }
 }
 /////////////////////////////////////////////////////////

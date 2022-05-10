@@ -45,7 +45,7 @@ if(EXISTS ${GET_VERSION_DIR})
 
   # Linker flags
   #
-  target_link_libraries(grawToEventTPC PUBLIC DataFormats Utilities GrawToROOT ${GET_LIBRARIES} ${Boost_LIBRARIES})
+  target_link_libraries(grawToEventTPC PUBLIC  ${ROOT_LIBRARIES} DataFormats Utilities GrawToROOT ${GET_LIBRARIES} ${Boost_LIBRARIES})
   target_link_libraries(testEventTPCread PUBLIC DataFormats)
   target_link_libraries(testEventTPCreadTChain PUBLIC DataFormats)
   target_link_libraries(grawToEventRaw PUBLIC DataFormats Utilities GrawToROOT ${GET_LIBRARIES} ${Boost_LIBRARIES})

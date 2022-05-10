@@ -79,7 +79,8 @@ else()
   MESSAGE( STATUS "AUXILIARY TOOLS dir already exists in the installation dir" )
 endif()
 
-set(CMAKE_CXX_FLAGS "${ROOT_CXX_FLAGS} -Wall -Werror -O3 -std=c++17 -pthread")
+#set(CMAKE_CXX_FLAGS "${ROOT_CXX_FLAGS} -Wall -Werror -O3 -std=c++17 -pthread")
+set(CMAKE_CXX_FLAGS "-Wall -Werror -O3 -std=c++17 -pthread")
 MESSAGE( STATUS "CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS})
 
 option(DEBUG "Define DEBUG variable" OFF)
@@ -109,6 +110,7 @@ set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 
 #Framework packages
 add_subdirectory(DataFormats)
+add_subdirectory(DataFormats_test)
 add_subdirectory(GrawToROOT) 
 add_subdirectory(Utilities)
 add_subdirectory(Reconstruction)

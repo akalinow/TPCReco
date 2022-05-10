@@ -323,9 +323,10 @@ TH1F TrackSegment3D::getChargeProfile() const{
   }
 
   int rebinFactor = 8*hChargeProfile.GetNbinsX()/maxPoints;
-  while(nBins%rebinFactor){
+  while(nBins%rebinFactor && rebinFactor<nBins){
     ++rebinFactor;
   }
+  
   hChargeProfile.Rebin(rebinFactor);
   //hChargeProfile.Scale(getIntegratedCharge(getLength())/hChargeProfile.Integral());
   //hChargeProfile.SaveAs("density_histo.root");

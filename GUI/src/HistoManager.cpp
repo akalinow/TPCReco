@@ -27,7 +27,6 @@
 
 #include "HistoManager.h"
 
-#include "CoordinateConverter.h"
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 HistoManager::HistoManager() {
@@ -934,13 +933,10 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   
   TLatex aLatex;
   double x = 0.35*aTrack3D.getLength();
-  double y = 0.75;
+  double y = 0.78;
   aLatex.DrawLatex(x,y,TString::Format("Track length: %3.0f mm",aTrack3D.getLength()));
-  y = 0.68;
+  y = 0.70;
   aLatex.DrawLatex(x,y,TString::Format("Total E: %2.1f MeV",alphaEnergy+carbonEnergy));
-  
-  CoordinateConverter myConv;
-  std::cout<<myConv<<std::endl;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

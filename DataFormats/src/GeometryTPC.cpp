@@ -22,6 +22,7 @@
 #include "colorText.h"
 #include "GeometryTPC.h"
 #include "MultiKey.h"
+#include "Geometry_Strip.h"
 
 StripTPC::StripTPC(int direction, int section, int number, int cobo_index,
                    int asad_index, int aget_index, int aget_channel,
@@ -358,6 +359,23 @@ bool GeometryTPC::Load(const char *fname) {
           StripTPC *strip = new StripTPC(
               dir, section, strip_num, cobo, asad, aget, chan_num, chan_num_raw,
               strip_unit_vec[dir], offset, length_in_pads, this);
+
+	  ////TEST
+	  projection aDir;
+	  if(dir==DIR_U) aDir = DIR_U;
+	  else if (dir==DIR_V) aDir = DIR_V;
+	  else if (dir==DIR_W) aDir = DIR_W;
+	  std::shared_ptr<Geometry_Strip> strip_new = std::make_shared<Geometry_Strip>(aDir, strip_num,
+										       cobo, asad, aget,
+										       chan_num, chan_num_raw,
+										       strip_unit_vec[dir],
+										       offset, length);
+	  // update map (by: COBO board, ASAD board, AGET chip, AGET normal/raw channel)
+	  arrayByAget[{cobo, asad, aget, chan_num}] = strip_new;
+
+	  // update reverse map (by: strip direction, strip number)
+	  stripArray[{aDir, strip_num}] = strip_new;
+	  ///////////////
 
           // update map (by: COBO board, ASAD board, AGET chip, AGET normal/raw
           // channel)
@@ -1834,3 +1852,12 @@ void GeometryTPC::Debug() {
 // ClassImp(StripTPC)
 // ClassImp(GeometryTPC)
 
+
+
+std::shared_ptr<Geometry_Strip> GeometryTPC::GetStripByAget(int COBO_idx, int ASAD_idx, int AGET_idx, int channel_idx) const { // valid range [0-1][0-3][0-3][0-63]
+	return arrayByAget.at({ COBO_idx , ASAD_idx,AGET_idx, channel_idx });
+}
+
+std::shared_ptr<Geometry_Strip> GeometryTPC::GetStripByDir(projection dir, int num) const { // valid range [0-2][1-1024]
+	return stripArray.at({ dir,num });
+}

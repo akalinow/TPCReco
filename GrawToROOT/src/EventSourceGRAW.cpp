@@ -24,9 +24,6 @@ EventSourceGRAW::EventSourceGRAW(const std::string & geometryFileName) {
 
   std::string formatsFilePath = "./CoboFormats.xcfg";
   myFrameLoader.initialize(formatsFilePath);
- 
-  // minSignalCell = 2;//FIXME read from config
-  // maxSignalCell = 500;//FIXME read from config
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -173,6 +170,7 @@ void EventSourceGRAW::loadFileEntry(unsigned long int iEntry){
 
   myCurrentEntry = iEntry;
   loadGrawFrame(iEntry, false);
+  
   unsigned long int eventId = myDataFrame.fHeader.fEventIdx;
 
   std::cout<<KBLU
@@ -391,7 +389,12 @@ void EventSourceGRAW::fillEventFromFrame(GET::GDataFrame & aGrawFrame){
     corrVal -= myPedestalCalculator.GetPedestalCorrection(COBO_idx, ASAD_idx, agetId, chanId, icell);
   }
 //	} 
-	myCurrentEvent->AddValByAgetChannel(COBO_idx, ASAD_idx, agetId, chanId, icell, corrVal);
+  myCurrentEvent->AddValByAgetChannel(COBO_idx, ASAD_idx, agetId, chanId, icell, corrVal);
+
+  std::shared_ptr<Geometry_Strip> aStrip = myGeometryPtr->GetStripByAget(COBO_idx, ASAD_idx,
+									 agetId, chanId,
+									 icell, corrVal);
+  myCurrentEvent_new->AddValByAgetChannel(aStrip, icell, cossVal);                     
       }
     }
   }

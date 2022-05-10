@@ -15,7 +15,7 @@ dEdxFitter::dEdxFitter(double aPressure){
   
   alpha_ionisation = new TF1("alpha_ionisation", bragg_alpha, 0, 350.0);
   carbon_ionisation = new TF1("carbon_ionisation",bragg_12C, 0, 120.0);
-
+  
   carbon_alpha_ionisation = new TF1("carbon_alpha_ionisation",bragg_12C_alpha, -10, 350.0, 4);
   carbon_alpha_ionisation->SetParName(1,"vertex");
   carbon_alpha_ionisation->SetParName(2,"alpha_shift");
@@ -23,12 +23,12 @@ dEdxFitter::dEdxFitter(double aPressure){
   carbon_alpha_ionisation->SetParName(4,"carbon_scale");
   carbon_alpha_ionisation->SetParameters(10.0, 10.0, 5, 1.0, 1.0);
 
-  carbon_alpha_ionisation_smeared = new TF1Convolution("carbon_alpha_ionisation", "gaus",-20, 350, true);
-  carbon_alpha_ionisation_smeared->SetRange(-20, 350);
+  carbon_alpha_ionisation_smeared = new TF1Convolution("carbon_alpha_ionisation", "gaus",-20, 300, true);
+  carbon_alpha_ionisation_smeared->SetRange(-20, 300);
   carbon_alpha_ionisation_smeared->SetNofPointsFFT(2000);
  
   carbon_alphaModel = new TF1("carbon_alphaModel", *carbon_alpha_ionisation_smeared,
-		       -20, 350., carbon_alpha_ionisation_smeared->GetNpar());
+		       -20, 300., carbon_alpha_ionisation_smeared->GetNpar());
   carbon_alphaModel->SetLineColor(1);
   carbon_alphaModel->SetLineStyle(2);
   carbon_alphaModel->SetLineWidth(3);
@@ -40,20 +40,18 @@ dEdxFitter::dEdxFitter(double aPressure){
   carbon_alphaModel->SetParName(5, "gaussMean");
   carbon_alphaModel->SetParName(6, "gaussSigma");
 
-  carbon_alphaModel->SetParLimits(0, 5, 20.0);
-  carbon_alphaModel->SetParLimits(1, 240, 360.0);
+  carbon_alphaModel->SetParLimits(0, 5, maxCarbonRange);
+  carbon_alphaModel->SetParLimits(1, maxAlphaRange-65, maxAlphaRange);
   carbon_alphaModel->FixParameter(2, 1.0);
   carbon_alphaModel->FixParameter(3, 0.46);
   carbon_alphaModel->FixParameter(4, 2.2E-6);
   carbon_alphaModel->FixParameter(5, 0.0);
   carbon_alphaModel->FixParameter(6, 1.5);
   carbon_alphaModel->SetParLimits(6, 1, 3);
-  carbon_alphaModel->SetParameters(5, 250, 1.0, 0.5,  2.2E-6, 0, 1.28);
 
   alphaModel = new TF1(*carbon_alphaModel);
   alphaModel->SetName("alphaModel");
   alphaModel->FixParameter(3, 0.0);
-  alphaModel->SetParameters(0, 250, 1.0, 0.0, 2.2E-6, 0, 1.28);
 
   ROOT::Math::MinimizerOptions::SetDefaultMinimizer("Minuit2");
   //ROOT::Math::MinimizerOptions::SetDefaultMinimizer("Minuit" ,"Scan");
@@ -63,10 +61,32 @@ dEdxFitter::dEdxFitter(double aPressure){
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
+void dEdxFitter::setPressure(double aPressure) {
+  
+  pressure = aPressure;
+
+  maxCarbonRange = 14*(250/pressure);
+  maxAlphaRange = 289.791*(250/pressure);
+}
+////////////////////////////////////////////////
+////////////////////////////////////////////////
 void dEdxFitter::reset(){
 
-  carbon_alphaModel->SetParameters(10, 270, 1.0, 0.46,  2.2E-6, 0, 1.28);
-  alphaModel->SetParameters(10, 250, 1.0, 0.0, 2.2E-6, 0, 1.28);
+  carbon_alphaModel->SetParLimits(0, 5, maxCarbonRange);
+  carbon_alphaModel->SetParLimits(1, 0, maxAlphaRange);
+
+  alphaModel->SetParLimits(1, 0, maxAlphaRange);
+
+  carbon_alphaModel->SetParameters(maxCarbonRange/2.0,
+				   maxAlphaRange/2.0,
+				   1.0, 0.46,
+				   2.2E-6, 0, 1.28);
+  
+  alphaModel->SetParameters(maxCarbonRange/2.0,
+			    maxAlphaRange/2.0,
+			    1.0, 0.0,
+			    2.2E-6, 0, 1.28);
+
   theFitResult = TFitResult();
   theFittedModel = alphaModel;
   theFittedHisto = emptyHisto;
@@ -129,9 +149,11 @@ TFitResult dEdxFitter::fitHypothesis(TF1 *fModel, TH1F & aHisto){
   TFitResult theResult;
   if(!aHisto.GetEntries()) return theResult;
 
-  std::cout<<"---------------------------------"<<std::endl;
-  TFitResultPtr theResultPtr = aHisto.Fit(fModel,"BRWSM");
-  //TFitResultPtr theResultPtr = aHisto.Fit("carbon_alphaModel","BRWSM");
+  double maxOffset = aHisto.GetXaxis()->GetXmax();
+  fModel->SetParLimits(1, maxAlphaRange-maxOffset, maxAlphaRange);
+  fModel->SetParameter(1, maxAlphaRange-maxOffset/2.0);
+  
+  TFitResultPtr theResultPtr = aHisto.Fit(fModel,"BRWSM");  
   if(theResultPtr.Get()) theResult = *theResultPtr.Get();
   else{
     std::cout<<KRED<<"No fit result"<<RST<<std::endl;
@@ -157,7 +179,6 @@ TFitResult dEdxFitter::fitHisto(TH1F & aHisto){
   
   TFitResult alphaResult = fitHypothesis(alphaModel, aHisto);
   if(alphaResult.IsEmpty()) return theFitResult;
-
 
   TFitResult alphaResult_reflected = fitHypothesis(alphaModel, aReflectedHisto);									 
   TFitResult carbon_alphaResult = fitHypothesis(carbon_alphaModel, aHisto);
@@ -196,25 +217,11 @@ TFitResult dEdxFitter::fitHisto(TH1F & aHisto){
   }
 
   theFittedModel->SetParameters(theFitResult.Parameters().data());
-  return theFitResult;
-}
-////////////////////////////////////////////////
-////////////////////////////////////////////////
-double dEdxFitter::getAlphaEnergy() const{
 
-  double alphaOffset = theFittedModel->GetParameter("alphaOffset");
-  double alphaEnergy = alpha_ionisation->Integral(alphaOffset, 350.0*(250.0/pressure), 0.1);
-  return alphaEnergy;
-}
-////////////////////////////////////////////////
-////////////////////////////////////////////////
-double dEdxFitter::getCarbonEnergy() const{
-
-  if(bestFitEventType!=C12_ALPHA) return -1;
+  std::cout<<"alpha range from fit: "<<getAlphaRange()<<std::endl;
+  std::cout<<"carbon range from fit: "<<getCarbonRange()<<std::endl;
   
-  double carbonOffset = 14.4 - theFittedModel->GetParameter("carbonLength");
-  double carbonEnergy =  carbon_ionisation->Integral(carbonOffset, 15.0, 0.1); 
-  return carbonEnergy;
+  return theFitResult;
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
@@ -223,7 +230,7 @@ double dEdxFitter::getAlphaRange() const{
   if(bestFitEventType==pid_type::UNKNOWN) return 0.0;
     
   double alphaOffset = theFittedModel->GetParameter("alphaOffset");
-  double alphaRange = 289.745*(250.0/190) - alphaOffset;
+  double alphaRange = maxAlphaRange - alphaOffset;
   return alphaRange;
 }
 ////////////////////////////////////////////////

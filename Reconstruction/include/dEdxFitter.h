@@ -18,7 +18,7 @@ public:
 
   dEdxFitter(double aPressure=250);
 
-  void setPressure(double aPressure) {pressure = aPressure;}
+  void setPressure(double aPressure);
 
   TFitResult fitHisto(TH1F & aHisto);
 
@@ -38,10 +38,6 @@ public:
 
   bool getIsReflected() const { return isReflected;}
 
-  double getAlphaEnergy() const;
-
-  double getCarbonEnergy() const;
-
   double getAlphaRange() const;
 
   double getCarbonRange() const;
@@ -56,6 +52,8 @@ private:
   static double pressure;
   bool isReflected{false};
   double bestFitChi2{999.0};
+
+  double maxCarbonRange, maxAlphaRange;
 
   TF1 dummyFunc;
   TF1 *alpha_ionisation{0}; 

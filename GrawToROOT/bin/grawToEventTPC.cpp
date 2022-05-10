@@ -156,6 +156,15 @@ int convertGRAWFile(const  std::string & geometryFileName,
   
   Long64_t currentEventIdx=-1;
   std::map<unsigned int, bool> eventIdxMap;
+
+  ///////////////////
+  do{
+    myEventSource->getNextEvent();
+    currentEventIdx=myEventSource->currentEventNumber();
+  }
+  while(currentEventIdx!=(Long64_t)myEventSource->currentEventNumber());
+  //////////////////////
+  
   do {
     // load first frame and initialize eventId counter
     if(currentEventIdx==-1) {
@@ -185,14 +194,14 @@ int convertGRAWFile(const  std::string & geometryFileName,
       // temporarily reset geometry pointer while filling TTree
       //      std::shared_ptr<GeometryTPC> gPtr(myEventPtr->GetGeoPtr());
       myEventPtr->SetGeoPtr(0);      
-      //aTree.Fill();
+      aTree.Fill();
       if(eventIdxMap.size()%100==0) aTree.FlushBaskets();
     }
 
 #ifdef DEBUG
     if( eventIdxMap.size()==10 ) break;
 #endif
-    if( eventIdxMap.size()==300 ) break;
+    if( eventIdxMap.size()==200 ) break;
 
     currentEventIdx=myEventSource->currentEventNumber();
     myEventSource->getNextEvent();

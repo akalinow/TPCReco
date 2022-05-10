@@ -139,14 +139,18 @@ void TrackBuilder::reconstruct(){
   }
   myZRange = getTimeProjectionEdges();
   myTrack3DSeed = buildSegment3D();
+  if(myTrack3DSeed.getLength()<1) return;
+  
   Track3D aTrackCandidate;
   aTrackCandidate.addSegment(myTrack3DSeed);
 
   auto xyRange = myGeometryPtr->rangeXY();
   aTrackCandidate.extendToChamberRange(xyRange, myZRange);
+  double maxLength = std::get<1>(xyRange) - std::get<0>(xyRange);
+  double minLength = 10;
 
   aTrackCandidate = fitTrack3D(aTrackCandidate);
-  if(aTrackCandidate.getLength()>50 && aTrackCandidate.getLength()<300){
+  if(aTrackCandidate.getLength()>minLength && aTrackCandidate.getLength()<maxLength){
     aTrackCandidate = fitEventHypothesis(aTrackCandidate);
   }
   myFittedTrack = aTrackCandidate;
@@ -350,6 +354,9 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
+
+  TrackSegment3D a3DSeed;
+  a3DSeed.setGeometry(myGeometryPtr);  
 	     
   const TrackSegment2D & segmentU = my2DSeeds[DIR_U][iTrack2DSeed];
   const TrackSegment2D & segmentV = my2DSeeds[DIR_V][iTrack2DSeed];
@@ -358,6 +365,8 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   int nHits_U = segmentU.getNAccumulatorHits();
   int nHits_V = segmentV.getNAccumulatorHits();
   int nHits_W = segmentW.getNAccumulatorHits();
+
+  if(!nHits_U && !nHits_V && !nHits_W) return a3DSeed;
 
   double bias_time = (segmentU.getMinBias().X()*(nHits_U>0) +
 		      segmentV.getMinBias().X()*(nHits_V>0) +
@@ -465,8 +474,6 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   //aTangent.SetXYZ(0.318140,-0.948024,0.006087);
   */
 
-  TrackSegment3D a3DSeed;
-  a3DSeed.setGeometry(myGeometryPtr);  
   a3DSeed.setBiasTangent(aBias, aTangent);
   a3DSeed.setRecHits(myRecHits);
   /*
@@ -625,7 +632,7 @@ Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
 
   pid_type eventType = mydEdxFitter.getBestFitEventType();
   bool isReflected = mydEdxFitter.getIsReflected();
-  //double alphaRange = mydEdxFitter.getAlphaRange();
+  double alphaRange = mydEdxFitter.getAlphaRange();
   double carbonRange = mydEdxFitter.getCarbonRange();
 
   TVector3 alphaEnd =  aSegment.getEnd();
@@ -642,7 +649,7 @@ Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
   aSplitTrackCandidate.setHypothesisFitChi2(mydEdxFitter.getChi2());
   TrackSegment3D alphaSegment;
   alphaSegment.setGeometry(myGeometryPtr);  
-  alphaSegment.setStartEnd(vertex, alphaEnd);
+  alphaSegment.setStartEnd(vertex, vertex+alphaRange*tangent);
   alphaSegment.setRecHits(myRecHits);
   alphaSegment.setPID(pid_type::ALPHA);
   aSplitTrackCandidate.addSegment(alphaSegment);

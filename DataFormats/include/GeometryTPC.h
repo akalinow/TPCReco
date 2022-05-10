@@ -25,6 +25,7 @@
 #define MAXIMUM(A,B) ((A)>(B) ? (A) : (B))
 #define NUM_TOLERANCE 1e-6
 
+class Geometry_Strip;
 class StripTPC;
 
 // UVW strip geometry defined as a class
@@ -47,6 +48,11 @@ class GeometryTPC {
   std::map<int, int>         stripN;    // pair=(directory_idx, number_of_strips=xxx,xxx,xxx,4*ASAD_N*COBO_N)                          
   std::map<int, std::string> dir2name;  // pair=(directory_idx, group_name="U","V","W","FPN")
   std::map<std::string, int> name2dir;  // pair=(group_name="U","V","W","FPN", directory_idx)
+
+  std::map<std::tuple<int, int, int, int>, std::shared_ptr<Geometry_Strip>> arrayByAget;
+  std::map<std::tuple<projection, int> ,std::shared_ptr<Geometry_Strip>> stripArray;
+
+  
   std::map<MultiKey4, StripTPC*, multikey4_less> mapByAget;     // key=(COBO_idx[0-1], ASAD_idx[0-3], AGET_idx[0-3], channel_idx[0-63])
   std::map<MultiKey4, StripTPC*, multikey4_less> mapByAget_raw; // key=(COBO_idx[0-1], ASAD_idx[0-3], AGET_idx [0-3], raw_channel_idx [0-67] )
   std::map<MultiKey3, StripTPC*, multikey3_less> mapByStrip;    // key=(STRIP_DIRECTION [0-2], STRIP_SECTION [0-2], STRIP_NUMBER [1-1024])
@@ -136,6 +142,9 @@ class GeometryTPC {
 
   const char* GetDirName(int dir);
   const char* GetStripName(StripTPC *s);
+
+  std::shared_ptr<Geometry_Strip> GetStripByAget(int COBO_idx, int ASAD_idx, int AGET_idx, int channel_idx) const;         // valid range [0-1][0-3][0-3][0-63]
+  std::shared_ptr<Geometry_Strip> GetStripByDir(projection dir, int num) const;   
 
   StripTPC *GetStripByAget(int COBO_idx, int ASAD_idx, int AGET_idx, int channel_idx);         // valid range [0-1][0-3][0-3][0-63]
   StripTPC *GetStripByGlobal(int global_channel_idx);                                          // valid range [0-1023]
