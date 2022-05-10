@@ -182,3 +182,11 @@ TEST(RunIdParser_Test, OtherFormatsSpace_multigraw) {
   EXPECT_EQ(
       RunIdParser("CoBo0_AsAd2_2021-06-22T12 01 56.568_0003.graw").AsAdId(), 2);
 }
+
+TEST(RunIdParser_Test, timePointFromRunId) {
+  EXPECT_TRUE(
+      RunIdParser("CoBo_ALL_AsAd_ALL_2021-09-08T09:26:36.127_0015.graw.gz")
+          .isClose(
+              RunIdParser::timePointFromRunId("20210908092636"),
+              std::chrono::seconds(1)));
+}
