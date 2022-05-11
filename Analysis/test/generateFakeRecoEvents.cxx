@@ -370,11 +370,11 @@ Track3D generateFakeAlphaCarbonGenericEvent(std::shared_ptr<GeometryTPC> aGeomet
   double beta=beamEnergy_DET/(beamEnergy_DET+oxygenMass);
   TVector3 beta_DET=beamDir_DET.Unit()*beta;
 
-  // boosting P4 from DET/LAB frame to CMS frame (see TlorentzVector::Boost() convention!)
+  // boosting P4 from DET/LAB frame to CMS frame
   TLorentzVector photonP4_CMS(photonP4_DET);
   TLorentzVector oxygenP4_CMS(oxygenP4_DET);
-  photonP4_CMS.Boost(-beta_DET);
-  oxygenP4_CMS.Boost(-beta_DET);
+  photonP4_CMS.Boost(-beta_DET); // see TLorentzVector::Boost() for sign convention!
+  oxygenP4_CMS.Boost(-beta_DET); // see TLorentzVector::Boost() for sign convention!
 
   // check total energy in CMS frame
   double totalEnergy_CMS=(photonP4_CMS+oxygenP4_CMS).E();

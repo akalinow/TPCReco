@@ -20,7 +20,8 @@
 int analyzeRecoEvents(const  std::string & geometryFileName, 
 		      const  std::string & dataFileName,
 		      const  float & beamEnergy,
-		      const  TVector3 & beamDir);
+		      const  TVector3 & beamDir,
+		      const  double & pressure);
 
 enum class BeamDirection{
   X,
@@ -49,7 +50,8 @@ boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
     ("geometryFile",  boost::program_options::value<std::string>()->required(), "string - path to the geometry file")
     ("dataFile",  boost::program_options::value<std::string>()->required(), "string - path to data file")
     ("beamEnergy", boost::program_options::value<float>()->required(), "float - LAB gamma beam energy [MeV]")
-    ("beamDir", boost::program_options::value<BeamDirection>()->required(), "string - LAB gamma beam direction [\"x\" xor \"-x\"]");
+    ("beamDir", boost::program_options::value<BeamDirection>()->required(), "string - LAB gamma beam direction [\"x\" xor \"-x\"]")
+    ("pressure", boost::program_options::value<float>()->required(), "float - CO2 pressure [mbar]");
   
   boost::program_options::variables_map varMap;  
 
@@ -77,6 +79,7 @@ int main(int argc, char **argv){
   auto geometryFileName = varMap["geometryFile"].as<std::string>();
   auto dataFileName = varMap["dataFile"].as<std::string>();
   auto beamEnergy = varMap["beamEnergy"].as<float>();
+  auto pressure = varMap["pressure"].as<float>();
   TVector3 beamDir;
   switch(varMap["beamDir"].as<BeamDirection>()){
     case BeamDirection::X : 
@@ -88,7 +91,7 @@ int main(int argc, char **argv){
     default:
       return 1;
   }
-  analyzeRecoEvents(geometryFileName, dataFileName, beamEnergy, beamDir);
+  analyzeRecoEvents(geometryFileName, dataFileName, beamEnergy, beamDir, pressure);
   return 0;
 }
 /////////////////////////////
@@ -101,7 +104,8 @@ std::shared_ptr<GeometryTPC> loadGeometry(const std::string fileName){
 int analyzeRecoEvents(const  std::string & geometryFileName,
 		      const  std::string & dataFileName,
 		      const  float & beamEnergy,
-		      const  TVector3 & beamDir) {
+		      const  TVector3 & beamDir,
+		      const  double & pressure) {
 
   TFile *aFile = new TFile(dataFileName.c_str());
   if(!aFile || !aFile->IsOpen()){
@@ -127,9 +131,13 @@ int analyzeRecoEvents(const  std::string & geometryFileName,
 	     <<std::endl;
     return -1;
   }
+  if(pressure<50.0 || pressure>1100.0) {
+    std::cout<<KRED<<"Wrong CO2 pressure: "<<RST<<pressure<<" mbar"
+	     <<std::endl;
+    return -1;
+  }
   
-  HIGGS_analysis myAnalysis(aGeometry, beamEnergy, beamDir); // need TPC geometry for proper histogram ranges
-  
+  HIGGS_analysis myAnalysis(aGeometry, beamEnergy, beamDir, pressure); 
   HIGS_trees_analysis myTreesAnalysis(aGeometry, beamEnergy, beamDir);
   
   TTree *aTree = (TTree*)aFile->Get("TPCRecoData");
