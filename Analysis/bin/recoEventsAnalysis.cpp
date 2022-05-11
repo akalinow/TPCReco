@@ -13,6 +13,7 @@
 #include "GeometryTPC.h"
 #include "Track3D.h"
 #include "HIGGS_analysis.h"
+#include "HIGS_trees_analysis.h"
 
 #include "colorText.h"
 
@@ -128,6 +129,9 @@ int analyzeRecoEvents(const  std::string & geometryFileName,
   }
   
   HIGGS_analysis myAnalysis(aGeometry, beamEnergy, beamDir); // need TPC geometry for proper histogram ranges
+  
+  HIGS_trees_analysis myTreesAnalysis(aGeometry, beamEnergy, beamDir);
+  
   TTree *aTree = (TTree*)aFile->Get("TPCRecoData");
   if(!aTree) {
     std::cerr<<"ERROR: Cannot find 'TPCRecoData' tree!"<<std::endl;
@@ -147,8 +151,10 @@ int analyzeRecoEvents(const  std::string & geometryFileName,
     aBranch->GetEntry(iEntry);
     for (auto & aSegment: aTrack->getSegments())  aSegment.setGeometry(aGeometry); // need TPC geometry for track projections
     myAnalysis.fillHistos(aTrack);
+    myTreesAnalysis.fillTrees(aTrack);
   }			      
-
+ 
+  
   return 0;
 }
 /////////////////////////////
