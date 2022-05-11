@@ -10,6 +10,8 @@
 
 #include "colorText.h"
 #include "HIGS_trees_dataFormat.h"
+#include "Track3D.h"
+#include "EventInfo.h"
 
 class Track3D;
 class GeometryTPC;
@@ -29,10 +31,10 @@ public:
   
   void close();
   
-  void fillTrees(Track3D *aTrack);
-  void fillTrees1prong(Track3D *aTrack);
-  void fillTrees2prong(Track3D *aTrack);
-  void fillTrees3prong(Track3D *aTrack);
+  void fillTrees(Track3D *aTrack, eventraw::EventInfo *aEventInfo);
+  void fillTrees1prong(Track3D *aTrack, eventraw::EventInfo *aEventInfo);
+  void fillTrees2prong(Track3D *aTrack, eventraw::EventInfo *aEventInfo);
+  void fillTrees3prong(Track3D *aTrack, eventraw::EventInfo *aEventInfo);
 
 //   bool eventFilter(Track3D *aTrack); // 1 = pass, 0 = reject
   

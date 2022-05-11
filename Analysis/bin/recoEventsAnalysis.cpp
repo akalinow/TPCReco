@@ -153,13 +153,25 @@ int analyzeRecoEvents(const  std::string & geometryFileName,
   }
   aBranch->SetAddress(&aTrack);
   
+  TBranch *aBranchInfo = aTree->GetBranch("EventInfo");
+  eventraw::EventInfo *aEventInfo = 0;
+  if(!aBranchInfo) {
+   std::cerr<<KRED<<"WARNING: "<<RST
+	    <<"Cannot find 'EventInfo' branch!"<<std::endl;
+//    return std::vector<Long64_t>();
+  }
+  else{
+    aBranchInfo->SetAddress(&aEventInfo);
+    aEventInfo = new eventraw::EventInfo();
+  }
+
   unsigned int nEntries = aTree->GetEntries();
   for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
-
     aBranch->GetEntry(iEntry);
+    aBranchInfo->GetEntry(iEntry);
     for (auto & aSegment: aTrack->getSegments())  aSegment.setGeometry(aGeometry); // need TPC geometry for track projections
     myAnalysis.fillHistos(aTrack);
-    myTreesAnalysis.fillTrees(aTrack);
+    myTreesAnalysis.fillTrees(aTrack, aEventInfo);
   }			      
  
   
