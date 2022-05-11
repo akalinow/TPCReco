@@ -148,24 +148,37 @@ int analyzeRecoEvents(const  std::string & geometryFileName,
 
   TTree *aTree = (TTree*)aFile->Get("TPCRecoData");
   if(!aTree) {
-    std::cerr<<"ERROR: Cannot find 'TPCRecoData' tree!"<<std::endl;
+    std::cerr<<KRED<<"ERROR: Cannot find 'TPCRecoData' tree!"<<RST<<std::endl;
     return -1;
   }
+  // NOTE: * branch RecoEvent - must always be present
+  //       * branch EventInfo - is optional (eg. for Monte Carlo)
   Track3D *aTrack = new Track3D();
   TBranch *aBranch  = aTree->GetBranch("RecoEvent");
   if(!aBranch) {
-    std::cerr<<"ERROR: Cannot find 'RecoEvent' branch!"<<std::endl;
+    std::cerr<<KRED<<"ERROR: Cannot find 'RecoEvent' branch!"<<RST<<std::endl;
     return -1;
   }
   aBranch->SetAddress(&aTrack);
   
+  eventraw::EventInfo *aEventInfo = 0;
+  TBranch *aBranchInfo = aTree->GetBranch("EventInfo");
+  if(!aBranchInfo) {
+   std::cerr<<KRED<<"WARNING: "
+	    <<"Cannot find 'EventInfo' branch!"<<RST<<std::endl;
+  }
+  else{
+    aEventInfo = new eventraw::EventInfo();
+    aBranchInfo->SetAddress(&aEventInfo);
+  }
+
   unsigned int nEntries = aTree->GetEntries();
   for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
-
-    aBranch->GetEntry(iEntry);
+    aBranch->GetEntry(iEntry); 
+    if(aBranchInfo) aBranchInfo->GetEntry(iEntry); // this branch is optional
     for (auto & aSegment: aTrack->getSegments())  aSegment.setGeometry(aGeometry); // need TPC geometry for track projections
     myAnalysis->fillHistos(aTrack);
-    if(makeTreeFlag) myTreesAnalysis->fillTrees(aTrack);
+    if(makeTreeFlag) myTreesAnalysis->fillTrees(aTrack, aEventInfo);
   }			      
  
   return 0;
