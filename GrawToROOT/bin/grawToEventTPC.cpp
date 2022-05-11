@@ -10,6 +10,7 @@
 
 #include "GeometryTPC.h"
 #include "EventTPC.h"
+#include "EventTPC_new.h"
 #include "PedestalCalculator.h"
 #include "EventSourceGRAW.h"
 #include "EventSourceMultiGRAW.h"
@@ -29,7 +30,6 @@
 
 #ifdef DEBUG
 #include "EventSourceROOT.h" 
-#include "EventTPC.h" 
 #endif
 
 /////////////////////////////////////
@@ -144,6 +144,7 @@ int convertGRAWFile(const  std::string & geometryFileName,
   std::cout << "File with " << myEventSource->numberOfEntries() << " frames opened." << std::endl;
   
   std::shared_ptr<EventTPC> myEventPtr = myEventSource->getCurrentEvent();
+  auto myEventPtr_new = myEventSource->getCurrentEvent_new();
 
   #ifdef DEBUG
   std::cout << "==== GrawToEvenTPC INITIALIZATION: myPtr_EventTPC="
@@ -153,6 +154,9 @@ int convertGRAWFile(const  std::string & geometryFileName,
   TTree aTree("TPCData","");
   EventTPC *persistent_event = myEventPtr.get();
   aTree.Branch("Event", &persistent_event);
+
+  //test::EventTPC *persistent_event_new = myEventPtr_new.get();
+  //aTree.Branch("Event_new", &persistent_event_new);
   
   Long64_t currentEventIdx=-1;
   std::map<unsigned int, bool> eventIdxMap;
@@ -193,7 +197,7 @@ int convertGRAWFile(const  std::string & geometryFileName,
 
       // temporarily reset geometry pointer while filling TTree
       //      std::shared_ptr<GeometryTPC> gPtr(myEventPtr->GetGeoPtr());
-      myEventPtr->SetGeoPtr(0);      
+      myEventPtr->SetGeoPtr(0);
       aTree.Fill();
       if(eventIdxMap.size()%100==0) aTree.FlushBaskets();
     }
@@ -201,7 +205,7 @@ int convertGRAWFile(const  std::string & geometryFileName,
 #ifdef DEBUG
     if( eventIdxMap.size()==10 ) break;
 #endif
-    if( eventIdxMap.size()==200 ) break;
+    if( eventIdxMap.size()==100 ) break;
 
     currentEventIdx=myEventSource->currentEventNumber();
     myEventSource->getNextEvent();

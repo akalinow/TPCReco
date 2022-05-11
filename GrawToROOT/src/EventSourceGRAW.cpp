@@ -294,13 +294,14 @@ void EventSourceGRAW::collectEventFragments(unsigned int eventId){
     myCurrentEvent->Clear();
     myCurrentEvent->SetEventId(eventId);
     myCurrentEvent->SetGeoPtr(myGeometryPtr);
-    
+
+    myCurrentEventInfo.SetEventId(eventId);        
     std::cout<<KYEL<<"Creating a new EventTPC with eventId: "<<eventId<<RST<<std::endl;
     
     for(auto aFragment: it->second){
       loadGrawFrame(aFragment, true);
       myCurrentEvent->SetEventTime(myDataFrame.fHeader.fEventTime);
-      //    myCurrentEvent->SetEventNumber(aFragment/myGeometryPtr->GetAsadNboards());
+      myCurrentEventInfo.SetEventTimestamp(myDataFrame.fHeader.fEventTime);
       int  ASAD_idx = myDataFrame.fHeader.fAsadIdx;
       unsigned long int eventId_fromFrame = myDataFrame.fHeader.fEventIdx;
       if(eventId!=eventId_fromFrame){
@@ -313,38 +314,11 @@ void EventSourceGRAW::collectEventFragments(unsigned int eventId){
     std::cout<<KBLU<<"Found a frame for eventId: "<<RST<<eventId;
     if(aFragment<nEntries) std::cout<<KBLU<<" in file entry: "<<RST<<aFragment<<RST;
     else std::cout<<KBLU<<" in next file entry: "<<RST<<aFragment-nEntries<<RST;
-    std::cout<<KBLU<<" for  ASAD: "<<RST<<ASAD_idx<<RST<<std::endl;      
+    std::cout<<KBLU<<" for  ASAD: "<<RST<<ASAD_idx<<RST<<std::endl;
+    myCurrentEvent_new->SetEventInfo(myCurrentEventInfo);
     fillEventFromFrame(myDataFrame);
     }
   };
-
-  /*  
-  myCurrentEvent->Clear();
-  myCurrentEvent->SetEventId(eventId);
-  myCurrentEvent->SetGeoPtr(myGeometryPtr);
-
-  std::cout<<KYEL<<"Creating a new event with eventId: "<<eventId<<RST<<std::endl;
-
-  for(auto aFragment: it->second){
-    loadGrawFrame(aFragment, true);
-    myCurrentEvent->SetEventTime(myDataFrame.fHeader.fEventTime);
-    //    myCurrentEvent->SetEventNumber(aFragment/myGeometryPtr->GetAsadNboards());
-    int  ASAD_idx = myDataFrame.fHeader.fAsadIdx;
-    unsigned long int eventId_fromFrame = myDataFrame.fHeader.fEventIdx;
-    if(eventId!=eventId_fromFrame){
-      std::cerr<<KRED<<__FUNCTION__
-	       <<": Event id mismatch! eventId="<<eventId
-	       <<", eventId_fromFrame="<<eventId_fromFrame
-	       <<RST<<std::endl;
-      return;
-    }     
-    std::cout<<KBLU<<"Found a frame for eventId: "<<RST<<eventId;
-    if(aFragment<nEntries) std::cout<<KBLU<<" in file entry: "<<RST<<aFragment<<RST;
-    else std::cout<<KBLU<<" in next file entry: "<<RST<<aFragment-nEntries<<RST;
-    std::cout<<KBLU<<" for  ASAD: "<<RST<<ASAD_idx<<RST<<std::endl;      
-    fillEventFromFrame(myDataFrame);
-  }
-  */
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -390,11 +364,19 @@ void EventSourceGRAW::fillEventFromFrame(GET::GDataFrame & aGrawFrame){
   }
 //	} 
   myCurrentEvent->AddValByAgetChannel(COBO_idx, ASAD_idx, agetId, chanId, icell, corrVal);
-
-  std::shared_ptr<Geometry_Strip> aStrip = myGeometryPtr->GetStripByAget(COBO_idx, ASAD_idx,
-									 agetId, chanId,
-									 icell, corrVal);
-  myCurrentEvent_new->AddValByAgetChannel(aStrip, icell, cossVal);                     
+  /*
+  std::cout<<" COBO_idx: "<<COBO_idx
+	   <<" ASAD_idx: "<<ASAD_idx
+	   <<" agetId: "<<agetId
+	   <<" chanId: "<<chanId
+	   <<" icell: "<<icell<<std::endl
+	   <<" corrVal: "<<corrVal<<std::endl;
+  std::cout<<"old: "<<myGeometryPtr->GetStripByAget(COBO_idx, ASAD_idx, agetId, chanId)<<std::endl;
+  */
+  /*
+  std::shared_ptr<Geometry_Strip> aStrip = myGeometryPtr->GetStripByAget_new(COBO_idx, ASAD_idx, agetId, chanId);
+  if(aStrip) myCurrentEvent_new->AddValByStrip(aStrip, icell, corrVal);                     
+  */
       }
     }
   }

@@ -641,6 +641,8 @@ void EventSourceMultiGRAW::collectEventFragments(unsigned int eventId){
 	loadGrawFrame(aFragment, true, streamIndex); // HOTFIX => fills myDataFrame
 	
 	myCurrentEvent->SetEventTime(myDataFrame.fHeader.fEventTime); // HOTFIX !!!
+	myCurrentEventInfo.SetEventId(eventId);      
+	myCurrentEventInfo.SetEventTimestamp(myDataFrame.fHeader.fEventTime);
 	int ASAD_idx = myDataFrame.fHeader.fAsadIdx; // HOTFIX !!!
 	int COBO_idx = myDataFrame.fHeader.fCoboIdx; // HOTFIX !!!
 	unsigned long int eventId_fromFrame = myDataFrame.fHeader.fEventIdx; // HOTFIX !!!
@@ -668,7 +670,8 @@ void EventSourceMultiGRAW::collectEventFragments(unsigned int eventId){
 	std::cout<<KBLU<<" for ASAD: "<<RST<<ASAD_idx
 		 <<KBLU<<", COBO: "<<RST<<COBO_idx
 		 <<KBLU<<", GRAW stream id: "<<RST<<streamIndex
-		 <<std::endl;      
+		 <<std::endl;
+	myCurrentEvent_new->SetEventInfo(myCurrentEventInfo);
 	fillEventFromFrame(myDataFrame); // HOTFIX!!!!!
 	//	fillEventFromFrame(myDataFrameList[streamIndex]); 
 	nFragments++; // count good fragments

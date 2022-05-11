@@ -71,7 +71,7 @@ using Reconstr_hist = std::pair<std::shared_ptr<TH2D>, std::shared_ptr<TH3D>>;
 
 template < std::size_t I = 0, typename...Tp >
 inline void sumTuples(const std::tuple < Tp...>& t1, const std::tuple < Tp...>& t2, std::tuple < Tp...>& _result) noexcept {
-	if constexpr (I < sizeof...(Tp)) {
+	if (I < sizeof...(Tp)) {
 		std::get < I >(_result) = std::get < I >(t1) + std::get < I >(t2);
 		sumTuples < I + 1, Tp...>(t1, t2, _result);
 	  }

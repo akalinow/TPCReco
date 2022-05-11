@@ -9,6 +9,7 @@
 EventSourceBase::EventSourceBase() {
 
   myCurrentEvent =  std::make_shared<EventTPC>();
+  myCurrentEvent_new =  std::make_shared<test::EventTPC>();
   myCurrentEntry = 0;
   nEntries = 0;
 }
@@ -41,6 +42,12 @@ void EventSourceBase::loadGeometry(const std::string & fileName){
 std::shared_ptr<EventTPC> EventSourceBase::getCurrentEvent() const{
 
   return myCurrentEvent;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::shared_ptr<test::EventTPC> EventSourceBase::getCurrentEvent_new() const{
+
+  return myCurrentEvent_new;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

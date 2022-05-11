@@ -143,8 +143,8 @@ class GeometryTPC {
   const char* GetDirName(int dir);
   const char* GetStripName(StripTPC *s);
 
-  std::shared_ptr<Geometry_Strip> GetStripByAget(int COBO_idx, int ASAD_idx, int AGET_idx, int channel_idx) const;         // valid range [0-1][0-3][0-3][0-63]
-  std::shared_ptr<Geometry_Strip> GetStripByDir(projection dir, int num) const;   
+  std::shared_ptr<Geometry_Strip> GetStripByAget_new(int COBO_idx, int ASAD_idx, int AGET_idx, int channel_idx) const;         // valid range [0-1][0-3][0-3][0-63]
+  std::shared_ptr<Geometry_Strip> GetStripByDir_new(projection dir, int num) const;   
 
   StripTPC *GetStripByAget(int COBO_idx, int ASAD_idx, int AGET_idx, int channel_idx);         // valid range [0-1][0-3][0-3][0-63]
   StripTPC *GetStripByGlobal(int global_channel_idx);                                          // valid range [0-1023]

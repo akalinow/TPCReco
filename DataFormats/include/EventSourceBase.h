@@ -9,6 +9,9 @@
 #include "EventTPC.h"
 #include "GeometryTPC.h"
 
+#include "EventInfo.h"
+#include "EventTPC_new.h"
+
 class EventSourceBase {
 
 public:
@@ -32,6 +35,8 @@ public:
   std::string getCurrentPath() const;
 
   std::shared_ptr<EventTPC> getCurrentEvent() const;
+
+  std::shared_ptr<test::EventTPC> getCurrentEvent_new() const;
   
   std::shared_ptr<EventTPC> getNextEventLoop();
 
@@ -65,6 +70,10 @@ protected:
 
   std::shared_ptr<EventTPC> myCurrentEvent;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
+
+  eventraw::EventInfo myCurrentEventInfo;
+  std::shared_ptr<test::EventTPC> myCurrentEvent_new;
+  
 };
 #endif
 

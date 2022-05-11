@@ -361,7 +361,7 @@ bool GeometryTPC::Load(const char *fname) {
               strip_unit_vec[dir], offset, length_in_pads, this);
 
 	  ////TEST
-	  projection aDir;
+	  projection aDir = DIR_U;
 	  if(dir==DIR_U) aDir = DIR_U;
 	  else if (dir==DIR_V) aDir = DIR_V;
 	  else if (dir==DIR_W) aDir = DIR_W;
@@ -370,11 +370,11 @@ bool GeometryTPC::Load(const char *fname) {
 										       chan_num, chan_num_raw,
 										       strip_unit_vec[dir],
 										       offset, length);
-	  // update map (by: COBO board, ASAD board, AGET chip, AGET normal/raw channel)
-	  arrayByAget[{cobo, asad, aget, chan_num}] = strip_new;
-
-	  // update reverse map (by: strip direction, strip number)
-	  stripArray[{aDir, strip_num}] = strip_new;
+	  auto key = std::make_tuple(cobo, asad, aget, chan_num);
+	  arrayByAget[key] = strip_new;
+	  
+	  auto key1 = std::make_tuple(aDir, strip_num);
+	  stripArray[key1] = strip_new;
 	  ///////////////
 
           // update map (by: COBO board, ASAD board, AGET chip, AGET normal/raw
@@ -1246,7 +1246,7 @@ const char *GeometryTPC::GetStripName(StripTPC *s) {
 
 StripTPC *GeometryTPC::GetStripByAget(
     int COBO_idx, int ASAD_idx, int AGET_idx,
-    int channel_idx) { // valid range [0-1][0-3][0-3][0-63]
+    int channel_idx){ // valid range [0-1][0-3][0-3][0-63]
   if (!IsOK())
     return NULL; // ERROR
   std::map<MultiKey4, StripTPC *, multikey4_less>::iterator it;
@@ -1854,10 +1854,18 @@ void GeometryTPC::Debug() {
 
 
 
-std::shared_ptr<Geometry_Strip> GeometryTPC::GetStripByAget(int COBO_idx, int ASAD_idx, int AGET_idx, int channel_idx) const { // valid range [0-1][0-3][0-3][0-63]
-	return arrayByAget.at({ COBO_idx , ASAD_idx,AGET_idx, channel_idx });
+std::shared_ptr<Geometry_Strip> GeometryTPC::GetStripByAget_new(int COBO_idx, int ASAD_idx, int AGET_idx, int channel_idx) const {
+
+  auto key = std::make_tuple(COBO_idx ,ASAD_idx,AGET_idx,channel_idx);
+  if(arrayByAget.find(key)==arrayByAget.end()){
+    return std::shared_ptr<Geometry_Strip>();
+    //std::cout<<COBO_idx<<" "<<ASAD_idx<<" "<<AGET_idx<<" "<<channel_idx<<std::endl;
+  }
+  return arrayByAget.at(key);
 }
 
-std::shared_ptr<Geometry_Strip> GeometryTPC::GetStripByDir(projection dir, int num) const { // valid range [0-2][1-1024]
-	return stripArray.at({ dir,num });
+std::shared_ptr<Geometry_Strip> GeometryTPC::GetStripByDir_new(projection dir, int num) const { // valid range [0-2][1-1024]
+  auto key = std::make_tuple(dir,num);
+  return stripArray.at(key);
 }
+
