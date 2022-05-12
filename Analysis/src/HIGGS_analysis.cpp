@@ -83,11 +83,12 @@ void HIGGS_analysis::bookHistos(){
   outputFile = new TFile(outputFileName.c_str(),"RECREATE");
 
   const float binSizeMM = 0.5; // [mm]
-  const float binSizeMM_2d = 1.5; // [mm]
+  const float binSizeMM_2d = 3.0; // [mm]
   const float binSizeMM_prof = 3.0; // [mm]
   const float maxLengthMM = 200.0; // [mm]
-  const float maxTotalEnergyMeV = 20e3; // [MeV]
-  const float maxKineticEnergyMeV = 20.0; // [MeV]
+  const float minTotalEnergyMeV = 5e3; // [MeV]
+  const float maxTotalEnergyMeV = 10e3; // [MeV]
+  const float maxKineticEnergyMeV = 6.0; // [MeV]
   const float maxDeltaMomentumMeV = 20.0; // [MeV]
   float xmin, xmax, ymin, ymax, zmin, zmax; // [mm]
   std::tie(xmin, xmax, ymin, ymax) = myGeometryPtr->rangeXY();
@@ -196,11 +197,11 @@ void HIGGS_analysis::bookHistos(){
       histos1D[(prefix+"_total_E_CMS").c_str()]=
 	new TH1F((prefix+"_total_E_CMS").c_str(),
 		 Form("%s;Total energy in CMS [MeV];%s", info, perEventTitle),
-		 1000, 0, maxTotalEnergyMeV);
+		 1000, minTotalEnergyMeV, maxTotalEnergyMeV);
       histos1D[(prefix+"_invMass").c_str()]=
 	new TH1F((prefix+"_invMass").c_str(),
 		 Form("%s;Invariant mass [MeV];%s", info, perEventTitle),
-		 1000, 0, maxTotalEnergyMeV);
+		 1000, minTotalEnergyMeV, maxTotalEnergyMeV);
       histos1D[(prefix+"_Qvalue_CMS").c_str()]=
 	new TH1F((prefix+"_Qvalue_CMS").c_str(),
 		 Form("%s;Q value in CMS [MeV];%s", info, perEventTitle),
@@ -454,10 +455,10 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     // TODO
     // change DET-->BEAM coordinate transformation for the HIGS experiment
     // formulas below are valid provided that beam direction is anti-paralell to X_DET (HIGS case):
-    // X_DET -> Z_BEAM
-    // Y_DET -> X_BEAM 
-    // Z_DET -> Y_BEAM
-    double phi_BEAM_LAB=atan2(track.getTangent().Z(), track.getTangent().Y()); // [rad], azimuthal angle from horizontal axis
+    // X_DET -> -Z_BEAM
+    // Y_DET ->  X_BEAM
+    // Z_DET -> -Y_BEAM
+    double phi_BEAM_LAB=atan2(-track.getTangent().Z(), track.getTangent().Y()); // [rad], azimuthal angle from horizontal axis
     double cosTheta_BEAM_LAB=track.getTangent()*photonUnitVec_DET_LAB; // polar angle wrt beam axis
     histos1D["h_all_phiBEAM_LAB"]->Fill(phi_BEAM_LAB);
     histos1D["h_all_thetaBEAM_LAB"]->Fill(acos(cosTheta_BEAM_LAB));
@@ -497,10 +498,10 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     // TODO
     // change DET-->BEAM coordinate transformation for the HIGS experiment
     // formulas below are valid provided that beam direction is anti-paralell to X_DET (HIGS case):
-    // X_DET -> Z_BEAM
-    // Y_DET -> X_BEAM 
-    // Z_DET -> Y_BEAM
-    double phi_BEAM_LAB=atan2(track.getTangent().Z(), track.getTangent().Y()); // [rad], azimuthal angle from horizontal axis
+    // X_DET -> -Z_BEAM
+    // Y_DET ->  X_BEAM
+    // Z_DET -> -Y_BEAM
+    double phi_BEAM_LAB=atan2(-track.getTangent().Z(), track.getTangent().Y()); // [rad], azimuthal angle from horizontal axis
     double cosTheta_BEAM_LAB=track.getTangent()*photonUnitVec_DET_LAB; // polar angle wrt beam axis
     histos1D["h_1prong_alpha_phiBEAM_LAB"]->Fill(phi_BEAM_LAB);
     histos1D["h_1prong_alpha_thetaBEAM_LAB"]->Fill(acos(cosTheta_BEAM_LAB));
@@ -569,11 +570,11 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     // TODO
     // change DET-->BEAM coordinate transformation for the HIGS experiment
     // formulas below are valid provided that beam direction is anti-paralell to X_DET (HIGS case):
-    // X_DET -> Z_BEAM
-    // Y_DET -> X_BEAM 
-    // Z_DET -> Y_BEAM
-    double alpha_phi_BEAM_LAB=atan2(list.front().getTangent().Z(), list.front().getTangent().Y()); // [rad], azimuthal angle from horizontal axis
-    double carbon_phi_BEAM_LAB=atan2(list.back().getTangent().Z(), list.back().getTangent().Y()); // [rad], azimuthal angle from horizontal axis
+    // X_DET -> -Z_BEAM
+    // Y_DET ->  X_BEAM
+    // Z_DET -> -Y_BEAM
+    double alpha_phi_BEAM_LAB=atan2(-list.front().getTangent().Z(), list.front().getTangent().Y()); // [rad], azimuthal angle from horizontal axis
+    double carbon_phi_BEAM_LAB=atan2(-list.back().getTangent().Z(), list.back().getTangent().Y()); // [rad], azimuthal angle from horizontal axis
     double alpha_cosTheta_BEAM_LAB=list.front().getTangent()*photonUnitVec_DET_LAB; // polar angle wrt beam axis
     double carbon_cosTheta_BEAM_LAB=list.back().getTangent()*photonUnitVec_DET_LAB; // polar angle wrt beam axis
     histos1D["h_2prong_alpha_phiBEAM_LAB"]->Fill(alpha_phi_BEAM_LAB);
@@ -608,11 +609,11 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     // TODO
     // change DET-->BEAM coordinate transformation for the HIGS experiment
     // formulas below are valid provided that beam direction is anti-paralell to X_DET (HIGS case):
-    // X_DET -> Z_BEAM
-    // Y_DET -> X_BEAM 
-    // Z_DET -> Y_BEAM
-    TLorentzVector alphaP4_BEAM_CMS(alphaP4_CMS_DET.Py(), alphaP4_CMS_DET.Pz(), alphaP4_CMS_DET.Px(), alphaP4_CMS_DET.E());
-    TLorentzVector carbonP4_BEAM_CMS(carbonP4_CMS_DET.Py(), carbonP4_CMS_DET.Pz(), carbonP4_CMS_DET.Px(), alphaP4_CMS_DET.E());
+    // X_DET -> -Z_BEAM
+    // Y_DET ->  X_BEAM
+    // Z_DET -> -Y_BEAM
+    TLorentzVector alphaP4_BEAM_CMS(alphaP4_CMS_DET.Py(), -alphaP4_CMS_DET.Pz(), -alphaP4_CMS_DET.Px(), alphaP4_CMS_DET.E());
+    TLorentzVector carbonP4_BEAM_CMS(carbonP4_CMS_DET.Py(), -carbonP4_CMS_DET.Pz(), -carbonP4_CMS_DET.Px(), carbonP4_CMS_DET.E());
     double alpha_T_CMS=alphaP4_BEAM_CMS.E()-alphaP4_BEAM_CMS.M(); // [MeV]
     double carbon_T_CMS=carbonP4_BEAM_CMS.E()-carbonP4_BEAM_CMS.M(); // [MeV]
     double invariantMass=(alphaP4_BEAM_CMS+carbonP4_BEAM_CMS).M();// [MeV/c^2]
@@ -695,10 +696,10 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
       // TODO
       // change DET-->BEAM coordinate transformation for the HIGS experiment
       // formulas below are valid provided that beam direction is anti-paralell to X_DET (HIGS case):
-      // X_DET -> Z_BEAM
-      // Y_DET -> X_BEAM 
-      // Z_DET -> Y_BEAM
-      alpha_phi_BEAM_LAB[i]=atan2(track.getTangent().Z(), track.getTangent().Y()); // [rad], azimuthal angle from horizontal axis
+      // X_DET -> -Z_BEAM
+      // Y_DET ->  X_BEAM
+      // Z_DET -> -Y_BEAM
+      alpha_phi_BEAM_LAB[i]=atan2(-track.getTangent().Z(), track.getTangent().Y()); // [rad], azimuthal angle from horizontal axis
       alpha_cosTheta_BEAM_LAB[i]=track.getTangent()*photonUnitVec_DET_LAB; // polar angle wrt beam axis
       
       // reconstruct kinetic energy from particle range [mm]
@@ -714,10 +715,10 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
       // TODO
       // change DET-->BEAM coordinate transformation for the HIGS experiment
       // formulas below are valid provided that beam direction is anti-paralell to X_DET (HIGS case):
-      // X_DET -> Z_BEAM
-      // Y_DET -> X_BEAM 
-      // Z_DET -> Y_BEAM
-      alphaP4_BEAM_CMS[i]=TLorentzVector(alphaP4_DET_CMS[i].Py(), alphaP4_DET_CMS[i].Pz(), alphaP4_DET_CMS[i].Px(), alphaP4_DET_CMS[i].E());
+      // X_DET -> -Z_BEAM
+      // Y_DET ->  X_BEAM
+      // Z_DET -> -Y_BEAM
+      alphaP4_BEAM_CMS[i]=TLorentzVector(alphaP4_DET_CMS[i].Py(), -alphaP4_DET_CMS[i].Pz(), -alphaP4_DET_CMS[i].Px(), alphaP4_DET_CMS[i].E());
       alpha_T_CMS[i]=alphaP4_BEAM_CMS[i].E()-alphaP4_BEAM_CMS[i].M(); // [MeV]
       alpha_phi_BEAM_CMS[i]=alphaP4_BEAM_CMS[i].Phi(); // [rad], azimuthal angle from X axis
       alpha_cosTheta_BEAM_CMS[i]=alphaP4_BEAM_CMS[i].CosTheta(); // [rad], azimuthal angle from X axis
@@ -809,7 +810,7 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
 ///////////////////////////////
 bool HIGGS_analysis::eventFilter(Track3D *aTrack){
 
-  return true; // always pass, no cuts
+  //  return true; // always pass, no cuts
 
   // reject empty events
   TrackSegment3DCollection list = aTrack->getSegments();
@@ -822,14 +823,15 @@ bool HIGGS_analysis::eventFilter(Track3D *aTrack){
   // endpoint cuts per track per event
   for(auto &track: list) {  
     if( fabs(track.getEnd().X()) > 160.0 ) return false;
-    if( fabs(track.getEnd().Y()) > 80.0 ) return false;
+    //    if( fabs(track.getEnd().Y()) > 80.0 ) return false;
   }
   
   // length correlation cuts per track pair per event
   for(auto i=0u; i<list.size()-1; i++) {
     for(auto j=i; j<list.size(); j++) {
       if( fabs(list.at(i).getLength()*list.at(i).getTangent().Z() -
-	       list.at(j).getLength()*list.at(j).getTangent().Z()) > 160.0 ) return false;	
+	       list.at(j).getLength()*list.at(j).getTangent().Z()) > 180.0 ) return false;
+      if( list.at(i).getLength()+list.at(j).getLength() < 50.0 ) return false;
     }
   }
   return true; // event passed all cuts

@@ -2,7 +2,7 @@
 //
 // root
 // root [0] .L generateFakeRecoEvents.cxx
-// root [1] generateFakeRecoEvents("geometry.dat")
+// root [1] generateFakeRecoEvents("geometry.dat", 1000, 11.5, 1, 0, 0);
 //
 //
 //////////////////////////
@@ -14,29 +14,26 @@
 #define SIMUL_CONTAINMENT_FLAG   false     // skip partially contained events?
 #define SIMUL_TRUNCATE_FLAG      true      // truncate partially contained tracks?
 #define SIMUL_EXT_TRG_FLAG       true      // simulate external trigger?
-#define SIMUL_EXT_TRG_ARRIVAL    0.1       // trigger postion on time scale [0-1]
-//#define SIMUL_BEAM_E           7.164     // [MeV] energy peak, O-16 threshold
-#define SIMUL_BEAM_E             11.5      // [MeV] energy peak
-//#define SIMUL_BEAM_E           12.3      // [MeV] energy peak
+#define SIMUL_EXT_TRG_ARRIVAL    0.1       // trigger position on time scale [0-1]
 //#define SIMUL_BEAM_E_RESOL     0         // no energy smearing
-//#define SIMUL_BEAM_E_RESOL     0.00369   // [0-1] 0.369% energy sigma, fwhm=100 keV
-#define SIMUL_BEAM_E_RESOL       0.00554   // [0-1] 0.554% energy sigma, fwhm=150 keV
-//#define SIMUL_BEAM_E_RESOL     0.00738   // [0-1] 0.738% energy sigma, fwhm=200 keV
-//#define SIMUL_BEAM_E_RESOL     0.0107    // [0-1] 1.107% energy sigma, fwhm=300 keV
-//#define SIMUL_BEAM_E_RESOL     0.0148    // [0-1] 1.480% energy sigma, fwhm=400 keV
+//#define SIMUL_BEAM_E_RESOL     0.00369   // [0-1] 0.369% energy sigma, fwhm=100 keV @ 11.5MeV
+#define SIMUL_BEAM_E_RESOL       0.00554   // [0-1] 0.554% energy sigma, fwhm=150 keV @ 11.5MeV
+//#define SIMUL_BEAM_E_RESOL     0.00738   // [0-1] 0.738% energy sigma, fwhm=200 keV @ 11.5MeV
+//#define SIMUL_BEAM_E_RESOL     0.0107    // [0-1] 1.107% energy sigma, fwhm=300 keV @ 11.5MeV
+//#define SIMUL_BEAM_E_RESOL     0.0148    // [0-1] 1.480% energy sigma, fwhm=400 keV @ 11.5MeV
 #define SIMUL_BEAM_SPREAD_R      5.25      // [mm] flat top intentsity radius
 #define SIMUL_BEAM_SPREAD_SIGMA  1.0       // [mm] intensity tail sigma
 #define SIMUL_PRESSURE           190.0     // [mbar] CO2 pressure
-#define SIMUL_OXYGEN_E1E2_FLAG   true      // use anisotropic theta distribution for O-16?
-#define SIMUL_OXYGEN_E1E2_SIGMA1 0         // sigma_E1 cross section [nb]
-#define SIMUL_OXYGEN_E1E2_SIGMA2 1         // sigma_E2 cross section [nb]
+#define SIMUL_OXYGEN_E1E2_FLAG   false     // use anisotropic theta distribution for O-16?
+#define SIMUL_OXYGEN_E1E2_SIGMA1 1         // sigma_E1 cross section [nb]
+#define SIMUL_OXYGEN_E1E2_SIGMA2 0         // sigma_E2 cross section [nb]
 #define SIMUL_OXYGEN_E1E2_PHI12  0         // E1/E2 mixing phase [rad]
 //#define SIMUL_OXYGEN_E1E2_SIGMA1 0.16    // sigma_E1 cross section [nb]
 //#define SIMUL_OXYGEN_E1E2_SIGMA2 0.15    // sigma_E2 cross section [nb]
 //#define SIMUL_OXYGEN_E1E2_PHI12  54./180.*TMath::Pi() // E1/E2 mixing phase [rad]
-#define SIMUL_POLARISATION_FLAG  false     // use unpolarised or partially polarized beam?
+#define SIMUL_POLARISATION_FLAG  true      // use unpolarised or partially polarized beam?
 #define SIMUL_POLARISATION_FRAC  0.33      // degree of linear polarization of gamma beam
-#define SIMUL_POLARISATION_ANGLE 60./180.*TMath::Pi()  // polarization plane (CKW wrt horizontal axis)
+#define SIMUL_POLARISATION_ANGLE 45./180.*TMath::Pi()  // polarization plane (CKW wrt horizontal axis)
 #define SIMUL_PLOT3D_FLAG        false     // create 3D debug plot with all tracks?
 
 #ifndef __ROOTLOGON__
@@ -341,7 +338,7 @@ void truncateTracks(Track3D & aTrack, bool debug_flag){
 }
 //////////////////////////
 //////////////////////////
-Track3D generateFakeAlphaCarbonGenericEvent(std::shared_ptr<GeometryTPC> aGeometry, std::shared_ptr<IonRangeCalculator> aRangeCalculator, bool Oxygen18_flag=false, bool debug_flag=false){
+Track3D generateFakeAlphaCarbonGenericEvent(std::shared_ptr<GeometryTPC> aGeometry, std::shared_ptr<IonRangeCalculator> aRangeCalculator, double photonEnergyMeV, bool Oxygen18_flag=false, bool debug_flag=false){
 
   auto r=gRandom; // use global ROOT pointer
 
@@ -361,7 +358,7 @@ Track3D generateFakeAlphaCarbonGenericEvent(std::shared_ptr<GeometryTPC> aGeomet
 
   // detector reference frame (DET=LAB)
   double beamEnergyResolution=SIMUL_BEAM_E_RESOL; // LAB beam energy smearing factor
-  double beamEnergy_DET=SIMUL_BEAM_E*r->Gaus(1, beamEnergyResolution); // smear beam energy by 5% // MeV
+  double beamEnergy_DET=photonEnergyMeV*r->Gaus(1, beamEnergyResolution); // smear beam energy by 5% // MeV
   TVector3 beamDir_DET(-1, 0, 0); // unit vector
   TLorentzVector photonP4_DET(beamDir_DET.Unit()*beamEnergy_DET, beamEnergy_DET); // [MeV/c, MeV/c, MeV/c, MeV/c^2]
   TLorentzVector oxygenP4_DET(0, 0, 0, oxygenMass); // [MeV/c, MeV/c, MeV/c, MeV/c^2]
@@ -419,9 +416,13 @@ Track3D generateFakeAlphaCarbonGenericEvent(std::shared_ptr<GeometryTPC> aGeomet
     // distribute isotropically alpha particles in CMS frame
     phi_BEAM=r->Uniform(0, TMath::TwoPi()); // rad
   }
+  // 4-momentum vector in detector coordinate system, CMS reference frame:
+  // Z_DET (down)      -> -Y_BEAM, so Y_BEAM is up
+  // Y_DET (horiz)     ->  X_B (horiz)
+  // X_DET (anti-beam) -> -Z_BEAM, so Z_BEAM is along photon
   TLorentzVector alphaP4_CMS(p_alpha_CMS*beamDir_DET.Unit(), alphaMass+T_alpha_CMS); // initial = along gamma beam
-  alphaP4_CMS.RotateZ(theta_BEAM); // rotate by theta_BEAM about detector Z axis (vertical)
-  alphaP4_CMS.Rotate(phi_BEAM, beamDir_DET); // rotate by phi_BEAM about beam axis
+  alphaP4_CMS.RotateZ(-theta_BEAM); // rotate by theta_BEAM about Y_BEAM (up) = -Z_DET axis
+  alphaP4_CMS.Rotate(phi_BEAM, beamDir_DET); // rotate by phi_BEAM about beam axis = -X_DET
 
   //  TLorentzVector alphaP4_CMS(p_alpha_CMS*TVector3(0, 0, 1), alphaMass+T_alpha_CMS); // initial = along Z
   //  alphaP4_CMS.RotateY(theta); // rotate by theta about Y axis
@@ -513,18 +514,17 @@ Track3D generateFakeAlphaCarbonGenericEvent(std::shared_ptr<GeometryTPC> aGeomet
 }
 //////////////////////////
 //////////////////////////
-Track3D generateFakeAlphaCarbon12Event(std::shared_ptr<GeometryTPC> aGeometry, std::shared_ptr<IonRangeCalculator> aRangeCalculator, bool debug_flag=false){
-  return generateFakeAlphaCarbonGenericEvent(aGeometry, aRangeCalculator, false, debug_flag);
+Track3D generateFakeAlphaCarbon12Event(std::shared_ptr<GeometryTPC> aGeometry, std::shared_ptr<IonRangeCalculator> aRangeCalculator, double photonEnergyMeV, bool debug_flag=false){
+  return generateFakeAlphaCarbonGenericEvent(aGeometry, aRangeCalculator, photonEnergyMeV, false, debug_flag);
 }
 //////////////////////////
 //////////////////////////
-Track3D generateFakeAlphaCarbon14Event(std::shared_ptr<GeometryTPC> aGeometry, std::shared_ptr<IonRangeCalculator> aRangeCalculator, bool debug_flag=false){
-  return generateFakeAlphaCarbonGenericEvent(aGeometry, aRangeCalculator, true, debug_flag);
+Track3D generateFakeAlphaCarbon14Event(std::shared_ptr<GeometryTPC> aGeometry, std::shared_ptr<IonRangeCalculator> aRangeCalculator, double photonEnergyMeV, bool debug_flag=false){
+  return generateFakeAlphaCarbonGenericEvent(aGeometry, aRangeCalculator, photonEnergyMeV, true, debug_flag);
 }
 //////////////////////////
 //////////////////////////
-Track3D generateFake3AlphaEvent(std::shared_ptr<GeometryTPC> aGeometry, std::shared_ptr<IonRangeCalculator> aRangeCalculator, bool debug_flag=false){
-  //Track3D generateFake3AlphaEvent(std::shared_ptr<GeometryTPC> aGeometry, IonRangeCalculator *aRangeCalculator, bool debug_flag=false){
+Track3D generateFake3AlphaEvent(std::shared_ptr<GeometryTPC> aGeometry, std::shared_ptr<IonRangeCalculator> aRangeCalculator, double photonEnergyMeV, bool debug_flag=false){
 
   //  auto r=new Trandom3();
   auto r=gRandom; // use global ROOT pointer
@@ -538,7 +538,7 @@ Track3D generateFake3AlphaEvent(std::shared_ptr<GeometryTPC> aGeometry, std::sha
 
   // detector reference frame (DET=LAB)
   double beamEnergyResolution=SIMUL_BEAM_E_RESOL; // LAB beam energy smearing factor
-  double beamEnergy_DET=SIMUL_BEAM_E*r->Gaus(1, beamEnergyResolution); // smear beam energy by 5% // MeV
+  double beamEnergy_DET=photonEnergyMeV*r->Gaus(1, beamEnergyResolution); // smear beam energy by 5% // MeV
   TVector3 beamDir_DET(-1, 0, 0); // unit vector
   TLorentzVector photonP4_DET(beamDir_DET.Unit()*beamEnergy_DET, beamEnergy_DET); // [MeV/c, MeV/c, MeV/c, MeV/c^2]
   TLorentzVector carbonP4_DET(0, 0, 0, carbonMass); // [MeV/c, MeV/c, MeV/c, MeV/c^2]
@@ -593,9 +593,13 @@ Track3D generateFake3AlphaEvent(std::shared_ptr<GeometryTPC> aGeometry, std::sha
   // distribute isotropically 1st alpha particle momentum:
   double phi1=r->Uniform(0, TMath::TwoPi()); // rad
   double theta1=acos(r->Uniform(-1, 1)); // rad, dOmega=dPhi*d(cosTheta)
-  TLorentzVector alpha1_P4_CMS(p1_CMS*TVector3(0, 0, 1), alphaMass+T1_CMS); // initial = along Z
-  alpha1_P4_CMS.RotateY(theta1); // rotate by theta1 about Y axis
-  alpha1_P4_CMS.RotateZ(phi1); // rotate by phi1 about Z axis
+  // 4-momentum vector in detector coordinate system, CMS reference frame:
+  // Z_DET (down)      -> -Y_BEAM, so Y_BEAM is up
+  // Y_DET (horiz)     ->  X_B (horiz)
+  // X_DET (anti-beam) -> -Z_BEAM, so Z_BEAM is along photon
+  TLorentzVector alpha1_P4_CMS(p1_CMS*beamDir_DET, alphaMass+T1_CMS); // initial = along Z_BEAM
+  alpha1_P4_CMS.RotateZ(-theta1); // rotate by theta_BEAM about Y_BEAM = -Z_DET axis
+  alpha1_P4_CMS.Rotate(phi1,beamDir_DET); // rotate by phi_BEAM about beam axis = -X_DET
 
   // distribute isotropically 2nd alpha particle momentum
   // - cos(theta12) is constrained by momentum conservation: p3^2 = p1^2 + p2^2 + 2*p1*p2*cos(theta12)
@@ -698,7 +702,7 @@ Track3D generateFake3AlphaEvent(std::shared_ptr<GeometryTPC> aGeometry, std::sha
 }
 //////////////////////////
 //////////////////////////
-void generateFakeRecoEvents(const std::string geometryName, unsigned int nEvents, double brOxygen16=1, double brOxygen18=0, double brCarbon12_3alpha=0, bool debug_flag=false){
+void generateFakeRecoEvents(const std::string geometryName, unsigned int nEvents, double photonEnergyMeV, double brOxygen16=1, double brOxygen18=0, double brCarbon12_3alpha=0, bool debug_flag=false){
 
   if (!gROOT->GetClass("Track3D")){
     R__LOAD_LIBRARY(libDataFormats.so);
@@ -803,7 +807,7 @@ void generateFakeRecoEvents(const std::string geometryName, unsigned int nEvents
     phiEmissionTF1.SetNpx(10000);
   }
 
-  Track3D (*func)(std::shared_ptr<GeometryTPC>, std::shared_ptr<IonRangeCalculator>, bool);
+  Track3D (*func)(std::shared_ptr<GeometryTPC>, std::shared_ptr<IonRangeCalculator>, double, bool);
 
   for(auto i=0L; i<nEvents; i++) {
 
@@ -824,7 +828,7 @@ void generateFakeRecoEvents(const std::string geometryName, unsigned int nEvents
     }
 
     if(debug_flag || (i<1000L && (i%100L)==0L) || (i%1000L)==0L ) std::cout<<"Generating fake track i="<<i<<std::endl;
-    *aTrack = func(myGeometry, myRangeCalculator, debug_flag);
+    *aTrack = func(myGeometry, myRangeCalculator, photonEnergyMeV, debug_flag);
 
     // check if all segments are fully contained
     if( (SIMUL_CONTAINMENT_FLAG || SIMUL_TRUNCATE_FLAG) &&
@@ -903,7 +907,7 @@ void generateFakeRecoEvents(const std::string geometryName, unsigned int nEvents
 //////////////////////////
 int main (const int argc, const char *args[]) {
 
-  if(argc!=6) return -1;
-  generateFakeRecoEvents(args[1], atol(args[2]), atof(args[3]), atof(args[4]), atof(args[5]));
+  if(argc!=7) return -1;
+  generateFakeRecoEvents(args[1], atol(args[2]), atof(args[3]), atof(args[4]), atof(args[5]), atof(args[6]));
   return 0;
 }
