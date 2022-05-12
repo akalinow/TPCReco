@@ -18,6 +18,7 @@ class HIGS_trees_analysis{
 
 public:
 
+  HIGS_trees_analysis() { ; }
   HIGS_trees_analysis(std::shared_ptr<GeometryTPC> aGeometryPtr,    // definition of LAB detector coordinates
 		 float beamEnergy,                // nominal gamma beam energy [keV] in detector LAB frame
 		 TVector3 beamDir); 
