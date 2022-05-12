@@ -28,7 +28,7 @@ def analyzeSingleBatch(runId, fileCSV, geometryFile, command):
 def analyzeDataInDirectory(dataPath, geometryFile, procName):
     
     command = "../../bin/"+procName
-    procCount = 4
+    procCount = 2
 
     runDataList = getCSVinputList(dataPath)
 

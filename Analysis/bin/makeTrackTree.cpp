@@ -213,7 +213,7 @@ int makeTrackTree(const  std::string & geometryFileName,
 
   //Event loop
   unsigned int nEntries = myEventSource->numberOfEntries();
-  //nEntries = 1000;
+  nEntries = 100;
   for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
     if(nEntries>10 && iEntry%(nEntries/10)==0){
       std::cout<<KBLU<<"Processed: "<<int(100*(double)iEntry/nEntries)<<" % events"<<RST<<std::endl;
@@ -223,7 +223,8 @@ int makeTrackTree(const  std::string & geometryFileName,
     if(myEventSource->getCurrentEvent()->GetOneCluster().GetNhits()>20000){
       std::cout<<KRED<<"Noisy event - skipping."<<RST<<std::endl;
       continue;
-    }			      
+    }
+    
     myTkBuilder.setEvent(myEventSource->getCurrentEvent());
     myTkBuilder.reconstruct();
 

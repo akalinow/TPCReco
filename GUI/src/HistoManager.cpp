@@ -933,11 +933,11 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   double carbonEnergy = myRangeCalculator.getIonEnergyMeV(pid_type::CARBON_12,carbonRange);
   
   TLatex aLatex;
-  double x = 0.35*aTrack3D.getLength();
-  double y = 0.75;
-  aLatex.DrawLatex(x,y,TString::Format("Track length: %3.0f mm",aTrack3D.getLength()));
-  y = 0.68;
-  aLatex.DrawLatex(x,y,TString::Format("Total E: %2.1f MeV",alphaEnergy+carbonEnergy));
+  double x = -0.2*aTrack3D.getLength();
+  double y = 1.12;
+  aLatex.DrawLatex(x,y,TString::Format("Total length [mm]: %3.0f",aTrack3D.getLength()));
+  y = 1.06;
+  aLatex.DrawLatex(x,y,TString::Format("Total E [MeV]:     %2.1f",alphaEnergy+carbonEnergy));
   
   CoordinateConverter myConv;
   std::cout<<myConv<<std::endl;

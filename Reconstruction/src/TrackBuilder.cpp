@@ -44,7 +44,8 @@ TrackBuilder::TrackBuilder() {
   aHoughOffest.SetY(50.0);
   aHoughOffest.SetZ(0.0);
 
-  mydEdxFitter.setPressure(190);
+  //mydEdxFitter.setPressure(190);
+  mydEdxFitter.setPressure(130);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -146,7 +147,7 @@ void TrackBuilder::reconstruct(){
   aTrackCandidate.extendToChamberRange(xyRange, myZRange);
 
   aTrackCandidate = fitTrack3D(aTrackCandidate);
-  if(aTrackCandidate.getLength()>50 && aTrackCandidate.getLength()<300){
+  if(aTrackCandidate.getLength()>20 && aTrackCandidate.getLength()<300){
     aTrackCandidate = fitEventHypothesis(aTrackCandidate);
   }
   myFittedTrack = aTrackCandidate;
@@ -350,6 +351,9 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
+
+  TrackSegment3D a3DSeed;
+  a3DSeed.setGeometry(myGeometryPtr);  
 	     
   const TrackSegment2D & segmentU = my2DSeeds[DIR_U][iTrack2DSeed];
   const TrackSegment2D & segmentV = my2DSeeds[DIR_V][iTrack2DSeed];
@@ -358,6 +362,8 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   int nHits_U = segmentU.getNAccumulatorHits();
   int nHits_V = segmentV.getNAccumulatorHits();
   int nHits_W = segmentW.getNAccumulatorHits();
+
+  if(!nHits_U && !nHits_V && !nHits_W) return a3DSeed;
 
   double bias_time = (segmentU.getMinBias().X()*(nHits_U>0) +
 		      segmentV.getMinBias().X()*(nHits_V>0) +
@@ -465,8 +471,6 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   //aTangent.SetXYZ(0.318140,-0.948024,0.006087);
   */
 
-  TrackSegment3D a3DSeed;
-  a3DSeed.setGeometry(myGeometryPtr);  
   a3DSeed.setBiasTangent(aBias, aTangent);
   a3DSeed.setRecHits(myRecHits);
   /*

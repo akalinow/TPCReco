@@ -4,14 +4,21 @@
 #include "TFitResultPtr.h"
 #include "Math/MinimizerOptions.h"
 
+/*
 TGraph* dEdxFitter::braggGraph_alpha = new TGraph("dEdx_alpha_10000keV_250mbar_CO2.dat", "%lg %lg %*lg");
 TGraph* dEdxFitter::braggGraph_12C = new TGraph("dEdx_12C_2500keV_250mbar_CO2.dat", "%lg %lg %*lg");
-double dEdxFitter::pressure = 250.0;
+double dEdxFitter::currentPressure = 250.0;
+double dEdxFitter::nominalPressure = 250.0;
+*/
+TGraph* dEdxFitter::braggGraph_alpha = new TGraph("dEdx_alpha_10000keV_190mbar_CO2.dat", "%lg %lg %*lg");
+TGraph* dEdxFitter::braggGraph_12C = new TGraph("dEdx_12C_5000keV_190mbar_CO2.dat", "%lg %lg %*lg");
+double dEdxFitter::currentPressure = 190.0;
+double dEdxFitter::nominalPressure = 190.0;
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 dEdxFitter::dEdxFitter(double aPressure){
 
-  pressure = aPressure;
+  currentPressure = aPressure;
   
   alpha_ionisation = new TF1("alpha_ionisation", bragg_alpha, 0, 350.0);
   carbon_ionisation = new TF1("carbon_ionisation",bragg_12C, 0, 120.0);
@@ -43,7 +50,8 @@ dEdxFitter::dEdxFitter(double aPressure){
   carbon_alphaModel->SetParLimits(0, 5, 20.0);
   carbon_alphaModel->SetParLimits(1, 240, 360.0);
   carbon_alphaModel->FixParameter(2, 1.0);
-  carbon_alphaModel->FixParameter(3, 0.46);
+  //carbon_alphaModel->FixParameter(3, 0.46);
+  carbon_alphaModel->FixParameter(3, 0.31);
   carbon_alphaModel->FixParameter(4, 2.2E-6);
   carbon_alphaModel->FixParameter(5, 0.0);
   carbon_alphaModel->FixParameter(6, 1.5);
@@ -65,7 +73,8 @@ dEdxFitter::dEdxFitter(double aPressure){
 ////////////////////////////////////////////////
 void dEdxFitter::reset(){
 
-  carbon_alphaModel->SetParameters(10, 270, 1.0, 0.46,  2.2E-6, 0, 1.28);
+  carbon_alphaModel->SetParameters(10, 270, 1.0, 0.35,  2.2E-6, 0, 1.28);
+  //carbon_alphaModel->SetParameters(10, 270, 1.0, 0.46,  2.2E-6, 0, 1.28);
   alphaModel->SetParameters(10, 250, 1.0, 0.0, 2.2E-6, 0, 1.28);
   theFitResult = TFitResult();
   theFittedModel = alphaModel;
@@ -77,12 +86,12 @@ void dEdxFitter::reset(){
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 double dEdxFitter::bragg_alpha(double *x, double *params) {
-  return 1E7*braggGraph_alpha->Eval((pressure/250.0)*x[0]*1E7);
+  return 1E7*braggGraph_alpha->Eval((currentPressure/nominalPressure)*x[0]*1E7);
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 double dEdxFitter::bragg_12C(double *x, double *params) {
-  return 1E7*braggGraph_12C->Eval((pressure/250.0)*x[0]*1E7);
+  return 1E7*braggGraph_12C->Eval((currentPressure/nominalPressure)*x[0]*1E7);
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
@@ -200,30 +209,12 @@ TFitResult dEdxFitter::fitHisto(TH1F & aHisto){
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
-double dEdxFitter::getAlphaEnergy() const{
-
-  double alphaOffset = theFittedModel->GetParameter("alphaOffset");
-  double alphaEnergy = alpha_ionisation->Integral(alphaOffset, 350.0*(250.0/pressure), 0.1);
-  return alphaEnergy;
-}
-////////////////////////////////////////////////
-////////////////////////////////////////////////
-double dEdxFitter::getCarbonEnergy() const{
-
-  if(bestFitEventType!=C12_ALPHA) return -1;
-  
-  double carbonOffset = 14.4 - theFittedModel->GetParameter("carbonLength");
-  double carbonEnergy =  carbon_ionisation->Integral(carbonOffset, 15.0, 0.1); 
-  return carbonEnergy;
-}
-////////////////////////////////////////////////
-////////////////////////////////////////////////
 double dEdxFitter::getAlphaRange() const{
 
   if(bestFitEventType==pid_type::UNKNOWN) return 0.0;
     
   double alphaOffset = theFittedModel->GetParameter("alphaOffset");
-  double alphaRange = 289.745*(250.0/190) - alphaOffset;
+  double alphaRange = 289.745*(250/currentPressure) - alphaOffset;
   return alphaRange;
 }
 ////////////////////////////////////////////////

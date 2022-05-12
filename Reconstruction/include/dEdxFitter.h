@@ -16,9 +16,9 @@ class dEdxFitter{
 
 public:
 
-  dEdxFitter(double aPressure=250);
+  dEdxFitter(double aPressure=190);
 
-  void setPressure(double aPressure) {pressure = aPressure;}
+  void setPressure(double aPressure) {currentPressure = aPressure;}
 
   TFitResult fitHisto(TH1F & aHisto);
 
@@ -38,10 +38,6 @@ public:
 
   bool getIsReflected() const { return isReflected;}
 
-  double getAlphaEnergy() const;
-
-  double getCarbonEnergy() const;
-
   double getAlphaRange() const;
 
   double getCarbonRange() const;
@@ -53,7 +49,8 @@ private:
 
   static TGraph *braggGraph_alpha;
   static TGraph *braggGraph_12C;
-  static double pressure;
+  static double currentPressure;
+  static double nominalPressure;
   bool isReflected{false};
   double bestFitChi2{999.0};
 
