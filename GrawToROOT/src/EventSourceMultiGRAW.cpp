@@ -453,7 +453,7 @@ void EventSourceMultiGRAW::loadFileEntry(unsigned long int iEntry){
       unsigned long int deltaEntry=1, maxTries=nEntries, iTries=0;
       bool minFlag=false, maxFlag=false;
       while((++iTries)<maxTries && !minFlag && !maxFlag) {
-	deltaEntry=(deltaEntry < 0 ? abs(deltaEntry)+1 : -deltaEntry);
+	deltaEntry=(deltaEntry < 0 ? deltaEntry+1 : -deltaEntry);
 	auto iEntry2=iEntry+deltaEntry;
 	if(iEntry2<0) minFlag=true;
 	if(iEntry2>=nEntries) maxFlag=true;
