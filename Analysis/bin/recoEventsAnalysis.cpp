@@ -141,10 +141,10 @@ int analyzeRecoEvents(const  std::string & geometryFileName,
 	     <<std::endl;
     return -1;
   }
-  
+
   std::shared_ptr<HIGGS_analysis> myAnalysis(new HIGGS_analysis(aGeometry, beamEnergy, beamDir, pressure));
   std::shared_ptr<HIGS_trees_analysis> myTreesAnalysis(0);
-  if(makeTreeFlag) myTreesAnalysis=std::make_shared<HIGS_trees_analysis>(aGeometry, beamEnergy, beamDir);
+  if(makeTreeFlag) myTreesAnalysis=std::make_shared<HIGS_trees_analysis>(aGeometry, beamEnergy, beamDir, pressure);
 
   TTree *aTree = (TTree*)aFile->Get("TPCRecoData");
   if(!aTree) {
@@ -173,6 +173,9 @@ int analyzeRecoEvents(const  std::string & geometryFileName,
   }
 
   unsigned int nEntries = aTree->GetEntries();
+  
+  std::cout << __FUNCTION__ << ": Starting to loop " << nEntries << " events" << std::endl;
+
   for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
     aBranch->GetEntry(iEntry); 
     if(aBranchInfo) aBranchInfo->GetEntry(iEntry); // this branch is optional
