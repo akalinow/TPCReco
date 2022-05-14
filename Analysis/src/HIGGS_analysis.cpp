@@ -86,8 +86,8 @@ void HIGGS_analysis::bookHistos(){
   const float binSizeMM_2d = 3.0; // [mm]
   const float binSizeMM_prof = 3.0; // [mm]
   const float maxLengthMM = 200.0; // [mm]
-  const float minTotalEnergyMeV = 5e3; // [MeV]
-  const float maxTotalEnergyMeV = 10e3; // [MeV]
+  const float minTotalEnergyMeV = 11e3; // [MeV] // C-12 = 12u
+  const float maxTotalEnergyMeV = 17e3; // [MeV] // O-18 = 18u
   const float maxKineticEnergyMeV = 6.0; // [MeV]
   const float maxDeltaMomentumMeV = 20.0; // [MeV]
   float xmin, xmax, ymin, ymax, zmin, zmax; // [mm]
@@ -137,8 +137,8 @@ void HIGGS_analysis::bookHistos(){
   // GLOBAL HISTOGRAMS
   //
   // NTRACKS : ALL event categories
-  histos1D["ntracks"]=
-    new TH1F("ntracks","Number of tracks;Tracks per event;Event count", 5, 0, 5);
+  histos1D["h_ntracks"]=
+    new TH1F("h_ntracks","Number of tracks;Tracks per event;Event count", 5, 0, 5);
 
   // HISTOGRAMS PER CATEGORY
   //
@@ -197,11 +197,11 @@ void HIGGS_analysis::bookHistos(){
       histos1D[(prefix+"_total_E_CMS").c_str()]=
 	new TH1F((prefix+"_total_E_CMS").c_str(),
 		 Form("%s;Total energy in CMS [MeV];%s", info, perEventTitle),
-		 1000, minTotalEnergyMeV, maxTotalEnergyMeV);
+		 (int)(maxTotalEnergyMeV-minTotalEnergyMeV), minTotalEnergyMeV, maxTotalEnergyMeV);
       histos1D[(prefix+"_invMass").c_str()]=
 	new TH1F((prefix+"_invMass").c_str(),
 		 Form("%s;Invariant mass [MeV];%s", info, perEventTitle),
-		 1000, minTotalEnergyMeV, maxTotalEnergyMeV);
+		 (int)(maxTotalEnergyMeV-minTotalEnergyMeV), minTotalEnergyMeV, maxTotalEnergyMeV);
       histos1D[(prefix+"_Qvalue_CMS").c_str()]=
 	new TH1F((prefix+"_Qvalue_CMS").c_str(),
 		 Form("%s;Q value in CMS [MeV];%s", info, perEventTitle),
@@ -414,7 +414,7 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
   // - for 3-prong events: all tracks are ALPHAS, descending order by their energy/length
   
   const int ntracks = aTrack->getSegments().size();
-  histos1D["ntracks"]->Fill(ntracks);
+  histos1D["h_ntracks"]->Fill(ntracks);
   if (ntracks==0) return;
 
   // get sorted list of tracks (descending order by track length)
@@ -810,7 +810,7 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
 ///////////////////////////////
 bool HIGGS_analysis::eventFilter(Track3D *aTrack){
 
-  //  return true; // always pass, no cuts
+  return true; // always pass, no cuts
 
   // reject empty events
   TrackSegment3DCollection list = aTrack->getSegments();

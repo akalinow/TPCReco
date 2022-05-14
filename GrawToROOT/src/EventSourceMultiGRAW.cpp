@@ -449,18 +449,17 @@ void EventSourceMultiGRAW::loadFileEntry(unsigned long int iEntry){
       //	checkEntryForFragments(iEntry2, streamIndex);
       //	if(myFramesMapList[streamIndex].find(matchEventId)!=myFramesMapList[streamIndex].end()) continue; // break;
       //      }
-      // strategy 2A: scan all remaining frames for matched event ID (order: n+1, n-1, n+2, n-2...)
-      unsigned long int deltaEntry=1, maxTries=nEntries, iTries=0;
+      // strategy 2A: scan all remaining frames in the following order: n+1, n-1, n+2, n-2, etc
+      long int deltaEntry=1;
+      unsigned long int maxTries=2*nEntries, iTries=0;
       bool minFlag=false, maxFlag=false;
-      while((++iTries)<maxTries && !minFlag && !maxFlag) {
+      while((++iTries)<maxTries && (!minFlag || !maxFlag)) {
+	auto iEntry2=(long int)(iEntry+deltaEntry);
 	deltaEntry=(deltaEntry < 0 ? abs(deltaEntry)+1 : -deltaEntry);
-	auto iEntry2=iEntry+deltaEntry;
-	if(iEntry2<0) minFlag=true;
-	if(iEntry2>=nEntries) maxFlag=true;
-	if(!minFlag && !maxFlag) {
-	  checkEntryForFragments(iEntry2, streamIndex);
-	  if(myFramesMapList[streamIndex].find(matchEventId)!=myFramesMapList[streamIndex].end()) break; // go to next stream
-	}
+	if(iEntry2<0) { minFlag=true; continue; }
+	if(iEntry2>=(long int)nEntries) { maxFlag=true; continue; }
+	checkEntryForFragments((unsigned long int)iEntry2, streamIndex);
+	if(myFramesMapList[streamIndex].find(matchEventId)!=myFramesMapList[streamIndex].end()) break; // go to next stream
       }
     }
   }

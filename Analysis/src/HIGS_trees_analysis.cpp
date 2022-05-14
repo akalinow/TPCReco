@@ -1,13 +1,16 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <algorithm>
 
 #include "TFile.h"
 #include "TTree.h"
 #include "TVector3.h"
+#include "TH2Poly.h"
 
 #include "GeometryTPC.h"
 #include "Track3D.h"
+#include "TrackSegment3D.h"
 #include "EventInfo.h"
 #include "HIGS_trees_analysis.h"
 
@@ -16,12 +19,24 @@
 ///////////////////////////////
 ///////////////////////////////
 HIGS_trees_analysis::HIGS_trees_analysis(std::shared_ptr<GeometryTPC> aGeometryPtr, // definition of LAB detector coordinates
-			       float beamEnergy,   // nominal gamma beam energy [MeV] in detector LAB frame
-			       TVector3 beamDir) { // nominal gamma beam direction in detector LAB frame
+					 float beamEnergy, // nominal gamma beam energy [MeV] in detector LAB frame
+					 TVector3 beamDir, // nominal gamma beam direction in detector LAB frame
+					 double pressure){ // CO2 pressure [mbar]
   setGeometry(aGeometryPtr);
   setBeamProperties(beamEnergy, beamDir);
+  setIonRangeCalculator(pressure);
   open();
-  
+
+  auto gback=(TGraph*)(xyArea.back().bin->GetPolygon());
+  std::cout << "CONSTRUCTOR AFTER: graph 10mm: TH2PolyBin.GetPolygon=" << gback
+	    <<  " (npoints=" << (gback ? gback->GetN() : 0)
+	    << ")" << std::endl;
+
+  auto zback=zRange.back();
+  std::cout << "CONSTRUCTOR AFTER: Zrange 10mm: drift_cage=" << zback.lengthLimit
+	    << ", lowerLimit=" << zback.lowerLimit << ", upperLimit=" << zback.upperLimit
+	    << std::endl;
+
 }
 ///////////////////////////////
 ///////////////////////////////
@@ -30,10 +45,9 @@ HIGS_trees_analysis::~HIGS_trees_analysis(){
   Output2prongTreePtr->Write("", TObject::kOverwrite);
   Output3prongTreePtr->Write("", TObject::kOverwrite);
   close();
-  
 }
-
-
+///////////////////////////////
+///////////////////////////////
 void HIGS_trees_analysis::open(){
 
   std::string fileName = "Trees.root";
@@ -72,6 +86,19 @@ void HIGS_trees_analysis::close(){
 ///////////////////////////////
 void HIGS_trees_analysis::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
   myGeometryPtr = aGeometryPtr;
+  if(!myGeometryPtr) {
+    std::cout<<KRED<<"HIGS_trees_analysis::setGeometry: "<<RST
+	     <<" pointer to TPC geometry not set!"
+	     <<std::endl;
+    exit(-1);
+  }
+  xyArea.push_back(HorizontalCheck(myGeometryPtr, 2.0)); // 2 mm safety band
+  xyArea.push_back(HorizontalCheck(myGeometryPtr, 5.0)); // 5 mm safety band
+  xyArea.push_back(HorizontalCheck(myGeometryPtr, 10.0)); // 10 mm safety band
+
+  zRange.push_back(VerticalCheck(myGeometryPtr, 2.0)); // 2 mm safety band
+  zRange.push_back(VerticalCheck(myGeometryPtr, 5.0)); // 5 mm safety band
+  zRange.push_back(VerticalCheck(myGeometryPtr, 10.0)); // 10 mm safety band
 }
 ///////////////////////////////
 ///////////////////////////////
@@ -79,6 +106,13 @@ void HIGS_trees_analysis::setBeamProperties(float beamEnergy,   // nominal gamma
 					    TVector3 beamDir) { // nominal gamma beam direction in detector LAB frame
   gammaEnergy = fabs(beamEnergy);
   gammaUnitVec = beamDir.Unit();
+}
+//////////////////////////
+//////////////////////////
+void HIGS_trees_analysis::setIonRangeCalculator(double pressure){ // CO2 pressure [mbar]
+
+  // set current conditions: gas=CO2, pressure=190 mbar, temperature=20C
+  myRangeCalculator.setGasConditions(IonRangeCalculator::CO2, fabs(pressure), 273.15+20);
 }
 ///////////////////////////////
 ///////////////////////////////
@@ -128,7 +162,35 @@ void HIGS_trees_analysis::fillTrees1prong(Track3D *aTrack, eventraw::EventInfo *
   event1prong_->cosThetaDET = cos(track.getTangent().Theta());
   event1prong_->phiBEAM = atan2(track.getTangent().Z(), -track.getTangent().Y()); // [rad], azimuthal angle from horizontal axis
   event1prong_->cosThetaBEAM = track.getTangent()*gammaUnitVec;; // cos of polar angle wrt beam axis
+
+  // check containment in Z_DET
+  event1prong_->Zmargin2mm = true;
+  event1prong_->Zmargin5mm = true;
+  event1prong_->Zmargin10mm = true;
+  std::for_each(list.begin(), list.end(),
+		[&](const TrackSegment3D& a) mutable {
+		  event1prong_->Zmargin2mm &= zRange[0].IsInside(a.getStart().Z(), a.getEnd().Z());
+		  event1prong_->Zmargin5mm &= zRange[1].IsInside(a.getStart().Z(), a.getEnd().Z());
+		  event1prong_->Zmargin10mm &= zRange[2].IsInside(a.getStart().Z(), a.getEnd().Z());
+		});
   
+  // check containment in XY_DET
+  event1prong_->XYmargin2mm = true;
+  event1prong_->XYmargin5mm = true;
+  event1prong_->XYmargin10mm = true;
+  std::for_each(list.begin(), list.end(),
+		[&](const TrackSegment3D& a) mutable {
+		  event1prong_->XYmargin2mm &=
+		    xyArea[0].IsInside(a.getStart().X(), a.getStart().Y()) &
+		    xyArea[0].IsInside(a.getEnd().X(), a.getEnd().Y());
+		  event1prong_->XYmargin5mm &=
+		    xyArea[1].IsInside(a.getStart().X(), a.getStart().Y()) &
+		    xyArea[1].IsInside(a.getEnd().X(), a.getEnd().Y());
+		  event1prong_->XYmargin10mm &=
+		    xyArea[2].IsInside(a.getStart().X(), a.getStart().Y()) &
+		    xyArea[2].IsInside(a.getEnd().X(), a.getEnd().Y());
+		});
+
   Output1prongTreePtr->Fill();
 }
 ///////////////////////////////
@@ -148,6 +210,7 @@ void HIGS_trees_analysis::fillTrees2prong(Track3D *aTrack, eventraw::EventInfo *
 	    [](const TrackSegment3D& a, const TrackSegment3D& b) {
 	      return a.getLength() > b.getLength();
 	    });
+
   static double last_timestamp = 0;
   event2prong_->runID=(aEventInfo ? aEventInfo->GetRunId() : -1);
   event2prong_->eventID=(aEventInfo ? aEventInfo->GetEventId() : -1);
@@ -167,7 +230,35 @@ void HIGS_trees_analysis::fillTrees2prong(Track3D *aTrack, eventraw::EventInfo *
   event2prong_->carbon_cosThetaDET = cos(list.back().getTangent().Theta());
   event2prong_->carbon_phiBEAM = atan2(list.back().getTangent().Z(), -list.back().getTangent().Y()); // [rad], azimuthal angle from horizontal axis
   event2prong_->carbon_cosThetaBEAM = list.back().getTangent()*gammaUnitVec; // polar angle wrt beam axis
+
+  // check containment in Z_DET
+  event2prong_->Zmargin2mm = true;
+  event2prong_->Zmargin5mm = true;
+  event2prong_->Zmargin10mm = true;
+  std::for_each(list.begin(), list.end(),
+		[&](const TrackSegment3D& a) mutable {
+		  event2prong_->Zmargin2mm &= zRange[0].IsInside(a.getStart().Z(), a.getEnd().Z());
+		  event2prong_->Zmargin5mm &= zRange[1].IsInside(a.getStart().Z(), a.getEnd().Z());
+		  event2prong_->Zmargin10mm &= zRange[2].IsInside(a.getStart().Z(), a.getEnd().Z());
+		});
   
+  // check containment in XY_DET
+  event2prong_->XYmargin2mm = true;
+  event2prong_->XYmargin5mm = true;
+  event2prong_->XYmargin10mm = true;
+  std::for_each(list.begin(), list.end(),
+		[&](const TrackSegment3D& a) mutable {
+		  event2prong_->XYmargin2mm &=
+		    xyArea[0].IsInside(a.getStart().X(), a.getStart().Y()) &
+		    xyArea[0].IsInside(a.getEnd().X(), a.getEnd().Y());
+		  event2prong_->XYmargin5mm &=
+		    xyArea[1].IsInside(a.getStart().X(), a.getStart().Y()) &
+		    xyArea[1].IsInside(a.getEnd().X(), a.getEnd().Y());
+		  event2prong_->XYmargin10mm &=
+		    xyArea[2].IsInside(a.getStart().X(), a.getStart().Y()) &
+		    xyArea[2].IsInside(a.getEnd().X(), a.getEnd().Y());
+		});
+
   Output2prongTreePtr->Fill();
 }
 ///////////////////////////////
@@ -216,5 +307,33 @@ void HIGS_trees_analysis::fillTrees3prong(Track3D *aTrack, eventraw::EventInfo *
   event3prong_->alpha3_phiBEAM = atan2(track3.getTangent().Z(), -track3.getTangent().Y()); // [rad], azimuthal angle from horizontal axis;
   event3prong_->alpha3_cosThetaBEAM = track3.getTangent()*gammaUnitVec; // polar angle wrt beam axis
   
+  // check containment in Z_DET
+  event3prong_->Zmargin2mm = true;
+  event3prong_->Zmargin5mm = true;
+  event3prong_->Zmargin10mm = true;
+  std::for_each(list.begin(), list.end(),
+		[&](const TrackSegment3D& a) mutable {
+		  event3prong_->Zmargin2mm &= zRange[0].IsInside(a.getStart().Z(), a.getEnd().Z());
+		  event3prong_->Zmargin5mm &= zRange[1].IsInside(a.getStart().Z(), a.getEnd().Z());
+		  event3prong_->Zmargin10mm &= zRange[2].IsInside(a.getStart().Z(), a.getEnd().Z());
+		});
+  
+  // check containment in XY_DET
+  event3prong_->XYmargin2mm = true;
+  event3prong_->XYmargin5mm = true;
+  event3prong_->XYmargin10mm = true;
+  std::for_each(list.begin(), list.end(),
+		[&](const TrackSegment3D& a) mutable {
+		  event3prong_->XYmargin2mm &=
+		    xyArea[0].IsInside(a.getStart().X(), a.getStart().Y()) &
+		    xyArea[0].IsInside(a.getEnd().X(), a.getEnd().Y());
+		  event3prong_->XYmargin5mm &=
+		    xyArea[1].IsInside(a.getStart().X(), a.getStart().Y()) &
+		    xyArea[1].IsInside(a.getEnd().X(), a.getEnd().Y());
+		  event3prong_->XYmargin10mm &=
+		    xyArea[2].IsInside(a.getStart().X(), a.getStart().Y()) &
+		    xyArea[2].IsInside(a.getEnd().X(), a.getEnd().Y());
+		});
+
   Output3prongTreePtr->Fill();
 }
