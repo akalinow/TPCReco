@@ -27,7 +27,7 @@ struct Event_1prong{ // hypothesis: background alpha particle
   bool Zmargin5mm; // global Z-span <196mm and >=5mm lower/upper margins on Z/time scale
   bool Zmargin10mm; // global Z-span <196mm and >=10mm lower/upper margins on Z/time scale
 };
-struct Event_2prong{ // hypothesis: gamma + C-12 -> 3-alpha, isotropic in CMS
+struct Event_2prong{ // hypothesis: gamma + O-16 -> alpha + C-12
   time_t runID;
   unsigned int eventID;
   uint64_t timestamp; // internal GET electronics counter 10ns units
@@ -68,7 +68,7 @@ struct Event_2prong{ // hypothesis: gamma + C-12 -> 3-alpha, isotropic in CMS
   bool Zmargin5mm; // global Z-span <196mm and >=5mm lower/upper margins on Z/time scale
   bool Zmargin10mm; // global Z-span <196mm and >=10mm lower/upper margins on Z/time scale
 };
-struct Event_3prong{ // hypothesis: gamma + C-12 -> 3-alpha, isotropic in CMS
+struct Event_3prong{ // hypothesis: gamma + C-12 -> 3-alpha
   time_t runID;
   unsigned int eventID;
   uint64_t timestamp; // internal GET electronics counter 10ns units
