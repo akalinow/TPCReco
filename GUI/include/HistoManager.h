@@ -51,7 +51,7 @@ public:
 
   void drawRawHistos(TCanvas *aCanvas, bool isRateDisplayOn);
 
-  void drawRecoHistos(TCanvas *aCanvas);
+  void drawRecoHistos(TCanvas *aCanvas, std::string* infoT);
 
   void drawTechnicalHistos(TCanvas *aCanvas, int nAgetChips);
 

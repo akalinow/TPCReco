@@ -124,13 +124,18 @@ void HistoManager::drawTechnicalHistos(TCanvas *aCanvas, int nAgetChips){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void HistoManager::drawRecoHistos(TCanvas *aCanvas){
+void HistoManager::drawRecoHistos(TCanvas *aCanvas, std::string* infoT){
 
   if(!aCanvas) return;
   int padNumberOffset = 0;
   if(std::string(aCanvas->GetName())=="Histograms") padNumberOffset = 0;
   
   reconstruct();
+
+  const Track3D& bTrack3D = myTkBuilder.getTrack3D(0);
+  std::stringstream ss;
+  ss << bTrack3D.getLength();
+  ss >> *infoT;
 
    for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
      TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);

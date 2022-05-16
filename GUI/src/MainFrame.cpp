@@ -31,9 +31,7 @@
 #include "TGButton.h"
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::string lengthtrack;
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
+
 MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h,  const boost::property_tree::ptree &aConfig)
       : TGMainFrame(p, w, h){
 
@@ -581,13 +579,7 @@ void MainFrame::Update(){
       myEventSource->currentEventNumber(),
       myEventSource->currentEntryNumber());
 
-  TrackBuilder myTkBuilder;
-  const Track3D& bTrack3D = myTkBuilder.getTrack3D(0);
-  std::stringstream ss;
-  ss << bTrack3D.getLength();
-  ss >> lengthtrack;
 
-  fTrackInfoFrame->updateTrackInfo(lengthtrack);
 
   myHistoManager.setEvent(myEventSource->getCurrentEvent());
   fMarkersManager->reset();
@@ -601,7 +593,9 @@ void MainFrame::Update(){
     myHistoManager.drawRawHistos(fMainCanvas, isRateDisplayOn);
   }
   else {
-    myHistoManager.drawRecoHistos(fMainCanvas);
+      std::string infoT;
+      myHistoManager.drawRecoHistos(fMainCanvas,&infoT);
+    fTrackInfoFrame->updateTrackInfo(infoT);
   }
 }
 
