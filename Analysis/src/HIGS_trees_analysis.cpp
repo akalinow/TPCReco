@@ -26,7 +26,7 @@ HIGS_trees_analysis::HIGS_trees_analysis(std::shared_ptr<GeometryTPC> aGeometryP
   setBeamProperties(beamEnergy, beamDir);
   setIonRangeCalculator(pressure);
   open();
-
+  /*
   auto gback=(TGraph*)(xyArea.back().bin->GetPolygon());
   std::cout << "CONSTRUCTOR AFTER: graph 10mm: TH2PolyBin.GetPolygon=" << gback
 	    <<  " (npoints=" << (gback ? gback->GetN() : 0)
@@ -36,7 +36,7 @@ HIGS_trees_analysis::HIGS_trees_analysis(std::shared_ptr<GeometryTPC> aGeometryP
   std::cout << "CONSTRUCTOR AFTER: Zrange 10mm: drift_cage=" << zback.lengthLimit
 	    << ", lowerLimit=" << zback.lowerLimit << ", upperLimit=" << zback.upperLimit
 	    << std::endl;
-
+  */
 }
 ///////////////////////////////
 ///////////////////////////////

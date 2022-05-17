@@ -17,23 +17,26 @@
 #define SIMUL_EXT_TRG_ARRIVAL    0.1       // trigger position on time scale [0-1]
 //#define SIMUL_BEAM_E_RESOL     0         // no energy smearing
 //#define SIMUL_BEAM_E_RESOL     0.00369   // [0-1] 0.369% energy sigma, fwhm=100 keV @ 11.5MeV
-#define SIMUL_BEAM_E_RESOL       0.00554   // [0-1] 0.554% energy sigma, fwhm=150 keV @ 11.5MeV
+//#define SIMUL_BEAM_E_RESOL     0.00554   // [0-1] 0.554% energy sigma, fwhm=150 keV @ 11.5MeV
 //#define SIMUL_BEAM_E_RESOL     0.00738   // [0-1] 0.738% energy sigma, fwhm=200 keV @ 11.5MeV
 //#define SIMUL_BEAM_E_RESOL     0.0107    // [0-1] 1.107% energy sigma, fwhm=300 keV @ 11.5MeV
 //#define SIMUL_BEAM_E_RESOL     0.0148    // [0-1] 1.480% energy sigma, fwhm=400 keV @ 11.5MeV
+#define SIMUL_BEAM_E_RESOL       0.01440   // [0-1] 1.440% energy sigma, fwhm=300 keV @ 8.86MeV
 #define SIMUL_BEAM_SPREAD_R      5.25      // [mm] flat top intentsity radius
 #define SIMUL_BEAM_SPREAD_SIGMA  1.0       // [mm] intensity tail sigma
-#define SIMUL_PRESSURE           190.0     // [mbar] CO2 pressure
+#define SIMUL_PRESSURE           130.0     // [mbar] CO2 pressure
 #define SIMUL_OXYGEN_E1E2_FLAG   false     // use anisotropic theta distribution for O-16?
-#define SIMUL_OXYGEN_E1E2_SIGMA1 1         // sigma_E1 cross section [nb]
-#define SIMUL_OXYGEN_E1E2_SIGMA2 0         // sigma_E2 cross section [nb]
+#define SIMUL_OXYGEN_E1E2_SIGMA1 0         // sigma_E1 cross section [nb]
+#define SIMUL_OXYGEN_E1E2_SIGMA2 1         // sigma_E2 cross section [nb]
 #define SIMUL_OXYGEN_E1E2_PHI12  0         // E1/E2 mixing phase [rad]
 //#define SIMUL_OXYGEN_E1E2_SIGMA1 0.16    // sigma_E1 cross section [nb]
 //#define SIMUL_OXYGEN_E1E2_SIGMA2 0.15    // sigma_E2 cross section [nb]
 //#define SIMUL_OXYGEN_E1E2_PHI12  54./180.*TMath::Pi() // E1/E2 mixing phase [rad]
 #define SIMUL_POLARISATION_FLAG  true      // use unpolarised or partially polarized beam?
 #define SIMUL_POLARISATION_FRAC  0.33      // degree of linear polarization of gamma beam
-#define SIMUL_POLARISATION_ANGLE 45./180.*TMath::Pi()  // polarization plane (CKW wrt horizontal axis)
+#define SIMUL_POLARISATION_ANGLE 35./180.*TMath::Pi()  // polarization plane (CKW wrt horizontal axis)
+#define SIMUL_EXTENSION_FLAG     true      // allow verticies created outside of active volume?
+#define SIMUL_EXTENSION_ZONE     100.0      // extension zone for the verticies [mm]
 #define SIMUL_PLOT3D_FLAG        false     // create 3D debug plot with all tracks?
 
 #ifndef __ROOTLOGON__
@@ -499,7 +502,9 @@ Track3D generateFakeAlphaCarbonGenericEvent(std::shared_ptr<GeometryTPC> aGeomet
 
   //  TVector3 vertex( r->Uniform(xmin, xmax), y_rnd, z_rnd);
   ///////// DEBUG
-  TVector3 vertex( r->Uniform(xmin-10, xmax+10), y_rnd, z_rnd); // extend by +/- 10 mm
+  TVector3 vertex( r->Uniform(xmin-(SIMUL_EXTENSION_FLAG ? SIMUL_EXTENSION_ZONE : 0),
+			      xmax+(SIMUL_EXTENSION_FLAG ? SIMUL_EXTENSION_ZONE : 0)),
+		   y_rnd, z_rnd); // optionally extend vertex production outside of active area
   ///////// DEBUG
 
   // create TrackSegment3D collection
