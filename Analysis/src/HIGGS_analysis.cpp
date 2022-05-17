@@ -273,6 +273,7 @@ void HIGGS_analysis::bookHistos(){
 	new TH2F((prefix+pid+"_endXY").c_str(),
 		 Form("%s;%s track endpoint X_{DET} [mm];%s track endpoint Y_{DET} [mm];%s", info, pidLatex, pidLatex, perTrackTitle),
 		 (xmax-xmin)/binSizeMM_2dXY, xmin, xmax, (ymax-ymin)/binSizeMM_2dXY, ymin, ymax);
+
       // TRACK PHI_DET/THETA_DET/cos(THETA_DET) : per category / per track
       histos1D[(prefix+pid+"_phiDET").c_str()]=
 	new TH1F((prefix+pid+"_phiDET").c_str(),

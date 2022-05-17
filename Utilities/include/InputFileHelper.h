@@ -31,49 +31,65 @@ template <class It> std::string getExtension(It begin, It end) {
   throw std::runtime_error("No common extension in input files.");
 }
 
-template <class It, class Rep, class Period>
-void discoverFiles(const std::string &input,
-                   std::chrono::duration<Rep, Period> delay, It iterator) {
-  auto inputId = RunIdParser(input);
-  if (inputId.AsAdId() < 0) {
-    return;
-  }
-  auto inputPath = boost::filesystem::path(input);
-  auto directory =
-      boost::filesystem::directory_iterator(inputPath.parent_path());
-
-  std::vector<std::string> inputFiles;
-  for (const auto &entry : directory) {
-    auto path = entry.path();
-    if (!boost::filesystem::is_regular_file(path) ||
-        path.extension() != ".graw") {
-      continue;
+template <class Rep, class Period, class InputIterator, class OutputIterator>
+void discoverFiles(RunIdParser::time_point timePoint, size_t fileId,
+                   std::chrono::duration<Rep, Period> delay,
+                   InputIterator begin, InputIterator end,
+                   OutputIterator output) {
+  std::for_each(begin, end, [&](const auto &entry) {
+    auto path = boost::filesystem::path(entry);
+    if (!boost::filesystem::is_regular_file(path)) {
+      return;
     }
     try {
       auto id = RunIdParser(path.string());
-      if (inputId.isClose(id, delay) && id.AsAdId() >= 0 &&
-          id.fileId() == inputId.fileId()) {
-        (*iterator) = path.string();
-        ++iterator;
+      if (id.isClose(timePoint, delay) && id.AsAdId() >= 0 &&
+          id.fileId() == fileId) {
+        (*output) = path.string();
+        ++output;
       }
     } catch (const std::logic_error &e) {
     }
-  }
+  });
 }
 
+// convenience function
+template <class OutputIterator, class Rep, class Period>
+void discoverFiles(const std::string &inputFilename,
+                   std::chrono::duration<Rep, Period> delay,
+                   OutputIterator output) {
+  auto inputId = RunIdParser(inputFilename);
+  if (inputId.AsAdId() < 0) {
+    return;
+  }
+  auto inputPath = boost::filesystem::path(inputFilename);
+  auto begin = boost::filesystem::directory_iterator(inputPath.parent_path());
+  auto end = boost::filesystem::directory_iterator{};
+  discoverFiles(inputId.timePoint(), inputId.fileId(), delay, begin, end,
+                output);
+}
+
+template <class Sequence>
+std::string join(Sequence sequence, std::string separator) {
+  std::sort(sequence.begin(), sequence.end(), [](auto lhs, auto rhs) {
+    auto lParser = RunIdParser(lhs);
+    auto rParser = RunIdParser(rhs);
+    return std::make_tuple(lParser.fileId(), lParser.CoBoId(),
+                           lParser.AsAdId()) <
+           std::make_tuple(rParser.fileId(), rParser.CoBoId(),
+                           rParser.AsAdId());
+  });
+  return boost::algorithm::join(sequence, separator);
+}
+
+// convenience function
 template <class Rep, class Period>
 std::string discoverFilesCSV(const std::string &input,
                              std::chrono::duration<Rep, Period> delay,
                              std::string separator = ",") {
   std::vector<std::string> files;
   discoverFiles(input, delay, std::back_inserter(files));
-  std::sort(files.begin(), files.end(), [](auto lhs, auto rhs) {
-    auto lParser = RunIdParser(lhs);
-    auto rParser = RunIdParser(rhs);
-    return std::make_tuple(lParser.CoBoId(), lParser.AsAdId()) <
-           std::make_tuple(rParser.CoBoId(), rParser.AsAdId());
-  });
-  return boost::algorithm::join(files, separator);
+  return join(files, separator);
 }
 
 } // namespace InputFileHelper
