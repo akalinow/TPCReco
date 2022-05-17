@@ -67,6 +67,10 @@ struct Event_2prong{ // hypothesis: gamma + O-16 -> alpha + C-12
   bool Zmargin2mm; // global Z-span <196mm and >=2mm lower/upper margins on Z/time scale
   bool Zmargin5mm; // global Z-span <196mm and >=5mm lower/upper margins on Z/time scale
   bool Zmargin10mm; // global Z-span <196mm and >=10mm lower/upper margins on Z/time scale
+  /*
+  float Qvalue_cms; // [MeV], CMS frame, reaction Q-value = E_total_cms-(alpha_mass-carbon_mass)
+  float Eexcitation_cms; // [MeV], CMS frame, oxygen excitation energy = E_total_cms - (oxygen g.s.mass)
+  */
 };
 struct Event_3prong{ // hypothesis: gamma + C-12 -> 3-alpha
   time_t runID;
@@ -104,7 +108,8 @@ struct Event_3prong{ // hypothesis: gamma + C-12 -> 3-alpha
   float alpha3_cosThetaDET;
   float alpha3_phiBEAM; // [rad]
   float alpha3_cosThetaBEAM;
-  /*  float alpha3_E; // [MeV], alpha track hypothesis, kinetic energy from range, LAB frame
+  /*
+  float alpha3_E; // [MeV], alpha track hypothesis, kinetic energy from range, LAB frame
   float alpha3_Ecms; // [MeV], alpha track hypothesis, kinetic energy from range, CMS frame
   TLorentzVector alpha3_p4BEAM; // [MeV], LAB frame, BEAM coords
   TLorentzVector alpha3_p4BEAMcms; // [MeV], CMS frame, BEAM coords
@@ -115,6 +120,10 @@ struct Event_3prong{ // hypothesis: gamma + C-12 -> 3-alpha
   bool Zmargin2mm; // global Z-span <196mm and >=2mm lower/upper margins on Z/time scale
   bool Zmargin5mm; // global Z-span <196mm and >=5mm lower/upper margins on Z/time scale
   bool Zmargin10mm; // global Z-span <196mm and >=10mm lower/upper margins on Z/time scale
+  /*
+  float Qvalue_cms; // [MeV], CMS frame, reaction Q-value = E_total_cms-3*alpha_mass
+  float Eexcitation_cms; // [MeV], CMS frame, carbon excitation energy = E_total_cms - (carbon g.s.mass)
+  */
 };
 
 #endif

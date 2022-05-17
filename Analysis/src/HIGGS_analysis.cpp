@@ -1,5 +1,6 @@
 #include <vector>
 #include <iostream>
+#include <iomanip>
 
 #include "TH1F.h"
 #include "TH2F.h"
@@ -17,6 +18,8 @@
 #include "Track3D.h"
 #include "HIGGS_analysis.h"
 
+#include "colorText.h"
+
 ///////////////////////////////
 ///////////////////////////////
 HIGGS_analysis::HIGGS_analysis(std::shared_ptr<GeometryTPC> aGeometryPtr, // definition of LAB detector coordinates
@@ -25,7 +28,8 @@ HIGGS_analysis::HIGGS_analysis(std::shared_ptr<GeometryTPC> aGeometryPtr, // def
 			       double pressure){ // CO2 pressure [mbar]
   setGeometry(aGeometryPtr);
   setBeamProperties(beamEnergy, beamDir);
-  setIonRangeCalculator(pressure);  
+  setIonRangeCalculator(pressure);
+  setCuts();
   bookHistos();
 }
 ///////////////////////////////
@@ -47,7 +51,7 @@ void HIGGS_analysis::setIonRangeCalculator(double pressure){ // CO2 pressure [mb
 void HIGGS_analysis::bookHistos(){
 
   const std::string categoryPrefix[]={ "h_all", "h_1prong", "h_2prong", "h_3prong" };
-  const std::string categoryInfo[]={ "ALL", "1-prong (#alpha)", "2-prong (#alpha+C)", "3-prong (#alpha_{1}+#alpha_{2}+#alpha_{3})" };
+  const std::string categoryInfo[]={ "All tracks", "1-prong (#alpha)", "2-prong (#alpha+C)", "3-prong (#alpha_{1}+#alpha_{2}+#alpha_{3})" };
 
   // PID for calculating the range, etc
   // NOTE: index=0 is deliberately empty
@@ -83,12 +87,15 @@ void HIGGS_analysis::bookHistos(){
   outputFile = new TFile(outputFileName.c_str(),"RECREATE");
 
   const float binSizeMM = 0.5; // [mm]
-  const float binSizeMM_2d = 3.0; // [mm]
+  //  const float binSizeMM_2d = 3.0; // [mm]
+  const float binSizeMM_2dXZ = binSizeMM;
+  const float binSizeMM_2dYZ = binSizeMM;
+  const float binSizeMM_2dXY = binSizeMM;
   const float binSizeMM_prof = 3.0; // [mm]
   const float maxLengthMM = 200.0; // [mm]
   const float minTotalEnergyMeV = 11e3; // [MeV] // C-12 = 12u
   const float maxTotalEnergyMeV = 17e3; // [MeV] // O-18 = 18u
-  const float maxKineticEnergyMeV = 6.0; // [MeV]
+  const float maxKineticEnergyMeV = 10.0; // [MeV]
   const float maxDeltaMomentumMeV = 20.0; // [MeV]
   float xmin, xmax, ymin, ymax, zmin, zmax; // [mm]
   std::tie(xmin, xmax, ymin, ymax) = myGeometryPtr->rangeXY();
@@ -164,11 +171,11 @@ void HIGGS_analysis::bookHistos(){
     histos2D[(prefix+"_vertexXY").c_str()]=
       new TH2F((prefix+"_vertexXY").c_str(),
 	       Form("%s;Vertex position X_{DET} [mm];Vertex position Y_{DET} [mm];%s", info, perEventTitle),
-	       (xmax-xmin)/binSizeMM_2d, xmin, xmax, (ymax-ymin)/binSizeMM_2d, ymin, ymax);
+	       (xmax-xmin)/binSizeMM_2dXY, xmin, xmax, (ymax-ymin)/binSizeMM_2dXY, ymin, ymax);
     histos2D[(prefix+"_vertexYZ").c_str()]=
       new TH2F((prefix+"_vertexYZ").c_str(),
 	       Form("%s;Vertex position Y_{DET} [mm];Vertex position Z_{DET} [mm];%s", info, perEventTitle),
-	       (ymax-ymin)/binSizeMM_2d, ymin, ymax, (zmax-zmin)/binSizeMM_2d, zmin, zmax);
+	       (ymax-ymin)/binSizeMM_2dYZ, ymin, ymax, (zmax-zmin)/binSizeMM_2dYZ, zmin, zmax);
     profiles1D[(prefix+"_vertexXY_prof").c_str()]=
       new TProfile((prefix+"_vertexXZ_prof").c_str(),
 		   Form("%s;Vertex position X_{DET} [mm];Average vertex position Y_{DET} [mm];%s", info, perEventTitle),
@@ -198,10 +205,10 @@ void HIGGS_analysis::bookHistos(){
 	new TH1F((prefix+"_total_E_CMS").c_str(),
 		 Form("%s;Total energy in CMS [MeV];%s", info, perEventTitle),
 		 (int)(maxTotalEnergyMeV-minTotalEnergyMeV), minTotalEnergyMeV, maxTotalEnergyMeV);
-      histos1D[(prefix+"_invMass").c_str()]=
-	new TH1F((prefix+"_invMass").c_str(),
-		 Form("%s;Invariant mass [MeV];%s", info, perEventTitle),
-		 (int)(maxTotalEnergyMeV-minTotalEnergyMeV), minTotalEnergyMeV, maxTotalEnergyMeV);
+      histos1D[(prefix+"_excitation_E_CMS").c_str()]=
+	new TH1F((prefix+"_excitation_E_CMS").c_str(),
+		 Form("%s;Excitation energy above g.s. in CMS [MeV];%s", info, perEventTitle),
+		 300, 0, maxKineticEnergyMeV*3);
       histos1D[(prefix+"_Qvalue_CMS").c_str()]=
 	new TH1F((prefix+"_Qvalue_CMS").c_str(),
 		 Form("%s;Q value in CMS [MeV];%s", info, perEventTitle),
@@ -236,18 +243,18 @@ void HIGGS_analysis::bookHistos(){
       histos2D[(prefix+pid+"_deltaXY").c_str()]=
 	new TH2F((prefix+pid+"_deltaXY").c_str(),
 		 Form("%s;%s track #DeltaX_{DET} [mm];%s track #DeltaY_{DET} [mm];%s", info, pidLatex, pidLatex, perTrackTitle),
-		 maxLengthMM/binSizeMM_2d, -0.5*maxLengthMM, 0.5*maxLengthMM,
-		 maxLengthMM/binSizeMM_2d, -0.5*maxLengthMM, 0.5*maxLengthMM);
+		 maxLengthMM/binSizeMM_2dXY, -0.5*maxLengthMM, 0.5*maxLengthMM,
+		 maxLengthMM/binSizeMM_2dXY, -0.5*maxLengthMM, 0.5*maxLengthMM);
       histos2D[(prefix+pid+"_deltaXZ").c_str()]=
 	new TH2F((prefix+pid+"_deltaXZ").c_str(),
 		 Form("%s;%s track #DeltaX_{DET} [mm];%s track #DeltaZ_{DET} [mm];%s", info, pidLatex, pidLatex, perTrackTitle),
-		 maxLengthMM/binSizeMM_2d, -0.5*maxLengthMM, 0.5*maxLengthMM,
-		 maxLengthMM/binSizeMM_2d, -0.5*maxLengthMM, 0.5*maxLengthMM);
+		 maxLengthMM/binSizeMM_2dXZ, -0.5*maxLengthMM, 0.5*maxLengthMM,
+		 maxLengthMM/binSizeMM_2dXZ, -0.5*maxLengthMM, 0.5*maxLengthMM);
       histos2D[(prefix+pid+"_deltaYZ").c_str()]=
 	new TH2F((prefix+pid+"_deltaYZ").c_str(),
 		 Form("%s;%s track #DeltaY_{DET} [mm];%s track #DeltaZ_{DET} [mm];%s", info, pidLatex, pidLatex, perTrackTitle),
-		 maxLengthMM/binSizeMM_2d, -0.5*maxLengthMM, 0.5*maxLengthMM,
-		 maxLengthMM/binSizeMM_2d, -0.5*maxLengthMM, 0.5*maxLengthMM);
+		 maxLengthMM/binSizeMM_2dYZ, -0.5*maxLengthMM, 0.5*maxLengthMM,
+		 maxLengthMM/binSizeMM_2dYZ, -0.5*maxLengthMM, 0.5*maxLengthMM);
       
       // TRACK END_X/Y/Z : per category / per track
       histos1D[(prefix+pid+"_endX").c_str()]=
@@ -265,7 +272,7 @@ void HIGGS_analysis::bookHistos(){
       histos2D[(prefix+pid+"_endXY").c_str()]=
 	new TH2F((prefix+pid+"_endXY").c_str(),
 		 Form("%s;%s track endpoint X_{DET} [mm];%s track endpoint Y_{DET} [mm];%s", info, pidLatex, pidLatex, perTrackTitle),
-		 (xmax-xmin)/binSizeMM_2d, xmin, xmax, (ymax-ymin)/binSizeMM_2d, ymin, ymax);
+		 (xmax-xmin)/binSizeMM_2dXY, xmin, xmax, (ymax-ymin)/binSizeMM_2dXY, ymin, ymax);
       // TRACK PHI_DET/THETA_DET/cos(THETA_DET) : per category / per track
       histos1D[(prefix+pid+"_phiDET").c_str()]=
 	new TH1F((prefix+pid+"_phiDET").c_str(),
@@ -399,6 +406,36 @@ void HIGGS_analysis::bookHistos(){
 	}
       }
     }
+  }
+  // dump list of histogram names
+  std::cout<<__FUNCTION__<<": List of booked 1D histograms:"<<std::endl;
+  for (auto &h : histos1D) {
+    std::cout<<std::left<<std::setw(50)<<std::setfill('.')
+	     <<h.first<<"T = "<<h.second->GetTitle()<<std::endl
+	     <<std::setfill(' ')<<std::right<<std::setw(50+4)
+	     <<"X = "<<std::left<<h.second->GetXaxis()->GetTitle()<<std::endl
+	     <<std::right<<std::setw(50+4)
+	     <<"Y = "<<std::left<<h.second->GetYaxis()->GetTitle()<<std::endl;
+  }
+  std::cout<<__FUNCTION__<<": List of booked 1D profile histograms:"<<std::endl;
+  for (auto &h : profiles1D) {
+    std::cout<<std::left<<std::setw(50)<<std::setfill('.')
+	     <<h.first<<"T = "<<h.second->GetTitle()<<std::endl
+	     <<std::setfill(' ')<<std::right<<std::setw(50+4)
+	     <<"X = "<<std::left<<h.second->GetXaxis()->GetTitle()<<std::endl
+	     <<std::right<<std::setw(50+4)
+	     <<"Y = "<<std::left<<h.second->GetYaxis()->GetTitle()<<std::endl;
+  }
+  std::cout<<__FUNCTION__<<": List of booked 2D histograms:"<<std::endl;
+  for (auto &h : histos2D) {
+    std::cout<<std::left<<std::setw(50)<<std::setfill('.')
+	     <<h.first<<"T = "<<h.second->GetTitle()<<std::endl
+	     <<std::setfill(' ')<<std::right<<std::setw(50+4)
+	     <<"X = "<<std::left<<h.second->GetXaxis()->GetTitle()<<std::endl
+	     <<std::right<<std::setw(50+4)
+	     <<"Y = "<<std::left<<h.second->GetYaxis()->GetTitle()<<std::endl
+	     <<std::right<<std::setw(50+4)
+	     <<"Z = "<<std::left<<h.second->GetZaxis()->GetTitle()<<std::endl;
   }
 }
 ///////////////////////////////
@@ -599,7 +636,8 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     TLorentzVector alphaP4_DET_LAB(alpha_p_LAB*list.front().getTangent(), alphaMass+alpha_T_LAB);
     TLorentzVector carbonP4_DET_LAB(carbon_p_LAB*list.back().getTangent(), carbonMass+carbon_T_LAB);
     // boost P4 from DET/LAB frame to CMS frame (see TLorentzVector::Boost() convention!)
-    const TVector3 beta_DET_LAB=getBetaVectorOfCMS(myRangeCalculator.getIonMassMeV(IonRangeCalculator::OXYGEN_16));
+    const double oxygenMassGroundState=myRangeCalculator.getIonMassMeV(IonRangeCalculator::OXYGEN_16);
+    const TVector3 beta_DET_LAB=getBetaVectorOfCMS(oxygenMassGroundState);
     TLorentzVector alphaP4_CMS_DET(alphaP4_DET_LAB);
     TLorentzVector carbonP4_CMS_DET(carbonP4_DET_LAB);
     alphaP4_CMS_DET.Boost(-1.0*beta_DET_LAB); // see TLorentzVector::Boost for sign convention!
@@ -616,9 +654,10 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     TLorentzVector carbonP4_BEAM_CMS(carbonP4_CMS_DET.Py(), -carbonP4_CMS_DET.Pz(), -carbonP4_CMS_DET.Px(), carbonP4_CMS_DET.E());
     double alpha_T_CMS=alphaP4_BEAM_CMS.E()-alphaP4_BEAM_CMS.M(); // [MeV]
     double carbon_T_CMS=carbonP4_BEAM_CMS.E()-carbonP4_BEAM_CMS.M(); // [MeV]
-    double invariantMass=(alphaP4_BEAM_CMS+carbonP4_BEAM_CMS).M();// [MeV/c^2]
+    //    double invariantMass=(alphaP4_BEAM_CMS+carbonP4_BEAM_CMS).M();// [MeV/c^2]
     double totalEnergy_CMS=(alphaP4_BEAM_CMS+carbonP4_BEAM_CMS).E(); // [MeV], mass of stationary excited Oxygen state
     double oxygenMassExcited=totalEnergy_CMS;
+    double oxygenExcitationEnergy=oxygenMassExcited-oxygenMassGroundState;
     double Qvalue_CMS=oxygenMassExcited-alphaMass-carbonMass;
     histos1D["h_2prong_alpha_E_LAB"]->Fill(alpha_T_LAB);
     histos1D["h_2prong_carbon_E_LAB"]->Fill(carbon_T_LAB);
@@ -628,7 +667,7 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     histos1D["h_2prong_total_PyBEAM_CMS"]->Fill((alphaP4_BEAM_CMS+carbonP4_BEAM_CMS).Py());
     histos1D["h_2prong_total_PzBEAM_CMS"]->Fill((alphaP4_BEAM_CMS+carbonP4_BEAM_CMS).Pz());
     histos1D["h_2prong_total_E_CMS"]->Fill(totalEnergy_CMS);
-    histos1D["h_2prong_invMass"]->Fill(invariantMass);
+    histos1D["h_2prong_excitation_E_CMS"]->Fill(oxygenExcitationEnergy);
     histos1D["h_2prong_Qvalue_CMS"]->Fill(Qvalue_CMS);
 
     // calculate angles in CMS reference frame in BEAM coordinate system
@@ -665,7 +704,8 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     histos2D["h_3prong_vertexYZ"]->Fill(vertexPos.Y(), vertexPos.Z());
     profiles1D["h_3prong_vertexXY_prof"]->Fill(vertexPos.X(), vertexPos.Y());
 
-    const TVector3 beta_DET_LAB=getBetaVectorOfCMS(myRangeCalculator.getIonMassMeV(IonRangeCalculator::CARBON_12));
+    const double carbonMassGroundState=myRangeCalculator.getIonMassMeV(IonRangeCalculator::CARBON_12);
+    const TVector3 beta_DET_LAB=getBetaVectorOfCMS(carbonMassGroundState);
     const double alphaMass=myRangeCalculator.getIonMassMeV(IonRangeCalculator::ALPHA);
 
     // initialize array of track properties
@@ -783,16 +823,17 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     }
 
     // fill total sums
-    double invariantMass=sumP4_BEAM_CMS.M(); // [MeV]
+    //    double invariantMass=sumP4_BEAM_CMS.M(); // [MeV]
     double totalEnergy_CMS=sumP4_BEAM_CMS.E(); // [MeV], mass of stationary excited Carbon state
     double carbonMassExcited=totalEnergy_CMS;
+    double carbonExcitationEnergy=carbonMassExcited-carbonMassGroundState;
     double Qvalue_CMS=carbonMassExcited-massSUM;
     histos1D["h_3prong_lenSUM"]->Fill(lengthSUM);
     histos1D["h_3prong_total_PxBEAM_CMS"]->Fill(sumP4_BEAM_CMS.Px());
     histos1D["h_3prong_total_PyBEAM_CMS"]->Fill(sumP4_BEAM_CMS.Py());
     histos1D["h_3prong_total_PzBEAM_CMS"]->Fill(sumP4_BEAM_CMS.Pz());
     histos1D["h_3prong_total_E_CMS"]->Fill(totalEnergy_CMS);
-    histos1D["h_3prong_invMass"]->Fill(invariantMass);
+    histos1D["h_3prong_excitation_E_CMS"]->Fill(carbonExcitationEnergy);
     histos1D["h_3prong_Qvalue_CMS"]->Fill(Qvalue_CMS);
   }
   //////// DEBUG
@@ -810,31 +851,119 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
 ///////////////////////////////
 bool HIGGS_analysis::eventFilter(Track3D *aTrack){
 
-  return true; // always pass, no cuts
+  // print statistics on demand
+  const auto printAccepted=false; // TODO - TO BE PARAMETERIZED !!!
+  const auto printRejected=false; // TODO - TO BE PARAMETERIZED !!!
 
-  // reject empty events
-  TrackSegment3DCollection list = aTrack->getSegments();
-  if(list.size()==0) return false;
-  
-  // vertex cuts per event
-  TVector3 vertexPos = list.front().getStart();
-  if( fabs(vertexPos.Y()) > 6.0 ) return false;
-    
-  // endpoint cuts per track per event
-  for(auto &track: list) {  
-    if( fabs(track.getEnd().X()) > 160.0 ) return false;
-    //    if( fabs(track.getEnd().Y()) > 80.0 ) return false;
-  }
-  
-  // length correlation cuts per track pair per event
-  for(auto i=0u; i<list.size()-1; i++) {
-    for(auto j=i; j<list.size(); j++) {
-      if( fabs(list.at(i).getLength()*list.at(i).getTangent().Z() -
-	       list.at(j).getLength()*list.at(j).getTangent().Z()) > 180.0 ) return false;
-      if( list.at(i).getLength()+list.at(j).getLength() < 50.0 ) return false;
+  static TrackSegment3DCollection list;
+  static TVector3 vertexPos;
+  bool result=true;
+
+  // cut #1 :reject empty events
+  if(!aTrack || (list=aTrack->getSegments()).size()==0) {
+    result=false;
+    if(printRejected) {
+      std::cout<<KRED<<__FUNCTION__<<": REJECTED (empty event)"<<RST<<std::endl;
     }
   }
-  return true; // event passed all cuts
+
+  // cut #2 : XY plane : vertex position per event, corrected for beam tilt
+  if(result) {
+    vertexPos = list.front().getStart();
+    if( fabs( vertexPos.Y() - (beam_offset+beam_slope*vertexPos.X()) ) > 0.5*beam_diameter ) {
+      result=false;
+      if(printRejected) {
+	std::cout<<KRED<<__FUNCTION__<<": REJECTED (horizontal: vertex too far from beam axis)"<<RST<<std::endl;
+      }
+    }
+  }
+  
+  // cut #3 : XY plane : minimal distance to the border of UVW active area
+  // - less strict than simple XY rectangular cut, allows to gain some statistics
+  if(result) {
+    for(auto &track: list) {
+      if( !xyAreaCut.IsInside(track.getEnd().X(), track.getEnd().Y()) ||
+	  !xyAreaCut.IsInside(track.getStart().X(), track.getStart().Y()) ) {
+	result=false;
+	if(printRejected) {
+	  std::cout<<KRED<<__FUNCTION__<<": REJECTED (horizontal: track too close to UVW border)"<<RST<<std::endl;
+	}
+	break;
+      }
+    }
+  }
+  /*
+  // cut #3a : XY plane : rectangular cut per track
+  if(result) {
+    for(auto &track: list) {
+      if( fabs(track.getEnd().X()) > 160.0   || // TODO - TO BE PARAMETERIZED !!!
+	  fabs(track.getEnd().Y()) > 80.0    || // TODO - TO BE PARAMETERIZED !!!
+	  fabs(track.getStart().X()) > 160.0 || // TODO - TO BE PARAMETERIZED !!!
+	  fabs(track.getStart().Y()) > 80.0 ) { // TODO - TO BE PARAMETERIZED !!!
+	result=false;
+	if(printRejected) {
+	  std::cout<<KRED<<__FUNCTION__<<": REJECTED (horizontal: track outside acceptance rectangle)"<<RST<<std::endl;
+	}
+	break;
+      }
+    }
+  }
+  */
+
+  // cut #4 : global sum of 3D track lengths, ie. rough cut on minimal kinectic energy
+  if(result) {
+    auto length=0.0;
+    for(auto i=0u; i<list.size(); i++) {
+      length+=list.at(i).getLength();
+    }
+    if(length<50.0) { // TODO - TO BE PARAMETERIZED !!!
+      result=false;
+      if(printRejected) {
+	std::cout<<KRED<<__FUNCTION__<<": REJECTED (too low sum of track lengths)"<<RST<<std::endl;
+      }
+    }
+  }
+  
+  // cut #5 : global Z-span per event, verifies that:
+  // - vertical projection length is below physical drift cage length
+  // - tracks do not overlap with pedestal exclusion zone, begin of history buffer
+  // - tracks not too close to end of history buffer
+  if(result) {
+    auto zmin=list.at(0).getStart().Z(), zmax=zmin;
+    for(auto i=0u; i<list.size(); i++) {
+      zmin=std::min(zmin, (std::min(list.at(i).getStart().Z(), list.at(i).getEnd().Z())));
+      zmax=std::max(zmax, (std::max(list.at(i).getStart().Z(), list.at(i).getEnd().Z())));
+    }
+    if(!zRangeCut.IsInside(zmin, zmax)) {
+      result=false;
+      if(printRejected) {
+	std::cout<<KRED<<__FUNCTION__<<": REJECTED (vertical: too close to electronics limits / too close to drift cage height)"<<RST<<std::endl;
+      }
+    }
+  }
+
+  // cut #6 : Z-span wrt vertex per track per event, verifies that:
+  // - vertical distance of endpoint to vertex is less than half of drift cage height
+  //   corrected for maximal vertical beam spread
+  // - ensures that 2,3-prong events hit neither the GEM plane nor the cathode plane
+  // NOTE: does not protect against 1-prong events (eg. background) originating
+  //       from the GEM plane or the cathode plane
+  if(result) {
+    for(auto i=0u; i<list.size(); i++) {
+      if(fabs(list.at(i).getEnd().Z()-vertexPos.Z())>0.5*(myGeometryPtr->GetDriftCageZmax()-myGeometryPtr->GetDriftCageZmin()-beam_diameter)) {
+      result=false;
+	if(printRejected) {
+	  std::cout<<KRED<<__FUNCTION__<<": REJECTED (vertical: too long wrt vertex)"<<RST<<std::endl;
+	}
+	break;
+      }
+    }
+  }
+
+  if(printAccepted && result) {
+    std::cout<<KGRN<<__FUNCTION__<<": ACCEPTED"<<RST<<std::endl;
+  }
+  return result;
 }
 ///////////////////////////////
 ///////////////////////////////
@@ -864,8 +993,25 @@ void HIGGS_analysis::finalize(){
 ///////////////////////////////
 ///////////////////////////////
 void HIGGS_analysis::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
-  
   myGeometryPtr = aGeometryPtr;
+  if(!myGeometryPtr) {
+    std::cout<<KRED<<"HIGS_trees_analysis::setGeometry: "<<RST
+	     <<" pointer to TPC geometry not set!"
+	     <<std::endl;
+    exit(-1);
+  }
+}
+///////////////////////////////
+///////////////////////////////
+void HIGGS_analysis::setCuts(){
+
+  // set safety margin around UVW active area
+  xyAreaCut.initialize(myGeometryPtr, 5.0); // TODO - TO BE PARAMETERIZED
+
+  // set allowed window in time cells:
+  // - event starts >25 time cells for unibiased pedestal calculation (0-25 zone)
+  // - event ends >5 time cells from the end of history buffer
+  zRangeCut.initialize(myGeometryPtr, 25, 5); // TODO - TO BE PARAMETERIZED
 }
 ///////////////////////////////
 ///////////////////////////////
@@ -873,6 +1019,9 @@ void HIGGS_analysis::setBeamProperties(float beamEnergyInMeV, // nominal gamma b
 				       TVector3 beamDir) { // nominal gamma beam direction in LAB reference frame and detector coordinate system
   photonEnergyInMeV_LAB = fabs(beamEnergyInMeV);
   photonUnitVec_DET_LAB = beamDir.Unit();
+  beam_slope=tan(3.0e-3); // [rad], measured slope: Y_DET(X_DET)=offset+slope*X_DET
+  beam_offset=-1.3; // [mm], measured offset: Y_DET of beam axis at X_DET=0
+  beam_diameter=12.0; // [mm] // TODO - TO BE PARAMETERIZED !!!
 }
 ///////////////////////////////
 ///////////////////////////////
