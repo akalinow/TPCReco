@@ -10,7 +10,7 @@ def analyzeSingleBatch(runId, fileCSV, geometryFile, command):
 
     outputName = runId + ".out"
     
-    runId = runId[:-9]
+    runId = runId[:-10]
     if not os.path.isdir(runId):
         os.mkdir(runId)
 
@@ -28,7 +28,7 @@ def analyzeSingleBatch(runId, fileCSV, geometryFile, command):
 def analyzeDataInDirectory(dataPath, geometryFile, procName):
     
     command = "../../bin/"+procName
-    procCount = 2
+    procCount = 4
 
     runDataList = getCSVinputList(dataPath)
 

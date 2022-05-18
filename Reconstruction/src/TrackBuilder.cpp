@@ -44,8 +44,8 @@ TrackBuilder::TrackBuilder() {
   aHoughOffest.SetY(50.0);
   aHoughOffest.SetZ(0.0);
 
-  //mydEdxFitter.setPressure(190);
-  mydEdxFitter.setPressure(130);
+  mydEdxFitter.setPressure(190);
+  //mydEdxFitter.setPressure(130);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -363,7 +363,7 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   int nHits_V = segmentV.getNAccumulatorHits();
   int nHits_W = segmentW.getNAccumulatorHits();
 
-  if(!nHits_U && !nHits_V && !nHits_W) return a3DSeed;
+  if(nHits_U*nHits_V*nHits_W==0) return a3DSeed;
 
   double bias_time = (segmentU.getMinBias().X()*(nHits_U>0) +
 		      segmentV.getMinBias().X()*(nHits_V>0) +
@@ -629,24 +629,28 @@ Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
 
   pid_type eventType = mydEdxFitter.getBestFitEventType();
   bool isReflected = mydEdxFitter.getIsReflected();
-  //double alphaRange = mydEdxFitter.getAlphaRange();
+  double vertexOffset = mydEdxFitter.getVertexOffset();
+  double alphaRange = mydEdxFitter.getAlphaRange();
   double carbonRange = mydEdxFitter.getCarbonRange();
 
-  TVector3 alphaEnd =  aSegment.getEnd();
-  TVector3 carbonEnd =  aSegment.getStart();
   TVector3 tangent =  aSegment.getTangent();
+  TVector3 start =  aSegment.getStart();
+  
   if(isReflected){
-    std::swap(alphaEnd, carbonEnd);
     tangent *=-1;
+    start = aSegment.getEnd();
   }
-  const TVector3 vertex = carbonEnd + carbonRange*tangent;
+
+  TVector3 vertexPos =  start + vertexOffset*tangent;
+  TVector3 alphaEnd =  vertexPos + alphaRange*tangent;
+  TVector3 carbonEnd =  vertexPos - carbonRange*tangent;
 
   Track3D aSplitTrackCandidate;
   aSplitTrackCandidate.setChargeProfile(mydEdxFitter.getFittedHisto());
   aSplitTrackCandidate.setHypothesisFitChi2(mydEdxFitter.getChi2());
   TrackSegment3D alphaSegment;
   alphaSegment.setGeometry(myGeometryPtr);  
-  alphaSegment.setStartEnd(vertex, alphaEnd);
+  alphaSegment.setStartEnd(vertexPos, alphaEnd);
   alphaSegment.setRecHits(myRecHits);
   alphaSegment.setPID(pid_type::ALPHA);
   aSplitTrackCandidate.addSegment(alphaSegment);
@@ -654,7 +658,7 @@ Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
   if(eventType==C12_ALPHA){   
     TrackSegment3D carbonSegment;
     carbonSegment.setGeometry(myGeometryPtr);  
-    carbonSegment.setStartEnd(vertex, carbonEnd);
+    carbonSegment.setStartEnd(vertexPos, carbonEnd);
     carbonSegment.setRecHits(myRecHits);
     carbonSegment.setPID(pid_type::CARBON_12);
     aSplitTrackCandidate.addSegment(carbonSegment);
@@ -662,6 +666,7 @@ Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
 
   std::cout<<KBLU<<"Post-split: "<<RST<<std::endl;
   std::cout<<aSplitTrackCandidate<<std::endl;
+ 
   return aSplitTrackCandidate;
 }
 /////////////////////////////////////////////////////////

@@ -160,7 +160,6 @@ public:
   TrackBuilder myTkBuilder;
   RecoOutput myRecoOutput;
   DotFinder myDotFinder;
-  dEdxFitter mydEdxFitter;
 
   std::shared_ptr<EventTPC> myEventPtr;
   std::shared_ptr<eventraw::EventInfo> myEventInfo;

@@ -35,7 +35,6 @@ HistoManager::HistoManager() {
   myEventPtr = 0;
   myEventInfo = std::make_shared<eventraw::EventInfo>();
   myRecoOutput.setEventInfo(myEventInfo);
-  mydEdxFitter.setPressure(190);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -885,7 +884,7 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   hChargeProfile.SetMarkerSize(1.0);
   hChargeProfile.SetMarkerStyle(20);
 
-  //double maxCharge = hAlphaChargeProfile.GetMaximum();
+  //double maxCharge = hChargeProfile.GetMaximum();
   //maxCharge = std::max(maxCharge, hCarbonChargeProfile.GetMaximum());
   //maxCharge = 1.0;
   //hFrame.SetMaximum(1.1*maxCharge);
@@ -933,11 +932,11 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   double carbonEnergy = myRangeCalculator.getIonEnergyMeV(pid_type::CARBON_12,carbonRange);
   
   TLatex aLatex;
-  double x = -0.2*aTrack3D.getLength();
-  double y = 1.12;
-  aLatex.DrawLatex(x,y,TString::Format("Total length [mm]: %3.0f",aTrack3D.getLength()));
-  y = 1.06;
-  aLatex.DrawLatex(x,y,TString::Format("Total E [MeV]:     %2.1f",alphaEnergy+carbonEnergy));
+  double x = 0.1;
+  double y = 0.91;
+  aLatex.DrawLatexNDC(x,y,TString::Format("Total length [mm]: %3.0f",aTrack3D.getLength()));
+  y = 0.95;
+  aLatex.DrawLatexNDC(x,y,TString::Format("Total E [MeV]:        %2.1f",alphaEnergy+carbonEnergy));
   
   CoordinateConverter myConv;
   std::cout<<myConv<<std::endl;

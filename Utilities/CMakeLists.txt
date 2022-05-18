@@ -26,6 +26,7 @@ include_directories(${PROJECT_SOURCE_DIR}/DataFormats/include)
 #
 add_executable(grawls bin/grawls.cpp)
 add_library(${MODULE_NAME} SHARED ${sources})
+
 target_link_libraries(${MODULE_NAME} PUBLIC ${ROOT_LIBRARIES} DataFormats Boost::filesystem)
 target_link_libraries(grawls PRIVATE ${MODULE_NAME} Boost::program_options)
 # Compiler flags.

@@ -421,7 +421,7 @@ std::ostream & operator << (std::ostream &out, const Track3D &aTrack){
   }
   */
   out<<"\t Total track length: "<<aTrack.getLength()<<std::endl;
-  out<<"\t Total track chi2: "<<aTrack.getChi2()<<std::endl;
+  out<<"\t Total track fit loss func.: "<<aTrack.getChi2()<<std::endl;
   out<<KBLU<<"-----------------------------------"<<RST<<std::endl;
   return out;
 }

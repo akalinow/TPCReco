@@ -14,7 +14,7 @@ void makePlots(std::string fileName){
   TFile *aFile = new TFile(fileName.c_str());
   TTree *trackTree = (TTree*)aFile->Get("trackTree");
 
-  TH1D *hEnergy = new TH1D("hEnergy", "#alpha + ^{12}C energy;E(#alpha + ^{12}C) [MeV]; Number of events",40,1,9);
+  TH1D *hEnergy = new TH1D("hEnergy", "#alpha + ^{12}C energy;E(#alpha + ^{12}C) [MeV]; Number of events",60,3,9);
   TH1D *hEnergyCut2 = (TH1D*)hEnergy->Clone("hEnergyCut2");
   TH1D *hEnergyCut3 = (TH1D*)hEnergy->Clone("hEnergyCut3");
 
@@ -51,6 +51,8 @@ void makePlots(std::string fileName){
   TH3D *hVtxYCorrCut1 = (TH3D*)hVtxXYZ->Clone("hVtxYCorrCut1");
   TH3D *hAlphaEndXYZCut1 = (TH3D*)hVtxXYZ->Clone("hAlphaEndXYZCut1");
 
+  TH2D *hAlphaEndPolar = new TH2D("hAlphaEndPolar","",36, -M_PI, M_PI, 20, 0, 100);
+
   TH1D *hChi2 = new TH1D("hChi2","Track loss function;loss function;Number of events",60,-10,20);
   hChi2->SetStats(kFALSE);
   TH1D *hChi2Cut0 = (TH1D*)hChi2->Clone("hChi2Cut0");
@@ -67,8 +69,8 @@ void makePlots(std::string fileName){
   TH1D *hCosThetaCut1 = (TH1D*)hCosTheta->Clone("hCosThetaCut1");
   
 
-  std::string qualityCut = "chi2<10 && charge>1000 && length>20 && eventType==3 && hypothesisChi2<5";
-  std::string fiducialXYCut = "abs(xAlphaEnd)<160 && abs(yAlphaEnd)<800 && abs(xCarbonEnd)<160 && abs(yCarbonEnd)<800";
+  std::string qualityCut = "chi2<10 && charge>1000 && length>30 && eventType==3 && hypothesisChi2<1";
+  std::string fiducialXYCut = "abs(xAlphaEnd)<160 && abs(yAlphaEnd)<80 && abs(xCarbonEnd)<160 && abs(yCarbonEnd)<80";
   std::string fiducialZCut = "abs(zCarbonEnd - zAlphaEnd)<180";
   std::string vertexCut = "abs(yVtx+2)<6";
   
@@ -81,11 +83,11 @@ void makePlots(std::string fileName){
   cut1 += std::string("&&")+fiducialZCut;
 
   std::string cut2 = cut1;
-  std::string lengthCut = "length<60";
+  std::string lengthCut = "length<90";
   cut2 += std::string("&&")+lengthCut;
 
   std::string cut3 = cut1;
-  lengthCut = "length>60";
+  lengthCut = "length>90 && carbonRange<15";
   cut3 += std::string("&&")+lengthCut;
 
   std::string cut4 = cut1;
@@ -119,6 +121,8 @@ void makePlots(std::string fileName){
   trackTree->Draw("phi>>hPhiRaw",cut1.c_str(), "goff");
   trackTree->Draw("cosTheta>>hCosThetaCut1",cut1.c_str(), "goff");  
   trackTree->Draw("yAlphaEnd-yVtx:zAlphaEnd-zVtx:xAlphaEnd-xVtx>>hAlphaEndXYZCut1",cut1.c_str(), "goff");
+  trackTree->Draw("sqrt(pow(zAlphaEnd-zVtx,2) + pow(yAlphaEnd-yVtx,2)):atan2(zAlphaEnd-zVtx, yAlphaEnd-yVtx)>>hAlphaEndPolar",cut1.c_str(), "goff");
+  
   
   trackTree->Draw("hypothesisChi2>>hChi2Cut0",cut0.c_str(), "goff");
   trackTree->Draw("hypothesisChi2>>hChi2Cut1",cut1.c_str(), "goff");
@@ -150,15 +154,6 @@ void makePlots(std::string fileName){
   TFitResultPtr aFitPtr = hProfile->Fit("pol1","RS","",-150,150);
   double vtxCorr_p0 = aFitPtr->GetParams()[0];
   double vtxCorr_p1 = aFitPtr->GetParams()[1];
-  std::stringstream aStringStream;
-  aStringStream<<"("<<vtxCorr_p0<<"+"<<vtxCorr_p1<<"*xVtx)";
-  double beamAngle = atan(vtxCorr_p1);
-  std::string yCorrString = aStringStream.str();
-  std::string columns = "0:yVtx-"+yCorrString+":0>>hVtxYCorrCut1";  
-  trackTree->Draw(columns.c_str(),cut0.c_str(), "goff");
-  columns = "atan2(zAlphaEnd-zVtx,-(xAlphaEnd-xVtx)*sin(0.00315905) + (yAlphaEnd-yVtx)*cos(0.00315905))";
-  columns +=">>hPhiCorr";
-  trackTree->Draw(columns.c_str(),cut1.c_str(), "goff");
   ////////////////////////////////
   aCanvas->cd(3);
   gPad->SetLeftMargin(0.12);
@@ -205,7 +200,6 @@ void makePlots(std::string fileName){
   hLengthCut0->SetLineColor(1);
   hLengthCut0->SetLineStyle(2);
   hLengthCut0->SetLineWidth(3);
-  hLengthCut0->SetMaximum(100*hLengthCut0->GetMaximum());
   hLengthCut0->GetXaxis()->SetRangeUser(50,200);
   hLengthCut0->Draw("");
 
@@ -214,15 +208,10 @@ void makePlots(std::string fileName){
   hLengthCut1->SetLineStyle(2);
   hLengthCut1->SetLineWidth(3); 
   hLengthCut1->SetStats(kTRUE);
-  hLengthCut1->SetMaximum(100*hLengthCut1->GetMaximum());
   hLengthCut1->Draw("same");
   hLengthCut0->Draw("same");
   hLengthCut1->Draw();
   gPad->SetLogy();
-
-  aLeg = new TLegend(0.1, 0.63, 0.6, 0.9);
-  aLeg->AddEntry(hLengthCut1, "#splitline{|yVtx-yBeam|<6}{#splitline{|tk. end_{X}|<160}{|C_{Z} - #alpha_{Z}|<180}}","l");
-  aLeg->Draw();
   ////////////////////////////////  
   aCanvas->cd(2);
   gPad->SetLeftMargin(0.12);
@@ -232,8 +221,7 @@ void makePlots(std::string fileName){
   hAlphaRangeCut1->SetLineColor(4);
   hAlphaRangeCut1->SetLineWidth(3);
   hAlphaRangeCut1->SetStats(kTRUE);
-  hAlphaRangeCut1->SetMaximum(1.5*hAlphaRangeCut1->GetMaximum());
-  hAlphaRangeCut1->GetXaxis()->SetRangeUser(10,110);
+  hAlphaRangeCut1->GetXaxis()->SetRangeUser(50,110);
   hAlphaRangeCut1->Draw("");
   ////////////////////////////////
   
@@ -244,7 +232,6 @@ void makePlots(std::string fileName){
   hCarbonRangeCut1->SetTitle("^{12}C track length");
   hCarbonRangeCut1->SetLineColor(4);
   hCarbonRangeCut1->SetLineWidth(3);
-  hCarbonRangeCut1->SetMaximum(1.5*hCarbonRangeCut1->GetMaximum());
   hCarbonRangeCut1->GetXaxis()->SetRangeUser(0,25);
   hCarbonRangeCut1->Draw("");
   ////////////////////////////////
@@ -258,25 +245,27 @@ void makePlots(std::string fileName){
   hEnergyCut2->SetMaximum(0.4);
   hEnergyCut2->Fit("gaus","");
   hEnergyCut2->Draw("");
+  TF1 *fitFunc = (TF1*)hEnergyCut2->FindObject("gaus");
+  fitFunc->SetLineColor(4);
   gPad->Update();
 
   hEnergyCut3->SetLineWidth(2);
   hEnergyCut3->SetLineColor(2);
   hEnergyCut3->Scale(1.0/hEnergyCut3->Integral());
-  hEnergyCut3->SetMaximum(0.4);
+  hEnergyCut3->SetMaximum(0.3);
   hEnergyCut3->Fit("gaus","");
   hEnergyCut3->Draw("");
   gPad->Update();
   TPaveStats *st2 = (TPaveStats*)hEnergyCut3->FindObject("stats");
-  if(st2){
-    st2->SetY1NDC(0.55);
-    st2->SetY2NDC(0.7);
-  }
+  st2->SetY1NDC(0.55);
+  st2->SetY2NDC(0.7);
+  
   hEnergyCut2->Draw("same");
 
-  aLeg = new TLegend(0.1, 0.7, 0.6, 0.9);
-  aLeg->AddEntry(hEnergyCut2, "#alpha+C length<60 mm","l");
-  aLeg->AddEntry(hEnergyCut3, "#alpha+C length>60 mm","l");
+  aLeg = new TLegend(0.6, 0.25,0.98, 0.45);
+  aLeg->SetHeader("d(^{12}C)<15 mm");
+  aLeg->AddEntry(hEnergyCut2, "d(#alpha+^{12}C)<90 mm","l");
+  aLeg->AddEntry(hEnergyCut3, "d(#alpha+^{12}C)>90 mm","l");
   aLeg->Draw();
   ////////////////
   aCanvas->Print("Plots_set1.png");
@@ -321,10 +310,14 @@ void makePlots(std::string fileName){
   hProj->DrawCopy("colz");
 
   ////////////////////////////////
-  aCanvas->cd(3);
+  aCanvas->cd(4);
   gPad->SetLeftMargin(0.12);
   gPad->SetRightMargin(0.12);
+  gPad->SetTheta(90.);
+  gPad->SetPhi(0.);
 
+  hAlphaEndPolar->SetTitle("#alpha track endpoint wrt. vertex in polar coordinates.");
+  hAlphaEndPolar->Draw("lego2 pol");
   ////////////////
   aCanvas->Print("Plots_set2.png");
   ////////////////
@@ -340,15 +333,15 @@ void makePlots(std::string fileName){
 
   hEnergyVsCosThetaCut2->GetYaxis()->SetRangeUser(2.5,3.5);
   hEnergyVsCosThetaCut3->SetTitle("#alpha+C length<100 mm");
-  //hEnergyVsCosThetaCut2->Draw("colz");
+  hEnergyVsCosThetaCut2->Draw("colz");
 
   ////////////////////////////////
   aCanvas->cd(2);
   gPad->SetLeftMargin(0.12);
   gPad->SetRightMargin(0.12);
 
-  hEnergyVsCosThetaCut3->GetYaxis()->SetRangeUser(2,3.5);
-  hEnergyVsCosThetaCut3->SetTitle("#alpha+C length>60 mm");
+  hEnergyVsCosThetaCut3->GetYaxis()->SetRangeUser(3.5,4.5);
+  hEnergyVsCosThetaCut3->SetTitle("#alpha+C length>100 mm");
   hEnergyVsCosThetaCut3->Draw("colz");
 
   ////////////////////////////////
@@ -358,8 +351,8 @@ void makePlots(std::string fileName){
 
   hProfile = hEnergyVsCosThetaCut2->ProfileX();
   hProfile->SetYTitle("#alpha energy [MeV]");
-  //hProfile->Fit("pol1");
-  //hProfile->Draw();
+  hProfile->Fit("pol1");
+  hProfile->Draw();
 
   ////////////////////////////////
   aCanvas->cd(4);
@@ -373,7 +366,7 @@ void makePlots(std::string fileName){
   
   aCanvas->Print("Plots_set3.png");
   ////////////////
-  //return;
+  return;
   ////////////////
   aCanvas->Clear();
   aCanvas->Divide(2,2);
@@ -388,30 +381,8 @@ void makePlots(std::string fileName){
   gPad->SetLeftMargin(0.12);
   gPad->SetRightMargin(0.12);
   
-  hAlphaRangeCut4->SetTitle("#alpha track length");
-  hAlphaRangeCut4->SetLineColor(4);
-  hAlphaRangeCut4->SetLineWidth(3);
-  hAlphaRangeCut4->SetStats(kTRUE);
-  hAlphaRangeCut4->SetMaximum(1.5*hAlphaRangeCut4->GetMaximum());
-  hAlphaRangeCut4->GetXaxis()->SetRangeUser(20,80);
-  hAlphaRangeCut4->DrawNormalized("");
-
-  hAlphaRangeCut5->SetLineColor(8);
-  hAlphaRangeCut5->SetLineWidth(3);
-  hAlphaRangeCut5->SetLineStyle(3);
-  hAlphaRangeCut5->DrawNormalized("same");
-
-  aLeg = new TLegend(0.5, 0.75, 0.85, 0.9);
-  aLeg->AddEntry(hAlphaRangeCut4, "^{12}C range<16 mm","l");
-  aLeg->AddEntry(hAlphaRangeCut5, "^{12}C range>16 mm","l");
-  aLeg->Draw();
-  ////////////////////////////////  
-  aCanvas->cd(2);
-  gPad->SetLeftMargin(0.12);
-  gPad->SetRightMargin(0.12);
-
-  hLength2DCut1->GetXaxis()->SetRangeUser(20,80);
-  hLength2DCut1->GetYaxis()->SetRangeUser(5,25);
+  hLength2DCut1->GetXaxis()->SetRangeUser(50,110);
+  hLength2DCut1->GetYaxis()->SetRangeUser(0,20);
   hLength2DCut1->SetXTitle("#alpha range [mm]");
   hLength2DCut1->SetYTitle("^{12}C range [mm]");
   hLength2DCut1->Draw("colz");

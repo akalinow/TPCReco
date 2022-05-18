@@ -6,11 +6,9 @@
 ////////////////////////////////////////////
 CoordinateConverter::CoordinateConverter(double aPhi, double aTheta, double aPsi){
 
-  detToNominalBeamRotation.SetXEulerAngles(M_PI/2.0, -M_PI/2.0, 0.0);
+  detToNominalBeamRotation.SetXEulerAngles(-M_PI/2.0, M_PI/2.0, 0.0);
   nominalToActualBeamRotation.SetXEulerAngles(aPhi, aTheta, aPsi);
   totalRotation = nominalToActualBeamRotation*detToNominalBeamRotation;
-  /*
-   */
     
 }
 ////////////////////////////////////////////

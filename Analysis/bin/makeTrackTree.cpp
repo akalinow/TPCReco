@@ -130,7 +130,7 @@ int main(int argc, char **argv){
   aStopwatch.Stop();
   std::cout<<KBLU<<"Real time:       "<<RST<<aStopwatch.RealTime()<<" s"<<std::endl;
   std::cout<<KBLU<<"CPU time:        "<<RST<<aStopwatch.CpuTime()<<" s"<<std::endl;
-  std::cout<<KBLU<<"Processing rate: "<<RST<<nEntriesProcessed/aStopwatch.RealTime()<< " ev./s"<<std::endl;
+  std::cout<<KBLU<<"Processing rate: "<<RST<<nEntriesProcessed/aStopwatch.RealTime()<< " ev/s"<<std::endl;
 
   return 0;
 }
@@ -213,17 +213,19 @@ int makeTrackTree(const  std::string & geometryFileName,
 
   //Event loop
   unsigned int nEntries = myEventSource->numberOfEntries();
-  nEntries = 100;
+  //nEntries = 200;
   for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
     if(nEntries>10 && iEntry%(nEntries/10)==0){
       std::cout<<KBLU<<"Processed: "<<int(100*(double)iEntry/nEntries)<<" % events"<<RST<<std::endl;
     }
     myEventSource->loadFileEntry(iEntry);
+    /*
     myEventSource->getCurrentEvent()->MakeOneCluster(35, 0, 0);
     if(myEventSource->getCurrentEvent()->GetOneCluster().GetNhits()>20000){
       std::cout<<KRED<<"Noisy event - skipping."<<RST<<std::endl;
       continue;
-    }
+      }
+    */
     
     myTkBuilder.setEvent(myEventSource->getCurrentEvent());
     myTkBuilder.reconstruct();
@@ -245,7 +247,7 @@ int makeTrackTree(const  std::string & geometryFileName,
     const TVector3 & carbonEnd = aTrack3D.getSegments().back().getEnd();
     
     const TVector3 & tangent = aTrack3D.getSegments().front().getTangent();
-    double phi = atan2(tangent.Z(),-tangent.Y());
+    double phi = atan2(-tangent.Z(), tangent.Y());
     double cosTheta = -tangent.X();
 
     TVector3 horizontal(0,-1,0);
