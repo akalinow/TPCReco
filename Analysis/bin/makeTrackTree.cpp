@@ -14,7 +14,6 @@
 #include "IonRangeCalculator.h"
 #include "dEdxFitter.h"
 #include "TrackBuilder.h"
-#include "HistoManager.h"
 #include "EventSourceROOT.h"
 #ifdef WITH_GET
 #include "EventSourceGRAW.h"
@@ -192,10 +191,6 @@ int makeTrackTree(const  std::string & geometryFileName,
   dEdxFitter mydEdxFitter;
   IonRangeCalculator myRangeCalculator(gas_mixture_type::CO2,190.0,293.15);
 
-  HistoManager myHistoManager;
-  myHistoManager.setGeometry(myEventSource->getGeometry());
-  myHistoManager.toggleAutozoom();
-
   RecoOutput myRecoOutput;
   std::string fileName = InputFileHelper::tokenize(dataFileName)[0];
   std::size_t last_dot_position = fileName.find_last_of(".");
@@ -213,7 +208,7 @@ int makeTrackTree(const  std::string & geometryFileName,
 
   //Event loop
   unsigned int nEntries = myEventSource->numberOfEntries();
-  //nEntries = 200;
+  nEntries = 500;
   for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
     if(nEntries>10 && iEntry%(nEntries/10)==0){
       std::cout<<KBLU<<"Processed: "<<int(100*(double)iEntry/nEntries)<<" % events"<<RST<<std::endl;

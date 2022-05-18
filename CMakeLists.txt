@@ -108,21 +108,23 @@ endif()
 set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 
 #Framework packages
+set(TPCRECO_PREFIX "libTPC")
+set(TPCRECO_LIBRARIES "")
+
 add_subdirectory(DataFormats)
-add_subdirectory(GrawToROOT) 
 add_subdirectory(Utilities)
+add_subdirectory(GrawToROOT) 
 add_subdirectory(Reconstruction)
-add_subdirectory(GUI)
 add_subdirectory(Analysis)
+add_subdirectory(GUI)
 add_subdirectory(ToyMC)
 option(BUILD_MC "build MC tools" OFF)
 if(BUILD_MC)
   add_subdirectory(TrackGenerator)
 endif()
-# Now comes everything we need, to create a package
-# there are a lot more variables you can set, and some
-# you need to set for some package types, but we want to
-# be minimal here.
+
+MESSAGE(STATUS "TPCReco libraries:" ${TPCRECO_LIBRARIES})
+
 set(CPACK_PACKAGE_NAME "TPCSoft")
 set(CPACK_PACKAGE_VERSION "1.0.0")
 

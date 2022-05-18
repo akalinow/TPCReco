@@ -1,5 +1,7 @@
 set(MODULE_NAME "Utilities")
 MESSAGE( STATUS "Adding CMake fragment for module:         " ${MODULE_NAME} )
+set(TPCRECO_LIBRARIES_LOCAL ${TPCRECO_LIBRARIES})
+set(TPCRECO_LIBRARIES ${TPCRECO_LIBRARIES} ${TPCRECO_PREFIX}${MODULE_NAME} PARENT_SCOPE)
 
 ###############################################################################
 ## file globbing ##############################################################
@@ -26,12 +28,15 @@ include_directories(${PROJECT_SOURCE_DIR}/DataFormats/include)
 #
 add_executable(grawls bin/grawls.cpp)
 add_library(${MODULE_NAME} SHARED ${sources})
+add_library(${TPCRECO_PREFIX}${MODULE_NAME} ALIAS ${MODULE_NAME})
+set_target_properties(${MODULE_NAME} PROPERTIES PREFIX ${TPCRECO_PREFIX})
 
-target_link_libraries(${MODULE_NAME} PUBLIC ${ROOT_LIBRARIES} DataFormats Boost::filesystem)
-target_link_libraries(grawls PRIVATE ${MODULE_NAME} Boost::program_options)
 # Compiler flags.
 #
 target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
+
+target_link_libraries(${MODULE_NAME} PUBLIC ${TPCRECO_LIBRARIES_LOCAL} ${ROOT_LIBRARIES} Boost::filesystem)
+target_link_libraries(grawls PRIVATE ${MODULE_NAME} ${TPCRECO_LIBRARIES_LOCAL} Boost::program_options)
 
 # All install commands get the same destination. this allows us to use paths
 # relative to the executable.

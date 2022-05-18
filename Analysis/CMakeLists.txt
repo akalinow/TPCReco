@@ -1,5 +1,7 @@
 set(MODULE_NAME "Analysis")
 MESSAGE( STATUS "Adding CMake fragment for module:         " ${MODULE_NAME} )
+set(TPCRECO_LIBRARIES_LOCAL ${TPCRECO_LIBRARIES})
+set(TPCRECO_LIBRARIES ${TPCRECO_LIBRARIES} ${TPCRECO_PREFIX}${MODULE_NAME}  PARENT_SCOPE)
 
 ###############################################################################
 ## file globbing ##############################################################
@@ -25,8 +27,9 @@ include_directories(${PROJECT_SOURCE_DIR}/Utilities/include)
 ## target definitions #########################################################
 ###############################################################################
 add_library(${MODULE_NAME} SHARED ${sources})
+add_library(${TPCRECO_PREFIX}${MODULE_NAME} ALIAS ${MODULE_NAME})
+set_target_properties(${MODULE_NAME} PROPERTIES PREFIX ${TPCRECO_PREFIX})
 
-add_executable(analysis_IFJ_VdG  bin/analysis_IFJ_VdG.cpp)
 add_executable(makeTrackTree  bin/makeTrackTree.cpp)
 add_executable(recoEventsAnalysis  bin/recoEventsAnalysis.cpp)
 add_executable(recoEventsComparison  bin/recoEventsComparison.cpp)
@@ -34,21 +37,18 @@ add_executable(recoEventsComparison  bin/recoEventsComparison.cpp)
 # Compiler flags.
 #
 target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
-target_compile_options(analysis_IFJ_VdG PUBLIC ${CMAKE_ROOT_CFLAGS})
 target_compile_options(makeTrackTree PUBLIC ${CMAKE_ROOT_CFLAGS})
 target_compile_options(recoEventsAnalysis PUBLIC ${CMAKE_ROOT_CFLAGS})
 target_compile_options(recoEventsComparison PUBLIC ${CMAKE_ROOT_CFLAGS})
 
-target_link_libraries(${MODULE_NAME} DataFormats Reconstruction ${GRAW_TO_ROOT_LIBRARY} ${ROOT_LIBRARIES})
-target_link_libraries(analysis_IFJ_VdG PUBLIC DataFormats Utilities Reconstruction GUI ${Boost_LIBRARIES} ${MODULE_NAME})
-target_link_libraries(makeTrackTree PUBLIC DataFormats ${GRAW_TO_ROOT_LIBRARY} Utilities Reconstruction GUI ${Boost_LIBRARIES} ${MODULE_NAME})
-target_link_libraries(recoEventsAnalysis PUBLIC DataFormats ${GRAW_TO_ROOT_LIBRARY} Utilities Reconstruction GUI ${Boost_LIBRARIES} ${MODULE_NAME})
-target_link_libraries(recoEventsComparison PUBLIC DataFormats ${GRAW_TO_ROOT_LIBRARY} Utilities Reconstruction GUI ${Boost_LIBRARIES} ${MODULE_NAME})
+target_link_libraries(${MODULE_NAME} ${TPCRECO_LIBRARIES_LOCAL} ${ROOT_LIBRARIES})
+target_link_libraries(makeTrackTree PUBLIC ${TPCRECO_LIBRARIES} ${Boost_LIBRARIES} ${MODULE_NAME})
+target_link_libraries(recoEventsAnalysis PUBLIC  ${TPCRECO_LIBRARIES} ${Boost_LIBRARIES} ${MODULE_NAME})
+target_link_libraries(recoEventsComparison PUBLIC ${TPCRECO_LIBRARIES} ${Boost_LIBRARIES} ${MODULE_NAME})
 
 # All install commands get the same destination. this allows us to use paths
 # relative to the executable.
 install(TARGETS ${MODULE_NAME} LIBRARY DESTINATION lib)
-install(TARGETS analysis_IFJ_VdG RUNTIME DESTINATION bin)
 install(TARGETS makeTrackTree RUNTIME DESTINATION bin)
 install(TARGETS recoEventsAnalysis RUNTIME DESTINATION bin)
 install(TARGETS recoEventsComparison RUNTIME DESTINATION bin)

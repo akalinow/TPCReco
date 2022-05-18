@@ -10,7 +10,7 @@ def analyzeSingleBatch(runId, fileCSV, geometryFile, command):
 
     outputName = runId + ".out"
     
-    runId = runId[:-10]
+    runId = runId[:-9]
     if not os.path.isdir(runId):
         os.mkdir(runId)
 
