@@ -309,7 +309,7 @@ TH1F TrackSegment3D::getChargeProfile() const{
   hChargeProfile.SetDirectory(0);
   if(getLength()<1) return hChargeProfile;
 
-  int maxPoints = 0;
+  int maxPoints = 1;
   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
     TGraphErrors & aGraph = projections[strip_dir];
     if(aGraph.GetN()>maxPoints) maxPoints = aGraph.GetN();

@@ -147,9 +147,7 @@ void TrackBuilder::reconstruct(){
   aTrackCandidate.extendToChamberRange(xyRange, myZRange);
 
   aTrackCandidate = fitTrack3D(aTrackCandidate);
-  if(aTrackCandidate.getLength()>20 && aTrackCandidate.getLength()<300){
-    aTrackCandidate = fitEventHypothesis(aTrackCandidate);
-  }
+  aTrackCandidate = fitEventHypothesis(aTrackCandidate);
   myFittedTrack = aTrackCandidate;
 }
 /////////////////////////////////////////////////////////
@@ -623,8 +621,8 @@ Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
 
   const TrackSegment3D & aSegment = aTrackCandidate.getSegments().front();
   TH1F hChargeProfile = aSegment.getChargeProfile();
-  
-  hChargeProfile.Scale(1.0/hChargeProfile.GetMaximum());
+
+  if(hChargeProfile.GetMaximum()) hChargeProfile.Scale(1.0/hChargeProfile.GetMaximum());
   mydEdxFitter.fitHisto(hChargeProfile);
 
   pid_type eventType = mydEdxFitter.getBestFitEventType();

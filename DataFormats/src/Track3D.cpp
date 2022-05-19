@@ -227,6 +227,7 @@ void Track3D::splitSegment(unsigned int iSegment, double lenghtFraction){
 void Track3D::extendToChamberRange(const std::tuple<double, double, double, double> & xyRange,
 				   const std::tuple<double, double> & zRange){
 
+  if(getLength()<1) return;
   bool extended = extendToZRange(std::get<0>(zRange),std::get<1>(zRange));
 
   if(!extended){

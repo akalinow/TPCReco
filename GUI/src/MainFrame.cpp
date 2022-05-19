@@ -257,7 +257,6 @@ void MainFrame::InitializeEventSource(){
   if(myWorkMode!=M_ONLINE_GRAW_MODE && myWorkMode!=M_ONLINE_NGRAW_MODE){
     myEventSource->loadDataFile(dataFileName);
     myEventSource->loadFileEntry(0);
-    //myEventSource->loadFileEntry(8);//TEST
   }
   myHistoManager.setGeometry(myEventSource->getGeometry());
   if(isRecoModeOn) myHistoManager.openOutputStream(dataFileName);

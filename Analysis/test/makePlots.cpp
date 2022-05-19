@@ -154,6 +154,12 @@ void makePlots(std::string fileName){
   TFitResultPtr aFitPtr = hProfile->Fit("pol1","RS","",-150,150);
   double vtxCorr_p0 = aFitPtr->GetParams()[0];
   double vtxCorr_p1 = aFitPtr->GetParams()[1];
+  std::stringstream aStringStream;
+  aStringStream<<"("<<vtxCorr_p0<<"+"<<vtxCorr_p1<<"*xVtx)";
+  double beamAngle = atan(vtxCorr_p1);
+  std::string yCorrString = aStringStream.str();
+  std::string columns = "0:yVtx-"+yCorrString+":0>>hVtxYCorrCut1";  
+  trackTree->Draw(columns.c_str(),cut0.c_str(), "goff");
   ////////////////////////////////
   aCanvas->cd(3);
   gPad->SetLeftMargin(0.12);
@@ -366,7 +372,7 @@ void makePlots(std::string fileName){
   
   aCanvas->Print("Plots_set3.png");
   ////////////////
-  return;
+  //return;
   ////////////////
   aCanvas->Clear();
   aCanvas->Divide(2,2);

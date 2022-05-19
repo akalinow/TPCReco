@@ -71,19 +71,21 @@ void dEdxFitter::setPressure(double aPressure) {
   minVtxOffset = -5;
 
   minAlphaOffset = 0;
-  maxAlphaOffset = 385.99*(190/currentPressure); 
+  maxAlphaOffset = (385.99)*(190.0/currentPressure); 
 
   minCarbonOffset = 0;
-  maxCarbonOffset = 28.64*(190/currentPressure);
+  maxCarbonOffset = (28.64)*(190.0/currentPressure);
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 void dEdxFitter::reset(){
 
+  carbon_alphaModel->SetRange(-20, 350);
   carbon_alphaModel->SetParLimits(0, 0.0, maxVtxOffset);
   carbon_alphaModel->SetParLimits(1, minAlphaOffset, maxAlphaOffset);
   carbon_alphaModel->SetParLimits(2, minCarbonOffset, maxCarbonOffset);
 
+  alphaModel->SetRange(-20, 350);
   alphaModel->SetParLimits(0, minVtxOffset, maxVtxOffset);
   alphaModel->SetParLimits(1, minAlphaOffset, maxAlphaOffset);
   
@@ -159,7 +161,6 @@ TFitResult dEdxFitter::fitHypothesis(TF1 *fModel, TH1F & aHisto){
 
   double tkLength = aHisto.GetXaxis()->GetXmax();
   maxVtxOffset = tkLength/2.0;
-  
   minAlphaOffset = std::max(0.0, maxAlphaOffset - tkLength);
   minCarbonOffset = std::max(0.0, maxCarbonOffset - tkLength);
   
@@ -194,7 +195,7 @@ TFitResult dEdxFitter::fitHisto(TH1F & aHisto){
   TFitResult carbon_alphaResult = fitHypothesis(carbon_alphaModel, aHisto);
 
   int iteration = 0;
-  int maxIterations = 10;
+  int maxIterations = 15;
   while( (!carbon_alphaResult.IsValid() || carbon_alphaResult.MinFcnValue()>1.0)
 	 && iteration<maxIterations){
     carbon_alphaResult = fitHypothesis(carbon_alphaModel, aHisto);
@@ -211,6 +212,9 @@ TFitResult dEdxFitter::fitHisto(TH1F & aHisto){
   theFittedModel = carbon_alphaModel;
   theFittedHisto = aHisto;
   bestFitEventType = pid_type::C12_ALPHA;
+  if(getCarbonRange()<1){
+    bestFitEventType = pid_type::ALPHA;
+  }
 
   theFittedModel->SetParameters(theFitResult.Parameters().data());
   return theFitResult;
