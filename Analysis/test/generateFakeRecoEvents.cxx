@@ -68,6 +68,7 @@ R__ADD_LIBRARY_PATH(../lib)
 #include "MultiKey.h"
 #include "GeometryTPC.h"
 #include "IonRangeCalculator.h"
+#include "CommonDefinitions.h"
 #include "Track3D.h"
 #include "UtilsMath.h"
 
@@ -132,7 +133,7 @@ std::shared_ptr<IonRangeCalculator> loadRangeCalculator(){
   std::shared_ptr<IonRangeCalculator> db = std::make_shared<IonRangeCalculator>();
 
   // set current conditions: gas=CO2, pressure=190 mbar, temperature=20C
-  db->setGasConditions(IonRangeCalculator::CO2, SIMUL_PRESSURE, 273.15+20);
+  db->setGasConditions(/*IonRangeCalculator::*/CO2, SIMUL_PRESSURE, 273.15+20);
   
   return db;
 }
@@ -471,12 +472,12 @@ Track3D generateFakeAlphaCarbonGenericEvent(std::shared_ptr<GeometryTPC> aGeomet
   }
 
   // calculate alpha/carbon ranges [mm] in LAB/DET frame
-  double rangeAlpha_DET=aRangeCalculator->getIonRangeMM(IonRangeCalculator::ALPHA, alphaP4_DET.E()-alphaP4_DET.M()); // mm
+  double rangeAlpha_DET=aRangeCalculator->getIonRangeMM(/*IonRangeCalculator::*/ALPHA, alphaP4_DET.E()-alphaP4_DET.M()); // mm
   double rangeCarbon_DET;
   if(Oxygen18_flag) { // Alpha + Carbon-14
-    rangeCarbon_DET=aRangeCalculator->getIonRangeMM(IonRangeCalculator::CARBON_14, carbonP4_DET.E()-carbonP4_DET.M()); // mm
+    rangeCarbon_DET=aRangeCalculator->getIonRangeMM(/*IonRangeCalculator::*/CARBON_14, carbonP4_DET.E()-carbonP4_DET.M()); // mm
   } else { // Alpha + Carbon-12
-    rangeCarbon_DET=aRangeCalculator->getIonRangeMM(IonRangeCalculator::CARBON_12, carbonP4_DET.E()-carbonP4_DET.M()); // mm
+    rangeCarbon_DET=aRangeCalculator->getIonRangeMM(/*IonRangeCalculator::*/CARBON_12, carbonP4_DET.E()-carbonP4_DET.M()); // mm
   }
 
   // create list of tracks
@@ -666,9 +667,9 @@ Track3D generateFake3AlphaEvent(std::shared_ptr<GeometryTPC> aGeometry, std::sha
   }
 
   // calculate alpha ranges [mm] in LAB/DET frame
-  double range1_DET=aRangeCalculator->getIonRangeMM(IonRangeCalculator::ALPHA, alpha1_P4_DET.E()-alpha1_P4_DET.M()); // mm
-  double range2_DET=aRangeCalculator->getIonRangeMM(IonRangeCalculator::ALPHA, alpha2_P4_DET.E()-alpha2_P4_DET.M()); // mm
-  double range3_DET=aRangeCalculator->getIonRangeMM(IonRangeCalculator::ALPHA, alpha3_P4_DET.E()-alpha3_P4_DET.M()); // mm
+  double range1_DET=aRangeCalculator->getIonRangeMM(/*IonRangeCalculator::*/ALPHA, alpha1_P4_DET.E()-alpha1_P4_DET.M()); // mm
+  double range2_DET=aRangeCalculator->getIonRangeMM(/*IonRangeCalculator::*/ALPHA, alpha2_P4_DET.E()-alpha2_P4_DET.M()); // mm
+  double range3_DET=aRangeCalculator->getIonRangeMM(/*IonRangeCalculator::*/ALPHA, alpha3_P4_DET.E()-alpha3_P4_DET.M()); // mm
 
   // create list of tracks
   std::vector<TVector3> list;

@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////
 IonRangeCalculator::IonRangeCalculator(gas_mixture_type gas, double p_mbar, double T_Kelvin){ // input: GAS index, pressure [mbar], temperature [K]
 
-  addIonRangeCurve(IonRangeCalculator::ALPHA,     IonRangeCalculator::CO2, 250.0, 273.15+20, "range_alpha_in_CO2_250mbar.dat");
-  addIonRangeCurve(IonRangeCalculator::CARBON_12, IonRangeCalculator::CO2, 250.0, 273.15+20, "range_12C_in_CO2_250mbar.dat");
-  addIonRangeCurve(IonRangeCalculator::CARBON_14, IonRangeCalculator::CO2, 250.0, 273.15+20, "range_14C_in_CO2_250mbar.dat");
+  addIonRangeCurve(/*IonRangeCalculator::*/ALPHA,     /*IonRangeCalculator::*/CO2, 250.0, 273.15+20, "range_alpha_in_CO2_250mbar.dat");
+  addIonRangeCurve(/*IonRangeCalculator::*/CARBON_12, /*IonRangeCalculator::*/CO2, 250.0, 273.15+20, "range_12C_in_CO2_250mbar.dat");
+  addIonRangeCurve(/*IonRangeCalculator::*/CARBON_14, /*IonRangeCalculator::*/CO2, 250.0, 273.15+20, "range_14C_in_CO2_250mbar.dat");
 
   setGasConditions(gas, p_mbar, T_Kelvin);
   
@@ -25,15 +25,15 @@ IonRangeCalculator::IonRangeCalculator(gas_mixture_type gas, double p_mbar, doub
   //     URL: https://en.wikipedia.org/wiki/Isotopes_of_carbon
   //     Access date: 10 May 2022
   const double atomicMassUnit = 931.4941024228; // MeV/c^2
-  massTableMap[IonRangeCalculator::PROTON]=1.00727646663*atomicMassUnit; // [3]
-  massTableMap[IonRangeCalculator::ALPHA]=4.001506179127*atomicMassUnit; // [2]
-  massTableMap[IonRangeCalculator::CARBON_12]=12*atomicMassUnit; // [1]
-  massTableMap[IonRangeCalculator::CARBON_13]=13.003355*atomicMassUnit; // [1]
-  massTableMap[IonRangeCalculator::CARBON_14]=14.0032419894*atomicMassUnit; // [4]
-  massTableMap[IonRangeCalculator::NITROGEN_15]=15.000108*atomicMassUnit; // [1]
-  massTableMap[IonRangeCalculator::OXYGEN_16]=15.994915*atomicMassUnit; // [1]
-  massTableMap[IonRangeCalculator::OXYGEN_17]=16.999311*atomicMassUnit; // [1]
-  massTableMap[IonRangeCalculator::OXYGEN_18]=17.999160*atomicMassUnit; // [1]
+  massTableMap[/*IonRangeCalculator::*/PROTON]=1.00727646663*atomicMassUnit; // [3]
+  massTableMap[/*IonRangeCalculator::*/ALPHA]=4.001506179127*atomicMassUnit; // [2]
+  massTableMap[/*IonRangeCalculator::*/CARBON_12]=12*atomicMassUnit; // [1]
+  massTableMap[/*IonRangeCalculator::*/CARBON_13]=13.003355*atomicMassUnit; // [1]
+  massTableMap[/*IonRangeCalculator::*/CARBON_14]=14.0032419894*atomicMassUnit; // [4]
+  massTableMap[/*IonRangeCalculator::*/NITROGEN_15]=15.000108*atomicMassUnit; // [1]
+  massTableMap[/*IonRangeCalculator::*/OXYGEN_16]=15.994915*atomicMassUnit; // [1]
+  massTableMap[/*IonRangeCalculator::*/OXYGEN_17]=16.999311*atomicMassUnit; // [1]
+  massTableMap[/*IonRangeCalculator::*/OXYGEN_18]=17.999160*atomicMassUnit; // [1]
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
@@ -47,7 +47,7 @@ void IonRangeCalculator::setGasMixture(gas_mixture_type gas){ // GAS index
   
   // check that at least one range/energy curve exists for this gas index
   bool valid=false;
-  for(auto ion=IonRangeCalculator::pid_type::PID_MIN; ion!=IonRangeCalculator::pid_type::PID_MAX; ion=IonRangeCalculator::pid_type(ion+1)) {
+  for(auto ion=/*IonRangeCalculator::*/pid_type::PID_MIN; ion!=/*IonRangeCalculator::*/pid_type::PID_MAX; ion=/*IonRangeCalculator::*/pid_type(ion+1)) {
     if(refGasRangeCurveMap.find(MultiKey2((int)gas, (int)ion))!=refGasRangeCurveMap.end()) {
       valid=true;
       break;
@@ -87,7 +87,7 @@ void IonRangeCalculator::setGasConditions(gas_mixture_type gas, double p_mbar, d
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
-IonRangeCalculator::gas_mixture_type IonRangeCalculator::getGasMixture() { return myGasMixture; } // GAS index
+/*IonRangeCalculator::*/gas_mixture_type IonRangeCalculator::getGasMixture() { return myGasMixture; } // GAS index
 
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
@@ -99,8 +99,8 @@ double IonRangeCalculator::getGasTemperature() { return myGasTemperature; } // t
 
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
-std::tuple<IonRangeCalculator::gas_mixture_type, double, double> IonRangeCalculator::getGasConditions(){ // output: GAS index, pressure [mbar], temperature [K]
-  return std::tuple<IonRangeCalculator::gas_mixture_type, double, double>(myGasMixture, myGasPressure, myGasTemperature);
+std::tuple</*IonRangeCalculator::*/gas_mixture_type, double, double> IonRangeCalculator::getGasConditions(){ // output: GAS index, pressure [mbar], temperature [K]
+  return std::tuple</*IonRangeCalculator::*/gas_mixture_type, double, double>(myGasMixture, myGasPressure, myGasTemperature);
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
