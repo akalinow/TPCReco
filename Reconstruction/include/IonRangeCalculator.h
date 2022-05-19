@@ -9,13 +9,14 @@
 #include "TH1D.h"
 #include "TGraph.h"
 #include "MultiKey.h"
+#include "CommonDefinitions.h"
 
 class MultiKey2;
 
 class IonRangeCalculator{
 
  public:
-
+  /*
   enum pid_type{
     PROTON=1,         // Hydrogen-2
     ALPHA,            // Helium-4
@@ -43,7 +44,7 @@ class IonRangeCalculator{
     GAS_MIN=CO2,
     GAS_MAX=CO2
   };
-
+  */
   IonRangeCalculator(gas_mixture_type gas=CO2, double p_mbar=250.0, double T_Kelvin=293.15); // default gas: CO2, 250 mbar, 20C
 
   void setGasMixture(gas_mixture_type gas); // set current GAS index
@@ -54,7 +55,7 @@ class IonRangeCalculator{
 
   void setGasConditions(gas_mixture_type gas, double p_mbar, double T_Kelvin); // input: GAS index, pressure [mbar], temperature [K]
 
-  IonRangeCalculator::gas_mixture_type getGasMixture(); // get current GAS index
+  /*IonRangeCalculator::*/gas_mixture_type getGasMixture(); // get current GAS index
 
   double getGasPressure(); // get current gas pressure [mbar]
 
@@ -76,9 +77,9 @@ class IonRangeCalculator{
   std::map<MultiKey2, TGraph*> refEnergyCurveMap; // reference inverted curve for given {gas, ion} pair
   std::map<MultiKey2, double>  refGasPressureMap;    // reference pressure for given {gas, ion} pair
   std::map<MultiKey2, double>  refGasTemperatureMap; // reference temperature for given {gas, ion} pair
-  std::map<IonRangeCalculator::pid_type, double> massTableMap; // particle or isotope mass table in [MeV/c^2]
+  std::map</*IonRangeCalculator::*/pid_type, double> massTableMap; // particle or isotope mass table in [MeV/c^2]
   
-  IonRangeCalculator::gas_mixture_type myGasMixture{IonRangeCalculator::GAS_MIN};   // GAS index 
+  /*IonRangeCalculator::*/gas_mixture_type myGasMixture{/*IonRangeCalculator::*/GAS_MIN};   // GAS index 
   double myGasTemperature{0}; // Kelvins
   double myGasPressure{0};    // mbar
   

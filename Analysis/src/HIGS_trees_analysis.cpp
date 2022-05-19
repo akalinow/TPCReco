@@ -112,7 +112,7 @@ void HIGS_trees_analysis::setBeamProperties(float beamEnergy,   // nominal gamma
 void HIGS_trees_analysis::setIonRangeCalculator(double pressure){ // CO2 pressure [mbar]
 
   // set current conditions: gas=CO2, pressure=190 mbar, temperature=20C
-  myRangeCalculator.setGasConditions(IonRangeCalculator::CO2, fabs(pressure), 273.15+20);
+  myRangeCalculator.setGasConditions(/*IonRangeCalculator::*/CO2, fabs(pressure), 273.15+20);
 }
 ///////////////////////////////
 ///////////////////////////////

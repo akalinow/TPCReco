@@ -16,6 +16,7 @@
 
 #include "GeometryTPC.h"
 #include "Track3D.h"
+#include "CommonDefinitions.h"
 #include "HIGGS_analysis.h"
 
 #include "colorText.h"
@@ -44,7 +45,7 @@ HIGGS_analysis::~HIGGS_analysis(){
 void HIGGS_analysis::setIonRangeCalculator(double pressure){ // CO2 pressure [mbar]
 
   // set current conditions: gas=CO2, pressure=190 mbar, temperature=20C
-  myRangeCalculator.setGasConditions(IonRangeCalculator::CO2, fabs(pressure), 273.15+20);
+  myRangeCalculator.setGasConditions(/*IonRangeCalculator::*/CO2, fabs(pressure), 273.15+20);
 }
 ///////////////////////////////
 ///////////////////////////////
@@ -547,7 +548,7 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     profiles1D["h_1prong_alpha_cosThetaBEAM_len_LAB_prof"]->Fill(cosTheta_BEAM_LAB, len);
 
     // reconstruct kinetic energy from particle range [mm]
-    double T_LAB=myRangeCalculator.getIonEnergyMeV(IonRangeCalculator::ALPHA, len);
+    double T_LAB=myRangeCalculator.getIonEnergyMeV(/*IonRangeCalculator::*/ALPHA, len);
     //    double p_LAB=sqrt(T_LAB*(T_LAB+2*alphaMass));
     histos1D["h_1prong_alpha_E_LAB"]->Fill(T_LAB);
     histos2D["h_1prong_alpha_cosThetaBEAM_E_LAB"]->Fill(cosTheta_BEAM_LAB, T_LAB);
@@ -626,17 +627,17 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     profiles1D["h_2prong_carbon_cosThetaBEAM_len_LAB_prof"]->Fill(carbon_cosTheta_BEAM_LAB, carbon_len);
 
     // reconstruct kinetic energy from particle range [mm]
-    const double alphaMass=myRangeCalculator.getIonMassMeV(IonRangeCalculator::ALPHA);
-    const double carbonMass=myRangeCalculator.getIonMassMeV(IonRangeCalculator::CARBON_12);
-    const double alpha_T_LAB=myRangeCalculator.getIonEnergyMeV(IonRangeCalculator::ALPHA, alpha_len);
-    const double carbon_T_LAB=myRangeCalculator.getIonEnergyMeV(IonRangeCalculator::CARBON_12, carbon_len);
+    const double alphaMass=myRangeCalculator.getIonMassMeV(/*IonRangeCalculator::*/ALPHA);
+    const double carbonMass=myRangeCalculator.getIonMassMeV(/*IonRangeCalculator::*/CARBON_12);
+    const double alpha_T_LAB=myRangeCalculator.getIonEnergyMeV(/*IonRangeCalculator::*/ALPHA, alpha_len);
+    const double carbon_T_LAB=myRangeCalculator.getIonEnergyMeV(/*IonRangeCalculator::*/CARBON_12, carbon_len);
     double alpha_p_LAB=sqrt(alpha_T_LAB*(alpha_T_LAB+2*alphaMass));
     double carbon_p_LAB=sqrt(carbon_T_LAB*(carbon_T_LAB+2*carbonMass));
     // construct TLorentzVector in DET/LAB frame
     TLorentzVector alphaP4_DET_LAB(alpha_p_LAB*list.front().getTangent(), alphaMass+alpha_T_LAB);
     TLorentzVector carbonP4_DET_LAB(carbon_p_LAB*list.back().getTangent(), carbonMass+carbon_T_LAB);
     // boost P4 from DET/LAB frame to CMS frame (see TLorentzVector::Boost() convention!)
-    const double oxygenMassGroundState=myRangeCalculator.getIonMassMeV(IonRangeCalculator::OXYGEN_16);
+    const double oxygenMassGroundState=myRangeCalculator.getIonMassMeV(/*IonRangeCalculator::*/OXYGEN_16);
     const TVector3 beta_DET_LAB=getBetaVectorOfCMS(oxygenMassGroundState);
     TLorentzVector alphaP4_CMS_DET(alphaP4_DET_LAB);
     TLorentzVector carbonP4_CMS_DET(carbonP4_DET_LAB);
@@ -704,9 +705,9 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     histos2D["h_3prong_vertexYZ"]->Fill(vertexPos.Y(), vertexPos.Z());
     profiles1D["h_3prong_vertexXY_prof"]->Fill(vertexPos.X(), vertexPos.Y());
 
-    const double carbonMassGroundState=myRangeCalculator.getIonMassMeV(IonRangeCalculator::CARBON_12);
+    const double carbonMassGroundState=myRangeCalculator.getIonMassMeV(/*IonRangeCalculator::*/CARBON_12);
     const TVector3 beta_DET_LAB=getBetaVectorOfCMS(carbonMassGroundState);
-    const double alphaMass=myRangeCalculator.getIonMassMeV(IonRangeCalculator::ALPHA);
+    const double alphaMass=myRangeCalculator.getIonMassMeV(/*IonRangeCalculator::*/ALPHA);
 
     // initialize array of track properties
     double alpha_len[3]; // [mm]
@@ -743,7 +744,7 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
       alpha_cosTheta_BEAM_LAB[i]=track.getTangent()*photonUnitVec_DET_LAB; // polar angle wrt beam axis
       
       // reconstruct kinetic energy from particle range [mm]
-      alpha_T_LAB[i]=myRangeCalculator.getIonEnergyMeV(IonRangeCalculator::ALPHA, alpha_len[i]);
+      alpha_T_LAB[i]=myRangeCalculator.getIonEnergyMeV(/*IonRangeCalculator::*/ALPHA, alpha_len[i]);
       alpha_p_LAB[i]=sqrt(alpha_T_LAB[i]*(alpha_T_LAB[i]+2*alphaMass));
       // construct TLorentzVector in DET/LAB frame
       alphaP4_DET_LAB[i]=TLorentzVector(alpha_p_LAB[i]*track.getTangent(), alphaMass+alpha_T_LAB[i]);
@@ -851,7 +852,10 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
 ///////////////////////////////
 bool HIGGS_analysis::eventFilter(Track3D *aTrack){
 
-  // return true;
+  return true;
+
+  // NOTE: for manual reconstruction disable dE/dx fit quality checks (cut #6)
+  bool checkFitQualityOf2prongs=false; // TODO - TO BE PARAMETERIZED !!!
 
   // print statistics on demand
   const auto printAccepted=false; // TODO - TO BE PARAMETERIZED !!!
@@ -952,39 +956,28 @@ bool HIGGS_analysis::eventFilter(Track3D *aTrack){
   // reconstruction that employs lustering + dE/dx method:
   // - chi2 < 10
   // - charge > 1000
-  // - length > 20 mm
+  // - length > 20 mm  (30, 50 also good)
   // - eventType = 3
   // - hypothesisChi2 < 5
+  // NOTE: For manual reconstruction disable these dE/dx fit quality checks
   // NOTE: Those cuts are currently impossible to apply to results from manual data
   // reconstruction and to fake data generated by toy MC. If we are going to use results
   // from automatic reconstruction for demonstration of cross section measurement then those
   // cuts must be taken into account as well while correcting the rates!
-  if(result && list.size()==2) {
+  if(result && checkFitQualityOf2prongs && list.size()==2) {
     auto length = aTrack->getLength();
     auto charge = aTrack->getIntegratedCharge(length);
     auto chi2 = aTrack->getChi2();
-    //    auto hypothesisChi2 = aTrack->getHypothesisFitChi2(); // NOT IMPLEMENTED
-    //    auto correctPID = list.front().getPID()==ALPHA && list.back().getPID()==CARBON_12; // NOT IMPLEMENTED
-    if( // !correctPID ||         // NOT IMPLEMENTED (definition of enum type changed!)
-       chi2 > 10 ||                  // TODO - TO BE PARAMETERIZED!!!
-	// hypothesisChi2 > 5 ||  // NOT IMPLEMENTED
-       length < 40     ||            // TODO - TO BE PARAMETERIZED!!! (same as sum of lengths [mm])
-       charge < 1000) {              // TODO - TO BE PARAMETERIZED!!!
+    auto hypothesisChi2 = aTrack->getHypothesisFitChi2();
+    auto correctPID = list.front().getPID()==ALPHA && list.back().getPID()==CARBON_12; // TODO - TO BE PARAMETERIZED!!!
+    if(!correctPID        ||
+       chi2 > 10          || // TODO - TO BE PARAMETERIZED!!!
+       hypothesisChi2 > 5 || // TODO - TO BE PARAMETERIZED!!!
+       length < 30        || // TODO - TO BE PARAMETERIZED!!! (same as sum of lengths [mm])
+       charge < 1000) {      // TODO - TO BE PARAMETERIZED!!!
       result=false;
       if(printRejected) {
-	std::cout<<KRED<<__FUNCTION__<<": REJECTED (failed 2-prong quality cuts)"<<RST<<std::endl;
-      }
-    }
-  }
-  if(result) {
-    auto length=0.0;
-    for(auto i=0u; i<list.size(); i++) {
-      length+=list.at(i).getLength();
-    }
-    if(length<40) { // TODO - TO BE PARAMETERIZED !!!
-      result=false;
-      if(printRejected) {
-	std::cout<<KRED<<__FUNCTION__<<": REJECTED (failed sum of track lengths cut)"<<RST<<std::endl;
+	  std::cout<<KRED<<__FUNCTION__<<": REJECTED (failed 2-prong quality cuts)"<<RST<<std::endl;
       }
     }
   }
