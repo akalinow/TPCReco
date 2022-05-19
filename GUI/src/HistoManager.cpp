@@ -160,9 +160,7 @@ void HistoManager::drawRecoHistos(TCanvas *aCanvas){
        hPlotBackground->Draw("col same");
        aPad->RedrawAxis();  
        h1->Draw("same colz");
-
        drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
-
      } else {
        getRawStripVsTimeInMM(strip_dir)->DrawCopy("colz");
      }
@@ -174,7 +172,8 @@ void HistoManager::drawRecoHistos(TCanvas *aCanvas){
    aCanvas->Modified();
    aCanvas->Update();
    if(getRecoClusterEnable()) {
-     getClusterTimeProjectionInMM()->DrawCopy("hist");
+     drawChargeAlongTrack3D(aPad);
+     //getClusterTimeProjectionInMM()->DrawCopy("hist");
    } else {
      getRawTimeProjectionInMM()->DrawCopy("hist");
    }
@@ -260,7 +259,7 @@ void HistoManager::clearTracks(){
   for(auto aObj : fTrackLines){
     if(aObj) aObj->Delete();
   }
-  fTrackLines.clear();  
+  fTrackLines.clear();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
