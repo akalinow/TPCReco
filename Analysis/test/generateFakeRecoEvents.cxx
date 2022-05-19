@@ -18,14 +18,14 @@
 //#define SIMUL_BEAM_E_RESOL     0         // no energy smearing
 //#define SIMUL_BEAM_E_RESOL     0.00369   // [0-1] 0.369% energy sigma, fwhm=100 keV @ 11.5MeV
 //#define SIMUL_BEAM_E_RESOL     0.00554   // [0-1] 0.554% energy sigma, fwhm=150 keV @ 11.5MeV
-//#define SIMUL_BEAM_E_RESOL     0.00738   // [0-1] 0.738% energy sigma, fwhm=200 keV @ 11.5MeV
+#define SIMUL_BEAM_E_RESOL       0.00738   // [0-1] 0.738% energy sigma, fwhm=200 keV @ 11.5MeV
 //#define SIMUL_BEAM_E_RESOL     0.0107    // [0-1] 1.107% energy sigma, fwhm=300 keV @ 11.5MeV
 //#define SIMUL_BEAM_E_RESOL     0.0148    // [0-1] 1.480% energy sigma, fwhm=400 keV @ 11.5MeV
-#define SIMUL_BEAM_E_RESOL       0.01440   // [0-1] 1.440% energy sigma, fwhm=300 keV @ 8.86MeV
+//#define SIMUL_BEAM_E_RESOL     0.01440   // [0-1] 1.440% energy sigma, fwhm=300 keV @ 8.86MeV
 #define SIMUL_BEAM_SPREAD_R      5.25      // [mm] flat top intentsity radius
 #define SIMUL_BEAM_SPREAD_SIGMA  1.0       // [mm] intensity tail sigma
-#define SIMUL_PRESSURE           130.0     // [mbar] CO2 pressure
-#define SIMUL_OXYGEN_E1E2_FLAG   false     // use anisotropic theta distribution for O-16?
+#define SIMUL_PRESSURE           190.0     // [mbar] CO2 pressure
+#define SIMUL_OXYGEN_E1E2_FLAG   true      // use anisotropic theta distribution for O-16?
 #define SIMUL_OXYGEN_E1E2_SIGMA1 0         // sigma_E1 cross section [nb]
 #define SIMUL_OXYGEN_E1E2_SIGMA2 1         // sigma_E2 cross section [nb]
 #define SIMUL_OXYGEN_E1E2_PHI12  0         // E1/E2 mixing phase [rad]
@@ -693,7 +693,12 @@ Track3D generateFake3AlphaEvent(std::shared_ptr<GeometryTPC> aGeometry, std::sha
   // employs TF2::GetRandom2()
   double y_rnd=0, z_rnd=0;
   beamProfileTF2.GetRandom2(y_rnd, z_rnd); // (y_rnd, z_rnf, r);
-  TVector3 vertex( r->Uniform(xmin, xmax), y_rnd, z_rnd);
+  //  TVector3 vertex( r->Uniform(xmin, xmax), y_rnd, z_rnd);
+  ///////// DEBUG
+  TVector3 vertex( r->Uniform(xmin-(SIMUL_EXTENSION_FLAG ? SIMUL_EXTENSION_ZONE : 0),
+			      xmax+(SIMUL_EXTENSION_FLAG ? SIMUL_EXTENSION_ZONE : 0)),
+		   y_rnd, z_rnd); // optionally extend vertex production outside of active area
+  ///////// DEBUG
 
   // create TrackSegment3D collection
   Track3D aTrack;
