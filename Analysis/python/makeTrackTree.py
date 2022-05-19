@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import os
 from fileLoop import *
 
 ################################################################
@@ -48,15 +49,29 @@ def finalizeFunc():
         "2022-04-12T21:15:46",
     ]
 
-    command = "mkdir 2021-11-25_12.5MHz 2021-11-25_25.0MHz IFJ_VdG 2018 HIgS_2022"
+    command = "mkdir HIgS_2022"
     os.system(command)
 
     for item in samples_HIGGS:
-        command = "mv "+item+" HIgS_2022"
-        os.system(command)
-        command = "hadd -f HIgS_2022/HIgS_2022.root HIgS_2022/*/*.root"
-        os.system(command)
+        item = item.replace(":","-")
+        if not os.path.isdir(item):
+            continue
 
+        command = "cp -r "+item+" HIgS_2022/"
+        print(command)
+        os.system(command)
+        command = "hadd -f HIgS_2022/"+item+".root HIgS_2022/"+item+"/*.root"
+        print(command)
+        os.system(command)
+        command = "root -b -q \"../test/makePlots.cpp(\\\"HIgS_2022/"+item+".root\\\")\" "
+        print(command)
+        os.system(command)
+        command = "mv *.png HIgS_2022/"+item
+        print(command)        
+        os.system(command)
+        command = "git log -1 > HIgS_2022/git_version.dat"
+        os.system(command)
+        
     return    
 
     command = "mv 2018-* 2018"
@@ -111,17 +126,23 @@ runs = [
     #("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220415_extTrg_CO2_130mbar/8.86MeV/EventTPC/",
     #"/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_130mbar_1372Vdrift_25MHz.dat"),
     
-    #("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220412_extTrg_CO2_190mbar_DT1470ET/11.5MeV/EventTPC/",
-    #"/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat"),
-    
-    #("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220412_extTrg_CO2_190mbar_DT1470ET/12.3MeV/EventTPC/",
-    #"/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat"),
+    ("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220412_extTrg_CO2_190mbar_DT1470ET/11.1MeV/GRAW/",
+     "/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat"),
 
-    #("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220412_extTrg_CO2_190mbar_DT1470ET/12.3MeV/GRAW/",
-    #"/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat"),
-
-    ("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220412_extTrg_CO2_190mbar_DT1470ET/11.5MeV/GRAW/",
+    ("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220412_extTrg_CO2_190mbar_DT1470ET/11.5MeV/EventTPC/",
     "/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat"),
+
+    ("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220412_extTrg_CO2_190mbar_DT1470ET/11.9MeV/GRAW/",
+    "/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat"),
+
+    ("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220412_extTrg_CO2_190mbar_DT1470ET/12.3MeV/EventTPC/",
+    "/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat"),
+
+    ("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220412_extTrg_CO2_190mbar_DT1470ET/12.7MeV/GRAW/",
+    "/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_190mbar_3626Vdrift_25MHz.dat"),
+
+    ("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220412_extTrg_CO2_190mbar_DT1470ET/13.1MeV/GRAW/",
+    "/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_190mbar_3920Vdrift_25MHz.dat"),
 
     #("/qnap/20220412_extTrg_CO2_190mbar_DT1470ET/",
     #"/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat"),

@@ -18,7 +18,7 @@ def waintUnitilProcCount(procName, procCount):
 
     counter = countRunningProcesses(procName)
     while counter>=procCount:
-        print("Number of jobs running:",counter," Waiting one minutue.")
+        print("Number of jobs running:",counter," Waiting two minutues.")
         time.sleep(2*60)
         counter = countRunningProcesses(procName)         
 ################################################################
@@ -29,15 +29,11 @@ def getTimeFileDict(dataPath, filePattern):
     for aFile in fileList:
         oldFileName = aFile
         index = aFile.rfind("/")+1
-        aFile = aFile[index:]
-        ##
-        #aFile = aFile.replace(aFile[25],":")
-        #aFile = aFile.replace(aFile[28],":")
-        #command = "mv "+oldFileName+" "+dataPath+"/"+aFile
-        #os.system(command)
-        ##
+        aFile = aFile[index:]       
         index = aFile.find("AsAd")
         asadId = aFile[index+4:index+5]
+        if index<0:
+            asadId = "0"
         
         index = -1
         year = 2019
@@ -76,7 +72,7 @@ def mergeASADfiles(timeFileDict):
 def getCSVinputList(dataPath):
     filePattern = "CoBo0_AsAd*"
     fileDict = getTimeFileDict(dataPath, filePattern)
-
+    
     if len(fileDict):
         fileDict = mergeASADfiles(fileDict)
     else:

@@ -51,7 +51,7 @@ void makePlots(std::string fileName){
   TH3D *hVtxYCorrCut1 = (TH3D*)hVtxXYZ->Clone("hVtxYCorrCut1");
   TH3D *hAlphaEndXYZCut1 = (TH3D*)hVtxXYZ->Clone("hAlphaEndXYZCut1");
 
-  TH2D *hAlphaEndPolar = new TH2D("hAlphaEndPolar","",36, -M_PI, M_PI, 20, 0, 100);
+  TH2D *hAlphaEndPolar = new TH2D("hAlphaEndPolar","",36, -M_PI, M_PI, 30, 0, 150);
 
   TH1D *hChi2 = new TH1D("hChi2","Track loss function;loss function;Number of events",60,-10,20);
   hChi2->SetStats(kFALSE);
@@ -309,8 +309,8 @@ void makePlots(std::string fileName){
 
   hProj = hAlphaEndXYZCut1->Project3D("zy");
   hProj->SetTitle("#alpha track endpoint wrt. vertex");
-  hProj->GetXaxis()->SetRangeUser(-100,100);
-  hProj->GetYaxis()->SetRangeUser(-100,100);
+  hProj->GetXaxis()->SetRangeUser(-120,120);
+  hProj->GetYaxis()->SetRangeUser(-120,120);
   hProj->SetXTitle("Y_{DETECTOR}");
   hProj->SetYTitle("Z_{DETECTOR}");
   hProj->DrawCopy("colz");
