@@ -343,6 +343,7 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
   //aTrackCandidate.extendToChamberRange(xyRange, myZRange);
   //myFittedTrack = fitTrack3D(aTrackCandidate);
   myFittedTrack = aTrackCandidate;
+  myFittedTrack.setHypothesisFitChi2(0);
   std::cout<<KBLU<<"Hand cliked track: "<<RST<<std::endl;
   std::cout<<myFittedTrack<<std::endl;
 }
@@ -618,6 +619,8 @@ Track3D TrackBuilder::fitTrackNodesStartEnd(const Track3D & aTrack) const{
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
+
+  if(aTrackCandidate.getLength()<1) return aTrackCandidate;
 
   const TrackSegment3D & aSegment = aTrackCandidate.getSegments().front();
   TH1F hChargeProfile = aSegment.getChargeProfile();

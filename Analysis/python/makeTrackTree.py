@@ -2,36 +2,47 @@
 # -*- coding: utf-8 -*-
 
 import os
+import functools
 from fileLoop import *
 
 ################################################################
 ################################################################
-def finalizeFunc():
+def finalize(topDirName, samples):
 
-    samples_calibration_12MHz = [
-        "2021-11-25T13-53-16.129",
-        "2021-11-25T15-00-32.273",
-        "2021-11-25T15-21-05.094",
-        "2021-11-25T16-29-22.081"        
-    ]
-    
-    samples_calibration_25MHz = [
-        "2021-11-25T14-07-04.200",
-        "2021-11-25T14-33-41.411",
-        "2021-11-25T16-12-14.995"
-    ]
-    
-    samples_IFJ_VdG = [
-    "2021-06-16T17-46-28.582",
-    "2021-06-22T12-01-56.568",
-    "2021-06-23T14-16-30.884",  
-    "2021-06-23T19-24-16.737",
-    "2021-06-17T11-54-38.000",
-    "2021-06-22T14-11-08.614",
-    "2021-06-23T18-39-39.905",
-    ]
+    command = "mkdir -p "+topDirName+"/plots/"
+    os.system(command)
 
-    samples_HIGGS = [
+    for item in samples:
+        item = item.replace(":","-")
+        if not os.path.isdir(item):
+            continue
+
+        command = "cp -r "+item+" "+topDirName
+        print(command)
+        os.system(command)
+        command = "mkdir -p "+topDirName+"/plots/"+item
+        print(command)
+        os.system(command)
+        command = "hadd -f "+topDirName+"/"+item+".root "+topDirName+"/"+item+"/*.root"
+        print(command)
+        os.system(command)
+        command = "root -b -q \"../test/makePlots.cpp(\\\""+topDirName+"/"+item+".root\\\")\" "
+        print(command)
+        os.system(command)
+        command = "mv *.png "+topDirName+"/plots/"+item
+        print(command)        
+        os.system(command)
+        command = "git log -1 > "+topDirName+"/git_version.dat"
+        os.system(command)
+        command = "cp ../test/makePlots.cpp "+topDirName
+        os.system(command)
+################################################################
+################################################################
+def finalizeHIgS():
+
+    topDirName = "HIgS_2022"
+    
+    samples = [
         "2022-04-12T00:20:27",
         "2022-04-12T01:36:08",
         "2022-04-12T02:39:59",
@@ -49,53 +60,7 @@ def finalizeFunc():
         "2022-04-12T21:15:46",
     ]
 
-    command = "mkdir HIgS_2022"
-    os.system(command)
-
-    for item in samples_HIGGS:
-        item = item.replace(":","-")
-        if not os.path.isdir(item):
-            continue
-
-        command = "cp -r "+item+" HIgS_2022/"
-        print(command)
-        os.system(command)
-        command = "hadd -f HIgS_2022/"+item+".root HIgS_2022/"+item+"/*.root"
-        print(command)
-        os.system(command)
-        command = "root -b -q \"../test/makePlots.cpp(\\\"HIgS_2022/"+item+".root\\\")\" "
-        print(command)
-        os.system(command)
-        command = "mv *.png HIgS_2022/"+item
-        print(command)        
-        os.system(command)
-        command = "git log -1 > HIgS_2022/git_version.dat"
-        os.system(command)
-        
-    return    
-
-    command = "mv 2018-* 2018"
-    os.system(command)
-    command = "hadd -f 2018/2018.root 2018/*/*.root"
-
-    for item in samples_calibration_12MHz:
-        command = "mv "+item+" 2021-11-25_12.5MHz"
-        os.system(command)
-        command = "hadd -f 2021-11-25_12.5MHz/12.5MHz.root 2021-11-25_12.5MHz/*/*.root"
-        os.system(command)
-
-    for item in samples_calibration_25MHz:
-        command = "mv "+item+" 2021-11-25_25.0MHz"
-        os.system(command)
-        command = "hadd -f 2021-11-25_25.0MHz/25.0MHz.root 2021-11-25_25.0MHz/*/*.root"
-        os.system(command)
-
-    for item in samples_IFJ_VdG:
-        command = "mv "+item+" IFJ_VdG"
-        os.system(command)
-        command = "hadd -f IFJ_VdG/IFJ_VdG.root IFJ_VdG/*/*.root"
-        os.system(command)
-        
+    return functools.partial(finalize, topDirName, samples)
 ################################################
 ################################################                
 calibration_runs = [ ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210616_extTrg_CO2_250mbar_DT1470ET",
@@ -122,9 +87,9 @@ calibration_runs = [ ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210616_e
 ]
 ###
 ###
-runs = [
-    #("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220415_extTrg_CO2_130mbar/8.86MeV/EventTPC/",
-    #"/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_130mbar_1372Vdrift_25MHz.dat"),
+HIgS_runs = [
+    ("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220415_extTrg_CO2_130mbar/8.86MeV/EventTPC/",
+    "/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_130mbar_1372Vdrift_25MHz.dat"),
     
     ("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220412_extTrg_CO2_190mbar_DT1470ET/11.1MeV/GRAW/",
      "/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat"),
@@ -155,9 +120,10 @@ runs = [
 ###
 ###
 procName = "makeTrackTree"
+#procName = "doNothing"
 ################################################
 ################################################
-runLoop(runs, procName, finalizeFunc)
+runLoop(HIgS_runs, procName, finalizeHIgS())
 ################################################
 ################################################
 
