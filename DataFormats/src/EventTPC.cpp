@@ -118,7 +118,8 @@ bool EventTPC::AddValByStrip(int strip_dir, int strip_section, int strip_number,
 
     }
 
-    //return true; //TEST AK
+    return true; //HACK AK
+    
     // update charge integrals
 
     tot_charge[strip_dir] += val;

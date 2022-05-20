@@ -9,6 +9,8 @@ from fileLoop import *
 ################################################################
 def finalize(topDirName, samples):
 
+    print(topDirName, samples)
+
     command = "mkdir -p "+topDirName+"/plots/"
     os.system(command)
 
@@ -29,7 +31,7 @@ def finalize(topDirName, samples):
         command = "root -b -q \"../test/makePlots.cpp(\\\""+topDirName+"/"+item+".root\\\")\" "
         print(command)
         os.system(command)
-        command = "mv *.png "+topDirName+"/plots/"+item
+        command = "mv Plots*.png "+topDirName+"/plots/"+item
         print(command)        
         os.system(command)
         command = "git log -1 > "+topDirName+"/git_version.dat"
@@ -58,6 +60,8 @@ def finalizeHIgS():
         "2022-04-12T18:43:08",
         "2022-04-12T20:05:29",
         "2022-04-12T21:15:46",
+        "2022-04-13T09-50-40",
+        
     ]
 
     return functools.partial(finalize, topDirName, samples)
@@ -90,9 +94,12 @@ calibration_runs = [ ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210616_e
 HIgS_runs = [
     ("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220415_extTrg_CO2_130mbar/8.86MeV/EventTPC/",
     "/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_130mbar_1372Vdrift_25MHz.dat"),
+
+    ("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220414_extTrg_CO2_130mbar/9.85MeV/GRAW/",
+    "/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat"),
     
     ("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220412_extTrg_CO2_190mbar_DT1470ET/11.1MeV/GRAW/",
-     "/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat"),
+    "/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat"),
 
     ("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220412_extTrg_CO2_190mbar_DT1470ET/11.5MeV/EventTPC/",
     "/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat"),
@@ -109,12 +116,23 @@ HIgS_runs = [
     ("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220412_extTrg_CO2_190mbar_DT1470ET/13.1MeV/GRAW/",
     "/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_190mbar_3920Vdrift_25MHz.dat"),
 
+    ("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220413_extTrg_CO2_250mbar_DT1470ET/13.1MeV/GRAW/",
+    "/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat"),
+
+    ("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220413_extTrg_CO2_250mbar_DT1470ET/13.5MeV/GRAW/",
+    "/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat"),
+
+    ("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220413_extTrg_CO2_250mbar_DT1470ET/13.9MeV/GRAW/",
+    "/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat"),
+
+
     #("/qnap/20220412_extTrg_CO2_190mbar_DT1470ET/",
     #"/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat"),
     
     #("/scratch/akalinow/Zajecia/2021-2022/Lato/PracowniaFizycznaIIStopnia/MariannaGlazewska/data/",
     # "/scratch/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_12.5MHz.dat"),
 ]
+
 ################################################
 ################################################
 ###

@@ -16,6 +16,8 @@ def analyzeSingleBatch(runId, fileCSV, geometryFile, command):
 
     arguments = " --geometryFile " + geometryFile + " --dataFile " + fileCSV + " > "+outputName+" 2>&1 &"
     print("Running job id:",runId,"\nfor file(s):\n\t"+ fileCSV.replace(",","\n\t"))
+
+    #return #TEST
     
     os.chdir(runId)
     os.system("ln -s ../*Formats* ./")

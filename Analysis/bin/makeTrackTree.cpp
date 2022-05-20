@@ -185,11 +185,13 @@ int makeTrackTree(const  std::string & geometryFileName,
   leafNames += "xAlphaEnd:yAlphaEnd:zAlphaEnd:";
   leafNames += "xCarbonEnd:yCarbonEnd:zCarbonEnd";
   tree->Branch("track",&track_data,leafNames.c_str());
-  
+
+  int index = geometryFileName.find("mbar");
+  double pressure = stof(geometryFileName.substr(index-3, 3));
   TrackBuilder myTkBuilder;
   myTkBuilder.setGeometry(myEventSource->getGeometry());
-  dEdxFitter mydEdxFitter;
-  IonRangeCalculator myRangeCalculator(gas_mixture_type::CO2,190.0,293.15);
+  myTkBuilder.setPressure(pressure);
+  IonRangeCalculator myRangeCalculator(gas_mixture_type::CO2,pressure,293.15);
 
   RecoOutput myRecoOutput;
   std::string fileName = InputFileHelper::tokenize(dataFileName)[0];
@@ -208,7 +210,7 @@ int makeTrackTree(const  std::string & geometryFileName,
 
   //Event loop
   unsigned int nEntries = myEventSource->numberOfEntries();
-  nEntries = 500;
+  //nEntries = 500;
   for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
     if(nEntries>10 && iEntry%(nEntries/10)==0){
       std::cout<<KBLU<<"Processed: "<<int(100*(double)iEntry/nEntries)<<" % events"<<RST<<std::endl;

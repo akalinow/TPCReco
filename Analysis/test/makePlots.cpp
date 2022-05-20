@@ -227,7 +227,7 @@ void makePlots(std::string fileName){
   hAlphaRangeCut1->SetLineColor(4);
   hAlphaRangeCut1->SetLineWidth(3);
   hAlphaRangeCut1->SetStats(kTRUE);
-  hAlphaRangeCut1->GetXaxis()->SetRangeUser(50,110);
+  hAlphaRangeCut1->GetXaxis()->SetRangeUser(50,150);
   hAlphaRangeCut1->Draw("");
   ////////////////////////////////
   
@@ -387,7 +387,7 @@ void makePlots(std::string fileName){
   gPad->SetLeftMargin(0.12);
   gPad->SetRightMargin(0.12);
   
-  hLength2DCut1->GetXaxis()->SetRangeUser(50,110);
+  hLength2DCut1->GetXaxis()->SetRangeUser(50,150);
   hLength2DCut1->GetYaxis()->SetRangeUser(0,20);
   hLength2DCut1->SetXTitle("#alpha range [mm]");
   hLength2DCut1->SetYTitle("^{12}C range [mm]");

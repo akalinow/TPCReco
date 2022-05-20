@@ -44,8 +44,7 @@ TrackBuilder::TrackBuilder() {
   aHoughOffest.SetY(50.0);
   aHoughOffest.SetZ(0.0);
 
-  mydEdxFitter.setPressure(190);
-  //mydEdxFitter.setPressure(130);
+  setPressure(myPressure);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -61,6 +60,13 @@ void TrackBuilder::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
   phiPitchDirection[DIR_U] = myGeometryPtr->GetStripPitchVector(DIR_U).Phi();
   phiPitchDirection[DIR_V] = myGeometryPtr->GetStripPitchVector(DIR_V).Phi();
   phiPitchDirection[DIR_W] = myGeometryPtr->GetStripPitchVector(DIR_W).Phi();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void TrackBuilder::setPressure(double aPressure) {
+
+  myPressure = aPressure;
+  mydEdxFitter.setPressure(myPressure);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
