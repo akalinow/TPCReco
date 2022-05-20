@@ -852,10 +852,10 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
 ///////////////////////////////
 bool HIGGS_analysis::eventFilter(Track3D *aTrack){
 
-  return true;
+  //  return true;
 
   // NOTE: for manual reconstruction disable dE/dx fit quality checks (cut #6)
-  bool checkFitQualityOf2prongs=false; // TODO - TO BE PARAMETERIZED !!!
+  bool checkFitQualityOf2prongs=true; // TODO - TO BE PARAMETERIZED !!!
 
   // print statistics on demand
   const auto printAccepted=false; // TODO - TO BE PARAMETERIZED !!!
@@ -873,6 +873,12 @@ bool HIGGS_analysis::eventFilter(Track3D *aTrack){
     }
   }
 
+  // get sorted list of tracks (descending order by track length)
+  std::sort(list.begin(), list.end(),
+	    [](const TrackSegment3D& a, const TrackSegment3D& b) {
+	      return a.getLength() > b.getLength();
+	    });
+  
   // cut #2 : XY plane : vertex position per event, corrected for beam tilt
   if(result) {
     vertexPos = list.front().getStart();
