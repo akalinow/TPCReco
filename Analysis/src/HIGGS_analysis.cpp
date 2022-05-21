@@ -178,7 +178,7 @@ void HIGGS_analysis::bookHistos(){
 	       Form("%s;Vertex position Y_{DET} [mm];Vertex position Z_{DET} [mm];%s", info, perEventTitle),
 	       (ymax-ymin)/binSizeMM_2dYZ, ymin, ymax, (zmax-zmin)/binSizeMM_2dYZ, zmin, zmax);
     profiles1D[(prefix+"_vertexXY_prof").c_str()]=
-      new TProfile((prefix+"_vertexXZ_prof").c_str(),
+      new TProfile((prefix+"_vertexXY_prof").c_str(),
 		   Form("%s;Vertex position X_{DET} [mm];Average vertex position Y_{DET} [mm];%s", info, perEventTitle),
 		   (xmax-xmin)/binSizeMM_prof, xmin, xmax, ymin, ymax);
     
