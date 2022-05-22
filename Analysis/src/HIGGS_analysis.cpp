@@ -983,7 +983,13 @@ bool HIGGS_analysis::eventFilter(Track3D *aTrack){
        charge < 1000) {      // TODO - TO BE PARAMETERIZED!!!
       result=false;
       if(printRejected) {
-	  std::cout<<KRED<<__FUNCTION__<<": REJECTED (failed 2-prong quality cuts)"<<RST<<std::endl;
+	  std::cout<<KRED<<__FUNCTION__<<": REJECTED (failed 2-prong quality cuts)"<<RST
+	    //		   <<" length="<<length
+	    //		   <<", charge="<<charge
+	    //		   <<", chi2="<<chi2
+	    //		   <<", hypothesisChi2="<<hypothesisChi2
+	    //		   <<", pid_ok="<<correctPID
+		   <<std::endl;
       }
     }
   }
