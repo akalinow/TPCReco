@@ -265,7 +265,7 @@ void makePlots_report(std::string fileNameHistos, float energyMeV, std::string c
     hp->SetLineWidth(2);
     TF1 *tiltFunc=new TF1("tiltFunc", "[0]+[1]*x", hp->GetXaxis()->GetXmin()+20, hp->GetXaxis()->GetXmax()-20);
     tiltFunc->SetParNames("Offset", "Slope");
-    hp->Fit(tiltFunc);
+    hp->Fit(tiltFunc, "R");
     hp->Draw("E1 SAME");
     gPad->SetLeftMargin(0.125);
     gPad->SetRightMargin(0.1);
@@ -328,7 +328,8 @@ void makePlots_report(std::string fileNameHistos, float energyMeV, std::string c
     c->Print(((string)(prefix)+".pdf").c_str());
   }
 
-  //// 2-prong, Sum of alpha + carbon track lengths, zoomed X=[30mm, 130mm], log Y scale
+  //// 2-prong, Sum of alpha + carbon track lengths, zoomed X=[30mm, 130mm], log Y scale @ 11.5 MeV
+  //// 2-prong, Sum of alpha + carbon track lengths, zoomed X=[30mm, 150mm], log Y scale @ 12.3 MeV
   if(plot_2prong) {
     c->Clear();
     h1=(TH1D*)f->Get("h_2prong_lenSUM")->Clone(); // copy for modifications of the same histogram
@@ -338,7 +339,8 @@ void makePlots_report(std::string fileNameHistos, float energyMeV, std::string c
     h1->UseCurrentStyle();
     h1->SetStats(true);
     h1->SetLineWidth(2);
-    h1->GetXaxis()->SetRangeUser(30.0, 130.0);
+    //    h1->GetXaxis()->SetRangeUser(30.0, 130.0); // valid for 11.5 MeV
+    h1->GetXaxis()->SetRangeUser(30.0, 150.0); // valid for 12.3 MeV
     gPad->SetLeftMargin(0.125);
     gPad->SetRightMargin(0.1);
     gPad->SetLogy(true);
@@ -352,7 +354,8 @@ void makePlots_report(std::string fileNameHistos, float energyMeV, std::string c
     c->Print(((string)(prefix)+".pdf").c_str());
   }
 
-  //// 2-prong, Sum of alpha + carbon track lengths, zoomed X=[30mm, 130mm], linear Y scale
+  //// 2-prong, Sum of alpha + carbon track lengths, zoomed X=[30mm, 130mm], linear Y scale @ 11.5 MeV
+  //// 2-prong, Sum of alpha + carbon track lengths, zoomed X=[30mm, 150mm], linear Y scale @ 12.3 MeV
   if(plot_2prong) {
     c->Clear();
     h1=(TH1D*)f->Get("h_2prong_lenSUM")->Clone(); // copy for modifications of the same histogram
@@ -362,7 +365,8 @@ void makePlots_report(std::string fileNameHistos, float energyMeV, std::string c
     h1->UseCurrentStyle();
     h1->SetStats(true);
     h1->SetLineWidth(2);
-    h1->GetXaxis()->SetRangeUser(30.0, 130.0);
+    //    h1->GetXaxis()->SetRangeUser(30.0, 130.0); // valid for 11.5 MeV
+    h1->GetXaxis()->SetRangeUser(30.0, 150.0); // valid for 12.3 MeV
     gPad->SetLeftMargin(0.125);
     gPad->SetRightMargin(0.1);
     gPad->SetLogy(false);
@@ -376,7 +380,8 @@ void makePlots_report(std::string fileNameHistos, float energyMeV, std::string c
     c->Print(((string)(prefix)+".pdf").c_str());
   }
 
-  //// 2-prong, Alpha track length, zoomed X=[30mm, 130mm], log Y scale
+  //// 2-prong, Alpha track length, zoomed X=[30mm, 130mm], log Y scale @ 11.5 MeV
+  //// 2-prong, Alpha track length, zoomed X=[30mm, 150mm], log Y scale @ 12.3 MeV
   if(plot_2prong) {
     c->Clear();
     h1=(TH1D*)f->Get("h_2prong_alpha_len")->Clone(); // copy for modifications of the same histogram
@@ -386,7 +391,8 @@ void makePlots_report(std::string fileNameHistos, float energyMeV, std::string c
     h1->UseCurrentStyle();
     h1->SetStats(true);
     h1->SetLineWidth(2);
-    h1->GetXaxis()->SetRangeUser(30.0, 130.0);
+    //    h1->GetXaxis()->SetRangeUser(30.0, 130.0); // valid for 11.5 MeV
+    h1->GetXaxis()->SetRangeUser(30.0, 150.0); // valid for 12.3 MeV
     gPad->SetLeftMargin(0.125);
     gPad->SetRightMargin(0.1);
     gPad->SetLogy(true);
@@ -400,7 +406,8 @@ void makePlots_report(std::string fileNameHistos, float energyMeV, std::string c
     c->Print(((string)(prefix)+".pdf").c_str());
   }
 
-  //// 2-prong, Alpha track length, zoomed X=[60mm, 80mm], linear Y scale
+  //// 2-prong, Alpha track length, zoomed X=[60mm, 80mm], linear Y scale @ 11.5 MeV
+  //// 2-prong, Alpha track length, zoomed X=[75mm, 105mm], linear Y scale @ 12.3 MeV
   if(plot_2prong) {
     c->Clear();
     h1=(TH1D*)f->Get("h_2prong_alpha_len")->Clone(); // copy for modifications of the same histogram
@@ -410,7 +417,8 @@ void makePlots_report(std::string fileNameHistos, float energyMeV, std::string c
     h1->UseCurrentStyle();
     h1->SetStats(true);
     h1->SetLineWidth(2);
-    h1->GetXaxis()->SetRangeUser(60.0, 80.0);
+    //    h1->GetXaxis()->SetRangeUser(60.0, 80.0); // valid for 11.5 MeV
+    h1->GetXaxis()->SetRangeUser(75.0, 105.0); // valid for 12.3 MeV
     gPad->SetLeftMargin(0.125);
     gPad->SetRightMargin(0.1);
     gPad->SetLogy(false);
@@ -424,7 +432,8 @@ void makePlots_report(std::string fileNameHistos, float energyMeV, std::string c
     c->Print(((string)(prefix)+".pdf").c_str());
   }
 
-  //// 2-prong, Alpha track length (X) vs Carbon track length (Y), zoomed X=[20mm, 120mm] x Y=[4mm, 18mm]
+  //// 2-prong, Alpha track length (X) vs Carbon track length (Y), zoomed X=[20mm, 120mm] x Y=[4mm, 18mm] @ 11.5 MeV
+  //// 2-prong, Alpha track length (X) vs Carbon track length (Y), zoomed X=[20mm, 120mm] x Y=[4mm, 18mm] @ 12.3 MeV
   if(plot_2prong) {
     c->Clear();
     h2=(TH2D*)f->Get("h_2prong_alpha_len_carbon_len")->Clone(); // copy for modifications of the same histogram
@@ -439,8 +448,10 @@ void makePlots_report(std::string fileNameHistos, float energyMeV, std::string c
     h2->SetTitleOffset(1.6, "X");
     h2->SetTitleOffset(1.4, "Y");
     h2->SetTitleOffset(1.2, "Z");
-    h2->GetXaxis()->SetRangeUser(20, 120);
-    h2->GetYaxis()->SetRangeUser(4, 18);
+    //    h2->GetXaxis()->SetRangeUser(20, 120); // valid for 11.5 MeV
+    //    h2->GetYaxis()->SetRangeUser(4, 18); // valid for 11.5 MeV
+    h2->GetXaxis()->SetRangeUser(20, 120); // valid for 12.3 MeV
+    h2->GetYaxis()->SetRangeUser(4, 18); // valid for 12.3 MeV
     gPad->Update();
     st = (TPaveStats *)c->GetPrimitive("stats");
     if(st) {
@@ -453,7 +464,9 @@ void makePlots_report(std::string fileNameHistos, float energyMeV, std::string c
 
   //// define 2D cut to select Oxygen-16 only for next 3 plots
   Double_t theta[5]  = {-1,    1,       1,    -1, -1};
-  Double_t length[5] = {58, 58+5, 58+5+20, 58+20, 58};
+  //  Double_t length[5] = {58, 58+5, 58+5+20, 58+20, 58}; // valid for 11.5MeV
+  Double_t length[5] = {78, 78+7, 78+7+20, 78+20, 78}; // valid for 12.3MeV
+
   TCutG *mycut=new TCutG("select_O16", 5, theta, length);
   mycut->SetLineColor(kRed);
   mycut->SetLineWidth(3);
@@ -485,7 +498,8 @@ void makePlots_report(std::string fileNameHistos, float energyMeV, std::string c
     c->Print(((string)(prefix)+".pdf").c_str());
   }
 
-  //// 2-prong, Alpha track length (X) vs Alpha cos(theta_BEAM_LAB), zoomed Y=[50mm, 90mm], tagged O-16
+  //// 2-prong, Alpha track length (X) vs Alpha cos(theta_BEAM_LAB), zoomed Y=[50mm, 90mm], tagged O-16 @ 11.5 MeV
+  //// 2-prong, Alpha track length (X) vs Alpha cos(theta_BEAM_LAB), zoomed Y=[70mm, 110mm], tagged O-16 @ 12.3 MeV
   if(plot_2prong) {
     c->Clear();
     h2=(TH2D*)f->Get("h_2prong_alpha_cosThetaBEAM_len_LAB")->Clone(); // copy for modifications of the same histogram
@@ -502,7 +516,8 @@ void makePlots_report(std::string fileNameHistos, float energyMeV, std::string c
     h2->SetTitleOffset(1.6, "X");
     h2->SetTitleOffset(1.4, "Y");
     h2->SetTitleOffset(1.2, "Z");
-    h2->GetYaxis()->SetRangeUser(50, 90);
+    //    h2->GetYaxis()->SetRangeUser(50, 90); // valid for 11.5 MeV
+    h2->GetYaxis()->SetRangeUser(70, 110); // valid for 12.3 MeV
     gPad->Update();
     //  st = (TPaveStats *)c->GetPrimitive("stats");
     //  if(st) {
@@ -525,7 +540,7 @@ void makePlots_report(std::string fileNameHistos, float energyMeV, std::string c
     h1->UseCurrentStyle();
     h1->SetStats(true);
     h1->SetLineWidth(2);
-    h1->GetXaxis()->SetRangeUser(60.0, 80.0);
+    //    h1->GetXaxis()->SetRangeUser(60.0, 80.0);
     h1->GetMinimum(0);
     gPad->SetLeftMargin(0.125);
     gPad->SetRightMargin(0.1);
@@ -851,7 +866,7 @@ void makePlots_report(std::string fileNameHistos, float energyMeV, std::string c
 //////////////////////////////////
 void makeCombinedPlots_report(std::string fileNameHistosAuto, std::string fileNameHistosManual, float energyMeV){
 
-  const auto rebin=4;
+  const auto rebin=5;
   const auto width=2;
 
   TFile *f1 = new TFile(fileNameHistosAuto.c_str(), "OLD"); // AUTOMATIC RECO

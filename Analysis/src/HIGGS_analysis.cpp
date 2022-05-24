@@ -963,7 +963,7 @@ bool HIGGS_analysis::eventFilter(Track3D *aTrack){
   // reconstruction that employs lustering + dE/dx method:
   // - chi2 < 10
   // - charge > 1000
-  // - length > 20 mm  (30, 50 also good)
+  // - length > 30 mm
   // - eventType = 3
   // - hypothesisChi2 < 5
   // NOTE: For manual reconstruction disable these dE/dx fit quality checks
@@ -979,7 +979,7 @@ bool HIGGS_analysis::eventFilter(Track3D *aTrack){
     auto correctPID = list.front().getPID()==ALPHA && list.back().getPID()==CARBON_12; // TODO - TO BE PARAMETERIZED!!!
     if(!correctPID        ||
        chi2 > 10          || // TODO - TO BE PARAMETERIZED!!!
-       hypothesisChi2 > 5 || // TODO - TO BE PARAMETERIZED!!!
+       hypothesisChi2 > 5 || // TODO - TO BE PARAMETERIZED!!! (conservative cut from Artur's 11_05_2022 reprocessing)
        length < 30        || // TODO - TO BE PARAMETERIZED!!! (same as sum of lengths [mm])
        charge < 1000) {      // TODO - TO BE PARAMETERIZED!!!
       result=false;

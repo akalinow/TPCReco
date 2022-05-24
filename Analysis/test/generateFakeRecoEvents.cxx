@@ -11,10 +11,10 @@
 // Below are parameters and flags that control behaviour of
 // the toy Monte Carlo generator:
 //
-#define SIMUL_CONTAINMENT_FLAG   false     // skip partially contained events?
-#define SIMUL_TRUNCATE_FLAG      true      // truncate partially contained tracks?
-#define SIMUL_EXT_TRG_FLAG       true      // simulate external trigger?
-#define SIMUL_EXT_TRG_ARRIVAL    0.1       // trigger position on time scale [0-1]
+#define SIMUL_CONTAINMENT_FLAG   false     // skip partially contained events within detector's volume?
+#define SIMUL_TRUNCATE_FLAG      true      // truncate partially contained tracks (detector's volume and/or GET history buffer)?
+#define SIMUL_EXT_TRG_FLAG       true      // simulate external trigger and GET history buffer?
+#define SIMUL_EXT_TRG_ARRIVAL    0.1       // trigger position as a fraction of GET electronics full time scale [0-1]
 //#define SIMUL_BEAM_E_RESOL     0         // no energy smearing
 //#define SIMUL_BEAM_E_RESOL     0.00369   // [0-1] 0.369% energy sigma, fwhm=100 keV @ 11.5MeV
 //#define SIMUL_BEAM_E_RESOL     0.00554   // [0-1] 0.554% energy sigma, fwhm=150 keV @ 11.5MeV
@@ -36,7 +36,7 @@
 #define SIMUL_POLARISATION_FRAC  0.33      // degree of linear polarization of gamma beam
 #define SIMUL_POLARISATION_ANGLE 35./180.*TMath::Pi()  // polarization plane (CKW wrt horizontal axis)
 #define SIMUL_EXTENSION_FLAG     true      // allow verticies created outside of active volume?
-#define SIMUL_EXTENSION_ZONE     100.0      // extension zone for the verticies [mm]
+#define SIMUL_EXTENSION_ZONE     100.0     // extension zone for the verticies [mm]
 #define SIMUL_PLOT3D_FLAG        false     // create 3D debug plot with all tracks?
 
 #ifndef __ROOTLOGON__
@@ -155,7 +155,7 @@ bool isFullyContainedEvent(Track3D & aTrack){
 }
 //////////////////////////
 //////////////////////////
-void truncateTracks(Track3D & aTrack, bool debug_flag){
+void truncateTracks(Track3D & aTrack, bool debug_flag, bool electronicsRange_flag=false){
   if(aTrack.getSegments().size()==0) return;
   std::shared_ptr<GeometryTPC> aGeometry=aTrack.getSegments().front().getGeometry();
 
@@ -166,6 +166,24 @@ void truncateTracks(Track3D & aTrack, bool debug_flag){
   std::vector<bool> isHorizontal_vec;
   double xmin, xmax, ymin, ymax, zmin, zmax;
   std::tie(xmin, xmax, ymin, ymax, zmin, zmax)=aGeometry->rangeXYZ();
+
+  // optionally truncate tracks to GET electronics history buffer rather than to hardware drift cage range
+  if(electronicsRange_flag) {
+    auto err=false;
+    auto get_zmin=aGeometry->Timecell2pos(0, err);
+    auto get_zmax=aGeometry->Timecell2pos(aGeometry->GetAgetNtimecells(), err);
+    if(debug_flag) {
+      std::cout << __FUNCTION__ << ": Truncating to GET electronics Z-range = ["<<get_zmin<<", "<<get_zmax<<"] mm, sampling rate="
+		<<aGeometry->GetSamplingRate()<<" MHz, time_bin_width="
+		<<aGeometry->GetTimeBinWidth()<<" mm"<<std::endl;
+    }
+    zmin=get_zmin;
+    zmax=get_zmax;
+  } else {
+    if(debug_flag) {
+      std::cout << __FUNCTION__ << ": Truncating to drift cage Z-range = ["<<zmin<<", "<<zmax<<"] mm"<<std::endl;
+    }
+  }
   basepoint_vec.push_back(TVector3(xmin, ymin, zmin));
   basepoint_vec.push_back(TVector3(xmin, ymin, zmax));
   span1_vec.push_back(TVector3(1, 0, 0)*(xmax-xmin));
@@ -188,8 +206,10 @@ void truncateTracks(Track3D & aTrack, bool debug_flag){
     TrackSegment3D & aSegment=aTrack.getSegments().at(index_seg);
     auto offset=aSegment.getStart();
     auto tangent=aSegment.getEnd()-offset;
-    const bool keep_start=aGeometry->IsInsideActiveVolume(offset);
-    const bool keep_end=aGeometry->IsInsideActiveVolume(offset+tangent);
+    const bool keep_start=aGeometry->IsInsideActiveVolume(offset)
+      && (electronicsRange_flag ? aGeometry->IsInsideElectronicsRange(offset) : true); // optionally check GET electronics range
+    const bool keep_end=aGeometry->IsInsideActiveVolume(offset+tangent)
+      && (electronicsRange_flag ? aGeometry->IsInsideElectronicsRange(offset+tangent) : true); // optionally check GET electronics range
 
     // both inside => nothing to do
     if(keep_start && keep_end) {
@@ -206,6 +226,13 @@ void truncateTracks(Track3D & aTrack, bool debug_flag){
       for(auto iwall=0u; iwall<nwalls; iwall++) { // loop through all detector's faces
 
 	double t1=-9999, t2=-9999;
+	/*
+	if(!Utils::intersectionEdgePlane(offset, tangent, basepoint_vec[iwall],
+					 span1_vec[iwall], span2_vec[iwall], p, t1, t2) ||
+	   !( (isHorizontal_vec[iwall] && aGeometry->IsInsideActiveArea(TVector2(p.X(), p.Y()))) ||
+	      (!isHorizontal_vec[iwall] && t1>-Utils::NUMERICAL_TOLERANCE && t1<1+Utils::NUMERICAL_TOLERANCE
+	       && t2>-Utils::NUMERICAL_TOLERANCE && t2<1+Utils::NUMERICAL_TOLERANCE) ) ) {
+	*/
 	if(!Utils::intersectionEdgePlane(offset, tangent, basepoint_vec[iwall],
 					 span1_vec[iwall], span2_vec[iwall], p, t1, t2) ||
 	   !( (isHorizontal_vec[iwall] && aGeometry->IsInsideActiveArea(TVector2(p.X(), p.Y()))) ||
@@ -278,11 +305,18 @@ void truncateTracks(Track3D & aTrack, bool debug_flag){
 
       TVector3 p;
       double t1=9999, t2=9999;
+      /*
+      if(!Utils::intersectionEdgePlane(offset, tangent, basepoint_vec[iwall],
+				       span1_vec[iwall], span2_vec[iwall], p, t1, t2) ||
+	 !( (isHorizontal_vec[iwall] && aGeometry->IsInsideActiveArea(TVector2(p.X(), p.Y()))) ||
+	    (!isHorizontal_vec[iwall] && t1>-Utils::NUMERICAL_TOLERANCE && t1<1+Utils::NUMERICAL_TOLERANCE
+	     && t2>-Utils::NUMERICAL_TOLERANCE && t2<1+Utils::NUMERICAL_TOLERANCE) ) ) {
+      */
       if(!Utils::intersectionEdgePlane(offset, tangent, basepoint_vec[iwall],
 				       span1_vec[iwall], span2_vec[iwall], p, t1, t2) ||
 	 !( (isHorizontal_vec[iwall] && aGeometry->IsInsideActiveArea(TVector2(p.X(), p.Y()))) ||
 	    (!isHorizontal_vec[iwall] && t1>=0 && t1<=1 && t2>=0 && t2<=1) ) ) {
-	continue; // next wall
+      continue; // next wall
       }
       list.push_back(p);
     }
@@ -485,28 +519,19 @@ Track3D generateFakeAlphaCarbonGenericEvent(std::shared_ptr<GeometryTPC> aGeomet
   list.push_back(alphaP4_DET.Vect().Unit()*rangeAlpha_DET); // 1st track direction
   list.push_back(carbonP4_DET.Vect().Unit()*rangeCarbon_DET); // 2nd track direction
 
-  // smear vertex position in XYZ
-  // - assume gaussian spread of beam profile
-  // - assume self-triggering mode
-  // - assume trigger position at 10% of TIME scale
-  double xmin, xmax, ymin, ymax, zmin, zmax;
-  std::tie(xmin, xmax, ymin, ymax, zmin, zmax)=aGeometry->rangeXYZ();
-
-  // gaussian beam profile in YZ plane
-  //  double beamSpreadSigma=1.0;   // gaussian tail sigma in [mm]
-  //  TVector3 vertex( r->Uniform(xmin, xmax), r->Gaus(0, beamSpreadSigma), r->Gaus(0.5*(zmin+zmax), beamSpreadsigma) );
-
-  // flat-top with gaussian tails beam profile in YZ plane
+  // smear vertex position in XYZ assuming:
+  // - uniform distribution along X
+  // - flat-top beam profile with gaussian tails in YZ plane
   // employs TF2::GetRandom2()
+  double xmin, xmax, ymin, ymax;
+  std::tie(xmin, xmax, ymin, ymax)=aGeometry->rangeXY();
   double y_rnd=0, z_rnd=0;
   beamProfileTF2.GetRandom2(y_rnd, z_rnd); // newer ROOT: (y_rnd, z_rnd, r);
 
-  //  TVector3 vertex( r->Uniform(xmin, xmax), y_rnd, z_rnd);
-  ///////// DEBUG
+  // optionally extend vertex production outside of active area
   TVector3 vertex( r->Uniform(xmin-(SIMUL_EXTENSION_FLAG ? SIMUL_EXTENSION_ZONE : 0),
 			      xmax+(SIMUL_EXTENSION_FLAG ? SIMUL_EXTENSION_ZONE : 0)),
-		   y_rnd, z_rnd); // optionally extend vertex production outside of active area
-  ///////// DEBUG
+		   y_rnd, z_rnd);
 
   // create TrackSegment3D collection
   Track3D aTrack;
@@ -677,29 +702,19 @@ Track3D generateFake3AlphaEvent(std::shared_ptr<GeometryTPC> aGeometry, std::sha
   list.push_back(alpha2_P4_DET.Vect().Unit()*range2_DET); // 2nd track direction
   list.push_back(alpha3_P4_DET.Vect().Unit()*range3_DET); // 3rd track direction
 
-  // smear vertex position in XYZ
-  // - assume gaussian spread of beam profile
-  // - assume self-triggering mode
-  // - assume trigger position at 10% of TIME scale
-  double xmin, xmax, ymin, ymax, zmin, zmax;
-  std::tie(xmin, xmax, ymin, ymax)=aGeometry->rangeXY();
-  zmin=aGeometry->GetDriftCageZmin();
-  zmax=aGeometry->GetDriftCageZmax();
-
-  // gaussian beam profile in YZ plane
-  //  double beamSpreadSigma=5.0;   // gaussian tail sigma in [mm]
-  //  TVector3 vertex( r->Uniform(xmin, xmax), r->Gaus(0, beamSpreadSigma), r->Gaus(0.5*(zmin+zmax), beamSpreadsigma) );
-
-  // flat-top with gaussian tails beam profile in YZ plane
+  // smear vertex position in XYZ assuming:
+  // - uniform distribution along X
+  // - flat-top beam profile with gaussian tails in YZ plane
   // employs TF2::GetRandom2()
+  double xmin, xmax, ymin, ymax;
+  std::tie(xmin, xmax, ymin, ymax)=aGeometry->rangeXY();
   double y_rnd=0, z_rnd=0;
   beamProfileTF2.GetRandom2(y_rnd, z_rnd); // (y_rnd, z_rnf, r);
-  //  TVector3 vertex( r->Uniform(xmin, xmax), y_rnd, z_rnd);
-  ///////// DEBUG
+
+  // optionally extend vertex production outside of active area
   TVector3 vertex( r->Uniform(xmin-(SIMUL_EXTENSION_FLAG ? SIMUL_EXTENSION_ZONE : 0),
 			      xmax+(SIMUL_EXTENSION_FLAG ? SIMUL_EXTENSION_ZONE : 0)),
-		   y_rnd, z_rnd); // optionally extend vertex production outside of active area
-  ///////// DEBUG
+		   y_rnd, z_rnd);
 
   // create TrackSegment3D collection
   Track3D aTrack;
@@ -773,6 +788,14 @@ void generateFakeRecoEvents(const std::string geometryName, unsigned int nEvents
     TView *view=TView::CreateView(1);
     double xmin, xmax, ymin, ymax, zmin, zmax;
     std::tie(xmin, xmax, ymin, ymax, zmin, zmax)=myGeometry->rangeXYZ();
+
+    if(SIMUL_EXT_TRG_FLAG) {
+      auto err=false;
+      auto get_zmin=myGeometry->Timecell2pos(0, err);
+      zmax=get_zmin+(zmax-zmin);
+      zmin=get_zmin;
+    }
+
     auto view_span=0.8*std::max(std::max(xmax-xmin, ymax-ymin), zmax-zmin);
     view->SetRange(0.5*(xmax+xmin)-0.5*view_span, 0.5*(ymax+ymin)-0.5*view_span, 0.5*(zmax+zmin)-0.5*view_span,
 		   0.5*(xmax+xmin)+0.5*view_span, 0.5*(ymax+ymin)+0.5*view_span, 0.5*(zmax+zmin)+0.5*view_span);
@@ -841,7 +864,7 @@ void generateFakeRecoEvents(const std::string geometryName, unsigned int nEvents
     if(debug_flag || (i<1000L && (i%100L)==0L) || (i%1000L)==0L ) std::cout<<"Generating fake track i="<<i<<std::endl;
     *aTrack = func(myGeometry, myRangeCalculator, photonEnergyMeV, debug_flag);
 
-    // check if all segments are fully contained
+    // check if all segments are fully contained inside detector's active volume
     if( (SIMUL_CONTAINMENT_FLAG || SIMUL_TRUNCATE_FLAG) &&
 	!isFullyContainedEvent(*aTrack) ) {
 
@@ -854,7 +877,7 @@ void generateFakeRecoEvents(const std::string geometryName, unsigned int nEvents
       } else {
 	if(SIMUL_TRUNCATE_FLAG) {
 	  Track3D copy(*aTrack);
-	  truncateTracks(copy, debug_flag); // truncate tracks to detector's volume
+	  truncateTracks(copy, debug_flag); // truncate tracks to detector's active volume
 	  *aTrack=copy;
 	}
       }
@@ -866,7 +889,9 @@ void generateFakeRecoEvents(const std::string geometryName, unsigned int nEvents
       continue; 
     }
 
-    // simulates triggering on the 1st track (arrival at 10% of TIME scale)
+    // simulates GET electronics:
+    // - TIME scale depends the sampling rate
+    // - triggering on the 1st track (arrival at 10% of TIME scale)
     if(SIMUL_EXT_TRG_FLAG) {
 
       // sort a copy of the track collection in ascending Z-coordinate order
@@ -875,8 +900,10 @@ void generateFakeRecoEvents(const std::string geometryName, unsigned int nEvents
 		[](const TrackSegment3D& a, const TrackSegment3D& b) {
 		  return std::min(a.getEnd().Z(), a.getStart().Z()) < std::min(b.getEnd().Z(), b.getStart().Z());
 		});
-      auto zmin=myGeometry->GetDriftCageZmin();
-      auto zmax=myGeometry->GetDriftCageZmax();
+      // calculate range in time cells [0-511] of the GET electronics
+      auto err=false;
+      auto zmin=myGeometry->Timecell2pos(0, err); // Z_DET corresponding to timecell=0
+      auto zmax=myGeometry->Timecell2pos(myGeometry->GetAgetNtimecells(), err); // Z_DET corresponding to timecell=512
       const double true_zmin=std::min(list.front().getStart().Z(), list.front().getEnd().Z());
       for(auto &seg: aTrack->getSegments()) {
 	seg.setStartEnd(TVector3(seg.getStart().X(), seg.getStart().Y(),
@@ -885,6 +912,20 @@ void generateFakeRecoEvents(const std::string geometryName, unsigned int nEvents
 				 seg.getEnd().Z()-true_zmin+zmin+SIMUL_EXT_TRG_ARRIVAL*(zmax-zmin)));
       }
     }
+
+    // check if all segments are fully contained within GET electronics Z_DET history buffer
+    if(SIMUL_TRUNCATE_FLAG) {
+      Track3D copy(*aTrack);
+      truncateTracks(copy, debug_flag, true); // truncate tracks to Z_DET slice corresponding to GET electronics history buffer
+      *aTrack=copy;
+    }
+
+    // skip bad or parially contained events
+    if(aTrack->getSegments().size()==0) {
+      if(debug_flag) std::cout<<"Fake event i="<<i<<" rejected!"<<std::endl;
+      continue;
+    }
+
     aTree->Fill();
 
     // make 3D plot (optional)

@@ -206,8 +206,10 @@ class GeometryTPC {
   TGraph GetActiveAreaConvexHull(double vetoBand=0); // get convex hull [mm] of the entire UVW active area
                                                      // with (optionally) excluded outer VETO band [mm]
   bool IsInsideActiveVolume(TVector3 point); // checks if 3D point [mm] has X,Y inside
-                                             // UVW active area and Z within [zmin. zmax] range
+                                             // UVW active area and Z within [zmin, zmax] range
   bool IsInsideActiveArea(TVector2 point); // checks if 2D point [mm] is inside UVW active area
+  bool IsInsideElectronicsRange(double z); // checks if Z coordinate [mm] is inside Z-slice covered by the GET electronics
+  bool IsInsideElectronicsRange(TVector3 point); // checks 3D point [mm] is inside Z-slice covered by the GET electronics
   std::tuple<double, double> rangeX(); //min/max X [mm] cartesian coordinates covered by UVW active area
   std::tuple<double, double> rangeY(); //min/max Y [mm] cartesian coordinates covered by UVW active area
   std::tuple<double, double> rangeZ(); //min/max Z [mm] cartesian coordinates covered by drift cage
