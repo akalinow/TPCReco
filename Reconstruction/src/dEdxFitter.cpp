@@ -4,12 +4,18 @@
 #include "TFitResultPtr.h"
 #include "Math/MinimizerOptions.h"
 
-TGraph* dEdxFitter::braggGraph_alpha = new TGraph("dEdx_alpha_10000keV_190mbar_CO2.dat", "%lg %lg %*lg");
+/*
+TGraph* dEdxFitter::braggGraph_alpha = new TGraph("dEdx_alpha_10000keV_190mbar_CO2_corr.dat", "%lg %lg %*lg");
 TGraph* dEdxFitter::braggGraph_12C = new TGraph("dEdx_12C_5000keV_190mbar_CO2.dat", "%lg %lg %*lg");
+double dEdxFitter::nominalPressure = 190.0;
+*/
+
+
+TGraph* dEdxFitter::braggGraph_alpha = new TGraph("dEdx_alpha_10000keV_250mbar_CO2.dat", "%lg %lg %*lg");
+TGraph* dEdxFitter::braggGraph_12C = new TGraph("dEdx_12C_2500keV_250mbar_CO2.dat", "%lg %lg %*lg");
+double dEdxFitter::nominalPressure = 250.0;
 
 double dEdxFitter::currentPressure = 190.0;
-double dEdxFitter::nominalPressure = 190.0;
-
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 dEdxFitter::dEdxFitter(double aPressure){
@@ -69,12 +75,24 @@ void dEdxFitter::setPressure(double aPressure) {
   currentPressure = aPressure;
 
   minVtxOffset = -5;
-
   minAlphaOffset = 0;
-  maxAlphaOffset = (385.99)*(190.0/currentPressure); 
-
   minCarbonOffset = 0;
-  maxCarbonOffset = (28.64)*(190.0/currentPressure);
+
+  //190 mbar, 10 MeV alpha, 2.5 MeV C
+  if(std::abs(nominalPressure-190)<1E-3){
+    maxAlphaOffset = (385.99)*(nominalPressure/currentPressure); 
+    maxCarbonOffset = (28.64)*(nominalPressure/currentPressure);
+  }
+  //250 mbar, 10 MeV alpha, 5 MeV C
+  else if(std::abs(nominalPressure-250)<1E-3){
+    maxCarbonOffset = (13.191)*(nominalPressure/currentPressure);
+    maxAlphaOffset = (289.791)*(nominalPressure/currentPressure);
+  }
+  else{
+    std::cout<<KRED<<"dEdxFitter: nominal pressure: "<<RST<<nominalPressure
+	     <<" does not corresond to any dEdx data files."<<std::endl;
+    exit(0);
+  }
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
