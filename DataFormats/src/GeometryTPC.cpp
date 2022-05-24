@@ -1127,21 +1127,40 @@ TGraph GeometryTPC::GetActiveAreaConvexHull(double vetoBand){
 ////////////////////////////////////////////////////////////
 //
 // Checks if 3D point [mm] has X,Y inside
-// UVW active area and Z within [zmin. zmax] range
+// UVW active area and Z within [zmin, zmax] drift cage range
 //
-bool GeometryTPC::IsInsideActiveVolume(TVector3 point) {
+bool GeometryTPC::IsInsideActiveVolume(TVector3 point) { // [mm]
   if(!isOK_TH2Poly || point.Z()<drift_zmin || point.Z()>drift_zmax ||
      !tp_convex->IsInside(point.X(), point.Y())) return false;
   return true;
 }
+
 ////////////////////////////////////////////////////////////
 //
 // Checks if 2D point [mm] is inside UVW active area
 //
-bool GeometryTPC::IsInsideActiveArea(TVector2 point) {
+bool GeometryTPC::IsInsideActiveArea(TVector2 point) { // [m]]
   if(!isOK_TH2Poly ||
      !tp_convex->IsInside(point.X(), point.Y())) return false;
   return true;
+}
+
+////////////////////////////////////////////////////////////
+//
+// Checks if Z coordinate [mm] is inside Z-slice covered by the GET electronics
+//
+bool GeometryTPC::IsInsideElectronicsRange(double z) { // [mm]
+  bool isOutside_flag=false;
+  Pos2timecell(z, isOutside_flag);
+  return !isOutside_flag;
+}
+
+////////////////////////////////////////////////////////////
+//
+// Checks if 3D point [mm] is inside Z-slice covered by the GET electronics
+//
+bool GeometryTPC::IsInsideElectronicsRange(TVector3 point) { // [mm]
+  return IsInsideElectronicsRange(point.Z());
 }
 
 void GeometryTPC::setDriftVelocity(double v){
