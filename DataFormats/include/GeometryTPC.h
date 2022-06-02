@@ -2,7 +2,7 @@
 #define __GEOMETRYTPC_H__
 
 // TPC geometry class.
-// VERSION: 05 May 2018
+// VERSION: 30 Apr 2022
 
 #include <cstdlib>
 #include <cstddef> // for NULL
@@ -14,6 +14,7 @@
 #include "TVector2.h"
 #include "TVector3.h"
 #include "TH2Poly.h"
+#include "TGraph.h"
 #include "MultiKey.h"
 #include "CommonDefinitions.h"
 #include "RunConditions.h"
@@ -66,7 +67,8 @@ class GeometryTPC {
   int grid_ny;                     // partition size of TH2Poly in Y-dir
   bool isOK_TH2Poly;               // is TH2Poly already initialized?
   bool _debug;                     // debug/verbose info flag
-     
+  TGraph* tp_convex;               // for internal storage of the convex hull for UVW active area
+
   // Setter methods 
   
   bool Load(const char *fname);                 // loads geometry from TXT config file
@@ -74,10 +76,12 @@ class GeometryTPC {
   bool InitTH2Poly();                           // define bins for the underlying TH2Poly histogram
 
   void SetTH2PolyStrip(int ibin, StripTPC *s);  // maps TH2Poly bin to a given StripTPC object
+
+  bool InitActiveAreaConvexHull(TGraph *g);     // calculates convex hull from cloud of 2D points [mm]
   
  public:
   void Debug();
-  GeometryTPC() { ; }  // empty constructor for required by TObject
+  GeometryTPC() { ; }  // empty constructor required by TObject
   //  virtual ~GeometryTPC();
   
   // Setter methods 
@@ -137,7 +141,7 @@ class GeometryTPC {
   StripTPC *GetStripByGlobal(int global_channel_idx);                                          // valid range [0-1023]
   StripTPC *GetStripByAget_raw(int COBO_idx, int ASAD_idx, int AGET_idx, int raw_channel_idx); // valid range [0-1][0-3][0-3][0-67]
   StripTPC *GetStripByGlobal_raw(int global_raw_channel_idx);                                  // valid range [0-(1023+4*ASAD_N*COBO_N)]
-  StripTPC *GetStripByDir(int dir, int section, int num);                                                   // valid range [0-2][0-2][1-1024]
+  StripTPC *GetStripByDir(int dir, int section, int num);                                      // valid range [0-2][0-2][1-1024]
   //  StripTPC *GetStripByDir(int dir, int num);   //legacy for section=0, valid range [0-2][1-1024]
 
   // various helper functions for calculating local/global normal/raw channel index
@@ -148,9 +152,9 @@ class GeometryTPC {
   int Asad_normal2raw(int aget_idx, int channel_idx);        // valid range [0-3][0-63]
   int Asad_normal2raw(int asad_channel_idx);                 // valid range [0-255]
   int Asad_normal2normal(int aget_idx, int channel_idx);     // valid range [0-3][0-63]
-  int Asad_raw2normal(int aget_idx, int raw_channel_idx);        // valid range [0-3][0-67]
+  int Asad_raw2normal(int aget_idx, int raw_channel_idx);    // valid range [0-3][0-67]
   int Asad_raw2normal(int asad_raw_channel_idx);             // valid range [0-271]
-  int Asad_raw2raw(int aget_idx, int raw_channel_idx);           // valid range [0-3][0-67]
+  int Asad_raw2raw(int aget_idx, int raw_channel_idx);       // valid range [0-3][0-67]
 
   int Global_normal2raw(int COBO_idx, int ASAD_idx, int aget_idx, int channel_idx);      // valid range [0-1][0-3][0-3][0-63]
   int Global_normal2raw(int glb_channel_idx);                                            // valid range [0-1024]
@@ -162,10 +166,10 @@ class GeometryTPC {
   int Global_fpn2raw(int COBO_idx, int ASAD_idx, int aget_idx, int FPN_idx);             // valid range [0-1][0-3][0-3][0-3]
 
   int Global_strip2normal(StripTPC *s);
-  int Global_strip2normal(int dir, int section, int num);                 // valid range [0-2][0-2][1-1024]
+  int Global_strip2normal(int dir, int section, int num);                                // valid range [0-2][0-2][1-1024]
   //  int Global_strip2normal(int dir, int num);                 //legacy for section=0, valid range [0-2][1-1024]
   int Global_strip2raw(StripTPC *s);
-  int Global_strip2raw(int dir, int section, int num);                    // valid range [0-2][0-2][1-1024]
+  int Global_strip2raw(int dir, int section, int num);                                   // valid range [0-2][0-2][1-1024]
   //  inline int Global_strip2raw(int dir, int num);                    //legacy for section =0, valid range [0-2][1-1024]
 
   bool GetCrossPoint(StripTPC *strip1, StripTPC *strip2, TVector2 &point);
@@ -191,7 +195,6 @@ class GeometryTPC {
   double Strip2posUVW(int dir, int section, int number, bool &err_flag); // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of the central line of the (existing) strip on the strip pitch axis for a given direction
   double Strip2posUVW(int dir, int number, bool &err_flag); // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of the central line of the (existing) strip on the strip pitch axis for a given direction
   double Strip2posUVW(StripTPC *strip, bool &err_flag); // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of the central line of the (existing) strip on the strip pitch axis for a strip given direction
-
   
   double Cartesian2posUVW(double x, double y, int dir, bool &err_flag); // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of a given (X,Y) point on the strip pitch axis for a given direction
   double Cartesian2posUVW(TVector2 pos, int dir, bool &err_flag); // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of a given (X,Y) point on the strip pitch axis for a given direction
@@ -199,7 +202,15 @@ class GeometryTPC {
   double Timecell2pos(double position_in_cells, bool &err_flag); // [mm] output: position along Z-axis
   double Pos2timecell(double z, bool &err_flag); // output: time-cell number, valid range [0-511]
 
-  std::tuple<double, double, double, double> rangeXY(); //min/max X Y cartesian coordinates covered by strips in any direction
+  TGraph GetActiveAreaConvexHull(double vetoBand=0); // get convex hull [mm] of the entire UVW active area
+                                                     // with (optionally) excluded outer VETO band [mm]
+
+  std::tuple<double, double> rangeX(); //min/max X [mm] cartesian coordinates covered by UVW active area
+  std::tuple<double, double> rangeY(); //min/max Y [mm] cartesian coordinates covered by UVW active area
+  std::tuple<double, double> rangeZ(); //min/max Z [mm] cartesian coordinates covered by drift cage
+  std::tuple<double, double, double, double> rangeXY(); //min/max X and Y [mm] cartesian coordinates covered by UVW active area
+  std::tuple<double, double, double, double, double, double> rangeXYZ(); //min/max X and Y [mm] cartesian coordinates covered by UVW active area
+                                                         // and min/max Z [mm] cartesian coordinates covered by drift cage
   std::tuple<double, double> rangeStripSectionInMM(int dir, int section); // [mm] min/max (signed) distance between projection of outermost strip's central axis and projection of the origin (X=0,Y=0) point on the U/V/W pitch axis for a given direction (per section)
   std::tuple<double, double> rangeStripDirInMM(int dir); // [mm] min/max (signed) distance between projection of outermost strip's central axis and projection of the origin (X=0,Y=0) point on the U/V/W pitch axis for a given direction (all sections)
     

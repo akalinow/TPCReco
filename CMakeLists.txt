@@ -79,34 +79,52 @@ else()
   MESSAGE( STATUS "AUXILIARY TOOLS dir already exists in the installation dir" )
 endif()
 
-set(CMAKE_CXX_FLAGS "${ROOT_CXX_FLAGS} -Wall -Werror -O3 -std=c++17 -pthread")
+set(CMAKE_CXX_FLAGS "${ROOT_CXX_FLAGS} -Wall -Werror -O3 -std=c++17 -pthread -Wno-register")
 MESSAGE( STATUS "CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS})
 
 option(DEBUG "Define DEBUG variable" OFF)
 if(DEBUG)
   MESSAGE( STATUS "DEBUG enabled" )
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG")
+endif()
+# Set default inotify message inplementation:
+option(DIRECTORYWATCH_ONE_MESSAGE_DISABLE "Define DIRECTORYWATCH_ONE_MESSAGE_DISABLE variable" OFF)
+if(DIRECTORYWATCH_ONE_MESSAGE_DISABLE)
+  MESSAGE( STATUS "DirectoryWatch single message disabled (i.e. one Message per modified file)" )
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDIRECTORYWATCH_ONE_MESSAGE_DISABLE")
+else()
+  MESSAGE( STATUS "DirectoryWatch single message enabled (i.e. single Message per all modified files)" )
+endif()  
+# Enable/disable searching next file with N+1 index (default=ON)
+option(EVENTSOURCEGRAW_NEXT_FILE_DISABLE "Define EVENTSOURCEGRAW_NEXT_FILE_DISABLE variable" ON)
+if(EVENTSOURCEGRAW_NEXT_FILE_DISABLE)
+  MESSAGE( STATUS "EventSourceGRAW automatic next file index disabled" )
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DEVENTSOURCEGRAW_NEXT_FILE_DISABLE")
+else()
+  MESSAGE( STATUS "EventSourceGRAW automatic next file index enabled" )
 endif()  
   
 #Set RPATH to install dir, so user do not have to set the LD_LIBRARY_PATH
 set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 
 #Framework packages
+set(TPCRECO_PREFIX "libTPC")
+set(TPCRECO_LIBRARIES "")
+
 add_subdirectory(DataFormats)
-add_subdirectory(GrawToROOT) 
 add_subdirectory(Utilities)
+add_subdirectory(GrawToROOT) 
 add_subdirectory(Reconstruction)
-add_subdirectory(GUI)
 add_subdirectory(Analysis)
+add_subdirectory(GUI)
 add_subdirectory(ToyMC)
 option(BUILD_MC "build MC tools" OFF)
 if(BUILD_MC)
   add_subdirectory(TrackGenerator)
 endif()
-# Now comes everything we need, to create a package
-# there are a lot more variables you can set, and some
-# you need to set for some package types, but we want to
-# be minimal here.
+
+MESSAGE(STATUS "TPCReco libraries:" ${TPCRECO_LIBRARIES})
+
 set(CPACK_PACKAGE_NAME "TPCSoft")
 set(CPACK_PACKAGE_VERSION "1.0.0")
 

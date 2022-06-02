@@ -50,7 +50,7 @@ Preparation:
 - initialize that directory by executing:
 
     ```
-    sudo docker run --rm  --user $(id -u) -v "$PWD":/scratch --workdir /scratch elitpc/tpcreco:latest cp -r /opt/soft/TPCReco/resources/. .
+    sudo docker run --rm  --user $(id -u) -v "$PWD:/scratch" --workdir /scratch elitpc/tpcreco:latest cp -r /opt/soft/TPCReco/resources/. .
     ```
 
 Running:
@@ -59,7 +59,7 @@ Running:
 - start a container:
 
     ```
-    sudo docker run -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix --rm -it --user $(id -u) -v "$PWD":/scratch --workdir /scratch elitpc/tpcreco:latest
+    sudo docker run -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix --rm -it --user $(id -u) -v "$PWD:/scratch" --workdir /scratch elitpc/tpcreco:latest
     ```
 
     NOTE: on some distributions (e.g. Arch Linux) executing `xhost local:root` is necessary. In that case consider executing also `xhost -` at the end of the session.
@@ -85,7 +85,7 @@ Preparation:
 - initialize that directory by executing:
 
     ```
-    sudo docker run --rm  --user $(id -u) -v "$PWD":/scratch --workdir /scratch elitpc/tpcreco:latest cp -r /opt/soft/TPCReco/resources/. .
+    sudo docker run --rm  --user $(id -u) -v "$PWD:/scratch" --workdir /scratch elitpc/tpcreco:latest cp -r /opt/soft/TPCReco/resources/. .
     ```
 
 Running:
@@ -101,7 +101,7 @@ Running:
 - start a container:
 
     ```
-    sudo docker run -e DISPLAY=host.docker.internal:0 -v /tmp/.X11-unix:/tmp/.X11-unix --rm -it --user $(id -u) -v "$PWD":/scratch --workdir /scratch elitpc/tpcreco:latest
+    sudo docker run -e DISPLAY=host.docker.internal:0 -v /tmp/.X11-unix:/tmp/.X11-unix --rm -it --user $(id -u) -v "$PWD:/scratch" --workdir /scratch elitpc/tpcreco:latest
     ```
 
 - run [`tpcGUI`](#running-tpcgui).

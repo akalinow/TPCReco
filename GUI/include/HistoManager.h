@@ -41,6 +41,8 @@ public:
 
   void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);
 
+  void setRecoClusterParameters(bool recoClusterEnable, double recoClusterThreshold, int recoClusterDeltaStrips, int recoClusterDetlaTimeCells);
+
   void openOutputStream(const std::string & filePath);
 
   void writeRecoData(unsigned long  eventType);
@@ -52,6 +54,8 @@ public:
   void drawRawHistos(TCanvas *aCanvas, bool isRateDisplayOn);
 
   void drawRecoHistos(TCanvas *aCanvas);
+
+  void drawDevelHistos(TCanvas *aCanvas);
 
   void drawTechnicalHistos(TCanvas *aCanvas, int nAgetChips);
 
@@ -110,6 +114,11 @@ public:
 
   std::shared_ptr<TH2D> getClusterStripVsTime(int strip_dir);
 
+  bool getRecoClusterEnable();
+  double getRecoClusterThreshold();
+  int getRecoClusterDeltaStrips();
+  int getRecoClusterDeltaTimeCells();
+  
   // Dot-like events usful for neutron flux monitoring
   void initializeDotFinder(unsigned int hitThr, // unsigned int maxStripsPerDir, unsigned int maxTimecellsPerDir,
 			   unsigned int totalChargeThr, 
@@ -143,21 +152,24 @@ public:
   void makeAutozoom(TH1 * aHisto);
 
   void setDetLayout();
+  void setDetLayoutVetoBand(double distance); // [mm]
       
   std::vector<TH2D*> projectionsInCartesianCoords;
   TH3D *h3DReco{0};
   TGraph *grEventRate{0};
   TrackBuilder myTkBuilder;
-  RecoOutput myRecoOuput;
+  RecoOutput myRecoOutput;
   DotFinder myDotFinder;
-  dEdxFitter mydEdxFitter;
 
   std::shared_ptr<EventTPC> myEventPtr;
   std::shared_ptr<eventraw::EventInfo> myEventInfo;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
 
-  TH2F *hDetLayout{0};
+  TH2F *hDetLayout{0};        // dummy histogram with optimal XY ranges
   TH2F *hPlotBackground{0};
+  TGraph *grDetLayoutAll{0};  // polygon with convex hull of UVW area
+  TGraph *grDetLayoutVeto{0}; // similar polygon with excluded outer veto band
+  double grVetoBand{10.0};    // width [mm] of exclusion zone around UVW perimeter
   
   std::vector<TObject*> fObjClones;
   std::vector<TObject*> fTrackLines;
@@ -167,6 +179,11 @@ public:
 
   Long64_t previousEventTime{-1};
   Long64_t previousEventNumber{-1};
+
+  bool recoClusterEnable{true};
+  double recoClusterThreshold{35};
+  int recoClusterDeltaStrips{2};
+  int recoClusterDeltaTimeCells{5};
 
 };
 #endif

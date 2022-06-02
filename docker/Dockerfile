@@ -7,6 +7,6 @@ RUN apt-get update -qq \
 RUN yes | pip3 install --no-cache-dir -r requirements_pip3.txt
 WORKDIR /opt/soft/TPCReco-src/build
 RUN cmake -DCMAKE_INSTALL_PREFIX=/opt/soft/TPCReco ..
-RUN make -j && make install
+RUN make -j && make install && make clean
 ENV PATH=${PATH}:/opt/soft/TPCReco/bin
 WORKDIR /opt/soft/TPCReco/resources

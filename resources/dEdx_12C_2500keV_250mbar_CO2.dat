@@ -1,30 +1,30 @@
-====== H (10) into Layer 1                      =======
-        SRIM-2013.00
-========================================
-      Ion and Recoil IONIZATION     
- See SRIM Outputs\TDATA.txt for details   
-========================================
---------------------------------------------------------------------
-    Recoil/Damage Calculations made with Kinchin-Pease Estimates    
---------------------------------------------------------------------
- See file :  SRIM Outputs\TDATA.txt   for calculation data
- Ion    =  C   Energy = 2500 keV
-============= TARGET MATERIAL ======================================
-Layer 1 : Carbon Dioxide (ICRU-134)
-Layer Width = 10000.E+05 A ;
-  Layer # 1- Density = 1.890E19 atoms/cm3 = .0004 g/cm3
-  Layer # 1-  C = 33.3 Atomic Percent = 27.2 Mass Percent
-  Layer # 1-  O = 66.6 Atomic Percent = 72.7 Mass Percent
-====================================================================
- Total Ions calculated =002000.00
-===============================================================
-  Ionization Energy Units are  >>>>  eV /(Angstrom-Ion)  <<<<  
-===============================================================
-
-  TARGET       IONIZ.       IONIZ.  
-  DEPTH         by           by     
-  (Ang)        IONS         RECOILS 
------------  -----------  -----------
+#====== H (10) into Layer 1                      =======
+#        SRIM-2013.00
+#========================================
+#      Ion and Recoil IONIZATION     
+# See SRIM Outputs\TDATA.txt for details   
+#========================================
+#--------------------------------------------------------------------
+#    Recoil/Damage Calculations made with Kinchin-Pease Estimates    
+#--------------------------------------------------------------------
+# See file :  SRIM Outputs\TDATA.txt   for calculation data
+# Ion    =  C   Energy = 2500 keV
+#============= TARGET MATERIAL ======================================
+#Layer 1 : Carbon Dioxide (ICRU-134)
+#Layer Width = 10000.E+05 A ;
+#  Layer # 1- Density = 1.890E19 atoms/cm3 = .0004 g/cm3
+#  Layer # 1-  C = 33.3 Atomic Percent = 27.2 Mass Percent
+#  Layer # 1-  O = 66.6 Atomic Percent = 72.7 Mass Percent
+#====================================================================
+# Total Ions calculated =002000.00
+#===============================================================
+#  Ionization Energy Units are  >>>>  eV /(Angstrom-Ion)  <<<<  
+#===============================================================
+#
+#  TARGET       IONIZ.       IONIZ.  
+#  DEPTH         by           by     
+#  (Ang)        IONS         RECOILS 
+#-----------  -----------  -----------
 150000.E+01  3099.73E-05  9830.07E-09
 300000.E+01  3080.36E-05  1922.01E-08
 450000.E+01  3064.15E-05  2485.78E-07

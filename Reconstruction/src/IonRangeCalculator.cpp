@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////
 IonRangeCalculator::IonRangeCalculator(gas_mixture_type gas, double p_mbar, double T_Kelvin){ // input: GAS index, pressure [mbar], temperature [K]
 
-  addIonRangeCurve(IonRangeCalculator::ALPHA,     IonRangeCalculator::CO2, 250.0, 273.15+20, "range_alpha_in_CO2_250mbar.dat");
-  addIonRangeCurve(IonRangeCalculator::CARBON_12, IonRangeCalculator::CO2, 250.0, 273.15+20, "range_12C_in_CO2_250mbar.dat");
-  addIonRangeCurve(IonRangeCalculator::CARBON_14, IonRangeCalculator::CO2, 250.0, 273.15+20, "range_14C_in_CO2_250mbar.dat");
+  addIonRangeCurve(pid_type::ALPHA,     gas_mixture_type::CO2, 250.0, 273.15+20, "range_alpha_in_CO2_250mbar.dat");
+  addIonRangeCurve(pid_type::CARBON_12, gas_mixture_type::CO2, 250.0, 273.15+20, "range_12C_in_CO2_250mbar.dat");
+  addIonRangeCurve(pid_type::CARBON_14, gas_mixture_type::CO2, 250.0, 273.15+20, "range_14C_in_CO2_250mbar.dat");
 
   setGasConditions(gas, p_mbar, T_Kelvin);
 }
@@ -23,7 +23,7 @@ void IonRangeCalculator::setGasMixture(gas_mixture_type gas){ // GAS index
   
   // check that at least one range/energy curve exists for this gas index
   bool valid=false;
-  for(auto ion: {IonRangeCalculator::pid_type::PID_MIN, IonRangeCalculator::pid_type::PID_MAX}) {
+  for(auto ion: {pid_type::PID_MIN, pid_type::PID_MAX}) {
     if(refGasRangeCurveMap.find(MultiKey2((int)gas, (int)ion))!=refGasRangeCurveMap.end()) {
       valid=true;
       break;
@@ -63,7 +63,7 @@ void IonRangeCalculator::setGasConditions(gas_mixture_type gas, double p_mbar, d
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
-IonRangeCalculator::gas_mixture_type IonRangeCalculator::getGasMixture() { return myGasMixture; } // GAS index
+gas_mixture_type IonRangeCalculator::getGasMixture() { return myGasMixture; } // GAS index
 
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
@@ -75,8 +75,8 @@ double IonRangeCalculator::getGasTemperature() { return myGasTemperature; } // t
 
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
-std::tuple<IonRangeCalculator::gas_mixture_type, double, double> IonRangeCalculator::getGasConditions(){ // output: GAS index, pressure [mbar], temperature [K]
-  return std::tuple<IonRangeCalculator::gas_mixture_type, double, double>(myGasMixture, myGasPressure, myGasTemperature);
+std::tuple<gas_mixture_type, double, double> IonRangeCalculator::getGasConditions(){ // output: GAS index, pressure [mbar], temperature [K]
+  return std::tuple<gas_mixture_type, double, double>(myGasMixture, myGasPressure, myGasTemperature);
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
@@ -124,7 +124,8 @@ double IonRangeCalculator::getIonEnergyMeV(pid_type ion, double range_mm){ // in
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
-void IonRangeCalculator::addIonRangeCurve(pid_type ion, gas_mixture_type gas, double p_mbar, double T_Kelvin, const char *datafile){ // range(E_kin) corresponding to {gas, p, T}
+void IonRangeCalculator::addIonRangeCurve(pid_type ion, gas_mixture_type gas, double p_mbar,
+					  double T_Kelvin, const char *datafile){ // range(E_kin) corresponding to {gas, p, T}
 
   // sanity checks
   if(ion<PID_MIN || ion>PID_MAX) {
@@ -188,3 +189,5 @@ bool IonRangeCalculator::IsOK(){
   if(refGasRangeCurveMap.size() && myGasPressure>0 && myGasTemperature>0) result=true;
   return result;
 }
+////////////////////////////////////////////////
+////////////////////////////////////////////////

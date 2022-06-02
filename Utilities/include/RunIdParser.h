@@ -14,7 +14,7 @@ public:
   inline size_t fileId() const noexcept { return fileId_; }
   // AsAd id
   // returns -1 if no information
-  inline int AsadId() const noexcept { return AsAdId_; };
+  inline int AsAdId() const noexcept { return AsAdId_; };
   // CoBoid
   // returns -1 if no information
   inline int CoBoId() const noexcept { return CoBoId_; };

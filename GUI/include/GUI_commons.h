@@ -45,8 +45,10 @@ enum Messages {
 };
 
 enum Modes {
-	    M_ONLINE_MODE,
+	    M_ONLINE_GRAW_MODE,
+	    M_ONLINE_NGRAW_MODE,
 	    M_OFFLINE_GRAW_MODE,
+	    M_OFFLINE_NGRAW_MODE,
 	    M_OFFLINE_ROOT_MODE	       
 };
 

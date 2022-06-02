@@ -33,9 +33,11 @@ public:
 
   double getSegmentLambda(double lambda, unsigned int iSegment) const;
 
+  void setChargeProfile(const TH1F &hProfile) {myChargeProfile = hProfile;} 
+
   double getIntegratedCharge(double lambda) const;
 
-  TH1F getChargeProfile() const { return mySegments.front().getChargeProfile();}
+  TH1F getChargeProfile() const { return myChargeProfile;}
 
   double getChi2() const;
 
@@ -52,6 +54,10 @@ public:
   void enableProjectionForChi2(int iProjection);
 
   void setFitMode(fit_modes aMode){myFitMode = aMode;}
+
+  void setHypothesisFitChi2(double chi2){ hypothesisFitChi2 = chi2;};
+
+  double getHypothesisFitChi2() const {return hypothesisFitChi2;}
 
   double hitDistanceFromBias(const double *par);
   
@@ -96,7 +102,8 @@ private:
   std::vector<double> nodeAngleChi2;
   
   TrackSegment3DCollection mySegments;
-  TGraph myChargeProfile, myIntegratedChargeProfile;              
+  TH1F myChargeProfile;
+  double hypothesisFitChi2{99};
 };
 
 typedef std::vector<Track3D> Track3DCollection;

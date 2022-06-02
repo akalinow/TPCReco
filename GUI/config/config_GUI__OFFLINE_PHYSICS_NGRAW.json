@@ -1,0 +1,17 @@
+{
+    "dataFile": "/data/edaq/2022/scratch_runs_TO_DELETE/CoBo0_AsAd0_2022-02-22T13:26:24.140_0000.graw,"
+                "/data/edaq/2022/scratch_runs_TO_DELETE/CoBo0_AsAd1_2022-02-22T13:26:24.161_0000.graw,"
+                "/data/edaq/2022/scratch_runs_TO_DELETE/CoBo0_AsAd2_2022-02-22T13:26:24.172_0000.graw,"
+                "/data/edaq/2022/scratch_runs_TO_DELETE/CoBo0_AsAd3_2022-02-22T13:26:24.190_0000.graw",
+    "geometryFile": "./geometry_ELITPC.dat",
+    "resourcesPath": ".",
+    "removePedestal": true,
+    "recoClusterEnable": false,
+    "singleAsadGrawFile": true,
+    "display": {
+        "zLogScale": true,
+        "autoZoom": false,
+        "recoMode": false,
+        "rate": false
+    }
+}

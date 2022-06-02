@@ -96,9 +96,8 @@ TGraphErrors TrackSegment2D::getChargeProfile(const Hit2DCollection & aRecHits, 
 					      cellDiagonal1.Dot(getTangent().Unit()));
   
   double binWidth = std::abs(cellProjectionOnSegment2D)/getLength();
-  binWidth = 1.0/getLength();
+  //binWidth = 1.0/getLength();
   TGraphErrors grChargeProfile2D(0);
-
 
   for(const auto aHit:aRecHits){
     x = aHit.getPosTime();

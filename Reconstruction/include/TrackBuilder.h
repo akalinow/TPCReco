@@ -12,6 +12,7 @@
 #include "TrackSegment3D.h"
 #include "Track3D.h"
 #include "RecHitBuilder.h"
+#include "dEdxFitter.h"
 
 #include "EventTPC.h"
 #include "EventInfo.h"
@@ -31,11 +32,13 @@ public:
   
   ~TrackBuilder();
 
-  void setEvent(EventTPC* aEvent);
+  void setEvent(EventTPC* aEvent, const double chargeThreshold, const int delta_timecells, const int delta_strips);
 
-  void setEvent(std::shared_ptr<EventTPC> aEvent);
+  void setEvent(std::shared_ptr<EventTPC> aEvent, const double chargeThreshold=35, const int delta_timecells=5, const int delta_strips=2);
 
   void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);
+
+  void setPressure(double aPressure);
 
   void reconstruct();
 
@@ -57,6 +60,8 @@ public:
 
   const Track3D & getTrack3D(unsigned int iSegment) const;
 
+  TF1 getdEdx() const {return mydEdxFitter.getFittedModel();};
+
 private:
 
   void makeRecHits(int iDir);
@@ -69,7 +74,9 @@ private:
   
   TrackSegment3D buildSegment3D(int iTrackSeed=0) const;
 
-  void fitTrack3D(const Track3D & aTrackCandidate);
+  Track3D fitTrack3D(const Track3D & aTrackCandidate);
+
+  Track3D fitEventHypothesis(const Track3D & aTrackCandidate);
   
   Track3D fitTrackNodesStartEnd(const Track3D & aTrack) const;
 
@@ -80,6 +87,9 @@ private:
   EventTPC *myEvent;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
   RecHitBuilder myRecHitBuilder;
+  dEdxFitter mydEdxFitter;
+  double myPressure{190};
+  
   std::vector<double> phiPitchDirection;
 
   bool myHistoInitialized;
@@ -93,8 +103,8 @@ private:
   std::tuple<double, double> myZRange;
 
   TrackSegment2D dummySegment2D;
-  TrackSegment3D myTrack3DSeed, dummySegment3D;
-  Track3D myFittedTrack;
+  TrackSegment3D myTrack3DSeed, dummySegment3D;  
+  Track3D myTmpTrack, myFittedTrack;
   
   mutable ROOT::Fit::Fitter fitter;
   

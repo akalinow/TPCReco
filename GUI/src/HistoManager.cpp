@@ -14,7 +14,11 @@
 #include "TLegend.h"
 #include "TText.h"
 #include "TPaletteAxis.h"
+#include "TLatex.h"
+#include "TLorentzVector.h"
 
+#include "CommonDefinitions.h"
+#include "IonRangeCalculator.h"
 #include "MakeUniqueName.h"
 #include "GeometryTPC.h"
 #include "EventTPC.h"
@@ -22,14 +26,15 @@
 #include "colorText.h"
 
 #include "HistoManager.h"
+
+#include "CoordinateConverter.h"
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 HistoManager::HistoManager() {
 
   myEventPtr = 0;
   myEventInfo = std::make_shared<eventraw::EventInfo>();
-  myRecoOuput.setEventInfo(myEventInfo);				   
-
+  myRecoOutput.setEventInfo(myEventInfo);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -41,7 +46,15 @@ void HistoManager::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
   myGeometryPtr = aGeometryPtr;
   myTkBuilder.setGeometry(aGeometryPtr);
   setDetLayout();
-  
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void HistoManager::setRecoClusterParameters(bool recoClusterEnable, double recoClusterThreshold, int recoClusterDeltaStrips, int recoClusterDeltaTimeCells) {
+
+  recoClusterEnable = recoClusterEnable;
+  recoClusterThreshold = recoClusterThreshold;
+  recoClusterDeltaStrips = recoClusterDeltaStrips;
+  recoClusterDeltaTimeCells = recoClusterDeltaTimeCells;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -56,7 +69,9 @@ void HistoManager::setEvent(EventTPC* aEvent){
 void HistoManager::setEvent(std::shared_ptr<EventTPC> aEvent){
   if(!aEvent) return;
   myEventPtr = aEvent;
-  myTkBuilder.setEvent(myEventPtr);
+  myTkBuilder.setEvent(myEventPtr,
+		       getRecoClusterThreshold(), getRecoClusterDeltaStrips(),
+		       getRecoClusterDeltaTimeCells());
   myEventInfo->set(myEventPtr);
 }
 /////////////////////////////////////////////////////////
@@ -139,29 +154,29 @@ void HistoManager::drawRecoHistos(TCanvas *aCanvas){
      aCanvas->Modified();
      aCanvas->Update();
 
-     auto h1 = getClusterStripVsTimeInMM(strip_dir)->DrawCopy("colz");
-     if(aPad->GetLogz()) h1->SetMinimum(1.0);
-     hPlotBackground->Draw("col same");
-     aPad->RedrawAxis();  // repaints both axes & fixes X-axis zooming issue
-     h1->Draw("same colz");
-
-     //getRecHitStripVsTime(strip_dir)->DrawCopy("box same");
-     //getRawStripVsTimeInMM(strip_dir)->DrawCopy("colz");
-     drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
-     //if(strip_dir==DIR_W) getClusterTimeProjectionInMM()->DrawCopy("hist");
-     //else getRawStripVsTimeInMM(strip_dir)->DrawCopy("colz");
-  }
+     if(getRecoClusterEnable()) {
+       auto h1 = getClusterStripVsTimeInMM(strip_dir)->DrawCopy("colz");
+       if(aPad->GetLogz()) h1->SetMinimum(1.0);
+       hPlotBackground->Draw("col same");
+       aPad->RedrawAxis();  
+       h1->Draw("same colz");
+       drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
+     } else {
+       getRawStripVsTimeInMM(strip_dir)->DrawCopy("colz");
+     }
+   }
    int strip_dir=3;
    TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
    if(!aPad) return;
    aPad->cd();
    aCanvas->Modified();
    aCanvas->Update();
-   //drawTrack3DProjectionXY(aPad);
-   //drawChargeAlongTrack3D(aPad);
-   //myHistoManager.drawTrack3D(aPad);
-   getClusterTimeProjectionInMM()->DrawCopy("hist");
-   //getRecHitTimeProjection()->DrawCopy("hist same");
+   if(getRecoClusterEnable()) {
+     drawChargeAlongTrack3D(aPad);
+     //getClusterTimeProjectionInMM()->DrawCopy("hist");
+   } else {
+     getRawTimeProjectionInMM()->DrawCopy("hist");
+   }
    aCanvas->Modified();
    aCanvas->Update();
 }
@@ -183,9 +198,39 @@ void HistoManager::drawRecoFromMarkers(TCanvas *aCanvas, std::vector<double> * s
    aCanvas->Modified();
    aCanvas->Update();
    drawTrack3DProjectionXY(aPad);
-  //myHistoManager.drawTrack3D(aPad);
-  //myHistoManager.drawChargeAlongTrack3D(aPad);
-   //getClusterTimeProjectionInMM()->DrawCopy("hist");
+   aCanvas->Modified();
+   aCanvas->Update();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void HistoManager::drawDevelHistos(TCanvas *aCanvas){
+
+  if(!aCanvas) return;
+  int padNumberOffset = 0;
+  if(std::string(aCanvas->GetName())=="Histograms") padNumberOffset = 0;
+  reconstruct();
+
+   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+     TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
+     if(!aPad) return;
+     aPad->cd();
+     aCanvas->Modified();
+     aCanvas->Update();
+     
+     auto h1 = getClusterStripVsTimeInMM(strip_dir)->DrawCopy("colz");
+     if(aPad->GetLogz()) h1->SetMinimum(1.0);
+     hPlotBackground->Draw("col same");
+     aPad->RedrawAxis();  
+     h1->Draw("same colz");
+     drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
+  }
+   int strip_dir=3;
+   TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
+   if(!aPad) return;
+   aPad->cd();
+   aCanvas->Modified();
+   aCanvas->Update();
+   drawChargeAlongTrack3D(aPad);
    aCanvas->Modified();
    aCanvas->Update();
 }
@@ -193,14 +238,7 @@ void HistoManager::drawRecoFromMarkers(TCanvas *aCanvas, std::vector<double> * s
 /////////////////////////////////////////////////////////
 void HistoManager::clearCanvas(TCanvas *aCanvas, bool isLogScaleOn){
 
-  if(!aCanvas) return;
-  /* TEST
-  clearTracks();  
-  for(auto aObj : fObjClones){
-    if(aObj) delete aObj;
-  }
-  fObjClones.clear();
-  */
+  if(!aCanvas) return; 
   TList *aList = aCanvas->GetListOfPrimitives();
   TText aMessage(0.0, 0.0,"Waiting for data.");
   for(auto obj: *aList){
@@ -222,14 +260,17 @@ void HistoManager::clearTracks(){
     if(aObj) aObj->Delete();
   }
   fTrackLines.clear();
-  
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void HistoManager::setDetLayout(){
-
-  if(!myGeometryPtr) return;
-  TH2Poly* aPtr =   myGeometryPtr->GetTH2Poly();
+  if(!myGeometryPtr) {
+    return;
+  }
+  if(grDetLayoutAll) { delete grDetLayoutAll; grDetLayoutAll=0; } // reset TGraph
+  if(grDetLayoutVeto) { delete grDetLayoutVeto; grDetLayoutVeto=0; } // reset TGraph
+  grDetLayoutAll = new TGraph(myGeometryPtr->GetActiveAreaConvexHull());
+  grDetLayoutVeto = new TGraph(myGeometryPtr->GetActiveAreaConvexHull(grVetoBand));
 
   // calculates optimal range for special histogram depicting UVW active area
   // - preserves 1:1 aspect ratio
@@ -243,38 +284,6 @@ void HistoManager::setDetLayout(){
 		     (int)(best_width+0.5), 0.5*(ymin+ymax)-0.5*best_width, 0.5*(ymin+ymax)+0.5*best_width);
   hDetLayout = (TH2F*)hDetLayoutTmp.Clone("hDetLayout");
   
-  int nBinsX = hDetLayoutTmp.GetNbinsX();
-  int nBinsY = hDetLayoutTmp.GetNbinsY();
-  double x, y;
-  int iBinPoly;
-  for(int iBinX=1;iBinX<nBinsX;++iBinX){
-    x = hDetLayoutTmp.GetXaxis()->GetBinCenter(iBinX);
-    for(int iBinY=1;iBinY<nBinsY;++iBinY){
-      y = hDetLayoutTmp.GetYaxis()->GetBinCenter(iBinY);    
-      iBinPoly = aPtr->FindBin(x,y);
-      if(iBinPoly>0){
-	hDetLayoutTmp.SetBinContent(iBinX,iBinY, 1.0);
-      }
-    }
-  }
-
-  int value = 0;
-  for(int iBinX=1;iBinX<nBinsX;++iBinX){
-    for(int iBinY=1;iBinY<nBinsY;++iBinY){
-      value = 0;
-      for(int iNeigbourX=-1;iNeigbourX<=1;++iNeigbourX){
-	for(int iNeigbourY=-1;iNeigbourY<=1;++iNeigbourY){
-	  value += hDetLayoutTmp.GetBinContent(iBinX+iNeigbourX, iBinY+iNeigbourY);
-	}
-      }
-      if(value>0 && value<4){
-	y = hDetLayoutTmp.GetYaxis()->GetBinCenter(iBinY);    
-	x = hDetLayoutTmp.GetXaxis()->GetBinCenter(iBinX);
-	hDetLayout->SetBinContent(iBinX, iBinY, 1.0);
-      }
-    }
-  }
-
   // calculates optimal ranges for special background 2D histogram:
   // - UVW STRIP projection range from all directions
   // - DRIFT projection range
@@ -286,8 +295,8 @@ void HistoManager::setDetLayout(){
     if(a<strip_min) strip_min=a;
     if(b>strip_max) strip_max=b;
   }
-  float drift_min=myGeometryPtr->GetDriftCageZmin();
-  float drift_max=myGeometryPtr->GetDriftCageZmax();
+  float drift_min, drift_max;
+  std::tie(drift_min, drift_max)=myGeometryPtr->rangeZ();
   hPlotBackground = new TH2F("hPlotBackground","",
 			     1, drift_min-0.05*(drift_max-drift_min), drift_max+0.05*(drift_max-drift_min),
 			     1, strip_min-0.05*(strip_max-strip_min), strip_max+0.05*(strip_max-strip_min));
@@ -307,8 +316,28 @@ void HistoManager::setDetLayout(){
 void HistoManager::drawDetLayout(){
 
   if(!hDetLayout) return;
-  hDetLayout->DrawCopy("box");  
-
+  hDetLayout->DrawCopy();
+  if(grDetLayoutAll) {
+    grDetLayoutAll->SetLineColor(kBlack);
+    grDetLayoutAll->SetLineWidth(2);
+    grDetLayoutAll->SetLineStyle(kSolid);
+    grDetLayoutAll->DrawClone("L");
+  }
+  if(grDetLayoutVeto) {
+    grDetLayoutVeto->SetLineColor(kBlack);
+    grDetLayoutVeto->SetLineWidth(1);
+    grDetLayoutVeto->SetLineStyle(kDashed);
+    grDetLayoutVeto->DrawClone("L");
+  }
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void HistoManager::setDetLayoutVetoBand(double distance){ // [mm]
+  if(distance<0) distance=0;
+  if(distance!=grVetoBand) { // update upon distance change
+    grVetoBand=distance;
+    setDetLayout();
+  }
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -508,6 +537,26 @@ std::shared_ptr<TH2D> HistoManager::getClusterStripVsTimeInMM(int strip_dir){
     aHisto->SetDrawOption("COLZ");
   }
   return aHisto;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+bool HistoManager::getRecoClusterEnable(){
+  return recoClusterEnable;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+double HistoManager::getRecoClusterThreshold(){
+  return recoClusterThreshold;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+int HistoManager::getRecoClusterDeltaStrips(){
+  return recoClusterDeltaStrips;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+int HistoManager::getRecoClusterDeltaTimeCells(){
+  return recoClusterDeltaTimeCells;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -781,46 +830,70 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   aPad->cd();
 
   const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
-  TH1F hChargeProfile = aTrack3D.getSegments().front().getChargeProfile();
+  if(aTrack3D.getLength()<1) return;
+  
+  TH1F hFrame("hFrame",";d [mm];charge [arb. units]",2,-20, 20+aTrack3D.getLength());
+  hFrame.GetYaxis()->SetTitleOffset(2.0);
+  hFrame.SetMinimum(0.0);
+
+  TH1F hChargeProfile = aTrack3D.getChargeProfile();
+  hChargeProfile.Scale(1.0/hChargeProfile.GetMaximum());
   hChargeProfile.SetLineWidth(2);
   hChargeProfile.SetLineColor(2);
   hChargeProfile.SetMarkerColor(2);
   hChargeProfile.SetMarkerSize(1.0);
   hChargeProfile.SetMarkerStyle(20);
-  hChargeProfile.SetMinimum(0.0);
-  hChargeProfile.GetYaxis()->SetTitleOffset(1.5);
-  hChargeProfile.DrawCopy("HIST P");
-
-  TLegend *aLegend = new TLegend(0.75, 0.8, 0.95,0.95);
-  fObjClones.push_back(aLegend);
-  /*
-  mydEdxFitter.fitHisto(hChargeProfile);
-  TH1F histo = mydEdxFitter.getFittedHisto();
-  TF1 func = mydEdxFitter.getFittedModel();
-  double carbonScale = func.GetParameter("carbonScale");
-  histo.DrawCopy();
-
-  func.SetParameter("carbonScale",0.0);
-  func.SetLineColor(kRed);
-  func.SetLineStyle(2);
-  func.SetLineWidth(2);
-  TObject *aObj = func.DrawCopy("same");
-  aLegend->AddEntry(aObj,"#alpha","l");
-
-  func.SetParameter("alphaScale",0.0);
-  func.SetParameter("carbonScale",carbonScale);
-  func.SetLineColor(kBlue-9);
-  func.SetLineStyle(2);
-  func.SetLineWidth(2);
-  TObject *aObj1  = func.DrawCopy("same");
-  aLegend->AddEntry(aObj1,"^{12}C","l");
-  aLegend->Draw();
+ 
+  hFrame.DrawCopy();
+  hChargeProfile.DrawCopy("same HIST P");
   
-  std::cout<<"Best fit event type: "<<mydEdxFitter.getBestFitEventType()<<std::endl;
-  std::cout<<"Fitted function: "<<func.GetName()<<std::endl;
-  std::cout<<"Alpha energy [MeV]: "<<mydEdxFitter.getAlphaEnergy()/1E6<<std::endl;
-  std::cout<<"Carbon energy [MeV]: "<<mydEdxFitter.getCarbonEnergy()/1E6<<std::endl;
-  */
+  TLegend *aLegend = new TLegend(0.7, 0.75, 0.95,0.95);
+  fObjClones.push_back(aLegend);
+  
+  TF1 dEdx = myTkBuilder.getdEdx();
+  if(!dEdx.GetNpar()) return;
+  double carbonScale = dEdx.GetParameter("carbonScale");
+  
+  dEdx.SetLineColor(kBlack);
+  dEdx.SetLineStyle(1);
+  dEdx.SetLineWidth(3);
+  TObject *aObj = dEdx.DrawCopy("same");
+  aLegend->AddEntry(aObj,"^{12}C + #alpha","l");
+  fObjClones.push_back(aObj);
+
+  dEdx.SetParameter("carbonScale",0.0);
+  dEdx.SetLineColor(kRed);
+  dEdx.SetLineStyle(2);
+  dEdx.SetLineWidth(2);
+  TObject *aObj1 = dEdx.DrawCopy("same");
+  aLegend->AddEntry(aObj1,"#alpha","l");
+  fObjClones.push_back(aObj1);
+  
+  dEdx.SetParameter("alphaScale",0.0);
+  dEdx.SetParameter("carbonScale",carbonScale);
+  dEdx.SetLineColor(kBlue-9);
+  dEdx.SetLineStyle(2);
+  dEdx.SetLineWidth(2);
+  TObject *aObj2  = dEdx.DrawCopy("same");
+  aLegend->AddEntry(aObj2,"^{12}C","l");
+  fObjClones.push_back(aObj2);
+  aLegend->Draw();
+
+  IonRangeCalculator myRangeCalculator(gas_mixture_type::CO2,190.0,293.15);  
+  double alphaRange = aTrack3D.getSegments().front().getLength();
+  double carbonRange = aTrack3D.getSegments().back().getLength();
+  double alphaEnergy = myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA,alphaRange);   
+  double carbonEnergy = myRangeCalculator.getIonEnergyMeV(pid_type::CARBON_12,carbonRange);
+  
+  TLatex aLatex;
+  double x = 0.1;
+  double y = 0.91;
+  aLatex.DrawLatexNDC(x,y,TString::Format("Total length [mm]: %3.0f",aTrack3D.getLength()));
+  y = 0.95;
+  aLatex.DrawLatexNDC(x,y,TString::Format("Total E [MeV]:        %2.1f",alphaEnergy+carbonEnergy));
+  
+  CoordinateConverter myConv;
+  std::cout<<myConv<<std::endl;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -849,7 +922,7 @@ void HistoManager::openOutputStream(const std::string & filePath){
   std::size_t last_slash_position = filePath.find_last_of("//");
   std::string recoFileName = MakeUniqueName("Reco_"+filePath.substr(last_slash_position+1,
 						     last_dot_position-last_slash_position-1)+".root");
-  myRecoOuput.open(recoFileName);
+  myRecoOutput.open(recoFileName);
 
   std::string fileName = filePath.substr(last_slash_position+1);
   if(fileName.find("CoBo")==std::string::npos){
@@ -868,10 +941,10 @@ void HistoManager::openOutputStream(const std::string & filePath){
 /////////////////////////////////////////////////////////
 void HistoManager::writeRecoData(unsigned long eventType){
 
-  myRecoOuput.setRecTrack(myTkBuilder.getTrack3D(0));
+  myRecoOutput.setRecTrack(myTkBuilder.getTrack3D(0));
   myEventInfo->SetEventType(eventType);				   
-  myRecoOuput.setEventInfo(myEventInfo);				   
-  myRecoOuput.update();  
+  myRecoOutput.setEventInfo(myEventInfo);				   
+  myRecoOutput.update();  
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -899,13 +972,7 @@ void HistoManager::updateEventRateGraph(){
   if(deltaTime==0) rate = 0.0;
   previousEventTime = currentEventTime;
   previousEventNumber = currentEventNumber;
-  /*
-  std::cout<<"currentEventTime: "<<currentEventTime<<" [s]"<<std::endl;
-  std::cout<<"currentEventNumber: "<<currentEventNumber<<std::endl;
-  std::cout<<"deltaTime: "<<deltaTime<<" [s]"<<std::endl;
-  std::cout<<"delta event count: "<<deltaEventCount<<std::endl;
-  std::cout<<"rate: "<<rate<<" [Hz]"<<std::endl;
-  */
+ 
   grEventRate->Expand(grEventRate->GetN()+1);
   grEventRate->SetPoint(grEventRate->GetN(), currentEventTime, rate);
   grEventRate->GetXaxis()->SetTitle("Time since start of run [s]; ");
