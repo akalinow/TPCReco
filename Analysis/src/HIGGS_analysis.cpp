@@ -184,8 +184,24 @@ void HIGGS_analysis::bookHistos(){
     
     // TOTAL OBSERVABLE : per category
     switch(categoryPID[c].size()) {
-    case 2: // 2-prong
-    case 3: // 3-prong
+    case 3: // DALITZ PLOTS FOR 3-BODY DECAY OF CARBON IN CMS FRAME : symmetrized track pairs, 3-prong only
+      histos2D[(prefix+"_Dalitz1_CMS").c_str()]=
+	new TH2F((prefix+"_Dalitz1_CMS").c_str(),
+		 Form("%s - Dalitz plot;#it{m_{i,j}} [MeV/c^{2}];#it{m_{i,k}} [MeV/c^{2}];Probability [arb.u.]", info),
+		 100, 2*myRangeCalculator.getIonMassMeV(ALPHA),
+		 myRangeCalculator.getIonMassMeV(CARBON_12)-myRangeCalculator.getIonMassMeV(ALPHA),
+		 100, 2*myRangeCalculator.getIonMassMeV(ALPHA),
+		 myRangeCalculator.getIonMassMeV(CARBON_12)-myRangeCalculator.getIonMassMeV(ALPHA) );
+      // Special version of Dalitz plot for identical masses, centered at (chi=0, psi=0):
+      // abscissa : chi = (eps1+2*eps2-1)/sqrt(3) = (T2-T3)/sqrt(3)/Q
+      // ordinate : psi = eps1-1/3 = (2*T1-T2-T3)/3/Q
+      // where: eps_i=T_i/Q, Q=T1+T2+T3
+      // Reference: K.L.Laursen at al., Eur. Phys. J. A 62 (2016) 271.
+      histos2D[(prefix+"_Dalitz2_CMS").c_str()]=
+	new TH2F((prefix+"_Dalitz2_CMS").c_str(),
+		 Form("%s - Dalitz plot;#chi;#psi;Probability [arb.u.]", info),
+		 100, -0.35, 0.35, 100, -0.35, 0.35);
+    case 2: // VALID FOR 2-prongs and 3-prongs
       histos1D[(prefix+"_lenSUM").c_str()]=
 	new TH1F((prefix+"_lenSUM").c_str(),
 		 Form("%s;Sum of track lengths [mm];%s", info, perTrackTitle),
@@ -222,7 +238,7 @@ void HIGGS_analysis::bookHistos(){
     for(auto t=0U; t<categoryPIDhname[c].size(); ++t) {
       auto pid=categoryPIDhname[c].at(t);
       auto pidLatex=categoryPIDlatex[c].at(t).c_str();
-
+      
       // TRACK LENGTH : per category / per track
       histos1D[(prefix+pid+"_len").c_str()]=
 	new TH1F((prefix+pid+"_len").c_str(),
@@ -409,6 +425,7 @@ void HIGGS_analysis::bookHistos(){
       }
     }
   }
+
   // dump list of histogram names
   std::cout<<__FUNCTION__<<": List of booked 1D histograms:"<<std::endl;
   for (auto &h : histos1D) {
@@ -825,7 +842,6 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     }
 
     // fill total sums
-    //    double invariantMass=sumP4_BEAM_CMS.M(); // [MeV]
     double totalEnergy_CMS=sumP4_BEAM_CMS.E(); // [MeV], mass of stationary excited Carbon state
     double carbonMassExcited=totalEnergy_CMS;
     double carbonExcitationEnergy=carbonMassExcited-carbonMassGroundState;
@@ -837,6 +853,28 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     histos1D["h_3prong_total_E_CMS"]->Fill(totalEnergy_CMS);
     histos1D["h_3prong_excitation_E_CMS"]->Fill(carbonExcitationEnergy);
     histos1D["h_3prong_Qvalue_CMS"]->Fill(Qvalue_CMS);
+
+    // fill symmetrized Dalitz plots
+    for(auto i1=0; i1<3; i1++) {
+      auto i2=(i1+1)%3;
+      auto i3=(i1+2)%3;
+
+      // consider even and odd permutations of {0,1,2} set => 6 entries per event
+      auto mass1=(alphaP4_BEAM_CMS[i1]+alphaP4_BEAM_CMS[i2]).M(); // [MeV/c^2]
+      auto mass2=(alphaP4_BEAM_CMS[i1]+alphaP4_BEAM_CMS[i3]).M(); // [MeV/c^2]
+      histos2D["h_3prong_Dalitz1_CMS"]->Fill(mass1, mass2);
+      histos2D["h_3prong_Dalitz1_CMS"]->Fill(mass2, mass1);
+
+      // consider even and odd permutations of {0,1,2} set => 6 entries per event
+      auto eps1=alpha_T_CMS[i1]/Qvalue_CMS;
+      auto eps2=alpha_T_CMS[i2]/Qvalue_CMS;
+      auto eps3=alpha_T_CMS[i3]/Qvalue_CMS;
+      histos2D["h_3prong_Dalitz2_CMS"]->Fill( (eps1+2*eps2-1)/sqrt(3.), // chi
+					      eps1-1/3. ); // psi
+      histos2D["h_3prong_Dalitz2_CMS"]->Fill( (eps1+2*eps3-1)/sqrt(3.), // chi
+					      eps1-1/3. ); // psi
+      
+    }
   }
   //////// DEBUG
   //  auto l = new TPolyLine3D(ntracks*3);
