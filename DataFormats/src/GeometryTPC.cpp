@@ -58,7 +58,7 @@ GeometryTPC::GeometryTPC(const char *fname, bool debug)
 
   tp = new TH2Poly();
   tp->SetName("h_uvw_dummy");
-  tp_convex = new TGraph();
+  tp_convex = new TH2PolyBin();
 
   // default REFERENCE POINT position on XY plane
   reference_point.Set(0., 0.);
@@ -933,7 +933,7 @@ bool GeometryTPC::InitActiveAreaConvexHull(TGraph *g) {
 
   // duplicate first point to close the loop
   gr4->SetPoint(gr4->GetN(), x0, y0);
-
+  /*
   // store convex hull as TGraph (easily convertible to TH2PolyBin)
   if(tp_convex) {
     tp_convex->Delete();
@@ -943,6 +943,18 @@ bool GeometryTPC::InitActiveAreaConvexHull(TGraph *g) {
 
   if(_debug) { // DEBUG
     std::cout << __FUNCTION__ << ": Created TGraph with " << tp_convex->GetN() << " points, "
+	      << "and starting point (X0=" << x0 << "mm, Y0="<< y0 << "mm)" << std::endl;
+  } // DEBUG
+  */
+  // store convex hull as TH2PolyBin (easily convertible to TGraph)
+  if(tp_convex) {
+    tp_convex->Delete();
+    tp_convex = NULL;
+  }
+  tp_convex = new TH2PolyBin(gr4, 1);
+
+  if(_debug) { // DEBUG
+    std::cout << __FUNCTION__ << ": Created TH2PolyBin with " << gr4->GetN() << " points, "
 	      << "and starting point (X0=" << x0 << "mm, Y0="<< y0 << "mm)" << std::endl;
   } // DEBUG
 
@@ -967,9 +979,10 @@ TGraph GeometryTPC::GetActiveAreaConvexHull(double vetoBand){
     if (_debug) {
       std::cerr << __FUNCTION__ << ": VETO band must not be negative - Abort(1)" << std::endl;
     }
-    return TGraph(); // dummy TGraph()
+    return TGraph(); // dummy TGraph
   }
-  TGraph result = *tp_convex;
+  if(!isOK_TH2Poly) return TGraph(); // dummy TGraph
+  TGraph result = *((TGraph*)(tp_convex->GetPolygon())); // extract TGraph from TH2PolyBin
   if(vetoBand==0.0) {
     return result;
   }
@@ -1107,6 +1120,45 @@ TGraph GeometryTPC::GetActiveAreaConvexHull(double vetoBand){
   } // DEBUG
 
   return result;
+}
+
+////////////////////////////////////////////////////////////
+//
+// Checks if 3D point [mm] has X,Y inside
+// UVW active area and Z within [zmin, zmax] drift cage range
+//
+bool GeometryTPC::IsInsideActiveVolume(TVector3 point) { // [mm]
+  if(!isOK_TH2Poly || point.Z()<drift_zmin || point.Z()>drift_zmax ||
+     !tp_convex->IsInside(point.X(), point.Y())) return false;
+  return true;
+}
+
+////////////////////////////////////////////////////////////
+//
+// Checks if 2D point [mm] is inside UVW active area
+//
+bool GeometryTPC::IsInsideActiveArea(TVector2 point) { // [m]]
+  if(!isOK_TH2Poly ||
+     !tp_convex->IsInside(point.X(), point.Y())) return false;
+  return true;
+}
+
+////////////////////////////////////////////////////////////
+//
+// Checks if Z coordinate [mm] is inside Z-slice covered by the GET electronics
+//
+bool GeometryTPC::IsInsideElectronicsRange(double z) { // [mm]
+  bool isOutside_flag=false;
+  Pos2timecell(z, isOutside_flag);
+  return !isOutside_flag;
+}
+
+////////////////////////////////////////////////////////////
+//
+// Checks if 3D point [mm] is inside Z-slice covered by the GET electronics
+//
+bool GeometryTPC::IsInsideElectronicsRange(TVector3 point) { // [mm]
+  return IsInsideElectronicsRange(point.Z());
 }
 
 void GeometryTPC::setDriftVelocity(double v){

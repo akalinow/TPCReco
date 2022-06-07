@@ -10,6 +10,30 @@ IonRangeCalculator::IonRangeCalculator(gas_mixture_type gas, double p_mbar, doub
   addIonRangeCurve(pid_type::CARBON_14, gas_mixture_type::CO2, 250.0, 273.15+20, "range_14C_in_CO2_250mbar.dat");
 
   setGasConditions(gas, p_mbar, T_Kelvin);
+  
+  // Sources:
+  // [1] National Institute of Standards and Technology (NIST)
+  //     URL: https://physics.nist.gov/PhysRefData/Handbook/atomic_number.htm
+  //     Access date: 10 May 2022
+  // [2] Wikipedia
+  //     URL: https://en.wikipedia.org/wiki/Alpha_particle
+  //     Access date: 10 May 2022
+  // [3] P.A. Zyla et al. (Particle Data Group), Prog. Theor. Exp. Phys. 2020, 083C01 (2020) and 2021 update. 
+  //     URL: https://pdglive.lbl.gov
+  //     Access date: 10 May 2022
+  // [4] Wikipedia, Isotopes of carbon
+  //     URL: https://en.wikipedia.org/wiki/Isotopes_of_carbon
+  //     Access date: 10 May 2022
+  const double atomicMassUnit = 931.4941024228; // MeV/c^2
+  massTableMap[pid_type::PROTON]=1.00727646663*atomicMassUnit; // [3]
+  massTableMap[pid_type::ALPHA]=4.001506179127*atomicMassUnit; // [2]
+  massTableMap[pid_type::CARBON_12]=12*atomicMassUnit; // [1]
+  massTableMap[pid_type::CARBON_13]=13.003355*atomicMassUnit; // [1]
+  massTableMap[pid_type::CARBON_14]=14.0032419894*atomicMassUnit; // [4]
+  massTableMap[pid_type::NITROGEN_15]=15.000108*atomicMassUnit; // [1]
+  massTableMap[pid_type::OXYGEN_16]=15.994915*atomicMassUnit; // [1]
+  massTableMap[pid_type::OXYGEN_17]=16.999311*atomicMassUnit; // [1]
+  massTableMap[pid_type::OXYGEN_18]=17.999160*atomicMassUnit; // [1]
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
@@ -23,7 +47,7 @@ void IonRangeCalculator::setGasMixture(gas_mixture_type gas){ // GAS index
   
   // check that at least one range/energy curve exists for this gas index
   bool valid=false;
-  for(auto ion: {pid_type::PID_MIN, pid_type::PID_MAX}) {
+  for(auto ion=pid_type::PID_MIN; ion!=pid_type::PID_MAX; ion=pid_type(ion+1)) {
     if(refGasRangeCurveMap.find(MultiKey2((int)gas, (int)ion))!=refGasRangeCurveMap.end()) {
       valid=true;
       break;
@@ -124,8 +148,15 @@ double IonRangeCalculator::getIonEnergyMeV(pid_type ion, double range_mm){ // in
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
-void IonRangeCalculator::addIonRangeCurve(pid_type ion, gas_mixture_type gas, double p_mbar,
-					  double T_Kelvin, const char *datafile){ // range(E_kin) corresponding to {gas, p, T}
+double IonRangeCalculator::getIonMassMeV(pid_type ion){ // particle or isotope mass in [MeV/c^2]
+  auto it=massTableMap.end();
+  if((it=massTableMap.find(ion))==massTableMap.end()) return 0;
+ else return it->second;
+}
+
+////////////////////////////////////////////////
+////////////////////////////////////////////////
+void IonRangeCalculator::addIonRangeCurve(pid_type ion, gas_mixture_type gas, double p_mbar, double T_Kelvin, const char *datafile){ // range(E_kin) corresponding to {gas, p, T}
 
   // sanity checks
   if(ion<PID_MIN || ion>PID_MAX) {

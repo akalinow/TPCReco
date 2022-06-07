@@ -10,10 +10,10 @@
 
 class Track3D{
 
-public:
+ public:
 
   enum fit_modes{FIT_START_STOP,
-		 FIT_BIAS_TANGENT
+		  FIT_BIAS_TANGENT
   };
 
   Track3D();
@@ -33,7 +33,7 @@ public:
 
   double getSegmentLambda(double lambda, unsigned int iSegment) const;
 
-  void setChargeProfile(const TH1F &hProfile) {myChargeProfile = hProfile;} 
+  void setChargeProfile(const TH1F &hProfile) {myChargeProfile = hProfile;}
 
   double getIntegratedCharge(double lambda) const;
 
@@ -46,7 +46,7 @@ public:
   void extendToChamberRange(const std::tuple<double, double, double, double> & xyRange,
 			    const std::tuple<double, double> & zRange);
 
-  ///Shrink track to actual hits range.
+    ///Shrink track to actual hits range.
   void shrinkToHits();
 
   void removeEmptySegments();
@@ -60,7 +60,7 @@ public:
   double getHypothesisFitChi2() const {return hypothesisFitChi2;}
 
   double hitDistanceFromBias(const double *par);
-  
+
   double chi2FromNodesList(const double *par);
 
   double chi2FromSplitPoint(const double *par);
@@ -73,7 +73,7 @@ public:
 
   void update();
 
-private:
+ private:
 
   void updateChi2();
 
@@ -100,7 +100,7 @@ private:
   std::vector<double> segmentChi2;
   std::vector<double> nodeHitsChi2;
   std::vector<double> nodeAngleChi2;
-  
+
   TrackSegment3DCollection mySegments;
   TH1F myChargeProfile;
   double hypothesisFitChi2{99};
@@ -111,4 +111,3 @@ typedef std::vector<Track3D> Track3DCollection;
 std::ostream & operator << (std::ostream &out, const Track3D &aTrack);
 
 #endif
-

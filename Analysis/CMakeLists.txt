@@ -25,8 +25,12 @@ include_directories(${PROJECT_SOURCE_DIR}/Reconstruction/include)
 include_directories(${PROJECT_SOURCE_DIR}/Utilities/include)
 ###############################################################################
 ## target definitions #########################################################
+# ROOT dictionary for persistens classes
+ROOT_GENERATE_DICTIONARY(G__${MODULE_NAME}
+  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/HIGS_trees_dataFormat.h
+  LINKDEF ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/LinkDef.h)
 ###############################################################################
-add_library(${MODULE_NAME} SHARED ${sources})
+add_library(${MODULE_NAME} SHARED ${sources} G__${MODULE_NAME}.cxx)
 add_library(${TPCRECO_PREFIX}${MODULE_NAME} ALIAS ${MODULE_NAME})
 set_target_properties(${MODULE_NAME} PROPERTIES PREFIX ${TPCRECO_PREFIX})
 
