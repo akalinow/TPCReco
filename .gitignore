@@ -47,3 +47,4 @@ Makefile
 ###################
 *.sif
 *.tar
+*.tar.gz
