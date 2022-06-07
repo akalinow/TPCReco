@@ -143,7 +143,6 @@ HIgS_runs = [
 ###
 ###
 procName = "makeTrackTree"
-#procName = "doNothing"
 ################################################
 ################################################
 runLoop(HIgS_runs, procName, finalizeHIgS())
