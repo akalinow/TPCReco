@@ -26,6 +26,7 @@ void eventraw::EventInfo::reset(){
   eventId = 0;   // 4-bytes
   timestamp = 0; // 6-bytes in 10ns CLK units (100 MHz)
   eventType = 0;
+  pedestalSubtracted = false;
 
 }
 ////////////////////////////////////////////////
@@ -34,7 +35,8 @@ std::ostream& eventraw::operator<<(std::ostream& os, const eventraw::EventInfo& 
   os << "EventInfo: "
      <<" run timestamp: "<<einfo.GetRunId()
      <<" event id=" << einfo.GetEventId() << ", timestamp=" << einfo.GetEventTimestamp()
-     <<" type: "<<einfo.GetEventType().to_string();
+     <<" type: "<<einfo.GetEventType().to_string()
+     <<" pedestal subtracted? "<<einfo.GetPedestalSubtracted();
   return os;
 }
 ////////////////////////////////////////////////

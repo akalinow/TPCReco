@@ -10,7 +10,7 @@
 
 #include "GeometryTPC.h"
 #include "EventTPC.h"
-#include "EventTPC_new.h"
+#include "PEventTPC.h"
 #include "PedestalCalculator.h"
 #include "EventSourceGRAW.h"
 #include "EventSourceMultiGRAW.h"
@@ -143,8 +143,8 @@ int convertGRAWFile(const  std::string & geometryFileName,
   myEventSource->loadDataFile(grawFileName);
   std::cout << "File with " << myEventSource->numberOfEntries() << " frames opened." << std::endl;
   
-  std::shared_ptr<EventTPC> myEventPtr = myEventSource->getCurrentEvent();
-  auto myEventPtr_new = myEventSource->getCurrentEvent_new();
+  //auto myEventPtr = myEventSource->getCurrentEvent();
+  auto myEventPtr = myEventSource->getCurrentPEvent();
 
   #ifdef DEBUG
   std::cout << "==== GrawToEvenTPC INITIALIZATION: myPtr_EventTPC="
@@ -152,26 +152,20 @@ int convertGRAWFile(const  std::string & geometryFileName,
   #endif
 
   TTree aTree("TPCData","");
-  EventTPC *persistent_event = myEventPtr.get();
-  aTree.Branch("Event", &persistent_event);
-
-  //test::EventTPC *persistent_event_new = myEventPtr_new.get();
-  //aTree.Branch("Event_new", &persistent_event_new);
-  
-  Long64_t currentEventIdx=-1;
-  std::map<unsigned int, bool> eventIdxMap;
-
+  auto persistent_event = myEventPtr.get();
+  aTree.Branch("Event", &persistent_event); 
+  Long64_t currentEventId=-1;
+  std::map<unsigned int, bool> eventIdMap;
   ///////////////////
   do{
     myEventSource->getNextEvent();
-    currentEventIdx=myEventSource->currentEventNumber();
+    currentEventId=myEventSource->currentEventNumber();
   }
-  while(currentEventIdx!=(Long64_t)myEventSource->currentEventNumber());
+  while(currentEventId!=(Long64_t)myEventSource->currentEventNumber());
   //////////////////////
-  
   do {
     // load first frame and initialize eventId counter
-    if(currentEventIdx==-1) {
+    if(currentEventId==-1) {
       myEventSource->loadFileEntry(0);
     }
 
@@ -179,13 +173,13 @@ int convertGRAWFile(const  std::string & geometryFileName,
     std::cout << "==== GrawToEventTPC X-CHECK: EventSourceGRAW EventID= "
     	      << myEventSource->currentEventNumber()
     	      << ", EventTPC EventID="
-    	      << myEventPtr->GetEventId()
+    	      << myEventPtr->GetEventInfo().GetEventId()
      	      << "====" << std::endl;
 #endif
     
-    unsigned int eventIdx = myEventPtr->GetEventId();
-    if(eventIdxMap.find(eventIdx)==eventIdxMap.end()){
-      eventIdxMap[eventIdx] = true;
+    unsigned int eventId = myEventPtr->GetEventInfo().GetEventId();    
+    if(eventIdMap.find(eventId)==eventIdMap.end()){
+      eventIdMap[eventId] = true;
 
 #ifdef DEBUG
       std::cout << "==== GrawToEventTPC LOOP: persistentPtr_EventTPC="
@@ -195,27 +189,25 @@ int convertGRAWFile(const  std::string & geometryFileName,
       std::cout << "---- EventTPC content end ----" << std::endl;
 #endif
 
-      // temporarily reset geometry pointer while filling TTree
-      //      std::shared_ptr<GeometryTPC> gPtr(myEventPtr->GetGeoPtr());
-      myEventPtr->SetGeoPtr(0);
       aTree.Fill();
-      if(eventIdxMap.size()%100==0) aTree.FlushBaskets();
+      if(eventIdMap.size()%100==0) aTree.FlushBaskets();
     }
 
 #ifdef DEBUG
-    if( eventIdxMap.size()==10 ) break;
+    if( eventIdMap.size()==10) break;
 #endif
-    if( eventIdxMap.size()==100 ) break;
 
-    currentEventIdx=myEventSource->currentEventNumber();
+    currentEventId=myEventSource->currentEventNumber();
     myEventSource->getNextEvent();
   }
-  while(currentEventIdx!=(Long64_t)myEventSource->currentEventNumber());  
+  while(currentEventId!=(Long64_t)myEventSource->currentEventNumber());  
   aTree.Print();
   // build index based on: majorname=EventId, minorname=NONE
   //aTree.BuildIndex("Event.event_id");
   aTree.Write("", TObject::kOverwrite); // save only the new version of the tree
   aFile.Close();
+
+  return 0;//TEST
   
  #ifdef DEBUG
   std::shared_ptr<EventSourceROOT> myEventSourceRoot;

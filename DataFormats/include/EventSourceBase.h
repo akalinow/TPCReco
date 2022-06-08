@@ -10,13 +10,13 @@
 #include "GeometryTPC.h"
 
 #include "EventInfo.h"
-#include "EventTPC_new.h"
+#include "PEventTPC.h"
+
+enum class EventType {raw, tpc};
 
 class EventSourceBase {
 
 public:
-
-  enum EventType {raw = 0, tpc = 1};
   
   EventSourceBase();
   
@@ -34,9 +34,9 @@ public:
 
   std::string getCurrentPath() const;
 
-  std::shared_ptr<EventTPC> getCurrentEvent() const;
+  std::shared_ptr<PEventTPC> getCurrentPEvent() const;
 
-  std::shared_ptr<test::EventTPC> getCurrentEvent_new() const;
+  std::shared_ptr<EventTPC> getCurrentEvent() const;
   
   std::shared_ptr<EventTPC> getNextEventLoop();
 
@@ -72,7 +72,7 @@ protected:
   std::shared_ptr<GeometryTPC> myGeometryPtr;
 
   eventraw::EventInfo myCurrentEventInfo;
-  std::shared_ptr<test::EventTPC> myCurrentEvent_new;
+  std::shared_ptr<PEventTPC> myCurrentPEvent;
   
 };
 #endif

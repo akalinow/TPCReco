@@ -23,8 +23,6 @@
 #define EVENTTPC_DEFAULT_STRIP_REBIN 2  // number of strips to rebin [1-1024] 
 #define EVENTTPC_DEFAULT_TIME_REBIN  5  // number of time cells to rebin [1-512]
 
-class TrackSegment3D;
-
 class EventTPC {
   //  friend class SigClusterTPC;
  private:
@@ -65,6 +63,7 @@ class EventTPC {
 
   void Clear();
 
+  void SetChargeMap();
   void SetGeoPtr(std::shared_ptr<GeometryTPC> aPtr);
   void SetEventId(Long64_t aId) { event_id = aId; };
   //  void SetEventNumber(Long64_t aNumber) { event_number = aNumber; };
@@ -72,7 +71,7 @@ class EventTPC {
   void SetRunId(Long64_t aId) { run_id =  aId; };
   // helper methods for inserting data points
   // they return TRUE on success and FALSE on error
-  bool AddValByStrip(StripTPC* strip, int time_cell, double val);                      // valid range [0-511]
+  bool AddValByStrip(std::shared_ptr<StripTPC> strip, int time_cell, double val);                      // valid range [0-511]
   bool AddValByStrip(int strip_dir, int strip_section, int strip_number, int time_cell, double val);     // valid range [0-2][0-2][1-1024][0-511]
   bool AddValByGlobalChannel(int glb_channel_idx, int time_cell, double val);         // valid range [0-1023][0-511]
   bool AddValByGlobalChannel_raw(int glb_raw_channel_idx, int time_cell, double val); // valid range [0-1023+4*N][0-511]
@@ -82,7 +81,7 @@ class EventTPC {
     
   // helper methods for extracting data points
   // they return 0.0 for non-existing data points
-  double GetValByStrip(StripTPC* strip, int time_cell/*, bool &result*/);                   // valid range [0-511]
+  double GetValByStrip(std::shared_ptr<StripTPC> strip, int time_cell/*, bool &result*/);                   // valid range [0-511]
   double GetValByStrip(int strip_dir, int strip_section, int strip_number, int time_cell/*, bool &result*/);  // valid range [0-2][1-1024][0-511]
   double GetValByStripMerged(int strip_dir, int strip_number, int time_cell/*, bool &result*/);  // valid range [0-2][1-1024][0-511] (all sections)
   double GetValByGlobalChannel(int glb_channel_idx, int time_cell/*, bool &result*/);         // valid range [0-1023][0-511]

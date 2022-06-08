@@ -207,7 +207,7 @@ bool EventTPC::AddValByStrip(int strip_dir, int strip_section, int strip_number,
       if(new_val2 > it_maxval2->second) it_maxval2->second = new_val2;
     }
     // update {COBO_idx, ASAD_idx} map
-    StripTPC *strip=myGeometryPtr->GetStripByDir(strip_dir, strip_section, strip_number);
+    std::shared_ptr<StripTPC> strip=myGeometryPtr->GetStripByDir(strip_dir, strip_section, strip_number);
     if(strip) {
       MultiKey2 mkey_asad( strip->CoboId(), strip->AsadId() );
       std::map<MultiKey2, int, multikey2_less>::iterator it_asad;
@@ -227,7 +227,7 @@ bool EventTPC::AddValByStrip(int strip_dir, int strip_section, int strip_number,
 }
 
 
-bool EventTPC::AddValByStrip(StripTPC *strip, int time_cell, double val) {  // valid range [0-511]
+bool EventTPC::AddValByStrip(std::shared_ptr<StripTPC> strip, int time_cell, double val) {  // valid range [0-511]
   if(strip) return AddValByStrip(strip->Dir(), strip->Section(), strip->Num(), time_cell, val);
   return false;
 }
@@ -299,7 +299,7 @@ double EventTPC::GetValByStrip(int strip_dir, int strip_section, int strip_numbe
   return 0.0;    
 }
 
-double EventTPC::GetValByStrip(StripTPC *strip, int time_cell/*, bool &result*/) {  // valid range [0-511]
+double EventTPC::GetValByStrip(std::shared_ptr<StripTPC> strip, int time_cell/*, bool &result*/) {  // valid range [0-511]
   if(strip) return GetValByStrip(strip->Dir(), strip->Section(), strip->Num(), time_cell); //, result);
   return false;
 }
@@ -1294,15 +1294,15 @@ std::vector<TH2D*> EventTPC::Get2D(const SigClusterTPC &cluster, double radius, 
     for(int i0=0; i0<(int)hits[0].size(); i0++) {
       for(auto iter0=myGeometryPtr->GetDirSectionIndexList(DIR_U).begin();
 	  iter0!=myGeometryPtr->GetDirSectionIndexList(DIR_U).end(); iter0++) {
-	StripTPC *strip0 = myGeometryPtr->GetStripByDir(DIR_U, *iter0, hits[0].at(i0));
+	std::shared_ptr<StripTPC> strip0 = myGeometryPtr->GetStripByDir(DIR_U, *iter0, hits[0].at(i0));
 	for(int i1=0; i1<(int)hits[1].size(); i1++) {
 	  for(auto iter1=myGeometryPtr->GetDirSectionIndexList(DIR_V).begin();
 	      iter1!=myGeometryPtr->GetDirSectionIndexList(DIR_V).end(); iter1++) {
-	    StripTPC *strip1 = myGeometryPtr->GetStripByDir(DIR_V, *iter1, hits[1].at(i1));
+	    std::shared_ptr<StripTPC> strip1 = myGeometryPtr->GetStripByDir(DIR_V, *iter1, hits[1].at(i1));
 	    for(int i2=0; i2<(int)hits[2].size(); i2++) {
 	      for(auto iter2=myGeometryPtr->GetDirSectionIndexList(DIR_W).begin();
 		  iter2!=myGeometryPtr->GetDirSectionIndexList(DIR_W).end(); iter2++) {
-		StripTPC *strip2 = myGeometryPtr->GetStripByDir(DIR_W, *iter2, hits[2].at(i2));
+		std::shared_ptr<StripTPC> strip2 = myGeometryPtr->GetStripByDir(DIR_W, *iter2, hits[2].at(i2));
 		
 		////////// DEBUG 
 		//	  std::cout << Form(">>>> Checking triplet: time_cell=%d: U=%d / V=%d / W=%d",
@@ -1616,15 +1616,15 @@ TH3D *EventTPC::Get3D(const SigClusterTPC &cluster, double radius, int rebin_spa
     for(int i0=0; i0<(int)hits[0].size(); i0++) {
       for(auto iter0=myGeometryPtr->GetDirSectionIndexList(DIR_U).begin();
 	  iter0!=myGeometryPtr->GetDirSectionIndexList(DIR_U).end(); iter0++) {
-	StripTPC *strip0 = myGeometryPtr->GetStripByDir(DIR_U, *iter0, hits[0].at(i0));
+	std::shared_ptr<StripTPC> strip0 = myGeometryPtr->GetStripByDir(DIR_U, *iter0, hits[0].at(i0));
 	for(int i1=0; i1<(int)hits[1].size(); i1++) {
 	  for(auto iter1=myGeometryPtr->GetDirSectionIndexList(DIR_V).begin();
 	      iter1!=myGeometryPtr->GetDirSectionIndexList(DIR_V).end(); iter1++) {
-	    StripTPC *strip1 = myGeometryPtr->GetStripByDir(DIR_V, *iter1, hits[1].at(i1));
+	    std::shared_ptr<StripTPC> strip1 = myGeometryPtr->GetStripByDir(DIR_V, *iter1, hits[1].at(i1));
 	    for(int i2=0; i2<(int)hits[2].size(); i2++) {
 	      for(auto iter2=myGeometryPtr->GetDirSectionIndexList(DIR_W).begin();
 		  iter2!=myGeometryPtr->GetDirSectionIndexList(DIR_W).end(); iter2++) {
-		StripTPC *strip2 = myGeometryPtr->GetStripByDir(DIR_W, *iter2, hits[2].at(i2));
+		std::shared_ptr<StripTPC> strip2 = myGeometryPtr->GetStripByDir(DIR_W, *iter2, hits[2].at(i2));
 		
 		////////// DEBUG 
 		//	  std::cout << Form(">>>> Checking triplet: time_cell=%d: U=%d / V=%d / W=%d",
@@ -1791,11 +1791,11 @@ TH2D *EventTPC::GetXY_TestUV(TH2D *h) { // test (unphysical) histogram
     if(i0!=1) continue;
     for(auto iter0=myGeometryPtr->GetDirSectionIndexList(DIR_U).begin();
 	iter0!=myGeometryPtr->GetDirSectionIndexList(DIR_U).end(); iter0++) {
-      StripTPC *strip0 = myGeometryPtr->GetStripByDir(DIR_U, *iter0, i0);
+      std::shared_ptr<StripTPC> strip0 = myGeometryPtr->GetStripByDir(DIR_U, *iter0, i0);
       for(int i1=1; i1<(int)myGeometryPtr->GetDirNstrips(DIR_V); i1++) {
 	for(auto iter1=myGeometryPtr->GetDirSectionIndexList(DIR_V).begin();
 	    iter1!=myGeometryPtr->GetDirSectionIndexList(DIR_V).end(); iter1++) {
-	  StripTPC *strip1 = myGeometryPtr->GetStripByDir(DIR_V, *iter1, i1);
+	  std::shared_ptr<StripTPC> strip1 = myGeometryPtr->GetStripByDir(DIR_V, *iter1, i1);
 	  TVector2 pos;
 	  if( myGeometryPtr->GetCrossPoint( strip0, strip1, pos) ) {
 	    h->SetBinContent( h->FindBin( pos.X(), pos.Y() ), 1.*i0);
@@ -1865,11 +1865,11 @@ TH2D *EventTPC::GetXY_TestVW(TH2D *h) { // test (unphysical) histogram
     if(i0!=1) continue;
     for(auto iter0=myGeometryPtr->GetDirSectionIndexList(DIR_V).begin();
 	iter0!=myGeometryPtr->GetDirSectionIndexList(DIR_V).end(); iter0++) {
-      StripTPC *strip0 = myGeometryPtr->GetStripByDir(DIR_V, *iter0, i0);
+      std::shared_ptr<StripTPC> strip0 = myGeometryPtr->GetStripByDir(DIR_V, *iter0, i0);
       for(int i1=1; i1<(int)myGeometryPtr->GetDirNstrips(DIR_W); i1++) {
 	for(auto iter1=myGeometryPtr->GetDirSectionIndexList(DIR_W).begin();
 	    iter1!=myGeometryPtr->GetDirSectionIndexList(DIR_W).end(); iter1++) {
-	  StripTPC *strip1 = myGeometryPtr->GetStripByDir(DIR_W, *iter1, i1);
+	  std::shared_ptr<StripTPC> strip1 = myGeometryPtr->GetStripByDir(DIR_W, *iter1, i1);
 	  TVector2 pos;
 	  if( myGeometryPtr->GetCrossPoint( strip0, strip1, pos) ) {
 	    h->SetBinContent( h->FindBin( pos.X(), pos.Y() ), 1.*i0);
@@ -1938,11 +1938,11 @@ TH2D *EventTPC::GetXY_TestWU(TH2D *h) { // test (unphysical) histogram
     if(i0!=1) continue;
     for(auto iter0=myGeometryPtr->GetDirSectionIndexList(DIR_W).begin();
 	iter0!=myGeometryPtr->GetDirSectionIndexList(DIR_W).end(); iter0++) {
-      StripTPC *strip0 = myGeometryPtr->GetStripByDir(DIR_W, *iter0, i0);
+      std::shared_ptr<StripTPC> strip0 = myGeometryPtr->GetStripByDir(DIR_W, *iter0, i0);
       for(int i1=1; i1<(int)myGeometryPtr->GetDirNstrips(DIR_U); i1++) {
 	for(auto iter1=myGeometryPtr->GetDirSectionIndexList(DIR_U).begin();
 	    iter1!=myGeometryPtr->GetDirSectionIndexList(DIR_U).end(); iter1++) {
-	  StripTPC *strip1 = myGeometryPtr->GetStripByDir(DIR_U, *iter1, i1);
+	  std::shared_ptr<StripTPC> strip1 = myGeometryPtr->GetStripByDir(DIR_U, *iter1, i1);
 	  TVector2 pos;
 	  if( myGeometryPtr->GetCrossPoint( strip0, strip1, pos) ) {
 	    h->SetBinContent( h->FindBin( pos.X(), pos.Y() ), 1.*i0);

@@ -4,7 +4,7 @@
 #include <map>
 #include <iostream>
 #include <functional>
-
+#include <memory>
 
 enum projection{
 		DIR_U=0,    // U-direction channel index

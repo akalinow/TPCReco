@@ -18,8 +18,6 @@ struct Strip_Data {
     double length;  // strip length [mm]
 };
 
-// Single UVW strip defined as a class
-//class Geometry_Strip : public TObject {
 class Geometry_Strip {
 
 private:
@@ -32,7 +30,6 @@ public:
         TVector2 unit_vector, TVector2 offset_vector_in_mm, double length_in_mm);
 
     decltype(Geometry_Strip::data) operator()() { return data; };
-    //  ClassDef(Geometry_Strip,1)
 };
 
 #endif

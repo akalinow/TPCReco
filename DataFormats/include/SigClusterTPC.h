@@ -90,7 +90,7 @@ class SigClusterTPC {
 
   // helper methods for inserting data points
   // they return TRUE on success and FALSE on error
-  bool AddByStrip(StripTPC* strip, int time_cell);                     // valid range [0-511]
+  bool AddByStrip(std::shared_ptr<StripTPC> strip, int time_cell);                     // valid range [0-511]
   bool AddByStrip(int strip_dir, int strip_section, int strip_number, int time_cell);// valid range [0-2][0-2][1-1024][0-511]
   bool AddByGlobalChannel(int glb_channel_idx, int time_cell);         // valid range [0-1023][0-511]
   bool AddByGlobalChannel_raw(int glb_raw_channel_idx, int time_cell); // valid range [0-(1023+4*N)][0-511]
@@ -99,7 +99,7 @@ class SigClusterTPC {
 
   // helper methods for checking cluster membership
   // they return TRUE for member data points and FALSE for non-member data points
-  bool CheckByStrip(StripTPC* strip, int time_cell) const;                   // valid range [0-511]
+  bool CheckByStrip(std::shared_ptr<StripTPC> strip, int time_cell) const;                   // valid range [0-511]
   bool CheckByStrip(int strip_dir, int strip_section, int strip_number, int time_cell) const;  // valid range [0-2][0-2][1-1024][0-511]
   bool CheckByStripMerged(int strip_dir, int strip_number, int time_cell) const;  // valid range [0-2][1-1024][0-511] (if at least one section was hit)
   bool CheckByGlobalChannel(int glb_channel_idx, int time_cell) const;         // valid range [0-1023][0-511]

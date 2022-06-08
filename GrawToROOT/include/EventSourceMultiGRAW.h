@@ -24,15 +24,9 @@ public:
   
   ~EventSourceMultiGRAW();
 
-  //  void setRemovePedestal(bool aFlag);
-
-  //  void configurePedestal(const boost::property_tree::ptree &config);
-
   std::shared_ptr<EventTPC> getNextEvent(); // OVERLOADED
   
   std::shared_ptr<EventTPC> getPreviousEvent(); // OVERLOADED
-
-  //  std::shared_ptr<eventraw::EventRaw> getCurrentEventRaw() { return myCurrentEventRaw; }
 
   unsigned long int numberOfEvents() const { return nEntries; } // the lowest number of frames among all GRAW_EVENT_FRAGMENTS files
 
@@ -44,44 +38,23 @@ public:
 
   void loadEventId(unsigned long int eventIdx); // OVERLOADED
   
-  //  inline void setFrameLoadRange(int range) {frameLoadRange=range;}
-
-  //  inline void setFillEventType(EventType type) {fillEventType=type;}
-
   unsigned int getMaxNumberOfStreams() { return GRAW_EVENT_FRAGMENTS; }
   
 private:
 
   bool loadGrawFrame(unsigned int iEntry, bool readFullEvent, unsigned int streamIndex); // OVERLOADED
-  //  void findEventFragments(unsigned long int eventIdx, unsigned int iInitialEntry);
   void collectEventFragments(unsigned int eventIdx); // OVERLOADED
-  //  void fillEventFromFrame(GET::GDataFrame & aGrawFrame);
-  //  void fillEventRawFromFrame(GET::GDataFrame & aGrawFrame);
   void checkEntryForFragments(unsigned int iEntry, unsigned int streamIndex); // OVERLOADED
-  //  void findStartingIndex(unsigned long int size);
   std::string getNextFilePath(unsigned int streamIndex); // OVERLOADED
 
-  //  unsigned int GRAW_EVENT_FRAGMENTS;
-  //  PedestalCalculatorGRAW myPedestalCalculator;
-  //  Graw2DataFrame> myFrameLoader;
-  //  std::vector<GET::GDataFrame> myDataFrameList; // NEW [streamIndex] // HOTFIX!!!!! => do not use at all
-  //  std::shared_ptr<eventraw::EventRaw> myCurrentEventRaw{std::make_shared<eventraw::EventRaw>()};
   std::vector<std::shared_ptr<TGrawFile> > myFileList; // NEW [streamIndex]
   std::vector<std::string> myFilePathList, myNextFilePathList; // NEW [streamIndex]
   std::vector<std::map<unsigned int, unsigned int> > myFramesMapList; // NEW [streamIndex, eventId, iEntry]
   std::vector<std::map<unsigned int, unsigned int> > myAsadMapList; // NEW [streamIndex, eventId, AsadId]
   std::vector<std::map<unsigned int, unsigned int> > myCoboMapList; // NEW [streamIndex, eventId, CoboId]
-  // std::map<unsigned int, std::set<unsigned int> > myASADMap;
-  // unsigned int myEntries;
   std::vector<std::set<unsigned int> > myReadEntriesSetList; // NEW [streamIndex, {iEntry, iEntry, ...}]
-  // bool isFullFileScannedList;
-
- // int minSignalCell;
- // int maxSignalCell;
-  //  bool removePedestal{true};
-  //  unsigned long int startingEventIndex{0};
+  
   unsigned int frameLoadRange{1}; // OVERLOADED
-  //  EventType fillEventType{tpc};
 
 };
 #endif

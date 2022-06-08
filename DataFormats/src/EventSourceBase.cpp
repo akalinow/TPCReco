@@ -9,7 +9,7 @@
 EventSourceBase::EventSourceBase() {
 
   myCurrentEvent =  std::make_shared<EventTPC>();
-  myCurrentEvent_new =  std::make_shared<test::EventTPC>();
+  myCurrentPEvent =  std::make_shared<PEventTPC>();
   myCurrentEntry = 0;
   nEntries = 0;
 }
@@ -39,15 +39,15 @@ void EventSourceBase::loadGeometry(const std::string & fileName){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<EventTPC> EventSourceBase::getCurrentEvent() const{
+std::shared_ptr<PEventTPC> EventSourceBase::getCurrentPEvent() const{
 
-  return myCurrentEvent;
+  return myCurrentPEvent;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<test::EventTPC> EventSourceBase::getCurrentEvent_new() const{
+std::shared_ptr<EventTPC> EventSourceBase::getCurrentEvent() const{
 
-  return myCurrentEvent_new;
+  return myCurrentEvent;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -58,7 +58,7 @@ std::shared_ptr<EventTPC> EventSourceBase::getLastEvent(){
     myCurrentEntry = nEntries-1;
   }
 
-  return myCurrentEvent;
+  return getCurrentEvent();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -76,10 +76,10 @@ unsigned long int EventSourceBase::numberOfEntries() const{ return nEntries; }
 /////////////////////////////////////////////////////////
 unsigned long int EventSourceBase::currentEventNumber() const{
 
-  if(myCurrentEvent){
-    return myCurrentEvent->GetEventId();
+  if(getCurrentEvent()){
+    return getCurrentEvent()->GetEventId();
   }
-  return 0;
+  return -1;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -92,22 +92,22 @@ std::string EventSourceBase::getCurrentPath() const{
 std::shared_ptr<EventTPC> EventSourceBase::getNextEventLoop(){
   unsigned int currentEventIdx;
   do{
-    currentEventIdx=myCurrentEvent->GetEventId();
+    currentEventIdx=getCurrentEvent()->GetEventId();
     getNextEvent();
   }
-  while(!eventFilter.pass(*myCurrentEvent) && currentEventIdx!=myCurrentEvent->GetEventId());
-  return myCurrentEvent;
+  while(!eventFilter.pass(*getCurrentEvent()) && currentEventIdx!=getCurrentEvent()->GetEventId());
+  return getCurrentEvent();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::shared_ptr<EventTPC> EventSourceBase::getPreviousEventLoop(){
   unsigned int currentEventIdx;
   do{
-    currentEventIdx=myCurrentEvent->GetEventId();
+    currentEventIdx=getCurrentEvent()->GetEventId();
     getPreviousEvent();
   }
-  while(!eventFilter.pass(*myCurrentEvent) && currentEventIdx!=myCurrentEvent->GetEventId());
-  return myCurrentEvent;
+  while(!eventFilter.pass(*getCurrentEvent()) && currentEventIdx!=getCurrentEvent()->GetEventId());
+  return getCurrentEvent();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

@@ -41,16 +41,16 @@ public:
   
  private:
 
-  EventTPC *aPtr; // for TBranch
+  PEventTPC *aPtr; // for TBranch
   eventraw::EventInfo *aPtrEventInfo; // for TBranch
   eventraw::EventData *aPtrEventData; // for TBranch
   std::shared_ptr<eventraw::EventRaw> myCurrentEventRaw{std::make_shared<eventraw::EventRaw>()};
+
   std::string treeName;
   std::shared_ptr<TFile> myFile;
-  //std::shared_ptr<TTree> myTree;
-  TTree * myTree;
+  std::shared_ptr<TTree> myTree;
   bool removePedestal{true};
-  EventType readEventType{raw};
+  EventType readEventType{EventType::raw};
 
   PedestalCalculator myPedestalCalculator;  
   void setTreePointers(const std::string & fileName);

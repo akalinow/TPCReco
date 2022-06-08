@@ -561,7 +561,7 @@ TH1D * UVWprojector::GetStripProfile_TH1D(int dir) {
       int ix = (it->first).key1;
       int iy = (it->first).key2;
       int ibin = it2->first;       // TH2Poly
-      StripTPC *s = geo_ptr->GetTH2PolyStrip(ibin);
+      std::shared_ptr<StripTPC> s = geo_ptr->GetTH2PolyStrip(ibin);
       if( s && s->Dir()==dir ) {
 	int strip_num = s->Num(); // valid range [1-1024] 
 	double weight = it2->second;
@@ -662,7 +662,7 @@ TH2D* UVWprojector::GetStripVsTime_TH2D(int dir) {
 	  int iy = (it3->first).key2;
 	  int ibin = it4->first;       // TH2Poly bin index
 	  
-	  StripTPC *s = geo_ptr->GetTH2PolyStrip(ibin);
+	  std::shared_ptr<StripTPC> s = geo_ptr->GetTH2PolyStrip(ibin);
 	  if( s && s->Dir()==dir ) { 
 
 	    //////////// DEBUG 

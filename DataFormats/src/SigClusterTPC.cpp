@@ -252,7 +252,7 @@ bool SigClusterTPC::AddByStrip(int strip_dir, int strip_section, int strip_numbe
   return false;  
 }               
                
-bool SigClusterTPC::AddByStrip(StripTPC *strip, int time_cell) {  // valid range [0-511]
+bool SigClusterTPC::AddByStrip(std::shared_ptr<StripTPC> strip, int time_cell) {  // valid range [0-511]
   if(strip) return AddByStrip( strip->Dir(), strip->Section(), strip->Num(), time_cell);
   return false;
 }
@@ -305,7 +305,7 @@ bool SigClusterTPC::CheckByStrip(int strip_dir, int strip_section, int strip_num
   return false;  
 }
 
-bool SigClusterTPC::CheckByStrip(StripTPC *strip, int time_cell) const{  // valid range [0-511]
+bool SigClusterTPC::CheckByStrip(std::shared_ptr<StripTPC> strip, int time_cell) const{  // valid range [0-511]
   if(strip) return CheckByStrip(strip->Dir(), strip->Section(), strip->Num(), time_cell);
   return false;
 }

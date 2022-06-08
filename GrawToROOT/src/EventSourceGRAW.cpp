@@ -265,7 +265,7 @@ void EventSourceGRAW::collectEventFragments(unsigned int eventId){
   //long int eventNumberInFile = std::distance(myFramesMap.begin(), it);
 
   switch(fillEventType) {
-  case raw:  
+  case EventType::raw:  
     myCurrentEventRaw->SetEventId(eventId);
     myCurrentEvent->SetEventId(eventId); // for compatibility with EventSourceBase::currentEventNumber()
     std::cout<<KYEL<<"Creating a new EventRaw with eventId: "<<eventId<<RST<<std::endl;
@@ -289,13 +289,14 @@ void EventSourceGRAW::collectEventFragments(unsigned int eventId){
     fillEventRawFromFrame(myDataFrame);
     }
     break;
-  case tpc:  // fill EventTPC class (skip EventRaw)
+  case EventType::tpc:  // fill EventTPC class (skip EventRaw)
   default:
     myCurrentEvent->Clear();
     myCurrentEvent->SetEventId(eventId);
     myCurrentEvent->SetGeoPtr(myGeometryPtr);
 
-    myCurrentEventInfo.SetEventId(eventId);        
+    myCurrentEventInfo.SetEventId(eventId);
+    myCurrentEventInfo.SetPedestalSubtracted(removePedestal);
     std::cout<<KYEL<<"Creating a new EventTPC with eventId: "<<eventId<<RST<<std::endl;
     
     for(auto aFragment: it->second){
@@ -315,7 +316,7 @@ void EventSourceGRAW::collectEventFragments(unsigned int eventId){
     if(aFragment<nEntries) std::cout<<KBLU<<" in file entry: "<<RST<<aFragment<<RST;
     else std::cout<<KBLU<<" in next file entry: "<<RST<<aFragment-nEntries<<RST;
     std::cout<<KBLU<<" for  ASAD: "<<RST<<ASAD_idx<<RST<<std::endl;
-    myCurrentEvent_new->SetEventInfo(myCurrentEventInfo);
+    myCurrentPEvent->SetEventInfo(myCurrentEventInfo);
     fillEventFromFrame(myDataFrame);
     }
   };
@@ -339,9 +340,7 @@ void EventSourceGRAW::fillEventFromFrame(GET::GDataFrame & aGrawFrame){
   }
   
   for (Int_t agetId = 0; agetId < myGeometryPtr->GetAgetNchips(); ++agetId){
-    // loop over normal channels and update channel mask for clustering
     for (Int_t chanId = 0; chanId < myGeometryPtr->GetAgetNchannels(); ++chanId){
-      //      int iChannelGlobal     = myGeometryPtr->Global_normal2normal(COBO_idx, ASAD_idx, agetId, chanId);// 0-255 (without FPN)
       GET::GDataChannel* channel = aGrawFrame.SearchChannel(agetId, myGeometryPtr->Aget_normal2raw(chanId));
       if (!channel) continue;
 	  
@@ -353,30 +352,12 @@ void EventSourceGRAW::fillEventFromFrame(GET::GDataFrame & aGrawFrame){
 	    
 	Double_t rawVal  = sample->fValue;
 	Double_t corrVal = rawVal;
-//	if(myGeometryPtr->GetAsadNboards()==1){
-    // Beware HACK!!!
-  //TProfile with pedestals is only 256 (max chans in frame) long, pedestals are calculated for each frame and reset
-  //to fit into TProfile the global number of first chan in COBO/ASAD has to be substracted from global chanel
-  if(removePedestal){
-    //int minChannelGlobal = myGeometryPtr->Global_normal2normal(COBO_idx, ASAD_idx, 0, 0);
-    //    corrVal -= myPedestalCalculator.GetPedestalCorrection(iChannelGlobal-minChannelGlobal, agetId, icell);
-    corrVal -= myPedestalCalculator.GetPedestalCorrection(COBO_idx, ASAD_idx, agetId, chanId, icell);
-  }
-//	} 
-  myCurrentEvent->AddValByAgetChannel(COBO_idx, ASAD_idx, agetId, chanId, icell, corrVal);
-  /*
-  std::cout<<" COBO_idx: "<<COBO_idx
-	   <<" ASAD_idx: "<<ASAD_idx
-	   <<" agetId: "<<agetId
-	   <<" chanId: "<<chanId
-	   <<" icell: "<<icell<<std::endl
-	   <<" corrVal: "<<corrVal<<std::endl;
-  std::cout<<"old: "<<myGeometryPtr->GetStripByAget(COBO_idx, ASAD_idx, agetId, chanId)<<std::endl;
-  */
-  /*
-  std::shared_ptr<Geometry_Strip> aStrip = myGeometryPtr->GetStripByAget_new(COBO_idx, ASAD_idx, agetId, chanId);
-  if(aStrip) myCurrentEvent_new->AddValByStrip(aStrip, icell, corrVal);                     
-  */
+	if(removePedestal){
+	  corrVal -= myPedestalCalculator.GetPedestalCorrection(COBO_idx, ASAD_idx, agetId, chanId, icell);
+	}
+	//myCurrentEvent->AddValByAgetChannel(COBO_idx, ASAD_idx, agetId, chanId, icell, corrVal);
+	std::shared_ptr<StripTPC> aStrip(myGeometryPtr->GetStripByAget(COBO_idx, ASAD_idx, agetId, chanId));
+	if(aStrip) myCurrentPEvent->AddValByStrip(aStrip, icell, corrVal);
       }
     }
   }
