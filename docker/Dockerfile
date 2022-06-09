@@ -1,4 +1,9 @@
-FROM elitpc/get:20190315_patched_v2
+
+ARG GET_VERSION=20190315_patched
+ARG ROOT_VERSION=6.08
+ARG UBUNTU_VERSION=xenial
+
+FROM elitpc/get:${GET_VERSION}-${UBUNTU_VERSION}-${ROOT_VERSION}
 ADD . /opt/soft/TPCReco-src
 WORKDIR /opt/soft/TPCReco-src
 RUN apt-get update -qq \
