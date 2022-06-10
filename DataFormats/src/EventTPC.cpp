@@ -8,7 +8,7 @@
 #include <iterator>
 #include <fstream>
 #include <utility>
-#include <algorithm> // for find_if
+#include <algorithm> // for find_if, min, max
 
 #include "TH1D.h"
 #include "TH2D.h"
@@ -79,7 +79,7 @@ bool EventTPC::AddValByStrip(int strip_dir, int strip_section, int strip_number,
     MultiKey4 mkey2(strip_dir, strip_section, strip_number, time_cell);
     MultiKey2 mkey_total(strip_dir, strip_number);
     MultiKey2 mkey_total2(strip_dir, time_cell);
-    MultiKey3 mkey_total4(strip_dir, strip_section, time_cell);
+    MultiKey3 mkey_total4(strip_dir, strip_section, strip_number);
     MultiKey3 mkey_total5(strip_dir, strip_section, time_cell);
     MultiKey2 mkey_maxval(strip_dir, strip_number);
     MultiKey3 mkey_maxval2(strip_dir, strip_section, strip_number);
@@ -540,10 +540,10 @@ void EventTPC::MakeOneCluster(double thr, int delta_strips, int delta_timecells)
       const int strip_sec = (*it2).key2;
       const int strip_num = (*it2).key3;
       const int time_cell = (*it2).key4;
-      const int strip_range[2] = { MAXIMUM(1, strip_num - delta_strips), 
-				   MINIMUM(myGeometryPtr->GetDirNstrips(strip_dir), strip_num + delta_strips) };
-      const int timecell_range[2] = { MAXIMUM(0, time_cell - delta_timecells), 
-				      MINIMUM(myGeometryPtr->GetAgetNtimecells()-1, time_cell + delta_timecells) };
+      const int strip_range[2] = { std::max(1, strip_num - delta_strips), 
+				   std::min(myGeometryPtr->GetDirNstrips(strip_dir), strip_num + delta_strips) };
+      const int timecell_range[2] = { std::max(0, time_cell - delta_timecells), 
+				      std::min(myGeometryPtr->GetAgetNtimecells()-1, time_cell + delta_timecells) };
       for(int icell=timecell_range[0]; icell<=timecell_range[1]; icell++) {
 	for(int istrip=strip_range[0]; istrip<=strip_range[1]; istrip++) {
 	  if(icell==time_cell && istrip==strip_num) continue; // exclude existing seed hits
@@ -1259,8 +1259,8 @@ std::vector<TH2D*> EventTPC::Get2D(const SigClusterTPC &cluster, double radius, 
      cluster.GetNhits(DIR_U)<1 || cluster.GetNhits(DIR_V)<1 || cluster.GetNhits(DIR_W)<1 ) return hvec;
 
   // loop over time slices and match hits in space
-  const int time_cell_min = MAXIMUM( cluster.min_time[DIR_U], MAXIMUM( cluster.min_time[DIR_V], cluster.min_time[DIR_W] ));
-  const int time_cell_max = MINIMUM( cluster.max_time[DIR_U], MINIMUM( cluster.max_time[DIR_V], cluster.max_time[DIR_W] ));
+  const int time_cell_min = std::max( cluster.min_time[DIR_U], std::max( cluster.min_time[DIR_V], cluster.min_time[DIR_W] ));
+  const int time_cell_max = std::min( cluster.max_time[DIR_U], std::min( cluster.max_time[DIR_V], cluster.max_time[DIR_W] ));
 
   ////////// DEBUG 
   //  std::cout << Form(">>>> EventId = %lld", event_id) << std::endl;
@@ -1568,8 +1568,8 @@ TH3D *EventTPC::Get3D(const SigClusterTPC &cluster, double radius, int rebin_spa
      cluster.GetNhits(DIR_U)<1 || cluster.GetNhits(DIR_V)<1 || cluster.GetNhits(DIR_W)<1 ) return h;
 
   // loop over time slices and match hits in space
-  const int time_cell_min = MAXIMUM( cluster.min_time[DIR_U], MAXIMUM( cluster.min_time[DIR_V], cluster.min_time[DIR_W] ));
-  const int time_cell_max = MINIMUM( cluster.max_time[DIR_U], MINIMUM( cluster.max_time[DIR_V], cluster.max_time[DIR_W] ));
+  const int time_cell_min = std::max( cluster.min_time[DIR_U], std::max( cluster.min_time[DIR_V], cluster.min_time[DIR_W] ));
+  const int time_cell_max = std::min( cluster.max_time[DIR_U], std::min( cluster.max_time[DIR_V], cluster.max_time[DIR_W] ));
 
   ////////// DEBUG 
   //std::cout << Form(">>>> EventId = %lld", event_id) << std::endl;
