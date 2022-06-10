@@ -318,9 +318,8 @@ int MarkersManager::findMissingMarkerDir(){
 double MarkersManager::getMissingYCoordinate(unsigned int missingMarkerDir){
 
   bool err_flag=false;
-  assert(fGeometryTPC); // DEBUG - TPC geometry should be defined at this point
+  assert(fGeometryTPC);
 
-  // find crossing point of 2 lines defined by 2 UVW coordinates (from 2 TMarkers)
   int dir[2] = { -1, -1 };
   double pos[2];
   int counter=0;

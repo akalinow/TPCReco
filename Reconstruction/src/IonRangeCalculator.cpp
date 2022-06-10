@@ -5,11 +5,35 @@
 ////////////////////////////////////////////////
 IonRangeCalculator::IonRangeCalculator(gas_mixture_type gas, double p_mbar, double T_Kelvin){ // input: GAS index, pressure [mbar], temperature [K]
 
-  addIonRangeCurve(IonRangeCalculator::ALPHA,     IonRangeCalculator::CO2, 250.0, 273.15+20, "range_alpha_in_CO2_250mbar.dat");
-  addIonRangeCurve(IonRangeCalculator::CARBON_12, IonRangeCalculator::CO2, 250.0, 273.15+20, "range_12C_in_CO2_250mbar.dat");
-  addIonRangeCurve(IonRangeCalculator::CARBON_14, IonRangeCalculator::CO2, 250.0, 273.15+20, "range_14C_in_CO2_250mbar.dat");
+  addIonRangeCurve(pid_type::ALPHA,     gas_mixture_type::CO2, 250.0, 273.15+20, "range_alpha_in_CO2_250mbar.dat");
+  addIonRangeCurve(pid_type::CARBON_12, gas_mixture_type::CO2, 250.0, 273.15+20, "range_12C_in_CO2_250mbar.dat");
+  addIonRangeCurve(pid_type::CARBON_14, gas_mixture_type::CO2, 250.0, 273.15+20, "range_14C_in_CO2_250mbar.dat");
 
   setGasConditions(gas, p_mbar, T_Kelvin);
+  
+  // Sources:
+  // [1] National Institute of Standards and Technology (NIST)
+  //     URL: https://physics.nist.gov/PhysRefData/Handbook/atomic_number.htm
+  //     Access date: 10 May 2022
+  // [2] Wikipedia
+  //     URL: https://en.wikipedia.org/wiki/Alpha_particle
+  //     Access date: 10 May 2022
+  // [3] P.A. Zyla et al. (Particle Data Group), Prog. Theor. Exp. Phys. 2020, 083C01 (2020) and 2021 update. 
+  //     URL: https://pdglive.lbl.gov
+  //     Access date: 10 May 2022
+  // [4] Wikipedia, Isotopes of carbon
+  //     URL: https://en.wikipedia.org/wiki/Isotopes_of_carbon
+  //     Access date: 10 May 2022
+  const double atomicMassUnit = 931.4941024228; // MeV/c^2
+  massTableMap[pid_type::PROTON]=1.00727646663*atomicMassUnit; // [3]
+  massTableMap[pid_type::ALPHA]=4.001506179127*atomicMassUnit; // [2]
+  massTableMap[pid_type::CARBON_12]=12*atomicMassUnit; // [1]
+  massTableMap[pid_type::CARBON_13]=13.003355*atomicMassUnit; // [1]
+  massTableMap[pid_type::CARBON_14]=14.0032419894*atomicMassUnit; // [4]
+  massTableMap[pid_type::NITROGEN_15]=15.000108*atomicMassUnit; // [1]
+  massTableMap[pid_type::OXYGEN_16]=15.994915*atomicMassUnit; // [1]
+  massTableMap[pid_type::OXYGEN_17]=16.999311*atomicMassUnit; // [1]
+  massTableMap[pid_type::OXYGEN_18]=17.999160*atomicMassUnit; // [1]
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
@@ -23,7 +47,7 @@ void IonRangeCalculator::setGasMixture(gas_mixture_type gas){ // GAS index
   
   // check that at least one range/energy curve exists for this gas index
   bool valid=false;
-  for(auto ion: {IonRangeCalculator::pid_type::PID_MIN, IonRangeCalculator::pid_type::PID_MAX}) {
+  for(auto ion=pid_type::PID_MIN; ion!=pid_type::PID_MAX; ion=pid_type(ion+1)) {
     if(refGasRangeCurveMap.find(MultiKey2((int)gas, (int)ion))!=refGasRangeCurveMap.end()) {
       valid=true;
       break;
@@ -63,7 +87,7 @@ void IonRangeCalculator::setGasConditions(gas_mixture_type gas, double p_mbar, d
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
-IonRangeCalculator::gas_mixture_type IonRangeCalculator::getGasMixture() { return myGasMixture; } // GAS index
+gas_mixture_type IonRangeCalculator::getGasMixture() { return myGasMixture; } // GAS index
 
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
@@ -75,8 +99,8 @@ double IonRangeCalculator::getGasTemperature() { return myGasTemperature; } // t
 
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
-std::tuple<IonRangeCalculator::gas_mixture_type, double, double> IonRangeCalculator::getGasConditions(){ // output: GAS index, pressure [mbar], temperature [K]
-  return std::tuple<IonRangeCalculator::gas_mixture_type, double, double>(myGasMixture, myGasPressure, myGasTemperature);
+std::tuple<gas_mixture_type, double, double> IonRangeCalculator::getGasConditions(){ // output: GAS index, pressure [mbar], temperature [K]
+  return std::tuple<gas_mixture_type, double, double>(myGasMixture, myGasPressure, myGasTemperature);
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
@@ -122,6 +146,14 @@ double IonRangeCalculator::getIonEnergyMeV(pid_type ion, double range_mm){ // in
   //	   <<"p_ref="<<refGasPressureMap[it->first]<<" mbar"<<std::endl;
   return 1E-3*(it->second)->Eval(ref_range*1E3); // result in [MeV]
 }
+////////////////////////////////////////////////
+////////////////////////////////////////////////
+double IonRangeCalculator::getIonMassMeV(pid_type ion){ // particle or isotope mass in [MeV/c^2]
+  auto it=massTableMap.end();
+  if((it=massTableMap.find(ion))==massTableMap.end()) return 0;
+ else return it->second;
+}
+
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 void IonRangeCalculator::addIonRangeCurve(pid_type ion, gas_mixture_type gas, double p_mbar, double T_Kelvin, const char *datafile){ // range(E_kin) corresponding to {gas, p, T}
@@ -188,3 +220,5 @@ bool IonRangeCalculator::IsOK(){
   if(refGasRangeCurveMap.size() && myGasPressure>0 && myGasTemperature>0) result=true;
   return result;
 }
+////////////////////////////////////////////////
+////////////////////////////////////////////////

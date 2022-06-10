@@ -10,17 +10,15 @@
 #include "TF1Convolution.h"
 #include "TFitResult.h"
 
+#include "CommonDefinitions.h"
+
 class dEdxFitter{
 
 public:
 
-  enum event_type{
-		  UNKNOWN=0,
-		  C12_ALPHA=1,
-		  ALPHA=2
-  };
+  dEdxFitter(double aPressure=190);
 
-  dEdxFitter();
+  void setPressure(double aPressure); 
 
   TFitResult fitHisto(TH1F & aHisto);
 
@@ -36,32 +34,53 @@ public:
 
   TF1* getAlphaModel() const { return alphaModel;}
 
-  double getAlphaEnergy() const;
+  double getChi2() const { return bestFitChi2;}
 
-  double getCarbonEnergy() const;
-  
-  event_type getBestFitEventType() const { return bestFitEventType;}
+  bool getIsReflected() const { return isReflected;}
+
+  double getVertexOffset() const;
+
+  double getAlphaRange() const;
+
+  double getCarbonRange() const;
+    
+  pid_type getBestFitEventType() const { return bestFitEventType;}
   
   
 private:
 
   static TGraph *braggGraph_alpha;
   static TGraph *braggGraph_12C;
+  static double currentPressure;
+  static double nominalPressure;
 
-  TF1 *alpha_ionisation; 
-  TF1 *carbon_ionisation;
-  TF1 *carbon_alpha_ionisation;
+  double minVtxOffset{0};
+  double maxVtxOffset{0};
+  double minAlphaOffset{0};
+  double maxAlphaOffset{0};
+  double minCarbonOffset{0};
+  double maxCarbonOffset{0};
+  
+  double carbonScale{1};
+  
+  bool isReflected{false};
+  double bestFitChi2{999.0};
 
-  TF1 *alphaModel;
-  TF1 *carbon_alphaModel;
+  TF1 dummyFunc;
+  TF1 *alpha_ionisation{0}; 
+  TF1 *carbon_ionisation{0};
+  TF1 *carbon_alpha_ionisation{0};
 
-  TF1Convolution *carbon_alpha_ionisation_smeared;
-  TF1Convolution *alpha_ionisation_smeared;
+  TF1 *alphaModel{0};
+  TF1 *carbon_alphaModel{0};
+
+  TF1Convolution *carbon_alpha_ionisation_smeared{0};
+  TF1Convolution *alpha_ionisation_smeared{0};
 
   TFitResult theFitResult;
   TH1F theFittedHisto;
   TH1F emptyHisto;
-  TF1 *theFittedModel;
+  TF1 *theFittedModel{0};
 
   void reset();
 
@@ -73,7 +92,7 @@ private:
   
   TFitResult fitHypothesis(TF1 *fModel, TH1F & aHisto);
 
-  event_type bestFitEventType{UNKNOWN};
+  pid_type bestFitEventType{pid_type::UNKNOWN};
 };
 
 #endif

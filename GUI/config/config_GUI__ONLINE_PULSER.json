@@ -1,8 +1,9 @@
 {
-  "dataFile": "/data/edaq/2021/pulser",
+  "dataFile": "/data/edaq/2022/HIgS_2022/pulser",
   "geometryFile": "./geometry_ELITPC.dat",
   "resourcesPath": ".",
   "updateInterval": 3000,
+  "frameLoadRange": 10,
   "removePedestal": false,
   "display": {
     "zLogScale": false,

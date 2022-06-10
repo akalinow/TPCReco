@@ -1,28 +1,139 @@
-#ifndef __ROOTLOGON__
-R__ADD_INCLUDE_PATH(../../DataFormats/include)
-R__ADD_INCLUDE_PATH(../../Reconstruction/include)
-R__ADD_LIBRARY_PATH(../lib)
-#endif
-#include "TROOT.h"
-#include "Track3D.h"
-#include "MultiKey.h"
-#include "GeometryTPC.h"
-#include "IonRangeCalculator.h"
 //////////////////////////
 //
 // root
 // root [0] .L generateFakeRecoEvents.cxx
-// root [1] generateFakeRecoEvents("geometry.dat")
+// root [1] generateFakeRecoEvents("geometry.dat", 1000, 11.5, 1, 0, 0);
 //
 //
+//////////////////////////
+//////////////////////////
 //
+// Below are parameters and flags that control behaviour of
+// the toy Monte Carlo generator:
+//
+#define SIMUL_CONTAINMENT_FLAG   false     // skip partially contained events within detector's volume?
+#define SIMUL_TRUNCATE_FLAG      true      // truncate partially contained tracks (detector's volume and/or GET history buffer)?
+#define SIMUL_EXT_TRG_FLAG       true      // simulate external trigger and GET history buffer?
+#define SIMUL_EXT_TRG_ARRIVAL    0.1       // trigger position as a fraction of GET electronics full time scale [0-1]
+//#define SIMUL_BEAM_E_RESOL     0         // no energy smearing
+//#define SIMUL_BEAM_E_RESOL     0.00369   // [0-1] 0.369% energy sigma, fwhm=100 keV @ 11.5MeV
+//#define SIMUL_BEAM_E_RESOL     0.00554   // [0-1] 0.554% energy sigma, fwhm=150 keV @ 11.5MeV
+#define SIMUL_BEAM_E_RESOL       0.00738   // [0-1] 0.738% energy sigma, fwhm=200 keV @ 11.5MeV
+//#define SIMUL_BEAM_E_RESOL     0.0107    // [0-1] 1.107% energy sigma, fwhm=300 keV @ 11.5MeV
+//#define SIMUL_BEAM_E_RESOL     0.0148    // [0-1] 1.480% energy sigma, fwhm=400 keV @ 11.5MeV
+//#define SIMUL_BEAM_E_RESOL     0.01440   // [0-1] 1.440% energy sigma, fwhm=300 keV @ 8.86MeV
+#define SIMUL_BEAM_SPREAD_R      5.25      // [mm] flat top intentsity radius
+#define SIMUL_BEAM_SPREAD_SIGMA  1.0       // [mm] intensity tail sigma
+#define SIMUL_PRESSURE           190.0     // [mbar] CO2 pressure
+#define SIMUL_OXYGEN_E1E2_FLAG   true      // use anisotropic theta distribution for O-16?
+#define SIMUL_OXYGEN_E1E2_SIGMA1 0         // sigma_E1 cross section [nb]
+#define SIMUL_OXYGEN_E1E2_SIGMA2 1         // sigma_E2 cross section [nb]
+#define SIMUL_OXYGEN_E1E2_PHI12  0         // E1/E2 mixing phase [rad]
+//#define SIMUL_OXYGEN_E1E2_SIGMA1 0.16    // sigma_E1 cross section [nb]
+//#define SIMUL_OXYGEN_E1E2_SIGMA2 0.15    // sigma_E2 cross section [nb]
+//#define SIMUL_OXYGEN_E1E2_PHI12  54./180.*TMath::Pi() // E1/E2 mixing phase [rad]
+#define SIMUL_POLARISATION_FLAG  true      // use unpolarised or partially polarized beam?
+#define SIMUL_POLARISATION_FRAC  0.33      // degree of linear polarization of gamma beam
+#define SIMUL_POLARISATION_ANGLE 35./180.*TMath::Pi()  // polarization plane (CKW wrt horizontal axis)
+#define SIMUL_EXTENSION_FLAG     true      // allow verticies created outside of active volume?
+#define SIMUL_EXTENSION_ZONE     100.0     // extension zone for the verticies [mm]
+#define SIMUL_PLOT3D_FLAG        false     // create 3D debug plot with all tracks?
+
+#ifndef __ROOTLOGON__
+R__ADD_INCLUDE_PATH(../../DataFormats/include)
+R__ADD_INCLUDE_PATH(../../Reconstruction/include)
+R__ADD_INCLUDE_PATH(../../Utilities/include)
+R__ADD_LIBRARY_PATH(../lib)
+#endif
+
+#include <tuple>
+#include <iostream>
+#include <vector>
+#include "TROOT.h"
+#include "TSystem.h"
+#include "TRandom3.h"
+#include "TVector3.h"
+#include "TH2Poly.h"
+#include "TGraph.h"
+#include "TLorentzVector.h"
+#include "TFile.h"
+#include "TTree.h"
+#include "TF2.h"
+#include "TMath.h"
+#include "TCanvas.h"
+#include "TView.h"
+#include "TPolyLine3D.h"
+
+#include "Math/IFunction.h" // needed for ROOT::Math::legendre
+#include "MultiKey.h"
+#include "GeometryTPC.h"
+#include "IonRangeCalculator.h"
+#include "CommonDefinitions.h"
+#include "Track3D.h"
+#include "UtilsMath.h"
+
+//////////////////////////
+//////////////////////////
+// 2D probability density function to be used by TF2::GetRandom2
+// x[0] = x [mm]
+// x[1] = y [mm]
+// par[0] = R [mm]
+// par[1] = flat-top intensity (arb.u.)
+// par[2] = gaussian tail sigma [mm]
+//
+double beamProfile2D(double *x, double *par)
+{
+   double r = sqrt(x[0]*x[0]+x[1]*x[1]);
+   if(r<par[0]) return par[1];
+   return par[1]*exp(-0.5*(r-par[0])*(r-par[0])/par[2]/par[2]);
+}
+TF2 beamProfileTF2("beamProfileTF2", beamProfile2D, -100, 100, -100, 100, 3);
+//
+//////////////////////////
+//////////////////////////
+// 1D angular distribution to be used with TF1::GetRandom
+// f=0 - circular polarized gamma beam
+// f=1 - 100% linearly polarized gamma beam
+//
+// x[0] = phi_BEAM alpha-particle emission angle wrt horizontal axis, CKW [rad]
+// par[0] = A - normalisation constant
+// par[1] = f - degree of polaristation [0-1]
+// par[2] = phi_0 - angle of polarization plane wrt horizontal axis, CKW [rad]
+//
+TF1 phiEmissionTF1("phiEmissionTF1", "[0]*(1+[1]*cos(2*(x+[2])))", 0.0, TMath::TwoPi());
+//
+//////////////////////////
+//////////////////////////
+// 1D angular distribution to be used with TF1::GetRandom
+// Non-siotropic angular distrubution of alpha-particle emission angle wrt gamma beam
+// with E1 abd E2 components for Oxygen-16 photodisintegration reaction.
+// Ref: M.Assuncao et al., PRC 73 055801 (2006).
+//
+// x[0] = CMS theta_BEAM alpha-particle emission angle wrt gamma beam [rad]
+// par[0] = normalisation constant
+// par[1] = sigma_E1 - E1 cross section parameter [nb]
+// par[2] = sigma_E2 - E2 cross section parameter [nb]
+// par[3] = phase_12 - phase angle responsible for mixing E1/E2 [rad]
+//
+double thetaEmission(double *x, double *par)
+{
+  double c = cos(x[0]);
+  double L[5];
+  for(auto i=0; i<=4; i++) L[i]=ROOT::Math::legendre(i, c);
+  double WE1 = L[0] - L[2];
+  double WE2 = L[0] + (5./7.)*L[2] - (12./7.)*L[4];
+  double W12 = 6./sqrt(5.0)*( L[1] - L[3] );
+  return par[0]*( par[1]*WE1 + par[2]*WE2 + sqrt(par[1]*par[2])*cos(par[3])*W12 );
+}
+TF1 thetaEmissionTF1("thetaEmissionTF1", thetaEmission, 0.0, TMath::Pi(), 3);
+//////////////////////////
 //////////////////////////
 std::shared_ptr<IonRangeCalculator> loadRangeCalculator(){
 
   std::shared_ptr<IonRangeCalculator> db = std::make_shared<IonRangeCalculator>();
 
-  // set current conditions: gas=CO2, pressure=250 mbar, temperature=20C
-  db->setGasConditions(IonRangeCalculator::CO2, 250.0, 273.15+20);
+  // set current conditions: gas=CO2, pressure=190 mbar, temperature=20C
+  db->setGasConditions(/*IonRangeCalculator::*/CO2, SIMUL_PRESSURE, 273.15+20);
   
   return db;
 }
@@ -36,50 +147,430 @@ std::shared_ptr<GeometryTPC> loadGeometry(const std::string fileName){
 bool isFullyContainedEvent(Track3D & aTrack){
   if(aTrack.getSegments().size()==0) return false;
   std::shared_ptr<GeometryTPC> aGeometry=aTrack.getSegments().front().getGeometry();
-  double xmin, xmax, ymin, ymax, zmin, zmax;
-  std::tie(xmin, xmax, ymin, ymax)=aGeometry->rangeXY();
-  zmin=aGeometry->GetDriftCageZmin();
-  zmax=aGeometry->GetDriftCageZmax();
-  
   for(auto & aSegment: aTrack.getSegments()) {
-    auto pack = aSegment.getStartEndXYZ(); // size = 6
-    if(pack[0]<xmin || pack[0]>xmax || pack[0+3]<xmin || pack[0+3]>xmax || // x-coordinates
-       pack[1]<ymin || pack[1]>ymax || pack[1+3]<ymin || pack[1+3]>ymax || // y-coordinates
-       pack[2]<zmin || pack[2]>zmax || pack[2+3]<zmin || pack[2+3]>zmax)   // z-coordinates
-      return false;
+    if(!aGeometry->IsInsideActiveVolume(aSegment.getStart()) ||
+       !aGeometry->IsInsideActiveVolume(aSegment.getEnd())) return false;
   }
   return true;
 }
 //////////////////////////
 //////////////////////////
-Track3D generateFake3AlphaEvent(std::shared_ptr<GeometryTPC> aGeometry, std::shared_ptr<IonRangeCalculator> aRangeCalculator, bool debug_flag=false){
-  //Track3D generateFake3AlphaEvent(std::shared_ptr<GeometryTPC> aGeometry, IonRangeCalculator *aRangeCalculator, bool debug_flag=false){
+void truncateTracks(Track3D & aTrack, bool debug_flag, bool electronicsRange_flag=false){
+  if(aTrack.getSegments().size()==0) return;
+  std::shared_ptr<GeometryTPC> aGeometry=aTrack.getSegments().front().getGeometry();
+
+  // construct list of active volume's faces
+  // - first two represent (infinite) XY plane at different Z levels
+  // - remaining ones represent (finite) vertical faces with orthogonal base vectors
+  std::vector<TVector3> basepoint_vec, span1_vec, span2_vec;
+  std::vector<bool> isHorizontal_vec;
+  double xmin, xmax, ymin, ymax, zmin, zmax;
+  std::tie(xmin, xmax, ymin, ymax, zmin, zmax)=aGeometry->rangeXYZ();
+
+  // optionally truncate tracks to GET electronics history buffer rather than to hardware drift cage range
+  if(electronicsRange_flag) {
+    auto err=false;
+    auto get_zmin=aGeometry->Timecell2pos(0, err);
+    auto get_zmax=aGeometry->Timecell2pos(aGeometry->GetAgetNtimecells(), err);
+    if(debug_flag) {
+      std::cout << __FUNCTION__ << ": Truncating to GET electronics Z-range = ["<<get_zmin<<", "<<get_zmax<<"] mm, sampling rate="
+		<<aGeometry->GetSamplingRate()<<" MHz, time_bin_width="
+		<<aGeometry->GetTimeBinWidth()<<" mm"<<std::endl;
+    }
+    zmin=get_zmin;
+    zmax=get_zmax;
+  } else {
+    if(debug_flag) {
+      std::cout << __FUNCTION__ << ": Truncating to drift cage Z-range = ["<<zmin<<", "<<zmax<<"] mm"<<std::endl;
+    }
+  }
+  basepoint_vec.push_back(TVector3(xmin, ymin, zmin));
+  basepoint_vec.push_back(TVector3(xmin, ymin, zmax));
+  span1_vec.push_back(TVector3(1, 0, 0)*(xmax-xmin));
+  span1_vec.push_back(span1_vec.back());
+  span2_vec.push_back(TVector3(0, 1, 0)*(ymax-ymin));
+  span2_vec.push_back(span2_vec.back());
+  isHorizontal_vec.push_back(true);
+  isHorizontal_vec.push_back(true);
+  TGraph gr=aGeometry->GetActiveAreaConvexHull();
+  for(auto iedge=0; iedge<gr.GetN()-1; iedge++) {
+    basepoint_vec.push_back(TVector3(gr.GetX()[iedge], gr.GetY()[iedge], zmin));
+    span1_vec.push_back(TVector3(gr.GetX()[iedge+1], gr.GetY()[iedge+1], zmin)-basepoint_vec.back());
+    span2_vec.push_back(TVector3(0, 0, 1)*(zmax-zmin));
+    isHorizontal_vec.push_back(false);
+  }
+  const auto nwalls=basepoint_vec.size();
+
+  std::set<unsigned int> eraseSet; // tracks marked for deletion
+  for(auto index_seg=0u; index_seg<aTrack.getSegments().size(); index_seg++) {
+    TrackSegment3D & aSegment=aTrack.getSegments().at(index_seg);
+    auto offset=aSegment.getStart();
+    auto tangent=aSegment.getEnd()-offset;
+    const bool keep_start=aGeometry->IsInsideActiveVolume(offset)
+      && (electronicsRange_flag ? aGeometry->IsInsideElectronicsRange(offset) : true); // optionally check GET electronics range
+    const bool keep_end=aGeometry->IsInsideActiveVolume(offset+tangent)
+      && (electronicsRange_flag ? aGeometry->IsInsideElectronicsRange(offset+tangent) : true); // optionally check GET electronics range
+
+    // both inside => nothing to do
+    if(keep_start && keep_end) {
+      ///////// DEBUG
+      //      std::cout << __FUNCTION__ << ": erasing track of index=" << index_seg << " from colllection of size=" << aTrack.getSegments().size() << std::endl << std::flush;
+      //      eraseSet.insert(index_seg);  // just for DEBUG
+      ///////// DEBUG
+      continue;
+    }
+    auto isTruncated=false;
+    // one inside, one outside => find one intersection point
+    if(keep_start || keep_end) {
+      TVector3 p;
+      for(auto iwall=0u; iwall<nwalls; iwall++) { // loop through all detector's faces
+
+	double t1=-9999, t2=-9999;
+	/*
+	if(!Utils::intersectionEdgePlane(offset, tangent, basepoint_vec[iwall],
+					 span1_vec[iwall], span2_vec[iwall], p, t1, t2) ||
+	   !( (isHorizontal_vec[iwall] && aGeometry->IsInsideActiveArea(TVector2(p.X(), p.Y()))) ||
+	      (!isHorizontal_vec[iwall] && t1>-Utils::NUMERICAL_TOLERANCE && t1<1+Utils::NUMERICAL_TOLERANCE
+	       && t2>-Utils::NUMERICAL_TOLERANCE && t2<1+Utils::NUMERICAL_TOLERANCE) ) ) {
+	*/
+	if(!Utils::intersectionEdgePlane(offset, tangent, basepoint_vec[iwall],
+					 span1_vec[iwall], span2_vec[iwall], p, t1, t2) ||
+	   !( (isHorizontal_vec[iwall] && aGeometry->IsInsideActiveArea(TVector2(p.X(), p.Y()))) ||
+	      (!isHorizontal_vec[iwall] && t1>=0 && t1<=1 && t2>=0 && t2<=1) ) ) {
+	  continue; // next wall
+	}
+	///////// DEBUG
+	//	bool res1=false, res2=false, res3=false, res4=false;
+	//	res1=Utils::intersectionEdgePlane(offset, tangent,
+	//					  basepoint_vec[iwall], span1_vec[iwall], span2_vec[iwall], p, t1, t2);
+	//	res2=isHorizontal_vec[iwall];
+	//	res3=(res1 && res2 && aGeometry->IsInsideActiveArea(TVector2(p.X(), p.Y())));
+	//	res4=(res1 && !res2 && (t1>=0 && t1<=1 && t2>=0 && t2<=1));
+	//	std::cout << __FUNCTION__ << ": detector face=" << iwall << ", found=" << res1 << ", inside_horizontal=" << res3 << ", inside_vertical=" << res4 << ", t1/t2=" << t1 << "/" << t2  << std::endl;
+	//	if(!res1 || !(res3 || res4)) continue; // next wall
+	///////// DEBUG
+
+	if(keep_start) {
+	  isTruncated=true;
+	  aSegment.setStartEnd(offset, p); // truncate and keep start-point
+
+	  ///////// DEBUG
+	  if(debug_flag) std::cout<<__FUNCTION__<<": inside/outside, truncated new END=["
+				  << aSegment.getEnd().X() << ", "
+				  << aSegment.getEnd().Y() << ", "
+				  << aSegment.getEnd().Z() << "]" << std::endl;
+	  //	  eraseSet.insert(index_seg); // just for DEBUG
+	  ///////// DEBUG
+	} else {
+	  isTruncated=true;
+	  aSegment.setStartEnd(p, offset+tangent); // truncate and keep end-point
+
+	  ///////// DEBUG
+	  if(debug_flag) std::cout<<__FUNCTION__<<": inside/outside truncated new START=["
+				  << aSegment.getStart().X() << ", "
+				  << aSegment.getStart().Y() << ", "
+				  << aSegment.getStart().Z() << "]" << std::endl;
+	  //	  eraseSet.insert(index_seg); // just for DEBUG
+	  ///////// DEBUG
+	}
+	break; // stop after finding first intersection point (works for convex volumes)
+      }
+
+      if(debug_flag && !isTruncated) {
+	std::cerr << __FUNCTION__ << ": ERROR: inside/outside, no intersections found after checking "
+		  << nwalls << " faces, "
+		  << "START=[" << offset.X() << ", " << offset.Y() << ", " << offset.Z()
+		  << "], END=[" << (offset+tangent).X() << ", " << (offset+tangent).Y() << ", " << (offset+tangent).Z() << "]" << std::endl;
+	///////// DEBUG
+	//    std::cout << __FUNCTION__ << ": erasing track of index=" << index_seg << " from colllection of size=" << aTrack.getSegments().size() << std::endl << std::flush;
+	//	eraseSet.insert(index_seg); // just for DEBUG
+	///////// DEBUG
+      }
+      continue; // next segment
+    }
+
+    ///////// DEBUG
+    //    std::cout << __FUNCTION__ << ": erasing track of index=" << index_seg << " from colllection of size=" << aTrack.getSegments().size() << std::endl;
+    //    eraseSet.insert(index_seg); // just for DEBUG
+    //    continue;
+    ///////// DEBUG
+
+    // both outside => find 2 intersection points (if any)
+    std::vector<TVector3> list;
+    for(auto iwall=0u; iwall<nwalls; iwall++) { // loopt through all detector's faces
+
+      // update track start/end points due to clipping to the previous detector face
+      offset=aSegment.getStart();
+      tangent=aSegment.getEnd()-offset;
+
+      TVector3 p;
+      double t1=9999, t2=9999;
+      /*
+      if(!Utils::intersectionEdgePlane(offset, tangent, basepoint_vec[iwall],
+				       span1_vec[iwall], span2_vec[iwall], p, t1, t2) ||
+	 !( (isHorizontal_vec[iwall] && aGeometry->IsInsideActiveArea(TVector2(p.X(), p.Y()))) ||
+	    (!isHorizontal_vec[iwall] && t1>-Utils::NUMERICAL_TOLERANCE && t1<1+Utils::NUMERICAL_TOLERANCE
+	     && t2>-Utils::NUMERICAL_TOLERANCE && t2<1+Utils::NUMERICAL_TOLERANCE) ) ) {
+      */
+      if(!Utils::intersectionEdgePlane(offset, tangent, basepoint_vec[iwall],
+				       span1_vec[iwall], span2_vec[iwall], p, t1, t2) ||
+	 !( (isHorizontal_vec[iwall] && aGeometry->IsInsideActiveArea(TVector2(p.X(), p.Y()))) ||
+	    (!isHorizontal_vec[iwall] && t1>=0 && t1<=1 && t2>=0 && t2<=1) ) ) {
+      continue; // next wall
+      }
+      list.push_back(p);
+    }
+
+    ///////// DEBUG
+    if(debug_flag) std::cout << __FUNCTION__ << ": outside/outside, found " << list.size()
+			     << " intersection(s) after checking "<< nwalls << " faces, START=["
+			     << offset.X() << ", "
+			     << offset.Y() << ", "
+			     << offset.Z() << "], END=["
+			     << (offset+tangent).X() << ", "
+			     << (offset+tangent).Y() << ", "
+			     << (offset+tangent).Z() << "]" << std::endl;
+    ///////// DEBUG
+
+    // reject track if there were not enough intersection points
+    if(list.size()<2) {
+
+      ///////// DEBUG
+      if(debug_flag) std::cout << __FUNCTION__
+			       << ": outside/outside, rejected, not enough intersections" << std::endl;
+      ///////// DEBUG
+
+      isTruncated=true;
+      eraseSet.insert(index_seg);
+      continue; // next segment
+    }
+
+    // sort list in ascending order according to distance from track's start-point
+    std::sort(list.begin(), list.end(),
+	      [&offset](const TVector3& a, const TVector3& b) {
+		return (a-offset).Mag2() < (b-offset).Mag2();
+	      });
+    // pick the first and the last solution (works for convex volumes)
+    isTruncated=true;
+    aSegment.setStartEnd(list.front(), list.back());
+
+    ///////// DEBUG
+    if(debug_flag) std::cout << __FUNCTION__ << ": outside/outside, truncated new START=["
+			     << aSegment.getStart().X() << ", "
+			     << aSegment.getStart().Y() << ", "
+			     << aSegment.getStart().Z() << "], new END=["
+			     << aSegment.getEnd().X() << ", "
+			     << aSegment.getEnd().Y() << ", "
+			     << aSegment.getEnd().Z() << "]" << std::endl;
+    ///////// DEBUG
+  }
+
+  // skip segments marked for deletion
+  Track3D myTrack;
+  for(auto index_seg=0u; index_seg<aTrack.getSegments().size(); index_seg++) {
+    if(eraseSet.find(index_seg)==eraseSet.end())
+      myTrack.addSegment(aTrack.getSegments().at(index_seg));
+  }
+  aTrack=myTrack;
+  return;
+}
+//////////////////////////
+//////////////////////////
+Track3D generateFakeAlphaCarbonGenericEvent(std::shared_ptr<GeometryTPC> aGeometry, std::shared_ptr<IonRangeCalculator> aRangeCalculator, double photonEnergyMeV, bool Oxygen18_flag=false, bool debug_flag=false){
+
+  auto r=gRandom; // use global ROOT pointer
+
+  Track3D empty_result;
+
+  // define some constants
+  const double atomicMassUnit = 931.49410242; // MeV/c^2
+  const double alphaMass = 4*atomicMassUnit + 2.4249; // A*u + Delta MeV/c^2
+  double carbonMass, oxygenMass;
+  if(Oxygen18_flag) {
+    carbonMass = 14.0032420*atomicMassUnit; // MeV/c^2, isotope C-14
+    oxygenMass = 17.9991610*atomicMassUnit; // MeV/c^2, isotope O-18
+  } else {
+    carbonMass = 12*atomicMassUnit; // MeV/c^2, isotope C-12
+    oxygenMass = 15.99491461956*atomicMassUnit; // MeV/c^2, isotope O-16
+  }
+
+  // detector reference frame (DET=LAB)
+  double beamEnergyResolution=SIMUL_BEAM_E_RESOL; // LAB beam energy smearing factor
+  double beamEnergy_DET=photonEnergyMeV*r->Gaus(1, beamEnergyResolution); // smear beam energy by 5% // MeV
+  TVector3 beamDir_DET(-1, 0, 0); // unit vector
+  TLorentzVector photonP4_DET(beamDir_DET.Unit()*beamEnergy_DET, beamEnergy_DET); // [MeV/c, MeV/c, MeV/c, MeV/c^2]
+  TLorentzVector oxygenP4_DET(0, 0, 0, oxygenMass); // [MeV/c, MeV/c, MeV/c, MeV/c^2]
+
+  // speed of photon-oxygen CMS frame in DET frame
+  double beta=beamEnergy_DET/(beamEnergy_DET+oxygenMass);
+  TVector3 beta_DET=beamDir_DET.Unit()*beta;
+
+  // boosting P4 from DET/LAB frame to CMS frame
+  TLorentzVector photonP4_CMS(photonP4_DET);
+  TLorentzVector oxygenP4_CMS(oxygenP4_DET);
+  photonP4_CMS.Boost(-beta_DET); // see TLorentzVector::Boost() for sign convention!
+  oxygenP4_CMS.Boost(-beta_DET); // see TLorentzVector::Boost() for sign convention!
+
+  // check total energy in CMS frame
+  double totalEnergy_CMS=(photonP4_CMS+oxygenP4_CMS).E();
+  double totalEnergy_CMS_xcheck=(oxygenMass+beamEnergy_DET*(1-beta))/sqrt(1-beta*beta); // DEBUG
+  double totalEnergy_CMS_xcheck2=sqrt( oxygenMass*(2*beamEnergy_DET+oxygenMass) ); // DEBUG
+
+  // check beam energy in CMS frame
+  double beamEnergy_CMS=photonP4_CMS.E();
+  double beamEnergy_CMS_xcheck=beamEnergy_DET*sqrt(oxygenMass/(oxygenMass+2*beamEnergy_DET));
+
+  // stationary excited oxygen state
+  double oxygenMassExcited=totalEnergy_CMS;
+  double oxygenMassExcited_xcheck=beamEnergy_CMS_xcheck+sqrt(oxygenMass*oxygenMass+beamEnergy_CMS*beamEnergy_CMS); //
+  double Qvalue_CMS=oxygenMassExcited-alphaMass-carbonMass;
+  if(Qvalue_CMS<0) {
+    if(debug_flag) std::cout<<"Beam energy is too low to create C12+alpha pair!"<<std::endl;
+    return empty_result;
+  }
+
+  // calculate momenta of particles in CMS frame
+  double p_alpha_CMS=0.5*sqrt((pow(pow(totalEnergy_CMS, 2)
+			       -pow(alphaMass, 2)-pow(carbonMass, 2), 2)
+			   -4*pow(alphaMass*carbonMass, 2)))/totalEnergy_CMS;
+  double T_alpha_CMS=sqrt(p_alpha_CMS*p_alpha_CMS+alphaMass*alphaMass)-alphaMass;
+  double p_carbon_CMS=p_alpha_CMS;
+  double T_carbon_CMS=sqrt(p_carbon_CMS*p_carbon_CMS+carbonMass*carbonMass)-carbonMass;
+
+  double phi_BEAM, theta_BEAM;
+  // pick polar alpha-particle emission angle according to specific model
+  if(!Oxygen18_flag && SIMUL_OXYGEN_E1E2_FLAG) {
+    // distribute anisotropically, mixture of E1 and E2 components for O-16
+    theta_BEAM=thetaEmissionTF1.GetRandom();
+  } else {
+    // distribute isotropically alpha particles in CMS frame
+    theta_BEAM=acos(r->Uniform(-1, 1)); // rad, dOmega=dPhi*d(cosTheta)
+  }
+  // pick azimuthal alpha-particle emission angle according to specific model
+  if(SIMUL_POLARISATION_FLAG) {
+    // distribute anisotropically, mix of circular and linear polarisation
+    phi_BEAM=phiEmissionTF1.GetRandom();
+  } else {
+    // distribute isotropically alpha particles in CMS frame
+    phi_BEAM=r->Uniform(0, TMath::TwoPi()); // rad
+  }
+  // 4-momentum vector in detector coordinate system, CMS reference frame:
+  // Z_DET (down)      -> -Y_BEAM, so Y_BEAM is up
+  // Y_DET (horiz)     ->  X_B (horiz)
+  // X_DET (anti-beam) -> -Z_BEAM, so Z_BEAM is along photon
+  TLorentzVector alphaP4_CMS(p_alpha_CMS*beamDir_DET.Unit(), alphaMass+T_alpha_CMS); // initial = along gamma beam
+  alphaP4_CMS.RotateZ(-theta_BEAM); // rotate by theta_BEAM about Y_BEAM (up) = -Z_DET axis
+  alphaP4_CMS.Rotate(phi_BEAM, beamDir_DET); // rotate by phi_BEAM about beam axis = -X_DET
+
+  //  TLorentzVector alphaP4_CMS(p_alpha_CMS*TVector3(0, 0, 1), alphaMass+T_alpha_CMS); // initial = along Z
+  //  alphaP4_CMS.RotateY(theta); // rotate by theta about Y axis
+  //  alphaP4_CMS.RotateZ(phi); // rotate by phi about Z axis
+
+  // calculate momentum of carbon recoil (back-to-back) in CMs frame
+  TLorentzVector carbonP4_CMS;
+  carbonP4_CMS.SetVectM( -1.0*alphaP4_CMS.Vect(), carbonMass);
+
+  // boosting P4 from CMS frame to DET/LAB frame (see TlorentzVector::Boost() convention!)
+  TLorentzVector alphaP4_DET(alphaP4_CMS);
+  TLorentzVector carbonP4_DET(carbonP4_CMS);
+  alphaP4_DET.Boost(beta_DET);
+  carbonP4_DET.Boost(beta_DET);
+
+  // print debug info
+  //  bool debug_flag=true;
+  if(debug_flag) {
+    std::cout<<"Alpha kin.energy in CMS (2 methods): "<<T_alpha_CMS<<", "<<alphaP4_CMS.E()-alphaP4_CMS.M()<<std::endl;
+    std::cout<<"Alpha momentum in CMS (2 methods): "<<p_alpha_CMS<<", "<<alphaP4_CMS.P()<<std::endl;
+    std::cout<<"Carbon kin.energy in CMS (2 methods): "<<T_carbon_CMS<<", "<<carbonP4_CMS.E()-carbonP4_CMS.M()<<std::endl;
+    std::cout<<"Carbon momentum in CMS (2 methods): "<<p_carbon_CMS<<", "<<carbonP4_CMS.P()<<std::endl;
+
+    std::cout<<"T_alpha+T_carbon in CMS (2 methods): "<<T_alpha_CMS+T_carbon_CMS<<", "<<alphaP4_CMS.E()+carbonP4_CMS.E()-alphaP4_CMS.M()-carbonP4_CMS.M()<<std::endl;
+    std::cout<<"p_alpha+p_carbon vector momentum balance in CMS:"<<std::endl;
+    (alphaP4_CMS.Vect()+carbonP4_CMS.Vect()).Print();
+
+    std::cout<<"|p_alpha+p_carbon| scalar momentum balance in CMS:"<<(alphaP4_CMS+carbonP4_CMS).P()<<std::endl;
+    double invariantMass1 = (photonP4_CMS+oxygenP4_CMS).M();
+    double invariantMass2 = (alphaP4_CMS+carbonP4_CMS).M();
+    std::cout<<"Gamma beam energy in DET/LAB: "<<beamEnergy_DET<<std::endl;
+    std::cout<<"Gamma beam energy in CMS (2 methods): "<<beamEnergy_CMS<<", "<<beamEnergy_CMS_xcheck<<std::endl;
+    std::cout<<"Total energy in CMS (3 methods): "<<totalEnergy_CMS<<" "<<totalEnergy_CMS_xcheck<<" "<<totalEnergy_CMS_xcheck2<<std::endl; // DEBUG
+    std::cout<<"Q-value in CMS: "<<Qvalue_CMS<<std::endl;
+    std::cout<<"Photon+Oxygen system invariant mass = "<<invariantMass1<<std::endl;
+    std::cout<<"Alpha+Carbon system invariant mass = "<<invariantMass2<<std::endl;
+    std::cout<<"Oxygen ground state mass = "<<oxygenMass<<std::endl;
+    std::cout<<"Oxygen excited state mass (2 methods)= "<<oxygenMassExcited<<", "<<oxygenMassExcited_xcheck<<std::endl;
+    std::cout<<"Alpha kin.energy in DET/LAB: "<<alphaP4_DET.E()-alphaP4_DET.M()<<std::endl;
+    std::cout<<"Alpha mass in DET/LAB: "<<alphaP4_DET.M()<<std::endl;
+    std::cout<<"Carbon kin.energy in DET/LAB: "<<carbonP4_DET.E()-carbonP4_DET.M()<<std::endl;
+    std::cout<<"Carbon mass in DET/LAB: "<<carbonP4_DET.M()<<std::endl;
+  }
+
+  // calculate alpha/carbon ranges [mm] in LAB/DET frame
+  double rangeAlpha_DET=aRangeCalculator->getIonRangeMM(/*IonRangeCalculator::*/ALPHA, alphaP4_DET.E()-alphaP4_DET.M()); // mm
+  double rangeCarbon_DET;
+  if(Oxygen18_flag) { // Alpha + Carbon-14
+    rangeCarbon_DET=aRangeCalculator->getIonRangeMM(/*IonRangeCalculator::*/CARBON_14, carbonP4_DET.E()-carbonP4_DET.M()); // mm
+  } else { // Alpha + Carbon-12
+    rangeCarbon_DET=aRangeCalculator->getIonRangeMM(/*IonRangeCalculator::*/CARBON_12, carbonP4_DET.E()-carbonP4_DET.M()); // mm
+  }
+
+  // create list of tracks
+  std::vector<TVector3> list;
+  list.push_back(alphaP4_DET.Vect().Unit()*rangeAlpha_DET); // 1st track direction
+  list.push_back(carbonP4_DET.Vect().Unit()*rangeCarbon_DET); // 2nd track direction
+
+  // smear vertex position in XYZ assuming:
+  // - uniform distribution along X
+  // - flat-top beam profile with gaussian tails in YZ plane
+  // employs TF2::GetRandom2()
+  double xmin, xmax, ymin, ymax;
+  std::tie(xmin, xmax, ymin, ymax)=aGeometry->rangeXY();
+  double y_rnd=0, z_rnd=0;
+  beamProfileTF2.GetRandom2(y_rnd, z_rnd); // newer ROOT: (y_rnd, z_rnd, r);
+
+  // optionally extend vertex production outside of active area
+  TVector3 vertex( r->Uniform(xmin-(SIMUL_EXTENSION_FLAG ? SIMUL_EXTENSION_ZONE : 0),
+			      xmax+(SIMUL_EXTENSION_FLAG ? SIMUL_EXTENSION_ZONE : 0)),
+		   y_rnd, z_rnd);
+
+  // create TrackSegment3D collection
+  Track3D aTrack;
+  TrackSegment3D aSegment;
+  for(auto & seg: list) {
+    aSegment.setGeometry(aGeometry);
+    aSegment.setStartEnd(vertex, vertex+seg);
+    aTrack.addSegment(aSegment);
+  }
+  return aTrack;
+}
+//////////////////////////
+//////////////////////////
+Track3D generateFakeAlphaCarbon12Event(std::shared_ptr<GeometryTPC> aGeometry, std::shared_ptr<IonRangeCalculator> aRangeCalculator, double photonEnergyMeV, bool debug_flag=false){
+  return generateFakeAlphaCarbonGenericEvent(aGeometry, aRangeCalculator, photonEnergyMeV, false, debug_flag);
+}
+//////////////////////////
+//////////////////////////
+Track3D generateFakeAlphaCarbon14Event(std::shared_ptr<GeometryTPC> aGeometry, std::shared_ptr<IonRangeCalculator> aRangeCalculator, double photonEnergyMeV, bool debug_flag=false){
+  return generateFakeAlphaCarbonGenericEvent(aGeometry, aRangeCalculator, photonEnergyMeV, true, debug_flag);
+}
+//////////////////////////
+//////////////////////////
+Track3D generateFake3AlphaEvent(std::shared_ptr<GeometryTPC> aGeometry, std::shared_ptr<IonRangeCalculator> aRangeCalculator, double photonEnergyMeV, bool debug_flag=false){
 
   //  auto r=new Trandom3();
   auto r=gRandom; // use global ROOT pointer
 
   Track3D empty_result;
 
-  ///Data and geometry loading.
-  //  std::string fileName = "Reco_EventTPC_2021-06-22T12:01:56.568_0.root";
-  //  Track3D *aTrack = loadRecoEvent(fileName);
-  //  fileName = "/home/user1/scratch/akalinow/ELITPC/TPCReco/build/resources/geometry_ELITPC_250mbar_12.5MHz.dat";
-  //  std::shared_ptr<GeometryTPC> aGeometry = loadGeometry(fileName);
-  //  std::cout<<*aTrack<<std::endl;
-
-  ///Fetching tracks segments from the full track.
-  //  TrackSegment3D aSegment = aTrack->getSegments().front();
-  //  aSegment.setGeometry(aGeometry);
-
   // define some constants
-  double atomicMassUnit = 931.49410242; //MeV/c^2
-  double alphaMass = 4*atomicMassUnit + 2.4249; //A*u + Delta MeV/c^2
-  double carbonMass = 12*atomicMassUnit;
+  const double atomicMassUnit = 931.49410242; //MeV/c^2
+  const double alphaMass = 4*atomicMassUnit + 2.4249; //A*u + Delta MeV/c^2
+  const double carbonMass = 12*atomicMassUnit;
 
   // detector reference frame (DET=LAB)
-  double beamEnergyResolution=0.05; // LAB beam energy smearing factor
-  double beamEnergy_DET=13.0*r->Gaus(1, beamEnergyResolution); // smear beam energy by 5% // MeV
-  TVector3 beamDir_DET(1, 0, 0); // unit vector
+  double beamEnergyResolution=SIMUL_BEAM_E_RESOL; // LAB beam energy smearing factor
+  double beamEnergy_DET=photonEnergyMeV*r->Gaus(1, beamEnergyResolution); // smear beam energy by 5% // MeV
+  TVector3 beamDir_DET(-1, 0, 0); // unit vector
   TLorentzVector photonP4_DET(beamDir_DET.Unit()*beamEnergy_DET, beamEnergy_DET); // [MeV/c, MeV/c, MeV/c, MeV/c^2]
   TLorentzVector carbonP4_DET(0, 0, 0, carbonMass); // [MeV/c, MeV/c, MeV/c, MeV/c^2]
 
@@ -133,9 +624,13 @@ Track3D generateFake3AlphaEvent(std::shared_ptr<GeometryTPC> aGeometry, std::sha
   // distribute isotropically 1st alpha particle momentum:
   double phi1=r->Uniform(0, TMath::TwoPi()); // rad
   double theta1=acos(r->Uniform(-1, 1)); // rad, dOmega=dPhi*d(cosTheta)
-  TLorentzVector alpha1_P4_CMS(p1_CMS*TVector3(0, 0, 1), alphaMass+T1_CMS); // initial = along Z
-  alpha1_P4_CMS.RotateY(theta1); // rotate by theta1 about Y axis
-  alpha1_P4_CMS.RotateZ(phi1); // rotate by phi1 about Z axis
+  // 4-momentum vector in detector coordinate system, CMS reference frame:
+  // Z_DET (down)      -> -Y_BEAM, so Y_BEAM is up
+  // Y_DET (horiz)     ->  X_B (horiz)
+  // X_DET (anti-beam) -> -Z_BEAM, so Z_BEAM is along photon
+  TLorentzVector alpha1_P4_CMS(p1_CMS*beamDir_DET, alphaMass+T1_CMS); // initial = along Z_BEAM
+  alpha1_P4_CMS.RotateZ(-theta1); // rotate by theta_BEAM about Y_BEAM = -Z_DET axis
+  alpha1_P4_CMS.Rotate(phi1,beamDir_DET); // rotate by phi_BEAM about beam axis = -X_DET
 
   // distribute isotropically 2nd alpha particle momentum
   // - cos(theta12) is constrained by momentum conservation: p3^2 = p1^2 + p2^2 + 2*p1*p2*cos(theta12)
@@ -197,33 +692,30 @@ Track3D generateFake3AlphaEvent(std::shared_ptr<GeometryTPC> aGeometry, std::sha
   }
 
   // calculate alpha ranges [mm] in LAB/DET frame
-  double range1_DET=aRangeCalculator->getIonRangeMM(IonRangeCalculator::ALPHA, alpha1_P4_DET.E()-alpha1_P4_DET.M()); // mm
-  double range2_DET=aRangeCalculator->getIonRangeMM(IonRangeCalculator::ALPHA, alpha2_P4_DET.E()-alpha2_P4_DET.M()); // mm
-  double range3_DET=aRangeCalculator->getIonRangeMM(IonRangeCalculator::ALPHA, alpha3_P4_DET.E()-alpha3_P4_DET.M()); // mm
+  double range1_DET=aRangeCalculator->getIonRangeMM(/*IonRangeCalculator::*/ALPHA, alpha1_P4_DET.E()-alpha1_P4_DET.M()); // mm
+  double range2_DET=aRangeCalculator->getIonRangeMM(/*IonRangeCalculator::*/ALPHA, alpha2_P4_DET.E()-alpha2_P4_DET.M()); // mm
+  double range3_DET=aRangeCalculator->getIonRangeMM(/*IonRangeCalculator::*/ALPHA, alpha3_P4_DET.E()-alpha3_P4_DET.M()); // mm
 
   // create list of tracks
   std::vector<TVector3> list;
   list.push_back(alpha1_P4_DET.Vect().Unit()*range1_DET); // 1st track direction
   list.push_back(alpha2_P4_DET.Vect().Unit()*range2_DET); // 2nd track direction
   list.push_back(alpha3_P4_DET.Vect().Unit()*range3_DET); // 3rd track direction
-  // sort tracks in ascending Z-coordinate order
-  std::sort(list.begin(), list.end(),
-	    [](const TVector3& a, const TVector3& b) {
-      return a.Z() < b.Z();
-    });
 
-  // smear vertex position in XYZ
-  // - assume gaussian spread of beam profile
-  // - assume self-triggering mode
-  // - assume trigger position at 10% of TIME scale
-  double xmin, xmax, ymin, ymax, zmin, zmax;
+  // smear vertex position in XYZ assuming:
+  // - uniform distribution along X
+  // - flat-top beam profile with gaussian tails in YZ plane
+  // employs TF2::GetRandom2()
+  double xmin, xmax, ymin, ymax;
   std::tie(xmin, xmax, ymin, ymax)=aGeometry->rangeXY();
-  zmin=aGeometry->GetDriftCageZmin();
-  zmax=aGeometry->GetDriftCageZmax();
-  double beamSpread=5.0; // sigma in [mm]
-  TVector3 vertex( r->Uniform(xmin, xmax), r->Gaus(0, beamSpread), r->Gaus(0.5*(zmin+zmax), beamSpread) );
-  vertex.SetZ(zmin+0.1*(zmax-zmin)-list.front().Z()); // simulates 1st (triggering) track arrival at 10% of TIME scale
-  
+  double y_rnd=0, z_rnd=0;
+  beamProfileTF2.GetRandom2(y_rnd, z_rnd); // (y_rnd, z_rnf, r);
+
+  // optionally extend vertex production outside of active area
+  TVector3 vertex( r->Uniform(xmin-(SIMUL_EXTENSION_FLAG ? SIMUL_EXTENSION_ZONE : 0),
+			      xmax+(SIMUL_EXTENSION_FLAG ? SIMUL_EXTENSION_ZONE : 0)),
+		   y_rnd, z_rnd);
+
   // create TrackSegment3D collection
   Track3D aTrack;
   TrackSegment3D aSegment;
@@ -232,26 +724,42 @@ Track3D generateFake3AlphaEvent(std::shared_ptr<GeometryTPC> aGeometry, std::sha
     aSegment.setStartEnd(vertex, vertex+seg);
     aTrack.addSegment(aSegment);
   }
-
-  // check if all segments are contained
-  if(!isFullyContainedEvent(aTrack)) {
-    if(debug_flag) std::cout<<"Event is not fully contained inside the active volume!"<<std::endl;
-    return empty_result;
-  }	
-
-  // accept event
   return aTrack;
 }
 //////////////////////////
 //////////////////////////
-void generateFakeRecoEvents(const std::string geometryName, bool debug_flag=false){
+void generateFakeRecoEvents(const std::string geometryName, unsigned int nEvents, double photonEnergyMeV, double brOxygen16=1, double brOxygen18=0, double brCarbon12_3alpha=0, bool debug_flag=false){
 
   if (!gROOT->GetClass("Track3D")){
-    R__LOAD_LIBRARY(libDataFormats.so);
+    R__LOAD_LIBRARY(libTPCDataFormats.so);
   }
   if (!gROOT->GetClass("IonRangeCalculator")){
-    R__LOAD_LIBRARY(libReconstruction.so);
+    R__LOAD_LIBRARY(libTPCReconstruction.so);
   }
+  R__LOAD_LIBRARY(libUtilities.so);
+  R__LOAD_LIBRARY(libMathMore.so);
+  
+  // construct partial sum of BRs, normalized to 1
+  std::vector<double> brSum;
+  brSum.push_back(fabs(brOxygen16));
+  brSum.push_back(fabs(brOxygen18));
+  brSum.push_back(fabs(brCarbon12_3alpha));
+  for(auto i=1u; i<brSum.size(); i++) {
+    brSum[i] += brSum[i-1];
+  }
+  if(brSum.back()==0) {
+    std::cerr<<"ERROR: Wrong branching ratios!"<<std::endl;
+    return;
+  }
+  // normalize sum to 1
+  for(auto i=0u; i<brSum.size(); i++) {
+    brSum[i] /= brSum.back();
+  }
+
+  std::cout << __FUNCTION__ << ": Reaction branching ratios" << std::endl;
+  std::cout << __FUNCTION__ << ": BR(O-16 -> alpha + C-12) = " << brSum[0]*1e2 << " %" << std::endl;
+  std::cout << __FUNCTION__ << ": BR(O-18 -> alpha + C-14) = " << (brSum[1]-brSum[0])*1e2 << " %" << std::endl;
+  std::cout << __FUNCTION__ << ": BR(C-12 -> 3-alpha)      = " << (brSum[2]-brSum[1])*1e2 << " %" << std::endl;
 
   const std::string fileName="Reco_FakeEvents.root";
   auto myGeometry=loadGeometry(geometryName);
@@ -265,27 +773,201 @@ void generateFakeRecoEvents(const std::string geometryName, bool debug_flag=fals
     return;
   }
   
-  TFile *aFile = new TFile(fileName.c_str(), "CREATE");
+  //  TFile *aFile = new TFile(fileName.c_str(), "CREATE");
+  TFile *aFile = new TFile(fileName.c_str(), "RECREATE");
   if(!aFile || !aFile->IsOpen()) {
     std::cerr<<"ERROR: Cannot create output file!"<<std::endl;
     return;
   }
+
+  // auxiliary canvas with all generated tracks (optional)
+  TCanvas *outputCanvas=0;
+  if(SIMUL_PLOT3D_FLAG) {
+    outputCanvas = new TCanvas("c", "all events", 500, 500);
+    outputCanvas->cd();
+    TView *view=TView::CreateView(1);
+    double xmin, xmax, ymin, ymax, zmin, zmax;
+    std::tie(xmin, xmax, ymin, ymax, zmin, zmax)=myGeometry->rangeXYZ();
+
+    if(SIMUL_EXT_TRG_FLAG) {
+      auto err=false;
+      auto get_zmin=myGeometry->Timecell2pos(0, err);
+      zmax=get_zmin+(zmax-zmin);
+      zmin=get_zmin;
+    }
+
+    auto view_span=0.8*std::max(std::max(xmax-xmin, ymax-ymin), zmax-zmin);
+    view->SetRange(0.5*(xmax+xmin)-0.5*view_span, 0.5*(ymax+ymin)-0.5*view_span, 0.5*(zmax+zmin)-0.5*view_span,
+		   0.5*(xmax+xmin)+0.5*view_span, 0.5*(ymax+ymin)+0.5*view_span, 0.5*(zmax+zmin)+0.5*view_span);
+    // plot active volume's faces
+    TGraph gr=myGeometry->GetActiveAreaConvexHull();
+    TPolyLine3D l(5*(gr.GetN()-1));
+    for(auto iedge=0; iedge<gr.GetN()-1; iedge++) {
+      l.SetPoint(iedge*5+0, gr.GetX()[iedge], gr.GetY()[iedge], zmin);
+      l.SetPoint(iedge*5+1, gr.GetX()[iedge+1], gr.GetY()[iedge+1], zmin);
+      l.SetPoint(iedge*5+2, gr.GetX()[iedge+1], gr.GetY()[iedge+1], zmax);
+      l.SetPoint(iedge*5+3, gr.GetX()[iedge], gr.GetY()[iedge], zmax);
+      l.SetPoint(iedge*5+4, gr.GetX()[iedge], gr.GetY()[iedge], zmin);
+    }
+    l.SetLineColor(kBlue);
+    l.DrawClone();
+    outputCanvas->Update();
+    outputCanvas->Modified();
+  }
+
   aFile->cd();
   TTree *aTree = new TTree("TPCRecoData","");
   Track3D *aTrack = new Track3D();
   aTree->Branch("RecoEvent", "Track3D", &aTrack);
 
-  for(auto i=0L; i<10000L; i++) {
+  //  auto r=new Trandom3(0);
+  auto r=gRandom; // use global ROOT pointer
+  r->SetSeed(0);
+
+  // initialize beam profile parameters
+  beamProfileTF2.SetParameters(SIMUL_BEAM_SPREAD_R, 1, SIMUL_BEAM_SPREAD_SIGMA);
+  beamProfileTF2.SetNpx(500);
+  beamProfileTF2.SetNpy(500);
+
+  // initialize THETA anistoropic distribution in CMS frame
+  if(SIMUL_OXYGEN_E1E2_FLAG) {
+    thetaEmissionTF1.SetParameters(1.0, SIMUL_OXYGEN_E1E2_SIGMA1, SIMUL_OXYGEN_E1E2_SIGMA2, SIMUL_OXYGEN_E1E2_PHI12);
+    thetaEmissionTF1.SetNpx(10000);
+  }
+
+  // initialize PHI anistoropic distribution in CMS frame
+  if(SIMUL_POLARISATION_FLAG) {
+    phiEmissionTF1.SetParameters(1.0, SIMUL_POLARISATION_FRAC, SIMUL_POLARISATION_ANGLE);
+    phiEmissionTF1.SetNpx(10000);
+  }
+
+  Track3D (*func)(std::shared_ptr<GeometryTPC>, std::shared_ptr<IonRangeCalculator>, double, bool);
+
+  for(auto i=0L; i<nEvents; i++) {
+
+    int color=kBlack; // track color on 3D plot (optional)
+    auto br = r->Uniform(brSum.back());
+    if(br<brSum[0]) { // Oxygen-16 to alpha + Carbon-12
+      func=generateFakeAlphaCarbon12Event;
+      color=kRed-3;
+      if(debug_flag) std::cout<<"a+C12"<<std::endl;
+    } else if(br<brSum[1]) { // Oxygen-18 to alpha + Carbon-14
+      func=generateFakeAlphaCarbon14Event;
+      color=kGray+2; //Orange+10; //kMagenta-4;
+      if(debug_flag) std::cout<<"a+C14"<<std::endl;
+    } else { // Carbon-12 to three alphas
+      func=generateFake3AlphaEvent;
+      color=kGreen+3;
+      if(debug_flag) std::cout<<"3a"<<std::endl;
+    }
+
     if(debug_flag || (i<1000L && (i%100L)==0L) || (i%1000L)==0L ) std::cout<<"Generating fake track i="<<i<<std::endl;
-    *aTrack = generateFake3AlphaEvent(myGeometry, myRangeCalculator, debug_flag);
+    *aTrack = func(myGeometry, myRangeCalculator, photonEnergyMeV, debug_flag);
+
+    // check if all segments are fully contained inside detector's active volume
+    if( (SIMUL_CONTAINMENT_FLAG || SIMUL_TRUNCATE_FLAG) &&
+	!isFullyContainedEvent(*aTrack) ) {
+
+      if(debug_flag) { // DEBUG
+	std::cout<<"Event is not fully contained inside the active volume!"<<std::endl;
+      } // DEBUG
+
+      if(SIMUL_CONTAINMENT_FLAG) {
+	*aTrack=Track3D(); // return empty event
+      } else {
+	if(SIMUL_TRUNCATE_FLAG) {
+	  Track3D copy(*aTrack);
+	  truncateTracks(copy, debug_flag); // truncate tracks to detector's active volume
+	  *aTrack=copy;
+	}
+      }
+    }
 
     // skip bad or parially contained events
     if(aTrack->getSegments().size()==0) {
       if(debug_flag) std::cout<<"Fake event i="<<i<<" rejected!"<<std::endl;
       continue; 
     }
+
+    // simulates GET electronics:
+    // - TIME scale depends the sampling rate
+    // - triggering on the 1st track (arrival at 10% of TIME scale)
+    if(SIMUL_EXT_TRG_FLAG) {
+
+      // sort a copy of the track collection in ascending Z-coordinate order
+      auto list(aTrack->getSegments());
+      std::sort(list.begin(), list.end(),
+		[](const TrackSegment3D& a, const TrackSegment3D& b) {
+		  return std::min(a.getEnd().Z(), a.getStart().Z()) < std::min(b.getEnd().Z(), b.getStart().Z());
+		});
+      // calculate range in time cells [0-511] of the GET electronics
+      auto err=false;
+      auto zmin=myGeometry->Timecell2pos(0, err); // Z_DET corresponding to timecell=0
+      auto zmax=myGeometry->Timecell2pos(myGeometry->GetAgetNtimecells(), err); // Z_DET corresponding to timecell=512
+      const double true_zmin=std::min(list.front().getStart().Z(), list.front().getEnd().Z());
+      for(auto &seg: aTrack->getSegments()) {
+	seg.setStartEnd(TVector3(seg.getStart().X(), seg.getStart().Y(),
+				 seg.getStart().Z()-true_zmin+zmin+SIMUL_EXT_TRG_ARRIVAL*(zmax-zmin)),
+			TVector3(seg.getEnd().X(), seg.getEnd().Y(),
+				 seg.getEnd().Z()-true_zmin+zmin+SIMUL_EXT_TRG_ARRIVAL*(zmax-zmin)));
+      }
+    }
+
+    // check if all segments are fully contained within GET electronics Z_DET history buffer
+    if(SIMUL_TRUNCATE_FLAG) {
+      Track3D copy(*aTrack);
+      truncateTracks(copy, debug_flag, true); // truncate tracks to Z_DET slice corresponding to GET electronics history buffer
+      *aTrack=copy;
+    }
+
+    // skip bad or parially contained events
+    if(aTrack->getSegments().size()==0) {
+      if(debug_flag) std::cout<<"Fake event i="<<i<<" rejected!"<<std::endl;
+      continue;
+    }
+
     aTree->Fill();
-  }
+
+    // make 3D plot (optional)
+    if(SIMUL_PLOT3D_FLAG && outputCanvas) {
+      auto list=aTrack->getSegments();
+      const int ntracks=list.size();
+      //      auto l = new TPolyLine3D(ntracks*3);
+      for(auto i=0; i<ntracks; i++) {
+        TPolyLine3D l(2);
+	l.SetPoint(0, list.at(i).getStart().X(), list.at(i).getStart().Y(), list.at(i).getStart().Z());
+	l.SetPoint(1, list.at(i).getEnd().X(), list.at(i).getEnd().Y(), list.at(i).getEnd().Z());
+	l.SetLineColor(color);
+	l.SetLineWidth(2);
+	if(list.at(i).getLength()>1.0) l.DrawClone(); // skip tracks below 1mm
+      }
+    }
+
+  } // end of event loop
+
   aTree->Write("",TObject::kOverwrite);
   aFile->Close();
+
+  if(SIMUL_PLOT3D_FLAG && outputCanvas) {
+    outputCanvas->Modified();
+    outputCanvas->Update();
+    outputCanvas->Print("GeneratorLevel_FakeEvents3D.C");
+  }
+
+}
+//////////////////////////
+//////////////////////////
+int main (const int argc, const char *args[]) {
+
+  if(argc!=7) return -1;
+  generateFakeRecoEvents(args[1], atol(args[2]), atof(args[3]), atof(args[4]), atof(args[5]), atof(args[6]));
+  return 0;
+}
+//////////////////////////
+//////////////////////////
+int main (const int argc, const char *args[]) {
+
+  if(argc!=4) return -1;
+  generateFakeRecoEvents(args[1], atof(args[2]), atof(args[3]));
+  return 0;
 }

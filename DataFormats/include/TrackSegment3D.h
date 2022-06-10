@@ -16,7 +16,7 @@ class GeometryTPC;
 
 class TrackSegment3D{
 
-public:
+ public:
 
   TrackSegment3D();
 
@@ -38,48 +38,53 @@ public:
 
   void setRecHits(const std::vector<Hit2DCollection> & aRecHits) {myRecHits = aRecHits;}
 
+  void setPID(pid_type aPID){ pid = aPID;}
+
   ///Unit tangential vector along segment.
   const TVector3 & getTangent() const { return myTangent;}
 
-  ///Bias vector perpendicular to tangent.
+    ///Bias vector perpendicular to tangent.
   const TVector3 & getBias() const { return myBias;}
 
-  ///Bias vector with X=0.
+    ///Bias vector with X=0.
   const TVector3 & getBiasAtX0() const { return myBiasAtX0;}
 
-  ///Bias vector with Y=0.
+    ///Bias vector with Y=0.
   const TVector3 & getBiasAtY0() const { return myBiasAtY0;}
 
-  ///Bias vector with Z=0.
+    ///Bias vector with Z=0.
   const TVector3 & getBiasAtZ0() const { return myBiasAtZ0;}
 
-  ///Lambda value for given X with current start and stop points
+    ///Lambda value for given X with current start and stop points
   double getLambdaAtX(double x) const;
 
-  ///Lambda value for given Y with current start and stop points
+    ///Lambda value for given Y with current start and stop points
   double getLambdaAtY(double y) const;
 
-  ///Lambda value for given Z (corresponding to time) with current start and stop points
+    ///Lambda value for given Z (corresponding to time) with current start and stop points
   double getLambdaAtZ(double z) const;
 
-  ///Bias vector at the beggining of the segment.
+    ///Bias vector at the beggining of the segment.
   const TVector3 & getStart() const { return myStart;}
 
-  ///Bias vector at the end of the segment.
+    ///Bias vector at the end of the segment.
   const TVector3 & getEnd() const { return myEnd;}
 
-  ///Return packed cartesian coordinates of the segment start/end points.
+    ///Return packed cartesian coordinates of the segment start/end points.
   std::vector<double> getStartEndXYZ() const;
 
-  ///Return packed coordinates of the segment bias (x, Y, Z) and tangent(Theta, Phi).
+    ///Return packed coordinates of the segment bias (x, Y, Z) and tangent(Theta, Phi).
   std::vector<double> getBiasTangentCoords() const;
 
-  ///Return 2D projection for stripPitchDirection corresponding to start and end lambdas
-  ///along the 3D segment.
+    ///Return 2D projection for stripPitchDirection corresponding to start and end lambdas
+    ///along the 3D segment.
   TrackSegment2D get2DProjection(int strip_dir, double start, double end) const;
 
-  ///Return the full lenght of the segment.
+    ///Return the full lenght of the segment.
   double getLength() const { return myLenght;}
+
+  ///Return the particle identification.
+  pid_type getPID() const { return pid;}
 
   ///Return charge profile along the track. Each projection is returned in separate
   ///histogram row
@@ -91,19 +96,19 @@ public:
   const std::vector<Hit2DCollection> & getRecHits() const { return myRecHits;}
 
   double getRecHitChi2(int iProjection=-1) const;
-  
-  ///Operator needed for fitting.
+
+    ///Operator needed for fitting.
   double operator() (const double *par);
 
-private:
+ private:
 
-  ///Return point on 2D projection for stripPitchDirection corresponding to given lambda.
+    ///Return point on 2D projection for stripPitchDirection corresponding to given lambda.
   TVector3 getPointOn2DProjection(double lambda, const TVector3 & stripPitchDirection) const;
 
-  ///Calculate vector for different parametrisations.
+    ///Calculate vector for different parametrisations.
   void initialize();
 
-  ///Calculate and store chi2 for all projections.
+    ///Calculate and store chi2 for all projections.
   void calculateRecHitChi2();
 
   void addProjection(TH1F &histo, TGraphErrors &graph) const;
@@ -112,7 +117,8 @@ private:
   TVector3 myTangent, myBias;
   TVector3 myBiasAtX0, myBiasAtY0, myBiasAtZ0;
   TVector3 myStart, myEnd;
-  double myLenght;
+  double myLenght{0};
+  pid_type pid{pid_type::UNKNOWN};
 
   std::vector<Hit2DCollection> myRecHits;
   std::vector<double> myProjectionsChi2;
@@ -123,4 +129,3 @@ std::ostream & operator << (std::ostream &out, const TrackSegment3D &aSegment);
 typedef std::vector<TrackSegment3D> TrackSegment3DCollection;
 
 #endif
-

@@ -19,7 +19,7 @@ RecoOutput::RecoOutput() {
 /////////////////////////////////////////////////////////
 RecoOutput::~RecoOutput() {
   
-  close();
+  //close();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -50,6 +50,7 @@ void RecoOutput::open(const std::string & fileName){
   std::string treeName = "TPCRecoData";
   myOutputFilePtr = std::make_shared<TFile>(fileName.c_str(),"RECREATE");
   myOutputTreePtr = std::make_shared<TTree>(treeName.c_str(),"");
+  myOutputTreePtr->SetDirectory(myOutputFilePtr.get());
   
   myOutputTreePtr->Branch("RecoEvent", myTrackPtr.get());
   myOutputTreePtr->Branch("EventInfo", myEventInfoPtr.get());
@@ -58,12 +59,17 @@ void RecoOutput::open(const std::string & fileName){
 /////////////////////////////////////////////////////////
 void RecoOutput::close(){
 
+  std::cout<<"myOutputFilePtr: "<<myOutputFilePtr<<std::endl;
+  std::cout<<"myOutputTreePtr->GetDirectory(): "
+	   <<std::endl;
+
   if(!myOutputFilePtr){
      std::cout<<KRED<<"RecoOutput::close"<<RST
 	     <<" pointer to output file not set!"
 	     <<std::endl;
      return;
   }
+  //myOutputFilePtr->Write();
   myOutputFilePtr->Close();
 }
 /////////////////////////////////////////////////////////
@@ -77,6 +83,7 @@ void RecoOutput::update(){
      return;
   }
   myOutputTreePtr->Fill();
+  myOutputFilePtr->cd();
   myOutputTreePtr->Write("", TObject::kOverwrite);
 }
 /////////////////////////////////////////////////////////

@@ -50,10 +50,13 @@ public:
   std::shared_ptr<GeometryTPC> getGeometry() const;
     
   inline EventFilter & getEventFilter() {return eventFilter;}
-protected:
 
   virtual std::shared_ptr<EventTPC> getNextEvent() = 0;
+  
   virtual std::shared_ptr<EventTPC> getPreviousEvent() = 0;
+  
+protected:
+
   std::string currentFilePath;
   
   unsigned long int nEntries;

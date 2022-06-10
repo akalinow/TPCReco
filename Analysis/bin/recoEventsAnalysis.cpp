@@ -8,85 +8,94 @@
 #include "TLatex.h"
 #include "TString.h"
 
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/property_tree/xml_parser.hpp>
 #include <boost/program_options.hpp>
-#include <boost/algorithm/string.hpp>
 
 #include "GeometryTPC.h"
 #include "Track3D.h"
 #include "HIGGS_analysis.h"
+#include "HIGS_trees_analysis.h"
 
 #include "colorText.h"
 
 int analyzeRecoEvents(const  std::string & geometryFileName, 
 		      const  std::string & dataFileName,
 		      const  float & beamEnergy,
-		      const  TVector3 & beamDir);
-/////////////////////////////////////
-/////////////////////////////////////
+		      const  TVector3 & beamDir,
+		      const  double & pressure,
+		      const  bool & makeTreeFlag);
+
+enum class BeamDirection{
+  X,
+  MINUS_X
+};
+
+std::istream& operator>>(std::istream& in, BeamDirection& direction){
+  std::string token;
+  in >> token;
+  if (token == "x" || token == "X"){
+     direction = BeamDirection::X;
+  }
+  else if (token == "-x" || token == "-X"){
+    direction = BeamDirection::MINUS_X;
+  } 
+  else
+    in.setstate(std::ios_base::failbit);
+  return in;
+  }
+
 boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
 
+  //  bool optionTree=true;
   boost::program_options::options_description cmdLineOptDesc("Allowed options");
   cmdLineOptDesc.add_options()
     ("help", "produce help message")
-    ("geometryFile",  boost::program_options::value<std::string>(), "string - path to the geometry file")
-    ("dataFile",  boost::program_options::value<std::string>(), "string - path to data file")
-    ("beamEnergy", boost::program_options::value<float>(), "float - LAB gamma beam energy [MeV]")
-    ("beamDir", boost::program_options::value<std::string>(), "string - LAB gamma beam direction [\"x\" xor \"-x\"]");
+    ("geometryFile",  boost::program_options::value<std::string>()->required(), "string - path to the geometry file")
+    ("dataFile",  boost::program_options::value<std::string>()->required(), "string - path to data file")
+    ("beamEnergy", boost::program_options::value<float>()->required(), "float - LAB gamma beam energy [MeV]")
+    ("beamDir", boost::program_options::value<BeamDirection>()->required(), "string - LAB gamma beam direction [\"x\" xor \"-x\"]")
+    ("pressure", boost::program_options::value<float>()->required(), "float - CO2 pressure [mbar]")
+    ("noTree", boost::program_options::bool_switch()->default_value(false), "skip creating additional TTree for 1,2,3-prongs (true = runs a bit faster)");
   
-  boost::program_options::variables_map varMap;        
-  boost::program_options::store(boost::program_options::parse_command_line(argc, argv, cmdLineOptDesc), varMap);
-  boost::program_options::notify(varMap); 
+  boost::program_options::variables_map varMap;  
 
-  if (varMap.count("help")) {
-    std::cout<<cmdLineOptDesc<<std::endl;
+  try {     
+    boost::program_options::store(boost::program_options::parse_command_line(argc, argv, cmdLineOptDesc), varMap);
+    if (varMap.count("help")) {
+      std::cout << "recoEventAnalysis" << "\n\n";
+      std::cout << cmdLineOptDesc << std::endl;
+      exit(1);
+    }
+    boost::program_options::notify(varMap);
+  } catch (const std::exception &e) {
+    std::cerr << e.what() << '\n';
+    std::cout << cmdLineOptDesc << std::endl;
     exit(1);
   }
+
   return varMap;
 }
 /////////////////////////////////////
 /////////////////////////////////////
 int main(int argc, char **argv){
 
-  float beamEnergy=0.0; // MeV
-  TVector3 beamDir(0,0,0); // dimensionless, in detector LAB coordinates
-  std::string geometryFileName, dataFileName;
-  boost::program_options::variables_map varMap = parseCmdLineArgs(argc, argv);
-  boost::property_tree::ptree tree;
-  if(argc<5){
-    char text[] = "--help";
-    char *argvTmp[] = {text, text};
-    parseCmdLineArgs(2,argvTmp);
-    return 1;
+  auto varMap = parseCmdLineArgs(argc, argv);
+  auto geometryFileName = varMap["geometryFile"].as<std::string>();
+  auto dataFileName = varMap["dataFile"].as<std::string>();
+  auto beamEnergy = varMap["beamEnergy"].as<float>();
+  auto pressure = varMap["pressure"].as<float>();
+  auto makeTreeFlag = !varMap["noTree"].as<bool>();
+  TVector3 beamDir;
+  switch(varMap["beamDir"].as<BeamDirection>()){
+    case BeamDirection::X : 
+      beamDir = TVector3(1,0,0);
+      break;
+    case BeamDirection::MINUS_X : 
+      beamDir = TVector3(-1,0,0);
+      break;
+    default:
+      return 1;
   }
-  if (varMap.count("geometryFile")) {
-    geometryFileName = varMap["geometryFile"].as<std::string>();
-  }
-  if (varMap.count("dataFile")) {
-    dataFileName = varMap["dataFile"].as<std::string>();
-  }
-  if (varMap.count("beamEnergy")) {
-    beamEnergy = varMap["beamEnergy"].as<float>();
-  }
-  if (varMap.count("beamDir")) {
-    std::string str = varMap["beamDir"].as<std::string>();
-    boost::to_upper(str);
-    if(str=="X")       beamDir=TVector3(1,0,0);
-    else if(str=="-X") beamDir=TVector3(-1,0,0);
-  }
-
-  if(dataFileName.size() && geometryFileName.size() && beamEnergy>0 && beamDir.Mag2()>0) {
-    analyzeRecoEvents(geometryFileName, dataFileName, beamEnergy, beamDir);
-  }
-  else{
-    std::cout<<KRED<<"Configuration not complete: "<<RST
-	     <<" geometryFile: "<<geometryFileName<<"\n"
-	     <<" dataFile: "<<dataFileName<<"\n"
-	     <<" beamEnergy: "<<beamEnergy<<" MeV\n"
-	     <<" beamDir: ["<<beamDir.X()<<", "<<beamDir.Y()<<", "<<beamDir.Z()<<"]"
-	     <<std::endl;
-  }
+  analyzeRecoEvents(geometryFileName, dataFileName, beamEnergy, beamDir, pressure, makeTreeFlag);
   return 0;
 }
 /////////////////////////////
@@ -99,7 +108,9 @@ std::shared_ptr<GeometryTPC> loadGeometry(const std::string fileName){
 int analyzeRecoEvents(const  std::string & geometryFileName,
 		      const  std::string & dataFileName,
 		      const  float & beamEnergy,
-		      const  TVector3 & beamDir) {
+		      const  TVector3 & beamDir,
+		      const  double & pressure,
+		      const  bool & makeTreeFlag){
 
   TFile *aFile = new TFile(dataFileName.c_str());
   if(!aFile || !aFile->IsOpen()){
@@ -125,29 +136,54 @@ int analyzeRecoEvents(const  std::string & geometryFileName,
 	     <<std::endl;
     return -1;
   }
-  
-  HIGGS_analysis myAnalysis(aGeometry, beamEnergy, beamDir); // need TPC geometry for proper histogram ranges
-  TTree *aTree = (TTree*)aFile->Get("TPCRecoData");
-  if(!aTree) {
-    std::cerr<<"ERROR: Cannot find 'TPCRecoData' tree!"<<std::endl;
+  if(pressure<50.0 || pressure>1100.0) {
+    std::cout<<KRED<<"Wrong CO2 pressure: "<<RST<<pressure<<" mbar"
+	     <<std::endl;
     return -1;
   }
+
+  std::shared_ptr<HIGGS_analysis> myAnalysis(new HIGGS_analysis(aGeometry, beamEnergy, beamDir, pressure));
+  std::shared_ptr<HIGS_trees_analysis> myTreesAnalysis(0);
+  if(makeTreeFlag) myTreesAnalysis=std::make_shared<HIGS_trees_analysis>(aGeometry, beamEnergy, beamDir, pressure);
+
+  TTree *aTree = (TTree*)aFile->Get("TPCRecoData");
+  if(!aTree) {
+    std::cerr<<KRED<<"ERROR: Cannot find 'TPCRecoData' tree!"<<RST<<std::endl;
+    return -1;
+  }
+  // NOTE: * branch RecoEvent - must always be present
+  //       * branch EventInfo - is optional (eg. for Monte Carlo)
   Track3D *aTrack = new Track3D();
   TBranch *aBranch  = aTree->GetBranch("RecoEvent");
   if(!aBranch) {
-    std::cerr<<"ERROR: Cannot find 'RecoEvent' branch!"<<std::endl;
+    std::cerr<<KRED<<"ERROR: Cannot find 'RecoEvent' branch!"<<RST<<std::endl;
     return -1;
   }
   aBranch->SetAddress(&aTrack);
   
+  eventraw::EventInfo *aEventInfo = 0;
+  TBranch *aBranchInfo = aTree->GetBranch("EventInfo");
+  if(!aBranchInfo) {
+   std::cerr<<KRED<<"WARNING: "
+	    <<"Cannot find 'EventInfo' branch!"<<RST<<std::endl;
+  }
+  else{
+    aEventInfo = new eventraw::EventInfo();
+    aBranchInfo->SetAddress(&aEventInfo);
+  }
+
   unsigned int nEntries = aTree->GetEntries();
+  
+  std::cout << __FUNCTION__ << ": Starting to loop " << nEntries << " events" << std::endl;
+
   for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
-
-    aBranch->GetEntry(iEntry);
+    aBranch->GetEntry(iEntry); 
+    if(aBranchInfo) aBranchInfo->GetEntry(iEntry); // this branch is optional
     for (auto & aSegment: aTrack->getSegments())  aSegment.setGeometry(aGeometry); // need TPC geometry for track projections
-    myAnalysis.fillHistos(aTrack);
+    myAnalysis->fillHistos(aTrack);
+    if(makeTreeFlag) myTreesAnalysis->fillTrees(aTrack, aEventInfo);
   }			      
-
+ 
   return 0;
 }
 /////////////////////////////

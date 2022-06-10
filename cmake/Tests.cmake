@@ -30,7 +30,6 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME AND BUILD_TEST)
     main
     ${UPDATE_DISCONNECTED_IF_AVAILABLE})
 
-  set(CMAKE_CXX_FLAGS "-std=c++14")
   set(INSTALL_GTEST OFF)
   add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR})
   include(CTest)

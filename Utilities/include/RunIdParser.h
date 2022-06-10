@@ -2,19 +2,24 @@
 #define RUN_ID_PARSER_H_
 #include <array>
 #include <chrono>
+#include <exception>
 #include <regex>
 #include <utility>
 class RunIdParser {
 public:
   RunIdParser(const std::string &name);
-
+  class ParseError : public std::logic_error {
+    public:
+    ParseError(const std::string& message) : std::logic_error(message) {}
+  };
+  
   using time_point = std::chrono::time_point<std::chrono::system_clock>;
 
   inline size_t runId() const noexcept { return rundId_; }
   inline size_t fileId() const noexcept { return fileId_; }
   // AsAd id
   // returns -1 if no information
-  inline int AsadId() const noexcept { return AsAdId_; };
+  inline int AsAdId() const noexcept { return AsAdId_; };
   // CoBoid
   // returns -1 if no information
   inline int CoBoId() const noexcept { return CoBoId_; };
@@ -22,11 +27,19 @@ public:
   inline time_point timePoint() const noexcept { return timePoint_; }
 
   template <class Rep, class Period>
-  bool isClose(const RunIdParser &other,
-              std::chrono::duration<Rep, Period> delay) const {
-    return (timePoint_ > other.timePoint_ ? timePoint_ - other.timePoint_
-                                  : other.timePoint_ - timePoint_) <= delay;
+  bool isClose(const time_point &other,
+               std::chrono::duration<Rep, Period> delay) const {
+    return (timePoint_ > other ? timePoint_ - other : other - timePoint_) <=
+           delay;
   }
+
+  template <class Rep, class Period>
+  bool isClose(const RunIdParser &other,
+               std::chrono::duration<Rep, Period> delay) const {
+    return isClose(other.timePoint_, delay);
+  }
+
+  static time_point timePointFromRunId(const std::string &runId);
 
 private:
   size_t rundId_;

@@ -33,8 +33,18 @@ build/
 \#*#
 .vscode
 
+# CMake cache
+###################
+*.cmake
+CMakeCache.txt
+CMakeFiles
+*/CMakeFiles
+*/*/CMakeFiles/*
+*/*/*/CMakeFiles/*
+Makefile
 
 # Containers
-#############
+###################
 *.sif
 *.tar
+*.tar.gz
