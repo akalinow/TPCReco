@@ -50,9 +50,9 @@ class GeometryTPC {
   std::map<int, std::string> dir2name;  // pair=(directory_idx, group_name="U","V","W","FPN")
   std::map<std::string, int> name2dir;  // pair=(group_name="U","V","W","FPN", directory_idx)
   
-  std::map<MultiKey4, std::shared_ptr<StripTPC>, multikey4_less> mapByAget;     // key=(COBO_idx[0-1], ASAD_idx[0-3], AGET_idx[0-3], channel_idx[0-63])
-  std::map<MultiKey4, std::shared_ptr<StripTPC>, multikey4_less> mapByAget_raw; // key=(COBO_idx[0-1], ASAD_idx[0-3], AGET_idx [0-3], raw_channel_idx [0-67] )
-  std::map<MultiKey3, std::shared_ptr<StripTPC>, multikey3_less> mapByStrip;    // key=(STRIP_DIRECTION [0-2], STRIP_SECTION [0-2], STRIP_NUMBER [1-1024])
+  std::map<MultiKey4, std::shared_ptr<StripTPC> > mapByAget;     // key=(COBO_idx[0-1], ASAD_idx[0-3], AGET_idx[0-3], channel_idx[0-63])
+  std::map<MultiKey4, std::shared_ptr<StripTPC> > mapByAget_raw; // key=(COBO_idx[0-1], ASAD_idx[0-3], AGET_idx [0-3], raw_channel_idx [0-67] )
+  std::map<MultiKey3, std::shared_ptr<StripTPC> > mapByStrip;    // key=(STRIP_DIRECTION [0-2], STRIP_SECTION [0-2], STRIP_NUMBER [1-1024])
   std::map<int, int> ASAD_N;       // pair=(COBO_idx, number of ASAD boards)
   std::vector<int> FPN_chanId;     // FPN channels in AGET chips
   double pad_size;                 // in [mm]

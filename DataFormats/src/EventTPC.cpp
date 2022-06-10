@@ -1,13 +1,8 @@
-#include <cstdlib>
-#include <cstdio>
 #include <iostream>
+//#include <sstream>
 #include <string>
-#include <sstream>
 #include <vector>
 #include <map>
-#include <iterator>
-#include <fstream>
-#include <utility>
 #include <algorithm> // for find_if
 
 #include "TH1D.h"
@@ -19,9 +14,11 @@
 #include "TrackSegmentTPC.h"
 #include "SigClusterTPC.h"
 
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
 EventTPC::EventTPC(){ Clear(); }
-
-
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
 void EventTPC::Clear(){
 
   SetGeoPtr(0);
@@ -32,7 +29,7 @@ void EventTPC::Clear(){
   glb_max_charge_channel = -1;
   glb_tot_charge = 0.0;
 
-  for(int idir=0; idir<3; idir++) {
+  for(int idir=DIR_U; idir<DIR_W; ++idir) {
     max_charge[idir]=0.0;
     max_charge_timing[idir]=-1;
     max_charge_strip[idir]=-1;
@@ -46,199 +43,86 @@ void EventTPC::Clear(){
   maxChargeMap.clear();    // 2-key map: strip_dir, strip_number
   maxChargeMap2.clear();   // 3-key map: strip_dir, strip_section, strip_number 
   chargeMap.clear();
-  chargeMap2.clear();
+  chargeMapWithSections.clear();
   asadMap.clear();
 }
-
-
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
 void EventTPC::SetGeoPtr(std::shared_ptr<GeometryTPC> aPtr) {
   myGeometryPtr = aPtr;
-  if(myGeometryPtr && myGeometryPtr->IsOK()) initOK=true;
-  }
+  initOK = myGeometryPtr && myGeometryPtr->IsOK();
+}
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+void EventTPC::SetChargeMap(const PEventTPC::chargeMapType & aChargeMap){
 
-bool EventTPC::AddValByStrip(int strip_dir, int strip_section, int strip_number, int time_cell, double val) {  // valid range [0-2][0-2][1-1024][0-511]
-  if(!IsOK() || time_cell<0 || time_cell>=myGeometryPtr->GetAgetNtimecells() ||
-     strip_section<0 || strip_section>2 ||
-     strip_number<1 || strip_number>myGeometryPtr->GetDirNstrips(strip_dir)) return false;
-  switch(strip_dir) {
-  case DIR_U:
-  case DIR_V:
-  case DIR_W: {
-    MultiKey3 mkey(strip_dir, strip_number, time_cell);
-    MultiKey4 mkey2(strip_dir, strip_section, strip_number, time_cell);
-   
-    // chargeMap - check if hit is unique    
-    std::map<MultiKey3, double, multikey3_less>::iterator it;
-    double new_val=0.0;    
-    if( (it=chargeMap.find(mkey))==chargeMap.end() ) {
+  chargeMapWithSections = aChargeMap;
+  
+}
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+void EventTPC::fillAuxMaps(){
 
-      // add new hit
-      chargeMap[mkey]=val;
-      new_val=val; // merged (all sections)
+  for(auto const & item: chargeMapWithSections){
+    auto key = item.first;
+    auto value = item.second;
 
-    } else {
+    const int strip_dir = std::get<0>(key);
+    const int strip_sec = std::get<1>(key);
+    const int strip_num = std::get<2>(key);
+    const int time_cell = std::get<3>(key);
 
-      // update already existing hit
-      it->second += val;
-      new_val=it->second; // merged (all sections)
-
-    }
-    
-    // chargeMap2 - check if hit is unique
-    std::map<MultiKey4, double, multikey4_less>::iterator it2;
-    double new_val2=0.0;
-    if( (it2=chargeMap2.find(mkey2))==chargeMap2.end() ) {
-
-      // add new hit
-      chargeMap2[mkey2]=val;
-      new_val2=val; // per section
-
-    } else {
-
-      // update already existing hit
-      it2->second += val;
-      new_val2=it2->second; // per section
-
-    }
-    //return true;//TEST
-
-    // update charge integrals
-    MultiKey2 mkey_total(strip_dir, strip_number);
+    MultiKey2 mkey_total(strip_dir, strip_num);
     MultiKey2 mkey_total2(strip_dir, time_cell);
-    MultiKey3 mkey_total4(strip_dir, strip_section, time_cell);
-    MultiKey3 mkey_total5(strip_dir, strip_section, time_cell);
-    MultiKey2 mkey_maxval(strip_dir, strip_number);
-    MultiKey3 mkey_maxval2(strip_dir, strip_section, strip_number);
+    MultiKey3 mkey_total4(strip_dir, strip_sec, strip_num);
+    MultiKey3 mkey_total5(strip_dir, strip_sec, time_cell);
+    MultiKey2 mkey_maxval(strip_dir, strip_num);
+    MultiKey3 mkey_maxval2(strip_dir, strip_sec, strip_num);
 
-    tot_charge[strip_dir] += val;
-    glb_tot_charge += val;
-
-    // totalChargeMap - check if strip exists
-    std::map<MultiKey2, double, multikey2_less>::iterator it_total;
-    if( (it_total=totalChargeMap.find(mkey_total))==totalChargeMap.end() ) {
-      // add new total value per strip
-      totalChargeMap[mkey_total]=val;
-    } else {
-      // update already existing total value per strip
-      it_total->second += val;
-    }
-
-    // totalChargeMap2 - check if strip exists
-    std::map<MultiKey2, double, multikey2_less>::iterator it_total2;
-    if( (it_total2=totalChargeMap2.find(mkey_total2))==totalChargeMap2.end() ) {
-      // add new total value per strip
-      totalChargeMap2[mkey_total2]=val;
-    } else {
-      // update already existing total value per strip
-      it_total2->second += val;
-    }
-
-    // totalChargeMap3 - check if strip exists
-    std::map<int, double>::iterator it_total3;
-    if( (it_total3=totalChargeMap3.find(time_cell))==totalChargeMap3.end() ) {
-      // add new total value per strip
-      totalChargeMap3[time_cell]=val;
-    } else {
-      // update already existing total value per strip
-      it_total3->second += val;
-    }
-
-    // totalChargeMap4 - check if strip exists
-    std::map<MultiKey3, double, multikey3_less>::iterator it_total4;
-    if( (it_total4=totalChargeMap4.find(mkey_total4))==totalChargeMap4.end() ) {
-      // add new total value per strip
-      totalChargeMap4[mkey_total4]=val;
-    } else {
-      // update already existing total value per strip
-      it_total4->second += val;
-    }
-
-    // totalChargeMap5 - check if strip exists
-    std::map<MultiKey3, double, multikey3_less>::iterator it_total5;
-    if( (it_total5=totalChargeMap5.find(mkey_total5))==totalChargeMap5.end() ) {
-      // add new total value per strip
-      totalChargeMap5[mkey_total5]=val;
-    } else {
-      // update already existing total value per strip
-      it_total5->second += val;
-    }
-
-    // upadate charge maxima
-
-    // maxChargeMap - check if strip exists
-    std::map<MultiKey2, double, multikey2_less>::iterator it_maxval;
-    if( (it_maxval=maxChargeMap.find(mkey_maxval))==maxChargeMap.end() ) {
-      // add new max value per strip
-      maxChargeMap[mkey_maxval]=new_val;
-    } else {
-      // update already existing max value per strip
-      if(new_val > it_maxval->second) it_maxval->second = new_val;
-    }
-    
-    if( new_val > max_charge[strip_dir] ) { 
-      max_charge[strip_dir]=new_val;
-      max_charge_timing[strip_dir]=time_cell;
-      max_charge_strip[strip_dir]=strip_number;
-      if( new_val > glb_max_charge ) {
-	glb_max_charge=new_val;
-	glb_max_charge_timing=time_cell;
-	glb_max_charge_channel=myGeometryPtr->Global_strip2normal(strip_dir, strip_section, strip_number);
-	}
-    }
-
-    // maxChargeMap2 - check if strip exists
-    std::map<MultiKey3, double, multikey3_less>::iterator it_maxval2;
-    if( (it_maxval2=maxChargeMap2.find(mkey_maxval2))==maxChargeMap2.end() ) {
-      // add new max value per strip
-      maxChargeMap2[mkey_maxval2]=new_val2;
-    } else {
-      // update already existing max value per strip
-      if(new_val2 > it_maxval2->second) it_maxval2->second = new_val2;
-    }
-    // update {COBO_idx, ASAD_idx} map
-    std::shared_ptr<StripTPC> strip=myGeometryPtr->GetStripByDir(strip_dir, strip_section, strip_number);
-    if(strip) {
-      MultiKey2 mkey_asad( strip->CoboId(), strip->AsadId() );
-      std::map<MultiKey2, int, multikey2_less>::iterator it_asad;
-      if( (it_asad=asadMap.find(mkey_asad))==asadMap.end() ) {
-	// add new {COBO_idx, ASAD_idx} pair to asadMap
-	asadMap[mkey_asad]=1;
-      } else {
-	// update already existing asadMap
-	it_asad->second++;
-      }
-    }
-    
-    return true;    
+    glb_tot_charge += value;
+    tot_charge[strip_dir] += value;
+    totalChargeMap[mkey_total] += value;
+    totalChargeMap2[mkey_total2] += value;
+    totalChargeMap3[time_cell] += value;
+    totalChargeMap4[mkey_total4] += value;
+    totalChargeMap5[mkey_total5] += value;
+    maxChargeMap[mkey_maxval] = value>maxChargeMap[mkey_maxval]? value : maxChargeMap[mkey_maxval];
+    maxChargeMap2[mkey_maxval2] = value>maxChargeMap2[mkey_maxval2]? value : maxChargeMap2[mkey_maxval2];
+    updateMaxChargeMaps(key, value);
+   
+    auto strip=myGeometryPtr->GetStripByDir(strip_dir, strip_sec, strip_num);
+    if(strip) asadMap[MultiKey2(strip->CoboId(), strip->AsadId())] += 1;
   }
-  };
-  return false;  
 }
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+void EventTPC::updateMaxChargeMaps(const PEventTPC::chargeMapType::key_type & key,
+				   double value){
 
-
-bool EventTPC::AddValByStrip(std::shared_ptr<StripTPC> strip, int time_cell, double val) {  // valid range [0-511]
-  if(strip) return AddValByStrip(strip->Dir(), strip->Section(), strip->Num(), time_cell, val);
-  return false;
+  const int strip_dir = std::get<0>(key);
+  const int strip_sec = std::get<1>(key);
+  const int strip_num = std::get<2>(key);
+  const int time_cell = std::get<3>(key);
+  
+  if(value > max_charge[strip_dir] ) { 
+    max_charge[strip_dir] = value;
+    max_charge_timing[strip_dir] = time_cell;
+    max_charge_strip[strip_dir] = strip_num;
+    if(value > glb_max_charge ) {
+      glb_max_charge = value;
+      glb_max_charge_timing = time_cell;
+      glb_max_charge_channel = myGeometryPtr->Global_strip2normal(strip_dir, strip_sec, strip_num);
+    }
+  }  
 }
-bool EventTPC::AddValByGlobalChannel(int glb_channel_idx, int time_cell, double val) {  // valid range [0-1023][0-511]
-  return AddValByStrip(myGeometryPtr->GetStripByGlobal(glb_channel_idx), time_cell, val);
-}
-bool EventTPC::AddValByGlobalChannel_raw(int glb_raw_channel_idx, int time_cell, double val) {  // valid range [0-1023+4*N][0-511]
-  return AddValByStrip(myGeometryPtr->GetStripByGlobal_raw(glb_raw_channel_idx), time_cell, val);
-}
-bool EventTPC::AddValByAgetChannel(int cobo_idx, int asad_idx, int aget_idx, int channel_idx, int time_cell, double val) {  // valid range [0-1][0-3][0-3][0-63][0-511]
-  return AddValByStrip(myGeometryPtr->GetStripByAget(cobo_idx, asad_idx, aget_idx, channel_idx), time_cell, val);
-}
-bool EventTPC::AddValByAgetChannel_raw(int cobo_idx, int asad_idx, int aget_idx, int raw_channel_idx, int time_cell, double val) {  // valid range [0-1][0-3][0-3][0-67][0-511]
-  return AddValByStrip(myGeometryPtr->GetStripByAget_raw(cobo_idx, asad_idx, aget_idx, raw_channel_idx), time_cell, val);
-}
-
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
 bool EventTPC::CheckAsadNboards() {
-  if (IsOK() && myGeometryPtr->GetAsadNboards()==(int)asadMap.size()) return true;
-  return false;
+  return IsOK() && myGeometryPtr->GetAsadNboards()==(int)asadMap.size();
 }
-
-double EventTPC::GetValByStripMerged(int strip_dir, int strip_number, int time_cell/*, bool &result*/){  // valid range [0-2][1-1024][0-511]
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+double EventTPC::GetValByStripMerged(int strip_dir, int strip_number, int time_cell){
   //result=false;
   if(!IsOK() || time_cell<0 || time_cell>=512 || strip_number<1 || strip_number>myGeometryPtr->GetDirNstrips(strip_dir)) {
     return 0.0;
@@ -251,7 +135,7 @@ double EventTPC::GetValByStripMerged(int strip_dir, int strip_number, int time_c
     MultiKey3 mkey(strip_dir, strip_number, time_cell);
 
     // check if hit is unique
-    std::map<MultiKey3, double, multikey3_less>::iterator it = chargeMap.find(mkey);
+    auto  it = chargeMap.find(mkey);
     if(it==chargeMap.end()){
       return 0.0;
     }
@@ -261,54 +145,19 @@ double EventTPC::GetValByStripMerged(int strip_dir, int strip_number, int time_c
   };
   return 0.0;    
 }
-
-double EventTPC::GetValByStrip(int strip_dir, int strip_section, int strip_number, int time_cell/*, bool &result*/){  // valid range [0-2][0-2][1-1024][0-511]
-  //result=false;
-  if(!IsOK() || time_cell<0 || time_cell>=512 ||
-     strip_section<0 || strip_section>2 ||
-     strip_number<1 || strip_number>myGeometryPtr->GetDirNstrips(strip_dir)) {
-    return 0.0;
-  }
-
-  switch(strip_dir) {
-  case DIR_U:
-  case DIR_V:
-  case DIR_W: {
-    MultiKey4 mkey(strip_dir, strip_section, strip_number, time_cell);
-
-    // check if hit is unique
-    std::map<MultiKey4, double, multikey4_less>::iterator it = chargeMap2.find(mkey);
-    if(it==chargeMap2.end()){
-      return 0.0;
-    }
-    //result=true;
-    return it->second;
-  }
-  };
-  return 0.0;    
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+double EventTPC::GetValByStrip(int strip_dir, int strip_section, int strip_number, int time_cell){
+  return chargeMapWithSections[MultiKey3];
 }
-
-double EventTPC::GetValByStrip(std::shared_ptr<StripTPC> strip, int time_cell/*, bool &result*/) {  // valid range [0-511]
-  if(strip) return GetValByStrip(strip->Dir(), strip->Section(), strip->Num(), time_cell); //, result);
-  return false;
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+double EventTPC::GetValByStrip(std::shared_ptr<StripTPC> strip, int time_cell) {
+  if(strip) return GetValByStrip(strip->Dir(), strip->Section(), strip->Num(), time_cell);
+  return 0.0;
 }
-
-double EventTPC::GetValByGlobalChannel(int glb_channel_idx, int time_cell/*, bool &result*/) {  // valid range [0-1023][0-511]
-  return GetValByStrip(myGeometryPtr->GetStripByGlobal(glb_channel_idx), time_cell); //, result);
-}
-
-double EventTPC::GetValByGlobalChannel_raw(int glb_raw_channel_idx, int time_cell/*, bool &result*/) {  // valid range [0-1023+4*N][0-511]
-  return GetValByStrip(myGeometryPtr->GetStripByGlobal_raw(glb_raw_channel_idx), time_cell); //, result);
-}
-
-double EventTPC::GetValByAgetChannel(int cobo_idx, int asad_idx, int aget_idx, int channel_idx, int time_cell/*, bool &result*/) {  // valid range [0-1][0-3][0-3][0-63][0-511]
-  return GetValByStrip(myGeometryPtr->GetStripByAget(cobo_idx, asad_idx, aget_idx, channel_idx), time_cell); //, result);
-}
-
-double EventTPC::GetValByAgetChannel_raw(int cobo_idx, int asad_idx, int aget_idx, int raw_channel_idx, int time_cell/*, bool &result*/) {  // valid range [0-1][0-3][0-3][0-67][0-511]
-  return GetValByStrip(myGeometryPtr->GetStripByAget_raw(cobo_idx, asad_idx, aget_idx, raw_channel_idx), time_cell); //, result);
-}
-
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
 double EventTPC::GetMaxCharge(int strip_dir, int strip_section, int strip_number) { // maximal charge from single strip of a given direction (per section)
   if(!IsOK()) return 0.0;
   switch(strip_dir) {
@@ -318,8 +167,8 @@ double EventTPC::GetMaxCharge(int strip_dir, int strip_section, int strip_number
     MultiKey3 mkey(strip_dir, strip_section, strip_number);
 
     // check if hit is unique
-    std::map<MultiKey3, double, multikey3_less>::iterator it;
-    if( (it=maxChargeMap2.find(mkey))==maxChargeMap2.end() ) {
+    auto it = maxChargeMap2.find(mkey);
+    if(it==maxChargeMap2.end()) {
       return 0.0;
     }
     return it->second;
@@ -336,8 +185,8 @@ double EventTPC::GetMaxCharge(int strip_dir, int strip_number) { // maximal char
     MultiKey2 mkey(strip_dir, strip_number);
 
     // check if hit is unique
-    std::map<MultiKey2, double, multikey2_less>::iterator it;
-    if( (it=maxChargeMap.find(mkey))==maxChargeMap.end() ) {
+    auto it = maxChargeMap.find(mkey);
+    if(it==maxChargeMap.end() ) {
       return 0.0;
     }
     return it->second;
@@ -399,7 +248,7 @@ double EventTPC::GetTotalCharge(int strip_dir, int strip_section, int strip_numb
     MultiKey3 mkey(strip_dir, strip_section, strip_number);
 
     // check if hit is unique
-    std::map<MultiKey3, double, multikey3_less>::iterator it;
+    std::map<MultiKey3, double>::iterator it;
     if( (it=totalChargeMap4.find(mkey))==totalChargeMap4.end() ) {
       return 0.0;
     }
@@ -417,7 +266,7 @@ double EventTPC::GetTotalCharge(int strip_dir, int strip_number) { // charge int
     MultiKey2 mkey(strip_dir, strip_number);
 
     // check if hit is unique
-    std::map<MultiKey2, double, multikey2_less>::iterator it;
+    std::map<MultiKey2, double>::iterator it;
     if( (it=totalChargeMap.find(mkey))==totalChargeMap.end() ) {
       return 0.0;
     }
@@ -452,7 +301,7 @@ double EventTPC::GetTotalChargeByTimeCell(int strip_dir, int strip_section, int 
     MultiKey3 mkey(strip_dir, strip_section, time_cell);
 
     // check if time slice is unique
-    std::map<MultiKey3, double, multikey3_less>::iterator it;
+    std::map<MultiKey3, double>::iterator it;
     if( (it=totalChargeMap5.find(mkey))!=totalChargeMap5.end() ) {
       return it->second;
     }
@@ -471,7 +320,7 @@ double EventTPC::GetTotalChargeByTimeCell(int strip_dir, int time_cell) { // cha
     MultiKey2 mkey(strip_dir, time_cell);
 
     // check if time slice is unique
-    std::map<MultiKey2, double, multikey2_less>::iterator it;
+    std::map<MultiKey2, double>::iterator it;
     if( (it=totalChargeMap2.find(mkey))!=totalChargeMap2.end() ) {
       return it->second;
     }
@@ -495,23 +344,27 @@ void EventTPC::MakeOneCluster(double thr, int delta_strips, int delta_timecells)
   myCluster = SigClusterTPC(this);
 
   // getting cluster seed hits (per section)
-  std::map<MultiKey4, double, multikey4_less>::iterator it;
+  std::map<MultiKey4, double>::iterator it;
 
   if(thr<=0 && delta_strips<=0 && delta_timecells<=0) { // dump the whole event as a single cluster
 
-    for( it=chargeMap2.begin(); it!=chargeMap2.end(); ++it ) {
-      myCluster.AddByStrip( (it->first).key1, (it->first).key2, (it->first).key3, (it->first).key4);
+    for( it=chargeMapWithSections.begin(); it!=chargeMapWithSections.end(); ++it ) {
+      myCluster.AddByStrip( std::get<0>(it->first), std::get<1>(it->first),
+			    std::get<2>(it->first), std::get<3>(it->first));
     }
     
   } else { // find seed hits and envelope around seed hits
     
-    for( it=chargeMap2.begin(); it!=chargeMap2.end(); ++it ) {
-      if( it->second > thr ) myCluster.AddByStrip( (it->first).key1, (it->first).key2, (it->first).key3, (it->first).key4);
+    for( it=chargeMapWithSections.begin(); it!=chargeMapWithSections.end(); ++it ) {
+      if( it->second > thr ) myCluster.AddByStrip( std::get<0>(it->first),
+						   std::get<1>(it->first),
+						   std::get<2>(it->first),
+						   std::get<3>(it->first));
     }
 
     // DEBUG
     /*
-    //  std::cout << ">>>> GetSigCluster: nhits=" << cluster.GetNhits() << ", chargeMap2.size=" << chargeMap2.size() << std::endl;
+    //  std::cout << ">>>> GetSigCluster: nhits=" << cluster.GetNhits() << ", chargeMapWithSections.size=" << chargeMapWithSections.size() << std::endl;
     std::cout << Form(">>>> GetSigCluster: BEFORE ENVELOPE: nhits(%d)/nhits(%d)/nhits(%d)=%ld/%ld/%ld",
     DIR_U, DIR_V, DIR_W,
     myCluster.GetNhits(DIR_U), 
@@ -526,10 +379,10 @@ void EventTPC::MakeOneCluster(double thr, int delta_strips, int delta_timecells)
     // loop thru SEED-hits (per section)
     for( it2=oldList.begin(); it2!=oldList.end() && true; ++it2 ) {
       // unpack coordinates
-      const int strip_dir = (*it2).key1;
-      const int strip_sec = (*it2).key2;
-      const int strip_num = (*it2).key3;
-      const int time_cell = (*it2).key4;
+      const int strip_dir = std::get<0>(*it2);
+      const int strip_sec = std::get<1>(*it2);
+      const int strip_num = std::get<2>(*it2);
+      const int time_cell = std::get<3>(*it2);
       const int strip_range[2] = { MAXIMUM(1, strip_num - delta_strips), 
 				   MINIMUM(myGeometryPtr->GetDirNstrips(strip_dir), strip_num + delta_strips) };
       const int timecell_range[2] = { MAXIMUM(0, time_cell - delta_timecells), 
@@ -538,12 +391,14 @@ void EventTPC::MakeOneCluster(double thr, int delta_strips, int delta_timecells)
 	for(int istrip=strip_range[0]; istrip<=strip_range[1]; istrip++) {
 	  if(icell==time_cell && istrip==strip_num) continue; // exclude existing seed hits
 	  MultiKey4 mkey4(strip_dir, strip_sec, istrip, icell);
-	  if(chargeMap2.find(mkey4)==chargeMap2.end()) continue; // exclude non-existing space-time coordinates
-	  //	  if(chargeMap2.find(mkey4)->second<0) continue; // exclude negative values (due to pedestal subtraction)
+	  if(chargeMapWithSections.find(mkey4)==chargeMapWithSections.end()) continue; // exclude non-existing space-time coordinates
+	  //	  if(chargeMapWithSections.find(mkey4)->second<0) continue; // exclude negative values (due to pedestal subtraction)
 	  // add new space-time point
+	  /* TEST FIXME
 	  if(find_if(oldList.begin(), oldList.end(), mkey4)==oldList.end()) {
 	    myCluster.AddByStrip( strip_dir, strip_sec, istrip, icell );
 	  } 
+	  */
 	} 
       } 
     }
@@ -1268,7 +1123,7 @@ std::vector<TH2D*> EventTPC::Get2D(const SigClusterTPC &cluster, double radius, 
   //  std::cout << Form(">>>> Time cell range = [%d, %d]", time_cell_min, time_cell_max) << std::endl;
   ////////// DEBUG 
 
-  const std::map<MultiKey2, std::vector<int>, multikey2_less> & hitListByTimeDirMerged = cluster.GetHitListByTimeDirMerged();
+  const std::map<MultiKey2, std::vector<int> > & hitListByTimeDirMerged = cluster.GetHitListByTimeDirMerged();
   
   for(int icell=time_cell_min; icell<=time_cell_max; icell++) {
     if((hitListByTimeDirMerged.find(MultiKey2(icell, DIR_U))==hitListByTimeDirMerged.end()) ||
@@ -1289,7 +1144,7 @@ std::vector<TH2D*> EventTPC::Get2D(const SigClusterTPC &cluster, double radius, 
     if(hits[DIR_U].size()==0 || hits[DIR_V].size()==0 || hits[DIR_W].size()==0) continue;
     
     std::map<int, int> n_match[3]; // map of number of matched points for each merged strip, key=STRIP_NUM [1-1024]
-    std::map<MultiKey3, TVector2, multikey3_less> hitPos; // key=(STRIP_NUM_U, STRIP_NUM_V, STRIP_NUM_W), value=(X [mm],Y [mm])
+    std::map<MultiKey3, TVector2> hitPos; // key=(STRIP_NUM_U, STRIP_NUM_V, STRIP_NUM_W), value=(X [mm],Y [mm])
    
     // loop over hits and confirm matching in space
     for(int i0=0; i0<(int)hits[0].size(); i0++) {
@@ -1395,8 +1250,8 @@ std::vector<TH2D*> EventTPC::Get2D(const SigClusterTPC &cluster, double radius, 
 
     // needed for method #2 only:
     // loop over matched hits and update fraction map
-    std::map<MultiKey3, double, multikey3_less> fraction[3]; // for U,V,W local charge projections
-    std::map<MultiKey3, TVector2, multikey3_less>::iterator it1, it2;
+    std::map<MultiKey3, double> fraction[3]; // for U,V,W local charge projections
+    std::map<MultiKey3, TVector2>::iterator it1, it2;
 
     for(it1=hitPos.begin(); it1!=hitPos.end(); it1++) {
 
@@ -1436,7 +1291,7 @@ std::vector<TH2D*> EventTPC::Get2D(const SigClusterTPC &cluster, double radius, 
     // loop over matched hits and fill histograms
     if(h1 && h2 && h3) {
 
-      std::map<MultiKey3, TVector2, multikey3_less>::iterator it;
+      std::map<MultiKey3, TVector2>::iterator it;
       for(it=hitPos.begin(); it!=hitPos.end(); it++) {
 
 	double val = 0.0;
@@ -1577,7 +1432,7 @@ TH3D *EventTPC::Get3D(const SigClusterTPC &cluster, double radius, int rebin_spa
   //std::cout << Form(">>>> Time cell range = [%d, %d]", time_cell_min, time_cell_max) << std::endl;
   ////////// DEBUG 
 
-  const std::map<MultiKey2, std::vector<int>, multikey2_less> & hitListByTimeDirMerged = cluster.GetHitListByTimeDirMerged();
+  const std::map<MultiKey2, std::vector<int> > & hitListByTimeDirMerged = cluster.GetHitListByTimeDirMerged();
   
   for(int icell=time_cell_min; icell<=time_cell_max; icell++) {
     if((hitListByTimeDirMerged.find(MultiKey2(icell, DIR_U))==hitListByTimeDirMerged.end()) ||
@@ -1589,7 +1444,7 @@ TH3D *EventTPC::Get3D(const SigClusterTPC &cluster, double radius, int rebin_spa
       hitListByTimeDirMerged.find(MultiKey2(icell, DIR_V))->second,
       hitListByTimeDirMerged.find(MultiKey2(icell, DIR_W))->second};
     /*
-      const std::map<MultiKey2, std::vector<int>, multikey2_less> & hitListByTimeDir = cluster.GetHitListByTimeDir();
+      const std::map<MultiKey2, std::vector<int> > & hitListByTimeDir = cluster.GetHitListByTimeDir();
       
       for(int icell=time_cell_min; icell<=time_cell_max; icell++) {
       
@@ -1611,7 +1466,7 @@ TH3D *EventTPC::Get3D(const SigClusterTPC &cluster, double radius, int rebin_spa
     if(hits[DIR_U].size()==0 || hits[DIR_V].size()==0 || hits[DIR_W].size()==0) continue;
     
     std::map<int, int> n_match[3]; // map of number of matched points for each strip, key=STRIP_NUM [1-1024]
-    std::map<MultiKey3, TVector2, multikey3_less> hitPos; // key=(STRIP_NUM_U, STRIP_NUM_V, STRIP_NUM_W), value=(X [mm],Y [mm])
+    std::map<MultiKey3, TVector2> hitPos; // key=(STRIP_NUM_U, STRIP_NUM_V, STRIP_NUM_W), value=(X [mm],Y [mm])
 
     // loop over hits and confirm matching in space
     for(int i0=0; i0<(int)hits[0].size(); i0++) {
@@ -1662,8 +1517,8 @@ TH3D *EventTPC::Get3D(const SigClusterTPC &cluster, double radius, int rebin_spa
     if(h==NULL) h = Get3DFrame(rebin_space, rebin_time); 
     // needed for method #2 only:
     // loop over matched hits and update fraction map
-    std::map<MultiKey3, double, multikey3_less> fraction[3]; // for U,V,W local charge projections
-    std::map<MultiKey3, TVector2, multikey3_less>::iterator it1, it2;
+    std::map<MultiKey3, double> fraction[3]; // for U,V,W local charge projections
+    std::map<MultiKey3, TVector2>::iterator it1, it2;
 
     for(it1=hitPos.begin(); it1!=hitPos.end(); it1++) {
 
@@ -1703,7 +1558,7 @@ TH3D *EventTPC::Get3D(const SigClusterTPC &cluster, double radius, int rebin_spa
     // loop over matched hits and fill histograms
     if(h) {
 
-      std::map<MultiKey3, TVector2, multikey3_less>::iterator it;
+      std::map<MultiKey3, TVector2>::iterator it;
       for(it=hitPos.begin(); it!=hitPos.end(); it++) {
 
 	double val = 0.0;

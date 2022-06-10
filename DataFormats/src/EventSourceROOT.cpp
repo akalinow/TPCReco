@@ -219,9 +219,9 @@ void EventSourceROOT::fillEventFromEventRaw(){
   // loop over AGET chips
   for(auto it=myCurrentEventRaw->data.begin(); it!=myCurrentEventRaw->data.end(); it++) {
 
-    const unsigned int COBO_idx = (unsigned int)(it->first).key1;
-    const unsigned int ASAD_idx = (unsigned int)(it->first).key2;
-    const unsigned int AGET_idx = (unsigned int)(it->first).key3;
+    const unsigned int COBO_idx = std::get<0>(it->first);
+    const unsigned int ASAD_idx = std::get<0>(it->first);
+    const unsigned int AGET_idx = std::get<0>(it->first);
 
     // sanity checks
     if(ASAD_idx >= (unsigned int)myGeometryPtr->GetAsadNboards()){
@@ -268,8 +268,9 @@ void EventSourceROOT::fillEventFromEventRaw(){
 		  corrVal -= myPedestalCalculator.GetPedestalCorrection(COBO_idx, ASAD_idx, AGET_idx, CHANNEL_idx, TIMECELL_idx);
 		}
 
-		// add new hit to EventTPC
-		myCurrentEvent->AddValByAgetChannel(COBO_idx, ASAD_idx, AGET_idx, CHANNEL_idx, TIMECELL_idx, corrVal);
+		// add new hit to PEventTPC
+		std::shared_ptr<StripTPC> aStrip(myGeometryPtr->GetStripByAget(COBO_idx, ASAD_idx,  AGET_idx,  CHANNEL_idx));
+		if(aStrip) myCurrentPEvent->AddValByStrip(aStrip, TIMECELL_idx, corrVal);
 		
 		idx2++; // set next cellData index
 	      } // if ((bitmask...

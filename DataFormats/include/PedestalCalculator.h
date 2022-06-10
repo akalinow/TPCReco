@@ -89,7 +89,7 @@ class PedestalCalculator {
   // wrt. average of 4 FPN channels from corresponding AGET chip,
   // where error=spread (rms)
   //  TProfile* prof_pedestal;
-  std::map< MultiKey2, TProfile*, multikey2_less> prof_pedestal_map; // key=[coboId[>=0], asadId[0-3]]
+  std::map< MultiKey2, TProfile*> prof_pedestal_map; // key=[coboId[>=0], asadId[0-3]]
     
 };
 

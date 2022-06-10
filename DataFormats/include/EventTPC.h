@@ -18,6 +18,7 @@
 #include "EventInfo.h"
 #include "GeometryTPC.h"
 #include "SigClusterTPC.h"
+#include "PEventTPC.h"
 
 #define EVENTTPC_DEFAULT_RECO_METHOD 1  // 0 = equal charge division along the strip
                                         // 1 = weighted charge division from complementary strip directions
@@ -28,20 +29,26 @@ class EventTPC {
 
  private:
 
+  void fillAuxMaps();
+  void updateMaxChargeMaps(const PEventTPC::chargeMapType::key_type & key,
+			   double value);
+
   eventraw::EventInfo myEventInfo;
   std::shared_ptr<GeometryTPC> myGeometryPtr;  //! transient data member
   SigClusterTPC myCluster;                     //! transient data member
   
-  std::map<MultiKey3, double, multikey3_less> chargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
-  std::map<MultiKey4, double, multikey4_less> chargeMap2; // key=(STRIP_DIR [0-2], SECTION [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
-  std::map<MultiKey2, double, multikey2_less> maxChargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024])
-  std::map<MultiKey3, double, multikey3_less> maxChargeMap2; // key=(STRIP_DIR [0-2], SECTION [0-2], STRIP_NUM [1-1024])
-  std::map<MultiKey2, double, multikey2_less> totalChargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024])
-  std::map<MultiKey2, double, multikey2_less> totalChargeMap2; // key=(STRIP_DIR [0-2], TIME_CELL [0-511])
+  std::map<MultiKey3, double> chargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
+  std::map<MultiKey4, double> chargeMap2; // key=(STRIP_DIR [0-2], SECTION [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
+
+  PEventTPC::chargeMapType chargeMapWithSections; // key=(STRIP_DIR [0-2], SECTION [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
+  std::map<MultiKey2, double> maxChargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024])
+  std::map<MultiKey3, double> maxChargeMap2; // key=(STRIP_DIR [0-2], SECTION [0-2], STRIP_NUM [1-1024])
+  std::map<MultiKey2, double> totalChargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024])
+  std::map<MultiKey2, double> totalChargeMap2; // key=(STRIP_DIR [0-2], TIME_CELL [0-511])
   std::map<int, double> totalChargeMap3; // key=TIME_CELL [0-511]
-  std::map<MultiKey3, double, multikey3_less> totalChargeMap4; // key=(STRIP_DIR [0-2], SECTION [0-2], STRIP_NUM [1-1024])
-  std::map<MultiKey3, double, multikey3_less> totalChargeMap5; // key=(STRIP_DIR [0-2], SECTION [0-2], TIME_CELL [0-511])
-  std::map<MultiKey2, int, multikey2_less> asadMap; // key=(COBO_id, ASAD_id [0-3])
+  std::map<MultiKey3, double> totalChargeMap4; // key=(STRIP_DIR [0-2], SECTION [0-2], STRIP_NUM [1-1024])
+  std::map<MultiKey3, double> totalChargeMap5; // key=(STRIP_DIR [0-2], SECTION [0-2], TIME_CELL [0-511])
+  std::map<MultiKey2, int> asadMap; // key=(COBO_id, ASAD_id [0-3])
     
   bool initOK;      // is geometry valid?
   int time_rebin;   // how many raw data time bins to merge (default=1, i.e. none)
@@ -62,25 +69,14 @@ class EventTPC {
 
   void Clear();
 
-  void SetChargeMap();
+  void SetChargeMap(const PEventTPC::chargeMapType & aChargeMap);
   void SetGeoPtr(std::shared_ptr<GeometryTPC> aPtr);  
   void SetEventInfo(decltype(myEventInfo)& aEvInfo) {myEventInfo = aEvInfo; };
 
-  bool AddValByStrip(std::shared_ptr<StripTPC> strip, int time_cell, double val);                      // valid range [0-511]
-  bool AddValByStrip(int strip_dir, int strip_section, int strip_number, int time_cell, double val);     // valid range [0-2][0-2][1-1024][0-511]
-  bool AddValByGlobalChannel(int glb_channel_idx, int time_cell, double val);         // valid range [0-1023][0-511]
-  bool AddValByGlobalChannel_raw(int glb_raw_channel_idx, int time_cell, double val); // valid range [0-1023+4*N][0-511]
-  bool AddValByAgetChannel(int cobo_idx, int asad_idx, int aget_idx, int channel_idx, int time_cell, double val); // valid range [0-1][0-3][0-3][0-63][0-511]
-  bool AddValByAgetChannel_raw(int cobo_idx, int asad_idx, int aget_idx, int raw_channel_idx, int time_cell, double val); // valid range [0-1][0-3][0-3][0-67][0-511]
   bool CheckAsadNboards(); // verifies that all AsAd boards are present in this event
     
   double GetValByStrip(std::shared_ptr<StripTPC> strip, int time_cell/*, bool &result*/);                   // valid range [0-511]
-  double GetValByStrip(int strip_dir, int strip_section, int strip_number, int time_cell/*, bool &result*/);  // valid range [0-2][1-1024][0-511]
   double GetValByStripMerged(int strip_dir, int strip_number, int time_cell/*, bool &result*/);  // valid range [0-2][1-1024][0-511] (all sections)
-  double GetValByGlobalChannel(int glb_channel_idx, int time_cell/*, bool &result*/);         // valid range [0-1023][0-511]
-  double GetValByGlobalChannel_raw(int glb_raw_channel_idx, int time_cell/*, bool &result*/); // valid range [0-1023+4*N][0-511]
-  double GetValByAgetChannel(int cobo_idx, int asad_idx, int aget_idx, int channel_idx, int time_cell/*, bool &result*/); // valid range [0-1][0-3][0-3][0-63][0-511]
-  double GetValByAgetChannel_raw(int cobo_idx, int asad_idx, int aget_idx, int raw_channel_idx, int time_cell/*, bool &result*/); // valid range [0-1][0-3][0-3][0-67][0-511]
 
   const decltype(myEventInfo)& GetEventInfo() const { return myEventInfo; };
   inline GeometryTPC * GetGeoPtr() const { return myGeometryPtr.get(); }
