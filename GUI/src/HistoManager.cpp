@@ -32,7 +32,6 @@
 HistoManager::HistoManager() {
 
   myEventPtr = 0;
-  myEventInfo = std::make_shared<eventraw::EventInfo>();
   myRecoOutput.setEventInfo(myEventInfo);
   mydEdxFitter.setPressure(190);
 }
@@ -60,18 +59,20 @@ void HistoManager::setRecoClusterParameters(bool recoClusterEnable, double recoC
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void HistoManager::setEvent(EventTPC* aEvent){
-  if(!aEvent) return;
-  myEventPtr.reset(aEvent);
-  myTkBuilder.setEvent(myEventPtr);
-  myEventInfo->set(myEventPtr);
+
+  setEvent(std::shared_ptr<EventTPC>(aEvent));
+
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void HistoManager::setEvent(std::shared_ptr<EventTPC> aEvent){
   if(!aEvent) return;
   myEventPtr = aEvent;
-  myTkBuilder.setEvent(myEventPtr, this->getRecoClusterThreshold(), this->getRecoClusterDeltaStrips(), this->getRecoClusterDeltaTimeCells());
-  myEventInfo->set(myEventPtr);
+  myEventInfo = aEvent->GetEventInfo();
+  myTkBuilder.setEvent(myEventPtr,
+		       getRecoClusterThreshold(),
+		       getRecoClusterDeltaStrips(),
+		       getRecoClusterDeltaTimeCells());
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -971,8 +972,7 @@ void HistoManager::openOutputStream(const std::string & filePath){
   if(fileName.find("CoBo")==std::string::npos){
     fileName = fileName.replace(0,8,"CoBo_ALL_AsAd_ALL");
   }
-  RunIdParser runParser(fileName);
-  myEventInfo->SetRunId(runParser.runId());
+  myRunParser.reset(new RunIdParser(fileName));
   /*
   std::string fluxFileName = "Flux_"+filePath.substr(last_slash_position+1,
 						     last_dot_position-last_slash_position-1)+".root";
@@ -984,8 +984,9 @@ void HistoManager::openOutputStream(const std::string & filePath){
 /////////////////////////////////////////////////////////
 void HistoManager::writeRecoData(unsigned long eventType){
 
+  myEventInfo.SetEventType(eventType);				   
+  myEventInfo.SetRunId(myRunParser->runId());
   myRecoOutput.setRecTrack(myTkBuilder.getTrack3D(0));
-  myEventInfo->SetEventType(eventType);				   
   myRecoOutput.setEventInfo(myEventInfo);				   
   myRecoOutput.update();  
 }
@@ -1003,8 +1004,8 @@ void HistoManager::updateEventRateGraph(){
     grEventRate->GetYaxis()->SetTitleOffset(1.5);
     grEventRate->GetXaxis()->SetNdivisions(5);
   }
-  Long64_t currentEventTime = myEventPtr->GetEventTime()*1E-8;//[s]
-  Long64_t currentEventNumber = myEventPtr->GetEventId();  
+  Long64_t currentEventTime = myEventPtr->GetEventInfo().GetEventTimestamp()*1E-8;//[s]
+  Long64_t currentEventNumber = myEventPtr->GetEventInfo().GetEventId();  
   if(previousEventTime<0 || previousEventNumber>currentEventNumber){
     previousEventTime = currentEventTime;
     previousEventNumber = currentEventNumber;

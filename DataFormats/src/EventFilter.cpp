@@ -6,7 +6,7 @@ bool EventFilter::pass(const EventTPC &event) const {
     return true;
   }
 
-  if (!indices.empty() && ( indices.find(event.GetEventId()) == indices.end() ) ) {
+  if (!indices.empty() && ( indices.find(event.GetEventInfo().GetEventId()) == indices.end() ) ) {
     return false;
   }
   if(event.GetTotalCharge()<conditions.get("totalChargeLowerBound",-std::numeric_limits<double>::max())){

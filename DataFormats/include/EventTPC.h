@@ -15,6 +15,7 @@
 #include "TH2D.h"
 #include "TH3F.h"
 
+#include "EventInfo.h"
 #include "GeometryTPC.h"
 #include "SigClusterTPC.h"
 
@@ -24,10 +25,10 @@
 #define EVENTTPC_DEFAULT_TIME_REBIN  5  // number of time cells to rebin [1-512]
 
 class EventTPC {
-  //  friend class SigClusterTPC;
+
  private:
-  Long64_t event_id, //event_number,
-    run_id, event_time;
+
+  eventraw::EventInfo myEventInfo;
   std::shared_ptr<GeometryTPC> myGeometryPtr;  //! transient data member
   SigClusterTPC myCluster;                     //! transient data member
   
@@ -54,8 +55,6 @@ class EventTPC {
   double tot_charge[3];       // integral per strip direction
   double glb_tot_charge;      // integral per event
 
-  bool isPedestalSubtracted{false}; // flag useful for reco/clustering 
-
  public:
   EventTPC();
 
@@ -64,13 +63,9 @@ class EventTPC {
   void Clear();
 
   void SetChargeMap();
-  void SetGeoPtr(std::shared_ptr<GeometryTPC> aPtr);
-  void SetEventId(Long64_t aId) { event_id = aId; };
-  //  void SetEventNumber(Long64_t aNumber) { event_number = aNumber; };
-  void SetEventTime(Long64_t aTime) { event_time = aTime; };
-  void SetRunId(Long64_t aId) { run_id =  aId; };
-  // helper methods for inserting data points
-  // they return TRUE on success and FALSE on error
+  void SetGeoPtr(std::shared_ptr<GeometryTPC> aPtr);  
+  void SetEventInfo(decltype(myEventInfo)& aEvInfo) {myEventInfo = aEvInfo; };
+
   bool AddValByStrip(std::shared_ptr<StripTPC> strip, int time_cell, double val);                      // valid range [0-511]
   bool AddValByStrip(int strip_dir, int strip_section, int strip_number, int time_cell, double val);     // valid range [0-2][0-2][1-1024][0-511]
   bool AddValByGlobalChannel(int glb_channel_idx, int time_cell, double val);         // valid range [0-1023][0-511]
@@ -79,8 +74,6 @@ class EventTPC {
   bool AddValByAgetChannel_raw(int cobo_idx, int asad_idx, int aget_idx, int raw_channel_idx, int time_cell, double val); // valid range [0-1][0-3][0-3][0-67][0-511]
   bool CheckAsadNboards(); // verifies that all AsAd boards are present in this event
     
-  // helper methods for extracting data points
-  // they return 0.0 for non-existing data points
   double GetValByStrip(std::shared_ptr<StripTPC> strip, int time_cell/*, bool &result*/);                   // valid range [0-511]
   double GetValByStrip(int strip_dir, int strip_section, int strip_number, int time_cell/*, bool &result*/);  // valid range [0-2][1-1024][0-511]
   double GetValByStripMerged(int strip_dir, int strip_number, int time_cell/*, bool &result*/);  // valid range [0-2][1-1024][0-511] (all sections)
@@ -89,14 +82,10 @@ class EventTPC {
   double GetValByAgetChannel(int cobo_idx, int asad_idx, int aget_idx, int channel_idx, int time_cell/*, bool &result*/); // valid range [0-1][0-3][0-3][0-63][0-511]
   double GetValByAgetChannel_raw(int cobo_idx, int asad_idx, int aget_idx, int raw_channel_idx, int time_cell/*, bool &result*/); // valid range [0-1][0-3][0-3][0-67][0-511]
 
+  const decltype(myEventInfo)& GetEventInfo() const { return myEventInfo; };
   inline GeometryTPC * GetGeoPtr() const { return myGeometryPtr.get(); }
-  inline Long64_t GetEventId() const { return event_id; }
-  inline Long64_t GetEventTime() const { return event_time; }
-  //  inline Long64_t GetEventNumber() const { return event_number; }
-  inline Long64_t GetRunId() const { return run_id; }
   inline bool IsOK() const { return initOK; }
   inline int GetTimeRebin() const { return time_rebin; }       
-  bool SetTimeRebin(int rebin); // HAS NO EFFECT YET !!!!
 
   double GetMaxCharge() const;             // maximal charge from all strips
   double GetMaxCharge(int strip_dir);      // maximal charge from strips of a given direction
@@ -116,8 +105,6 @@ class EventTPC {
 
   void MakeOneCluster(double thr=-1, int delta_strips=5, int delta_timecells=25); // applies clustering threshold to all space-time data points 
   const SigClusterTPC & GetOneCluster() const;
-  inline bool GetPedestalSubstracted() const {return isPedestalSubtracted;}
-  inline void SetPedestalSubstracted(bool isPedestalSubtracted){this->isPedestalSubtracted=isPedestalSubtracted;}
   
   std::shared_ptr<TH1D> GetStripProjection(const SigClusterTPC &cluster, int strip_dir);    // clustered hits only, valid dir range [0-2]
   TH1D *GetTimeProjection(const SigClusterTPC &cluster, int strip_dir);     // clustered hits only, valid dir range [0-2]

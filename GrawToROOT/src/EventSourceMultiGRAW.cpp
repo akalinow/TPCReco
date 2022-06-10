@@ -48,7 +48,7 @@ std::shared_ptr<EventTPC> EventSourceMultiGRAW::getNextEvent(){
 
   myDataFrame.Clear();
 
-  unsigned long int currentEventId = myCurrentEvent->GetEventId();
+  auto currentEventId = myCurrentEvent->GetEventInfo().GetEventId();
   for( unsigned int streamIndex=0; streamIndex<myFramesMapList.size(); streamIndex++ ) {
     auto it = myFramesMapList[streamIndex].find(currentEventId);
     auto it2 = myAsadMapList[streamIndex].find(currentEventId);
@@ -71,7 +71,7 @@ std::shared_ptr<EventTPC> EventSourceMultiGRAW::getNextEvent(){
 /////////////////////////////////////////////////////////
 std::shared_ptr<EventTPC> EventSourceMultiGRAW::getPreviousEvent(){
 
-  unsigned int currentEventId = myCurrentEvent->GetEventId();
+  auto currentEventId = myCurrentEvent->GetEventInfo().GetEventId();  
   for( unsigned int streamIndex=0; streamIndex<myFramesMapList.size() ; streamIndex++ ) {
     auto it = myFramesMapList[streamIndex].find(currentEventId);
     auto it2 = myAsadMapList[streamIndex].find(currentEventId);
@@ -531,7 +531,6 @@ void EventSourceMultiGRAW::collectEventFragments(unsigned int eventId){
       {	
 	if(nFragments==0) {
 	  myCurrentEventRaw->SetEventId(eventId);
-	  myCurrentEvent->SetEventId(eventId); // for compatibility with EventSourceBase::currentEventNumber()
 	  std::cout<<KYEL<<"Creating a new EventRaw with event id: "<<eventId<<RST<<std::endl;
 	}
 	auto aFragment = it->second;
@@ -569,7 +568,6 @@ void EventSourceMultiGRAW::collectEventFragments(unsigned int eventId){
 	  myCurrentPEvent->Clear();
 	  
 	  myCurrentEvent->Clear();
-	  myCurrentEvent->SetEventId(eventId);
 	  myCurrentEvent->SetGeoPtr(myGeometryPtr);
 	
 	  std::cout<<KYEL<<"Creating a new EventTPC with event id: "<<eventId<<RST<<std::endl;
@@ -577,7 +575,6 @@ void EventSourceMultiGRAW::collectEventFragments(unsigned int eventId){
 	auto aFragment = it->second;
 	loadGrawFrame(aFragment, true, streamIndex); // HOTFIX => fills myDataFrame
 	
-	myCurrentEvent->SetEventTime(myDataFrame.fHeader.fEventTime); // HOTFIX !!!
 	myCurrentEventInfo.SetEventId(eventId);      
 	myCurrentEventInfo.SetEventTimestamp(myDataFrame.fHeader.fEventTime);
 	int ASAD_idx = myDataFrame.fHeader.fAsadIdx; // HOTFIX !!!

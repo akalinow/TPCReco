@@ -209,12 +209,11 @@ void EventSourceROOT::fillEventFromEventRaw(){
 
 #ifdef DEBUG
   std::cout << __FUNCTION__
-	    << ": eventId=" << myCurrentEventRaw->GetEventId()
-	    << ", time=" << myCurrentEventRaw->GetEventTimestamp() << std::endl;
+	    << myCurrentEventRaw << std::endl;
 #endif
-  
-  myCurrentEvent->SetEventId(myCurrentEventRaw->GetEventId());
-  myCurrentEvent->SetEventTime(myCurrentEventRaw->GetEventTimestamp());
+
+  myCurrentEventRaw.get()->SetPedestalSubtracted(removePedestal);
+  myCurrentEvent->SetEventInfo(*myCurrentEventRaw.get());
   myCurrentEvent->SetGeoPtr(myGeometryPtr);
   
   // loop over AGET chips
@@ -281,22 +280,8 @@ void EventSourceROOT::fillEventFromEventRaw(){
 	} // if ((bitmask...
 	CHANNEL_idx++; // set next channel NUMBER
       } // scan of CHANNEL mask bits
-    } // scan of CHANNEL mask bytes
-
-    /*
-#ifdef DEBUG
-    ////// DEBUG
-    std::shared_ptr<TProfile> tp=myPedestalCalculator.GetPedestalProfilePerAsad(COBO_idx, ASAD_idx);
-    std::cout << __FUNCTION__ << ": TProfile[Cobo=" << COBO_idx
-	      << ", Asad=" << ASAD_idx
-	      << "]=" << tp->GetName()
-	      << std::endl << std::flush;
-    ////// DEBUG
-#endif
-    */  
-    
+    } // scan of CHANNEL mask bytes   
   } // loop over AGET chips
-
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

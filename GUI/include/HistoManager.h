@@ -24,6 +24,7 @@ class TH3D;
 
 class GeometryTPC;
 class EventTPC;
+class RunIdParser;
 
 class HistoManager {
 
@@ -162,8 +163,9 @@ public:
   DotFinder myDotFinder;
   dEdxFitter mydEdxFitter;
 
+  std::shared_ptr<RunIdParser> myRunParser; 
   std::shared_ptr<EventTPC> myEventPtr;
-  std::shared_ptr<eventraw::EventInfo> myEventInfo;
+  eventraw::EventInfo myEventInfo;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
 
   TH2F *hDetLayout{0};        // dummy histogram with optimal XY ranges

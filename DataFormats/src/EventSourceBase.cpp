@@ -77,7 +77,7 @@ unsigned long int EventSourceBase::numberOfEntries() const{ return nEntries; }
 unsigned long int EventSourceBase::currentEventNumber() const{
 
   if(getCurrentEvent()){
-    return getCurrentEvent()->GetEventId();
+    return getCurrentEvent()->GetEventInfo().GetEventId();
   }
   return -1;
 }
@@ -92,10 +92,11 @@ std::string EventSourceBase::getCurrentPath() const{
 std::shared_ptr<EventTPC> EventSourceBase::getNextEventLoop(){
   unsigned int currentEventIdx;
   do{
-    currentEventIdx=getCurrentEvent()->GetEventId();
+    currentEventIdx=getCurrentEvent()->GetEventInfo().GetEventId();
     getNextEvent();
   }
-  while(!eventFilter.pass(*getCurrentEvent()) && currentEventIdx!=getCurrentEvent()->GetEventId());
+  while(!eventFilter.pass(*getCurrentEvent()) &&
+	currentEventIdx!=getCurrentEvent()->GetEventInfo().GetEventId());
   return getCurrentEvent();
 }
 /////////////////////////////////////////////////////////
@@ -103,10 +104,11 @@ std::shared_ptr<EventTPC> EventSourceBase::getNextEventLoop(){
 std::shared_ptr<EventTPC> EventSourceBase::getPreviousEventLoop(){
   unsigned int currentEventIdx;
   do{
-    currentEventIdx=getCurrentEvent()->GetEventId();
+    currentEventIdx=getCurrentEvent()->GetEventInfo().GetEventId();
     getPreviousEvent();
   }
-  while(!eventFilter.pass(*getCurrentEvent()) && currentEventIdx!=getCurrentEvent()->GetEventId());
+  while(!eventFilter.pass(*getCurrentEvent()) &&
+	currentEventIdx!=getCurrentEvent()->GetEventInfo().GetEventId());
   return getCurrentEvent();
 }
 /////////////////////////////////////////////////////////

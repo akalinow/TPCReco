@@ -27,11 +27,6 @@ void EventTPC::Clear(){
   SetGeoPtr(0);
   initOK = false;
 
-  SetPedestalSubstracted(false);
-  event_id = -1;
-  run_id = -1;
-
-  time_rebin = 1;
   glb_max_charge = 0.0;
   glb_max_charge_timing = -1;
   glb_max_charge_channel = -1;
@@ -60,12 +55,6 @@ void EventTPC::SetGeoPtr(std::shared_ptr<GeometryTPC> aPtr) {
   myGeometryPtr = aPtr;
   if(myGeometryPtr && myGeometryPtr->IsOK()) initOK=true;
   }
-
-bool EventTPC::SetTimeRebin(int rebin) {
-  if(rebin<1) return false;
-  time_rebin=rebin;
-  return true;
-}
 
 bool EventTPC::AddValByStrip(int strip_dir, int strip_section, int strip_number, int time_cell, double val) {  // valid range [0-2][0-2][1-1024][0-511]
   if(!IsOK() || time_cell<0 || time_cell>=myGeometryPtr->GetAgetNtimecells() ||
@@ -577,14 +566,16 @@ const SigClusterTPC & EventTPC::GetOneCluster() const {
 
 std::shared_ptr<TH1D> EventTPC::GetStripProjection(const SigClusterTPC &cluster, int strip_dir) {  // valid range [0-2]
   auto h=std::shared_ptr<TH1D>();
+  auto event_id = myEventInfo.GetEventId();
+  
   if(!IsOK() || !cluster.IsOK()) return h;
   switch(strip_dir) {
   case DIR_U:
   case DIR_V:
   case DIR_W: {
     if(cluster.GetNhits(strip_dir)<1) break;
-    h =std::shared_ptr<TH1D>(new TH1D( Form("hclust_%spro_evt%lld", myGeometryPtr->GetDirName(strip_dir), event_id),
-				       Form("Event-%lld: Clustered hits from %s strips integrated over time;%s strip no.;Charge/strip [arb.u.]", 
+    h =std::shared_ptr<TH1D>(new TH1D( Form("hclust_%spro_evt%d", myGeometryPtr->GetDirName(strip_dir), event_id),
+				       Form("Event-%d: Clustered hits from %s strips integrated over time;%s strip no.;Charge/strip [arb.u.]", 
 					    event_id, myGeometryPtr->GetDirName(strip_dir), myGeometryPtr->GetDirName(strip_dir)),
 				       myGeometryPtr->GetDirNstrips(strip_dir),
 				       1.0 - 0.5,
@@ -606,13 +597,14 @@ std::shared_ptr<TH1D> EventTPC::GetStripProjection(const SigClusterTPC &cluster,
 
 TH1D *EventTPC::GetStripProjection(int strip_dir) {  // whole event, valid range [0-2]
   TH1D *h = NULL;
+  auto event_id = myEventInfo.GetEventId();
   if(!IsOK()) return h;
   switch(strip_dir) {
   case DIR_U:
   case DIR_V:
   case DIR_W: {
-    h = new TH1D( Form("hraw_%spro_evt%lld", myGeometryPtr->GetDirName(strip_dir), event_id), 
-                  Form("Event-%lld: Raw signals from %s strips integrated over time;%s strip no.;Charge/strip [arb.u.]", 
+    h = new TH1D( Form("hraw_%spro_evt%d", myGeometryPtr->GetDirName(strip_dir), event_id), 
+                  Form("Event-%d: Raw signals from %s strips integrated over time;%s strip no.;Charge/strip [arb.u.]", 
                        event_id, myGeometryPtr->GetDirName(strip_dir), myGeometryPtr->GetDirName(strip_dir)),
                   myGeometryPtr->GetDirNstrips(strip_dir),
                   1.0 - 0.5,
@@ -637,7 +629,7 @@ std::shared_ptr<TH1D> EventTPC::GetStripProjectionInMM(const SigClusterTPC &clus
 
   if(!IsOK()) return std::shared_ptr<TH1D>();
   bool err_flag;
-
+  auto event_id = myEventInfo.GetEventId();
   // - loop over all sections in a given family of strips
   // - check both ends of the first and the last strip in a given section
   double minStripInMM=1E30;
@@ -667,8 +659,8 @@ std::shared_ptr<TH1D> EventTPC::GetStripProjectionInMM(const SigClusterTPC &clus
     
   } // end of loop
   */
-  std::shared_ptr<TH1D> result(new TH1D( Form("hclust_%spro_mm_evt%lld", myGeometryPtr->GetDirName(strip_dir), event_id),
-					 Form("Event-%lld: Clustered hits from %s strips integrated over time;%s strip direction [mm];Charge/bin [arb.u.]",
+  std::shared_ptr<TH1D> result(new TH1D( Form("hclust_%spro_mm_evt%d", myGeometryPtr->GetDirName(strip_dir), event_id),
+					 Form("Event-%d: Clustered hits from %s strips integrated over time;%s strip direction [mm];Charge/bin [arb.u.]",
 					 event_id, myGeometryPtr->GetDirName(strip_dir), myGeometryPtr->GetDirName(strip_dir)),
 					 myGeometryPtr->GetDirNStripsMerged(strip_dir), minStripInMM, maxStripInMM));
 
@@ -692,6 +684,7 @@ std::shared_ptr<TH1D> EventTPC::GetStripProjectionInMM(int strip_dir) {  // vali
   if(!IsOK()) return std::shared_ptr<TH1D>();
   auto minStripNum=myGeometryPtr->GetDirMinStripMerged(strip_dir);
   auto maxStripNum=myGeometryPtr->GetDirMaxStripMerged(strip_dir);
+  auto event_id = myEventInfo.GetEventId();
   bool err_flag;
 
   // - loop over all sections in a given family of strips
@@ -723,8 +716,8 @@ std::shared_ptr<TH1D> EventTPC::GetStripProjectionInMM(int strip_dir) {  // vali
     
   } // end of loop
   */
-  std::shared_ptr<TH1D> result(new TH1D( Form("hraw_%spro_mm_evt%lld", myGeometryPtr->GetDirName(strip_dir), event_id),
-					 Form("Event-%lld: Raw signals from %s strips integrated over time;%s strip direction [mm];Charge/bin [arb.u.]",
+  std::shared_ptr<TH1D> result(new TH1D( Form("hraw_%spro_mm_evt%d", myGeometryPtr->GetDirName(strip_dir), event_id),
+					 Form("Event-%d: Raw signals from %s strips integrated over time;%s strip direction [mm];Charge/bin [arb.u.]",
 					 event_id, myGeometryPtr->GetDirName(strip_dir), myGeometryPtr->GetDirName(strip_dir)),
 					 myGeometryPtr->GetDirNStripsMerged(strip_dir), minStripInMM, maxStripInMM));
 
@@ -745,13 +738,14 @@ std::shared_ptr<TH1D> EventTPC::GetStripProjectionInMM(int strip_dir) {  // vali
 TH1D *EventTPC::GetTimeProjection(const SigClusterTPC &cluster, int strip_dir) {  // valid range [0-2]
   TH1D *h = NULL;
   if(!IsOK() || !cluster.IsOK()) return h;
+  auto event_id = myEventInfo.GetEventId();
   switch(strip_dir) {
   case DIR_U:
   case DIR_V:
   case DIR_W: {
     if(cluster.GetNhits(strip_dir)<1) break;
-    h = new TH1D( Form("hclust_%stime_evt%lld", myGeometryPtr->GetDirName(strip_dir), event_id),
-		  Form("Event-%lld: Clustered hits from %s strips;Time bin [arb.u.];Charge/bin [arb.u.]", 
+    h = new TH1D( Form("hclust_%stime_evt%d", myGeometryPtr->GetDirName(strip_dir), event_id),
+		  Form("Event-%d: Clustered hits from %s strips;Time bin [arb.u.];Charge/bin [arb.u.]", 
 		       event_id, myGeometryPtr->GetDirName(strip_dir)),
 		  myGeometryPtr->GetAgetNtimecells(),
 		  0.0-0.5, 
@@ -774,9 +768,10 @@ TH1D *EventTPC::GetTimeProjection(const SigClusterTPC &cluster, int strip_dir) {
 
 TH1D *EventTPC::GetTimeProjection(const SigClusterTPC &cluster) {  // all strips
   TH1D *h = NULL;
+  auto event_id = myEventInfo.GetEventId();
   if(!IsOK() || !cluster.IsOK() || cluster.GetNhits()==0 ) return h;
-  h = new TH1D( Form("hclust_time_evt%lld", event_id),
-	        Form("Event-%lld: Clustered hits from all strips;Time bin [arb.u.];Charge/bin [arb.u.]", event_id), 
+  h = new TH1D( Form("hclust_time_evt%d", event_id),
+	        Form("Event-%d: Clustered hits from all strips;Time bin [arb.u.];Charge/bin [arb.u.]", event_id), 
 		myGeometryPtr->GetAgetNtimecells(),
 		0.0-0.5, 
 		1.*myGeometryPtr->GetAgetNtimecells()-0.5 ); // ends at 511.5 (cells numbered from 0 to 511)
@@ -800,12 +795,13 @@ TH1D *EventTPC::GetTimeProjection(const SigClusterTPC &cluster) {  // all strips
 TH1D *EventTPC::GetTimeProjection(int strip_dir) {  // whole event, valid range [0-2]
   TH1D *h = nullptr;
   if(!IsOK()) return h;
+  auto event_id = myEventInfo.GetEventId();
   switch(strip_dir) {
   case DIR_U:
   case DIR_V:
   case DIR_W: {
-    h = new TH1D( Form("hraw_%stime_evt%lld", myGeometryPtr->GetDirName(strip_dir), event_id), 
-                  Form("Event-%lld: Raw signals from %s strips;Time bin [arb.u.];Charge/bin [arb.u.]", 
+    h = new TH1D( Form("hraw_%stime_evt%d", myGeometryPtr->GetDirName(strip_dir), event_id), 
+                  Form("Event-%d: Raw signals from %s strips;Time bin [arb.u.];Charge/bin [arb.u.]", 
                        event_id, myGeometryPtr->GetDirName(strip_dir)),
                   myGeometryPtr->GetAgetNtimecells(),
                   1.0 - 0.5,
@@ -828,9 +824,10 @@ TH1D *EventTPC::GetTimeProjection(int strip_dir) {  // whole event, valid range 
 
 TH1D *EventTPC::GetTimeProjection() {  // whole event, all strips
   TH1D *h = NULL;
+  auto event_id = myEventInfo.GetEventId();
   if(!IsOK()) return h;
-  h = new TH1D( Form("hraw_time_evt%lld", event_id),
-	        Form("Event-%lld: Raw signals from all strips;Time bin [arb.u.];Charge/bin [arb.u.]", event_id), 
+  h = new TH1D( Form("hraw_time_evt%d", event_id),
+	        Form("Event-%d: Raw signals from all strips;Time bin [arb.u.];Charge/bin [arb.u.]", event_id), 
 		myGeometryPtr->GetAgetNtimecells(),
 		0.0-0.5, 
 		1.*myGeometryPtr->GetAgetNtimecells()-0.5 ); // ends at 511.5 (cells numbered from 0 to 511)
@@ -861,9 +858,9 @@ std::shared_ptr<TH1D> EventTPC::GetTimeProjectionInMM(const SigClusterTPC &clust
   double zmax=myGeometryPtr->GetAgetNtimecells()-0.5; // time_cell_max;  
   double minTimeInMM = myGeometryPtr->Timecell2pos(zmin, err_flag);
   double maxTimeInMM = myGeometryPtr->Timecell2pos(zmax, err_flag);
-  
-  std::shared_ptr<TH1D> result(new TH1D( Form("hclust_%stime_mm_evt%lld", myGeometryPtr->GetDirName(strip_dir), event_id),
-					 Form("Event-%lld: Clustered hits from %s strips;Drift direction [mm];Charge/bin [arb.u.]",
+  auto event_id = myEventInfo.GetEventId();
+  std::shared_ptr<TH1D> result(new TH1D( Form("hclust_%stime_mm_evt%d", myGeometryPtr->GetDirName(strip_dir), event_id),
+					 Form("Event-%d: Clustered hits from %s strips;Drift direction [mm];Charge/bin [arb.u.]",
 					      event_id, myGeometryPtr->GetDirName(strip_dir)),
 					 myGeometryPtr->GetAgetNtimecells(), minTimeInMM, maxTimeInMM));
   
@@ -890,9 +887,9 @@ std::shared_ptr<TH1D> EventTPC::GetTimeProjectionInMM(const SigClusterTPC &clust
   double zmax=myGeometryPtr->GetAgetNtimecells()-0.5; // time_cell_max;  
   double minTimeInMM = myGeometryPtr->Timecell2pos(zmin, err_flag);
   double maxTimeInMM = myGeometryPtr->Timecell2pos(zmax, err_flag);
-
-  std::shared_ptr<TH1D> result(new TH1D( Form("hclust_time_mm_evt%lld", event_id),
-					 Form("Event-%lld: Clustered hits from all strips;Drift direction [mm];Charge/bin [arb.u.]",
+  auto event_id = myEventInfo.GetEventId();
+  std::shared_ptr<TH1D> result(new TH1D( Form("hclust_time_mm_evt%d", event_id),
+					 Form("Event-%d: Clustered hits from all strips;Drift direction [mm];Charge/bin [arb.u.]",
 					 event_id),
 					 myGeometryPtr->GetAgetNtimecells(), minTimeInMM, maxTimeInMM));
 
@@ -923,9 +920,9 @@ std::shared_ptr<TH1D> EventTPC::GetTimeProjectionInMM(int strip_dir) {  // whole
   double zmax=myGeometryPtr->GetAgetNtimecells()-0.5; // time_cell_max;  
   double minTimeInMM = myGeometryPtr->Timecell2pos(zmin, err_flag);
   double maxTimeInMM = myGeometryPtr->Timecell2pos(zmax, err_flag);
-
-  std::shared_ptr<TH1D> result(new TH1D( Form("hraw_%stime_mm_evt%lld", myGeometryPtr->GetDirName(strip_dir), event_id),
-					 Form("Event-%lld: Raw signals from %s strips;Drift direction [mm];Charge/bin [arb.u.]",
+  auto event_id = myEventInfo.GetEventId();
+  std::shared_ptr<TH1D> result(new TH1D( Form("hraw_%stime_mm_evt%d", myGeometryPtr->GetDirName(strip_dir), event_id),
+					 Form("Event-%d: Raw signals from %s strips;Drift direction [mm];Charge/bin [arb.u.]",
 					 event_id, myGeometryPtr->GetDirName(strip_dir)),
 					 myGeometryPtr->GetAgetNtimecells(), minTimeInMM, maxTimeInMM));
 
@@ -951,9 +948,9 @@ std::shared_ptr<TH1D> EventTPC::GetTimeProjectionInMM() {  // whole event, all s
   double zmax=myGeometryPtr->GetAgetNtimecells()-0.5; // time_cell_max;  
   double minTimeInMM = myGeometryPtr->Timecell2pos(zmin, err_flag);
   double maxTimeInMM = myGeometryPtr->Timecell2pos(zmax, err_flag);
-
-  std::shared_ptr<TH1D> result(new TH1D( Form("hraw_time_mm_evt%lld", event_id),
-					 Form("Event-%lld: Raw signals from all strips;Drift direction [mm];Charge/bin [arb.u.]",
+  auto event_id = myEventInfo.GetEventId();
+  std::shared_ptr<TH1D> result(new TH1D( Form("hraw_time_mm_evt%d", event_id),
+					 Form("Event-%d: Raw signals from all strips;Drift direction [mm];Charge/bin [arb.u.]",
 					 event_id),
 					 myGeometryPtr->GetAgetNtimecells(), minTimeInMM, maxTimeInMM));
 
@@ -978,8 +975,9 @@ std::shared_ptr<TH1D> EventTPC::GetTimeProjectionInMM() {  // whole event, all s
 std::shared_ptr<TH2D> EventTPC::GetStripVsTime(const SigClusterTPC &cluster, int strip_dir){  
 
   if(!IsOK() || !cluster.IsOK()) return 0;
-  std::shared_ptr<TH2D>result(new TH2D( Form("hclust_%s_vs_time_evt%lld", myGeometryPtr->GetDirName(strip_dir), event_id),
-					Form("Event-%lld: Clustered hits from %s strips;Time bin [arb.u.];%s strip no.;Charge/bin [arb.u.]",
+  auto event_id = myEventInfo.GetEventId();
+  std::shared_ptr<TH2D>result(new TH2D( Form("hclust_%s_vs_time_evt%d", myGeometryPtr->GetDirName(strip_dir), event_id),
+					Form("Event-%d: Clustered hits from %s strips;Time bin [arb.u.];%s strip no.;Charge/bin [arb.u.]",
 					     event_id, myGeometryPtr->GetDirName(strip_dir), myGeometryPtr->GetDirName(strip_dir)),
 					myGeometryPtr->GetAgetNtimecells(),
 					0.0-0.5, 
@@ -1003,8 +1001,9 @@ std::shared_ptr<TH2D> EventTPC::GetStripVsTime(int strip_dir){  // valid range [
   if(!IsOK()) return std::shared_ptr<TH2D>();
   auto minStripNum=myGeometryPtr->GetDirMinStripMerged(strip_dir);
   auto maxStripNum=myGeometryPtr->GetDirMaxStripMerged(strip_dir);
-  std::shared_ptr<TH2D> result(new TH2D( Form("hraw_%s_vs_time_evt%lld", myGeometryPtr->GetDirName(strip_dir), event_id),
-					 Form("Event-%lld: Raw signals from %s strips;Time bin [arb.u.];%s strip no.;Charge/bin [arb.u.]",
+  auto event_id = myEventInfo.GetEventId();
+  std::shared_ptr<TH2D> result(new TH2D( Form("hraw_%s_vs_time_evt%d", myGeometryPtr->GetDirName(strip_dir), event_id),
+					 Form("Event-%d: Raw signals from %s strips;Time bin [arb.u.];%s strip no.;Charge/bin [arb.u.]",
 					      event_id, myGeometryPtr->GetDirName(strip_dir), myGeometryPtr->GetDirName(strip_dir)),
 					 myGeometryPtr->GetAgetNtimecells(),
 					 0.0-0.5, 
@@ -1035,8 +1034,9 @@ std::shared_ptr<TH2D> EventTPC::GetChannels(int cobo_idx, int asad_idx){ // vali
      //////// DEBUG  
     return std::shared_ptr<TH2D>();
   }
-  std::shared_ptr<TH2D> result(new TH2D( Form("hraw_cobo%i_asad%i_signal_evt%lld", cobo_idx, asad_idx,event_id),
-					 Form("Event-%lld: Raw signals from CoBo %i AsAd %i;Time bin [arb.u.];Global AsAd channel no.;Charge/bin [arb.u.]",
+  auto event_id = myEventInfo.GetEventId();
+  std::shared_ptr<TH2D> result(new TH2D( Form("hraw_cobo%i_asad%i_signal_evt%d", cobo_idx, asad_idx,event_id),
+					 Form("Event-%d: Raw signals from CoBo %i AsAd %i;Time bin [arb.u.];Global AsAd channel no.;Charge/bin [arb.u.]",
 					      event_id, cobo_idx, asad_idx),
 					 myGeometryPtr->GetAgetNtimecells(),
 					 0.0-0.5, 
@@ -1060,8 +1060,9 @@ std::shared_ptr<TH2D> EventTPC::GetChannels(int cobo_idx, int asad_idx){ // vali
 std::shared_ptr<TH2D> EventTPC::GetChannels_raw(int cobo_idx, int asad_idx){ // valid range [0-1][0-3]
   if(!IsOK() || myGeometryPtr->GetAsadNboards(cobo_idx)==0 ||
      asad_idx<0 || asad_idx>=myGeometryPtr->GetAsadNboards(cobo_idx)) {return std::shared_ptr<TH2D>();}
-  std::shared_ptr<TH2D> result(new TH2D( Form("hraw_cobo%i_asad%i_signal_fpn_evt%lld", cobo_idx, asad_idx,event_id),
-					 Form("Event-%lld: Raw signals from Cobo %i Asad %i;Time bin [arb.u.];Global raw channel no.;Charge/bin [arb.u.]",
+  auto event_id = myEventInfo.GetEventId();
+  std::shared_ptr<TH2D> result(new TH2D( Form("hraw_cobo%i_asad%i_signal_fpn_evt%d", cobo_idx, asad_idx,event_id),
+					 Form("Event-%d: Raw signals from Cobo %i Asad %i;Time bin [arb.u.];Global raw channel no.;Charge/bin [arb.u.]",
 					      event_id, cobo_idx, asad_idx),
 					 myGeometryPtr->GetAgetNtimecells(),
 					 0.0-0.5, 
@@ -1090,7 +1091,7 @@ std::shared_ptr<TH2D> EventTPC::GetStripVsTimeInMM(const SigClusterTPC &cluster,
   double zmax=myGeometryPtr->GetAgetNtimecells()-0.5; // time_cell_max;  
   double minTimeInMM = myGeometryPtr->Timecell2pos(zmin, err_flag);
   double maxTimeInMM = myGeometryPtr->Timecell2pos(zmax, err_flag);
-
+  auto event_id = myEventInfo.GetEventId();
   //////////// DEBUG
   //  std::cout << "GetStripVsTimeInMM: "
   //	    << "strip_dir=" << strip_dir
@@ -1137,8 +1138,8 @@ std::shared_ptr<TH2D> EventTPC::GetStripVsTimeInMM(const SigClusterTPC &cluster,
   //  std::cout << "GetStripVsTimeInMM: Min[mm]=" << minStripInMM << ", Max[mm]=" << maxStripInMM << std::endl << std::flush;
   //////////// DEBUG
 
-  std::shared_ptr<TH2D> result(new TH2D( Form("hclust_%s_vs_time_mm_evt%lld", myGeometryPtr->GetDirName(strip_dir), event_id),
-					 Form("Event-%lld: Clustered hits from %s strips;Drift direction [mm];%s strip direction [mm];Charge/bin [arb.u.]",
+  std::shared_ptr<TH2D> result(new TH2D( Form("hclust_%s_vs_time_mm_evt%d", myGeometryPtr->GetDirName(strip_dir), event_id),
+					 Form("Event-%d: Clustered hits from %s strips;Drift direction [mm];%s strip direction [mm];Charge/bin [arb.u.]",
 					 event_id, myGeometryPtr->GetDirName(strip_dir), myGeometryPtr->GetDirName(strip_dir)),
 					 myGeometryPtr->GetAgetNtimecells(), minTimeInMM, maxTimeInMM,
 					 myGeometryPtr->GetDirNStripsMerged(strip_dir), minStripInMM, maxStripInMM));
@@ -1170,7 +1171,7 @@ std::shared_ptr<TH2D> EventTPC::GetStripVsTimeInMM(int strip_dir){  // valid ran
   double zmax=myGeometryPtr->GetAgetNtimecells()-0.5; // time_cell_max;  
   double minTimeInMM = myGeometryPtr->Timecell2pos(zmin, err_flag);
   double maxTimeInMM = myGeometryPtr->Timecell2pos(zmax, err_flag);
-
+  auto event_id = myEventInfo.GetEventId();
   //////////// DEBUG
   //  std::cout << "GetStripVsTimeInMM: "
   //	    << "strip_dir=" << strip_dir
@@ -1216,8 +1217,8 @@ std::shared_ptr<TH2D> EventTPC::GetStripVsTimeInMM(int strip_dir){  // valid ran
   //////////// DEBUG
   //  std::cout << "GetStripVsTimeInMM: DIR=" << myGeometryPtr->GetDirName(strip_dir) << ", Min[mm]=" << minStripInMM << ", Max[mm]=" << maxStripInMM << ", Nstrips=" << myGeometryPtr->GetDirNStripsMerged(strip_dir) << std::endl << std::flush;
   //////////// DEBUG
-  std::shared_ptr<TH2D> result(new TH2D( Form("hraw_%s_vs_time_mm_evt%lld", myGeometryPtr->GetDirName(strip_dir), event_id),
-					 Form("Event-%lld: Raw signals from %s strips;Drift direction [mm];%s strip direction [mm];Charge/bin [arb.u.]",
+  std::shared_ptr<TH2D> result(new TH2D( Form("hraw_%s_vs_time_mm_evt%d", myGeometryPtr->GetDirName(strip_dir), event_id),
+					 Form("Event-%d: Raw signals from %s strips;Drift direction [mm];%s strip direction [mm];Charge/bin [arb.u.]",
 					 event_id, myGeometryPtr->GetDirName(strip_dir), myGeometryPtr->GetDirName(strip_dir)),
 					 myGeometryPtr->GetAgetNtimecells(), minTimeInMM, maxTimeInMM,
 					 myGeometryPtr->GetDirNStripsMerged(strip_dir), minStripInMM, maxStripInMM));
@@ -1263,7 +1264,7 @@ std::vector<TH2D*> EventTPC::Get2D(const SigClusterTPC &cluster, double radius, 
   const int time_cell_max = MINIMUM( cluster.max_time[DIR_U], MINIMUM( cluster.max_time[DIR_V], cluster.max_time[DIR_W] ));
 
   ////////// DEBUG 
-  //  std::cout << Form(">>>> EventId = %lld", event_id) << std::endl;
+  //  std::cout << Form(">>>> EventId = %d", event_id) << std::endl;
   //  std::cout << Form(">>>> Time cell range = [%d, %d]", time_cell_min, time_cell_max) << std::endl;
   ////////// DEBUG 
 
@@ -1349,7 +1350,7 @@ std::vector<TH2D*> EventTPC::Get2D(const SigClusterTPC &cluster, double radius, 
       int nx = (int)( (xmax-xmin)/myGeometryPtr->GetStripPitch()-1 );
       int ny = (int)( (ymax-ymin)/myGeometryPtr->GetPadPitch()-1 );
       int nz = (int)( zmax-zmin );
-
+      auto event_id = myEventInfo.GetEventId();
       zmin = myGeometryPtr->Timecell2pos(zmin, err_flag);
       zmax = myGeometryPtr->Timecell2pos(zmax, err_flag);
 
@@ -1369,8 +1370,8 @@ std::vector<TH2D*> EventTPC::Get2D(const SigClusterTPC &cluster, double radius, 
       //      			xmin, xmax, ymin, ymax, nx, ny) << std::endl;
       ////////// DEBUG 
 
-      h1 = new TH2D( Form("hrecoXY_evt%lld", event_id),
-		     Form("Event-%lld: Projection in XY;X [mm];Y [mm];Charge/bin [arb.u.]", event_id),
+      h1 = new TH2D( Form("hrecoXY_evt%d", event_id),
+		     Form("Event-%d: Projection in XY;X [mm];Y [mm];Charge/bin [arb.u.]", event_id),
 		     nx, xmin, xmax, ny, ymin, ymax );
 		     
       ////////// DEBUG 
@@ -1378,8 +1379,8 @@ std::vector<TH2D*> EventTPC::Get2D(const SigClusterTPC &cluster, double radius, 
       //      			xmin, xmax, zmin, zmax, nx, nz) << std::endl;
       ////////// DEBUG 
 		     
-      h2 = new TH2D( Form("hrecoXZ_evt%lld", event_id),
-		     Form("Event-%lld: Projection in XZ;X [mm];Z [mm];Charge/bin [arb.u.]", event_id),
+      h2 = new TH2D( Form("hrecoXZ_evt%d", event_id),
+		     Form("Event-%d: Projection in XZ;X [mm];Z [mm];Charge/bin [arb.u.]", event_id),
 		     nx, xmin, xmax, nz, zmin, zmax );
 
       ////////// DEBUG 
@@ -1387,8 +1388,8 @@ std::vector<TH2D*> EventTPC::Get2D(const SigClusterTPC &cluster, double radius, 
       //      			ymin, ymax, zmin, zmax, ny, nz) << std::endl;
       ////////// DEBUG 
 		     
-      h3 = new TH2D( Form("hrecoYZ_evt%lld", event_id),
-		     Form("Event-%lld: Projection in YZ;Y [mm];Z [mm];Charge/bin [arb.u.]", event_id),
+      h3 = new TH2D( Form("hrecoYZ_evt%d", event_id),
+		     Form("Event-%d: Projection in YZ;Y [mm];Z [mm];Charge/bin [arb.u.]", event_id),
 		     ny, ymin, ymax, nz, zmin, zmax );
     }
 
@@ -1533,7 +1534,7 @@ TH3D *EventTPC::Get3DFrame(int rebin_space, int rebin_time) const{
   int nx = (int)( (xmax-xmin)/myGeometryPtr->GetPadPitch()-1 );
   int ny = (int)( (ymax-ymin)/myGeometryPtr->GetStripPitch()-1 );
   int nz = (int)( zmax-zmin );
-
+  auto event_id = myEventInfo.GetEventId();
   zmin = myGeometryPtr->Timecell2pos(zmin, err_flag);
   zmax = myGeometryPtr->Timecell2pos(zmax, err_flag);
 
@@ -1551,8 +1552,8 @@ TH3D *EventTPC::Get3DFrame(int rebin_space, int rebin_time) const{
   std::cout << Form(">>>> XYZ histogram: range=[%lf, %lf] x [%lf, %lf] x [%lf, %lf], nx=%d, ny=%d, nz=%d",
 		    xmin, xmax, ymin, ymax, zmin, zmax, nx, ny, nz) << std::endl;
 
-  TH3D *h = new TH3D( Form("hreco3D_evt%lld", event_id),
-		      Form("Event-%lld: 3D reco in XYZ;X [mm];Y [mm];Z [mm]", event_id),
+  TH3D *h = new TH3D( Form("hreco3D_evt%d", event_id),
+		      Form("Event-%d: 3D reco in XYZ;X [mm];Y [mm];Z [mm]", event_id),
 		      nx, xmin, xmax, ny, ymin, ymax, nz, zmin, zmax );
   return h;
 }
@@ -1572,7 +1573,7 @@ TH3D *EventTPC::Get3D(const SigClusterTPC &cluster, double radius, int rebin_spa
   const int time_cell_max = MINIMUM( cluster.max_time[DIR_U], MINIMUM( cluster.max_time[DIR_V], cluster.max_time[DIR_W] ));
 
   ////////// DEBUG 
-  //std::cout << Form(">>>> EventId = %lld", event_id) << std::endl;
+  //std::cout << Form(">>>> EventId = %d", event_id) << std::endl;
   //std::cout << Form(">>>> Time cell range = [%d, %d]", time_cell_min, time_cell_max) << std::endl;
   ////////// DEBUG 
 
@@ -1962,7 +1963,7 @@ TH2D *EventTPC::GetXY_TestWU(TH2D *h) { // test (unphysical) histogram
 /////////////////////////////////////////////////////////////////
 // overloading << operator
 std::ostream& operator<<(std::ostream& os, const EventTPC& e) {
-  os << "EventTPC: id=" << e.GetEventId() << ", timestamp=" << e.GetEventTime();
+  os << "EventTPC: " << e.GetEventInfo();
   return os;
 }
 /////////////////////////////////////////////////////////////////

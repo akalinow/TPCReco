@@ -13,11 +13,7 @@ namespace eventraw {
   public:
     EventInfo(){};
 
-    EventInfo(std::shared_ptr<EventTPC> aEventTPC);
-
     ~EventInfo(){};
-
-    void set(std::shared_ptr<EventTPC> aEventTPC);
 
     void reset();
 

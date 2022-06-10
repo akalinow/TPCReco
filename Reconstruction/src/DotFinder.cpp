@@ -367,8 +367,8 @@ void DotFinder::reconstruct(){
   //////// DEBUG
   
   // fill histograms before selections cuts (all events)
-  auto currentEventTime = myEvent->GetEventTime(); // in 10ns units
-
+  auto currentEventTime = myEvent->GetEventInfo().GetEventTimestamp(); // in 10ns units
+  
   myEventCounter_All++;
   if(isFirstEvent_All) {
     previousEventTime_All = currentEventTime; 

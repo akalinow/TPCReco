@@ -37,7 +37,7 @@ void EventSourceGRAW::setRemovePedestal(bool aFlag){
 /////////////////////////////////////////////////////////
 std::shared_ptr<EventTPC> EventSourceGRAW::getNextEvent(){
 
-  unsigned long int currentEventId = myCurrentEvent->GetEventId();
+  auto currentEventId = myCurrentEvent->GetEventInfo().GetEventId();
   auto it = myFramesMap.find(currentEventId);
   unsigned int lastEventFrame = *it->second.rbegin();
   if(lastEventFrame<nEntries-1) ++lastEventFrame;
@@ -48,7 +48,7 @@ std::shared_ptr<EventTPC> EventSourceGRAW::getNextEvent(){
 /////////////////////////////////////////////////////////
 std::shared_ptr<EventTPC> EventSourceGRAW::getPreviousEvent(){
 
-  unsigned int currentEventId = myCurrentEvent->GetEventId();
+  auto currentEventId = myCurrentEvent->GetEventInfo().GetEventId();
   auto it = myFramesMap.find(currentEventId);
   unsigned int startingEventIndexFrame = *it->second.begin();
   if(startingEventIndexFrame>0) --startingEventIndexFrame; 
@@ -267,7 +267,6 @@ void EventSourceGRAW::collectEventFragments(unsigned int eventId){
   switch(fillEventType) {
   case EventType::raw:  
     myCurrentEventRaw->SetEventId(eventId);
-    myCurrentEvent->SetEventId(eventId); // for compatibility with EventSourceBase::currentEventNumber()
     std::cout<<KYEL<<"Creating a new EventRaw with eventId: "<<eventId<<RST<<std::endl;
     
     for(auto aFragment: it->second){
@@ -292,16 +291,15 @@ void EventSourceGRAW::collectEventFragments(unsigned int eventId){
   case EventType::tpc:  // fill EventTPC class (skip EventRaw)
   default:
     myCurrentEvent->Clear();
-    myCurrentEvent->SetEventId(eventId);
     myCurrentEvent->SetGeoPtr(myGeometryPtr);
 
     myCurrentEventInfo.SetEventId(eventId);
     myCurrentEventInfo.SetPedestalSubtracted(removePedestal);
+
     std::cout<<KYEL<<"Creating a new EventTPC with eventId: "<<eventId<<RST<<std::endl;
     
     for(auto aFragment: it->second){
       loadGrawFrame(aFragment, true);
-      myCurrentEvent->SetEventTime(myDataFrame.fHeader.fEventTime);
       myCurrentEventInfo.SetEventTimestamp(myDataFrame.fHeader.fEventTime);
       int  ASAD_idx = myDataFrame.fHeader.fAsadIdx;
       unsigned long int eventId_fromFrame = myDataFrame.fHeader.fEventIdx;
@@ -362,9 +360,6 @@ void EventSourceGRAW::fillEventFromFrame(GET::GDataFrame & aGrawFrame){
     }
   }
 
-  if(removePedestal){
-    myCurrentEvent->SetPedestalSubstracted(true);
-  }
   ////// DEBUG
   //  std::shared_ptr<TProfile> tp=myPedestalCalculator.GetPedestalProfilePerAsad(COBO_idx, ASAD_idx);
   //  std::cout << __FUNCTION__ << ": TProfile[Cobo=" << COBO_idx
