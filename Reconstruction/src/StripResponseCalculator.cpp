@@ -2,6 +2,7 @@
 
 #include "MultiKey.h"
 #include "GeometryTPC.h"
+#include "EventTPC.h"
 #include "StripResponseCalculator.h"
 #include "colorText.h"
 
@@ -15,12 +16,15 @@
 #include "TFile.h"
 
 StripResponseCalculator::StripResponseCalculator(std::shared_ptr<GeometryTPC> aGeometryPtr,
-                                                 int delta_strips, int delta_timecells, // consider +/- neighbour strips, time cells
+                                                 int delta_strips, // consider +/- neighbour strips
+						 int delta_timecells, // consider +/- neighbour time cells
+						 int delta_pads, // consider +/- pads for the nearest strip section boundary
                                                  double sigma_xy, double sigma_z, // horizontal and vertical gaussian spread [mm]
-                                                 bool debug_flag,
-						 const char *fname)
-  : myGeometryPtr(aGeometryPtr), Nstrips(abs(delta_strips)), Ntimecells(abs(delta_timecells)),
-    sigma_xy(sigma_xy), sigma_z(sigma_z), has_UVWprojectionsRaw(false), has_UVWprojectionsInMM(false), debug_flag(debug_flag) {
+						 const char *fname,
+                                                 bool debug_flag) :
+  myGeometryPtr(aGeometryPtr), Nstrips(abs(delta_strips)), Ntimecells(abs(delta_timecells)), Npads(abs(delta_pads)),
+  sigma_xy(sigma_xy), sigma_z(sigma_z), has_UVWprojectionsRaw(false), has_UVWprojectionsInMM(false), has_EventTPC(false),
+  debug_flag(debug_flag) {
 
   // sanity checks
   if(!myGeometryPtr) {
@@ -35,20 +39,27 @@ StripResponseCalculator::StripResponseCalculator(std::shared_ptr<GeometryTPC> aG
     std::cout<<__FUNCTION__<<KRED<<": Wrong vertical smearing parameters!"<<RST<<std::endl;
     exit(-1);
   }
-  if(strlen(fname)==0 || (strlen(fname)>0 && !loadResponseHistograms(fname))) {
+  if(fname==NULL || strlen(fname)==0 || (strlen(fname)>0 && !loadHistograms(fname))) {
     initializeStripResponse();
     initializeTimeResponse();
   }
+  ////// DEBUG
+  for(auto & it : responseMapPerMergedStrip) {
+    if(debug_flag) {
+      std::cout << __FUNCTION__ << ": " << it.second->GetName() << ", integral=" << it.second->Integral() << std::endl;
+    }
+  }
+  ////// DEBUG
 }
 
-bool StripResponseCalculator::loadResponseHistograms(const char *fname) {						 
+bool StripResponseCalculator::loadHistograms(const char *fname) {
   TFile f(fname, "OLD");
   if(!f.IsOpen()) {
     if(debug_flag) std::cout<<__FUNCTION__<<KRED<<": Cannot open TFile: "<<fname<<"!"<<RST<<std::endl;
     return false;
   }
 
-  // initilaize strip domain histograms
+  // initilaize strip domain histograms (relative merged strip's index wrt reference node)
   for(auto & it : responseMapPerMergedStrip) {
     if(it.second) delete it.second;
   }
@@ -62,7 +73,29 @@ bool StripResponseCalculator::loadResponseHistograms(const char *fname) {
       }
       hist->SetDirectory(0); // do not assiciate this histogram with any TFile directory
       responseMapPerMergedStrip[MultiKey2(strip_dir, istrip)]=hist;
-      //    std::cout << __FUNCTION__ << ": dir=" << strip_dir << ", delta_strip=" << icell << ", hist=" << hist << std::endl;
+    }
+  }
+
+  // initilaize strip domain histograms (relative strip section start in pad units wrt reference node)
+  for(auto & it : responseMapPerStripSectionStart) {
+    if(it.second) delete it.second;
+  }
+  responseMapPerStripSectionStart.clear();
+  for(int istrip=-Nstrips; istrip<=Nstrips; istrip++) {
+    for(int strip_dir=DIR_U; strip_dir<=DIR_W; strip_dir++) {
+      if(myGeometryPtr->GetDirNSections(strip_dir)<2) continue; // just one section per strip direction
+      for(int ipad=-Npads; ipad<=Npads+abs((istrip%2)); ipad++) { // add 1 extra pad for odd relative strip index
+	auto hist=(TH2D*)f.Get(getStripSectionStartResponseHistogramName(strip_dir, istrip, ipad));
+	if(!hist) {
+	  if(debug_flag) std::cout<<__FUNCTION__<<KRED<<": Cannot find histogram: "<<getStripSectionStartResponseHistogramName(strip_dir, istrip, ipad)<<"!"<<RST<<std::endl;
+	  return false;
+	}
+	hist->SetDirectory(0); // do not assiciate this histogram with any TFile directory
+	responseMapPerStripSectionStart[MultiKey3(strip_dir, istrip, ipad)]=hist;
+	////// DEBUG
+	if(debug_flag) std::cout << __FUNCTION__ << ": dir=" << strip_dir << ", delta_strip=" << istrip << ", delta_pad=" << ipad << ", hist=" << hist << std::endl;
+	////// DEBUG
+      }
     }
   }
 
@@ -79,13 +112,21 @@ bool StripResponseCalculator::loadResponseHistograms(const char *fname) {
     }
     hist->SetDirectory(0); // do not assiciate this histogram with any TFile directory
     responseMapPerTimecell[icell]=hist;
-    //    std::cout << __FUNCTION__ << ": delta_timecell=" << icell << ", hist=" << hist << std::endl;
   }
 
   f.Close();
+
+  ////// DEBUG
+  for(auto & it : responseMapPerMergedStrip) {
+    if(debug_flag) {
+      std::cout << __FUNCTION__ << ": " << it.second->GetName() << ", integral=" << it.second->Integral() << std::endl;
+    }
+  }
+  ////// DEBUG
+
   return true;
 }
-bool StripResponseCalculator::saveResponseHistograms(const char *fname) {						 
+bool StripResponseCalculator::saveHistograms(const char *fname) {
   TFile f(fname, "CREATE");
   if(!f.IsOpen()) {
     if(debug_flag) std::cout<<__FUNCTION__<<KRED<<": Cannot create new TFile: "<<fname<<"!"<<RST<<std::endl;
@@ -93,6 +134,13 @@ bool StripResponseCalculator::saveResponseHistograms(const char *fname) {
   }
   f.cd();
   for(auto & it : responseMapPerMergedStrip) {
+    it.second->SetTitleOffset(1.3, "X");
+    it.second->SetTitleOffset(1.5, "Y");
+    it.second->SetTitleOffset(1.5, "Z");
+    it.second->SetOption("COLZ");
+    it.second->Write();
+  }
+  for(auto & it : responseMapPerStripSectionStart) {
     it.second->SetTitleOffset(1.3, "X");
     it.second->SetTitleOffset(1.5, "Y");
     it.second->SetTitleOffset(1.5, "Z");
@@ -109,7 +157,7 @@ bool StripResponseCalculator::saveResponseHistograms(const char *fname) {
   return true;
 }
 
-// declare array of UZ/VZ/WZ histograms to be filled (channel vs time cell)
+// declare new array of UZ/VZ/WZ histograms to be filled (channel vs time cell)
 bool StripResponseCalculator::setUVWprojectionsRaw(std::vector<TH2D*> aUVWprojectionsRaw) {
   has_UVWprojectionsRaw=false;
   if(aUVWprojectionsRaw.size()!=3) {
@@ -122,11 +170,12 @@ bool StripResponseCalculator::setUVWprojectionsRaw(std::vector<TH2D*> aUVWprojec
       return false;
     }
   }
-  myUVWprojectionsRaw.clear();
-  myUVWprojectionsRaw=aUVWprojectionsRaw;
+  fillUVWprojectionsRaw.clear();
+  fillUVWprojectionsRaw=aUVWprojectionsRaw;
   has_UVWprojectionsRaw=true;
   return true;
 }
+
 bool  StripResponseCalculator::setUVWprojectionsRaw(std::vector<std::shared_ptr<TH2D> > aUVWprojectionsRaw) { // pair={STRIP_DIR, TH2D pointer}
   std::vector<TH2D*> vec;
   for(auto & hist : aUVWprojectionsRaw) {
@@ -134,7 +183,8 @@ bool  StripResponseCalculator::setUVWprojectionsRaw(std::vector<std::shared_ptr<
   }
   return setUVWprojectionsRaw(vec);
 }
-// declare array of UZ/VZ/WZ histograms to be filled (in mm)
+
+// declare new array of UZ/VZ/WZ histograms to be filled (in mm)
 bool StripResponseCalculator::setUVWprojectionsInMM(std::vector<TH2D*> aUVWprojectionsInMM) {
   has_UVWprojectionsInMM=false;
   if(aUVWprojectionsInMM.size()!=3) {
@@ -147,11 +197,12 @@ bool StripResponseCalculator::setUVWprojectionsInMM(std::vector<TH2D*> aUVWproje
       return false;
     }
   }
-  myUVWprojectionsInMM.clear();
-  myUVWprojectionsInMM=aUVWprojectionsInMM;
+  fillUVWprojectionsInMM.clear();
+  fillUVWprojectionsInMM=aUVWprojectionsInMM;
   has_UVWprojectionsInMM=true;
   return true;
 }
+
 bool  StripResponseCalculator::setUVWprojectionsInMM(std::vector<std::shared_ptr<TH2D> > aUVWprojectionsInMM) { // pair={STRIP_DIR, TH2D pointer}
   std::vector<TH2D*> vec;
   for(auto & hist : aUVWprojectionsInMM) {
@@ -160,12 +211,31 @@ bool  StripResponseCalculator::setUVWprojectionsInMM(std::vector<std::shared_ptr
   return setUVWprojectionsInMM(vec);
 }
 
-void StripResponseCalculator::fillProjections(TVector3 position3d, double charge) {
-  fillProjections(position3d.X(), position3d.Y(), position3d.Z(), charge);
+// declare new EventTPC to be filled
+bool StripResponseCalculator::setEventTPC(std::shared_ptr<EventTPC> aEventTPC) {
+  has_EventTPC=false;
+  fillEventTPC=NULL;
+  if(!aEventTPC || !(aEventTPC->IsOK())) {
+    if(debug_flag) std::cout << __FUNCTION__ << KRED << ": Input EventTPC not initialized!" << RST << std::endl;
+    return false;
+  }
+  if(!(aEventTPC->GetGeoPtr()) || *(aEventTPC->GetGeoPtr())!=*(myGeometryPtr)) {
+    if(debug_flag) std::cout << __FUNCTION__ << KRED << ": Input EventTPC has different geoemetry than StripResponseCalculator!" << RST << std::endl;
+    return false;
+  }
+  fillEventTPC=aEventTPC;
+  has_EventTPC=true;
+  return has_EventTPC;
 }
-void StripResponseCalculator::fillProjections(double x, double y, double z, double charge) {
 
-  if(charge==0.0 || (!has_UVWprojectionsRaw && !has_UVWprojectionsInMM)) return; // nothing to do
+// fill all declared objects
+void StripResponseCalculator::addCharge(TVector3 position3d, double charge) {
+  addCharge(position3d.X(), position3d.Y(), position3d.Z(), charge);
+}
+
+void StripResponseCalculator::addCharge(double x, double y, double z, double charge) {
+
+  if(charge==0.0 || (!has_EventTPC && !has_UVWprojectionsRaw && !has_UVWprojectionsInMM)) return; // nothing to do
 
   // strip domain
   auto refNodePosInMM=TVector2(0,0);
@@ -190,59 +260,203 @@ void StripResponseCalculator::fillProjections(double x, double y, double z, doub
   const auto dz = z-refCellPosInMM; // wrt beginning of the time cell
 
   ////// DEBUG
-  //  if(debug_flag) {
-  //    std::cout << __FUNCTION__ << ": has_UVWprojectionsRaw=" << has_UVWprojectionsRaw
-  //	      << ", has_UVWprojectionsInMM=" << has_UVWprojectionsInMM << std::endl;
-  //    std::cout << __FUNCTION__ << ": dx=" << dx << ", dy=" << dy << ", dz=" << dz << std::endl;
-  //  }
+  if(debug_flag) std::cout << __FUNCTION__ << ": Relative postion=[dx=" << dx << ", dy=" << dy << ", dz=" << dz << "]"
+			   << ", Charge=" << charge
+			   << ", has_EventTPC=" << has_EventTPC
+			   << ", has_UVWprojectionsRaw=" << has_UVWprojectionsRaw
+			   << ", has_UVWprojectionsInMM=" << has_UVWprojectionsInMM
+			   << std::endl;
   ////// DEBUG
 
-	// fill all declared UZ, VZ, WZ projection histograms 
+  // fill all declared UZ, VZ, WZ projection histograms
   err=false;
   for(auto & respXY : responseMapPerMergedStrip) {
+    const auto smeared_strip_dir=respXY.first.key1; // DIR index
+    const auto smeared_strip_num=refStrips[smeared_strip_dir]+respXY.first.key2; // STRIP index
+    const auto smeared_pos=myGeometryPtr->Strip2posUVW(smeared_strip_dir, smeared_strip_num, err);
+    if(err) continue;
+
+    const auto smeared_bin=respXY.second->FindBin(dx ,dy);
+    const auto smeared_fractionXY=respXY.second->GetBinContent(smeared_bin);
+    if(smeared_fractionXY<Utils::NUMERICAL_TOLERANCE) continue; // speeds up filling
+
+    // calculate map of total charge fractions per strip section for merged strip {strip_dir, strip_number}
+    // * step-1 - use look-up table of section boundary points corresponding to the same merged strip
+    // * step-2 - initialize all sections with charge fractions taken from the merged strip (TOTAL)
+    // * step-3 - for each section boundary point (START or END) compute delta_pad index
+    // * step-4 - if delta_pad is within region of interest then assign charge fraction to adjacent strip sections as:
+    //             f and TOTAL-f according to respective 2D response per section histogram[delta_pad]
+    // * step-5 - if delta_pad is outside of region of interest then zero one section and leave the other one as-is
+    //
+    std::map<int, double> fractionPerSectionMap;
+    auto list=myGeometryPtr->GetStripSectionBoundaryList(smeared_strip_dir, smeared_strip_num);
+
     ////// DEBUG
-    //    std::cout << __FUNCTION__ << ": 1st loop:  dir=" << respXY.first.key1 << ", delta_strip=" << respXY.first.key2 << ", hist=" << respXY.second << std::endl;
+    if(debug_flag) {
+      std::cout << __FUNCTION__ << ": Merged strip "
+		<< myGeometryPtr->GetDirName(smeared_strip_dir) << smeared_strip_num
+		<< " [dir="<<smeared_strip_dir<<", num="<<smeared_strip_num<<"]"
+		<< ": Number of boundary points=" << list.size() << ":" << std::endl;
+      for(auto & it : list) {
+	std::cout << "    point=[" << it.pos.X() << ", " << it.pos.Y() << "], prev_sec=" << it.previous << ", next_sec=" << it.next << std::endl;
+      }
+    }
     ////// DEBUG
-    const auto smeared_dir=respXY.first.key1; // DIR index
-    const auto smeared_strip=refStrips[smeared_dir]+respXY.first.key2; // STRIP index
-    const auto smeared_fractionXY=respXY.second->GetBinContent(respXY.second->FindBin(dx ,dy));
-    if(smeared_fractionXY==0.0) continue;
+
+    // initialize the map with total fraction per merged strip
+    fractionPerSectionMap.clear();
+    for(auto & it : list) {
+      if(it.next!=GeometryTPC::outside_section && fractionPerSectionMap.find(it.next)==fractionPerSectionMap.end())
+	fractionPerSectionMap[it.next]=smeared_fractionXY;
+      if(it.previous!=GeometryTPC::outside_section && fractionPerSectionMap.find(it.previous)==fractionPerSectionMap.end())
+	fractionPerSectionMap[it.previous]=smeared_fractionXY;
+    }
+
+    ////// DEBUG
+    if(debug_flag) {
+      for(auto & it : fractionPerSectionMap) {
+	std::cout << __FUNCTION__ << ": Unmerged strip "
+		  << myGeometryPtr->GetDirName(smeared_strip_dir) << smeared_strip_num
+		  << " [dir="<<smeared_strip_dir<<", sec="<<it.first<<", num="<<smeared_strip_num<<"]"
+		  << ": initial fractionPerSectionMap[sec=" << it.first << "] = " << it.second << std::endl;
+      }
+    }
+    ////// DEBUG
+
+    // subtract charge per section according to relative position of the section's boundary wrt reference node
+    for(auto & it : list) {
+      const auto delta_pads=(int)TMath::Ceil( ((it.pos - refNodePosInMM)*myGeometryPtr->GetStripUnitVector(smeared_strip_dir))/myGeometryPtr->GetPadPitch()
+					      + ( (smeared_strip_num-refStrips[smeared_strip_dir])%2 == 0 ? 0.0 : 0.5) );
+      // delta_pads outside range [-Npads, Npads+eps]
+      if(delta_pads<-Npads || delta_pads>Npads+abs(smeared_strip_num-refStrips[smeared_strip_dir])%2) {
+
+	if(delta_pads<-Npads && it.previous!=GeometryTPC::outside_section) {
+
+	  ////// DEBUG
+	  if(debug_flag) std::cout << __FUNCTION__ << ": Unmerged strip "
+				   << myGeometryPtr->GetDirName(smeared_strip_dir) << smeared_strip_num
+				   << " [dir="<<smeared_strip_dir<<", sec="<<it.previous<<", num="<<smeared_strip_num<<"]"
+				   << ": delta_pads=" << delta_pads
+				   << " => zeroing sec=" << it.previous << ": new_val=0 (old=" << fractionPerSectionMap[it.previous] << ")" << std::endl;
+	  ////// DEBUG
+
+	  fractionPerSectionMap[it.previous]=0.0; // no impact on section it.next
+	}
+	if(delta_pads>Npads+abs(smeared_strip_num-refStrips[smeared_strip_dir])%2 && it.next!=GeometryTPC::outside_section) {
+
+	  ////// DEBUG
+	  if(debug_flag) std::cout << __FUNCTION__ << ": Unmerged strip "
+				   << myGeometryPtr->GetDirName(smeared_strip_dir) << smeared_strip_num
+				   << " [dir="<<smeared_strip_dir<<", sec="<<it.next<<", num="<<smeared_strip_num<<"]"
+				   << ": delta_pads=" << delta_pads
+				   << " => zeroing sec=" << it.next << ": new_val=0 (old=" << fractionPerSectionMap[it.next] << ")" << std::endl;
+	  ////// DEBUG
+
+	  fractionPerSectionMap[it.next]=0.0; // no impact on section it.previous
+	}
+	continue; // delta_pads is outside mapping range
+      }
+      // delta_pads is inside [-Npads, Npads+eps]
+      const auto it2 = responseMapPerStripSectionStart.find(MultiKey3(smeared_strip_dir, smeared_strip_num-refStrips[smeared_strip_dir], delta_pads));
+
+      if(it.previous!=GeometryTPC::outside_section) {
+	fractionPerSectionMap[it.previous] -= smeared_fractionXY-it2->second->GetBinContent(smeared_bin);
+
+	////// DEBUG
+	if(debug_flag) std::cout << __FUNCTION__ << ": Unmerged strip "
+				 << myGeometryPtr->GetDirName(smeared_strip_dir) << smeared_strip_num
+				 << " [dir="<<smeared_strip_dir<<", sec="<<it.previous<<", num="<<smeared_strip_num<<"]"
+				 << ": delta_pads=" << delta_pads
+				 << " => subtracting from sec=" << it.previous << ": new_val=" << fractionPerSectionMap[it.previous]
+				 << std::endl;
+	////// DEBUG
+      }
+      if(it.next!=GeometryTPC::outside_section) {
+	fractionPerSectionMap[it.next] -= it2->second->GetBinContent(smeared_bin);
+
+	////// DEBUG
+	if(debug_flag) std::cout << __FUNCTION__ << ": Unmerged strip "
+				 << myGeometryPtr->GetDirName(smeared_strip_dir) << smeared_strip_num
+				 << " [dir="<<smeared_strip_dir<<", sec="<<it.next<<", num="<<smeared_strip_num<<"]"
+				 << ": delta_pads=" << delta_pads
+				 << " => subtracting from sec=" << it.next << ": new_val=" << fractionPerSectionMap[it.next]
+				  << std::endl;
+	////// DEBUG
+      }
+    }
+    // final cross-check
+    auto smeared_fractionXY_sum=0.0;
+    for(auto & it2 : fractionPerSectionMap) {
+      if(it2.second<0.0) it2.second=0.0;
+      auto smeared_fractionXY_per_section = it2.second;
+      smeared_fractionXY_sum += smeared_fractionXY_per_section;
+
+      ////// DEBUG
+      if(debug_flag) std::cout << __FUNCTION__ << ": Unmerged strip "
+			       << myGeometryPtr->GetStripName(myGeometryPtr->GetStripByDir(smeared_strip_dir, it2.first, smeared_strip_num))
+			       << " [dir="<<smeared_strip_dir<<", sec="<<it2.first<<", num="<<smeared_strip_num<<"]"
+			       << ": total_charge_fraction=" << smeared_fractionXY_per_section
+			       << ", merged_strip_fraction=" << smeared_fractionXY_per_section/smeared_fractionXY << std::endl;
+      ////// DEBUG
+    }
+    ////// DEBUG
+    if(debug_flag) std::cout << __FUNCTION__
+			     << ": Merged strip " << myGeometryPtr->GetDirName(smeared_strip_dir) << smeared_strip_num
+			     << " [dir="<<smeared_strip_dir<<", num="<<smeared_strip_num<<"]"
+			     << ": total_charge_fraction=" << smeared_fractionXY_sum
+			     << ", merged_strip_fraction=" << smeared_fractionXY_sum/smeared_fractionXY
+			     << " (expected 1)" << std::endl;
+    ////// DEBUG
+
     for(auto & respZ : responseMapPerTimecell) {
-      ////// DEBUG
-      //      std::cout << __FUNCTION__ << ": 2nd loop: delta_timecell=" << respZ.first << ", hist=" << respZ.second << std::endl;
-      ////// DEBUG
       const auto smeared_fractionZ=respZ.second->GetBinContent(respZ.second->FindBin(dz));
       const auto smeared_charge=charge*smeared_fractionZ*smeared_fractionXY;
-      if(smeared_charge==0.0) continue;
+      if(smeared_charge<Utils::NUMERICAL_TOLERANCE) continue; // speeds up filling
       const auto smeared_timecell=refCell+respZ.first;
 
       if(has_UVWprojectionsRaw) {
-	myUVWprojectionsRaw[smeared_dir]->Fill(smeared_timecell*1., smeared_strip*1., smeared_charge);
+	fillUVWprojectionsRaw[smeared_strip_dir]->Fill(smeared_timecell*1., smeared_strip_num*1., smeared_charge);
 	////// DEBUG
 	//	if(debug_flag) std::cout << __FUNCTION__
-	//				 << ": dir=" << smeared_dir
-	//				 << ", strip=" << smeared_strip << " (delta=" << respXY.first.key2
+	//				 << ": dir=" << smeared_strip_dir
+	//				 << ", strip=" << smeared_strip_num << " (delta=" << respXY.first.key2
 	//				 << "), cell=" << smeared_timecell << " (delta=" << respZ.first
 	//				 << "), charge=" << smeared_charge << std::endl;
 	////// DEBUG
       }
       
       if(has_UVWprojectionsInMM) {
-	const auto smeared_pos=myGeometryPtr->Strip2posUVW(smeared_dir, smeared_strip, err);
 	const auto smeared_z=myGeometryPtr->Timecell2pos(smeared_timecell, err);
-	myUVWprojectionsInMM[smeared_dir]->Fill(smeared_z, smeared_pos, smeared_charge);
+	if(err) continue;
+	fillUVWprojectionsInMM[smeared_strip_dir]->Fill(smeared_z, smeared_pos, smeared_charge);
 	////// DEBUG
 	//	if(debug_flag) std::cout << __FUNCTION__
-	//				 << ": dir=" << smeared_dir
-	//				 << ", strip=" << smeared_strip << " (delta=" << respXY.first.key2
-	//				 << ", posUVW=" << myGeometryPtr->Cartesian2posUVW(x, y, smeared_dir, err)
+	//				 << ": dir=" << smeared_strip_dir
+	//				 << ", strip=" << smeared_strip_num << " (delta=" << respXY.first.key2
+	//				 << ", posUVW=" << myGeometryPtr->Cartesian2posUVW(x, y, smeared_strip_dir, err)
 	//				 << "), cell=" << smeared_timecell << " (delta=" << respZ.first
 	//				 << ", z=" << smeared_z
 	//				 << "), charge=" << smeared_charge << std::endl;
 	////// DEBUG
       }
 
-    }   
+      // fill charge per {strip DIR, strip NUM, strip SECTION, time CELL} quadruplet
+      if(has_EventTPC) {
+	for(auto & it2 : fractionPerSectionMap) {
+	  const auto smeared_charge_per_section = charge*smeared_fractionZ*it2.second;
+	  if(smeared_charge_per_section<Utils::NUMERICAL_TOLERANCE) continue; // speeds up filling
+	  fillEventTPC->AddValByStrip(smeared_strip_dir, it2.first, smeared_strip_num, smeared_timecell, smeared_charge_per_section);
+
+	  ////// DEBUG
+	  //	  	  if(debug_flag) std::cout << __FUNCTION__ << ": Unmerged strip "
+	  //	  				   << myGeometryPtr->GetStripName(myGeometryPtr->GetStripByDir(smeared_strip_dir, it2.first, smeared_strip_num))
+	  //	  				   << " [dir="<<smeared_strip_dir<<", sec="<<it2.first<<", num="<<smeared_strip_num<<"]"
+	  //	  				   << ": charge=" << smeared_charge_per_section
+	  //	  				   << ", total_charge_fraction=" << smeared_charge_per_section/charge << std::endl;
+	  ////// DEBUG
+	}
+      }
+    }
   }
 }
 
@@ -250,9 +464,11 @@ void StripResponseCalculator::fillProjections(double x, double y, double z, doub
 std::vector<int> StripResponseCalculator::getReferenceStripNode(TVector3 position3d, TVector2 *refNodePosInMM) const {
   return getReferenceStripNode(position3d.X(), position3d.Y(), refNodePosInMM);
 }
+
 std::vector<int> StripResponseCalculator::getReferenceStripNode(TVector2 position2d, TVector2 *refNodePosInMM) const {
   return getReferenceStripNode(position2d.X(), position2d.Y(), refNodePosInMM);
 }
+
 std::vector<int> StripResponseCalculator::getReferenceStripNode(double x, double y, TVector2 *refNodePosInMM) const {
   std::vector<int> result;
   auto strip=myGeometryPtr->GetTH2PolyStrip( myGeometryPtr->GetTH2Poly()->FindBin(x, y) );
@@ -267,19 +483,21 @@ std::vector<int> StripResponseCalculator::getReferenceStripNode(double x, double
   const auto strip_dir=strip->Dir();
   stripMap[strip_dir]=strip->Num();
 
+  ////// DEBUG
   if(debug_flag) std::cout << __FUNCTION__ << ": strip_dir=" << strip_dir << ", strip_num=" << stripMap[strip_dir] << std::endl;
+  ////// DEBUG
 
-  const auto strip_startPos=strip->Offset()+myGeometryPtr->GetReferencePoint()-0.5*myGeometryPtr->GetStripUnitVector(strip_dir)*myGeometryPtr->GetPadPitch();
-  const auto distance_to_start=(TVector2(x,y)-strip_startPos)*myGeometryPtr->GetStripUnitVector(strip_dir);
-  auto distance_to_node=fmod(distance_to_start, myGeometryPtr->GetPadPitch()); // [mm]
+  const auto strip_startPos=strip->Start(); // absolute position of strip's starting point
+  const auto distance_to_start=(TVector2(x,y)-strip_startPos)*myGeometryPtr->GetStripUnitVector(strip_dir); // position wrt start
+  auto distance_to_node=fmod(distance_to_start, myGeometryPtr->GetPadPitch()); // position wrt start
   if(distance_to_node>0.5*myGeometryPtr->GetPadPitch()) distance_to_node-=myGeometryPtr->GetPadPitch(); // range [-0.5*pad_pitch, 0.5*pad_pitch]
-  const auto nodePos=strip_startPos+myGeometryPtr->GetStripUnitVector(strip_dir)*(distance_to_start-distance_to_node);
+  const auto nodePos=strip_startPos+myGeometryPtr->GetStripUnitVector(strip_dir)*(distance_to_start-distance_to_node); // absolute position of the nearest strip node
 
-  // find 2 remaining strip numbers
+  // find strip numbers for 2 complementary strip directions
   for(int check_dir=DIR_U; check_dir<=DIR_W; check_dir++) {
     if(check_dir==strip_dir) continue;
 
-    for(auto isign=-1; isign<=1; isign+=2) { // probe 2 nearest pads for each direction index
+    for(auto isign=-1; isign<=1; isign+=2) { // probe 2 adjacent pads for each direction index
       const auto checkPos=nodePos+myGeometryPtr->GetStripUnitVector(check_dir)*0.5*myGeometryPtr->GetPadPitch()*isign;
       const auto check_strip=myGeometryPtr->GetTH2PolyStrip( myGeometryPtr->GetTH2Poly()->FindBin(checkPos.X(), checkPos.Y()) );
       if(!check_strip) continue;
@@ -301,7 +519,7 @@ std::vector<int> StripResponseCalculator::getReferenceStripNode(double x, double
   for(auto & it : stripMap) {
     result.at(it.first)=it.second;
   }
-
+  // optionally return absolute Cartesian coordinates of the strip node
   if(refNodePosInMM) *refNodePosInMM=nodePos;
   return result;
 }
@@ -310,18 +528,21 @@ std::vector<int> StripResponseCalculator::getReferenceStripNode(double x, double
 int StripResponseCalculator::getReferenceTimecell(TVector3 position3d) const {
   return getReferenceTimecell(position3d.Z());
 }
+
 int StripResponseCalculator::getReferenceTimecell(double z) const {
   auto err=false;
   return myGeometryPtr->Pos2timecell(z, err);
 }
 
-void StripResponseCalculator::initializeStripResponse() {
+// re-generate XY response histograms with arbitrary granularity
+void StripResponseCalculator::initializeStripResponse(unsigned long NpointsXY, int NbinsXY) {
+  // initilaize strip domain histograms (relative merged strip's index wrt reference node)
   for(auto & it : responseMapPerMergedStrip) {
     if(it.second) delete it.second;
   }
   responseMapPerMergedStrip.clear();
-  //
-  // Each histogram corresponds to single strip given by {relative strip index wrt reference node, strip direction} pair.
+
+  // Each histogram corresponds to a single strip given by {relative strip index wrt reference node, strip direction} pair.
   // Center of each bin corresponds to the mean XY position [mm] wrt reference node of 2D normal distribution with spread sigmaXY.
   // Fill each bin with fraction of the charge corresponding to the total strip area.
   // Integration is done using Monte Carlo technique.
@@ -334,11 +555,45 @@ void StripResponseCalculator::initializeStripResponse() {
 		 Form("Horizontal response for %s-strip %s%d;#Deltax wrt nearest strip node [mm];#Deltay wrt nearest node [mm];Charge fraction [arb.u.]",
 		      myGeometryPtr->GetDirName(strip_dir),
 		      (istrip==0 ? "" : (istrip<0 ? "-" : "+")), abs(istrip)),
-		 Nbins, -myGeometryPtr->GetPadSize(), myGeometryPtr->GetPadSize(),
-		 Nbins, -myGeometryPtr->GetPadSize(), myGeometryPtr->GetPadSize());
+		 NbinsXY, -myGeometryPtr->GetPadSize(), myGeometryPtr->GetPadSize(),
+		 NbinsXY, -myGeometryPtr->GetPadSize(), myGeometryPtr->GetPadSize());
       responseMapPerMergedStrip[MultiKey2(strip_dir, istrip)]=hist;
     }
   }
+
+  // initilaize strip domain histograms (relative strip section start in pad units wrt reference node)
+  for(auto & it : responseMapPerStripSectionStart) {
+    if(it.second) delete it.second;
+  }
+  responseMapPerStripSectionStart.clear();
+  for(int istrip=-Nstrips; istrip<=Nstrips; istrip++) {
+    for(int strip_dir=DIR_U; strip_dir<=DIR_W; strip_dir++) {
+      //      if(myGeometryPtr->GetDirSectionIndexList(strip_dir).size()<2) continue; // just one section per strip direction
+      //      if(myGeometryPtr->GetDirNSections(strip_dir)<2) continue; // just one section per strip direction
+      for(int ipad=-Npads; ipad<=Npads+abs((istrip%2)); ipad++) { // add 1 extra pad for odd relative strip index
+	auto hist=
+	  new TH2D(getStripSectionStartResponseHistogramName(strip_dir, istrip, ipad),
+		   Form("Horizontal response for %s-strip %s%d | Section @ Pad%s%d;#Deltax wrt nearest strip node [mm];#Deltay wrt nearest node [mm];Charge fraction [arb.u.]",
+			myGeometryPtr->GetDirName(strip_dir),
+			(istrip==0 ? "" : (istrip<0 ? "-" : "+")), abs(istrip),
+			(ipad==0 ? "" : (ipad<0 ? "-" : "+")), abs(ipad)),
+		   NbinsXY, -myGeometryPtr->GetPadSize(), myGeometryPtr->GetPadSize(),
+		   NbinsXY, -myGeometryPtr->GetPadSize(), myGeometryPtr->GetPadSize());
+	responseMapPerStripSectionStart[MultiKey3(strip_dir, istrip, ipad)]=hist;
+
+	////// DEBUG
+	//	if(debug_flag) std::cout << __FUNCTION__ << ": responseMapPerSectionStripStart [dir=" << strip_dir << ", delta_strip=" << istrip << ", delta_pad=" << ipad << "]=" << hist << std::endl;
+	////// DEBUG
+      }
+    }
+  }
+
+  ////// DEBUG
+  if(debug_flag) {
+    std::cout << __FUNCTION__ << ": responseMapPerMergedStrip size=" << responseMapPerMergedStrip.size() << std::endl;
+    std::cout << __FUNCTION__ << ": responseMapPerSectionStripStart size=" << responseMapPerStripSectionStart.size() << std::endl;
+  }
+  ////// DEBUG
 
   // find central node of UVW active area
   double xmin, xmax, ymin, ymax;
@@ -357,57 +612,106 @@ void StripResponseCalculator::initializeStripResponse() {
 	      -5*sigma_xy, 5*sigma_xy,
 	      -5*sigma_xy, 5*sigma_xy, 1, 2); // 1 parameter, 2 dimensions
   gauss2d.SetParameter(0, sigma_xy);
-  gauss2d.SetNpx(Nbins*10);
-  gauss2d.SetNpy(Nbins*10);
-  double delta_x, delta_y;
-  const auto weight=1./(double)Npoints;
-  ////// DEBUG
-  //  const auto R2=1.05*pow(myGeometryPtr->GetPadSize(), 2);
-  ////// DEBUG
+  gauss2d.SetNpx(NbinsXY*10);
+  gauss2d.SetNpy(NbinsXY*10);
+  const auto weight=1./(double)NpointsXY;
   const auto hist=responseMapPerMergedStrip.begin()->second;
-  double c1, c2;
-  StripTPC* strip=NULL;
-  for(unsigned long ipoint=0L; ipoint<Npoints; ipoint++) {
+  ////// DEBUG - optimized for speed
+  const auto R2=myGeometryPtr->GetPadSize()*myGeometryPtr->GetPadSize() + hist->GetXaxis()->GetBinWidth(1)*hist->GetYaxis()->GetBinWidth(1);
+  ////// DEBUG - optimized for speed
+  for(unsigned long ipoint=0L; ipoint<NpointsXY; ipoint++) {
+    double delta_x, delta_y;
     gauss2d.GetRandom2(delta_x, delta_y);
     if(debug_flag && ( (ipoint<1000 && ipoint%100==0) ||
 		       ipoint%1000==0 )) {
       std::cout << __FUNCTION__ << ": Generating point=" << ipoint << std::endl;
     }
     for(auto ibin1=1; ibin1<=hist->GetNbinsX(); ibin1++) {
-      c1=hist->GetXaxis()->GetBinCenter(ibin1);
+      double c1=hist->GetXaxis()->GetBinCenter(ibin1);
       for(auto ibin2=1; ibin2<=hist->GetNbinsY(); ibin2++) {
-	c2=hist->GetYaxis()->GetBinCenter(ibin2);
-	////// DEBUG
-	//	if(c1*c1+c2*c2>R2) continue; // stay within radius of PAD SIZE
-	////// DEBUG
-	strip=myGeometryPtr->GetTH2PolyStrip( myGeometryPtr->GetTH2Poly()->FindBin(refNodePosInMM.X()+c1+delta_x, refNodePosInMM.Y()+c2+delta_y) );
+	double c2=hist->GetYaxis()->GetBinCenter(ibin2);
+	////// DEBUG - optimized for speed
+	if(c1*c1+c2*c2>R2) continue; // stay within radius of PAD SIZE
+	////// DEBUG - optimized for speed
+        const auto x=c1+delta_x; // [mm] wrt reference strip node
+	const auto y=c2+delta_y; // [mm] wrt reference strip node
+	const auto strip=myGeometryPtr->GetTH2PolyStrip( myGeometryPtr->GetTH2Poly()->FindBin(refNodePosInMM.X()+x, refNodePosInMM.Y()+y) );
 	if(!strip) continue;
+
+	// fill charge fraction for merged strips
 	const auto it=responseMapPerMergedStrip.find(MultiKey2(strip->Dir(), strip->Num()-refStrips[strip->Dir()]));
 	if(it==responseMapPerMergedStrip.end()) continue;
 	it->second->Fill(c1, c2, weight);
+
+	// fill charge fraction contained in the 1st section wrt total charge of the merged strip (two sections)
+	// when the 1st section ends / 2nd section starts between -Npads and +Npads from the reference strip node postion:
+	// * step-1 - each random hit is projected onto the reference strip axis
+	// * step-2 - relative pad number is computed (delta_pad) for each relative strip index
+	// * step-3A - EVEN relative strip index: delta_pad=0 if projection of the start of the 1st pad of the next section
+	//   is loacated at the reference node position
+	// * step-3B - ODD relative strip index: delta_pad=0 if projection of the centre of 1st pad of the next section
+	//   is located at the reference node position (i.e. shift by 0.5*pad_length towards lower pad numbers of a given strip)
+	// * step-4 - populate histograms with section's starting pad postion ranging from MAX(delta_pad, -Npads) to (Npads+eps),
+	//   where: eps=0 for EVEN relative strip index. 1 for ODD relative strip index
+	/*
+	      ___+3         ___+3    Nstrips=1 x Npads=2 case:
+	     /\      ___+2 /\
+	     \/__+2 /\     \/__+2    REF strip node point is at
+             /\     \/     /\        (relative strip index)=0, (relative pad start index)=0
+	     \/     /\     \/
+	     /\     \/__0  /\
+	     \/__0  /\ REF \/__0
+	     /\     \/     /\         A  strip_unit_vector
+	     \/     /\     \/         |
+	     /\     \/__-2 /\         |
+             \/__-2        \/__-2     |
+	                              +------->>  strip_pitch_vector
+             odd    even   odd
+	     N-1    N+0    N+1
+	*/
+	const auto delta_pads=(int)TMath::Ceil( (TVector2(x,y)*myGeometryPtr->GetStripUnitVector(strip->Dir()))/myGeometryPtr->GetPadPitch()
+					    + ( (strip->Num()-refStrips[strip->Dir()])%2 == 0 ? 0.0 : 0.5) );
+	for(auto ipad=std::max(-Npads, delta_pads); ipad<=Npads+abs(strip->Num()-refStrips[strip->Dir()])%2; ipad++) {
+	  const auto it2=responseMapPerStripSectionStart.find(MultiKey3(strip->Dir(), strip->Num()-refStrips[strip->Dir()], ipad));
+	  if(it2==responseMapPerStripSectionStart.end()) continue;
+	  it2->second->Fill(c1, c2, weight);
+	}
       }
     }
   }
-    
+
+  ////// DEBUG
   if(debug_flag) {
-    ////// DEBUG
-    auto hist=responseMapPerMergedStrip.begin()->second;
+    auto hist=responseMapPerMergedStrip.begin()->second; // same bins for: responseMapPerMergedStrip, responseMapPerStripSectionStart
     for(auto ibin1=1; ibin1<=hist->GetNbinsX(); ibin1++) {
       auto c1=hist->GetXaxis()->GetBinCenter(ibin1);
       for(auto ibin2=1; ibin2<=hist->GetNbinsY(); ibin2++) {
 	auto sum=0.0;
 	auto c2=hist->GetYaxis()->GetBinCenter(ibin2);
-	for(auto & it : responseMapPerMergedStrip) {
-	  sum+=it.second->GetBinContent(ibin1, ibin2);
+	for(auto & it2 : responseMapPerMergedStrip) {
+	  sum+=it2.second->GetBinContent(ibin1, ibin2);
 	}
+	if(sum==0) continue;
 	std::cout << "center=[" << c1 << ", " << c2 << "], total_integral=" << sum << " (expected 1)" << std::endl;
+	//	if(!has_StripSections) continue;
+	for(auto & it3 : responseMapPerStripSectionStart) {
+	  auto it2=responseMapPerMergedStrip.find(MultiKey2((it3.first).key1, (it3.first).key2));
+	  auto frac_per_strip = (it2->second)->GetBinContent(ibin1, ibin2);
+	  auto frac_per_section = (it3.second)->GetBinContent(ibin1, ibin2);
+	  if(frac_per_strip==0) continue;
+	  std::cout << it3.second->GetName()
+		    << ": center=[" << c1 << ", " << c2 << "], merged_strip_fraction=" << frac_per_section/frac_per_strip << std::endl;
+	}
       }
     }
-    ////// DEBUG
-    std::cout << __FUNCTION__ << ": Initialized " << responseMapPerMergedStrip.size() << " horizontal response 2D histograms." << std::endl;
+    std::cout << __FUNCTION__ << ": Initialized " << responseMapPerMergedStrip.size() << " horizontal response 2D histograms (merged strips)" << std::endl;
+    std::cout << __FUNCTION__ << ": Initialized " << responseMapPerStripSectionStart.size() << " horizontal response 2D histograms (section start position)." << std::endl;
   }
+  ////// DEBUG
 }
-void StripResponseCalculator::initializeTimeResponse() {
+
+// re-generate time response histograms with arbitrary granularity
+void StripResponseCalculator::initializeTimeResponse(int NbinsZ) {
   for(auto & it : responseMapPerTimecell) {
     if(it.second) delete it.second;
   }
@@ -417,10 +721,10 @@ void StripResponseCalculator::initializeTimeResponse() {
       new TH1D(getTimeResponseHistogramName(icell),
 	       Form("Vertical response for time cell %s%d;Charge position within reference time cell [mm];Charge fraction [arb.u.]",
 		    (icell==0 ? "" : (icell<0 ? "-" : "+")), abs(icell)),
-	       Nbins, 0., myGeometryPtr->GetTimeBinWidth());
+	       NbinsZ, 0., myGeometryPtr->GetTimeBinWidth());
     responseMapPerTimecell[icell]=hist;
   }
-  //
+
   // Each histogram corresponds to time cell with Z-range=[a,b], where a=start of time cell [mm], b=end of time cell [mm].
   // Center of each bin corresponds to the mean value Z=c [mm] of 1D normal distribution with spread sigmaZ.
   // Fill each bin with fraction of the charge in slice [a,b] computed as:
@@ -440,8 +744,8 @@ void StripResponseCalculator::initializeTimeResponse() {
       ////// DEBUG
     }
   }
+  ////// DEBUG
   if(debug_flag) {
-    ////// DEBUG
     auto hist=responseMapPerTimecell.begin()->second;
     for(auto ibin=1; ibin<=hist->GetNbinsX(); ibin++) {
       auto sum=0.0;
@@ -451,10 +755,11 @@ void StripResponseCalculator::initializeTimeResponse() {
       }
       std::cout << "center=" << c << ", total_integral=" << sum << " (expected 1)" << std::endl;
     }    
-    ////// DEBUG
     std::cout << __FUNCTION__ << ": Initialized " << responseMapPerTimecell.size() << " vertical response 1D histograms." << std::endl;
   }
+  ////// DEBUG
 }
+
 std::shared_ptr<TH2D> StripResponseCalculator::getStripResponseHistogram(int dir, int delta_strip) {
   const auto it=responseMapPerMergedStrip.find(MultiKey2(dir, delta_strip));
   if(it==responseMapPerMergedStrip.end()) return std::shared_ptr<TH2D>();
@@ -466,6 +771,19 @@ std::shared_ptr<TH2D> StripResponseCalculator::getStripResponseHistogram(int dir
   ////// DEBUG
   return result;
 }
+
+std::shared_ptr<TH2D> StripResponseCalculator::getStripSectionStartResponseHistogram(int dir, int delta_strip, int delta_pad) {
+  const auto it=responseMapPerStripSectionStart.find(MultiKey3(dir, delta_strip, delta_pad));
+  if(it==responseMapPerStripSectionStart.end()) return std::shared_ptr<TH2D>();
+  TH2D* hist=(TH2D*)(it->second->Clone());
+  hist->SetDirectory(0); // do not associate this clone with any TFile dir to prevent memory leaks
+  std::shared_ptr<TH2D> result(hist);
+  ////// DEBUG
+  //  if(debug_flag) std::cout << __FUNCTION__ << ": TH2D original=" << it->second << ", clone=" << hist << ", shared_ptr.get=" << result.get() << std::endl;
+  ////// DEBUG
+  return result;
+}
+
 std::shared_ptr<TH1D> StripResponseCalculator::getTimeResponseHistogram(int delta_timecell) {
   const auto it=responseMapPerTimecell.find(delta_timecell);
   if(it==responseMapPerTimecell.end()) return std::shared_ptr<TH1D>();
@@ -483,6 +801,15 @@ const char* StripResponseCalculator::getStripResponseHistogramName(int dir, int 
 	      (delta_strip==0 ? "" :
 	       (delta_strip<0 ? "minus" : "plus")), abs(delta_strip));
 }    
+
+const char* StripResponseCalculator::getStripSectionStartResponseHistogramName(int dir, int delta_strip, int delta_pad) {
+  return Form("h_respXY_%s%s%d_P%s%d", myGeometryPtr->GetDirName(dir),
+	      (delta_strip==0 ? "" :
+	       (delta_strip<0 ? "minus" : "plus")), abs(delta_strip),
+	      (delta_pad==0 ? "" :
+	       (delta_pad<0 ? "minus" : "plus")), abs(delta_pad));
+}
+
 const char* StripResponseCalculator::getTimeResponseHistogramName(int delta_timecell) {
   return Form("h_respZ_%s%d", (delta_timecell==0 ? "" : (delta_timecell<0 ? "minus" : "plus")), abs(delta_timecell));
 }
