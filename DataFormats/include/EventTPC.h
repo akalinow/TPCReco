@@ -53,13 +53,13 @@ class EventTPC {
   bool initOK;      // is geometry valid?
   int time_rebin;   // how many raw data time bins to merge (default=1, i.e. none)
 
-  double max_charge[3];       // maximal value from each strip direction [0-2]
-  int max_charge_timing[3];   // range [0-511], RAW time cells
-  int max_charge_strip[3];    // range [1-1024]
+  std::vector<double> max_charge;       // maximal value from each strip direction [0-2]
+  std::vector<int> max_charge_timing;   // range [0-511], RAW time cells
+  std::vector<int> max_charge_strip;    // range [1-1024]
   double glb_max_charge;
   int glb_max_charge_timing;  // range [0-511]
   int glb_max_charge_channel; // range [0-1023]
-  double tot_charge[3];       // integral per strip direction
+  std::vector<double> tot_charge;       // integral per strip direction
   double glb_tot_charge;      // integral per event
 
  public:
@@ -73,10 +73,11 @@ class EventTPC {
   void SetGeoPtr(std::shared_ptr<GeometryTPC> aPtr);  
   void SetEventInfo(decltype(myEventInfo)& aEvInfo) {myEventInfo = aEvInfo; };
 
-  bool CheckAsadNboards(); // verifies that all AsAd boards are present in this event
-    
-  double GetValByStrip(std::shared_ptr<StripTPC> strip, int time_cell/*, bool &result*/);                   // valid range [0-511]
-  double GetValByStripMerged(int strip_dir, int strip_number, int time_cell/*, bool &result*/);  // valid range [0-2][1-1024][0-511] (all sections)
+  bool CheckAsadNboards() const ; // verifies that all AsAd boards are present in this event
+
+  double GetValByStrip(int strip_dir, int strip_section, int strip_number, int time_cell) const; // valid range [0-2][X-Y][1-1024][0-511] 
+  double GetValByStrip(std::shared_ptr<StripTPC> strip, int time_cell) const;                   // valid range [0-511]
+  double GetValByStripMerged(int strip_dir, int strip_number, int time_cell) const;  // valid range [0-2][1-1024][0-511] (all sections)
 
   const decltype(myEventInfo)& GetEventInfo() const { return myEventInfo; };
   inline GeometryTPC * GetGeoPtr() const { return myGeometryPtr.get(); }
@@ -84,20 +85,20 @@ class EventTPC {
   inline int GetTimeRebin() const { return time_rebin; }       
 
   double GetMaxCharge() const;             // maximal charge from all strips
-  double GetMaxCharge(int strip_dir);      // maximal charge from strips of a given direction
-  double GetMaxCharge(int strip_dir, int strip_number);      // maximal charge from merged strip of a given direction (all sections)
-  double GetMaxCharge(int strip_dir, int strip_section, int strip_number);      // maximal charge from single strip of a given direction (per section)
-  int GetMaxChargeTime(int strip_dir);     // arrival time of the maximal charge from strips of a given direction
-  int GetMaxChargeStrip(int strip_dir);    // strip number with the maximal charge in a given direction 
-  int GetMaxChargeTime();                  // arrival time of the maximal charge from all strips
-  int GetMaxChargeChannel();               // global channel number with the maximal charge from all strips
+  double GetMaxCharge(int strip_dir) const;      // maximal charge from strips of a given direction
+  double GetMaxCharge(int strip_dir, int strip_number) const;      // maximal charge from merged strip of a given direction (all sections)
+  double GetMaxCharge(int strip_dir, int strip_section, int strip_number) const;      // maximal charge from single strip of a given direction (per section)
+  int GetMaxChargeTime(int strip_dir) const;     // arrival time of the maximal charge from strips of a given direction
+  int GetMaxChargeStrip(int strip_dir) const;    // strip number with the maximal charge in a given direction 
+  int GetMaxChargeTime() const;                  // arrival time of the maximal charge from all strips
+  int GetMaxChargeChannel() const;               // global channel number with the maximal charge from all strips
   double GetTotalCharge() const;           // charge integral from all strips
-  double GetTotalCharge(int strip_dir);    // charge integral from strips of a given direction 
-  double GetTotalCharge(int strip_dir, int strip_number); // charge integral from merged strip of a given direction (all sections) 
-  double GetTotalCharge(int strip_dir, int strip_section, int strip_number); // charge integral from single strip of a given direction (per section) 
-  double GetTotalChargeByTimeCell(int time_cell); // charge integral from a single time cell from all strips
-  double GetTotalChargeByTimeCell(int strip_dir, int time_cell); // charge integral from a single time cell from all merged strips in a given direction (all sections)
-  double GetTotalChargeByTimeCell(int strip_dir, int strip_section, int time_cell); // charge integral from a single time cell from all strips in a given direction (per section)
+  double GetTotalCharge(int strip_dir) const;    // charge integral from strips of a given direction 
+  double GetTotalCharge(int strip_dir, int strip_number) const; // charge integral from merged strip of a given direction (all sections) 
+  double GetTotalCharge(int strip_dir, int strip_section, int strip_number) const; // charge integral from single strip of a given direction (per section) 
+  double GetTotalChargeByTimeCell(int time_cell) const; // charge integral from a single time cell from all strips
+  double GetTotalChargeByTimeCell(int strip_dir, int time_cell) const; // charge integral from a single time cell from all merged strips in a given direction (all sections)
+  double GetTotalChargeByTimeCell(int strip_dir, int strip_section, int time_cell) const; // charge integral from a single time cell from all strips in a given direction (per section)
 
   void MakeOneCluster(double thr=-1, int delta_strips=5, int delta_timecells=25); // applies clustering threshold to all space-time data points 
   const SigClusterTPC & GetOneCluster() const;

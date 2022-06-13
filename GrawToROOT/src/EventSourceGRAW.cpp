@@ -393,12 +393,14 @@ void EventSourceGRAW::fillEventRawFromFrame(GET::GDataFrame & aGrawFrame){
   // reset EventRaw.channelData for given {COBO, ASAD} pair
   eventraw::AgetRawMap_t::iterator a_it;
   for(a_it=(myCurrentEventRaw->data).begin(); a_it!=(myCurrentEventRaw->data).end(); a_it++) {
-    if( (a_it->first).key1==COBO_idx && (a_it->first).key2==ASAD_idx) (a_it->second).channelData.resize(0);
+    MultiKey2 aKey(COBO_idx, ASAD_idx);
+    if(std::get<0>(a_it->first)==COBO_idx &&
+       std::get<1>(a_it->first)==ASAD_idx) (a_it->second).channelData.resize(0);
   }
   
   // temporary map of AGET channels
-  std::map< MultiKey2, eventraw::ChannelRaw, multikey2_less> map2; // index={agetIdx[0-3], channelIdx[0-67]}, val=ChannelRaw
-  std::map< MultiKey2, eventraw::ChannelRaw, multikey2_less>::iterator map2_it;
+  std::map< MultiKey2, eventraw::ChannelRaw> map2; // index={agetIdx[0-3], channelIdx[0-67]}, val=ChannelRaw
+  std::map< MultiKey2, eventraw::ChannelRaw>::iterator map2_it;
 
   TClonesArray* channels = aGrawFrame.GetChannels();
   GET::GDataChannel* channel = 0;
@@ -446,8 +448,8 @@ void EventSourceGRAW::fillEventRawFromFrame(GET::GDataFrame & aGrawFrame){
   // NOTE: map2 is sorted by KEY={aget[0-3], chan[0-67]}
   for(map2_it=map2.begin(); map2_it!=map2.end(); map2_it++) {
 
-    uint8_t AGET_idx = (uint8_t)map2_it->first.key1;
-    uint8_t CHAN_idx = (uint8_t)map2_it->first.key2;
+    uint8_t AGET_idx = std::get<0>(map2_it->first);
+    uint8_t CHAN_idx = std::get<1>(map2_it->first);
     MultiKey3_uint8 mkey(COBO_idx, ASAD_idx, AGET_idx);
 
     // add new AGET to map if necessary

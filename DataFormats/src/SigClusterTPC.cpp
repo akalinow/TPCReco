@@ -123,9 +123,9 @@ bool SigClusterTPC::CheckByStripMerged(int strip_dir, int strip_number, int time
   switch(strip_dir) {
   case DIR_U:
   case DIR_V:
-  case DIR_W: return find_if(hitListByDir.find(strip_dir)->second.begin(),
-			     hitListByDir.find(strip_dir)->second.end(),
-			     MultiKey2(time_cell, strip_number))!=hitListByDir.find(strip_dir)->second.end();
+  case DIR_W: return find(hitListByDir.find(strip_dir)->second.begin(),
+			  hitListByDir.find(strip_dir)->second.end(),
+			  MultiKey2(time_cell, strip_number))!=hitListByDir.find(strip_dir)->second.end();
   };
   return false;  
 }
@@ -140,9 +140,9 @@ bool SigClusterTPC::CheckByStrip(int strip_dir, int strip_section, int strip_num
   switch(strip_dir) {
   case DIR_U:
   case DIR_V:
-  case DIR_W: return find_if(hitListByDir2.find(strip_dir)->second.begin(),
-			     hitListByDir2.find(strip_dir)->second.end(),
-			     MultiKey3(time_cell, strip_section, strip_number))!=hitListByDir2.find(strip_dir)->second.end();
+  case DIR_W: return find(hitListByDir2.find(strip_dir)->second.begin(),
+			  hitListByDir2.find(strip_dir)->second.end(),
+			  MultiKey3(time_cell, strip_section, strip_number))!=hitListByDir2.find(strip_dir)->second.end();
   };
   return false;  
 }

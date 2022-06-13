@@ -16,7 +16,17 @@
 
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
-EventTPC::EventTPC(){ Clear(); }
+EventTPC::EventTPC(){
+
+  int n_directions = 3;
+  max_charge.resize(n_directions);
+  max_charge_timing.resize(n_directions);
+  max_charge_strip.resize(n_directions);
+  tot_charge.resize(n_directions);
+
+  Clear();
+
+}
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 void EventTPC::Clear(){
@@ -30,10 +40,10 @@ void EventTPC::Clear(){
   glb_tot_charge = 0.0;
 
   for(int idir=DIR_U; idir<DIR_W; ++idir) {
-    max_charge[idir]=0.0;
-    max_charge_timing[idir]=-1;
-    max_charge_strip[idir]=-1;
-    tot_charge[idir]=0.0;   
+    max_charge.at(idir)=0.0;
+    max_charge_timing.at(idir)=-1;
+    max_charge_strip.at(idir)=-1;
+    tot_charge.at(idir)=0.0;   
   }  
   totalChargeMap.clear();  // 2-key map: strip_dir, strip_number
   totalChargeMap2.clear();  // 2-key map: strip_dir, time_cell
@@ -117,228 +127,105 @@ void EventTPC::updateMaxChargeMaps(const PEventTPC::chargeMapType::key_type & ke
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
-bool EventTPC::CheckAsadNboards() {
+bool EventTPC::CheckAsadNboards() const {
   return IsOK() && myGeometryPtr->GetAsadNboards()==(int)asadMap.size();
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
-double EventTPC::GetValByStripMerged(int strip_dir, int strip_number, int time_cell){
-  //result=false;
-  if(!IsOK() || time_cell<0 || time_cell>=512 || strip_number<1 || strip_number>myGeometryPtr->GetDirNstrips(strip_dir)) {
-    return 0.0;
-  }
-
-  switch(strip_dir) {
-  case DIR_U:
-  case DIR_V:
-  case DIR_W: {
-    MultiKey3 mkey(strip_dir, strip_number, time_cell);
-
-    // check if hit is unique
-    auto  it = chargeMap.find(mkey);
-    if(it==chargeMap.end()){
-      return 0.0;
-    }
-    //result=true;
-    return it->second;
-  }
-  };
-  return 0.0;    
+double EventTPC::GetValByStrip(int strip_dir, int strip_section, int strip_number, int time_cell) const {
+  return chargeMapWithSections.at({strip_dir,  strip_section, strip_number, time_cell});
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
-double EventTPC::GetValByStrip(int strip_dir, int strip_section, int strip_number, int time_cell){
-  return chargeMapWithSections[MultiKey3];
-}
-///////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////
-double EventTPC::GetValByStrip(std::shared_ptr<StripTPC> strip, int time_cell) {
+double EventTPC::GetValByStrip(std::shared_ptr<StripTPC> strip, int time_cell) const {
   if(strip) return GetValByStrip(strip->Dir(), strip->Section(), strip->Num(), time_cell);
   return 0.0;
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
-double EventTPC::GetMaxCharge(int strip_dir, int strip_section, int strip_number) { // maximal charge from single strip of a given direction (per section)
-  if(!IsOK()) return 0.0;
-  switch(strip_dir) {
-  case DIR_U:
-  case DIR_V:
-  case DIR_W: 
-    MultiKey3 mkey(strip_dir, strip_section, strip_number);
-
-    // check if hit is unique
-    auto it = maxChargeMap2.find(mkey);
-    if(it==maxChargeMap2.end()) {
-      return 0.0;
-    }
-    return it->second;
-  };
-  return 0.0;    
+double EventTPC::GetValByStripMerged(int strip_dir, int strip_number, int time_cell) const{
+  return chargeMap.at({strip_dir, strip_number, time_cell});
 }
-
-double EventTPC::GetMaxCharge(int strip_dir, int strip_number) { // maximal charge from merged strip of a given direction (all sections)
-  if(!IsOK()) return 0.0;
-  switch(strip_dir) {
-  case DIR_U:
-  case DIR_V:
-  case DIR_W: 
-    MultiKey2 mkey(strip_dir, strip_number);
-
-    // check if hit is unique
-    auto it = maxChargeMap.find(mkey);
-    if(it==maxChargeMap.end() ) {
-      return 0.0;
-    }
-    return it->second;
-  };
-  return 0.0;    
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+double EventTPC::GetMaxCharge(int strip_dir, int strip_section, int strip_number) const {
+  return maxChargeMap2.at({strip_dir, strip_section, strip_number});
 }
-
-double EventTPC::GetMaxCharge(int strip_dir) {  // maximal charge from strips of a given direction
-  if(!IsOK()) return 0.0;
-  switch(strip_dir) {
-  case DIR_U:
-  case DIR_V:
-  case DIR_W: return max_charge[strip_dir];
-  };
-  return 0.0;    
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+double EventTPC::GetMaxCharge(int strip_dir, int strip_number) const { 
+  return maxChargeMap.at({strip_dir, strip_number});
 }
-
-double EventTPC::GetMaxCharge() const {  // maximal charge from all strips
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+double EventTPC::GetMaxCharge(int strip_dir) const { 
+  return max_charge.at(strip_dir);
+}
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+double EventTPC::GetMaxCharge() const { 
   if(!IsOK()) return 0.0;
   return glb_max_charge;
 }
-
-int EventTPC::GetMaxChargeTime(int strip_dir) {  // arrival time of the maximal charge from strips of a given direction
-  if(!IsOK()) return ERROR;
-  switch(strip_dir) {
-  case DIR_U:
-  case DIR_V:
-  case DIR_W: return max_charge_timing[strip_dir];
-  };
-  return ERROR;    
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+int EventTPC::GetMaxChargeTime(int strip_dir) const {
+  return max_charge_timing.at(strip_dir);
 }
-
-int EventTPC::GetMaxChargeStrip(int strip_dir) {  // strip number with the maximal charge in a given direction
-  if(!IsOK()) return ERROR;
-  switch(strip_dir) {
-  case DIR_U:
-  case DIR_V:
-  case DIR_W: return max_charge_strip[strip_dir];
-  };
-  return ERROR;    
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+int EventTPC::GetMaxChargeStrip(int strip_dir) const {
+  return max_charge_strip.at(strip_dir);
 }
-
-int EventTPC::GetMaxChargeTime() {  // arrival time of the maximal charge from all strips
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+int EventTPC::GetMaxChargeTime() const {
   if(!IsOK()) return ERROR;
   return glb_max_charge_timing;
 }
-
-int EventTPC::GetMaxChargeChannel() {  // global channel number with the maximal charge from all strips
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+int EventTPC::GetMaxChargeChannel() const { 
   if(!IsOK()) return ERROR;
   return glb_max_charge_channel;
 }
-
-double EventTPC::GetTotalCharge(int strip_dir, int strip_section, int strip_number) { // charge integral from single strip of a given direction (per section) 
-  if(!IsOK()) return 0.0;
-  switch(strip_dir) {
-  case DIR_U:
-  case DIR_V:
-  case DIR_W: 
-    MultiKey3 mkey(strip_dir, strip_section, strip_number);
-
-    // check if hit is unique
-    std::map<MultiKey3, double>::iterator it;
-    if( (it=totalChargeMap4.find(mkey))==totalChargeMap4.end() ) {
-      return 0.0;
-    }
-    return it->second;
-  };
-  return 0.0;    
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+double EventTPC::GetTotalCharge(int strip_dir, int strip_section, int strip_number) const {
+  return totalChargeMap4.at({strip_dir, strip_section, strip_number});
 }
-
-double EventTPC::GetTotalCharge(int strip_dir, int strip_number) { // charge integral from merged strip of a given direction (all sections)
-  if(!IsOK()) return 0.0;
-  switch(strip_dir) {
-  case DIR_U:
-  case DIR_V:
-  case DIR_W: 
-    MultiKey2 mkey(strip_dir, strip_number);
-
-    // check if hit is unique
-    std::map<MultiKey2, double>::iterator it;
-    if( (it=totalChargeMap.find(mkey))==totalChargeMap.end() ) {
-      return 0.0;
-    }
-    return it->second;
-  };
-  return 0.0;    
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+double EventTPC::GetTotalCharge(int strip_dir, int strip_number) const {
+  return totalChargeMap.at({strip_dir, strip_number});
 }
-
-double EventTPC::GetTotalCharge(int strip_dir) {  // charge integral from strips of a given direction
-  if(!IsOK()) return 0.0;
-  switch(strip_dir) {
-  case DIR_U:
-  case DIR_V:
-  case DIR_W: return tot_charge[strip_dir];
-  };
-  return 0.0;    
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+double EventTPC::GetTotalCharge(int strip_dir) const{
+  return tot_charge.at(strip_dir);
 }
-
-double EventTPC::GetTotalCharge() const {   // charge integral from all strips
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+double EventTPC::GetTotalCharge() const {
   if(!IsOK()) return 0.0;
   return glb_tot_charge;
 }
 
-double EventTPC::GetTotalChargeByTimeCell(int strip_dir, int strip_section, int time_cell) { // charge integral from a single time cell from all strips in a given direction (per section)
-  if(!IsOK() || time_cell<0 || time_cell>=512 || strip_section<0 || strip_section>2) {
-    return 0.0;
-  }
-  switch(strip_dir) {
-  case DIR_U:
-  case DIR_V:
-  case DIR_W: 
-    MultiKey3 mkey(strip_dir, strip_section, time_cell);
-
-    // check if time slice is unique
-    std::map<MultiKey3, double>::iterator it;
-    if( (it=totalChargeMap5.find(mkey))!=totalChargeMap5.end() ) {
-      return it->second;
-    }
-  };
-  return 0.0;
+double EventTPC::GetTotalChargeByTimeCell(int strip_dir, int strip_section, int time_cell) const {
+  return totalChargeMap5.at({strip_dir, strip_section, time_cell});
 }
-
-double EventTPC::GetTotalChargeByTimeCell(int strip_dir, int time_cell) { // charge integral from a single time cell from all merged strips in a given direction (all sections)
-  if(!IsOK() || time_cell<0 || time_cell>=512) {
-    return 0.0;
-  }
-  switch(strip_dir) {
-  case DIR_U:
-  case DIR_V:
-  case DIR_W: 
-    MultiKey2 mkey(strip_dir, time_cell);
-
-    // check if time slice is unique
-    std::map<MultiKey2, double>::iterator it;
-    if( (it=totalChargeMap2.find(mkey))!=totalChargeMap2.end() ) {
-      return it->second;
-    }
-  };
-  return 0.0;
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+double EventTPC::GetTotalChargeByTimeCell(int strip_dir, int time_cell) const {
+  return totalChargeMap2.at({strip_dir, time_cell});
 }
-
-double EventTPC::GetTotalChargeByTimeCell(int time_cell) { // charge integral from a single time cell from all strips
-  if(!IsOK()) return 0.0;
-  
-  // check if time slice is unique
-  std::map<int, double>::iterator it;
-  if( (it=totalChargeMap3.find(time_cell))!=totalChargeMap3.end() ) {
-    return it->second;
-  }
-  return 0.0;
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+double EventTPC::GetTotalChargeByTimeCell(int time_cell) const {
+  return totalChargeMap3.at({time_cell});
 }
-
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
 void EventTPC::MakeOneCluster(double thr, int delta_strips, int delta_timecells) {  // applies clustering threshold to all space-time data points
 
   myCluster = SigClusterTPC(this);
@@ -688,14 +575,13 @@ TH1D *EventTPC::GetTimeProjection() {  // whole event, all strips
 		1.*myGeometryPtr->GetAgetNtimecells()-0.5 ); // ends at 511.5 (cells numbered from 0 to 511)
   // fill new histogram
   if(h) {
-    int counter=0;
+    int glb_channel_idx=0;
     for(int icobo=0; icobo<myGeometryPtr->GetCoboNboards(); icobo++) {
       for(int iasad=0; iasad<myGeometryPtr->GetAsadNboards(icobo); iasad++) {
 	for(int ichan=0; ichan<myGeometryPtr->GetAgetNchannels()*myGeometryPtr->GetAgetNchips(); ichan++) {
-	  counter++;
+	  ++glb_channel_idx;
 	  for(int icell=0; icell<=myGeometryPtr->GetAgetNtimecells(); icell++) {
-	    double val = GetValByGlobalChannel(counter, icell);
-	    //	    if(val!=0.0) h->Fill(1.*icell, val);
+	    double val = GetValByStrip(myGeometryPtr->GetStripByGlobal(glb_channel_idx), icell);
 	    h->Fill(1.*icell, val); 
 	  }
 	}
@@ -903,8 +789,7 @@ std::shared_ptr<TH2D> EventTPC::GetChannels(int cobo_idx, int asad_idx){ // vali
   for(int aget_num=0; aget_num<myGeometryPtr->GetAgetNchips(); ++aget_num) {
     for(int aget_ch=0; aget_ch<myGeometryPtr->GetAgetNchannels();++aget_ch){
       for(int icell=0; icell<myGeometryPtr->GetAgetNtimecells(); icell++) {
-        double val = GetValByAgetChannel(cobo_idx, asad_idx, aget_num, aget_ch, icell);
-	//        if(val) result->Fill(1.*icell, aget_num*myGeometryPtr->GetAgetNchannels()+aget_ch, val);
+	double val = GetValByStrip(myGeometryPtr->GetStripByAget(cobo_idx, asad_idx, aget_num, aget_ch), icell);	
 	result->Fill(1.*icell, aget_num*myGeometryPtr->GetAgetNchannels()+aget_ch, val); 
       }
     }
@@ -929,8 +814,7 @@ std::shared_ptr<TH2D> EventTPC::GetChannels_raw(int cobo_idx, int asad_idx){ // 
   for(int aget_num=0; aget_num<myGeometryPtr->GetAgetNchips(); ++aget_num) {
     for(int aget_ch=0; aget_ch<myGeometryPtr->GetAgetNchannels_raw();++aget_ch){
       for(int icell=0; icell<myGeometryPtr->GetAgetNtimecells(); icell++) {
-        double val = GetValByAgetChannel_raw(cobo_idx, asad_idx, aget_num, aget_ch, icell);
-	//        if(val) result->Fill(1.*icell, aget_num*myGeometryPtr->GetAgetNchannels_raw()+aget_ch, val);
+	double val = GetValByStrip(myGeometryPtr->GetStripByAget_raw(cobo_idx, asad_idx, aget_num, aget_ch), icell);
 	result->Fill(1.*icell, aget_num*myGeometryPtr->GetAgetNchannels_raw()+aget_ch, val); 
       }
     }
@@ -1255,9 +1139,9 @@ std::vector<TH2D*> EventTPC::Get2D(const SigClusterTPC &cluster, double radius, 
 
     for(it1=hitPos.begin(); it1!=hitPos.end(); it1++) {
 
-      int u1=(it1->first).key1;
-      int v1=(it1->first).key2;
-      int w1=(it1->first).key3;
+      int u1=std::get<0>(it1->first);
+      int v1=std::get<1>(it1->first);
+      int w1=std::get<2>(it1->first);
       double qtot[3] = {0., 0., 0.};  // sum of charges along three directions (for a given time range)
       double    q[3] = {0., 0., 0.};  // charge in a given strip (for a given time range)
       q[DIR_U] = GetValByStripMerged(DIR_U, u1, icell);
@@ -1266,9 +1150,9 @@ std::vector<TH2D*> EventTPC::Get2D(const SigClusterTPC &cluster, double radius, 
 
       // loop over directions
       for(it2=hitPos.begin(); it2!=hitPos.end(); it2++) {
-	int u2=(it2->first).key1;
-	int v2=(it2->first).key2;
-	int w2=(it2->first).key3;
+	int u2=std::get<0>(it2->first);
+	int v2=std::get<1>(it2->first);
+	int w2=std::get<2>(it2->first);
 	
 	if(u1==u2) {
 	  qtot[DIR_V] += GetValByStripMerged(DIR_V, v2, icell);
@@ -1300,20 +1184,20 @@ std::vector<TH2D*> EventTPC::Get2D(const SigClusterTPC &cluster, double radius, 
 
 	case 0: // mehtod #1 - divide charge equally 
 	  val = 
-	    GetValByStripMerged(DIR_U, (it->first).key1, icell) / n_match[0].at((it->first).key1) +
-	    GetValByStripMerged(DIR_V, (it->first).key2, icell) / n_match[1].at((it->first).key2) +
-	    GetValByStripMerged(DIR_W, (it->first).key3, icell) / n_match[2].at((it->first).key3);
+	    GetValByStripMerged(DIR_U, std::get<0>(it->first), icell) / n_match[0].at(std::get<0>(it->first)) +
+	    GetValByStripMerged(DIR_V, std::get<1>(it->first), icell) / n_match[1].at(std::get<1>(it->first)) +
+	    GetValByStripMerged(DIR_W, std::get<2>(it->first), icell) / n_match[2].at(std::get<2>(it->first));
 	  break;
 
 	case 1: // method #2 - divide charge according to charge-fraction in two other directions
 
 	  val = 
 	    GetValByStripMerged(DIR_U, 
-			  (it->first).key1, icell)*0.5*( fraction[DIR_V].at(it->first) + fraction[DIR_W].at(it->first) ) +
+				std::get<0>(it->first), icell)*0.5*( fraction[DIR_V].at(it->first) + fraction[DIR_W].at(it->first) ) +
 	    GetValByStripMerged(DIR_V, 
-			  (it->first).key2, icell)*0.5*( fraction[DIR_W].at(it->first) + fraction[DIR_U].at(it->first) ) +
+				std::get<1>(it->first), icell)*0.5*( fraction[DIR_W].at(it->first) + fraction[DIR_U].at(it->first) ) +
 	    GetValByStripMerged(DIR_W, 
-			  (it->first).key3, icell)*0.5*( fraction[DIR_U].at(it->first) + fraction[DIR_V].at(it->first) );
+				std::get<2>(it->first), icell)*0.5*( fraction[DIR_U].at(it->first) + fraction[DIR_V].at(it->first) );
 	  break;
 
 	default: 
@@ -1522,20 +1406,20 @@ TH3D *EventTPC::Get3D(const SigClusterTPC &cluster, double radius, int rebin_spa
 
     for(it1=hitPos.begin(); it1!=hitPos.end(); it1++) {
 
-      int u1=(it1->first).key1;
-      int v1=(it1->first).key2;
-      int w1=(it1->first).key3;
-      double qtot[3] = {0., 0., 0.};  // sum of charges along three directions (for a given time range)
-      double    q[3] = {0., 0., 0.};  // charge in a given strip (for a given time range)
+      int u1=std::get<0>(it1->first);
+      int v1=std::get<1>(it1->first);
+      int w1=std::get<2>(it1->first);
+      std::vector<double> qtot = {0., 0., 0.};  // sum of charges along three directions (for a given time range)
+      std::vector<double> q = {0., 0., 0.};  // charge in a given strip (for a given time range)
       q[DIR_U] = GetValByStripMerged(DIR_U, u1, icell);
       q[DIR_V] = GetValByStripMerged(DIR_V, v1, icell);
       q[DIR_W] = GetValByStripMerged(DIR_W, w1, icell);
 
       // loop over directions
       for(it2=hitPos.begin(); it2!=hitPos.end(); it2++) {
-	int u2=(it2->first).key1;
-	int v2=(it2->first).key2;
-	int w2=(it2->first).key3;
+	int u2=std::get<0>(it2->first);
+	int v2=std::get<1>(it2->first);
+	int w2=std::get<2>(it2->first);
 	
 	if(u1==u2) {
 	  qtot[DIR_V] += GetValByStripMerged(DIR_V, v2, icell);
@@ -1567,19 +1451,19 @@ TH3D *EventTPC::Get3D(const SigClusterTPC &cluster, double radius, int rebin_spa
 
 	case 0: // mehtod #1 - divide charge equally
 	  val = 
-	    GetValByStripMerged(DIR_U, (it->first).key1, icell) / n_match[0].at((it->first).key1) +
-	    GetValByStripMerged(DIR_V, (it->first).key2, icell) / n_match[1].at((it->first).key2) +
-	    GetValByStripMerged(DIR_W, (it->first).key3, icell) / n_match[2].at((it->first).key3);
+	    GetValByStripMerged(DIR_U, std::get<0>(it->first), icell) / n_match[0].at(std::get<0>(it->first)) +
+	    GetValByStripMerged(DIR_V, std::get<1>(it->first), icell) / n_match[1].at(std::get<1>(it->first)) +
+	    GetValByStripMerged(DIR_W, std::get<2>(it->first), icell) / n_match[2].at(std::get<2>(it->first));
 	  break;
 
 	case 1: // method #2 - divide charge according to charge-fraction in two other directions
 	  val = 
 	    GetValByStripMerged(DIR_U, 
-			  (it->first).key1, icell)*0.5*( fraction[DIR_V].at(it->first) + fraction[DIR_W].at(it->first) ) +
+			  std::get<0>(it->first), icell)*0.5*( fraction[DIR_V].at(it->first) + fraction[DIR_W].at(it->first) ) +
 	    GetValByStripMerged(DIR_V, 
-			  (it->first).key2, icell)*0.5*( fraction[DIR_W].at(it->first) + fraction[DIR_U].at(it->first) ) +
+			  std::get<1>(it->first), icell)*0.5*( fraction[DIR_W].at(it->first) + fraction[DIR_U].at(it->first) ) +
 	    GetValByStripMerged(DIR_W, 
-			  (it->first).key3, icell)*0.5*( fraction[DIR_U].at(it->first) + fraction[DIR_V].at(it->first) );
+			  std::get<2>(it->first), icell)*0.5*( fraction[DIR_U].at(it->first) + fraction[DIR_V].at(it->first) );
 	  break;
 	  
 	default: 

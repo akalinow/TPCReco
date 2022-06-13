@@ -456,11 +456,11 @@ bool TrackSegment2D::SetCluster(SigClusterTPC &cluster, int dir) { // cluster = 
   for(it=cluster_hits.begin(); it!=cluster_hits.end(); it++) {
 
     const double uvw_proj =
-      geo_ptr->Strip2posUVW(dir, (*it).key2, err_flag); // U/V/W [mm]
+      geo_ptr->Strip2posUVW(dir, std::get<1>(*it), err_flag); // U/V/W [mm]
     const double z =
-      geo_ptr->Timecell2pos( ((*it).key1+0.5), err_flag); // Z [mm] - middle of the time cell
+      geo_ptr->Timecell2pos( (std::get<0>(*it)+0.5), err_flag); // Z [mm] - middle of the time cell
     const double val =
-      cluster.GetEvtPtr()->GetValByStripMerged(dir, (*it).key2, (*it).key1); // all sections
+      cluster.GetEvtPtr()->GetValByStripMerged(dir, std::get<1>(*it), std::get<0>(*it)); // all sections
 
     AddHit2D( uvw_proj, z, val);
     

@@ -69,7 +69,7 @@ class UVWprojector {
   TH1 *input_hist; // input histogram to be projected (can be TH3D/TH3F or TH2D/TH2F)
   bool is_input_2D; // is the event input histogram of TH2D or TH3D type?
   
-  std::map<MultiKey2 /* TH2 bin index [1..NX*NY] */, BinFracMap, multikey2_less> fAreaFractionMap;
+  std::map<MultiKey2 /* TH2 bin index [1..NX*NY] */, BinFracMap> fAreaFractionMap;
   std::map<int /* TH1 bin index [1..NX] */, BinFracMap> fTimeFractionMap; 
   
  private: 
