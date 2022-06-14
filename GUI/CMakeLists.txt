@@ -33,8 +33,6 @@ ROOT_GENERATE_DICTIONARY(G__${MODULE_NAME}
   ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/DirectoryWatch.h
   LINKDEF ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/RootDictLinkDef.h)
 
-# The data is just added to the executable, because in some IDEs (QtCreator) 
-# files are invisible when they are not explicitly part of the project.
 #
 add_library(${MODULE_NAME} SHARED ${sources} G__${MODULE_NAME}.cxx)
 

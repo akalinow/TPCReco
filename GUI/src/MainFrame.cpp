@@ -253,18 +253,10 @@ void MainFrame::InitializeEventSource(){
     recoClusterDeltaTimeCells = abs(myConfig.get<int>("recoClusterDeltaTimeCells")); // set changes
   }
   myHistoManager.setRecoClusterParameters(recoClusterEnable, recoClusterThreshold, recoClusterDeltaStrips, recoClusterDeltaTimeCells);
-
-  ////// DEBUG
-  std::cout << __FUNCTION__ << ": myHistoManager.recoClusterEnable = " << myHistoManager.getRecoClusterEnable() << std::endl;
-  std::cout << __FUNCTION__ << ": myHistoManager.recoClusterThreshold = " << myHistoManager.getRecoClusterThreshold() << std::endl;
-  std::cout << __FUNCTION__ << ": myHistoManager.recoClusterDeltaStrips = " << myHistoManager.getRecoClusterDeltaStrips() << std::endl;
-  std::cout << __FUNCTION__ << ": myHistoManager.recoClusterDeltaTimeCells = " << myHistoManager.getRecoClusterDeltaTimeCells() << std::endl;
-  ////// DEBUG
   
   if(myWorkMode!=M_ONLINE_GRAW_MODE && myWorkMode!=M_ONLINE_NGRAW_MODE){
     myEventSource->loadDataFile(dataFileName);
     myEventSource->loadFileEntry(0);
-    myEventSource->loadFileEntry(20);//TEST
   }
   myHistoManager.setGeometry(myEventSource->getGeometry());
   if(isRecoModeOn) myHistoManager.openOutputStream(dataFileName);
