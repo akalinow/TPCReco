@@ -1,5 +1,13 @@
 # TPCReco
 
+## Dependences
+
+```
+sudo apt-get update
+sudo apt-get install $(cat requirements_apt.txt)
+pip3 install -H -r requirements_pip3.txt
+```
+
 ## Installation instructions:
 
 ```

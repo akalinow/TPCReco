@@ -67,7 +67,7 @@ void EventTPC::SetGeoPtr(std::shared_ptr<GeometryTPC> aPtr) {
 void EventTPC::SetChargeMap(const PEventTPC::chargeMapType & aChargeMap){
 
   chargeMapWithSections = aChargeMap;
-  
+
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////

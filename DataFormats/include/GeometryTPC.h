@@ -70,7 +70,7 @@ class GeometryTPC {
   int grid_ny;                     // partition size of TH2Poly in Y-dir
   bool isOK_TH2Poly;               // is TH2Poly already initialized?
   bool _debug;                     // debug/verbose info flag
-  TGraph* tp_convex;               // for internal storage of the convex hull for UVW active area
+  TH2PolyBin* tp_convex;           // for internal storage of the convex hull for UVW active area
 
   // Setter methods 
   
@@ -215,6 +215,11 @@ class GeometryTPC {
 
   TGraph GetActiveAreaConvexHull(double vetoBand=0); // get convex hull [mm] of the entire UVW active area
                                                      // with (optionally) excluded outer VETO band [mm]
+  bool IsInsideActiveVolume(TVector3 point); // checks if 3D point [mm] has X,Y inside
+                                             // UVW active area and Z within [zmin, zmax] range
+  bool IsInsideActiveArea(TVector2 point); // checks if 2D point [mm] is inside UVW active area
+  bool IsInsideElectronicsRange(double z); // checks if Z coordinate [mm] is inside Z-slice covered by the GET electronics
+  bool IsInsideElectronicsRange(TVector3 point); // checks 3D point [mm] is inside Z-slice covered by the GET electronics
 
   std::tuple<double, double> rangeX(); //min/max X [mm] cartesian coordinates covered by UVW active area
   std::tuple<double, double> rangeY(); //min/max Y [mm] cartesian coordinates covered by UVW active area
@@ -224,7 +229,7 @@ class GeometryTPC {
                                                          // and min/max Z [mm] cartesian coordinates covered by drift cage
   std::tuple<double, double> rangeStripSectionInMM(int dir, int section); // [mm] min/max (signed) distance between projection of outermost strip's central axis and projection of the origin (X=0,Y=0) point on the U/V/W pitch axis for a given direction (per section)
   std::tuple<double, double> rangeStripDirInMM(int dir); // [mm] min/max (signed) distance between projection of outermost strip's central axis and projection of the origin (X=0,Y=0) point on the U/V/W pitch axis for a given direction (all sections)
-    
+
   //  ClassDef(GeometryTPC,1)
 };
 

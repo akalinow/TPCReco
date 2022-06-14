@@ -38,6 +38,8 @@ public:
 
   void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);
 
+  void setPressure(double aPressure);
+
   void reconstruct();
 
   const SigClusterTPC & getCluster() const { return myEvent->GetOneCluster();}
@@ -86,6 +88,7 @@ private:
   std::shared_ptr<GeometryTPC> myGeometryPtr;
   RecHitBuilder myRecHitBuilder;
   dEdxFitter mydEdxFitter;
+  double myPressure{190};
   
   std::vector<double> phiPitchDirection;
 

@@ -66,7 +66,7 @@ target_compile_options(SimpleGenerator PUBLIC ${CMAKE_ROOT_CFLAGS})
 # Linker flags
 #
 target_link_libraries(${MODULE_NAME} ${ROOT_LIBRARIES} SimUtils)
-target_link_libraries(EventGenerator PUBLIC ${MODULE_NAME} SimUtils DataFormats Utilities )
+target_link_libraries(EventGenerator PUBLIC ${MODULE_NAME} SimUtils DataFormats Utilities)
 target_link_libraries(SimpleGenerator PUBLIC ${MODULE_NAME} DataFormats Utilities)
 #target_link_libraries(LineGenerator_test PUBLIC ${MODULE_NAME} DataFormats Utilities)
 #target_link_libraries(FromGeantGenerator_test PUBLIC ${MODULE_NAME}  DataFormats Utilities)

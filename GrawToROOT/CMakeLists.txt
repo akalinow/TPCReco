@@ -3,6 +3,8 @@ set(MODULE_NAME "GrawToROOT")
 if(EXISTS ${GET_VERSION_DIR})
 
   MESSAGE( STATUS "Adding CMake fragment for module:         " ${MODULE_NAME} )
+  set(TPCRECO_LIBRARIES ${TPCRECO_LIBRARIES} ${TPCRECO_PREFIX}${MODULE_NAME}  PARENT_SCOPE)
+  set(TPCRECO_LIBRARIES_LOCAL ${TPCRECO_LIBRARIES})
   ###############################################################################
   ## file globbing ##############################################################
   ###############################################################################
@@ -25,7 +27,10 @@ if(EXISTS ${GET_VERSION_DIR})
   ## target definitions #########################################################
   ###############################################################################
   add_library(${MODULE_NAME} SHARED ${sources})
-  target_link_libraries(${MODULE_NAME} ${ROOT_LIBRARIES} ${GET_LIBRARIES} DataFormats)
+  add_library(${TPCRECO_PREFIX}${MODULE_NAME} ALIAS ${MODULE_NAME})
+  set_target_properties(${MODULE_NAME} PROPERTIES PREFIX ${TPCRECO_PREFIX})
+  
+  target_link_libraries(${MODULE_NAME} ${TPCRECO_LIBRARIES_LOCAL} ${ROOT_LIBRARIES} ${GET_LIBRARIES})
   # The data is just added to the executable, because in some IDEs (QtCreator) 
   # files are invisible when they are not explicitly part of the project.
   #
@@ -45,10 +50,10 @@ if(EXISTS ${GET_VERSION_DIR})
 
   # Linker flags
   #
-  target_link_libraries(grawToEventTPC PUBLIC  ${ROOT_LIBRARIES} DataFormats Utilities GrawToROOT ${GET_LIBRARIES} ${Boost_LIBRARIES})
-  target_link_libraries(testEventTPCread PUBLIC DataFormats)
-  target_link_libraries(testEventTPCreadTChain PUBLIC DataFormats)
-  target_link_libraries(grawToEventRaw PUBLIC DataFormats Utilities GrawToROOT ${GET_LIBRARIES} ${Boost_LIBRARIES})
+  target_link_libraries(grawToEventTPC PUBLIC ${MODULE_NAME} ${TPCRECO_LIBRARIES} ${GET_LIBRARIES} ${Boost_LIBRARIES})
+  target_link_libraries(testEventTPCread PUBLIC ${MODULE_NAME} ${TPCRECO_LIBRARIES})
+  target_link_libraries(testEventTPCreadTChain PUBLIC ${MODULE_NAME} ${TPCRECO_LIBRARIES})
+  target_link_libraries(grawToEventRaw PUBLIC ${MODULE_NAME} ${TPCRECO_LIBRARIES} ${GET_LIBRARIES} ${Boost_LIBRARIES})
 
   # All install commands get the same destination. this allows us to use paths
   # relative to the executable.

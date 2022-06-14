@@ -78,10 +78,7 @@ typedef struct {Float_t eventId, frameId, length,
     x0, y0, z0, x1, y1, z1;} TrackData;
 ```
 
-The `Reco_EventTPC` ROOT files contain full reconstruction information:
-```
-
-```
+The `Reco_EventTPC` ROOT files contain full reconstruction information.
 
 The `TrackTree` TTree can be analysed with a example scripts:
 * [makeCalibrationPlots.cpp](test/makeCalibrationPlots.cpp) - a script for plotting track length for calibration data

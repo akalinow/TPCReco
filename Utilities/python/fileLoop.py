@@ -9,27 +9,30 @@ from tpc_utils import *
 def analyzeSingleBatch(runId, fileCSV, geometryFile, command):
 
     outputName = runId + ".out"
-    
-    runId = runId[:-9]
+
+    runId = runId[:19]
     if not os.path.isdir(runId):
         os.mkdir(runId)
 
     arguments = " --geometryFile " + geometryFile + " --dataFile " + fileCSV + " > "+outputName+" 2>&1 &"
     print("Running job id:",runId,"\nfor file(s):\n\t"+ fileCSV.replace(",","\n\t"))
+
+    #return #TEST
+    
     os.chdir(runId)
     os.system("ln -s ../*Formats* ./")
     os.system("ln -s ../*.dat ./")
     print(command+arguments)
     exit(0) #TEST
     os.system(command+arguments)
-    time.sleep(1)
+    time.sleep(2)
     os.chdir("../")
 ################################################
 ################################################
 def analyzeDataInDirectory(dataPath, geometryFile, procName):
     
     command = "../../bin/"+procName
-    procCount = 4
+    procCount = 8
 
     runDataList = getCSVinputList(dataPath)
 

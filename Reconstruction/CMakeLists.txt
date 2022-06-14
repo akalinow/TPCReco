@@ -1,6 +1,7 @@
 set(MODULE_NAME "Reconstruction")
 MESSAGE( STATUS "Adding CMake fragment for module:         " ${MODULE_NAME} )
-
+set(TPCRECO_LIBRARIES ${TPCRECO_LIBRARIES} " " ${TPCRECO_PREFIX}${MODULE_NAME}  PARENT_SCOPE)
+set(TPCRECO_LIBRARIES ${TPCRECO_LIBRARIES} ${TPCRECO_PREFIX}${MODULE_NAME} PARENT_SCOPE)
 ###############################################################################
 ## file globbing ##############################################################
 ###############################################################################
@@ -23,24 +24,16 @@ include_directories(${PROJECT_SOURCE_DIR}/DataFormats/include)
 ###############################################################################
 ## target definitions #########################################################
 ###############################################################################
-# Compiler flags.
-#
-###add_library(${MODULE_NAME} SHARED ${sources})
-###target_link_libraries(${MODULE_NAME} ${ROOT_LIBRARIES})
-
-# All install commands get the same destination. this allows us to use paths
-# relative to the executable.
-###install(TARGETS ${MODULE_NAME} LIBRARY DESTINATION lib)
 
 # ROOT dictionary for persistens classes
 ROOT_GENERATE_DICTIONARY(G__${MODULE_NAME}
   ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/IonRangeCalculator.h
   LINKDEF ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/LinkDef.h)
 
-# The data is just added to the executable, because in some IDEs (QtCreator) 
-# files are invisible when they are not explicitly part of the project.
-#
 add_library(${MODULE_NAME} SHARED ${sources} G__${MODULE_NAME}.cxx)
+add_library(${TPCRECO_PREFIX}${MODULE_NAME} ALIAS ${MODULE_NAME})
+set_target_properties(${MODULE_NAME} PROPERTIES PREFIX ${TPCRECO_PREFIX})
+
 target_link_libraries(${MODULE_NAME} ${ROOT_LIBRARIES})
 # Compiler flags.
 #

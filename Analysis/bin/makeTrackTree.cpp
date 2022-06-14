@@ -14,7 +14,6 @@
 #include "IonRangeCalculator.h"
 #include "dEdxFitter.h"
 #include "TrackBuilder.h"
-#include "HistoManager.h"
 #include "EventSourceROOT.h"
 #ifdef WITH_GET
 #include "EventSourceGRAW.h"
@@ -130,7 +129,7 @@ int main(int argc, char **argv){
   aStopwatch.Stop();
   std::cout<<KBLU<<"Real time:       "<<RST<<aStopwatch.RealTime()<<" s"<<std::endl;
   std::cout<<KBLU<<"CPU time:        "<<RST<<aStopwatch.CpuTime()<<" s"<<std::endl;
-  std::cout<<KBLU<<"Processing rate: "<<RST<<nEntriesProcessed/aStopwatch.RealTime()<< " ev./s"<<std::endl;
+  std::cout<<KBLU<<"Processing rate: "<<RST<<nEntriesProcessed/aStopwatch.RealTime()<< " ev/s"<<std::endl;
 
   return 0;
 }
@@ -186,15 +185,13 @@ int makeTrackTree(const  std::string & geometryFileName,
   leafNames += "xAlphaEnd:yAlphaEnd:zAlphaEnd:";
   leafNames += "xCarbonEnd:yCarbonEnd:zCarbonEnd";
   tree->Branch("track",&track_data,leafNames.c_str());
-  
+
+  int index = geometryFileName.find("mbar");
+  double pressure = stof(geometryFileName.substr(index-3, 3));
   TrackBuilder myTkBuilder;
   myTkBuilder.setGeometry(myEventSource->getGeometry());
-  dEdxFitter mydEdxFitter;
-  IonRangeCalculator myRangeCalculator(gas_mixture_type::CO2,190.0,293.15);
-
-  HistoManager myHistoManager;
-  myHistoManager.setGeometry(myEventSource->getGeometry());
-  myHistoManager.toggleAutozoom();
+  myTkBuilder.setPressure(pressure);
+  IonRangeCalculator myRangeCalculator(gas_mixture_type::CO2,pressure,293.15);
 
   RecoOutput myRecoOutput;
   std::string fileName = InputFileHelper::tokenize(dataFileName)[0];
@@ -213,17 +210,20 @@ int makeTrackTree(const  std::string & geometryFileName,
 
   //Event loop
   unsigned int nEntries = myEventSource->numberOfEntries();
-  nEntries = 200;
+  //nEntries = 500;
   for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
     if(nEntries>10 && iEntry%(nEntries/10)==0){
       std::cout<<KBLU<<"Processed: "<<int(100*(double)iEntry/nEntries)<<" % events"<<RST<<std::endl;
     }
     myEventSource->loadFileEntry(iEntry);
+    /*
     myEventSource->getCurrentEvent()->MakeOneCluster(35, 0, 0);
     if(myEventSource->getCurrentEvent()->GetOneCluster().GetNhits()>20000){
       std::cout<<KRED<<"Noisy event - skipping."<<RST<<std::endl;
       continue;
-    }			      
+      }
+    */
+    
     myTkBuilder.setEvent(myEventSource->getCurrentEvent());
     myTkBuilder.reconstruct();
 
@@ -244,7 +244,7 @@ int makeTrackTree(const  std::string & geometryFileName,
     const TVector3 & carbonEnd = aTrack3D.getSegments().back().getEnd();
     
     const TVector3 & tangent = aTrack3D.getSegments().front().getTangent();
-    double phi = atan2(tangent.Z(),-tangent.Y());
+    double phi = atan2(-tangent.Z(), tangent.Y());
     double cosTheta = -tangent.X();
 
     TVector3 horizontal(0,-1,0);

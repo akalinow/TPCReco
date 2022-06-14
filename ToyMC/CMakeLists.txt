@@ -1,5 +1,7 @@
 set(MODULE_NAME "ToyMC")
 MESSAGE( STATUS "Adding CMake fragment for module:         " ${MODULE_NAME} )
+set(TPCRECO_LIBRARIES_LOCAL ${TPCRECO_LIBRARIES})
+set(TPCRECO_LIBRARIES ${TPCRECO_LIBRARIES} ${TPCRECO_PREFIX}${MODULE_NAME}  PARENT_SCOPE)
 
 ###############################################################################
 ## file globbing ##############################################################
@@ -33,8 +35,8 @@ target_compile_options(TrackSegmentTPC_test PUBLIC ${CMAKE_ROOT_CFLAGS})
 
 # Linker flags
 #
-target_link_libraries(GeometryTPC_test PUBLIC DataFormats Utilities)
-target_link_libraries(TrackSegmentTPC_test PUBLIC DataFormats Utilities)
+target_link_libraries(GeometryTPC_test PUBLIC ${TPCRECO_LIBRARIES})
+target_link_libraries(TrackSegmentTPC_test PUBLIC ${TPCRECO_LIBRARIES})
 
 # All install commands get the same destination. this allows us to use paths
 # relative to the executable.

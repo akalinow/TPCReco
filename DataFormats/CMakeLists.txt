@@ -1,6 +1,7 @@
 set(MODULE_NAME "DataFormats")
 MESSAGE( STATUS "Adding CMake fragment for module:         " ${MODULE_NAME} )
-
+set(TPCRECO_LIBRARIES ${TPCRECO_LIBRARIES} ${TPCRECO_PREFIX}${MODULE_NAME}  PARENT_SCOPE)
+set(TPCRECO_LIBRARIES_LOCAL ${TPCRECO_LIBRARIES})
 ###############################################################################
 ## file globbing ##############################################################
 ###############################################################################
@@ -40,6 +41,9 @@ ROOT_GENERATE_DICTIONARY(G__${MODULE_NAME}
 # files are invisible when they are not explicitly part of the project.
 #
 add_library(${MODULE_NAME} SHARED ${sources} G__${MODULE_NAME}.cxx)
+add_library(${TPCRECO_PREFIX}${MODULE_NAME} ALIAS ${MODULE_NAME})
+set_target_properties(${MODULE_NAME} PROPERTIES PREFIX ${TPCRECO_PREFIX})
+
 target_link_libraries(${MODULE_NAME} ${ROOT_LIBRARIES})
 # Compiler flags.
 #

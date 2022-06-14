@@ -35,7 +35,7 @@ std::shared_ptr<GeometryTPC> loadGeometry(const std::string fileName){
 Track3D *loadRecoEvent(const std::string fileName){
 
   if (!gROOT->GetClass("Track3D")){
-    R__LOAD_LIBRARY(libDataFormats.so);
+    R__LOAD_LIBRARY(libTPCDataFormats.so);
   }
   
   TFile *aFile = new TFile(fileName.c_str());

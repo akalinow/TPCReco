@@ -37,6 +37,8 @@ class IonRangeCalculator{
 
   double getIonEnergyMeV(pid_type ion, double range_mm); // interpolated result in [MeV] for the current {gas, p, T}
 
+  double getIonMassMeV(pid_type ion); // particle or isotope mass in [MeV/c^2]
+  
   bool IsOK(); // check if there is at least one valid range/energy curve
     
  private:
@@ -47,6 +49,8 @@ class IonRangeCalculator{
   std::map<MultiKey2, double>  refGasTemperatureMap; // reference temperature for given {gas, ion} pair
 
   gas_mixture_type myGasMixture{gas_mixture_type::GAS_MIN};   // GAS index 
+  std::map<pid_type, double> massTableMap; // particle or isotope mass table in [MeV/c^2]
+  
   double myGasTemperature{0}; // Kelvins
   double myGasPressure{0};    // mbar
   

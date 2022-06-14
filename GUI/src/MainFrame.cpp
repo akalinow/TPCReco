@@ -660,8 +660,8 @@ void MainFrame::Update(){
   fMarkersManager->setEnabled(isRecoModeOn);
 
   ClearCanvases();      
-  myHistoManager.drawRawHistos(fRawHistosCanvas, isRateDisplayOn);
-  myHistoManager.drawTechnicalHistos(fTechHistosCanvas, myEventSource->getGeometry()->GetAgetNchips());
+  //myHistoManager.drawRawHistos(fRawHistosCanvas, isRateDisplayOn);
+  //myHistoManager.drawTechnicalHistos(fTechHistosCanvas, myEventSource->getGeometry()->GetAgetNchips());
 
   if(!isRecoModeOn){
     myHistoManager.drawRawHistos(fMainCanvas, isRateDisplayOn);

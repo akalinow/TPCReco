@@ -161,7 +161,6 @@ public:
   TrackBuilder myTkBuilder;
   RecoOutput myRecoOutput;
   DotFinder myDotFinder;
-  dEdxFitter mydEdxFitter;
 
   std::shared_ptr<RunIdParser> myRunParser; 
   std::shared_ptr<EventTPC> myEventPtr;
