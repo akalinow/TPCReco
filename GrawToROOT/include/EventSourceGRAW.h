@@ -81,8 +81,6 @@ private:
 
 protected: // needed for EventSourceMultiGRAW
 
-  // int minSignalCell;
-  // int maxSignalCell;  
   bool removePedestal{true};
 
 private:

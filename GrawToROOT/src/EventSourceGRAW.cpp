@@ -74,27 +74,11 @@ void EventSourceGRAW::loadDataFile(const std::string & fileName){
   }
 
   myFilePath = fileName;
-#ifdef EVENTSOURCEGRAW_NEXT_FILE_DISABLE  
-  myNextFilePath = fileName;
-#else
   myNextFilePath = getNextFilePath();
-#endif  
   myFramesMap.clear();
   myASADMap.clear();
   myReadEntriesSet.clear();
   isFullFileScanned = false;
-  /*
-  for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
-    loadGrawFrame(iEntry, false);
-    int currentEventId = myDataFrame.fHeader.fEventIdx;
-    int ASAD_idx = myDataFrame.fHeader.fAsadIdx;
-    std::cout<<"iEntry: "<<iEntry
-	     <<" currentEventId: "<<currentEventId
-	     <<" ASAD: "<<ASAD_idx
-	     <<std::endl;
-  }
-  std::cout<<KBLU<<"End of file"<<RST<<std::endl;  
-  */ 
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -264,66 +248,41 @@ void EventSourceGRAW::collectEventFragments(unsigned int eventId){
   }
   //long int eventNumberInFile = std::distance(myFramesMap.begin(), it);
 
-  switch(fillEventType) {
-  case EventType::raw:  
-    myCurrentEventRaw->SetEventId(eventId);
-    std::cout<<KYEL<<"Creating a new EventRaw with eventId: "<<eventId<<RST<<std::endl;
-    
-    for(auto aFragment: it->second){
-      loadGrawFrame(aFragment, true);
-      myCurrentEventRaw->SetEventTimestamp(myDataFrame.fHeader.fEventTime);
-      int  ASAD_idx = myDataFrame.fHeader.fAsadIdx;
-      unsigned long int eventId_fromFrame = myDataFrame.fHeader.fEventIdx;
-      if(eventId!=eventId_fromFrame){
-	std::cerr<<KRED<<__FUNCTION__
-		 <<": Event id mismatch! eventId="<<eventId
-		 <<", eventId_fromFrame="<<eventId_fromFrame
-		 <<RST<<std::endl;
-	return;
-      }     
-    std::cout<<KBLU<<"Found a frame for eventId: "<<RST<<eventId;
-    if(aFragment<nEntries) std::cout<<KBLU<<" in file entry: "<<RST<<aFragment<<RST;
-    else std::cout<<KBLU<<" in next file entry: "<<RST<<aFragment-nEntries<<RST;
-    std::cout<<KBLU<<" for  ASAD: "<<RST<<ASAD_idx<<RST<<std::endl;      
-    fillEventRawFromFrame(myDataFrame);
-    }
-    break;
-  case EventType::tpc:  // fill EventTPC class (skip EventRaw)
-  default:
-    myCurrentEvent->Clear();
-    myCurrentEvent->SetGeoPtr(myGeometryPtr);
+  
+  myCurrentPEvent->Clear();
+
+  std::cout<<KYEL<<"Creating a new EventTPC/Raw with eventId: "<<eventId<<RST<<std::endl;
+  
+  for(auto aFragment: it->second){
+    loadGrawFrame(aFragment, true);
+    int  ASAD_idx = myDataFrame.fHeader.fAsadIdx;
+    unsigned long int eventId_fromFrame = myDataFrame.fHeader.fEventIdx;
 
     myCurrentEventInfo.SetEventId(eventId);
-    myCurrentEventInfo.SetPedestalSubtracted(removePedestal);
-
-    std::cout<<KYEL<<"Creating a new EventTPC with eventId: "<<eventId<<RST<<std::endl;
+    myCurrentEventInfo.SetEventTimestamp(myDataFrame.fHeader.fEventTime);
     
-    for(auto aFragment: it->second){
-      loadGrawFrame(aFragment, true);
-      myCurrentEventInfo.SetEventTimestamp(myDataFrame.fHeader.fEventTime);
-      int  ASAD_idx = myDataFrame.fHeader.fAsadIdx;
-      unsigned long int eventId_fromFrame = myDataFrame.fHeader.fEventIdx;
-      if(eventId!=eventId_fromFrame){
-	std::cerr<<KRED<<__FUNCTION__
-		 <<": Event id mismatch!: eventId="<<eventId
-		 <<", eventId_fromFrame="<<eventId_fromFrame
-		 <<RST<<std::endl;
-	return;
-      }     
+    if(eventId!=eventId_fromFrame){
+      std::cerr<<KRED<<__FUNCTION__
+	       <<": Event id mismatch!: eventId="<<eventId
+	       <<", eventId_fromFrame="<<eventId_fromFrame
+	       <<RST<<std::endl;
+      return;
+    }     
     std::cout<<KBLU<<"Found a frame for eventId: "<<RST<<eventId;
     if(aFragment<nEntries) std::cout<<KBLU<<" in file entry: "<<RST<<aFragment<<RST;
     else std::cout<<KBLU<<" in next file entry: "<<RST<<aFragment-nEntries<<RST;
     std::cout<<KBLU<<" for  ASAD: "<<RST<<ASAD_idx<<RST<<std::endl;
-    myCurrentPEvent->SetEventInfo(myCurrentEventInfo);
-    fillEventFromFrame(myDataFrame);
-    }
-  };
+    if(fillEventType==EventType::tpc) fillEventFromFrame(myDataFrame);
+    else if(fillEventType==EventType::raw) fillEventRawFromFrame(myDataFrame);
+  }
+  fillEventTPC();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void EventSourceGRAW::fillEventFromFrame(GET::GDataFrame & aGrawFrame){
 
   if(removePedestal) myPedestalCalculator.CalculateEventPedestals(aGrawFrame);
+  myCurrentEventInfo.SetPedestalSubtracted(removePedestal);
 
   int  COBO_idx = aGrawFrame.fHeader.fCoboIdx;
   int  ASAD_idx = aGrawFrame.fHeader.fAsadIdx;
@@ -353,20 +312,12 @@ void EventSourceGRAW::fillEventFromFrame(GET::GDataFrame & aGrawFrame){
 	if(removePedestal){
 	  corrVal -= myPedestalCalculator.GetPedestalCorrection(COBO_idx, ASAD_idx, agetId, chanId, icell);
 	}
-	//myCurrentEvent->AddValByAgetChannel(COBO_idx, ASAD_idx, agetId, chanId, icell, corrVal);
 	std::shared_ptr<StripTPC> aStrip(myGeometryPtr->GetStripByAget(COBO_idx, ASAD_idx, agetId, chanId));
 	if(aStrip) myCurrentPEvent->AddValByStrip(aStrip, icell, corrVal);
       }
     }
   }
-
-  ////// DEBUG
-  //  std::shared_ptr<TProfile> tp=myPedestalCalculator.GetPedestalProfilePerAsad(COBO_idx, ASAD_idx);
-  //  std::cout << __FUNCTION__ << ": TProfile[Cobo=" << COBO_idx
-  //  	    << ", Asad=" << ASAD_idx
-  //  	    << "]=" << tp->GetName()
-  //  	    << std::endl << std::flush;
-  ////// DEBUG
+  myCurrentPEvent->SetEventInfo(myCurrentEventInfo);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -500,6 +451,10 @@ void EventSourceGRAW::configurePedestal(const boost::property_tree::ptree &confi
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::string EventSourceGRAW::getNextFilePath(){
+
+#ifdef EVENTSOURCEGRAW_NEXT_FILE_DISABLE  
+  return myFilePath;
+#endif
 
   std::string token = "_";
   int index = myFilePath.rfind(token);

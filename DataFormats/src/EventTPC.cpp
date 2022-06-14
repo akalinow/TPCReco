@@ -3,7 +3,8 @@
 #include <string>
 #include <vector>
 #include <map>
-#include <algorithm> // for find_if
+#include <set>
+#include <algorithm> 
 
 #include "TH1D.h"
 #include "TH2D.h"
@@ -25,7 +26,6 @@ EventTPC::EventTPC(){
   tot_charge.resize(n_directions);
 
   Clear();
-
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
@@ -210,7 +210,8 @@ double EventTPC::GetTotalCharge() const {
   if(!IsOK()) return 0.0;
   return glb_tot_charge;
 }
-
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
 double EventTPC::GetTotalChargeByTimeCell(int strip_dir, int strip_section, int time_cell) const {
   return totalChargeMap5.at({strip_dir, strip_section, time_cell});
 }
@@ -226,7 +227,35 @@ double EventTPC::GetTotalChargeByTimeCell(int time_cell) const {
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
-void EventTPC::MakeOneCluster(double thr, int delta_strips, int delta_timecells) {  // applies clustering threshold to all space-time data points
+void EventTPC::FilterHits(const std::string method){
+
+  double chargeThreshold = 35.0;
+  int delta_timecells = 3;
+  int delta_strips = 3;
+  
+  std::set<PEventTPC::chargeMapType::key_type> keyList;
+  
+  for(const auto & item: chargeMapWithSections){
+    auto key = item.first;
+    auto value = item.second;
+    if(value>chargeThreshold){
+      keyList.insert(key);
+      int iDir = std::get<0>(key);
+      int iSection = std::get<1>(key);
+      for(int iCell=std::get<3>(key)-delta_timecells;
+	  iCell<=std::get<3>(key)+delta_timecells;++iCell){
+	for(int iStrip=std::get<2>(key)-delta_strips;
+	    iStrip<=std::get<2>(key)+delta_strips;++iStrip){
+	  auto neighbourKey = std::make_tuple(iDir, iSection, iStrip, iCell);
+	  keyList.insert(neighbourKey);
+	}
+      }
+    }
+  }
+}
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+void EventTPC::MakeOneCluster(double thr, int delta_strips, int delta_timecells) {  
 
   myCluster = SigClusterTPC(this);
 

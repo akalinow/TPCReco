@@ -113,3 +113,12 @@ std::shared_ptr<EventTPC> EventSourceBase::getPreviousEventLoop(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+void EventSourceBase::fillEventTPC(){
+
+  myCurrentEvent->Clear();
+  myCurrentEvent->SetGeoPtr(myGeometryPtr);
+  myCurrentEvent->SetChargeMap(myCurrentPEvent->GetChargeMap());
+  myCurrentEvent->SetEventInfo(myCurrentPEvent->GetEventInfo());
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////

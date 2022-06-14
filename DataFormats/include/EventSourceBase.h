@@ -62,17 +62,18 @@ public:
   
 protected:
 
+  void fillEventTPC();
+
   std::string currentFilePath;
   
   unsigned long int nEntries;
   unsigned long int myCurrentEntry;
   EventFilter eventFilter;
 
-  std::shared_ptr<EventTPC> myCurrentEvent;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
-
   eventraw::EventInfo myCurrentEventInfo;
   std::shared_ptr<PEventTPC> myCurrentPEvent;
+  std::shared_ptr<EventTPC> myCurrentEvent;
   
 };
 #endif

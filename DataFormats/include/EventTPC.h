@@ -71,7 +71,7 @@ class EventTPC {
 
   void SetChargeMap(const PEventTPC::chargeMapType & aChargeMap);
   void SetGeoPtr(std::shared_ptr<GeometryTPC> aPtr);  
-  void SetEventInfo(decltype(myEventInfo)& aEvInfo) {myEventInfo = aEvInfo; };
+  void SetEventInfo(const decltype(myEventInfo)& aEvInfo) {myEventInfo = aEvInfo; };
 
   bool CheckAsadNboards() const ; // verifies that all AsAd boards are present in this event
 
@@ -100,6 +100,8 @@ class EventTPC {
   double GetTotalChargeByTimeCell(int strip_dir, int time_cell) const; // charge integral from a single time cell from all merged strips in a given direction (all sections)
   double GetTotalChargeByTimeCell(int strip_dir, int strip_section, int time_cell) const; // charge integral from a single time cell from all strips in a given direction (per section)
 
+  void FilterHits(const std::string method);
+  
   void MakeOneCluster(double thr=-1, int delta_strips=5, int delta_timecells=25); // applies clustering threshold to all space-time data points 
   const SigClusterTPC & GetOneCluster() const;
   

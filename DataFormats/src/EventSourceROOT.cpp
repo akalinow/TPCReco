@@ -124,20 +124,10 @@ void EventSourceROOT::loadFileEntry(unsigned long int iEntry){
   }
   if((long int)iEntry>=myTree->GetEntries()) iEntry = myTree->GetEntries() - 1;
 
-  switch(readEventType) {
-  case EventType::raw:
-    myTree->GetEntry(iEntry);
-    fillEventFromEventRaw();
-    break;
-
-  case EventType::tpc: 
-  default:
-    myCurrentEvent->SetGeoPtr(0);
-    myTree->GetEntry(iEntry);
-    myCurrentEvent->SetGeoPtr(myGeometryPtr);
-    break;
-  };
-  
+  myTree->GetEntry(iEntry);
+  if(readEventType==EventType::raw) fillEventFromEventRaw();
+  if(readEventType==EventType::tpc) fillEventTPC();
+			      
   myCurrentEntry = iEntry;
 }
 /////////////////////////////////////////////////////////
