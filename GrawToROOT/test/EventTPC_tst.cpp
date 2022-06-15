@@ -22,25 +22,29 @@ int main(int argc, char *argv[]) {
   std::shared_ptr<EventSourceBase> myEventSource = std::make_shared<EventSourceMultiGRAW>(geometryFileName);
   myEventSource->loadDataFile(dataFileName);
   std::cout << "File with " << myEventSource->numberOfEntries() << " frames opened." << std::endl;
-  myEventSource->loadFileEntry(0);
-  
+
   auto myEventPtr = myEventSource->getCurrentEvent();
+  for(int i=0;i<100;++i){
+    myEventSource->loadFileEntry(i);
+  
+    std::cout<<myEventPtr->GetEventInfo()<<std::endl;
 
-  myEventPtr->get1DProjection(projection_type::DIR_U, filter_type::none, scale_type::mm)->Print();
-  myEventPtr->get1DProjection(projection_type::DIR_V, filter_type::none, scale_type::mm)->Print();
-  myEventPtr->get1DProjection(projection_type::DIR_W, filter_type::none, scale_type::mm)->Print();
-
-  myEventPtr->get1DProjection(projection_type::DIR_U, filter_type::none, scale_type::raw)->Print();
-  myEventPtr->get1DProjection(projection_type::DIR_V, filter_type::none, scale_type::raw)->Print();
-  myEventPtr->get1DProjection(projection_type::DIR_W, filter_type::none, scale_type::raw)->Print();
-
-  myEventPtr->get1DProjection(projection_type::DIR_TIME_U, filter_type::none, scale_type::mm)->Print();
-  myEventPtr->get1DProjection(projection_type::DIR_TIME_V, filter_type::none, scale_type::mm)->Print();
-  myEventPtr->get1DProjection(projection_type::DIR_TIME_W, filter_type::none, scale_type::mm)->Print();
-
-  myEventPtr->get1DProjection(projection_type::DIR_TIME_U, filter_type::none, scale_type::raw)->Print();
-  myEventPtr->get1DProjection(projection_type::DIR_TIME_V, filter_type::none, scale_type::raw)->Print();
-  myEventPtr->get1DProjection(projection_type::DIR_TIME_W, filter_type::none, scale_type::raw)->Print();
+    myEventPtr->get1DProjection(projection_type::DIR_U, filter_type::none, scale_type::raw)->Print();
+    myEventPtr->get1DProjection(projection_type::DIR_V, filter_type::none, scale_type::raw)->Print();
+    myEventPtr->get1DProjection(projection_type::DIR_W, filter_type::none, scale_type::raw)->Print();
+    std::cout<<std::endl;
+    myEventPtr->get1DProjection(projection_type::DIR_U, filter_type::none, scale_type::mm)->Print();
+    myEventPtr->get1DProjection(projection_type::DIR_V, filter_type::none, scale_type::mm)->Print();
+    myEventPtr->get1DProjection(projection_type::DIR_W, filter_type::none, scale_type::mm)->Print();
+    std::cout<<std::endl;
+    myEventPtr->get1DProjection(projection_type::DIR_TIME_U, filter_type::none, scale_type::mm)->Print();
+    myEventPtr->get1DProjection(projection_type::DIR_TIME_V, filter_type::none, scale_type::mm)->Print();
+    myEventPtr->get1DProjection(projection_type::DIR_TIME_W, filter_type::none, scale_type::mm)->Print();
+    std::cout<<std::endl;
+    myEventPtr->get1DProjection(projection_type::DIR_TIME_U, filter_type::none, scale_type::raw)->Print();
+    myEventPtr->get1DProjection(projection_type::DIR_TIME_V, filter_type::none, scale_type::raw)->Print();
+    myEventPtr->get1DProjection(projection_type::DIR_TIME_W, filter_type::none, scale_type::raw)->Print();
+  }
 
   return 0;
 }

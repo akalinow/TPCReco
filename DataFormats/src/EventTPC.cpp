@@ -229,9 +229,9 @@ double EventTPC::GetTotalChargeByTimeCell(int time_cell) const {
 void EventTPC::filterHits(filter_type filterType){
 
   double chargeThreshold = 35.0;
-  int delta_timecells = 3;
-  int delta_strips = 3;
-  
+  int delta_strips = 2;
+  int delta_timecells = 5;
+
   std::set<PEventTPC::chargeMapType::key_type> keyList;
   
   for(const auto & item: chargeMapWithSections){
@@ -277,14 +277,14 @@ std::shared_ptr<TH1D> EventTPC::get1DProjection(projection_type projType,
   double x = 0.0, value=0.0;
   for(const auto & key: keyLists.at(filterType)){
 
-     if(projType==projection_type::DIR_U &&
-	std::get<0>(key)!=static_cast<int>(projType)) continue;
+    if((projType==projection_type::DIR_U || projType==projection_type::DIR_TIME_U) && 
+	std::get<0>(key)!=projection_type::DIR_U) continue;
 
-     if(projType==projection_type::DIR_V &&
-	std::get<0>(key)!=static_cast<int>(projType)) continue;
-
-     if(projType==projection_type::DIR_W &&
-	std::get<0>(key)!=static_cast<int>(projType)) continue;
+    if((projType==projection_type::DIR_V || projType==projection_type::DIR_TIME_V) && 
+       std::get<0>(key)!=projection_type::DIR_V) continue;
+     
+    if((projType==projection_type::DIR_W || projType==projection_type::DIR_TIME_W) && 
+       std::get<0>(key)!=projection_type::DIR_W) continue;
     
     value = chargeMapWithSections.at(key);
     x = get1DPosition(key, projType, scaleType);       
@@ -333,12 +333,13 @@ std::shared_ptr<TH1D> EventTPC::getEmpty1DHisto(projection_type projType, scale_
      projType==projection_type::DIR_W){
 
     nBins = myGeometryPtr->GetDirNstrips(projType);
-    minX = -0.5;
+    minX = 0.5;
     maxX = myGeometryPtr->GetDirNstrips(projType)+0.5;
     
     if(scaleType==scale_type::mm){
-      nBins = myGeometryPtr->GetDirNStripsMerged(projType);
-      std::tie(minX, maxX) = myGeometryPtr->rangeStripDirInMM(projType); 
+      std::tie(minX, maxX) = myGeometryPtr->rangeStripDirInMM(projType);
+      minX-=myGeometryPtr->GetStripPitch()/2.0;
+      maxX+=myGeometryPtr->GetStripPitch()/2.0;
     }
   }
   else if(projType==projection_type::DIR_TIME ||  
@@ -347,12 +348,12 @@ std::shared_ptr<TH1D> EventTPC::getEmpty1DHisto(projection_type projType, scale_
 	  projType==projection_type::DIR_TIME_W){
 
     nBins = myGeometryPtr->GetAgetNtimecells();
-    minX = -0.5;
+    minX = 0.5;
     maxX = myGeometryPtr->GetAgetNtimecells()-0.5;// ends at 511.5 (cells numbered from 0 to 511)
 
     if(scaleType==scale_type::mm){
       bool err_flag;
-      double zmin=0.0-0.5;  // time_cell_min;
+      double zmin=-0.5;  // time_cell_min;
       double zmax=myGeometryPtr->GetAgetNtimecells()-0.5; // time_cell_max;  
       minX = myGeometryPtr->Timecell2pos(zmin, err_flag);
       maxX = myGeometryPtr->Timecell2pos(zmax, err_flag);      
