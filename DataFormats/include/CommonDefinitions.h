@@ -6,6 +6,17 @@
 #include <functional>
 #include <memory>
 
+enum class scale_type{
+		 raw,
+		 mm
+};
+
+enum class filter_type{
+		 none,
+		 threshold,
+		 island
+};
+
 enum projection{
   DIR_U=0,          // U-direction channel index
   DIR_V=1,          // V-direction channel index

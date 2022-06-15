@@ -1,19 +1,15 @@
 #include <iostream>
-//#include <sstream>
 #include <string>
 #include <vector>
 #include <map>
-#include <set>
 #include <algorithm> 
 
 #include "TH1D.h"
 #include "TH2D.h"
 #include "TH3F.h"
 
-#include "GeometryTPC.h"
 #include "EventTPC.h"
 #include "TrackSegmentTPC.h"
-#include "SigClusterTPC.h"
 
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
@@ -240,272 +236,76 @@ void EventTPC::FilterHits(const std::string method){
     auto value = item.second;
     if(value>chargeThreshold){
       keyList.insert(key);
-      int iDir = std::get<0>(key);
-      int iSection = std::get<1>(key);
-      for(int iCell=std::get<3>(key)-delta_timecells;
-	  iCell<=std::get<3>(key)+delta_timecells;++iCell){
-	for(int iStrip=std::get<2>(key)-delta_strips;
-	    iStrip<=std::get<2>(key)+delta_strips;++iStrip){
-	  auto neighbourKey = std::make_tuple(iDir, iSection, iStrip, iCell);
-	  keyList.insert(neighbourKey);
-	}
-      }
+      addEnvelope(key, keyList, delta_timecells, delta_strips);
     }
   }
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
-void EventTPC::MakeOneCluster(double thr, int delta_strips, int delta_timecells) {  
+void EventTPC::addEnvelope(PEventTPC::chargeMapType::key_type key,
+			   std::set<PEventTPC::chargeMapType::key_type> & keyList,
+			   double delta_timecells,
+			   double delta_strips){
 
-  myCluster = SigClusterTPC(this);
+  int iDir = std::get<0>(key);
+  int iSection = std::get<1>(key);
 
-  // getting cluster seed hits (per section)
-  std::map<MultiKey4, double>::iterator it;
-
-  if(thr<=0 && delta_strips<=0 && delta_timecells<=0) { // dump the whole event as a single cluster
-
-    for( it=chargeMapWithSections.begin(); it!=chargeMapWithSections.end(); ++it ) {
-      myCluster.AddByStrip( std::get<0>(it->first), std::get<1>(it->first),
-			    std::get<2>(it->first), std::get<3>(it->first));
+  for(int iCell=std::get<3>(key)-delta_timecells;
+      iCell<=std::get<3>(key)+delta_timecells;++iCell){
+    for(int iStrip=std::get<2>(key)-delta_strips;
+	iStrip<=std::get<2>(key)+delta_strips;++iStrip){
+      auto neighbourKey = std::make_tuple(iDir, iSection, iStrip, iCell);
+      keyList.insert(neighbourKey);
     }
-    
-  } else { // find seed hits and envelope around seed hits
-    
-    for( it=chargeMapWithSections.begin(); it!=chargeMapWithSections.end(); ++it ) {
-      if( it->second > thr ) myCluster.AddByStrip( std::get<0>(it->first),
-						   std::get<1>(it->first),
-						   std::get<2>(it->first),
-						   std::get<3>(it->first));
-    }
-
-    // DEBUG
-    /*
-    //  std::cout << ">>>> GetSigCluster: nhits=" << cluster.GetNhits() << ", chargeMapWithSections.size=" << chargeMapWithSections.size() << std::endl;
-    std::cout << Form(">>>> GetSigCluster: BEFORE ENVELOPE: nhits(%d)/nhits(%d)/nhits(%d)=%ld/%ld/%ld",
-    DIR_U, DIR_V, DIR_W,
-    myCluster.GetNhits(DIR_U), 
-    myCluster.GetNhits(DIR_V), 
-    myCluster.GetNhits(DIR_W) ) << std::endl;
-    */
-    
-    // adding envelope to the seed hits (per section)
-    std::vector<MultiKey4> oldList = myCluster.GetHitList(); // make a copy of list of SEED-hits
-    std::vector<MultiKey4>::iterator it2;
-
-    // loop thru SEED-hits (per section)
-    for( it2=oldList.begin(); it2!=oldList.end() && true; ++it2 ) {
-      // unpack coordinates
-      const int strip_dir = std::get<0>(*it2);
-      const int strip_sec = std::get<1>(*it2);
-      const int strip_num = std::get<2>(*it2);
-      const int time_cell = std::get<3>(*it2);
-      const int strip_range[2] = { MAXIMUM(1, strip_num - delta_strips), 
-				   MINIMUM(myGeometryPtr->GetDirNstrips(strip_dir), strip_num + delta_strips) };
-      const int timecell_range[2] = { MAXIMUM(0, time_cell - delta_timecells), 
-				      MINIMUM(myGeometryPtr->GetAgetNtimecells()-1, time_cell + delta_timecells) };
-      for(int icell=timecell_range[0]; icell<=timecell_range[1]; icell++) {
-	for(int istrip=strip_range[0]; istrip<=strip_range[1]; istrip++) {
-	  if(icell==time_cell && istrip==strip_num) continue; // exclude existing seed hits
-	  MultiKey4 mkey4(strip_dir, strip_sec, istrip, icell);
-	  if(chargeMapWithSections.find(mkey4)==chargeMapWithSections.end()) continue; // exclude non-existing space-time coordinates
-	  //	  if(chargeMapWithSections.find(mkey4)->second<0) continue; // exclude negative values (due to pedestal subtraction)
-	  // add new space-time point
-	  /* TEST FIXME
-	  if(find_if(oldList.begin(), oldList.end(), mkey4)==oldList.end()) {
-	    myCluster.AddByStrip( strip_dir, strip_sec, istrip, icell );
-	  } 
-	  */
-	} 
-      } 
-    }
-    
-    // DEBUG
-    /*
-      std::cout << Form(">>>> GetSigCluster: AFTER ENVELOPE:  nhits(%d)/nhits(%d)/nhits(%d)=%ld/%ld/%ld",
-      DIR_U, DIR_V, DIR_W,
-      myCluster.GetNhits(DIR_U), 
-      myCluster.GetNhits(DIR_V), 
-      myCluster.GetNhits(DIR_W) ) << std::endl;
-    */
-  } // end of if(...) statement
+  }
 }
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+std::shared_ptr<TH1D> EventTPC::GetStripProjection(projection projType,
+						   filter_type filterType,
+						   scale_type scaleType){
 
-
-const SigClusterTPC & EventTPC::GetOneCluster() const {  
-  return myCluster;
-}
-
-std::shared_ptr<TH1D> EventTPC::GetStripProjection(const SigClusterTPC &cluster, int strip_dir) {  // valid range [0-2]
-  auto h=std::shared_ptr<TH1D>();
-  auto event_id = myEventInfo.GetEventId();
+  bool err_flag = false;
+  auto aHisto=std::shared_ptr<TH1D>();
+  aHisto.reset(getHisto(projType, scaleType));
   
-  if(!IsOK() || !cluster.IsOK()) return h;
-  switch(strip_dir) {
-  case DIR_U:
-  case DIR_V:
-  case DIR_W: {
-    if(cluster.GetNhits(strip_dir)<1) break;
-    h =std::shared_ptr<TH1D>(new TH1D( Form("hclust_%spro_evt%d", myGeometryPtr->GetDirName(strip_dir), event_id),
-				       Form("Event-%d: Clustered hits from %s strips integrated over time;%s strip no.;Charge/strip [arb.u.]", 
-					    event_id, myGeometryPtr->GetDirName(strip_dir), myGeometryPtr->GetDirName(strip_dir)),
-				       myGeometryPtr->GetDirNstrips(strip_dir),
-				       1.0 - 0.5,
-				       1.*myGeometryPtr->GetDirNstrips(strip_dir)+0.5 ));
-    // fill new histogram
-    if(h) {
-      //bool res;
-      for(int strip_num=cluster.GetMinStrip(strip_dir); strip_num<=cluster.GetMaxStrip(strip_dir); strip_num++) 
-	  for(int icell=cluster.GetMinTime(strip_dir); icell<=cluster.GetMaxTime(strip_dir); icell++) {
-	  if( cluster.CheckByStripMerged(strip_dir, strip_num, icell) ) {
-	    h->Fill(1.*strip_num, GetValByStripMerged(strip_dir, strip_num, icell/*, res*/));
-	}
-      }
-    }
-  }
-  };
-  return h;
-}
-
-TH1D *EventTPC::GetStripProjection(int strip_dir) {  // whole event, valid range [0-2]
-  TH1D *h = NULL;
   auto event_id = myEventInfo.GetEventId();
-  if(!IsOK()) return h;
-  switch(strip_dir) {
-  case DIR_U:
-  case DIR_V:
-  case DIR_W: {
-    h = new TH1D( Form("hraw_%spro_evt%d", myGeometryPtr->GetDirName(strip_dir), event_id), 
-                  Form("Event-%d: Raw signals from %s strips integrated over time;%s strip no.;Charge/strip [arb.u.]", 
-                       event_id, myGeometryPtr->GetDirName(strip_dir), myGeometryPtr->GetDirName(strip_dir)),
-                  myGeometryPtr->GetDirNstrips(strip_dir),
-                  1.0 - 0.5,
-                  1.*myGeometryPtr->GetDirNstrips(strip_dir)+0.5 );
-    // fill new histogram
-    if(h) {
-      //bool res;
-      for(int strip_num=1; strip_num<=myGeometryPtr->GetDirNstrips(strip_dir); strip_num++) {
-        for(int icell=0; icell<myGeometryPtr->GetAgetNtimecells(); icell++) {
-          double val = GetValByStripMerged(strip_dir, strip_num, icell);
-	  //	  if(val) h->Fill(1.*strip_num, val);
-	  h->Fill(1.*strip_num, val);
-        }
-      }
-    }
-  }
-  };
-  return h;
-}
 
-std::shared_ptr<TH1D> EventTPC::GetStripProjectionInMM(const SigClusterTPC &cluster, int strip_dir) {  // valid range [0-2]
+  double position = 0.0;
+  for(const auto & key: keyLists.at(filterType)){
+    if(std::get<0>(key)!=strip_dir) continue;
 
-  if(!IsOK()) return std::shared_ptr<TH1D>();
-  bool err_flag;
-  auto event_id = myEventInfo.GetEventId();
-  // - loop over all sections in a given family of strips
-  // - check both ends of the first and the last strip in a given section
-  double minStripInMM=1E30;
-  double maxStripInMM=-1E30;
-  std::tie(minStripInMM, maxStripInMM) = myGeometryPtr->rangeStripDirInMM(strip_dir);
-  /*  
-  for(unsigned int isec=0; isec<myGeometryPtr->GetDirSectionIndexList(strip_dir).size(); isec++) {
-    int section=myGeometryPtr->GetDirSectionIndexList(strip_dir).at(isec); // strip section index
-    double distance1, distance2; // distance between projection of one of the strip end-points and projection of the origin (0,0) along U/V/W pitch axis
-    StripTPC *firstStrip = myGeometryPtr->GetStripByDir(strip_dir, section,
-							myGeometryPtr->GetDirMinStrip(strip_dir, section));
-    distance1 = (firstStrip->Offset() + myGeometryPtr->GetReferencePoint())*myGeometryPtr->GetStripPitchVector(strip_dir);
-    distance2 = (firstStrip->Offset() + firstStrip->Length()*firstStrip->Unit() + myGeometryPtr->GetReferencePoint())*myGeometryPtr->GetStripPitchVector(strip_dir);
-    if(distance1>maxStripInMM) maxStripInMM=distance1;
-    if(distance1<minStripInMM) minStripInMM=distance1;
-    if(distance2>maxStripInMM) maxStripInMM=distance2;
-    if(distance2<minStripInMM) minStripInMM=distance2;
+    if(scale==scale_type::raw) position = std::get<0>(key);
+    else if(scale==scale_type::mm) position = myGeometryPtr->Strip2posUVW(std::get<0>(key), std::get<2>(key), err_flag);
     
-    StripTPC *lastStrip = myGeometryPtr->GetStripByDir(strip_dir, section,
-						       myGeometryPtr->GetDirMaxStrip(strip_dir, section));
-    distance1 = (lastStrip->Offset() + myGeometryPtr->GetReferencePoint())*myGeometryPtr->GetStripPitchVector(strip_dir);
-    distance2 = (lastStrip->Offset() + lastStrip->Length()*lastStrip->Unit() + myGeometryPtr->GetReferencePoint())*myGeometryPtr->GetStripPitchVector(strip_dir);
-    if(distance1>maxStripInMM) maxStripInMM=distance1;
-    if(distance1<minStripInMM) minStripInMM=distance1;
-    if(distance2>maxStripInMM) maxStripInMM=distance2;
-    if(distance2<minStripInMM) minStripInMM=distance2;
-    
-  } // end of loop
-  */
-  std::shared_ptr<TH1D> result(new TH1D( Form("hclust_%spro_mm_evt%d", myGeometryPtr->GetDirName(strip_dir), event_id),
-					 Form("Event-%d: Clustered hits from %s strips integrated over time;%s strip direction [mm];Charge/bin [arb.u.]",
-					 event_id, myGeometryPtr->GetDirName(strip_dir), myGeometryPtr->GetDirName(strip_dir)),
-					 myGeometryPtr->GetDirNStripsMerged(strip_dir), minStripInMM, maxStripInMM));
-
-  // fill new histogram
-  double x = 0.0;
-  for(int strip_num=cluster.GetMinStrip(strip_dir); strip_num<=cluster.GetMaxStrip(strip_dir); strip_num++) {
-    for(int icell=cluster.GetMinTime(strip_dir); icell<=cluster.GetMaxTime(strip_dir); icell++) {
-      if( cluster.CheckByStripMerged(strip_dir, strip_num, icell) ) {
-	x = myGeometryPtr->Strip2posUVW(strip_dir, strip_num, err_flag);	
-	if(err_flag) continue;	
-	double val = GetValByStripMerged(strip_dir, strip_num, icell);
-	result->Fill(x, val);
-      }
-    }
+    aHisto->Fill(position, chargeMapWithSections.at(key));
   }
-  return result;
+  return aHisto; 
 }
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+TH1* EventTPC::getHisto(projection projType, scale_type scaleType){
 
-std::shared_ptr<TH1D> EventTPC::GetStripProjectionInMM(int strip_dir) {  // valid range [0-2]
-  
-  if(!IsOK()) return std::shared_ptr<TH1D>();
-  auto minStripNum=myGeometryPtr->GetDirMinStripMerged(strip_dir);
-  auto maxStripNum=myGeometryPtr->GetDirMaxStripMerged(strip_dir);
-  auto event_id = myEventInfo.GetEventId();
-  bool err_flag;
-
-  // - loop over all sections in a given family of strips
-  // - check both ends of the first and the last strip in a given section
-  double minStripInMM=1E30;
-  double maxStripInMM=-1E30;
-  std::tie(minStripInMM, maxStripInMM) = myGeometryPtr->rangeStripDirInMM(strip_dir);
+  TH1* aHisto = 0;
   /*
-  for(unsigned int isec=0; isec<myGeometryPtr->GetDirSectionIndexList(strip_dir).size(); isec++) {
-    int section=myGeometryPtr->GetDirSectionIndexList(strip_dir).at(isec); // strip section index
-    double distance1, distance2; // distance between projection of one of the strip end-points and projection of the origin (0,0) along U/V/W pitch axis
-    StripTPC *firstStrip = myGeometryPtr->GetStripByDir(strip_dir, section,
-							myGeometryPtr->GetDirMinStrip(strip_dir, section));
-    distance1 = (firstStrip->Offset() + myGeometryPtr->GetReferencePoint())*myGeometryPtr->GetStripPitchVector(strip_dir);
-    distance2 = (firstStrip->Offset() + firstStrip->Length()*firstStrip->Unit() + myGeometryPtr->GetReferencePoint())*myGeometryPtr->GetStripPitchVector(strip_dir);
-    if(distance1>maxStripInMM) maxStripInMM=distance1;
-    if(distance1<minStripInMM) minStripInMM=distance1;
-    if(distance2>maxStripInMM) maxStripInMM=distance2;
-    if(distance2<minStripInMM) minStripInMM=distance2;
+  
+      h = new TH1D( Form("hclust_%spro_evt%d", myGeometryPtr->GetDirName(strip_dir), event_id),
+		    Form("Event-%d: Clustered hits from %s strips integrated over time;%s strip no.;Charge/strip [arb.u.]", 
+			 event_id, myGeometryPtr->GetDirName(strip_dir), myGeometryPtr->GetDirName(strip_dir)),
+		    myGeometryPtr->GetDirNstrips(strip_dir),
+		    1.0 - 0.5,
+		    1.*myGeometryPtr->GetDirNstrips(strip_dir)+0.5 ));
 
-    StripTPC *lastStrip = myGeometryPtr->GetStripByDir(strip_dir, section,
-						       myGeometryPtr->GetDirMaxStrip(strip_dir, section));
-    distance1 = (lastStrip->Offset() + myGeometryPtr->GetReferencePoint())*myGeometryPtr->GetStripPitchVector(strip_dir);
-    distance2 = (lastStrip->Offset() + lastStrip->Length()*lastStrip->Unit() + myGeometryPtr->GetReferencePoint())*myGeometryPtr->GetStripPitchVector(strip_dir);
-    if(distance1>maxStripInMM) maxStripInMM=distance1;
-    if(distance1<minStripInMM) minStripInMM=distance1;
-    if(distance2>maxStripInMM) maxStripInMM=distance2;
-    if(distance2<minStripInMM) minStripInMM=distance2;
-    
-  } // end of loop
+std::tie(minStripInMM, maxStripInMM) = myGeometryPtr->rangeStripDirInMM(strip_dir); 
+ h= new TH1D( Form("hclust_%spro_mm_evt%d", myGeometryPtr->GetDirName(strip_dir), event_id),
+	      Form("Event-%d: Clustered hits from %s strips integrated over time;%s strip direction [mm];Charge/bin [arb.u.]",
+		   event_id, myGeometryPtr->GetDirName(strip_dir), myGeometryPtr->GetDirName(strip_dir)),
+	      myGeometryPtr->GetDirNStripsMerged(strip_dir), minStripInMM, maxStripInMM));
   */
-  std::shared_ptr<TH1D> result(new TH1D( Form("hraw_%spro_mm_evt%d", myGeometryPtr->GetDirName(strip_dir), event_id),
-					 Form("Event-%d: Raw signals from %s strips integrated over time;%s strip direction [mm];Charge/bin [arb.u.]",
-					 event_id, myGeometryPtr->GetDirName(strip_dir), myGeometryPtr->GetDirName(strip_dir)),
-					 myGeometryPtr->GetDirNStripsMerged(strip_dir), minStripInMM, maxStripInMM));
-
-  // fill new histogram
-  double x = 0.0;
-  for(int strip_num=minStripNum; strip_num<=maxStripNum; strip_num++) {
-    for(int icell=0; icell<myGeometryPtr->GetAgetNtimecells(); icell++) {
-      x = myGeometryPtr->Strip2posUVW(strip_dir, strip_num, err_flag);	
-      if(err_flag) continue;
-      double val = GetValByStripMerged(strip_dir, strip_num, icell);
-      //      if(val) result->Fill(x, val);
-      result->Fill(x, val);
-    }
-  }
-  return result;
+  return aHisto;
 }
-
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
 TH1D *EventTPC::GetTimeProjection(const SigClusterTPC &cluster, int strip_dir) {  // valid range [0-2]
   TH1D *h = NULL;
   if(!IsOK() || !cluster.IsOK()) return h;
