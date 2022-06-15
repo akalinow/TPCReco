@@ -37,10 +37,12 @@ int main(int argc, char *argv[]) {
     myEventPtr->get1DProjection(projection_type::DIR_V, filter_type::none, scale_type::mm)->Print();
     myEventPtr->get1DProjection(projection_type::DIR_W, filter_type::none, scale_type::mm)->Print();
     std::cout<<std::endl;
+    myEventPtr->get1DProjection(projection_type::DIR_TIME, filter_type::none, scale_type::mm)->Print();
     myEventPtr->get1DProjection(projection_type::DIR_TIME_U, filter_type::none, scale_type::mm)->Print();
     myEventPtr->get1DProjection(projection_type::DIR_TIME_V, filter_type::none, scale_type::mm)->Print();
     myEventPtr->get1DProjection(projection_type::DIR_TIME_W, filter_type::none, scale_type::mm)->Print();
     std::cout<<std::endl;
+    myEventPtr->get1DProjection(projection_type::DIR_TIME, filter_type::none, scale_type::raw)->Print();
     myEventPtr->get1DProjection(projection_type::DIR_TIME_U, filter_type::none, scale_type::raw)->Print();
     myEventPtr->get1DProjection(projection_type::DIR_TIME_V, filter_type::none, scale_type::raw)->Print();
     myEventPtr->get1DProjection(projection_type::DIR_TIME_W, filter_type::none, scale_type::raw)->Print();

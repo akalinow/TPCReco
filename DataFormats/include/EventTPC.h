@@ -42,6 +42,12 @@ class EventTPC {
 
   double get1DPosition(PEventTPC::chargeMapType::key_type key,
 		       projection_type projType, scale_type scaleType) const;
+
+  void create3DHistos(scale_type scaleType);
+  void updateHistosCache(filter_type filterType);
+
+  bool histoCacheUpdated{false};
+  std::shared_ptr<TH3D> a3DHistoRawPtr, a3DHistoMMPtr;
   
   eventraw::EventInfo myEventInfo;
   std::shared_ptr<GeometryTPC> myGeometryPtr;  //! transient data member
