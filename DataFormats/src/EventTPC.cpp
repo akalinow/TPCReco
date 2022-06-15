@@ -63,6 +63,8 @@ void EventTPC::SetGeoPtr(std::shared_ptr<GeometryTPC> aPtr) {
 void EventTPC::SetChargeMap(const PEventTPC::chargeMapType & aChargeMap){
 
   chargeMapWithSections = aChargeMap;
+  filterHits(filter_type::none);
+  filterHits(filter_type::threshold);
 
 }
 ///////////////////////////////////////////////////////////////////////
@@ -235,9 +237,9 @@ void EventTPC::filterHits(filter_type filterType){
   for(const auto & item: chargeMapWithSections){
     auto key = item.first;
     auto value = item.second;
-    if(value>chargeThreshold){
-      keyList.insert(key);
-      addEnvelope(key, keyList, delta_timecells, delta_strips);
+    if(value>chargeThreshold || filterType==filter_type::none){
+      keyList.insert(key);      
+      if(filterType==filter_type::threshold) addEnvelope(key, keyList, delta_timecells, delta_strips);
     }
   }
  keyLists[filterType] = keyList;

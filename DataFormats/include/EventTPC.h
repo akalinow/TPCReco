@@ -42,11 +42,6 @@ class EventTPC {
 
   double get1DPosition(PEventTPC::chargeMapType::key_type key,
 		       projection_type projType, scale_type scaleType) const;
-
-  std::shared_ptr<TH1D> get1DProjection(projection_type projType,
-					filter_type filterType,
-					scale_type scaleType);
-  
   
   eventraw::EventInfo myEventInfo;
   std::shared_ptr<GeometryTPC> myGeometryPtr;  //! transient data member
@@ -121,6 +116,10 @@ class EventTPC {
   std::shared_ptr<TH2D> GetStripVsTimeInMM(int strip_dir);  // whole event, valid range [0-2]
   std::shared_ptr<TH2D> GetChannels(int cobo_idx, int asad_idx); // valid range [0-1][0-3]
   std::shared_ptr<TH2D> GetChannels_raw(int cobo_idx, int asad_idx); // valid range [0-1][0-3]
+
+  std::shared_ptr<TH1D> get1DProjection(projection_type projType,
+					filter_type filterType,
+					scale_type scaleType);
 
   std::vector<TH2D*> Get2D(const SigClusterTPC &cluster, double radius,          // clustered hits only,
 			   int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN,   // projections on: XY, XZ, YZ planes

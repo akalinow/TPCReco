@@ -38,6 +38,7 @@ if(EXISTS ${GET_VERSION_DIR})
   add_executable(testEventTPCread test/testEventTPCread.cpp)
   add_executable(testEventTPCreadTChain test/testEventTPCreadTChain.cpp)
   add_executable(grawToEventRaw bin/grawToEventRaw.cpp)
+  add_executable(EventTPC_tst test/EventTPC_tst.cpp)
   # Compiler flags.
   #
   MESSAGE( STATUS ${GET_CXX_FLAGS})
@@ -47,6 +48,7 @@ if(EXISTS ${GET_VERSION_DIR})
   target_compile_options(testEventTPCread PUBLIC ${CMAKE_ROOT_CFLAGS})
   target_compile_options(testEventTPCreadTChain PUBLIC ${CMAKE_ROOT_CFLAGS})
   target_compile_options(grawToEventRaw PUBLIC ${CMAKE_ROOT_CFLAGS} ${GET_CXX_FLAGS})
+  target_compile_options(EventTPC_tst PUBLIC ${CMAKE_ROOT_CFLAGS} ${GET_CXX_FLAGS})
 
   # Linker flags
   #
@@ -54,6 +56,7 @@ if(EXISTS ${GET_VERSION_DIR})
   target_link_libraries(testEventTPCread PUBLIC ${MODULE_NAME} ${TPCRECO_LIBRARIES})
   target_link_libraries(testEventTPCreadTChain PUBLIC ${MODULE_NAME} ${TPCRECO_LIBRARIES})
   target_link_libraries(grawToEventRaw PUBLIC ${MODULE_NAME} ${TPCRECO_LIBRARIES} ${GET_LIBRARIES} ${Boost_LIBRARIES})
+  target_link_libraries(EventTPC_tst PUBLIC ${MODULE_NAME} ${TPCRECO_LIBRARIES} ${GET_LIBRARIES} ${Boost_LIBRARIES})
 
   # All install commands get the same destination. this allows us to use paths
   # relative to the executable.
@@ -65,6 +68,7 @@ if(EXISTS ${GET_VERSION_DIR})
   install(TARGETS testEventTPCread RUNTIME DESTINATION bin)
   install(TARGETS testEventTPCreadTChain RUNTIME DESTINATION bin)
   install(TARGETS grawToEventRaw RUNTIME DESTINATION bin)
+  install(TARGETS EventTPC_tst RUNTIME DESTINATION test)
   install(DIRECTORY DESTINATION results)
   install(PROGRAMS $<1:${PROJECT_SOURCE_DIR}/${MODULE_NAME}/python/> DESTINATION python)
   

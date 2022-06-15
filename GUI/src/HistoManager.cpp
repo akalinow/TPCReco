@@ -67,10 +67,12 @@ void HistoManager::setEvent(EventTPC* aEvent){
 void HistoManager::setEvent(std::shared_ptr<EventTPC> aEvent){
   if(!aEvent) return;
   myEventPtr = aEvent;
+  /* TEST
   myTkBuilder.setEvent(myEventPtr,
 		       getRecoClusterThreshold(),
 		       getRecoClusterDeltaStrips(),
 		       getRecoClusterDeltaTimeCells());
+  */
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -206,7 +208,7 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
   if(!aCanvas) return;
   int padNumberOffset = 0;
   if(std::string(aCanvas->GetName())=="Histograms") padNumberOffset = 0;
-  reconstruct();
+  //reconstruct();
 
    for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
      TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
@@ -214,6 +216,12 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
      aPad->cd();
      aCanvas->Modified();
      aCanvas->Update();
+
+     ////TEST
+     //myEventPtr->get1DProjection(static_cast<projection_type>(strip_dir), filter_type::none, scale_type::raw)->DrawCopy("colz");
+     myEventPtr->get1DProjection(static_cast<projection_type>(strip_dir), filter_type::none, scale_type::mm)->DrawCopy("colz");
+     continue;
+     //////
      
      auto h1 = getClusterStripVsTimeInMM(strip_dir)->DrawCopy("colz");
      if(aPad->GetLogz()) h1->SetMinimum(1.0);
@@ -222,6 +230,7 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
      h1->Draw("same colz");
      drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
   }
+   /*
    int strip_dir=3;
    TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
    if(!aPad) return;
@@ -229,6 +238,7 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
    aCanvas->Modified();
    aCanvas->Update();
    drawChargeAlongTrack3D(aPad);
+   */
    aCanvas->Modified();
    aCanvas->Update();
 }
