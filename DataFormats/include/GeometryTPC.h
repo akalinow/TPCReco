@@ -230,6 +230,9 @@ class GeometryTPC {
   std::tuple<double, double> rangeStripSectionInMM(int dir, int section); // [mm] min/max (signed) distance between projection of outermost strip's central axis and projection of the origin (X=0,Y=0) point on the U/V/W pitch axis for a given direction (per section)
   std::tuple<double, double> rangeStripDirInMM(int dir); // [mm] min/max (signed) distance between projection of outermost strip's central axis and projection of the origin (X=0,Y=0) point on the U/V/W pitch axis for a given direction (all sections)
 
+  TH2D *GetXY_TestUV(TH2D *h=NULL); // auxillary functions for x-check 
+  TH2D *GetXY_TestVW(TH2D *h=NULL); // auxillary functions for x-check 
+  TH2D *GetXY_TestWU(TH2D *h=NULL); // auxillary functions for x-check
   //  ClassDef(GeometryTPC,1)
 };
 

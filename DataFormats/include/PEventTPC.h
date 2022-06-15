@@ -5,20 +5,7 @@
 ///
 /// VERSION: 05 May 2018
 
-#include <cstdlib>
-#include <vector>
 #include <map>
-#include <string>
-#include <memory>
-#include <cstdio>
-#include <iostream>
-#include <sstream>
-#include <map>
-#include <iterator>
-#include <fstream>
-#include <utility>
-#include <algorithm> 
-#include <numeric>
 
 #include "EventInfo.h"
 #include "StripTPC.h"

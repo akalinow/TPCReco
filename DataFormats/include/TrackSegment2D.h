@@ -19,7 +19,7 @@ class TrackSegment2D{
 
 public:
 
-  TrackSegment2D(int strip_dir=DIR_U, std::shared_ptr<GeometryTPC> aGeometryPtr=0);
+  TrackSegment2D(int strip_dir= (int)projection_type::DIR_U, std::shared_ptr<GeometryTPC> aGeometryPtr=0);
 
   ~TrackSegment2D() {};
 

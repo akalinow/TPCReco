@@ -34,8 +34,19 @@ class EventTPC {
 		   double delta_timece,
 		   double delta_strip);
 
-  TH1* getHisto(projection aProj);
+  std::shared_ptr<TH1D> getEmpty1DHisto(projection_type aProj, scale_type scaleType) const;
 
+  std::map<filter_type, std::set<PEventTPC::chargeMapType::key_type> > keyLists;
+
+  void filterHits(filter_type filterType);
+
+  double get1DPosition(PEventTPC::chargeMapType::key_type key,
+		       projection_type projType, scale_type scaleType) const;
+
+  std::shared_ptr<TH1D> get1DProjection(projection_type projType,
+					filter_type filterType,
+					scale_type scaleType);
+  
   
   eventraw::EventInfo myEventInfo;
   std::shared_ptr<GeometryTPC> myGeometryPtr;  //! transient data member
@@ -103,24 +114,6 @@ class EventTPC {
   double GetTotalChargeByTimeCell(int time_cell) const; // charge integral from a single time cell from all strips
   double GetTotalChargeByTimeCell(int strip_dir, int time_cell) const; // charge integral from a single time cell from all merged strips in a given direction (all sections)
   double GetTotalChargeByTimeCell(int strip_dir, int strip_section, int time_cell) const; // charge integral from a single time cell from all strips in a given direction (per section)
-
-  void FilterHits(filter_type filterType);
-
-  std::shared_ptr<TH1D> GetStripProjection(projection projType,
-					   filter_type filterType,
-					   scale_type scaleType);
-  
-  TH1D *GetTimeProjection(const SigClusterTPC &cluster, int strip_dir);     // clustered hits only, valid dir range [0-2]
-  TH1D *GetTimeProjection(const SigClusterTPC &cluster);                    // clustered hits only, all strip dirs
-  TH1D *GetStripProjection(int strip_dir);                            // whole,event, valid dir range [0-2]
-  TH1D *GetTimeProjection(int strip_dir);                             // whole,event, valid dir range [0-2]
-  TH1D *GetTimeProjection();                                          // whole event, all strip dirs
-
-  std::shared_ptr<TH1D> GetTimeProjectionInMM(const SigClusterTPC &cluster, int strip_dir);     // clustered hits only, valid dir range [0-2]
-  std::shared_ptr<TH1D> GetTimeProjectionInMM(const SigClusterTPC &cluster);                    // clustered hits only, all strip dirs
-  std::shared_ptr<TH1D> GetStripProjectionInMM(int strip_dir);                            // whole,event, valid dir range [0-2]
-  std::shared_ptr<TH1D> GetTimeProjectionInMM(int strip_dir);                             // whole,event, valid dir range [0-2]
-  std::shared_ptr<TH1D> GetTimeProjectionInMM();                                          // whole event, all strip dirs
   
   std::shared_ptr<TH2D> GetStripVsTime(const SigClusterTPC &cluster, int strip_dir);        // clustered hits only, valid dir range [0-2]
   std::shared_ptr<TH2D> GetStripVsTime(int strip_dir);                               // whole event, all strip dirs
@@ -141,15 +134,24 @@ class EventTPC {
 	      int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN, 
 	      int method=EVENTTPC_DEFAULT_RECO_METHOD);  
 
-  TH2D *GetXY_TestUV(TH2D *h=NULL); // auxillary functions for x-check 
-  TH2D *GetXY_TestVW(TH2D *h=NULL); // auxillary functions for x-check 
-  TH2D *GetXY_TestWU(TH2D *h=NULL); // auxillary functions for x-check
-
   ///Methods to remove
   void MakeOneCluster(double thr=-1, int delta_strips=5, int delta_timecells=25){} 
   const SigClusterTPC & GetOneCluster() const {return myCluster;}
 
+  std::shared_ptr<TH1D> GetStripProjection(const SigClusterTPC&, int&) { return std::shared_ptr<TH1D>();};
+  TH1D* GetStripProjection(int&) { return 0;};//TEMP FIX
+  std::shared_ptr<TH1D> GetStripProjectionInMM(const SigClusterTPC &cluster, int strip_dir) {return std::shared_ptr<TH1D>();};
+  std::shared_ptr<TH1D> GetStripProjectionInMM(int strip_dir) {return std::shared_ptr<TH1D>();};
+  
+  TH1D *GetTimeProjection(const SigClusterTPC &cluster, int strip_dir){return 0;};
+  TH1D *GetTimeProjection(const SigClusterTPC &cluster){return 0;};                
+  TH1D *GetTimeProjection(int strip_dir){return 0;};                             
+  TH1D *GetTimeProjection(){return 0;};                                          
 
+  std::shared_ptr<TH1D> GetTimeProjectionInMM(const SigClusterTPC &cluster, int strip_dir){ return std::shared_ptr<TH1D>();}; 
+  std::shared_ptr<TH1D> GetTimeProjectionInMM(const SigClusterTPC &cluster){ return std::shared_ptr<TH1D>();};                
+  std::shared_ptr<TH1D> GetTimeProjectionInMM(int strip_dir){ return std::shared_ptr<TH1D>();};                             
+  std::shared_ptr<TH1D> GetTimeProjectionInMM(){ return std::shared_ptr<TH1D>();};          
   /////
 
   friend std::ostream& operator<<(std::ostream& os, const EventTPC& e);

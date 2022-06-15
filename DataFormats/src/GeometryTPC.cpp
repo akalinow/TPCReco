@@ -1853,6 +1853,223 @@ void GeometryTPC::Debug() {
   }
 }
 
-// ClassImp(StripTPC)
-// ClassImp(GeometryTPC)
+TH2D *GeometryTPC::GetXY_TestUV(TH2D *h) { // test (unphysical) histogram
+  //TH2D *h = NULL;
 
+  if(!IsOK()) return h;
+
+  if(h==NULL) {
+    double xmin=1E30;
+    double xmax=-1E30;
+    double ymin=1E30;
+    double ymax=-1E30;
+    /*
+    StripTPC* s[6] = {
+      GetStripByDir(projection_type::DIR_U, 1),
+      GetStripByDir(projection_type::DIR_U, GetDirNstrips(projection_type::DIR_U)),
+      GetStripByDir(projection_type::DIR_V, 1),
+      GetStripByDir(projection_type::DIR_V, GetDirNstrips(projection_type::DIR_V)),
+      GetStripByDir(projection_type::DIR_W, 1),
+      GetStripByDir(projection_type::DIR_W, GetDirNstrips(projection_type::DIR_W))
+    };
+    for(int i=0; i<6; i++) {
+      if(!s[i]) continue;
+      if(s[i]->Offset().X()>xmax) xmax=s[i]->Offset().X();
+      if(s[i]->Offset().X()<xmin) xmin=s[i]->Offset().X();
+      if(s[i]->Offset().Y()>ymax) ymax=s[i]->Offset().Y();
+      if(s[i]->Offset().Y()<ymin) ymin=s[i]->Offset().Y();
+    }
+    xmin-=GetStripPitch()*0.3;
+    xmax+=GetStripPitch()*0.7;
+    ymin-=GetPadPitch()*0.3;
+    ymax+=GetPadPitch()*0.7;
+
+    int nx = (int)( (xmax-xmin)/GetStripPitch()-1 );
+    int ny = (int)( (ymax-ymin)/GetPadPitch()-1 );
+    */
+    std::tie(xmin, xmax, ymin, ymax) = rangeXY();
+    int nx = (int)( (xmax-xmin)/GetPadPitch()-1 );
+    int ny = (int)( (ymax-ymin)/GetStripPitch()-1 );
+    
+    ////////// DEBUG 
+    std::cout << Form(">>>> U-V correlation test histogram: range=[%lf, %lf] x [%lf, %lf], nx=%d, ny=%d",
+		      xmin, xmax, ymin, ymax, nx, ny) << std::endl;
+    ////////// DEBUG 
+    
+    h = new TH2D( "h_test_XY_UV_2d",
+		  "Intersection of U-V strips;X [mm];Y [mm]; V strip no.",
+		  nx, xmin, xmax, ny, ymin, ymax );
+  }
+
+  // loop over all strip numbers and check hits strip intersection
+  for(int i0=1; i0<=GetDirNstrips(projection_type::DIR_U); i0++) {
+    if(i0!=1) continue;
+    for(auto iter0=GetDirSectionIndexList(projection_type::DIR_U).begin();
+	iter0!=GetDirSectionIndexList(projection_type::DIR_U).end(); iter0++) {
+      std::shared_ptr<StripTPC> strip0 = GetStripByDir(projection_type::DIR_U, *iter0, i0);
+      for(int i1=1; i1<(int)GetDirNstrips(projection_type::DIR_V); i1++) {
+	for(auto iter1=GetDirSectionIndexList(projection_type::DIR_V).begin();
+	    iter1!=GetDirSectionIndexList(projection_type::DIR_V).end(); iter1++) {
+	  std::shared_ptr<StripTPC> strip1 = GetStripByDir(projection_type::DIR_V, *iter1, i1);
+	  TVector2 pos;
+	  if( GetCrossPoint( strip0, strip1, pos) ) {
+	    h->SetBinContent( h->FindBin( pos.X(), pos.Y() ), 1.*i0);
+	  }
+	}
+      }
+    }
+  }
+
+  ////////// DEBUG 
+  std::cout << ">>>> U-V correlation test histogram: END" << std::endl;
+  ////////// DEBUG 
+
+  return h;
+}
+
+TH2D *GeometryTPC::GetXY_TestVW(TH2D *h) { // test (unphysical) histogram
+  //  TH2D *h = NULL;
+
+  if(!IsOK()) return h;
+
+  if(h==NULL) {
+    double xmin=1E30;
+    double xmax=-1E30;
+    double ymin=1E30;
+    double ymax=-1E30;
+    /*
+    StripTPC* s[6] = {
+      GetStripByDir(projection_type::DIR_U, 1),
+      GetStripByDir(projection_type::DIR_U, GetDirNstrips(projection_type::DIR_U)),
+      GetStripByDir(projection_type::DIR_V, 1),
+      GetStripByDir(projection_type::DIR_V, GetDirNstrips(projection_type::DIR_V)),
+      GetStripByDir(projection_type::DIR_W, 1),
+      GetStripByDir(projection_type::DIR_W, GetDirNstrips(projection_type::DIR_W))
+    };
+    for(int i=0; i<6; i++) {
+      if(!s[i]) continue;
+      if(s[i]->Offset().X()>xmax) xmax=s[i]->Offset().X();
+      if(s[i]->Offset().X()<xmin) xmin=s[i]->Offset().X();
+      if(s[i]->Offset().Y()>ymax) ymax=s[i]->Offset().Y();
+      if(s[i]->Offset().Y()<ymin) ymin=s[i]->Offset().Y();
+    }
+    xmin-=GetStripPitch()*0.3;
+    xmax+=GetStripPitch()*0.7;
+    ymin-=GetPadPitch()*0.3;
+    ymax+=GetPadPitch()*0.7;
+    
+    int nx = (int)( (xmax-xmin)/GetStripPitch()-1 );
+    int ny = (int)( (ymax-ymin)/GetPadPitch()-1 );
+    */   
+    std::tie(xmin, xmax, ymin, ymax) = rangeXY();
+    int nx = (int)( (xmax-xmin)/GetPadPitch()-1 );
+    int ny = (int)( (ymax-ymin)/GetStripPitch()-1 );
+
+    ////////// DEBUG 
+    std::cout << Form(">>>> V-W correlation test histogram: range=[%lf, %lf] x [%lf, %lf], nx=%d, ny=%d",
+		      xmin, xmax, ymin, ymax, nx, ny) << std::endl;
+    ////////// DEBUG 
+    
+    h = new TH2D( "h_test_XY_VW_2d",
+		  "Intersection of V-W strips;X [mm];Y [mm]; V strip no.",
+		  nx, xmin, xmax, ny, ymin, ymax );
+  }
+
+  // loop over all strip numbers and check hits strip intersection
+  for(int i0=1; i0<(int)GetDirNstrips(projection_type::DIR_V); i0++) {
+    if(i0!=1) continue;
+    for(auto iter0=GetDirSectionIndexList(projection_type::DIR_V).begin();
+	iter0!=GetDirSectionIndexList(projection_type::DIR_V).end(); iter0++) {
+      std::shared_ptr<StripTPC> strip0 = GetStripByDir(projection_type::DIR_V, *iter0, i0);
+      for(int i1=1; i1<(int)GetDirNstrips(projection_type::DIR_W); i1++) {
+	for(auto iter1=GetDirSectionIndexList(projection_type::DIR_W).begin();
+	    iter1!=GetDirSectionIndexList(projection_type::DIR_W).end(); iter1++) {
+	  std::shared_ptr<StripTPC> strip1 = GetStripByDir(projection_type::DIR_W, *iter1, i1);
+	  TVector2 pos;
+	  if( GetCrossPoint( strip0, strip1, pos) ) {
+	    h->SetBinContent( h->FindBin( pos.X(), pos.Y() ), 1.*i0);
+	  }
+	}
+      }
+    }
+  }
+
+  ////////// DEBUG 
+  std::cout << ">>>> V-W correlation test histogram: END" << std::endl;
+  ////////// DEBUG 
+
+  return h;
+}
+
+TH2D *GeometryTPC::GetXY_TestWU(TH2D *h) { // test (unphysical) histogram
+  //  TH2D *h = NULL;
+
+  if(!IsOK()) return h;
+
+  if(h==NULL) {
+    double xmin=1E30;
+    double xmax=-1E30;
+    double ymin=1E30;
+    double ymax=-1E30;
+    /*    StripTPC* s[6] = {
+      GetStripByDir(projection_type::DIR_U, 1),
+      GetStripByDir(projection_type::DIR_U, GetDirNstrips(projection_type::DIR_U)),
+      GetStripByDir(projection_type::DIR_V, 1),
+      GetStripByDir(projection_type::DIR_V, GetDirNstrips(projection_type::DIR_V)),
+      GetStripByDir(projection_type::DIR_W, 1),
+      GetStripByDir(projection_type::DIR_W, GetDirNstrips(projection_type::DIR_W))
+    };
+    for(int i=0; i<6; i++) {
+      if(!s[i]) continue;
+      if(s[i]->Offset().X()>xmax) xmax=s[i]->Offset().X();
+      if(s[i]->Offset().X()<xmin) xmin=s[i]->Offset().X();
+      if(s[i]->Offset().Y()>ymax) ymax=s[i]->Offset().Y();
+      if(s[i]->Offset().Y()<ymin) ymin=s[i]->Offset().Y();
+    }
+    xmin-=GetStripPitch()*0.3;
+    xmax+=GetStripPitch()*0.7;
+    ymin-=GetPadPitch()*0.3;
+    ymax+=GetPadPitch()*0.7;
+    
+    int nx = (int)( (xmax-xmin)/GetStripPitch()-1 );
+    int ny = (int)( (ymax-ymin)/GetPadPitch()-1 );
+    */
+    std::tie(xmin, xmax, ymin, ymax) = rangeXY();
+    int nx = (int)( (xmax-xmin)/GetPadPitch()-1 );
+    int ny = (int)( (ymax-ymin)/GetStripPitch()-1 );
+
+    ////////// DEBUG 
+    std::cout << Form(">>>> W-U correlation test histogram: range=[%lf, %lf] x [%lf, %lf], nx=%d, ny=%d",
+    		      xmin, xmax, ymin, ymax, nx, ny) << std::endl;
+    ////////// DEBUG 
+    
+    h = new TH2D( "h_test_XY_WU_2d",
+		  "Intersection of W-U strips;X [mm];Y [mm]; W strip no.",
+		  nx, xmin, xmax, ny, ymin, ymax );
+  }
+
+  // loop over all strip numbers and check hits strip intersection
+  for(int i0=1; i0<(int)GetDirNstrips(projection_type::DIR_W); i0++) {
+    if(i0!=1) continue;
+    for(auto iter0=GetDirSectionIndexList(projection_type::DIR_W).begin();
+	iter0!=GetDirSectionIndexList(projection_type::DIR_W).end(); iter0++) {
+      std::shared_ptr<StripTPC> strip0 = GetStripByDir(projection_type::DIR_W, *iter0, i0);
+      for(int i1=1; i1<(int)GetDirNstrips(projection_type::DIR_U); i1++) {
+	for(auto iter1=GetDirSectionIndexList(projection_type::DIR_U).begin();
+	    iter1!=GetDirSectionIndexList(projection_type::DIR_U).end(); iter1++) {
+	  std::shared_ptr<StripTPC> strip1 = GetStripByDir(projection_type::DIR_U, *iter1, i1);
+	  TVector2 pos;
+	  if( GetCrossPoint( strip0, strip1, pos) ) {
+	    h->SetBinContent( h->FindBin( pos.X(), pos.Y() ), 1.*i0);
+	  }
+	}
+      }
+    }
+  }
+
+  ////////// DEBUG 
+  std::cout << ">>>> W-U correlation test histogram: END" << std::endl;
+  ////////// DEBUG
+
+  return h;
+}
