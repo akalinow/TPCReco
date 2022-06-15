@@ -276,6 +276,16 @@ std::shared_ptr<TH1D> EventTPC::get1DProjection(projection_type projType,
 
   double x = 0.0, value=0.0;
   for(const auto & key: keyLists.at(filterType)){
+
+     if(projType==projection_type::DIR_U &&
+	std::get<0>(key)!=static_cast<int>(projType)) continue;
+
+     if(projType==projection_type::DIR_V &&
+	std::get<0>(key)!=static_cast<int>(projType)) continue;
+
+     if(projType==projection_type::DIR_W &&
+	std::get<0>(key)!=static_cast<int>(projType)) continue;
+    
     value = chargeMapWithSections.at(key);
     x = get1DPosition(key, projType, scaleType);       
     aHisto->Fill(x, value);
