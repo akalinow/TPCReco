@@ -45,6 +45,7 @@ class StripTPC {
   double Length();
   inline int Npads() {return npads;}
 
+  friend std::ostream& operator<<(std::ostream& os, const StripTPC& aStrip);
 };
 
 #endif

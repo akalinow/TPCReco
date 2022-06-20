@@ -23,14 +23,14 @@ class GeometryStats{
     inline  void Fill(int dir,int section,int num){FillSections(dir,section,num);FillMerged(dir,num);}
     void print();
 
-    inline  SectionIndexList GetDirSectionIndexList(int dir){return directionsSectionIndexList.at(dir);} // added by MC - 4 Aug 2021
+    inline  SectionIndexList GetDirSectionIndexList(int dir)const{return directionsSectionIndexList.at(dir);}
     
-    inline  int GetDirNStrips(int dir,int section){return directionsStats.at(dir).at(section).n;}
-    inline  int GetDirMinStrip(int dir,int section){return directionsStats.at(dir).at(section).min;}
-    inline  int GetDirMaxStrip(int dir,int section){return directionsStats.at(dir).at(section).max;}
-    inline  int GetDirNStripsMerged(int dir){return mergedStats.at(dir).n;}
-    inline  int GetDirMinStripMerged(int dir){return mergedStats.at(dir).min;}
-    inline  int GetDirMaxStripMerged(int dir){return mergedStats.at(dir).max;}
+    inline  int GetDirNStrips(int dir,int section)const{return directionsStats.at(dir).at(section).n;}
+    inline  int GetDirMinStrip(int dir,int section)const{return directionsStats.at(dir).at(section).min;}
+    inline  int GetDirMaxStrip(int dir,int section)const{return directionsStats.at(dir).at(section).max;}
+    inline  int GetDirNStripsMerged(int dir)const{return mergedStats.at(dir).n;}
+    inline  int GetDirMinStripMerged(int dir)const{return mergedStats.at(dir).min;}
+    inline  int GetDirMaxStripMerged(int dir)const{return mergedStats.at(dir).max;}
 private:
   std::map<int,DirectionStats> directionsStats;
   std::map<int,SectionIndexList> directionsSectionIndexList; // added by MC - 4 Aug 2021

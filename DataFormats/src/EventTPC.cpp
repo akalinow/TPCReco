@@ -11,6 +11,7 @@
 #include "EventTPC.h"
 #include "TrackSegmentTPC.h"
 
+#include "colorText.h"
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 EventTPC::EventTPC(){
@@ -57,11 +58,7 @@ void EventTPC::Clear(){
 void EventTPC::SetGeoPtr(std::shared_ptr<GeometryTPC> aPtr) {
   myGeometryPtr = aPtr;
   initOK = myGeometryPtr && myGeometryPtr->IsOK();
-
-  if(initOK){
-    create3DHistos(scale_type::raw);
-    create3DHistos(scale_type::mm);
-  }
+  if(initOK) create3DHistoTemplate();
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
@@ -72,7 +69,7 @@ void EventTPC::SetChargeMap(const PEventTPC::chargeMapType & aChargeMap){
   filterHits(filter_type::threshold);
 
   updateHistosCache(filter_type::none);
-  //updateHistosCache(filter_type::threshold);
+  updateHistosCache(filter_type::threshold);
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
@@ -111,9 +108,9 @@ void EventTPC::fillAuxMaps(){
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
-void EventTPC::create3DHistos(scale_type scaleType){
+void EventTPC::create3DHistoTemplate(){
 
-  if(a3DHistoMMPtr && a3DHistoRawPtr) return;
+  if(a3DHistoRawPtr) return;
 
   int nBinsX = myGeometryPtr->GetAgetNtimecells();
   double minX = -0.5;
@@ -130,45 +127,28 @@ void EventTPC::create3DHistos(scale_type scaleType){
   double minZ = -0.5;
   double maxZ = nBinsZ + minZ;
 
-  if(scaleType==scale_type::mm){
-    bool err_flag;
-    minX = myGeometryPtr->Timecell2pos(minX, err_flag); 
-    maxX = myGeometryPtr->Timecell2pos(maxX, err_flag); 
-
-    std::tie(minY, maxY) = myGeometryPtr->rangeStripDirInMM(projection_type::DIR_V);//FIXME
-    minY-=myGeometryPtr->GetStripPitch()/2.0;
-    maxY+=myGeometryPtr->GetStripPitch()/2.0;
-  }
-
   TH3D* a3DHisto = new TH3D("a3DHisto","",
 			    nBinsX, minX, maxX,
 			    nBinsY, minY, maxY,
 			    nBinsZ, minZ, maxZ);
 
-  if(scaleType==scale_type::mm) a3DHistoMMPtr.reset(a3DHisto);
-  else a3DHistoRawPtr.reset(a3DHisto);
+  a3DHistoRawPtr.reset(a3DHisto);
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 void EventTPC::updateHistosCache(filter_type filterType){
 
-  a3DHistoRawPtr->Reset();
-  a3DHistoMMPtr->Reset();
+  std::shared_ptr<TH3D> aHisto((TH3D*)a3DHistoRawPtr->Clone());
 
   double x = 0.0, y = 0.0, z = 0.0, value=0.0;
-  bool err_flag = false;
   for(const auto & key: keyLists.at(filterType)){
-
     value = chargeMapWithSections.at(key);
     x = std::get<3>(key);
     y = std::get<2>(key);
     z = std::get<0>(key);    
-    a3DHistoRawPtr->Fill(x, y, z, value);
-
-    x = myGeometryPtr->Timecell2pos(std::get<3>(key), err_flag);
-    y = myGeometryPtr->Strip2posUVW(std::get<0>(key), std::get<2>(key), err_flag);
-    a3DHistoMMPtr->Fill(x, y, z, value);
+    aHisto->Fill(x, y, z, value);
   }
+  a3DHistoRawMap[filterType] = aHisto;
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
@@ -199,29 +179,41 @@ bool EventTPC::CheckAsadNboards() const {
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 double EventTPC::GetValByStrip(int strip_dir, int strip_section, int strip_number, int time_cell) const {
-  return chargeMapWithSections.at({strip_dir,  strip_section, strip_number, time_cell});
+
+  auto item = chargeMapWithSections.find({strip_dir,  strip_section, strip_number, time_cell});
+  if(item!=chargeMapWithSections.end()) return item->second;
+  return 0.0;
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 double EventTPC::GetValByStrip(std::shared_ptr<StripTPC> strip, int time_cell) const {
+  
   if(strip) return GetValByStrip(strip->Dir(), strip->Section(), strip->Num(), time_cell);
   return 0.0;
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 double EventTPC::GetValByStripMerged(int strip_dir, int strip_number, int time_cell) const{
-  return chargeMap.at({strip_dir, strip_number, time_cell});
+
+  auto item = chargeMap.find({strip_dir,  strip_number, time_cell});
+  if(item!=chargeMap.end()) return item->second;
+  return 0.0;
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 double EventTPC::GetMaxCharge(int strip_dir, int strip_section, int strip_number) const {
-  
-  return maxChargeMap2.at({strip_dir, strip_section, strip_number});
+
+  auto item = maxChargeMap2.find({strip_dir,  strip_section, strip_number});
+  if(item!=maxChargeMap2.end()) return item->second;
+  return 0.0;
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
-double EventTPC::GetMaxCharge(int strip_dir, int strip_number) const { 
-  return maxChargeMap.at({strip_dir, strip_number});
+double EventTPC::GetMaxCharge(int strip_dir, int strip_number) const {
+
+  auto item = maxChargeMap.find({strip_dir,  strip_number});
+  if(item!=maxChargeMap.end()) return item->second;
+  return 0.0;
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
@@ -259,12 +251,18 @@ int EventTPC::GetMaxChargeChannel() const {
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 double EventTPC::GetTotalCharge(int strip_dir, int strip_section, int strip_number) const {
-  return totalChargeMap4.at({strip_dir, strip_section, strip_number});
+
+   auto item = totalChargeMap4.find({strip_dir, strip_section, strip_number});
+   if(item!=totalChargeMap4.end()) return item->second;
+   return 0.0;
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 double EventTPC::GetTotalCharge(int strip_dir, int strip_number) const {
-  return totalChargeMap.at({strip_dir, strip_number});
+
+  auto item = totalChargeMap.find({strip_dir, strip_number});
+  if(item!=totalChargeMap.end()) return item->second;
+  return 0.0;
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
@@ -280,17 +278,26 @@ double EventTPC::GetTotalCharge() const {
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 double EventTPC::GetTotalChargeByTimeCell(int strip_dir, int strip_section, int time_cell) const {
-  return totalChargeMap5.at({strip_dir, strip_section, time_cell});
+
+  auto item = totalChargeMap5.find({strip_dir, strip_section, time_cell});
+  if(item!=totalChargeMap5.end()) return item->second;
+  return 0.0;
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 double EventTPC::GetTotalChargeByTimeCell(int strip_dir, int time_cell) const {
-  return totalChargeMap2.at({strip_dir, time_cell});
+
+  auto item = totalChargeMap2.find({strip_dir, time_cell});
+  if(item!=totalChargeMap2.end()) return item->second;
+  return 0.0;
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 double EventTPC::GetTotalChargeByTimeCell(int time_cell) const {
-  return totalChargeMap3.at({time_cell});
+
+  auto item = totalChargeMap3.find({time_cell});
+  if(item!=totalChargeMap3.end()) return item->second;
+  return 0.0;
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
@@ -337,6 +344,8 @@ std::shared_ptr<TH1D> EventTPC::get1DProjection(projection_type projType,
 						filter_type filterType,
 						scale_type scaleType){
   TH1D *h1D = 0;
+  std::shared_ptr<TH3D> a3DHistoRawPtr = a3DHistoRawMap.at(filterType);
+  
   if(projType==projection_type::DIR_U ||
      projType==projection_type::DIR_V ||
      projType==projection_type::DIR_W){
@@ -345,7 +354,7 @@ std::shared_ptr<TH1D> EventTPC::get1DProjection(projection_type projType,
     int maxY = myGeometryPtr->GetDirNstrips(projType)+minY;
 
     h1D = a3DHistoRawPtr->ProjectionY("_py",0,-1,
-					    static_cast<int>(projType)+1, static_cast<int>(projType)+1);
+				      static_cast<int>(projType)+1, static_cast<int>(projType)+1);
     h1D->GetXaxis()->SetRangeUser(minY, maxY);
   }
   else if(projType==projection_type::DIR_TIME_U){
@@ -365,160 +374,152 @@ std::shared_ptr<TH1D> EventTPC::get1DProjection(projection_type projType,
   else if(projType==projection_type::DIR_TIME){
     h1D = a3DHistoRawPtr->ProjectionX();
   }
-  return std::shared_ptr<TH1D>(h1D);    
-  
-
-
-  
-  auto aHisto=getEmpty1DHisto(projType, scaleType);
-  
-  //auto event_id = myEventInfo.GetEventId();
-  //setHeaderAndLabels(aHisto);
-
-  double x = 0.0, value=0.0;
-  for(const auto & key: keyLists.at(filterType)){
-
-    if((projType==projection_type::DIR_U || projType==projection_type::DIR_TIME_U) && 
-	std::get<0>(key)!=projection_type::DIR_U) continue;
-
-    if((projType==projection_type::DIR_V || projType==projection_type::DIR_TIME_V) && 
-       std::get<0>(key)!=projection_type::DIR_V) continue;
-     
-    if((projType==projection_type::DIR_W || projType==projection_type::DIR_TIME_W) && 
-       std::get<0>(key)!=projection_type::DIR_W) continue;
-    
-    value = chargeMapWithSections.at(key);
-    x = get1DPosition(key, projType, scaleType);       
-    aHisto->Fill(x, value);
+  else{
+    std::cout<<KRED<<"EventTPC::get1DProjection(): unknown projType: "<<RST<<projType<<std::endl;
   }
-  return aHisto; 
+
+  if(scaleType==scale_type::mm) scale1DHistoToMM(h1D, projType);
+  setHistoLabels(h1D, projType, filterType, scaleType);
+
+  return std::shared_ptr<TH1D>(h1D);    
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
-double EventTPC::get1DPosition(PEventTPC::chargeMapType::key_type key,
-			       projection_type projType, scale_type scaleType) const {
-
-  double x = -999.0;
-  bool err_flag;
+std::shared_ptr<TH2D> EventTPC::get2DProjection(projection_type projType,
+						filter_type filterType,
+						scale_type scaleType){
+  TH2D *h2D = 0;
+  std::shared_ptr<TH3D> a3DHistoRawPtr = a3DHistoRawMap.at(filterType);
   
+  if(projType==projection_type::DIR_TIME_U){
+    a3DHistoRawPtr->GetZaxis()->SetRange(static_cast<int>(projection_type::DIR_U)+1,
+					 static_cast<int>(projection_type::DIR_U)+1);
+    h2D = (TH2D*)a3DHistoRawPtr->Project3D("xy");
+  }
+  else if(projType==projection_type::DIR_TIME_V){
+    a3DHistoRawPtr->GetZaxis()->SetRange(static_cast<int>(projection_type::DIR_V)+1,
+					 static_cast<int>(projection_type::DIR_V)+1);
+    h2D = (TH2D*)a3DHistoRawPtr->Project3D("xy");
+  }
+  else if(projType==projection_type::DIR_TIME_W){
+    a3DHistoRawPtr->GetZaxis()->SetRange(static_cast<int>(projection_type::DIR_W)+1,
+					 static_cast<int>(projection_type::DIR_W)+1);
+    h2D = (TH2D*)a3DHistoRawPtr->Project3D("xy");
+  }
+
+  if(scaleType==scale_type::mm) scale2DHistoToMM(h2D, projType);
+  setHistoLabels(h2D, projType, filterType, scaleType);
+  
+  return std::shared_ptr<TH2D>(h2D);    
+}
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+void EventTPC::scale1DHistoToMM(TH1D *h1D, projection_type projType) const{
+
+  double minX = 0.0, maxX=0.0;
   if(projType==projection_type::DIR_U ||
      projType==projection_type::DIR_V ||
      projType==projection_type::DIR_W){
       
-    x = std::get<2>(key);
-    if(scaleType==scale_type::mm) x = myGeometryPtr->Strip2posUVW(std::get<0>(key), std::get<2>(key), err_flag);
+    std::tie(minX, maxX) = myGeometryPtr->rangeStripDirInMM(projType);
+    minX-=myGeometryPtr->GetStripPitch()/2.0;
+    maxX+=myGeometryPtr->GetStripPitch()/2.0;
   }
-  else if(projType==projection_type::DIR_TIME ||  
-	  projType==projection_type::DIR_TIME_U ||
+  else if(projType==projection_type::DIR_TIME_U ||
 	  projType==projection_type::DIR_TIME_V ||
-	  projType==projection_type::DIR_TIME_W){
+	  projType==projection_type::DIR_TIME_W ||
+	  projType==projection_type::DIR_TIME){
+    bool err_flag;
+    int nBinsX = myGeometryPtr->GetAgetNtimecells();
+    minX = -0.5;
+    maxX = nBinsX + minX;// ends at 511.5 (cells numbered from 0 to 511)
     
-    x = std::get<3>(key);
-    if(scaleType==scale_type::mm) x = myGeometryPtr->Timecell2pos(std::get<3>(key), err_flag);
+    minX = myGeometryPtr->Timecell2pos(minX, err_flag); 
+    maxX = myGeometryPtr->Timecell2pos(maxX, err_flag);
   }
-  else{
-    throw std::logic_error("unknown 1D projection type");
-  }
-  return x;
+  h1D->GetXaxis()->SetRange(minX, maxX);  
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
-std::shared_ptr<TH1D> EventTPC::getEmpty1DHisto(projection_type projType, scale_type scaleType) const{
+void EventTPC::scale2DHistoToMM(TH2D *h2D, projection_type projType) const{
 
-  int nBins = 0;
-  double minX = 0.0;
-  double maxX = 0.0;
+  bool err_flag;
+  int nBinsX = myGeometryPtr->GetAgetNtimecells();
+  double minX = -0.5;
+  double maxX = nBinsX + minX;// ends at 511.5 (cells numbered from 0 to 511)
+  
+  minX = myGeometryPtr->Timecell2pos(minX, err_flag); 
+  maxX = myGeometryPtr->Timecell2pos(maxX, err_flag);
+  
+  double minY = 0.0, maxY=0.0;
+  std::tie(minY, maxY) = myGeometryPtr->rangeStripDirInMM(projection_type::DIR_V);//FIXME
+  minY-=myGeometryPtr->GetStripPitch()/2.0;
+  maxY+=myGeometryPtr->GetStripPitch()/2.0;
+  
+  h2D->GetXaxis()->SetRange(minX, maxX);
+  h2D->GetYaxis()->SetRange(minY, maxY);
+}
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+void EventTPC::setHistoLabels(TH1 *h1, projection_type projType,
+			      filter_type filterType,
+			      scale_type scaleType) const {
+
+  auto event_id = myEventInfo.GetEventId();
+  projection_type strip_dir = projection_type::NONE;
 
   if(projType==projection_type::DIR_U ||
      projType==projection_type::DIR_V ||
-     projType==projection_type::DIR_W){
-
-    nBins = myGeometryPtr->GetDirNstrips(projType);
-    minX = 0.5;
-    maxX = myGeometryPtr->GetDirNstrips(projType)+0.5;
-    
-    if(scaleType==scale_type::mm){
-      std::tie(minX, maxX) = myGeometryPtr->rangeStripDirInMM(projType);
-      minX-=myGeometryPtr->GetStripPitch()/2.0;
-      maxX+=myGeometryPtr->GetStripPitch()/2.0;
-    }
+     projType==projection_type::DIR_W ||
+     projType==projection_type::DIR_TIME){
+    strip_dir = projType;
   }
-  else if(projType==projection_type::DIR_TIME ||  
-	  projType==projection_type::DIR_TIME_U ||
-	  projType==projection_type::DIR_TIME_V ||
-	  projType==projection_type::DIR_TIME_W){
-
-    nBins = myGeometryPtr->GetAgetNtimecells();
-    minX = -0.5;
-    maxX = myGeometryPtr->GetAgetNtimecells()-0.5;// ends at 511.5 (cells numbered from 0 to 511)
-
-    if(scaleType==scale_type::mm){
-      bool err_flag;
-      minX = myGeometryPtr->Timecell2pos(minX, err_flag);
-      maxX = myGeometryPtr->Timecell2pos(maxX, err_flag);      
-    }
+  else if(projType==projection_type::DIR_TIME_U){
+    strip_dir = projection_type::DIR_U;
   }
-  else{
-    throw std::logic_error("unknown 1D projection type");
+  else if(projType==projection_type::DIR_TIME_V){
+    strip_dir = projection_type::DIR_V;
   }
-    
-  TH1D* aHisto = new TH1D("empty1DHisto","",nBins, minX, maxX);
-  std::shared_ptr<TH1D> aHistoPtr;
-  aHistoPtr.reset(aHisto);
-  return aHistoPtr; 	      
+  else if(projType==projection_type::DIR_TIME_W){
+    strip_dir = projection_type::DIR_W;
+  }
+
+  std::string filterName = "raw";
+  if(filterType==filter_type::threshold) filterName="Thr";
+  else if(filterType==filter_type::island) filterName="Island";
+
+  std::string projName = myGeometryPtr->GetDirName(strip_dir);
+  std::string scaleName = "";
+  if(scaleType==scale_type::mm) scaleName="mm_";
+
+  std::string name = "h"+filterName+"_"+projName+"_"+scaleName+"evt"+std::to_string(event_id);
+  std::string title = "Event-"+std::to_string(event_id);
+  title+= "Selected by "+filterName+ " from "+projName;
+  title+= "integrated over time";
+
+  std::string labelX = projName+ " strip no."; 
+  std::string labelY = "Charge/strip [arb.u.]";
+  std::string labelZ = "Charge [arb.u.]";
+
+if(h1->GetDimension()==2){
+  labelX = "Time bin"; 
+  labelY = projName;
+ 
+  if(scaleType==scale_type::mm){
+    labelX += "[mm]";
+    labelY += "[mm]";
+  }
+ }   
+
+  
+  h1->SetName(name.c_str());
+  h1->SetTitle(title.c_str());
+  h1->SetXTitle(labelX.c_str());
+  h1->SetYTitle(labelY.c_str());
+  h1->SetZTitle(labelZ.c_str());  
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
-std::shared_ptr<TH2D> EventTPC::GetStripVsTime(const SigClusterTPC &cluster, int strip_dir){  
-
-  if(!IsOK() || !cluster.IsOK()) return 0;
-  auto event_id = myEventInfo.GetEventId();
-  std::shared_ptr<TH2D>result(new TH2D( Form("hclust_%s_vs_time_evt%d", myGeometryPtr->GetDirName(strip_dir), event_id),
-					Form("Event-%d: Clustered hits from %s strips;Time bin [arb.u.];%s strip no.;Charge/bin [arb.u.]",
-					     event_id, myGeometryPtr->GetDirName(strip_dir), myGeometryPtr->GetDirName(strip_dir)),
-					myGeometryPtr->GetAgetNtimecells(),
-					0.0-0.5, 
-					1.*myGeometryPtr->GetAgetNtimecells()-0.5, // ends at 511.5 (cells numbered from 0 to 511)
-					myGeometryPtr->GetDirNstrips(strip_dir),
-					1.0-0.5,
-					1.*myGeometryPtr->GetDirNstrips(strip_dir)+0.5 ));
-  
-  for(int strip_num=cluster.GetMinStrip(strip_dir); strip_num<=cluster.GetMaxStrip(strip_dir); strip_num++) {
-    for(int icell=cluster.GetMinTime(strip_dir); icell<=cluster.GetMaxTime(strip_dir); icell++) {
-      if( cluster.CheckByStripMerged(strip_dir, strip_num, icell) ) {
-	result->Fill(1.*icell, 1.*strip_num, GetValByStripMerged(strip_dir, strip_num, icell));
-      }
-    }
-  }
-  
-  return result;
-}
-std::shared_ptr<TH2D> EventTPC::GetStripVsTime(int strip_dir){  // valid range [0-2]
-
-  if(!IsOK()) return std::shared_ptr<TH2D>();
-  auto minStripNum=myGeometryPtr->GetDirMinStripMerged(strip_dir);
-  auto maxStripNum=myGeometryPtr->GetDirMaxStripMerged(strip_dir);
-  auto event_id = myEventInfo.GetEventId();
-  std::shared_ptr<TH2D> result(new TH2D( Form("hraw_%s_vs_time_evt%d", myGeometryPtr->GetDirName(strip_dir), event_id),
-					 Form("Event-%d: Raw signals from %s strips;Time bin [arb.u.];%s strip no.;Charge/bin [arb.u.]",
-					      event_id, myGeometryPtr->GetDirName(strip_dir), myGeometryPtr->GetDirName(strip_dir)),
-					 myGeometryPtr->GetAgetNtimecells(),
-					 0.0-0.5, 
-					 1.*myGeometryPtr->GetAgetNtimecells()-0.5, // ends at 511.5 (cells numbered from 0 to 511)
-					 maxStripNum-minStripNum+1,
-					 minStripNum-0.5,
-					 1*maxStripNum+0.5 ));
-  // fill new histogram
-  for(int strip_num=minStripNum; strip_num<=maxStripNum; strip_num++) {
-    for(int icell=0; icell<myGeometryPtr->GetAgetNtimecells(); icell++) {
-      double val = GetValByStripMerged(strip_dir, strip_num, icell);
-      //      if(val) result->Fill(1.*icell, 1.*strip_num, val);
-      result->Fill(1.*icell, 1.*strip_num, val); 
-    }
-  }
-  return result;
-}
-
 std::shared_ptr<TH2D> EventTPC::GetChannels(int cobo_idx, int asad_idx){ // valid range [0-1][0-3]
   //////// DEBUG
   //  std::cout << "GetChannels: cobo=" << cobo_idx << ", asad=" << asad_idx << std::endl << std::flush;
@@ -552,7 +553,8 @@ std::shared_ptr<TH2D> EventTPC::GetChannels(int cobo_idx, int asad_idx){ // vali
   }
   return result;
 }
-
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
 std::shared_ptr<TH2D> EventTPC::GetChannels_raw(int cobo_idx, int asad_idx){ // valid range [0-1][0-3]
   if(!IsOK() || myGeometryPtr->GetAsadNboards(cobo_idx)==0 ||
      asad_idx<0 || asad_idx>=myGeometryPtr->GetAsadNboards(cobo_idx)) {return std::shared_ptr<TH2D>();}
@@ -577,169 +579,8 @@ std::shared_ptr<TH2D> EventTPC::GetChannels_raw(int cobo_idx, int asad_idx){ // 
   }
   return result;
 }
-
-std::shared_ptr<TH2D> EventTPC::GetStripVsTimeInMM(const SigClusterTPC &cluster, int strip_dir){  // valid range [0-2]
-
-  if(!IsOK()) return std::shared_ptr<TH2D>();
-  bool err_flag;
-  double zmin=0.0-0.5;  // time_cell_min;
-  double zmax=myGeometryPtr->GetAgetNtimecells()-0.5; // time_cell_max;  
-  double minTimeInMM = myGeometryPtr->Timecell2pos(zmin, err_flag);
-  double maxTimeInMM = myGeometryPtr->Timecell2pos(zmax, err_flag);
-  auto event_id = myEventInfo.GetEventId();
-  //////////// DEBUG
-  //  std::cout << "GetStripVsTimeInMM: "
-  //	    << "strip_dir=" << strip_dir
-  //	    << ", GetDirMinStripMerged=" << myGeometryPtr->GetDirMinStripMerged(strip_dir)
-  //    	    << ", GetDirMaxStripMerged=" << myGeometryPtr->GetDirMaxStripMerged(strip_dir) 
-  //	    << std::endl << std::flush;
-  //  std::cout << "GetStripVsTimeInMM: List of sections for DIR=" << myGeometryPtr->GetDirName(strip_dir) << ":";
-  //  for(unsigned int isec=0; isec<myGeometryPtr->GetDirSectionIndexList(strip_dir).size(); isec++) {
-  //    std::cout << " " << myGeometryPtr->GetDirSectionIndexList(strip_dir).at(isec);
-  //  }
-  //  std::cout << std::endl << std::flush;
-  //////////// DEBUG
-
-  // - loop over all sections in a given family of strips
-  // - check both ends of the first and the last strip in a given section
-  double minStripInMM=1E30;
-  double maxStripInMM=-1E30;
-  std::tie(minStripInMM, maxStripInMM) = myGeometryPtr->rangeStripDirInMM(strip_dir);
-  /*
-  for(unsigned int isec=0; isec<myGeometryPtr->GetDirSectionIndexList(strip_dir).size(); isec++) {
-    int section=myGeometryPtr->GetDirSectionIndexList(strip_dir).at(isec); // strip section index
-    double distance1, distance2; // distance between projection of one of the strip end-points and projection of the origin (0,0) along U/V/W pitch axis
-    StripTPC *firstStrip = myGeometryPtr->GetStripByDir(strip_dir, section,
-							myGeometryPtr->GetDirMinStrip(strip_dir, section));
-    distance1 = (firstStrip->Offset() + myGeometryPtr->GetReferencePoint())*myGeometryPtr->GetStripPitchVector(strip_dir);
-    distance2 = (firstStrip->Offset() + firstStrip->Length()*firstStrip->Unit() + myGeometryPtr->GetReferencePoint())*myGeometryPtr->GetStripPitchVector(strip_dir);
-    if(distance1>maxStripInMM) maxStripInMM=distance1;
-    if(distance1<minStripInMM) minStripInMM=distance1;
-    if(distance2>maxStripInMM) maxStripInMM=distance2;
-    if(distance2<minStripInMM) minStripInMM=distance2;
-    
-    StripTPC *lastStrip = myGeometryPtr->GetStripByDir(strip_dir, section,
-						       myGeometryPtr->GetDirMaxStrip(strip_dir, section));
-    distance1 = (lastStrip->Offset() + myGeometryPtr->GetReferencePoint())*myGeometryPtr->GetStripPitchVector(strip_dir);
-    distance2 = (lastStrip->Offset() + lastStrip->Length()*lastStrip->Unit() + myGeometryPtr->GetReferencePoint())*myGeometryPtr->GetStripPitchVector(strip_dir);
-    if(distance1>maxStripInMM) maxStripInMM=distance1;
-    if(distance1<minStripInMM) minStripInMM=distance1;
-    if(distance2>maxStripInMM) maxStripInMM=distance2;
-    if(distance2<minStripInMM) minStripInMM=distance2;
-    
-  } // end of loop
-  */
-  //////////// DEBUG
-  //  std::cout << "GetStripVsTimeInMM: Min[mm]=" << minStripInMM << ", Max[mm]=" << maxStripInMM << std::endl << std::flush;
-  //////////// DEBUG
-
-  std::shared_ptr<TH2D> result(new TH2D( Form("hclust_%s_vs_time_mm_evt%d", myGeometryPtr->GetDirName(strip_dir), event_id),
-					 Form("Event-%d: Clustered hits from %s strips;Drift direction [mm];%s strip direction [mm];Charge/bin [arb.u.]",
-					 event_id, myGeometryPtr->GetDirName(strip_dir), myGeometryPtr->GetDirName(strip_dir)),
-					 myGeometryPtr->GetAgetNtimecells(), minTimeInMM, maxTimeInMM,
-					 myGeometryPtr->GetDirNStripsMerged(strip_dir), minStripInMM, maxStripInMM));
-
-  // fill new histogram
-  double x = 0.0, y = 0.0;
-  for(int strip_num=cluster.GetMinStrip(strip_dir); strip_num<=cluster.GetMaxStrip(strip_dir); strip_num++) {
-    for(int icell=cluster.GetMinTime(strip_dir); icell<=cluster.GetMaxTime(strip_dir); icell++) {
-      if( cluster.CheckByStripMerged(strip_dir, strip_num, icell) ) {
-	x = myGeometryPtr->Timecell2pos(icell, err_flag);
-	if(err_flag) continue;
-	y = myGeometryPtr->Strip2posUVW(strip_dir, strip_num, err_flag);	
-	if(err_flag) continue;
-	double val = GetValByStripMerged(strip_dir, strip_num, icell);
-	if(val>0) result->Fill(x, y, val);///HACK AK
-      }
-    }
-  }
-  return result;
-}
-
-std::shared_ptr<TH2D> EventTPC::GetStripVsTimeInMM(int strip_dir){  // valid range [0-2]
-
-  if(!IsOK()) return std::shared_ptr<TH2D>();
-  auto minStripNum=myGeometryPtr->GetDirMinStripMerged(strip_dir);
-  auto maxStripNum=myGeometryPtr->GetDirMaxStripMerged(strip_dir);
-  bool err_flag;
-  double zmin=0.0-0.5;  // time_cell_min;
-  double zmax=myGeometryPtr->GetAgetNtimecells()-0.5; // time_cell_max;  
-  double minTimeInMM = myGeometryPtr->Timecell2pos(zmin, err_flag);
-  double maxTimeInMM = myGeometryPtr->Timecell2pos(zmax, err_flag);
-  auto event_id = myEventInfo.GetEventId();
-  //////////// DEBUG
-  //  std::cout << "GetStripVsTimeInMM: "
-  //	    << "strip_dir=" << strip_dir
-  //	    << ", GetDirMinStripMerged=" << myGeometryPtr->GetDirMinStripMerged(strip_dir)
-  //    	    << ", GetDirMaxStripMerged=" << myGeometryPtr->GetDirMaxStripMerged(strip_dir) 
-  //	    << std::endl << std::flush;
-  //  std::cout << "GetStripVsTimeInMM: List of sections for DIR=" << myGeometryPtr->GetDirName(strip_dir) << ":";
-  //  for(unsigned int isec=0; isec<myGeometryPtr->GetDirSectionIndexList(strip_dir).size(); isec++) {
-  //    std::cout << " " << myGeometryPtr->GetDirSectionIndexList(strip_dir).at(isec);
-  //  }
-  //  std::cout << std::endl << std::flush;
-  //////////// DEBUG
-
-  double minStripInMM=1E30;
-  double maxStripInMM=-1E30;
-  std::tie(minStripInMM, maxStripInMM) = myGeometryPtr->rangeStripDirInMM(strip_dir);
-  /*
-  // - loop over all sections in a given family of strips
-  // - check both ends of the first and the last strip in a given section
-  for(unsigned int isec=0; isec<myGeometryPtr->GetDirSectionIndexList(strip_dir).size(); isec++) {
-    int section=myGeometryPtr->GetDirSectionIndexList(strip_dir).at(isec); // strip section index
-    double distance1, distance2; // distance between projection of one of the strip end-points and projection of the origin (0,0) along U/V/W pitch axis
-    StripTPC *firstStrip = myGeometryPtr->GetStripByDir(strip_dir, section,
-							myGeometryPtr->GetDirMinStrip(strip_dir, section));
-    distance1 = (firstStrip->Offset() + myGeometryPtr->GetReferencePoint())*myGeometryPtr->GetStripPitchVector(strip_dir);
-    distance2 = (firstStrip->Offset() + firstStrip->Length()*firstStrip->Unit() + myGeometryPtr->GetReferencePoint())*myGeometryPtr->GetStripPitchVector(strip_dir);
-    if(distance1>maxStripInMM) maxStripInMM=distance1;
-    if(distance1<minStripInMM) minStripInMM=distance1;
-    if(distance2>maxStripInMM) maxStripInMM=distance2;
-    if(distance2<minStripInMM) minStripInMM=distance2;
-    
-    StripTPC *lastStrip = myGeometryPtr->GetStripByDir(strip_dir, section,
-						       myGeometryPtr->GetDirMaxStrip(strip_dir, section));
-    distance1 = (lastStrip->Offset() + myGeometryPtr->GetReferencePoint())*myGeometryPtr->GetStripPitchVector(strip_dir);
-    distance2 = (lastStrip->Offset() + lastStrip->Length()*lastStrip->Unit() + myGeometryPtr->GetReferencePoint())*myGeometryPtr->GetStripPitchVector(strip_dir);
-    if(distance1>maxStripInMM) maxStripInMM=distance1;
-    if(distance1<minStripInMM) minStripInMM=distance1;
-    if(distance2>maxStripInMM) maxStripInMM=distance2;
-    if(distance2<minStripInMM) minStripInMM=distance2;
-    
-  } // end of loop
-  */
-  //////////// DEBUG
-  //  std::cout << "GetStripVsTimeInMM: DIR=" << myGeometryPtr->GetDirName(strip_dir) << ", Min[mm]=" << minStripInMM << ", Max[mm]=" << maxStripInMM << ", Nstrips=" << myGeometryPtr->GetDirNStripsMerged(strip_dir) << std::endl << std::flush;
-  //////////// DEBUG
-  std::shared_ptr<TH2D> result(new TH2D( Form("hraw_%s_vs_time_mm_evt%d", myGeometryPtr->GetDirName(strip_dir), event_id),
-					 Form("Event-%d: Raw signals from %s strips;Drift direction [mm];%s strip direction [mm];Charge/bin [arb.u.]",
-					 event_id, myGeometryPtr->GetDirName(strip_dir), myGeometryPtr->GetDirName(strip_dir)),
-					 myGeometryPtr->GetAgetNtimecells(), minTimeInMM, maxTimeInMM,
-					 myGeometryPtr->GetDirNStripsMerged(strip_dir), minStripInMM, maxStripInMM));
-
-  // fill new histogram
-  double x = 0.0, y = 0.0;
-  for(int strip_num=minStripNum; strip_num<=maxStripNum; strip_num++) {
-    for(int icell=0; icell<myGeometryPtr->GetAgetNtimecells(); icell++) {
-      x = myGeometryPtr->Timecell2pos(icell, err_flag);
-      //////////// DEBUG
-      //      std::cout << "GetStripVsTimeInMM: Timecell2pos: X[mm]=" << x << ", err_flag=" << err_flag << std::endl << std::flush;
-      //////////// DEBUG
-      if(err_flag) continue;
-      y = myGeometryPtr->Strip2posUVW(strip_dir, strip_num, err_flag);	
-      //////////// DEBUG
-      //      std::cout << "GetStripVsTimeInMM: Strip2pos Y[mm]=" << y << ", err_flag=" << err_flag << std::endl << std::flush;
-      //////////// DEBUG
-      if(err_flag) continue;
-      double val = GetValByStripMerged(strip_dir, strip_num, icell);
-      //      if(val) result->Fill(x, y, val);
-      result->Fill(x, y, val);
-    }
-  }
-  return result;
-}
-
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
 // get ALL three projections on: XY, XZ, YZ planes
 std::vector<TH2D*> EventTPC::Get2D(const SigClusterTPC &cluster, double radius, int rebin_space, int rebin_time, int method) { 
 
@@ -977,83 +818,6 @@ std::vector<TH2D*> EventTPC::Get2D(const SigClusterTPC &cluster, double radius, 
   return hvec;
 }
 
-//frame for plotting 3D reconstruction 
-TH3D *EventTPC::Get3DFrame(int rebin_space, int rebin_time) const{
-
-  bool err_flag = false;
-  double xmin=1E30;
-  double xmax=-1E30;
-  double ymin=1E30;
-  double ymax=-1E30;
-  double zmin=0.0-0.5;  // time_cell_min;
-  double zmax=myGeometryPtr->GetAgetNtimecells()-0.5; // time_cell_max;  
-  /*
-  StripTPC* s[6] = {
-		    myGeometryPtr->GetStripByDir(projection_type::DIR_U, 1),
-		    myGeometryPtr->GetStripByDir(projection_type::DIR_U, myGeometryPtr->GetDirNstrips(projection_type::DIR_U)),
-		    myGeometryPtr->GetStripByDir(projection_type::DIR_V, 1),
-		    myGeometryPtr->GetStripByDir(projection_type::DIR_V, myGeometryPtr->GetDirNstrips(projection_type::DIR_V)),
-		    myGeometryPtr->GetStripByDir(projection_type::DIR_W, 1),
-		    myGeometryPtr->GetStripByDir(projection_type::DIR_W, myGeometryPtr->GetDirNstrips(projection_type::DIR_W))
-  };
-  for(int i=0; i<6; i++) {
-    if(!s[i]) continue;
-    double x, y;
-    TVector2 vec=s[i]->Offset()+myGeometryPtr->GetReferencePoint();
-    x=vec.X();
-    y=vec.Y();
-    if(x>xmax) xmax=x;
-    if(x<xmin) xmin=x;
-    if(y>ymax) ymax=y;
-    if(y<ymin) ymin=y;
-    vec = vec + s[i]->Unit()*s[i]->Length();
-    if(x>xmax) xmax=x;
-    if(x<xmin) xmin=x;
-    if(y>ymax) ymax=y;
-    if(y<ymin) ymin=y;
-    //      if(s[i]->Offset().X()>xmax) xmax=s[i]->Offset().X();
-    //      if(s[i]->Offset().X()<xmin) xmin=s[i]->Offset().X();
-    //      if(s[i]->Offset().Y()>ymax) ymax=s[i]->Offset().Y();
-    //      if(s[i]->Offset().Y()<ymin) ymin=s[i]->Offset().Y();
-  }
-  xmin-=myGeometryPtr->GetStripPitch()*0.3;
-  xmax+=myGeometryPtr->GetStripPitch()*0.7;
-  ymin-=myGeometryPtr->GetPadPitch()*0.3;
-  ymax+=myGeometryPtr->GetPadPitch()*0.7;
-
-  int nx = (int)( (xmax-xmin)/myGeometryPtr->GetStripPitch()-1 );
-  int ny = (int)( (ymax-ymin)/myGeometryPtr->GetPadPitch()-1 );
-  int nz = (int)( zmax-zmin );
-  */
-  std::tie(xmin, xmax, ymin, ymax) = myGeometryPtr->rangeXY();
-  int nx = (int)( (xmax-xmin)/myGeometryPtr->GetPadPitch()-1 );
-  int ny = (int)( (ymax-ymin)/myGeometryPtr->GetStripPitch()-1 );
-  int nz = (int)( zmax-zmin );
-  auto event_id = myEventInfo.GetEventId();
-  zmin = myGeometryPtr->Timecell2pos(zmin, err_flag);
-  zmax = myGeometryPtr->Timecell2pos(zmax, err_flag);
-
-  // rebin in space
-  if(rebin_space>1) {
-    nx /= rebin_space;
-    ny /= rebin_space;
-  }
-
-  // rebin in time
-  if(rebin_time>1) {
-    nz /= rebin_time;
-  }
-
-  std::cout << Form(">>>> XYZ histogram: range=[%lf, %lf] x [%lf, %lf] x [%lf, %lf], nx=%d, ny=%d, nz=%d",
-		    xmin, xmax, ymin, ymax, zmin, zmax, nx, ny, nz) << std::endl;
-
-  TH3D *h = new TH3D( Form("hreco3D_evt%d", event_id),
-		      Form("Event-%d: 3D reco in XYZ;X [mm];Y [mm];Z [mm]", event_id),
-		      nx, xmin, xmax, ny, ymin, ymax, nz, zmin, zmax );
-  return h;
-}
-
-
 // get 3D histogram of clustered hits
 TH3D *EventTPC::Get3D(const SigClusterTPC &cluster, double radius, int rebin_space, int rebin_time, int method) {
 
@@ -1154,7 +918,7 @@ TH3D *EventTPC::Get3D(const SigClusterTPC &cluster, double radius, int rebin_spa
     if(hitPos.size()<1) continue;
 
     // book 3D histogram before first fill
-    if(h==NULL) h = Get3DFrame(rebin_space, rebin_time); 
+    if(h==NULL) h = myGeometryPtr->Get3DFrame(rebin_space, rebin_time); 
     // needed for method #2 only:
     // loop over matched hits and update fraction map
     std::map<MultiKey3, double> fraction[3]; // for U,V,W local charge projections

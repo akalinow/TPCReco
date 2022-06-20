@@ -657,7 +657,7 @@ void HistoManager::drawTrack3D(TVirtualPad *aPad){
   aPad->cd();
   int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN;
   int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN; 
-  TH3D *h3DFrame = myEventPtr->Get3DFrame(rebin_space, rebin_time);
+  TH3D *h3DFrame = myGeometryPtr->Get3DFrame(rebin_space, rebin_time);
   h3DFrame->GetXaxis()->SetTitleOffset(2.0);
   h3DFrame->GetYaxis()->SetTitleOffset(2.0);
   h3DFrame->GetZaxis()->SetTitleOffset(2.0);

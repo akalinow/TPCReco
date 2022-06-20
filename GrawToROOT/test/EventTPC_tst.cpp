@@ -11,6 +11,41 @@
 
 #include "colorText.h"
 
+void testHits(std::shared_ptr<EventTPC> aEventPtr, filter_type filterType){
+  
+  std::cout<<KBLU<<"1D projection on strips: U, V, W [raw]"<<RST<<std::endl;
+  aEventPtr->get1DProjection(projection_type::DIR_U, filterType, scale_type::raw)->Print();
+  aEventPtr->get1DProjection(projection_type::DIR_V, filterType, scale_type::raw)->Print();
+  aEventPtr->get1DProjection(projection_type::DIR_W, filterType, scale_type::raw)->Print();
+  std::cout<<KBLU<<"1D projection on strips U, V, W [mm]"<<RST<<std::endl;
+  aEventPtr->get1DProjection(projection_type::DIR_U, filterType, scale_type::mm)->Print();
+  aEventPtr->get1DProjection(projection_type::DIR_V, filterType, scale_type::mm)->Print();
+  aEventPtr->get1DProjection(projection_type::DIR_W, filterType, scale_type::mm)->Print();   
+  std::cout<<KBLU<<"1D projection on time : global, U, V, W [raw]"<<RST<<std::endl;
+  aEventPtr->get1DProjection(projection_type::DIR_TIME, filterType, scale_type::raw)->Print();
+  aEventPtr->get1DProjection(projection_type::DIR_TIME_U, filterType, scale_type::raw)->Print();
+  aEventPtr->get1DProjection(projection_type::DIR_TIME_V, filterType, scale_type::raw)->Print();
+  aEventPtr->get1DProjection(projection_type::DIR_TIME_W, filterType, scale_type::raw)->Print();
+  std::cout<<KBLU<<"1D projection on time : global, U, V, W [mm]"<<RST<<std::endl;
+  aEventPtr->get1DProjection(projection_type::DIR_TIME, filterType, scale_type::mm)->Print();
+  aEventPtr->get1DProjection(projection_type::DIR_TIME_U, filterType, scale_type::mm)->Print();
+  aEventPtr->get1DProjection(projection_type::DIR_TIME_V, filterType, scale_type::mm)->Print();
+  aEventPtr->get1DProjection(projection_type::DIR_TIME_W, filterType, scale_type::mm)->Print();
+  std::cout<<KBLU<<"2D projection time vs strips: U, V, W [raw]"<<RST<<std::endl;
+  aEventPtr->get2DProjection(projection_type::DIR_TIME_U, filterType, scale_type::raw)->Print();
+  aEventPtr->get2DProjection(projection_type::DIR_TIME_V, filterType, scale_type::raw)->Print();
+  aEventPtr->get2DProjection(projection_type::DIR_TIME_W, filterType, scale_type::raw)->Print();
+  std::cout<<KBLU<<"2D projection on time : global, U, V, W [mm]"<<RST<<std::endl;
+  aEventPtr->get2DProjection(projection_type::DIR_TIME_U, filterType, scale_type::mm)->Print();
+  aEventPtr->get2DProjection(projection_type::DIR_TIME_V, filterType, scale_type::mm)->Print();
+  aEventPtr->get2DProjection(projection_type::DIR_TIME_W, filterType, scale_type::mm)->Print();
+
+  if(filterType==filter_type::none){
+    std::cout<<KBLU<<"2D projection on time cells vs AGET channels"<<RST<<std::endl;
+    aEventPtr->GetChannels(0,0)->Print();
+    aEventPtr->GetChannels_raw(0,0)->Print();
+  }
+}
 /////////////////////////////////////
 /////////////////////////////////////
 int main(int argc, char *argv[]) {
@@ -24,28 +59,12 @@ int main(int argc, char *argv[]) {
   std::cout << "File with " << myEventSource->numberOfEntries() << " frames opened." << std::endl;
 
   auto myEventPtr = myEventSource->getCurrentEvent();
-  for(int i=0;i<100;++i){
+  for(int i=0;i<1;++i){
     myEventSource->loadFileEntry(i);
   
     std::cout<<myEventPtr->GetEventInfo()<<std::endl;
-
-    myEventPtr->get1DProjection(projection_type::DIR_U, filter_type::none, scale_type::raw)->Print();
-    myEventPtr->get1DProjection(projection_type::DIR_V, filter_type::none, scale_type::raw)->Print();
-    myEventPtr->get1DProjection(projection_type::DIR_W, filter_type::none, scale_type::raw)->Print();
-    std::cout<<std::endl;
-    myEventPtr->get1DProjection(projection_type::DIR_U, filter_type::none, scale_type::mm)->Print();
-    myEventPtr->get1DProjection(projection_type::DIR_V, filter_type::none, scale_type::mm)->Print();
-    myEventPtr->get1DProjection(projection_type::DIR_W, filter_type::none, scale_type::mm)->Print();
-    std::cout<<std::endl;
-    myEventPtr->get1DProjection(projection_type::DIR_TIME, filter_type::none, scale_type::mm)->Print();
-    myEventPtr->get1DProjection(projection_type::DIR_TIME_U, filter_type::none, scale_type::mm)->Print();
-    myEventPtr->get1DProjection(projection_type::DIR_TIME_V, filter_type::none, scale_type::mm)->Print();
-    myEventPtr->get1DProjection(projection_type::DIR_TIME_W, filter_type::none, scale_type::mm)->Print();
-    std::cout<<std::endl;
-    myEventPtr->get1DProjection(projection_type::DIR_TIME, filter_type::none, scale_type::raw)->Print();
-    myEventPtr->get1DProjection(projection_type::DIR_TIME_U, filter_type::none, scale_type::raw)->Print();
-    myEventPtr->get1DProjection(projection_type::DIR_TIME_V, filter_type::none, scale_type::raw)->Print();
-    myEventPtr->get1DProjection(projection_type::DIR_TIME_W, filter_type::none, scale_type::raw)->Print();
+    testHits(myEventPtr, filter_type::none);
+    //testHits(myEventPtr, filter_type::threshold);    
   }
 
   return 0;

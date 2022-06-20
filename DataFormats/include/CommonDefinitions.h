@@ -28,7 +28,8 @@ enum  projection_type{
   DIR_TIME_U,
   DIR_TIME_V,
   DIR_TIME_W,
-  DIR_TIME
+  DIR_TIME,
+  NONE
 };
 
 enum pid_type{

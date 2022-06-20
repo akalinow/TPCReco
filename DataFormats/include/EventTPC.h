@@ -34,20 +34,21 @@ class EventTPC {
 		   double delta_timece,
 		   double delta_strip);
 
-  std::shared_ptr<TH1D> getEmpty1DHisto(projection_type aProj, scale_type scaleType) const;
-
   std::map<filter_type, std::set<PEventTPC::chargeMapType::key_type> > keyLists;
 
   void filterHits(filter_type filterType);
-
-  double get1DPosition(PEventTPC::chargeMapType::key_type key,
-		       projection_type projType, scale_type scaleType) const;
-
-  void create3DHistos(scale_type scaleType);
+  void create3DHistoTemplate();
   void updateHistosCache(filter_type filterType);
+  void scale1DHistoToMM(TH1D *h1D, projection_type projType) const;
+  void scale2DHistoToMM(TH2D *h2D, projection_type projType) const;
+  void setHistoLabels(TH1 *h1,
+		      projection_type projType,
+		      filter_type filterType,
+		      scale_type scaleType) const;
 
   bool histoCacheUpdated{false};
-  std::shared_ptr<TH3D> a3DHistoRawPtr, a3DHistoMMPtr;
+  std::map<filter_type, std::shared_ptr<TH3D> > a3DHistoRawMap;
+  std::shared_ptr<TH3D> a3DHistoRawPtr;
   
   eventraw::EventInfo myEventInfo;
   std::shared_ptr<GeometryTPC> myGeometryPtr;  //! transient data member
@@ -116,10 +117,6 @@ class EventTPC {
   double GetTotalChargeByTimeCell(int strip_dir, int time_cell) const; // charge integral from a single time cell from all merged strips in a given direction (all sections)
   double GetTotalChargeByTimeCell(int strip_dir, int strip_section, int time_cell) const; // charge integral from a single time cell from all strips in a given direction (per section)
   
-  std::shared_ptr<TH2D> GetStripVsTime(const SigClusterTPC &cluster, int strip_dir);        // clustered hits only, valid dir range [0-2]
-  std::shared_ptr<TH2D> GetStripVsTime(int strip_dir);                               // whole event, all strip dirs
-  std::shared_ptr<TH2D> GetStripVsTimeInMM(const SigClusterTPC &cluster, int strip_dir);  // valid range [0-2]
-  std::shared_ptr<TH2D> GetStripVsTimeInMM(int strip_dir);  // whole event, valid range [0-2]
   std::shared_ptr<TH2D> GetChannels(int cobo_idx, int asad_idx); // valid range [0-1][0-3]
   std::shared_ptr<TH2D> GetChannels_raw(int cobo_idx, int asad_idx); // valid range [0-1][0-3]
 
@@ -127,12 +124,14 @@ class EventTPC {
 					filter_type filterType,
 					scale_type scaleType);
 
+  std::shared_ptr<TH2D> get2DProjection(projection_type projType,
+					filter_type filterType,
+					scale_type scaleType);
+
   std::vector<TH2D*> Get2D(const SigClusterTPC &cluster, double radius,          // clustered hits only,
 			   int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN,   // projections on: XY, XZ, YZ planes
 			   int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN, 
 			   int method=EVENTTPC_DEFAULT_RECO_METHOD);  
-
-  TH3D *Get3DFrame(int rebin_space, int rebin_time) const; //frame for plotting 3D reconstruction
   
   TH3D *Get3D(const SigClusterTPC &cluster, double radius,                       // clustered hits only, 3D view
 	      int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN, 
@@ -156,7 +155,12 @@ class EventTPC {
   std::shared_ptr<TH1D> GetTimeProjectionInMM(const SigClusterTPC &cluster, int strip_dir){ return std::shared_ptr<TH1D>();}; 
   std::shared_ptr<TH1D> GetTimeProjectionInMM(const SigClusterTPC &cluster){ return std::shared_ptr<TH1D>();};                
   std::shared_ptr<TH1D> GetTimeProjectionInMM(int strip_dir){ return std::shared_ptr<TH1D>();};                             
-  std::shared_ptr<TH1D> GetTimeProjectionInMM(){ return std::shared_ptr<TH1D>();};          
+  std::shared_ptr<TH1D> GetTimeProjectionInMM(){ return std::shared_ptr<TH1D>();};
+
+  std::shared_ptr<TH2D> GetStripVsTime(const SigClusterTPC &cluster, int strip_dir){ return std::shared_ptr<TH2D>();};   
+  std::shared_ptr<TH2D> GetStripVsTime(int strip_dir) { return std::shared_ptr<TH2D>();};                               
+  std::shared_ptr<TH2D> GetStripVsTimeInMM(const SigClusterTPC &cluster, int strip_dir) { return std::shared_ptr<TH2D>();};
+  std::shared_ptr<TH2D> GetStripVsTimeInMM(int strip_dir) { return std::shared_ptr<TH2D>();};
   /////
 
   friend std::ostream& operator<<(std::ostream& os, const EventTPC& e);

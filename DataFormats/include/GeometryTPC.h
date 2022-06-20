@@ -16,6 +16,7 @@
 #include "TVector3.h"
 #include "TH2Poly.h"
 #include "TGraph.h"
+#include "TH3D.h"
 #include "MultiKey.h"
 #include "CommonDefinitions.h"
 #include "RunConditions.h"
@@ -91,8 +92,8 @@ class GeometryTPC {
   
   GeometryTPC(const char* fname, bool debug=false);
   void SetTH2PolyPartition(int nx, int ny); // change cartesian binning of the underlying TH2Poly
-  inline int GetTH2PolyPartitionX() { return grid_nx; }
-  inline int GetTH2PolyPartitionY() { return grid_ny; }
+  inline int GetTH2PolyPartitionX() const{ return grid_nx; }
+  inline int GetTH2PolyPartitionY() const{ return grid_ny; }
   inline void SetDebug(bool flag) { _debug = flag; }
 
   void setDriftVelocity(double v);
@@ -102,116 +103,116 @@ class GeometryTPC {
   // Getter methods
   const RunConditions & getRunConditions() const { return runConditions;}
 
-  inline TH2Poly *GetTH2Poly() { return tp; }   // returns pointer to the underlying TH2Poly
-  std::shared_ptr<StripTPC> GetTH2PolyStrip(int ibin);          // returns pointer to StripTPC object corresponding to TH2Poly bin 
+  inline TH2Poly *GetTH2Poly() const{ return tp; }   // returns pointer to the underlying TH2Poly
+  std::shared_ptr<StripTPC> GetTH2PolyStrip(int ibin)const;          // returns pointer to StripTPC object corresponding to TH2Poly bin 
   
-  inline bool IsOK() { return initOK; }
+  inline bool IsOK() const{ return initOK; }
   
   //returns total number of strips in sections
-  int GetDirNstrips(int dir);
-  int GetDirNstrips(std::string name);
-  int GetDirNstrips(const char *name);
-  int GetDirNstrips(std::shared_ptr<StripTPC> s);
+  int GetDirNstrips(int dir)const;
+  int GetDirNstrips(std::string name)const;
+  int GetDirNstrips(const char *name)const;
+  int GetDirNstrips(std::shared_ptr<StripTPC> s)const;
 
-  inline SectionIndexList GetDirSectionIndexList(int dir){return geometryStats.GetDirSectionIndexList(dir);} // added by MC - 4 Aug 2021
-  inline int GetDirNStrips(int dir,int section){return geometryStats.GetDirNStrips(dir,section);}
-  inline int GetDirMinStrip(int dir,int section){return geometryStats.GetDirMinStrip(dir,section);}
-  inline int GetDirMaxStrip(int dir,int section){return geometryStats.GetDirMaxStrip(dir,section);}
-  inline int GetDirNStripsMerged(int dir){return geometryStats.GetDirNStripsMerged(dir);}
-  inline int GetDirMinStripMerged(int dir){return geometryStats.GetDirMinStripMerged(dir);}
-  inline int GetDirMaxStripMerged(int dir){return geometryStats.GetDirMaxStripMerged(dir);}
+  inline SectionIndexList GetDirSectionIndexList(int dir)const{return geometryStats.GetDirSectionIndexList(dir);} // added by MC - 4 Aug 2021
+  inline int GetDirNStrips(int dir,int section)const{return geometryStats.GetDirNStrips(dir,section);}
+  inline int GetDirMinStrip(int dir,int section)const{return geometryStats.GetDirMinStrip(dir,section);}
+  inline int GetDirMaxStrip(int dir,int section)const{return geometryStats.GetDirMaxStrip(dir,section);}
+  inline int GetDirNStripsMerged(int dir)const{return geometryStats.GetDirNStripsMerged(dir);}
+  inline int GetDirMinStripMerged(int dir)const{return geometryStats.GetDirMinStripMerged(dir);}
+  inline int GetDirMaxStripMerged(int dir)const{return geometryStats.GetDirMaxStripMerged(dir);}
 
-  inline int GetAgetNchips() { return AGET_Nchips; }
-  inline int GetAgetNchannels() { return AGET_Nchan; }
-  inline int GetAgetNchannels_raw() { return AGET_Nchan_raw; }
-  inline int GetAgetNchannels_fpn() { return AGET_Nchan_fpn; }
-  inline int GetAgetNtimecells() { return AGET_Ntimecells; }
-  inline int GetAsadNboards(int COBO_idx) { return (ASAD_N.find(COBO_idx)==ASAD_N.end() ? 0 : ASAD_N[COBO_idx]); }
-  inline int GetAsadNboards() { int n=0; for(int icobo=0; icobo<COBO_N; icobo++) { n+=ASAD_N[icobo]; } return n; }
-  inline int GetCoboNboards() { return COBO_N; }
+  inline int GetAgetNchips() const { return AGET_Nchips; }
+  inline int GetAgetNchannels() const { return AGET_Nchan; }
+  inline int GetAgetNchannels_raw() const { return AGET_Nchan_raw; }
+  inline int GetAgetNchannels_fpn() const { return AGET_Nchan_fpn; }
+  inline int GetAgetNtimecells() const { return AGET_Ntimecells; }
+  inline int GetAsadNboards(int COBO_idx) const { return (ASAD_N.find(COBO_idx)==ASAD_N.end() ? 0 : ASAD_N.at(COBO_idx)); }
+  inline int GetAsadNboards() const { int n=0; for(int icobo=0; icobo<COBO_N; icobo++) { n+=ASAD_N.at(icobo); } return n; }
+  inline int GetCoboNboards() const { return COBO_N; }
 
-  int GetDirIndex(const char *name); 
-  int GetDirIndex(std::string name);
-  int GetDirIndex(int global_channel_idx);
-  int GetDirIndex(int COBO_idx, int ASAD_idx, int AGET_idx, int channel_idx);
-  int GetDirIndex_raw(int global_raw_channel_idx);
-  int GetDirIndex_raw(int COBO_idx, int ASAD_idx, int AGET_idx, int raw_channel_idx);
+  int GetDirIndex(const char *name)const; 
+  int GetDirIndex(std::string name)const;
+  int GetDirIndex(int global_channel_idx)const;
+  int GetDirIndex(int COBO_idx, int ASAD_idx, int AGET_idx, int channel_idx)const;
+  int GetDirIndex_raw(int global_raw_channel_idx)const;
+  int GetDirIndex_raw(int COBO_idx, int ASAD_idx, int AGET_idx, int raw_channel_idx)const;
 
-  const char* GetDirName(int dir);
-  const char* GetStripName(std::shared_ptr<StripTPC> s);
+  const char* GetDirName(int dir)const;
+  const char* GetStripName(std::shared_ptr<StripTPC> s)const;
 
-  std::shared_ptr<StripTPC> GetStripByAget(int COBO_idx, int ASAD_idx, int AGET_idx, int channel_idx);         // valid range [0-1][0-3][0-3][0-63]
-  std::shared_ptr<StripTPC> GetStripByGlobal(int global_channel_idx);                                          // valid range [0-1023]
-  std::shared_ptr<StripTPC> GetStripByAget_raw(int COBO_idx, int ASAD_idx, int AGET_idx, int raw_channel_idx); // valid range [0-1][0-3][0-3][0-67]
-  std::shared_ptr<StripTPC> GetStripByGlobal_raw(int global_raw_channel_idx);                                  // valid range [0-(1023+4*ASAD_N*COBO_N)]
-  std::shared_ptr<StripTPC> GetStripByDir(int dir, int section, int num);                                      // valid range [0-2][0-2][1-1024]
+  std::shared_ptr<StripTPC> GetStripByAget(int COBO_idx, int ASAD_idx, int AGET_idx, int channel_idx) const;         // valid range [0-1][0-3][0-3][0-63]
+  std::shared_ptr<StripTPC> GetStripByGlobal(int global_channel_idx) const;                                          // valid range [0-1023]
+  std::shared_ptr<StripTPC> GetStripByAget_raw(int COBO_idx, int ASAD_idx, int AGET_idx, int raw_channel_idx) const; // valid range [0-1][0-3][0-3][0-67]
+  std::shared_ptr<StripTPC> GetStripByGlobal_raw(int global_raw_channel_idx) const;                                  // valid range [0-(1023+4*ASAD_N*COBO_N)]
+  std::shared_ptr<StripTPC> GetStripByDir(int dir, int section, int num) const;                                      // valid range [0-2][0-2][1-1024]
 
   // various helper functions for calculating local/global normal/raw channel index
-  int Aget_normal2raw(int channel_idx);                      // valid range [0-63]
-  int Aget_raw2normal(int raw_channel_idx);                  // valid range [0-67]
-  int Aget_fpn2raw(int FPN_idx);                             // valid range [0-3]
+  int Aget_normal2raw(int channel_idx)const;                      // valid range [0-63]
+  int Aget_raw2normal(int raw_channel_idx)const;                  // valid range [0-67]
+  int Aget_fpn2raw(int FPN_idx)const;                             // valid range [0-3]
 
-  int Asad_normal2raw(int aget_idx, int channel_idx);        // valid range [0-3][0-63]
-  int Asad_normal2raw(int asad_channel_idx);                 // valid range [0-255]
-  int Asad_normal2normal(int aget_idx, int channel_idx);     // valid range [0-3][0-63]
-  int Asad_raw2normal(int aget_idx, int raw_channel_idx);    // valid range [0-3][0-67]
-  int Asad_raw2normal(int asad_raw_channel_idx);             // valid range [0-271]
-  int Asad_raw2raw(int aget_idx, int raw_channel_idx);       // valid range [0-3][0-67]
+  int Asad_normal2raw(int aget_idx, int channel_idx)const;        // valid range [0-3][0-63]
+  int Asad_normal2raw(int asad_channel_idx)const;                 // valid range [0-255]
+  int Asad_normal2normal(int aget_idx, int channel_idx)const;     // valid range [0-3][0-63]
+  int Asad_raw2normal(int aget_idx, int raw_channel_idx)const;    // valid range [0-3][0-67]
+  int Asad_raw2normal(int asad_raw_channel_idx)const;             // valid range [0-271]
+  int Asad_raw2raw(int aget_idx, int raw_channel_idx)const;       // valid range [0-3][0-67]
 
-  int Global_normal2raw(int COBO_idx, int ASAD_idx, int aget_idx, int channel_idx);      // valid range [0-1][0-3][0-3][0-63]
-  int Global_normal2raw(int glb_channel_idx);                                            // valid range [0-1024]
-  int Global_normal2normal(int COBO_idx, int ASAD_idx, int aget_idx, int channel_idx);   // valid range [0-1][0-3][0-3][0-63]
+  int Global_normal2raw(int COBO_idx, int ASAD_idx, int aget_idx, int channel_idx)const;      // valid range [0-1][0-3][0-3][0-63]
+  int Global_normal2raw(int glb_channel_idx)const;                                            // valid range [0-1024]
+  int Global_normal2normal(int COBO_idx, int ASAD_idx, int aget_idx, int channel_idx)const;   // valid range [0-1][0-3][0-3][0-63]
 
-  int Global_raw2normal(int COBO_idx, int ASAD_idx, int aget_idx, int raw_channel_idx);  // valid range [0-1][0-3][0-3][0-67]
-  int Global_raw2normal(int glb_raw_channel_idx);                                        // valid range [0-(1023+4*ASAD_N*COBO_N)]
-  int Global_raw2raw(int COBO_idx, int ASAD_idx, int aget_idx, int raw_channel_idx);     // valid range [0-1][0-3][0-3][0-67]
-  int Global_fpn2raw(int COBO_idx, int ASAD_idx, int aget_idx, int FPN_idx);             // valid range [0-1][0-3][0-3][0-3]
+  int Global_raw2normal(int COBO_idx, int ASAD_idx, int aget_idx, int raw_channel_idx)const;  // valid range [0-1][0-3][0-3][0-67]
+  int Global_raw2normal(int glb_raw_channel_idx)const;                                        // valid range [0-(1023+4*ASAD_N*COBO_N)]
+  int Global_raw2raw(int COBO_idx, int ASAD_idx, int aget_idx, int raw_channel_idx)const;     // valid range [0-1][0-3][0-3][0-67]
+  int Global_fpn2raw(int COBO_idx, int ASAD_idx, int aget_idx, int FPN_idx)const;             // valid range [0-1][0-3][0-3][0-3]
 
-  int Global_strip2normal(StripTPC *s);
-  int Global_strip2normal(int dir, int section, int num);                                // valid range [0-2][0-2][1-1024]
-  int Global_strip2raw(StripTPC *s);
-  int Global_strip2raw(int dir, int section, int num);                                   // valid range [0-2][0-2][1-1024]
+  int Global_strip2normal(StripTPC *s) const;
+  int Global_strip2normal(int dir, int section, int num)const;                                // valid range [0-2][0-2][1-1024]
+  int Global_strip2raw(StripTPC *s)const;
+  int Global_strip2raw(int dir, int section, int num)const;                                   // valid range [0-2][0-2][1-1024]
 
   bool GetCrossPoint(std::shared_ptr<StripTPC> strip1,
 		     std::shared_ptr<StripTPC> strip2,
-		     TVector2 &point);
+		     TVector2 &point)const;
   
   bool GetCrossPoint(StripTPC *strip1,
 		     StripTPC *strip2,
-		     TVector2 &point);
+		     TVector2 &point)const;
   
-  bool GetUVWCrossPointInMM(int dir1, double UVW_pos1, int dir2, double UVW_pos2, TVector2 &point);
-  bool MatchCrossPoint(StripTPC *strip1, StripTPC *strip2, StripTPC *strip3, double radius, TVector2 &point);
+  bool GetUVWCrossPointInMM(int dir1, double UVW_pos1, int dir2, double UVW_pos2, TVector2 &point)const;
+  bool MatchCrossPoint(StripTPC *strip1, StripTPC *strip2, StripTPC *strip3, double radius, TVector2 &point)const;
   bool MatchCrossPoint(std::shared_ptr<StripTPC> strip1,
 		       std::shared_ptr<StripTPC> strip2,
 		       std::shared_ptr<StripTPC> strip3,
-		       double radius, TVector2 &point);
+		       double radius, TVector2 &point)const;
 
-  inline double GetPadSize() { return pad_size; } // [mm]
-  inline double GetPadPitch() { return pad_pitch; } // [mm]
-  inline double GetStripPitch() { return strip_pitch; } // [mm]
+  inline double GetPadSize() const{ return pad_size; } // [mm]
+  inline double GetPadPitch() const{ return pad_pitch; } // [mm]
+  inline double GetStripPitch() const{ return strip_pitch; } // [mm]
 
-  inline double GetDriftVelocity() { return runConditions.getDriftVelocity(); } // [cm/us]
-  inline double GetSamplingRate() { return runConditions.getSamplingRate(); } // [MHz]
-  inline double GetTriggerDelay() { return runConditions.getTriggerDelay(); } // [us]
-  inline double GetTimeBinWidth() { return  1.0/GetSamplingRate()*GetDriftVelocity()*10.0; } // [mm]
+  inline double GetDriftVelocity() const{ return runConditions.getDriftVelocity(); } // [cm/us]
+  inline double GetSamplingRate() const{ return runConditions.getSamplingRate(); } // [MHz]
+  inline double GetTriggerDelay() const{ return runConditions.getTriggerDelay(); } // [us]
+  inline double GetTimeBinWidth() const{ return  1.0/GetSamplingRate()*GetDriftVelocity()*10.0; } // [mm]
 
-  inline TVector2 GetReferencePoint() { return reference_point; } // XY ([mm],[mm])
-  TVector2 GetStripUnitVector(int dir); // XY ([mm],[mm])
-  TVector2 GetStripPitchVector(int dir); // XY ([mm],[mm])
-  TVector3 GetStripPitchVector3D(int dir); // XYZ ([mm],[mm],0)  
-  inline double GetDriftCageZmin() { return drift_zmin; } // [mm]
-  inline double GetDriftCageZmax() { return drift_zmax; } // [mm]
+  inline TVector2 GetReferencePoint() const{ return reference_point; } // XY ([mm],[mm])
+  TVector2 GetStripUnitVector(int dir) const; // XY ([mm],[mm])
+  TVector2 GetStripPitchVector(int dir) const; // XY ([mm],[mm])
+  TVector3 GetStripPitchVector3D(int dir) const; // XYZ ([mm],[mm],0)  
+  inline double GetDriftCageZmin() const{ return drift_zmin; } // [mm]
+  inline double GetDriftCageZmax() const{ return drift_zmax; } // [mm]
 
-  double Strip2posUVW(int dir, int section, int number, bool &err_flag); // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of the central line of the (existing) strip on the strip pitch axis for a given direction
-  double Strip2posUVW(int dir, int number, bool &err_flag); // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of the central line of the (existing) strip on the strip pitch axis for a given direction
-  double Strip2posUVW(std::shared_ptr<StripTPC> strip, bool &err_flag); // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of the central line of the (existing) strip on the strip pitch axis for a strip given direction
+  double Strip2posUVW(int dir, int section, int number, bool &err_flag)const; // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of the central line of the (existing) strip on the strip pitch axis for a given direction
+  double Strip2posUVW(int dir, int number, bool &err_flag)const; // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of the central line of the (existing) strip on the strip pitch axis for a given direction
+  double Strip2posUVW(std::shared_ptr<StripTPC> strip, bool &err_flag)const; // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of the central line of the (existing) strip on the strip pitch axis for a strip given direction
   
-  double Cartesian2posUVW(double x, double y, int dir, bool &err_flag); // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of a given (X,Y) point on the strip pitch axis for a given direction
-  double Cartesian2posUVW(TVector2 pos, int dir, bool &err_flag); // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of a given (X,Y) point on the strip pitch axis for a given direction
+  double Cartesian2posUVW(double x, double y, int dir, bool &err_flag)const; // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of a given (X,Y) point on the strip pitch axis for a given direction
+  double Cartesian2posUVW(TVector2 pos, int dir, bool &err_flag)const; // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of a given (X,Y) point on the strip pitch axis for a given direction
   
-  double Timecell2pos(double position_in_cells, bool &err_flag); // [mm] output: position along Z-axis
-  double Pos2timecell(double z, bool &err_flag); // output: time-cell number, valid range [0-511]
+  double Timecell2pos(double position_in_cells, bool &err_flag)const; // [mm] output: position along Z-axis
+  double Pos2timecell(double z, bool &err_flag)const; // output: time-cell number, valid range [0-511]
 
   TGraph GetActiveAreaConvexHull(double vetoBand=0); // get convex hull [mm] of the entire UVW active area
                                                      // with (optionally) excluded outer VETO band [mm]
@@ -221,15 +222,17 @@ class GeometryTPC {
   bool IsInsideElectronicsRange(double z); // checks if Z coordinate [mm] is inside Z-slice covered by the GET electronics
   bool IsInsideElectronicsRange(TVector3 point); // checks 3D point [mm] is inside Z-slice covered by the GET electronics
 
-  std::tuple<double, double> rangeX(); //min/max X [mm] cartesian coordinates covered by UVW active area
-  std::tuple<double, double> rangeY(); //min/max Y [mm] cartesian coordinates covered by UVW active area
-  std::tuple<double, double> rangeZ(); //min/max Z [mm] cartesian coordinates covered by drift cage
-  std::tuple<double, double, double, double> rangeXY(); //min/max X and Y [mm] cartesian coordinates covered by UVW active area
-  std::tuple<double, double, double, double, double, double> rangeXYZ(); //min/max X and Y [mm] cartesian coordinates covered by UVW active area
+  std::tuple<double, double> rangeX() const; //min/max X [mm] cartesian coordinates covered by UVW active area
+  std::tuple<double, double> rangeY() const; //min/max Y [mm] cartesian coordinates covered by UVW active area
+  std::tuple<double, double> rangeZ() const; //min/max Z [mm] cartesian coordinates covered by drift cage
+  std::tuple<double, double, double, double> rangeXY() const; //min/max X and Y [mm] cartesian coordinates covered by UVW active area
+  std::tuple<double, double, double, double, double, double> rangeXYZ() const; //min/max X and Y [mm] cartesian coordinates covered by UVW active area
                                                          // and min/max Z [mm] cartesian coordinates covered by drift cage
-  std::tuple<double, double> rangeStripSectionInMM(int dir, int section); // [mm] min/max (signed) distance between projection of outermost strip's central axis and projection of the origin (X=0,Y=0) point on the U/V/W pitch axis for a given direction (per section)
-  std::tuple<double, double> rangeStripDirInMM(int dir); // [mm] min/max (signed) distance between projection of outermost strip's central axis and projection of the origin (X=0,Y=0) point on the U/V/W pitch axis for a given direction (all sections)
+  std::tuple<double, double> rangeStripSectionInMM(int dir, int section) const; // [mm] min/max (signed) distance between projection of outermost strip's central axis and projection of the origin (X=0,Y=0) point on the U/V/W pitch axis for a given direction (per section)
+  std::tuple<double, double> rangeStripDirInMM(int dir) const; // [mm] min/max (signed) distance between projection of outermost strip's central axis and projection of the origin (X=0,Y=0) point on the U/V/W pitch axis for a given direction (all sections)
 
+  TH3D *Get3DFrame(int rebin_space, int rebin_time) const; //frame for plotting 3D reconstruction
+  
   TH2D *GetXY_TestUV(TH2D *h=NULL); // auxillary functions for x-check 
   TH2D *GetXY_TestVW(TH2D *h=NULL); // auxillary functions for x-check 
   TH2D *GetXY_TestWU(TH2D *h=NULL); // auxillary functions for x-check

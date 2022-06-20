@@ -31,4 +31,12 @@ int StripTPC::GlobalCh_raw() {
 double StripTPC::Length() { return geo_ptr->GetPadPitch()*npads; } // [mm]
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
-
+std::ostream& operator<<(std::ostream& os, const StripTPC& aStrip) {
+  os << "StripTPC: dir:"<<aStrip.dir<<" sec: "<<aStrip.section<<" num: "<<aStrip.num
+     <<" coboId: "<<aStrip.coboId<<" asadId: "<<aStrip.asadId<<" agetId: "<<aStrip.agetId
+     <<" agetCh: "<<aStrip.agetCh<<" agetCh_raw: "<<aStrip.agetCh_raw
+     <<" npads: "<<aStrip.npads;
+  return os;
+}
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
