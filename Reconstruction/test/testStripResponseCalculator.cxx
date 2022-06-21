@@ -31,9 +31,9 @@ void generateResponse(double sigma=0.5) { // generates histograms and saves them
   auto geo=std::make_shared<GeometryTPC>("geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat", false);
   //  geo->SetTH2PolyPartition(3*20,2*20); // higher TH2Poly granularity speeds up finding reference nodes
   geo->SetTH2PolyPartition(3*200,2*200); // higher TH2Poly granularity speeds up initialization of XY response histograms!
-  auto nstrips=6; // 1; // 6 // 4
-  auto ncells=30; // 1; // 30; // 20
-  auto npads=nstrips; // 4; // nstrips;
+  auto nstrips=6;
+  auto ncells=30;
+  auto npads=nstrips;
   auto sigmaXY=sigma;
   auto sigmaZ=sigma;
   auto npoints=10000000; // 10M points
@@ -63,9 +63,9 @@ void plotStripResponse(double sigma=0.5) {
   }
   //  gSystem->Load("../lib/libDataFormats.so");
   //  gSystem->Load("../lib/libReconstruction.so");
-  auto nstrips=6; // 1; // 6; // 4;
-  auto ncells=30; // 1; // 30; // 20;
-  auto npads=nstrips; // 4; // nstrips;
+  auto nstrips=6;
+  auto ncells=30;
+  auto npads=nstrips;
   auto sigmaXY=sigma;
   auto sigmaZ=sigma;
   auto geo=std::make_shared<GeometryTPC>("geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat", false);
@@ -102,9 +102,9 @@ void plotTimeResponse(double sigma=0.5) {
   }
   //  gSystem->Load("../lib/libDataFormats.so");
   //  gSystem->Load("../lib/libReconstruction.so");
-  auto nstrips=6; // 1; // 6; // 4;
-  auto ncells=30; // 1; // 30; // 20;
-  auto npads=nstrips; // 4; // nstrips;
+  auto nstrips=6;
+  auto ncells=30;
+  auto npads=nstrips;
   auto sigmaXY=sigma;
   auto sigmaZ=sigma;
   auto geo=std::make_shared<GeometryTPC>("geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat", false);
@@ -200,9 +200,9 @@ void testResponse1(double sigma=0.5) {
   }
   //  gSystem->Load("../lib/libDataFormats.so");
   //  gSystem->Load("../lib/libReconstruction.so");
-  auto nstrips=6; // 1; // 6; // 4;
-  auto ncells=30; // 1; // 30; // 20;
-  auto npads=nstrips; // 4; // nstrips;
+  auto nstrips=6;
+  auto ncells=30;
+  auto npads=nstrips;
   auto sigmaXY=sigma;
   auto sigmaZ=sigma;
   auto geo=std::make_shared<GeometryTPC>("geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat", false);
@@ -269,9 +269,9 @@ void testResponse2() {
   }
   //  gSystem->Load("../lib/libDataFormats.so");
   //  gSystem->Load("../lib/libReconstruction.so");
-  auto nstrips=6; // 1; // 6; // 4;
-  auto ncells=30; // 1; // 30; // 20;
-  auto npads=nstrips; // 4; // nstrips;
+  auto nstrips=6;
+  auto ncells=30;
+  auto npads=nstrips;
   auto geo=std::make_shared<GeometryTPC>("geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat", false);
   geo->SetTH2PolyPartition(3*20,2*20); // higher TH2Poly granularity speeds up finding reference nodes
   std::vector<double> sigma{0.5, 1, 2};
@@ -360,9 +360,9 @@ void testResponse3() {
   }
   //  gSystem->Load("../lib/libDataFormats.so");
   //  gSystem->Load("../lib/libReconstruction.so");
-  auto nstrips=6; // 1; // 6; // 4;
-  auto ncells=30; // 1; // 30; // 20;
-  auto npads=nstrips; // 4; // nstrips;
+  auto nstrips=6;
+  auto ncells=30;
+  auto npads=nstrips;
   auto geo=std::make_shared<GeometryTPC>("geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat", false);
   geo->SetTH2PolyPartition(3*20,2*20); // higher TH2Poly granularity speeds up finding reference nodes
   std::vector<double> sigma{0.5, 1, 2};
@@ -376,33 +376,35 @@ void testResponse3() {
   TStopwatch t;
   t.Start();
 
-  // create empty event
-  auto event=std::make_shared<EventTPC>(); // empty event
-  event->SetGeoPtr(geo);
-  for(auto i=0; i<calc.size(); i++) {
-    calc[i]->setEventTPC(event);
-  }
+  // create in memory 1000 dummy events for algorithm's speed test
+  std::shared_ptr<EventTPC> event;
+  for(auto ievent=0; ievent<1000; ievent++) {
 
-  // fill EventTPC - simulate triangular shape of dE/dx
-  for(auto i=0; i<calc.size(); i++) {
-    auto pos0=TVector3(50.0, 50.0, -30.0);
-    auto pos=pos0+TVector3(0, -50, 0)*i;
-    auto charge=10000;
-    auto length=50.0; // [mm]
-    auto npoints=(int)(2*length/geo->GetStripPitch());
-    auto unit_vec=TVector3(1,1,1).Unit();
-    for(auto ipoint=0; ipoint<npoints; ipoint++) {
-      calc[i]->addCharge(pos+unit_vec*(ipoint*length/npoints), (ipoint+1)*charge/npoints);
+    if(ievent%100==0) std::cout << "event=" << ievent << std::endl;
+
+    // create empty event
+    event=std::make_shared<EventTPC>(); // empty event
+    event->SetGeoPtr(geo);
+    for(auto i=0; i<calc.size(); i++) {
+      calc[i]->setEventTPC(event);
+    }
+
+    // fill EventTPC - simulate triangular shape of dE/dx
+    for(auto i=0; i<calc.size(); i++) {
+      auto pos0=TVector3(50.0, 50.0, -30.0);
+      auto pos=pos0+TVector3(0, -50, 0)*i;
+      auto charge=10000;
+      auto length=50.0; // [mm]
+      auto npoints=100; // (int)(2*length/geo->GetStripPitch());
+      auto unit_vec=TVector3(1,1,1).Unit();
+      for(auto ipoint=0; ipoint<npoints; ipoint++) {
+	calc[i]->addCharge(pos+unit_vec*(ipoint*length/npoints), (ipoint+1)*charge/npoints);
+      }
     }
   }
 
-  // fill EventTPC - simulate point charge
-  for(auto i=0; i<calc.size(); i++) {
-    auto pos0=TVector3(60.0, 60.0, 40.0);
-    auto pos=pos0+TVector3(0, -50, 0)*i;
-    auto charge=10000;
-     calc[i]->addCharge(pos, charge);
-  }
+  t.Stop();
+  t.Print();
 
   // get UZ/VZ/WZ histograms (merged strip sections) from EventTPC
   std::vector<std::shared_ptr<TH2D> > histosRaw(3);
@@ -415,10 +417,7 @@ void testResponse3() {
     addConstantToTH2D(histosInMM[strip_dir].get(), minval);
   }
 
-  t.Stop();
-  t.Print();
-
-  // plot results
+  // plot results for last event
   auto c=new TCanvas("c","c",3*500, 500);
   auto pad=0;
   c->Divide(3,1);

@@ -78,8 +78,8 @@ class StripResponseCalculator{
   int Nstrips{0};
   int Ntimecells{0};
   int Npads{0};
-  static const int default_NbinsZ{5}; // granularity of strip response histograms in Z domain (sub-time cell resolution)
-  static const int default_NbinsXY{7}; // granularity of strip response histograms in X/Y domain (sub-strip resolution)
+  static const int default_NbinsZ{20};  // {5}; // granularity of strip response histograms in Z domain (sub-time cell resolution)
+  static const int default_NbinsXY{10}; // {7}; // granularity of strip response histograms in X/Y domain (sub-strip resolution)
   static const unsigned long default_NpointsXY{10000}; // # of sampling points for initialization of strip response histograms
   double sigma_xy{0}; // [mm]
   double sigma_z{0}; // [mm]
