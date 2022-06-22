@@ -960,18 +960,17 @@ void HistoManager::resetEventRateGraph(){
    grEventRate->Set(0);
   }
 }
+/*
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 // Dot-like events useful for neutron flux monitoring
 /////////////////////////////////////////////////////////
 void HistoManager::initializeDotFinder(unsigned int hitThr,
-				       //				       unsigned int maxStripsPerDir,
-				       //				       unsigned int maxTimecellsPerDir,
 				       unsigned int totalChargeThr,
 				       double matchRadiusInMM,
 				       const std::string & filePath) {
   myDotFinder.openOutputStream(filePath);
-  myDotFinder.setCuts(hitThr, /* maxStripsPerDir, maxTimecellsPerDir,*/ totalChargeThr, matchRadiusInMM);
+  myDotFinder.setCuts(hitThr, totalChargeThr, matchRadiusInMM);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -991,4 +990,4 @@ void HistoManager::finalizeDotFinder() {
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-
+*/

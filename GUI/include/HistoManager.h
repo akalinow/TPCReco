@@ -13,7 +13,7 @@
 
 #include "SigClusterTPC.h"
 #include "TrackBuilder.h"
-#include "DotFinder.h"
+//#include "DotFinder.h"
 #include "dEdxFitter.h"
 #include "RecoOutput.h"
 
@@ -116,7 +116,7 @@ public:
   double getRecoClusterThreshold();
   int getRecoClusterDeltaStrips();
   int getRecoClusterDeltaTimeCells();
-  
+  /*
   // Dot-like events usful for neutron flux monitoring
   void initializeDotFinder(unsigned int hitThr, // unsigned int maxStripsPerDir, unsigned int maxTimecellsPerDir,
 			   unsigned int totalChargeThr, 
@@ -124,7 +124,7 @@ public:
 
   void runDotFinder();
   void finalizeDotFinder();
-
+  */
   private:
 
   TH3D* get3DReconstruction();
@@ -157,7 +157,7 @@ public:
   TGraph *grEventRate{0};
   TrackBuilder myTkBuilder;
   RecoOutput myRecoOutput;
-  DotFinder myDotFinder;
+  //  DotFinder myDotFinder;
   dEdxFitter mydEdxFitter;
 
   std::shared_ptr<EventTPC> myEventPtr;

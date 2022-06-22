@@ -51,7 +51,7 @@ target_link_libraries(${MODULE_NAME} DataFormats Reconstruction Utilities Analys
 target_link_libraries(tpcGUI PUBLIC DataFormats Utilities Reconstruction Analysis ${Boost_LIBRARIES} ${GRAW_TO_ROOT_LIBRARY} ${MODULE_NAME})
 target_link_libraries(dumpProjectionHistos PUBLIC DataFormats Utilities Reconstruction Analysis ${GRAW_TO_ROOT_LIBRARY} ${MODULE_NAME})
 target_link_libraries(dumpClusterHistos PUBLIC DataFormats Utilities Reconstruction Analysis ${GRAW_TO_ROOT_LIBRARY} ${MODULE_NAME})
-target_link_libraries(dumpRateHistos PUBLIC DataFormats Utilities Analysis ${GRAW_TO_ROOT_LIBRARY} ${MODULE_NAME})
+target_link_libraries(dumpRateHistos PUBLIC DataFormats Utilities Analysis ${Boost_LIBRARIES} ${GRAW_TO_ROOT_LIBRARY} ${MODULE_NAME})
 
 # All install commands get the same destination. this allows us to use paths
 # relative to the executable.
