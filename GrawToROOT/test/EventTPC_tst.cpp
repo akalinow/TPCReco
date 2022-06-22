@@ -14,6 +14,22 @@
 void testHits(std::shared_ptr<EventTPC> aEventPtr, filter_type filterType){
   
   std::cout<<KBLU<<"1D projection on strips: U, V, W [raw]"<<RST<<std::endl;
+  std::cout<<aEventPtr->get1DProjection(projection_type::DIR_V, filterType, scale_type::raw)->GetTitle()<<std::endl;
+  std::cout<<aEventPtr->get1DProjection(projection_type::DIR_V, filterType, scale_type::raw)->GetXaxis()->GetTitle()<<std::endl;
+  std::cout<<aEventPtr->get1DProjection(projection_type::DIR_V, filterType, scale_type::raw)->GetYaxis()->GetTitle()<<std::endl;
+
+  std::cout<<aEventPtr->get1DProjection(projection_type::DIR_TIME, filterType, scale_type::raw)->GetTitle()<<std::endl;
+  std::cout<<aEventPtr->get1DProjection(projection_type::DIR_TIME, filterType, scale_type::raw)->GetXaxis()->GetTitle()<<std::endl;
+  std::cout<<aEventPtr->get1DProjection(projection_type::DIR_TIME, filterType, scale_type::raw)->GetYaxis()->GetTitle()<<std::endl;
+  
+  std::cout<<aEventPtr->get2DProjection(projection_type::DIR_TIME_V, filterType, scale_type::raw)->GetTitle()<<std::endl;
+  std::cout<<aEventPtr->get2DProjection(projection_type::DIR_TIME_V, filterType, scale_type::raw)->GetXaxis()->GetTitle()<<std::endl;
+  std::cout<<aEventPtr->get2DProjection(projection_type::DIR_TIME_V, filterType, scale_type::raw)->GetYaxis()->GetTitle()<<std::endl;
+  
+  std::cout<<aEventPtr->get2DProjection(projection_type::DIR_TIME_V, filterType, scale_type::mm)->GetTitle()<<std::endl;
+  std::cout<<aEventPtr->get2DProjection(projection_type::DIR_TIME_V, filterType, scale_type::mm)->GetXaxis()->GetTitle()<<std::endl;
+  std::cout<<aEventPtr->get2DProjection(projection_type::DIR_TIME_V, filterType, scale_type::mm)->GetYaxis()->GetTitle()<<std::endl;
+
   aEventPtr->get1DProjection(projection_type::DIR_U, filterType, scale_type::raw)->Print();
   aEventPtr->get1DProjection(projection_type::DIR_V, filterType, scale_type::raw)->Print();
   aEventPtr->get1DProjection(projection_type::DIR_W, filterType, scale_type::raw)->Print();
@@ -45,6 +61,36 @@ void testHits(std::shared_ptr<EventTPC> aEventPtr, filter_type filterType){
     aEventPtr->GetChannels(0,0)->Print();
     aEventPtr->GetChannels_raw(0,0)->Print();
   }
+
+  std::cout<<"total charge: "<< aEventPtr->GetTotalCharge(-1, -1, -1, -1, filterType)<<std::endl;
+  std::cout<<"total charge DIR_U: "<< aEventPtr->GetTotalCharge(DIR_U, -1, -1, -1, filterType)<<std::endl;  
+  std::cout<<"total charge DIR_U, strip 1: "<< aEventPtr->GetTotalCharge(DIR_U, -1, 1, -1, filterType)<<std::endl;
+  std::cout<<"total charge DIR_U, sec. 1, strip 58: "<< aEventPtr->GetTotalCharge(DIR_U, 1, 58, -1, filterType)<<std::endl;
+  std::cout<<"total charge time cell 128: "<< aEventPtr->GetTotalCharge(-1, -1, -1, 128, filterType)<<std::endl;
+  std::cout<<"total charge DIR_U, time cell 128: "<< aEventPtr->GetTotalCharge(DIR_U, -1, -1, 128, filterType)<<std::endl;
+  std::cout<<"total charge DIR_U, sec. 1, time cell 128: "<< aEventPtr->GetTotalCharge(DIR_U, 1,  -1, 128, filterType)<<std::endl;
+
+  std::cout<<"max charge: "<< aEventPtr->GetMaxCharge()<<std::endl;
+  std::cout<<"max charge DIR_U: "<< aEventPtr->GetMaxCharge(DIR_U)<<std::endl;
+  std::cout<<"max charge DIR_U, strip 1: "<< aEventPtr->GetMaxCharge(DIR_U, 1)<<std::endl;
+  std::cout<<"max charge DIR_U, sec. 1, strip 58: "<< aEventPtr->GetMaxCharge(DIR_U, 1, 58)<<std::endl;
+  /*
+  std::cout<<"max charge: "<< aEventPtr->GetMaxCharge(-1, -1, -1, -1, filterType)<<std::endl;
+  std::cout<<"max charge DIR_U: "<< aEventPtr->GetMaxCharge(DIR_U, -1, -1, -1, filterType)<<std::endl;
+  std::cout<<"max charge DIR_U, strip 1: "<< aEventPtr->GetMaxCharge(DIR_U, -1, 1, -1, filterType)<<std::endl;
+  std::cout<<"max charge DIR_U, sec. 1, strip 58: "<< aEventPtr->GetMaxCharge(DIR_U, 1, 58, -1, filterType)<<std::endl;
+  */
+  std::cout<<"max time: "<<std::endl;//aEventPtr->GetMaxTime(-1, -1, -1, filterType)<<std::endl;
+  std::cout<<"min time: "<<std::endl;//aEventPtr->GetMinTime(filterType)<<std::endl;    
+  std::cout<<"multiplicity(total): "<<aEventPtr->GetMultiplicity(-1, -1, filterType)<<std::endl;
+
+  std::cout<<"multiplicity(DIR_U): "<<aEventPtr->GetMultiplicity(DIR_U, -1, filterType)<<std::endl;
+  std::cout<<"multiplicity(DIR_V): "<<aEventPtr->GetMultiplicity(DIR_V, -1, filterType)<<std::endl;
+  std::cout<<"multiplicity(DIR_W): "<<aEventPtr->GetMultiplicity(DIR_W, -1, filterType)<<std::endl;
+  
+  std::cout<<"multiplicity(DIR_U, 0): "<<aEventPtr->GetMultiplicity(DIR_U, 0, filterType)<<std::endl;
+  std::cout<<"multiplicity(DIR_V, 0): "<<aEventPtr->GetMultiplicity(DIR_V, 0, filterType)<<std::endl;
+  std::cout<<"multiplicity(DIR_W, 0): "<<aEventPtr->GetMultiplicity(DIR_W, 0, filterType)<<std::endl;
 }
 /////////////////////////////////////
 /////////////////////////////////////
@@ -64,7 +110,7 @@ int main(int argc, char *argv[]) {
   
     std::cout<<myEventPtr->GetEventInfo()<<std::endl;
     testHits(myEventPtr, filter_type::none);
-    //testHits(myEventPtr, filter_type::threshold);    
+    testHits(myEventPtr, filter_type::threshold);    
   }
 
   return 0;

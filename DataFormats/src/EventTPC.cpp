@@ -2,7 +2,8 @@
 #include <string>
 #include <vector>
 #include <map>
-#include <algorithm> 
+#include <algorithm>
+#include <numeric>
 
 #include "TH1D.h"
 #include "TH2D.h"
@@ -51,6 +52,7 @@ void EventTPC::Clear(){
   maxChargeMap2.clear();   // 3-key map: strip_dir, strip_section, strip_number 
   chargeMap.clear();
   chargeMapWithSections.clear();
+  chargeMapMergedSections.clear();
   asadMap.clear();
 }
 ///////////////////////////////////////////////////////////////////////
@@ -65,19 +67,38 @@ void EventTPC::SetGeoPtr(std::shared_ptr<GeometryTPC> aPtr) {
 void EventTPC::SetChargeMap(const PEventTPC::chargeMapType & aChargeMap){
 
   chargeMapWithSections = aChargeMap;
+  fillMergedSectionsMap();
+
   filterHits(filter_type::none);
   filterHits(filter_type::threshold);
 
   updateHistosCache(filter_type::none);
   updateHistosCache(filter_type::threshold);
+
+  fillAuxMaps(filter_type::none);
+    
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
-void EventTPC::fillAuxMaps(){
+void EventTPC::fillMergedSectionsMap(){
 
-  for(auto const & item: chargeMapWithSections){
-    auto key = item.first;
-    auto value = item.second;
+  for(const auto & item: chargeMapWithSections){
+    auto key =  item.first;
+    auto value =  item.second;
+
+    const int strip_dir = std::get<0>(key);
+    const int strip_num = std::get<2>(key);
+    const int time_cell = std::get<3>(key);
+
+    chargeMapMergedSections[{strip_dir, strip_num, time_cell}] += value;
+  }  
+}
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+void EventTPC::fillAuxMaps(filter_type filterType){
+
+  for(const auto & key: keyLists.at(filterType)){
+    auto value =  chargeMapWithSections.at(key);
 
     const int strip_dir = std::get<0>(key);
     const int strip_sec = std::get<1>(key);
@@ -160,10 +181,10 @@ void EventTPC::updateMaxChargeMaps(const PEventTPC::chargeMapType::key_type & ke
   const int strip_num = std::get<2>(key);
   const int time_cell = std::get<3>(key);
   
-  if(value > max_charge[strip_dir] ) { 
-    max_charge[strip_dir] = value;
-    max_charge_timing[strip_dir] = time_cell;
-    max_charge_strip[strip_dir] = strip_num;
+  if(value > max_charge.at(strip_dir) ) { 
+    max_charge.at(strip_dir) = value;
+    max_charge_timing.at(strip_dir) = time_cell;
+    max_charge_strip.at(strip_dir) = strip_num;
     if(value > glb_max_charge ) {
       glb_max_charge = value;
       glb_max_charge_timing = time_cell;
@@ -250,6 +271,7 @@ int EventTPC::GetMaxChargeChannel() const {
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
+/*
 double EventTPC::GetTotalCharge(int strip_dir, int strip_section, int strip_number) const {
 
    auto item = totalChargeMap4.find({strip_dir, strip_section, strip_number});
@@ -299,6 +321,91 @@ double EventTPC::GetTotalChargeByTimeCell(int time_cell) const {
   if(item!=totalChargeMap3.end()) return item->second;
   return 0.0;
 }
+*/
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+int EventTPC::GetMultiplicity(int aStrip_dir, int aStrip_section, filter_type filterType) const{
+
+  int counter = 0;
+  int strip_dir=0, strip_section=0;
+  for(const auto & key: keyLists.at(filterType)){
+    strip_dir = std::get<0>(key);
+    strip_section  = std::get<1>(key);
+    if( (aStrip_dir<0 || strip_dir==aStrip_dir) &&
+	(aStrip_section<0 || strip_section==aStrip_section)) ++counter;
+  }
+  return counter;
+}
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+/*
+double EventTPC::GetMaxCharge(int aStrip_dir, int aStrip_section, 
+			      int aStrip_number, int aTime_cell,
+			      filter_type filterType) const{
+
+  double value=0;
+  int strip_dir=0, strip_section=0, strip_number=0, time_cell=0;
+  double maxCharge=0;
+  for(const auto & key: keyLists.at(filterType)){
+    strip_dir = std::get<0>(key);
+    strip_section  = std::get<1>(key);
+    strip_number  = std::get<2>(key);
+    time_cell  = std::get<3>(key);    
+    if( (aStrip_dir<0 || strip_dir==aStrip_dir) &&
+	(aStrip_number<0 || strip_number==aStrip_number) &&
+	(aStrip_section<0 || strip_section==aStrip_section) &&
+	(aTime_cell<0 || time_cell==aTime_cell) ){
+	  
+      if(aStrip_section<0) value = chargeMapMergedSections.at({strip_dir, strip_number, time_cell});
+      else value = chargeMapWithSections.at(key);
+      
+      if(value>maxCharge) maxCharge = value;
+    }
+  }
+  return maxCharge;
+}
+*/
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+double EventTPC::GetTotalCharge(int aStrip_dir, int aStrip_section,
+				int aStrip_number, int aTime_cell,
+				filter_type filterType) const{
+
+  double sum = 0;
+  int strip_dir=0, strip_section=0, strip_number=0, time_cell=0;
+  for(const auto & key: keyLists.at(filterType)){
+    strip_dir = std::get<0>(key);
+    strip_section  = std::get<1>(key);
+    strip_number  = std::get<2>(key);
+    time_cell = std::get<3>(key);
+    if( (aStrip_dir<0 || strip_dir==aStrip_dir) &&
+	(aStrip_number<0 || strip_number==aStrip_number) &&
+	(aStrip_section<0 || strip_section==aStrip_section) &&
+	(aTime_cell<0 || time_cell==aTime_cell) ) sum+=chargeMapWithSections.at(key);
+  }
+  return sum;  
+}
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+double EventTPC::sumOverSections(const PEventTPC::chargeMapType::key_type & key,
+				 filter_type filterType) const{
+
+  double value = 0;
+  int strip_dir = std::get<0>(key);
+  int strip_number  = std::get<2>(key);
+  int time_cell  = std::get<3>(key);
+  
+  auto key_section0 = std::make_tuple(strip_dir, 0, strip_number, time_cell);
+  auto key_section1 = std::make_tuple(strip_dir, 1, strip_number, time_cell);
+  auto key_section2 = std::make_tuple(strip_dir, 2, strip_number, time_cell);
+  auto keyList = keyLists.at(filterType);
+
+  if(std::find(keyList.begin(), keyList.end(), key_section0) != keyList.end()) value += chargeMapWithSections.at(key_section0);
+  if(std::find(keyList.begin(), keyList.end(), key_section1) != keyList.end()) value += chargeMapWithSections.at(key_section1);
+  if(std::find(keyList.begin(), keyList.end(), key_section2) != keyList.end()) value += chargeMapWithSections.at(key_section2);
+
+  return value;
+  }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 void EventTPC::filterHits(filter_type filterType){
@@ -467,50 +574,76 @@ void EventTPC::setHistoLabels(TH1 *h1, projection_type projType,
 
   auto event_id = myEventInfo.GetEventId();
   projection_type strip_dir = projection_type::NONE;
+  std::string timeName = "time";
+  std::string labelX = "", labelY = "", labelZ = "";
+  std::string integratedOverTime = "";
+  bool isTimeProjection = false;
+
+  std::string filterName = "raw";
+  if(filterType==filter_type::threshold) filterName="Threshold";
+  else if(filterType==filter_type::island) filterName="Island";
 
   if(projType==projection_type::DIR_U ||
      projType==projection_type::DIR_V ||
-     projType==projection_type::DIR_W ||
-     projType==projection_type::DIR_TIME){
+     projType==projection_type::DIR_W){
     strip_dir = projType;
+    timeName = "pro";
+    integratedOverTime = "integrated over time";
+    labelX = myGeometryPtr->GetDirName(strip_dir);
+    labelY = "Charge/strip [arb.u.]";
+
+    if(scaleType==scale_type::mm) labelX += " [mm]";
+    else labelX += " [strip]";
   }
+  else if(projType==projection_type::DIR_TIME){
+    strip_dir = projection_type::DIR_TIME;
+    isTimeProjection = true;
+   }
   else if(projType==projection_type::DIR_TIME_U){
     strip_dir = projection_type::DIR_U;
+    isTimeProjection = true;
   }
   else if(projType==projection_type::DIR_TIME_V){
     strip_dir = projection_type::DIR_V;
+    isTimeProjection = true;
   }
   else if(projType==projection_type::DIR_TIME_W){
     strip_dir = projection_type::DIR_W;
+    isTimeProjection = true;
   }
 
-  std::string filterName = "raw";
-  if(filterType==filter_type::threshold) filterName="Thr";
-  else if(filterType==filter_type::island) filterName="Island";
+  if(isTimeProjection){
+    timeName = "time";    
+    labelX = "Time"; 
+    labelY = "Charge/time bin [arb.u.]";
+    if(scaleType==scale_type::mm) labelX += " [mm]";
+    else labelX += " [bin]";
+  }
 
   std::string projName = myGeometryPtr->GetDirName(strip_dir);
-  std::string scaleName = "";
-  if(scaleType==scale_type::mm) scaleName="mm_";
+  std::string scaleName = "_";
+  if(scaleType==scale_type::mm) scaleName="_mm_";
 
-  std::string name = "h"+filterName+"_"+projName+"_"+scaleName+"evt"+std::to_string(event_id);
-  std::string title = "Event-"+std::to_string(event_id);
-  title+= "Selected by "+filterName+ " from "+projName;
-  title+= "integrated over time";
-
-  std::string labelX = projName+ " strip no."; 
-  std::string labelY = "Charge/strip [arb.u.]";
-  std::string labelZ = "Charge [arb.u.]";
+  std::string name = "h"+filterName+"_"+projName+timeName+scaleName+"evt"+std::to_string(event_id);
+  std::string title = "Event-"+std::to_string(event_id)+" ";
+  title+= "selected by "+filterName+ " from "+projName+ " ";
+  title+= integratedOverTime;
 
 if(h1->GetDimension()==2){
-  labelX = "Time bin"; 
+  name = "h"+filterName+"_"+projName+"_vs_"+timeName+scaleName+"evt"+std::to_string(event_id);
+  title = "Event-"+std::to_string(event_id)+" selected by "+filterName+" from "+projName;
+  labelX = "Time"; 
   labelY = projName;
- 
+  labelZ = "Charge [arb.u.]";
   if(scaleType==scale_type::mm){
-    labelX += "[mm]";
-    labelY += "[mm]";
+    labelX += " [mm]";
+    labelY += " [mm]";
+  }
+  else{
+    labelX += " [bin]";
+    labelY += " [strip]";
   }
  }   
-
   
   h1->SetName(name.c_str());
   h1->SetTitle(title.c_str());
@@ -578,423 +711,6 @@ std::shared_ptr<TH2D> EventTPC::GetChannels_raw(int cobo_idx, int asad_idx){ // 
     }
   }
   return result;
-}
-///////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////
-// get ALL three projections on: XY, XZ, YZ planes
-std::vector<TH2D*> EventTPC::Get2D(const SigClusterTPC &cluster, double radius, int rebin_space, int rebin_time, int method) { 
-
-  //  const bool rebin_flag=false;
-  TH2D *h1 = NULL;
-  TH2D *h2 = NULL;
-  TH2D *h3 = NULL;
-  std::vector<TH2D*> hvec;
-  hvec.resize(0);
-  bool err_flag = false;
-
-  if(!IsOK() || !cluster.IsOK() || 
-     cluster.GetNhits(projection_type::DIR_U)<1 || cluster.GetNhits(projection_type::DIR_V)<1 || cluster.GetNhits(projection_type::DIR_W)<1 ) return hvec;
-
-  // loop over time slices and match hits in space
-  const int time_cell_min = MAXIMUM( cluster.min_time[projection_type::DIR_U], MAXIMUM( cluster.min_time[projection_type::DIR_V], cluster.min_time[projection_type::DIR_W] ));
-  const int time_cell_max = MINIMUM( cluster.max_time[projection_type::DIR_U], MINIMUM( cluster.max_time[projection_type::DIR_V], cluster.max_time[projection_type::DIR_W] ));
-
-  ////////// DEBUG 
-  //  std::cout << Form(">>>> EventId = %d", event_id) << std::endl;
-  //  std::cout << Form(">>>> Time cell range = [%d, %d]", time_cell_min, time_cell_max) << std::endl;
-  ////////// DEBUG 
-
-  const std::map<MultiKey2, std::vector<int> > & hitListByTimeDirMerged = cluster.GetHitListByTimeDirMerged();
-  
-  for(int icell=time_cell_min; icell<=time_cell_max; icell++) {
-    if((hitListByTimeDirMerged.find(MultiKey2(icell, projection_type::DIR_U))==hitListByTimeDirMerged.end()) ||
-       (hitListByTimeDirMerged.find(MultiKey2(icell, projection_type::DIR_V))==hitListByTimeDirMerged.end()) ||
-       (hitListByTimeDirMerged.find(MultiKey2(icell, projection_type::DIR_W))==hitListByTimeDirMerged.end())) continue;
-    
-    std::vector<int> hits[3] = {
-				hitListByTimeDirMerged.find(MultiKey2(icell, projection_type::DIR_U))->second,
-				hitListByTimeDirMerged.find(MultiKey2(icell, projection_type::DIR_V))->second,
-				hitListByTimeDirMerged.find(MultiKey2(icell, projection_type::DIR_W))->second};
-
-    ////////// DEBUG 
-    //   std::cout << Form(">>>> Number of hits: time cell=%d: U=%d / V=%d / W=%d",
-    //		      icell, (int)hits[projection_type::DIR_U].size(), (int)hits[projection_type::DIR_V].size(), (int)hits[projection_type::DIR_W].size()) << std::endl;
-    ////////// DEBUG 
-
-    // check if there is at least one hit in each direction
-    if(hits[projection_type::DIR_U].size()==0 || hits[projection_type::DIR_V].size()==0 || hits[projection_type::DIR_W].size()==0) continue;
-    
-    std::map<int, int> n_match[3]; // map of number of matched points for each merged strip, key=STRIP_NUM [1-1024]
-    std::map<MultiKey3, TVector2> hitPos; // key=(STRIP_NUM_U, STRIP_NUM_V, STRIP_NUM_W), value=(X [mm],Y [mm])
-   
-    // loop over hits and confirm matching in space
-    for(int i0=0; i0<(int)hits[0].size(); i0++) {
-      for(auto iter0=myGeometryPtr->GetDirSectionIndexList(projection_type::DIR_U).begin();
-	  iter0!=myGeometryPtr->GetDirSectionIndexList(projection_type::DIR_U).end(); iter0++) {
-	std::shared_ptr<StripTPC> strip0 = myGeometryPtr->GetStripByDir(projection_type::DIR_U, *iter0, hits[0].at(i0));
-	for(int i1=0; i1<(int)hits[1].size(); i1++) {
-	  for(auto iter1=myGeometryPtr->GetDirSectionIndexList(projection_type::DIR_V).begin();
-	      iter1!=myGeometryPtr->GetDirSectionIndexList(projection_type::DIR_V).end(); iter1++) {
-	    std::shared_ptr<StripTPC> strip1 = myGeometryPtr->GetStripByDir(projection_type::DIR_V, *iter1, hits[1].at(i1));
-	    for(int i2=0; i2<(int)hits[2].size(); i2++) {
-	      for(auto iter2=myGeometryPtr->GetDirSectionIndexList(projection_type::DIR_W).begin();
-		  iter2!=myGeometryPtr->GetDirSectionIndexList(projection_type::DIR_W).end(); iter2++) {
-		std::shared_ptr<StripTPC> strip2 = myGeometryPtr->GetStripByDir(projection_type::DIR_W, *iter2, hits[2].at(i2));
-		
-		////////// DEBUG 
-		//	  std::cout << Form(">>>> Checking triplet: time_cell=%d: U=%d / V=%d / W=%d",
-		//			    icell, hits[0].at(i0), hits[1].at(i1), hits[2].at(i2)) << std::endl;
-		////////// DEBUG 
-
-		TVector2 pos;
-		if( myGeometryPtr->MatchCrossPoint( strip0, strip1, strip2, radius, pos )) {
-		  (n_match[projection_type::DIR_U])[hits[0].at(i0)]++;
-		  (n_match[projection_type::DIR_V])[hits[1].at(i1)]++;
-		  (n_match[projection_type::DIR_W])[hits[2].at(i2)]++;
-		  MultiKey3 mkey(hits[0].at(i0), hits[1].at(i1), hits[2].at(i2));
-		  // accept only first matched 2D postion 
-		  if(hitPos.find(mkey)!=hitPos.end()) continue;
-		  hitPos[mkey]=pos;
-		  ////////// DEBUG 
-		  //      std::cout << Form(">>>> Checking triplet: result = TRUE" ) << std::endl;
-		  ////////// DEBUG 
-		} else {
-		  ////////// DEBUG 
-		  //	  std::cout << Form(">>>> Checking triplet: result = FALSE" ) << std::endl;
-		  ////////// DEBUG 
-		}
-	      }
-	    }
-	  }
-	}
-      }
-    }
-    ////////// DEBUG 
-    //    std::cout << Form(">>>> Number of matches: time_cell=%d, triplets=%d", icell, (int)hitPos.size()) << std::endl;
-    ////////// DEBUG 
-    if(hitPos.size()<1) continue;
-
-    // book histograms before first fill
-    if(h1==NULL && h2==NULL && h3==NULL) {
-
-      double xmin, xmax, ymin, ymax;
-      std::tie(xmin, xmax, ymin, ymax) = myGeometryPtr->rangeXY();
-      
-      double zmin=0.0-0.5;  // time_cell_min;
-      double zmax=myGeometryPtr->GetAgetNtimecells()-0.5; // time_cell_max;  
-      
-      int nx = (int)( (xmax-xmin)/myGeometryPtr->GetStripPitch()-1 );
-      int ny = (int)( (ymax-ymin)/myGeometryPtr->GetPadPitch()-1 );
-      int nz = (int)( zmax-zmin );
-      auto event_id = myEventInfo.GetEventId();
-      zmin = myGeometryPtr->Timecell2pos(zmin, err_flag);
-      zmax = myGeometryPtr->Timecell2pos(zmax, err_flag);
-
-      // rebin in space
-      if(rebin_space>1) {
-	nx /= rebin_space;
-	ny /= rebin_space;
-      }
-
-      // rebin in time
-      if(rebin_time>1) {
-	nz /= rebin_time;
-      }
-
-      ////////// DEBUG 
-      //      std::cout << Form(">>>> XY histogram: range=[%lf, %lf] x [%lf, %lf], nx=%d, ny=%d",
-      //      			xmin, xmax, ymin, ymax, nx, ny) << std::endl;
-      ////////// DEBUG 
-
-      h1 = new TH2D( Form("hrecoXY_evt%d", event_id),
-		     Form("Event-%d: Projection in XY;X [mm];Y [mm];Charge/bin [arb.u.]", event_id),
-		     nx, xmin, xmax, ny, ymin, ymax );
-		     
-      ////////// DEBUG 
-      //      std::cout << Form(">>>> XZ histogram: range=[%lf, %lf] x [%lf, %lf], nx=%d, nz=%d",
-      //      			xmin, xmax, zmin, zmax, nx, nz) << std::endl;
-      ////////// DEBUG 
-		     
-      h2 = new TH2D( Form("hrecoXZ_evt%d", event_id),
-		     Form("Event-%d: Projection in XZ;X [mm];Z [mm];Charge/bin [arb.u.]", event_id),
-		     nx, xmin, xmax, nz, zmin, zmax );
-
-      ////////// DEBUG 
-      //      std::cout << Form(">>>> YZ histogram: range=[%lf, %lf] x [%lf, %lf], nx=%d, nz=%d",
-      //      			ymin, ymax, zmin, zmax, ny, nz) << std::endl;
-      ////////// DEBUG 
-		     
-      h3 = new TH2D( Form("hrecoYZ_evt%d", event_id),
-		     Form("Event-%d: Projection in YZ;Y [mm];Z [mm];Charge/bin [arb.u.]", event_id),
-		     ny, ymin, ymax, nz, zmin, zmax );
-    }
-
-    // needed for method #2 only:
-    // loop over matched hits and update fraction map
-    std::map<MultiKey3, double> fraction[3]; // for U,V,W local charge projections
-    std::map<MultiKey3, TVector2>::iterator it1, it2;
-
-    for(it1=hitPos.begin(); it1!=hitPos.end(); it1++) {
-
-      int u1=std::get<0>(it1->first);
-      int v1=std::get<1>(it1->first);
-      int w1=std::get<2>(it1->first);
-      double qtot[3] = {0., 0., 0.};  // sum of charges along three directions (for a given time range)
-      double    q[3] = {0., 0., 0.};  // charge in a given strip (for a given time range)
-      q[projection_type::DIR_U] = GetValByStripMerged(projection_type::DIR_U, u1, icell);
-      q[projection_type::DIR_V] = GetValByStripMerged(projection_type::DIR_V, v1, icell);
-      q[projection_type::DIR_W] = GetValByStripMerged(projection_type::DIR_W, w1, icell);
-
-      // loop over directions
-      for(it2=hitPos.begin(); it2!=hitPos.end(); it2++) {
-	int u2=std::get<0>(it2->first);
-	int v2=std::get<1>(it2->first);
-	int w2=std::get<2>(it2->first);
-	
-	if(u1==u2) {
-	  qtot[projection_type::DIR_V] += GetValByStripMerged(projection_type::DIR_V, v2, icell);
-	  qtot[projection_type::DIR_W] += GetValByStripMerged(projection_type::DIR_W, w2, icell);
-	}
-	if(v1==v2) {
-	  qtot[projection_type::DIR_W] += GetValByStripMerged(projection_type::DIR_W, w2, icell);
-	  qtot[projection_type::DIR_U] += GetValByStripMerged(projection_type::DIR_U, u2, icell);
-	}
-	if(w1==w2){
-	  qtot[projection_type::DIR_U] += GetValByStripMerged(projection_type::DIR_U, u2, icell);
-	  qtot[projection_type::DIR_V] += GetValByStripMerged(projection_type::DIR_V, v2, icell);
-	}
-      }
-      fraction[projection_type::DIR_U].insert(std::pair<MultiKey3, double>(it1->first, q[projection_type::DIR_U] / qtot[projection_type::DIR_U] ));
-      fraction[projection_type::DIR_V].insert(std::pair<MultiKey3, double>(it1->first, q[projection_type::DIR_V] / qtot[projection_type::DIR_V] ));
-      fraction[projection_type::DIR_W].insert(std::pair<MultiKey3, double>(it1->first, q[projection_type::DIR_W] / qtot[projection_type::DIR_W] ));
-    }
-
-    // loop over matched hits and fill histograms
-    if(h1 && h2 && h3) {
-
-      std::map<MultiKey3, TVector2>::iterator it;
-      for(it=hitPos.begin(); it!=hitPos.end(); it++) {
-
-	double val = 0.0;
-
-	switch (method) {
-
-	case 0: // mehtod #1 - divide charge equally 
-	  val = 
-	    GetValByStripMerged(projection_type::DIR_U, std::get<0>(it->first), icell) / n_match[0].at(std::get<0>(it->first)) +
-	    GetValByStripMerged(projection_type::DIR_V, std::get<1>(it->first), icell) / n_match[1].at(std::get<1>(it->first)) +
-	    GetValByStripMerged(projection_type::DIR_W, std::get<2>(it->first), icell) / n_match[2].at(std::get<2>(it->first));
-	  break;
-
-	case 1: // method #2 - divide charge according to charge-fraction in two other directions
-
-	  val = 
-	    GetValByStripMerged(projection_type::DIR_U, 
-				std::get<0>(it->first), icell)*0.5*( fraction[projection_type::DIR_V].at(it->first) + fraction[projection_type::DIR_W].at(it->first) ) +
-	    GetValByStripMerged(projection_type::DIR_V, 
-				std::get<1>(it->first), icell)*0.5*( fraction[projection_type::DIR_W].at(it->first) + fraction[projection_type::DIR_U].at(it->first) ) +
-	    GetValByStripMerged(projection_type::DIR_W, 
-				std::get<2>(it->first), icell)*0.5*( fraction[projection_type::DIR_U].at(it->first) + fraction[projection_type::DIR_V].at(it->first) );
-	  break;
-
-	default: 
-	  val=0.0;
-
-	}; // end of switch (method)...
-	
-	Double_t z=myGeometryPtr->Timecell2pos(icell, err_flag);
-	h1->Fill( (it->second).X(), (it->second).Y(), val );
-	h2->Fill( (it->second).X(), z, val );
-	h3->Fill( (it->second).Y(), z, val );
-
-      }
-    }
-  }
-  if(h1 && h2 && h3) {
-    hvec.push_back(h1);
-    hvec.push_back(h2);
-    hvec.push_back(h3);
-  }
-  return hvec;
-}
-
-// get 3D histogram of clustered hits
-TH3D *EventTPC::Get3D(const SigClusterTPC &cluster, double radius, int rebin_space, int rebin_time, int method) {
-
-  TH3D *h = NULL;
-  bool err_flag = false;
-
-  if(!IsOK() || !cluster.IsOK() || 
-     cluster.GetNhits(projection_type::DIR_U)<1 || cluster.GetNhits(projection_type::DIR_V)<1 || cluster.GetNhits(projection_type::DIR_W)<1 ) return h;
-
-  // loop over time slices and match hits in space
-  const int time_cell_min = MAXIMUM( cluster.min_time[projection_type::DIR_U], MAXIMUM( cluster.min_time[projection_type::DIR_V], cluster.min_time[projection_type::DIR_W] ));
-  const int time_cell_max = MINIMUM( cluster.max_time[projection_type::DIR_U], MINIMUM( cluster.max_time[projection_type::DIR_V], cluster.max_time[projection_type::DIR_W] ));
-
-  ////////// DEBUG 
-  //std::cout << Form(">>>> EventId = %d", event_id) << std::endl;
-  //std::cout << Form(">>>> Time cell range = [%d, %d]", time_cell_min, time_cell_max) << std::endl;
-  ////////// DEBUG 
-
-  const std::map<MultiKey2, std::vector<int> > & hitListByTimeDirMerged = cluster.GetHitListByTimeDirMerged();
-  
-  for(int icell=time_cell_min; icell<=time_cell_max; icell++) {
-    if((hitListByTimeDirMerged.find(MultiKey2(icell, projection_type::DIR_U))==hitListByTimeDirMerged.end()) ||
-       (hitListByTimeDirMerged.find(MultiKey2(icell, projection_type::DIR_V))==hitListByTimeDirMerged.end()) ||
-       (hitListByTimeDirMerged.find(MultiKey2(icell, projection_type::DIR_W))==hitListByTimeDirMerged.end())) continue;
-    
-    std::vector<int> hits[3] = {
-      hitListByTimeDirMerged.find(MultiKey2(icell, projection_type::DIR_U))->second,
-      hitListByTimeDirMerged.find(MultiKey2(icell, projection_type::DIR_V))->second,
-      hitListByTimeDirMerged.find(MultiKey2(icell, projection_type::DIR_W))->second};
-    /*
-      const std::map<MultiKey2, std::vector<int> > & hitListByTimeDir = cluster.GetHitListByTimeDir();
-      
-      for(int icell=time_cell_min; icell<=time_cell_max; icell++) {
-      
-      if((hitListByTimeDir.find(MultiKey2(icell, projection_type::DIR_U))==hitListByTimeDir.end()) ||
-      (hitListByTimeDir.find(MultiKey2(icell, projection_type::DIR_V))==hitListByTimeDir.end()) ||
-      (hitListByTimeDir.find(MultiKey2(icell, projection_type::DIR_W))==hitListByTimeDir.end())) continue;
-      
-      std::vector<int> hits[3] = {
-      hitListByTimeDir.find(MultiKey2(icell, projection_type::DIR_U))->second,
-      hitListByTimeDir.find(MultiKey2(icell, projection_type::DIR_V))->second,
-      hitListByTimeDir.find(MultiKey2(icell, projection_type::DIR_W))->second};
-    */
-    ////////// DEBUG 
-    //   std::cout << Form(">>>> Number of hits: time cell=%d: U=%d / V=%d / W=%d",
-    //		      icell, (int)hits[projection_type::DIR_U].size(), (int)hits[projection_type::DIR_V].size(), (int)hits[projection_type::DIR_W].size()) << std::endl;
-    ////////// DEBUG 
-    
-    // check if there is at least one hit in each direction
-    if(hits[projection_type::DIR_U].size()==0 || hits[projection_type::DIR_V].size()==0 || hits[projection_type::DIR_W].size()==0) continue;
-    
-    std::map<int, int> n_match[3]; // map of number of matched points for each strip, key=STRIP_NUM [1-1024]
-    std::map<MultiKey3, TVector2> hitPos; // key=(STRIP_NUM_U, STRIP_NUM_V, STRIP_NUM_W), value=(X [mm],Y [mm])
-
-    // loop over hits and confirm matching in space
-    for(int i0=0; i0<(int)hits[0].size(); i0++) {
-      for(auto iter0=myGeometryPtr->GetDirSectionIndexList(projection_type::DIR_U).begin();
-	  iter0!=myGeometryPtr->GetDirSectionIndexList(projection_type::DIR_U).end(); iter0++) {
-	std::shared_ptr<StripTPC> strip0 = myGeometryPtr->GetStripByDir(projection_type::DIR_U, *iter0, hits[0].at(i0));
-	for(int i1=0; i1<(int)hits[1].size(); i1++) {
-	  for(auto iter1=myGeometryPtr->GetDirSectionIndexList(projection_type::DIR_V).begin();
-	      iter1!=myGeometryPtr->GetDirSectionIndexList(projection_type::DIR_V).end(); iter1++) {
-	    std::shared_ptr<StripTPC> strip1 = myGeometryPtr->GetStripByDir(projection_type::DIR_V, *iter1, hits[1].at(i1));
-	    for(int i2=0; i2<(int)hits[2].size(); i2++) {
-	      for(auto iter2=myGeometryPtr->GetDirSectionIndexList(projection_type::DIR_W).begin();
-		  iter2!=myGeometryPtr->GetDirSectionIndexList(projection_type::DIR_W).end(); iter2++) {
-		std::shared_ptr<StripTPC> strip2 = myGeometryPtr->GetStripByDir(projection_type::DIR_W, *iter2, hits[2].at(i2));
-		
-		////////// DEBUG 
-		//	  std::cout << Form(">>>> Checking triplet: time_cell=%d: U=%d / V=%d / W=%d",
-		//			    icell, hits[0].at(i0), hits[1].at(i1), hits[2].at(i2)) << std::endl;
-		////////// DEBUG 
-
-		TVector2 pos;
-		if( myGeometryPtr->MatchCrossPoint( strip0, strip1, strip2, radius, pos )) {
-		  (n_match[projection_type::DIR_U])[hits[0].at(i0)]++;
-		  (n_match[projection_type::DIR_V])[hits[1].at(i1)]++;
-		  (n_match[projection_type::DIR_W])[hits[2].at(i2)]++;
-		  MultiKey3 mkey(hits[0].at(i0), hits[1].at(i1), hits[2].at(i2));
-		  // accept only first matched 2D postion 
-		  if(hitPos.find(mkey)!=hitPos.end()) continue;
-		  hitPos[mkey]=pos;
-		  ////////// DEBUG 
-		  //	    std::cout << Form(">>>> Checking triplet: result = TRUE" ) << std::endl;
-		  ////////// DEBUG 
-		} else {
-		  ////////// DEBUG 
-		  //	    std::cout << Form(">>>> Checking triplet: result = FALSE" ) << std::endl;
-		  ////////// DEBUG 
-		}
-	      }
-	    }
-	  }
-	}
-      }
-    }
-    //    std::cout << Form(">>>> Number of matches: time_cell=%d, triplets=%d", icell, (int)hitPos.size()) << std::endl;
-    if(hitPos.size()<1) continue;
-
-    // book 3D histogram before first fill
-    if(h==NULL) h = myGeometryPtr->Get3DFrame(rebin_space, rebin_time); 
-    // needed for method #2 only:
-    // loop over matched hits and update fraction map
-    std::map<MultiKey3, double> fraction[3]; // for U,V,W local charge projections
-    std::map<MultiKey3, TVector2>::iterator it1, it2;
-
-    for(it1=hitPos.begin(); it1!=hitPos.end(); it1++) {
-
-      int u1=std::get<0>(it1->first);
-      int v1=std::get<1>(it1->first);
-      int w1=std::get<2>(it1->first);
-      std::vector<double> qtot = {0., 0., 0.};  // sum of charges along three directions (for a given time range)
-      std::vector<double> q = {0., 0., 0.};  // charge in a given strip (for a given time range)
-      q[projection_type::DIR_U] = GetValByStripMerged(projection_type::DIR_U, u1, icell);
-      q[projection_type::DIR_V] = GetValByStripMerged(projection_type::DIR_V, v1, icell);
-      q[projection_type::DIR_W] = GetValByStripMerged(projection_type::DIR_W, w1, icell);
-
-      // loop over directions
-      for(it2=hitPos.begin(); it2!=hitPos.end(); it2++) {
-	int u2=std::get<0>(it2->first);
-	int v2=std::get<1>(it2->first);
-	int w2=std::get<2>(it2->first);
-	
-	if(u1==u2) {
-	  qtot[projection_type::DIR_V] += GetValByStripMerged(projection_type::DIR_V, v2, icell);
-	  qtot[projection_type::DIR_W] += GetValByStripMerged(projection_type::DIR_W, w2, icell);
-	}
-	if(v1==v2) {
-	  qtot[projection_type::DIR_W] += GetValByStripMerged(projection_type::DIR_W, w2, icell);
-	  qtot[projection_type::DIR_U] += GetValByStripMerged(projection_type::DIR_U, u2, icell);
-	}
-	if(w1==w2){
-	  qtot[projection_type::DIR_U] += GetValByStripMerged(projection_type::DIR_U, u2, icell);
-	  qtot[projection_type::DIR_V] += GetValByStripMerged(projection_type::DIR_V, v2, icell);
-	}
-      }
-      fraction[projection_type::DIR_U].insert(std::pair<MultiKey3, double>(it1->first, q[projection_type::DIR_U] / qtot[projection_type::DIR_U] ));
-      fraction[projection_type::DIR_V].insert(std::pair<MultiKey3, double>(it1->first, q[projection_type::DIR_V] / qtot[projection_type::DIR_V] ));
-      fraction[projection_type::DIR_W].insert(std::pair<MultiKey3, double>(it1->first, q[projection_type::DIR_W] / qtot[projection_type::DIR_W] ));
-    }
-    
-    // loop over matched hits and fill histograms
-    if(h) {
-
-      std::map<MultiKey3, TVector2>::iterator it;
-      for(it=hitPos.begin(); it!=hitPos.end(); it++) {
-
-	double val = 0.0;
-
-	switch (method) {
-
-	case 0: // mehtod #1 - divide charge equally
-	  val = 
-	    GetValByStripMerged(projection_type::DIR_U, std::get<0>(it->first), icell) / n_match[0].at(std::get<0>(it->first)) +
-	    GetValByStripMerged(projection_type::DIR_V, std::get<1>(it->first), icell) / n_match[1].at(std::get<1>(it->first)) +
-	    GetValByStripMerged(projection_type::DIR_W, std::get<2>(it->first), icell) / n_match[2].at(std::get<2>(it->first));
-	  break;
-
-	case 1: // method #2 - divide charge according to charge-fraction in two other directions
-	  val = 
-	    GetValByStripMerged(projection_type::DIR_U, 
-			  std::get<0>(it->first), icell)*0.5*( fraction[projection_type::DIR_V].at(it->first) + fraction[projection_type::DIR_W].at(it->first) ) +
-	    GetValByStripMerged(projection_type::DIR_V, 
-			  std::get<1>(it->first), icell)*0.5*( fraction[projection_type::DIR_W].at(it->first) + fraction[projection_type::DIR_U].at(it->first) ) +
-	    GetValByStripMerged(projection_type::DIR_W, 
-			  std::get<2>(it->first), icell)*0.5*( fraction[projection_type::DIR_U].at(it->first) + fraction[projection_type::DIR_V].at(it->first) );
-	  break;
-	  
-	default: 
-	  val=0.0;
-	}; // end of switch (method)...
-	Double_t z=myGeometryPtr->Timecell2pos(icell, err_flag);
-	h->Fill( (it->second).X(), (it->second).Y(), z, val );
-      }
-    }
-  }
-  return h;
 }
 /////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////

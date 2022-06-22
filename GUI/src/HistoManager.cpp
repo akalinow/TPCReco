@@ -614,36 +614,6 @@ std::shared_ptr<TH1D> HistoManager::getRecHitTimeProjection(){
   aHisto->SetLineColor(2);
   return aHisto;//FIX ME avoid object copying
 }
-
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-TH3D* HistoManager::get3DReconstruction(){
-
-  double radius = 2.0;
-  int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN;
-  int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN; 
-  int method=EVENTTPC_DEFAULT_RECO_METHOD;
-  h3DReco = myEventPtr->Get3D(myTkBuilder.getCluster(),  radius, rebin_space, rebin_time, method);
-  return h3DReco;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-TH2D* HistoManager::get2DReconstruction(int strip_dir){
-
-  double radius = 2.0;
-  int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN;
-  int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN; 
-  int method=EVENTTPC_DEFAULT_RECO_METHOD;
-  std::vector<TH2D*> h2DVector = myEventPtr->Get2D(myTkBuilder.getCluster(),  radius, rebin_space, rebin_time, method);
-  if(!h2DVector.size()) return 0;
-  int index = 0;
-  
-  if(strip_dir==DIR_XY) index = 0;
-  if(strip_dir==DIR_XZ) index = 1;
-  if(strip_dir==DIR_YZ) index = 2;
-   
-  return h2DVector[index];
-}
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 const TH2D & HistoManager::getHoughAccumulator(int strip_dir, int iPeak){

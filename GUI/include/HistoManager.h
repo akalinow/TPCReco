@@ -130,10 +130,6 @@ public:
 
   private:
 
-  TH3D* get3DReconstruction();
-
-  TH2D* get2DReconstruction(int strip_dir);
-
   const TH2D & getHoughAccumulator(int strip_dir, int iPeak=0);
 
   void drawTrack2DSeed(int strip_dir, TVirtualPad *aPad);

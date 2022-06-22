@@ -26,7 +26,8 @@ class EventTPC {
 
  private:
 
-  void fillAuxMaps();
+  void fillMergedSectionsMap();
+  void fillAuxMaps(filter_type filterType);
   void updateMaxChargeMaps(const PEventTPC::chargeMapType::key_type & key,
 			   double value);
   void addEnvelope(PEventTPC::chargeMapType::key_type key,
@@ -46,6 +47,9 @@ class EventTPC {
 		      filter_type filterType,
 		      scale_type scaleType) const;
 
+  double sumOverSections(const PEventTPC::chargeMapType::key_type & key,
+			 filter_type filterType) const;
+
   bool histoCacheUpdated{false};
   std::map<filter_type, std::shared_ptr<TH3D> > a3DHistoRawMap;
   std::shared_ptr<TH3D> a3DHistoRawPtr;
@@ -58,6 +62,9 @@ class EventTPC {
   std::map<MultiKey4, double> chargeMap2; // key=(STRIP_DIR [0-2], SECTION [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
 
   PEventTPC::chargeMapType chargeMapWithSections; // key=(STRIP_DIR [0-2], SECTION [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
+  std::map<MultiKey3, double> chargeMapMergedSections; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
+
+
   std::map<MultiKey2, double> maxChargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024])
   std::map<MultiKey3, double> maxChargeMap2; // key=(STRIP_DIR [0-2], SECTION [0-2], STRIP_NUM [1-1024])
   std::map<MultiKey2, double> totalChargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024])
@@ -109,17 +116,25 @@ class EventTPC {
   int GetMaxChargeStrip(int strip_dir) const;    // strip number with the maximal charge in a given direction 
   int GetMaxChargeTime() const;                  // arrival time of the maximal charge from all strips
   int GetMaxChargeChannel() const;               // global channel number with the maximal charge from all strips
-  double GetTotalCharge() const;           // charge integral from all strips
-  double GetTotalCharge(int strip_dir) const;    // charge integral from strips of a given direction 
-  double GetTotalCharge(int strip_dir, int strip_number) const; // charge integral from merged strip of a given direction (all sections) 
-  double GetTotalCharge(int strip_dir, int strip_section, int strip_number) const; // charge integral from single strip of a given direction (per section) 
+  //double GetTotalCharge() const;           // charge integral from all strips
+  //double GetTotalCharge(int strip_dir) const;    // charge integral from strips of a given direction 
+  //double GetTotalCharge(int strip_dir, int strip_number) const; // charge integral from merged strip of a given direction (all sections) 
+  //double GetTotalCharge(int strip_dir, int strip_section, int strip_number) const; // charge integral from single strip of a given direction (per section) 
   double GetTotalChargeByTimeCell(int time_cell) const; // charge integral from a single time cell from all strips
   double GetTotalChargeByTimeCell(int strip_dir, int time_cell) const; // charge integral from a single time cell from all merged strips in a given direction (all sections)
   double GetTotalChargeByTimeCell(int strip_dir, int strip_section, int time_cell) const; // charge integral from a single time cell from all strips in a given direction (per section)
-  
   std::shared_ptr<TH2D> GetChannels(int cobo_idx, int asad_idx); // valid range [0-1][0-3]
   std::shared_ptr<TH2D> GetChannels_raw(int cobo_idx, int asad_idx); // valid range [0-1][0-3]
 
+
+  //double GetMaxCharge(int strip_dir=-1, int strip_section=-1, int strip_number=-1,
+  //		      int time_cell=-1, filter_type filterType=filter_type::none) const;
+  
+  double GetTotalCharge(int strip_dir=-1, int strip_section=-1, int strip_number=-1,
+			int time_cell=-1, filter_type filterType=filter_type::none) const;
+  
+  int GetMultiplicity(int strip_dir=-1, int strip_section=-1,  filter_type filterType=filter_type::none) const; 
+  
   std::shared_ptr<TH1D> get1DProjection(projection_type projType,
 					filter_type filterType,
 					scale_type scaleType);
@@ -127,16 +142,6 @@ class EventTPC {
   std::shared_ptr<TH2D> get2DProjection(projection_type projType,
 					filter_type filterType,
 					scale_type scaleType);
-
-  std::vector<TH2D*> Get2D(const SigClusterTPC &cluster, double radius,          // clustered hits only,
-			   int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN,   // projections on: XY, XZ, YZ planes
-			   int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN, 
-			   int method=EVENTTPC_DEFAULT_RECO_METHOD);  
-  
-  TH3D *Get3D(const SigClusterTPC &cluster, double radius,                       // clustered hits only, 3D view
-	      int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN, 
-	      int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN, 
-	      int method=EVENTTPC_DEFAULT_RECO_METHOD);  
 
   ///Methods to remove
   void MakeOneCluster(double thr=-1, int delta_strips=5, int delta_timecells=25){} 
