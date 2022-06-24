@@ -27,7 +27,7 @@ class EventTPC {
  private:
 
   void fillMergedSectionsMap();
-  void fillAuxMaps(filter_type filterType);
+  void fillAuxMaps(const std::set<PEventTPC::chargeMapType::key_type> & keyLists);
   void updateMaxChargeMaps(const PEventTPC::chargeMapType::key_type & key,
 			   double value);
   void addEnvelope(PEventTPC::chargeMapType::key_type key,
@@ -47,45 +47,19 @@ class EventTPC {
 		      filter_type filterType,
 		      scale_type scaleType) const;
 
-  double sumOverSections(const PEventTPC::chargeMapType::key_type & key,
-			 filter_type filterType) const;
-
   bool histoCacheUpdated{false};
   std::map<filter_type, std::shared_ptr<TH3D> > a3DHistoRawMap;
   std::shared_ptr<TH3D> a3DHistoRawPtr;
   
   eventraw::EventInfo myEventInfo;
   std::shared_ptr<GeometryTPC> myGeometryPtr;  //! transient data member
-  SigClusterTPC myCluster;                     //! transient data member
   
-  std::map<MultiKey3, double> chargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
-  std::map<MultiKey4, double> chargeMap2; // key=(STRIP_DIR [0-2], SECTION [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
-
   PEventTPC::chargeMapType chargeMapWithSections; // key=(STRIP_DIR [0-2], SECTION [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
   std::map<MultiKey3, double> chargeMapMergedSections; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
 
-
-  std::map<MultiKey2, double> maxChargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024])
-  std::map<MultiKey3, double> maxChargeMap2; // key=(STRIP_DIR [0-2], SECTION [0-2], STRIP_NUM [1-1024])
-  std::map<MultiKey2, double> totalChargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024])
-  std::map<MultiKey2, double> totalChargeMap2; // key=(STRIP_DIR [0-2], TIME_CELL [0-511])
-  std::map<int, double> totalChargeMap3; // key=TIME_CELL [0-511]
-  std::map<MultiKey3, double> totalChargeMap4; // key=(STRIP_DIR [0-2], SECTION [0-2], STRIP_NUM [1-1024])
-  std::map<MultiKey3, double> totalChargeMap5; // key=(STRIP_DIR [0-2], SECTION [0-2], TIME_CELL [0-511])
-  std::map<MultiKey2, int> asadMap; // key=(COBO_id, ASAD_id [0-3])
-    
-  bool initOK;      // is geometry valid?
-  int time_rebin;   // how many raw data time bins to merge (default=1, i.e. none)
-
-  std::vector<double> max_charge;       // maximal value from each strip direction [0-2]
-  std::vector<int> max_charge_timing;   // range [0-511], RAW time cells
-  std::vector<int> max_charge_strip;    // range [1-1024]
-  double glb_max_charge;
-  int glb_max_charge_timing;  // range [0-511]
-  int glb_max_charge_channel; // range [0-1023]
-  std::vector<double> tot_charge;       // integral per strip direction
-  double glb_tot_charge;      // integral per event
-
+  
+  std::map<MultiKey2, int> asadMap; // key=(COBO_id, ASAD_id [0-3])    
+   
  public:
   EventTPC();
 
@@ -103,71 +77,45 @@ class EventTPC {
   double GetValByStrip(std::shared_ptr<StripTPC> strip, int time_cell) const;                   // valid range [0-511]
   double GetValByStripMerged(int strip_dir, int strip_number, int time_cell) const;  // valid range [0-2][1-1024][0-511] (all sections)
 
-  const decltype(myEventInfo)& GetEventInfo() const { return myEventInfo; };
+  const eventraw::EventInfo & GetEventInfo() const { return myEventInfo; };
   inline GeometryTPC * GetGeoPtr() const { return myGeometryPtr.get(); }
-  inline bool IsOK() const { return initOK; }
-  inline int GetTimeRebin() const { return time_rebin; }       
 
-  double GetMaxCharge() const;             // maximal charge from all strips
-  double GetMaxCharge(int strip_dir) const;      // maximal charge from strips of a given direction
-  double GetMaxCharge(int strip_dir, int strip_number) const;      // maximal charge from merged strip of a given direction (all sections)
-  double GetMaxCharge(int strip_dir, int strip_section, int strip_number) const;      // maximal charge from single strip of a given direction (per section)
-  int GetMaxChargeTime(int strip_dir) const;     // arrival time of the maximal charge from strips of a given direction
-  int GetMaxChargeStrip(int strip_dir) const;    // strip number with the maximal charge in a given direction 
-  int GetMaxChargeTime() const;                  // arrival time of the maximal charge from all strips
-  int GetMaxChargeChannel() const;               // global channel number with the maximal charge from all strips
-  //double GetTotalCharge() const;           // charge integral from all strips
-  //double GetTotalCharge(int strip_dir) const;    // charge integral from strips of a given direction 
-  //double GetTotalCharge(int strip_dir, int strip_number) const; // charge integral from merged strip of a given direction (all sections) 
-  //double GetTotalCharge(int strip_dir, int strip_section, int strip_number) const; // charge integral from single strip of a given direction (per section) 
-  double GetTotalChargeByTimeCell(int time_cell) const; // charge integral from a single time cell from all strips
-  double GetTotalChargeByTimeCell(int strip_dir, int time_cell) const; // charge integral from a single time cell from all merged strips in a given direction (all sections)
-  double GetTotalChargeByTimeCell(int strip_dir, int strip_section, int time_cell) const; // charge integral from a single time cell from all strips in a given direction (per section)
-  std::shared_ptr<TH2D> GetChannels(int cobo_idx, int asad_idx); // valid range [0-1][0-3]
-  std::shared_ptr<TH2D> GetChannels_raw(int cobo_idx, int asad_idx); // valid range [0-1][0-3]
+  // maximal charge from strips of a given direction
+  double GetMaxCharge(int strip_dir=-1, int strip_section=-1, int strip_number=-1,
+		      filter_type filterType=filter_type::none) const;   
 
-
-  //double GetMaxCharge(int strip_dir=-1, int strip_section=-1, int strip_number=-1,
-  //		      int time_cell=-1, filter_type filterType=filter_type::none) const;
-  
+  // total charge from strips of a given direction
   double GetTotalCharge(int strip_dir=-1, int strip_section=-1, int strip_number=-1,
 			int time_cell=-1, filter_type filterType=filter_type::none) const;
+
+  // arrival time and strip number of the maximal charge from strips of a given direction
+  // or arrival time of the maximal charge from all strips
+  std::tuple<int,int> GetMaxChargePos(int aStrip_dir=-1, filter_type filterType=filter_type::none) const;
   
-  int GetMultiplicity(int strip_dir=-1, int strip_section=-1,  filter_type filterType=filter_type::none) const; 
+  int GetMaxChargeChannel() const;               // global channel number with the maximal charge from all strips
+  std::shared_ptr<TH2D> GetChannels(int cobo_idx, int asad_idx); // valid range [0-1][0-3]
+  std::shared_ptr<TH2D> GetChannels_raw(int cobo_idx, int asad_idx); // valid range [0-1][0-3]
   
   std::shared_ptr<TH1D> get1DProjection(projection_type projType,
 					filter_type filterType,
-					scale_type scaleType);
+					scale_type scaleType) const;
 
   std::shared_ptr<TH2D> get2DProjection(projection_type projType,
 					filter_type filterType,
-					scale_type scaleType);
+					scale_type scaleType) const;
 
-  ///Methods to remove
-  void MakeOneCluster(double thr=-1, int delta_strips=5, int delta_timecells=25){} 
-  const SigClusterTPC & GetOneCluster() const {return myCluster;}
+  // Number of hits in a given direction, section, strip number
+  long GetMultiplicity(int strip_dir, int strip_section, filter_type filterType) const;
 
-  std::shared_ptr<TH1D> GetStripProjection(const SigClusterTPC&, int&) { return std::shared_ptr<TH1D>();};
-  TH1D* GetStripProjection(int&) { return 0;};//TEMP FIX
-  std::shared_ptr<TH1D> GetStripProjectionInMM(const SigClusterTPC &cluster, int strip_dir) {return std::shared_ptr<TH1D>();};
-  std::shared_ptr<TH1D> GetStripProjectionInMM(int strip_dir) {return std::shared_ptr<TH1D>();};
-  
-  TH1D *GetTimeProjection(const SigClusterTPC &cluster, int strip_dir){return 0;};
-  TH1D *GetTimeProjection(const SigClusterTPC &cluster){return 0;};                
-  TH1D *GetTimeProjection(int strip_dir){return 0;};                             
-  TH1D *GetTimeProjection(){return 0;};                                          
-
-  std::shared_ptr<TH1D> GetTimeProjectionInMM(const SigClusterTPC &cluster, int strip_dir){ return std::shared_ptr<TH1D>();}; 
-  std::shared_ptr<TH1D> GetTimeProjectionInMM(const SigClusterTPC &cluster){ return std::shared_ptr<TH1D>();};                
-  std::shared_ptr<TH1D> GetTimeProjectionInMM(int strip_dir){ return std::shared_ptr<TH1D>();};                             
-  std::shared_ptr<TH1D> GetTimeProjectionInMM(){ return std::shared_ptr<TH1D>();};
-
-  std::shared_ptr<TH2D> GetStripVsTime(const SigClusterTPC &cluster, int strip_dir){ return std::shared_ptr<TH2D>();};   
-  std::shared_ptr<TH2D> GetStripVsTime(int strip_dir) { return std::shared_ptr<TH2D>();};                               
-  std::shared_ptr<TH2D> GetStripVsTimeInMM(const SigClusterTPC &cluster, int strip_dir) { return std::shared_ptr<TH2D>();};
-  std::shared_ptr<TH2D> GetStripVsTimeInMM(int strip_dir) { return std::shared_ptr<TH2D>();};
-  /////
+  // Min time,max time, min strip, max strip in a given direction (all sections)
+  std::tuple<int,int,int,int> GetSignalRange(int aStrip_dir, filter_type filterType) const;
 
   friend std::ostream& operator<<(std::ostream& os, const EventTPC& e);
+
+  ////Legacy methods
+  SigClusterTPC myCluster;                     //! transient data member
+  void MakeOneCluster(double thr=-1, int delta_strips=5, int delta_timecells=25) {}; 
+  const SigClusterTPC & GetOneCluster() const {return myCluster;}
+  /////////////////
 };
 #endif

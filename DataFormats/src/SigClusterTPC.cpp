@@ -53,7 +53,7 @@ SigClusterTPC::SigClusterTPC(EventTPC *e)
   totalChargeMap5.clear();  // 3-key map: strip_dir, strip_sec, time_cell
   maxChargeMap.clear();     // 2-key map: strip_dir, strip_number 
   maxChargeMap2.clear();    // 3-key map: strip_dir, strip_sec, strip_number 
-  if(evt_ptr && evt_ptr->IsOK()) initOK=true;
+  if(evt_ptr) initOK=true;
   
 }
 

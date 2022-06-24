@@ -70,16 +70,19 @@ void testHits(std::shared_ptr<EventTPC> aEventPtr, filter_type filterType){
   std::cout<<"total charge DIR_U, time cell 128: "<< aEventPtr->GetTotalCharge(DIR_U, -1, -1, 128, filterType)<<std::endl;
   std::cout<<"total charge DIR_U, sec. 1, time cell 128: "<< aEventPtr->GetTotalCharge(DIR_U, 1,  -1, 128, filterType)<<std::endl;
 
-  std::cout<<"max charge: "<< aEventPtr->GetMaxCharge()<<std::endl;
-  std::cout<<"max charge DIR_U: "<< aEventPtr->GetMaxCharge(DIR_U)<<std::endl;
-  std::cout<<"max charge DIR_U, strip 1: "<< aEventPtr->GetMaxCharge(DIR_U, 1)<<std::endl;
-  std::cout<<"max charge DIR_U, sec. 1, strip 58: "<< aEventPtr->GetMaxCharge(DIR_U, 1, 58)<<std::endl;
+  std::cout<<"max charge: "<< aEventPtr->GetMaxCharge(-1,-1,-1,filterType)<<std::endl;
+  std::cout<<"max charge DIR_U: "<< aEventPtr->GetMaxCharge(DIR_U,-1,-1,filterType)<<std::endl;
+  std::cout<<"max charge DIR_U, strip 1: "<< aEventPtr->GetMaxCharge(DIR_U, -1, 1, filterType)<<std::endl;
+  std::cout<<"max charge DIR_U, sec. 1, strip 58: "<< aEventPtr->GetMaxCharge(DIR_U, 1, 58,filterType)<<std::endl;
+
+  int maxTime = 0, maxStrip = 0;
+  std::tie(maxTime, maxStrip) = aEventPtr->GetMaxChargePos(-1,filterType);
+  std::cout<<"max charge time: "<<maxTime<<std::endl;
+  std::cout<<"max charge channel: "<<0<<std::endl;
+  std::tie(maxTime, maxStrip) = aEventPtr->GetMaxChargePos(DIR_U, filterType);
+  std::cout<<"max charge time DIR_U: "<<maxTime<<std::endl;
+  std::cout<<"max charge strip DIR_U: "<<maxStrip<<std::endl;
   /*
-  std::cout<<"max charge: "<< aEventPtr->GetMaxCharge(-1, -1, -1, -1, filterType)<<std::endl;
-  std::cout<<"max charge DIR_U: "<< aEventPtr->GetMaxCharge(DIR_U, -1, -1, -1, filterType)<<std::endl;
-  std::cout<<"max charge DIR_U, strip 1: "<< aEventPtr->GetMaxCharge(DIR_U, -1, 1, -1, filterType)<<std::endl;
-  std::cout<<"max charge DIR_U, sec. 1, strip 58: "<< aEventPtr->GetMaxCharge(DIR_U, 1, 58, -1, filterType)<<std::endl;
-  */
   std::cout<<"max time: "<<std::endl;//aEventPtr->GetMaxTime(-1, -1, -1, filterType)<<std::endl;
   std::cout<<"min time: "<<std::endl;//aEventPtr->GetMinTime(filterType)<<std::endl;    
   std::cout<<"multiplicity(total): "<<aEventPtr->GetMultiplicity(-1, -1, filterType)<<std::endl;
@@ -90,7 +93,8 @@ void testHits(std::shared_ptr<EventTPC> aEventPtr, filter_type filterType){
   
   std::cout<<"multiplicity(DIR_U, 0): "<<aEventPtr->GetMultiplicity(DIR_U, 0, filterType)<<std::endl;
   std::cout<<"multiplicity(DIR_V, 0): "<<aEventPtr->GetMultiplicity(DIR_V, 0, filterType)<<std::endl;
-  std::cout<<"multiplicity(DIR_W, 0): "<<aEventPtr->GetMultiplicity(DIR_W, 0, filterType)<<std::endl;
+  std::cout<<"multiplicity(DIR_W, 0): "<<aEventPtr->GetMultiplicity(DIR_W, 0, filterType)<<std::endl; 
+  */ 
 }
 /////////////////////////////////////
 /////////////////////////////////////
@@ -105,7 +109,7 @@ int main(int argc, char *argv[]) {
   std::cout << "File with " << myEventSource->numberOfEntries() << " frames opened." << std::endl;
 
   auto myEventPtr = myEventSource->getCurrentEvent();
-  for(int i=0;i<1;++i){
+  for(int i=0;i<100;++i){
     myEventSource->loadFileEntry(i);
   
     std::cout<<myEventPtr->GetEventInfo()<<std::endl;
