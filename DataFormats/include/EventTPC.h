@@ -104,8 +104,11 @@ class EventTPC {
 					filter_type filterType,
 					scale_type scaleType) const;
 
-  // Number of hits in a given direction, section, strip number
-  long GetMultiplicity(int strip_dir, int strip_section, filter_type filterType) const;
+  // Number of hit or strips in a given direction, section, strip number.
+  // Hits arou counted if countHits==true
+  long GetMultiplicity(bool countHits,
+		       int strip_dir, int strip_section, int strip_number,
+		       filter_type filterType) const;
 
   // Min time,max time, min strip, max strip in a given direction (all sections)
   std::tuple<int,int,int,int> GetSignalRange(int aStrip_dir, filter_type filterType) const;

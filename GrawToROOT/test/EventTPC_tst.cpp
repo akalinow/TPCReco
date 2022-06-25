@@ -82,19 +82,36 @@ void testHits(std::shared_ptr<EventTPC> aEventPtr, filter_type filterType){
   std::tie(maxTime, maxStrip) = aEventPtr->GetMaxChargePos(DIR_U, filterType);
   std::cout<<"max charge time DIR_U: "<<maxTime<<std::endl;
   std::cout<<"max charge strip DIR_U: "<<maxStrip<<std::endl;
-  /*
-  std::cout<<"max time: "<<std::endl;//aEventPtr->GetMaxTime(-1, -1, -1, filterType)<<std::endl;
-  std::cout<<"min time: "<<std::endl;//aEventPtr->GetMinTime(filterType)<<std::endl;    
-  std::cout<<"multiplicity(total): "<<aEventPtr->GetMultiplicity(-1, -1, filterType)<<std::endl;
 
-  std::cout<<"multiplicity(DIR_U): "<<aEventPtr->GetMultiplicity(DIR_U, -1, filterType)<<std::endl;
-  std::cout<<"multiplicity(DIR_V): "<<aEventPtr->GetMultiplicity(DIR_V, -1, filterType)<<std::endl;
-  std::cout<<"multiplicity(DIR_W): "<<aEventPtr->GetMultiplicity(DIR_W, -1, filterType)<<std::endl;
+  int minTime=0, minStrip=0;
+  std::tie(minTime, maxTime, minStrip, maxStrip) = aEventPtr->GetSignalRange(-1, filterType);
+  std::cout<<"min time: "<<minTime<<std::endl;
+  std::cout<<"max time: "<<maxTime<<std::endl;
+  //std::cout<<"min strip: "<<minStrip<<std::endl;
+  //std::cout<<"max strip: "<<maxStrip<<std::endl;
+
+  std::tie(minTime, maxTime, minStrip, maxStrip) = aEventPtr->GetSignalRange(DIR_U, filterType);
+  std::cout<<"min time DIR_U: "<<minTime<<std::endl;
+  std::cout<<"max time DIR_U: "<<maxTime<<std::endl;
+  std::cout<<"min strip DIR_U: "<<minStrip<<std::endl;
+  std::cout<<"max strip DIR_U: "<<maxStrip<<std::endl;
   
-  std::cout<<"multiplicity(DIR_U, 0): "<<aEventPtr->GetMultiplicity(DIR_U, 0, filterType)<<std::endl;
-  std::cout<<"multiplicity(DIR_V, 0): "<<aEventPtr->GetMultiplicity(DIR_V, 0, filterType)<<std::endl;
-  std::cout<<"multiplicity(DIR_W, 0): "<<aEventPtr->GetMultiplicity(DIR_W, 0, filterType)<<std::endl; 
-  */ 
+  std::cout<<"multiplicity(total): "<<aEventPtr->GetMultiplicity(false, -1, -1, -1, filterType)<<std::endl;
+  std::cout<<"multiplicity(DIR_U): "<<aEventPtr->GetMultiplicity(false, DIR_U, -1, -1, filterType)<<std::endl;
+  std::cout<<"multiplicity(DIR_V): "<<aEventPtr->GetMultiplicity(false, DIR_V, -1, -1, filterType)<<std::endl;
+  std::cout<<"multiplicity(DIR_W): "<<aEventPtr->GetMultiplicity(false, DIR_W, -1, -1, filterType)<<std::endl;
+  
+  std::cout<<"multiplicity(DIR_U, 0): "<<aEventPtr->GetMultiplicity(false, DIR_U, 0, -1, filterType)<<std::endl;
+  std::cout<<"multiplicity(DIR_V, 0): "<<aEventPtr->GetMultiplicity(false, DIR_V, 0, -1, filterType)<<std::endl;
+  std::cout<<"multiplicity(DIR_W, 0): "<<aEventPtr->GetMultiplicity(false, DIR_W, 0, -1, filterType)<<std::endl;
+
+  std::cout<<"Nhits(total): "<<aEventPtr->GetMultiplicity(true, -1, -1, -1, filterType)<<std::endl;
+  std::cout<<"Nhits(DIR_U): "<<aEventPtr->GetMultiplicity(true, DIR_U, -1, -1, filterType)<<std::endl;
+  std::cout<<"Nhits(DIR_V): "<<aEventPtr->GetMultiplicity(true, DIR_V, -1, -1, filterType)<<std::endl;
+  std::cout<<"Nhits(DIR_W): "<<aEventPtr->GetMultiplicity(true, DIR_W, -1, -1, filterType)<<std::endl;
+  std::cout<<"Nhits(DIR_U, 0): "<<aEventPtr->GetMultiplicity(true, DIR_U, 0, -1, filterType)<<std::endl;
+  std::cout<<"Nhits(DIR_U, 0, 70): "<<aEventPtr->GetMultiplicity(true, DIR_U, 0, 70, filterType)<<std::endl;
+  std::cout<<"NhitsMerged(DIR_U, 70): "<<aEventPtr->GetMultiplicity(true, DIR_U, -1, 70, filterType)<<std::endl;
 }
 /////////////////////////////////////
 /////////////////////////////////////
@@ -109,7 +126,7 @@ int main(int argc, char *argv[]) {
   std::cout << "File with " << myEventSource->numberOfEntries() << " frames opened." << std::endl;
 
   auto myEventPtr = myEventSource->getCurrentEvent();
-  for(int i=0;i<100;++i){
+  for(int i=0;i<90;++i){
     myEventSource->loadFileEntry(i);
   
     std::cout<<myEventPtr->GetEventInfo()<<std::endl;

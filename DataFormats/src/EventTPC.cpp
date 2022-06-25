@@ -23,10 +23,10 @@ EventTPC::EventTPC(){
 ///////////////////////////////////////////////////////////////////////
 void EventTPC::Clear(){
 
-  SetGeoPtr(0);
-
   chargeMapWithSections.clear();
-  //chargeMapMergedSections.clear();
+  chargeMapMergedSections.clear();
+
+  keyLists.clear();
   asadMap.clear();
 }
 ///////////////////////////////////////////////////////////////////////
@@ -42,14 +42,20 @@ void EventTPC::SetGeoPtr(std::shared_ptr<GeometryTPC> aPtr) {
 ///////////////////////////////////////////////////////////////////////
 void EventTPC::SetChargeMap(const PEventTPC::chargeMapType & aChargeMap){
 
+  Clear();
+
   chargeMapWithSections = aChargeMap;
   //fillMergedSectionsMap();
+
 
   filterHits(filter_type::none);
   updateHistosCache(filter_type::none);
   
   filterHits(filter_type::threshold);
+  std::cout<<"Here 1"<<std::endl;
   updateHistosCache(filter_type::threshold);
+  std::cout<<"Here 2"<<std::endl;
+
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
@@ -65,6 +71,55 @@ void EventTPC::fillMergedSectionsMap(){
 
     chargeMapMergedSections[{strip_dir, strip_num, time_cell}] += value;
   }  
+}
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+void EventTPC::filterHits(filter_type filterType){
+
+  double chargeThreshold = 35.0;
+  int delta_strips = 2;
+  int delta_timecells = 5;
+
+  std::set<PEventTPC::chargeMapType::key_type> keyList;
+  
+  for(const auto & item: chargeMapWithSections){
+    auto key = item.first;
+    auto value = item.second;
+    if(value>chargeThreshold || filterType==filter_type::none){
+      keyList.insert(key);      
+      if(filterType==filter_type::threshold) addEnvelope(key, keyList, delta_timecells, delta_strips);
+    }
+  }
+ keyLists[filterType] = keyList;
+}
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+void EventTPC::addEnvelope(PEventTPC::chargeMapType::key_type key,
+			   std::set<PEventTPC::chargeMapType::key_type> & keyList,
+			   double delta_timecells,
+			   double delta_strips){
+
+  int iDir = std::get<0>(key);
+  int iSection = std::get<1>(key);
+
+  for(int iCell=std::get<3>(key)-delta_timecells;
+      iCell<=std::get<3>(key)+delta_timecells;++iCell){
+
+    if(iCell<0 || iCell>=myGeometryPtr->GetAgetNtimecells()) continue;
+    
+    for(int iStrip=std::get<2>(key)-delta_strips;
+	iStrip<=std::get<2>(key)+delta_strips;++iStrip){
+
+      if(iStrip<myGeometryPtr->GetDirMinStrip(iDir, iSection) ||
+	 iStrip>myGeometryPtr->GetDirMaxStrip(iDir, iSection)) continue;
+      auto neighbourKey = std::make_tuple(iDir, iSection, iStrip, iCell);
+      if(chargeMapWithSections.find(neighbourKey)!=chargeMapWithSections.end()){
+	  keyList.insert(neighbourKey);
+	}
+    }
+  }
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
@@ -101,6 +156,7 @@ void EventTPC::updateHistosCache(filter_type filterType){
   std::shared_ptr<TH3D> aHisto((TH3D*)a3DHistoRawPtr->Clone());
 
   double x = 0.0, y = 0.0, z = 0.0, value=0.0;
+
   for(const auto & key: keyLists.at(filterType)){
     value = chargeMapWithSections.at(key);
     x = std::get<3>(key) + 1;
@@ -221,15 +277,13 @@ double EventTPC::GetTotalCharge(int aStrip_dir, int aStrip_section,
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
-long EventTPC::GetMultiplicity(int aStrip_dir, int aStrip_section, 
+long EventTPC::GetMultiplicity(bool countHits,
+			       int aStrip_dir, int aStrip_section, int aStrip_number, 
 			       filter_type filterType) const{
 
   int counter = 0;
 
-  if(aStrip_section<0 && aStrip_dir<0){
-    counter = 999;
-   }
-  else if(aStrip_section<0){
+  if(!countHits && aStrip_dir>-1 && aStrip_section<0){
     projection_type projType =projection_type::NONE;
     if(aStrip_dir==projection_type::DIR_U) projType = projection_type::DIR_TIME_U;
     else if(aStrip_dir==projection_type::DIR_V) projType = projection_type::DIR_TIME_V;
@@ -242,13 +296,28 @@ long EventTPC::GetMultiplicity(int aStrip_dir, int aStrip_section,
     }
   }
   else{
-    int strip_dir=0, strip_section=0;
+    std::set<int> strips;
+    long int multiplexedPos = 0;
+    int strip_dir=0, strip_section=0, strip_number=0, time_cell=0; 
     for(const auto & key: keyLists.at(filterType)){
       strip_dir = std::get<0>(key);
       strip_section  = std::get<1>(key);
-      //strip_number  = std::get<2>(key);
-      if(strip_dir==aStrip_dir && strip_section==aStrip_section) ++counter;
+      strip_number  = std::get<2>(key);
+      time_cell  = std::get<3>(key);
+      if((aStrip_dir<0 || strip_dir==aStrip_dir) &&
+	 (aStrip_section<0 || strip_section==aStrip_section) &&
+	 (aStrip_number<0 || strip_number==aStrip_number)
+	 ) {
+	if(countHits) multiplexedPos =
+			1E9*strip_section*(aStrip_section>-1) +
+			1E6*strip_dir +
+			1E3*strip_number +
+			time_cell;
+	else multiplexedPos = 1E9*strip_section +  1E6*strip_dir +  1E3*strip_number;
+	strips.insert(multiplexedPos);
+      }
     }
+    counter = strips.size();
   }
   return counter;
 }
@@ -256,59 +325,36 @@ long EventTPC::GetMultiplicity(int aStrip_dir, int aStrip_section,
 ///////////////////////////////////////////////////////////////////////
 std::tuple<int,int,int,int> EventTPC::GetSignalRange(int aStrip_dir, filter_type filterType) const{
 
-  projection_type projType =projection_type::NONE;
+  projection_type projType = projection_type::NONE;
   if(aStrip_dir==projection_type::DIR_U) projType = projection_type::DIR_TIME_U;
   else if(aStrip_dir==projection_type::DIR_V) projType = projection_type::DIR_TIME_V;
   else if(aStrip_dir==projection_type::DIR_W) projType = projection_type::DIR_TIME_W;
 
-  std::shared_ptr<TH2D> histo2d = get2DProjection(projType, filterType, scale_type::raw);
-  double threshold = -1E10;
-  int minBinX = histo2d->FindFirstBinAbove(threshold, 1);
-  int minBinY = histo2d->FindFirstBinAbove(threshold, 2);
-
-  int maxBinX = histo2d->FindLastBinAbove(threshold, 1);
-  int maxBinY = histo2d->FindLastBinAbove(threshold, 2);
-
+  int minBinX = -1, minBinY = -1;
+  int maxBinX = -1, maxBinY = -1;
+  int strip_number=0, time_cell=0;
+  if(projType==projection_type::NONE){
+    for(const auto & key: keyLists.at(filterType)){
+      strip_number  = std::get<2>(key);
+      time_cell = std::get<3>(key);
+      if(minBinX==-1) minBinX = time_cell;
+      if(minBinY==-1) minBinY = strip_number;
+      minBinX = std::min(minBinX, time_cell);
+      minBinY = std::min(minBinY, strip_number);
+      maxBinX = std::max(maxBinX, time_cell);
+      maxBinY = std::max(maxBinY, strip_number);
+    }
+  }
+  else{  
+    std::shared_ptr<TH2D> histo2d = get2DProjection(projType, filterType, scale_type::raw);
+    double threshold = 0;
+    minBinX = histo2d->FindFirstBinAbove(threshold, 1);
+    minBinY = histo2d->FindFirstBinAbove(threshold, 2);
+      
+    maxBinX = histo2d->FindLastBinAbove(threshold, 1);
+    maxBinY = histo2d->FindLastBinAbove(threshold, 2);
+  }   
   return std::make_tuple(minBinX, maxBinX, minBinY, maxBinY);
-}
-///////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////
-void EventTPC::filterHits(filter_type filterType){
-
-  double chargeThreshold = 35.0;
-  int delta_strips = 2;
-  int delta_timecells = 5;
-
-  std::set<PEventTPC::chargeMapType::key_type> keyList;
-  
-  for(const auto & item: chargeMapWithSections){
-    auto key = item.first;
-    auto value = item.second;
-    if(value>chargeThreshold || filterType==filter_type::none){
-      keyList.insert(key);      
-      if(filterType==filter_type::threshold) addEnvelope(key, keyList, delta_timecells, delta_strips);
-    }
-  }
- keyLists[filterType] = keyList;
-}
-///////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////
-void EventTPC::addEnvelope(PEventTPC::chargeMapType::key_type key,
-			   std::set<PEventTPC::chargeMapType::key_type> & keyList,
-			   double delta_timecells,
-			   double delta_strips){
-
-  int iDir = std::get<0>(key);
-  int iSection = std::get<1>(key);
-
-  for(int iCell=std::get<3>(key)-delta_timecells;
-      iCell<=std::get<3>(key)+delta_timecells;++iCell){
-    for(int iStrip=std::get<2>(key)-delta_strips;
-	iStrip<=std::get<2>(key)+delta_strips;++iStrip){
-      auto neighbourKey = std::make_tuple(iDir, iSection, iStrip, iCell);
-      keyList.insert(neighbourKey);
-    }
-  }
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
