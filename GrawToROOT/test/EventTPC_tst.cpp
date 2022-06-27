@@ -61,7 +61,7 @@ void testHits(std::shared_ptr<EventTPC> aEventPtr, filter_type filterType){
     aEventPtr->GetChannels(0,0)->Print();
     aEventPtr->GetChannels_raw(0,0)->Print();
   }
-
+  
   std::cout<<"total charge: "<< aEventPtr->GetTotalCharge(-1, -1, -1, -1, filterType)<<std::endl;
   std::cout<<"total charge DIR_U: "<< aEventPtr->GetTotalCharge(DIR_U, -1, -1, -1, filterType)<<std::endl;  
   std::cout<<"total charge DIR_U, strip 1: "<< aEventPtr->GetTotalCharge(DIR_U, -1, 1, -1, filterType)<<std::endl;
@@ -87,8 +87,6 @@ void testHits(std::shared_ptr<EventTPC> aEventPtr, filter_type filterType){
   std::tie(minTime, maxTime, minStrip, maxStrip) = aEventPtr->GetSignalRange(-1, filterType);
   std::cout<<"min time: "<<minTime<<std::endl;
   std::cout<<"max time: "<<maxTime<<std::endl;
-  //std::cout<<"min strip: "<<minStrip<<std::endl;
-  //std::cout<<"max strip: "<<maxStrip<<std::endl;
 
   std::tie(minTime, maxTime, minStrip, maxStrip) = aEventPtr->GetSignalRange(DIR_U, filterType);
   std::cout<<"min time DIR_U: "<<minTime<<std::endl;
@@ -126,7 +124,7 @@ int main(int argc, char *argv[]) {
   std::cout << "File with " << myEventSource->numberOfEntries() << " frames opened." << std::endl;
 
   auto myEventPtr = myEventSource->getCurrentEvent();
-  for(int i=0;i<90;++i){
+  for(int i=89;i<90;++i){
     myEventSource->loadFileEntry(i);
   
     std::cout<<myEventPtr->GetEventInfo()<<std::endl;

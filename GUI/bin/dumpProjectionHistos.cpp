@@ -46,8 +46,9 @@ int main(int argc, char *argv[]) {
       myEventSource->loadFileEntry(iEntry);
       std::cout<<"EventID: "<<myEventSource->currentEventNumber()<<std::endl;
       myHistoManager.setEvent(myEventSource->getCurrentEvent());
-      for(int strip_dir=0;strip_dir<3;++strip_dir){
-	myHistoManager.getRawStripVsTime(strip_dir)->Write();
+      for(int strip_dir=projection_type::DIR_U;strip_dir<=projection_type::DIR_W;++strip_dir){
+	auto projType = get2DProjectionType(strip_dir);
+	myHistoManager.get1DProjection(projType, filter_type::none, scale_type::raw)->Write();
       }
     }
     aFile.Close();

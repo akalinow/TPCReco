@@ -12,15 +12,12 @@
 #include "Math/Functor.h"
 
 #include "GeometryTPC.h"
-#include "SigClusterTPC.h"
 
 #include "TrackBuilder.h"
 #include "colorText.h"
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 TrackBuilder::TrackBuilder() {
-
-  myEvent = 0;
 
   nAccumulatorRhoBins = 50;//FIX ME move to configuarable
   nAccumulatorPhiBins = 2.0*M_PI/0.025;//FIX ME move to configuarable
@@ -57,9 +54,9 @@ void TrackBuilder::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
   myRecHitBuilder.setGeometry(aGeometryPtr);
   
   phiPitchDirection.resize(3);
-  phiPitchDirection[DIR_U] = myGeometryPtr->GetStripPitchVector(DIR_U).Phi();
-  phiPitchDirection[DIR_V] = myGeometryPtr->GetStripPitchVector(DIR_V).Phi();
-  phiPitchDirection[DIR_W] = myGeometryPtr->GetStripPitchVector(DIR_W).Phi();
+  phiPitchDirection[projection_type::DIR_U] = myGeometryPtr->GetStripPitchVector(projection_type::DIR_U).Phi();
+  phiPitchDirection[projection_type::DIR_V] = myGeometryPtr->GetStripPitchVector(projection_type::DIR_V).Phi();
+  phiPitchDirection[projection_type::DIR_W] = myGeometryPtr->GetStripPitchVector(projection_type::DIR_W).Phi();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -70,25 +67,23 @@ void TrackBuilder::setPressure(double aPressure) {
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void TrackBuilder::setEvent(std::shared_ptr<EventTPC> aEvent, const double chargeThreshold, const int delta_timecells, const int delta_strips){
-  setEvent(aEvent.get(), chargeThreshold, delta_timecells, delta_strips);
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void TrackBuilder::setEvent(EventTPC* aEvent, const double chargeThreshold, const int delta_timecells, const int delta_strips){
+void TrackBuilder::setEvent(std::shared_ptr<EventTPC> aEvent,
+			    const double chargeThreshold,
+			    const int delta_timecells,
+			    const int delta_strips){
 
-  std::cout<<aEvent->GetEventInfo()<<std::endl;
   if(!aEvent->GetEventInfo().GetPedestalSubtracted()){
     throw std::logic_error("Pedestals not removed. Working without removed pedestals not implemented yet.");
   }
-  myEvent = aEvent;
- 
-  myEvent->MakeOneCluster(chargeThreshold, delta_strips, delta_timecells);
-  
+  myEventPtr = aEvent;
+   
   std::string hName, hTitle;
-  if(!myHistoInitialized){     
-    for(int iDir=DIR_U;iDir<=DIR_W;++iDir){
-      std::shared_ptr<TH2D> hRawHits = myEvent->GetStripVsTimeInMM(getCluster(), iDir);     
+  if(!myHistoInitialized){
+    for(int iDir=projection_type::DIR_U;iDir<=projection_type::DIR_W;++iDir){
+      get2DProjectionType(iDir);
+      std::shared_ptr<TH2D> hRawHits = myEventPtr->get2DProjection(get2DProjectionType(iDir),
+								   filter_type::none,
+								   scale_type::mm);
       double minX = hRawHits->GetXaxis()->GetXmin();
       double minY = hRawHits->GetYaxis()->GetXmin();
       double maxX = hRawHits->GetXaxis()->GetXmax();
@@ -130,7 +125,7 @@ void TrackBuilder::setEvent(EventTPC* aEvent, const double chargeThreshold, cons
 			-M_PI, M_PI, nAccumulatorRhoBins, rhoMIN, rhoMAX);
       myAccumulators[iDir] = hAccumulator;
       myRawHits[iDir] = *hRawHits;
-      if(iDir==DIR_U) hTimeProjection = *hRawHits->ProjectionX();
+      if(iDir==projection_type::DIR_U) hTimeProjection = *hRawHits->ProjectionX();
     }
     myHistoInitialized = true;
   } 
@@ -140,7 +135,7 @@ void TrackBuilder::setEvent(EventTPC* aEvent, const double chargeThreshold, cons
 void TrackBuilder::reconstruct(){
 
   hTimeProjection.Reset();  
-  for(int iDir=DIR_U;iDir<=DIR_W;++iDir){
+  for(int iDir=projection_type::DIR_U;iDir<=projection_type::DIR_W;++iDir){
     makeRecHits(iDir);
     fillHoughAccumulator(iDir);
     my2DSeeds[iDir] = findSegment2DCollection(iDir);    
@@ -163,8 +158,9 @@ void TrackBuilder::reconstruct(){
 /////////////////////////////////////////////////////////
 void TrackBuilder::makeRecHits(int iDir){
 
-  myEvent->GetStripVsTimeInMM(getCluster(), iDir);
-  std::shared_ptr<TH2D> hProj = myEvent->GetStripVsTimeInMM(getCluster(), iDir);
+  std::shared_ptr<TH2D> hProj = myEventPtr->get2DProjection(get2DProjectionType(iDir),
+							 filter_type::threshold,
+							 scale_type::mm);
   myRecHits[iDir] = myRecHitBuilder.makeRecHits(*hProj);
   myRawHits[iDir] = myRecHitBuilder.makeCleanCluster(*hProj);
   hTimeProjection.Add(myRecHits[iDir].ProjectionX("hTimeProjection"));
@@ -326,7 +322,7 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
   double x=0.0, y=0.0;
   int nSegments = segmentsXY.size()/3/4;
   for(int iSegment=0;iSegment<nSegments;++iSegment){
-    for(int iDir = DIR_U; iDir<=DIR_W;++iDir){
+    for(int iDir = projection_type::DIR_U; iDir<=projection_type::DIR_W;++iDir){
       TrackSegment2D aSegment2D(iDir, myGeometryPtr);
       x = segmentsXY.at(iDir*4 + iSegment*12);
       y = segmentsXY.at(iDir*4 + iSegment*12 + 1);
@@ -339,8 +335,8 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
       my2DSeeds[iDir].push_back(aSegment2D);
     }
     TrackSegment3D a3DSeed = buildSegment3D(iSegment);
-    double startTime = my2DSeeds.at(DIR_U).at(iSegment).getStart().X();    
-    double endTime = my2DSeeds.at(DIR_U).at(iSegment).getEnd().X();
+    double startTime = my2DSeeds.at(projection_type::DIR_U).at(iSegment).getStart().X();    
+    double endTime = my2DSeeds.at(projection_type::DIR_U).at(iSegment).getEnd().X();
     double lambdaStartTime = a3DSeed.getLambdaAtZ(startTime);
     double lambdaEndTime = a3DSeed.getLambdaAtZ(endTime);
     TVector3 start =  a3DSeed.getStart() + lambdaStartTime*a3DSeed.getTangent();
@@ -363,9 +359,9 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   TrackSegment3D a3DSeed;
   a3DSeed.setGeometry(myGeometryPtr);  
 	     
-  const TrackSegment2D & segmentU = my2DSeeds[DIR_U][iTrack2DSeed];
-  const TrackSegment2D & segmentV = my2DSeeds[DIR_V][iTrack2DSeed];
-  const TrackSegment2D & segmentW = my2DSeeds[DIR_W][iTrack2DSeed];
+  const TrackSegment2D & segmentU = my2DSeeds[projection_type::DIR_U][iTrack2DSeed];
+  const TrackSegment2D & segmentV = my2DSeeds[projection_type::DIR_V][iTrack2DSeed];
+  const TrackSegment2D & segmentW = my2DSeeds[projection_type::DIR_W][iTrack2DSeed];
 
   int nHits_U = segmentU.getNAccumulatorHits();
   int nHits_V = segmentV.getNAccumulatorHits();
@@ -486,13 +482,13 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   a3DSeed.getTangent().Print();
   
   std::cout<<KRED<<"tagent from track, U proj.: "<<RST;
-  a3DSeed.get2DProjection(DIR_U, 0, 1).getTangent().Print();
+  a3DSeed.get2DProjection(projection_type::DIR_U, 0, 1).getTangent().Print();
 
   std::cout<<KRED<<"tagent from track, V proj.: "<<RST;
-  a3DSeed.get2DProjection(DIR_V, 0, 1).getTangent().Print();
+  a3DSeed.get2DProjection(projection_type::DIR_V, 0, 1).getTangent().Print();
 
   std::cout<<KRED<<"tagent from track, W proj.: "<<RST;
-  a3DSeed.get2DProjection(DIR_W, 0, 1).getTangent().Print();
+  a3DSeed.get2DProjection(projection_type::DIR_W, 0, 1).getTangent().Print();
 
   std::cout<<KRED<<"bias from track: "<<RST;
   a3DSeed.getBias().Print();

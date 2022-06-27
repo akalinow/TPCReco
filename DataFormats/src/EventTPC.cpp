@@ -47,15 +47,11 @@ void EventTPC::SetChargeMap(const PEventTPC::chargeMapType & aChargeMap){
   chargeMapWithSections = aChargeMap;
   //fillMergedSectionsMap();
 
-
   filterHits(filter_type::none);
   updateHistosCache(filter_type::none);
   
   filterHits(filter_type::threshold);
-  std::cout<<"Here 1"<<std::endl;
   updateHistosCache(filter_type::threshold);
-  std::cout<<"Here 2"<<std::endl;
-
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
@@ -72,8 +68,6 @@ void EventTPC::fillMergedSectionsMap(){
     chargeMapMergedSections[{strip_dir, strip_num, time_cell}] += value;
   }  
 }
-///////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 void EventTPC::filterHits(filter_type filterType){
@@ -201,11 +195,7 @@ double EventTPC::GetMaxCharge(int aStrip_dir, int aStrip_section, int aStrip_num
 			      filter_type filterType) const {
 
   double result = 0.0;
-  
-  projection_type projType =projection_type::NONE;
-  if(aStrip_dir==projection_type::DIR_U) projType = projection_type::DIR_TIME_U;
-  else if(aStrip_dir==projection_type::DIR_V) projType = projection_type::DIR_TIME_V;
-  else if(aStrip_dir==projection_type::DIR_W) projType = projection_type::DIR_TIME_W;
+  auto projType = get2DProjectionType(aStrip_dir);
 
   if(aStrip_dir<0){
     result = a3DHistoRawMap.at(filterType)->GetMaximum();
@@ -284,11 +274,8 @@ long EventTPC::GetMultiplicity(bool countHits,
   int counter = 0;
 
   if(!countHits && aStrip_dir>-1 && aStrip_section<0){
-    projection_type projType =projection_type::NONE;
-    if(aStrip_dir==projection_type::DIR_U) projType = projection_type::DIR_TIME_U;
-    else if(aStrip_dir==projection_type::DIR_V) projType = projection_type::DIR_TIME_V;
-    else if(aStrip_dir==projection_type::DIR_W) projType = projection_type::DIR_TIME_W;
     
+    auto projType = get2DProjectionType(aStrip_dir);
     std::shared_ptr<TH2D> histo2d = get2DProjection(projType, filterType, scale_type::raw);
     std::shared_ptr<TH1D> histo1d(histo2d->ProjectionY("_py"));
     for(auto binX=1;binX<histo1d->GetNbinsX();++binX){
@@ -325,11 +312,8 @@ long EventTPC::GetMultiplicity(bool countHits,
 ///////////////////////////////////////////////////////////////////////
 std::tuple<int,int,int,int> EventTPC::GetSignalRange(int aStrip_dir, filter_type filterType) const{
 
-  projection_type projType = projection_type::NONE;
-  if(aStrip_dir==projection_type::DIR_U) projType = projection_type::DIR_TIME_U;
-  else if(aStrip_dir==projection_type::DIR_V) projType = projection_type::DIR_TIME_V;
-  else if(aStrip_dir==projection_type::DIR_W) projType = projection_type::DIR_TIME_W;
-
+  auto projType = get2DProjectionType(aStrip_dir);
+  
   int minBinX = -1, minBinY = -1;
   int maxBinX = -1, maxBinY = -1;
   int strip_number=0, time_cell=0;
@@ -406,37 +390,32 @@ std::shared_ptr<TH1D> EventTPC::get1DProjection(projection_type projType,
 std::shared_ptr<TH2D> EventTPC::get2DProjection(projection_type projType,
 						filter_type filterType,
 						scale_type scaleType) const{
-  TH2D *h2D = 0;
+
   std::shared_ptr<TH3D> a3DHistoRawPtr = a3DHistoRawMap.at(filterType);
+
+  auto projType1D = get1DProjectionType(projType);
+  a3DHistoRawPtr->GetZaxis()->SetRange(static_cast<int>(projType1D)+1,
+				       static_cast<int>(projType1D)+1);
+  int minY = 0.5;
+  int maxY = myGeometryPtr->GetDirNstrips(projType1D)+minY;
+  a3DHistoRawPtr->GetYaxis()->SetRangeUser(minY, maxY);    
   
-  if(projType==projection_type::DIR_TIME_U){
-    a3DHistoRawPtr->GetZaxis()->SetRange(static_cast<int>(projection_type::DIR_U)+1,
-					 static_cast<int>(projection_type::DIR_U)+1);
-  }
-  else if(projType==projection_type::DIR_TIME_V){
-    a3DHistoRawPtr->GetZaxis()->SetRange(static_cast<int>(projection_type::DIR_V)+1,
-					 static_cast<int>(projection_type::DIR_V)+1);
-  }
-  else if(projType==projection_type::DIR_TIME_W){
-    a3DHistoRawPtr->GetZaxis()->SetRange(static_cast<int>(projection_type::DIR_W)+1,
-					 static_cast<int>(projection_type::DIR_W)+1);
-  }
-  h2D = (TH2D*)a3DHistoRawPtr->Project3D("yx");
-  
+  TH2D *h2D = (TH2D*)a3DHistoRawPtr->Project3D("yx");
   if(scaleType==scale_type::mm) scale2DHistoToMM(h2D, projType);
   setHistoLabels(h2D, projType, filterType, scaleType);
-  
   return std::shared_ptr<TH2D>(h2D);    
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 void EventTPC::scale1DHistoToMM(TH1D *h1D, projection_type projType) const{
 
+  int nBinsX=1;
   double minX = 0.0, maxX=0.0;
   if(projType==projection_type::DIR_U ||
      projType==projection_type::DIR_V ||
      projType==projection_type::DIR_W){
-      
+
+    nBinsX =  myGeometryPtr->GetDirNstrips(projType);
     std::tie(minX, maxX) = myGeometryPtr->rangeStripDirInMM(projType);
     minX-=myGeometryPtr->GetStripPitch()/2.0;
     maxX+=myGeometryPtr->GetStripPitch()/2.0;
@@ -446,14 +425,14 @@ void EventTPC::scale1DHistoToMM(TH1D *h1D, projection_type projType) const{
 	  projType==projection_type::DIR_TIME_W ||
 	  projType==projection_type::DIR_TIME){
     bool err_flag;
-    int nBinsX = myGeometryPtr->GetAgetNtimecells();
+    nBinsX = myGeometryPtr->GetAgetNtimecells();
     minX = -0.5;
     maxX = nBinsX + minX;// ends at 511.5 (cells numbered from 0 to 511)
     
     minX = myGeometryPtr->Timecell2pos(minX, err_flag); 
     maxX = myGeometryPtr->Timecell2pos(maxX, err_flag);
   }
-  h1D->GetXaxis()->SetRange(minX, maxX);  
+  h1D->GetXaxis()->Set(nBinsX, minX, maxX);
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
@@ -466,14 +445,27 @@ void EventTPC::scale2DHistoToMM(TH2D *h2D, projection_type projType) const{
   
   minX = myGeometryPtr->Timecell2pos(minX, err_flag); 
   maxX = myGeometryPtr->Timecell2pos(maxX, err_flag);
-  
+
+  auto projType1D = get1DProjectionType(projType);
+  int nBinsY =  myGeometryPtr->GetDirNstrips(projType1D);
   double minY = 0.0, maxY=0.0;
-  std::tie(minY, maxY) = myGeometryPtr->rangeStripDirInMM(projection_type::DIR_V);//FIXME
+  std::tie(minY, maxY) = myGeometryPtr->rangeStripDirInMM(projType1D);
   minY-=myGeometryPtr->GetStripPitch()/2.0;
   maxY+=myGeometryPtr->GetStripPitch()/2.0;
+
+  if(projType1D!=projection_type::DIR_V){
+    for(int iBinY=0;iBinY<nBinsY/2;++iBinY){
+          for(int iBinX=0;iBinX<nBinsX;++iBinX){
+	    double value1 = h2D->GetBinContent(iBinX, iBinY);
+	    double value2 = h2D->GetBinContent(iBinX, nBinsY-iBinY);
+	    h2D->SetBinContent(iBinX, iBinY, value2);
+	    h2D->SetBinContent(iBinX, nBinsY-iBinY, value1);
+	  }
+    }
+  }
   
-  h2D->GetXaxis()->SetRange(minX, maxX);
-  h2D->GetYaxis()->SetRange(minY, maxY);
+  h2D->GetXaxis()->Set(nBinsX, minX, maxX);
+  h2D->GetYaxis()->Set(nBinsY, minY, maxY);
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
@@ -627,5 +619,8 @@ std::ostream& operator<<(std::ostream& os, const EventTPC& e) {
   os << "EventTPC: " << e.GetEventInfo();
   return os;
 }
+/////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////
+
 /////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////

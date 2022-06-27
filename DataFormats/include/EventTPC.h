@@ -14,13 +14,7 @@
 
 #include "EventInfo.h"
 #include "GeometryTPC.h"
-#include "SigClusterTPC.h"
 #include "PEventTPC.h"
-
-#define EVENTTPC_DEFAULT_RECO_METHOD 1  // 0 = equal charge division along the strip
-                                        // 1 = weighted charge division from complementary strip directions
-#define EVENTTPC_DEFAULT_STRIP_REBIN 2  // number of strips to rebin [1-1024] 
-#define EVENTTPC_DEFAULT_TIME_REBIN  5  // number of time cells to rebin [1-512]
 
 class EventTPC {
 
@@ -114,11 +108,6 @@ class EventTPC {
   std::tuple<int,int,int,int> GetSignalRange(int aStrip_dir, filter_type filterType) const;
 
   friend std::ostream& operator<<(std::ostream& os, const EventTPC& e);
-
-  ////Legacy methods
-  SigClusterTPC myCluster;                     //! transient data member
-  void MakeOneCluster(double thr=-1, int delta_strips=5, int delta_timecells=25) {}; 
-  const SigClusterTPC & GetOneCluster() const {return myCluster;}
-  /////////////////
+ 
 };
 #endif

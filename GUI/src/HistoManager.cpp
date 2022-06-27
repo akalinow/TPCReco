@@ -48,7 +48,8 @@ void HistoManager::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void HistoManager::setRecoClusterParameters(bool recoClusterEnable, double recoClusterThreshold, int recoClusterDeltaStrips, int recoClusterDeltaTimeCells) {
+void HistoManager::setRecoClusterParameters(bool recoClusterEnable, double recoClusterThreshold,
+					    int recoClusterDeltaStrips, int recoClusterDeltaTimeCells) {
 
   recoClusterEnable = recoClusterEnable;
   recoClusterThreshold = recoClusterThreshold;
@@ -67,12 +68,10 @@ void HistoManager::setEvent(EventTPC* aEvent){
 void HistoManager::setEvent(std::shared_ptr<EventTPC> aEvent){
   if(!aEvent) return;
   myEventPtr = aEvent;
-  /* TEST
   myTkBuilder.setEvent(myEventPtr,
 		       getRecoClusterThreshold(),
 		       getRecoClusterDeltaStrips(),
 		       getRecoClusterDeltaTimeCells());
-  */
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -93,13 +92,14 @@ void HistoManager::drawRawHistos(TCanvas *aCanvas, bool isRateDisplayOn){
   int padNumberOffset = 0;
   if(std::string(aCanvas->GetName())=="fRawHistosCanvas") padNumberOffset = 100;
   
-  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+  for(int strip_dir=projection_type::DIR_U;strip_dir<=projection_type::DIR_W;++strip_dir){
     TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
     if(!aPad) return;
     aPad->cd();
     aCanvas->Modified();
     aCanvas->Update();
-    getRawStripVsTime(strip_dir)->DrawCopy("colz");
+    auto projType = get2DProjectionType(strip_dir);
+    get2DProjection(projType, filter_type::none, scale_type::raw)->DrawCopy("colz");
     aPad->RedrawAxis();
   }
 
@@ -112,7 +112,7 @@ void HistoManager::drawRawHistos(TCanvas *aCanvas, bool isRateDisplayOn){
   if(isRateDisplayOn){
     fObjClones.push_back(getEventRateGraph()->DrawClone("AP"));
   } else{
-    getRawTimeProjection()->DrawCopy("hist");
+    get1DProjection(projection_type::DIR_TIME, filter_type::none, scale_type::raw)->DrawCopy("hist");
   }
   aCanvas->Modified();
   aCanvas->Update();
@@ -146,23 +146,28 @@ void HistoManager::drawRecoHistos(TCanvas *aCanvas){
   if(std::string(aCanvas->GetName())=="Histograms") padNumberOffset = 0;
   
   reconstruct();
+  filter_type filterType = filter_type::none;
 
-   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+   for(int strip_dir=projection_type::DIR_U;strip_dir<=projection_type::DIR_W;++strip_dir){
      TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
      if(!aPad) return;
      aPad->cd();
      aCanvas->Modified();
      aCanvas->Update();
 
+     auto projType = get2DProjectionType(strip_dir);
+     
      if(getRecoClusterEnable()) {
-       auto h1 = getClusterStripVsTimeInMM(strip_dir)->DrawCopy("colz");
-       if(aPad->GetLogz()) h1->SetMinimum(1.0);
+       auto histo2D = get2DProjection(projType, filterType, scale_type::mm);
+       if(aPad->GetLogz()) histo2D->SetMinimum(1.0);
+       histo2D->DrawCopy("colz");
        hPlotBackground->Draw("col same");
        aPad->RedrawAxis();  
-       h1->Draw("same colz");
+       histo2D->Draw("same colz");
        drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
-     } else {
-       getRawStripVsTimeInMM(strip_dir)->DrawCopy("colz");
+     }
+     else {
+       get2DProjection(projType, filterType, scale_type::mm)->DrawCopy("colz");;
      }
    }
    int strip_dir=3;
@@ -171,12 +176,9 @@ void HistoManager::drawRecoHistos(TCanvas *aCanvas){
    aPad->cd();
    aCanvas->Modified();
    aCanvas->Update();
-   if(getRecoClusterEnable()) {
-     drawChargeAlongTrack3D(aPad);
-     //getClusterTimeProjectionInMM()->DrawCopy("hist");
-   } else {
-     getRawTimeProjectionInMM()->DrawCopy("hist");
-   }
+   if(getRecoClusterEnable()) drawChargeAlongTrack3D(aPad);
+   else  get1DProjection(projection_type::DIR_TIME, filterType, scale_type::mm)->DrawCopy("hist");
+
    aCanvas->Modified();
    aCanvas->Update();
 }
@@ -185,7 +187,7 @@ void HistoManager::drawRecoHistos(TCanvas *aCanvas){
 void HistoManager::drawRecoFromMarkers(TCanvas *aCanvas, std::vector<double> * segmentsXY){
 
   reconstructSegmentsFromMarkers(segmentsXY);
-  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+  for(int strip_dir=projection_type::DIR_U;strip_dir<=projection_type::DIR_W;++strip_dir){
     TVirtualPad *aPad = aCanvas->cd(strip_dir+1);
     aCanvas->Modified();
     aCanvas->Update();
@@ -208,37 +210,39 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
   if(!aCanvas) return;
   int padNumberOffset = 0;
   if(std::string(aCanvas->GetName())=="Histograms") padNumberOffset = 0;
-  //reconstruct();
+  reconstruct();
+  filter_type filterType = filter_type::threshold;
 
-   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+   for(int strip_dir=projection_type::DIR_U;strip_dir<=projection_type::DIR_W;++strip_dir){
      TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
      if(!aPad) return;
      aPad->cd();
      aCanvas->Modified();
      aCanvas->Update();
 
-     ////TEST
-     //myEventPtr->get1DProjection(static_cast<projection_type>(strip_dir), filter_type::none, scale_type::raw)->DrawCopy("colz");
-     myEventPtr->get1DProjection(static_cast<projection_type>(strip_dir), filter_type::none, scale_type::mm)->DrawCopy("colz");
-     continue;
-     //////
+     auto projType = get2DProjectionType(strip_dir);
      
-     auto h1 = getClusterStripVsTimeInMM(strip_dir)->DrawCopy("colz");
-     if(aPad->GetLogz()) h1->SetMinimum(1.0);
-     hPlotBackground->Draw("col same");
-     aPad->RedrawAxis();  
-     h1->Draw("same colz");
-     drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
-  }
-   /*
+     if(getRecoClusterEnable()) {
+       auto histo2D = get2DProjection(projType, filterType, scale_type::mm);
+       if(aPad->GetLogz()) histo2D->SetMinimum(1.0);
+       histo2D->DrawCopy("colz");
+       hPlotBackground->Draw("col same");
+       aPad->RedrawAxis();  
+       histo2D->DrawCopy("same colz");
+       drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
+     }
+     else {
+       get2DProjection(projType, filterType, scale_type::mm)->DrawCopy("colz");;
+     }
+   }
    int strip_dir=3;
    TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
    if(!aPad) return;
    aPad->cd();
    aCanvas->Modified();
    aCanvas->Update();
-   drawChargeAlongTrack3D(aPad);
-   */
+   if(getRecoClusterEnable()) drawChargeAlongTrack3D(aPad);
+   else get1DProjection(projection_type::DIR_TIME, filterType, scale_type::mm)->DrawCopy("hist");
    aCanvas->Modified();
    aCanvas->Update();
 }
@@ -275,8 +279,8 @@ void HistoManager::setDetLayout(){
   if(!myGeometryPtr) {
     return;
   }
-  if(grDetLayoutAll) { delete grDetLayoutAll; grDetLayoutAll=0; } // reset TGraph
-  if(grDetLayoutVeto) { delete grDetLayoutVeto; grDetLayoutVeto=0; } // reset TGraph
+  if(grDetLayoutAll) { delete grDetLayoutAll;} 
+  if(grDetLayoutVeto) { delete grDetLayoutVeto; }
   grDetLayoutAll = new TGraph(myGeometryPtr->GetActiveAreaConvexHull());
   grDetLayoutVeto = new TGraph(myGeometryPtr->GetActiveAreaConvexHull(grVetoBand));
 
@@ -296,8 +300,8 @@ void HistoManager::setDetLayout(){
   // - UVW STRIP projection range from all directions
   // - DRIFT projection range
   float strip_min, strip_max;
-  std::tie(strip_min, strip_max)=myGeometryPtr->rangeStripDirInMM(DIR_U);
-  for(int idir=DIR_V; idir<=DIR_W; ++idir) {
+  std::tie(strip_min, strip_max)=myGeometryPtr->rangeStripDirInMM(projection_type::DIR_U);
+  for(int idir=projection_type::DIR_V; idir<=projection_type::DIR_W; ++idir) {
     float a, b;
     std::tie(a, b)=myGeometryPtr->rangeStripDirInMM(idir);
     if(a<strip_min) strip_min=a;
@@ -349,139 +353,11 @@ void HistoManager::setDetLayoutVetoBand(double distance){ // [mm]
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<TH1D> HistoManager::getRawTimeProjection(){
-  auto aHisto=std::shared_ptr<TH1D>(myEventPtr->GetTimeProjection());
-  if(aHisto) {
-    if(doAutozoom) makeAutozoom(aHisto.get());
-    aHisto->GetXaxis()->SetTitleOffset(1.5);
-    aHisto->GetYaxis()->SetTitleOffset(1.6);
-    aHisto->SetDrawOption("HIST0");
-  }
-  return aHisto;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-std::shared_ptr<TH1D> HistoManager::getRawTimeProjectionInMM(){
-  auto aHisto=std::shared_ptr<TH1D>(myEventPtr->GetTimeProjectionInMM());
-  if(aHisto) {
-    if(doAutozoom) makeAutozoom(aHisto.get());
-    aHisto->GetXaxis()->SetTitleOffset(1.5);
-    aHisto->GetYaxis()->SetTitleOffset(1.6);
-    aHisto->SetDrawOption("HIST0");
-  }
-  return aHisto;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-std::shared_ptr<TH1D> HistoManager::getRawTimeProjectionInMM(int strip_dir){
-  auto aHisto=std::shared_ptr<TH1D>(myEventPtr->GetTimeProjectionInMM(strip_dir));
-  if(aHisto) {
-    if(doAutozoom) makeAutozoom(aHisto.get());
-    aHisto->GetXaxis()->SetTitleOffset(1.5);
-    aHisto->GetYaxis()->SetTitleOffset(1.6);
-    aHisto->SetDrawOption("HIST0");
-  }
-  return aHisto;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-std::shared_ptr<TH1D> HistoManager::getRawStripProjection(int strip_dir){
-  auto aHisto=std::shared_ptr<TH1D>(myEventPtr->GetStripProjection(strip_dir));
-  if(aHisto) {
-    if(doAutozoom) makeAutozoom(aHisto.get());
-    aHisto->GetXaxis()->SetTitleOffset(1.5);
-    aHisto->GetYaxis()->SetTitleOffset(1.6);
-    aHisto->SetDrawOption("HIST0");
-  }
-  return aHisto;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-std::shared_ptr<TH1D> HistoManager::getRawStripProjectionInMM(int strip_dir){
-  auto aHisto=std::shared_ptr<TH1D>(myEventPtr->GetStripProjectionInMM(strip_dir));
-  if(aHisto) {
-    if(doAutozoom) makeAutozoom(aHisto.get());
-    aHisto->GetXaxis()->SetTitleOffset(1.5);
-    aHisto->GetYaxis()->SetTitleOffset(1.6); 
-    aHisto->SetDrawOption("HIST0");
-  }
-  return aHisto;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-std::shared_ptr<TH2D> HistoManager::getRawStripVsTime(int strip_dir){
-  auto aHisto=std::shared_ptr<TH2D>(myEventPtr->GetStripVsTime(strip_dir));
-  if(aHisto) {
-    if(doAutozoom) makeAutozoom(aHisto.get());
-    aHisto->GetXaxis()->SetTitleOffset(1.5);
-    aHisto->GetYaxis()->SetTitleOffset(1.5);
-    aHisto->GetZaxis()->SetTitleOffset(1.5);
-    aHisto->SetDrawOption("COLZ");
-  }
-  return aHisto;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-std::shared_ptr<TH2D> HistoManager::getRawStripVsTimeInMM(int strip_dir){
-  auto aHisto=std::shared_ptr<TH2D>(myEventPtr->GetStripVsTimeInMM(strip_dir)); 
-  if(aHisto) {
-    if(doAutozoom) makeAutozoom(aHisto.get());
-    aHisto->GetXaxis()->SetTitleOffset(1.5);
-    aHisto->GetYaxis()->SetTitleOffset(1.5);
-    aHisto->GetZaxis()->SetTitleOffset(1.5);
-    aHisto->SetDrawOption("COLZ");
-  }
-  return aHisto;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-std::shared_ptr<TH1D> HistoManager::getClusterTimeProjection(){
-  auto aHisto=std::shared_ptr<TH1D>(myEventPtr->GetTimeProjection(myTkBuilder.getCluster()));
-  if(aHisto) {
-    if(doAutozoom) makeAutozoom(aHisto.get());
-    aHisto->GetXaxis()->SetTitleOffset(1.5);
-    aHisto->GetYaxis()->SetTitleOffset(1.6);
-    aHisto->SetDrawOption("HIST0");
-  }
-  return aHisto;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-std::shared_ptr<TH1D> HistoManager::getClusterTimeProjectionInMM(){
-  //auto aHisto=std::shared_ptr<TH1D>(myEventPtr->GetTimeProjectionInMM(myTkBuilder.getCluster()));
-  auto aHisto=std::shared_ptr<TH1D>((TH1D*)myTkBuilder.getCluster2D(DIR_U).ProjectionX()->Clone("hClusterTimeProjectionInMM"));
-  aHisto->SetTitle("Clustered hits time projection. All directions.");
-  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
-    TH1D *hTimeProj = myTkBuilder.getCluster2D(strip_dir).ProjectionX();
-    aHisto->Add(hTimeProj);
-  }
-
-  if(aHisto) {
-    if(doAutozoom) makeAutozoom(aHisto.get());
-    aHisto->GetXaxis()->SetTitleOffset(1.5);
-    aHisto->GetYaxis()->SetTitleOffset(1.6);
-    aHisto->SetDrawOption("HIST0");
-  }
-  return aHisto;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-std::shared_ptr<TH1D> HistoManager::getClusterTimeProjection(int strip_dir){
-  auto aHisto=std::shared_ptr<TH1D>(myEventPtr->GetTimeProjection(myTkBuilder.getCluster(), strip_dir));
-  if(aHisto) {
-    if(doAutozoom) makeAutozoom(aHisto.get());
-    aHisto->GetXaxis()->SetTitleOffset(1.5);
-    aHisto->GetYaxis()->SetTitleOffset(1.6);
-    aHisto->SetDrawOption("HIST0");
-  }
-  return aHisto;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-std::shared_ptr<TH1D> HistoManager::getClusterTimeProjectionInMM(int strip_dir){
-  //auto aHisto=std::shared_ptr<TH1D>(myEventPtr->GetTimeProjectionInMM(myTkBuilder.getCluster(), strip_dir));
-  auto aHisto=std::shared_ptr<TH1D>((TH1D*)myTkBuilder.getCluster2D(strip_dir).ProjectionX()->Clone("hClusterTimeProjectionInMM"));
+std::shared_ptr<TH1D> HistoManager::get1DProjection(projection_type projType,
+						    filter_type filterType,
+						    scale_type scaleType){
   
+  auto aHisto = myEventPtr->get1DProjection(projType, filterType, scaleType);
   if(aHisto) {
     if(doAutozoom) makeAutozoom(aHisto.get());
     aHisto->GetXaxis()->SetTitleOffset(1.5);
@@ -492,51 +368,11 @@ std::shared_ptr<TH1D> HistoManager::getClusterTimeProjectionInMM(int strip_dir){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<TH1D> HistoManager::getClusterStripProjection(int strip_dir){
+std::shared_ptr<TH2D> HistoManager::get2DProjection(projection_type projType,
+						    filter_type filterType,
+						    scale_type scaleType){
 
-  auto aHisto=std::shared_ptr<TH1D>(myEventPtr->GetStripProjection(myTkBuilder.getCluster(), strip_dir));  
-  if(aHisto) {
-    if(doAutozoom) makeAutozoom(aHisto.get());
-    aHisto->GetXaxis()->SetTitleOffset(1.5);
-    aHisto->GetYaxis()->SetTitleOffset(1.6);
-    aHisto->SetDrawOption("HIST0");
-  }
-  return aHisto;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-std::shared_ptr<TH1D> HistoManager::getClusterStripProjectionInMM(int strip_dir){
-  //auto aHisto=std::shared_ptr<TH1D>(myEventPtr->GetStripProjectionInMM(myTkBuilder.getCluster(), strip_dir));
-  auto aHisto=std::shared_ptr<TH1D>((TH1D*)myTkBuilder.getCluster2D(strip_dir).ProjectionY()->Clone("hClusterStripProjectionInMM"));
-
-  if(aHisto) {
-    if(doAutozoom) makeAutozoom(aHisto.get());
-    aHisto->GetXaxis()->SetTitleOffset(1.5);
-    aHisto->GetYaxis()->SetTitleOffset(1.6);
-    aHisto->SetDrawOption("HIST0");
-  }
-  return aHisto;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-std::shared_ptr<TH2D> HistoManager::getClusterStripVsTime(int strip_dir){
-  auto aHisto=std::shared_ptr<TH2D>(myEventPtr->GetStripVsTime(myTkBuilder.getCluster(), strip_dir));
-
-  if(aHisto) {
-    if(doAutozoom) makeAutozoom(aHisto.get());
-    aHisto->GetXaxis()->SetTitleOffset(1.5);
-    aHisto->GetYaxis()->SetTitleOffset(1.5);
-    aHisto->GetZaxis()->SetTitleOffset(1.5);
-    aHisto->SetDrawOption("COLZ");
-  }
-  return aHisto;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-std::shared_ptr<TH2D> HistoManager::getClusterStripVsTimeInMM(int strip_dir){
-  
-  //std::shared_ptr<TH2D> aHisto = myEventPtr->GetStripVsTimeInMM(myTkBuilder.getCluster(), strip_dir);
-  std::shared_ptr<TH2D> aHisto(new TH2D(myTkBuilder.getCluster2D(strip_dir)));
+  auto aHisto = myEventPtr->get2DProjection(projType, filterType, scaleType);
   if(aHisto) {
     if(doAutozoom) makeAutozoom(aHisto.get());
     aHisto->GetXaxis()->SetTitleOffset(1.5);
@@ -565,17 +401,6 @@ int HistoManager::getRecoClusterDeltaStrips(){
 /////////////////////////////////////////////////////////
 int HistoManager::getRecoClusterDeltaTimeCells(){
   return recoClusterDeltaTimeCells;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-std::shared_ptr<TH2D> HistoManager::getFilteredStripVsTime(int strip_dir){
-  auto aHisto=std::shared_ptr<TH2D>(myEventPtr->GetStripVsTime(myTkBuilder.getCluster(), strip_dir));
-  if(aHisto) {
-    if(doAutozoom) makeAutozoom(aHisto.get());
-    aHisto->GetYaxis()->SetTitleOffset(1.8);
-    aHisto->GetZaxis()->SetTitleOffset(1.5);
-  }
-  return aHisto;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -906,13 +731,7 @@ void HistoManager::openOutputStream(const std::string & filePath){
   if(fileName.find("CoBo")==std::string::npos){
     fileName = fileName.replace(0,8,"CoBo_ALL_AsAd_ALL");
   }
-  myRunParser.reset(new RunIdParser(fileName));
-  /*
-  std::string fluxFileName = "Flux_"+filePath.substr(last_slash_position+1,
-						     last_dot_position-last_slash_position-1)+".root";
-  std::cout<<KBLU<<"fluxFileName: "<<RST<<recoFileName<<std::endl;
-  myDotFinder.openOutputStream(fluxFileName);
-  */
+  myRunParser.reset(new RunIdParser(fileName)); 
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

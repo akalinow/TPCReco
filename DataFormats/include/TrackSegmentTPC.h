@@ -11,6 +11,7 @@
 #include "TH3F.h"
 #include "TVector3.h"
 #include "EventTPC.h"
+#include "SigClusterTPC.h"
 
 #define TRACKSEGMENTTPC_DEFAULT_FIT_SIGMA  1.5 // default expected position resolution [mm] for CHI2 definition (used in: 0,2)
 #define TRACKSEGMENTTPC_DEFAULT_FIT_METHOD 2   // 0 = sum of "perpendicular" distances 

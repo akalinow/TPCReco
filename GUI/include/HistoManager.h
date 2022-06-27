@@ -78,42 +78,20 @@ public:
   TGraph* getEventRateGraph();
   
   TH2Poly *getDetectorLayout() const;
-  
-  std::shared_ptr<TH1D> getRawTimeProjection();
 
-  std::shared_ptr<TH1D> getRawTimeProjection(int strip_dir);
+  std::shared_ptr<TH1D> get1DProjection(projection_type projType,
+					filter_type filterType,
+					scale_type scaleType);
 
-  std::shared_ptr<TH1D> getRawTimeProjectionInMM(); 
-
-  std::shared_ptr<TH1D> getRawTimeProjectionInMM(int strip_dir);
-
-  std::shared_ptr<TH1D> getRawStripProjection(int strip_dir);
-
-  std::shared_ptr<TH1D> getRawStripProjectionInMM(int strip_dir);
-
-  std::shared_ptr<TH2D> getRawStripVsTimeInMM(int strip_dir);
-
-  std::shared_ptr<TH2D> getFilteredStripVsTime(int strip_dir);
-
+  std::shared_ptr<TH2D> get2DProjection(projection_type projType,
+					filter_type filterType,
+					scale_type scaleType);
+    
   std::shared_ptr<TH2D> getRecHitStripVsTime(int strip_dir);
 
   std::shared_ptr<TH1D> getRecHitTimeProjection();
 
   std::shared_ptr<TH2D> getChannels(int cobo_id, int asad_id);
-
-  std::shared_ptr<TH1D> getClusterTimeProjection();
-
-  std::shared_ptr<TH1D> getClusterTimeProjectionInMM();
-
-  std::shared_ptr<TH1D> getClusterTimeProjection(int strip_dir);
-
-  std::shared_ptr<TH1D> getClusterTimeProjectionInMM(int strip_dir);
-
-  std::shared_ptr<TH1D> getClusterStripProjection(int strip_dir);
-
-  std::shared_ptr<TH1D> getClusterStripProjectionInMM(int strip_dir); 
-
-  std::shared_ptr<TH2D> getClusterStripVsTime(int strip_dir);
 
   bool getRecoClusterEnable();
   double getRecoClusterThreshold();

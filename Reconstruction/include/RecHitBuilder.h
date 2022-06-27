@@ -8,6 +8,11 @@
 
 #include "TF1.h"
 
+#define EVENTTPC_DEFAULT_RECO_METHOD 1  // 0 = equal charge division along the strip
+                                        // 1 = weighted charge division from complementary strip directions
+#define EVENTTPC_DEFAULT_STRIP_REBIN 2  // number of strips to rebin [1-1024] 
+#define EVENTTPC_DEFAULT_TIME_REBIN  5  // number of time cells to rebin [1-512]
+
 class TH2D;
 class GeometryTPC;
 

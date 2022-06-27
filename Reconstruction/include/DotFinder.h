@@ -49,7 +49,7 @@ public:
   //  void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);
 
   void reconstruct();
-  bool checkCuts(SigClusterTPC &aCluster);
+  bool checkCuts();
   void initializeHistograms();
   void resetHistograms();
 

@@ -11,10 +11,10 @@
 #include "colorText.h"
 
 #include <TSystem.h>
-#include <TObjArray.h> // for string tokens
-#include <TObjString.h> // for string tokens
+#include <TObjArray.h> 
+#include <TObjString.h>
 #include <TStyle.h>
-#include <TString.h> // for string tokens
+#include <TString.h>
 #include <TFrame.h>
 #include <TVirtualX.h>
 #include <TImage.h>
@@ -40,7 +40,6 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h,  const boost::proper
   myConfig = aConfig;
  
   fSelectionBox = 0;
-
   InitializeEventSource();
   InitializeWindows();
   
@@ -235,22 +234,22 @@ void MainFrame::InitializeEventSource(){
   }
 
   // sets RECO cluster parameters
-  bool recoClusterEnable=myHistoManager.getRecoClusterEnable(); // get defaults
-  double recoClusterThreshold=myHistoManager.getRecoClusterThreshold(); // get defaults
-  int recoClusterDeltaStrips=myHistoManager.getRecoClusterDeltaStrips(); // get defaults
-  int recoClusterDeltaTimeCells=myHistoManager.getRecoClusterDeltaTimeCells(); // get defaults
+  bool recoClusterEnable=myHistoManager.getRecoClusterEnable(); 
+  double recoClusterThreshold=myHistoManager.getRecoClusterThreshold();
+  int recoClusterDeltaStrips=myHistoManager.getRecoClusterDeltaStrips();
+  int recoClusterDeltaTimeCells=myHistoManager.getRecoClusterDeltaTimeCells();
 
   if(myConfig.find("recoClusterEnable")!=myConfig.not_found()){
-    recoClusterEnable = myConfig.get<bool>("recoClusterEnable"); // set changes
+    recoClusterEnable = myConfig.get<bool>("recoClusterEnable"); 
   }
   if(myConfig.find("recoClusterThreshold")!=myConfig.not_found()){
-    recoClusterThreshold = fabs(myConfig.get<double>("recoClusterThreshold")); // set changes
+    recoClusterThreshold = fabs(myConfig.get<double>("recoClusterThreshold"));
   }
   if(myConfig.find("recoClusterDeltaStrips")!=myConfig.not_found()){
-    recoClusterDeltaStrips = abs(myConfig.get<int>("recoClusterDeltaStrips")); // set changes
+    recoClusterDeltaStrips = abs(myConfig.get<int>("recoClusterDeltaStrips"));
   }
   if(myConfig.find("recoClusterDeltaTimeCells")!=myConfig.not_found()){
-    recoClusterDeltaTimeCells = abs(myConfig.get<int>("recoClusterDeltaTimeCells")); // set changes
+    recoClusterDeltaTimeCells = abs(myConfig.get<int>("recoClusterDeltaTimeCells"));
   }
   myHistoManager.setRecoClusterParameters(recoClusterEnable, recoClusterThreshold, recoClusterDeltaStrips, recoClusterDeltaTimeCells);
   
@@ -650,7 +649,6 @@ void MainFrame::Update(){
 
   if(!myEventSource || !myEventSource->numberOfEvents() ||
      !fFileInfoFrame || !fMarkersManager) {return;}
-  
   fFileInfoFrame->updateFileName(myEventSource->getCurrentPath());
   fFileInfoFrame->updateEventNumbers(myEventSource->numberOfEvents(),
 				   myEventSource->currentEventNumber(),
@@ -658,11 +656,9 @@ void MainFrame::Update(){
   myHistoManager.setEvent(myEventSource->getCurrentEvent());
   fMarkersManager->reset();
   fMarkersManager->setEnabled(isRecoModeOn);
-
   ClearCanvases();      
   //myHistoManager.drawRawHistos(fRawHistosCanvas, isRateDisplayOn);
   //myHistoManager.drawTechnicalHistos(fTechHistosCanvas, myEventSource->getGeometry()->GetAgetNchips());
-
   if(!isRecoModeOn){
     myHistoManager.drawRawHistos(fMainCanvas, isRateDisplayOn);
   }

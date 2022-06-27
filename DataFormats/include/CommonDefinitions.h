@@ -32,6 +32,12 @@ enum  projection_type{
   NONE
 };
 
+projection_type get2DProjectionType(int aStrip_dir);
+projection_type get2DProjectionType(projection_type aStrip_dir);
+
+projection_type get1DProjectionType(int aStrip_dir);
+projection_type get1DProjectionType(projection_type aStrip_dir);
+
 enum pid_type{
   UNKNOWN=0,        //           <-- for backward compatibilty with data analyzed before 20 May 2022
   ALPHA=1,          // Helium-4  <-- for backward compatibilty with data analyzed before 20 May 2022
