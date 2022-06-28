@@ -48,13 +48,14 @@ void HistoManager::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void HistoManager::setRecoClusterParameters(bool recoClusterEnable, double recoClusterThreshold,
-					    int recoClusterDeltaStrips, int recoClusterDeltaTimeCells) {
+void HistoManager::setConfig(const boost::property_tree::ptree &aConfig){
+  
+  myConfig = aConfig;
 
-  recoClusterEnable = recoClusterEnable;
-  recoClusterThreshold = recoClusterThreshold;
-  recoClusterDeltaStrips = recoClusterDeltaStrips;
-  recoClusterDeltaTimeCells = recoClusterDeltaTimeCells;
+  if(myConfig.find("recoClusterEnable")==myConfig.not_found()) myConfig.put("recoClusterEnable", true);
+  if(myConfig.find("recoClusterThreshold")==myConfig.not_found()) myConfig.put("recoClusterThreshold", 35.0);
+  if(myConfig.find("recoClusterDeltaStrips")==myConfig.not_found()) myConfig.put("recoClusterDeltaStrips", 2);
+  if(myConfig.find("recoClusterDeltaTimeCells")==myConfig.not_found()) myConfig.put("recoClusterDeltaTimeCells", 5);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -66,12 +67,11 @@ void HistoManager::setEvent(EventTPC* aEvent){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void HistoManager::setEvent(std::shared_ptr<EventTPC> aEvent){
+  
   if(!aEvent) return;
   myEventPtr = aEvent;
-  myTkBuilder.setEvent(myEventPtr,
-		       getRecoClusterThreshold(),
-		       getRecoClusterDeltaStrips(),
-		       getRecoClusterDeltaTimeCells());
+  myEventPtr->setHitFilterConfig(filter_type::threshold, myConfig);
+  myTkBuilder.setEvent(myEventPtr);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -146,7 +146,8 @@ void HistoManager::drawRecoHistos(TCanvas *aCanvas){
   if(std::string(aCanvas->GetName())=="Histograms") padNumberOffset = 0;
   
   reconstruct();
-  filter_type filterType = filter_type::none;
+  filter_type filterType = filter_type::threshold;
+  if(myConfig.get<bool>("recoClusterEnable")) filterType = filter_type::none;
 
    for(int strip_dir=projection_type::DIR_U;strip_dir<=projection_type::DIR_W;++strip_dir){
      TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
@@ -155,20 +156,16 @@ void HistoManager::drawRecoHistos(TCanvas *aCanvas){
      aCanvas->Modified();
      aCanvas->Update();
 
-     auto projType = get2DProjectionType(strip_dir);
-     
-     if(getRecoClusterEnable()) {
-       auto histo2D = get2DProjection(projType, filterType, scale_type::mm);
-       if(aPad->GetLogz()) histo2D->SetMinimum(1.0);
-       histo2D->DrawCopy("colz");
+     auto projType = get2DProjectionType(strip_dir);     
+     auto histo2D = get2DProjection(projType, filterType, scale_type::mm);
+     histo2D->DrawCopy("colz");
+     if(myConfig.get<bool>("recoClusterEnable")){
+       histo2D->SetMinimum(1.0);
        hPlotBackground->Draw("col same");
-       aPad->RedrawAxis();  
-       histo2D->Draw("same colz");
-       drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
+       aPad->RedrawAxis();
+       histo2D->DrawCopy("colz same");
      }
-     else {
-       get2DProjection(projType, filterType, scale_type::mm)->DrawCopy("colz");;
-     }
+     drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
    }
    int strip_dir=3;
    TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
@@ -176,7 +173,7 @@ void HistoManager::drawRecoHistos(TCanvas *aCanvas){
    aPad->cd();
    aCanvas->Modified();
    aCanvas->Update();
-   if(getRecoClusterEnable()) drawChargeAlongTrack3D(aPad);
+   if(myConfig.get<bool>("recoClusterEnable")) drawChargeAlongTrack3D(aPad);
    else  get1DProjection(projection_type::DIR_TIME, filterType, scale_type::mm)->DrawCopy("hist");
 
    aCanvas->Modified();
@@ -207,11 +204,13 @@ void HistoManager::drawRecoFromMarkers(TCanvas *aCanvas, std::vector<double> * s
 /////////////////////////////////////////////////////////
 void HistoManager::drawDevelHistos(TCanvas *aCanvas){
 
-  if(!aCanvas) return;
+ if(!aCanvas) return;
   int padNumberOffset = 0;
   if(std::string(aCanvas->GetName())=="Histograms") padNumberOffset = 0;
+  
   reconstruct();
   filter_type filterType = filter_type::threshold;
+  if(!myConfig.get<bool>("recoClusterEnable")) filterType = filter_type::none;
 
    for(int strip_dir=projection_type::DIR_U;strip_dir<=projection_type::DIR_W;++strip_dir){
      TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
@@ -220,20 +219,17 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
      aCanvas->Modified();
      aCanvas->Update();
 
-     auto projType = get2DProjectionType(strip_dir);
-     
-     if(getRecoClusterEnable()) {
-       auto histo2D = get2DProjection(projType, filterType, scale_type::mm);
+     auto projType = get2DProjectionType(strip_dir);     
+     auto histo2D = get2DProjection(projType, filterType, scale_type::mm);
+     if(myConfig.get<bool>("recoClusterEnable")){
+       histo2D->SetMinimum(0.0);
        if(aPad->GetLogz()) histo2D->SetMinimum(1.0);
-       histo2D->DrawCopy("colz");
        hPlotBackground->Draw("col same");
-       aPad->RedrawAxis();  
-       histo2D->DrawCopy("same colz");
-       drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
+       aPad->RedrawAxis();
+       histo2D->DrawCopy("colz same");
+       drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);	    
      }
-     else {
-       get2DProjection(projType, filterType, scale_type::mm)->DrawCopy("colz");;
-     }
+     else histo2D->DrawCopy("colz");
    }
    int strip_dir=3;
    TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
@@ -241,8 +237,9 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
    aPad->cd();
    aCanvas->Modified();
    aCanvas->Update();
-   if(getRecoClusterEnable()) drawChargeAlongTrack3D(aPad);
-   else get1DProjection(projection_type::DIR_TIME, filterType, scale_type::mm)->DrawCopy("hist");
+   if(myConfig.get<bool>("recoClusterEnable")) drawChargeAlongTrack3D(aPad);
+   else  get1DProjection(projection_type::DIR_TIME, filterType, scale_type::mm)->DrawCopy("hist");
+
    aCanvas->Modified();
    aCanvas->Update();
 }
@@ -381,26 +378,6 @@ std::shared_ptr<TH2D> HistoManager::get2DProjection(projection_type projType,
     aHisto->SetDrawOption("COLZ");
   }
   return aHisto;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-bool HistoManager::getRecoClusterEnable(){
-  return recoClusterEnable;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-double HistoManager::getRecoClusterThreshold(){
-  return recoClusterThreshold;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-int HistoManager::getRecoClusterDeltaStrips(){
-  return recoClusterDeltaStrips;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-int HistoManager::getRecoClusterDeltaTimeCells(){
-  return recoClusterDeltaTimeCells;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

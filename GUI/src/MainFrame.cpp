@@ -232,30 +232,13 @@ void MainFrame::InitializeEventSource(){
     exit(0);
     return;
   }
-
-  // sets RECO cluster parameters
-  bool recoClusterEnable=myHistoManager.getRecoClusterEnable(); 
-  double recoClusterThreshold=myHistoManager.getRecoClusterThreshold();
-  int recoClusterDeltaStrips=myHistoManager.getRecoClusterDeltaStrips();
-  int recoClusterDeltaTimeCells=myHistoManager.getRecoClusterDeltaTimeCells();
-
-  if(myConfig.find("recoClusterEnable")!=myConfig.not_found()){
-    recoClusterEnable = myConfig.get<bool>("recoClusterEnable"); 
-  }
-  if(myConfig.find("recoClusterThreshold")!=myConfig.not_found()){
-    recoClusterThreshold = fabs(myConfig.get<double>("recoClusterThreshold"));
-  }
-  if(myConfig.find("recoClusterDeltaStrips")!=myConfig.not_found()){
-    recoClusterDeltaStrips = abs(myConfig.get<int>("recoClusterDeltaStrips"));
-  }
-  if(myConfig.find("recoClusterDeltaTimeCells")!=myConfig.not_found()){
-    recoClusterDeltaTimeCells = abs(myConfig.get<int>("recoClusterDeltaTimeCells"));
-  }
-  myHistoManager.setRecoClusterParameters(recoClusterEnable, recoClusterThreshold, recoClusterDeltaStrips, recoClusterDeltaTimeCells);
   
   if(myWorkMode!=M_ONLINE_GRAW_MODE && myWorkMode!=M_ONLINE_NGRAW_MODE){
     myEventSource->loadDataFile(dataFileName);
     myEventSource->loadFileEntry(0);
+  }
+  if(myConfig.find("hitFilter")!=myConfig.not_found()){
+    myHistoManager.setConfig(myConfig.find("hitFilter")->second);
   }
   myHistoManager.setGeometry(myEventSource->getGeometry());
   if(isRecoModeOn) myHistoManager.openOutputStream(dataFileName);

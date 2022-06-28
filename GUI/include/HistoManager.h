@@ -5,6 +5,8 @@
 #include <vector>
 #include <memory>
 
+#include <boost/property_tree/ptree.hpp>
+
 #include "TFile.h"
 #include "TLine.h"
 #include "TGraph.h"
@@ -40,9 +42,9 @@ public:
 
   void setEvent(std::shared_ptr<EventTPC> aEvent);
 
-  void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);
+  void setConfig(const boost::property_tree::ptree &aConfig);
 
-  void setRecoClusterParameters(bool recoClusterEnable, double recoClusterThreshold, int recoClusterDeltaStrips, int recoClusterDetlaTimeCells);
+  void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);
 
   void openOutputStream(const std::string & filePath);
 
@@ -66,11 +68,6 @@ public:
 
   void clearTracks();
 
-  std::shared_ptr<TH2D> getRawStripVsTime(int strip_dir);
-
-  std::shared_ptr<TH2D> getClusterStripVsTimeInMM(int strip_dir); 
-
-
   void reconstruct();
 
   void reconstructSegmentsFromMarkers(std::vector<double> * segmentsXY);
@@ -92,11 +89,6 @@ public:
   std::shared_ptr<TH1D> getRecHitTimeProjection();
 
   std::shared_ptr<TH2D> getChannels(int cobo_id, int asad_id);
-
-  bool getRecoClusterEnable();
-  double getRecoClusterThreshold();
-  int getRecoClusterDeltaStrips();
-  int getRecoClusterDeltaTimeCells();
   
   // Dot-like events usful for neutron flux monitoring
   void initializeDotFinder(unsigned int hitThr, // unsigned int maxStripsPerDir, unsigned int maxTimecellsPerDir,
@@ -128,6 +120,8 @@ public:
 
   void setDetLayout();
   void setDetLayoutVetoBand(double distance); // [mm]
+
+  boost::property_tree::ptree myConfig;
       
   std::vector<TH2D*> projectionsInCartesianCoords;
   TH3D *h3DReco{0};
@@ -157,10 +151,6 @@ public:
   Long64_t previousEventNumber{-1};
 
   bool recoClusterEnable{true};
-  double recoClusterThreshold{35};
-  int recoClusterDeltaStrips{2};
-  int recoClusterDeltaTimeCells{5};
-
 };
 #endif
 

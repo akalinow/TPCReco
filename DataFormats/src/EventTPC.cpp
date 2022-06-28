@@ -18,16 +18,19 @@
 EventTPC::EventTPC(){
 
   Clear();
+
+  boost::property_tree::ptree tree;
+  tree.put("recoClusterThreshold", 35.0);
+  tree.put("recoClusterDeltaStrips",2);
+  tree.put("recoClusterDeltaTimeCells",5);
+  filterConfigs[filter_type::threshold] = tree;
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 void EventTPC::Clear(){
 
   chargeMapWithSections.clear();
-  chargeMapMergedSections.clear();
-
   keyLists.clear();
-  asadMap.clear();
   for(auto & item: histoCacheUpdated) item.second = false;
 }
 ///////////////////////////////////////////////////////////////////////
@@ -41,25 +44,18 @@ void EventTPC::SetGeoPtr(std::shared_ptr<GeometryTPC> aPtr) {
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
+void EventTPC::setHitFilterConfig(filter_type filterType, const boost::property_tree::ptree &config){
+
+  filterConfigs[filterType] = config;
+  histoCacheUpdated.at(filterType) = false;
+  filterHits(filterType);
+}
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
 void EventTPC::SetChargeMap(const PEventTPC::chargeMapType & aChargeMap){
 
   Clear();
   chargeMapWithSections = aChargeMap;
-}
-///////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////
-void EventTPC::fillMergedSectionsMap(){
-
-  for(const auto & item: chargeMapWithSections){
-    auto key =  item.first;
-    auto value =  item.second;
-
-    const int strip_dir = std::get<0>(key);
-    const int strip_num = std::get<2>(key);
-    const int time_cell = std::get<3>(key);
-
-    chargeMapMergedSections[{strip_dir, strip_num, time_cell}] += value;
-  }  
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
@@ -68,18 +64,16 @@ void EventTPC::filterHits(filter_type filterType){
   if(histoCacheUpdated.at(filterType)) return;
   else histoCacheUpdated.at(filterType)=true;
 
-  double chargeThreshold = 35.0;
-  int delta_strips = 2;
-  int delta_timecells = 5;
-
   std::set<PEventTPC::chargeMapType::key_type> keyList;
+  const auto & config = filterConfigs.at(filter_type::threshold);
+  double chargeThreshold = config.get<double>("recoClusterThreshold");
   
   for(const auto & item: chargeMapWithSections){
     auto key = item.first;
     auto value = item.second;
     if(value>chargeThreshold || filterType==filter_type::none){
       keyList.insert(key);      
-      if(filterType==filter_type::threshold) addEnvelope(key, keyList, delta_timecells, delta_strips);
+      if(filterType==filter_type::threshold) addEnvelope(key, keyList);
     }
   }
  keyLists[filterType] = keyList;
@@ -88,24 +82,29 @@ void EventTPC::filterHits(filter_type filterType){
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 void EventTPC::addEnvelope(PEventTPC::chargeMapType::key_type key,
-			   std::set<PEventTPC::chargeMapType::key_type> & keyList,
-			   double delta_timecells,
-			   double delta_strips){
+			   std::set<PEventTPC::chargeMapType::key_type> & keyList){
 
-  int iDir = std::get<0>(key);
-  int iSection = std::get<1>(key);
+  int strip_dir = std::get<0>(key);
+  int strip_section  = std::get<1>(key);
+  int strip_number  = std::get<2>(key);
+  int time_cell = std::get<3>(key);
+    
+  const auto & config = filterConfigs.at(filter_type::threshold);
+  int delta_timecells = config.get<int>("recoClusterDeltaTimeCells");
+  int delta_strips = config.get<int>("recoClusterDeltaStrips");
 
-  for(int iCell=std::get<3>(key)-delta_timecells;
-      iCell<=std::get<3>(key)+delta_timecells;++iCell){
+  for(int iCell=time_cell-delta_timecells;
+      iCell<=time_cell+delta_timecells;++iCell){
 
     if(iCell<0 || iCell>=myGeometryPtr->GetAgetNtimecells()) continue;
     
-    for(int iStrip=std::get<2>(key)-delta_strips;
-	iStrip<=std::get<2>(key)+delta_strips;++iStrip){
+    for(int iStrip=strip_number-delta_strips;
+	iStrip<=strip_number+delta_strips;++iStrip){
 
-      if(iStrip<myGeometryPtr->GetDirMinStrip(iDir, iSection) ||
-	 iStrip>myGeometryPtr->GetDirMaxStrip(iDir, iSection)) continue;
-      auto neighbourKey = std::make_tuple(iDir, iSection, iStrip, iCell);
+      if(iStrip<myGeometryPtr->GetDirMinStrip(strip_dir, strip_section) ||
+	 iStrip>myGeometryPtr->GetDirMaxStrip(strip_dir, strip_section)) continue;
+      
+      auto neighbourKey = std::make_tuple(strip_dir, strip_section, iStrip, iCell);
       if(chargeMapWithSections.find(neighbourKey)!=chargeMapWithSections.end()){
 	  keyList.insert(neighbourKey);
 	}
@@ -160,11 +159,6 @@ void EventTPC::updateHistosCache(filter_type filterType){
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
-bool EventTPC::CheckAsadNboards() const {
-  return myGeometryPtr->GetAsadNboards()==(int)asadMap.size();
-}
-///////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////
 double EventTPC::GetValByStrip(int strip_dir, int strip_section, int strip_number, int time_cell) const {
 
   auto item = chargeMapWithSections.find({strip_dir,  strip_section, strip_number, time_cell});
@@ -180,11 +174,16 @@ double EventTPC::GetValByStrip(std::shared_ptr<StripTPC> strip, int time_cell) c
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
-double EventTPC::GetValByStripMerged(int strip_dir, int strip_number, int time_cell) const{
+double EventTPC::GetValByStripMerged(int strip_dir, int strip_number, int time_cell){
 
-  auto item = chargeMapMergedSections.find({strip_dir,  strip_number, time_cell});
-  if(item!=chargeMapMergedSections.end()) return item->second;
-  return 0.0;
+  filter_type filterType = filter_type::none;
+  filterHits(filterType);
+  a3DHistoRawMap.at(filterType);
+  auto a3DHisto = a3DHistoRawMap.at(filterType);
+  int iBinX = a3DHisto->GetXaxis()->FindBin(time_cell);
+  int iBinY = a3DHisto->GetYaxis()->FindBin(strip_number);
+  int iBinZ = a3DHisto->GetZaxis()->FindBin(strip_dir);
+  return a3DHisto->GetBinContent(iBinX, iBinY, iBinZ);
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
@@ -461,9 +460,9 @@ void EventTPC::scale2DHistoToMM(TH2D *h2D, projection_type projType) const{
     for(int iBinY=0;iBinY<nBinsY/2;++iBinY){
           for(int iBinX=0;iBinX<nBinsX;++iBinX){
 	    double value1 = h2D->GetBinContent(iBinX, iBinY);
-	    double value2 = h2D->GetBinContent(iBinX, nBinsY-iBinY);
+	    double value2 = h2D->GetBinContent(iBinX, nBinsY-iBinY+1);
 	    h2D->SetBinContent(iBinX, iBinY, value2);
-	    h2D->SetBinContent(iBinX, nBinsY-iBinY, value1);
+	    h2D->SetBinContent(iBinX, nBinsY-iBinY+1, value1);
 	  }
     }
   }

@@ -67,14 +67,8 @@ void TrackBuilder::setPressure(double aPressure) {
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void TrackBuilder::setEvent(std::shared_ptr<EventTPC> aEvent,
-			    const double chargeThreshold,
-			    const int delta_timecells,
-			    const int delta_strips){
+void TrackBuilder::setEvent(std::shared_ptr<EventTPC> aEvent){
 
-  if(!aEvent->GetEventInfo().GetPedestalSubtracted()){
-    throw std::logic_error("Pedestals not removed. Working without removed pedestals not implemented yet.");
-  }
   myEventPtr = aEvent;
    
   std::string hName, hTitle;

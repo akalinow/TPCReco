@@ -6,6 +6,8 @@
 #include <memory>
 #include <tuple>
 
+#include <boost/property_tree/ptree.hpp>
+
 #include <Fit/Fitter.h>
 
 #include "TrackSegment2D.h"
@@ -32,7 +34,7 @@ public:
   
   ~TrackBuilder();
 
-  void setEvent(std::shared_ptr<EventTPC> aEvent, const double chargeThreshold=35, const int delta_timecells=5, const int delta_strips=2);
+  void setEvent(std::shared_ptr<EventTPC> aEvent);
 
   void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);
 

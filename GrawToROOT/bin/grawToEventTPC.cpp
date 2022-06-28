@@ -198,8 +198,6 @@ int convertGRAWFile(const  std::string & geometryFileName,
 #ifdef DEBUG
     if( eventIdMap.size()==10) break;
 #endif
-    if( eventIdMap.size()==3) break; //TEST
-
     currentEventId=myEventSource->currentEventNumber();
     myEventSource->getNextEvent();
   }

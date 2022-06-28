@@ -197,14 +197,6 @@ bool DotFinder::checkCuts(){
     return false;
   }
 
-  // are data frames missing?
-  if( !myEvent->CheckAsadNboards() ) {
-    //////// DEBUG
-    std::cout << "DotFinder::checkCuts: Missing data frames ==> event rejected." << std::endl;
-    //////// DEBUG
-    return false;
-  }
-
   if(myEvent->GetTotalCharge(-1, -1, -1, -1, filter_type::threshold) < myTotalChargeThr ) {
     //////// DEBUG
     std::cout << "DotFinder::checkCuts: Too small total charge  => event rejected." << std::endl

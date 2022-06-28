@@ -8,7 +8,7 @@ void PEventTPC::Clear() { myChargeMap.clear(); }
 ///////////////////////////////////////////////////////////////////////
 bool PEventTPC::AddValByStrip(std::shared_ptr<StripTPC> strip, int time_cell, double val){
   auto key = std::make_tuple(strip->Dir(), strip->Section(), strip->Num(), time_cell);
-  myChargeMap[key] += val; //update hit or add new one
+  myChargeMap[key] += val; 
   return true;
 }
 ///////////////////////////////////////////////////////////////////////
