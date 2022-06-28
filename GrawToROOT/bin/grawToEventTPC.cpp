@@ -159,8 +159,8 @@ int convertGRAWFile(const  std::string & geometryFileName,
 
   TTree aTree("TPCData","");
   auto persistent_event = myEventPtr.get();
-  Int_t bufsize=64000;
-  int splitlevel=1;
+  Int_t bufsize=128000;
+  int splitlevel=2;
   aTree.Branch("Event", &persistent_event, bufsize, splitlevel); 
   Long64_t currentEventId=-1;
   std::map<unsigned int, bool> eventIdMap;
@@ -198,6 +198,9 @@ int convertGRAWFile(const  std::string & geometryFileName,
 #ifdef DEBUG
     if( eventIdMap.size()==10) break;
 #endif
+
+    //if( eventIdMap.size()==10) break;
+    
     currentEventId=myEventSource->currentEventNumber();
     myEventSource->getNextEvent();
   }
