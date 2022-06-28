@@ -4,7 +4,6 @@
     "resourcesPath": ".",
     "updateInterval": 3000,
     "removePedestal": true,
-    "recoClusterEnable": false,
     "frameLoadRange": 10,
     "singleAsadGrawFile": true,
     "display": {
@@ -17,5 +16,11 @@
         "maxPedestalCell": 25,
         "minSignalCell": 5,
         "maxSignalCell": 506
+    },
+    "hitFilter": {
+        "recoClusterEnable": false,
+        "recoClusterThreshold": 35,
+        "recoClusterDeltaStrips": 2,
+        "recoClusterDeltaTimeCells": 5
     }
 }

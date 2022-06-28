@@ -6,12 +6,17 @@
     "geometryFile": "./geometry_ELITPC.dat",
     "resourcesPath": ".",
     "removePedestal": true,
-    "recoClusterEnable": false,
     "singleAsadGrawFile": true,
     "display": {
         "zLogScale": true,
         "autoZoom": false,
         "recoMode": false,
         "rate": false
+    },
+    "hitFilter": {
+        "recoClusterEnable": false,
+        "recoClusterThreshold": 35,
+        "recoClusterDeltaStrips": 2,
+        "recoClusterDeltaTimeCells": 5
     }
 }
