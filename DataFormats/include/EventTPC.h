@@ -41,7 +41,9 @@ class EventTPC {
 		      filter_type filterType,
 		      scale_type scaleType) const;
 
-  bool histoCacheUpdated{false};
+  std::map<filter_type, bool> histoCacheUpdated = {{filter_type::none, false},
+						   {filter_type::threshold, false},
+						   {filter_type::island, false}};
   std::map<filter_type, std::shared_ptr<TH3D> > a3DHistoRawMap;
   std::shared_ptr<TH3D> a3DHistoRawPtr;
   
@@ -76,15 +78,15 @@ class EventTPC {
 
   // maximal charge from strips of a given direction
   double GetMaxCharge(int strip_dir=-1, int strip_section=-1, int strip_number=-1,
-		      filter_type filterType=filter_type::none) const;   
+		      filter_type filterType=filter_type::none);   
 
   // total charge from strips of a given direction
   double GetTotalCharge(int strip_dir=-1, int strip_section=-1, int strip_number=-1,
-			int time_cell=-1, filter_type filterType=filter_type::none) const;
+			int time_cell=-1, filter_type filterType=filter_type::none);
 
   // arrival time and strip number of the maximal charge from strips of a given direction
   // or arrival time of the maximal charge from all strips
-  std::tuple<int,int> GetMaxChargePos(int aStrip_dir=-1, filter_type filterType=filter_type::none) const;
+  std::tuple<int,int> GetMaxChargePos(int aStrip_dir=-1, filter_type filterType=filter_type::none);
   
   int GetMaxChargeChannel() const;               // global channel number with the maximal charge from all strips
   std::shared_ptr<TH2D> GetChannels(int cobo_idx, int asad_idx); // valid range [0-1][0-3]
@@ -92,20 +94,20 @@ class EventTPC {
   
   std::shared_ptr<TH1D> get1DProjection(projection_type projType,
 					filter_type filterType,
-					scale_type scaleType) const;
+					scale_type scaleType);
 
   std::shared_ptr<TH2D> get2DProjection(projection_type projType,
 					filter_type filterType,
-					scale_type scaleType) const;
+					scale_type scaleType);
 
   // Number of hit or strips in a given direction, section, strip number.
   // Hits arou counted if countHits==true
   long GetMultiplicity(bool countHits,
 		       int strip_dir, int strip_section, int strip_number,
-		       filter_type filterType) const;
+		       filter_type filterType);
 
   // Min time,max time, min strip, max strip in a given direction (all sections)
-  std::tuple<int,int,int,int> GetSignalRange(int aStrip_dir, filter_type filterType) const;
+  std::tuple<int,int,int,int> GetSignalRange(int aStrip_dir, filter_type filterType);
 
   friend std::ostream& operator<<(std::ostream& os, const EventTPC& e);
  

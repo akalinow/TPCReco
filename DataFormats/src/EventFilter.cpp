@@ -1,6 +1,6 @@
 #include "EventFilter.h"
 #include <limits>
-bool EventFilter::pass(const EventTPC &event) const {
+bool EventFilter::pass(EventTPC &event) const {
 
   if(!enabled){
     return true;

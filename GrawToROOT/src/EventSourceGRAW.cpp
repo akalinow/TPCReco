@@ -246,12 +246,9 @@ void EventSourceGRAW::collectEventFragments(unsigned int eventId){
 	       <<KRED<<" found: "<<RST<<it->second.size()
 	       <<RST<<std::endl;
   }
-  //long int eventNumberInFile = std::distance(myFramesMap.begin(), it);
-
-  
+  //long int eventNumberInFile = std::distance(myFramesMap.begin(), it);  
   myCurrentPEvent->Clear();
-
-  std::cout<<KYEL<<"Creating a new EventTPC/Raw with eventId: "<<eventId<<RST<<std::endl;
+  std::cout<<KYEL<<"Creating a new PEventTPC/Raw with eventId: "<<eventId<<RST<<std::endl;
   
   for(auto aFragment: it->second){
     loadGrawFrame(aFragment, true);
@@ -305,7 +302,9 @@ void EventSourceGRAW::fillEventFromFrame(GET::GDataFrame & aGrawFrame){
 	GET::GDataSample* sample = (GET::GDataSample*) channel->fSamples.At(i);
 	// skip cells outside signal time-window
 	Int_t icell = sample->fBuckIdx;
-	if(icell<2 || icell>509 || icell<myPedestalCalculator.GetMinSignalCell() || icell>myPedestalCalculator.GetMaxSignalCell()) continue;
+	if(icell<2 || icell>509 ||
+	   icell<myPedestalCalculator.GetMinSignalCell() ||
+	   icell>myPedestalCalculator.GetMaxSignalCell()) continue;
 	    
 	Double_t rawVal  = sample->fValue;
 	Double_t corrVal = rawVal;

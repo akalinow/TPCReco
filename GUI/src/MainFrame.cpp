@@ -485,7 +485,7 @@ int MainFrame::AddFileInfoFrame(int attach){
   UInt_t attach_left=nColumns*0.7+1;
   UInt_t attach_right=nColumns;
   UInt_t attach_top=attach;
-  UInt_t attach_bottom=attach_top+6;
+  UInt_t attach_bottom=attach_top+8;
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 						    kLHintsShrinkX|kLHintsShrinkY|
 						    kLHintsFillX|kLHintsFillY);

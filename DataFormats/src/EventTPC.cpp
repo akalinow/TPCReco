@@ -28,6 +28,7 @@ void EventTPC::Clear(){
 
   keyLists.clear();
   asadMap.clear();
+  for(auto & item: histoCacheUpdated) item.second = false;
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
@@ -43,15 +44,7 @@ void EventTPC::SetGeoPtr(std::shared_ptr<GeometryTPC> aPtr) {
 void EventTPC::SetChargeMap(const PEventTPC::chargeMapType & aChargeMap){
 
   Clear();
-
   chargeMapWithSections = aChargeMap;
-  //fillMergedSectionsMap();
-
-  filterHits(filter_type::none);
-  updateHistosCache(filter_type::none);
-  
-  filterHits(filter_type::threshold);
-  updateHistosCache(filter_type::threshold);
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
@@ -72,6 +65,9 @@ void EventTPC::fillMergedSectionsMap(){
 ///////////////////////////////////////////////////////////////////////
 void EventTPC::filterHits(filter_type filterType){
 
+  if(histoCacheUpdated.at(filterType)) return;
+  else histoCacheUpdated.at(filterType)=true;
+
   double chargeThreshold = 35.0;
   int delta_strips = 2;
   int delta_timecells = 5;
@@ -87,6 +83,7 @@ void EventTPC::filterHits(filter_type filterType){
     }
   }
  keyLists[filterType] = keyList;
+ updateHistosCache(filterType);
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
@@ -192,7 +189,9 @@ double EventTPC::GetValByStripMerged(int strip_dir, int strip_number, int time_c
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 double EventTPC::GetMaxCharge(int aStrip_dir, int aStrip_section, int aStrip_number,
-			      filter_type filterType) const {
+			      filter_type filterType){
+
+  filterHits(filterType);
 
   double result = 0.0;
   auto projType = get2DProjectionType(aStrip_dir);
@@ -229,7 +228,9 @@ double EventTPC::GetMaxCharge(int aStrip_dir, int aStrip_section, int aStrip_num
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
-std::tuple<int,int> EventTPC::GetMaxChargePos(int aStrip_dir, filter_type filterType) const {
+std::tuple<int,int> EventTPC::GetMaxChargePos(int aStrip_dir, filter_type filterType){
+
+  filterHits(filterType);
   
   std::shared_ptr<TH3D> histo3d = a3DHistoRawMap.at(filterType);
   if(aStrip_dir>0){
@@ -249,7 +250,8 @@ std::tuple<int,int> EventTPC::GetMaxChargePos(int aStrip_dir, filter_type filter
 ///////////////////////////////////////////////////////////////////////
 double EventTPC::GetTotalCharge(int aStrip_dir, int aStrip_section,
 				int aStrip_number, int aTime_cell,
-				filter_type filterType) const{
+				filter_type filterType){
+  filterHits(filterType);
 
   double sum = 0;
   int strip_dir=0, strip_section=0, strip_number=0, time_cell=0;
@@ -269,8 +271,8 @@ double EventTPC::GetTotalCharge(int aStrip_dir, int aStrip_section,
 ///////////////////////////////////////////////////////////////////////
 long EventTPC::GetMultiplicity(bool countHits,
 			       int aStrip_dir, int aStrip_section, int aStrip_number, 
-			       filter_type filterType) const{
-
+			       filter_type filterType){
+  filterHits(filterType);
   int counter = 0;
 
   if(!countHits && aStrip_dir>-1 && aStrip_section<0){
@@ -310,8 +312,9 @@ long EventTPC::GetMultiplicity(bool countHits,
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
-std::tuple<int,int,int,int> EventTPC::GetSignalRange(int aStrip_dir, filter_type filterType) const{
+std::tuple<int,int,int,int> EventTPC::GetSignalRange(int aStrip_dir, filter_type filterType){
 
+  filterHits(filterType);
   auto projType = get2DProjectionType(aStrip_dir);
   
   int minBinX = -1, minBinY = -1;
@@ -344,7 +347,8 @@ std::tuple<int,int,int,int> EventTPC::GetSignalRange(int aStrip_dir, filter_type
 ///////////////////////////////////////////////////////////////////////
 std::shared_ptr<TH1D> EventTPC::get1DProjection(projection_type projType,
 						filter_type filterType,
-						scale_type scaleType) const{
+						scale_type scaleType){
+  filterHits(filterType);
   TH1D *h1D = 0;
   std::shared_ptr<TH3D> a3DHistoRawPtr = a3DHistoRawMap.at(filterType);
   
@@ -389,8 +393,8 @@ std::shared_ptr<TH1D> EventTPC::get1DProjection(projection_type projType,
 ///////////////////////////////////////////////////////////////////////
 std::shared_ptr<TH2D> EventTPC::get2DProjection(projection_type projType,
 						filter_type filterType,
-						scale_type scaleType) const{
-
+						scale_type scaleType){
+  filterHits(filterType);
   std::shared_ptr<TH3D> a3DHistoRawPtr = a3DHistoRawMap.at(filterType);
 
   auto projType1D = get1DProjectionType(projType);
