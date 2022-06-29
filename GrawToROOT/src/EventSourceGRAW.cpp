@@ -9,8 +9,10 @@
 #include "TCollection.h"
 #include "TClonesArray.h"
 
+
 #include "EventSourceGRAW.h"
 //#include "EventRaw.h"
+#include "RunIdParser.h"
 #include "colorText.h"
 
 #include "get/graw2dataframe.h"
@@ -249,14 +251,22 @@ void EventSourceGRAW::collectEventFragments(unsigned int eventId){
   //long int eventNumberInFile = std::distance(myFramesMap.begin(), it);  
   myCurrentPEvent->Clear();
   std::cout<<KYEL<<"Creating a new PEventTPC/Raw with eventId: "<<eventId<<RST<<std::endl;
+  std::set<int> asadCounter;
+
+  RunIdParser runParser(myFilePath);
+  myCurrentEventInfo.SetRunId(runParser.runId());
   
   for(auto aFragment: it->second){
     loadGrawFrame(aFragment, true);
     int  ASAD_idx = myDataFrame.fHeader.fAsadIdx;
     unsigned long int eventId_fromFrame = myDataFrame.fHeader.fEventIdx;
+    asadCounter.insert(ASAD_idx);
 
     myCurrentEventInfo.SetEventId(eventId);
+    myCurrentEventInfo.SetRunId(eventId);
     myCurrentEventInfo.SetEventTimestamp(myDataFrame.fHeader.fEventTime);
+    myCurrentEventInfo.SetAsadCounter(asadCounter.size());
+    std::cout<<myCurrentEventInfo<<std::endl;
     
     if(eventId!=eventId_fromFrame){
       std::cerr<<KRED<<__FUNCTION__

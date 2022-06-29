@@ -76,7 +76,7 @@ void HistoManager::setEvent(std::shared_ptr<EventTPC> aEvent){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void HistoManager::reconstruct(){
-  myTkBuilder.reconstruct();
+  if(myEventPtr->GetEventInfo().GetPedestalSubtracted()) myTkBuilder.reconstruct();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -141,13 +141,13 @@ void HistoManager::drawTechnicalHistos(TCanvas *aCanvas, int nAgetChips){
 /////////////////////////////////////////////////////////
 void HistoManager::drawRecoHistos(TCanvas *aCanvas){
 
-  if(!aCanvas) return;
+   if(!aCanvas) return;
   int padNumberOffset = 0;
   if(std::string(aCanvas->GetName())=="Histograms") padNumberOffset = 0;
   
   reconstruct();
   filter_type filterType = filter_type::threshold;
-  if(myConfig.get<bool>("recoClusterEnable")) filterType = filter_type::none;
+  if(!myConfig.get<bool>("recoClusterEnable")) filterType = filter_type::none;
 
    for(int strip_dir=projection_type::DIR_U;strip_dir<=projection_type::DIR_W;++strip_dir){
      TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
@@ -158,14 +158,16 @@ void HistoManager::drawRecoHistos(TCanvas *aCanvas){
 
      auto projType = get2DProjectionType(strip_dir);     
      auto histo2D = get2DProjection(projType, filterType, scale_type::mm);
-     histo2D->DrawCopy("colz");
      if(myConfig.get<bool>("recoClusterEnable")){
-       histo2D->SetMinimum(1.0);
+       histo2D->SetMinimum(0.0);
+       histo2D->DrawCopy("colz");
+       if(aPad->GetLogz()) histo2D->SetMinimum(1.0);
        hPlotBackground->Draw("col same");
        aPad->RedrawAxis();
        histo2D->DrawCopy("colz same");
+       drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);	    
      }
-     drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
+     else histo2D->DrawCopy("colz");
    }
    int strip_dir=3;
    TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
@@ -177,7 +179,7 @@ void HistoManager::drawRecoHistos(TCanvas *aCanvas){
    else  get1DProjection(projection_type::DIR_TIME, filterType, scale_type::mm)->DrawCopy("hist");
 
    aCanvas->Modified();
-   aCanvas->Update();
+   aCanvas->Update(); 
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -223,6 +225,7 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
      auto histo2D = get2DProjection(projType, filterType, scale_type::mm);
      if(myConfig.get<bool>("recoClusterEnable")){
        histo2D->SetMinimum(0.0);
+       histo2D->DrawCopy("colz");
        if(aPad->GetLogz()) histo2D->SetMinimum(1.0);
        hPlotBackground->Draw("col same");
        aPad->RedrawAxis();
@@ -714,8 +717,8 @@ void HistoManager::openOutputStream(const std::string & filePath){
 /////////////////////////////////////////////////////////
 void HistoManager::writeRecoData(unsigned long eventType){
 
+  myEventInfo = myEventPtr->GetEventInfo(); 
   myEventInfo.SetEventType(eventType);				   
-  myEventInfo.SetRunId(myRunParser->runId());
   myRecoOutput.setRecTrack(myTkBuilder.getTrack3D(0));
   myRecoOutput.setEventInfo(myEventInfo);				   
   myRecoOutput.update();  

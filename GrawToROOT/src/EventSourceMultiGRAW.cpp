@@ -13,6 +13,7 @@
 #include "TCollection.h"
 #include "TClonesArray.h"
 
+#include "RunIdParser.h"
 #include "EventSourceMultiGRAW.h"
 //#include "EventRaw.h"
 #include "colorText.h"
@@ -411,25 +412,30 @@ void EventSourceMultiGRAW::checkEntryForFragments(unsigned int iEntry, unsigned 
 void EventSourceMultiGRAW::collectEventFragments(unsigned int eventId){
 
   unsigned int nFragments=0;
+  std::set<int> asadCounter;
   for(unsigned int streamIndex=0; streamIndex<myFramesMapList.size(); streamIndex++) {
     auto it = myFramesMapList[streamIndex].find(eventId);
     if(it==myFramesMapList[streamIndex].end()) continue;
-    
+
     if(nFragments==0) {
       myCurrentPEvent->Clear();
 	  	
-      std::cout<<KYEL<<"Creating a new EventTPC/Raw with event id: "<<eventId<<RST<<std::endl;
+      std::cout<<KYEL<<"Creating a new PEventTPC/Raw with event id: "<<eventId<<RST<<std::endl;
     }
     auto aFragment = it->second;
     loadGrawFrame(aFragment, true, streamIndex);
-	
-    myCurrentEventInfo.SetEventId(eventId);      
-    myCurrentEventInfo.SetEventTimestamp(myDataFrame.fHeader.fEventTime);
-    
+	    
     int ASAD_idx = myDataFrame.fHeader.fAsadIdx;
     int COBO_idx = myDataFrame.fHeader.fCoboIdx;
     unsigned long int eventId_fromFrame = myDataFrame.fHeader.fEventIdx; // HOTFIX !!!
-    myCurrentEntry=aFragment; // update current event frame index for EventSourceBase::currententryNumber()
+    myCurrentEntry=aFragment; 
+    asadCounter.insert(ASAD_idx);
+
+    myCurrentEventInfo.SetEventId(eventId);      
+    myCurrentEventInfo.SetEventTimestamp(myDataFrame.fHeader.fEventTime);
+    RunIdParser runParser(myFilePathList.front());
+    myCurrentEventInfo.SetRunId(runParser.runId());
+    myCurrentEventInfo.SetAsadCounter(asadCounter.size());
 
     if(eventId!=eventId_fromFrame){
       std::cerr<<KRED<<__FUNCTION__
@@ -487,3 +493,5 @@ std::string EventSourceMultiGRAW::getNextFilePath(unsigned int streamIndex){
   std::string nextFilePath = ostr.str();
   return nextFilePath;
 }
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////

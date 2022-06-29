@@ -27,6 +27,8 @@ namespace eventraw {
 
     bool GetPedestalSubtracted() const {return pedestalSubtracted;}
 
+    int GetAsadCounter() const {return asadCounter;}
+
     void SetRunId(time_t aRunId) {runId = aRunId;}
 
     void SetEventId(uint32_t aEventId) {eventId = aEventId;}
@@ -37,12 +39,15 @@ namespace eventraw {
 
     void SetPedestalSubtracted(bool isSubtracted) {pedestalSubtracted = isSubtracted;}
 
+    void SetAsadCounter(int count) {asadCounter = count;}
+
     inline EventInfo(std::shared_ptr<EventInfo> &einfo) {
       runId = einfo->GetRunId();
       eventId = einfo->GetEventId();
       timestamp = einfo->GetEventTimestamp();
       eventType = einfo->GetEventType().to_ulong();
       pedestalSubtracted = einfo->GetPedestalSubtracted();
+      asadCounter = einfo->GetAsadCounter();
     }
 
   private:
@@ -52,6 +57,7 @@ namespace eventraw {
     uint64_t timestamp{0}; // 6-bytes in 10ns CLK units (100 MHz)
     unsigned long eventType{0};
     bool pedestalSubtracted{false};
+    int asadCounter{0};
     
     static const uint eventTypeBits = 64;
 

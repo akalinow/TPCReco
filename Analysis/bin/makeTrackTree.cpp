@@ -200,8 +200,6 @@ int makeTrackTree(const  std::string & geometryFileName,
   std::string recoFileName = MakeUniqueName("Reco_"+fileName.substr(last_slash_position+1,
 						     last_dot_position-last_slash_position-1)+".root");
   std::shared_ptr<eventraw::EventInfo> myEventInfo = std::make_shared<eventraw::EventInfo>();
-  RunIdParser runParser(fileName);
-  myEventInfo->SetRunId(runParser.runId());
   myRecoOutput.setEventInfo(myEventInfo);
   myRecoOutput.open(recoFileName);
   
@@ -216,14 +214,7 @@ int makeTrackTree(const  std::string & geometryFileName,
       std::cout<<KBLU<<"Processed: "<<int(100*(double)iEntry/nEntries)<<" % events"<<RST<<std::endl;
     }
     myEventSource->loadFileEntry(iEntry);
-    /*
-    myEventSource->getCurrentEvent()->MakeOneCluster(35, 0, 0);
-    if(myEventSource->getCurrentEvent()->GetOneCluster().GetNhits()>20000){
-      std::cout<<KRED<<"Noisy event - skipping."<<RST<<std::endl;
-      continue;
-      }
-    */
-    
+    *myEventInfo = myEventSource->getCurrentEvent()->GetEventInfo();
     myTkBuilder.setEvent(myEventSource->getCurrentEvent());
     myTkBuilder.reconstruct();
 
@@ -231,8 +222,7 @@ int makeTrackTree(const  std::string & geometryFileName,
     const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
 
     myRecoOutput.setRecTrack(aTrack3D);
-    myEventInfo->SetEventId(eventId);
-    myRecoOutput.setEventInfo(myEventInfo);				   
+    //myRecoOutput.setEventInfo(myEventInfo);				   
     myRecoOutput.update(); 
     
     double length = aTrack3D.getLength();

@@ -17,10 +17,13 @@ void eventraw::EventInfo::reset(){
 ////////////////////////////////////////////////
 std::ostream& eventraw::operator<<(std::ostream& os, const eventraw::EventInfo& einfo) {
   os << "EventInfo: "
-     <<" run timestamp: "<<einfo.GetRunId()
-     <<" event id=" << einfo.GetEventId() << ", timestamp=" << einfo.GetEventTimestamp()
+     <<" event id=" << einfo.GetEventId()
+     <<"timestamps"
+     <<" run: "<<einfo.GetRunId()
+     <<" event:" << einfo.GetEventTimestamp()
      <<" type: "<<einfo.GetEventType().to_string()
-     <<" pedestal subtracted? "<<einfo.GetPedestalSubtracted();
+     <<" pedestal subtracted? "<<einfo.GetPedestalSubtracted()
+     <<" AsAd count: "<<einfo.GetAsadCounter();
   return os;
 }
 ////////////////////////////////////////////////
