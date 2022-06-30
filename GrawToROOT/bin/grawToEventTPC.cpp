@@ -199,7 +199,7 @@ int convertGRAWFile(const  std::string & geometryFileName,
     if( eventIdMap.size()==10) break;
 #endif
 
-    if( eventIdMap.size()==10) break;
+    //if( eventIdMap.size()==100) break;//TEST
     
     currentEventId=myEventSource->currentEventNumber();
     myEventSource->getNextEvent();

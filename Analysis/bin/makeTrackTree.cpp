@@ -200,7 +200,6 @@ int makeTrackTree(const  std::string & geometryFileName,
   std::string recoFileName = MakeUniqueName("Reco_"+fileName.substr(last_slash_position+1,
 						     last_dot_position-last_slash_position-1)+".root");
   std::shared_ptr<eventraw::EventInfo> myEventInfo = std::make_shared<eventraw::EventInfo>();
-  myRecoOutput.setEventInfo(myEventInfo);
   myRecoOutput.open(recoFileName);
   
   myEventSource->loadDataFile(dataFileName);
@@ -208,7 +207,7 @@ int makeTrackTree(const  std::string & geometryFileName,
 
   //Event loop
   unsigned int nEntries = myEventSource->numberOfEntries();
-  //nEntries = 500;
+  nEntries = 1;
   for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
     if(nEntries>10 && iEntry%(nEntries/10)==0){
       std::cout<<KBLU<<"Processed: "<<int(100*(double)iEntry/nEntries)<<" % events"<<RST<<std::endl;
@@ -222,7 +221,7 @@ int makeTrackTree(const  std::string & geometryFileName,
     const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
 
     myRecoOutput.setRecTrack(aTrack3D);
-    //myRecoOutput.setEventInfo(myEventInfo);				   
+    myRecoOutput.setEventInfo(myEventInfo);				   
     myRecoOutput.update(); 
     
     double length = aTrack3D.getLength();

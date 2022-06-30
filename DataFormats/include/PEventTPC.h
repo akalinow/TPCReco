@@ -32,14 +32,14 @@ public:
   
   void SetEventInfo(decltype(myEventInfo)& aEvInfo) {myEventInfo = aEvInfo; };
 
-  bool AddValByStrip(std::shared_ptr<StripTPC> strip, int time_cell, double val);                     
+  bool AddValByStrip(const std::shared_ptr<StripTPC> & strip, int time_cell, double val);                     
   
   friend std::ostream& operator<<(std::ostream& os, const PEventTPC& e);
 
   private:
 
   chargeMapType myChargeMap;
-  //float myChargeMap2[3][3][256][512];
+  float myChargeArray[3][3][256][512];
   
 };
 
