@@ -2,13 +2,14 @@
 Usage:
 
 $ root -l
-root [0] .L makePlots_report.cpp
-root [1] makePlots_report("Histos.root", 11.5);
+root [0] .L makePlots_HIGS.cpp
+root [1] makePlots_HIGS("Histos.root", 11.5);
 
 */
 //#undef __ROOTLOGON__
 //#ifndef __ROOTLOGON__
 R__ADD_INCLUDE_PATH(../../DataFormats/include)
+R__ADD_INCLUDE_PATH(../../Utilities/include)
 R__ADD_LIBRARY_PATH(../lib)
 //#endif
 
@@ -16,10 +17,10 @@ R__ADD_LIBRARY_PATH(../lib)
 #include <algorithm>
 #include "GeometryTPC.h"
 
-void makePlots_report(std::string fileNameHistos, float energyMeV, std::string cutInfo=""){
+void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cutInfo=""){
 
   bool plot_2prong=true;
-  bool plot_3prong=false;
+  bool plot_3prong=true;
 
   if (!gROOT->GetClass("GeometryTPC")){
     R__LOAD_LIBRARY(libDataFormats.so);
@@ -51,7 +52,7 @@ void makePlots_report(std::string fileNameHistos, float energyMeV, std::string c
 
   TCanvas *c=new TCanvas("c","c",800,600);
 
-  std::string prefix=Form("figures_%.1fMeV", energyMeV);
+  std::string prefix=Form("figures_%.3fMeV", energyMeV);
   c->Print(((string)(prefix)+".pdf[").c_str());
   gPad->SetLogy(false);
 
@@ -73,7 +74,9 @@ void makePlots_report(std::string fileNameHistos, float energyMeV, std::string c
   auto statY6=statY1;
   auto lineH=0.075;
   auto lineW=0.15;
-  std::string energyInfo=Form("E_{#gamma}=%.1f MeV : ", energyMeV);
+  auto statX7=0.9-1.5*lineW;
+  auto statY7=0.9-2.5*lineH;
+  std::string energyInfo=Form("E_{#gamma}=%.3f MeV : ", energyMeV);
   
   ///// control plot: number of tracks
   h1=(TH1D*)f->Get("h_ntracks")->Clone(); // copy for modifications of the same histogram
@@ -328,6 +331,7 @@ void makePlots_report(std::string fileNameHistos, float energyMeV, std::string c
     c->Print(((string)(prefix)+".pdf").c_str());
   }
 
+  //// 2-prong, Sum of alpha + carbon track lengths, zoomed X=[30mm, 120mm], log Y scale @ 9.845 MeV
   //// 2-prong, Sum of alpha + carbon track lengths, zoomed X=[30mm, 130mm], log Y scale @ 11.5 MeV
   //// 2-prong, Sum of alpha + carbon track lengths, zoomed X=[30mm, 150mm], log Y scale @ 12.3 MeV
   if(plot_2prong) {
@@ -339,8 +343,9 @@ void makePlots_report(std::string fileNameHistos, float energyMeV, std::string c
     h1->UseCurrentStyle();
     h1->SetStats(true);
     h1->SetLineWidth(2);
+    h1->GetXaxis()->SetRangeUser(30.0, 120.0); // valid for 9.845 MeV
     //    h1->GetXaxis()->SetRangeUser(30.0, 130.0); // valid for 11.5 MeV
-    h1->GetXaxis()->SetRangeUser(30.0, 150.0); // valid for 12.3 MeV
+    //    h1->GetXaxis()->SetRangeUser(30.0, 150.0); // valid for 12.3 MeV
     gPad->SetLeftMargin(0.125);
     gPad->SetRightMargin(0.1);
     gPad->SetLogy(true);
@@ -354,6 +359,7 @@ void makePlots_report(std::string fileNameHistos, float energyMeV, std::string c
     c->Print(((string)(prefix)+".pdf").c_str());
   }
 
+  //// 2-prong, Sum of alpha + carbon track lengths, zoomed X=[30mm, 120mm], linear Y scale @ 9.845 MeV
   //// 2-prong, Sum of alpha + carbon track lengths, zoomed X=[30mm, 130mm], linear Y scale @ 11.5 MeV
   //// 2-prong, Sum of alpha + carbon track lengths, zoomed X=[30mm, 150mm], linear Y scale @ 12.3 MeV
   if(plot_2prong) {
@@ -365,8 +371,9 @@ void makePlots_report(std::string fileNameHistos, float energyMeV, std::string c
     h1->UseCurrentStyle();
     h1->SetStats(true);
     h1->SetLineWidth(2);
+    h1->GetXaxis()->SetRangeUser(30.0, 120.0); // valid for 9.845 MeV
     //    h1->GetXaxis()->SetRangeUser(30.0, 130.0); // valid for 11.5 MeV
-    h1->GetXaxis()->SetRangeUser(30.0, 150.0); // valid for 12.3 MeV
+    //    h1->GetXaxis()->SetRangeUser(30.0, 150.0); // valid for 12.3 MeV
     gPad->SetLeftMargin(0.125);
     gPad->SetRightMargin(0.1);
     gPad->SetLogy(false);
@@ -380,6 +387,7 @@ void makePlots_report(std::string fileNameHistos, float energyMeV, std::string c
     c->Print(((string)(prefix)+".pdf").c_str());
   }
 
+  //// 2-prong, Alpha track length, zoomed X=[20mm, 100mm], log Y scale @ 9.845 MeV
   //// 2-prong, Alpha track length, zoomed X=[30mm, 130mm], log Y scale @ 11.5 MeV
   //// 2-prong, Alpha track length, zoomed X=[30mm, 150mm], log Y scale @ 12.3 MeV
   if(plot_2prong) {
@@ -391,8 +399,9 @@ void makePlots_report(std::string fileNameHistos, float energyMeV, std::string c
     h1->UseCurrentStyle();
     h1->SetStats(true);
     h1->SetLineWidth(2);
+    h1->GetXaxis()->SetRangeUser(20.0, 100.0); // valid for 9.845 MeV
     //    h1->GetXaxis()->SetRangeUser(30.0, 130.0); // valid for 11.5 MeV
-    h1->GetXaxis()->SetRangeUser(30.0, 150.0); // valid for 12.3 MeV
+    //    h1->GetXaxis()->SetRangeUser(30.0, 150.0); // valid for 12.3 MeV
     gPad->SetLeftMargin(0.125);
     gPad->SetRightMargin(0.1);
     gPad->SetLogy(true);
@@ -406,6 +415,7 @@ void makePlots_report(std::string fileNameHistos, float energyMeV, std::string c
     c->Print(((string)(prefix)+".pdf").c_str());
   }
 
+  //// 2-prong, Alpha track length, zoomed X=[40mm, 70mm], linear Y scale @ 9.845 MeV
   //// 2-prong, Alpha track length, zoomed X=[60mm, 80mm], linear Y scale @ 11.5 MeV
   //// 2-prong, Alpha track length, zoomed X=[75mm, 105mm], linear Y scale @ 12.3 MeV
   if(plot_2prong) {
@@ -417,8 +427,9 @@ void makePlots_report(std::string fileNameHistos, float energyMeV, std::string c
     h1->UseCurrentStyle();
     h1->SetStats(true);
     h1->SetLineWidth(2);
+    h1->GetXaxis()->SetRangeUser(40.0, 70.0); // valid for 9.845 MeV
     //    h1->GetXaxis()->SetRangeUser(60.0, 80.0); // valid for 11.5 MeV
-    h1->GetXaxis()->SetRangeUser(75.0, 105.0); // valid for 12.3 MeV
+    //    h1->GetXaxis()->SetRangeUser(75.0, 105.0); // valid for 12.3 MeV
     gPad->SetLeftMargin(0.125);
     gPad->SetRightMargin(0.1);
     gPad->SetLogy(false);
@@ -432,6 +443,7 @@ void makePlots_report(std::string fileNameHistos, float energyMeV, std::string c
     c->Print(((string)(prefix)+".pdf").c_str());
   }
 
+  //// 2-prong, Alpha track length (X) vs Carbon track length (Y), zoomed X=[20mm, 120mm] x Y=[4mm, 18mm] @ 9.845 MeV
   //// 2-prong, Alpha track length (X) vs Carbon track length (Y), zoomed X=[20mm, 120mm] x Y=[4mm, 18mm] @ 11.5 MeV
   //// 2-prong, Alpha track length (X) vs Carbon track length (Y), zoomed X=[20mm, 120mm] x Y=[4mm, 18mm] @ 12.3 MeV
   if(plot_2prong) {
@@ -465,7 +477,8 @@ void makePlots_report(std::string fileNameHistos, float energyMeV, std::string c
   //// define 2D cut to select Oxygen-16 only for next 3 plots
   Double_t theta[5]  = {-1,    1,       1,    -1, -1};
   //  Double_t length[5] = {58, 58+5, 58+5+20, 58+20, 58}; // valid for 11.5MeV
-  Double_t length[5] = {78, 78+7, 78+7+20, 78+20, 78}; // valid for 12.3MeV
+  //  Double_t length[5] = {78, 78+7, 78+7+20, 78+20, 78}; // valid for 12.3MeV
+  Double_t length[5] = {38, 38+7, 38+7+20, 38+20, 38}; // valid for 9.845 MeV
 
   TCutG *mycut=new TCutG("select_O16", 5, theta, length);
   mycut->SetLineColor(kRed);
@@ -498,6 +511,7 @@ void makePlots_report(std::string fileNameHistos, float energyMeV, std::string c
     c->Print(((string)(prefix)+".pdf").c_str());
   }
 
+  //// 2-prong, Alpha track length (X) vs Alpha cos(theta_BEAM_LAB), zoomed Y=[30mm, 70mm], tagged O-16 @ 9.845 MeV
   //// 2-prong, Alpha track length (X) vs Alpha cos(theta_BEAM_LAB), zoomed Y=[50mm, 90mm], tagged O-16 @ 11.5 MeV
   //// 2-prong, Alpha track length (X) vs Alpha cos(theta_BEAM_LAB), zoomed Y=[70mm, 110mm], tagged O-16 @ 12.3 MeV
   if(plot_2prong) {
@@ -517,7 +531,8 @@ void makePlots_report(std::string fileNameHistos, float energyMeV, std::string c
     h2->SetTitleOffset(1.4, "Y");
     h2->SetTitleOffset(1.2, "Z");
     //    h2->GetYaxis()->SetRangeUser(50, 90); // valid for 11.5 MeV
-    h2->GetYaxis()->SetRangeUser(70, 110); // valid for 12.3 MeV
+    //    h2->GetYaxis()->SetRangeUser(70, 110); // valid for 12.3 MeV
+    h2->GetYaxis()->SetRangeUser(30, 70); // valid for 9.845 MeV
     gPad->Update();
     //  st = (TPaveStats *)c->GetPrimitive("stats");
     //  if(st) {
@@ -577,12 +592,13 @@ void makePlots_report(std::string fileNameHistos, float energyMeV, std::string c
     gPad->Update();
     st = (TPaveStats *)c->GetPrimitive("stats");
     if(st) {
-      st->SetX1NDC(statX5); st->SetX2NDC(statX5+lineW*1.5); st->SetY1NDC(statY5); st->SetY2NDC(statY5+lineH*2.5);
+      st->SetX1NDC(statX7); st->SetX2NDC(statX7+lineW*1.5); st->SetY1NDC(statY7); st->SetY2NDC(statY7+lineH*2.5);
     }
     TLatex *tl=new TLatex;
     tl->SetTextSize(0.030);
     tl->SetTextAlign(11); // align at bottom, left
-    tl->DrawLatexNDC(0.2, 0.275, "Fit :  #font[12]{#frac{dN}{d#phi} = A #[]{1 + f cos 2#(){#phi + #delta}}}");
+    //    tl->DrawLatexNDC(0.2, 0.275, "Fit :  #font[12]{#frac{dN}{d#phi} = A #[]{1 + f cos 2#(){#phi + #delta}}}");
+    tl->DrawLatexNDC(0.15, 0.85, "Fit :  #font[12]{#frac{dN}{d#phi} = A #[]{1 + f cos 2#(){#phi + #delta}}}");
     c->Update();
     c->Modified();
     c->Print(((string)(prefix)+".pdf").c_str());
@@ -594,7 +610,8 @@ void makePlots_report(std::string fileNameHistos, float energyMeV, std::string c
     h2=(TH2D*)f->Get("h_2prong_alpha_deltaYZ")->Clone(); // copy for modifications of the same histogram
     h2->SetTitle((energyInfo+h2->GetTitle()).c_str());
     gStyle->SetOptStat(10); // KISOURMEN : show entries only
-    h2->Rebin2D(10,10);
+    //    h2->Rebin2D(10,10);
+    h2->Rebin2D(20,20);
     h2->UseCurrentStyle();
     h2->SetStats(true);
     h2->Draw("COLZ");
@@ -853,6 +870,115 @@ void makePlots_report(std::string fileNameHistos, float energyMeV, std::string c
     c->Update();
     c->Modified();
     c->Print(((string)(prefix)+".pdf").c_str());
+
+  }
+
+  //// 3-prong, Carbon-12 excitation energy above ground state, CMS, linear Y scale
+  if(plot_3prong) {
+    c->Clear();
+    h1=(TH1D*)f->Get("h_3prong_excitation_E_CMS")->Clone(); // copy for modifications of the same histogram
+    h1->SetTitle((energyInfo+h1->GetTitle()).c_str());
+    gStyle->SetOptStat(10); // KISOURMEN : show entries only
+    //    h1->Rebin(4);
+    h1->Draw();
+    h1->UseCurrentStyle();
+    h1->SetStats(true);
+    h1->SetLineWidth(2);
+    h1->GetXaxis()->SetRangeUser(0.0, 10.0);
+    gPad->SetLeftMargin(0.125);
+    gPad->SetRightMargin(0.1);
+    gPad->SetLogy(false);
+    gPad->Update();
+    st = (TPaveStats *)c->GetPrimitive("stats");
+    if(st) {
+      st->SetX1NDC(statX1); st->SetX2NDC(statX1+lineW); st->SetY1NDC(statY1); st->SetY2NDC(statY1+lineH);
+    }
+    c->Update();
+    c->Modified();
+    c->Print(((string)(prefix)+".pdf").c_str());
+
+  }
+
+  //// 3-prong, reaction Q-value, CMS, linear Y scale
+  if(plot_3prong) {
+    c->Clear();
+    h1=(TH1D*)f->Get("h_3prong_Qvalue_CMS")->Clone(); // copy for modifications of the same histogram
+    h1->SetTitle((energyInfo+h1->GetTitle()).c_str());
+    gStyle->SetOptStat(10); // KISOURMEN : show entries only
+    //    h1->Rebin(4);
+    h1->Draw();
+    h1->UseCurrentStyle();
+    h1->SetStats(true);
+    h1->SetLineWidth(2);
+    h1->GetXaxis()->SetRangeUser(0.0, 4.0);
+    gPad->SetLeftMargin(0.125);
+    gPad->SetRightMargin(0.1);
+    gPad->SetLogy(false);
+    gPad->Update();
+    st = (TPaveStats *)c->GetPrimitive("stats");
+    if(st) {
+      st->SetX1NDC(statX1); st->SetX2NDC(statX1+lineW); st->SetY1NDC(statY1); st->SetY2NDC(statY1+lineH);
+    }
+    c->Update();
+    c->Modified();
+    c->Print(((string)(prefix)+".pdf").c_str());
+
+  }
+
+  //// 3-prong, Dalitz plot, invariant mass of each alpha pair (symmetrized)
+  if(plot_3prong) {
+    c->Clear();
+    h2=(TH2D*)f->Get("h_3prong_Dalitz1_CMS")->Clone(); // copy for modifications of the same histogram
+    h2->SetTitle((energyInfo+h2->GetTitle()).c_str());
+    gStyle->SetOptStat(10); // KISOURMEN : show entries only
+    h2->Rebin2D(4,4);
+    h2->UseCurrentStyle();
+    h2->SetStats(true);
+    h2->Draw("COLZ");
+    gPad->SetLeftMargin(0.1);
+    gPad->SetRightMargin(0.14);
+    h2->SetTitleOffset(1.6, "X");
+    h2->SetTitleOffset(1.4, "Y");
+    h2->SetTitleOffset(1.2, "Z");
+    gPad->SetLogy(false);
+    gPad->SetLogz(false);
+    gPad->Update();
+    st = (TPaveStats *)c->GetPrimitive("stats");
+    if(st) {
+      st->SetX1NDC(statX3); st->SetX2NDC(statX3+lineW); st->SetY1NDC(statY3); st->SetY2NDC(statY3+lineH);
+    }
+    c->Update();
+    c->Modified();
+    c->Print(((string)(prefix)+".pdf").c_str());
+
+  }
+
+  //// 3-prong, Dalitz plot, chi/kappa variables (symmeterized)
+  if(plot_3prong) {
+    c->Clear();
+    h2=(TH2D*)f->Get("h_3prong_Dalitz2_CMS")->Clone(); // copy for modifications of the same histogram
+    h2->SetTitle((energyInfo+h2->GetTitle()).c_str());
+    gStyle->SetOptStat(10); // KISOURMEN : show entries only
+    h2->Rebin2D(4,4);
+    h2->UseCurrentStyle();
+    h2->SetStats(true);
+    h2->Draw("COLZ");
+    gPad->SetLeftMargin(0.1);
+    gPad->SetRightMargin(0.14);
+    h2->SetTitleOffset(1.6, "X");
+    h2->SetTitleOffset(1.4, "Y");
+    h2->SetTitleOffset(1.2, "Z");
+    gPad->SetLogy(false);
+    gPad->SetLogz(false);
+    gPad->Update();
+    st = (TPaveStats *)c->GetPrimitive("stats");
+    if(st) {
+      st->SetX1NDC(statX3); st->SetX2NDC(statX3+lineW); st->SetY1NDC(statY3); st->SetY2NDC(statY3+lineH);
+    }
+    c->Update();
+    c->Modified();
+    c->Print(((string)(prefix)+".pdf").c_str());
+
   }
 
   //////////////////////////////////
@@ -874,8 +1000,8 @@ void makeCombinedPlots_report(std::string fileNameHistosAuto, std::string fileNa
   TFile *f2 = new TFile(fileNameHistosManual.c_str(), "OLD"); // MANUAL RECO
   if(!f2) exit(-1);
 
-  std::string prefix=Form("figures2_%.1fMeV_rebin%d", energyMeV, rebin);
-  std::string energyInfo=Form("E_{#gamma}=%.1f MeV : ", energyMeV);
+  std::string prefix=Form("figures2_%.3fMeV_rebin%d", energyMeV, rebin);
+  std::string energyInfo=Form("E_{#gamma}=%.3f MeV : ", energyMeV);
 
   gStyle->SetOptFit(111); // PCEV : prob=disabled / chi2,errors,variables=enabled
   gStyle->SetOptStat(10); // KISOURMEN : entries=enabled, name=disabled

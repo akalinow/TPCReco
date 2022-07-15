@@ -200,7 +200,8 @@ void HIGGS_analysis::bookHistos(){
       histos2D[(prefix+"_Dalitz2_CMS").c_str()]=
 	new TH2F((prefix+"_Dalitz2_CMS").c_str(),
 		 Form("%s - Dalitz plot;#chi;#psi;Probability [arb.u.]", info),
-		 100, -0.35, 0.35, 100, -0.35, 0.35);
+		 200, -0.50, 0.50, 200, -0.50, 0.50);
+      //	 100, -0.35, 0.35, 100, -0.35, 0.35);
     case 2: // VALID FOR 2-prongs and 3-prongs
       histos1D[(prefix+"_lenSUM").c_str()]=
 	new TH1F((prefix+"_lenSUM").c_str(),
@@ -894,7 +895,7 @@ bool HIGGS_analysis::eventFilter(Track3D *aTrack){
   //  return true;
 
   // NOTE: for manual reconstruction disable dE/dx fit quality checks (cut #6)
-  bool checkFitQualityOf2prongs=true; // TODO - TO BE PARAMETERIZED !!!
+  bool checkFitQualityOf2prongs=false; // TODO - TO BE PARAMETERIZED !!!
 
   // print statistics on demand
   const auto printAccepted=false; // TODO - TO BE PARAMETERIZED !!!
