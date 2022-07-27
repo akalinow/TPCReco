@@ -63,7 +63,10 @@ void discoverFiles(const std::string &inputFilename,
     return;
   }
   auto inputPath = boost::filesystem::path(inputFilename);
-  auto begin = boost::filesystem::directory_iterator(inputPath.parent_path());
+  auto parentPath = inputPath.has_parent_path()
+                        ? inputPath.parent_path()
+                        : boost::filesystem::current_path();
+  auto begin = boost::filesystem::directory_iterator(parentPath);
   auto end = boost::filesystem::directory_iterator{};
   discoverFiles(inputId.timePoint(), inputId.fileId(), delay, begin, end,
                 output);

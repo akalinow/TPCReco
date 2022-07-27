@@ -110,7 +110,9 @@ int main(int argc, char **argv) {
       if (varMap.count("directory")) {
         dir = boost::filesystem::path(varMap["directory"].as<std::string>());
       } else {
-        dir = boost::filesystem::path(input).parent_path();
+        auto inputPath = boost::filesystem::path(input);
+        dir = inputPath.has_parent_path() ? inputPath.parent_path()
+                                          : boost::filesystem::current_path();
       }
       auto begin = boost::filesystem::directory_iterator(dir);
       auto end = boost::filesystem::directory_iterator();
