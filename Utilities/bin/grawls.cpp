@@ -1,6 +1,7 @@
 #include "InputFileHelper.h"
 #include <boost/program_options.hpp>
 #include <iostream>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -58,7 +59,12 @@ boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv) {
       "files,f",
       boost::program_options::value<std::vector<std::string>>()->multitoken(),
       "strings - list of files to browse. Mutually "
-      "exclusive with \"directory\"");
+      "exclusive with \"directory\"")(
+      "ext",
+      boost::program_options::value<std::vector<std::string>>()->multitoken()
+       ->default_value(std::vector<std::string>{std::string{".graw"}},".graw")
+      ,
+      "allowed extensions");
 
   boost::program_options::positional_options_description cmdLinePosDesc;
   cmdLinePosDesc.add("input", 1).add("files", -1);
@@ -96,6 +102,18 @@ int main(int argc, char **argv) {
   auto input = varMap["input"].as<std::string>();
   auto delay = std::chrono::milliseconds(varMap["ms"].as<int>());
   auto separator = varMap["separator"].as<std::string>();
+
+  std::set<std::string> extensionsSet;
+  {
+    auto extensions = varMap["ext"].as<std::vector<std::string>>();
+    std::transform(std::begin(extensions), std::end(extensions),
+                   std::inserter(extensionsSet, std::begin(extensionsSet)),
+                   [](auto entry) {
+                     return !entry.empty() && entry[0] != '.' ? "." + entry
+                                                              : entry;
+                   });
+  }
+
   std::vector<std::string> output;
   try {
     auto referencePoint =
@@ -121,6 +139,9 @@ int main(int argc, char **argv) {
                                      referencePoint.second, delay, begin, end,
                                      std::back_inserter(output));
     }
+    output.erase(InputFileHelper::filterExtensions(
+                     std::begin(output), std::end(output), extensionsSet),
+                 std::end(output));
     std::cout << InputFileHelper::join(output, separator) << std::endl;
   } catch (const std::exception &e) {
     std::cerr << "grawls: " << e.what() << std::endl;

@@ -95,6 +95,15 @@ std::string discoverFilesCSV(const std::string &input,
   return join(files, separator);
 }
 
+template <class FilesIterator, class ExtensionsContainer>
+FilesIterator filterExtensions(FilesIterator first, FilesIterator last,
+                               const ExtensionsContainer &extensions) {
+  return std::remove_if(first, last, [&extensions](const auto &entry) {
+    auto extension =
+        boost::filesystem::path(entry).extension().string();
+    return extensions.count(extension) == 0;
+  });
+}
 } // namespace InputFileHelper
 
 #endif // UTILITIES_INPUT_FILE_HELPER_H_
