@@ -12,31 +12,37 @@
 // the toy Monte Carlo generator:
 //
 #define SIMUL_CONTAINMENT_FLAG   false     // skip partially contained events within detector's volume?
+                                           // useful for calculating TPC geometric/electronics acceptance
 #define SIMUL_TRUNCATE_FLAG      true      // truncate partially contained tracks (detector's volume and/or GET history buffer)?
 #define SIMUL_EXT_TRG_FLAG       true      // simulate external trigger and GET history buffer?
 #define SIMUL_EXT_TRG_ARRIVAL    0.1       // trigger position as a fraction of GET electronics full time scale [0-1]
-//#define SIMUL_BEAM_E_RESOL     0         // no energy smearing
+#define SIMUL_BEAM_E_RESOL     0         // no energy smearing
 //#define SIMUL_BEAM_E_RESOL     0.00369   // [0-1] 0.369% energy sigma, fwhm=100 keV @ 11.5MeV
 //#define SIMUL_BEAM_E_RESOL     0.00554   // [0-1] 0.554% energy sigma, fwhm=150 keV @ 11.5MeV
-#define SIMUL_BEAM_E_RESOL       0.00738   // [0-1] 0.738% energy sigma, fwhm=200 keV @ 11.5MeV
+//#define SIMUL_BEAM_E_RESOL     0.00738   // [0-1] 0.738% energy sigma, fwhm=200 keV @ 11.5MeV
+//#define SIMUL_BEAM_E_RESOL       0.00863   // [0-1] 0.863% energy sigma, fwhm=200 keV @ 9.845MeV
 //#define SIMUL_BEAM_E_RESOL     0.0107    // [0-1] 1.107% energy sigma, fwhm=300 keV @ 11.5MeV
 //#define SIMUL_BEAM_E_RESOL     0.0148    // [0-1] 1.480% energy sigma, fwhm=400 keV @ 11.5MeV
 //#define SIMUL_BEAM_E_RESOL     0.01440   // [0-1] 1.440% energy sigma, fwhm=300 keV @ 8.86MeV
 #define SIMUL_BEAM_SPREAD_R      5.25      // [mm] flat top intentsity radius
 #define SIMUL_BEAM_SPREAD_SIGMA  1.0       // [mm] intensity tail sigma
-#define SIMUL_PRESSURE           190.0     // [mbar] CO2 pressure
+#define SIMUL_BEAM_TILT_OFFSET   -1.3      // [mm] beam tilt offset
+#define SIMUL_BEAM_TILT_ANGLE    3.0e-3    // [rad] beam tilt angle
+                                           // where: y_det(x_det)=tan(angle)*x_det + offset
+//#define SIMUL_PRESSURE         190.0     // [mbar] CO2 pressure
+#define SIMUL_PRESSURE           130.0     // [mbar] CO2 pressure
 #define SIMUL_OXYGEN_E1E2_FLAG   true      // use anisotropic theta distribution for O-16?
-#define SIMUL_OXYGEN_E1E2_SIGMA1 0         // sigma_E1 cross section [nb]
-#define SIMUL_OXYGEN_E1E2_SIGMA2 1         // sigma_E2 cross section [nb]
-#define SIMUL_OXYGEN_E1E2_PHI12  0         // E1/E2 mixing phase [rad]
-//#define SIMUL_OXYGEN_E1E2_SIGMA1 0.16    // sigma_E1 cross section [nb]
-//#define SIMUL_OXYGEN_E1E2_SIGMA2 0.15    // sigma_E2 cross section [nb]
-//#define SIMUL_OXYGEN_E1E2_PHI12  54./180.*TMath::Pi() // E1/E2 mixing phase [rad]
+#define SIMUL_OXYGEN_E1E2_SIGMA1 0         // [nb] sigma_E1 cross section
+#define SIMUL_OXYGEN_E1E2_SIGMA2 1         // [nb] sigma_E2 cross section
+#define SIMUL_OXYGEN_E1E2_PHI12  0         // [rad] E1/E2 mixing phase
+//#define SIMUL_OXYGEN_E1E2_SIGMA1 0.16    // [nb] sigma_E1 cross section
+//#define SIMUL_OXYGEN_E1E2_SIGMA2 0.15    // [nb] sigma_E2 cross section
+//#define SIMUL_OXYGEN_E1E2_PHI12  54./180.*TMath::Pi() // [rad] E1/E2 mixing phase
 #define SIMUL_POLARISATION_FLAG  true      // use unpolarised or partially polarized beam?
-#define SIMUL_POLARISATION_FRAC  0.33      // degree of linear polarization of gamma beam
-#define SIMUL_POLARISATION_ANGLE 35./180.*TMath::Pi()  // polarization plane (CKW wrt horizontal axis)
-#define SIMUL_EXTENSION_FLAG     true      // allow verticies created outside of active volume?
-#define SIMUL_EXTENSION_ZONE     100.0     // extension zone for the verticies [mm]
+#define SIMUL_POLARISATION_FRAC  0.33      // [0-1] degree of linear polarization of gamma beam
+#define SIMUL_POLARISATION_ANGLE -45./180.*TMath::Pi()  // [rad] polarization plane (CKW wrt horizontal axis)
+#define SIMUL_EXTENSION_FLAG     false     // allow verticies created outside of active volume?
+#define SIMUL_EXTENSION_ZONE     100.0     // [mm] extension zone for the verticies
 #define SIMUL_PLOT3D_FLAG        false     // create 3D debug plot with all tracks?
 
 #ifndef __ROOTLOGON__
@@ -398,6 +404,7 @@ Track3D generateFakeAlphaCarbonGenericEvent(std::shared_ptr<GeometryTPC> aGeomet
   double beamEnergyResolution=SIMUL_BEAM_E_RESOL; // LAB beam energy smearing factor
   double beamEnergy_DET=photonEnergyMeV*r->Gaus(1, beamEnergyResolution); // smear beam energy by 5% // MeV
   TVector3 beamDir_DET(-1, 0, 0); // unit vector
+  beamDir_DET.RotateZ(SIMUL_BEAM_TILT_ANGLE); // apply beam tilt
   TLorentzVector photonP4_DET(beamDir_DET.Unit()*beamEnergy_DET, beamEnergy_DET); // [MeV/c, MeV/c, MeV/c, MeV/c^2]
   TLorentzVector oxygenP4_DET(0, 0, 0, oxygenMass); // [MeV/c, MeV/c, MeV/c, MeV/c^2]
 
@@ -533,6 +540,10 @@ Track3D generateFakeAlphaCarbonGenericEvent(std::shared_ptr<GeometryTPC> aGeomet
 			      xmax+(SIMUL_EXTENSION_FLAG ? SIMUL_EXTENSION_ZONE : 0)),
 		   y_rnd, z_rnd);
 
+  // apply beam tilt & offset
+  vertex.RotateZ(SIMUL_BEAM_TILT_ANGLE);
+  vertex+=TVector3(0, SIMUL_BEAM_TILT_OFFSET, 0);
+
   // create TrackSegment3D collection
   Track3D aTrack;
   TrackSegment3D aSegment;
@@ -571,6 +582,7 @@ Track3D generateFake3AlphaEvent(std::shared_ptr<GeometryTPC> aGeometry, std::sha
   double beamEnergyResolution=SIMUL_BEAM_E_RESOL; // LAB beam energy smearing factor
   double beamEnergy_DET=photonEnergyMeV*r->Gaus(1, beamEnergyResolution); // smear beam energy by 5% // MeV
   TVector3 beamDir_DET(-1, 0, 0); // unit vector
+  beamDir_DET.RotateZ(SIMUL_BEAM_TILT_ANGLE); // apply beam tilt
   TLorentzVector photonP4_DET(beamDir_DET.Unit()*beamEnergy_DET, beamEnergy_DET); // [MeV/c, MeV/c, MeV/c, MeV/c^2]
   TLorentzVector carbonP4_DET(0, 0, 0, carbonMass); // [MeV/c, MeV/c, MeV/c, MeV/c^2]
 
@@ -715,6 +727,10 @@ Track3D generateFake3AlphaEvent(std::shared_ptr<GeometryTPC> aGeometry, std::sha
   TVector3 vertex( r->Uniform(xmin-(SIMUL_EXTENSION_FLAG ? SIMUL_EXTENSION_ZONE : 0),
 			      xmax+(SIMUL_EXTENSION_FLAG ? SIMUL_EXTENSION_ZONE : 0)),
 		   y_rnd, z_rnd);
+
+  // apply beam tilt & offset
+  vertex.RotateZ(SIMUL_BEAM_TILT_ANGLE);
+  vertex+=TVector3(0, SIMUL_BEAM_TILT_OFFSET, 0);
 
   // create TrackSegment3D collection
   Track3D aTrack;

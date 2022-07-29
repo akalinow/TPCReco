@@ -990,7 +990,7 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
 
 //////////////////////////////////
 //////////////////////////////////
-void makeCombinedPlots_report(std::string fileNameHistosAuto, std::string fileNameHistosManual, float energyMeV){
+void makeCombinedPlots_report(std::string fileNameHistosAuto, std::string fileNameHistosManual, float energyMeV, const char *commentHistosAuto="Automatic", const char *commentHistosManual="Manual"){
 
   const auto rebin=5;
   const auto width=2;
@@ -1023,18 +1023,20 @@ void makeCombinedPlots_report(std::string fileNameHistosAuto, std::string fileNa
   //// 2-prong, Sum of alpha + carbon track lengths - AUTOMATIC RECO
   f1->cd();
   h1=(TH1D*)f1->Get("h_2prong_lenSUM")->Clone(); // copy for modifications of the same histogram
+  if(!h1) { std::cout << "ERROR: missing 2-prong histogram!" << std::endl;  return; }
   h1->SetTitle((energyInfo+h1->GetTitle()).c_str());
   h1->UseCurrentStyle();
   h1->SetStats(false);
   h1->SetLineWidth(width);
   h1->Rebin(rebin);
   stack.push_back(h1);
-  label.push_back(Form("Automatic 2-prong, %.0f#times10^{3} evts", h1->GetEntries()*1e-3));
+  label.push_back(Form("%s 2-prong, %.1f#times10^{3} evts", commentHistosAuto, h1->GetEntries()*1e-3));
   label_style.push_back("L");
 
   //// 2-prong, Sum of alpha + carbon track lengths - MANUAL RECO
   f2->cd();
   h1=(TH1D*)f2->Get("h_2prong_lenSUM")->Clone(); // copy for modifications of the same histogram
+  if(!h1) { std::cout << "ERROR: missing 2-prong histogram!" << std::endl;  return; }
   h1->SetTitle((energyInfo+h1->GetTitle()).c_str());
   h1->UseCurrentStyle();
   h1->SetStats(false);
@@ -1044,12 +1046,13 @@ void makeCombinedPlots_report(std::string fileNameHistosAuto, std::string fileNa
   h1->SetFillColor(kRed);
   h1->Rebin(rebin);
   stack.push_back(h1);
-  label.push_back(Form("Manual 2-prong, %.0f#times10^{3} evts", h1->GetEntries()*1e-3));
+  label.push_back(Form("%s 2-prong, %.1f#times10^{3} evts", commentHistosManual, h1->GetEntries()*1e-3));
   label_style.push_back("FL");
 
   //// 3-prong, Sum of alpha1 + alpha2 + alpha3 track lengths - MANUAL RECO
   f2->cd();
   h1=(TH1D*)f2->Get("h_3prong_lenSUM")->Clone(); // copy for modifications of the same histogram
+  if(!h1) { std::cout << "ERROR: missing 3-prong histogram!" << std::endl;  return; }
   h1->SetTitle((energyInfo+h1->GetTitle()).c_str());
   h1->UseCurrentStyle();
   h1->SetStats(false);
@@ -1059,7 +1062,7 @@ void makeCombinedPlots_report(std::string fileNameHistosAuto, std::string fileNa
   h1->SetFillColor(kMagenta);
   h1->Rebin(rebin);
   stack.push_back(h1);
-  label.push_back(Form("Manual 3-prong, %.0f evts", h1->GetEntries()));
+  label.push_back(Form("%s 3-prong, %.0f evts", commentHistosManual, h1->GetEntries()));
   label_style.push_back("FL");
 
   // compute normalization factors
@@ -1079,6 +1082,7 @@ void makeCombinedPlots_report(std::string fileNameHistosAuto, std::string fileNa
     std::string option="HIST";
     if(!first) option="HIST SAME";
     h1=(TH1D*)(stack[index]->DrawNormalized(option.c_str(), integral[index]));
+    if(!h1) continue;
     ymax=std::max(ymax, h1->GetMaximum());
     if(first) {
       h1_range=h1;
@@ -1110,6 +1114,7 @@ void makeCombinedPlots_report(std::string fileNameHistosAuto, std::string fileNa
     std::string option="HIST";
     if(!first) option="HIST SAME";
     h1=(TH1D*)(stack[index]->DrawNormalized(option.c_str(), integral[index]));
+    if(!h1) continue;
     ymax=std::max(ymax, h1->GetMaximum());
     if(first) {
       h1_range=h1;
@@ -1139,6 +1144,7 @@ void makeCombinedPlots_report(std::string fileNameHistosAuto, std::string fileNa
   //// 2-prong, Alpha track length
   f1->cd();
   h1=(TH1D*)f1->Get("h_2prong_alpha_len")->Clone(); // copy for modifications of the same histogram
+  if(!h1) { std::cout << "ERROR: missing 2-prong histogram!" << std::endl;  return; }
   h1->SetTitle((energyInfo+h1->GetTitle()).c_str());
   h1->UseCurrentStyle();
   h1->SetStats(false);
@@ -1149,6 +1155,7 @@ void makeCombinedPlots_report(std::string fileNameHistosAuto, std::string fileNa
   //// 2-prong, Alpha track length
   f2->cd();
   h1=(TH1D*)f2->Get("h_2prong_alpha_len")->Clone(); // copy for modifications of the same histogram
+  if(!h1) { std::cout << "ERROR: missing 2-prong histogram!" << std::endl;  return; }
   h1->SetTitle((energyInfo+h1->GetTitle()).c_str());
   h1->UseCurrentStyle();
   h1->SetStats(false);
@@ -1162,6 +1169,7 @@ void makeCombinedPlots_report(std::string fileNameHistosAuto, std::string fileNa
   //// 3-prong, Longest alpha track length
   f2->cd();
   h1=(TH1D*)f2->Get("h_3prong_alpha1_len")->Clone(); // copy for modifications of the same histogram
+  if(!h1) { std::cout << "ERROR: missing 2-prong histogram!" << std::endl;  return; }
   h1->SetTitle((energyInfo+h1->GetTitle()).c_str());
   h1->UseCurrentStyle();
   h1->SetStats(false);
@@ -1186,6 +1194,7 @@ void makeCombinedPlots_report(std::string fileNameHistosAuto, std::string fileNa
     std::string option="HIST";
     if(!first) option="HIST SAME";
     h1=(TH1D*)(stack[index]->DrawNormalized(option.c_str(), integral[index]));
+    if(!h1) continue;
     ymax=std::max(ymax, h1->GetMaximum());
     if(first) {
       h1_range=h1;
@@ -1217,6 +1226,7 @@ void makeCombinedPlots_report(std::string fileNameHistosAuto, std::string fileNa
     std::string option="HIST";
     if(!first) option="HIST SAME";
     h1=(TH1D*)(stack[index]->DrawNormalized(option.c_str(), integral[index]));
+    if(!h1) continue;
     ymax=std::max(ymax, h1->GetMaximum());
     if(first) {
       h1_range=h1;
