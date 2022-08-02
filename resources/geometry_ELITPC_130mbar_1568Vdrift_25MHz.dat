@@ -10,11 +10,11 @@ DIAMOND SIZE: 1.0
 #
 REFERENCE POINT: -138.9971 98.25
 #
-#### Electron drift velocity [cm/us] (for: Udrift=1372V, E=70V/cm, p=130mbar, T=293K, CO2 gas, from MAGBOLTZ simulations)
+#### Electron drift velocity [cm/us] (for: Udrift=1568V, E=80V/cm, p=130mbar, T=293K, CO2 gas, from MAGBOLTZ simulations)
 #
-DRIFT VELOCITY: 0.390
+DRIFT VELOCITY: 0.445
 #
-#### Electronics sampling rate [MHz] (eg. (512 cells)/(25 MHz)*(0.390cm/us) = 8.0 cm window can be recorded, actual length of the drift cage is 19.6 cm)
+#### Electronics sampling rate [MHz] (eg. (512 cells)/(25 MHz)*(0.445cm/us) = 9.1 cm window can be recorded, actual length of the drift cage is 19.6 cm)
 #
 SAMPLING RATE: 25
 #
