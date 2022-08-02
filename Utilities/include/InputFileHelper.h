@@ -63,7 +63,10 @@ void discoverFiles(const std::string &inputFilename,
     return;
   }
   auto inputPath = boost::filesystem::path(inputFilename);
-  auto begin = boost::filesystem::directory_iterator(inputPath.parent_path());
+  auto parentPath = inputPath.has_parent_path()
+                        ? inputPath.parent_path()
+                        : boost::filesystem::current_path();
+  auto begin = boost::filesystem::directory_iterator(parentPath);
   auto end = boost::filesystem::directory_iterator{};
   discoverFiles(inputId.timePoint(), inputId.fileId(), delay, begin, end,
                 output);
@@ -92,6 +95,15 @@ std::string discoverFilesCSV(const std::string &input,
   return join(files, separator);
 }
 
+template <class FilesIterator, class ExtensionsContainer>
+FilesIterator filterExtensions(FilesIterator first, FilesIterator last,
+                               const ExtensionsContainer &extensions) {
+  return std::remove_if(first, last, [&extensions](const auto &entry) {
+    auto extension =
+        boost::filesystem::path(entry).extension().string();
+    return extensions.count(extension) == 0;
+  });
+}
 } // namespace InputFileHelper
 
 #endif // UTILITIES_INPUT_FILE_HELPER_H_
