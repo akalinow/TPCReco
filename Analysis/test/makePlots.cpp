@@ -82,11 +82,11 @@ void makePlots(std::string fileName){
   cut1 += std::string("&&")+fiducialZCut;
 
   std::string cut2 = cut1;
-  std::string lengthCut = "length<90";
+  std::string lengthCut = "length<80";
   cut2 += std::string("&&")+lengthCut;
 
   std::string cut3 = cut1;
-  lengthCut = "length>90 && carbonRange<15";
+  lengthCut = "length>80 && carbonRange<15";
   cut3 += std::string("&&")+lengthCut;
 
   std::string cut4 = cut1;
@@ -269,8 +269,8 @@ void makePlots(std::string fileName){
 
   aLeg = new TLegend(0.6, 0.25,0.98, 0.45);
   aLeg->SetHeader("d(^{12}C)<15 mm");
-  aLeg->AddEntry(hEnergyCut2, "d(#alpha+^{12}C)<90 mm","l");
-  aLeg->AddEntry(hEnergyCut3, "d(#alpha+^{12}C)>90 mm","l");
+  aLeg->AddEntry(hEnergyCut2, "d(#alpha+^{12}C)<80 mm","l");
+  aLeg->AddEntry(hEnergyCut3, "d(#alpha+^{12}C)>80 mm","l");
   aLeg->Draw();
   ////////////////
   aCanvas->Print("Plots_set1.png");
