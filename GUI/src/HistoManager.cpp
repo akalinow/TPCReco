@@ -674,9 +674,6 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   aLatex.DrawLatexNDC(x,y,TString::Format("Total length [mm]: %3.0f",aTrack3D.getLength()));
   y = 0.95;
   aLatex.DrawLatexNDC(x,y,TString::Format("Total E [MeV]:        %2.1f",alphaEnergy+carbonEnergy));
-  
-  CoordinateConverter myConv;
-  std::cout<<myConv<<std::endl;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

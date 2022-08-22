@@ -139,6 +139,12 @@ HIgS_runs = [
 
 ################################################
 ################################################
+HIgS_runs = [
+
+    ("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220413_extTrg_CO2_250mbar_DT1470ET/13.1MeV/GRAW/",
+    "/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat"),    
+]
+
 ###
 ###
 procName = "makeTrackTree"

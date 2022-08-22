@@ -4,16 +4,15 @@
 #include "TFitResultPtr.h"
 #include "Math/MinimizerOptions.h"
 
-/*
-TGraph* dEdxFitter::braggGraph_alpha = new TGraph("dEdx_alpha_10000keV_190mbar_CO2_corr.dat", "%lg %lg %*lg");
-TGraph* dEdxFitter::braggGraph_12C = new TGraph("dEdx_12C_5000keV_190mbar_CO2.dat", "%lg %lg %*lg");
-double dEdxFitter::nominalPressure = 190.0;
-*/
-
-
-TGraph* dEdxFitter::braggGraph_alpha = new TGraph("dEdx_alpha_10000keV_250mbar_CO2.dat", "%lg %lg %*lg");
-TGraph* dEdxFitter::braggGraph_12C = new TGraph("dEdx_12C_2500keV_250mbar_CO2.dat", "%lg %lg %*lg");
+//TEST ///
+TGraph* dEdxFitter::braggGraph_alpha = new TGraph("dEdx_corr_alpha_10MeV_CO2_250mbar.dat", "%lg %lg");
+TGraph* dEdxFitter::braggGraph_12C = new TGraph("dEdx_corr_12C_5MeV_CO2_250mbar.dat", "%lg %lg");
 double dEdxFitter::nominalPressure = 250.0;
+//////
+
+//TGraph* dEdxFitter::braggGraph_alpha = new TGraph("dEdx_alpha_10000keV_250mbar_CO2.dat", "%lg %lg %*lg");
+//TGraph* dEdxFitter::braggGraph_12C = new TGraph("dEdx_12C_2500keV_250mbar_CO2.dat", "%lg %lg %*lg");
+//double dEdxFitter::nominalPressure = 250.0;
 
 double dEdxFitter::currentPressure = 190.0;
 ////////////////////////////////////////////////
@@ -85,8 +84,8 @@ void dEdxFitter::setPressure(double aPressure) {
   }
   //250 mbar, 10 MeV alpha, 5 MeV C
   else if(std::abs(nominalPressure-250)<1E-3){
-    maxCarbonOffset = (13.191)*(nominalPressure/currentPressure);
-    maxAlphaOffset = (289.791)*(nominalPressure/currentPressure);
+    maxAlphaOffset = (297.23)*(nominalPressure/currentPressure);
+    maxCarbonOffset = (23.43)*(nominalPressure/currentPressure);
   }
   else{
     std::cout<<KRED<<"dEdxFitter: nominal pressure: "<<RST<<nominalPressure
@@ -129,12 +128,12 @@ void dEdxFitter::reset(){
 ////////////////////////////////////////////////
 double dEdxFitter::bragg_alpha(double *x, double *params) {
   
-  return 1E7*braggGraph_alpha->Eval((currentPressure/nominalPressure)*x[0]*1E7);
+  return 1E3*braggGraph_alpha->Eval((currentPressure/nominalPressure)*x[0]);
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 double dEdxFitter::bragg_12C(double *x, double *params) {
-  return 1E7*braggGraph_12C->Eval((currentPressure/nominalPressure)*x[0]*1E7);
+  return 1E3*braggGraph_12C->Eval((currentPressure/nominalPressure)*x[0]);
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
