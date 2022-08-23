@@ -19,7 +19,7 @@ RecoOutput::RecoOutput() {
 /////////////////////////////////////////////////////////
 RecoOutput::~RecoOutput() {
   
-  //close();
+  close();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -58,10 +58,6 @@ void RecoOutput::open(const std::string & fileName){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void RecoOutput::close(){
-
-  std::cout<<"myOutputFilePtr: "<<myOutputFilePtr<<std::endl;
-  std::cout<<"myOutputTreePtr->GetDirectory(): "
-	   <<std::endl;
 
   if(!myOutputFilePtr){
      std::cout<<KRED<<"RecoOutput::close"<<RST

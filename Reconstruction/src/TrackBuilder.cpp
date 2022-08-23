@@ -74,7 +74,6 @@ void TrackBuilder::setEvent(std::shared_ptr<EventTPC> aEvent){
   std::string hName, hTitle;
   if(!myHistoInitialized){
     for(int iDir=projection_type::DIR_U;iDir<=projection_type::DIR_W;++iDir){
-      get2DProjectionType(iDir);
       std::shared_ptr<TH2D> hRawHits = myEventPtr->get2DProjection(get2DProjectionType(iDir),
 								   filter_type::none,
 								   scale_type::mm);

@@ -36,6 +36,7 @@ void EventSourceBase::loadGeometry(const std::string & fileName){
     std::cerr<<"Geometry not loaded! Refuse to work anymore."<<std::endl;
     exit(0);
   }
+  myCurrentEvent->SetGeoPtr(myGeometryPtr);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

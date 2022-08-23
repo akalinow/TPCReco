@@ -19,15 +19,13 @@
 #include "EventSourceGRAW.h"
 #include "EventSourceMultiGRAW.h"
 #endif
-#include "SigClusterTPC.h"
-#include "EventTPC.h"
 #include "RecoOutput.h"
 #include "RunIdParser.h"
 #include "InputFileHelper.h"
 #include "MakeUniqueName.h"
 #include "colorText.h"
 
-
+#include "EventTPC.h"
 /////////////////////////////////////
 /////////////////////////////////////
 std::string createROOTFileName(const  std::string & grawFileName){
@@ -207,13 +205,13 @@ int makeTrackTree(const  std::string & geometryFileName,
 
   //Event loop
   unsigned int nEntries = myEventSource->numberOfEntries();
-  nEntries = 1000;
+  nEntries = 3; //TEST
   for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
     if(nEntries>10 && iEntry%(nEntries/10)==0){
       std::cout<<KBLU<<"Processed: "<<int(100*(double)iEntry/nEntries)<<" % events"<<RST<<std::endl;
     }
-    myEventSource->loadFileEntry(iEntry);
-    *myEventInfo = myEventSource->getCurrentEvent()->GetEventInfo();
+    myEventSource->loadFileEntry(iEntry);    
+    *myEventInfo = myEventSource->getCurrentEvent()->GetEventInfo();    
     myTkBuilder.setEvent(myEventSource->getCurrentEvent());
     myTkBuilder.reconstruct();
 
@@ -279,7 +277,6 @@ int makeTrackTree(const  std::string & geometryFileName,
     tree->Fill();    
   }
   outputROOTFile.Write();
-  myRecoOutput.close();
   return nEntries;
 }
 /////////////////////////////

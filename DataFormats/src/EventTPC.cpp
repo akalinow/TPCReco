@@ -27,6 +27,9 @@ EventTPC::EventTPC(){
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
+EventTPC::~EventTPC(){ }
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
 void EventTPC::Clear(){
 
   chargeMapWithSections.clear();
@@ -137,6 +140,7 @@ void EventTPC::create3DHistoTemplate(){
 			    nBinsY, minY, maxY,
 			    nBinsZ, minZ, maxZ);
   a3DHisto->Sumw2(true);
+  a3DHisto->SetDirectory(0);
   a3DHistoRawPtr.reset(a3DHisto);
 }
 ///////////////////////////////////////////////////////////////////////
@@ -144,6 +148,7 @@ void EventTPC::create3DHistoTemplate(){
 void EventTPC::updateHistosCache(filter_type filterType){
 
   std::shared_ptr<TH3D> aHisto((TH3D*)a3DHistoRawPtr->Clone());
+  aHisto->SetDirectory(0);
 
   double x = 0.0, y = 0.0, z = 0.0, value=0.0;
 
@@ -404,6 +409,7 @@ std::shared_ptr<TH2D> EventTPC::get2DProjection(projection_type projType,
   a3DHistoRawPtr->GetYaxis()->SetRangeUser(minY, maxY);    
   
   TH2D *h2D = (TH2D*)a3DHistoRawPtr->Project3D("yx");
+  h2D->SetDirectory(0);
   if(scaleType==scale_type::mm) scale2DHistoToMM(h2D, projType);
   setHistoLabels(h2D, projType, filterType, scaleType);
   return std::shared_ptr<TH2D>(h2D);    
@@ -578,6 +584,7 @@ std::shared_ptr<TH2D> EventTPC::GetChannels(int cobo_idx, int asad_idx){ // vali
 					myGeometryPtr->GetAgetNchips()*myGeometryPtr->GetAgetNchannels()+1,
 					 -0.5,
 					 myGeometryPtr->GetAgetNchips()*myGeometryPtr->GetAgetNchannels()+0.5 ));
+  result->SetDirectory(0);
   // fill new histogram
   for(int aget_num=0; aget_num<myGeometryPtr->GetAgetNchips(); ++aget_num) {
     for(int aget_ch=0; aget_ch<myGeometryPtr->GetAgetNchannels();++aget_ch){
@@ -604,6 +611,7 @@ std::shared_ptr<TH2D> EventTPC::GetChannels_raw(int cobo_idx, int asad_idx){ // 
 					myGeometryPtr->GetAgetNchips()*myGeometryPtr->GetAgetNchannels_raw()+1,
 					 -0.5,
 					 myGeometryPtr->GetAgetNchips()*myGeometryPtr->GetAgetNchannels_raw()+0.5 ));
+  result->SetDirectory(0);
   // fill new histogram
   for(int aget_num=0; aget_num<myGeometryPtr->GetAgetNchips(); ++aget_num) {
     for(int aget_ch=0; aget_ch<myGeometryPtr->GetAgetNchannels_raw();++aget_ch){

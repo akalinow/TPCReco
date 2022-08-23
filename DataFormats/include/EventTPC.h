@@ -23,7 +23,7 @@ class EventTPC {
  public:
   EventTPC();
 
-  ~EventTPC(){};
+  ~EventTPC();
 
   void Clear();
 

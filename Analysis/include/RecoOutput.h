@@ -23,12 +23,12 @@ public:
   void setEventInfo(const eventraw::EventInfo & aEventInfo);
 
   void open(const std::string & fileName);
-  
-  void close();
-  
+    
   void update();
 
 private:
+  
+  void close();
 
   std::shared_ptr<Track3D> myTrackPtr;
   
