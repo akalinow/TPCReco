@@ -4,6 +4,8 @@
 #include "TFitResultPtr.h"
 #include "Math/MinimizerOptions.h"
 
+#include "TRandom3.h"
+
 //TEST ///
 TGraph* dEdxFitter::braggGraph_alpha = new TGraph("dEdx_corr_alpha_10MeV_CO2_250mbar.dat", "%lg %lg");
 TGraph* dEdxFitter::braggGraph_12C = new TGraph("dEdx_corr_12C_5MeV_CO2_250mbar.dat", "%lg %lg");
@@ -22,49 +24,32 @@ dEdxFitter::dEdxFitter(double aPressure){
   setPressure(aPressure);
 
   braggGraph_alpha->SetBit(TGraph::kIsSortedX);
-  braggGraph_alpha->SetBit(TGraph::kIsSortedX);
+  braggGraph_12C->SetBit(TGraph::kIsSortedX);
 
   alpha_ionisation = new TF1("alpha_ionisation", bragg_alpha, 0, 600.0);
   carbon_ionisation = new TF1("carbon_ionisation",bragg_12C, 0,  200.0);
 
-  carbon_alpha_ionisation = new TF1("carbon_alpha_ionisation",bragg_12C_alpha, -20, 350.0, 5);
+  carbon_alpha_model = new TF1("carbon_alpha_model",bragg_12C_alpha, -20, 350.0, 7);
 
-  carbon_alpha_ionisation_smeared = new TF1Convolution("carbon_alpha_ionisation", "gausn",-20, 350, true);
-  carbon_alpha_ionisation_smeared->SetRange(-20, 350);
-  carbon_alpha_ionisation_smeared->SetNofPointsFFT(1000);
- 
-  carbon_alphaModel = new TF1("carbon_alphaModel", *carbon_alpha_ionisation_smeared,
-			      -20, 350., carbon_alpha_ionisation_smeared->GetNpar());
-    
-  carbon_alphaModel->SetParName(0, "vertexOffset");
-  carbon_alphaModel->SetParName(1, "alphaOffset");
-  carbon_alphaModel->SetParName(2, "carbonOffset");
-  carbon_alphaModel->SetParName(3, "alphaScale");
-  carbon_alphaModel->SetParName(4, "carbonScale");
-  carbon_alphaModel->SetParName(5, "gaussNorm");
-  carbon_alphaModel->SetParName(6, "gaussMean");
-  carbon_alphaModel->SetParName(7, "gaussSigma");
+  carbon_alpha_model->SetParName(0, "sigma");
+  carbon_alpha_model->SetParName(1, "vertexOffset");
+  carbon_alpha_model->SetParName(2, "alphaOffset");
+  carbon_alpha_model->SetParName(3, "carbonOffset");
+  carbon_alpha_model->SetParName(4, "alphaScale");
+  carbon_alpha_model->SetParName(5, "carbonScale");
+  carbon_alpha_model->SetParName(6, "commonScale");
 
-  carbon_alphaModel->SetParLimits(0, minVtxOffset, maxVtxOffset);
-  carbon_alphaModel->SetParLimits(1, minAlphaOffset, maxAlphaOffset);
-  carbon_alphaModel->SetParLimits(2, minCarbonOffset, maxCarbonOffset);
-  carbon_alphaModel->FixParameter(3, 1.0);
-  carbon_alphaModel->FixParameter(4, 1.0);  
-  carbon_alphaModel->SetParLimits(5, 1E-6, 2E-5);
-  carbon_alphaModel->FixParameter(6, 0.0);
-  carbon_alphaModel->SetParLimits(7, 1.0, 3.0);
- 
-  alphaModel = new TF1(*carbon_alphaModel);
-  alphaModel->SetName("alphaModel");
-  alphaModel->FixParameter(2, 0.0);
-  alphaModel->FixParameter(4, 0.0);
+  carbon_alpha_model->SetParLimits(0, 0.1, 5);
+  carbon_alpha_model->SetParLimits(6, 0.001, 0.01);
   
-  ROOT::Math::MinimizerOptions::SetDefaultMinimizer("Minuit2");
-  //ROOT::Math::MinimizerOptions::SetDefaultMinimizer("Minuit" ,"Scan");
-  //ROOT::Math::MinimizerOptions::SetDefaultStrategy(0);
-  //ROOT::Math::MinimizerOptions::SetDefaultPrintLevel(10);
-  //ROOT::Math::MinimizerOptions::PrintDefault("",std::cout);
-
+  carbon_alpha_model->FixParameter(4, 1.0);
+  carbon_alpha_model->FixParameter(5, 1.0);  
+ 
+  alpha_model = new TF1(*carbon_alpha_model);
+  alpha_model->SetName("alpha_model");
+  alpha_model->FixParameter(4, 0.0);
+  alpha_model->FixParameter(5, 0.0);
+ 
   reset();
 }
 ////////////////////////////////////////////////
@@ -97,29 +82,29 @@ void dEdxFitter::setPressure(double aPressure) {
 ////////////////////////////////////////////////
 void dEdxFitter::reset(){
 
-  carbon_alphaModel->SetRange(-20, 350);
-  carbon_alphaModel->SetParLimits(0, 0.0, maxVtxOffset);
-  carbon_alphaModel->SetParLimits(1, minAlphaOffset, maxAlphaOffset);
-  carbon_alphaModel->SetParLimits(2, minCarbonOffset, maxCarbonOffset);
+  gRandom->SetSeed(123456789);
 
-  alphaModel->SetRange(-20, 350);
-  alphaModel->SetParLimits(0, minVtxOffset, maxVtxOffset);
-  alphaModel->SetParLimits(1, minAlphaOffset, maxAlphaOffset);
-  
-  carbon_alphaModel->SetParameters(maxVtxOffset/2.0,
-				   (minAlphaOffset+maxAlphaOffset)/2.0,
-				   (minCarbonOffset+maxCarbonOffset)/2.0,
-				   1.0, 1.0,				   
-				   9E-6, 0.0, 1.8);
-  
-  alphaModel->SetParameters((minVtxOffset+maxVtxOffset)/2.0,
-			    (minAlphaOffset+maxAlphaOffset)/2.0,
-			    0.0,
-			    1.0, 0.0,
-			    9E-6, 0.0, 1.8);
+  carbon_alpha_model->SetRange(-20, maxAlphaOffset+maxCarbonOffset);
+  carbon_alpha_model->SetParLimits(1, 5.0, maxVtxOffset);
+  carbon_alpha_model->SetParLimits(2, minAlphaOffset, maxAlphaOffset);
+  carbon_alpha_model->SetParLimits(3, minCarbonOffset, maxCarbonOffset);
+  carbon_alpha_model->SetParameters(2.0,
+				    maxVtxOffset/2.0,
+				    (minAlphaOffset+maxAlphaOffset)/2.0,
+				    (minCarbonOffset+maxCarbonOffset)/2.0,
+				    1.0, 1.0, 1/147.0);
 
+  alpha_model->SetRange(-20, maxAlphaOffset);
+  alpha_model->SetParLimits(1, minVtxOffset, maxVtxOffset);
+  alpha_model->SetParLimits(2, minAlphaOffset, maxAlphaOffset);
+  alpha_model->SetParameters(2.0,
+			     (minVtxOffset+maxVtxOffset)/2.0,
+			     (minAlphaOffset+maxAlphaOffset)/2.0,
+			     0.0,
+			     1.0, 0.0, 1/147.0);
+  
   theFitResult = TFitResult();
-  theFittedModel = alphaModel;
+  theFittedModel = alpha_model;
   theFittedHisto = emptyHisto;
   bestFitEventType = pid_type::UNKNOWN;
   bestFitChi2 = 999.0;
@@ -128,32 +113,87 @@ void dEdxFitter::reset(){
 ////////////////////////////////////////////////
 double dEdxFitter::bragg_alpha(double *x, double *params) {
   
-  return 1E3*braggGraph_alpha->Eval((currentPressure/nominalPressure)*x[0]);
+  double sigma = params[0];
+  double vertex_pos = params[1];
+  double shift = params[2];  
+  double n_sigma = 3.0;
+
+  double pressure_scale_factor = currentPressure/nominalPressure;
+  double x_shifted = (x[0] - vertex_pos) + shift;
+  double x_scaled = pressure_scale_factor*x_shifted;
+
+  double total_dEdx_length = 300;
+  double a = pressure_scale_factor*shift;
+  double b = total_dEdx_length;
+  double t = (x[0] - vertex_pos)*pressure_scale_factor + a;
+
+  double bragg_at_n_sigma = braggGraph_alpha->Eval(a+n_sigma*sigma*pressure_scale_factor);
+  double p0 = bragg_at_n_sigma;
+  double p1 = 0.0;
+  double p2 = 0.0;
+
+  double smeared_edge = 0;
+  smeared_edge += 0.5*TMath::Erf((t-a)/sqrt(2)/sigma)*(p2*(t*t + sigma*sigma) + p1*t + p0);
+  smeared_edge += 1.0/sqrt(2*M_PI)*sigma*exp(-(a-t)*(a-t)/(2*sigma*sigma))*(p2*(a+t) + p1);
+  smeared_edge -= 0.5*TMath::Erf((t-b)/sqrt(2)/sigma)*(p2*(t*t + sigma*sigma) + p1*t + p0);
+  smeared_edge -= 1.0/sqrt(2*M_PI)*sigma*exp(-(b-t)*(b-t)/(2*sigma*sigma))*(p2*(b+t) + p1);
+
+  double bragg = braggGraph_alpha->Eval(x_scaled)*(x_scaled<total_dEdx_length)*(x_scaled>0)*(x_shifted-shift>0);
+  return smeared_edge*(x_shifted-shift<n_sigma*sigma) + bragg*(x_shifted-shift>n_sigma*sigma);
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 double dEdxFitter::bragg_12C(double *x, double *params) {
-  return 1E3*braggGraph_12C->Eval((currentPressure/nominalPressure)*x[0]);
+
+   double sigma = params[0];
+  double vertex_pos = params[1];
+  double shift = params[3];  
+  double n_sigma = 20.0;
+
+  double pressure_scale_factor = currentPressure/nominalPressure;
+  double x_shifted = (vertex_pos-x[0]) + shift;
+  double x_scaled = pressure_scale_factor*x_shifted;
+
+  double total_dEdx_length = 23.5;
+  double a = pressure_scale_factor*shift;
+  double b = total_dEdx_length;
+  double t = (vertex_pos - x[0])*pressure_scale_factor + a;
+
+  double p0 = 0.0, p1=0.0, p2 = 0.0;
+  if(t<15){
+    p0 = 254.284;
+    p1 = 16.6512;
+    p2 = -1.40697;
+  }
+  else if(t>15){
+    p0 = 533.018;
+    p1 = -23.1911;
+    p2 = 0.00861351;
+  }
+
+  double smeared_edge = 0;
+  smeared_edge += 0.5*TMath::Erf((t-a)/sqrt(2)/sigma)*(p2*(t*t + sigma*sigma) + p1*t + p0);
+  smeared_edge += 1.0/sqrt(2*M_PI)*sigma*exp(-(a-t)*(a-t)/(2*sigma*sigma))*(p2*(a+t) + p1);
+  smeared_edge -= 0.5*TMath::Erf((t-b)/sqrt(2)/sigma)*(p2*(t*t + sigma*sigma) + p1*t + p0);
+  smeared_edge -= 1.0/sqrt(2*M_PI)*sigma*exp(-(b-t)*(b-t)/(2*sigma*sigma))*(p2*(b+t) + p1);
+
+  double bragg = braggGraph_12C->Eval(x_scaled)*(x_scaled<total_dEdx_length)*(x_scaled>0)*(x_shifted-shift>0);
+
+  return smeared_edge*(x_shifted-shift<n_sigma*sigma) + bragg*(x_shifted-shift>n_sigma*sigma);
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 double dEdxFitter::bragg_12C_alpha(double *x, double *params) {
 
   double value = 0.0;
-  double vertex_pos = params[0];
-  double alpha_shift = params[1];
-  double carbon_shift = params[2];
-  double alpha_scale = params[3];
-  double carbon_scale = params[4];
-  double xShifted[1];
+  double alpha_scale = params[4];
+  double carbon_scale = params[5];
+  double common_scale = params[6];
   
-  xShifted[0] = (x[0] - vertex_pos) + alpha_shift;
-  value = alpha_scale*bragg_alpha(xShifted, params)*(x[0]>vertex_pos);
-
-  xShifted[0] = (vertex_pos-x[0]) + carbon_shift;
-  value += carbon_scale*bragg_12C(xShifted, params)*(xShifted[0]>0)*(x[0]>0)*(x[0]<vertex_pos);
+  value = alpha_scale*bragg_alpha(x, params);
+  value += carbon_scale*bragg_12C(x, params);
                  
-  return value;
+  return common_scale*value;
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
@@ -183,14 +223,21 @@ TFitResult dEdxFitter::fitHypothesis(TF1 *fModel, TH1F & aHisto){
   
   reset();
 
+  int fitCounter = 0;
   TFitResult theResult;
   if(!aHisto.GetEntries()) return theResult;
   std::cout<<"---------------------------------"<<std::endl;
-  TFitResultPtr theResultPtr = aHisto.Fit(fModel,"BRWSM");
-  if(theResultPtr.Get()) theResult = *theResultPtr.Get();
-  else{
-    std::cout<<KRED<<"No fit result"<<RST<<std::endl;
-  }
+  TFitResultPtr theResultPtr;
+  do{
+    theResultPtr = aHisto.Fit(fModel,"BRWWS");
+    if(!theResultPtr.Get()) break;
+    ++fitCounter;
+  }while(!theResultPtr->IsValid() && fitCounter<10);
+
+    if(theResultPtr.Get()) theResult = *theResultPtr.Get();
+    else{
+      std::cout<<KRED<<"No fit result"<<RST<<std::endl;
+    }
   return theResult;
 }
 ////////////////////////////////////////////////
@@ -206,24 +253,14 @@ TFitResult dEdxFitter::fitHisto(TH1F & aHisto){
     isReflected = false;
   }
 
-  TFitResult carbon_alphaResult = fitHypothesis(carbon_alphaModel, aHisto);
-
-  int iteration = 0;
-  int maxIterations = 15;
-  while( (!carbon_alphaResult.IsValid() || carbon_alphaResult.MinFcnValue()>1.0)
-	 && iteration<maxIterations){
-    carbon_alphaResult = fitHypothesis(carbon_alphaModel, aHisto);
-    ++iteration;
-  }
-
-  
-  //TFitResult carbon_alphaResult_reflected = fitHypothesis(carbon_alphaModel, aReflectedHisto);
-  //TFitResult alphaResult = fitHypothesis(alphaModel, aHisto);
-  //TFitResult alphaResult_reflected = fitHypothesis(alphaModel, aReflectedHisto);
+  TFitResult carbon_alphaResult = fitHypothesis(carbon_alpha_model, aHisto); 
+  //TFitResult carbon_alphaResult_reflected = fitHypothesis(carbon_alpha_model, aReflectedHisto);
+  //TFitResult alphaResult = fitHypothesis(alpha_model, aHisto);
+  //TFitResult alphaResult_reflected = fitHypothesis(alpha_model, aReflectedHisto);
 
   bestFitChi2 = carbon_alphaResult.MinFcnValue();
   theFitResult = carbon_alphaResult;
-  theFittedModel = carbon_alphaModel;
+  theFittedModel = carbon_alpha_model;
   theFittedHisto = aHisto;
   bestFitEventType = pid_type::C12_ALPHA;
   if(getCarbonRange()<1){

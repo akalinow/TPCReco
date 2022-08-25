@@ -65,7 +65,8 @@ void RecoOutput::close(){
 	     <<std::endl;
      return;
   }
-  //myOutputFilePtr->Write();
+  myOutputFilePtr->cd();
+  myOutputTreePtr->Write("", TObject::kOverwrite);
   myOutputFilePtr->Close();
 }
 /////////////////////////////////////////////////////////
@@ -79,8 +80,6 @@ void RecoOutput::update(){
      return;
   }
   myOutputTreePtr->Fill();
-  myOutputFilePtr->cd();
-  myOutputTreePtr->Write("", TObject::kOverwrite);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
