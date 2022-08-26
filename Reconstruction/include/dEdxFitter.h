@@ -20,9 +20,11 @@ public:
 
   void setPressure(double aPressure); 
 
-  TFitResult fitHisto(TH1F & aHisto);
+  TFitResult fitHisto(const TH1F & aHisto);
 
   const TH1F & getFittedHisto() const { return theFittedHisto;};
+
+  double getChi2() const { return theFitResult.MinFcnValue();};
 
   const TF1 & getFittedModel() const { return *theFittedModel;};
 
@@ -33,8 +35,6 @@ public:
   TF1* get12CAlphaIonisation() const { return carbon_alpha_model;}
 
   TF1* getAlphaModel() const { return alpha_model;}
-
-  double getChi2() const { return bestFitChi2;}
 
   bool getIsReflected() const { return isReflected;}
 
@@ -64,7 +64,6 @@ private:
   double carbonScale{1};
   
   bool isReflected{false};
-  double bestFitChi2{999.0};
 
   double maxCarbonRange, maxAlphaRange;
 

@@ -33,6 +33,7 @@ TrackBuilder::TrackBuilder() {
   fitter.Config().MinimizerOptions().SetMaxFunctionCalls(1000);
   fitter.Config().MinimizerOptions().Print(std::cout);
   fitter.Config().MinimizerOptions().SetPrintLevel(0);
+  
   ///An offset used for filling the Hough transformation.
   ///to avoid having very small rho parameters, as
   ///orignally many tracks traverse close to X=0, Time=0

@@ -48,6 +48,12 @@ void HistoManager::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+void HistoManager::setPressure(double aPressure){
+  
+  myTkBuilder.setPressure(aPressure);
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 void HistoManager::setConfig(const boost::property_tree::ptree &aConfig){
   
   myConfig = aConfig;
@@ -618,9 +624,10 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   TH1F hFrame("hFrame",";d [mm];charge [arb. units]",2,-20, 20+aTrack3D.getLength());
   hFrame.GetYaxis()->SetTitleOffset(2.0);
   hFrame.SetMinimum(0.0);
+  hFrame.SetMaximum(1.2);
 
   TH1F hChargeProfile = aTrack3D.getChargeProfile();
-  hChargeProfile.Scale(1.0/hChargeProfile.GetMaximum());
+  hChargeProfile.Scale(1.0/hChargeProfile.GetMaximum());  
   hChargeProfile.SetLineWidth(2);
   hChargeProfile.SetLineColor(2);
   hChargeProfile.SetMarkerColor(2);

@@ -240,7 +240,11 @@ void MainFrame::InitializeEventSource(){
   if(myConfig.find("hitFilter")!=myConfig.not_found()){
     myHistoManager.setConfig(myConfig.find("hitFilter")->second);
   }
+  int index = geometryFileName.find("mbar");
+  double pressure = stof(geometryFileName.substr(index-3, 3));
   myHistoManager.setGeometry(myEventSource->getGeometry());
+  myHistoManager.setPressure(pressure);
+  
   if(isRecoModeOn) myHistoManager.openOutputStream(dataFileName);
   myEventSource->getEventFilter().setConditions(myConfig);
 }

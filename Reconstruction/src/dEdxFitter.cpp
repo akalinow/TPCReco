@@ -39,7 +39,7 @@ dEdxFitter::dEdxFitter(double aPressure){
   carbon_alpha_model->SetParName(5, "carbonScale");
   carbon_alpha_model->SetParName(6, "commonScale");
 
-  carbon_alpha_model->SetParLimits(0, 0.1, 5);
+  carbon_alpha_model->SetParLimits(0, 0.1, 3.0);
   carbon_alpha_model->SetParLimits(6, 0.001, 0.01);
   
   carbon_alpha_model->FixParameter(4, 1.0);
@@ -47,6 +47,8 @@ dEdxFitter::dEdxFitter(double aPressure){
  
   alpha_model = new TF1(*carbon_alpha_model);
   alpha_model->SetName("alpha_model");
+  alpha_model->FixParameter(1, 0.0);
+  alpha_model->FixParameter(3, 0.0);
   alpha_model->FixParameter(4, 0.0);
   alpha_model->FixParameter(5, 0.0);
  
@@ -82,32 +84,30 @@ void dEdxFitter::setPressure(double aPressure) {
 ////////////////////////////////////////////////
 void dEdxFitter::reset(){
 
-  gRandom->SetSeed(123456789);
-
   carbon_alpha_model->SetRange(-20, maxAlphaOffset+maxCarbonOffset);
-  carbon_alpha_model->SetParLimits(1, 5.0, maxVtxOffset);
+  carbon_alpha_model->SetParLimits(1, 0.0, maxVtxOffset);
+  
   carbon_alpha_model->SetParLimits(2, minAlphaOffset, maxAlphaOffset);
   carbon_alpha_model->SetParLimits(3, minCarbonOffset, maxCarbonOffset);
-  carbon_alpha_model->SetParameters(2.0,
-				    maxVtxOffset/2.0,
+  carbon_alpha_model->SetParameters(1.0,
+				    (minVtxOffset+maxVtxOffset)/2.0,
 				    (minAlphaOffset+maxAlphaOffset)/2.0,
 				    (minCarbonOffset+maxCarbonOffset)/2.0,
-				    1.0, 1.0, 1/147.0);
+				    1.0, 1.0, 0.006);
 
   alpha_model->SetRange(-20, maxAlphaOffset);
   alpha_model->SetParLimits(1, minVtxOffset, maxVtxOffset);
   alpha_model->SetParLimits(2, minAlphaOffset, maxAlphaOffset);
-  alpha_model->SetParameters(2.0,
+  alpha_model->SetParameters(1.0,
 			     (minVtxOffset+maxVtxOffset)/2.0,
 			     (minAlphaOffset+maxAlphaOffset)/2.0,
 			     0.0,
-			     1.0, 0.0, 1/147.0);
+			     1.0, 0.0, 0.006);
   
   theFitResult = TFitResult();
   theFittedModel = alpha_model;
   theFittedHisto = emptyHisto;
   bestFitEventType = pid_type::UNKNOWN;
-  bestFitChi2 = 999.0;
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
@@ -145,7 +145,7 @@ double dEdxFitter::bragg_alpha(double *x, double *params) {
 ////////////////////////////////////////////////
 double dEdxFitter::bragg_12C(double *x, double *params) {
 
-   double sigma = params[0];
+  double sigma = params[0];
   double vertex_pos = params[1];
   double shift = params[3];  
   double n_sigma = 20.0;
@@ -216,57 +216,67 @@ TH1F dEdxFitter::reflectHisto(const TH1F &aHisto) const{
 ////////////////////////////////////////////////
 TFitResult dEdxFitter::fitHypothesis(TF1 *fModel, TH1F & aHisto){
 
-  double tkLength = aHisto.GetXaxis()->GetXmax();
-  maxVtxOffset = tkLength/2.0;
-  minAlphaOffset = std::max(0.0, maxAlphaOffset - tkLength);
-  minCarbonOffset = std::max(0.0, maxCarbonOffset - tkLength);
-  
-  reset();
-
-  int fitCounter = 0;
   TFitResult theResult;
   if(!aHisto.GetEntries()) return theResult;
-  std::cout<<"---------------------------------"<<std::endl;
+
+  double tkLength = aHisto.GetXaxis()->GetXmax();
+  maxVtxOffset = maxCarbonOffset;
+  minAlphaOffset = std::max(0.0, maxAlphaOffset - tkLength);
+  minCarbonOffset = std::max(0.0, maxCarbonOffset - tkLength);
+
+  int fitCounter = 0;
   TFitResultPtr theResultPtr;
   do{
+    reset();
     theResultPtr = aHisto.Fit(fModel,"BRWWS");
     if(!theResultPtr.Get()) break;
     ++fitCounter;
-  }while(!theResultPtr->IsValid() && fitCounter<10);
-
-    if(theResultPtr.Get()) theResult = *theResultPtr.Get();
-    else{
-      std::cout<<KRED<<"No fit result"<<RST<<std::endl;
-    }
+  }while(!theResultPtr->IsValid() && fitCounter<3);
+  
+  if(theResultPtr.Get()) theResult = *theResultPtr.Get();
+  else{
+    std::cout<<KRED<<"No fit result"<<RST<<std::endl;
+  }
   return theResult;
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
-TFitResult dEdxFitter::fitHisto(TH1F & aHisto){
+TFitResult dEdxFitter::fitHisto(const TH1F & aHisto){
 
+  ////////////C12+alpha hypothesis
+  TH1F fittedHisto_for_C12_alpha = aHisto;
+  bool reflection_for_C12_alpha = false;
   int maxBin = aHisto.GetMaximumBin();
   if(maxBin>aHisto.GetNbinsX()/2.0){
-    aHisto = reflectHisto(aHisto);
-    isReflected = true;
+    fittedHisto_for_C12_alpha = reflectHisto(aHisto);
+    reflection_for_C12_alpha = true;
   }
-  else{
-    isReflected = false;
+  TFitResult carbon_alphaResult = fitHypothesis(carbon_alpha_model, fittedHisto_for_C12_alpha);
+
+  ////////////alpha hypothesis
+  bool reflection_for_alpha = false;
+  TH1F fittedHisto_for_alpha = aHisto;
+  maxBin = aHisto.GetMaximumBin();
+  if(maxBin<aHisto.GetNbinsX()/2.0){
+    fittedHisto_for_alpha = reflectHisto(aHisto);
+    reflection_for_alpha = true;
   }
+  TFitResult alphaResult = fitHypothesis(alpha_model, fittedHisto_for_alpha);
 
-  TFitResult carbon_alphaResult = fitHypothesis(carbon_alpha_model, aHisto); 
-  //TFitResult carbon_alphaResult_reflected = fitHypothesis(carbon_alpha_model, aReflectedHisto);
-  //TFitResult alphaResult = fitHypothesis(alpha_model, aHisto);
-  //TFitResult alphaResult_reflected = fitHypothesis(alpha_model, aReflectedHisto);
-
-  bestFitChi2 = carbon_alphaResult.MinFcnValue();
-  theFitResult = carbon_alphaResult;
-  theFittedModel = carbon_alpha_model;
-  theFittedHisto = aHisto;
-  bestFitEventType = pid_type::C12_ALPHA;
-  if(getCarbonRange()<1){
+  if(alphaResult.MinFcnValue()<carbon_alphaResult.MinFcnValue()){
+    theFitResult = alphaResult;
+    theFittedModel = alpha_model;
+    theFittedHisto = fittedHisto_for_alpha;
+    isReflected = reflection_for_alpha;
     bestFitEventType = pid_type::ALPHA;
   }
-
+  else{
+    theFitResult = carbon_alphaResult;
+    theFittedModel = carbon_alpha_model;
+    theFittedHisto = fittedHisto_for_C12_alpha;
+    isReflected = reflection_for_C12_alpha;
+    bestFitEventType = pid_type::C12_ALPHA;
+  }
   theFittedModel->SetParameters(theFitResult.Parameters().data());
   return theFitResult;
 }
@@ -274,8 +284,7 @@ TFitResult dEdxFitter::fitHisto(TH1F & aHisto){
 ////////////////////////////////////////////////
 double dEdxFitter::getVertexOffset() const{
 
-  return theFittedModel->GetParameter("vertexOffset");
-  
+  return theFittedModel->GetParameter("vertexOffset");  
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
