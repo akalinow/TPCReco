@@ -146,6 +146,9 @@ void TrackBuilder::reconstruct(){
 
   aTrackCandidate = fitTrack3D(aTrackCandidate);
   aTrackCandidate = fitEventHypothesis(aTrackCandidate);
+  //aTrackCandidate = fitTrackNodesStartEnd(aTrackCandidate);
+  //aTrackCandidate = fitEventHypothesis(aTrackCandidate);
+  
   myFittedTrack = aTrackCandidate;
 }
 /////////////////////////////////////////////////////////
@@ -338,13 +341,11 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
     a3DSeed.setStartEnd(start, end);
     aTrackCandidate.addSegment(a3DSeed);
   }
-  //auto xyRange = myGeometryPtr->rangeXY();
-  //aTrackCandidate.extendToChamberRange(xyRange, myZRange);
-  //myFittedTrack = fitTrack3D(aTrackCandidate);
+  std::cout<<KBLU<<"Hand cliked track: "<<RST<<std::endl;
+  std::cout<<aTrackCandidate<<std::endl;
+  
   myFittedTrack = aTrackCandidate;
   myFittedTrack.setHypothesisFitChi2(0);
-  std::cout<<KBLU<<"Hand cliked track: "<<RST<<std::endl;
-  std::cout<<myFittedTrack<<std::endl;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -597,8 +598,9 @@ Track3D TrackBuilder::fitTrackNodesStartEnd(const Track3D & aTrack) const{
   ROOT::Math::Functor fcn(&aTrackCandidate, &Track3D::chi2FromNodesList, nParams);
   fitter.SetFCN(fcn, params.data());
   
-  double paramWindowWidth = 100.0;
+  double paramWindowWidth = 10.0;
   for (int iPar = 0; iPar < nParams; ++iPar){
+    fitter.Config().ParSettings(iPar).Release();
     fitter.Config().ParSettings(iPar).SetValue(params[iPar]);
     fitter.Config().ParSettings(iPar).SetStepSize(1);
     fitter.Config().ParSettings(iPar).SetLimits(params[iPar]-paramWindowWidth,
@@ -609,10 +611,14 @@ Track3D TrackBuilder::fitTrackNodesStartEnd(const Track3D & aTrack) const{
     Error(__FUNCTION__, "Track3D Fit failed");
     std::cout<<KRED<<"Track3D Fit failed"<<RST<<std::endl;
     //fitter.Result().Print(std::cout);
-    return aTrack;
+    //return aTrack;
   }
   const ROOT::Fit::FitResult & result = fitter.Result();
   aTrackCandidate.chi2FromNodesList(result.GetParams());
+
+  std::cout<<KBLU<<"Post-refit: "<<RST<<std::endl;
+  std::cout<<aTrackCandidate<<std::endl;
+  
   return aTrackCandidate;
 }
 /////////////////////////////////////////////////////////
@@ -666,7 +672,6 @@ Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
 
   std::cout<<KBLU<<"Post-split: "<<RST<<std::endl;
   std::cout<<aSplitTrackCandidate<<std::endl;
- 
   return aSplitTrackCandidate;
 }
 /////////////////////////////////////////////////////////

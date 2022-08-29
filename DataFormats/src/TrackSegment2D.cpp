@@ -191,6 +191,7 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
     std::tie(lambda,distance) = getPointLambdaAndDistance(aPoint);
     totalChargeSum += charge;
     if(distance>10) continue;
+    if(lambda<0 || lambda>getLength()) continue;//TEST
     ++pointCount;
     chi2 += std::pow(distance, 2)*charge;
     chargeSum +=charge;
@@ -201,8 +202,15 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
   chi2 /= chargeSum;
   biasDistance /= chargeSum;
   chargeSum /= totalChargeSum;
-  if(!pointCount) return -100.0;
+
+  ///TEST
+  if(!pointCount) return 0.0;
+  return chi2;
+  /////
+
+  if(!pointCount) return -100.0;  
   return chi2 + biasDistance - chargeSum;
+
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

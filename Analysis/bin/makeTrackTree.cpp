@@ -140,6 +140,7 @@ typedef struct {Float_t eventId, frameId,
     horizontalLostLength, verticalLostLength,
     alphaEnergy, carbonEnergy,
     alphaRange, carbonRange,
+    cosPhiSegments,
     charge, cosTheta, phi, chi2,
     hypothesisChi2,
     xVtx, yVtx, zVtx,
@@ -178,6 +179,7 @@ int makeTrackTree(const  std::string & geometryFileName,
   leafNames += "eventId:frameId:eventType:";
   leafNames += "length:horizontalLostLength:verticalLostLength:";
   leafNames += "alphaEnergy:carbonEnergy:alphaRange:carbonRange:";
+  leafNames += "cosPhiSegments:";
   leafNames += "charge:cosTheta:phi:chi2:hypothesisChi2:";
   leafNames += "xVtx:yVtx:zVtx:";
   leafNames += "xAlphaEnd:yAlphaEnd:zAlphaEnd:";
@@ -205,7 +207,7 @@ int makeTrackTree(const  std::string & geometryFileName,
 
   //Event loop
   unsigned int nEntries = myEventSource->numberOfEntries();
-  nEntries = 100; //TEST
+  nEntries = 1000; //TEST
   for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
     if(nEntries>10 && iEntry%(nEntries/10)==0){
       std::cout<<KBLU<<"Processed: "<<int(100*(double)iEntry/nEntries)<<" % events"<<RST<<std::endl;
@@ -229,6 +231,8 @@ int makeTrackTree(const  std::string & geometryFileName,
     const TVector3 & vertex = aTrack3D.getSegments().front().getStart();
     const TVector3 & alphaEnd = aTrack3D.getSegments().front().getEnd();
     const TVector3 & carbonEnd = aTrack3D.getSegments().back().getEnd();
+
+    double cosPhiSegments = (alphaEnd-vertex).Unit().Dot((carbonEnd-vertex).Unit());
     
     const TVector3 & tangent = aTrack3D.getSegments().front().getTangent();
     double phi = atan2(-tangent.Z(), tangent.Y());
@@ -245,7 +249,15 @@ int makeTrackTree(const  std::string & geometryFileName,
     double carbonRange =  aTrack3D.getSegments().back().getPID()== pid_type::CARBON_12 ? aTrack3D.getSegments().back().getLength(): 0.0;
     double alphaEnergy = alphaRange>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA,alphaRange):0.0;
     double carbonEnergy = carbonRange>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::CARBON_12, carbonRange):0.0;
-      
+    //double m_Alpha = myRangeCalculator.getIonMassMeV(pid_type::ALPHA);
+    //double m_12C = myRangeCalculator.getIonMassMeV(pid_type::CARBON_12);
+    /*
+    double p_alpha = sqrt(2*m_Alpha*alphaEnergy);
+    double p_12C = sqrt(2*m_12C*carbonEnergy);
+    TVector3 total_p = p_alpha*(alphaEnd-vertex).Unit() + p_12C*((carbonEnd-vertex).Unit());
+    //double total_p_mag = total_p.Mag();
+    total_p.Print();
+    */
     track_data.frameId = iEntry;
     track_data.eventId = eventId;
     track_data.eventType = eventType;
@@ -274,6 +286,7 @@ int makeTrackTree(const  std::string & geometryFileName,
     track_data.carbonEnergy = carbonEnergy;
     track_data.alphaRange = alphaRange;
     track_data.carbonRange = carbonRange;
+    track_data.cosPhiSegments = cosPhiSegments;
     tree->Fill();    
   }
   outputROOTFile.Write();
