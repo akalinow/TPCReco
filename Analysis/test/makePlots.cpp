@@ -67,7 +67,7 @@ void makePlots(std::string fileName){
   hCosTheta->SetStats(kFALSE);
   TH1D *hCosThetaCut1 = (TH1D*)hCosTheta->Clone("hCosThetaCut1");
   
-  std::string qualityCut = "chi2<10 && charge>1000 && length>30 && eventType==3 && hypothesisChi2<1";
+  std::string qualityCut = "chi2<10 && charge>1000 && length>10 && carbonRange>1 && eventType==3 && hypothesisChi2<1";
   std::string fiducialXYCut = "abs(xAlphaEnd)<160 && abs(yAlphaEnd)<80 && abs(xCarbonEnd)<160 && abs(yCarbonEnd)<80";
 
   std::string fiducialZCut = "abs(zCarbonEnd - zAlphaEnd)<180";
@@ -197,7 +197,30 @@ void makePlots(std::string fileName){
   aCanvas->Divide(2,2);
 
   ////////////////////////////////
+  ////////////////////////////////  
   aCanvas->cd(1);
+  gPad->SetLeftMargin(0.12);
+  gPad->SetRightMargin(0.12);
+  
+  hAlphaRangeCut1->SetTitle("#alpha track length");
+  hAlphaRangeCut1->SetLineColor(4);
+  hAlphaRangeCut1->SetLineWidth(3);
+  hAlphaRangeCut1->SetStats(kTRUE);
+  hAlphaRangeCut1->GetXaxis()->SetRangeUser(50,150);
+  hAlphaRangeCut1->Draw("");
+  ////////////////////////////////
+  
+  aCanvas->cd(2);
+  gPad->SetLeftMargin(0.12);
+  gPad->SetRightMargin(0.12);
+  
+  hCarbonRangeCut1->SetTitle("^{12}C track length");
+  hCarbonRangeCut1->SetLineColor(4);
+  hCarbonRangeCut1->SetLineWidth(3);
+  hCarbonRangeCut1->GetXaxis()->SetRangeUser(0,25);
+  hCarbonRangeCut1->Draw("");
+  ////////////////////////////////
+  aCanvas->cd(3);
   gPad->SetLeftMargin(0.12);
   gPad->SetRightMargin(0.12);
   
@@ -217,28 +240,6 @@ void makePlots(std::string fileName){
   hLengthCut0->Draw("same");
   hLengthCut1->Draw();
   gPad->SetLogy();
-  ////////////////////////////////  
-  aCanvas->cd(2);
-  gPad->SetLeftMargin(0.12);
-  gPad->SetRightMargin(0.12);
-  
-  hAlphaRangeCut1->SetTitle("#alpha track length");
-  hAlphaRangeCut1->SetLineColor(4);
-  hAlphaRangeCut1->SetLineWidth(3);
-  hAlphaRangeCut1->SetStats(kTRUE);
-  hAlphaRangeCut1->GetXaxis()->SetRangeUser(50,150);
-  hAlphaRangeCut1->Draw("");
-  ////////////////////////////////
-  
-  aCanvas->cd(3);
-  gPad->SetLeftMargin(0.12);
-  gPad->SetRightMargin(0.12);
-  
-  hCarbonRangeCut1->SetTitle("^{12}C track length");
-  hCarbonRangeCut1->SetLineColor(4);
-  hCarbonRangeCut1->SetLineWidth(3);
-  hCarbonRangeCut1->GetXaxis()->SetRangeUser(0,25);
-  hCarbonRangeCut1->Draw("");
   ////////////////////////////////
   aCanvas->cd(4);
   gPad->SetLeftMargin(0.12);
