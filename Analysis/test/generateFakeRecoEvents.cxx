@@ -16,11 +16,11 @@
 #define SIMUL_TRUNCATE_FLAG      true      // truncate partially contained tracks (detector's volume and/or GET history buffer)?
 #define SIMUL_EXT_TRG_FLAG       true      // simulate external trigger and GET history buffer?
 #define SIMUL_EXT_TRG_ARRIVAL    0.1       // trigger position as a fraction of GET electronics full time scale [0-1]
-#define SIMUL_BEAM_E_RESOL     0         // no energy smearing
+//#define SIMUL_BEAM_E_RESOL     0         // no energy smearing
 //#define SIMUL_BEAM_E_RESOL     0.00369   // [0-1] 0.369% energy sigma, fwhm=100 keV @ 11.5MeV
 //#define SIMUL_BEAM_E_RESOL     0.00554   // [0-1] 0.554% energy sigma, fwhm=150 keV @ 11.5MeV
 //#define SIMUL_BEAM_E_RESOL     0.00738   // [0-1] 0.738% energy sigma, fwhm=200 keV @ 11.5MeV
-//#define SIMUL_BEAM_E_RESOL       0.00863   // [0-1] 0.863% energy sigma, fwhm=200 keV @ 9.845MeV
+#define SIMUL_BEAM_E_RESOL       0.00863   // [0-1] 0.863% energy sigma, fwhm=200 keV @ 9.845MeV
 //#define SIMUL_BEAM_E_RESOL     0.0107    // [0-1] 1.107% energy sigma, fwhm=300 keV @ 11.5MeV
 //#define SIMUL_BEAM_E_RESOL     0.0148    // [0-1] 1.480% energy sigma, fwhm=400 keV @ 11.5MeV
 //#define SIMUL_BEAM_E_RESOL     0.01440   // [0-1] 1.440% energy sigma, fwhm=300 keV @ 8.86MeV

@@ -99,6 +99,7 @@ class EventTPC {
   inline int GetTimeRebin() const { return time_rebin; }       
   bool SetTimeRebin(int rebin); // HAS NO EFFECT YET !!!!
 
+  long GetNhits() const { return chargeMap2.size(); } // total # of unique {electronics channel, time cell} pairs present in this event
   double GetMaxCharge() const;             // maximal charge from all strips
   double GetMaxCharge(int strip_dir);      // maximal charge from strips of a given direction
   double GetMaxCharge(int strip_dir, int strip_number);      // maximal charge from merged strip of a given direction (all sections)
