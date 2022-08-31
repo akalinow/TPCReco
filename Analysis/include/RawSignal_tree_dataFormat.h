@@ -4,8 +4,9 @@
 struct Event_rawsignal{ // diagnostic data per event
   time_t runID;
   unsigned int eventID;
-  uint64_t timestamp; // internal GET electronics counter 10ns units
-  float delta_timestamp; // [s]
+  double unixTimeSec; // [s] absolute unix timestamp since 1970/1/1 epoch with millisecond precision
+  double elapsedTimeSec; // [s] elapsed time since start of run with 10ns precision from GET electronics counter (100 MHz clock)
+  double deltaTimeSec; // [s] diference with previous event converted to seconds
 
   bool clusterFlag; // is clustering enabled?
   float clusterThr; // clustering threshold in ADC units
