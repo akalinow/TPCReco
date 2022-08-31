@@ -30,7 +30,7 @@ TrackBuilder::TrackBuilder() {
   myRawHits.resize(3);
 
   fitter.Config().MinimizerOptions().SetMinimizerType("Minuit2");
-  fitter.Config().MinimizerOptions().SetMaxFunctionCalls(1000);
+  fitter.Config().MinimizerOptions().SetMaxFunctionCalls(2000);
   fitter.Config().MinimizerOptions().Print(std::cout);
   fitter.Config().MinimizerOptions().SetPrintLevel(0);
   
@@ -146,6 +146,31 @@ void TrackBuilder::reconstruct(){
 
   aTrackCandidate = fitTrack3D(aTrackCandidate);
   aTrackCandidate = fitEventHypothesis(aTrackCandidate);
+
+  ////TEST
+  const TrackSegment3D & aSegment = aTrackCandidate.getSegments().front();
+  TVector3 tangent =  aSegment.getTangent();
+  TVector3 start =  aSegment.getStart();
+
+  TVector3 vertexPos = aSegment.getStart() + aSegment.getLength()/2.0*aSegment.getTangent();
+
+  Track3D aTrackCandidate1;
+  TrackSegment3D aSegment1;
+  aSegment1.setGeometry(myGeometryPtr);  
+  aSegment1.setStartEnd(vertexPos, aSegment.getStart() - 10*aSegment.getTangent());
+  aSegment1.setRecHits(myRecHits);
+  aTrackCandidate1.addSegment(aSegment1);
+
+  aSegment1.setStartEnd(vertexPos, aSegment.getEnd() + 5*aSegment.getTangent());
+  aTrackCandidate1.addSegment(aSegment1);
+  
+  //aTrackCandidate = fitTrackNodesStartEnd(aTrackCandidate);
+  myFittedTrack = aTrackCandidate;
+  return;  
+  ////////
+
+  
+  
   //aTrackCandidate = fitTrackNodesStartEnd(aTrackCandidate);
   //aTrackCandidate = fitEventHypothesis(aTrackCandidate);
   
@@ -343,6 +368,8 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
   }
   std::cout<<KBLU<<"Hand cliked track: "<<RST<<std::endl;
   std::cout<<aTrackCandidate<<std::endl;
+
+  aTrackCandidate = fitEventHypothesis(aTrackCandidate);
   
   myFittedTrack = aTrackCandidate;
   myFittedTrack.setHypothesisFitChi2(0);
@@ -598,19 +625,18 @@ Track3D TrackBuilder::fitTrackNodesStartEnd(const Track3D & aTrack) const{
   ROOT::Math::Functor fcn(&aTrackCandidate, &Track3D::chi2FromNodesList, nParams);
   fitter.SetFCN(fcn, params.data());
   
-  double paramWindowWidth = 10.0;
+  //double paramWindowWidth = 10.0;
   for (int iPar = 0; iPar < nParams; ++iPar){
     fitter.Config().ParSettings(iPar).Release();
     fitter.Config().ParSettings(iPar).SetValue(params[iPar]);
-    fitter.Config().ParSettings(iPar).SetStepSize(1);
-    fitter.Config().ParSettings(iPar).SetLimits(params[iPar]-paramWindowWidth,
-						params[iPar]+paramWindowWidth);
+    //fitter.Config().ParSettings(iPar).SetLimits(params[iPar]-paramWindowWidth,
+    //						params[iPar]+paramWindowWidth);
   }      
   bool fitStatus = fitter.FitFCN();
   if (!fitStatus) {
     Error(__FUNCTION__, "Track3D Fit failed");
-    std::cout<<KRED<<"Track3D Fit failed"<<RST<<std::endl;
-    //fitter.Result().Print(std::cout);
+    std::cout<<KRED<<"Track3D nodes fit failed"<<RST<<std::endl;
+    fitter.Result().Print(std::cout);
     //return aTrack;
   }
   const ROOT::Fit::FitResult & result = fitter.Result();
@@ -629,7 +655,8 @@ Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
 
   const TrackSegment3D & aSegment = aTrackCandidate.getSegments().front();
   TH1F hChargeProfile = aSegment.getChargeProfile();
-
+  hChargeProfile.Rebin(2);
+  
   if(hChargeProfile.GetMaximum()) hChargeProfile.Scale(1.0/hChargeProfile.GetMaximum());
   mydEdxFitter.fitHisto(hChargeProfile);
 

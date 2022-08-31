@@ -86,9 +86,7 @@ class TrackSegment3D{
   ///Return the particle identification.
   pid_type getPID() const { return pid;}
 
-  ///Return charge profile along the track. Each projection is returned in separate
-  ///histogram row
-  TH2F getChargeProfile1() const;
+  ///Return charge profile along the track.
   TH1F getChargeProfile() const;
 
   double getIntegratedCharge(double lambda) const;

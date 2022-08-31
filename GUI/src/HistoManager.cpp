@@ -192,6 +192,7 @@ void HistoManager::drawRecoHistos(TCanvas *aCanvas){
 void HistoManager::drawRecoFromMarkers(TCanvas *aCanvas, std::vector<double> * segmentsXY){
 
   reconstructSegmentsFromMarkers(segmentsXY);
+  
   for(int strip_dir=projection_type::DIR_U;strip_dir<=projection_type::DIR_W;++strip_dir){
     TVirtualPad *aPad = aCanvas->cd(strip_dir+1);
     aCanvas->Modified();
@@ -200,11 +201,12 @@ void HistoManager::drawRecoFromMarkers(TCanvas *aCanvas, std::vector<double> * s
   }
    int strip_dir=3;
    TVirtualPad *aPad = aCanvas->GetPad(strip_dir+1);
-   if(!aPad) return;
+   if(!aPad) return;   
    aPad->cd();
    aCanvas->Modified();
    aCanvas->Update();
-   drawTrack3DProjectionXY(aPad);
+   //drawTrack3DProjectionXY(aPad);
+   drawChargeAlongTrack3D(aPad);
    aCanvas->Modified();
    aCanvas->Update();
 }
@@ -627,16 +629,28 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   hFrame.SetMaximum(1.2);
 
   TH1F hChargeProfile = aTrack3D.getChargeProfile();
-  hChargeProfile.Scale(1.0/hChargeProfile.GetMaximum());  
+  //TH1F hChargeProfile = aTrack3D.getSegments().front().getChargeProfile();
+  double scale = 1.0/hChargeProfile.GetMaximum();  
+  hChargeProfile.Scale(scale);  
   hChargeProfile.SetLineWidth(2);
   hChargeProfile.SetLineColor(2);
   hChargeProfile.SetMarkerColor(2);
   hChargeProfile.SetMarkerSize(1.0);
   hChargeProfile.SetMarkerStyle(20);
- 
+  
   hFrame.DrawCopy();
   hChargeProfile.DrawCopy("same HIST P");
-  
+  /*
+  TH1F hChargeProfile1 = aTrack3D.getSegments().back().getChargeProfile();
+  hChargeProfile1.Scale(scale);
+  hChargeProfile1.SetLineWidth(2);
+  hChargeProfile1.SetLineColor(3);
+  hChargeProfile1.SetMarkerColor(3);
+  hChargeProfile1.SetMarkerSize(1.0);
+  hChargeProfile1.SetMarkerStyle(20);
+  hChargeProfile1.DrawCopy("same HIST P");
+  return;
+  */
   TLegend *aLegend = new TLegend(0.7, 0.75, 0.95,0.95);
   fObjClones.push_back(aLegend);
   
@@ -671,10 +685,12 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
 
   IonRangeCalculator myRangeCalculator(gas_mixture_type::CO2,190.0,293.15);  
   double alphaRange = aTrack3D.getSegments().front().getLength();
-  double carbonRange = aTrack3D.getSegments().back().getLength();
+  double carbonRange = 0.0;
+  if( aTrack3D.getSegments().size()==2){
+    carbonRange = aTrack3D.getSegments().back().getLength();
+  }
   double alphaEnergy = myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA,alphaRange);   
-  double carbonEnergy = myRangeCalculator.getIonEnergyMeV(pid_type::CARBON_12,carbonRange);
-  
+  double carbonEnergy = myRangeCalculator.getIonEnergyMeV(pid_type::CARBON_12,carbonRange);  
   TLatex aLatex;
   double x = 0.1;
   double y = 0.91;

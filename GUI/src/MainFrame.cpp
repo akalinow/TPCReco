@@ -235,7 +235,7 @@ void MainFrame::InitializeEventSource(){
   
   if(myWorkMode!=M_ONLINE_GRAW_MODE && myWorkMode!=M_ONLINE_NGRAW_MODE){
     myEventSource->loadDataFile(dataFileName);
-    myEventSource->loadFileEntry(0);
+    myEventSource->loadFileEntry(13);//TEST
   }
   if(myConfig.find("hitFilter")!=myConfig.not_found()){
     myHistoManager.setConfig(myConfig.find("hitFilter")->second);

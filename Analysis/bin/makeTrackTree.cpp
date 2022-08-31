@@ -145,7 +145,8 @@ typedef struct {Float_t eventId, frameId,
     hypothesisChi2,
     xVtx, yVtx, zVtx,
     xAlphaEnd, yAlphaEnd, zAlphaEnd,
-    xCarbonEnd, yCarbonEnd, zCarbonEnd;
+    xCarbonEnd, yCarbonEnd, zCarbonEnd,
+    total_mom_x,  total_mom_y,  total_mom_z;
     } TrackData;
 /////////////////////////
 int makeTrackTree(const  std::string & geometryFileName,
@@ -153,6 +154,13 @@ int makeTrackTree(const  std::string & geometryFileName,
 
   std::shared_ptr<EventSourceBase> myEventSource;
   if(dataFileName.find(".graw")!=std::string::npos){
+    
+    boost::property_tree::ptree proterty_tree;
+    proterty_tree.put("pedestal.minPedestalCell", 5.0);
+    proterty_tree.put("pedestal.maxPedestalCell",25);
+    proterty_tree.put("pedestal.minSignalCell",5);
+    proterty_tree.put("pedestal.maxSignalCell",506);
+    
     #ifdef WITH_GET
     if(dataFileName.find(",")!=std::string::npos){
       myEventSource = std::make_shared<EventSourceMultiGRAW>(geometryFileName);
@@ -161,7 +169,8 @@ int makeTrackTree(const  std::string & geometryFileName,
       myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
       dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(160);
     }
-     #endif
+    dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(proterty_tree.find("pedestal")->second);    
+    #endif
   }
   else if(dataFileName.find(".root")!=std::string::npos){
     myEventSource = std::make_shared<EventSourceROOT>(geometryFileName);
@@ -183,7 +192,8 @@ int makeTrackTree(const  std::string & geometryFileName,
   leafNames += "charge:cosTheta:phi:chi2:hypothesisChi2:";
   leafNames += "xVtx:yVtx:zVtx:";
   leafNames += "xAlphaEnd:yAlphaEnd:zAlphaEnd:";
-  leafNames += "xCarbonEnd:yCarbonEnd:zCarbonEnd";
+  leafNames += "xCarbonEnd:yCarbonEnd:zCarbonEnd:";
+  leafNames += "total_mom_x:total_mom_y:total_mom_z";
   tree->Branch("track",&track_data,leafNames.c_str());
 
   int index = geometryFileName.find("mbar");
@@ -201,13 +211,13 @@ int makeTrackTree(const  std::string & geometryFileName,
 						     last_dot_position-last_slash_position-1)+".root");
   std::shared_ptr<eventraw::EventInfo> myEventInfo = std::make_shared<eventraw::EventInfo>();
   myRecoOutput.open(recoFileName);
-  
+ 
   myEventSource->loadDataFile(dataFileName);
   std::cout<<KBLU<<"File with "<<RST<<myEventSource->numberOfEntries()<<" frames loaded."<<std::endl;
 
   //Event loop
   unsigned int nEntries = myEventSource->numberOfEntries();
-  nEntries = 1000; //TEST
+  nEntries = 100; //TEST
   for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
     if(nEntries>10 && iEntry%(nEntries/10)==0){
       std::cout<<KBLU<<"Processed: "<<int(100*(double)iEntry/nEntries)<<" % events"<<RST<<std::endl;
@@ -249,15 +259,13 @@ int makeTrackTree(const  std::string & geometryFileName,
     double carbonRange =  aTrack3D.getSegments().back().getPID()== pid_type::CARBON_12 ? aTrack3D.getSegments().back().getLength(): 0.0;
     double alphaEnergy = alphaRange>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA,alphaRange):0.0;
     double carbonEnergy = carbonRange>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::CARBON_12, carbonRange):0.0;
-    //double m_Alpha = myRangeCalculator.getIonMassMeV(pid_type::ALPHA);
-    //double m_12C = myRangeCalculator.getIonMassMeV(pid_type::CARBON_12);
-    /*
+    double m_Alpha = myRangeCalculator.getIonMassMeV(pid_type::ALPHA);
+    double m_12C = myRangeCalculator.getIonMassMeV(pid_type::CARBON_12);
+    
     double p_alpha = sqrt(2*m_Alpha*alphaEnergy);
     double p_12C = sqrt(2*m_12C*carbonEnergy);
-    TVector3 total_p = p_alpha*(alphaEnd-vertex).Unit() + p_12C*((carbonEnd-vertex).Unit());
-    //double total_p_mag = total_p.Mag();
-    total_p.Print();
-    */
+    TVector3 total_p = p_alpha*(alphaEnd-vertex).Unit() + p_12C*(carbonEnd-vertex).Unit();
+    
     track_data.frameId = iEntry;
     track_data.eventId = eventId;
     track_data.eventType = eventType;
@@ -287,6 +295,11 @@ int makeTrackTree(const  std::string & geometryFileName,
     track_data.alphaRange = alphaRange;
     track_data.carbonRange = carbonRange;
     track_data.cosPhiSegments = cosPhiSegments;
+
+    track_data.total_mom_x = total_p.x();
+    track_data.total_mom_y = total_p.y();
+    track_data.total_mom_z = total_p.z();
+    
     tree->Fill();    
   }
   outputROOTFile.Write();
