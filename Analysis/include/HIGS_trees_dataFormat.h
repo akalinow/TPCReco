@@ -5,10 +5,11 @@
 #include "TLorentzVector.h"
 
 struct Event_1prong{ // hypothesis: background alpha particle
-  time_t runID;
-  unsigned int eventID;
-  uint64_t timestamp; // internal GET electronics counter 10ns units
-  float delta_timestamp; // [s]
+  time_t runId;
+  unsigned int eventId;
+  double unixTimeSec; // [s] absolute unix timestamp since 1970/1/1 epoch with millisecond precision (combined runID and GET counter)
+  double runTimeSec; // [s] elapsed time since start of the runID with 10ns precision from GET counter (100 MHz clock)
+  double deltaTimeSec; // [s] diference with previous event from GET counter converted to seconds (prone to glitches while switching between runIDs)
   TVector3 vertexPos; // [mm]
   TVector3 endPos; // [mm]
   float length; // [mm]
@@ -28,10 +29,11 @@ struct Event_1prong{ // hypothesis: background alpha particle
   bool Zmargin10mm; // global Z-span <196mm and >=10mm lower/upper margins on Z/time scale
 };
 struct Event_2prong{ // hypothesis: gamma + O-16 -> alpha + C-12
-  time_t runID;
-  unsigned int eventID;
-  uint64_t timestamp; // internal GET electronics counter 10ns units
-  float delta_timestamp; // in seconds
+  time_t runId;
+  unsigned int eventId;
+  double unixTimeSec; // [s] absolute unix timestamp since 1970/1/1 epoch with millisecond precision (combined runID and GET counter)
+  double runTimeSec; // [s] elapsed time since start of the runID with 10ns precision from GET counter (100 MHz clock)
+  double deltaTimeSec; // [s] diference with previous event from GET counter converted to seconds (prone to glitches while switching between runIDs)
   TVector3 vertexPos; // [mm]
   TVector3 alpha_endPos; // [mm]
   float alpha_length; // [mm]
@@ -73,10 +75,11 @@ struct Event_2prong{ // hypothesis: gamma + O-16 -> alpha + C-12
   */
 };
 struct Event_3prong{ // hypothesis: gamma + C-12 -> 3-alpha
-  time_t runID;
-  unsigned int eventID;
-  uint64_t timestamp; // internal GET electronics counter 10ns units
-  float delta_timestamp; // [s]
+  time_t runId;
+  unsigned int eventId;
+  double unixTimeSec; // [s] absolute unix timestamp since 1970/1/1 epoch with millisecond precision (combined runID and GET counter)
+  double runTimeSec; // [s] elapsed time since start of the runID with 10ns precision from GET counter (100 MHz clock)
+  double deltaTimeSec; // [s] diference with previous event from GET counter converted to seconds (prone to glitches while switching between runIDs)
   TVector3 vertexPos; // [mm]
   TVector3 alpha1_endPos; // [mm]
   float alpha1_length; // [mm]

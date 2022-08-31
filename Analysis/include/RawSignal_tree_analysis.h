@@ -32,7 +32,7 @@ public:
 			  ClusterConfig &aClusterConfig); // definition of LAB detector coordinates
   ~RawSignal_tree_analysis();
   
-  void fillTree(std::shared_ptr<EventTPC> aEventTPC);//(eventraw::EventInfo *aEventInfo);
+  void fillTree(std::shared_ptr<EventTPC> aEventTPC, bool & isFirst);//(eventraw::EventInfo *aEventInfo);
 
  private:
 
@@ -45,7 +45,7 @@ public:
   void initialize();
   void finalize();
   void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);  // definition of LAB detector coordinates
-  double getUnixTimestamp(time_t run_id, uint64_t elapsed_time_10ns); // creates absolute Unix timestamp with millisecond precision [s]
+  //  double getUnixTimestamp(time_t run_id, uint64_t elapsed_time_10ns); // creates absolute Unix timestamp with millisecond precision [s]
 };
 
 #endif

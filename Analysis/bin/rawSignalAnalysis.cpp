@@ -237,6 +237,7 @@ void analyzeRawEvents(const boost::property_tree::ptree &aConfig){
 
   // loop over ALL events
   Long64_t currentEventIdx=-1;
+  bool isFirst=true; // flag to indicate first event for time period / rate calculations
 
   ////// DEBUG
   Long64_t counter=0;
@@ -254,7 +255,7 @@ void analyzeRawEvents(const boost::property_tree::ptree &aConfig){
     // DEBUG
 
     // fill statistical histograms per run (before & after user-defined cuts)
-    myAnalysis.fillTree(myEventSource->getCurrentEvent());
+    myAnalysis.fillTree(myEventSource->getCurrentEvent(), isFirst);
     
     // load next event (if any)
     currentEventIdx=myEventSource->currentEventNumber();

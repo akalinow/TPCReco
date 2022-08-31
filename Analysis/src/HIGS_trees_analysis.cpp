@@ -13,6 +13,7 @@
 #include "TrackSegment3D.h"
 #include "EventInfo.h"
 #include "HIGS_trees_analysis.h"
+#include "UtilsMath.h"
 
 #include "colorText.h"
 
@@ -117,7 +118,7 @@ void HIGS_trees_analysis::setIonRangeCalculator(double pressure){ // CO2 pressur
 ///////////////////////////////
 ///////////////////////////////
 void HIGS_trees_analysis::fillTrees(Track3D *aTrack, eventraw::EventInfo *aEventInfo){
-  
+
   // The following assumptions are made:
   // - event is a collection of straight 3D segments
   // - 3D segments share common vertex (STARTING POINT of each segment)
@@ -127,18 +128,21 @@ void HIGS_trees_analysis::fillTrees(Track3D *aTrack, eventraw::EventInfo *aEvent
   const int ntracks = aTrack->getSegments().size();
   if (ntracks==0) return;
 
+  static bool isFirst_1prong=true;
   if (ntracks==1)
-      fillTrees1prong(aTrack, aEventInfo);
+    fillTrees1prong(aTrack, aEventInfo, isFirst_1prong);
   
+  static bool isFirst_2prong=true;
   if (ntracks==2)
-      fillTrees2prong(aTrack, aEventInfo);
+    fillTrees2prong(aTrack, aEventInfo, isFirst_2prong);
   
+  static bool isFirst_3prong=true;
   if (ntracks==3)
-      fillTrees3prong(aTrack, aEventInfo);  
+    fillTrees3prong(aTrack, aEventInfo, isFirst_3prong);  
 }
 ///////////////////////////////
 ///////////////////////////////
-void HIGS_trees_analysis::fillTrees1prong(Track3D *aTrack, eventraw::EventInfo *aEventInfo){
+void HIGS_trees_analysis::fillTrees1prong(Track3D *aTrack, eventraw::EventInfo *aEventInfo, bool & isFirst){
 
   if(!Output1prongTreePtr){
     std::cout<<KRED<<"HIGS_trees_analysis::fillTrees1prong"<<RST
@@ -149,12 +153,18 @@ void HIGS_trees_analysis::fillTrees1prong(Track3D *aTrack, eventraw::EventInfo *
   
   TrackSegment3DCollection list = aTrack->getSegments();
   auto track=list.front();
+  event1prong_->runId=(aEventInfo ? aEventInfo->GetRunId() : -1);
+  event1prong_->eventId=(aEventInfo ? aEventInfo->GetEventId() : -1);
+  event1prong_->unixTimeSec=(aEventInfo ? Utils::getUnixTimestamp( aEventInfo->GetRunId(), aEventInfo->GetEventTimestamp() ) : -1); // absolute Unix time [s]
   static double last_timestamp = 0;
-  event1prong_->runID=(aEventInfo ? aEventInfo->GetRunId() : -1);
-  event1prong_->eventID=(aEventInfo ? aEventInfo->GetEventId() : -1);
-  event1prong_->timestamp=(aEventInfo ? aEventInfo->GetEventTimestamp() : -1);
-  event1prong_->delta_timestamp=( (double)(aEventInfo ? aEventInfo->GetEventTimestamp() : 0)-last_timestamp)*1e-8; // sec 
-  last_timestamp=event1prong_->timestamp;
+  if(isFirst) {
+    last_timestamp=event1prong_->unixTimeSec;
+    isFirst=false;
+  }
+  event1prong_->runTimeSec=(aEventInfo ? (double)(aEventInfo->GetEventTimestamp()*10.0e-9) : -1); // [s] converted from GET electronics timestamp (10ns units) to seconds
+  event1prong_->deltaTimeSec=(double)(aEventInfo ? event1prong_->unixTimeSec - last_timestamp : -1); // [s] time difference for rate measurements
+  last_timestamp=event1prong_->unixTimeSec;
+
   event1prong_->vertexPos = list.front().getStart();
   event1prong_->endPos = track.getEnd();
   event1prong_->length = track.getLength(); // [mm]
@@ -195,7 +205,7 @@ void HIGS_trees_analysis::fillTrees1prong(Track3D *aTrack, eventraw::EventInfo *
 }
 ///////////////////////////////
 ///////////////////////////////
-void HIGS_trees_analysis::fillTrees2prong(Track3D *aTrack, eventraw::EventInfo *aEventInfo){
+void HIGS_trees_analysis::fillTrees2prong(Track3D *aTrack, eventraw::EventInfo *aEventInfo, bool & isFirst){
 
   if(!Output2prongTreePtr){
     std::cout<<KRED<<"HIGS_trees_analysis::fillTrees"<<RST
@@ -211,12 +221,18 @@ void HIGS_trees_analysis::fillTrees2prong(Track3D *aTrack, eventraw::EventInfo *
 	      return a.getLength() > b.getLength();
 	    });
 
+  event2prong_->runId=(aEventInfo ? aEventInfo->GetRunId() : -1);
+  event2prong_->eventId=(aEventInfo ? aEventInfo->GetEventId() : -1);
+  event2prong_->unixTimeSec=(aEventInfo ? Utils::getUnixTimestamp( aEventInfo->GetRunId(), aEventInfo->GetEventTimestamp() ) : -1); // absolute Unix time [s]
   static double last_timestamp = 0;
-  event2prong_->runID=(aEventInfo ? aEventInfo->GetRunId() : -1);
-  event2prong_->eventID=(aEventInfo ? aEventInfo->GetEventId() : -1);
-  event2prong_->timestamp=(aEventInfo ? aEventInfo->GetEventTimestamp() : -1);
-  event2prong_->delta_timestamp=( (double)(aEventInfo ? aEventInfo->GetEventTimestamp() : 0)-last_timestamp)*1e-8; // sec 
-  last_timestamp=event2prong_->timestamp;
+  if(isFirst) {
+    last_timestamp=event2prong_->unixTimeSec;
+    isFirst=false;
+  }
+  event2prong_->runTimeSec=(aEventInfo ? (double)(aEventInfo->GetEventTimestamp()*10.0e-9) : -1); // [s] converted from GET electronics timestamp (10ns units) to seconds
+  event2prong_->deltaTimeSec=(double)(aEventInfo ? event2prong_->unixTimeSec - last_timestamp : -1); // [s] time difference for rate measurements
+  last_timestamp=event2prong_->unixTimeSec;
+
   event2prong_->vertexPos = list.front().getStart();
   event2prong_->alpha_endPos = list.front().getEnd();
   event2prong_->alpha_length = list.front().getLength(); // longest = alpha
@@ -263,7 +279,7 @@ void HIGS_trees_analysis::fillTrees2prong(Track3D *aTrack, eventraw::EventInfo *
 }
 ///////////////////////////////
 ///////////////////////////////
-void HIGS_trees_analysis::fillTrees3prong(Track3D *aTrack, eventraw::EventInfo *aEventInfo){
+void HIGS_trees_analysis::fillTrees3prong(Track3D *aTrack, eventraw::EventInfo *aEventInfo, bool & isFirst){
 
   if(!Output3prongTreePtr){
     std::cout<<KRED<<"HIGS_trees_analysis::fillTrees"<<RST
@@ -278,12 +294,18 @@ void HIGS_trees_analysis::fillTrees3prong(Track3D *aTrack, eventraw::EventInfo *
 	    [](const TrackSegment3D& a, const TrackSegment3D& b) {
 	      return a.getLength() > b.getLength();
 	    });  
+  event3prong_->runId=(aEventInfo ? aEventInfo->GetRunId() : -1);
+  event3prong_->eventId=(aEventInfo ? aEventInfo->GetEventId() : -1);
+  event3prong_->unixTimeSec=(aEventInfo ? Utils::getUnixTimestamp( aEventInfo->GetRunId(), aEventInfo->GetEventTimestamp() ) : -1); // absolute Unix time [s]
   static double last_timestamp = 0;
-  event3prong_->runID=(aEventInfo ? aEventInfo->GetRunId() : -1);
-  event3prong_->eventID=(aEventInfo ? aEventInfo->GetEventId() : -1);
-  event3prong_->timestamp=(aEventInfo ? aEventInfo->GetEventTimestamp() : -1);
-  event3prong_->delta_timestamp=( (double)(aEventInfo ? aEventInfo->GetEventTimestamp() : 0)-last_timestamp)*1e-8; // sec 
-  last_timestamp=event3prong_->timestamp;
+  if(isFirst) {
+    last_timestamp=event3prong_->unixTimeSec;
+    isFirst=false;
+  }
+  event3prong_->runTimeSec=(aEventInfo ? (double)(aEventInfo->GetEventTimestamp()*10.0e-9) : -1); // [s] converted from GET electronics timestamp (10ns units) to seconds
+  event3prong_->deltaTimeSec=(double)(aEventInfo ? event3prong_->unixTimeSec - last_timestamp : -1); // [s] time difference for rate measurements
+  last_timestamp=event3prong_->unixTimeSec;
+
   event3prong_->vertexPos = list.front().getStart();
   auto track1=list.at(0);
   event3prong_->alpha1_endPos = track1.getEnd();

@@ -10,6 +10,7 @@
 #include "EventInfo.h"
 #include "RawSignal_tree_analysis.h"
 #include "RawSignal_tree_dataFormat.h"
+#include "UtilsMath.h"
 
 #include "colorText.h"
 
@@ -67,7 +68,7 @@ void RawSignal_tree_analysis::finalize(){
 }
 ///////////////////////////////
 ///////////////////////////////
-void RawSignal_tree_analysis::fillTree(std::shared_ptr<EventTPC> aEventTPC){ // eventraw::EventInfo *aEventInfo){
+void RawSignal_tree_analysis::fillTree(std::shared_ptr<EventTPC> aEventTPC, bool & isFirst){ // eventraw::EventInfo *aEventInfo){
 
   if(!OutputTreePtr){
     std::cout<<KRED<<"RawSignal_tree_analysis::fillTree"<<RST
@@ -77,14 +78,18 @@ void RawSignal_tree_analysis::fillTree(std::shared_ptr<EventTPC> aEventTPC){ // 
   }
 
   // FILL EVENT INFO
-  
+
+  event_rawsignal_->runId=(aEventTPC ? aEventTPC->GetRunId() : -1); // run number
+  event_rawsignal_->eventId=(aEventTPC ? aEventTPC->GetEventId() : -1); // event number
+  event_rawsignal_->unixTimeSec=(aEventTPC ? Utils::getUnixTimestamp( aEventTPC->GetRunId(), aEventTPC->GetEventTime() ) : -1); // absolute Unix time [s]
   static double last_timestamp = 0;
-  event_rawsignal_->runID=(aEventTPC ? aEventTPC->GetRunId() : -1); // run number
-  event_rawsignal_->eventID=(aEventTPC ? aEventTPC->GetEventId() : -1); // event number
-  event_rawsignal_->unixTimeSec=(aEventTPC ? getUnixTimestamp( aEventTPC->GetRunId(), aEventTPC->GetEventTime() ) : -1); // absolute Unix time [s]
-  event_rawsignal_->elapsedTimeSec=(aEventTPC ? (double)(aEventTPC->GetEventTime()*10.0e-9) : -1); // [s] converted from GET electronics timestamp (10ns units) to seconds
-  event_rawsignal_->deltaTimeSec=(double)(aEventTPC ? aEventTPC->GetEventTime() : 0)*10.0e-9 - last_timestamp; // [s] time difference for rate measurements
-  last_timestamp=event_rawsignal_->elapsedTimeSec;
+  if(isFirst) {
+    last_timestamp=event_rawsignal_->unixTimeSec;
+    isFirst=false;
+  }
+  event_rawsignal_->runTimeSec=(aEventTPC ? (double)(aEventTPC->GetEventTime()*10.0e-9) : -1); // [s] converted from GET electronics timestamp (10ns units) to seconds
+  event_rawsignal_->deltaTimeSec=(double)(aEventTPC ? event_rawsignal_->unixTimeSec - last_timestamp : -1); // [s] time difference for rate measurements
+  last_timestamp=event_rawsignal_->unixTimeSec;
 
   // FILL CLUSTER PARAMETERS
   
@@ -131,30 +136,4 @@ void RawSignal_tree_analysis::setGeometry(std::shared_ptr<GeometryTPC> aGeometry
 	     <<std::endl;
     exit(-1);
   }
-}
-///////////////////////////////
-///////////////////////////////
-double RawSignal_tree_analysis::getUnixTimestamp(time_t run_id, uint64_t elapsed_time_10ns){
-  // Combines run ID with relative CoBo timestamp (10ns units)
-  // to produce Unix time stamp.
-  // NOTE: time zone is defined by runID convention (local time in most cases).
-
-  // decode run ID from YYYYMMDDhhmmss decimal format
-  auto year=(int)(run_id*1e-10);
-  auto month=(int)(fmod(run_id, year*1e10)*1e-8);
-  auto day=(int)(fmod(run_id, year*1e10+month*1e8)*1e-6);
-  auto hour=(int)(fmod(run_id, year*1e10+month*1e8+day*1e6)*1e-4);
-  auto minute=(int)(fmod(run_id, year*1e10+month*1e8+day*1e6+hour*1e4)*1e-2);
-  auto sec=(int)(fmod(run_id, year*1e10+month*1e8+day*1e6+hour*1e4+minute*1e2)); 
-
-  // create event Unix time point with millisecond precision
-  std::tm tm{};
-  tm.tm_year = year - 1900;
-  tm.tm_mon = month - 1;
-  tm.tm_mday = day;
-  tm.tm_hour = hour;
-  tm.tm_min = minute;
-  tm.tm_sec = sec;
-  tm.tm_isdst = -1;
-  return (double)(std::mktime(&tm) + elapsed_time_10ns*1e-5);
 }
