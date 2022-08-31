@@ -29,6 +29,7 @@
 #include "EventSourceMultiGRAW.h"
 #endif
 #include "EventSourceROOT.h"
+#include "EventSourceMC.h"
 
 #include "TGButtonGroup.h"
 #include "TGButton.h"
@@ -222,7 +223,7 @@ void MainFrame::InitializeEventSource(){
   }
   if(myConfig.find("pedestal")!=myConfig.not_found() && myEventSource.get()){
     dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(myConfig.find("pedestal")->second);
-  }
+  } 
 #endif
   else if(!myEventSource){
     std::cerr<<KRED<<"Input source not known. dataFile: "<<RST<<dataFileName<<std::endl;
@@ -232,10 +233,14 @@ void MainFrame::InitializeEventSource(){
     exit(0);
     return;
   }
+
+  ////TEST
+  myEventSource = std::make_shared<EventSourceMC>(geometryFileName);
+  ////////
   
   if(myWorkMode!=M_ONLINE_GRAW_MODE && myWorkMode!=M_ONLINE_NGRAW_MODE){
     myEventSource->loadDataFile(dataFileName);
-    myEventSource->loadFileEntry(13);//TEST
+    myEventSource->loadFileEntry(0);
   }
   if(myConfig.find("hitFilter")!=myConfig.not_found()){
     myHistoManager.setConfig(myConfig.find("hitFilter")->second);

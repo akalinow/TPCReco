@@ -205,8 +205,7 @@ void HistoManager::drawRecoFromMarkers(TCanvas *aCanvas, std::vector<double> * s
    aPad->cd();
    aCanvas->Modified();
    aCanvas->Update();
-   //drawTrack3DProjectionXY(aPad);
-   drawChargeAlongTrack3D(aPad);
+   drawTrack3DProjectionXY(aPad);
    aCanvas->Modified();
    aCanvas->Update();
 }

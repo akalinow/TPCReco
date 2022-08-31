@@ -114,6 +114,7 @@ set(TPCRECO_LIBRARIES "")
 
 add_subdirectory(DataFormats)
 add_subdirectory(Utilities)
+add_subdirectory(TrackGenerator) 
 add_subdirectory(GrawToROOT) 
 add_subdirectory(Reconstruction)
 add_subdirectory(Analysis)

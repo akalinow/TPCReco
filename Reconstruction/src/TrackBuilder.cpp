@@ -148,6 +148,7 @@ void TrackBuilder::reconstruct(){
   aTrackCandidate = fitEventHypothesis(aTrackCandidate);
 
   ////TEST
+  /*
   const TrackSegment3D & aSegment = aTrackCandidate.getSegments().front();
   TVector3 tangent =  aSegment.getTangent();
   TVector3 start =  aSegment.getStart();
@@ -164,7 +165,8 @@ void TrackBuilder::reconstruct(){
   aSegment1.setStartEnd(vertexPos, aSegment.getEnd() + 5*aSegment.getTangent());
   aTrackCandidate1.addSegment(aSegment1);
   
-  //aTrackCandidate = fitTrackNodesStartEnd(aTrackCandidate);
+  aTrackCandidate = fitTrackNodesStartEnd(aTrackCandidate);
+  */
   myFittedTrack = aTrackCandidate;
   return;  
   ////////
@@ -368,8 +370,6 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
   }
   std::cout<<KBLU<<"Hand cliked track: "<<RST<<std::endl;
   std::cout<<aTrackCandidate<<std::endl;
-
-  aTrackCandidate = fitEventHypothesis(aTrackCandidate);
   
   myFittedTrack = aTrackCandidate;
   myFittedTrack.setHypothesisFitChi2(0);

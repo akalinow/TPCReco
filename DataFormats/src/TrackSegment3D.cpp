@@ -269,7 +269,6 @@ TH1F TrackSegment3D::getChargeProfile() const{
 
   int numberOfBins = std::min(maxPoints,256);
   int rebinFactor = hChargeProfile.GetNbinsX()/numberOfBins;
-  //int rebinFactor = 8*hChargeProfile.GetNbinsX()/maxPoints;
   while(nBins%rebinFactor && rebinFactor<nBins){
     ++rebinFactor;
   }
@@ -303,3 +302,5 @@ std::ostream & operator << (std::ostream &out, const TrackSegment3D &aSegment){
 
   return out;
 }
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
