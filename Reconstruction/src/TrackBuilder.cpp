@@ -366,6 +366,7 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
     TVector3 start =  a3DSeed.getStart() + lambdaStartTime*a3DSeed.getTangent();
     TVector3 end =  a3DSeed.getStart() + lambdaEndTime*a3DSeed.getTangent();
     a3DSeed.setStartEnd(start, end);
+    a3DSeed.setRecHits(myRawHits);
     aTrackCandidate.addSegment(a3DSeed);
   }
   std::cout<<KBLU<<"Hand cliked track: "<<RST<<std::endl;
@@ -651,12 +652,25 @@ Track3D TrackBuilder::fitTrackNodesStartEnd(const Track3D & aTrack) const{
 /////////////////////////////////////////////////////////
 Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
 
+  ////TEST
+  TVector3 a(0,0,0); 
+  //TVector3 b(56.5685, 56.5685, 4.89859e-15);
+  TVector3 b(0, 0 , 60); 
+
+  Track3D aCandidate1;
+  TrackSegment3D aSegment1;
+  aSegment1.setGeometry(myGeometryPtr);  
+  aSegment1.setStartEnd(a, b);
+  aSegment1.setRecHits(myRawHits);
+  aSegment1.setPID(pid_type::ALPHA);
+  aCandidate1.addSegment(aSegment1);
+  return aCandidate1;
+  ////////
+
   if(aTrackCandidate.getLength()<1) return aTrackCandidate;
 
-  const TrackSegment3D & aSegment = aTrackCandidate.getSegments().front();
+  const TrackSegment3D & aSegment = aTrackCandidate.getSegments().front(); 
   TH1F hChargeProfile = aSegment.getChargeProfile();
-  hChargeProfile.Rebin(2);
-  
   if(hChargeProfile.GetMaximum()) hChargeProfile.Scale(1.0/hChargeProfile.GetMaximum());
   mydEdxFitter.fitHisto(hChargeProfile);
 
@@ -684,7 +698,7 @@ Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
   TrackSegment3D alphaSegment;
   alphaSegment.setGeometry(myGeometryPtr);  
   alphaSegment.setStartEnd(vertexPos, alphaEnd);
-  alphaSegment.setRecHits(myRecHits);
+  alphaSegment.setRecHits(myRawHits);
   alphaSegment.setPID(pid_type::ALPHA);
   aSplitTrackCandidate.addSegment(alphaSegment);
   
@@ -692,7 +706,7 @@ Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
     TrackSegment3D carbonSegment;
     carbonSegment.setGeometry(myGeometryPtr);  
     carbonSegment.setStartEnd(vertexPos, carbonEnd);
-    carbonSegment.setRecHits(myRecHits);
+    carbonSegment.setRecHits(myRawHits);
     carbonSegment.setPID(pid_type::CARBON_12);
     aSplitTrackCandidate.addSegment(carbonSegment);
   }

@@ -26,7 +26,7 @@
 // Setter methods
 
 // constructor
-UVWprojector::UVWprojector(GeometryTPC *geo, int n, int nx, int ny) 
+UVWprojector::UVWprojector(std::shared_ptr<GeometryTPC> geo, int n, int nx, int ny) 
   : area_npoints(1), 
     isOK_AreaMapping(false),    
     isOK_TimeMapping(false), 
@@ -447,7 +447,50 @@ bool UVWprojector::InitTimeMapping() {
 }
 
 // Getter methods
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+void UVWprojector::fillPEventTPC(std::shared_ptr<PEventTPC> aEvent){
 
+  // sanity checks
+  if(is_input_2D || !geo_ptr || !(geo_ptr->IsOK()) || !isOK_TimeMapping || !isOK_AreaMapping) return;
+
+  TH3D *h3 = (TH3D*)input_hist;
+  // loop over all Z-slices
+  std::map<int, BinFracMap>::const_iterator it;
+  std::map<int, double>::const_iterator it2;
+  for(it=fTimeFractionMap.cbegin(); it!=fTimeFractionMap.cend(); it++) {
+    int iz = it->first; // Z-slice
+ 
+    // loop over all mapped time cells for a give Z-slice
+    for(it2=(it->second).FracMap.cbegin(); it2!=(it->second).FracMap.cend(); it2++) {	
+      
+      const double time_ibin = it2->first;
+      const double weightT = it2->second;
+
+      // loop over all mapped X,Y bins and project TH3D to TH2D using proper weights
+      std::map<MultiKey2, BinFracMap>::const_iterator it3;
+      std::map<int, double>::const_iterator it4;
+      for(it3=fAreaFractionMap.cbegin(); it3!=fAreaFractionMap.cend(); it3++) {
+	for(it4=(it3->second).FracMap.cbegin(); it4!=(it3->second).FracMap.cend(); it4++) {
+	  int ix = std::get<0>(it3->first);
+	  int iy = std::get<1>(it3->first);
+	  int ibin = it4->first;       // TH2Poly bin index
+	  
+	  std::shared_ptr<StripTPC> s = geo_ptr->GetTH2PolyStrip(ibin);
+	  if(s) { 
+	    const double weight = it4->second;
+	    if(weight<=0.0) continue;
+	    aEvent->AddValByStrip(s,
+				  time_ibin,
+				  h3->GetBinContent(ix, iy, iz)*weight*weightT);
+	  }
+	}
+      }  
+    }
+  }
+}
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 // Get TH1D of time-integrated strip projection for 3D or 2D event (SELECTED DIRECTION)
 TH1D * UVWprojector::GetStripProfile_TH1D(int dir) {
 

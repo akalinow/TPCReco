@@ -9,6 +9,7 @@
 
 #include "TH1F.h"
 #include "Track3D.h"
+#include "IonRangeCalculator.h"
 
 class EventSourceMC: public EventSourceBase {
   
@@ -38,17 +39,23 @@ public:
   
  private:
 
-  const TVector3 & getVertex();
-  const TrackSegment3D & getSegment(const TVector3 vertexPos, pid_type ion_id);  
-  const TH1F & getChargeProfile(double ion_range, pid_type ion_id);  
-  void createTrack();
-  void fillChargeMap(const Track3D & aTrack);
+  std::shared_ptr<UVWprojector> myProjectorPtr;
+  TH3D my3DChargeCloud;
+
+  TVector3 createVertex() const;
+  TrackSegment3D createSegment(const TVector3 vertexPos, pid_type ion_id) const;  
+  TH1F createChargeProfile(double ion_range, pid_type ion_id) const;  
+  Track3D createTrack() const;
+
+  
+  void fill3DChargeCloud(const Track3D & aTrack);
+  void fillPEventTPC(const Track3D & aTrack);
   void generateEvent();
 
-  TH1F myChargeProfile{"hChargeProfile","",1024, -0.2, 1.2};
-  TVector3 myVertex;
-  Track3D myTrack;
-  TrackSegment3D mySegment;
+  
+  
+  
+  
 };
 #endif
 

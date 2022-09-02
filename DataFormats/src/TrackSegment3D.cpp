@@ -220,7 +220,7 @@ double TrackSegment3D::operator() (const double *par) {
 void TrackSegment3D::addProjection(TH1F &histo, TGraphErrors &graph) const{
 
   double x, y, ex;
-  double value=0;
+  double value=0, binCoverage=0.0;
   int binLow, binHigh;
   double binWidth = histo.GetBinWidth(1);
   for(int iPoint=0;iPoint<graph.GetN();++iPoint){
@@ -230,8 +230,12 @@ void TrackSegment3D::addProjection(TH1F &histo, TGraphErrors &graph) const{
     binHigh = histo.FindBin((x+ex)*getLength());
     y *= binWidth/getLength();
     for(int iBin=binLow;iBin<=binHigh;++iBin){
+      if(iBin==binLow) binCoverage = histo.GetXaxis()->GetBinUpEdge(iBin) - (x-ex)*getLength();
+      else if(iBin==binHigh) binCoverage = (x+ex)*getLength() - histo.GetXaxis()->GetBinLowEdge(iBin);
+      else binCoverage = histo.GetBinWidth(iBin);
+      binCoverage /=histo.GetBinWidth(iBin);
       value = histo.GetBinContent(iBin);
-      histo.SetBinContent(iBin, value+y);
+      histo.SetBinContent(iBin, value+y*binCoverage);
     }
   }
 }
@@ -262,7 +266,7 @@ TH1F TrackSegment3D::getChargeProfile() const{
     std::string name = "density_graph_"+std::to_string(strip_dir);
     aGraph.SetName(name.c_str());
     name +=".root";
-    aGraph.SaveAs(name.c_str());
+    aGraph.SaveAs(name.c_str());    
     */
     addProjection(hChargeProfile, aGraph);
   }

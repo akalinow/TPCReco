@@ -712,6 +712,7 @@ bool GeometryTPC::InitTH2Poly() {
 
 // change cartesian binning of the underlying TH2Poly
 void GeometryTPC::SetTH2PolyPartition(int nx, int ny) {
+
   bool change = false;
   if (nx > 1 && nx != grid_nx) {
     grid_nx = nx;

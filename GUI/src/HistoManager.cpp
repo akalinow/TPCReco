@@ -213,7 +213,7 @@ void HistoManager::drawRecoFromMarkers(TCanvas *aCanvas, std::vector<double> * s
 /////////////////////////////////////////////////////////
 void HistoManager::drawDevelHistos(TCanvas *aCanvas){
 
- if(!aCanvas) return;
+   if(!aCanvas) return;
   int padNumberOffset = 0;
   if(std::string(aCanvas->GetName())=="Histograms") padNumberOffset = 0;
   

@@ -16,6 +16,7 @@
 #include "TH2Poly.h"
 
 #include "GeometryTPC.h"
+#include "PEventTPC.h"
 
 //class UVWprojector : public TH2Poly {
 class UVWprojector {
@@ -28,14 +29,14 @@ class UVWprojector {
   
   // Setter methods 
   
-  UVWprojector(GeometryTPC *geo, int n=100, int nx=25, int ny=25);
+  UVWprojector(std::shared_ptr<GeometryTPC> geo, int n=100, int nx=25, int ny=25);
   void SetAreaNpoints(int n); // change number of points used for random probing of TH2Poly bins
   void SetEvent3D(TH3D &h3); // 3D ionization map: (x [mm], y [mm], z [mm], Q [arb.u.])
   void SetEvent2D(TH2D &h2); // 2D ionization map: (x [mm], y [mm], Q [arb.u.])
   inline void SetDebug(bool flag) { _debug = flag; }
 
   // Getter methods
-  
+  void fillPEventTPC(std::shared_ptr<PEventTPC> aEvent);
   TH1D    *GetStripProfile_TH1D(int dir); // Get TH1D of time-integrated strip projection (SELECTED DIRECTION)
   TH2Poly *GetStripProfile_TH2Poly();     // Get TH2Poly of time-integrated strip projection (ALL STRIPS)
   TH2D    *GetStripVsTime_TH2D(int dir);  // Get TH2D of strip vs time projection (SELECTED DIRECTION)  
@@ -65,7 +66,7 @@ class UVWprojector {
   int area_npoints;
   bool isOK_AreaMapping;
   bool isOK_TimeMapping;
-  GeometryTPC *geo_ptr; // pointer to the existing TPC geometry
+  std::shared_ptr<GeometryTPC> geo_ptr; // pointer to the existing TPC geometry
   TH1 *input_hist; // input histogram to be projected (can be TH3D/TH3F or TH2D/TH2F)
   bool is_input_2D; // is the event input histogram of TH2D or TH3D type?
   

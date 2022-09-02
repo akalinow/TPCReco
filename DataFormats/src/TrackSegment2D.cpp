@@ -93,10 +93,8 @@ TGraphErrors TrackSegment2D::getChargeProfile(const Hit2DCollection & aRecHits, 
   TVector3 cellDiagonal(myGeometryPtr->GetTimeBinWidth(), myGeometryPtr->GetStripPitch(), 0);
   TVector3 cellDiagonal1(myGeometryPtr->GetTimeBinWidth(), -myGeometryPtr->GetStripPitch(), 0);
   double cellProjectionOnSegment2D = std::max(cellDiagonal.Dot(getTangent().Unit()),
-					      cellDiagonal1.Dot(getTangent().Unit()));
-  
+					      cellDiagonal1.Dot(getTangent().Unit()));  
   double binWidth = std::abs(cellProjectionOnSegment2D)/getLength();
-  //binWidth = 1.0/getLength();
   TGraphErrors grChargeProfile2D(0);
 
   for(const auto aHit:aRecHits){

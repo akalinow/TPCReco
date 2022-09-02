@@ -655,8 +655,8 @@ void MainFrame::Update(){
     myHistoManager.drawRawHistos(fMainCanvas, isRateDisplayOn);
   }
   else {
-    //myHistoManager.drawDevelHistos(fMainCanvas);
-    myHistoManager.drawRecoHistos(fMainCanvas);
+    myHistoManager.drawDevelHistos(fMainCanvas);
+    //myHistoManager.drawRecoHistos(fMainCanvas);
   }
 }
 
