@@ -625,18 +625,16 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   TH1F hFrame("hFrame",";d [mm];charge [arb. units]",2,-20, 20+aTrack3D.getLength());
   hFrame.GetYaxis()->SetTitleOffset(2.0);
   hFrame.SetMinimum(0.0);
-  hFrame.SetMaximum(1.2);
 
   TH1F hChargeProfile = aTrack3D.getChargeProfile();
-  //TH1F hChargeProfile = aTrack3D.getSegments().front().getChargeProfile();
-  double scale = 1.0/hChargeProfile.GetMaximum();  
-  hChargeProfile.Scale(scale);  
+  //hChargeProfile = aTrack3D.getSegments().front().getChargeProfile();//TEST
   hChargeProfile.SetLineWidth(2);
   hChargeProfile.SetLineColor(2);
   hChargeProfile.SetMarkerColor(2);
   hChargeProfile.SetMarkerSize(1.0);
   hChargeProfile.SetMarkerStyle(20);
-  
+
+  hFrame.SetMaximum(1.2*hChargeProfile.GetMaximum());  
   hFrame.DrawCopy();
   hChargeProfile.DrawCopy("same HIST P");
   /*

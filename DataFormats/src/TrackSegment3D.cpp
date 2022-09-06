@@ -262,7 +262,7 @@ TH1F TrackSegment3D::getChargeProfile() const{
   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
     TGraphErrors & aGraph = projections[strip_dir];
     if(aGraph.GetN()>maxPoints) maxPoints = aGraph.GetN();
-    /*
+    /*  
     std::string name = "density_graph_"+std::to_string(strip_dir);
     aGraph.SetName(name.c_str());
     name +=".root";
@@ -277,6 +277,9 @@ TH1F TrackSegment3D::getChargeProfile() const{
     ++rebinFactor;
   }
   hChargeProfile.Rebin(rebinFactor);
+  hChargeProfile.Rebin(8);
+  double scale = 1.0/hChargeProfile.GetBinWidth(1);
+  hChargeProfile.Scale(scale); 
   return hChargeProfile;
 }
 /////////////////////////////////////////////////////////

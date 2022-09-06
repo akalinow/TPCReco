@@ -652,10 +652,13 @@ Track3D TrackBuilder::fitTrackNodesStartEnd(const Track3D & aTrack) const{
 /////////////////////////////////////////////////////////
 Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
 
+  /*
+  return aTrackCandidate;
   ////TEST
   TVector3 a(0,0,0); 
-  //TVector3 b(56.5685, 56.5685, 4.89859e-15);
-  TVector3 b(0, 0 , 60); 
+  //TVector3 b(0, 0 , 60); //theta = 0
+  //TVector3 b(60, 0, 3.67394e-15); //theta = M_PI/2, phi = 0
+  TVector3 b(42.4264, 42.4264, 3.67394e-15); //theta = M_PI/4, phi = M_PI/4
 
   Track3D aCandidate1;
   TrackSegment3D aSegment1;
@@ -666,12 +669,11 @@ Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
   aCandidate1.addSegment(aSegment1);
   return aCandidate1;
   ////////
-
+  */
   if(aTrackCandidate.getLength()<1) return aTrackCandidate;
 
   const TrackSegment3D & aSegment = aTrackCandidate.getSegments().front(); 
-  TH1F hChargeProfile = aSegment.getChargeProfile();
-  if(hChargeProfile.GetMaximum()) hChargeProfile.Scale(1.0/hChargeProfile.GetMaximum());
+  TH1F hChargeProfile = aSegment.getChargeProfile(); 
   mydEdxFitter.fitHisto(hChargeProfile);
 
   pid_type eventType = mydEdxFitter.getBestFitEventType();

@@ -40,7 +40,7 @@ dEdxFitter::dEdxFitter(double aPressure){
   carbon_alpha_model->SetParName(6, "commonScale");
 
   carbon_alpha_model->SetParLimits(0, 0.1, 3.0);
-  carbon_alpha_model->SetParLimits(6, 0.001, 0.02);
+  carbon_alpha_model->SetParLimits(6, 10, 1000);
   
   carbon_alpha_model->FixParameter(4, 1.0);
   carbon_alpha_model->FixParameter(5, 1.0);  

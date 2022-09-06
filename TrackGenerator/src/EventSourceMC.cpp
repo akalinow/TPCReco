@@ -2,7 +2,6 @@
 
 #include "colorText.h"
 #include "EventSourceMC.h"
-#include "TRandom3.h"
 
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -20,7 +19,6 @@ EventSourceMC::EventSourceMC(const std::string & geometryFileName) {
 			 NbinsZ, zmin, zmax);
   
   nEntries = 9999;
-
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -59,6 +57,7 @@ std::shared_ptr<EventTPC> EventSourceMC::getPreviousEvent(){
 /////////////////////////////////////////////////////////
 void EventSourceMC::loadEventId(unsigned long int iEvent){
 
+  myCurrentEntry = iEvent;
   generateEvent();
  
 }
@@ -85,8 +84,26 @@ TVector3 EventSourceMC::createVertex() const{
 TrackSegment3D EventSourceMC::createSegment(const TVector3 vertexPos, pid_type ion_id) const{
 
   double length = 60;
-  double theta = 0;//M_PI/2.0;
-  double phi = 0;//M_PI/4.0;
+  double theta = 0, phi = 0.0;
+ 
+  if(myCurrentEntry==0){
+    theta = 0.0;
+    phi = 0.0;
+  }
+  else if(myCurrentEntry==1){
+    theta = M_PI/2.0;
+    phi = M_PI/4.0;
+  }
+  else if(myCurrentEntry==2){
+    theta = M_PI/4.0;
+    phi = M_PI/4.0;
+  }
+  else{
+    theta = myRndm.Uniform(0, M_PI);
+    phi = myRndm.Uniform(0, 2*M_PI);
+    length = myRndm.Uniform(20, 60);
+  }
+
   TVector3 tangent;
   tangent.SetMagThetaPhi(1.0, theta, phi);
 
@@ -107,12 +124,13 @@ TH1F EventSourceMC::createChargeProfile(double ion_range, pid_type ion_id) const
   //IonRangeCalculator myRangeCalculator(gas_mixture_type::CO2, nominalPressure, 293.15);
   //double energy = 10.0;
   //double braggGraph_alpha_energy = 10;
-  double graph_range = 297.23;//myRangeCalculator.getIonRangeMM(ionId, braggGraph_alpha_energy);
-  double delta = graph_range - ion_range;
+  double max_ion_range = 297.23;//myRangeCalculator.getIonRangeMM(ionId, braggGraph_alpha_energy);
+  double graph_range = 299;//myRangeCalculator.getIonRangeMM(ionId, braggGraph_alpha_energy);
+  double delta = max_ion_range - ion_range;
 
   double x = 0.0;
   double value = 0.0;
-  TH1F aChargeProfile{"hChargeProfile",";x [mm];dE/dx [MeV/mm]", 1024, -0.2*ion_range, 1.2*ion_range};
+  TH1F aChargeProfile{"hChargeProfile",";x [mm];dE/dx [keV/mm]", 1024, -0.2*ion_range, 1.2*ion_range};
   for(int iBinX=1;iBinX<=aChargeProfile.GetNbinsX();++iBinX){
     x = aChargeProfile.GetBinCenter(iBinX);
     if(x<0) continue;
@@ -122,6 +140,7 @@ TH1F EventSourceMC::createChargeProfile(double ion_range, pid_type ion_id) const
   }
   
   std::cout<<"ion energy: "<<braggGraph_alpha->Integral(delta, graph_range)<<std::endl;
+  aChargeProfile.SaveAs("generated_charge_profile.root");
   return aChargeProfile;
 }
 /////////////////////////////////////////////////////////
@@ -145,13 +164,13 @@ void EventSourceMC::fill3DChargeCloud(const Track3D & aTrack){
   TVector3 depositPosition;
   TH1F hChargeProfile = aTrack.getChargeProfile();
   double lambda = 0.0, value = 0.0;
-  double scale = 100.0;
+  double scale = 1.0;
   int iBinTmp = 0;
   for(int iBin=0;iBin<hChargeProfile.GetNbinsX();++iBin){
     value = hChargeProfile.GetBinContent(iBin);
     if(!value) continue;
     lambda = hChargeProfile.GetBinCenter(iBin);
-    depositPosition = aTrack.getSegments().front().getStart() + lambda*aTrack.getSegments().front().getTangent();   
+    depositPosition = aTrack.getSegments().front().getStart() + lambda*aTrack.getSegments().front().getTangent(); 
     iBinTmp = my3DChargeCloud.FindBin(depositPosition.X(), depositPosition.Y(), depositPosition.Z());
     my3DChargeCloud.SetBinContent(iBinTmp, value*scale);
   }
@@ -165,10 +184,8 @@ void EventSourceMC::fillPEventTPC(const Track3D & aTrack){
   myProjectorPtr->SetEvent3D(my3DChargeCloud);
   myProjectorPtr->fillPEventTPC(myCurrentPEvent);
   */
-
-  TRandom3 rndm;
   double sigma = 1.5;
-  int nTries = 200;
+  int nTries = 100;
   double smearWeight = 1.0;
   
   double lambda = 0.0;
@@ -177,6 +194,7 @@ void EventSourceMC::fillPEventTPC(const Track3D & aTrack){
   bool err_flag = false;
   TVector3 depositPosition, smearedPosition, smearVect;
   TH1F hChargeProfile = aTrack.getChargeProfile();
+  double totalCharge = 0.0;
   
   for(int iBin=0;iBin<hChargeProfile.GetNbinsX();++iBin){
     value = hChargeProfile.GetBinContent(iBin);
@@ -185,27 +203,28 @@ void EventSourceMC::fillPEventTPC(const Track3D & aTrack){
     depositPosition = aTrack.getSegments().front().getStart() + lambda*aTrack.getSegments().front().getTangent();
 
     for(int iTry=0;iTry<nTries;++iTry){
-      smearedPosition = TVector3(rndm.Gaus(depositPosition.X(), sigma),
-				 rndm.Gaus(depositPosition.Y(), sigma),
-				 rndm.Gaus(depositPosition.Z(), sigma));
-    
-    iPolyBin = myGeometryPtr->GetTH2Poly()->FindBin(smearedPosition.X(), smearedPosition.Y());
-    iCell = myGeometryPtr->Pos2timecell(smearedPosition.Z(), err_flag);
-    std::shared_ptr<StripTPC> aStrip = myGeometryPtr->GetTH2PolyStrip(iPolyBin);
-    if(aStrip){
-      auto key = std::make_tuple(aStrip->Dir(), aStrip->Section(), aStrip->Num(), iCell);
-      if(myCurrentPEvent->GetChargeMap().find(key)==myCurrentPEvent->GetChargeMap().end()){
-	myCurrentPEvent->AddValByStrip(aStrip, iCell, value*smearWeight);
+      smearedPosition = TVector3(myRndm.Gaus(depositPosition.X(), sigma),
+				 myRndm.Gaus(depositPosition.Y(), sigma),
+				 myRndm.Gaus(depositPosition.Z(), sigma));
+      smearWeight = TMath::Gaus((smearedPosition-depositPosition).Mag(), 0, sigma, true);
+      iPolyBin = myGeometryPtr->GetTH2Poly()->FindBin(smearedPosition.X(), smearedPosition.Y());
+      iCell = myGeometryPtr->Pos2timecell(smearedPosition.Z(), err_flag);
+      std::shared_ptr<StripTPC> aStrip = myGeometryPtr->GetTH2PolyStrip(iPolyBin);
+      if(aStrip){
+	auto key = std::make_tuple(aStrip->Dir(), aStrip->Section(), aStrip->Num(), iCell);
+	if(true || myCurrentPEvent->GetChargeMap().find(key)==myCurrentPEvent->GetChargeMap().end()){
+	  myCurrentPEvent->AddValByStrip(aStrip, iCell, value*smearWeight);
+	  totalCharge+=value*smearWeight;
+	}
       }
     }
   }
-  }
+  std::cout<<"Total charge generated: "<<totalCharge<<std::endl;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void EventSourceMC::generateEvent(){
 
-  ++myCurrentEntry;
   myCurrentEventInfo.SetEventId(myCurrentEntry);
   myCurrentEventInfo.SetRunId(0);
   myCurrentEventInfo.SetEventTimestamp(0);
@@ -219,9 +238,11 @@ void EventSourceMC::generateEvent(){
   fill3DChargeCloud(aTrack);
   fillPEventTPC(aTrack);
   fillEventTPC();
+  ++myCurrentEntry;
 
   std::cout<<KBLU<<"Generated track: "<<RST<<std::endl;
   std::cout<<aTrack<<std::endl;
+
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

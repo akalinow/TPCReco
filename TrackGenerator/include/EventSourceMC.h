@@ -4,10 +4,11 @@
 #include <memory>
 #include <boost/property_tree/json_parser.hpp>
 
+#include "TH1F.h"
+#include "TRandom3.h"
+
 #include "EventSourceBase.h"
 #include "UVWprojector.h"
-
-#include "TH1F.h"
 #include "Track3D.h"
 #include "IonRangeCalculator.h"
 
@@ -39,6 +40,7 @@ public:
   
  private:
 
+  mutable TRandom3 myRndm;
   std::shared_ptr<UVWprojector> myProjectorPtr;
   TH3D my3DChargeCloud;
 
