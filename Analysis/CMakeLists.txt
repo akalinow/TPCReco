@@ -23,6 +23,7 @@ include_directories(${PROJECT_SOURCE_DIR}/GrawToROOT/include)
 include_directories(${PROJECT_SOURCE_DIR}/GUI/include)
 include_directories(${PROJECT_SOURCE_DIR}/Reconstruction/include)
 include_directories(${PROJECT_SOURCE_DIR}/Utilities/include)
+include_directories(${PROJECT_SOURCE_DIR}/TrackGenerator/include)
 ###############################################################################
 ## target definitions #########################################################
 # ROOT dictionary for persistens classes
@@ -35,18 +36,21 @@ add_library(${TPCRECO_PREFIX}${MODULE_NAME} ALIAS ${MODULE_NAME})
 set_target_properties(${MODULE_NAME} PROPERTIES PREFIX ${TPCRECO_PREFIX})
 
 add_executable(makeTrackTree  bin/makeTrackTree.cpp)
+add_executable(makeMCTrackTree  bin/makeMCTrackTree.cpp)
 add_executable(recoEventsAnalysis  bin/recoEventsAnalysis.cpp)
 add_executable(recoEventsComparison  bin/recoEventsComparison.cpp)
 
 # Compiler flags.
 #
 target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
+target_compile_options(makeMCTrackTree PUBLIC ${CMAKE_ROOT_CFLAGS})
 target_compile_options(makeTrackTree PUBLIC ${CMAKE_ROOT_CFLAGS})
 target_compile_options(recoEventsAnalysis PUBLIC ${CMAKE_ROOT_CFLAGS})
 target_compile_options(recoEventsComparison PUBLIC ${CMAKE_ROOT_CFLAGS})
 
 target_link_libraries(${MODULE_NAME} ${TPCRECO_LIBRARIES_LOCAL} ${ROOT_LIBRARIES})
 target_link_libraries(makeTrackTree PUBLIC ${TPCRECO_LIBRARIES} ${Boost_LIBRARIES} ${MODULE_NAME})
+target_link_libraries(makeMCTrackTree PUBLIC ${TPCRECO_LIBRARIES} ${Boost_LIBRARIES} ${MODULE_NAME})
 target_link_libraries(recoEventsAnalysis PUBLIC  ${TPCRECO_LIBRARIES} ${Boost_LIBRARIES} ${MODULE_NAME})
 target_link_libraries(recoEventsComparison PUBLIC ${TPCRECO_LIBRARIES} ${Boost_LIBRARIES} ${MODULE_NAME})
 
@@ -54,6 +58,7 @@ target_link_libraries(recoEventsComparison PUBLIC ${TPCRECO_LIBRARIES} ${Boost_L
 # relative to the executable.
 install(TARGETS ${MODULE_NAME} LIBRARY DESTINATION lib)
 install(TARGETS makeTrackTree RUNTIME DESTINATION bin)
+install(TARGETS makeMCTrackTree RUNTIME DESTINATION bin)
 install(TARGETS recoEventsAnalysis RUNTIME DESTINATION bin)
 install(TARGETS recoEventsComparison RUNTIME DESTINATION bin)
 

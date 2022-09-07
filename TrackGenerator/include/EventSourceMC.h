@@ -44,6 +44,7 @@ public:
 
   mutable TRandom3 myRndm;
   std::shared_ptr<UVWprojector> myProjectorPtr;
+  mutable IonRangeCalculator myRangeCalculator;
   TH3D my3DChargeCloud;
   Track3D myTrack3D;
 
@@ -54,7 +55,7 @@ public:
 
   
   void fill3DChargeCloud(const Track3D & aTrack);
-  void fillPEventTPC(const Track3D & aTrack);
+  void fillPEventTPC(const TH3D & h3DChargeCloud, const Track3D & aTrack);
   void generateEvent();
 
   
