@@ -42,7 +42,7 @@ public:
   
  private:
 
-  mutable TRandom3 myRndm;
+  mutable TRandom3 myRndm{0};
   std::shared_ptr<UVWprojector> myProjectorPtr;
   mutable IonRangeCalculator myRangeCalculator;
   TH3D my3DChargeCloud;
@@ -51,7 +51,7 @@ public:
   TVector3 createVertex() const;
   TrackSegment3D createSegment(const TVector3 vertexPos, pid_type ion_id) const;  
   TH1F createChargeProfile(double ion_range, pid_type ion_id) const;  
-  Track3D createTrack() const;
+  Track3D createTrack(const TVector3 & aVtx) const;
 
   
   void fill3DChargeCloud(const Track3D & aTrack);

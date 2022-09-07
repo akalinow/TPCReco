@@ -18,6 +18,7 @@
 #include "DotFinder.h"
 #include "dEdxFitter.h"
 #include "RecoOutput.h"
+#include "IonRangeCalculator.h"
 
 #include "CommonDefinitions.h"
 
@@ -124,7 +125,8 @@ public:
   void setDetLayoutVetoBand(double distance); // [mm]
 
   boost::property_tree::ptree myConfig;
-      
+
+  IonRangeCalculator myRangeCalculator;
   std::vector<TH2D*> projectionsInCartesianCoords;
   TH3D *h3DReco{0};
   TGraph *grEventRate{0};

@@ -202,8 +202,8 @@ int makeTrackTree(const  std::string & geometryFileName,
 
     track_data.eventTypeGen = aTrack3DGen.getSegments().front().getPID() + aTrack3DGen.getSegments().back().getPID();    
     track_data.alphaRangeGen =  aTrack3DGen.getSegments().front().getLength();    
-    track_data.alphaEnergyGen = track_data.alphaRangeGen>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA, track_data.alphaRangeGen):0.0;
-    track_data.chargeGen = aTrack3DGen.getIntegratedCharge(track_data.alphaRangeGen);
+    track_data.alphaEnergyGen = track_data.alphaRangeGen>0 ? 1E3*myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA, track_data.alphaRangeGen):0.0;
+    track_data.chargeGen = 100*track_data.alphaEnergyGen;//aTrack3DGen.getIntegratedCharge(track_data.alphaRangeGen);
     const TVector3 & tangentGen = aTrack3DGen.getSegments().front().getTangent();
     track_data.cosThetaGen = -tangentGen.X();
     track_data.phiGen = atan2(-tangentGen.Z(), tangentGen.Y());

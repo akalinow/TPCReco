@@ -146,11 +146,10 @@ TH1F EventSourceMC::createChargeProfile(double ion_range, pid_type ion_id) const
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-Track3D EventSourceMC::createTrack() const{
+Track3D EventSourceMC::createTrack(const TVector3 & aVtx) const{
 
   Track3D aTrack;
   pid_type ion_id = pid_type::ALPHA;
-  TVector3 aVtx = createVertex();
   TrackSegment3D aSegment = createSegment(aVtx, ion_id);
   TH1F hChargeProfile = createChargeProfile(aSegment.getLength(), ion_id);
   aTrack.addSegment(aSegment);
@@ -185,7 +184,7 @@ void EventSourceMC::fill3DChargeCloud(const Track3D & aTrack){
       my3DChargeCloud.Fill(smearedPosition.X(), smearedPosition.Y(), smearedPosition.Z(), value*smearWeight/7.06*keVToChargeScale);
     }
   }
-  std::cout<<KBLU<<"Total charge cloud energy [keV]: "<<RST<<my3DChargeCloud.Integral()<<std::endl;
+  std::cout<<KBLU<<"Total charge cloud energy [100*keV]: "<<RST<<my3DChargeCloud.Integral()<<std::endl;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -196,31 +195,9 @@ void EventSourceMC::fillPEventTPC(const TH3D & h3DChargeCloud, const Track3D & a
   myProjectorPtr->fillPEventTPC(myCurrentPEvent);
   */
 
-  //int iBinX=0, iBinY=0.0, iBinZ=0;
-  //double x=0.0, y=0.0, z=0.0;
-  //int iTimeCell = 0,
   int iPolyBin = 0;
   double value = 0.0, totalCharge = 0.0;
-  bool err_flag = false;
-
-  /*
-  for(int iHistoCell=0;iHistoCell<h3DChargeCloud.GetNcells();++iHistoCell){
-    h3DChargeCloud.GetBinXYZ(iHistoCell, iBinX, iBinY, iBinZ);
-    x = h3DChargeCloud.GetXaxis()->GetBinCenter(iBinX);
-    y = h3DChargeCloud.GetYaxis()->GetBinCenter(iBinY);
-    z = h3DChargeCloud.GetZaxis()->GetBinCenter(iBinZ);    
-    value = h3DChargeCloud.GetBinContent(iBinX, iBinY, iBinZ);
-    if(!value) continue;
-    iPolyBin = myGeometryPtr->GetTH2Poly()->FindBin(x, y);
-    iTimeCell = myGeometryPtr->Pos2timecell(z, err_flag);
-    std::shared_ptr<StripTPC> aStrip = myGeometryPtr->GetTH2PolyStrip(iPolyBin);
-    if(aStrip){
-      myCurrentPEvent->AddValByStrip(aStrip, iTimeCell, value);
-      totalCharge+=value;
-    }
-  }
-  */
-  
+  bool err_flag = false;  
   double sigma = 2.0;
   int nTries = 100;
   double smearWeight = 1.0;
@@ -246,11 +223,11 @@ void EventSourceMC::fillPEventTPC(const TH3D & h3DChargeCloud, const Track3D & a
       std::shared_ptr<StripTPC> aStrip = myGeometryPtr->GetTH2PolyStrip(iPolyBin);
       if(aStrip){
 	  myCurrentPEvent->AddValByStrip(aStrip, iCell, value*smearWeight/7.06*100);
-	  totalCharge+=value*smearWeight/7.06;
+	  totalCharge+=100*value*smearWeight/7.06;
       }
     }
   }
-  std::cout<<KBLU<<"Total charge generated [keV]: "<<RST<<totalCharge<<std::endl;
+  std::cout<<KBLU<<"Total charge generated [100*keV]: "<<RST<<totalCharge<<std::endl;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -264,8 +241,9 @@ void EventSourceMC::generateEvent(){
   
   myCurrentPEvent->Clear();
   myCurrentPEvent->SetEventInfo(myCurrentEventInfo);
-  
-  myTrack3D = createTrack();
+
+  TVector3 aVtx = createVertex();
+  myTrack3D = createTrack(aVtx);
   fill3DChargeCloud(myTrack3D);
   fillPEventTPC(my3DChargeCloud, myTrack3D);
   fillEventTPC();
@@ -277,3 +255,4 @@ void EventSourceMC::generateEvent(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+

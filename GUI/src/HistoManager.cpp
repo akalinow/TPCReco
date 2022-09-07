@@ -18,7 +18,6 @@
 #include "TLorentzVector.h"
 
 #include "CommonDefinitions.h"
-#include "IonRangeCalculator.h"
 #include "MakeUniqueName.h"
 #include "GeometryTPC.h"
 #include "EventTPC.h"
@@ -51,6 +50,7 @@ void HistoManager::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
 void HistoManager::setPressure(double aPressure){
   
   myTkBuilder.setPressure(aPressure);
+  myRangeCalculator.setGasPressure(aPressure);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -680,7 +680,6 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   fObjClones.push_back(aObj2);
   aLegend->Draw();
 
-  IonRangeCalculator myRangeCalculator(gas_mixture_type::CO2,190.0,293.15);  
   double alphaRange = aTrack3D.getSegments().front().getLength();
   double carbonRange = 0.0;
   if( aTrack3D.getSegments().size()==2){
