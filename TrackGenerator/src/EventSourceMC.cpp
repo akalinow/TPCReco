@@ -184,7 +184,7 @@ void EventSourceMC::fillPEventTPC(const Track3D & aTrack){
   myProjectorPtr->SetEvent3D(my3DChargeCloud);
   myProjectorPtr->fillPEventTPC(myCurrentPEvent);
   */
-  double sigma = 1.5;
+  double sigma = 2.0;
   int nTries = 100;
   double smearWeight = 1.0;
   
@@ -234,14 +234,14 @@ void EventSourceMC::generateEvent(){
   myCurrentPEvent->Clear();
   myCurrentPEvent->SetEventInfo(myCurrentEventInfo);
   
-  Track3D aTrack = createTrack();
-  fill3DChargeCloud(aTrack);
-  fillPEventTPC(aTrack);
+  myTrack3D = createTrack();
+  fill3DChargeCloud(myTrack3D);
+  fillPEventTPC(myTrack3D);
   fillEventTPC();
   ++myCurrentEntry;
 
   std::cout<<KBLU<<"Generated track: "<<RST<<std::endl;
-  std::cout<<aTrack<<std::endl;
+  std::cout<<myTrack3D<<std::endl;
 
 }
 /////////////////////////////////////////////////////////

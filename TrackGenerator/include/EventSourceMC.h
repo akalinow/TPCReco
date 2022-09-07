@@ -34,6 +34,8 @@ public:
 
   std::shared_ptr<EventTPC> getLastEvent();
 
+  const Track3D & getGeneratedTrack() const { return myTrack3D;}
+
   unsigned long int numberOfEvents() const;
 
   void loadGeometry(const std::string & fileName);
@@ -43,6 +45,7 @@ public:
   mutable TRandom3 myRndm;
   std::shared_ptr<UVWprojector> myProjectorPtr;
   TH3D my3DChargeCloud;
+  Track3D myTrack3D;
 
   TVector3 createVertex() const;
   TrackSegment3D createSegment(const TVector3 vertexPos, pid_type ion_id) const;  
