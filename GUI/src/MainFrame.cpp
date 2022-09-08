@@ -51,6 +51,9 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h,  const boost::proper
   else if(myWorkMode==M_OFFLINE_ROOT_MODE){
     modeLabel = "OFFLINE from ROOT";
   }
+  else if(myWorkMode==M_OFFLINE_MC_MODE){
+    modeLabel = "OFFLINE from Monte Carlo";
+  }
   else if(myWorkMode==M_OFFLINE_GRAW_MODE || myWorkMode==M_OFFLINE_NGRAW_MODE){
     modeLabel = "OFFLINE from GRAW";
   }
@@ -127,8 +130,12 @@ void MainFrame::InitializeEventSource(){
     //    TString list2=((TObjString *)(token->At(itoken)))->String(); // path + name of single file
     std::string list2( ((TObjString *)(token->At(itoken)))->String().Data() );
     if(gSystem->GetPathInfo(list2.c_str(), stat) != 0){
+      if(list2.find("_MC_")!=std::string::npos){
+	dataFileVec.push_back(list2);
+	continue;
+      }
       std::cerr<<KRED<<"Invalid data path. No such file or directory: "<<RST<<list2<<std::endl;
-      return;
+      exit(1);
     }
 #ifdef WITH_GET
     if( ((stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG) && list2.find(".graw")!=std::string::npos){
@@ -153,11 +160,21 @@ void MainFrame::InitializeEventSource(){
   //    std::cerr<<KRED<<"Invalid data path. No such file or directory: "<<RST<<dataFileName<<std::endl;
   //   return;
   //  }
+
+  std::cout<<"dataFileVec.size(): "<<dataFileVec.size()
+	   <<" ((stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG): "<<((stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG)
+	   <<"dataFileName.find(_MC_)!=std::string::npos: "<<(dataFileName.find("_MC_")!=std::string::npos)
+	   <<std::endl;
   
   if( dataFileVec.size()==1 && ((stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG) && dataFileName.find(".root")!=std::string::npos){
       myWorkMode = M_OFFLINE_ROOT_MODE;
       myEventSource = std::make_shared<EventSourceROOT>(geometryFileName);
     }
+  else if(dataFileVec.size()==1 && dataFileName.find("_MC_")!=std::string::npos){
+    myWorkMode = M_OFFLINE_MC_MODE;
+    myEventSource = std::make_shared<EventSourceMC>(geometryFileName);
+  }
+  
 #ifdef WITH_GET
   else if( all_graw ) { //(stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG) && dataFileName.find(".graw")!=std::string::npos){
 
@@ -226,18 +243,13 @@ void MainFrame::InitializeEventSource(){
   } 
 #endif
   else if(!myEventSource){
-    std::cerr<<KRED<<"Input source not known. dataFile: "<<RST<<dataFileName<<std::endl;
+    std::cerr<<KRED<<"Input source not known. DataFile: "<<RST<<dataFileName<<std::endl;
 #ifndef WITH_GET
     std::cerr<<KRED<<"and GRAW libriaries not set."<<RST<<std::endl;
 #endif
     exit(0);
     return;
-  }
-
-  ////TEST
-  myEventSource = std::make_shared<EventSourceMC>(geometryFileName);
-  ////////
-  
+  } 
   if(myWorkMode!=M_ONLINE_GRAW_MODE && myWorkMode!=M_ONLINE_NGRAW_MODE){
     myEventSource->loadDataFile(dataFileName);
     myEventSource->loadFileEntry(0);

@@ -11,7 +11,18 @@ EventSourceMC::EventSourceMC(const std::string & geometryFileName) {
 
   int NbinsX=50, NbinsY=50, NbinsZ=50;
   double xmin=-150,  ymin=-100, zmin=-100;
-  double xmax=150,  ymax=100,  zmax=100; 
+  double xmax=150,  ymax=100,  zmax=100;
+
+  braggGraph_alpha = new TGraph("dEdx_corr_alpha_10MeV_CO2_250mbar.dat", "%lg %lg");
+  braggGraph_12C = new TGraph("dEdx_corr_12C_5MeV_CO2_250mbar.dat", "%lg %lg");
+  double nominalPressure = 250.0; //[mbar]
+  braggGraph_alpha_energy = 10; // [MeV]
+  braggGraph_12C_energy = 5; // [MeV]
+
+  keVToChargeScale = 100.0; // 1 keV = 100 charge in arb. units
+  
+  myRangeCalculator.setGasPressure(nominalPressure);
+
 
   my3DChargeCloud = TH3D("h3DChargeCloud", "charge cloud [arb. units];X [mm];Y [mm];Z [mm]",
 			 NbinsX, xmin, xmax,
@@ -25,9 +36,7 @@ EventSourceMC::EventSourceMC(const std::string & geometryFileName) {
 EventSourceMC::~EventSourceMC(){ }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void EventSourceMC::loadDataFile(const std::string & fileName){
-   
-}
+void EventSourceMC::loadDataFile(const std::string & fileName){ }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void EventSourceMC::loadFileEntry(unsigned long int iEntry){
@@ -57,7 +66,7 @@ std::shared_ptr<EventTPC> EventSourceMC::getPreviousEvent(){
 /////////////////////////////////////////////////////////
 void EventSourceMC::loadEventId(unsigned long int iEvent){
 
-  myCurrentEntry = iEvent;
+  myCurrentEntry = iEvent - 1;
   generateEvent();
  
 }
@@ -72,9 +81,7 @@ void EventSourceMC::loadGeometry(const std::string & fileName){
 /////////////////////////////////////////////////////////
 TVector3 EventSourceMC::createVertex() const{
 
-  double x = 0.0;
-  double y = 0.0;
-  double z = 0.0;
+  double x = 0.0, y = 0.0, z = 0.0;
 
   TVector3 aVertex(x,y,z);
   return aVertex;
@@ -117,15 +124,22 @@ TrackSegment3D EventSourceMC::createSegment(const TVector3 vertexPos, pid_type i
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 TH1F EventSourceMC::createChargeProfile(double ion_range, pid_type ion_id) const{
-
-  TGraph* braggGraph_alpha = new TGraph("dEdx_corr_alpha_10MeV_CO2_250mbar.dat", "%lg %lg");
-  //TGraph* braggGraph_12C = new TGraph("dEdx_corr_12C_5MeV_CO2_250mbar.dat", "%lg %lg");
-  double nominalPressure = 250.0;
-  myRangeCalculator.setGasPressure(nominalPressure);
   
-  double braggGraph_alpha_energy = 10; // [MeV]
-  double max_ion_range = myRangeCalculator.getIonRangeMM(ion_id, braggGraph_alpha_energy);
-  double graph_range = 299;
+  double dEdx_max_energy =0.0, graph_range = 0.0;
+  TGraph *dEdx_graph=0;
+  
+  if(ion_id==pid_type::ALPHA){
+    dEdx_max_energy = braggGraph_alpha_energy;
+    dEdx_graph=braggGraph_alpha;
+    graph_range = 299;
+  }
+    else if(ion_id==pid_type::C_12){
+      dEdx_max_energy = braggGraph_12C_energy;
+      dEdx_graph = braggGraph_12C;
+      graph_range = 23.5;
+    }
+  
+  double max_ion_range = myRangeCalculator.getIonRangeMM(ion_id, dEdx_max_energy);
   double delta = max_ion_range - ion_range;
 
   double x = 0.0;
@@ -133,12 +147,10 @@ TH1F EventSourceMC::createChargeProfile(double ion_range, pid_type ion_id) const
   TH1F aChargeProfile{"hChargeProfile",";x [mm];dE/dx [keV/mm]", 1024, -0.2*ion_range, 1.2*ion_range};
   for(int iBinX=1;iBinX<=aChargeProfile.GetNbinsX();++iBinX){
     x = aChargeProfile.GetBinCenter(iBinX);
-    if(x<0) continue;
-    if(x+delta>graph_range) continue;
-    value = braggGraph_alpha->Eval(x+delta)*aChargeProfile.GetBinWidth(iBinX);
+    if(x<0 || (x+delta>graph_range)) continue;
+    value = dEdx_graph->Eval(x+delta)*aChargeProfile.GetBinWidth(iBinX);
     aChargeProfile.SetBinContent(iBinX, value);
   }
-
   
   std::cout<<KBLU<<"Charge profile sum [keV]: \t"<<RST<<aChargeProfile.Integral()<<std::endl;
   std::cout<<KBLU<<"Ion energy from range calculator [keV]: \t"<<RST<<myRangeCalculator.getIonEnergyMeV(ion_id, ion_range)*1E3<<std::endl;
@@ -146,10 +158,9 @@ TH1F EventSourceMC::createChargeProfile(double ion_range, pid_type ion_id) const
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-Track3D EventSourceMC::createTrack(const TVector3 & aVtx) const{
+Track3D EventSourceMC::createTrack(const TVector3 & aVtx, pid_type ion_id) const{
 
   Track3D aTrack;
-  pid_type ion_id = pid_type::ALPHA;
   TrackSegment3D aSegment = createSegment(aVtx, ion_id);
   TH1F hChargeProfile = createChargeProfile(aSegment.getLength(), ion_id);
   aTrack.addSegment(aSegment);
@@ -160,15 +171,12 @@ Track3D EventSourceMC::createTrack(const TVector3 & aVtx) const{
 /////////////////////////////////////////////////////////
 void EventSourceMC::fill3DChargeCloud(const Track3D & aTrack){
 
-  
   my3DChargeCloud.Reset();  
   TVector3 depositPosition, smearedPosition;
   TH1F hChargeProfile = aTrack.getChargeProfile();
   double lambda = 0.0, value = 0.0;
   double sigma = 2.0;
   int nTries = 100;
-  double smearWeight = 1.0;
-  double keVToChargeScale = 100.0;
   
   for(int iBin=0;iBin<hChargeProfile.GetNbinsX();++iBin){
     value = hChargeProfile.GetBinContent(iBin);
@@ -180,8 +188,7 @@ void EventSourceMC::fill3DChargeCloud(const Track3D & aTrack){
       smearedPosition = TVector3(myRndm.Gaus(depositPosition.X(), sigma),
 				 myRndm.Gaus(depositPosition.Y(), sigma),
 				 myRndm.Gaus(depositPosition.Z(), sigma));
-      smearWeight = TMath::Gaus((smearedPosition-depositPosition).Mag(), 0, sigma, true);    
-      my3DChargeCloud.Fill(smearedPosition.X(), smearedPosition.Y(), smearedPosition.Z(), value*smearWeight/7.06*keVToChargeScale);
+      my3DChargeCloud.Fill(smearedPosition.X(), smearedPosition.Y(), smearedPosition.Z(), value/nTries*keVToChargeScale);
     }
   }
   std::cout<<KBLU<<"Total charge cloud energy [100*keV]: "<<RST<<my3DChargeCloud.Integral()<<std::endl;
@@ -200,7 +207,6 @@ void EventSourceMC::fillPEventTPC(const TH3D & h3DChargeCloud, const Track3D & a
   bool err_flag = false;  
   double sigma = 2.0;
   int nTries = 100;
-  double smearWeight = 1.0;
   
   double lambda = 0.0;
 
@@ -217,13 +223,12 @@ void EventSourceMC::fillPEventTPC(const TH3D & h3DChargeCloud, const Track3D & a
       smearedPosition = TVector3(myRndm.Gaus(depositPosition.X(), sigma),
 				 myRndm.Gaus(depositPosition.Y(), sigma),
 				 myRndm.Gaus(depositPosition.Z(), sigma));
-      smearWeight = TMath::Gaus((smearedPosition-depositPosition).Mag(), 0, sigma, true);
       iPolyBin = myGeometryPtr->GetTH2Poly()->FindBin(smearedPosition.X(), smearedPosition.Y());
       iCell = myGeometryPtr->Pos2timecell(smearedPosition.Z(), err_flag);
       std::shared_ptr<StripTPC> aStrip = myGeometryPtr->GetTH2PolyStrip(iPolyBin);
       if(aStrip){
-	  myCurrentPEvent->AddValByStrip(aStrip, iCell, value*smearWeight/7.06*100);
-	  totalCharge+=100*value*smearWeight/7.06;
+	  myCurrentPEvent->AddValByStrip(aStrip, iCell, value/nTries*keVToChargeScale);
+	  totalCharge+=value/nTries*keVToChargeScale;
       }
     }
   }
@@ -242,10 +247,17 @@ void EventSourceMC::generateEvent(){
   myCurrentPEvent->Clear();
   myCurrentPEvent->SetEventInfo(myCurrentEventInfo);
 
+  pid_type ion_id = pid_type::ALPHA;
   TVector3 aVtx = createVertex();
-  myTrack3D = createTrack(aVtx);
-  fill3DChargeCloud(myTrack3D);
-  fillPEventTPC(my3DChargeCloud, myTrack3D);
+
+  int nParts = 1;
+  for(int iPart=0;iPart<nParts;++iPart){
+    myTrack3D = createTrack(aVtx, ion_id);
+    //fill3DChargeCloud(myTrack3D);
+    fillPEventTPC(my3DChargeCloud, myTrack3D);
+  }
+
+
   fillEventTPC();
   ++myCurrentEntry;
 

@@ -42,6 +42,10 @@ public:
   
  private:
 
+  TGraph* braggGraph_alpha, *braggGraph_12C;
+  double braggGraph_alpha_energy, braggGraph_12C_energy;
+  double keVToChargeScale{1.0};
+
   mutable TRandom3 myRndm{0};
   std::shared_ptr<UVWprojector> myProjectorPtr;
   mutable IonRangeCalculator myRangeCalculator;
@@ -51,7 +55,7 @@ public:
   TVector3 createVertex() const;
   TrackSegment3D createSegment(const TVector3 vertexPos, pid_type ion_id) const;  
   TH1F createChargeProfile(double ion_range, pid_type ion_id) const;  
-  Track3D createTrack(const TVector3 & aVtx) const;
+  Track3D createTrack(const TVector3 & aVtx, pid_type ion_id) const;
 
   
   void fill3DChargeCloud(const Track3D & aTrack);

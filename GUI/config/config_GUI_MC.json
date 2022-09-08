@@ -1,0 +1,24 @@
+{
+
+    "dataFile": "SingleAlpha_MC_CoBo0_AsAdAll_2022-09-08T09:00:00.000_0000",
+    "geometryFile": "geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat",
+
+    "resourcesPath":"/scratch/akalinow/ELITPC/TPCReco/build/resources/",
+    "removePedestal": true,
+    "display": {
+	"zLogScale": false,
+        "autoZoom":  true,
+	"recoMode":  true
+    },
+    "eventFilter": {
+	"enabled": false,
+        "totalChargeLowerBound": 1200
+    },   
+    "hitFilter": {
+        "recoClusterEnable": true,
+        "recoClusterThreshold": 35,
+        "recoClusterDeltaStrips": 2,
+        "recoClusterDeltaTimeCells": 5
+    }
+}
+
