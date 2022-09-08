@@ -80,7 +80,7 @@ void makeMCPlots(std::string fileName){
   ////////////////////////////////
   aCanvas->Print("MCPlots_set0.png");
   ////////////////////////////////
-  return;
+  //return;
   ////////////////////////////////
   aCanvas->Clear();
   aCanvas->Divide(2,2);
@@ -89,12 +89,51 @@ void makeMCPlots(std::string fileName){
   aCanvas->cd(1);
   gPad->SetLeftMargin(0.15);
   gPad->SetRightMargin(0.15);
+  gPad->SetBottomMargin(0.15);
 
+  /*
   hRangeResVsCosTheta->FitSlicesY();
   TH2F *hRangeResVsCosTheta_mean = (TH2F*)gDirectory->Get("hRangeResVsCosTheta_1");
   TH2F *hRangeResVsCosTheta_sigma = (TH2F*)gDirectory->Get("hRangeResVsCosTheta_2");
   //hRangeResVsCosTheta_mean->Draw();
-  hRangeResVsCosTheta_sigma->Draw();
+  //hRangeResVsCosTheta_sigma->Draw();
+  */
+  TH1D *hProjectionY;
+
+  hProjectionY = hRangeResVsCosTheta->ProjectionY();
+  hProjectionY->GetXaxis()->SetTitleOffset(1.5);
+  hProjectionY->Draw();
+
+  ////////////////////////////////
+  aCanvas->cd(2);
+  gPad->SetLeftMargin(0.15);
+  gPad->SetRightMargin(0.15);
+  gPad->SetBottomMargin(0.15);
+
+  hProjectionY = hCosThetaResVsCosTheta->ProjectionY();
+  hProjectionY->GetXaxis()->SetTitleOffset(1.5);
+  hProjectionY->Draw();
+  ////////////////////////////////
+  aCanvas->cd(3);
+  gPad->SetLeftMargin(0.15);
+  gPad->SetRightMargin(0.15);
+  gPad->SetBottomMargin(0.15);
+
+  hProjectionY = hPhiResVsCosTheta->ProjectionY();
+  hProjectionY->GetXaxis()->SetTitleOffset(1.5);
+  hProjectionY->Draw();
+  ////////////////////////////////
+  aCanvas->cd(4);
+  gPad->SetLeftMargin(0.15);
+  gPad->SetRightMargin(0.15);
+  gPad->SetBottomMargin(0.15);
+
+  hProjectionY = hChargeResVsCosTheta->ProjectionY();
+  hProjectionY->GetXaxis()->SetTitleOffset(1.5);
+  hProjectionY->Draw();
+
+  aCanvas->Print("MCPlots_set1.png");
+
  
 }
 
