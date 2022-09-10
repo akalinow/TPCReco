@@ -172,6 +172,7 @@ void HIGS_trees_analysis::fillTrees1prong(Track3D *aTrack, eventraw::EventInfo *
   event1prong_->cosThetaDET = cos(track.getTangent().Theta());
   event1prong_->phiBEAM = atan2(-track.getTangent().Z(), track.getTangent().Y()); // [rad], azimuthal angle from horizontal axis
   event1prong_->cosThetaBEAM = track.getTangent()*gammaUnitVec;; // cos of polar angle wrt beam axis
+  event1prong_->chargeProfile = track.getChargeProfile();
 
   // check containment in Z_DET
   event1prong_->Zmargin2mm = true;
@@ -240,12 +241,15 @@ void HIGS_trees_analysis::fillTrees2prong(Track3D *aTrack, eventraw::EventInfo *
   event2prong_->alpha_cosThetaDET = cos(list.front().getTangent().Theta());
   event2prong_->alpha_phiBEAM = atan2(-list.front().getTangent().Z(), list.front().getTangent().Y()); // [rad], azimuthal angle from horizontal axis;
   event2prong_->alpha_cosThetaBEAM = list.front().getTangent()*gammaUnitVec; // polar angle wrt beam axis
+  event2prong_->alpha_chargeProfile = list.front().getChargeProfile();
+
   event2prong_->carbon_endPos = list.back().getEnd();
   event2prong_->carbon_length = list.back().getLength(); // shortest = carbon
   event2prong_->carbon_phiDET = list.back().getTangent().Phi();
   event2prong_->carbon_cosThetaDET = cos(list.back().getTangent().Theta());
   event2prong_->carbon_phiBEAM = atan2(-list.back().getTangent().Z(), list.back().getTangent().Y()); // [rad], azimuthal angle from horizontal axis
   event2prong_->carbon_cosThetaBEAM = list.back().getTangent()*gammaUnitVec; // polar angle wrt beam axis
+  event2prong_->carbon_chargeProfile = list.back().getChargeProfile();
 
   // check containment in Z_DET
   event2prong_->Zmargin2mm = true;
@@ -314,6 +318,8 @@ void HIGS_trees_analysis::fillTrees3prong(Track3D *aTrack, eventraw::EventInfo *
   event3prong_->alpha1_cosThetaDET = cos(track1.getTangent().Theta());
   event3prong_->alpha1_phiBEAM = atan2(-track1.getTangent().Z(), track1.getTangent().Y()); // [rad], azimuthal angle from horizontal axis;
   event3prong_->alpha1_cosThetaBEAM = track1.getTangent()*gammaUnitVec; // cos polar angle wrt beam axis
+  event3prong_->alpha1_chargeProfile = track1.getChargeProfile();
+
   auto track2=list.at(1);
   event3prong_->alpha2_endPos = track2.getEnd();
   event3prong_->alpha2_length = track2.getLength(); // middle alpha
@@ -321,6 +327,8 @@ void HIGS_trees_analysis::fillTrees3prong(Track3D *aTrack, eventraw::EventInfo *
   event3prong_->alpha2_cosThetaDET = cos(track2.getTangent().Theta());
   event3prong_->alpha2_phiBEAM = atan2(-track2.getTangent().Z(), track2.getTangent().Y()); // [rad], azimuthal angle from horizontal axis;
   event3prong_->alpha2_cosThetaBEAM = track2.getTangent()*gammaUnitVec; // cos polar angle wrt beam axis
+  event3prong_->alpha2_chargeProfile = track2.getChargeProfile();
+
   auto track3=list.at(2);
   event3prong_->alpha3_endPos = track3.getEnd();
   event3prong_->alpha3_length = track3.getLength(); // shortest alpha
@@ -328,6 +336,7 @@ void HIGS_trees_analysis::fillTrees3prong(Track3D *aTrack, eventraw::EventInfo *
   event3prong_->alpha3_cosThetaDET = cos(track3.getTangent().Theta());
   event3prong_->alpha3_phiBEAM = atan2(-track3.getTangent().Z(), track3.getTangent().Y()); // [rad], azimuthal angle from horizontal axis;
   event3prong_->alpha3_cosThetaBEAM = track3.getTangent()*gammaUnitVec; // polar angle wrt beam axis
+  event3prong_->alpha3_chargeProfile = track3.getChargeProfile();
   
   // check containment in Z_DET
   event3prong_->Zmargin2mm = true;

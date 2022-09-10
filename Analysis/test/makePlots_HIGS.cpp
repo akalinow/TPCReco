@@ -3,7 +3,7 @@ Usage:
 
 $ root -l
 root [0] .L makePlots_HIGS.cpp
-root [1] makePlots_HIGS("Histos.root", 11.5);
+root [1] makePlots_HIGS("Histos.root", 8.66);
 
 */
 //#undef __ROOTLOGON__
@@ -21,6 +21,13 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
 
   bool plot_2prong=true;
   bool plot_3prong=true;
+  bool plot_fill=true; // false;
+  int plot_fill_style=3345;  // 45 deg
+  int plot_fill_color=kAzure+2; // kGray+2;
+  if(!plot_fill) {
+    plot_fill_style=0;
+    plot_fill_color=0;
+  }
 
   if (!gROOT->GetClass("GeometryTPC")){
     R__LOAD_LIBRARY(libDataFormats.so);
@@ -87,6 +94,8 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
   h1->Draw("TEXT00 SAME");
   h1->UseCurrentStyle();
   h1->SetLineWidth(2);
+  h1->SetFillColor(plot_fill_color);
+  h1->SetFillStyle(plot_fill_style);
   h1->GetXaxis()->SetNdivisions(5);
   c->Update();
   st = (TPaveStats *)c->GetPrimitive("stats");
@@ -296,6 +305,8 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     h1->UseCurrentStyle();
     h1->SetStats(true);
     h1->SetLineWidth(2);
+    h1->SetFillColor(plot_fill_color);
+    h1->SetFillStyle(plot_fill_style);
     gPad->SetLeftMargin(0.125);
     gPad->SetRightMargin(0.1);
     gPad->Update();
@@ -318,6 +329,8 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     h1->UseCurrentStyle();
     h1->SetStats(true);
     h1->SetLineWidth(2);
+    h1->SetFillColor(plot_fill_color);
+    h1->SetFillStyle(plot_fill_style);
     h1->GetXaxis()->SetRangeUser(-15.0, 15.0);
     gPad->SetLeftMargin(0.125);
     gPad->SetRightMargin(0.1);
@@ -331,6 +344,7 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     c->Print(((string)(prefix)+".pdf").c_str());
   }
 
+  //// 2-prong, Sum of alpha + carbon track lengths, zoomed X=[20mm, 100mm], log Y scale @ 8.66 MeV
   //// 2-prong, Sum of alpha + carbon track lengths, zoomed X=[30mm, 120mm], log Y scale @ 9.845 MeV
   //// 2-prong, Sum of alpha + carbon track lengths, zoomed X=[30mm, 130mm], log Y scale @ 11.5 MeV
   //// 2-prong, Sum of alpha + carbon track lengths, zoomed X=[30mm, 150mm], log Y scale @ 12.3 MeV
@@ -343,7 +357,10 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     h1->UseCurrentStyle();
     h1->SetStats(true);
     h1->SetLineWidth(2);
-    h1->GetXaxis()->SetRangeUser(30.0, 120.0); // valid for 9.845 MeV
+    h1->SetFillColor(plot_fill_color);
+    h1->SetFillStyle(plot_fill_style);
+    h1->GetXaxis()->SetRangeUser(20.0, 100.0); // valid for 8.66 MeV
+    //    h1->GetXaxis()->SetRangeUser(30.0, 120.0); // valid for 9.845 MeV
     //    h1->GetXaxis()->SetRangeUser(30.0, 130.0); // valid for 11.5 MeV
     //    h1->GetXaxis()->SetRangeUser(30.0, 150.0); // valid for 12.3 MeV
     gPad->SetLeftMargin(0.125);
@@ -359,6 +376,7 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     c->Print(((string)(prefix)+".pdf").c_str());
   }
 
+  //// 2-prong, Sum of alpha + carbon track lengths, zoomed X=[20mm, 100mm], linear Y scale @ 8.66 MeV
   //// 2-prong, Sum of alpha + carbon track lengths, zoomed X=[30mm, 120mm], linear Y scale @ 9.845 MeV
   //// 2-prong, Sum of alpha + carbon track lengths, zoomed X=[30mm, 130mm], linear Y scale @ 11.5 MeV
   //// 2-prong, Sum of alpha + carbon track lengths, zoomed X=[30mm, 150mm], linear Y scale @ 12.3 MeV
@@ -371,7 +389,10 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     h1->UseCurrentStyle();
     h1->SetStats(true);
     h1->SetLineWidth(2);
-    h1->GetXaxis()->SetRangeUser(30.0, 120.0); // valid for 9.845 MeV
+    h1->SetFillColor(plot_fill_color);
+    h1->SetFillStyle(plot_fill_style);
+    h1->GetXaxis()->SetRangeUser(20.0, 100.0); // valid for 8.66 MeV
+    //    h1->GetXaxis()->SetRangeUser(30.0, 120.0); // valid for 9.845 MeV
     //    h1->GetXaxis()->SetRangeUser(30.0, 130.0); // valid for 11.5 MeV
     //    h1->GetXaxis()->SetRangeUser(30.0, 150.0); // valid for 12.3 MeV
     gPad->SetLeftMargin(0.125);
@@ -387,6 +408,7 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     c->Print(((string)(prefix)+".pdf").c_str());
   }
 
+  //// 2-prong, Alpha track length, zoomed X=[10mm, 80mm], log Y scale @ 8.66 MeV
   //// 2-prong, Alpha track length, zoomed X=[20mm, 100mm], log Y scale @ 9.845 MeV
   //// 2-prong, Alpha track length, zoomed X=[30mm, 130mm], log Y scale @ 11.5 MeV
   //// 2-prong, Alpha track length, zoomed X=[30mm, 150mm], log Y scale @ 12.3 MeV
@@ -399,7 +421,10 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     h1->UseCurrentStyle();
     h1->SetStats(true);
     h1->SetLineWidth(2);
-    h1->GetXaxis()->SetRangeUser(20.0, 100.0); // valid for 9.845 MeV
+    h1->SetFillColor(plot_fill_color);
+    h1->SetFillStyle(plot_fill_style);
+    h1->GetXaxis()->SetRangeUser(10.0, 80.0); // valid for 8.66 MeV
+    //    h1->GetXaxis()->SetRangeUser(20.0, 100.0); // valid for 9.845 MeV
     //    h1->GetXaxis()->SetRangeUser(30.0, 130.0); // valid for 11.5 MeV
     //    h1->GetXaxis()->SetRangeUser(30.0, 150.0); // valid for 12.3 MeV
     gPad->SetLeftMargin(0.125);
@@ -415,6 +440,7 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     c->Print(((string)(prefix)+".pdf").c_str());
   }
 
+  //// 16O : 2-prong, Alpha track length, zoomed X=[20mm, 40mm], linear Y scale @ 8.66 MeV
   //// 2-prong, Alpha track length, zoomed X=[40mm, 70mm], linear Y scale @ 9.845 MeV
   //// 2-prong, Alpha track length, zoomed X=[60mm, 80mm], linear Y scale @ 11.5 MeV
   //// 2-prong, Alpha track length, zoomed X=[75mm, 105mm], linear Y scale @ 12.3 MeV
@@ -427,7 +453,10 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     h1->UseCurrentStyle();
     h1->SetStats(true);
     h1->SetLineWidth(2);
-    h1->GetXaxis()->SetRangeUser(40.0, 70.0); // valid for 9.845 MeV
+    h1->SetFillColor(plot_fill_color);
+    h1->SetFillStyle(plot_fill_style);
+    h1->GetXaxis()->SetRangeUser(20.0, 40.0); // valid for 8.66 MeV
+    //    h1->GetXaxis()->SetRangeUser(40.0, 70.0); // valid for 9.845 MeV
     //    h1->GetXaxis()->SetRangeUser(60.0, 80.0); // valid for 11.5 MeV
     //    h1->GetXaxis()->SetRangeUser(75.0, 105.0); // valid for 12.3 MeV
     gPad->SetLeftMargin(0.125);
@@ -443,6 +472,7 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     c->Print(((string)(prefix)+".pdf").c_str());
   }
 
+  //// 2-prong, Alpha track length (X) vs Carbon track length (Y), zoomed X=[10mm, 80mm] x Y=[4mm, 18mm] @ 8.66 MeV
   //// 2-prong, Alpha track length (X) vs Carbon track length (Y), zoomed X=[20mm, 120mm] x Y=[4mm, 18mm] @ 9.845 MeV
   //// 2-prong, Alpha track length (X) vs Carbon track length (Y), zoomed X=[20mm, 120mm] x Y=[4mm, 18mm] @ 11.5 MeV
   //// 2-prong, Alpha track length (X) vs Carbon track length (Y), zoomed X=[20mm, 120mm] x Y=[4mm, 18mm] @ 12.3 MeV
@@ -460,10 +490,12 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     h2->SetTitleOffset(1.6, "X");
     h2->SetTitleOffset(1.4, "Y");
     h2->SetTitleOffset(1.2, "Z");
+    h2->GetXaxis()->SetRangeUser(10, 80); // valid for 8.66 MeV
+    h2->GetYaxis()->SetRangeUser(4, 18); // valid for 8.66 MeV
     //    h2->GetXaxis()->SetRangeUser(20, 120); // valid for 11.5 MeV
     //    h2->GetYaxis()->SetRangeUser(4, 18); // valid for 11.5 MeV
-    h2->GetXaxis()->SetRangeUser(20, 120); // valid for 12.3 MeV
-    h2->GetYaxis()->SetRangeUser(4, 18); // valid for 12.3 MeV
+    //    h2->GetXaxis()->SetRangeUser(20, 120); // valid for 12.3 MeV
+    //    h2->GetYaxis()->SetRangeUser(4, 18); // valid for 12.3 MeV
     gPad->Update();
     st = (TPaveStats *)c->GetPrimitive("stats");
     if(st) {
@@ -478,7 +510,8 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
   Double_t theta[5]  = {-1,    1,       1,    -1, -1};
   //  Double_t length[5] = {58, 58+5, 58+5+20, 58+20, 58}; // valid for 11.5MeV
   //  Double_t length[5] = {78, 78+7, 78+7+20, 78+20, 78}; // valid for 12.3MeV
-  Double_t length[5] = {38, 38+7, 38+7+20, 38+20, 38}; // valid for 9.845 MeV
+  //  Double_t length[5] = {38, 38+7, 38+7+20, 38+20, 38}; // valid for 9.845 MeV
+  Double_t length[5] = {15, 15+2, 15+2+20, 15+20, 15}; // valid for 8.66 MeV
 
   TCutG *mycut=new TCutG("select_O16", 5, theta, length);
   mycut->SetLineColor(kRed);
@@ -499,7 +532,8 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     h2->SetTitleOffset(1.6, "X");
     h2->SetTitleOffset(1.4, "Y");
     h2->SetTitleOffset(1.2, "Z");
-    h2->GetYaxis()->SetRangeUser(20, 120);
+    //    h2->GetYaxis()->SetRangeUser(20, 120);
+    h2->GetYaxis()->SetRangeUser(0, 80); // valid for 8.66 MeV
     gPad->Update();
     st = (TPaveStats *)c->GetPrimitive("stats");
     if(st) {
@@ -511,6 +545,7 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     c->Print(((string)(prefix)+".pdf").c_str());
   }
 
+  //// 2-prong, Alpha track length (X) vs Alpha cos(theta_BEAM_LAB), zoomed Y=[15mm, 40mm], tagged O-16 @ 8.66 MeV
   //// 2-prong, Alpha track length (X) vs Alpha cos(theta_BEAM_LAB), zoomed Y=[30mm, 70mm], tagged O-16 @ 9.845 MeV
   //// 2-prong, Alpha track length (X) vs Alpha cos(theta_BEAM_LAB), zoomed Y=[50mm, 90mm], tagged O-16 @ 11.5 MeV
   //// 2-prong, Alpha track length (X) vs Alpha cos(theta_BEAM_LAB), zoomed Y=[70mm, 110mm], tagged O-16 @ 12.3 MeV
@@ -532,7 +567,8 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     h2->SetTitleOffset(1.2, "Z");
     //    h2->GetYaxis()->SetRangeUser(50, 90); // valid for 11.5 MeV
     //    h2->GetYaxis()->SetRangeUser(70, 110); // valid for 12.3 MeV
-    h2->GetYaxis()->SetRangeUser(30, 70); // valid for 9.845 MeV
+    //    h2->GetYaxis()->SetRangeUser(30, 70); // valid for 9.845 MeV
+    h2->GetYaxis()->SetRangeUser(15, 40); // valid for 8.66 MeV
     gPad->Update();
     //  st = (TPaveStats *)c->GetPrimitive("stats");
     //  if(st) {
@@ -555,6 +591,8 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     h1->UseCurrentStyle();
     h1->SetStats(true);
     h1->SetLineWidth(2);
+    h1->SetFillColor(plot_fill_color);
+    h1->SetFillStyle(plot_fill_style);
     //    h1->GetXaxis()->SetRangeUser(60.0, 80.0);
     h1->GetMinimum(0);
     gPad->SetLeftMargin(0.125);
@@ -581,6 +619,8 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     h1->UseCurrentStyle();
     h1->SetStats(true);
     h1->SetLineWidth(2);
+    h1->SetFillColor(plot_fill_color);
+    h1->SetFillStyle(plot_fill_style);
     h1->SetMinimum(0);
     gPad->SetLeftMargin(0.125);
     gPad->SetRightMargin(0.1);
@@ -736,6 +776,8 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     h1->UseCurrentStyle();
     h1->SetStats(true);
     h1->SetLineWidth(2);
+    h1->SetFillColor(plot_fill_color);
+    h1->SetFillStyle(plot_fill_style);
     gPad->SetLeftMargin(0.125);
     gPad->SetRightMargin(0.1);
     gPad->Update();
@@ -759,6 +801,8 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     h1->UseCurrentStyle();
     h1->SetStats(true);
     h1->SetLineWidth(2);
+    h1->SetFillColor(plot_fill_color);
+    h1->SetFillStyle(plot_fill_style);
     h1->GetXaxis()->SetRangeUser(-15.0, 15.0);
     gPad->SetLeftMargin(0.125);
     gPad->SetRightMargin(0.1);
@@ -772,6 +816,7 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     c->Print(((string)(prefix)+".pdf").c_str());
   }
 
+  //// 3-prong, Sum of alpha1 + alpha2 + alpha3 track lengths, zoomed X=[20mm, 100mm], log Y scale @ 8.66 MeV 
   //// 3-prong, Sum of alpha1 + alpha2 + alpha3 track lengths, zoomed X=[30mm, 130mm], log Y scale
   if(plot_3prong) {
     c->Clear();
@@ -783,7 +828,10 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     h1->UseCurrentStyle();
     h1->SetStats(true);
     h1->SetLineWidth(2);
-    h1->GetXaxis()->SetRangeUser(30.0, 130.0);
+    h1->SetFillColor(plot_fill_color);
+    h1->SetFillStyle(plot_fill_style);
+    //    h1->GetXaxis()->SetRangeUser(30.0, 130.0);
+    h1->GetXaxis()->SetRangeUser(20.0, 100.0); // valid for 8.66 MeV
     gPad->SetLeftMargin(0.125);
     gPad->SetRightMargin(0.1);
     gPad->SetLogy(true);
@@ -797,6 +845,7 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     c->Print(((string)(prefix)+".pdf").c_str());
   }
 
+  //// 3-prong, Sum of alpha1 + alpha2 + alpha3 track lengths, zoomed X=[20mm, 100mm], linear Y scale @ 8.66 MeV
   //// 3-prong, Sum of alpha1 + alpha2 + alpha3 track lengths, zoomed X=[30mm, 130mm], linear Y scale
   if(plot_3prong) {
     c->Clear();
@@ -808,7 +857,10 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     h1->UseCurrentStyle();
     h1->SetStats(true);
     h1->SetLineWidth(2);
-    h1->GetXaxis()->SetRangeUser(30.0, 130.0);
+    h1->SetFillColor(plot_fill_color);
+    h1->SetFillStyle(plot_fill_style);
+    //    h1->GetXaxis()->SetRangeUser(30.0, 130.0);
+    h1->GetXaxis()->SetRangeUser(20.0, 100.0); // valid for 8.66 MeV
     gPad->SetLeftMargin(0.125);
     gPad->SetRightMargin(0.1);
     gPad->SetLogy(false);
@@ -822,6 +874,7 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     c->Print(((string)(prefix)+".pdf").c_str());
   }
 
+  //// 3-prong, Longest alpha track length, zoomed X=[0mm, 80mm], log Y scale @ 8.66 MeV
   //// 3-prong, Longest alpha track length, zoomed X=[30mm, 130mm], log Y scale
   if(plot_3prong) {
     c->Clear();
@@ -833,7 +886,10 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     h1->UseCurrentStyle();
     h1->SetStats(true);
     h1->SetLineWidth(2);
-    h1->GetXaxis()->SetRangeUser(30.0, 130.0);
+    h1->SetFillColor(plot_fill_color);
+    h1->SetFillStyle(plot_fill_style);
+    //    h1->GetXaxis()->SetRangeUser(30.0, 130.0);
+    h1->GetXaxis()->SetRangeUser(0.0, 80.0); // valid for 8.66 MeV
     gPad->SetLeftMargin(0.125);
     gPad->SetRightMargin(0.1);
     gPad->SetLogy(true);
@@ -847,6 +903,7 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     c->Print(((string)(prefix)+".pdf").c_str());
   }
 
+  //// 3-prong, Longest alpha track length, zoomed X=[0mm, 80mm], linear Y scale @ 8.66 MeV
   //// 3-prong, Longest alpha track length, zoomed X=[30mm, 130mm], linear Y scale
   if(plot_3prong) {
     c->Clear();
@@ -858,7 +915,10 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     h1->UseCurrentStyle();
     h1->SetStats(true);
     h1->SetLineWidth(2);
-    h1->GetXaxis()->SetRangeUser(30.0, 130.0);
+    h1->SetFillColor(plot_fill_color);
+    h1->SetFillStyle(plot_fill_style);
+    //    h1->GetXaxis()->SetRangeUser(30.0, 130.0);
+    h1->GetXaxis()->SetRangeUser(0.0, 80.0); // valid for 8.66 MeV
     gPad->SetLeftMargin(0.125);
     gPad->SetRightMargin(0.1);
     gPad->SetLogy(false);
@@ -870,7 +930,31 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     c->Update();
     c->Modified();
     c->Print(((string)(prefix)+".pdf").c_str());
+  }
 
+  //// 3-prong, Longest alpha cos(theta_BEAM_LAB), linear Y scale
+  if(plot_3prong) {
+    h1=(TH1D*)f->Get("h_3prong_alpha1_cosThetaBEAM_LAB")->Clone(); // copy for modifications of the same histogram
+    h1->SetTitle((energyInfo+h1->GetTitle()).c_str());
+    gStyle->SetOptStat(10); // KISOURMEN : show entries only
+    h1->Rebin(2);
+    h1->Draw();
+    h1->UseCurrentStyle();
+    h1->SetStats(true);
+    h1->SetLineWidth(2);
+    h1->SetFillColor(plot_fill_color);
+    h1->SetFillStyle(plot_fill_style);
+    gPad->SetLeftMargin(0.125);
+    gPad->SetRightMargin(0.1);
+    gPad->SetLogy(false);
+    gPad->Update();
+    st = (TPaveStats *)c->GetPrimitive("stats");
+    if(st) {
+      st->SetX1NDC(statX1-0.2); st->SetX2NDC(statX1-0.2+lineW); st->SetY1NDC(statY1); st->SetY2NDC(statY1+lineH);
+    }
+    c->Update();
+    c->Modified();
+    c->Print(((string)(prefix)+".pdf").c_str());
   }
 
   //// 3-prong, Carbon-12 excitation energy above ground state, CMS, linear Y scale
@@ -884,6 +968,8 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     h1->UseCurrentStyle();
     h1->SetStats(true);
     h1->SetLineWidth(2);
+    h1->SetFillColor(plot_fill_color);
+    h1->SetFillStyle(plot_fill_style);
     h1->GetXaxis()->SetRangeUser(0.0, 10.0);
     gPad->SetLeftMargin(0.125);
     gPad->SetRightMargin(0.1);
@@ -910,6 +996,8 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     h1->UseCurrentStyle();
     h1->SetStats(true);
     h1->SetLineWidth(2);
+    h1->SetFillColor(plot_fill_color);
+    h1->SetFillStyle(plot_fill_style);
     h1->GetXaxis()->SetRangeUser(0.0, 4.0);
     gPad->SetLeftMargin(0.125);
     gPad->SetRightMargin(0.1);
@@ -1020,7 +1108,7 @@ void makeCombinedPlots_report(std::string fileNameHistosAuto, std::string fileNa
   std::vector<std::string> label;
   std::vector<std::string> label_style;
 
-  //// 2-prong, Sum of alpha + carbon track lengths - AUTOMATIC RECO
+  //// 2-prong, Sum of alpha + carbon track lengths - automatic RECO
   f1->cd();
   h1=(TH1D*)f1->Get("h_2prong_lenSUM")->Clone(); // copy for modifications of the same histogram
   if(!h1) { std::cout << "ERROR: missing 2-prong histogram!" << std::endl;  return; }
@@ -1028,12 +1116,14 @@ void makeCombinedPlots_report(std::string fileNameHistosAuto, std::string fileNa
   h1->UseCurrentStyle();
   h1->SetStats(false);
   h1->SetLineWidth(width);
+  h1->SetLineColor(kBlue);
   h1->Rebin(rebin);
   stack.push_back(h1);
-  label.push_back(Form("%s 2-prong, %.1f#times10^{3} evts", commentHistosAuto, h1->GetEntries()*1e-3));
+  label.push_back(Form("%s 2-prong, %.0f evts", commentHistosAuto, h1->GetEntries()));
+  //  label.push_back(Form("%s 2-prong, %.1f#times10^{3} evts", commentHistosAuto, h1->GetEntries()*1e-3));
   label_style.push_back("L");
 
-  //// 2-prong, Sum of alpha + carbon track lengths - MANUAL RECO
+  //// 2-prong, Sum of alpha + carbon track lengths - manual RECO
   f2->cd();
   h1=(TH1D*)f2->Get("h_2prong_lenSUM")->Clone(); // copy for modifications of the same histogram
   if(!h1) { std::cout << "ERROR: missing 2-prong histogram!" << std::endl;  return; }
@@ -1042,11 +1132,31 @@ void makeCombinedPlots_report(std::string fileNameHistosAuto, std::string fileNa
   h1->SetStats(false);
   h1->SetLineWidth(width);
   h1->SetLineColor(kRed);
-  h1->SetFillStyle(3004); // 45 deg hatch
-  h1->SetFillColor(kRed);
+  //  h1->SetFillStyle(3004); // 45 deg hatch
+  //  h1->SetFillColor(kRed);
   h1->Rebin(rebin);
   stack.push_back(h1);
-  label.push_back(Form("%s 2-prong, %.1f#times10^{3} evts", commentHistosManual, h1->GetEntries()*1e-3));
+  label.push_back(Form("%s 2-prong, %.0f evts", commentHistosManual, h1->GetEntries()));
+  //  label.push_back(Form("%s 2-prong, %.1f#times10^{3} evts", commentHistosManual, h1->GetEntries()*1e-3));
+  label_style.push_back("FL");
+
+  //// 3-prong, Sum of alpha1 + alpha2 + alpha3 track lengths - AUTOMATIC RECO
+  f1->cd();
+  h1=(TH1D*)f1->Get("h_3prong_lenSUM")->Clone(); // copy for modifications of the same histogram
+  if(!h1) { std::cout << "ERROR: missing 3-prong histogram!" << std::endl;  return; }
+  h1->SetTitle((energyInfo+h1->GetTitle()).c_str());
+  h1->UseCurrentStyle();
+  h1->SetStats(false);
+  h1->SetLineWidth(width);
+  h1->SetLineColor(kBlack);
+  h1->SetFillStyle(3004); // 45 deg hatch
+  h1->SetFillColor(kBlack);
+  //  h1->SetLineColor(kMagenta);
+  //  h1->SetFillStyle(3144);// double 45 deg hatch
+  //  h1->SetFillColor(kMagenta);
+  h1->Rebin(rebin);
+  stack.push_back(h1);
+  label.push_back(Form("%s 3-prong, %.0f evts", commentHistosAuto, h1->GetEntries()));
   label_style.push_back("FL");
 
   //// 3-prong, Sum of alpha1 + alpha2 + alpha3 track lengths - MANUAL RECO
@@ -1067,8 +1177,12 @@ void makeCombinedPlots_report(std::string fileNameHistosAuto, std::string fileNa
 
   // compute normalization factors
   integral.push_back(1.0);
-  integral.push_back(stack[1]->GetEntries()/(stack[1]->GetEntries()+stack[2]->GetEntries()));
-  integral.push_back(stack[2]->GetEntries()/(stack[1]->GetEntries()+stack[2]->GetEntries()));
+  integral.push_back(1.0);
+  integral.push_back(1.0);
+  integral.push_back(1.0);
+  //  integral.push_back(stack[1]->GetEntries()/(stack[1]->GetEntries()+stack[2]->GetEntries()+stack[3]->GetEntries()));
+  //  integral.push_back(stack[2]->GetEntries()/(stack[1]->GetEntries()+stack[2]->GetEntries()+stack[3]->GetEntries()));
+  //  integral.push_back(stack[3]->GetEntries()/(stack[1]->GetEntries()+stack[2]->GetEntries()+stack[3]->GetEntries()));
 
   // initialize legend
   auto legend = new TLegend(0.59, 0.7, 0.59+0.4, 0.7+0.2);
@@ -1086,7 +1200,7 @@ void makeCombinedPlots_report(std::string fileNameHistosAuto, std::string fileNa
     ymax=std::max(ymax, h1->GetMaximum());
     if(first) {
       h1_range=h1;
-      h1->GetXaxis()->SetRangeUser(30.0, 130.0);
+      h1->GetXaxis()->SetRangeUser(20.0, 130.0);
       h1->SetXTitle("Sum of all track lengths [mm]");
       h1->SetYTitle("Probability [arb.u.]");
       h1->SetTitle((energyInfo+"Comparison of two reconstruction methods").c_str());
@@ -1118,7 +1232,7 @@ void makeCombinedPlots_report(std::string fileNameHistosAuto, std::string fileNa
     ymax=std::max(ymax, h1->GetMaximum());
     if(first) {
       h1_range=h1;
-      h1->GetXaxis()->SetRangeUser(30.0, 130.0);
+      h1->GetXaxis()->SetRangeUser(20.0, 130.0);
       h1->SetXTitle("Sum of all track lengths [mm]");
       h1->SetYTitle("Probability [arb.u.]");
       h1->SetTitle("Comparison of two reconstruction methods");
@@ -1149,6 +1263,7 @@ void makeCombinedPlots_report(std::string fileNameHistosAuto, std::string fileNa
   h1->UseCurrentStyle();
   h1->SetStats(false);
   h1->SetLineWidth(width);
+  h1->SetLineColor(kBlue);
   h1->Rebin(rebin);
   stack.push_back(h1);
 
@@ -1161,15 +1276,31 @@ void makeCombinedPlots_report(std::string fileNameHistosAuto, std::string fileNa
   h1->SetStats(false);
   h1->SetLineWidth(width);
   h1->SetLineColor(kRed);
+  //  h1->SetFillStyle(3004); // 45 deg hatch
+  //  h1->SetFillColor(kRed);
+  h1->Rebin(rebin);
+  stack.push_back(h1);
+
+  //// 3-prong, Longest alpha track length
+  f1->cd();
+  h1=(TH1D*)f1->Get("h_3prong_alpha1_len")->Clone(); // copy for modifications of the same histogram
+  if(!h1) { std::cout << "ERROR: missing 3-prong histogram!" << std::endl;  return; }
+  h1->SetTitle((energyInfo+h1->GetTitle()).c_str());
+  h1->UseCurrentStyle();
+  h1->SetStats(false);
+  h1->SetLineWidth(width);
+  h1->SetLineColor(kBlack);
   h1->SetFillStyle(3004); // 45 deg hatch
-  h1->SetFillColor(kRed);
+  h1->SetFillColor(kBlack);
+  //  h1->SetFillStyle(3144);// double 45 deg hatch
+  //  h1->SetFillColor(kMagenta);
   h1->Rebin(rebin);
   stack.push_back(h1);
 
   //// 3-prong, Longest alpha track length
   f2->cd();
   h1=(TH1D*)f2->Get("h_3prong_alpha1_len")->Clone(); // copy for modifications of the same histogram
-  if(!h1) { std::cout << "ERROR: missing 2-prong histogram!" << std::endl;  return; }
+  if(!h1) { std::cout << "ERROR: missing 3-prong histogram!" << std::endl;  return; }
   h1->SetTitle((energyInfo+h1->GetTitle()).c_str());
   h1->UseCurrentStyle();
   h1->SetStats(false);
@@ -1182,8 +1313,12 @@ void makeCombinedPlots_report(std::string fileNameHistosAuto, std::string fileNa
 
   // compute normalization factors
   integral.push_back(1.0);
-  integral.push_back(stack[1]->GetEntries()/(stack[1]->GetEntries()+stack[2]->GetEntries()));
-  integral.push_back(stack[2]->GetEntries()/(stack[1]->GetEntries()+stack[2]->GetEntries()));
+  integral.push_back(1.0);
+  integral.push_back(1.0);
+  integral.push_back(1.0);
+  //  integral.push_back(stack[1]->GetEntries()/(stack[1]->GetEntries()+stack[2]->GetEntries()+stack[3]->GetEntries()));
+  //  integral.push_back(stack[2]->GetEntries()/(stack[1]->GetEntries()+stack[2]->GetEntries()+stack[3]->GetEntries()));
+  //  integral.push_back(stack[3]->GetEntries()/(stack[1]->GetEntries()+stack[2]->GetEntries()+stack[3]->GetEntries()));
 
   // plot stack of normalized histograms with errors, log Y scale
   c->Clear();
@@ -1198,7 +1333,7 @@ void makeCombinedPlots_report(std::string fileNameHistosAuto, std::string fileNa
     ymax=std::max(ymax, h1->GetMaximum());
     if(first) {
       h1_range=h1;
-      h1->GetXaxis()->SetRangeUser(30.0, 130.0);
+      h1->GetXaxis()->SetRangeUser(0.0, 100.0);
       h1->SetXTitle("Leading #alpha track length [mm]");
       h1->SetYTitle("Probability [arb.u.]");
       h1->SetTitle("Comparison of two reconstruction methods");
@@ -1230,7 +1365,7 @@ void makeCombinedPlots_report(std::string fileNameHistosAuto, std::string fileNa
     ymax=std::max(ymax, h1->GetMaximum());
     if(first) {
       h1_range=h1;
-      h1->GetXaxis()->SetRangeUser(30.0, 130.0);
+      h1->GetXaxis()->SetRangeUser(0.0, 100.0);
       h1->SetXTitle("Leading #alpha track length [mm]");
       h1->SetYTitle("Probability [arb.u.]");
       h1->SetTitle("Comparison of two reconstruction methods");

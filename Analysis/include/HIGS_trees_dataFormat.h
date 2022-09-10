@@ -3,6 +3,7 @@
 
 #include "TVector3.h"
 #include "TLorentzVector.h"
+#include "TH1F.h"
 
 struct Event_1prong{ // hypothesis: background alpha particle
   time_t runId;
@@ -17,6 +18,7 @@ struct Event_1prong{ // hypothesis: background alpha particle
   float cosThetaDET;
   float phiBEAM; // [rad]
   float cosThetaBEAM;
+  TH1F chargeProfile; // charge profile along the track
   /*
   float alpha_E; // [MeV], alpha track, kinetic energy from range, LAB frame
   TLorentzVector alpha_p4BEAM; // [MeV], alpha track, LAB frame, BEAM coords
@@ -41,6 +43,7 @@ struct Event_2prong{ // hypothesis: gamma + O-16 -> alpha + C-12
   float alpha_cosThetaDET;
   float alpha_phiBEAM; // [rad], LAB frame (invariant), BEAM coords
   float alpha_cosThetaBEAM; // LAB frame, BEAM coords
+  TH1F alpha_chargeProfile; // charge profile along the track
   /*
   float alpha_phiBEAMcms; // [rad], CMS frame (invariant), BEAM coords
   float alpha_cosThetaBEAMcms; // CMS frame, BEAM coords
@@ -55,6 +58,7 @@ struct Event_2prong{ // hypothesis: gamma + O-16 -> alpha + C-12
   float carbon_cosThetaDET;
   float carbon_phiBEAM; // [mm]
   float carbon_cosThetaBEAM;
+  TH1F carbon_chargeProfile; // charge profile along the track
   /*
   float carbon_phiBEAMcms; // [rad], CMS frame (invariant), BEAM coords
   float carbon_cosThetaBEAMcms; // CMS frame, BEAM coords
@@ -87,6 +91,7 @@ struct Event_3prong{ // hypothesis: gamma + C-12 -> 3-alpha
   float alpha1_cosThetaDET;
   float alpha1_phiBEAM; // [rad]
   float alpha1_cosThetaBEAM;
+  TH1F alpha1_chargeProfile; // charge profile along the track
   /*
   float alpha1_E; // [MeV], alpha track hypothesis, kinetic energy from range, LAB frame
   float alpha1_Ecms; // [MeV], alpha track hypothesis, kinetic energy from range, CMS frame
@@ -99,6 +104,7 @@ struct Event_3prong{ // hypothesis: gamma + C-12 -> 3-alpha
   float alpha2_cosThetaDET;
   float alpha2_phiBEAM; // [rad]
   float alpha2_cosThetaBEAM;
+  TH1F alpha2_chargeProfile; // charge profile along the track
   /*
   float alpha2_E; // [MeV], alpha track hypothesis, kinetic energy from range, LAB frame
   float alpha2_Ecms; // [MeV], alpha track hypothesis, kinetic energy from range, CMS frame
@@ -111,6 +117,7 @@ struct Event_3prong{ // hypothesis: gamma + C-12 -> 3-alpha
   float alpha3_cosThetaDET;
   float alpha3_phiBEAM; // [rad]
   float alpha3_cosThetaBEAM;
+  TH1F alpha3_chargeProfile; // charge profile along the track
   /*
   float alpha3_E; // [MeV], alpha track hypothesis, kinetic energy from range, LAB frame
   float alpha3_Ecms; // [MeV], alpha track hypothesis, kinetic energy from range, CMS frame

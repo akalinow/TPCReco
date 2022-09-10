@@ -240,7 +240,7 @@ void analyzeRawEvents(const boost::property_tree::ptree &aConfig){
   bool isFirst=true; // flag to indicate first event for time period / rate calculations
 
   ////// DEBUG
-  Long64_t counter=0;
+  //  Long64_t counter=0;
   ////// DEBUG
 
   do {
@@ -262,7 +262,7 @@ void analyzeRawEvents(const boost::property_tree::ptree &aConfig){
     myEventSource->getNextEvent();
 
     ////// DEBUG
-    if(++counter==100) break;
+    //    if(++counter==100) break;
     ////// DEBUG
   }
   while(currentEventIdx!=(Long64_t)myEventSource->currentEventNumber());
