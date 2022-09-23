@@ -8,4 +8,6 @@
 #pragma link C++ class Event_2prong+;
 #pragma link C++ class Event_3prong+;
 
+#pragma link C++ class Event_rawsignal+;
+
 #endif

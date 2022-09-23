@@ -189,7 +189,7 @@ bool SigClusterTPC::AddByStrip(int strip_dir, int strip_section, int strip_numbe
       
       // totalChargeMap5 - check if strip exists
       std::map<MultiKey3, double, multikey3_less>::iterator it_total5;
-      if( (it_total5=totalChargeMap5.find(mkey_total4))==totalChargeMap5.end() ) {
+      if( (it_total5=totalChargeMap5.find(mkey_total5))==totalChargeMap5.end() ) {
 	// add new total charge per strip
 	totalChargeMap5[mkey_total5]=val;
       } else {

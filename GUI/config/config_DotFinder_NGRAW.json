@@ -1,0 +1,8 @@
+{
+    "geometryFile": "./geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat",
+    "frameLoadRange": 1,
+    "singleAsadGrawFile": true,
+    "hitThr": 50,
+    "totalChargeThr": 200,
+    "matchRadiusInMM": 25.0
+}

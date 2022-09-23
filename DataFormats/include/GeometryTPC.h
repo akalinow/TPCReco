@@ -2,7 +2,7 @@
 #define __GEOMETRYTPC_H__
 
 // TPC geometry class.
-// VERSION: 30 Apr 2022
+// VERSION: 11 June 2022
 
 #include <cstdlib>
 #include <cstddef> // for NULL
@@ -19,11 +19,9 @@
 #include "CommonDefinitions.h"
 #include "RunConditions.h"
 #include "GeometryStats.h"
-#define FPN_CH   3    // FPN channel type index
-#define ERROR    -1   // error result indicator                                                                         
-#define MINIMUM(A,B) ((A)<(B) ? (A) : (B))
-#define MAXIMUM(A,B) ((A)>(B) ? (A) : (B))
-#define NUM_TOLERANCE 1e-6
+#include "UtilsMath.h" // for Utils::NUMERICAL_TOLERANCE
+#define FPN_CH   3     // FPN channel type index
+#define ERROR    -1    // error result indicator
 
 class StripTPC;
 
@@ -85,7 +83,6 @@ class GeometryTPC {
   //  virtual ~GeometryTPC();
   
   // Setter methods 
-  
   GeometryTPC(const char* fname, bool debug=false);
   void SetTH2PolyPartition(int nx, int ny); // change cartesian binning of the underlying TH2Poly
   inline int GetTH2PolyPartitionX() { return grid_nx; }
@@ -109,8 +106,10 @@ class GeometryTPC {
   int GetDirNstrips(std::string name);
   int GetDirNstrips(const char *name);
   int GetDirNstrips(StripTPC *s);
-
-  inline SectionIndexList GetDirSectionIndexList(int dir){return geometryStats.GetDirSectionIndexList(dir);} // added by MC - 4 Aug 2021
+  inline int GetDirNSections(int dir){return GetDirSectionIndexList(dir).size();}
+  inline int GetDirStripNSections(int dir, int num){return geometryStats.GetDirStripNSections(dir,num);}
+  StripSectionBoundaryList GetStripSectionBoundaryList(int dir, int num){return geometryStats.GetStripSectionBoundaryList(dir,num);}
+  inline SectionIndexList GetDirSectionIndexList(int dir){return geometryStats.GetDirSectionIndexList(dir);}
   inline int GetDirNStrips(int dir,int section){return geometryStats.GetDirNStrips(dir,section);}
   inline int GetDirMinStrip(int dir,int section){return geometryStats.GetDirMinStrip(dir,section);}
   inline int GetDirMaxStrip(int dir,int section){return geometryStats.GetDirMaxStrip(dir,section);}
@@ -219,6 +218,10 @@ class GeometryTPC {
   std::tuple<double, double> rangeStripSectionInMM(int dir, int section); // [mm] min/max (signed) distance between projection of outermost strip's central axis and projection of the origin (X=0,Y=0) point on the U/V/W pitch axis for a given direction (per section)
   std::tuple<double, double> rangeStripDirInMM(int dir); // [mm] min/max (signed) distance between projection of outermost strip's central axis and projection of the origin (X=0,Y=0) point on the U/V/W pitch axis for a given direction (all sections)
 
+  bool operator==(const GeometryTPC&) const;
+  inline bool operator!=(const GeometryTPC& B) const { return !(*this==B); }
+  static const int outside_section{GeometryStats::outside_section}; // index for dummy sections outside of UVW active area used to truncate toy MC generated signals
+
   //  ClassDef(GeometryTPC,1)
 };
 
@@ -242,7 +245,6 @@ class StripTPC {
   int agetCh_raw; // range [0-67]
   TVector2 unit_vec;   // 2D directional unit vector (towards increasing pad numbers)
   TVector2 offset_vec; // 2D offset vector [mm] of the 1st pad wrt REF.POINT
- // double length;  // strip length [mm]
   int npads; //strip length in pads
  public:
 
@@ -264,6 +266,8 @@ class StripTPC {
   inline TVector2 Offset() { return offset_vec; } // ([mm],[mm])
   inline double Length() { return geo_ptr->GetPadPitch()*npads; } // [mm]
   inline int Npads() {return npads;}
+  TVector2 Start();
+  TVector2 End();
 
   //  ClassDef(StripTPC,1)
 };

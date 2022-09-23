@@ -28,6 +28,7 @@ include_directories(${PROJECT_SOURCE_DIR}/DataFormats/include)
 # ROOT dictionary for persistens classes
 ROOT_GENERATE_DICTIONARY(G__${MODULE_NAME}
   ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/IonRangeCalculator.h
+  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/StripResponseCalculator.h
   LINKDEF ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/LinkDef.h)
 
 add_library(${MODULE_NAME} SHARED ${sources} G__${MODULE_NAME}.cxx)
@@ -44,5 +45,5 @@ target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
 install(TARGETS ${MODULE_NAME} LIBRARY DESTINATION lib)
 install(FILES ${CMAKE_BINARY_DIR}/${MODULE_NAME}/lib${MODULE_NAME}_rdict.pcm DESTINATION lib)
 install(FILES ${CMAKE_BINARY_DIR}/${MODULE_NAME}/lib${MODULE_NAME}.rootmap DESTINATION lib)
-
+install(FILES $<1:${PROJECT_SOURCE_DIR}/${MODULE_NAME}/test/> DESTINATION test)
 

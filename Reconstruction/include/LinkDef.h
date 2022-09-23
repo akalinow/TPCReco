@@ -5,5 +5,6 @@
 #pragma link C++ nestedclasses;
 
 #pragma link C++ class IonRangeCalculator+;
+#pragma link C++ class StripResponseCalculator+;
 
 #endif

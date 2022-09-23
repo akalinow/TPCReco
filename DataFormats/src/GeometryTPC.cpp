@@ -17,11 +17,12 @@
 #include "TROOT.h"
 #include "TVector2.h"
 #include "TVector3.h"
-#include "TRandom3.h" // DEBUG
+#include "TRandom3.h"
 
 #include "colorText.h"
 #include "GeometryTPC.h"
 #include "MultiKey.h"
+#include "UtilsMath.h" // for Utils::NUMERICAL_TOLERANCE
 
 StripTPC::StripTPC(int direction, int section, int number, int cobo_index,
                    int asad_index, int aget_index, int aget_channel,
@@ -43,6 +44,28 @@ int StripTPC::GlobalCh_raw() {
   if (geo_ptr && geo_ptr->IsOK())
     return geo_ptr->Global_normal2raw(coboId, asadId, agetId, agetCh);
   return ERROR;
+}
+
+TVector2 StripTPC::Start() {
+  ////// DEBUG
+  //  std::cout << __FUNCTION__ << ": dir=" << dir << ", sec=" << section << ", num=" << num << ", npads=" << npads << ": ";
+  //  (offset_vec + geo_ptr->GetReferencePoint() - 0.5*unit_vec*geo_ptr->GetPadPitch()).Print();
+  ////// DEBUG
+  if (geo_ptr) // skip strict checking to allow proper initialization of statistics during Load()
+    return offset_vec + geo_ptr->GetReferencePoint() - 0.5*unit_vec*geo_ptr->GetPadPitch();
+  std::cerr << __FUNCTION__ << KRED <<": ERROR: Invalid geometry pointer!" << RST << std::endl;
+  exit(-1);
+}
+
+TVector2 StripTPC::End() {
+  ////// DEBUG
+  //  std::cout << __FUNCTION__ << ": dir=" << dir << ", sec=" << section << ", num=" << num << ", npads=" << npads << ": ";
+  //  (offset_vec + geo_ptr->GetReferencePoint() + (npads-0.5)*unit_vec*geo_ptr->GetPadPitch()).Print();
+  ////// DEBUG
+  if (geo_ptr) // skip strict checking to allow proper initialization of statistics during Load()
+    return offset_vec + geo_ptr->GetReferencePoint() + (npads-0.5)*unit_vec*geo_ptr->GetPadPitch();
+  std::cerr << __FUNCTION__ << KRED <<": ERROR: Invalid geometry pointer!" << RST << std::endl;
+  exit(-1);
 }
 
 GeometryTPC::GeometryTPC(const char *fname, bool debug)
@@ -388,7 +411,7 @@ bool GeometryTPC::Load(const char *fname) {
           else
             stripN[dir]++;
 
-          geometryStats.Fill(dir, section, strip_num);
+	  geometryStats.Fill(dir, section, strip_num, strip->Start(), strip->End());
 
           // DEBUG
           if (_debug) {
@@ -847,7 +870,7 @@ bool GeometryTPC::InitActiveAreaConvexHull(TGraph *g) {
       //	std::cout << __FUNCTION__ << Form(": TGRAPH SORTED DIFF %d-to-%d, d_Phi=%25.18le rad, d_R=%25.18le mm", ipoint2, ipoint, grX[ipoint2]-grX[ipoint], grY[ipoint2]-grY[ipoint]) << std::endl;
       //      } // DEBUG
 
-      if(fabs(grX[ipoint2]-grX[ipoint])<NUM_TOLERANCE) { // grX[ipoint2]==grX[ipoint] &&
+      if(fabs(grX[ipoint2]-grX[ipoint])<Utils::NUMERICAL_TOLERANCE) { // grX[ipoint2]==grX[ipoint] &&
 	if( grY[ipoint2]<=grY[ipoint] ) {
 	  grSet.insert(ipoint2); // mark to be excluded
 	} else {
@@ -910,7 +933,7 @@ bool GeometryTPC::InitActiveAreaConvexHull(TGraph *g) {
       // orientation <0  :CCW rotation => exit while loop
       // orientation >=0 :CW rotation or colinear => remove from top of the stack
       double orientation=-((P2-P1).Cross(P3-P2)).Z();
-      if( orientation<-NUM_TOLERANCE ) break;
+      if( orientation<-Utils::NUMERICAL_TOLERANCE ) break;
       //      if( orientation<(double)0.0 ) break;
       stack.pop_back();
 
@@ -991,7 +1014,7 @@ TGraph GeometryTPC::GetActiveAreaConvexHull(double vetoBand){
   // iterate while number of points >=3 and new edges were rejected
   auto counter=0u; // number of iterations
   auto remaining_offset=vetoBand; // requested offset [mm]
-  while(result.GetN()>2 && fabs(remaining_offset)>NUM_TOLERANCE) {
+  while(result.GetN()>2 && fabs(remaining_offset)>Utils::NUMERICAL_TOLERANCE) {
     counter++;
     auto input=result;
     
@@ -1073,11 +1096,11 @@ TGraph GeometryTPC::GetActiveAreaConvexHull(double vetoBand){
       //		  << ", safe_offset=" << safe_offset << std::endl;
       //      } // DEBUG
 
-      if(grIndex>0 && fabs(prev_dist-dist)>NUM_TOLERANCE) break;
+      if(grIndex>0 && fabs(prev_dist-dist)>Utils::NUMERICAL_TOLERANCE) break;
       prev_dist=dist;
 
       // reduce number of points if needed
-      if( dist-safe_offset<NUM_TOLERANCE) { // less or nearly equal
+      if( dist-safe_offset<Utils::NUMERICAL_TOLERANCE) { // less or nearly equal
 	safe_offset=dist;
 	rejectSet.insert(ipoint);
 	
@@ -1591,7 +1614,7 @@ bool GeometryTPC::GetCrossPoint(StripTPC *strip1, StripTPC *strip2,
   const double u1[2] = {strip1->Unit().X(), strip1->Unit().Y()};
   const double u2[2] = {strip2->Unit().X(), strip2->Unit().Y()};
   double W = -u1[0] * u2[1] + u1[1] * u2[0];
-  if (fabs(W) < NUM_TOLERANCE)
+  if (fabs(W) < Utils::NUMERICAL_TOLERANCE)
     return false;
   const double offset[2] = {strip2->Offset().X() - strip1->Offset().X(),
                             strip2->Offset().Y() - strip1->Offset().Y()};
@@ -1600,9 +1623,9 @@ bool GeometryTPC::GetCrossPoint(StripTPC *strip1, StripTPC *strip2,
   double len1 = W1 / W;
   double len2 = W2 / W;
   double residual = 0.5 * pad_pitch;
-  if (len1 < -residual - NUM_TOLERANCE || len2 < -residual - NUM_TOLERANCE ||
-      len1 > strip1->Length() + NUM_TOLERANCE ||
-      len2 > strip2->Length() + NUM_TOLERANCE)
+  if (len1 < -residual - Utils::NUMERICAL_TOLERANCE || len2 < -residual - Utils::NUMERICAL_TOLERANCE ||
+      len1 > strip1->Length() + Utils::NUMERICAL_TOLERANCE ||
+      len2 > strip2->Length() + Utils::NUMERICAL_TOLERANCE)
     return false;
   point.Set(strip1->Offset().X() + len1 * strip1->Unit().X(),
             strip1->Offset().Y() + len1 * strip1->Unit().Y());
@@ -1618,7 +1641,7 @@ bool GeometryTPC::GetUVWCrossPointInMM(int dir1, double UVW_pos1, int dir2, doub
 
   // sanity check (not parallel AND not empty)
   double W = -unit_vec[0].X() * unit_vec[1].Y() + unit_vec[0].Y() * unit_vec[1].X();  
-  if (fabs(W) < NUM_TOLERANCE)
+  if (fabs(W) < Utils::NUMERICAL_TOLERANCE)
     return false;
   
   const double offset[2] = {offset_vec[1].X() - offset_vec[0].X(),
@@ -1883,6 +1906,64 @@ void GeometryTPC::Debug() {
   }
 }
 
+bool GeometryTPC::operator==(const GeometryTPC& B) const {
+  if(// SKIP runConditions
+     (this->geometryStats != B.geometryStats) ||
+     (this->initOK != B.initOK) ||
+     (this->COBO_N != B.COBO_N) ||
+     (this->AGET_Nchips != B.AGET_Nchips) ||
+     (this->AGET_Nchan != B.AGET_Nchan) ||
+     (this->AGET_Nchan_fpn != B.AGET_Nchan_fpn) ||
+     (this->AGET_Nchan_raw != B.AGET_Nchan_raw) ||
+     (this->AGET_Ntimecells != B.AGET_Ntimecells) ||
+     (this->stripN != B.stripN) ||
+     (this->dir2name != B.dir2name) ||
+     (this->name2dir != B.name2dir) ||
+     (this->mapByAget.size() != B.mapByAget.size()) ||
+     (this->mapByAget_raw.size() != B.mapByAget_raw.size()) ||
+     (this->mapByStrip.size() != B.mapByStrip.size()) ||
+     (this->ASAD_N != B.ASAD_N) ||
+     (this->FPN_chanId != B.FPN_chanId) ||
+     (this->pad_size != B.pad_size) ||
+     (this->pad_pitch != B.pad_pitch) ||
+     (this->strip_pitch != B.strip_pitch) ||
+     ((this->reference_point-B.reference_point).Mod2()>Utils::NUMERICAL_TOLERANCE) ||
+     (this->strip_unit_vec.size() != B.strip_unit_vec.size()) ||
+     (this->pitch_unit_vec.size() != B.pitch_unit_vec.size()) ||
+     (this->fStripMap.size() != B.fStripMap.size()) ||
+     (this->drift_zmin != B.drift_zmin) ||
+     (this->drift_zmax != B.drift_zmax) ||
+     (this->tp != B.tp) ||
+     (this->grid_nx != B.grid_nx) ||
+     (this->grid_ny != B.grid_ny) ||
+     (this->isOK_TH2Poly != B.isOK_TH2Poly) ||
+     // SKIP bool _debug
+     (this->tp_convex != B.tp_convex) ) return false;
+  for(auto & it :B.mapByAget) {
+    auto it2=this->mapByAget.find(it.first);
+    if(it2==this->mapByAget.end() || it2->second!=it.second) return false;
+  }
+  for(auto & it :B.mapByAget_raw) {
+    auto it2=this->mapByAget_raw.find(it.first);
+    if(it2==this->mapByAget_raw.end() || it2->second!=it.second) return false;
+  }
+  for(auto & it :B.mapByStrip) {
+    auto it2=this->mapByStrip.find(it.first);
+    if(it2==this->mapByStrip.end() || it2->second!=it.second) return false;
+  }
+  for(auto & it :B.strip_unit_vec) {
+    auto it2=this->strip_unit_vec.find(it.first);
+    if(it2==this->strip_unit_vec.end() || (it2->second-it.second).Mod2()>Utils::NUMERICAL_TOLERANCE) return false;
+  }
+  for(auto & it :B.pitch_unit_vec) {
+    auto it2=this->pitch_unit_vec.find(it.first);
+    if(it2==this->pitch_unit_vec.end() || (it2->second-it.second).Mod2()>Utils::NUMERICAL_TOLERANCE) return false;
+  }
+  for(auto & it :B.fStripMap) {
+    auto it2=this->fStripMap.find(it.first);
+    if(it2==this->fStripMap.end() || it2->second!=it.second) return false;
+  }
+  return true;
+}
 // ClassImp(StripTPC)
 // ClassImp(GeometryTPC)
-

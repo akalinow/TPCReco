@@ -36,9 +36,9 @@ public:
   void close();
   
   void fillTrees(Track3D *aTrack, eventraw::EventInfo *aEventInfo);
-  void fillTrees1prong(Track3D *aTrack, eventraw::EventInfo *aEventInfo);
-  void fillTrees2prong(Track3D *aTrack, eventraw::EventInfo *aEventInfo);
-  void fillTrees3prong(Track3D *aTrack, eventraw::EventInfo *aEventInfo);
+  void fillTrees1prong(Track3D *aTrack, eventraw::EventInfo *aEventInfo, bool & isFirst);
+  void fillTrees2prong(Track3D *aTrack, eventraw::EventInfo *aEventInfo, bool & isFirst);
+  void fillTrees3prong(Track3D *aTrack, eventraw::EventInfo *aEventInfo, bool & isFirst);
 
  private:
      
