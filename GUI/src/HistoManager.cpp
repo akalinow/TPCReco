@@ -51,10 +51,10 @@ void HistoManager::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
 /////////////////////////////////////////////////////////
 void HistoManager::setRecoClusterParameters(bool recoClusterEnable, double recoClusterThreshold, int recoClusterDeltaStrips, int recoClusterDeltaTimeCells) {
 
-  recoClusterEnable = recoClusterEnable;
-  recoClusterThreshold = recoClusterThreshold;
-  recoClusterDeltaStrips = recoClusterDeltaStrips;
-  recoClusterDeltaTimeCells = recoClusterDeltaTimeCells;
+  this->recoClusterEnable = recoClusterEnable;
+  this->recoClusterThreshold = recoClusterThreshold;
+  this->recoClusterDeltaStrips = recoClusterDeltaStrips;
+  this->recoClusterDeltaTimeCells = recoClusterDeltaTimeCells;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
