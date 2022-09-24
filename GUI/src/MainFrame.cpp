@@ -216,13 +216,15 @@ void MainFrame::InitializeEventSource(){
     }
     myDirWatch.Connect("Message(const char *)", "MainFrame", this, "ProcessMessage(const char *)");
   }
-  if(myConfig.find("removePedestal")!=myConfig.not_found() && myEventSource.get()){
-       bool removePedestal = myConfig.get<bool>("removePedestal");
-       EventSourceGRAW* aGrawEventSrc = dynamic_cast<EventSourceGRAW*>(myEventSource.get());
-       if(aGrawEventSrc) aGrawEventSrc->setRemovePedestal(removePedestal);
-  }
-  if(myConfig.find("pedestal")!=myConfig.not_found() && myEventSource.get()){
-    dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(myConfig.find("pedestal")->second);
+  if((myWorkMode == M_ONLINE_GRAW_MODE) || (myWorkMode == M_ONLINE_NGRAW_MODE) ||  (myWorkMode == M_OFFLINE_GRAW_MODE) || (myWorkMode == M_OFFLINE_NGRAW_MODE)){
+    if(myConfig.find("removePedestal")!=myConfig.not_found() && myEventSource.get()){
+         bool removePedestal = myConfig.get<bool>("removePedestal");
+         EventSourceGRAW* aGrawEventSrc = dynamic_cast<EventSourceGRAW*>(myEventSource.get());
+         if(aGrawEventSrc) aGrawEventSrc->setRemovePedestal(removePedestal);
+    }
+    if(myConfig.find("pedestal")!=myConfig.not_found() && myEventSource.get()){
+      dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(myConfig.find("pedestal")->second);
+    }
   }
 #endif
   else if(!myEventSource){
