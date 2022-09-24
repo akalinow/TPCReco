@@ -42,10 +42,10 @@ R__ADD_LIBRARY_PATH(../lib)
 void runTimeSec(const char *filename, const double max_interval_sec=1000) {
 
   if (!gROOT->GetClass("Track3D")){
-    R__LOAD_LIBRARY(libDataFormats.so);
+    R__LOAD_LIBRARY(libTPCDataFormats.so);
   }
   if (!gROOT->GetClass("getUnixTimestamp")){
-    R__LOAD_LIBRARY(libUtilities.so);
+    R__LOAD_LIBRARY(libTPCUtilities.so);
   }
 
   auto f=TFile::Open(filename, "OLD");

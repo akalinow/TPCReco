@@ -24,7 +24,7 @@ R__ADD_LIBRARY_PATH(../lib)
 void plotChargeProfile(const char *fname) {
 
   if (!gROOT->GetClass("TrackSegment3D")){
-     R__LOAD_LIBRARY(libDataFormats.so);
+     R__LOAD_LIBRARY(libTPCDataFormats.so);
   }
  
   TFile *f = TFile::Open(fname, "OLD");

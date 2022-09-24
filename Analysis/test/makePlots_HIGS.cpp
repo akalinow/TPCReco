@@ -30,7 +30,7 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
   }
 
   if (!gROOT->GetClass("GeometryTPC")){
-    R__LOAD_LIBRARY(libDataFormats.so);
+    R__LOAD_LIBRARY(libTPCDataFormats.so);
   }
   GeometryTPC *geo=new GeometryTPC("geometry_ELITPC.dat", false);
   if(!geo) exit(-1);

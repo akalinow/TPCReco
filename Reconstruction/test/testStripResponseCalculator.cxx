@@ -21,10 +21,10 @@ R__ADD_LIBRARY_PATH(../lib)
 //////////////////////////
 void generateResponse(double sigma=0.5) { // generates histograms and saves them to a separate ROOT file
   if (!gROOT->GetClass("GeometryTPC")){
-    R__LOAD_LIBRARY(libDataFormats.so);
+    R__LOAD_LIBRARY(libTPCDataFormats.so);
   }
   if (!gROOT->GetClass("StripResponseCalculator")){
-    R__LOAD_LIBRARY(libReconstruction.so);
+    R__LOAD_LIBRARY(libTPCReconstruction.so);
   }
   //  gSystem->Load("../lib/libDataFormats.so");
   //  gSystem->Load("../lib/libReconstruction.so");
@@ -56,10 +56,10 @@ void generateResponseAll() {
 //////////////////////////
 void plotStripResponse(double sigma=0.5) {
   if (!gROOT->GetClass("GeometryTPC")){
-    R__LOAD_LIBRARY(libDataFormats.so);
+    R__LOAD_LIBRARY(libTPCDataFormats.so);
   }
   if (!gROOT->GetClass("StripResponseCalculator")){
-    R__LOAD_LIBRARY(libReconstruction.so);
+    R__LOAD_LIBRARY(libTPCReconstruction.so);
   }
   //  gSystem->Load("../lib/libDataFormats.so");
   //  gSystem->Load("../lib/libReconstruction.so");
@@ -95,10 +95,10 @@ void plotStripResponse(double sigma=0.5) {
 //////////////////////////
 void plotTimeResponse(double sigma=0.5) {
   if (!gROOT->GetClass("GeometryTPC")){
-    R__LOAD_LIBRARY(libDataFormats.so);
+    R__LOAD_LIBRARY(libTPCDataFormats.so);
   }
   if (!gROOT->GetClass("StripResponseCalculator")){
-    R__LOAD_LIBRARY(libReconstruction.so);
+    R__LOAD_LIBRARY(libTPCReconstruction.so);
   }
   //  gSystem->Load("../lib/libDataFormats.so");
   //  gSystem->Load("../lib/libReconstruction.so");
@@ -193,10 +193,10 @@ void addConstantToTH2D(TH2D* h, double c) {
 //////////////////////////
 void testResponse1(double sigma=0.5) {
   if (!gROOT->GetClass("GeometryTPC")){
-    R__LOAD_LIBRARY(libDataFormats.so);
+    R__LOAD_LIBRARY(libTPCDataFormats.so);
   }
   if (!gROOT->GetClass("StripResponseCalculator")){
-    R__LOAD_LIBRARY(libReconstruction.so);
+    R__LOAD_LIBRARY(libTPCReconstruction.so);
   }
   //  gSystem->Load("../lib/libDataFormats.so");
   //  gSystem->Load("../lib/libReconstruction.so");
@@ -262,10 +262,10 @@ void testResponse1(double sigma=0.5) {
 //////////////////////////
 void testResponse2() {
   if (!gROOT->GetClass("GeometryTPC")){
-    R__LOAD_LIBRARY(libDataFormats.so);
+    R__LOAD_LIBRARY(libTPCDataFormats.so);
   }
   if (!gROOT->GetClass("StripResponseCalculator")){
-    R__LOAD_LIBRARY(libReconstruction.so);
+    R__LOAD_LIBRARY(libTPCReconstruction.so);
   }
   //  gSystem->Load("../lib/libDataFormats.so");
   //  gSystem->Load("../lib/libReconstruction.so");
@@ -353,10 +353,10 @@ void testResponse2() {
 //////////////////////////
 void testResponse3() {
   if (!gROOT->GetClass("GeometryTPC")){
-    R__LOAD_LIBRARY(libDataFormats.so);
+    R__LOAD_LIBRARY(libTPCDataFormats.so);
   }
   if (!gROOT->GetClass("StripResponseCalculator")){
-    R__LOAD_LIBRARY(libReconstruction.so);
+    R__LOAD_LIBRARY(libTPCReconstruction.so);
   }
   //  gSystem->Load("../lib/libDataFormats.so");
   //  gSystem->Load("../lib/libReconstruction.so");
