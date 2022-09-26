@@ -5,6 +5,7 @@
 #include <exception>
 #include <regex>
 #include <utility>
+#include "CoBoClock.h"
 class RunIdParser {
 public:
   RunIdParser(const std::string &name);
@@ -13,7 +14,7 @@ public:
     ParseError(const std::string& message) : std::logic_error(message) {}
   };
   
-  using time_point = std::chrono::time_point<std::chrono::system_clock>;
+  using time_point = tpcreco::cobo_time_point;
 
   inline size_t runId() const noexcept { return rundId_; }
   inline size_t fileId() const noexcept { return fileId_; }
