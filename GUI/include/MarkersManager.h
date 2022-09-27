@@ -66,7 +66,7 @@ private:
   TMarker *firstMarker = nullptr;
   TMarker *timeMarker = nullptr;
   std::array<TMarker*, 3> fMarkersContainer;
-  std::array<TLine*, 3> fHelperLinesContainer;
+  std::array<TLine*, 4> fHelperLinesContainer;
   std::array<std::vector<TLine>, 3> fSegmentsContainer;
   std::vector<double> fSegmentsXY;
   std::vector<TObject*> fObjClones;
