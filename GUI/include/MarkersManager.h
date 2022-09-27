@@ -3,6 +3,7 @@
 
 #include <string>
 #include <map>
+#include <array>
 
 #include <TMarker.h>
 #include <TLine.h>
@@ -62,14 +63,15 @@ private:
   std::map<std::string, TGTextButton*> myButtons;
 
   
-  TMarker *firstMarker, *timeMarker;
-  std::vector<TMarker*> fMarkersContainer;
-  std::vector<TLine*> fHelperLinesContainer;
-  std::vector<std::vector<TLine>> fSegmentsContainer;
+  TMarker *firstMarker = nullptr;
+  TMarker *timeMarker = nullptr;
+  std::array<TMarker*, 3> fMarkersContainer;
+  std::array<TLine*, 3> fHelperLinesContainer;
+  std::array<std::vector<TLine>, 3> fSegmentsContainer;
   std::vector<double> fSegmentsXY;
   std::vector<TObject*> fObjClones;
   
-  bool acceptPoints;
+  bool acceptPoints = false;
 };
 
 #endif
