@@ -8,12 +8,8 @@
 #include "TH2D.h"
 #include "TProfile.h"
 #include "TProfile2D.h"
-//#include "TObjArray.h"
-//#include "TF1.h"
 //#include "TTree.h"
 #include "TFile.h"
-//#include "TFitResult.h"
-//#include "Math/Functor.h"
 
 #include "GeometryTPC.h"
 #include "EventTPC.h"
@@ -40,7 +36,7 @@ DotFinder::DotFinder() {
   myEventCounter_Dot=0;
   previousEventTime_All = -1;
   previousEventTime_Dot = -1;
-  setCuts(DOTFINDER_DEFAULT_HIT_THR, /*DOTFINDER_DEFAULT_NSTRIPS, DOTFINDER_DEFAULT_NTIMECELLS,*/ DOTFINDER_DEFAULT_CHARGE_THR, DOTFINDER_DEFAULT_RADIUS);
+  setCuts(DOTFINDER_DEFAULT_HIT_THR, DOTFINDER_DEFAULT_CHARGE_THR, DOTFINDER_DEFAULT_RADIUS);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -62,31 +58,17 @@ void DotFinder::setEvent(EventTPC* aEvent){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void DotFinder::setCuts(unsigned int aHitThr,
-			//			unsigned int aMaxStripsPerDir,
-			//			unsigned int aMaxTimeCellsPerDir,
 			unsigned int aTotalChargeThr,
-			double aMatchRadiusInMM){
+			float aMatchRadiusInMM){
   if(  myHitThr == aHitThr && 
-       //       myMaxStripsPerDir == aMaxStripsPerDir &&
-       //       myMaxTimeCellsPerDir == aMaxTimeCellsPerDir &&
        myTotalChargeThr == aTotalChargeThr &&
        myMatchRadiusInMM == aMatchRadiusInMM ) return; // no change
 
   myHitThr = aHitThr;
-  //  myMaxStripsPerDir = aMaxStripsPerDir;
-  //  myMaxTimeCellsPerDir = aMaxTimeCellsPerDir;
   myTotalChargeThr = aTotalChargeThr;
   myMatchRadiusInMM = aMatchRadiusInMM;
 
   resetHistograms();
-  /*  
-  if(!myHistogramsInitialized) {
-    initializeHistograms();
-  } else {
-    // change of cuts invalidate existing histograms
-    resetHistograms();
-  }
-  */
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -231,16 +213,6 @@ bool DotFinder::checkCuts(SigClusterTPC &aCluster){
   const int maxTimeCells = std::max( 1, (int)(myMatchRadiusInMM/(10.0*myEvent->GetGeoPtr()->GetDriftVelocity()     // [1mm / (10mm/cm * 1cm/us / 1MHz ]=[dimensionless]
 								 /myEvent->GetGeoPtr()->GetSamplingRate())+0.5) ); // maximum # of time cells
 			       
-  /*  if(aCluster.GetMultiplicity(DIR_U) > (int)myMaxStripsPerDir ||
-     aCluster.GetMultiplicity(DIR_V) > (int)myMaxStripsPerDir ||
-     aCluster.GetMultiplicity(DIR_W) > (int)myMaxStripsPerDir ||
-     aCluster.GetMaxTime(DIR_U) - aCluster.GetMinTime(DIR_U) > (int)myMaxTimeCellsPerDir ||
-     aCluster.GetMaxTime(DIR_V) - aCluster.GetMinTime(DIR_V) > (int)myMaxTimeCellsPerDir ||
-     aCluster.GetMaxTime(DIR_W) - aCluster.GetMinTime(DIR_W) > (int)myMaxTimeCellsPerDir ||
-	aCluster.GetMaxStrip(DIR_U) - aCluster.GetMinStrip(DIR_U) > (int)myMaxStripsPerDir ||
-	aCluster.GetMaxStrip(DIR_V) - aCluster.GetMinStrip(DIR_V) > (int)myMaxStripsPerDir ||
-	aCluster.GetMaxStrip(DIR_W) - aCluster.GetMinStrip(DIR_W) > (int)myMaxStripsPerDir 
-  */
   myDotDeltaZ = fabs( aCluster.GetMaxTime() - aCluster.GetMinTime() + 1 )*(10.0*myEvent->GetGeoPtr()->GetDriftVelocity()     // [ 10mm/cm * 1cm/us / 1MHz ]=[mm]
 								          /myEvent->GetGeoPtr()->GetSamplingRate());
   if(aCluster.GetMultiplicity(DIR_U) > maxStrips ||
@@ -469,4 +441,25 @@ void DotFinder::fillOutputStream(){
 
   std::cout << "DotFinder: Total analyzed events   = " << myEventCounter_All << std::endl
 	    << "           Total point-like events = " << myEventCounter_Dot << std::endl;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void DotFinder::initializeDotFinder(unsigned int hitThr,
+				    unsigned int totalChargeThr,
+				    float matchRadiusInMM,
+				    const std::string & filePath) {
+  openOutputStream(filePath);
+  setCuts(hitThr, totalChargeThr, matchRadiusInMM);
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void DotFinder::runDotFinder(std::shared_ptr<EventTPC> aEvent) {
+  setEvent(aEvent);
+  reconstruct();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void DotFinder::finalizeDotFinder() {
+  fillOutputStream();
+  closeOutputStream();
 }

@@ -7,6 +7,7 @@
 #include "TCanvas.h"
 #include "TLatex.h"
 #include "TString.h"
+#include "TTreeIndex.h"
 
 #include <boost/program_options.hpp>
 
@@ -174,16 +175,47 @@ int analyzeRecoEvents(const  std::string & geometryFileName,
 
   unsigned int nEntries = aTree->GetEntries();
   
-  std::cout << __FUNCTION__ << ": Starting to loop " << nEntries << " events" << std::endl;
+  // When (optional) "EventInfo" branch is present try to sort input tree in ascending order of {runID, eventID}
+  if(!aBranchInfo) {
+    
+    std::cout << __FUNCTION__ << ": Starting to loop " << nEntries << " events without sorting" << std::endl;
+    for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
+      aBranch->GetEntry(iEntry); 
+      for (auto & aSegment: aTrack->getSegments())  aSegment.setGeometry(aGeometry); // need TPC geometry for track projections
+      myAnalysis->fillHistos(aTrack);
+      if(makeTreeFlag) myTreesAnalysis->fillTrees(aTrack, aEventInfo);
+    }
+    
+  } else {
+    
+    std::cout << __FUNCTION__ << ": Starting to loop " << nEntries << " events with sorting by {runId, eventId}" << std::endl;
+    aTree->BuildIndex("runId", "eventId");
+    TTreeIndex *I=(TTreeIndex*)aTree->GetTreeIndex(); // get the tree index
+    Long64_t* index=I->GetIndex();
 
-  for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
+    for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
+      aBranch->GetEntry(index[iEntry]);
+      aBranchInfo->GetEntry(index[iEntry]);
+
+      ////// DEBUG
+      //      std::cout << __FUNCTION__ << ": run=" << aEventInfo->GetRunId() << ", event=" << aEventInfo->GetEventId() << std::endl;
+      ////// DEBUG
+      
+      for (auto & aSegment: aTrack->getSegments())  aSegment.setGeometry(aGeometry); // need TPC geometry for track projections
+      myAnalysis->fillHistos(aTrack);
+      if(makeTreeFlag) myTreesAnalysis->fillTrees(aTrack, aEventInfo);
+    }
+    
+  }
+  /*
+    for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
     aBranch->GetEntry(iEntry); 
     if(aBranchInfo) aBranchInfo->GetEntry(iEntry); // this branch is optional
     for (auto & aSegment: aTrack->getSegments())  aSegment.setGeometry(aGeometry); // need TPC geometry for track projections
     myAnalysis->fillHistos(aTrack);
     if(makeTreeFlag) myTreesAnalysis->fillTrees(aTrack, aEventInfo);
-  }			      
- 
+    }			      
+  */
   return 0;
 }
 /////////////////////////////

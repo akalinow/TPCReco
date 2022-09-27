@@ -51,10 +51,10 @@ void HistoManager::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
 /////////////////////////////////////////////////////////
 void HistoManager::setRecoClusterParameters(bool recoClusterEnable, double recoClusterThreshold, int recoClusterDeltaStrips, int recoClusterDeltaTimeCells) {
 
-  recoClusterEnable = recoClusterEnable;
-  recoClusterThreshold = recoClusterThreshold;
-  recoClusterDeltaStrips = recoClusterDeltaStrips;
-  recoClusterDeltaTimeCells = recoClusterDeltaTimeCells;
+  this->recoClusterEnable = recoClusterEnable;
+  this->recoClusterThreshold = recoClusterThreshold;
+  this->recoClusterDeltaStrips = recoClusterDeltaStrips;
+  this->recoClusterDeltaTimeCells = recoClusterDeltaTimeCells;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -992,18 +992,17 @@ void HistoManager::resetEventRateGraph(){
    grEventRate->Set(0);
   }
 }
+/*
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 // Dot-like events useful for neutron flux monitoring
 /////////////////////////////////////////////////////////
 void HistoManager::initializeDotFinder(unsigned int hitThr,
-				       //				       unsigned int maxStripsPerDir,
-				       //				       unsigned int maxTimecellsPerDir,
 				       unsigned int totalChargeThr,
 				       double matchRadiusInMM,
 				       const std::string & filePath) {
   myDotFinder.openOutputStream(filePath);
-  myDotFinder.setCuts(hitThr, /* maxStripsPerDir, maxTimecellsPerDir,*/ totalChargeThr, matchRadiusInMM);
+  myDotFinder.setCuts(hitThr, totalChargeThr, matchRadiusInMM);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -1023,4 +1022,4 @@ void HistoManager::finalizeDotFinder() {
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-
+*/

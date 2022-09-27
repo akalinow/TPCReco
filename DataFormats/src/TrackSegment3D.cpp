@@ -16,7 +16,7 @@ TrackSegment3D::TrackSegment3D(){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void TrackSegment3D::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
-
+  
   myGeometryPtr = aGeometryPtr;
 }
 /////////////////////////////////////////////////////////
@@ -52,7 +52,7 @@ void TrackSegment3D::setStartEnd(const TVector3 & aStart, const TVector3 & aEnd)
 void TrackSegment3D::setStartEnd(const double *par){
 
   TVector3 start(par[0], par[1], par[2]);
-  TVector3 end(par[3], par[4], par[5]);
+  TVector3 end(par[3], par[4], par[5]);  
   setStartEnd(start, end);
 }
 /////////////////////////////////////////////////////////
@@ -71,7 +71,7 @@ void TrackSegment3D::setRecHits(const std::vector<TH2D> & aRecHits){
 
   myRecHits.clear();
   myRecHits.resize(3);
-
+  
   double x=-999.0, y=-999.0, charge=-999.0;
   for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
     const TH2D & hRecHits = aRecHits[strip_dir];

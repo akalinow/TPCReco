@@ -329,6 +329,7 @@ void Track3D::shrinkToHits(){
     startBin-=1;
     endBin+=1;
   }
+
   double lambdaStart = hChargeProfileStart.GetBinCenter(startBin);
   double lambdaEnd = hChargeProfileEnd.GetBinCenter(endBin);
 

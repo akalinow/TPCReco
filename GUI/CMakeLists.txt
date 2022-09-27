@@ -54,7 +54,7 @@ target_link_libraries(${MODULE_NAME} ${TPCRECO_LIBRARIES_LOCAL} ${GRAW_TO_ROOT_L
 target_link_libraries(tpcGUI PUBLIC ${TPCRECO_LIBRARIES} ${Boost_LIBRARIES} ${GRAW_TO_ROOT_LIBRARY} ${MODULE_NAME})
 target_link_libraries(dumpProjectionHistos PUBLIC ${TPCRECO_LIBRARIES} ${GRAW_TO_ROOT_LIBRARY} ${MODULE_NAME})
 target_link_libraries(dumpClusterHistos PUBLIC ${TPCRECO_LIBRARIES} ${GRAW_TO_ROOT_LIBRARY} ${MODULE_NAME})
-target_link_libraries(dumpRateHistos PUBLIC ${TPCRECO_LIBRARIES} ${GRAW_TO_ROOT_LIBRARY} ${MODULE_NAME})
+target_link_libraries(dumpRateHistos PUBLIC ${TPCRECO_LIBRARIES} ${Boost_LIBRARIES} ${GRAW_TO_ROOT_LIBRARY} ${MODULE_NAME})
 
 # All install commands get the same destination. this allows us to use paths
 # relative to the executable.
