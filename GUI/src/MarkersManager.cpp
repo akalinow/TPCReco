@@ -21,7 +21,8 @@
 /////////////////////////////////////////////////////////
 MarkersManager::MarkersManager(const TGWindow * p, MainFrame * aFrame)
  : TGCompositeFrame(p, 10, 10, kVerticalFrame), fParentFrame(aFrame){
-
+   fHelperLinesContainer.fill(nullptr);
+   fMarkersContainer.fill(nullptr);
    SetCleanup(kDeepCleanup);
 
    int nRows = 2;
@@ -31,7 +32,6 @@ MarkersManager::MarkersManager(const TGWindow * p, MainFrame * aFrame)
    fHeaderFrame->SetLayoutManager(tlo);
    AddFrame(fHeaderFrame, new TGLayoutHints(kLHintsExpandX, 2, 2, 1, 1));
    addButtons();   
-   initialize();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -58,8 +58,7 @@ void MarkersManager::addButtons(){
 
     fHeaderFrame->AddFrame(aButton,tloh);
     aButton->Connect("Clicked()","MarkersManager",this,"DoButton()");
-    if(button_names[iButton]!="Add segment") aButton->SetState(kButtonDisabled);
-    if(button_names[iButton]=="Clear track") aButton->SetState(kButtonUp);
+    aButton->SetState(kButtonDisabled);
     aButton->ChangeBackground(aColor);
     aButton->SetToolTipText(button_tooltips[iButton].c_str());
     myButtons[button_names[iButton]] = aButton;
@@ -73,21 +72,7 @@ MarkersManager::~MarkersManager(){
 
   delete fMarkerGCanvas;
 }
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void MarkersManager::initialize(){
 
-  fMarkersContainer.resize(3);
-  fHelperLinesContainer.resize(3);
-  fSegmentsContainer.resize(3);
-
-  firstMarker = 0;
-  timeMarker = 0;
-  acceptPoints = false;
-  setEnabled(false);
-  fGeometryTPC = NULL;
-
-}
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MarkersManager::setEnabled(bool enable){
@@ -194,9 +179,10 @@ void MarkersManager::resetMarkers(bool force){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MarkersManager::clearHelperLines(){
-
-std::for_each(fHelperLinesContainer.begin(), fHelperLinesContainer.end(),
-		[](TLine *&item){if(item){delete item; item = 0;}});  
+  for (auto &item: fHelperLinesContainer){
+    delete item;
+    item = nullptr;
+  } 
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -291,8 +277,8 @@ void MarkersManager::drawFixedTimeLines(int strip_dir, double time){
   aLine.SetLineColor(aColor);
   aLine.SetLineWidth(2);
   
-  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
-    std::string padName = "Histograms_"+std::to_string(strip_dir+1);
+  for(size_t i = 0 ; i< fHelperLinesContainer.size(); ++i){
+    std::string padName = "Histograms_"+std::to_string(i+1);
     TPad *aPad = (TPad*)gROOT->FindObject(padName.c_str());
     if(!aPad) continue;
     aPad->cd();
@@ -300,7 +286,7 @@ void MarkersManager::drawFixedTimeLines(int strip_dir, double time){
     if(!hFrame) continue;
     double minY = hFrame->GetY1();
     double maxY = hFrame->GetY2();
-    fHelperLinesContainer[strip_dir] = aLine.DrawLine(time, minY, time, maxY);
+    fHelperLinesContainer[i] = aLine.DrawLine(time, minY, time, maxY);
   }  
 }
 /////////////////////////////////////////////////////////
