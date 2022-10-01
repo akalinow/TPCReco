@@ -1,1 +1,2 @@
 add_unit_test(EventInfo_tst DataFormats)
+add_unit_test(Filters_tst DataFormats)
