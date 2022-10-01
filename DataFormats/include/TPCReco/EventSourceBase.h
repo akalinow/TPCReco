@@ -54,7 +54,7 @@ public:
 
   std::shared_ptr<GeometryTPC> getGeometry() const;
     
-  inline EventFilter & getEventFilter() {return eventFilter;}
+  inline EventFilter<EventTPC> & getEventFilter() {return eventFilter;}
 
   virtual std::shared_ptr<EventTPC> getNextEvent() = 0;
   
@@ -68,7 +68,7 @@ protected:
   
   unsigned long int nEntries;
   unsigned long int myCurrentEntry;
-  EventFilter eventFilter;
+  EventFilter<EventTPC> eventFilter;
 
   std::shared_ptr<GeometryTPC> myGeometryPtr;
   eventraw::EventInfo myCurrentEventInfo;
