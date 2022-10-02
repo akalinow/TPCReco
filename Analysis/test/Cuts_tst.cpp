@@ -12,6 +12,8 @@ using ::testing::StrictMock;
 struct GeometryTPCMock {
   MOCK_METHOD(double, GetDriftCageZmin, (), (const));
   MOCK_METHOD(double, GetDriftCageZmax, (), (const));
+  MOCK_METHOD(int, GetAgetNtimecells, (), (const));
+  MOCK_METHOD(double, Timecell2pos, (double, bool &));
 };
 
 struct TrackSegment3DMock {
@@ -133,16 +135,66 @@ TEST_F(Cut3aTest, AllInside) {
   EXPECT_TRUE(cut(&track));
 }
 
+class Cut4Test : public CutsTest {
+public:
+  GeometryTPCMock geometry;
+  double lowerMargin = 25;
+  double upperMargin = 5;
+  void SetUp() override {
+    CutsTest::SetUp();
+    EXPECT_CALL(geometry, GetDriftCageZmin()).WillRepeatedly(Return(-50));
+    EXPECT_CALL(geometry, GetDriftCageZmax()).WillRepeatedly(Return(50));
+    EXPECT_CALL(geometry, GetAgetNtimecells()).WillRepeatedly(Return(512));
+    EXPECT_CALL(geometry, Timecell2pos(_, _))
+        .WillOnce(Return(-100))
+        .WillOnce(Return(100));
+  }
+};
+
+TEST_F(Cut4Test, SingleSegmentInside) {
+
+  Cut4 cut{&geometry, lowerMargin, upperMargin};
+  segments.push_back({});
+  EXPECT_CALL(segments[0], getStart())
+      .WillRepeatedly(Return(TVector3{0, 0, 80}));
+  EXPECT_CALL(segments[0], getStop())
+      .WillRepeatedly(Return(TVector3{0, 0, 90}));
+  EXPECT_TRUE(cut(&track));
+}
+
+TEST_F(Cut4Test, SingleSegmentOutsideMargin) {
+  Cut4 cut{&geometry, lowerMargin, upperMargin};
+  segments.push_back({});
+  EXPECT_CALL(segments[0], getStart())
+      .WillRepeatedly(Return(TVector3{0, 0, 80}));
+  EXPECT_CALL(segments[0], getStop())
+      .WillRepeatedly(Return(TVector3{0, 0, 110}));
+  EXPECT_FALSE(cut(&track));
+}
+
+TEST_F(Cut4Test, SingleSegmentOutsideDriftCageLimit) {
+  Cut4 cut{&geometry, lowerMargin, upperMargin};
+  segments.push_back({});
+  EXPECT_CALL(segments[0], getStart())
+      .WillRepeatedly(Return(TVector3{0, 0, -90}));
+  EXPECT_CALL(segments[0], getStop())
+      .WillRepeatedly(Return(TVector3{0, 0, 90}));
+  EXPECT_FALSE(cut(&track));
+}
+
 class Cut5Test : public CutsTest {
 public:
   GeometryTPCMock geometry;
   double beamDiameter = 10;
-  Cut5<GeometryTPCMock> cut{&geometry, beamDiameter};
+  void SetUp() override {
+    CutsTest::SetUp();
+    EXPECT_CALL(geometry, GetDriftCageZmin()).WillRepeatedly(Return(-20));
+    EXPECT_CALL(geometry, GetDriftCageZmax()).WillRepeatedly(Return(20));
+  }
 };
 
 TEST_F(Cut5Test, VertexInCenter) {
-  EXPECT_CALL(geometry, GetDriftCageZmin()).WillRepeatedly(Return(-20));
-  EXPECT_CALL(geometry, GetDriftCageZmax()).WillRepeatedly(Return(20));
+  Cut5 cut{&geometry, beamDiameter};
   segments.push_back({});
   EXPECT_CALL(segments[0], getStart())
       .WillRepeatedly(Return(TVector3{0, 0, 0}));
@@ -159,8 +211,7 @@ TEST_F(Cut5Test, VertexInCenter) {
 }
 
 TEST_F(Cut5Test, VertexOffCenter) {
-  EXPECT_CALL(geometry, GetDriftCageZmin()).WillRepeatedly(Return(-20));
-  EXPECT_CALL(geometry, GetDriftCageZmax()).WillRepeatedly(Return(20));
+  Cut5 cut{&geometry, beamDiameter};
   segments.push_back({});
   EXPECT_CALL(segments[0], getStart())
       .WillRepeatedly(Return(TVector3{0, 0, 10}));
