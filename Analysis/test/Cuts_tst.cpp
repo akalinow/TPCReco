@@ -14,6 +14,7 @@ struct GeometryTPCMock {
   MOCK_METHOD(double, GetDriftCageZmax, (), (const));
   MOCK_METHOD(int, GetAgetNtimecells, (), (const));
   MOCK_METHOD(double, Timecell2pos, (double, bool &));
+  MOCK_METHOD(TGraph, GetActiveAreaConvexHull, (double));
 };
 
 struct TrackSegment3DMock {
@@ -103,6 +104,42 @@ TEST_F(Cut2Test, beamTilt) {
       .WillRepeatedly(Return(TVector3{1, 15.4, 0}));
   EXPECT_FALSE(cut(&track));
 }
+
+class Cut3Test : public CutsTest {
+public:
+  double margin_mm;
+  TGraph graph;
+  GeometryTPCMock geometry;
+  void SetUp() override {
+    CutsTest::SetUp();
+    double x[] = {0, 1, 1, 0, 0};
+    double y[] = {0, 0, 1, 1, 0};
+    graph = TGraph(5, x, y);
+    EXPECT_CALL(geometry, GetActiveAreaConvexHull(_))
+        .WillRepeatedly(Return(graph));
+  }
+};
+
+TEST_F(Cut3Test, InsideConvexHull) {
+  Cut3 cut{&geometry, margin_mm};
+  segments.push_back({});
+  EXPECT_CALL(segments[0], getStart())
+      .WillRepeatedly(Return(TVector3{0.3, 0.3, 0}));
+  EXPECT_CALL(segments[0], getStop())
+      .WillRepeatedly(Return(TVector3{0.4, 0.4, 0}));
+  EXPECT_TRUE(cut(&track));
+}
+
+TEST_F(Cut3Test, OutsideConvexHull) {
+  Cut3 cut{&geometry, margin_mm};
+  segments.push_back({});
+  EXPECT_CALL(segments[0], getStart())
+      .WillRepeatedly(Return(TVector3{2, 0.3, 0}));
+  EXPECT_CALL(segments[0], getStop())
+      .WillRepeatedly(Return(TVector3{0.4, -0.4, 0}));
+  EXPECT_FALSE(cut(&track));
+}
+
 
 class Cut3aTest : public CutsTest {
 public:
