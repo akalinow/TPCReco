@@ -223,15 +223,16 @@ int makeTrackTree(const  std::string & geometryFileName,
       continue;
       }
     */
-    
-    myTkBuilder.setEvent(myEventSource->getCurrentEvent());
-    myTkBuilder.reconstruct();
+    auto event = myEventSource->getCurrentEvent();
 
-    int eventId = myEventSource->getCurrentEvent()->GetEventId();
+    myEventInfo->SetEventId(event->GetEventId());
+    myEventInfo->SetEventTimestamp(event->GetEventTime());
+
+    myTkBuilder.setEvent(event);
+    myTkBuilder.reconstruct();
     const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
 
     myRecoOutput.setRecTrack(aTrack3D);
-    myEventInfo->SetEventId(eventId);
     myRecoOutput.setEventInfo(myEventInfo);				   
     myRecoOutput.update(); 
     
@@ -260,7 +261,7 @@ int makeTrackTree(const  std::string & geometryFileName,
     double carbonEnergy = carbonRange>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::CARBON_12, carbonRange):0.0;
       
     track_data.frameId = iEntry;
-    track_data.eventId = eventId;
+    track_data.eventId = myEventInfo->GetEventId();
     track_data.eventType = eventType;
     track_data.length = length;    
     track_data.horizontalLostLength = horizontalTrackLostPart;
