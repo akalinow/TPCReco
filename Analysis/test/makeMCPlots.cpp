@@ -15,11 +15,11 @@ void makeMCPlots(std::string fileName){
   TTree *trackTree = (TTree*)aFile->Get("trackTree");
 
 
-  trackTree->Draw("(alphaRangeReco-alphaRangeGen)/alphaRangeGen:alphaRangeGen>>hRangeResVsRangeGen(21,0, 70,  41,-0.5,0.5)","","goff");
-  trackTree->Draw("(alphaRangeReco-alphaRangeGen)/alphaRangeGen:cosThetaGen>>hRangeResVsCosTheta(21,-0.5, 0.5,  41,-0.5,0.5)","","goff");
-  trackTree->Draw("(cosThetaReco-cosThetaGen)/cosThetaGen:cosThetaGen>>hCosThetaResVsCosTheta(21,-0.5, 0.5,  41,-0.5,0.5)","","goff");
-  trackTree->Draw("(phiReco-phiGen)/phiGen:cosThetaGen>>hPhiResVsCosTheta(21,-0.5, 0.5,  41,-0.5,0.5)","","goff");
-  trackTree->Draw("(chargeReco-chargeGen)/chargeGen:cosThetaGen>>hChargeResVsCosTheta(21,-0.5, 0.5,  41,-0.5,0.5)","","goff");
+  trackTree->Draw("(alphaRangeReco-alphaRangeGen)/alphaRangeGen:alphaRangeGen>>hRangeResVsRangeGen(21,0, 70,  41,-0.5,0.5)","eventTypeGen==1","goff");
+  trackTree->Draw("(alphaRangeReco-alphaRangeGen)/alphaRangeGen:cosThetaGen>>hRangeResVsCosTheta(21,-1, 1,  41,-0.5,0.5)","eventTypeGen==1","goff");
+  trackTree->Draw("(cosThetaReco-cosThetaGen)/cosThetaGen:cosThetaGen>>hCosThetaResVsCosTheta(21,-1, 1,  41,-0.5,0.5)","eventTypeGen==1","goff");
+  trackTree->Draw("(phiReco-phiGen)/phiGen:cosThetaGen>>hPhiResVsCosTheta(21,-0.5, 0.5,  41,-0.5,0.5)","eventTypeGen==1","goff");
+  trackTree->Draw("(chargeReco*1E-5-chargeGen)/chargeGen:cosThetaGen>>hChargeResVsCosTheta(21,-1, 1,  41,-0.5,0.5)","eventTypeGen==1","goff");
   ///////////////////////////////////////////////////
   TLegend *aLeg = new TLegend(0.1, 0.1, 0.5, 0.3);
   TCanvas *aCanvas = new TCanvas("aCanvas","",700,700);

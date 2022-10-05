@@ -146,7 +146,8 @@ typedef struct {Float_t eventId, frameId,
     xVtx, yVtx, zVtx,
     xAlphaEnd, yAlphaEnd, zAlphaEnd,
     xCarbonEnd, yCarbonEnd, zCarbonEnd,
-    total_mom_x,  total_mom_y,  total_mom_z;
+    total_mom_x,  total_mom_y,  total_mom_z,
+    lineFitChi2, dEdxFitChi2;
     } TrackData;
 /////////////////////////
 int makeTrackTree(const  std::string & geometryFileName,
@@ -154,12 +155,12 @@ int makeTrackTree(const  std::string & geometryFileName,
 
   std::shared_ptr<EventSourceBase> myEventSource;
   if(dataFileName.find(".graw")!=std::string::npos){
-    
-    boost::property_tree::ptree proterty_tree;
-    proterty_tree.put("pedestal.minPedestalCell", 5.0);
-    proterty_tree.put("pedestal.maxPedestalCell",25);
-    proterty_tree.put("pedestal.minSignalCell",5);
-    proterty_tree.put("pedestal.maxSignalCell",506);
+
+    boost::property_tree::ptree property_tree;
+    property_tree.put("pedestal.minPedestalCell", 5.0);
+    property_tree.put("pedestal.maxPedestalCell",25);
+    property_tree.put("pedestal.minSignalCell",5);
+    property_tree.put("pedestal.maxSignalCell",506);
     
     #ifdef WITH_GET
     if(dataFileName.find(",")!=std::string::npos){
@@ -169,7 +170,7 @@ int makeTrackTree(const  std::string & geometryFileName,
       myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
       dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(160);
     }
-    dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(proterty_tree.find("pedestal")->second);    
+    dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(property_tree.find("pedestal")->second);    
     #endif
   }
   else if(dataFileName.find(".root")!=std::string::npos){
@@ -193,7 +194,8 @@ int makeTrackTree(const  std::string & geometryFileName,
   leafNames += "xVtx:yVtx:zVtx:";
   leafNames += "xAlphaEnd:yAlphaEnd:zAlphaEnd:";
   leafNames += "xCarbonEnd:yCarbonEnd:zCarbonEnd:";
-  leafNames += "total_mom_x:total_mom_y:total_mom_z";
+  leafNames += "total_mom_x:total_mom_y:total_mom_z:";
+  leafNames += "lineFitChi2:dEdxFitChi2";
   tree->Branch("track",&track_data,leafNames.c_str());
 
   int index = geometryFileName.find("mbar");
@@ -217,7 +219,7 @@ int makeTrackTree(const  std::string & geometryFileName,
 
   //Event loop
   unsigned int nEntries = myEventSource->numberOfEntries();
-  nEntries = 100; //TEST
+  //nEntries = 500; //TEST
   for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
     if(nEntries>10 && iEntry%(nEntries/10)==0){
       std::cout<<KBLU<<"Processed: "<<int(100*(double)iEntry/nEntries)<<" % events"<<RST<<std::endl;
@@ -299,6 +301,9 @@ int makeTrackTree(const  std::string & geometryFileName,
     track_data.total_mom_x = total_p.x();
     track_data.total_mom_y = total_p.y();
     track_data.total_mom_z = total_p.z();
+
+    track_data.lineFitChi2 = aTrack3D.getChi2();
+    track_data.dEdxFitChi2 = aTrack3D.getHypothesisFitChi2();
     
     tree->Fill();    
   }

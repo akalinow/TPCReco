@@ -58,6 +58,7 @@ enum pid_type{
   O_16=OXYGEN_16,   // alias
   O_17=OXYGEN_17,   // alias
   O_18=OXYGEN_18,   // alias
+  THREE_ALPHA,      //
   PID_MIN=ALPHA,    // alias
   PID_MAX=OXYGEN_18 // alias
 };

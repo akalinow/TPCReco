@@ -34,7 +34,9 @@ public:
 
   std::shared_ptr<EventTPC> getLastEvent();
 
-  const Track3D & getGeneratedTrack() const { return myTrack3D;}
+  const Track3D & getGeneratedTrack(unsigned int index=0) const {return myTracks3D.at(index);}
+
+  pid_type getGeneratedEventType() const {return myGenEventType;}
 
   unsigned long int numberOfEvents() const;
 
@@ -50,14 +52,18 @@ public:
   std::shared_ptr<UVWprojector> myProjectorPtr;
   mutable IonRangeCalculator myRangeCalculator;
   TH3D my3DChargeCloud;
-  Track3D myTrack3D;
+  std::vector<Track3D> myTracks3D;
+  pid_type myGenEventType;
 
   TVector3 createVertex() const;
   TrackSegment3D createSegment(const TVector3 vertexPos, pid_type ion_id) const;  
   TH1F createChargeProfile(double ion_range, pid_type ion_id) const;  
   Track3D createTrack(const TVector3 & aVtx, pid_type ion_id) const;
 
-  
+  void generateSingleProng(pid_type ion_id=pid_type::ALPHA);
+  void generateTwoProng();
+  void generateThreeProng();
+
   void fill3DChargeCloud(const Track3D & aTrack);
   void fillPEventTPC(const TH3D & h3DChargeCloud, const Track3D & aTrack);
   void generateEvent();

@@ -141,6 +141,9 @@ HIgS_runs = [
 ################################################
 HIgS_runs = [
 
+    ("/scratch_hdd/akalinow/ELITPC/data/HIgs_2022/20220820_extTrg_CO2_130mbar/",
+     "/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat"),
+
     #("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220412_extTrg_CO2_190mbar_DT1470ET/11.1MeV/GRAW/",
     #"/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat"),
 

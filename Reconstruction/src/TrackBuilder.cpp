@@ -146,36 +146,6 @@ void TrackBuilder::reconstruct(){
 
   aTrackCandidate = fitTrack3D(aTrackCandidate);
   aTrackCandidate = fitEventHypothesis(aTrackCandidate);
-
-  ////TEST
-  /*
-  const TrackSegment3D & aSegment = aTrackCandidate.getSegments().front();
-  TVector3 tangent =  aSegment.getTangent();
-  TVector3 start =  aSegment.getStart();
-
-  TVector3 vertexPos = aSegment.getStart() + aSegment.getLength()/2.0*aSegment.getTangent();
-
-  Track3D aTrackCandidate1;
-  TrackSegment3D aSegment1;
-  aSegment1.setGeometry(myGeometryPtr);  
-  aSegment1.setStartEnd(vertexPos, aSegment.getStart() - 10*aSegment.getTangent());
-  aSegment1.setRecHits(myRecHits);
-  aTrackCandidate1.addSegment(aSegment1);
-
-  aSegment1.setStartEnd(vertexPos, aSegment.getEnd() + 5*aSegment.getTangent());
-  aTrackCandidate1.addSegment(aSegment1);
-  
-  aTrackCandidate = fitTrackNodesStartEnd(aTrackCandidate);
-  */
-  myFittedTrack = aTrackCandidate;
-  return;  
-  ////////
-
-  
-  
-  //aTrackCandidate = fitTrackNodesStartEnd(aTrackCandidate);
-  //aTrackCandidate = fitEventHypothesis(aTrackCandidate);
-  
   myFittedTrack = aTrackCandidate;
 }
 /////////////////////////////////////////////////////////
