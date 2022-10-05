@@ -167,7 +167,7 @@ TH1F EventSourceMC::createChargeProfile(double ion_range, pid_type ion_id) const
 
   double x = 0.0;
   double value = 0.0;
-  TH1F aChargeProfile{"hChargeProfile",";x [mm];dE/dx [keV/mm]", 1024, -0.2*ion_range, 1.2*ion_range};
+  TH1F aChargeProfile{"hChargeProfile",";x [mm];dE/dx [keV/bin width]", 1024, -0.2*ion_range, 1.2*ion_range};
   for(int iBinX=1;iBinX<=aChargeProfile.GetNbinsX();++iBinX){
     x = aChargeProfile.GetBinCenter(iBinX);
     if(x<0 || (x+delta>graph_range)) continue;

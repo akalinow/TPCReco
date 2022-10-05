@@ -30,12 +30,13 @@ void makeMCPlots(std::string fileName){
   aCanvas->cd(1);
   gPad->SetLeftMargin(0.15);
   gPad->SetRightMargin(0.15);
-
+ 
   TH2F *hRangeResVsCosTheta = (TH2F*)gDirectory->Get("hRangeResVsCosTheta");
   hRangeResVsCosTheta->SetTitle("");
   hRangeResVsCosTheta->SetXTitle("cos(#theta^{GEN})");
-  hRangeResVsCosTheta->SetYTitle("#frac{d^{RECO} - d^{GEN}}{d^{RECO}}");
+  hRangeResVsCosTheta->SetYTitle("#frac{d^{RECO} - d^{GEN}}{d^{GEN}}");
   hRangeResVsCosTheta->SetZTitle("Number of events");
+  hRangeResVsCosTheta->GetZaxis()->SetTitleOffset(1.5);
   hRangeResVsCosTheta->Draw("colz");
   ////////////////////////////////
   aCanvas->cd(2);
@@ -47,6 +48,7 @@ void makeMCPlots(std::string fileName){
   hRangeResVsRangeGen->SetXTitle("d^{GEN} [mm]");
   hRangeResVsRangeGen->SetYTitle("#frac{d^{RECO} - d^{GEN}}{d^{RECO}}");
   hRangeResVsRangeGen->SetZTitle("Number of events");
+  hRangeResVsRangeGen->GetZaxis()->SetTitleOffset(1.5);
   hRangeResVsRangeGen->Draw("colz");
 
   TH2F *hCosThetaResVsCosTheta = (TH2F*)gDirectory->Get("hCosThetaResVsCosTheta");
@@ -54,6 +56,7 @@ void makeMCPlots(std::string fileName){
   hCosThetaResVsCosTheta->SetXTitle("cos(#theta^{GEN})");
   hCosThetaResVsCosTheta->SetYTitle("#frac{cos(#theta^{RECO}) - cos(#theta^{GEN})}{cos(#theta^{GEN})}");
   hCosThetaResVsCosTheta->SetZTitle("Number of events");
+  hCosThetaResVsCosTheta->GetZaxis()->SetTitleOffset(1.5);
   //hCosThetaResVsCosTheta->Draw("colz");
   ////////////////////////////////
   aCanvas->cd(3);
@@ -63,8 +66,9 @@ void makeMCPlots(std::string fileName){
   TH2F *hPhiResVsCosTheta = (TH2F*)gDirectory->Get("hPhiResVsCosTheta");
   hPhiResVsCosTheta->SetTitle("");
   hPhiResVsCosTheta->SetXTitle("cos(#theta^{GEN})");
-  hPhiResVsCosTheta->SetYTitle("#frac{#varphi^{RECO} - #varphi^{GEN}}{#varphi^{RECO}}");
+  hPhiResVsCosTheta->SetYTitle("#frac{#varphi^{RECO} - #varphi^{GEN}}{#varphi^{GEN}}");
   hPhiResVsCosTheta->SetZTitle("Number of events");
+  hPhiResVsCosTheta->GetZaxis()->SetTitleOffset(1.5);
   hPhiResVsCosTheta->Draw("colz");
   ////////////////////////////////
   aCanvas->cd(4);
@@ -74,13 +78,14 @@ void makeMCPlots(std::string fileName){
   TH2F *hChargeResVsCosTheta = (TH2F*)gDirectory->Get("hChargeResVsCosTheta");
   hChargeResVsCosTheta->SetTitle("");
   hChargeResVsCosTheta->SetXTitle("cos(#theta^{GEN})");
-  hChargeResVsCosTheta->SetYTitle("#frac{charge^{RECO} - charge^{GEN}}{charge^{RECO}}");
+  hChargeResVsCosTheta->SetYTitle("#frac{charge^{RECO} - charge^{GEN}}{charge^{GEN}}");
   hChargeResVsCosTheta->SetZTitle("Number of events");
+  hChargeResVsCosTheta->GetZaxis()->SetTitleOffset(1.5);
   hChargeResVsCosTheta->Draw("colz");
   ////////////////////////////////
   aCanvas->Print("MCPlots_set0.png");
   ////////////////////////////////
-  return;
+  //return;
   ////////////////////////////////
   aCanvas->Clear();
   aCanvas->Divide(2,2);
@@ -89,12 +94,55 @@ void makeMCPlots(std::string fileName){
   aCanvas->cd(1);
   gPad->SetLeftMargin(0.15);
   gPad->SetRightMargin(0.15);
+  gPad->SetBottomMargin(0.15);
+  gPad->SetGrid(1,1);
 
+  /*
   hRangeResVsCosTheta->FitSlicesY();
   TH2F *hRangeResVsCosTheta_mean = (TH2F*)gDirectory->Get("hRangeResVsCosTheta_1");
   TH2F *hRangeResVsCosTheta_sigma = (TH2F*)gDirectory->Get("hRangeResVsCosTheta_2");
   //hRangeResVsCosTheta_mean->Draw();
-  hRangeResVsCosTheta_sigma->Draw();
+  //hRangeResVsCosTheta_sigma->Draw();
+  */
+  TH1D *hProjectionY;
+
+  hProjectionY = hRangeResVsCosTheta->ProjectionY();
+  hProjectionY->GetXaxis()->SetTitleOffset(1.5);
+  hProjectionY->Draw();
+
+  ////////////////////////////////
+  aCanvas->cd(2);
+  gPad->SetLeftMargin(0.15);
+  gPad->SetRightMargin(0.15);
+  gPad->SetBottomMargin(0.15);
+  gPad->SetGrid(1,1);
+
+  hProjectionY = hCosThetaResVsCosTheta->ProjectionY();
+  hProjectionY->GetXaxis()->SetTitleOffset(1.5);
+  hProjectionY->Draw();
+  ////////////////////////////////
+  aCanvas->cd(3);
+  gPad->SetLeftMargin(0.15);
+  gPad->SetRightMargin(0.15);
+  gPad->SetBottomMargin(0.15);
+  gPad->SetGrid(1,1);
+
+  hProjectionY = hPhiResVsCosTheta->ProjectionY();
+  hProjectionY->GetXaxis()->SetTitleOffset(1.5);
+  hProjectionY->Draw();
+  ////////////////////////////////
+  aCanvas->cd(4);
+  gPad->SetLeftMargin(0.15);
+  gPad->SetRightMargin(0.15);
+  gPad->SetBottomMargin(0.15);
+  gPad->SetGrid(1,1);
+
+  hProjectionY = hChargeResVsCosTheta->ProjectionY();
+  hProjectionY->GetXaxis()->SetTitleOffset(1.5);
+  hProjectionY->Draw();
+
+  aCanvas->Print("MCPlots_set1.png");
+
  
 }
 
