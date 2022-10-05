@@ -3,6 +3,7 @@
 #include "gtest/gtest.h"
 #include <boost/filesystem.hpp>
 #include <fstream>
+#include <set>
 
 namespace fs = boost::filesystem;
 using namespace InputFileHelper;
@@ -97,4 +98,22 @@ TEST_F(InputFileHelperTest, FileDiscoveryCSV) {
                 "," + directory +
                 "CoBo0_AsAd2_2021-07-12T12:03:40.994_0000.graw" + "," +
                 directory + "CoBo0_AsAd3_2021-07-12T12:03:41.001_0000.graw");
+}
+
+TEST(InputFileHelper, ExtensionsFilter) {
+  std::set<std::string> allowedExtensions = {".graw", ".root" , ".log"};
+  std::vector<std::string> files = {
+      "CoBo0_AsAd0_2021-07-12T12:03:40.978_0000.graw",
+      "CoBo0_AsAd0_2021-07-12T12:03:40.978_0000.root",
+      "CoBo0_AsAd0_2021-07-12T12:03:40.978_0000.graw.log",
+      "CoBo0_AsAd0_2021-07-12T12:03:40.978_0000",
+      "CoBo0_AsAd0_2021-07-12T12:03:40.978_0000.txt",
+      "CoBo0_AsAd0_2021-07-12T12:03:40.978_0000.graw.txt"};
+  auto last =
+      filterExtensions(std::begin(files), std::end(files), allowedExtensions);
+  files.erase(last, std::end(files));
+  EXPECT_THAT(files, ::testing::UnorderedElementsAreArray(
+                         {"CoBo0_AsAd0_2021-07-12T12:03:40.978_0000.graw",
+                          "CoBo0_AsAd0_2021-07-12T12:03:40.978_0000.root",
+                          "CoBo0_AsAd0_2021-07-12T12:03:40.978_0000.graw.log"}));
 }

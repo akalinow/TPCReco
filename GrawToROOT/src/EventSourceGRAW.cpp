@@ -265,7 +265,6 @@ void EventSourceGRAW::collectEventFragments(unsigned int eventId){
     myCurrentEventInfo.SetEventId(eventId);
     myCurrentEventInfo.SetRunId(eventId);
     myCurrentEventInfo.SetEventTimestamp(myDataFrame.fHeader.fEventTime);
-    myCurrentEventInfo.SetAsadCounter(asadCounter.size());
     std::cout<<myCurrentEventInfo<<std::endl;
     
     if(eventId!=eventId_fromFrame){

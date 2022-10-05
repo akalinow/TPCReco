@@ -1,4 +1,5 @@
 #include "UtilsMath.h"
+#include <ctime>
 
 ////////////////////
 ////////////////////
@@ -315,4 +316,35 @@ double Utils::distancePointPlane(TVector3 basepoint, TVector3 span1, TVector3 sp
 double Utils::signedDistancePointPlane(TVector3 basepoint, TVector3 span1, TVector3 span2, TVector3 point) {
   auto normal = (span1.Cross(span2)).Unit();
   return (point-basepoint)*normal;
+}
+////////////////////
+////////////////////
+//
+// combines run ID with relative CoBo timestamp (10ns units)
+// NOTE: time zone is defined by runID convention (local time in most cases).
+//
+// input:   * run_id - run ID encoded as 14-digit decimal number (YYYYmmDDhhMMss)
+//          * elapsed_time_10ns - elepsed run time from the GET counter (10ns units)
+// output:  return Unix timestamp [s] with millisecond precision.
+//
+double Utils::getUnixTimestamp(time_t run_id, uint64_t elapsed_time_10ns) {
+
+  // decode run ID from YYYYMMDDhhmmss decimal format
+  auto year=(int)(run_id*1e-10);
+  auto month=(int)(fmod(run_id, year*1e10)*1e-8);
+  auto day=(int)(fmod(run_id, year*1e10+month*1e8)*1e-6);
+  auto hour=(int)(fmod(run_id, year*1e10+month*1e8+day*1e6)*1e-4);
+  auto minute=(int)(fmod(run_id, year*1e10+month*1e8+day*1e6+hour*1e4)*1e-2);
+  auto sec=(int)(fmod(run_id, year*1e10+month*1e8+day*1e6+hour*1e4+minute*1e2)); 
+
+  // create event Unix time point with millisecond precision
+  std::tm tm{};
+  tm.tm_year = year - 1900;
+  tm.tm_mon = month - 1;
+  tm.tm_mday = day;
+  tm.tm_hour = hour;
+  tm.tm_min = minute;
+  tm.tm_sec = sec;
+  tm.tm_isdst = -1;
+  return (double)(std::mktime(&tm) + elapsed_time_10ns*10.0e-9);
 }

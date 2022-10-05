@@ -40,6 +40,7 @@ void EventTPC::Clear(){
 ///////////////////////////////////////////////////////////////////////
 void EventTPC::SetGeoPtr(std::shared_ptr<GeometryTPC> aPtr) {
   myGeometryPtr = aPtr;
+  
   if(myGeometryPtr && !myGeometryPtr->IsOK()){
     throw std::logic_error("Geometry not initialised.");
   }

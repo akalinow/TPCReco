@@ -1,6 +1,5 @@
 set(MODULE_NAME "Reconstruction")
 MESSAGE( STATUS "Adding CMake fragment for module:         " ${MODULE_NAME} )
-set(TPCRECO_LIBRARIES ${TPCRECO_LIBRARIES} " " ${TPCRECO_PREFIX}${MODULE_NAME}  PARENT_SCOPE)
 set(TPCRECO_LIBRARIES ${TPCRECO_LIBRARIES} ${TPCRECO_PREFIX}${MODULE_NAME} PARENT_SCOPE)
 ###############################################################################
 ## file globbing ##############################################################
@@ -19,7 +18,6 @@ include_directories(${ROOTINCDIR})
 include_directories(${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include)
 include_directories(${PROJECT_SOURCE_DIR}/DataFormats/include)
 include_directories(${PROJECT_SOURCE_DIR}/Utilities/include)
-include_directories(${PROJECT_SOURCE_DIR}/Analysis/include)
 ###############################################################################
 ## target definitions #########################################################
 ###############################################################################

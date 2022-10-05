@@ -22,8 +22,7 @@ std::ostream& eventraw::operator<<(std::ostream& os, const eventraw::EventInfo& 
      <<" run: "<<einfo.GetRunId()
      <<" event:" << einfo.GetEventTimestamp()
      <<" type: "<<einfo.GetEventType().to_string()
-     <<" pedestal subtracted? "<<einfo.GetPedestalSubtracted()
-     <<" AsAd count: "<<einfo.GetAsadCounter();
+     <<" pedestal subtracted? "<<einfo.GetPedestalSubtracted();
   return os;
 }
 ////////////////////////////////////////////////

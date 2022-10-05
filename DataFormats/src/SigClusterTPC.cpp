@@ -90,7 +90,7 @@ const std::map<MultiKey3, std::vector<int> > & SigClusterTPC::GetHitListByTimeDi
 }
 
 bool SigClusterTPC::AddByStrip(int strip_dir, int strip_section, int strip_number, int time_cell) {  // valid range [0-2][0-2][1-1024][0-511]
- 
+  //Dummy method kept for backward compatibility
   return false;  
 }               
                

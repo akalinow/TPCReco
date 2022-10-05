@@ -1,4 +1,6 @@
+#include "StripTPC.h"
 #include "GeometryTPC.h"
+#include "colorText.h"
 
 
 /////////////////////////////////////////////////////////////////////////
@@ -37,6 +39,35 @@ std::ostream& operator<<(std::ostream& os, const StripTPC& aStrip) {
      <<" agetCh: "<<aStrip.agetCh<<" agetCh_raw: "<<aStrip.agetCh_raw
      <<" npads: "<<aStrip.npads;
   return os;
+}
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+TVector2 StripTPC::Start() {
+  ////// DEBUG
+  //  std::cout << __FUNCTION__ << ": dir=" << dir << ", sec=" << section << ", num=" << num << ", npads=" << npads << ": ";
+  //  (offset_vec + geo_ptr->GetReferencePoint() - 0.5*unit_vec*geo_ptr->GetPadPitch()).Print();
+  ////// DEBUG
+  if (geo_ptr){ // skip strict checking to allow proper initialization of statistics during Load()
+    return offset_vec + geo_ptr->GetReferencePoint() - 0.5*unit_vec*geo_ptr->GetPadPitch();
+  }
+  else{
+    std::cerr << __FUNCTION__ << KRED <<": ERROR: Invalid geometry pointer!" << RST << std::endl;
+    exit(-1);
+  }
+}
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+TVector2 StripTPC::End() {
+  ////// DEBUG
+  //  std::cout << __FUNCTION__ << ": dir=" << dir << ", sec=" << section << ", num=" << num << ", npads=" << npads << ": ";
+  //  (offset_vec + geo_ptr->GetReferencePoint() + (npads-0.5)*unit_vec*geo_ptr->GetPadPitch()).Print();
+  ////// DEBUG
+  if (geo_ptr){ // skip strict checking to allow proper initialization of statistics during Load()
+    return offset_vec + geo_ptr->GetReferencePoint() + (npads-0.5)*unit_vec*geo_ptr->GetPadPitch();
+  }
+  else {std::cerr << __FUNCTION__ << KRED <<": ERROR: Invalid geometry pointer!" << RST << std::endl;
+    exit(-1);
+  }
 }
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////

@@ -15,7 +15,7 @@
 
 #include "SigClusterTPC.h"
 #include "TrackBuilder.h"
-#include "DotFinder.h"
+//#include "DotFinder.h"
 #include "dEdxFitter.h"
 #include "RecoOutput.h"
 #include "IonRangeCalculator.h"
@@ -92,14 +92,6 @@ public:
   std::shared_ptr<TH1D> getRecHitTimeProjection();
 
   std::shared_ptr<TH2D> getChannels(int cobo_id, int asad_id);
-  
-  // Dot-like events usful for neutron flux monitoring
-  void initializeDotFinder(unsigned int hitThr, // unsigned int maxStripsPerDir, unsigned int maxTimecellsPerDir,
-			   unsigned int totalChargeThr, 
-			   double matchRadiusInMM, const std::string & filePath);
-
-  void runDotFinder();
-  void finalizeDotFinder();
 
   private:
 
@@ -132,7 +124,7 @@ public:
   TGraph *grEventRate{0};
   TrackBuilder myTkBuilder;
   RecoOutput myRecoOutput;
-  DotFinder myDotFinder;
+
 
   std::shared_ptr<RunIdParser> myRunParser; 
   std::shared_ptr<EventTPC> myEventPtr;

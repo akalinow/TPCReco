@@ -230,6 +230,7 @@ int makeTrackTree(const  std::string & geometryFileName,
     myTkBuilder.reconstruct();
 
     int eventId = myEventSource->getCurrentEvent()->GetEventInfo().GetEventId();
+
     const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
 
     myRecoOutput.setRecTrack(aTrack3D);
@@ -269,7 +270,7 @@ int makeTrackTree(const  std::string & geometryFileName,
     TVector3 total_p = p_alpha*(alphaEnd-vertex).Unit() + p_12C*(carbonEnd-vertex).Unit();
     
     track_data.frameId = iEntry;
-    track_data.eventId = eventId;
+    track_data.eventId = myEventInfo->GetEventId();
     track_data.eventType = eventType;
     track_data.length = length;    
     track_data.horizontalLostLength = horizontalTrackLostPart;

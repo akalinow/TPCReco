@@ -22,7 +22,7 @@ include_directories(${PROJECT_SOURCE_DIR}/Utilities/include)
 ###############################################################################
 ## target definitions #########################################################
 ###############################################################################
-add_library(${MODULE_NAME} SHARED ${sources} G__${MODULE_NAME}.cxx)
+add_library(${MODULE_NAME} SHARED ${sources})
 add_library(${TPCRECO_PREFIX}${MODULE_NAME} ALIAS ${MODULE_NAME})
 set_target_properties(${MODULE_NAME} PROPERTIES PREFIX ${TPCRECO_PREFIX})
 
@@ -34,7 +34,6 @@ target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
 # All install commands get the same destination. this allows us to use paths
 # relative to the executable.
 install(TARGETS ${MODULE_NAME} LIBRARY DESTINATION lib)
-install(FILES ${CMAKE_BINARY_DIR}/${MODULE_NAME}/lib${MODULE_NAME}_rdict.pcm DESTINATION lib)
-install(FILES ${CMAKE_BINARY_DIR}/${MODULE_NAME}/lib${MODULE_NAME}.rootmap DESTINATION lib)
+
 
 

@@ -309,7 +309,6 @@ void EventSourceMC::generateEvent(){
   myCurrentEventInfo.SetEventId(myCurrentEntry);
   myCurrentEventInfo.SetRunId(0);
   myCurrentEventInfo.SetEventTimestamp(0);
-  myCurrentEventInfo.SetAsadCounter(4);
   myCurrentEventInfo.SetPedestalSubtracted(true);
   
   myCurrentPEvent->Clear();

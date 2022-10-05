@@ -190,7 +190,6 @@ int convertGRAWFile(const  std::string & geometryFileName,
 #endif
 
       std::cout<< myEventPtr->GetEventInfo()<<std::endl;
-      std::cout<<"myEventSource->currentEventNumber(): "<<myEventSource->currentEventNumber()<<std::endl;
       aTree.Fill();
       if(eventIdMap.size()%100==0) aTree.FlushBaskets();
     }
@@ -199,8 +198,6 @@ int convertGRAWFile(const  std::string & geometryFileName,
     if( eventIdMap.size()==10) break;
 #endif
 
-    //if( eventIdMap.size()==100) break;//TEST
-    
     currentEventId=myEventSource->currentEventNumber();
     myEventSource->getNextEvent();
   }
@@ -225,7 +222,7 @@ int convertGRAWFile(const  std::string & geometryFileName,
   int delta_timecells = 25;
   int delta_strips = 5;
   myEventSourceRoot->getCurrentEvent()->MakeOneCluster(chargeThreshold, delta_strips, delta_timecells);
-#endif
+  #endif
 
   return 0;
 }

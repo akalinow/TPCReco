@@ -8,12 +8,8 @@
 #include "TH2D.h"
 #include "TProfile.h"
 #include "TProfile2D.h"
-//#include "TObjArray.h"
-//#include "TF1.h"
 //#include "TTree.h"
 #include "TFile.h"
-//#include "TFitResult.h"
-//#include "Math/Functor.h"
 
 #include "GeometryTPC.h"
 #include "EventTPC.h"
@@ -40,7 +36,7 @@ DotFinder::DotFinder() {
   myEventCounter_Dot=0;
   previousEventTime_All = -1;
   previousEventTime_Dot = -1;
-  setCuts(DOTFINDER_DEFAULT_HIT_THR, /*DOTFINDER_DEFAULT_NSTRIPS, DOTFINDER_DEFAULT_NTIMECELLS,*/ DOTFINDER_DEFAULT_CHARGE_THR, DOTFINDER_DEFAULT_RADIUS);
+  setCuts(DOTFINDER_DEFAULT_HIT_THR, DOTFINDER_DEFAULT_CHARGE_THR, DOTFINDER_DEFAULT_RADIUS);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -62,31 +58,17 @@ void DotFinder::setEvent(EventTPC* aEvent){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void DotFinder::setCuts(unsigned int aHitThr,
-			//			unsigned int aMaxStripsPerDir,
-			//			unsigned int aMaxTimeCellsPerDir,
 			unsigned int aTotalChargeThr,
-			double aMatchRadiusInMM){
+			float aMatchRadiusInMM){
   if(  myHitThr == aHitThr && 
-       //       myMaxStripsPerDir == aMaxStripsPerDir &&
-       //       myMaxTimeCellsPerDir == aMaxTimeCellsPerDir &&
        myTotalChargeThr == aTotalChargeThr &&
        myMatchRadiusInMM == aMatchRadiusInMM ) return; // no change
 
   myHitThr = aHitThr;
-  //  myMaxStripsPerDir = aMaxStripsPerDir;
-  //  myMaxTimeCellsPerDir = aMaxTimeCellsPerDir;
   myTotalChargeThr = aTotalChargeThr;
   myMatchRadiusInMM = aMatchRadiusInMM;
 
   resetHistograms();
-  /*  
-  if(!myHistogramsInitialized) {
-    initializeHistograms();
-  } else {
-    // change of cuts invalidate existing histograms
-    resetHistograms();
-  }
-  */
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -228,9 +210,7 @@ bool DotFinder::checkCuts(){
   const int maxStrips    = std::max( 1, (int)(myMatchRadiusInMM/myEvent->GetGeoPtr()->GetStripPitch()+0.5) );      // maximum # of strips
   const int maxTimeCells = std::max( 1, (int)(myMatchRadiusInMM/(10.0*myEvent->GetGeoPtr()->GetDriftVelocity()     // [1mm / (10mm/cm * 1cm/us / 1MHz ]=[dimensionless]
 								 /myEvent->GetGeoPtr()->GetSamplingRate())+0.5) ); // maximum # of time cells
-			       
-  
-  
+			         
   int minTime=0, maxTime=0, minStrip=0, maxStrip=0; 
   std::tie(minTime, maxTime, minStrip, maxStrip) = myEvent->GetSignalRange(-1, filter_type::threshold);
 
@@ -259,6 +239,7 @@ bool DotFinder::checkCuts(){
      myEvent->GetMultiplicity(false, projection_type::DIR_V, -1, -1,  filter_type::threshold) > maxStrips ||
      myEvent->GetMultiplicity(false, projection_type::DIR_W, -1, -1,  filter_type::threshold) > maxStrips ||
      maxTime - minTime > maxTimeCells ) {
+
     //////// DEBUG
     int minTimeU=0, maxTimeU=0, minStripU=0, maxStripU=0;
     int minTimeV=0, maxTimeV=0, minStripV=0, maxStripV=0;
@@ -512,4 +493,25 @@ void DotFinder::fillOutputStream(){
 
   std::cout << "DotFinder: Total analyzed events   = " << myEventCounter_All << std::endl
 	    << "           Total point-like events = " << myEventCounter_Dot << std::endl;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void DotFinder::initializeDotFinder(unsigned int hitThr,
+				    unsigned int totalChargeThr,
+				    float matchRadiusInMM,
+				    const std::string & filePath) {
+  openOutputStream(filePath);
+  setCuts(hitThr, totalChargeThr, matchRadiusInMM);
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void DotFinder::runDotFinder(std::shared_ptr<EventTPC> aEvent) {
+  setEvent(aEvent);
+  reconstruct();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void DotFinder::finalizeDotFinder() {
+  fillOutputStream();
+  closeOutputStream();
 }

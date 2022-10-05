@@ -44,6 +44,8 @@ class StripTPC {
   inline TVector2 Offset() { return offset_vec; } // ([mm],[mm])
   double Length();
   inline int Npads() {return npads;}
+  TVector2 Start();
+  TVector2 End();
 
   friend std::ostream& operator<<(std::ostream& os, const StripTPC& aStrip);
 };

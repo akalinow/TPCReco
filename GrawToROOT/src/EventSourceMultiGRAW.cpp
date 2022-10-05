@@ -435,7 +435,6 @@ void EventSourceMultiGRAW::collectEventFragments(unsigned int eventId){
     myCurrentEventInfo.SetEventTimestamp(myDataFrame.fHeader.fEventTime);
     RunIdParser runParser(myFilePathList.front());
     myCurrentEventInfo.SetRunId(runParser.runId());
-    myCurrentEventInfo.SetAsadCounter(asadCounter.size());
 
     if(eventId!=eventId_fromFrame){
       std::cerr<<KRED<<__FUNCTION__

@@ -62,6 +62,7 @@ void HistoManager::setConfig(const boost::property_tree::ptree &aConfig){
   if(myConfig.find("recoClusterThreshold")==myConfig.not_found()) myConfig.put("recoClusterThreshold", 35.0);
   if(myConfig.find("recoClusterDeltaStrips")==myConfig.not_found()) myConfig.put("recoClusterDeltaStrips", 2);
   if(myConfig.find("recoClusterDeltaTimeCells")==myConfig.not_found()) myConfig.put("recoClusterDeltaTimeCells", 5);
+
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -151,7 +152,7 @@ void HistoManager::drawRecoHistos(TCanvas *aCanvas){
   int padNumberOffset = 0;
   if(std::string(aCanvas->GetName())=="Histograms") padNumberOffset = 0;
   
-  reconstruct();
+  //reco disabled for clicking campaign reconstruct();
   filter_type filterType = filter_type::threshold;
   if(!myConfig.get<bool>("recoClusterEnable")) filterType = filter_type::none;
 
@@ -785,18 +786,17 @@ void HistoManager::resetEventRateGraph(){
    grEventRate->Set(0);
   }
 }
+/*
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 // Dot-like events useful for neutron flux monitoring
 /////////////////////////////////////////////////////////
 void HistoManager::initializeDotFinder(unsigned int hitThr,
-				       //				       unsigned int maxStripsPerDir,
-				       //				       unsigned int maxTimecellsPerDir,
 				       unsigned int totalChargeThr,
 				       double matchRadiusInMM,
 				       const std::string & filePath) {
   myDotFinder.openOutputStream(filePath);
-  myDotFinder.setCuts(hitThr, /* maxStripsPerDir, maxTimecellsPerDir,*/ totalChargeThr, matchRadiusInMM);
+  myDotFinder.setCuts(hitThr, totalChargeThr, matchRadiusInMM);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -816,4 +816,4 @@ void HistoManager::finalizeDotFinder() {
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-
+*/
