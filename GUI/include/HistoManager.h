@@ -125,7 +125,6 @@ public:
   TrackBuilder myTkBuilder;
   RecoOutput myRecoOutput;
 
-
   std::shared_ptr<RunIdParser> myRunParser; 
   std::shared_ptr<EventTPC> myEventPtr;
   eventraw::EventInfo myEventInfo;

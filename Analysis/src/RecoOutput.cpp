@@ -80,6 +80,8 @@ void RecoOutput::update(){
      return;
   }
   myOutputTreePtr->Fill();
+  myOutputFilePtr->cd();
+  myOutputTreePtr->Write("", TObject::kOverwrite);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

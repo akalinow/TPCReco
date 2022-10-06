@@ -637,7 +637,10 @@ void MainFrame::AddLogos(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void MainFrame::CloseWindow(){ gApplication->Terminate(0); }
+void MainFrame::CloseWindow(){
+  myHistoManager.~HistoManager();
+  gApplication->Terminate(0);
+}
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MainFrame::ClearCanvases(){
@@ -667,8 +670,8 @@ void MainFrame::Update(){
     myHistoManager.drawRawHistos(fMainCanvas, isRateDisplayOn);
   }
   else {
-    myHistoManager.drawDevelHistos(fMainCanvas);
-    //myHistoManager.drawRecoHistos(fMainCanvas);
+    //myHistoManager.drawDevelHistos(fMainCanvas);
+    myHistoManager.drawRecoHistos(fMainCanvas);
   }
 }
 
