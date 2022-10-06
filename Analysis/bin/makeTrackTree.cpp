@@ -229,8 +229,6 @@ int makeTrackTree(const  std::string & geometryFileName,
     myTkBuilder.setEvent(myEventSource->getCurrentEvent());
     myTkBuilder.reconstruct();
 
-    int eventId = myEventSource->getCurrentEvent()->GetEventInfo().GetEventId();
-
     const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
 
     myRecoOutput.setRecTrack(aTrack3D);

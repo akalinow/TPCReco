@@ -3,6 +3,8 @@
 #include <iostream>
 #include <algorithm>
 
+#include <boost/property_tree/ptree.hpp>
+
 #include "TFile.h"
 #include "TTree.h"
 
@@ -79,15 +81,15 @@ void RawSignal_tree_analysis::fillTree(std::shared_ptr<EventTPC> aEventTPC, bool
 
   // FILL EVENT INFO
 
-  event_rawsignal_->runId=(aEventTPC ? aEventTPC->GetRunId() : -1); // run number
-  event_rawsignal_->eventId=(aEventTPC ? aEventTPC->GetEventId() : -1); // event number
-  event_rawsignal_->unixTimeSec=(aEventTPC ? Utils::getUnixTimestamp( aEventTPC->GetRunId(), aEventTPC->GetEventTime() ) : -1); // absolute Unix time [s]
+  event_rawsignal_->runId=(aEventTPC ? aEventTPC->GetEventInfo().GetRunId() : -1); // run number
+  event_rawsignal_->eventId=(aEventTPC ? aEventTPC->GetEventInfo().GetEventId() : -1); // event number
+  event_rawsignal_->unixTimeSec=(aEventTPC ? Utils::getUnixTimestamp( aEventTPC->GetEventInfo().GetRunId(), aEventTPC->GetEventInfo().GetEventTimestamp() ) : -1); // absolute Unix time [s]
   static double last_timestamp = 0;
   if(isFirst) {
     last_timestamp=event_rawsignal_->unixTimeSec;
     isFirst=false;
   }
-  event_rawsignal_->runTimeSec=(aEventTPC ? (double)(aEventTPC->GetEventTime()*10.0e-9) : -1); // [s] converted from GET electronics timestamp (10ns units) to seconds
+  event_rawsignal_->runTimeSec=(aEventTPC ? (double)(aEventTPC->GetEventInfo().GetEventTimestamp()*10.0e-9) : -1); // [s] converted from GET electronics timestamp (10ns units) to seconds
   event_rawsignal_->deltaTimeSec=(double)(aEventTPC ? event_rawsignal_->unixTimeSec - last_timestamp : -1); // [s] time difference for rate measurements
   last_timestamp=event_rawsignal_->unixTimeSec;
 
@@ -98,30 +100,29 @@ void RawSignal_tree_analysis::fillTree(std::shared_ptr<EventTPC> aEventTPC, bool
   event_rawsignal_->clusterDeltaStrips = myClusterConfig.clusterDeltaStrips; // cluster size in +/- strip units 
   event_rawsignal_->clusterDeltaTimeCells = myClusterConfig.clusterDeltaTimeCells; // cluster size in +/- time cell units
 
-  // MAKE A CLUSTER AND COMPUTE SOME STATISTICS
 
+  filter_type filterType = filter_type::none;
   if(myClusterConfig.clusterEnable) { // CLUSTER
-    aEventTPC->MakeOneCluster(myClusterConfig.clusterThreshold, myClusterConfig.clusterDeltaStrips, myClusterConfig.clusterDeltaTimeCells);
-    event_rawsignal_->nHits = aEventTPC->GetOneCluster().GetNhits(); // cluster size in time-strip hits
-    event_rawsignal_->totalCharge = aEventTPC->GetOneCluster().GetTotalCharge(); // total charge integral from all strips
-    event_rawsignal_->maxCharge = aEventTPC->GetOneCluster().GetMaxCharge(); // maximal pulse-height from all strips
-    for(int strip_dir=0; strip_dir<3; strip_dir++) {
-      event_rawsignal_->totalChargePerDir[strip_dir] = aEventTPC->GetOneCluster().GetTotalCharge(strip_dir); // charge integral per strip direction
-      event_rawsignal_->maxChargePerDir[strip_dir] = aEventTPC->GetOneCluster().GetMaxCharge(strip_dir); // maximal pulse-height per strip direction
-      bool err=false;
-      event_rawsignal_->maxChargePositionPerDir[strip_dir] = myGeometryPtr->Strip2posUVW(strip_dir, aEventTPC->GetOneCluster().GetMaxChargeStrip(strip_dir), err); // [mm] postion of the maximal pulse-height per strip direction
-    }
-  } else { // WHOLE EVENT
-    event_rawsignal_->nHits = aEventTPC->GetNhits(); // event size in time-strip hits
-    event_rawsignal_->totalCharge = aEventTPC->GetTotalCharge(); // total charge integral from all strips
-    event_rawsignal_->maxCharge = aEventTPC->GetMaxCharge(); // maximal pulse-height from all strips
-    for(int strip_dir=0; strip_dir<3; strip_dir++) {
-      event_rawsignal_->totalChargePerDir[strip_dir] = aEventTPC->GetTotalCharge(strip_dir); // charge integral per strip direction
-      event_rawsignal_->maxChargePerDir[strip_dir] = aEventTPC->GetMaxCharge(strip_dir); // maximal pulse-height per strip direction
-      bool err=false;
-      event_rawsignal_->maxChargePositionPerDir[strip_dir] = myGeometryPtr->Strip2posUVW(strip_dir, aEventTPC->GetMaxChargeStrip(strip_dir), err); // [mm] postion of the maximal pulse-height per strip direction
-    }
+    filterType = filter_type::threshold;
+    boost::property_tree::ptree config;
+    config.put("recoClusterThreshold", myClusterConfig.clusterThreshold);
+    config.put("recoClusterDeltaStrips",myClusterConfig.clusterDeltaStrips);
+    config.put("recoClusterDeltaTimeCells",myClusterConfig.clusterDeltaTimeCells);  
+    aEventTPC->setHitFilterConfig(filterType, config);    
   }
+  
+  // MAKE A CLUSTER AND COMPUTE SOME STATISTICS
+  event_rawsignal_->nHits = aEventTPC->GetMultiplicity(true, -1, -1, -1, filterType);
+  event_rawsignal_->totalCharge = aEventTPC->GetTotalCharge(-1, -1, -1, -1, filterType);
+  event_rawsignal_->maxCharge = aEventTPC->GetMaxCharge(-1,-1,-1,filterType); // maximal pulse-height from all strips
+    for(int strip_dir=0; strip_dir<3; strip_dir++) {
+      event_rawsignal_->totalChargePerDir[strip_dir] = aEventTPC->GetTotalCharge(DIR_U, -1, -1, -1, filterType); // charge integral per strip direction
+      event_rawsignal_->maxChargePerDir[strip_dir] = aEventTPC->GetMaxCharge(strip_dir,-1,-1,filterType); // maximal pulse-height per strip direction
+      bool err=false;
+      int maxChargeTime = 0, maxChargeStrip = 0;
+      std::tie(maxChargeTime, maxChargeStrip) = aEventTPC->GetMaxChargePos(strip_dir, filterType);
+      event_rawsignal_->maxChargePositionPerDir[strip_dir] = myGeometryPtr->Strip2posUVW(strip_dir, maxChargeStrip, err); // [mm] postion of the maximal pulse-height per strip direction
+    }
 
   // update tree data
   OutputTreePtr->Fill();
@@ -137,3 +138,5 @@ void RawSignal_tree_analysis::setGeometry(std::shared_ptr<GeometryTPC> aGeometry
     exit(-1);
   }
 }
+///////////////////////////////
+///////////////////////////////
