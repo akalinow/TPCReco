@@ -40,7 +40,7 @@ public:
   template <class Event> bool operator()(const Event &event) {
     return indices.find(event.GetEventId()) != indices.end();
   }
-  auto insert(size_t index) { return indices.insert(index); }
+  void insert(size_t index) { indices.insert(index); }
 
 private:
   std::set<size_t> indices;

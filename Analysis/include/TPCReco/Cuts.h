@@ -38,20 +38,20 @@ public:
   template <class Geometry>
   DistanceToBorder(Geometry *geometry, double margin_mm) {
     auto *hull = new TGraph(geometry->GetActiveAreaConvexHull(margin_mm));
-    bin.reset(new TH2PolyBin(hull, 1));
+    bin = std::make_shared<TH2PolyBin>(hull, 1);
   }
   template <class Track> bool operator()(Track *track) {
     const auto &segments = track->getSegments();
     return std::all_of(std::cbegin(segments), std::cend(segments),
                        [this](const auto &segment) {
-                         return isInside(segment.getStart()) &&
-                                isInside(segment.getStop());
+                         return this->isInside(segment.getStart()) &&
+                                this->isInside(segment.getEnd());
                        });
   }
 
 private:
   bool isInside(TVector3 v) const { return bin->IsInside(v.X(), v.Y()); }
-  std::unique_ptr<TH2PolyBin> bin;
+  std::shared_ptr<TH2PolyBin> bin;
 };
 using Cut3 = DistanceToBorder;
 
@@ -66,7 +66,7 @@ struct RectangularCut {
     return std::all_of(std::cbegin(segments), std::cend(segments),
                        [this](const auto &segment) {
                          auto start = segment.getStart();
-                         auto stop = segment.getStop();
+                         auto stop = segment.getEnd();
                          return start.X() < maxX && start.X() > minX &&
                                 start.Y() < maxY && start.Y() > minY &&
                                 stop.X() < maxX && stop.X() > minX &&
@@ -108,9 +108,9 @@ public:
     auto zmax = zmin;
     for (size_t i = 0; i < segments.size(); ++i) {
       zmin = std::min(zmin, (std::min(segments[i].getStart().Z(),
-                                      segments[i].getStop().Z())));
+                                      segments[i].getEnd().Z())));
       zmax = std::max(zmax, (std::max(segments[i].getStart().Z(),
-                                      segments[i].getStop().Z())));
+                                      segments[i].getEnd().Z())));
     }
     return isInside(zmin, zmax);
   }
@@ -151,7 +151,7 @@ public:
     auto vertexZ = segments.front().getStart().Z();
     return std::all_of(std::cbegin(segments), std::cend(segments),
                        [this, vertexZ](const auto &segment) {
-                         return std::abs(segment.getStop().Z() - vertexZ) <=
+                         return std::abs(segment.getEnd().Z() - vertexZ) <=
                                 0.5 * (driftCageLength - beamDiameter);
                        });
   }
@@ -186,9 +186,13 @@ struct ReconstructionQuality2Prong {
     if (track->getSegments().size() != 2) {
       return true;
     }
-    return track->getSegments().front().getPID() == firstPID &&
-           track->getSegments().back().getPID() == secondPID &&
-           track->getChi2() <= chi2 &&
+    auto segments = track->getSegments();
+    std::sort(segments.begin(), segments.end(),
+              [](const auto &a, const auto &b) {
+                return a.getLength() > b.getLength();
+              });
+    return segments.front().getPID() == firstPID &&
+           segments.back().getPID() == secondPID && track->getChi2() <= chi2 &&
            track->getHypothesisFitChi2() <= hypothesisChi2 &&
            track->getLength() >= length &&
            track->getIntegratedCharge(track->getLength()) >= charge;

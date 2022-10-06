@@ -1,6 +1,6 @@
 #include "TPCReco/RequirementsCollection.h"
 #include "gtest/gtest.h"
-
+#include <functional>
 class GreaterThan {
 public:
   GreaterThan(int value) : value(value) {}
@@ -11,7 +11,7 @@ private:
 };
 
 TEST(RequirementsCollection, InitializerList) {
-  RequirementsCollection<int> cuts = {GreaterThan{3},
+  RequirementsCollection<std::function<bool(int)>> cuts = {GreaterThan{3},
                                       [](auto i) { return i < 7; }};
   EXPECT_EQ(cuts.size(), 2);
   cuts.clear();
@@ -19,7 +19,7 @@ TEST(RequirementsCollection, InitializerList) {
 }
 
 TEST(RequirementsCollection, ElementInsertion) {
-  RequirementsCollection<int> cuts;
+  RequirementsCollection<std::function<bool(int)>> cuts;
   EXPECT_EQ(cuts.size(), 0);
   GreaterThan predicate(3);
   cuts.push_back(predicate);
@@ -29,7 +29,7 @@ TEST(RequirementsCollection, ElementInsertion) {
 }
 
 TEST(RequirementsCollection, Logic) {
-  RequirementsCollection<int> cuts;
+  RequirementsCollection<std::function<bool(int)>> cuts;
   GreaterThan predicate(3);
   cuts.push_back(predicate);
   cuts.push_back([](auto i) { return i < 7; });
@@ -39,7 +39,7 @@ TEST(RequirementsCollection, Logic) {
 }
 
 TEST(RequirementsCollection, LogicWithInitializerList) {
-  RequirementsCollection<int> cuts = {GreaterThan{3},
+  RequirementsCollection<std::function<bool(int)>> cuts = {GreaterThan{3},
                                       [](auto i) { return i < 7; }};
   EXPECT_FALSE(cuts(2));
   EXPECT_TRUE(cuts(4));

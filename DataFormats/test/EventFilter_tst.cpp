@@ -2,8 +2,8 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include <boost/property_tree/json_parser.hpp>
+#include <functional>
 #include <sstream>
-
 namespace pt = boost::property_tree;
 using ::testing::Return;
 
@@ -15,7 +15,7 @@ struct EventMock {
 
 class EventFilterTest : public ::testing::Test {
 public:
-  EventFilter<EventMock> filter;
+  EventFilter<std::function<bool(const EventMock &)>> filter;
   EventMock event;
   pt::ptree ptree;
 };

@@ -5,9 +5,9 @@
 #include "TPCReco/Filters.h"
 #include <boost/property_tree/ptree.hpp>
 
-template <class Event> class EventFilter {
+template <class T> class EventFilter {
 public:
-  bool pass(const Event &event) const {
+  template <class Event> bool pass(const Event &event) const {
     return enabled ? filters(event) : true;
   }
   void setConditions(const boost::property_tree::ptree &conditions);
@@ -18,11 +18,12 @@ public:
 
 private:
   bool enabled = false;
-  RequirementsCollection<Event> filters;
+  RequirementsCollection<T> filters;
 };
 
 template <class Event>
-void EventFilter<Event>::setConditions(const boost::property_tree::ptree &conditions) {
+void EventFilter<Event>::setConditions(
+    const boost::property_tree::ptree &conditions) {
   auto nodeIt = conditions.find("eventFilter");
   if (nodeIt == conditions.not_found()) {
     return;
@@ -40,7 +41,7 @@ void EventFilter<Event>::setConditions(const boost::property_tree::ptree &condit
 
   value = node.get_optional<double>("maxChargeLowerBound");
   if (value) {
-    filters.push_back(tpcreco::filters::MaxChargeLowerBound {*value});
+    filters.push_back(tpcreco::filters::MaxChargeLowerBound{*value});
   }
 
   value = node.get_optional<double>("totalChargeLowerBound");
