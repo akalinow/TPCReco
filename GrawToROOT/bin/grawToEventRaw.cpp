@@ -7,7 +7,6 @@
 #include "EventRaw.h"
 #include "PedestalCalculator.h"
 #include "EventSourceGRAW.h"
-#include "SigClusterTPC.h"
 
 #include "TFile.h"
 #include "TTree.h"

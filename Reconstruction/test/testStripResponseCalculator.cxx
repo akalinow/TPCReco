@@ -216,8 +216,8 @@ void testResponse1(double sigma=0.5) {
   std::vector<std::shared_ptr<TH2D> > histosInMM(3);
   const auto minval=1;
   for(auto strip_dir=0; strip_dir<3; strip_dir++) {
-    histosInMM[strip_dir]=event->GetStripVsTimeInMM(strip_dir);
-    histosRaw[strip_dir]=event->GetStripVsTime(strip_dir);
+    histosInMM[strip_dir] = event->get1DProjection(strip_dir, filter_type::none, scale_type::mm);
+    histosRaw[strip_dir] =  event->get1DProjection(strip_dir, filter_type::none, scale_type::raw);    
     addConstantToTH2D(histosRaw[strip_dir].get(), minval);
     addConstantToTH2D(histosInMM[strip_dir].get(), minval);
   }
@@ -292,8 +292,8 @@ void testResponse2() {
   std::vector<std::shared_ptr<TH2D> > histosInMM(3);
   const auto minval=1;
   for(auto strip_dir=0; strip_dir<3; strip_dir++) {
-    histosInMM[strip_dir]=event->GetStripVsTimeInMM(strip_dir);
-    histosRaw[strip_dir]=event->GetStripVsTime(strip_dir);
+    histosInMM[strip_dir] = event->get1DProjection(strip_dir, filter_type::none, scale_type::mm)
+    histosRaw[strip_dir] =  event->get1DProjection(strip_dir, filter_type::none, scale_type::raw) 
     addConstantToTH2D(histosRaw[strip_dir].get(), minval);
     addConstantToTH2D(histosInMM[strip_dir].get(), minval);
   }
@@ -411,8 +411,8 @@ void testResponse3() {
   std::vector<std::shared_ptr<TH2D> > histosInMM(3);
   const auto minval=1;
   for(auto strip_dir=0; strip_dir<3; strip_dir++) {
-    histosInMM[strip_dir]=event->GetStripVsTimeInMM(strip_dir);
-    histosRaw[strip_dir]=event->GetStripVsTime(strip_dir);
+    histosInMM[strip_dir] = event->get1DProjection(strip_dir, filter_type::none, scale_type::mm);
+    histosRaw[strip_dir] =  event->get1DProjection(strip_dir, filter_type::none, scale_type::raw);    
     addConstantToTH2D(histosRaw[strip_dir].get(), minval);
     addConstantToTH2D(histosInMM[strip_dir].get(), minval);
   }

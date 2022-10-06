@@ -14,7 +14,6 @@
 #include "PedestalCalculator.h"
 #include "EventSourceGRAW.h"
 #include "EventSourceMultiGRAW.h"
-#include "SigClusterTPC.h"
 
 #include "TFile.h"
 #include "TTree.h"
