@@ -1,7 +1,6 @@
 #ifndef TPCRECO_UTILITIES_REQUIREMENTS_COLLECTION_H_
 #define TPCRECO_UTILITIES_REQUIREMENTS_COLLECTION_H_
 #include <algorithm>
-#include <functional>
 #include <vector>
 template <class T> class RequirementsCollection {
 public:
