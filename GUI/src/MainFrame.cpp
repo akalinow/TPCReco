@@ -845,8 +845,8 @@ void MainFrame::HandleMenu(Int_t id){
   case M_NEXT_EVENT:
     {
       unsigned int eventType = UpdateEventLog();
-      myEventSource->getNextEventLoop();
       if(isRecoModeOn) myHistoManager.writeRecoData(eventType);
+      myEventSource->getNextEventLoop();
       Update();
     }
     break;
