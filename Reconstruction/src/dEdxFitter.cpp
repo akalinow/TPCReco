@@ -3,7 +3,7 @@
 
 #include "TFitResultPtr.h"
 #include "Math/MinimizerOptions.h"
-
+#include <TMath.h>
 #include "TRandom3.h"
 
 //TEST ///
