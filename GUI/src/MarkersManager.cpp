@@ -21,7 +21,6 @@
 /////////////////////////////////////////////////////////
 MarkersManager::MarkersManager(const TGWindow * p, MainFrame * aFrame)
  : TGCompositeFrame(p, 10, 10, kVerticalFrame), fParentFrame(aFrame){
-   fHelperLinesContainer.fill(nullptr);
    fMarkersContainer.fill(nullptr);
    SetCleanup(kDeepCleanup);
 
@@ -31,7 +30,15 @@ MarkersManager::MarkersManager(const TGWindow * p, MainFrame * aFrame)
    TGTableLayout* tlo = new TGTableLayout(fHeaderFrame, nRows, nColumns, 1);
    fHeaderFrame->SetLayoutManager(tlo);
    AddFrame(fHeaderFrame, new TGLayoutHints(kLHintsExpandX, 2, 2, 1, 1));
-   addButtons();   
+   addButtons();  
+   //assign helper lines to pads 
+   for(size_t i =0 ; i<fHelperLinesContainer.size(); ++i){
+    std::string padName = "Histograms_"+std::to_string(i+1);
+    auto *pad = static_cast<TPad*>(gROOT->FindObject(padName.c_str()));
+    fHelperLinesContainer[i].setPad((static_cast<TPad*>(pad)));
+   }
+    auto *pad = static_cast<TPad*>(gROOT->FindObject("Histograms_4"));
+    fLastPanelHelperLine.setPad((static_cast<TPad*>(pad)));
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -117,6 +124,7 @@ void MarkersManager::updateSegments(int strip_dir){
   if(!aPad) return;
   aPad->cd();
   for(auto &item:aSegmentsContainer){
+    item.SetBit(kCannotPick);
     item.Draw();
     TMarker aMarker(item.GetX1(), item.GetY1(), 21);
     aMarker.SetMarkerColor(item.GetLineColor());
@@ -127,9 +135,11 @@ void MarkersManager::updateSegments(int strip_dir){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MarkersManager::reset(){
-
+  pLines.clear();
+  fLastPanelHelperLine.getPrototype().SetLineColor(1);
   resetMarkers(true);
   resetSegments();
+
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -180,9 +190,9 @@ void MarkersManager::resetMarkers(bool force){
 /////////////////////////////////////////////////////////
 void MarkersManager::clearHelperLines(){
   for (auto &item: fHelperLinesContainer){
-    delete item;
-    item = nullptr;
+    item.clear();
   } 
+  fLastPanelHelperLine.clear();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -244,6 +254,7 @@ void MarkersManager::processClickCoordinates(int strip_dir, float x, float y){
   TMarker *aMarker = new TMarker(x, y, iMarkerStyle);
   aMarker->SetMarkerColor(iMarkerColor);
   aMarker->SetMarkerSize(iMarkerSize);
+  aMarker->SetBit(kCannotPick);
   aMarker->Draw();
   fMarkersContainer.at(strip_dir) = aMarker;
   if(!firstMarker){
@@ -256,6 +267,7 @@ void MarkersManager::processClickCoordinates(int strip_dir, float x, float y){
     aMarker = new TMarker(x, y, iMarkerStyle);
     aMarker->SetMarkerColor(iMarkerColor);
     aMarker->SetMarkerSize(iMarkerSize);
+    aMarker->SetBit(kCannotPick);
     fMarkersContainer.at(missingMarkerDir) = aMarker;    
     std::string padName = "Histograms_"+std::to_string(missingMarkerDir+1);
     TPad *aPad = (TPad*)gROOT->FindObject(padName.c_str());
@@ -266,28 +278,14 @@ void MarkersManager::processClickCoordinates(int strip_dir, float x, float y){
     updateSegments(DIR_W);
     resetMarkers();
   }
+  fLastPanelHelperLine.clear();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MarkersManager::drawFixedTimeLines(int strip_dir, double time){
-
-  clearHelperLines();
-  int aColor = 1;
-  TLine aLine(time, 0, time, 0);
-  aLine.SetLineColor(aColor);
-  aLine.SetLineWidth(2);
-  
-  for(size_t i = 0 ; i< fHelperLinesContainer.size(); ++i){
-    std::string padName = "Histograms_"+std::to_string(i+1);
-    TPad *aPad = (TPad*)gROOT->FindObject(padName.c_str());
-    if(!aPad) continue;
-    aPad->cd();
-    TFrame *hFrame = (TFrame*)aPad->GetListOfPrimitives()->At(0);
-    if(!hFrame) continue;
-    double minY = hFrame->GetY1();
-    double maxY = hFrame->GetY2();
-    fHelperLinesContainer[i] = aLine.DrawLine(time, minY, time, maxY);
-  }  
+  for(auto & line : fHelperLinesContainer){
+    line.drawVertical(time);
+  }
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -361,15 +359,30 @@ void MarkersManager::HandleMarkerPosition(Int_t event, Int_t x, Int_t y, TObject
   TVirtualPad *aCurrentPad = gPad->GetSelectedPad();
   if(!aCurrentPad) return;
   std::string padName = std::string(aCurrentPad->GetName());
-  if(event == kButton1 && padName.find("Histograms_")!=std::string::npos){
+  if(event == kButton1 && padName != "Histograms_4" && padName.find("Histograms_")!=std::string::npos){
     aCurrentPad->cd();
     int strip_dir = stoi(padName.substr(11,1))-1;
     float localX = aCurrentPad->AbsPixeltoX(x);
     float localY = aCurrentPad->AbsPixeltoY(y);    
+    if(!firstMarker && !fMarkersContainer.at(strip_dir)){
+      pLines.emplace_back(fLastPanelHelperLine.getPad());
+      pLines.back().getPrototype().SetLineColor(pLines.size());
+      pLines.back().drawVertical(localX);
+      fLastPanelHelperLine.getPrototype().SetLineColor(1+pLines.size());
+    }
+    aCurrentPad->cd();
     processClickCoordinates(strip_dir, localX, localY);
     aCurrentPad->Update();
   }
-  return;
+  else if (event == kMouseMotion && padName.find("Histograms_")!=std::string::npos){
+    aCurrentPad->cd();
+    aCurrentPad->SetCursor(kCross) ;
+    if(!firstMarker){
+      float localX = aCurrentPad->AbsPixeltoX(x);
+      fLastPanelHelperLine.drawVertical(localX);
+      }
+    aCurrentPad->Update();
+  }
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

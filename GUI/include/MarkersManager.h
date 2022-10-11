@@ -13,7 +13,7 @@
 
 #include "GUI_commons.h"
 #include "GeometryTPC.h" // added by MC - 19 Aug 2021
-
+#include "HelperLine.h"
 class MainFrame;
 class TGCanvas;
 
@@ -66,7 +66,9 @@ private:
   TMarker *firstMarker = nullptr;
   TMarker *timeMarker = nullptr;
   std::array<TMarker*, 3> fMarkersContainer;
-  std::array<TLine*, 4> fHelperLinesContainer;
+  std::array<HelperLine, 3> fHelperLinesContainer;
+  HelperLine fLastPanelHelperLine;
+  std::vector<HelperLine> pLines;
   std::array<std::vector<TLine>, 3> fSegmentsContainer;
   std::vector<double> fSegmentsXY;
   std::vector<TObject*> fObjClones;
