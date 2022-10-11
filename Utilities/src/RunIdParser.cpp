@@ -8,12 +8,11 @@ const std::array<std::pair<std::regex, RunIdParser::Positions>, 2>
     RunIdParser::regexes = {
         std::make_pair(
             std::regex("^.*CoBo(\\d)_AsAd(\\d)_(\\d{4})-(\\d{2})-(\\d{2})T(\\d{"
-                       "2})[-_ :](\\d{2})[-_ :](\\d{2})\\.(\\d{3})_(\\d+).*$"),
+                       "2})\\D(\\d{2})\\D(\\d{2})\\.(\\d{3})_(\\d+).*$"),
             Positions{3, 4, 5, 6, 7, 8, 9, 10, 1, 2}),
-        std::make_pair(
-            std::regex("^.*(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2})[-_ :]("
-                       "\\d{2})[-_ :](\\d{2})\\.(\\d{3})_(\\d+).*$"),
-            Positions{1, 2, 3, 4, 5, 6, 7, 8, 0, 0})
+        std::make_pair(std::regex("^.*(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2})\\D("
+                                  "\\d{2})\\D(\\d{2})\\.(\\d{3})_(\\d+).*$"),
+                       Positions{1, 2, 3, 4, 5, 6, 7, 8, 0, 0})
 
 };
 
@@ -83,7 +82,8 @@ RunIdParser::timePointFromRunId(const std::string &runid) {
     std::stringstream stream(runid);
     stream.exceptions(std::stringstream::failbit | std::stringstream::badbit);
     stream >> std::get_time(&tm, "%Y%m%d%H%M%S");
-    return time_point::clock::from_time_t(std::mktime(&tm))+std::chrono::milliseconds(0);
+    return time_point::clock::from_time_t(std::mktime(&tm)) +
+           std::chrono::milliseconds(0);
   } catch (const std::exception &e) {
     throw ParseError(e.what());
   }
