@@ -28,7 +28,7 @@ Running:
 - start a container:
 
     ```
-    singularity run --bind "$PWD" elitpc_tpcreco_latest.sif
+    singularity shell --bind "$PWD" elitpc_tpcreco_latest.sif
     ```
 
 - run [`tpcGUI`](#running-tpcgui).
