@@ -35,12 +35,12 @@ class StripResponseCalculator{
   bool setUVWprojectionsInMM(std::vector<TH2D*> aUVWprojectionsInMM); // pair={STRIP_DIR, TH2D pointer}
   bool setUVWprojectionsRaw(std::vector<std::shared_ptr<TH2D> > aUVWprojectionsRaw); // pair={STRIP_DIR, TH2D pointer}
   bool setUVWprojectionsInMM(std::vector<std::shared_ptr<TH2D> > aUVWprojectionsInMM); // pair={STRIP_DIR, TH2D pointer}
-  bool setEventTPC(EventTPC *aEventTPC);
-  bool setEventTPC(std::shared_ptr<EventTPC> aEventTPC);
+  //  bool setEventTPC(EventTPC *aEventTPC);
+  //  bool setEventTPC(std::shared_ptr<EventTPC> aEventTPC);
 
   // fill all declared objects (TH2 histograms and/or EventTPC) with smeared point-like charge
-  void addCharge(TVector3 position3d, double charge, std::shared_ptr<PEventTPC> aEventPtr);
-  void addCharge(double x, double y, double z, double charge, std::shared_ptr<PEventTPC> aEventPtr);
+  void addCharge(TVector3 position3d, double charge, std::shared_ptr<PEventTPC> aEventPtr=std::shared_ptr<PEventTPC>(nullptr));
+  void addCharge(double x, double y, double z, double charge, std::shared_ptr<PEventTPC> aEventPtr=std::shared_ptr<PEventTPC>(nullptr));
 
   void setDebug(bool enable) { debug_flag=enable; }
   int getDeltaStrips() const { return Nstrips; }

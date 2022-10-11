@@ -217,7 +217,7 @@ void StripResponseCalculator::addCharge(TVector3 position3d, double charge, std:
 
 void StripResponseCalculator::addCharge(double x, double y, double z, double charge, std::shared_ptr<PEventTPC> aEventPtr) {
 
-  if(charge==0.0 || (!has_UVWprojectionsRaw && !has_UVWprojectionsInMM)) return; // nothing to do
+  if(charge==0.0 || (!has_UVWprojectionsRaw && !has_UVWprojectionsInMM && !aEventPtr)) return; // nothing to do
 
   // strip domain
   auto refNodePosInMM=TVector2(0,0);
