@@ -1703,6 +1703,20 @@ double GeometryTPC::Strip2posUVW(std::shared_ptr<StripTPC>strip, bool &err_flag)
   return 0.0; // ERROR
 }
 
+
+bool GeometryTPC::IsStripDirReversed(int dir) const{
+
+  if(dir<projection_type::DIR_U || dir>projection_type::DIR_W) return false;
+  int section = 1;
+  int minStrip = GetDirMinStrip(dir, section);
+  int maxStrip = GetDirMaxStrip(dir, section);
+  bool err_flag = false;
+  double minStripInMM = Strip2posUVW(dir, section, minStrip,err_flag);
+  double maxStripInMM = Strip2posUVW(dir, section, maxStrip,err_flag);
+
+  return (maxStripInMM<minStripInMM);
+}
+
 // Calculates (signed) distance of projection of (X=0, Y=0) point from
 // projection of a given (X,Y) point on the strip pitch axis
 // for a given DIR family.

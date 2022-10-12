@@ -208,6 +208,7 @@ class GeometryTPC {
   double Strip2posUVW(int dir, int section, int number, bool &err_flag)const; // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of the central line of the (existing) strip on the strip pitch axis for a given direction
   double Strip2posUVW(int dir, int number, bool &err_flag)const; // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of the central line of the (existing) strip on the strip pitch axis for a given direction
   double Strip2posUVW(std::shared_ptr<StripTPC> strip, bool &err_flag)const; // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of the central line of the (existing) strip on the strip pitch axis for a strip given direction
+  bool IsStripDirReversed(int dir) const;
   
   double Cartesian2posUVW(double x, double y, int dir, bool &err_flag)const; // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of a given (X,Y) point on the strip pitch axis for a given direction
   double Cartesian2posUVW(TVector2 pos, int dir, bool &err_flag)const; // [mm] (signed) distance of projection of (X=0, Y=0) point from projection of a given (X,Y) point on the strip pitch axis for a given direction

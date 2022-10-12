@@ -462,10 +462,10 @@ void EventTPC::scale2DHistoToMM(TH2D *h2D, projection_type projType) const{
   std::tie(minY, maxY) = myGeometryPtr->rangeStripDirInMM(projType1D);
   minY-=myGeometryPtr->GetStripPitch()/2.0;
   maxY+=myGeometryPtr->GetStripPitch()/2.0;
-
-  if(projType1D!=projection_type::DIR_V){
-    for(int iBinY=0;iBinY<nBinsY/2;++iBinY){
-          for(int iBinX=0;iBinX<nBinsX;++iBinX){
+  
+  if(myGeometryPtr->IsStripDirReversed(projType1D)){
+    for(int iBinY=0;iBinY<=nBinsY/2;++iBinY){
+          for(int iBinX=0;iBinX<=nBinsX;++iBinX){
 	    double value1 = h2D->GetBinContent(iBinX, iBinY);
 	    double value2 = h2D->GetBinContent(iBinX, nBinsY-iBinY+1);
 	    h2D->SetBinContent(iBinX, iBinY, value2);

@@ -132,6 +132,13 @@ int main(int argc, char *argv[]) {
     testHits(myEventPtr, filter_type::threshold);    
   }
 
+  ///This part to be moved to GeometryTPC_tst.cpp
+  std::cout<<KBLU<<"Strip direction has reversed strip numbering wrt. cartesian coordinates: "<<RST<<std::endl;
+  std::cout<<KBLU<<"U: "<<RST<<myEventPtr->GetGeoPtr()->IsStripDirReversed(projection_type::DIR_U)<<std::endl;
+  std::cout<<KBLU<<"V: "<<RST<<myEventPtr->GetGeoPtr()->IsStripDirReversed(projection_type::DIR_V)<<std::endl;
+  std::cout<<KBLU<<"W: "<<RST<<myEventPtr->GetGeoPtr()->IsStripDirReversed(projection_type::DIR_W)<<std::endl;
+  /////
+  
   return 0;
 }
 /////////////////////////////////////
