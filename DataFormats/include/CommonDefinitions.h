@@ -18,6 +18,7 @@ enum class filter_type{
 };
 
 enum  projection_type{
+  NONE = -1, 
   DIR_U=0,          // U-direction channel index
   DIR_V=1,          // V-direction channel index
   DIR_W=2,          // W-direction channel index
@@ -29,7 +30,6 @@ enum  projection_type{
   DIR_TIME_V,
   DIR_TIME_W,
   DIR_TIME,
-  NONE
 };
 
 projection_type get2DProjectionType(int aStrip_dir);
