@@ -167,7 +167,7 @@ void EventTPC::updateHistosCache(filter_type filterType){
 ///////////////////////////////////////////////////////////////////////
 double EventTPC::GetValByStrip(int strip_dir, int strip_section, int strip_number, int time_cell) const {
 
-  auto item = chargeMapWithSections.find({strip_dir,  strip_section, strip_number, time_cell});
+  auto item = chargeMapWithSections.find(std::tie(strip_dir,  strip_section, strip_number, time_cell));
   if(item!=chargeMapWithSections.end()) return item->second;
   return 0.0;
 }

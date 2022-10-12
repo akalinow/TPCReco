@@ -33,5 +33,4 @@ target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
 # All install commands get the same destination. this allows us to use paths
 # relative to the executable.
 install(TARGETS ${MODULE_NAME} LIBRARY DESTINATION lib)
-
-
+install(FILES $<1:${PROJECT_SOURCE_DIR}/${MODULE_NAME}/test/> DESTINATION test)

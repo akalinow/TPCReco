@@ -14,14 +14,25 @@
 #ifndef __ROOTLOGON__
 R__ADD_INCLUDE_PATH(../../DataFormats/include)
 R__ADD_INCLUDE_PATH(../../Reconstruction/include)
+R__ADD_INCLUDE_PATH(../../Utilities/include)  // FIX
 R__ADD_LIBRARY_PATH(../lib)
 #endif
+
+//#include "UtilsMath.h"
+//#include "CommonDefinitions.h"
+//#include "GeometryTPC.h"
+//#include "IonRangeCalculator.h"
+//#include "Track3D.h"
+#include "StripResponseCalculator.h"  // FIX
 
 //////////////////////////
 //////////////////////////
 void generateResponse(double sigma=0.5) { // generates histograms and saves them to a separate ROOT file
   if (!gROOT->GetClass("GeometryTPC")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
+  }
+  if (!gROOT->GetClass("IonRangeCalculator")){ // FIX
+    R__LOAD_LIBRARY(libTPCUtilities.so);
   }
   if (!gROOT->GetClass("StripResponseCalculator")){
     R__LOAD_LIBRARY(libTPCReconstruction.so);
@@ -36,7 +47,7 @@ void generateResponse(double sigma=0.5) { // generates histograms and saves them
   auto npads=nstrips;
   auto sigmaXY=sigma;
   auto sigmaZ=sigma;
-  auto npoints=10000000; // 10M points
+  auto npoints=1000000; // 1M points (default) // 10M points (better)
   auto calc=new StripResponseCalculator(geo, nstrips, ncells, npads, sigmaXY, sigmaZ);
   calc->setDebug(true);
   calc->initializeStripResponse(npoints); // overwrite default value
@@ -57,6 +68,9 @@ void generateResponseAll() {
 void plotStripResponse(double sigma=0.5) {
   if (!gROOT->GetClass("GeometryTPC")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
+  }
+  if (!gROOT->GetClass("IonRangeCalculator")){ // FIX
+    R__LOAD_LIBRARY(libTPCUtilities.so);
   }
   if (!gROOT->GetClass("StripResponseCalculator")){
     R__LOAD_LIBRARY(libTPCReconstruction.so);
@@ -96,6 +110,9 @@ void plotStripResponse(double sigma=0.5) {
 void plotTimeResponse(double sigma=0.5) {
   if (!gROOT->GetClass("GeometryTPC")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
+  }
+  if (!gROOT->GetClass("IonRangeCalculator")){ // FIX
+    R__LOAD_LIBRARY(libTPCUtilities.so);
   }
   if (!gROOT->GetClass("StripResponseCalculator")){
     R__LOAD_LIBRARY(libTPCReconstruction.so);
@@ -195,6 +212,9 @@ void testResponse1(double sigma=0.5) {
   if (!gROOT->GetClass("GeometryTPC")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
   }
+  if (!gROOT->GetClass("IonRangeCalculator")){ // FIX
+    R__LOAD_LIBRARY(libTPCUtilities.so);
+  }
   if (!gROOT->GetClass("StripResponseCalculator")){
     R__LOAD_LIBRARY(libTPCReconstruction.so);
   }
@@ -216,10 +236,10 @@ void testResponse1(double sigma=0.5) {
   std::vector<std::shared_ptr<TH2D> > histosInMM(3);
   const auto minval=1;
   for(auto strip_dir=0; strip_dir<3; strip_dir++) {
-    histosInMM[strip_dir] = event->get1DProjection(strip_dir, filter_type::none, scale_type::mm);
-    histosRaw[strip_dir] =  event->get1DProjection(strip_dir, filter_type::none, scale_type::raw);    
-    addConstantToTH2D(histosRaw[strip_dir].get(), minval);
+    histosInMM[strip_dir] = event->get2DProjection(get2DProjectionType(strip_dir), filter_type::none, scale_type::mm); // FIX 
+    histosRaw[strip_dir] =  event->get2DProjection(get2DProjectionType(strip_dir), filter_type::none, scale_type::raw); // FIX
     addConstantToTH2D(histosInMM[strip_dir].get(), minval);
+    addConstantToTH2D(histosRaw[strip_dir].get(), minval);
   }
 
   // associate UZ/VZ/WZ histograms with reponse calculator
@@ -260,9 +280,12 @@ void testResponse1(double sigma=0.5) {
 
 //////////////////////////
 //////////////////////////
-void testResponse2() {
+void testResponse2(int nevents=1) {
   if (!gROOT->GetClass("GeometryTPC")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
+  }
+  if (!gROOT->GetClass("IonRangeCalculator")){ // FIX
+    R__LOAD_LIBRARY(libTPCUtilities.so);
   }
   if (!gROOT->GetClass("StripResponseCalculator")){
     R__LOAD_LIBRARY(libTPCReconstruction.so);
@@ -292,41 +315,58 @@ void testResponse2() {
   std::vector<std::shared_ptr<TH2D> > histosInMM(3);
   const auto minval=1;
   for(auto strip_dir=0; strip_dir<3; strip_dir++) {
-    histosInMM[strip_dir] = event->get1DProjection(strip_dir, filter_type::none, scale_type::mm)
-    histosRaw[strip_dir] =  event->get1DProjection(strip_dir, filter_type::none, scale_type::raw) 
-    addConstantToTH2D(histosRaw[strip_dir].get(), minval);
+    histosInMM[strip_dir] = event->get2DProjection(get2DProjectionType(strip_dir), filter_type::none, scale_type::mm); // FIX
+    histosRaw[strip_dir] =  event->get2DProjection(get2DProjectionType(strip_dir), filter_type::none, scale_type::raw); // FIX
     addConstantToTH2D(histosInMM[strip_dir].get(), minval);
+    addConstantToTH2D(histosRaw[strip_dir].get(), minval);
   }
 
   // associate UZ/VZ/WZ histograms (merged strip sections) with reponse calculator
   for(auto i=0; i<calc.size(); i++) {
-    calc[i]->setUVWprojectionsRaw(histosRaw);
     calc[i]->setUVWprojectionsInMM(histosInMM);
+    //    calc[i]->setUVWprojectionsRaw(histosRaw);
   }
   
-  // fill UZ/VZ/WZ histograms (merged strip sections) - simulate triangular shape of dE/dx
-  for(auto i=0; i<calc.size(); i++) {
-    auto pos0=TVector3(50.0, 50.0, -30.0);
-    auto pos=pos0+TVector3(0, -50, 0)*i;
-    auto charge=10000;
-    auto length=50.0; // [mm]
-    auto npoints=(int)(2*length/geo->GetStripPitch());
-    auto unit_vec=TVector3(1,1,1).Unit();
-    for(auto ipoint=0; ipoint<npoints; ipoint++) {
-      calc[i]->addCharge(pos+unit_vec*(ipoint*length/npoints), (ipoint+1)*charge/npoints);
+  for(auto ievent=0; ievent<nevents; ievent++) {
+    if(ievent%100==0) std::cout << "event=" << ievent << std::endl;
+
+    // reset associated 2D histograms
+    for(auto strip_dir=0; strip_dir<3; strip_dir++) {
+      histosInMM[strip_dir]->Reset();
+      addConstantToTH2D(histosInMM[strip_dir].get(), minval);
+      //      histosRaw[strip_dir]->Reset();
+      //      addConstantToTH2D(histosRaw[strip_dir].get(), minval);
     }
+    
+    // fill UZ/VZ/WZ histograms (merged strip sections) - simulate triangular shape of dE/dx
+    for(auto i=0; i<calc.size(); i++) {
+      auto pos0=TVector3(50.0, 50.0, -30.0);
+      auto pos=pos0+TVector3(0, -50, 0)*i;
+      auto charge=10000;
+      auto length=50.0; // [mm]
+      //      auto npoints=100;
+      auto npoints=(int)(3*length/geo->GetStripPitch());
+      auto unit_vec=TVector3(1,1,1).Unit();
+      for(auto ipoint=0; ipoint<npoints; ipoint++) {
+	calc[i]->addCharge(pos+unit_vec*(ipoint*length/npoints), (ipoint+1)*charge/npoints);
+      }
+    }
+    /*
+    // fill UZ/VZ/WZ histograms (merged strip sections) - simulate point charge
+    for(auto i=0; i<calc.size(); i++) {
+      auto pos0=TVector3(60.0, 60.0, 40.0);
+      auto pos=pos0+TVector3(0, -50, 0)*i;
+      auto charge=10000;
+      calc[i]->addCharge(pos, charge);
+    }
+    */
   }
-
-  // fill UZ/VZ/WZ histograms (merged strip sections) - simulate point charge
-  for(auto i=0; i<calc.size(); i++) {
-    auto pos0=TVector3(60.0, 60.0, 40.0);
-    auto pos=pos0+TVector3(0, -50, 0)*i;
-    auto charge=10000;
-     calc[i]->addCharge(pos, charge);
-  }
-
+  
   t.Stop();
+  std::cout << "===========" << std::endl;
+  std::cout << "CPU time needed to generate " << nevents << " TH2D triplets:" << std::endl;
   t.Print();
+  std::cout << "===========" << std::endl;
 
   // plot results
   auto c=new TCanvas("c","c",3*500, 500);
@@ -351,9 +391,12 @@ void testResponse2() {
 
 //////////////////////////
 //////////////////////////
-void testResponse3() {
+void testResponse3(int nevents=1) {
   if (!gROOT->GetClass("GeometryTPC")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
+  }
+  if (!gROOT->GetClass("IonRangeCalculator")){ // FIX
+    R__LOAD_LIBRARY(libTPCUtilities.so);
   }
   if (!gROOT->GetClass("StripResponseCalculator")){
     R__LOAD_LIBRARY(libTPCReconstruction.so);
@@ -376,45 +419,46 @@ void testResponse3() {
   TStopwatch t;
   t.Start();
 
-  // create in memory 1000 dummy events for algorithm's speed test
-  std::shared_ptr<EventTPC> event;
-  for(auto ievent=0; ievent<1000; ievent++) {
+  // create in memory N dummy events for algorithm's speed test
+  // NOTE: re-use existing EventTPC pointer
+  auto event=std::make_shared<EventTPC>(); // empty event
+  event->SetGeoPtr(geo);
 
+  for(auto ievent=0; ievent<nevents; ievent++) {
     if(ievent%100==0) std::cout << "event=" << ievent << std::endl;
 
-    // create empty event
-    event=std::make_shared<EventTPC>(); // empty event
-    event->SetGeoPtr(geo);
-    for(auto i=0; i<calc.size(); i++) {
-      calc[i]->setEventTPC(event);
-    }
-
     // fill EventTPC - simulate triangular shape of dE/dx
+    auto pevent=std::make_shared<PEventTPC>(); // empty PEventTPC
     for(auto i=0; i<calc.size(); i++) {
       auto pos0=TVector3(50.0, 50.0, -30.0);
       auto pos=pos0+TVector3(0, -50, 0)*i;
       auto charge=10000;
       auto length=50.0; // [mm]
-      auto npoints=100; // (int)(2*length/geo->GetStripPitch());
+      //      auto npoints=100;
+      auto npoints=(int)(3*length/geo->GetStripPitch());
       auto unit_vec=TVector3(1,1,1).Unit();
       for(auto ipoint=0; ipoint<npoints; ipoint++) {
-	calc[i]->addCharge(pos+unit_vec*(ipoint*length/npoints), (ipoint+1)*charge/npoints);
+	calc[i]->addCharge(pos+unit_vec*(ipoint*length/npoints), (ipoint+1)*charge/npoints, pevent);
+	event->SetChargeMap(pevent->GetChargeMap());
       }
     }
   }
 
   t.Stop();
+  std::cout << "===========" << std::endl;
+  std::cout << "CPU time needed to generate " << nevents << " EventTPC objects:" << std::endl;
   t.Print();
+  std::cout << "===========" << std::endl;
 
   // get UZ/VZ/WZ histograms (merged strip sections) from EventTPC
   std::vector<std::shared_ptr<TH2D> > histosRaw(3);
   std::vector<std::shared_ptr<TH2D> > histosInMM(3);
   const auto minval=1;
   for(auto strip_dir=0; strip_dir<3; strip_dir++) {
-    histosInMM[strip_dir] = event->get1DProjection(strip_dir, filter_type::none, scale_type::mm);
-    histosRaw[strip_dir] =  event->get1DProjection(strip_dir, filter_type::none, scale_type::raw);    
-    addConstantToTH2D(histosRaw[strip_dir].get(), minval);
+    histosInMM[strip_dir] = event->get2DProjection(get2DProjectionType(strip_dir), filter_type::none, scale_type::mm); // FIX
+    histosRaw[strip_dir] =  event->get2DProjection(get2DProjectionType(strip_dir), filter_type::none, scale_type::raw); // FIX
     addConstantToTH2D(histosInMM[strip_dir].get(), minval);
+    addConstantToTH2D(histosRaw[strip_dir].get(), minval);
   }
 
   // plot results for last event
