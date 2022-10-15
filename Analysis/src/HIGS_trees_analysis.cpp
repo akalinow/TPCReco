@@ -155,7 +155,7 @@ void HIGS_trees_analysis::fillTrees1prong(Track3D *aTrack, eventraw::EventInfo *
   auto track=list.front();
   event1prong_->runId=(aEventInfo ? aEventInfo->GetRunId() : -1);
   event1prong_->eventId=(aEventInfo ? aEventInfo->GetEventId() : -1);
-  event1prong_->eventType = aEventInfo ? aEventInfo->GetEventType().to_ulong() : 1;
+  event1prong_->eventType = aEventInfo ? aEventInfo->GetEventType().to_ulong() : 0;
   event1prong_->unixTimeSec=(aEventInfo ? Utils::getUnixTimestamp( aEventInfo->GetRunId(), aEventInfo->GetEventTimestamp() ) : -1); // absolute Unix time [s]
   static double last_timestamp = 0;
   if(isFirst) {
@@ -225,7 +225,7 @@ void HIGS_trees_analysis::fillTrees2prong(Track3D *aTrack, eventraw::EventInfo *
 
   event2prong_->runId=(aEventInfo ? aEventInfo->GetRunId() : -1);
   event2prong_->eventId=(aEventInfo ? aEventInfo->GetEventId() : -1);
-  event2prong_->eventType = aEventInfo ? aEventInfo->GetEventType().to_ulong() : 1;
+  event2prong_->eventType = aEventInfo ? aEventInfo->GetEventType().to_ulong() : 0;
   event2prong_->unixTimeSec=(aEventInfo ? Utils::getUnixTimestamp( aEventInfo->GetRunId(), aEventInfo->GetEventTimestamp() ) : -1); // absolute Unix time [s]
   static double last_timestamp = 0;
   if(isFirst) {
@@ -302,7 +302,7 @@ void HIGS_trees_analysis::fillTrees3prong(Track3D *aTrack, eventraw::EventInfo *
 	    });  
   event3prong_->runId=(aEventInfo ? aEventInfo->GetRunId() : -1);
   event3prong_->eventId=(aEventInfo ? aEventInfo->GetEventId() : -1);
-  event3prong_->eventType = aEventInfo ? aEventInfo->GetEventType().to_ulong() : 1;
+  event3prong_->eventType = aEventInfo ? aEventInfo->GetEventType().to_ulong() : 0;
   event3prong_->unixTimeSec=(aEventInfo ? Utils::getUnixTimestamp( aEventInfo->GetRunId(), aEventInfo->GetEventTimestamp() ) : -1); // absolute Unix time [s]
   static double last_timestamp = 0;
   if(isFirst) {
