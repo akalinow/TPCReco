@@ -1,7 +1,6 @@
 #include "TTreeOps.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
-#include <boost/variant.hpp>
 #include <vector>
 
 using namespace tpcreco::utilities;
@@ -73,7 +72,7 @@ struct DetailCheckMock {
   MOCK_METHOD(void, invokeHelper, (int, int));
 };
 
-struct ExtraProcessorMock : boost::static_visitor<> {
+struct ExtraProcessorMock {
   void operator()(Dispatched<0, int> v) { return invokeHelper(v); }
   MOCK_METHOD(void, invokeHelper, ((Dispatched<0, int>)));
   void operator()(Dispatched<1, int> v) { return invokeHelper(v); }
@@ -88,20 +87,18 @@ TEST(TreeDiffTest, diffDispatch) {
   auto range2 = boost::make_iterator_range(v2.data(), v2.data() + v2.size());
 
   StrictMock<DetailCheckMock> detailCheck;
-  StrictMock<ExtraProcessorMock> visitor;
+  StrictMock<ExtraProcessorMock> extraProcessor;
   EXPECT_CALL(detailCheck, invokeHelper(1, 1));
   EXPECT_CALL(detailCheck, invokeHelper(2, 2));
-  EXPECT_CALL(visitor, invokeHelper(Dispatched<0, int>{3}));
-  EXPECT_CALL(visitor, invokeHelper(Dispatched<1, int>{4}));
-  EXPECT_CALL(visitor, invokeHelper(Dispatched<1, int>{5}));
-  EXPECT_CALL(visitor, invokeHelper(Dispatched<0, int>{6}));
-  EXPECT_CALL(visitor, invokeHelper(Dispatched<0, int>{7}));
-  EXPECT_CALL(visitor, invokeHelper(Dispatched<0, int>{8}));
+  EXPECT_CALL(extraProcessor, invokeHelper(Dispatched<0, int>{3}));
+  EXPECT_CALL(extraProcessor, invokeHelper(Dispatched<1, int>{4}));
+  EXPECT_CALL(extraProcessor, invokeHelper(Dispatched<1, int>{5}));
+  EXPECT_CALL(extraProcessor, invokeHelper(Dispatched<0, int>{6}));
+  EXPECT_CALL(extraProcessor, invokeHelper(Dispatched<0, int>{7}));
+  EXPECT_CALL(extraProcessor, invokeHelper(Dispatched<0, int>{8}));
   EXPECT_CALL(detailCheck, invokeHelper(9, 9));
-  EXPECT_CALL(visitor, invokeHelper(Dispatched<0, int>{11}));
-  EXPECT_CALL(visitor, invokeHelper(Dispatched<1, int>{12}));
-  diffDispatcher(
-      range1, range2, std::less<int>(), std::equal_to<int>(), detailCheck,
-      [&visitor](boost::variant<Dispatched<0, int>, Dispatched<1, int>>
-                     variant) mutable { variant.apply_visitor(visitor); });
+  EXPECT_CALL(extraProcessor, invokeHelper(Dispatched<0, int>{11}));
+  EXPECT_CALL(extraProcessor, invokeHelper(Dispatched<1, int>{12}));
+  diffDispatcher(range1, range2, std::less<int>(), std::equal_to<int>(),
+                 detailCheck, extraProcessor);
 }
