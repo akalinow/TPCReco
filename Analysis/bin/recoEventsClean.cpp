@@ -21,9 +21,10 @@ parseCmdLineArgs(int argc, char **argv) {
       "Allowed command line options");
 
   cmdLineOptDesc.add_options()("help", "produce help message")(
+      "inplace", "overwrites the input file,\nmutally exclusive with 'output'")(
       "input,i", boost::program_options::value<std::string>()->required(),
-      "input file")("output,o", boost::program_options::value<std::string>(),
-                    "output file")("inplace", "overwrites the input file");
+      "input root file")("output,o", boost::program_options::value<std::string>(),
+                    "output root file, mutally exclusive with 'inplace'");
 
   boost::program_options::positional_options_description cmdLinePosDesc;
   cmdLinePosDesc.add("input", 1).add("output", 1);
@@ -37,7 +38,7 @@ parseCmdLineArgs(int argc, char **argv) {
             .run(),
         varMap);
     if (varMap.count("help")) {
-      std::cout << "recoEventsClean"
+      std::cout << "recoEventsClean [--help] <input> [--inplace | output]"
                 << "\nRemove duplicated entries from reco TTrees\n"
                 << cmdLineOptDesc << '\n';
       return boost::none;
