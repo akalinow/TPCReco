@@ -65,6 +65,42 @@ TTree *cloneUnique(TTree *tree, TFile *file) {
   return clonedTree;
 }
 
+template <int n, class T> struct Dispatched {
+  static_assert(n == 0 || n == 1, "");
+  T data;
+  bool operator==(const Dispatched<n, T> &other) const {
+    return data == other.data;
+  }
+};
+
+template <class Range, class Less, class Equal, class DetailCheck, class Extra>
+void diffDispatcher(Range range1, Range range2, Less &&less, Equal &&equal,
+                    DetailCheck &&detailCheck, Extra &&extra) {
+  auto first1 = range1.begin();
+  auto first2 = range2.begin();
+  while (first1 != range1.end()) {
+    if (first2 == range2.end()) {
+      extra(Dispatched<0, typename Range::value_type>{*first1});
+      ++first1;
+    } else if (less(*first1, *first2)) {
+      extra(Dispatched<0, typename Range::value_type>{*first1});
+      ++first1;
+    } else if (equal(*first1, *first2)) {
+      detailCheck(*first1, *first2);
+      ++first1;
+      ++first2;
+    } else {
+      extra(Dispatched<1, typename Range::value_type>{*first2});
+      ++first2;
+    }
+  }
+  while (first2 != range2.end()) {
+    extra(Dispatched<1, typename Range::value_type>{*first2});
+    ++first2;
+  }
+}
+
+
 } // namespace utilities
 
 } // namespace tpcreco
