@@ -23,8 +23,10 @@ public:
     }
     tree->BuildIndex("runId", "eventId");
   }
+  static void TearDownTestSuite() { delete tree; }
 };
-TTree *TreeDuplicationTest::tree = new TTree("", "");
+
+TTree *TreeDuplicationTest::tree = new TTree("test tree", "test tree");
 double TreeDuplicationTest::data = 0;
 int TreeDuplicationTest::runId = 1;
 int TreeDuplicationTest::eventId = 0;
@@ -49,5 +51,15 @@ TEST_F(TreeDuplicationTest, nonDuplicates) {
     tree->GetEntry(entry);
     EXPECT_FLOAT_EQ(data, expectedData[i]);
     ++i;
+  }
+}
+
+TEST_F(TreeDuplicationTest, CloneUnique) {
+  auto clone = cloneUnique(tree, nullptr);
+  std::vector<double> expectedData = {.8, .6, .7, .1, .0};
+  EXPECT_EQ(clone->GetEntries(), expectedData.size());
+  for (int i = 0; i < clone->GetEntries(); ++i) {
+    clone->GetEntry(i);
+    EXPECT_FLOAT_EQ(data, expectedData[i]);
   }
 }
