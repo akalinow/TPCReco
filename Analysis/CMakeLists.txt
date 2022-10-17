@@ -40,6 +40,7 @@ add_executable(recoEventsAnalysis  bin/recoEventsAnalysis.cpp)
 add_executable(recoEventsComparison  bin/recoEventsComparison.cpp)
 add_executable(rawSignalAnalysis  bin/rawSignalAnalysis.cpp)
 add_executable(recoEventsClean  bin/recoEventsClean.cpp)
+add_executable(recoEventsDiff bin/recoEventsDiff.cpp)
 
 # Compiler flags.
 #
@@ -55,6 +56,7 @@ target_link_libraries(recoEventsAnalysis PUBLIC  ${TPCRECO_LIBRARIES} ${Boost_LI
 target_link_libraries(recoEventsComparison PUBLIC ${TPCRECO_LIBRARIES} ${Boost_LIBRARIES} ${MODULE_NAME})
 target_link_libraries(rawSignalAnalysis PUBLIC ${TPCRECO_LIBRARIES} ${GRAW_TO_ROOT_LIBRARY} Utilities ${Boost_LIBRARIES} ${MODULE_NAME})
 target_link_libraries(recoEventsClean PRIVATE ${TPCRECO_LIBRARIES}  Utilities Boost::program_options ${MODULE_NAME})
+target_link_libraries(recoEventsDiff PRIVATE ${TPCRECO_LIBRARIES}  Utilities Boost::program_options ${MODULE_NAME})
 
 # All install commands get the same destination. this allows us to use paths
 # relative to the executable.
@@ -62,7 +64,7 @@ install(TARGETS ${MODULE_NAME} LIBRARY DESTINATION lib)
 install(TARGETS makeTrackTree RUNTIME DESTINATION bin)
 install(TARGETS recoEventsAnalysis RUNTIME DESTINATION bin)
 install(TARGETS recoEventsComparison RUNTIME DESTINATION bin)
-install(TARGETS recoEventsClean RUNTIME DESTINATION bin)
+install(TARGETS recoEventsClean recoEventsDiff RUNTIME DESTINATION bin)
 install(TARGETS rawSignalAnalysis RUNTIME DESTINATION bin)
 
 install(PROGRAMS $<1:${PROJECT_SOURCE_DIR}/${MODULE_NAME}/python/> DESTINATION python)
