@@ -6,6 +6,7 @@
 #include <boost/range/adaptors.hpp>
 #include <boost/range/algorithm.hpp>
 #include <boost/range/combine.hpp>
+#include <iostream>
 #include <stdexcept>
 namespace tpcreco {
 namespace utilities {
@@ -31,10 +32,16 @@ auto getTreeIndexRange(TTree *tree) {
 }
 
 namespace {
-auto unique_view() {
+
+auto unique_view(bool verbose) {
   return boost::adaptors::adjacent_filtered(
-      [](const auto &lhs, const auto &rhs) {
-        return boost::get<1>(lhs) != boost::get<1>(rhs);
+      [verbose](const auto &lhs, const auto &rhs) {
+        auto isEqual = boost::get<1>(lhs) == boost::get<1>(rhs);
+        if (verbose && isEqual) {
+          std::cout << "Duplicated index " << boost::get<1>(rhs) << " (Entry "
+                    << boost::get<0>(rhs) << ")\n";
+        }
+        return !isEqual;
       });
 }
 
@@ -45,20 +52,21 @@ template <int N> auto element_view() {
 
 } // namespace
 
-template <class ZipRange> auto filterDuplicates(ZipRange &&range) {
-  return range | boost::adaptors::reversed | unique_view() | element_view<0>();
+template <class ZipRange>
+auto filterDuplicates(ZipRange &&range, bool verbose = false) {
+  return range | boost::adaptors::reversed | unique_view(verbose)| element_view<0>();
 }
 
-auto filterDuplicates(TTree *tree) {
-  return filterDuplicates(getTreeIndexRange(tree));
+auto filterDuplicates(TTree *tree, bool verbose = false) {
+  return filterDuplicates(getTreeIndexRange(tree), verbose);
 }
 
-TTree *cloneUnique(TTree *tree, TFile *file) {
+TTree *cloneUnique(TTree *tree, TFile *file, bool verbose = false) {
   if (file) {
     file->cd();
   }
   auto clonedTree = tree->CloneTree(0);
-  for (auto entry : filterDuplicates(tree)) {
+  for (auto entry : filterDuplicates(tree, verbose)) {
     tree->GetEntry(entry);
     clonedTree->Fill();
   }
@@ -99,7 +107,6 @@ void diffDispatcher(Range range1, Range range2, Less &&less, Equal &&equal,
     ++first2;
   }
 }
-
 
 } // namespace utilities
 
