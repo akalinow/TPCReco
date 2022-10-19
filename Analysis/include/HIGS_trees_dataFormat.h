@@ -8,6 +8,7 @@
 struct Event_1prong{ // hypothesis: background alpha particle
   time_t runId;
   unsigned int eventId;
+  unsigned long eventType;
   double unixTimeSec; // [s] absolute unix timestamp since 1970/1/1 epoch with millisecond precision (combined runID and GET counter)
   double runTimeSec; // [s] elapsed time since start of the runID with 10ns precision from GET counter (100 MHz clock)
   double deltaTimeSec; // [s] diference with previous event from GET counter converted to seconds (prone to glitches while switching between runIDs)
@@ -33,6 +34,7 @@ struct Event_1prong{ // hypothesis: background alpha particle
 struct Event_2prong{ // hypothesis: gamma + O-16 -> alpha + C-12
   time_t runId;
   unsigned int eventId;
+    unsigned long eventType;
   double unixTimeSec; // [s] absolute unix timestamp since 1970/1/1 epoch with millisecond precision (combined runID and GET counter)
   double runTimeSec; // [s] elapsed time since start of the runID with 10ns precision from GET counter (100 MHz clock)
   double deltaTimeSec; // [s] diference with previous event from GET counter converted to seconds (prone to glitches while switching between runIDs)
@@ -81,6 +83,7 @@ struct Event_2prong{ // hypothesis: gamma + O-16 -> alpha + C-12
 struct Event_3prong{ // hypothesis: gamma + C-12 -> 3-alpha
   time_t runId;
   unsigned int eventId;
+  unsigned long eventType;
   double unixTimeSec; // [s] absolute unix timestamp since 1970/1/1 epoch with millisecond precision (combined runID and GET counter)
   double runTimeSec; // [s] elapsed time since start of the runID with 10ns precision from GET counter (100 MHz clock)
   double deltaTimeSec; // [s] diference with previous event from GET counter converted to seconds (prone to glitches while switching between runIDs)

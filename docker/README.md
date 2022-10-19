@@ -62,7 +62,7 @@ Options `-v $HOME:/scratch --workdir /scratch` will bind your home directory fro
 ### Start singularity container
 
 ```
-singularity run --bind /data elitpc_tpcreco_latest.sif
+singularity shell --bind /data elitpc_tpcreco_latest.sif
 ```
 
 Singularity will automatically include your `$HOME` from host inside the container. If you wish to include other directories from host, you can do so using `--bind` option. `--bind /data` will bind `/data` directory on host to `/data` directory inside the container.
