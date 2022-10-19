@@ -4,7 +4,6 @@
 #include <boost/program_options.hpp>
 #include <iostream>
 #include <string>
-
 void conflicting_options(const boost::program_options::variables_map &vm,
                          const std::string &opt1, const std::string &opt2) {
   if (vm.count(opt1) && !vm[opt1].defaulted() && vm.count(opt2) &&
@@ -22,11 +21,13 @@ parseCmdLineArgs(int argc, char **argv) {
 
   cmdLineOptDesc.add_options()("help", "produce help message")(
       "verbose,v", "prints message for every duplicate")(
-      "inplace", "overwrites the input file,\nmutally exclusive with 'output'")(
+      "dry-run", "testing without modyfing files")(
+      "inplace", "overwrites the input file,\nmutally exclusive "
+                 "with 'output'")(
       "input,i", boost::program_options::value<std::string>()->required(),
       "input root file")("output,o",
                          boost::program_options::value<std::string>(),
-                         "output root file, mutally exclusive with 'inplace'");
+                         "output root file,\nmutally exclusive with 'inplace'");
 
   boost::program_options::positional_options_description cmdLinePosDesc;
   cmdLinePosDesc.add("input", 1).add("output", 1);
@@ -40,10 +41,11 @@ parseCmdLineArgs(int argc, char **argv) {
             .run(),
         varMap);
     if (varMap.count("help")) {
-      std::cout
-          << "recoEventsClean [--help] [--verbose] <input> [--inplace | output]"
-          << "\nRemove duplicated entries from reco TTrees\n"
-          << cmdLineOptDesc << '\n';
+      std::cout << "recoEventsClean [--help] [--verbose] [--dry-run] <input> "
+                   "[--inplace | output]"
+                   "--dry-run | output]"
+                << "\nRemove duplicated entries from reco TTrees\n"
+                << cmdLineOptDesc << '\n';
       return boost::none;
     }
     boost::program_options::notify(varMap);
@@ -60,7 +62,9 @@ int main(int argc, char **argv) {
     return 1;
   };
   conflicting_options(*varMap, "output", "inplace");
-  if (!varMap->count("output") && !varMap->count("inplace")) {
+
+  if (!varMap->count("output") && !varMap->count("inplace") &&
+      !varMap->count("dry-run")) {
     std::cerr << "Either '--output' or '--inplace' options must be provided\n";
     return 1;
   }
@@ -82,6 +86,15 @@ int main(int argc, char **argv) {
     std::cerr << "Can't build index on input tree using " << primaryKey
               << " and " << secondaryKey << '\n';
     return 1;
+  }
+
+  if (varMap->count("dry-run")) {
+    auto count = boost::size(tpcreco::utilities::filterDuplicates(
+        inputTree, varMap->count("verbose")));
+    std::cout << "Removed " << inputTree->GetEntries() - count
+              << " duplicated entries keeping the younger (dry run)\n";
+    inputFile->Close();
+    return 0;
   }
 
   auto outputName = varMap->count("inplace")
