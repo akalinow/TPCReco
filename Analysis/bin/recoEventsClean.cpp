@@ -43,7 +43,6 @@ parseCmdLineArgs(int argc, char **argv) {
     if (varMap.count("help")) {
       std::cout << "recoEventsClean [--help] [--verbose] [--dry-run] <input> "
                    "[--inplace | output]"
-                   "--dry-run | output]"
                 << "\nRemove duplicated entries from reco TTrees\n"
                 << cmdLineOptDesc << '\n';
       return boost::none;
