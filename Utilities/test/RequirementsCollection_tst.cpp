@@ -11,8 +11,8 @@ private:
 };
 
 TEST(RequirementsCollection, InitializerList) {
-  RequirementsCollection<std::function<bool(int)>> cuts = {GreaterThan{3},
-                                      [](auto i) { return i < 7; }};
+  RequirementsCollection<std::function<bool(int)>> cuts = {
+      GreaterThan{3}, [](auto i) { return i < 7; }};
   EXPECT_EQ(cuts.size(), 2);
   cuts.clear();
   EXPECT_EQ(cuts.size(), 0);
@@ -39,9 +39,38 @@ TEST(RequirementsCollection, Logic) {
 }
 
 TEST(RequirementsCollection, LogicWithInitializerList) {
-  RequirementsCollection<std::function<bool(int)>> cuts = {GreaterThan{3},
-                                      [](auto i) { return i < 7; }};
+  RequirementsCollection<std::function<bool(int)>> cuts = {
+      GreaterThan{3}, [](auto i) { return i < 7; }};
   EXPECT_FALSE(cuts(2));
   EXPECT_TRUE(cuts(4));
   EXPECT_FALSE(cuts(9));
+}
+
+TEST(CountedRequirement, count) {
+  auto req = CountedRequirement<std::function<bool(int)>>(GreaterThan{3});
+  EXPECT_EQ(req.getCount(), 0);
+
+  EXPECT_FALSE(req(2));
+  EXPECT_EQ(req.getCount(), 0);
+
+  EXPECT_TRUE(req(5));
+  EXPECT_EQ(req.getCount(), 1);
+
+  EXPECT_TRUE(req(6));
+  EXPECT_EQ(req.getCount(), 2);
+
+  EXPECT_FALSE(req(0));
+  EXPECT_EQ(req.getCount(), 2);
+}
+
+TEST(CountedRequirement, reset) {
+  auto req = CountedRequirement<std::function<bool(int)>>(GreaterThan{3});
+  EXPECT_EQ(req.getCount(), 0);
+
+  EXPECT_TRUE(req(5));
+  EXPECT_EQ(req.getCount(), 1);
+  req.resetCount();
+  EXPECT_EQ(req.getCount(), 0);
+  req.resetCount();
+  EXPECT_EQ(req.getCount(), 0);
 }
