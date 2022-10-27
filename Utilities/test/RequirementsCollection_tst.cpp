@@ -102,3 +102,17 @@ TEST(Make_counted, lambda) {
   EXPECT_TRUE(req(5));
   EXPECT_EQ(req.getCount(), 1);
 }
+
+TEST(CountedRequirement, inCollection) {
+  RequirementsCollection<CountedRequirement<std::function<bool(int)>>> cuts;
+  cuts.push_back(
+      make_counted<std::function<bool(int)>>([](auto i) { return i > 3; }));
+  cuts.push_back(make_counted<std::function<bool(int)>>(GreaterThan(5)));
+  EXPECT_FALSE(cuts(0));
+  EXPECT_FALSE(cuts(4));
+  EXPECT_TRUE(cuts(7));
+  std::vector<size_t> counts;
+  std::transform(cuts.cbegin(), cuts.cend(), std::back_inserter(counts),
+                 [](auto i) { return i.getCount(); });
+  EXPECT_THAT(counts, ::testing::ElementsAreArray({2, 1}));
+}

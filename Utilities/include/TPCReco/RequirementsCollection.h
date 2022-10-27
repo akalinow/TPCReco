@@ -20,6 +20,10 @@ public:
 
   size_t size() const noexcept { return requirements.size(); }
 
+  using const_iterator = typename std::vector<T>::const_iterator;
+  const_iterator cbegin() const noexcept {return requirements.cbegin();}
+  const_iterator cend() const noexcept {return requirements.cend();}
+
 private:
   std::vector<T> requirements;
 };
