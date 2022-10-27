@@ -13,7 +13,7 @@ public:
   template <class... Args> bool operator()(Args &&...args) {
     return std::all_of(
         std::begin(requirements), std::end(requirements),
-        [&args...](T f) { return f(std::forward<Args>(args)...); });
+        [&args...](T& f) { return f(std::forward<Args>(args)...); });
   }
 
   void clear() noexcept { requirements.clear(); }
