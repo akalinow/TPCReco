@@ -10,9 +10,10 @@ public:
       : requirements(requirements) {}
 
   void push_back(T &&requirement) { requirements.push_back(requirement); }
-  template <class Arg> bool operator()(const Arg &candidate) const {
-    return std::all_of(std::begin(requirements), std::end(requirements),
-                       [&candidate](T f) { return f(candidate); });
+  template <class... Args> bool operator()(Args &&...args) {
+    return std::all_of(
+        std::begin(requirements), std::end(requirements),
+        [&args...](T f) { return f(std::forward<Args>(args)...); });
   }
 
   void clear() noexcept { requirements.clear(); }
@@ -24,10 +25,10 @@ private:
 };
 
 template <class Req> class CountedRequirement {
-  public:
+public:
   CountedRequirement(Req &&requirement) : requirement(requirement) {}
-  template <class T> bool operator()(T operand) {
-    auto isPassing = requirement(operand);
+  template <class... Args> bool operator()(Args &&...args) {
+    auto isPassing = requirement(std::forward<Args>(args)...);
     if (isPassing) {
       ++count;
     }
