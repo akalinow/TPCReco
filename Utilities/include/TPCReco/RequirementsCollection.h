@@ -42,4 +42,8 @@ private:
   Req requirement;
 };
 
+template <class T, class... Args> CountedRequirement<T> make_counted(Args &&... function) {
+  return CountedRequirement<T>(std::forward<Args>(function)...);
+}
+
 #endif // TPCRECO_UTILITIES_REQUIREMENTS_COLLECTION_H_

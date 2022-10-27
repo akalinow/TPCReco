@@ -74,3 +74,31 @@ TEST(CountedRequirement, reset) {
   req.resetCount();
   EXPECT_EQ(req.getCount(), 0);
 }
+
+TEST(Make_counted, functor) {
+  auto req = make_counted<GreaterThan>(3);
+  EXPECT_EQ(req.getCount(), 0);
+  EXPECT_FALSE(req(2));
+  EXPECT_EQ(req.getCount(), 0);
+  EXPECT_TRUE(req(5));
+  EXPECT_EQ(req.getCount(), 1);
+}
+
+TEST(Make_counted, functorAsStdFunction) {
+  auto req = make_counted<std::function<bool(int)>>(GreaterThan(3));
+  EXPECT_EQ(req.getCount(), 0);
+  EXPECT_FALSE(req(2));
+  EXPECT_EQ(req.getCount(), 0);
+  EXPECT_TRUE(req(5));
+  EXPECT_EQ(req.getCount(), 1);
+}
+
+TEST(Make_counted, lambda) {
+  auto req =
+      make_counted<std::function<bool(int)>>([](int i) { return i > 3; });
+  EXPECT_EQ(req.getCount(), 0);
+  EXPECT_FALSE(req(2));
+  EXPECT_EQ(req.getCount(), 0);
+  EXPECT_TRUE(req(5));
+  EXPECT_EQ(req.getCount(), 1);
+}
