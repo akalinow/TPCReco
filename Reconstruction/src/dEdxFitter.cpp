@@ -6,15 +6,9 @@
 #include <TMath.h>
 #include "TRandom3.h"
 
-//TEST ///
 TGraph* dEdxFitter::braggGraph_alpha = new TGraph("dEdx_corr_alpha_10MeV_CO2_250mbar.dat", "%lg %lg");
 TGraph* dEdxFitter::braggGraph_12C = new TGraph("dEdx_corr_12C_5MeV_CO2_250mbar.dat", "%lg %lg");
 double dEdxFitter::nominalPressure = 250.0;
-//////
-
-//TGraph* dEdxFitter::braggGraph_alpha = new TGraph("dEdx_alpha_10000keV_250mbar_CO2.dat", "%lg %lg %*lg");
-//TGraph* dEdxFitter::braggGraph_12C = new TGraph("dEdx_12C_2500keV_250mbar_CO2.dat", "%lg %lg %*lg");
-//double dEdxFitter::nominalPressure = 250.0;
 
 double dEdxFitter::currentPressure = 190.0;
 ////////////////////////////////////////////////
