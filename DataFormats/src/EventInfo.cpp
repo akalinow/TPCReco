@@ -1,23 +1,7 @@
 #include <bitset>
 
 #include "EventInfo.h"
-#include "EventTPC.h"
 
-////////////////////////////////////////////////
-////////////////////////////////////////////////
-eventraw::EventInfo::EventInfo(std::shared_ptr<EventTPC> aEventTPC){
-
-  set(aEventTPC);
-  
-}
-////////////////////////////////////////////////
-////////////////////////////////////////////////
-void eventraw::EventInfo::set(std::shared_ptr<EventTPC> aEventTPC){
-
-  SetEventId(aEventTPC->GetEventId());
-  SetEventTimestamp(aEventTPC->GetEventTime());
-  
-}
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 void eventraw::EventInfo::reset(){
@@ -26,15 +10,19 @@ void eventraw::EventInfo::reset(){
   eventId = 0;   // 4-bytes
   timestamp = 0; // 6-bytes in 10ns CLK units (100 MHz)
   eventType = 0;
+  pedestalSubtracted = false;
 
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 std::ostream& eventraw::operator<<(std::ostream& os, const eventraw::EventInfo& einfo) {
   os << "EventInfo: "
-     <<" run timestamp: "<<einfo.GetRunId()
-     <<" event id=" << einfo.GetEventId() << ", timestamp=" << einfo.GetEventTimestamp()
-     <<" type: "<<einfo.GetEventType().to_string();
+     <<" event id=" << einfo.GetEventId()
+     <<"timestamps"
+     <<" run: "<<einfo.GetRunId()
+     <<" event:" << einfo.GetEventTimestamp()
+     <<" type: "<<einfo.GetEventType().to_string()
+     <<" pedestal subtracted? "<<einfo.GetPedestalSubtracted();
   return os;
 }
 ////////////////////////////////////////////////

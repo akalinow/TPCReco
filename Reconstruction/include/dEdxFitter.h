@@ -20,9 +20,11 @@ public:
 
   void setPressure(double aPressure); 
 
-  TFitResult fitHisto(TH1F & aHisto);
+  TFitResult fitHisto(const TH1F & aHisto);
 
   const TH1F & getFittedHisto() const { return theFittedHisto;};
+
+  double getChi2() const { return theFitResult.MinFcnValue();};
 
   const TF1 & getFittedModel() const { return *theFittedModel;};
 
@@ -30,11 +32,9 @@ public:
 
   TF1* get12CIonisation() const { return carbon_ionisation;}
 
-  TF1* get12CAlphaIonisation() const { return carbon_alpha_ionisation;}
+  TF1* get12CAlphaIonisation() const { return carbon_alpha_model;}
 
-  TF1* getAlphaModel() const { return alphaModel;}
-
-  double getChi2() const { return bestFitChi2;}
+  TF1* getAlphaModel() const { return alpha_model;}
 
   bool getIsReflected() const { return isReflected;}
 
@@ -64,18 +64,14 @@ private:
   double carbonScale{1};
   
   bool isReflected{false};
-  double bestFitChi2{999.0};
+
+  double maxCarbonRange, maxAlphaRange;
 
   TF1 dummyFunc;
   TF1 *alpha_ionisation{0}; 
   TF1 *carbon_ionisation{0};
-  TF1 *carbon_alpha_ionisation{0};
-
-  TF1 *alphaModel{0};
-  TF1 *carbon_alphaModel{0};
-
-  TF1Convolution *carbon_alpha_ionisation_smeared{0};
-  TF1Convolution *alpha_ionisation_smeared{0};
+  TF1 *alpha_model{0};
+  TF1 *carbon_alpha_model{0};
 
   TFitResult theFitResult;
   TH1F theFittedHisto;
@@ -86,7 +82,7 @@ private:
 
   static double bragg_alpha(double *x, double *params); //x in [mm], result in [keV/mm]
   static double bragg_12C(double *x, double *params); //x in [mm], result in [keV/mm]
-  static double bragg_12C_alpha(double *x, double *params); //x in [mm], result in ??
+  static double bragg_12C_alpha(double *x, double *params); //x in [mm], result in [keV/mm]
 
   TH1F reflectHisto(const TH1F &aHisto) const;
   

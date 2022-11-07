@@ -19,15 +19,13 @@
 #include "EventSourceGRAW.h"
 #include "EventSourceMultiGRAW.h"
 #endif
-#include "SigClusterTPC.h"
-#include "EventTPC.h"
 #include "RecoOutput.h"
 #include "RunIdParser.h"
 #include "InputFileHelper.h"
 #include "MakeUniqueName.h"
 #include "colorText.h"
 
-
+#include "EventTPC.h"
 /////////////////////////////////////
 /////////////////////////////////////
 std::string createROOTFileName(const  std::string & grawFileName){
@@ -142,11 +140,14 @@ typedef struct {Float_t eventId, frameId,
     horizontalLostLength, verticalLostLength,
     alphaEnergy, carbonEnergy,
     alphaRange, carbonRange,
+    cosPhiSegments,
     charge, cosTheta, phi, chi2,
     hypothesisChi2,
     xVtx, yVtx, zVtx,
     xAlphaEnd, yAlphaEnd, zAlphaEnd,
-    xCarbonEnd, yCarbonEnd, zCarbonEnd;
+    xCarbonEnd, yCarbonEnd, zCarbonEnd,
+    total_mom_x,  total_mom_y,  total_mom_z,
+    lineFitChi2, dEdxFitChi2;
     } TrackData;
 /////////////////////////
 int makeTrackTree(const  std::string & geometryFileName,
@@ -154,6 +155,13 @@ int makeTrackTree(const  std::string & geometryFileName,
 
   std::shared_ptr<EventSourceBase> myEventSource;
   if(dataFileName.find(".graw")!=std::string::npos){
+
+    boost::property_tree::ptree property_tree;
+    property_tree.put("pedestal.minPedestalCell", 5.0);
+    property_tree.put("pedestal.maxPedestalCell",25);
+    property_tree.put("pedestal.minSignalCell",5);
+    property_tree.put("pedestal.maxSignalCell",506);
+    
     #ifdef WITH_GET
     if(dataFileName.find(",")!=std::string::npos){
       myEventSource = std::make_shared<EventSourceMultiGRAW>(geometryFileName);
@@ -162,7 +170,8 @@ int makeTrackTree(const  std::string & geometryFileName,
       myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
       dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(160);
     }
-     #endif
+    dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(property_tree.find("pedestal")->second);    
+    #endif
   }
   else if(dataFileName.find(".root")!=std::string::npos){
     myEventSource = std::make_shared<EventSourceROOT>(geometryFileName);
@@ -180,10 +189,13 @@ int makeTrackTree(const  std::string & geometryFileName,
   leafNames += "eventId:frameId:eventType:";
   leafNames += "length:horizontalLostLength:verticalLostLength:";
   leafNames += "alphaEnergy:carbonEnergy:alphaRange:carbonRange:";
+  leafNames += "cosPhiSegments:";
   leafNames += "charge:cosTheta:phi:chi2:hypothesisChi2:";
   leafNames += "xVtx:yVtx:zVtx:";
   leafNames += "xAlphaEnd:yAlphaEnd:zAlphaEnd:";
-  leafNames += "xCarbonEnd:yCarbonEnd:zCarbonEnd";
+  leafNames += "xCarbonEnd:yCarbonEnd:zCarbonEnd:";
+  leafNames += "total_mom_x:total_mom_y:total_mom_z:";
+  leafNames += "lineFitChi2:dEdxFitChi2";
   tree->Branch("track",&track_data,leafNames.c_str());
 
   int index = geometryFileName.find("mbar");
@@ -200,36 +212,23 @@ int makeTrackTree(const  std::string & geometryFileName,
   std::string recoFileName = MakeUniqueName("Reco_"+fileName.substr(last_slash_position+1,
 						     last_dot_position-last_slash_position-1)+".root");
   std::shared_ptr<eventraw::EventInfo> myEventInfo = std::make_shared<eventraw::EventInfo>();
-  RunIdParser runParser(fileName);
-  myEventInfo->SetRunId(runParser.runId());
-  myRecoOutput.setEventInfo(myEventInfo);
   myRecoOutput.open(recoFileName);
-  
+ 
   myEventSource->loadDataFile(dataFileName);
   std::cout<<KBLU<<"File with "<<RST<<myEventSource->numberOfEntries()<<" frames loaded."<<std::endl;
 
   //Event loop
   unsigned int nEntries = myEventSource->numberOfEntries();
-  //nEntries = 500;
+  //nEntries = 5; //TEST
   for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
     if(nEntries>10 && iEntry%(nEntries/10)==0){
       std::cout<<KBLU<<"Processed: "<<int(100*(double)iEntry/nEntries)<<" % events"<<RST<<std::endl;
     }
-    myEventSource->loadFileEntry(iEntry);
-    /*
-    myEventSource->getCurrentEvent()->MakeOneCluster(35, 0, 0);
-    if(myEventSource->getCurrentEvent()->GetOneCluster().GetNhits()>20000){
-      std::cout<<KRED<<"Noisy event - skipping."<<RST<<std::endl;
-      continue;
-      }
-    */
-    auto event = myEventSource->getCurrentEvent();
-
-    myEventInfo->SetEventId(event->GetEventId());
-    myEventInfo->SetEventTimestamp(event->GetEventTime());
-
-    myTkBuilder.setEvent(event);
+    myEventSource->loadFileEntry(iEntry);    
+    *myEventInfo = myEventSource->getCurrentEvent()->GetEventInfo();    
+    myTkBuilder.setEvent(myEventSource->getCurrentEvent());
     myTkBuilder.reconstruct();
+
     const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
 
     myRecoOutput.setRecTrack(aTrack3D);
@@ -243,6 +242,8 @@ int makeTrackTree(const  std::string & geometryFileName,
     const TVector3 & vertex = aTrack3D.getSegments().front().getStart();
     const TVector3 & alphaEnd = aTrack3D.getSegments().front().getEnd();
     const TVector3 & carbonEnd = aTrack3D.getSegments().back().getEnd();
+
+    double cosPhiSegments = (alphaEnd-vertex).Unit().Dot((carbonEnd-vertex).Unit());
     
     const TVector3 & tangent = aTrack3D.getSegments().front().getTangent();
     double phi = atan2(-tangent.Z(), tangent.Y());
@@ -259,7 +260,13 @@ int makeTrackTree(const  std::string & geometryFileName,
     double carbonRange =  aTrack3D.getSegments().back().getPID()== pid_type::CARBON_12 ? aTrack3D.getSegments().back().getLength(): 0.0;
     double alphaEnergy = alphaRange>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA,alphaRange):0.0;
     double carbonEnergy = carbonRange>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::CARBON_12, carbonRange):0.0;
-      
+    double m_Alpha = myRangeCalculator.getIonMassMeV(pid_type::ALPHA);
+    double m_12C = myRangeCalculator.getIonMassMeV(pid_type::CARBON_12);
+    
+    double p_alpha = sqrt(2*m_Alpha*alphaEnergy);
+    double p_12C = sqrt(2*m_12C*carbonEnergy);
+    TVector3 total_p = p_alpha*(alphaEnd-vertex).Unit() + p_12C*(carbonEnd-vertex).Unit();
+    
     track_data.frameId = iEntry;
     track_data.eventId = myEventInfo->GetEventId();
     track_data.eventType = eventType;
@@ -288,10 +295,18 @@ int makeTrackTree(const  std::string & geometryFileName,
     track_data.carbonEnergy = carbonEnergy;
     track_data.alphaRange = alphaRange;
     track_data.carbonRange = carbonRange;
+    track_data.cosPhiSegments = cosPhiSegments;
+
+    track_data.total_mom_x = total_p.x();
+    track_data.total_mom_y = total_p.y();
+    track_data.total_mom_z = total_p.z();
+
+    track_data.lineFitChi2 = aTrack3D.getChi2();
+    track_data.dEdxFitChi2 = aTrack3D.getHypothesisFitChi2();
+    
     tree->Fill();    
   }
   outputROOTFile.Write();
-  myRecoOutput.close();
   return nEntries;
 }
 /////////////////////////////

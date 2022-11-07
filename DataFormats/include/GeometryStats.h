@@ -48,29 +48,29 @@ class GeometryStats{
     }
     void print();
 
-    inline  SectionIndexList GetDirSectionIndexList(int dir){return directionsSectionIndexList.at(dir);} // added by MC - 4 Aug 2021
-    inline  int GetDirNStrips(int dir,int section){return directionsStats.at(dir).at(section).n;}
-    inline  int GetDirMinStrip(int dir,int section){return directionsStats.at(dir).at(section).min;}
-    inline  int GetDirMaxStrip(int dir,int section){return directionsStats.at(dir).at(section).max;}
-    inline  int GetDirNStripsMerged(int dir){return mergedStats.at(dir).n;}
-    inline  int GetDirMinStripMerged(int dir){return mergedStats.at(dir).min;}
-    inline  int GetDirMaxStripMerged(int dir){return mergedStats.at(dir).max;}
+    inline  SectionIndexList GetDirSectionIndexList(int dir) const {return directionsSectionIndexList.at(dir);}
+    
+    inline  int GetDirNStrips(int dir,int section) const {return directionsStats.at(dir).at(section).n;}
+    inline  int GetDirMinStrip(int dir,int section) const {return directionsStats.at(dir).at(section).min;}
+    inline  int GetDirMaxStrip(int dir,int section) const {return directionsStats.at(dir).at(section).max;}
+    inline  int GetDirNStripsMerged(int dir) const {return mergedStats.at(dir).n;}
+    inline  int GetDirMinStripMerged(int dir) const {return mergedStats.at(dir).min;}
+    inline  int GetDirMaxStripMerged(int dir) const {return mergedStats.at(dir).max;}
     static const int outside_section{-99}; // index for dummy sections outside of UVW active area used to truncate toy MC generated signals
-    inline  int GetDirNSections(int dir){return directionsSectionIndexList.at(dir).size();} // total number of sections per strip DIR
-    int GetDirStripNSections(int dir, int num); // number of sections per {strip DIR, strip NUM} pair
-    StripSectionBoundaryList GetStripSectionBoundaryList(int dir, int num); // active area boundaries + section boundaries
+    inline  int GetDirNSections(int dir) const {return directionsSectionIndexList.at(dir).size();} // total number of sections per strip DIR
+    int GetDirStripNSections(int dir, int num) const; // number of sections per {strip DIR, strip NUM} pair
+    StripSectionBoundaryList GetStripSectionBoundaryList(int dir, int num) const; // active area boundaries + section boundaries
 
     bool operator==(const GeometryStats&) const;
     inline bool operator!=(const GeometryStats& B) const { return !(*this==B); }
-
- private:
-    std::map<int,DirectionStats> directionsStats; // key=strip_DIR
-    std::map<int,SectionIndexList> directionsSectionIndexList; // key=strip_DIR
-    DirectionStats mergedStats;
-    void FillSections(int dir, int section,int num);
-    void FillMerged(int dir,int num);
-    std::map<std::pair<int, int>, StripSectionBoundaryList> directionsStripSectionBoundaryList; // key=[strip DIR, strip NUM]
-    void FillSectionBoundary(int dir, int section, int num, TVector2 start, TVector2 end);
+private:
+  std::map<int,DirectionStats> directionsStats;
+  std::map<int,SectionIndexList> directionsSectionIndexList; // added by MC - 4 Aug 2021
+  DirectionStats mergedStats;
+  void FillSections(int dir, int section,int num);
+  void FillMerged(int dir,int num);
+  std::map<std::pair<int, int>, StripSectionBoundaryList> directionsStripSectionBoundaryList; // key=[strip DIR, strip NUM]
+  void FillSectionBoundary(int dir, int section, int num, TVector2 start, TVector2 end);
 };
 
 #endif

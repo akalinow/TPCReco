@@ -19,7 +19,7 @@ RecoOutput::RecoOutput() {
 /////////////////////////////////////////////////////////
 RecoOutput::~RecoOutput() {
   
-  //close();
+  close();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -59,17 +59,14 @@ void RecoOutput::open(const std::string & fileName){
 /////////////////////////////////////////////////////////
 void RecoOutput::close(){
 
-  std::cout<<"myOutputFilePtr: "<<myOutputFilePtr<<std::endl;
-  std::cout<<"myOutputTreePtr->GetDirectory(): "
-	   <<std::endl;
-
   if(!myOutputFilePtr){
      std::cout<<KRED<<"RecoOutput::close"<<RST
 	     <<" pointer to output file not set!"
 	     <<std::endl;
      return;
   }
-  //myOutputFilePtr->Write();
+  myOutputFilePtr->cd();
+  myOutputTreePtr->Write("", TObject::kOverwrite);
   myOutputFilePtr->Close();
 }
 /////////////////////////////////////////////////////////

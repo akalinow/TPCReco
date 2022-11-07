@@ -37,12 +37,13 @@ std::vector<double> Track3D::getSegmentsStartEndXYZ() const{
   std::vector<double> coordinates;
   if(!mySegments.size()) return coordinates;
 
+  std::vector<double> segmentCoordinates = mySegments.front().getStartEndXYZ();
+  coordinates.insert(coordinates.end(), segmentCoordinates.begin(), segmentCoordinates.begin()+3);
+  
   for(auto &aSegment: mySegments){
     std::vector<double> segmentCoordinates = aSegment.getStartEndXYZ();
-    coordinates.insert(coordinates.end(), segmentCoordinates.begin(), segmentCoordinates.begin()+3);
+    coordinates.insert(coordinates.end(), segmentCoordinates.begin()+3, segmentCoordinates.begin()+6);
   }
-  std::vector<double> segmentCoordinates = mySegments.back().getStartEndXYZ();
-  coordinates.insert(coordinates.end(), segmentCoordinates.begin()+3, segmentCoordinates.end());
 
   return coordinates;
 }
@@ -231,8 +232,8 @@ void Track3D::extendToChamberRange(const std::tuple<double, double, double, doub
   bool extended = extendToZRange(std::get<0>(zRange),std::get<1>(zRange));
 
   if(!extended){
-    extendToXYRange(std::get<2>(xyRange), std::get<3>(xyRange),
-		    std::get<0>(xyRange), std::get<1>(xyRange));
+    extendToXYRange(std::get<0>(xyRange), std::get<1>(xyRange),
+		    std::get<2>(xyRange), std::get<3>(xyRange));
   }
 }
 /////////////////////////////////////////////////////////
@@ -369,9 +370,18 @@ void Track3D::removeEmptySegments(){
 /////////////////////////////////////////////////////////
 double Track3D::chi2FromNodesList(const double *par){
 
+  double segmentParameters[6];
+  
   for(unsigned int iSegment=0;iSegment<mySegments.size();++iSegment){
     if(myFitMode==FIT_START_STOP){
-      const double *segmentParameters = par+3*iSegment;
+      segmentParameters[0]  = par[0];
+      segmentParameters[1]  = par[1];
+      segmentParameters[2]  = par[2];
+
+      segmentParameters[3]  = par[3*iSegment+3];
+      segmentParameters[4]  = par[3*iSegment+4];
+      segmentParameters[5]  = par[3*iSegment+5];
+      
       mySegments.at(iSegment).setStartEnd(segmentParameters);
     }
     if(myFitMode==FIT_BIAS_TANGENT){
@@ -380,7 +390,7 @@ double Track3D::chi2FromNodesList(const double *par){
     }
   }
 
-  updateChi2();
+  update();
   return getChi2();
 }
 /////////////////////////////////////////////////////////

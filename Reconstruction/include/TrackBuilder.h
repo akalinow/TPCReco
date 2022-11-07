@@ -6,6 +6,8 @@
 #include <memory>
 #include <tuple>
 
+#include <boost/property_tree/ptree.hpp>
+
 #include <Fit/Fitter.h>
 
 #include "TrackSegment2D.h"
@@ -32,17 +34,13 @@ public:
   
   ~TrackBuilder();
 
-  void setEvent(EventTPC* aEvent, const double chargeThreshold, const int delta_timecells, const int delta_strips);
-
-  void setEvent(std::shared_ptr<EventTPC> aEvent, const double chargeThreshold=35, const int delta_timecells=5, const int delta_strips=2);
+  void setEvent(std::shared_ptr<EventTPC> aEvent);
 
   void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);
 
   void setPressure(double aPressure);
 
   void reconstruct();
-
-  const SigClusterTPC & getCluster() const { return myEvent->GetOneCluster();}
 
   const TH2D & getCluster2D(int iDir) const;
 
@@ -83,8 +81,8 @@ private:
   ROOT::Fit::FitResult fitTrackNodesBiasTangent(const Track3D & aTrack, double offset=0) const;
 
   std::tuple<double, double> getTimeProjectionEdges() const;
-   
-  EventTPC *myEvent;
+
+  std::shared_ptr<EventTPC> myEventPtr;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
   RecHitBuilder myRecHitBuilder;
   dEdxFitter mydEdxFitter;

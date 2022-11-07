@@ -21,6 +21,7 @@ include_directories(${PROJECT_SOURCE_DIR}/DataFormats/include)
 include_directories(${PROJECT_SOURCE_DIR}/Reconstruction/include)
 include_directories(${PROJECT_SOURCE_DIR}/GrawToROOT/include)
 include_directories(${PROJECT_SOURCE_DIR}/Utilities/include)
+include_directories(${PROJECT_SOURCE_DIR}/TrackGenerator/include)
 include_directories(${PROJECT_SOURCE_DIR}/Analysis/include)
 
 find_package(ROOT REQUIRED COMPONENTS RIO GenVector Gui)
@@ -34,8 +35,6 @@ ROOT_GENERATE_DICTIONARY(G__${MODULE_NAME}
   ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/DirectoryWatch.h
   LINKDEF ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/RootDictLinkDef.h)
 
-# The data is just added to the executable, because in some IDEs (QtCreator) 
-# files are invisible when they are not explicitly part of the project.
 #
 add_library(${MODULE_NAME} SHARED ${sources} G__${MODULE_NAME}.cxx)
 add_library(${TPCRECO_PREFIX}${MODULE_NAME} ALIAS ${MODULE_NAME})

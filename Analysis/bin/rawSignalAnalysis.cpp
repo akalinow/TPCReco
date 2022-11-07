@@ -249,10 +249,7 @@ void analyzeRawEvents(const boost::property_tree::ptree &aConfig){
       myEventSource->loadFileEntry(0);
     }
 
-    // DEBUG - add run id info to unpacked EventTPC - functionality to be moved to EventSourceGRAW !!!!
-    myEventSource->getCurrentEvent()->SetRunId(id.runId());
-    std::cout << "RunID: " << myEventSource->getCurrentEvent()->GetRunId() << ", EventID: " << myEventSource->currentEventNumber() << std::endl;
-    // DEBUG
+    std::cout << "EventInfo: " << myEventSource->getCurrentEvent()->GetEventInfo()<<std::endl;
 
     // fill statistical histograms per run (before & after user-defined cuts)
     myAnalysis.fillTree(myEventSource->getCurrentEvent(), isFirst);

@@ -5,6 +5,8 @@
 #include <vector>
 #include <memory>
 
+#include <boost/property_tree/ptree.hpp>
+
 #include "TFile.h"
 #include "TLine.h"
 #include "TGraph.h"
@@ -16,6 +18,7 @@
 //#include "DotFinder.h"
 #include "dEdxFitter.h"
 #include "RecoOutput.h"
+#include "IonRangeCalculator.h"
 
 #include "CommonDefinitions.h"
 
@@ -24,6 +27,7 @@ class TH3D;
 
 class GeometryTPC;
 class EventTPC;
+class RunIdParser;
 
 class HistoManager {
 
@@ -39,9 +43,11 @@ public:
 
   void setEvent(std::shared_ptr<EventTPC> aEvent);
 
+  void setConfig(const boost::property_tree::ptree &aConfig);
+
   void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);
 
-  void setRecoClusterParameters(bool recoClusterEnable, double recoClusterThreshold, int recoClusterDeltaStrips, int recoClusterDetlaTimeCells);
+  void setPressure(double aPressure);
 
   void openOutputStream(const std::string & filePath);
 
@@ -65,11 +71,6 @@ public:
 
   void clearTracks();
 
-  std::shared_ptr<TH2D> getRawStripVsTime(int strip_dir);
-
-  std::shared_ptr<TH2D> getClusterStripVsTimeInMM(int strip_dir); 
-
-
   void reconstruct();
 
   void reconstructSegmentsFromMarkers(std::vector<double> * segmentsXY);
@@ -77,61 +78,22 @@ public:
   TGraph* getEventRateGraph();
   
   TH2Poly *getDetectorLayout() const;
-  
-  std::shared_ptr<TH1D> getRawTimeProjection();
 
-  std::shared_ptr<TH1D> getRawTimeProjection(int strip_dir);
+  std::shared_ptr<TH1D> get1DProjection(projection_type projType,
+					filter_type filterType,
+					scale_type scaleType);
 
-  std::shared_ptr<TH1D> getRawTimeProjectionInMM(); 
-
-  std::shared_ptr<TH1D> getRawTimeProjectionInMM(int strip_dir);
-
-  std::shared_ptr<TH1D> getRawStripProjection(int strip_dir);
-
-  std::shared_ptr<TH1D> getRawStripProjectionInMM(int strip_dir);
-
-  std::shared_ptr<TH2D> getRawStripVsTimeInMM(int strip_dir);
-
-  std::shared_ptr<TH2D> getFilteredStripVsTime(int strip_dir);
-
+  std::shared_ptr<TH2D> get2DProjection(projection_type projType,
+					filter_type filterType,
+					scale_type scaleType);
+    
   std::shared_ptr<TH2D> getRecHitStripVsTime(int strip_dir);
 
   std::shared_ptr<TH1D> getRecHitTimeProjection();
 
   std::shared_ptr<TH2D> getChannels(int cobo_id, int asad_id);
 
-  std::shared_ptr<TH1D> getClusterTimeProjection();
-
-  std::shared_ptr<TH1D> getClusterTimeProjectionInMM();
-
-  std::shared_ptr<TH1D> getClusterTimeProjection(int strip_dir);
-
-  std::shared_ptr<TH1D> getClusterTimeProjectionInMM(int strip_dir);
-
-  std::shared_ptr<TH1D> getClusterStripProjection(int strip_dir);
-
-  std::shared_ptr<TH1D> getClusterStripProjectionInMM(int strip_dir); 
-
-  std::shared_ptr<TH2D> getClusterStripVsTime(int strip_dir);
-
-  bool getRecoClusterEnable();
-  double getRecoClusterThreshold();
-  int getRecoClusterDeltaStrips();
-  int getRecoClusterDeltaTimeCells();
-  /*
-  // Dot-like events usful for neutron flux monitoring
-  void initializeDotFinder(unsigned int hitThr, // unsigned int maxStripsPerDir, unsigned int maxTimecellsPerDir,
-			   unsigned int totalChargeThr, 
-			   double matchRadiusInMM, const std::string & filePath);
-
-  void runDotFinder();
-  void finalizeDotFinder();
-  */
   private:
-
-  TH3D* get3DReconstruction();
-
-  TH2D* get2DReconstruction(int strip_dir);
 
   const TH2D & getHoughAccumulator(int strip_dir, int iPeak=0);
 
@@ -153,16 +115,19 @@ public:
 
   void setDetLayout();
   void setDetLayoutVetoBand(double distance); // [mm]
-      
+
+  boost::property_tree::ptree myConfig;
+
+  IonRangeCalculator myRangeCalculator;
   std::vector<TH2D*> projectionsInCartesianCoords;
   TH3D *h3DReco{0};
   TGraph *grEventRate{0};
   TrackBuilder myTkBuilder;
   RecoOutput myRecoOutput;
 
-
+  std::shared_ptr<RunIdParser> myRunParser; 
   std::shared_ptr<EventTPC> myEventPtr;
-  std::shared_ptr<eventraw::EventInfo> myEventInfo;
+  eventraw::EventInfo myEventInfo;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
 
   TH2F *hDetLayout{0};        // dummy histogram with optimal XY ranges
@@ -181,10 +146,6 @@ public:
   Long64_t previousEventNumber{-1};
 
   bool recoClusterEnable{true};
-  double recoClusterThreshold{35};
-  int recoClusterDeltaStrips{2};
-  int recoClusterDeltaTimeCells{5};
-
 };
 #endif
 

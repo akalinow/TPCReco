@@ -22,51 +22,7 @@
 #include "colorText.h"
 #include "GeometryTPC.h"
 #include "MultiKey.h"
-#include "UtilsMath.h" // for Utils::NUMERICAL_TOLERANCE
-
-StripTPC::StripTPC(int direction, int section, int number, int cobo_index,
-                   int asad_index, int aget_index, int aget_channel,
-                   int aget_channel_raw, TVector2 unit_vector,
-                   TVector2 offset_vector_in_mm, int number_of_pads,
-                   GeometryTPC *g)
-    : geo_ptr(g), dir(direction), section(section), num(number),
-      coboId(cobo_index), asadId(asad_index), agetId(aget_index),
-      agetCh(aget_channel), agetCh_raw(aget_channel_raw), unit_vec(unit_vector),
-      offset_vec(offset_vector_in_mm), npads(number_of_pads) {}
-
-int StripTPC::GlobalCh() {
-  if (geo_ptr && geo_ptr->IsOK())
-    return geo_ptr->Global_normal2normal(coboId, asadId, agetId, agetCh);
-  return ERROR;
-}
-
-int StripTPC::GlobalCh_raw() {
-  if (geo_ptr && geo_ptr->IsOK())
-    return geo_ptr->Global_normal2raw(coboId, asadId, agetId, agetCh);
-  return ERROR;
-}
-
-TVector2 StripTPC::Start() {
-  ////// DEBUG
-  //  std::cout << __FUNCTION__ << ": dir=" << dir << ", sec=" << section << ", num=" << num << ", npads=" << npads << ": ";
-  //  (offset_vec + geo_ptr->GetReferencePoint() - 0.5*unit_vec*geo_ptr->GetPadPitch()).Print();
-  ////// DEBUG
-  if (geo_ptr) // skip strict checking to allow proper initialization of statistics during Load()
-    return offset_vec + geo_ptr->GetReferencePoint() - 0.5*unit_vec*geo_ptr->GetPadPitch();
-  std::cerr << __FUNCTION__ << KRED <<": ERROR: Invalid geometry pointer!" << RST << std::endl;
-  exit(-1);
-}
-
-TVector2 StripTPC::End() {
-  ////// DEBUG
-  //  std::cout << __FUNCTION__ << ": dir=" << dir << ", sec=" << section << ", num=" << num << ", npads=" << npads << ": ";
-  //  (offset_vec + geo_ptr->GetReferencePoint() + (npads-0.5)*unit_vec*geo_ptr->GetPadPitch()).Print();
-  ////// DEBUG
-  if (geo_ptr) // skip strict checking to allow proper initialization of statistics during Load()
-    return offset_vec + geo_ptr->GetReferencePoint() + (npads-0.5)*unit_vec*geo_ptr->GetPadPitch();
-  std::cerr << __FUNCTION__ << KRED <<": ERROR: Invalid geometry pointer!" << RST << std::endl;
-  exit(-1);
-}
+#include "UtilsMath.h" 
 
 GeometryTPC::GeometryTPC(const char *fname, bool debug)
     : initOK(false), COBO_N(0), AGET_Nchips(4), AGET_Nchan(64),
@@ -100,6 +56,7 @@ GeometryTPC::GeometryTPC(const char *fname, bool debug)
   dir2name.insert(std::pair<int, std::string>(DIR_U, "U"));
   dir2name.insert(std::pair<int, std::string>(DIR_V, "V"));
   dir2name.insert(std::pair<int, std::string>(DIR_W, "W"));
+  dir2name.insert(std::pair<int, std::string>(DIR_TIME, "time"));
   dir2name.insert(std::pair<int, std::string>(FPN_CH, "FPN"));
 
   name2dir.clear();
@@ -378,16 +335,14 @@ bool GeometryTPC::Load(const char *fname) {
               offset_in_strips * strip_pitch * pitch_unit_vec[dir] +
               offset_in_pads * pad_pitch * strip_unit_vec[dir];
           double length = length_in_pads * pad_pitch;
-          StripTPC *strip = new StripTPC(
-              dir, section, strip_num, cobo, asad, aget, chan_num, chan_num_raw,
-              strip_unit_vec[dir], offset, length_in_pads, this);
+          std::shared_ptr<StripTPC> strip(new StripTPC(
+						       dir, section, strip_num, cobo, asad, aget, chan_num, chan_num_raw,
+						       strip_unit_vec[dir], offset, length_in_pads, this));
 
           // update map (by: COBO board, ASAD board, AGET chip, AGET normal/raw
           // channel)
-          mapByAget[MultiKey4(cobo, asad, aget, chan_num)] =
-              strip; // StripTPC(dir, strip_num);
-          mapByAget_raw[MultiKey4(cobo, asad, aget, chan_num_raw)] =
-              strip; // StripTPC(dir, strip_num);
+          mapByAget[MultiKey4(cobo, asad, aget, chan_num)] = strip; 
+          mapByAget_raw[MultiKey4(cobo, asad, aget, chan_num_raw)] = strip; 
 
           // update reverse map (by: strip direction, strip number)
           if (dir == DIR_U || dir == DIR_V || dir == DIR_W) {
@@ -481,8 +436,8 @@ bool GeometryTPC::Load(const char *fname) {
       for (int ichip = 0; ichip < AGET_Nchips; ichip++)
         for (uint i = 0; i < FPN_chanId.size(); i++) {
           mapByAget_raw[MultiKey4(icobo, iasad, ichip, FPN_chanId[i])] =
-              new StripTPC(FPN_CH, 0, i + 1, icobo, iasad, ichip, ERROR,
-                           FPN_chanId[i], TVector2(), TVector2(), 0, this);
+	    std::shared_ptr<StripTPC>(new StripTPC(FPN_CH, 0, i + 1, icobo, iasad, ichip, ERROR,
+						   FPN_chanId[i], TVector2(), TVector2(), 0, this));
         }
 
   // adding # of FPN channels to stripN
@@ -634,7 +589,7 @@ bool GeometryTPC::InitTH2Poly() {
   auto gr=new TGraph(); // collection of initial points for calculating perimeter of the active area
   for (auto &i : mapByStrip) {
 
-    auto *s = i.second;
+    auto s = i.second;
     // if(!s) continue;
     int dir = s->Dir();
     int section = s->Section();
@@ -758,6 +713,7 @@ bool GeometryTPC::InitTH2Poly() {
 
 // change cartesian binning of the underlying TH2Poly
 void GeometryTPC::SetTH2PolyPartition(int nx, int ny) {
+
   bool change = false;
   if (nx > 1 && nx != grid_nx) {
     grid_nx = nx;
@@ -771,9 +727,8 @@ void GeometryTPC::SetTH2PolyPartition(int nx, int ny) {
     tp->ChangePartition(grid_nx, grid_ny);
 }
 
-void GeometryTPC::SetTH2PolyStrip(int ibin, StripTPC *s) {
-  if (s)
-    fStripMap[ibin] = s;
+void GeometryTPC::SetTH2PolyStrip(int ibin, std::shared_ptr<StripTPC> s) {
+  if (s) fStripMap[ibin] = s;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1196,11 +1151,11 @@ void GeometryTPC::setTriggerDelay(double d){
   runConditions.setTriggerDelay(d);
 }
 
-StripTPC *GeometryTPC::GetTH2PolyStrip(int ibin) {
-  return (fStripMap.find(ibin) == fStripMap.end() ? NULL : fStripMap[ibin]);
+std::shared_ptr<StripTPC> GeometryTPC::GetTH2PolyStrip(int ibin) const{
+  return (fStripMap.find(ibin) == fStripMap.end() ? std::shared_ptr<StripTPC>() : fStripMap.at(ibin));
 }
 
-int GeometryTPC::GetDirNstrips(int dir) {
+int GeometryTPC::GetDirNstrips(int dir) const{
   if (!IsOK())
     return -1;
   switch (dir) {
@@ -1210,80 +1165,74 @@ int GeometryTPC::GetDirNstrips(int dir) {
     return GetDirNStripsMerged(dir);
     break;
   case FPN_CH:
-    return stripN[dir];
+    return stripN.at(dir);
     break;
   };
   return ERROR;
 }
-int GeometryTPC::GetDirNstrips(std::string name) {
+int GeometryTPC::GetDirNstrips(std::string name) const{
   return this->GetDirNstrips(this->GetDirIndex(name));
 }
-int GeometryTPC::GetDirNstrips(const char *name) {
+int GeometryTPC::GetDirNstrips(const char *name) const{
   return this->GetDirNstrips(this->GetDirIndex(std::string(name)));
 }
-int GeometryTPC::GetDirNstrips(StripTPC *s) {
-  if (s)
-    return this->GetDirNstrips(s->Dir());
+int GeometryTPC::GetDirNstrips(std::shared_ptr<StripTPC> s) const{
+  if (s) return this->GetDirNstrips(s->Dir());
   return ERROR;
 }
 
-const char *GeometryTPC::GetDirName(int dir) {
+const char *GeometryTPC::GetDirName(int dir) const{
   if (!IsOK())
     return NULL; // "ERROR";
   switch (dir) {
   case DIR_U:
   case DIR_V:
   case DIR_W:
+  case DIR_TIME:
   case FPN_CH:
     return dir2name.at(dir).c_str(); // dir2name[dir];
   };
   return NULL; // "ERROR";
 }
 
-int GeometryTPC::GetDirIndex(std::string name) {
-  std::map<std::string, int>::iterator it;
-  if ((it = name2dir.find(name)) != name2dir.end())
+int GeometryTPC::GetDirIndex(std::string name) const{
+  auto it = name2dir.find(name);
+  if (it != name2dir.end())
     return it->second;
   else
     return ERROR;
 }
-int GeometryTPC::GetDirIndex(const char *name) {
+int GeometryTPC::GetDirIndex(const char *name) const{
   return this->GetDirIndex(std::string(name));
 }
 
-int GeometryTPC::GetDirIndex(int global_channel_idx) {
-  StripTPC *strip = this->GetStripByGlobal(global_channel_idx);
-  if (strip)
-    return strip->Dir();
+int GeometryTPC::GetDirIndex(int global_channel_idx) const{
+  std::shared_ptr<StripTPC> strip = this->GetStripByGlobal(global_channel_idx);
+  if (strip) return strip->Dir();
   return ERROR;
 }
 
 int GeometryTPC::GetDirIndex(int COBO_idx, int ASAD_idx, int AGET_idx,
-                             int channel_idx) {
-  StripTPC *strip =
-      this->GetStripByAget(COBO_idx, ASAD_idx, AGET_idx, channel_idx);
-  if (strip)
-    return strip->Dir();
+                             int channel_idx) const{
+  std::shared_ptr<StripTPC> strip = this->GetStripByAget(COBO_idx, ASAD_idx, AGET_idx, channel_idx);
+  if (strip) return strip->Dir();
   return ERROR;
 }
 
-int GeometryTPC::GetDirIndex_raw(int global_raw_channel_idx) {
-  StripTPC *strip = this->GetStripByGlobal_raw(global_raw_channel_idx);
-  if (strip)
-    return strip->Dir();
+int GeometryTPC::GetDirIndex_raw(int global_raw_channel_idx) const{
+  std::shared_ptr<StripTPC> strip = this->GetStripByGlobal_raw(global_raw_channel_idx);
+  if (strip) return strip->Dir();
   return ERROR;
 }
 
 int GeometryTPC::GetDirIndex_raw(int COBO_idx, int ASAD_idx, int AGET_idx,
-                                 int raw_channel_idx) {
-  StripTPC *strip =
-      this->GetStripByAget_raw(COBO_idx, ASAD_idx, AGET_idx, raw_channel_idx);
-  if (strip)
-    return strip->Dir();
+                                 int raw_channel_idx) const{
+  std::shared_ptr<StripTPC> strip = this->GetStripByAget_raw(COBO_idx, ASAD_idx, AGET_idx, raw_channel_idx);
+  if (strip) return strip->Dir();
   return ERROR;
 }
 
-const char *GeometryTPC::GetStripName(StripTPC *s) {
+const char *GeometryTPC::GetStripName(std::shared_ptr<StripTPC> s) const{
   if (!IsOK() || !s)
     return NULL; // "ERROR";
   std::stringstream ss;
@@ -1301,64 +1250,54 @@ const char *GeometryTPC::GetStripName(StripTPC *s) {
   return NULL; // "ERROR";
 }
 
-StripTPC *GeometryTPC::GetStripByAget(
+std::shared_ptr<StripTPC> GeometryTPC::GetStripByAget(
     int COBO_idx, int ASAD_idx, int AGET_idx,
-    int channel_idx) { // valid range [0-1][0-3][0-3][0-63]
-  if (!IsOK())
-    return NULL; // ERROR
-  std::map<MultiKey4, StripTPC *, multikey4_less>::iterator it;
-  if ((it = mapByAget.find(MultiKey4(COBO_idx, ASAD_idx, AGET_idx,
-                                     channel_idx))) != mapByAget.end()) {
-    return it->second;
-  }
-  return NULL; // ERROR
+    int channel_idx) const{ // valid range [0-1][0-3][0-3][0-63]
+  if (!IsOK()) return std::shared_ptr<StripTPC>();
+
+  auto it = mapByAget.find(MultiKey4(COBO_idx, ASAD_idx, AGET_idx,
+                                     channel_idx));
+  if(it != mapByAget.end()) return it->second;  
+  return std::shared_ptr<StripTPC>();
 }
 
-StripTPC *
-GeometryTPC::GetStripByGlobal(int global_channel_idx) { // valid range [0-1023]
-  if (global_channel_idx < 0)
-    return NULL; // ERROR
+std::shared_ptr<StripTPC> GeometryTPC::GetStripByGlobal(int global_channel_idx) const{ // valid range [0-1023]
+  if (global_channel_idx < 0) return std::shared_ptr<StripTPC>();
   int channel_idx = global_channel_idx % AGET_Nchan;
   int rest1 = global_channel_idx / AGET_Nchan;
   int AGET_idx = rest1 % AGET_Nchips;
   int rest2 = rest1 / AGET_Nchips;
   int counter = 0;
   for (int icobo = 0; icobo < COBO_N; icobo++) {
-    for (int iasad = 0; iasad < ASAD_N[icobo]; iasad++) {
+    for (int iasad = 0; iasad < ASAD_N.at(icobo); iasad++) {
       if (counter == rest2) {
         return this->GetStripByAget(icobo, iasad, AGET_idx, channel_idx);
       }
       counter++;
     }
   }
-  return NULL; // ERROR
+  return std::shared_ptr<StripTPC>();
 }
-
-StripTPC *GeometryTPC::GetStripByAget_raw(
+ 
+std::shared_ptr<StripTPC> GeometryTPC::GetStripByAget_raw(
     int COBO_idx, int ASAD_idx, int AGET_idx,
-    int raw_channel_idx) { // valid range [0-1][0-3][0-3][0-67]
-  if (!IsOK())
-    return NULL; // ERROR
-  std::map<MultiKey4, StripTPC *, multikey4_less>::iterator it;
-  if ((it = mapByAget_raw.find(
-           MultiKey4(COBO_idx, ASAD_idx, AGET_idx, raw_channel_idx))) !=
-      mapByAget_raw.end()) {
-    return it->second;
-  }
-  return NULL; // ERROR
+    int raw_channel_idx) const{ // valid range [0-1][0-3][0-3][0-67]
+  if (!IsOK()) return std::shared_ptr<StripTPC>();
+  auto it =  mapByAget_raw.find(MultiKey4(COBO_idx, ASAD_idx, AGET_idx, raw_channel_idx));
+  if(it!=mapByAget_raw.end()) return it->second;  
+  return std::shared_ptr<StripTPC>();
 }
 
-StripTPC *GeometryTPC::GetStripByGlobal_raw(
-    int global_raw_channel_idx) { // valid range [0-1023]
-  if (global_raw_channel_idx < 0)
-    return NULL; // ERROR
+std::shared_ptr<StripTPC> GeometryTPC::GetStripByGlobal_raw(
+    int global_raw_channel_idx) const{ // valid range [0-1023]
+  if (global_raw_channel_idx < 0) return std::shared_ptr<StripTPC>();
   int raw_channel_idx = global_raw_channel_idx % AGET_Nchan_raw;
   int rest1 = global_raw_channel_idx / AGET_Nchan_raw;
   int AGET_idx = rest1 % AGET_Nchips;
   int rest2 = rest1 / AGET_Nchips;
   int counter = 0;
   for (int icobo = 0; icobo < COBO_N; icobo++) {
-    for (int iasad = 0; iasad < ASAD_N[icobo]; iasad++) {
+    for (int iasad = 0; iasad < ASAD_N.at(icobo); iasad++) {
       if (counter == rest2) {
         return this->GetStripByAget_raw(icobo, iasad, AGET_idx,
                                         raw_channel_idx);
@@ -1366,19 +1305,14 @@ StripTPC *GeometryTPC::GetStripByGlobal_raw(
       counter++;
     }
   }
-  return NULL; // ERROR
+  return std::shared_ptr<StripTPC>();
 }
 
-StripTPC *GeometryTPC::GetStripByDir(int dir, int section,
-                           int num) { // valid range [0-2][0-2][1-1024]
+ std::shared_ptr<StripTPC> GeometryTPC::GetStripByDir(int dir, int section, int num) const{ // valid range [0-2][0-2][1-1024]
   return this->GetStripByGlobal(Global_strip2normal(dir, section, num));
 }
-//StripTPC *GeometryTPC::GetStripByDir(
-//    int dir, int num) { // legacy for section=0, valid range [0-2][1-1024]
-//  return GetStripByDir(dir, 0, num);
-//}
 
-int GeometryTPC::Aget_normal2raw(int channel_idx) { // valid range [0-63]
+int GeometryTPC::Aget_normal2raw(int channel_idx) const{ // valid range [0-63]
   if (/*!IsOK() || */ channel_idx < 0 || channel_idx >= AGET_Nchan)
     return ERROR;
   int raw_channel_idx = channel_idx;
@@ -1391,7 +1325,7 @@ int GeometryTPC::Aget_normal2raw(int channel_idx) { // valid range [0-63]
   return raw_channel_idx;
 }
 
-int GeometryTPC::Aget_raw2normal(int raw_channel_idx) { // valid range [0-67]
+int GeometryTPC::Aget_raw2normal(int raw_channel_idx) const{ // valid range [0-67]
   if (/*!IsOK() || */ raw_channel_idx < 0 || raw_channel_idx >= AGET_Nchan_raw)
     return ERROR;
   int channel_idx = raw_channel_idx;
@@ -1405,7 +1339,7 @@ int GeometryTPC::Aget_raw2normal(int raw_channel_idx) { // valid range [0-67]
 }
 
 int GeometryTPC::Asad_normal2raw(
-   int asad_channel_idx) { // valid range [0-255]
+   int asad_channel_idx) const{ // valid range [0-255]
   int aget_raw_channel_idx = Aget_normal2raw(asad_channel_idx % AGET_Nchan);
   int AGET_idx = (int)(asad_channel_idx / AGET_Nchan); // relative AGET index
   if (aget_raw_channel_idx == ERROR) return ERROR;
@@ -1414,7 +1348,7 @@ int GeometryTPC::Asad_normal2raw(
 
 int GeometryTPC::Asad_normal2raw(
     int aget_idx,
-    int channel_idx) { // valid range [0-3][0-63]
+    int channel_idx) const{ // valid range [0-3][0-63]
   int aget_raw_channel_idx = Aget_normal2raw(channel_idx);
   if (aget_raw_channel_idx == ERROR || 
       aget_idx < 0 ||
@@ -1424,7 +1358,7 @@ int GeometryTPC::Asad_normal2raw(
 
 int GeometryTPC::Asad_normal2normal(
     int aget_idx,
-    int channel_idx) { // valid range [0-3][0-63]
+    int channel_idx) const{ // valid range [0-3][0-63]
   if(/*!IsOK() || */
      aget_idx<0 || aget_idx>=AGET_Nchips ||
      channel_idx<0 || channel_idx>=AGET_Nchan ) return ERROR;
@@ -1433,7 +1367,7 @@ int GeometryTPC::Asad_normal2normal(
 
 int GeometryTPC::Asad_raw2normal(
     int aget_idx,
-    int raw_channel_idx) { // valid range [0-3][0-67]
+    int raw_channel_idx) const{ // valid range [0-3][0-67]
   int aget_channel_idx = Aget_raw2normal(raw_channel_idx);
   if (aget_channel_idx == ERROR ||
       aget_idx < 0 ||
@@ -1443,7 +1377,7 @@ int GeometryTPC::Asad_raw2normal(
 }
 
 int GeometryTPC::Asad_raw2normal(
-    int asad_raw_channel_idx) { // valid range [0-(1023+4*4)]
+    int asad_raw_channel_idx) const{ // valid range [0-(1023+4*4)]
   int aget_channel_idx = Aget_raw2normal(asad_raw_channel_idx % AGET_Nchan_raw);
   int AGET_idx = (int)(asad_raw_channel_idx / AGET_Nchan_raw); // relative AGET index
   if (aget_channel_idx == ERROR) return ERROR;
@@ -1452,7 +1386,7 @@ int GeometryTPC::Asad_raw2normal(
 
 int GeometryTPC::Asad_raw2raw(
     int aget_idx,
-    int raw_channel_idx) { // valid range [0-3][0-67]
+    int raw_channel_idx) const{ // valid range [0-3][0-67]
   if (/*!IsOK() || */
       aget_idx < 0 || aget_idx >= AGET_Nchips ||
       raw_channel_idx < 0 || raw_channel_idx >= AGET_Nchan_raw) return ERROR;
@@ -1461,15 +1395,15 @@ int GeometryTPC::Asad_raw2raw(
 
 int GeometryTPC::Global_normal2raw(
     int COBO_idx, int ASAD_idx, int aget_idx,
-    int channel_idx) { // valid range [0-1][0-3][0-3][0-63]
+    int channel_idx) const{ // valid range [0-1][0-3][0-3][0-63]
   int glb_raw_channel_idx = Aget_normal2raw(channel_idx);
   if (glb_raw_channel_idx == ERROR || COBO_idx < 0 || COBO_idx >= COBO_N ||
-      ASAD_idx < 0 || ASAD_idx > ASAD_N[COBO_idx] || aget_idx < 0 ||
+      ASAD_idx < 0 || ASAD_idx > ASAD_N.at(COBO_idx) || aget_idx < 0 ||
       aget_idx >= AGET_Nchips)
     return ERROR;
   int ASAD_offset = 0;
   for (int icobo = 0; icobo < COBO_idx; icobo++) {
-    ASAD_offset += ASAD_N[icobo];
+    ASAD_offset += ASAD_N.at(icobo);
   }
   return ((ASAD_offset + ASAD_idx) * AGET_Nchips + aget_idx) * AGET_Nchan_raw +
          glb_raw_channel_idx;
@@ -1477,15 +1411,15 @@ int GeometryTPC::Global_normal2raw(
 
 int GeometryTPC::Global_raw2normal(
     int COBO_idx, int ASAD_idx, int aget_idx,
-    int raw_channel_idx) { // valid range [0-1][0-3][0-3][0-67]
+    int raw_channel_idx) const{ // valid range [0-1][0-3][0-3][0-67]
   int glb_channel_idx = Aget_raw2normal(raw_channel_idx);
   if (glb_channel_idx == ERROR || COBO_idx < 0 || COBO_idx >= COBO_N ||
-      ASAD_idx < 0 || ASAD_idx > ASAD_N[COBO_idx] || aget_idx < 0 ||
+      ASAD_idx < 0 || ASAD_idx > ASAD_N.at(COBO_idx) || aget_idx < 0 ||
       aget_idx >= AGET_Nchips)
     return ERROR;
   int ASAD_offset = 0;
   for (int icobo = 0; icobo < COBO_idx; icobo++) {
-    ASAD_offset += ASAD_N[icobo];
+    ASAD_offset += ASAD_N.at(icobo);
   }
   return ((ASAD_offset + ASAD_idx) * AGET_Nchips + aget_idx) * AGET_Nchan +
          glb_channel_idx;
@@ -1493,32 +1427,32 @@ int GeometryTPC::Global_raw2normal(
 
 int GeometryTPC::Global_fpn2raw(
     int COBO_idx, int ASAD_idx, int aget_idx,
-    int FPN_idx) { // valid range [0-1][0-3][0-3][0-3]
+    int FPN_idx) const{ // valid range [0-1][0-3][0-3][0-3]
   if (/*!IsOK() || */ COBO_idx < 0 || COBO_idx >= COBO_N || ASAD_idx < 0 ||
-      ASAD_idx > ASAD_N[COBO_idx] || aget_idx < 0 || aget_idx >= AGET_Nchips ||
-      FPN_idx < 0 || FPN_idx >= stripN[FPN_CH])
+      ASAD_idx > ASAD_N.at(COBO_idx) || aget_idx < 0 || aget_idx >= AGET_Nchips ||
+      FPN_idx < 0 || FPN_idx >= stripN.at(FPN_CH))
     return ERROR;
   int ASAD_offset = 0;
   for (int icobo = 0; icobo < COBO_idx; icobo++) {
-    ASAD_offset += ASAD_N[icobo];
+    ASAD_offset += ASAD_N.at(icobo);
   }
   return ((ASAD_offset + ASAD_idx) * AGET_Nchips + aget_idx) * AGET_Nchan_raw +
-         FPN_chanId[FPN_idx];
+    FPN_chanId.at(FPN_idx);
 }
-int GeometryTPC::Aget_fpn2raw(int FPN_idx) { // valid range [0-3]
-  if (/*!IsOK() || */ FPN_idx < 0 || FPN_idx >= stripN[FPN_CH])
+int GeometryTPC::Aget_fpn2raw(int FPN_idx) const{ // valid range [0-3]
+  if (/*!IsOK() || */ FPN_idx < 0 || FPN_idx >= stripN.at(FPN_CH))
     return ERROR;
   return FPN_chanId.at(FPN_idx);
 }
 
 int GeometryTPC::Global_normal2raw(
-    int glb_channel_idx) { // valid range [0-1023]
+    int glb_channel_idx) const{ // valid range [0-1023]
   int glb_raw_channel_idx = Aget_normal2raw(glb_channel_idx % AGET_Nchan);
   int AGET_idx = (int)(glb_channel_idx / AGET_Nchan); // relative AGET index
   int ASAD_idx = (int)(AGET_idx / AGET_Nchips);       // relative ASAD index
   int counter = 0;
   for (int icobo = 0; icobo < COBO_N; icobo++)
-    for (int iasad = 0; iasad < ASAD_N[icobo]; iasad++) {
+    for (int iasad = 0; iasad < ASAD_N.at(icobo); iasad++) {
       if (counter == ASAD_idx && glb_raw_channel_idx != ERROR)
         return AGET_idx * AGET_Nchan_raw + glb_raw_channel_idx;
       counter++;
@@ -1528,13 +1462,13 @@ int GeometryTPC::Global_normal2raw(
 
 int GeometryTPC::Global_normal2normal(
     int COBO_idx, int ASAD_idx, int aget_idx,
-    int channel_idx) { // valid range [0-1][0-3][0-3][0-63]
+    int channel_idx) const{ // valid range [0-1][0-3][0-3][0-63]
   // if(/*!IsOK() || */COBO_idx<0 || COBO_idx>=COBO_N || ASAD_idx<0 ||
   // ASAD_idx>ASAD_N[COBO_idx] || aget_idx<0 || aget_idx>=AGET_Nchips ||
   //    channel_idx<0 || channel_idx>=AGET_Nchan ) return ERROR;
   int ASAD_offset = 0;
   for (int icobo = 0; icobo < COBO_idx; icobo++) {
-    ASAD_offset += ASAD_N[icobo];
+    ASAD_offset += ASAD_N.at(icobo);
   }
 
   return ((ASAD_offset + ASAD_idx) * AGET_Nchips + aget_idx) * AGET_Nchan +
@@ -1542,13 +1476,13 @@ int GeometryTPC::Global_normal2normal(
 }
 
 int GeometryTPC::Global_raw2normal(
-    int glb_raw_channel_idx) { // valid range [0-(1023+ASAD_N[0]+...)]
+    int glb_raw_channel_idx) const{ // valid range [0-(1023+ASAD_N[0]+...)]
   int glb_channel_idx = Aget_raw2normal(glb_raw_channel_idx % AGET_Nchan_raw);
   int AGET_idx = (int)(glb_channel_idx / AGET_Nchan); // relative AGET index
   int ASAD_idx = (int)(AGET_idx / AGET_Nchips);       // relative ASAD index
   int counter = 0;
   for (int icobo = 0; icobo < COBO_N; icobo++)
-    for (int iasad = 0; iasad < ASAD_N[icobo]; iasad++) {
+    for (int iasad = 0; iasad < ASAD_N.at(icobo); iasad++) {
       if (counter == ASAD_idx && glb_channel_idx != ERROR)
         return AGET_idx * AGET_Nchan + glb_channel_idx;
       counter++;
@@ -1558,27 +1492,26 @@ int GeometryTPC::Global_raw2normal(
 
 int GeometryTPC::Global_raw2raw(
     int COBO_idx, int ASAD_idx, int aget_idx,
-    int raw_channel_idx) { // valid range [0-1][0-3][0-3][0-67]
+    int raw_channel_idx) const{ // valid range [0-1][0-3][0-3][0-67]
   if (/*!IsOK() || */ COBO_idx < 0 || COBO_idx >= COBO_N || ASAD_idx < 0 ||
-      ASAD_idx > ASAD_N[COBO_idx] || aget_idx < 0 || aget_idx >= AGET_Nchips ||
+      ASAD_idx > ASAD_N.at(COBO_idx) || aget_idx < 0 || aget_idx >= AGET_Nchips ||
       raw_channel_idx < 0 || raw_channel_idx >= AGET_Nchan_raw)
     return ERROR;
   int ASAD_offset = 0;
   for (int icobo = 0; icobo < COBO_idx; icobo++) {
-    ASAD_offset += ASAD_N[icobo];
+    ASAD_offset += ASAD_N.at(icobo);
   }
   return ((ASAD_offset + ASAD_idx) * AGET_Nchips + aget_idx) * AGET_Nchan_raw +
          raw_channel_idx;
 }
 
-int GeometryTPC::Global_strip2normal(StripTPC *s) {
+int GeometryTPC::Global_strip2normal(StripTPC *s) const{
   return Global_strip2normal(s->Dir(), s->Section(), s->Num());
 }
 
 int GeometryTPC::Global_strip2normal(int dir, int section,
-                                     int num) { // valid range [0-2][0-2][1-92]
-  std::map<MultiKey3, StripTPC *>::iterator it =
-      mapByStrip.find(MultiKey3(dir, section, num));
+                                     int num) const{ // valid range [0-2][0-2][1-92]
+  auto it = mapByStrip.find(MultiKey3(dir, section, num));
   if (it != mapByStrip.end() && it->second)
     return (it->second)->GlobalCh();
   return ERROR;
@@ -1588,14 +1521,13 @@ int GeometryTPC::Global_strip2normal(int dir, int section,
 //  return Global_strip2normal(dir, 0, num);
 //}
 
-int GeometryTPC::Global_strip2raw(StripTPC *s) {
+int GeometryTPC::Global_strip2raw(StripTPC *s) const{
   return Global_strip2raw(s->Dir(), s->Section(), s->Num());
 }
 
 int GeometryTPC::Global_strip2raw(int dir, int section,
-                                  int num) { // valid range [0-2][0-2][1-92]
-  std::map<MultiKey3, StripTPC *>::iterator it =
-      mapByStrip.find(MultiKey3(dir, section, num));
+                                  int num) const{ // valid range [0-2][0-2][1-92]
+  auto it = mapByStrip.find(MultiKey3(dir, section, num));
   if (it != mapByStrip.end() && it->second)
     return (it->second)->GlobalCh_raw();
   return ERROR;
@@ -1608,14 +1540,21 @@ int GeometryTPC::Global_strip2raw(int dir, int section,
 // Checks if 2 strips (single electronic channel) are crossing inside the active area of TPC,
 // on success (true) also returns the calculated offset vector wrt ORIGIN POINT (0,0)
 bool GeometryTPC::GetCrossPoint(StripTPC *strip1, StripTPC *strip2,
-                                TVector2 &point) {
-  if (!strip1 || !strip2)
-    return false;
+                                TVector2 &point) const{
+
+  return GetCrossPoint(std::shared_ptr<StripTPC>(strip1),
+		       std::shared_ptr<StripTPC>(strip2),
+		       point);
+}
+ 
+bool GeometryTPC::GetCrossPoint(std::shared_ptr<StripTPC> strip1,
+				std::shared_ptr<StripTPC> strip2,
+                                TVector2 &point) const{
+  if (!strip1 || !strip2) return false;
   const double u1[2] = {strip1->Unit().X(), strip1->Unit().Y()};
   const double u2[2] = {strip2->Unit().X(), strip2->Unit().Y()};
   double W = -u1[0] * u2[1] + u1[1] * u2[0];
-  if (fabs(W) < Utils::NUMERICAL_TOLERANCE)
-    return false;
+  if (fabs(W) < Utils::NUMERICAL_TOLERANCE) return false;
   const double offset[2] = {strip2->Offset().X() - strip1->Offset().X(),
                             strip2->Offset().Y() - strip1->Offset().Y()};
   double W1 = -offset[0] * u2[1] + offset[1] * u2[0];
@@ -1625,8 +1564,8 @@ bool GeometryTPC::GetCrossPoint(StripTPC *strip1, StripTPC *strip2,
   double residual = 0.5 * pad_pitch;
   if (len1 < -residual - Utils::NUMERICAL_TOLERANCE || len2 < -residual - Utils::NUMERICAL_TOLERANCE ||
       len1 > strip1->Length() + Utils::NUMERICAL_TOLERANCE ||
-      len2 > strip2->Length() + Utils::NUMERICAL_TOLERANCE)
-    return false;
+      len2 > strip2->Length() + Utils::NUMERICAL_TOLERANCE) return false;
+
   point.Set(strip1->Offset().X() + len1 * strip1->Unit().X(),
             strip1->Offset().Y() + len1 * strip1->Unit().Y());
   point = point + reference_point;
@@ -1635,7 +1574,7 @@ bool GeometryTPC::GetCrossPoint(StripTPC *strip1, StripTPC *strip2,
 
 // Finds 2D crossing point of two lines defined by 2 of 3 redundant UVW coordinates expressed in millimiters
 // (e.g. calculated by Strip2posUVW), on success (true) calculates offset vector wrt ORIGIN POINT (0,0)
-bool GeometryTPC::GetUVWCrossPointInMM(int dir1, double UVW_pos1, int dir2, double UVW_pos2, TVector2 &point) {
+bool GeometryTPC::GetUVWCrossPointInMM(int dir1, double UVW_pos1, int dir2, double UVW_pos2, TVector2 &point) const{
   const TVector2 unit_vec[2] = { GetStripUnitVector(dir1), GetStripUnitVector(dir2) };
   const TVector2 offset_vec[2] = { GetStripPitchVector(dir1)*UVW_pos1, GetStripPitchVector(dir2)*UVW_pos2 };
 
@@ -1657,9 +1596,24 @@ bool GeometryTPC::GetUVWCrossPointInMM(int dir1, double UVW_pos1, int dir2, doub
 // Checks if 3 strips (single electronic channel) are crossing inside the active area of TPC within a given
 // tolerance (radius in [mm]), on success (true) also returns the average
 // calculated offset vector wrt ORIGIN POINT (0,0)
-bool GeometryTPC::MatchCrossPoint(StripTPC *strip1, StripTPC *strip2,
-                                  StripTPC *strip3, double radius,
-                                  TVector2 &point) {
+bool GeometryTPC::MatchCrossPoint(StripTPC *strip1,
+				  StripTPC *strip2,				  
+                                  StripTPC *strip3,
+				  double radius,
+                                  TVector2 &point) const{
+
+  return MatchCrossPoint(std::shared_ptr<StripTPC>(strip1),
+			 std::shared_ptr<StripTPC>(strip2),				  
+			 std::shared_ptr<StripTPC>(strip3),
+			 radius, point);  
+}
+
+ 
+bool GeometryTPC::MatchCrossPoint(std::shared_ptr<StripTPC> strip1,
+				  std::shared_ptr<StripTPC> strip2,				  
+                                  std::shared_ptr<StripTPC> strip3,
+				  double radius,
+                                  TVector2 &point) const{
   TVector2 points[3];
   if (!this->GetCrossPoint(strip1, strip2, points[0]) ||
       !this->GetCrossPoint(strip2, strip3, points[1]) ||
@@ -1670,12 +1624,11 @@ bool GeometryTPC::MatchCrossPoint(StripTPC *strip1, StripTPC *strip2,
       (points[1] - points[2]).Mod2() > rad2 ||
       (points[2] - points[0]).Mod2() > rad2)
     return false;
-  point = (points[0] + points[1] + points[2]) /
-          3.0; // return average position wrt ORIGIN POINT (0,0)
+  point = (points[0] + points[1] + points[2]) /3.0; 
   return true;
 }
 
-TVector2 GeometryTPC::GetStripUnitVector(int dir) { // XY ([mm],[mm])
+TVector2 GeometryTPC::GetStripUnitVector(int dir) const{ // XY ([mm],[mm])
   const TVector2 empty(0, 0);
   if (!IsOK())
     return empty; // ERROR
@@ -1688,7 +1641,7 @@ TVector2 GeometryTPC::GetStripUnitVector(int dir) { // XY ([mm],[mm])
   return empty; // ERROR
 }
 
-TVector2 GeometryTPC::GetStripPitchVector(int dir) { // XY ([mm],[mm])
+TVector2 GeometryTPC::GetStripPitchVector(int dir) const{ // XY ([mm],[mm])
   
   if (!IsOK()){
     return empty; // ERROR
@@ -1702,7 +1655,7 @@ TVector2 GeometryTPC::GetStripPitchVector(int dir) { // XY ([mm],[mm])
   return empty; // ERROR
 }
 
-TVector3 GeometryTPC::GetStripPitchVector3D(int dir) {
+TVector3 GeometryTPC::GetStripPitchVector3D(int dir) const{
   return TVector3(GetStripPitchVector(dir).X(), GetStripPitchVector(dir).Y(), 0);
 }
 
@@ -1712,11 +1665,11 @@ TVector3 GeometryTPC::GetStripPitchVector3D(int dir) {
 // The "err_flag" is set to TRUE if:
 // - geometry has not been initialized properly, or
 // - input strip DIR and/or NUM are invalid
-double GeometryTPC::Strip2posUVW(int dir, int section, int num, bool &err_flag) { // (per section)
+double GeometryTPC::Strip2posUVW(int dir, int section, int num, bool &err_flag) const{ // (per section)
                                  
   return this->Strip2posUVW(this->GetStripByDir(dir, section, num), err_flag);
 }
-double GeometryTPC::Strip2posUVW(int dir, int num, bool &err_flag) { // (all sections)
+double GeometryTPC::Strip2posUVW(int dir, int num, bool &err_flag) const{ // (all sections)
   double x=0.0;
   for(unsigned int isec=0; isec<this->GetDirSectionIndexList(dir).size(); isec++) {
     x = Strip2posUVW(dir, this->GetDirSectionIndexList(dir).at(isec), num, err_flag);
@@ -1736,19 +1689,32 @@ double GeometryTPC::Strip2posUVW(int dir, int num, bool &err_flag) { // (all sec
 // The "err_flag" is set to TRUE if:
 // - geometry has not been initialized properly, or
 // - input StripTPC object is invalid
-double GeometryTPC::Strip2posUVW(StripTPC *strip, bool &err_flag) {
+double GeometryTPC::Strip2posUVW(std::shared_ptr<StripTPC>strip, bool &err_flag) const{
   err_flag = true;
-  if (!strip)
-    return 0.0; // ERROR
+  if (!strip) return 0.0; // ERROR
   switch (strip->Dir()) {
   case DIR_U:
   case DIR_V:
   case DIR_W:
     err_flag = false; // valid strip
     return (reference_point + strip->Offset()) *
-           pitch_unit_vec[strip->Dir()]; // [mm]
+      pitch_unit_vec.at(strip->Dir()); // [mm]
   };
   return 0.0; // ERROR
+}
+
+
+bool GeometryTPC::IsStripDirReversed(int dir) const{
+
+  if(dir<projection_type::DIR_U || dir>projection_type::DIR_W) return false;
+  int section = 1;
+  int minStrip = GetDirMinStrip(dir, section);
+  int maxStrip = GetDirMaxStrip(dir, section);
+  bool err_flag = false;
+  double minStripInMM = Strip2posUVW(dir, section, minStrip,err_flag);
+  double maxStripInMM = Strip2posUVW(dir, section, maxStrip,err_flag);
+
+  return (maxStripInMM<minStripInMM);
 }
 
 // Calculates (signed) distance of projection of (X=0, Y=0) point from
@@ -1758,21 +1724,21 @@ double GeometryTPC::Strip2posUVW(StripTPC *strip, bool &err_flag) {
 // - geometry has not been initialized properly, or
 // - input strip DIR is invalid
 double GeometryTPC::Cartesian2posUVW(double x, double y, int dir,
-                                     bool &err_flag) {
+                                     bool &err_flag) const{
   return this->Cartesian2posUVW(TVector2(x, y), dir, err_flag); // [mm]
 }
 
 // Calculates (signed) distance of projection of (X=0, Y=0) point from
 // projection of a given (X,Y) point on the strip pitch axis
 // for a given DIR family.
-double GeometryTPC::Cartesian2posUVW(TVector2 pos, int dir, bool &err_flag) {
+double GeometryTPC::Cartesian2posUVW(TVector2 pos, int dir, bool &err_flag) const{
   err_flag = true;
   switch (dir) {
   case DIR_U:
   case DIR_V:
   case DIR_W:
     err_flag = false;                 // valid DIR
-    return pos * pitch_unit_vec[dir]; // [mm]
+    return pos * pitch_unit_vec.at(dir); // [mm]
   };
   return 0.0; // ERROR
 }
@@ -1782,7 +1748,7 @@ double GeometryTPC::Cartesian2posUVW(TVector2 pos, int dir, bool &err_flag) {
 // The "err_flag" is set to TRUE if:
 // - geometry has not been initialized properly, or
 // - input time-cell is outside of the valid range [0-511]
-double GeometryTPC::Timecell2pos(double position_in_cells, bool &err_flag) {
+double GeometryTPC::Timecell2pos(double position_in_cells, bool &err_flag) const{
   err_flag = true;
   if (!IsOK())
     return 0.0; // ERROR
@@ -1797,7 +1763,7 @@ double GeometryTPC::Timecell2pos(double position_in_cells, bool &err_flag) {
 // The "err_flag" is set to TRUE if:
 // - geometry has not been initialized properly, or
 // - resulting time-cell is outside of the valid range [0-511]
-double GeometryTPC::Pos2timecell(double z, bool &err_flag) {
+double GeometryTPC::Pos2timecell(double z, bool &err_flag) const{
   err_flag = true;
   const double position_in_cells =
       AGET_Ntimecells +
@@ -1808,26 +1774,26 @@ double GeometryTPC::Pos2timecell(double z, bool &err_flag) {
 }
 
 // min/max X [mm] cartesian coordinates covered by UVW active area
-std::tuple<double, double> GeometryTPC::rangeX() {
+std::tuple<double, double> GeometryTPC::rangeX() const{
   if(!isOK_TH2Poly) return std::tuple<double, double>(0.0, 0.0); // ERROR
   return std::tuple<double, double>(tp->GetXaxis()->GetXmin(),
 				    tp->GetXaxis()->GetXmax());
 }
 
 // min/max Y [mm] cartesian coordinates covered by UVW active area
-std::tuple<double, double> GeometryTPC::rangeY() {
+std::tuple<double, double> GeometryTPC::rangeY() const{
   if(!isOK_TH2Poly) return std::tuple<double, double>(0.0, 0.0); // ERROR
   return std::tuple<double, double>(tp->GetYaxis()->GetXmin(),
 				    tp->GetYaxis()->GetXmax());
 }
 
 // min/max Z [mm] cartesian coordinates covered by drift cage
-std::tuple<double, double> GeometryTPC::rangeZ() {
+std::tuple<double, double> GeometryTPC::rangeZ() const{
   return std::tuple<double, double>(drift_zmin, drift_zmax);
 }
 
 // min/max X and Y [mm] cartesian coordinates covered by UVW active area
-std::tuple<double, double, double, double> GeometryTPC::rangeXY() {
+std::tuple<double, double, double, double> GeometryTPC::rangeXY() const{
   if(!isOK_TH2Poly) return std::tuple<double, double, double, double>(0.0, 0.0, 0.0, 0.0); // ERROR
   return std::tuple<double, double, double, double>(tp->GetXaxis()->GetXmin(),
 						    tp->GetXaxis()->GetXmax(),
@@ -1837,7 +1803,7 @@ std::tuple<double, double, double, double> GeometryTPC::rangeXY() {
 
 // min/max X and Y [mm] cartesian coordinates covered by UVW active area
 // and min/max Z [mm] cartesian coordinates covered by drift cage
-std::tuple<double, double, double, double, double, double> GeometryTPC::rangeXYZ() {
+std::tuple<double, double, double, double, double, double> GeometryTPC::rangeXYZ() const{
   if(!isOK_TH2Poly) return std::tuple<double, double, double, double, double, double>(0.0, 0.0, 0.0, 0.0, drift_zmin, drift_zmax); // ERROR
   return std::tuple<double, double, double, double, double, double>
     (tp->GetXaxis()->GetXmin(),
@@ -1849,15 +1815,15 @@ std::tuple<double, double, double, double, double, double> GeometryTPC::rangeXYZ
 
 // min/max (signed) distance [mm] between projection of outermost strip's central axis and
 // projection of the origin (X=0,Y=0) point on the U/V/W pitch axis for a given direction (per section)
-std::tuple<double, double> GeometryTPC::rangeStripSectionInMM(int dir, int section) {
+std::tuple<double, double> GeometryTPC::rangeStripSectionInMM(int dir, int section) const{
   double minStripInMM=1E30;
   double maxStripInMM=-1E30;
 
   double distance1, distance2; 
-  StripTPC *firstStrip = GetStripByDir(dir, section,
-				       GetDirMinStrip(dir, section));
-  StripTPC *lastStrip = GetStripByDir(dir, section,
-				      GetDirMaxStrip(dir, section));
+  std::shared_ptr<StripTPC> firstStrip = GetStripByDir(dir, section,
+						       GetDirMinStrip(dir, section));
+  std::shared_ptr<StripTPC> lastStrip = GetStripByDir(dir, section,
+						      GetDirMaxStrip(dir, section));
   if(firstStrip && lastStrip) {
     distance1 = (firstStrip->Offset() + GetReferencePoint())*GetStripPitchVector(dir);
     distance2 = (lastStrip->Offset() + GetReferencePoint())*GetStripPitchVector(dir);
@@ -1875,7 +1841,7 @@ std::tuple<double, double> GeometryTPC::rangeStripSectionInMM(int dir, int secti
 
 // min/max (signed) distance [mm] between projection of outermost strip's central axis and
 // projection of the origin (X=0,Y=0) point on the U/V/W pitch axis for a given direction (all sections)
-std::tuple<double, double> GeometryTPC::rangeStripDirInMM(int dir) {
+std::tuple<double, double> GeometryTPC::rangeStripDirInMM(int dir) const{
   double minStripInMM=1E30;
   double maxStripInMM=-1E30;
 
@@ -1904,6 +1870,301 @@ void GeometryTPC::Debug() {
     std::cout << p.X() << ", " << p.Y() << s->Section() << std::endl;
     tp->Fill(x, y, s->Section() + 1);
   }
+}
+
+TH2D *GeometryTPC::GetXY_TestUV(TH2D *h) { // test (unphysical) histogram
+  //TH2D *h = NULL;
+
+  if(!IsOK()) return h;
+
+  if(h==NULL) {
+    double xmin=1E30;
+    double xmax=-1E30;
+    double ymin=1E30;
+    double ymax=-1E30;
+    /*
+    StripTPC* s[6] = {
+      GetStripByDir(projection_type::DIR_U, 1),
+      GetStripByDir(projection_type::DIR_U, GetDirNstrips(projection_type::DIR_U)),
+      GetStripByDir(projection_type::DIR_V, 1),
+      GetStripByDir(projection_type::DIR_V, GetDirNstrips(projection_type::DIR_V)),
+      GetStripByDir(projection_type::DIR_W, 1),
+      GetStripByDir(projection_type::DIR_W, GetDirNstrips(projection_type::DIR_W))
+    };
+    for(int i=0; i<6; i++) {
+      if(!s[i]) continue;
+      if(s[i]->Offset().X()>xmax) xmax=s[i]->Offset().X();
+      if(s[i]->Offset().X()<xmin) xmin=s[i]->Offset().X();
+      if(s[i]->Offset().Y()>ymax) ymax=s[i]->Offset().Y();
+      if(s[i]->Offset().Y()<ymin) ymin=s[i]->Offset().Y();
+    }
+    xmin-=GetStripPitch()*0.3;
+    xmax+=GetStripPitch()*0.7;
+    ymin-=GetPadPitch()*0.3;
+    ymax+=GetPadPitch()*0.7;
+    int nx = (int)( (xmax-xmin)/GetStripPitch()-1 );
+    int ny = (int)( (ymax-ymin)/GetPadPitch()-1 );
+    */
+    std::tie(xmin, xmax, ymin, ymax) = rangeXY();
+    int nx = (int)( (xmax-xmin)/GetPadPitch()-1 );
+    int ny = (int)( (ymax-ymin)/GetStripPitch()-1 );
+    
+    ////////// DEBUG 
+    std::cout << Form(">>>> U-V correlation test histogram: range=[%lf, %lf] x [%lf, %lf], nx=%d, ny=%d",
+		      xmin, xmax, ymin, ymax, nx, ny) << std::endl;
+    ////////// DEBUG 
+    
+    h = new TH2D( "h_test_XY_UV_2d",
+		  "Intersection of U-V strips;X [mm];Y [mm]; V strip no.",
+		  nx, xmin, xmax, ny, ymin, ymax );
+  }
+
+  // loop over all strip numbers and check hits strip intersection
+  for(int i0=1; i0<=GetDirNstrips(projection_type::DIR_U); i0++) {
+    if(i0!=1) continue;
+    for(auto iter0=GetDirSectionIndexList(projection_type::DIR_U).begin();
+	iter0!=GetDirSectionIndexList(projection_type::DIR_U).end(); iter0++) {
+      std::shared_ptr<StripTPC> strip0 = GetStripByDir(projection_type::DIR_U, *iter0, i0);
+      for(int i1=1; i1<(int)GetDirNstrips(projection_type::DIR_V); i1++) {
+	for(auto iter1=GetDirSectionIndexList(projection_type::DIR_V).begin();
+	    iter1!=GetDirSectionIndexList(projection_type::DIR_V).end(); iter1++) {
+	  std::shared_ptr<StripTPC> strip1 = GetStripByDir(projection_type::DIR_V, *iter1, i1);
+	  TVector2 pos;
+	  if( GetCrossPoint( strip0, strip1, pos) ) {
+	    h->SetBinContent( h->FindBin( pos.X(), pos.Y() ), 1.*i0);
+	  }
+	}
+      }
+    }
+  }
+
+  ////////// DEBUG 
+  std::cout << ">>>> U-V correlation test histogram: END" << std::endl;
+  ////////// DEBUG 
+
+  return h;
+}
+
+TH2D *GeometryTPC::GetXY_TestVW(TH2D *h) { // test (unphysical) histogram
+  //  TH2D *h = NULL;
+
+  if(!IsOK()) return h;
+
+  if(h==NULL) {
+    double xmin=1E30;
+    double xmax=-1E30;
+    double ymin=1E30;
+    double ymax=-1E30;
+    /*
+    StripTPC* s[6] = {
+      GetStripByDir(projection_type::DIR_U, 1),
+      GetStripByDir(projection_type::DIR_U, GetDirNstrips(projection_type::DIR_U)),
+      GetStripByDir(projection_type::DIR_V, 1),
+      GetStripByDir(projection_type::DIR_V, GetDirNstrips(projection_type::DIR_V)),
+      GetStripByDir(projection_type::DIR_W, 1),
+      GetStripByDir(projection_type::DIR_W, GetDirNstrips(projection_type::DIR_W))
+    };
+    for(int i=0; i<6; i++) {
+      if(!s[i]) continue;
+      if(s[i]->Offset().X()>xmax) xmax=s[i]->Offset().X();
+      if(s[i]->Offset().X()<xmin) xmin=s[i]->Offset().X();
+      if(s[i]->Offset().Y()>ymax) ymax=s[i]->Offset().Y();
+      if(s[i]->Offset().Y()<ymin) ymin=s[i]->Offset().Y();
+    }
+    xmin-=GetStripPitch()*0.3;
+    xmax+=GetStripPitch()*0.7;
+    ymin-=GetPadPitch()*0.3;
+    ymax+=GetPadPitch()*0.7;
+    
+    int nx = (int)( (xmax-xmin)/GetStripPitch()-1 );
+    int ny = (int)( (ymax-ymin)/GetPadPitch()-1 );
+    */   
+    std::tie(xmin, xmax, ymin, ymax) = rangeXY();
+    int nx = (int)( (xmax-xmin)/GetPadPitch()-1 );
+    int ny = (int)( (ymax-ymin)/GetStripPitch()-1 );
+
+    ////////// DEBUG 
+    std::cout << Form(">>>> V-W correlation test histogram: range=[%lf, %lf] x [%lf, %lf], nx=%d, ny=%d",
+		      xmin, xmax, ymin, ymax, nx, ny) << std::endl;
+    ////////// DEBUG 
+    
+    h = new TH2D( "h_test_XY_VW_2d",
+		  "Intersection of V-W strips;X [mm];Y [mm]; V strip no.",
+		  nx, xmin, xmax, ny, ymin, ymax );
+  }
+
+  // loop over all strip numbers and check hits strip intersection
+  for(int i0=1; i0<(int)GetDirNstrips(projection_type::DIR_V); i0++) {
+    if(i0!=1) continue;
+    for(auto iter0=GetDirSectionIndexList(projection_type::DIR_V).begin();
+	iter0!=GetDirSectionIndexList(projection_type::DIR_V).end(); iter0++) {
+      std::shared_ptr<StripTPC> strip0 = GetStripByDir(projection_type::DIR_V, *iter0, i0);
+      for(int i1=1; i1<(int)GetDirNstrips(projection_type::DIR_W); i1++) {
+	for(auto iter1=GetDirSectionIndexList(projection_type::DIR_W).begin();
+	    iter1!=GetDirSectionIndexList(projection_type::DIR_W).end(); iter1++) {
+	  std::shared_ptr<StripTPC> strip1 = GetStripByDir(projection_type::DIR_W, *iter1, i1);
+	  TVector2 pos;
+	  if( GetCrossPoint( strip0, strip1, pos) ) {
+	    h->SetBinContent( h->FindBin( pos.X(), pos.Y() ), 1.*i0);
+	  }
+	}
+      }
+    }
+  }
+
+  ////////// DEBUG 
+  std::cout << ">>>> V-W correlation test histogram: END" << std::endl;
+  ////////// DEBUG 
+
+  return h;
+}
+
+TH2D *GeometryTPC::GetXY_TestWU(TH2D *h) { // test (unphysical) histogram
+  //  TH2D *h = NULL;
+
+  if(!IsOK()) return h;
+
+  if(h==NULL) {
+    double xmin=1E30;
+    double xmax=-1E30;
+    double ymin=1E30;
+    double ymax=-1E30;
+    /*    StripTPC* s[6] = {
+      GetStripByDir(projection_type::DIR_U, 1),
+      GetStripByDir(projection_type::DIR_U, GetDirNstrips(projection_type::DIR_U)),
+      GetStripByDir(projection_type::DIR_V, 1),
+      GetStripByDir(projection_type::DIR_V, GetDirNstrips(projection_type::DIR_V)),
+      GetStripByDir(projection_type::DIR_W, 1),
+      GetStripByDir(projection_type::DIR_W, GetDirNstrips(projection_type::DIR_W))
+    };
+    for(int i=0; i<6; i++) {
+      if(!s[i]) continue;
+      if(s[i]->Offset().X()>xmax) xmax=s[i]->Offset().X();
+      if(s[i]->Offset().X()<xmin) xmin=s[i]->Offset().X();
+      if(s[i]->Offset().Y()>ymax) ymax=s[i]->Offset().Y();
+      if(s[i]->Offset().Y()<ymin) ymin=s[i]->Offset().Y();
+    }
+    xmin-=GetStripPitch()*0.3;
+    xmax+=GetStripPitch()*0.7;
+    ymin-=GetPadPitch()*0.3;
+    ymax+=GetPadPitch()*0.7;
+    
+    int nx = (int)( (xmax-xmin)/GetStripPitch()-1 );
+    int ny = (int)( (ymax-ymin)/GetPadPitch()-1 );
+    */
+    std::tie(xmin, xmax, ymin, ymax) = rangeXY();
+    int nx = (int)( (xmax-xmin)/GetPadPitch()-1 );
+    int ny = (int)( (ymax-ymin)/GetStripPitch()-1 );
+
+    ////////// DEBUG 
+    std::cout << Form(">>>> W-U correlation test histogram: range=[%lf, %lf] x [%lf, %lf], nx=%d, ny=%d",
+    		      xmin, xmax, ymin, ymax, nx, ny) << std::endl;
+    ////////// DEBUG 
+    
+    h = new TH2D( "h_test_XY_WU_2d",
+		  "Intersection of W-U strips;X [mm];Y [mm]; W strip no.",
+		  nx, xmin, xmax, ny, ymin, ymax );
+  }
+
+  // loop over all strip numbers and check hits strip intersection
+  for(int i0=1; i0<(int)GetDirNstrips(projection_type::DIR_W); i0++) {
+    if(i0!=1) continue;
+    for(auto iter0=GetDirSectionIndexList(projection_type::DIR_W).begin();
+	iter0!=GetDirSectionIndexList(projection_type::DIR_W).end(); iter0++) {
+      std::shared_ptr<StripTPC> strip0 = GetStripByDir(projection_type::DIR_W, *iter0, i0);
+      for(int i1=1; i1<(int)GetDirNstrips(projection_type::DIR_U); i1++) {
+	for(auto iter1=GetDirSectionIndexList(projection_type::DIR_U).begin();
+	    iter1!=GetDirSectionIndexList(projection_type::DIR_U).end(); iter1++) {
+	  std::shared_ptr<StripTPC> strip1 = GetStripByDir(projection_type::DIR_U, *iter1, i1);
+	  TVector2 pos;
+	  if( GetCrossPoint( strip0, strip1, pos) ) {
+	    h->SetBinContent( h->FindBin( pos.X(), pos.Y() ), 1.*i0);
+	  }
+	}
+      }
+    }
+  }
+
+  ////////// DEBUG 
+  std::cout << ">>>> W-U correlation test histogram: END" << std::endl;
+  ////////// DEBUG
+
+  return h;
+}
+
+//frame for plotting 3D reconstruction 
+TH3D *GeometryTPC::Get3DFrame(int rebin_space, int rebin_time) const{
+
+  bool err_flag = false;
+  double xmin=1E30;
+  double xmax=-1E30;
+  double ymin=1E30;
+  double ymax=-1E30;
+  double zmin=0.0-0.5;  // time_cell_min;
+  double zmax=GetAgetNtimecells()-0.5; // time_cell_max;  
+  /*
+  StripTPC* s[6] = {
+		    GetStripByDir(projection_type::DIR_U, 1),
+		    GetStripByDir(projection_type::DIR_U, GetDirNstrips(projection_type::DIR_U)),
+		    GetStripByDir(projection_type::DIR_V, 1),
+		    GetStripByDir(projection_type::DIR_V, GetDirNstrips(projection_type::DIR_V)),
+		    GetStripByDir(projection_type::DIR_W, 1),
+		    GetStripByDir(projection_type::DIR_W, GetDirNstrips(projection_type::DIR_W))
+  };
+  for(int i=0; i<6; i++) {
+    if(!s[i]) continue;
+    double x, y;
+    TVector2 vec=s[i]->Offset()+GetReferencePoint();
+    x=vec.X();
+    y=vec.Y();
+    if(x>xmax) xmax=x;
+    if(x<xmin) xmin=x;
+    if(y>ymax) ymax=y;
+    if(y<ymin) ymin=y;
+    vec = vec + s[i]->Unit()*s[i]->Length();
+    if(x>xmax) xmax=x;
+    if(x<xmin) xmin=x;
+    if(y>ymax) ymax=y;
+    if(y<ymin) ymin=y;
+    //      if(s[i]->Offset().X()>xmax) xmax=s[i]->Offset().X();
+    //      if(s[i]->Offset().X()<xmin) xmin=s[i]->Offset().X();
+    //      if(s[i]->Offset().Y()>ymax) ymax=s[i]->Offset().Y();
+    //      if(s[i]->Offset().Y()<ymin) ymin=s[i]->Offset().Y();
+  }
+  xmin-=GetStripPitch()*0.3;
+  xmax+=GetStripPitch()*0.7;
+  ymin-=GetPadPitch()*0.3;
+  ymax+=GetPadPitch()*0.7;
+  int nx = (int)( (xmax-xmin)/GetStripPitch()-1 );
+  int ny = (int)( (ymax-ymin)/GetPadPitch()-1 );
+  int nz = (int)( zmax-zmin );
+  */
+  std::tie(xmin, xmax, ymin, ymax) = rangeXY();
+  int nx = (int)( (xmax-xmin)/GetPadPitch()-1 );
+  int ny = (int)( (ymax-ymin)/GetStripPitch()-1 );
+  int nz = (int)( zmax-zmin );
+  auto event_id = -999;//FIXME
+  zmin = Timecell2pos(zmin, err_flag);
+  zmax = Timecell2pos(zmax, err_flag);
+
+  // rebin in space
+  if(rebin_space>1) {
+    nx /= rebin_space;
+    ny /= rebin_space;
+  }
+
+  // rebin in time
+  if(rebin_time>1) {
+    nz /= rebin_time;
+  }
+
+  std::cout << Form(">>>> XYZ histogram: range=[%lf, %lf] x [%lf, %lf] x [%lf, %lf], nx=%d, ny=%d, nz=%d",
+		    xmin, xmax, ymin, ymax, zmin, zmax, nx, ny, nz) << std::endl;
+
+  TH3D *h = new TH3D( Form("hreco3D_evt%d", event_id),
+		      Form("Event-%d: 3D reco in XYZ;X [mm];Y [mm];Z [mm]", event_id),
+		      nx, xmin, xmax, ny, ymin, ymax, nz, zmin, zmax );
+  return h;
 }
 
 bool GeometryTPC::operator==(const GeometryTPC& B) const {
@@ -1967,3 +2228,4 @@ bool GeometryTPC::operator==(const GeometryTPC& B) const {
 }
 // ClassImp(StripTPC)
 // ClassImp(GeometryTPC)
+

@@ -81,8 +81,6 @@ private:
 
 protected: // needed for EventSourceMultiGRAW
 
-  // int minSignalCell;
-  // int maxSignalCell;  
   bool removePedestal{true};
 
 private:
@@ -90,7 +88,7 @@ private:
   unsigned int frameLoadRange{100};
 
 protected: // needed for EventSourceMultiGRAW
-  EventType fillEventType{tpc};
+  EventType fillEventType{EventType::tpc};
 
 };
 #endif

@@ -38,10 +38,10 @@ std::ostream& eventraw::operator<<(std::ostream& os, const eventraw::EventData& 
   os << "EventData: AgetRawMap.size=" << edata.data.size();
   for(auto it=edata.data.begin(); it!=edata.data.end(); it++) {
     os << std::endl
-       << "[cobo=" << (unsigned int)(it->first).key1
-       << ", asad=" << (unsigned int)(it->first).key2
-       << ", aget=" << (unsigned int)(it->first).key3 << "]:" // << std::endl
-       << it->second; // << std::endl << std::flush;
+       << "[cobo=" << std::get<0>(it->first)
+       << ", asad=" << std::get<1>(it->first)
+       << ", aget=" << std::get<2>(it->first) << "]:" 
+       << it->second; 
   }
   return os;
 }

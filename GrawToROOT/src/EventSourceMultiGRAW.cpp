@@ -13,6 +13,7 @@
 #include "TCollection.h"
 #include "TClonesArray.h"
 
+#include "RunIdParser.h"
 #include "EventSourceMultiGRAW.h"
 //#include "EventRaw.h"
 #include "colorText.h"
@@ -20,33 +21,17 @@
 #include "get/graw2dataframe.h"
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-EventSourceMultiGRAW::EventSourceMultiGRAW(const std::string & geometryFileName) : EventSourceGRAW(geometryFileName) {
-  /*
-  loadGeometry(geometryFileName);
-  GRAW_EVENT_FRAGMENTS = myGeometryPtr->GetAsadNboards();
-  myPedestalCalculator.SetGeometryAndInitialize(myGeometryPtr);
-
-  std::string formatsFilePath = "./CoboFormats.xcfg";
-  myFrameLoader.initialize(formatsFilePath);
-  // minSignalCell = 2;//FIXME read from config
-  // maxSignalCell = 500;//FIXME read from config
-  */
-}
+EventSourceMultiGRAW::EventSourceMultiGRAW(const std::string & geometryFileName) : EventSourceGRAW(geometryFileName) {}
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 EventSourceMultiGRAW::~EventSourceMultiGRAW(){}
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-/*
-void EventSourceGRAW::setRemovePedestal(bool aFlag){
-  removePedestal = aFlag;
-}
-*/
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
 std::shared_ptr<EventTPC> EventSourceMultiGRAW::getNextEvent(){
 
-  unsigned long int currentEventId = myCurrentEvent->GetEventId();
+  myDataFrame.Clear();
+
+  auto currentEventId = myCurrentEvent->GetEventInfo().GetEventId();
   for( unsigned int streamIndex=0; streamIndex<myFramesMapList.size(); streamIndex++ ) {
     auto it = myFramesMapList[streamIndex].find(currentEventId);
     auto it2 = myAsadMapList[streamIndex].find(currentEventId);
@@ -69,7 +54,7 @@ std::shared_ptr<EventTPC> EventSourceMultiGRAW::getNextEvent(){
 /////////////////////////////////////////////////////////
 std::shared_ptr<EventTPC> EventSourceMultiGRAW::getPreviousEvent(){
 
-  unsigned int currentEventId = myCurrentEvent->GetEventId();
+  auto currentEventId = myCurrentEvent->GetEventInfo().GetEventId();  
   for( unsigned int streamIndex=0; streamIndex<myFramesMapList.size() ; streamIndex++ ) {
     auto it = myFramesMapList[streamIndex].find(currentEventId);
     auto it2 = myAsadMapList[streamIndex].find(currentEventId);
@@ -187,7 +172,7 @@ bool EventSourceMultiGRAW::loadGrawFrame(unsigned int iEntry, bool readFullEvent
 
   
   //  bool dataFrameRead = myFrameLoader.getGrawFrame(tmpFilePath, iEntry+1, myDataFrameList[streamIndex], readFullEvent);///FIXME getGrawFrame counts frames from 1 (WRRR!)
-  bool dataFrameRead = myFrameLoader.getGrawFrame(tmpFilePath, iEntry+1, myDataFrame, readFullEvent); // HOTFIX!!!!! => fills myDataFrame
+  bool dataFrameRead = myFrameLoader.getGrawFrame(tmpFilePath, iEntry+1, myDataFrame, readFullEvent); // HOTFIX!!!!! => fills myDataFrame 
   ///FIXME getGrawFrame counts frames from 1 (WRRR!)
 
   
@@ -331,12 +316,6 @@ void EventSourceMultiGRAW::loadFileEntry(unsigned long int iEntry){
 	if(it2==myAsadMapList[streamIndex].end() || it3==myCoboMapList[streamIndex].end() ) continue;
 	int ASAD_idx = it2->second;
 	int COBO_idx = it3->second;
-
-	///////////////////////////////////////////////////////////////
-	//	std::cout<<__FUNCTION__<<": stream="<<streamIndex<<", frame="<<it.second<<", event="<<EventId<<", cobo="<<COBO_idx<<", asad="<<ASAD_idx
-	//		 <<RST<<std::endl<<std::flush;
-	///////////////////////////////////////////////////////////////
-	
 	// use only {ASAD=0, COBO=0} for frame counting purpose
 	if( ASAD_idx==0 && COBO_idx==0) {
 	  matchEventId=EventId;
@@ -353,11 +332,7 @@ void EventSourceMultiGRAW::loadFileEntry(unsigned long int iEntry){
 	      <<": WARNING: cannot find any GRAW streams with {ASAD=0, COBO=0} for the file entry: "<<RST<<iEntry
 	      <<std::endl;
     return;
-  }
-  std::cout<<__FUNCTION__<<KBLU<<": Found the GRAW stream id: "<<RST<<matchStreamIndex
-	   <<KBLU<<" corresponding to {ASAD=0, COBO=0}, file entry: "<<RST<<iEntry
-	   <<KBLU<<", event id: "<<RST<<matchEventId<<std::endl;    
-
+  } 
   // check frames corresponding to matched event ID
   for(unsigned int streamIndex=0; streamIndex<myReadEntriesSetList.size() ; streamIndex++) {
     if(streamIndex!=matchStreamIndex) {
@@ -387,24 +362,8 @@ void EventSourceMultiGRAW::loadFileEntry(unsigned long int iEntry){
       }
     }
   }
-
-  //#ifdef DEBUG
-  //  std::cout<<__FUNCTION__<<": before calling collectEventFragments(eventId="<<matchEventId<<")"
-  //	   <<std::endl<<std::flush;
-  //#endif    
-
   // fill myCurrentEvent object using existing GRAW frame mapping
-  collectEventFragments(matchEventId);
-
-  //#ifdef DEBUG
-  //  std::cout<<__FUNCTION__<<": after calling collectEventFragments(eventId="<<matchEventId<<")"
-  //	   <<std::endl<<std::flush;
-  //#endif
-  #ifdef DEBUG
-  std::cout<<__FUNCTION__<<KBLU
-	   <<": Finished looking for the file entry: "<<RST<<iEntry
-	   <<std::endl;
-  #endif
+  collectEventFragments(matchEventId); 
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -441,126 +400,64 @@ void EventSourceMultiGRAW::checkEntryForFragments(unsigned int iEntry, unsigned 
   unsigned long int currentEventId = myDataFrame.fHeader.fEventIdx; // HOTFIX!!!!!
   unsigned int ASAD_idx = myDataFrame.fHeader.fAsadIdx; // HOTFIX!!!!!
   unsigned int COBO_idx = myDataFrame.fHeader.fCoboIdx; // HOTFIX!!!!!
-  //  unsigned long int currentEventId = myDataFrameList[streamIndex].fHeader.fEventIdx;
-  //  unsigned int ASAD_idx = myDataFrameList[streamIndex].fHeader.fAsadIdx;
-  //  unsigned int COBO_idx = myDataFrameList[streamIndex].fHeader.fCoboIdx;
-
+ 
   myAsadMapList[streamIndex][currentEventId] = ASAD_idx;
   myCoboMapList[streamIndex][currentEventId] = COBO_idx;
   myFramesMapList[streamIndex][currentEventId] = iEntry;
   myReadEntriesSetList[streamIndex].insert(iEntry);
-
-  //#ifdef DEBUG
-  //  std::cout<<__FUNCTION__<<": END ---> stream="<<streamIndex<<", frame_check="<<iEntry<<std::endl<<std::flush;
-  //#endif
-
 }
-
 /////////////////////////////////////////////////////////
 // Fills myCurrentEvent object using existing GRAW frame mapping
 /////////////////////////////////////////////////////////
 void EventSourceMultiGRAW::collectEventFragments(unsigned int eventId){
 
   unsigned int nFragments=0;
+  std::set<int> asadCounter;
   for(unsigned int streamIndex=0; streamIndex<myFramesMapList.size(); streamIndex++) {
     auto it = myFramesMapList[streamIndex].find(eventId);
     if(it==myFramesMapList[streamIndex].end()) continue;
+
+    if(nFragments==0) {
+      myCurrentPEvent->Clear();
+	  	
+      std::cout<<KYEL<<"Creating a new PEventTPC/Raw with event id: "<<eventId<<RST<<std::endl;
+    }
+    auto aFragment = it->second;
+    loadGrawFrame(aFragment, true, streamIndex);
+	    
+    int ASAD_idx = myDataFrame.fHeader.fAsadIdx;
+    int COBO_idx = myDataFrame.fHeader.fCoboIdx;
+    unsigned long int eventId_fromFrame = myDataFrame.fHeader.fEventIdx; // HOTFIX !!!
+    myCurrentEntry=aFragment; 
+    asadCounter.insert(ASAD_idx);
+
+    myCurrentEventInfo.SetEventId(eventId);      
+    myCurrentEventInfo.SetEventTimestamp(myDataFrame.fHeader.fEventTime);
+    RunIdParser runParser(myFilePathList.front());
+    myCurrentEventInfo.SetRunId(runParser.runId());
+
+    if(eventId!=eventId_fromFrame){
+      std::cerr<<KRED<<__FUNCTION__
+	       <<": WARNING: event id mismatch!: eventId="<<RST<<eventId
+	       <<KRED<<", eventId_fromFrame="<<RST<<eventId_fromFrame<<std::endl;
+      return;
+    }     
+    std::cout<<__FUNCTION__<<KBLU<<": Found a frame for event id: "<<RST<<eventId;
+    if(aFragment<nEntries) {
+      std::cout<<KBLU<<" in file entry: "<<RST<<aFragment<<RST;
+    } else {
+      std::cout<<KBLU<<" in next file entry: "<<RST<<aFragment-nEntries<<RST;
+    }
+    std::cout<<KBLU<<" for ASAD: "<<RST<<ASAD_idx
+	     <<KBLU<<", COBO: "<<RST<<COBO_idx
+	     <<KBLU<<", GRAW stream id: "<<RST<<streamIndex
+	     <<std::endl;
     
-    switch(fillEventType) {
-      
-    case raw:
-      {	
-	if(nFragments==0) {
-	  myCurrentEventRaw->SetEventId(eventId);
-	  myCurrentEvent->SetEventId(eventId); // for compatibility with EventSourceBase::currentEventNumber()
-	  std::cout<<KYEL<<"Creating a new EventRaw with event id: "<<eventId<<RST<<std::endl;
-	}
-	auto aFragment = it->second;
-	loadGrawFrame(aFragment, true, streamIndex); // HOTFIX => fills myDataFrame
-	
-	myCurrentEventRaw->SetEventTimestamp(myDataFrame.fHeader.fEventTime); // HOTFIX !!!
-	int ASAD_idx = myDataFrame.fHeader.fAsadIdx; // HOTFIX !!!
-	int COBO_idx = myDataFrame.fHeader.fCoboIdx; // HOTFIX !!!
-	unsigned long int eventId_fromFrame = myDataFrame.fHeader.fEventIdx; // HOTFIX !!!
-	myCurrentEntry=aFragment; // update current event frame index for EventSourceBase::currententryNumber()
-
-	//	std::cout<<KGRN<<__FUNCTION__
-	//		 <<": myCurrentEntry="<<aFragment<<", BASE->getCurrentEntry()="<<this->currentEntryNumber()<<RST<<std::endl;
-
-	//	myCurrentEventRaw->timestamp=myDataFrameList[streamIndex].fHeader.fEventTime;
-	//	int ASAD_idx = myDataFrameList[streamIndex].fHeader.fAsadIdx;
-	//	int COBO_idx = myDataFrameList[streamIndex].fHeader.fCoboIdx;
-	//	unsigned long int eventId_fromFrame = myDataFrameList[streamIndex].fHeader.fEventIdx;
-	if(eventId!=eventId_fromFrame){
-	  std::cerr<<KRED<<__FUNCTION__<<KRED
-		   <<": WARNING: event id mismatch! eventId="<<RST<<eventId
-		   <<KRED<<", eventId_fromFrame="<<RST<<eventId_fromFrame<<RST<<std::endl;
-	  return;
-	}
-	std::cout<<__FUNCTION__<<KBLU<<": Found a frame for event id: "<<RST<<eventId;
-	if(aFragment<nEntries) {
-	  std::cout<<KBLU<<" in file entry: "<<RST<<aFragment<<RST;
-	} else {
-	  std::cout<<KBLU<<" in next file entry: "<<RST<<aFragment-nEntries<<RST;
-	}
-	std::cout<<KBLU<<" for ASAD: "<<RST<<ASAD_idx
-		 <<KBLU<<", COBO: "<<RST<<COBO_idx
-		 <<KBLU<<", GRAW stream id: "<<RST<<streamIndex
-		 <<std::endl;      
-	fillEventRawFromFrame(myDataFrame); // HOTFIX!!!!!
-	//	fillEventRawFromFrame(myDataFrameList[streamIndex]);
-	nFragments++; // count good fragments
-      }
-      break;
-      
-    case tpc:  // fill EventTPC class (skip EventRaw)
-    default:
-      {
-	if(nFragments==0) {
-	  myCurrentEvent->Clear();
-	  myCurrentEvent->SetEventId(eventId);
-	  myCurrentEvent->SetGeoPtr(myGeometryPtr);
-	
-	  std::cout<<KYEL<<"Creating a new EventTPC with event id: "<<eventId<<RST<<std::endl;
-	}
-	auto aFragment = it->second;
-	loadGrawFrame(aFragment, true, streamIndex); // HOTFIX => fills myDataFrame
-	
-	myCurrentEvent->SetEventTime(myDataFrame.fHeader.fEventTime); // HOTFIX !!!
-	int ASAD_idx = myDataFrame.fHeader.fAsadIdx; // HOTFIX !!!
-	int COBO_idx = myDataFrame.fHeader.fCoboIdx; // HOTFIX !!!
-	unsigned long int eventId_fromFrame = myDataFrame.fHeader.fEventIdx; // HOTFIX !!!
-	myCurrentEntry=aFragment; // update current event frame index for EventSourceBase::currententryNumber()
-
-	//	std::cout<<KGRN<<__FUNCTION__
-	//		 <<": myCurrentEntry="<<aFragment<<", BASE->getCurrentEntry()="<<this->currentEntryNumber()<<RST<<std::endl;
-
-	//	myCurrentEvent->SetEventTime(myDataFrameList[streamIndex].fHeader.fEventTime);
-	//	int ASAD_idx = myDataFrameList[streamIndex].fHeader.fAsadIdx;
-	//	int COBO_idx = myDataFrameList[streamIndex].fHeader.fCoboIdx;
-	//	unsigned long int eventId_fromFrame = myDataFrameList[streamIndex].fHeader.fEventIdx;
-	if(eventId!=eventId_fromFrame){
-	  std::cerr<<KRED<<__FUNCTION__
-		   <<": WARNING: event id mismatch!: eventId="<<RST<<eventId
-		   <<KRED<<", eventId_fromFrame="<<RST<<eventId_fromFrame<<std::endl;
-	  return;
-	}     
-	std::cout<<__FUNCTION__<<KBLU<<": Found a frame for event id: "<<RST<<eventId;
-	if(aFragment<nEntries) {
-	  std::cout<<KBLU<<" in file entry: "<<RST<<aFragment<<RST;
-	} else {
-	  std::cout<<KBLU<<" in next file entry: "<<RST<<aFragment-nEntries<<RST;
-	}
-	std::cout<<KBLU<<" for ASAD: "<<RST<<ASAD_idx
-		 <<KBLU<<", COBO: "<<RST<<COBO_idx
-		 <<KBLU<<", GRAW stream id: "<<RST<<streamIndex
-		 <<std::endl;      
-	fillEventFromFrame(myDataFrame); // HOTFIX!!!!!
-	//	fillEventFromFrame(myDataFrameList[streamIndex]); 
-	nFragments++; // count good fragments
-      }
-    }; 
+    if(fillEventType==EventType::tpc) fillEventFromFrame(myDataFrame);
+    else if(fillEventType==EventType::raw) fillEventRawFromFrame(myDataFrame);
+    nFragments++; 
   }
+  fillEventTPC();
   
   if(nFragments!=GRAW_EVENT_FRAGMENTS) {
     std::cerr<<KRED<<__FUNCTION__
@@ -570,7 +467,6 @@ void EventSourceMultiGRAW::collectEventFragments(unsigned int eventId){
   }
   //long int eventNumberInFile = std::distance(myFramesMap.begin(), it);
 }
-
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::string EventSourceMultiGRAW::getNextFilePath(unsigned int streamIndex){
@@ -596,3 +492,5 @@ std::string EventSourceMultiGRAW::getNextFilePath(unsigned int streamIndex){
   std::string nextFilePath = ostr.str();
   return nextFilePath;
 }
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////

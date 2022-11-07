@@ -34,7 +34,7 @@ namespace eventraw {
     friend std::ostream& operator<<(std::ostream& os, const eventraw::AgetRaw& araw);
   };
   
-  typedef std::map< MultiKey3_uint8, AgetRaw, multikey3_uint8_less > AgetRawMap_t; // index = { cobo[>=0], asad[0-3], aget[0-3] }
+  typedef std::map< MultiKey3_uint8, AgetRaw> AgetRawMap_t; // index = { cobo[>=0], asad[0-3], aget[0-3] }
  
   class EventData {
   public:

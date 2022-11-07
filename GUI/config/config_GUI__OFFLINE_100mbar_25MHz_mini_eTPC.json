@@ -4,7 +4,6 @@
     "resourcesPath": ".",
     "updateInterval": 3000,
     "removePedestal": true,
-    "recoClusterEnable": false,
     "frameLoadRange": 2,
     "display": {
         "zLogScale": true,
@@ -16,5 +15,11 @@
         "maxPedestalCell": 50,
         "minSignalCell": 2,
         "maxSignalCell": 500
+    },
+    "hitFilter": {
+        "recoClusterEnable": false,
+        "recoClusterThreshold": 35,
+        "recoClusterDeltaStrips": 2,
+        "recoClusterDeltaTimeCells": 5
     }
 }

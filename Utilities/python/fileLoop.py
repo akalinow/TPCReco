@@ -16,13 +16,12 @@ def analyzeSingleBatch(runId, fileCSV, geometryFile, command):
 
     arguments = " --geometryFile " + geometryFile + " --dataFile " + fileCSV + " > "+outputName+" 2>&1 &"
     print("Running job id:",runId,"\nfor file(s):\n\t"+ fileCSV.replace(",","\n\t"))
-
-    #return #TEST
     
     os.chdir(runId)
     os.system("ln -s ../*Formats* ./")
     os.system("ln -s ../*.dat ./")
     print(command+arguments)
+    #exit(0) #TEST
     os.system(command+arguments)
     time.sleep(2)
     os.chdir("../")
@@ -31,7 +30,7 @@ def analyzeSingleBatch(runId, fileCSV, geometryFile, command):
 def analyzeDataInDirectory(dataPath, geometryFile, procName):
     
     command = "../../bin/"+procName
-    procCount = 8
+    procCount = 1
 
     runDataList = getCSVinputList(dataPath)
 

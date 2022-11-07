@@ -320,7 +320,7 @@ void plot_MCevent(const char *input_fname1,  // input ROOT file name for reading
   // INITIALIZE UVW-projector
   // ________________________
   
-  GeometryTPC *g = new GeometryTPC(geom_fname);
+  std::shared_ptr<GeometryTPC>g(new GeometryTPC(geom_fname));
   UVWprojector *p = new UVWprojector(g, 100, 25, 25); //  100, 100, 100);
   p->SetDebug(false);
   g->SetDebug(false);

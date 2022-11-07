@@ -79,7 +79,8 @@ else()
   MESSAGE( STATUS "AUXILIARY TOOLS dir already exists in the installation dir" )
 endif()
 
-set(CMAKE_CXX_FLAGS "${ROOT_CXX_FLAGS} -Wall -Werror -O3 -pthread -Wno-register")
+set(CMAKE_CXX_FLAGS "${ROOT_CXX_FLAGS} -std=c++17 -Wall -Werror -O3 -pthread -Wno-register")
+
 MESSAGE( STATUS "CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS})
 
 option(DEBUG "Define DEBUG variable" OFF)
@@ -113,15 +114,12 @@ set(TPCRECO_LIBRARIES "")
 
 add_subdirectory(DataFormats)
 add_subdirectory(Utilities)
+add_subdirectory(TrackGenerator) 
 add_subdirectory(GrawToROOT) 
 add_subdirectory(Reconstruction)
 add_subdirectory(Analysis)
 add_subdirectory(GUI)
 add_subdirectory(ToyMC)
-option(BUILD_MC "build MC tools" OFF)
-if(BUILD_MC)
-  add_subdirectory(TrackGenerator)
-endif()
 
 MESSAGE(STATUS "TPCReco libraries:" ${TPCRECO_LIBRARIES})
 

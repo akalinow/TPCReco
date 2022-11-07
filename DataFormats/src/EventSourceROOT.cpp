@@ -19,20 +19,20 @@ EventSourceROOT::EventSourceROOT(const std::string & geometryFileName) {
 /////////////////////////////////////////////////////////
 void EventSourceROOT::setTreePointers(const std::string & fileName) {
 
-  readEventType = raw;
-  if(fileName.find("EventTPC")!=std::string::npos) readEventType = tpc;
+  readEventType = EventType::raw;
+  if(fileName.find("EventTPC")!=std::string::npos) readEventType = EventType::tpc;
 
   switch(readEventType) {
-  case raw: 
+  case EventType::raw: 
     treeName = "TPCDataRaw";
     aPtrEventInfo = (eventraw::EventInfo*)(myCurrentEventRaw.get());
     aPtrEventData = (eventraw::EventData*)(myCurrentEventRaw.get());
     aPtr=NULL;
     break;
-  case tpc: 
+  case EventType::tpc: 
   default:
     treeName = "TPCData";
-    aPtr = myCurrentEvent.get();
+    aPtr = myCurrentPEvent.get();
     aPtrEventInfo=NULL;
     aPtrEventData=NULL;
     break;
@@ -81,7 +81,7 @@ void EventSourceROOT::loadDataFile(const std::string & fileName){
   }
 
   setTreePointers(fileName);
-  myTree = (TTree*)myFile->Get(treeName.c_str());
+  myTree.reset((TTree*)myFile->Get(treeName.c_str()));
   if(!myTree){
     std::cout<<KRED<<"ERROR "<<RST<<"TTree with name: "<<treeName
 	     <<" not found in TFile. "<<std::endl;
@@ -91,12 +91,12 @@ void EventSourceROOT::loadDataFile(const std::string & fileName){
   }
 
   switch(readEventType) {
-  case raw:
+  case EventType::raw:
     myTree->SetBranchAddress("EventInfo", &aPtrEventInfo);
     myTree->SetBranchAddress("EventData", &aPtrEventData);
     break;
 
-  case tpc:
+  case EventType::tpc:
   default:
     myTree->SetBranchAddress("Event", &aPtr);
     break;
@@ -124,20 +124,10 @@ void EventSourceROOT::loadFileEntry(unsigned long int iEntry){
   }
   if((long int)iEntry>=myTree->GetEntries()) iEntry = myTree->GetEntries() - 1;
 
-  switch(readEventType) {
-  case raw:
-    myTree->GetEntry(iEntry);
-    fillEventFromEventRaw();
-    break;
-
-  case tpc: 
-  default:
-    myCurrentEvent->SetGeoPtr(0);
-    myTree->GetEntry(iEntry);
-    myCurrentEvent->SetGeoPtr(myGeometryPtr);
-    break;
-  };
-  
+  myTree->GetEntry(iEntry);
+  if(readEventType==EventType::raw) fillEventFromEventRaw();
+  if(readEventType==EventType::tpc) fillEventTPC();
+			      
   myCurrentEntry = iEntry;
 }
 /////////////////////////////////////////////////////////
@@ -190,7 +180,7 @@ void EventSourceROOT::loadGeometry(const std::string & fileName){
 void EventSourceROOT::fillEventFromEventRaw(){
 
   // sanity checks
-  if(readEventType!=raw) {
+  if(readEventType!=EventType::raw) {
     std::cout << KRED << __FUNCTION__
 	      << ": Read flag mismatch! "
 	      << "Expected EventRaw instead of EventTPC. Entry skipped." << RST << std::endl;
@@ -209,20 +199,19 @@ void EventSourceROOT::fillEventFromEventRaw(){
 
 #ifdef DEBUG
   std::cout << __FUNCTION__
-	    << ": eventId=" << myCurrentEventRaw->getEventId()
-	    << ", time=" << myCurrentEventRaw->getEventTimestamp() << std::endl;
+	    << myCurrentEventRaw << std::endl;
 #endif
-  
-  myCurrentEvent->SetEventId(myCurrentEventRaw->GetEventId());
-  myCurrentEvent->SetEventTime(myCurrentEventRaw->GetEventTimestamp());
+
+  myCurrentEventRaw.get()->SetPedestalSubtracted(removePedestal);
+  myCurrentEvent->SetEventInfo(*myCurrentEventRaw.get());
   myCurrentEvent->SetGeoPtr(myGeometryPtr);
   
   // loop over AGET chips
   for(auto it=myCurrentEventRaw->data.begin(); it!=myCurrentEventRaw->data.end(); it++) {
 
-    const unsigned int COBO_idx = (unsigned int)(it->first).key1;
-    const unsigned int ASAD_idx = (unsigned int)(it->first).key2;
-    const unsigned int AGET_idx = (unsigned int)(it->first).key3;
+    const unsigned int COBO_idx = std::get<0>(it->first);
+    const unsigned int ASAD_idx = std::get<0>(it->first);
+    const unsigned int AGET_idx = std::get<0>(it->first);
 
     // sanity checks
     if(ASAD_idx >= (unsigned int)myGeometryPtr->GetAsadNboards()){
@@ -269,8 +258,9 @@ void EventSourceROOT::fillEventFromEventRaw(){
 		  corrVal -= myPedestalCalculator.GetPedestalCorrection(COBO_idx, ASAD_idx, AGET_idx, CHANNEL_idx, TIMECELL_idx);
 		}
 
-		// add new hit to EventTPC
-		myCurrentEvent->AddValByAgetChannel(COBO_idx, ASAD_idx, AGET_idx, CHANNEL_idx, TIMECELL_idx, corrVal);
+		// add new hit to PEventTPC
+		std::shared_ptr<StripTPC> aStrip(myGeometryPtr->GetStripByAget(COBO_idx, ASAD_idx,  AGET_idx,  CHANNEL_idx));
+		if(aStrip) myCurrentPEvent->AddValByStrip(aStrip, TIMECELL_idx, corrVal);
 		
 		idx2++; // set next cellData index
 	      } // if ((bitmask...
@@ -281,22 +271,8 @@ void EventSourceROOT::fillEventFromEventRaw(){
 	} // if ((bitmask...
 	CHANNEL_idx++; // set next channel NUMBER
       } // scan of CHANNEL mask bits
-    } // scan of CHANNEL mask bytes
-
-    /*
-#ifdef DEBUG
-    ////// DEBUG
-    std::shared_ptr<TProfile> tp=myPedestalCalculator.GetPedestalProfilePerAsad(COBO_idx, ASAD_idx);
-    std::cout << __FUNCTION__ << ": TProfile[Cobo=" << COBO_idx
-	      << ", Asad=" << ASAD_idx
-	      << "]=" << tp->GetName()
-	      << std::endl << std::flush;
-    ////// DEBUG
-#endif
-    */  
-    
+    } // scan of CHANNEL mask bytes   
   } // loop over AGET chips
-
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

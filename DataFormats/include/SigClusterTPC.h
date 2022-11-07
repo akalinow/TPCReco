@@ -25,11 +25,11 @@ class SigClusterTPC {
   std::vector<MultiKey4> hitList2;// list of selected space-time cells (per section) for further analysis where return
                                   // value=key(STRIP_DIR [0-2], STRIP_SEC [0-2], STRIP_NUM [1-1024], REBIN_TIME_CELL [0-511])
   std::map<MultiKey2, 
-    std::vector<int>, multikey2_less> hitListByTimeDir;// same list of selected space-time cells as a map
+    std::vector<int> > hitListByTimeDir;// same list of selected space-time cells as a map
                                                         // with key=(REBIN_TIME_CELL [0-511], STRIP_DIR [0-2]) 
                                                         // that returns vector of STRIP_NUMBERS 
   std::map<MultiKey3, 
-    std::vector<int>, multikey3_less> hitListByTimeDir2;// same list of selected space-time cells (per section) as a map
+    std::vector<int> > hitListByTimeDir2;// same list of selected space-time cells (per section) as a map
                                                         // with key=(REBIN_TIME_CELL [0-511], STRIP_DIR [0-2], STRIP_SEC [0-2]) 
                                                         // that returns vector of STRIP_NUMBERS 
   std::map<int, std::vector<MultiKey2> > hitListByDir;  // same list of selected space-time cells as a map
@@ -42,11 +42,11 @@ class SigClusterTPC {
 
   // statistics variables
   long nhits[3];   // number of space-time cells in a given U,V,W direction (per section)
-  std::map<MultiKey2, int, multikey2_less> nhitsMap; // number of space-time cells per merged strip, 
+  std::map<MultiKey2, int> nhitsMap; // number of space-time cells per merged strip, 
                                                      // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024])
-  std::map<MultiKey3, int, multikey3_less> nhitsMap2;// number of space-time cells per strip per section, 
+  std::map<MultiKey3, int> nhitsMap2;// number of space-time cells per strip per section, 
                                                      // key=(STRIP_DIR [0-2], STRIP_SEC [0-2], STRIP_NUM [1-1024])
-  std::map<MultiKey2, int, multikey2_less> nhitsMap3;// number of space-time cells per direction per section, 
+  std::map<MultiKey2, int> nhitsMap3;// number of space-time cells per direction per section, 
                                                      // key=(STRIP_DIR [0-2], STRIP_SEC [0-2])
   int nstrips[3];   // number of merged strips with some hits in a given direction
   int min_strip[3]; // minimal merged strip number for each direction (-1=error)
@@ -65,13 +65,13 @@ class SigClusterTPC {
   double tot_charge[3];              // charge integral
   double glb_tot_charge;             // charge integral
 
-  std::map<MultiKey2, double, multikey2_less> maxChargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024])
-  std::map<MultiKey3, double, multikey3_less> maxChargeMap2; // key=(STRIP_DIR [0-2], STRIP_SEC [0-2], STRIP_NUM [1-1024])
-  std::map<MultiKey2, double, multikey2_less> totalChargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024])
-  std::map<MultiKey2, double, multikey2_less> totalChargeMap2; // key=(STRIP_DIR [0-2], TIME_CELL [0-511])
+  std::map<MultiKey2, double> maxChargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024])
+  std::map<MultiKey3, double> maxChargeMap2; // key=(STRIP_DIR [0-2], STRIP_SEC [0-2], STRIP_NUM [1-1024])
+  std::map<MultiKey2, double> totalChargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024])
+  std::map<MultiKey2, double> totalChargeMap2; // key=(STRIP_DIR [0-2], TIME_CELL [0-511])
   std::map<int, double> totalChargeMap3; // key=TIME_CELL [0-511]
-  std::map<MultiKey3, double, multikey3_less> totalChargeMap4; // key=(STRIP_DIR [0-2], STRIP_SEC [0-2], STRIP_NUM [1-1024])
-  std::map<MultiKey3, double, multikey3_less> totalChargeMap5; // key=(STRIP_DIR [0-2], STRIP_SEC [0-2], TIME_CELL [0-511])
+  std::map<MultiKey3, double> totalChargeMap4; // key=(STRIP_DIR [0-2], STRIP_SEC [0-2], STRIP_NUM [1-1024])
+  std::map<MultiKey3, double> totalChargeMap5; // key=(STRIP_DIR [0-2], STRIP_SEC [0-2], TIME_CELL [0-511])
 
  public:
 
@@ -83,14 +83,14 @@ class SigClusterTPC {
   std::vector<MultiKey2> GetHitListByDirMerged(int strip_dir) const; // list of SELECTED hits corresponding to a given STRIP_DIR[0-2], value=key(REBIN_TIME_CELL [0-511], STRIP_NUM [1-1024])
   std::vector<MultiKey3> GetHitListByDir(int strip_dir) const; // list of SELECTED hits corresponding to a given STRIP_DIR[0-2], value=key(REBIN_TIME_CELL [0-511], STRIP_SEC [0-2], STRIP_NUM [1-1024])
 
-  const std::map<MultiKey2, std::vector<int>, multikey2_less> & GetHitListByTimeDirMerged() const;
-  const std::map<MultiKey3, std::vector<int>, multikey3_less> & GetHitListByTimeDir() const;
+  const std::map<MultiKey2, std::vector<int> > & GetHitListByTimeDirMerged() const;
+  const std::map<MultiKey3, std::vector<int> > & GetHitListByTimeDir() const;
   
   inline EventTPC* GetEvtPtr() const{ return evt_ptr; }
 
   // helper methods for inserting data points
   // they return TRUE on success and FALSE on error
-  bool AddByStrip(StripTPC* strip, int time_cell);                     // valid range [0-511]
+  bool AddByStrip(std::shared_ptr<StripTPC> strip, int time_cell);                     // valid range [0-511]
   bool AddByStrip(int strip_dir, int strip_section, int strip_number, int time_cell);// valid range [0-2][0-2][1-1024][0-511]
   bool AddByGlobalChannel(int glb_channel_idx, int time_cell);         // valid range [0-1023][0-511]
   bool AddByGlobalChannel_raw(int glb_raw_channel_idx, int time_cell); // valid range [0-(1023+4*N)][0-511]
@@ -99,7 +99,7 @@ class SigClusterTPC {
 
   // helper methods for checking cluster membership
   // they return TRUE for member data points and FALSE for non-member data points
-  bool CheckByStrip(StripTPC* strip, int time_cell) const;                   // valid range [0-511]
+  bool CheckByStrip(std::shared_ptr<StripTPC> strip, int time_cell) const;                   // valid range [0-511]
   bool CheckByStrip(int strip_dir, int strip_section, int strip_number, int time_cell) const;  // valid range [0-2][0-2][1-1024][0-511]
   bool CheckByStripMerged(int strip_dir, int strip_number, int time_cell) const;  // valid range [0-2][1-1024][0-511] (if at least one section was hit)
   bool CheckByGlobalChannel(int glb_channel_idx, int time_cell) const;         // valid range [0-1023][0-511]

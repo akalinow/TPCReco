@@ -11,10 +11,10 @@
 #include "colorText.h"
 
 #include <TSystem.h>
-#include <TObjArray.h> // for string tokens
-#include <TObjString.h> // for string tokens
+#include <TObjArray.h> 
+#include <TObjString.h>
 #include <TStyle.h>
-#include <TString.h> // for string tokens
+#include <TString.h>
 #include <TFrame.h>
 #include <TVirtualX.h>
 #include <TImage.h>
@@ -29,6 +29,7 @@
 #include "EventSourceMultiGRAW.h"
 #endif
 #include "EventSourceROOT.h"
+#include "EventSourceMC.h"
 
 #include "TGButtonGroup.h"
 #include "TGButton.h"
@@ -40,7 +41,6 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h,  const boost::proper
   myConfig = aConfig;
  
   fSelectionBox = 0;
-
   InitializeEventSource();
   InitializeWindows();
   
@@ -50,6 +50,9 @@ MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h,  const boost::proper
   }
   else if(myWorkMode==M_OFFLINE_ROOT_MODE){
     modeLabel = "OFFLINE from ROOT";
+  }
+  else if(myWorkMode==M_OFFLINE_MC_MODE){
+    modeLabel = "OFFLINE from Monte Carlo";
   }
   else if(myWorkMode==M_OFFLINE_GRAW_MODE || myWorkMode==M_OFFLINE_NGRAW_MODE){
     modeLabel = "OFFLINE from GRAW";
@@ -127,8 +130,12 @@ void MainFrame::InitializeEventSource(){
     //    TString list2=((TObjString *)(token->At(itoken)))->String(); // path + name of single file
     std::string list2( ((TObjString *)(token->At(itoken)))->String().Data() );
     if(gSystem->GetPathInfo(list2.c_str(), stat) != 0){
+      if(list2.find("_MC_")!=std::string::npos){
+	dataFileVec.push_back(list2);
+	continue;
+      }
       std::cerr<<KRED<<"Invalid data path. No such file or directory: "<<RST<<list2<<std::endl;
-      return;
+      exit(1);
     }
 #ifdef WITH_GET
     if( ((stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG) && list2.find(".graw")!=std::string::npos){
@@ -153,11 +160,21 @@ void MainFrame::InitializeEventSource(){
   //    std::cerr<<KRED<<"Invalid data path. No such file or directory: "<<RST<<dataFileName<<std::endl;
   //   return;
   //  }
+
+  std::cout<<"dataFileVec.size(): "<<dataFileVec.size()
+	   <<" ((stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG): "<<((stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG)
+	   <<"dataFileName.find(_MC_)!=std::string::npos: "<<(dataFileName.find("_MC_")!=std::string::npos)
+	   <<std::endl;
   
   if( dataFileVec.size()==1 && ((stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG) && dataFileName.find(".root")!=std::string::npos){
       myWorkMode = M_OFFLINE_ROOT_MODE;
       myEventSource = std::make_shared<EventSourceROOT>(geometryFileName);
     }
+  else if(dataFileVec.size()==1 && dataFileName.find("_MC_")!=std::string::npos){
+    myWorkMode = M_OFFLINE_MC_MODE;
+    myEventSource = std::make_shared<EventSourceMC>(geometryFileName);
+  }
+  
 #ifdef WITH_GET
   else if( all_graw ) { //(stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG) && dataFileName.find(".graw")!=std::string::npos){
 
@@ -216,51 +233,35 @@ void MainFrame::InitializeEventSource(){
     }
     myDirWatch.Connect("Message(const char *)", "MainFrame", this, "ProcessMessage(const char *)");
   }
-  if((myWorkMode == M_ONLINE_GRAW_MODE) || (myWorkMode == M_ONLINE_NGRAW_MODE) ||  (myWorkMode == M_OFFLINE_GRAW_MODE) || (myWorkMode == M_OFFLINE_NGRAW_MODE)){
-    if(myConfig.find("removePedestal")!=myConfig.not_found() && myEventSource.get()){
-         bool removePedestal = myConfig.get<bool>("removePedestal");
-         EventSourceGRAW* aGrawEventSrc = dynamic_cast<EventSourceGRAW*>(myEventSource.get());
-         if(aGrawEventSrc) aGrawEventSrc->setRemovePedestal(removePedestal);
-    }
-    if(myConfig.find("pedestal")!=myConfig.not_found() && myEventSource.get()){
-      dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(myConfig.find("pedestal")->second);
-    }
+  if(myConfig.find("removePedestal")!=myConfig.not_found() && myEventSource.get()){
+       bool removePedestal = myConfig.get<bool>("removePedestal");
+       EventSourceGRAW* aGrawEventSrc = dynamic_cast<EventSourceGRAW*>(myEventSource.get());
+       if(aGrawEventSrc) aGrawEventSrc->setRemovePedestal(removePedestal);
   }
+  if(myConfig.find("pedestal")!=myConfig.not_found() && myEventSource.get()){
+    dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(myConfig.find("pedestal")->second);
+  } 
 #endif
   else if(!myEventSource){
-    std::cerr<<KRED<<"Input source not known. dataFile: "<<RST<<dataFileName<<std::endl;
+    std::cerr<<KRED<<"Input source not known. DataFile: "<<RST<<dataFileName<<std::endl;
 #ifndef WITH_GET
     std::cerr<<KRED<<"and GRAW libriaries not set."<<RST<<std::endl;
 #endif
     exit(0);
     return;
-  }
-
-  // sets RECO cluster parameters
-  bool recoClusterEnable=myHistoManager.getRecoClusterEnable(); // get defaults
-  double recoClusterThreshold=myHistoManager.getRecoClusterThreshold(); // get defaults
-  int recoClusterDeltaStrips=myHistoManager.getRecoClusterDeltaStrips(); // get defaults
-  int recoClusterDeltaTimeCells=myHistoManager.getRecoClusterDeltaTimeCells(); // get defaults
-
-  if(myConfig.find("recoClusterEnable")!=myConfig.not_found()){
-    recoClusterEnable = myConfig.get<bool>("recoClusterEnable"); // set changes
-  }
-  if(myConfig.find("recoClusterThreshold")!=myConfig.not_found()){
-    recoClusterThreshold = fabs(myConfig.get<double>("recoClusterThreshold")); // set changes
-  }
-  if(myConfig.find("recoClusterDeltaStrips")!=myConfig.not_found()){
-    recoClusterDeltaStrips = abs(myConfig.get<int>("recoClusterDeltaStrips")); // set changes
-  }
-  if(myConfig.find("recoClusterDeltaTimeCells")!=myConfig.not_found()){
-    recoClusterDeltaTimeCells = abs(myConfig.get<int>("recoClusterDeltaTimeCells")); // set changes
-  }
-  myHistoManager.setRecoClusterParameters(recoClusterEnable, recoClusterThreshold, recoClusterDeltaStrips, recoClusterDeltaTimeCells);
-  
+  } 
   if(myWorkMode!=M_ONLINE_GRAW_MODE && myWorkMode!=M_ONLINE_NGRAW_MODE){
     myEventSource->loadDataFile(dataFileName);
     myEventSource->loadFileEntry(0);
   }
+  if(myConfig.find("hitFilter")!=myConfig.not_found()){
+    myHistoManager.setConfig(myConfig.find("hitFilter")->second);
+  }
+  int index = geometryFileName.find("mbar");
+  double pressure = stof(geometryFileName.substr(index-3, 3));
   myHistoManager.setGeometry(myEventSource->getGeometry());
+  myHistoManager.setPressure(pressure);
+  
   if(isRecoModeOn) myHistoManager.openOutputStream(dataFileName);
   myEventSource->getEventFilter().setConditions(myConfig);
 }
@@ -488,7 +489,7 @@ int MainFrame::AddFileInfoFrame(int attach){
   UInt_t attach_left=nColumns*0.7+1;
   UInt_t attach_right=nColumns;
   UInt_t attach_top=attach;
-  UInt_t attach_bottom=attach_top+6;
+  UInt_t attach_bottom=attach_top+8;
   TGTableLayoutHints *tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom,
 						    kLHintsShrinkX|kLHintsShrinkY|
 						    kLHintsFillX|kLHintsFillY);
@@ -636,7 +637,10 @@ void MainFrame::AddLogos(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void MainFrame::CloseWindow(){ gApplication->Terminate(0); }
+void MainFrame::CloseWindow(){
+  myHistoManager.~HistoManager();
+  gApplication->Terminate(0);
+}
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MainFrame::ClearCanvases(){
@@ -652,7 +656,6 @@ void MainFrame::Update(){
 
   if(!myEventSource || !myEventSource->numberOfEvents() ||
      !fFileInfoFrame || !fMarkersManager) {return;}
-  
   fFileInfoFrame->updateFileName(myEventSource->getCurrentPath());
   fFileInfoFrame->updateEventNumbers(myEventSource->numberOfEvents(),
 				   myEventSource->currentEventNumber(),
@@ -660,11 +663,9 @@ void MainFrame::Update(){
   myHistoManager.setEvent(myEventSource->getCurrentEvent());
   fMarkersManager->reset();
   fMarkersManager->setEnabled(isRecoModeOn);
-
   ClearCanvases();      
   //myHistoManager.drawRawHistos(fRawHistosCanvas, isRateDisplayOn);
   //myHistoManager.drawTechnicalHistos(fTechHistosCanvas, myEventSource->getGeometry()->GetAgetNchips());
-
   if(!isRecoModeOn){
     myHistoManager.drawRawHistos(fMainCanvas, isRateDisplayOn);
   }

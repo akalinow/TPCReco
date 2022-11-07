@@ -157,13 +157,13 @@ void GeometryStats::FillSectionBoundary(int dir, int section, int num, TVector2 
   }
 }
 
-int GeometryStats::GetDirStripNSections(int dir, int num){ // number of sections per {strip DIR, strip NUM} pair
+int GeometryStats::GetDirStripNSections(int dir, int num) const{ // number of sections per {strip DIR, strip NUM} pair
   auto sectionBoundaryList=directionsStripSectionBoundaryList.find(std::pair<int, int>(dir, num));
   if(sectionBoundaryList==directionsStripSectionBoundaryList.end()) return 0;
   return std::max( (int)sectionBoundaryList->second.size()-1, 1); // NSections=1 => size=2, NSections=3 => size=2, etc.
 }
 
-StripSectionBoundaryList GeometryStats::GetStripSectionBoundaryList(int dir, int num){ // active area boundaries + section boundaries
+StripSectionBoundaryList GeometryStats::GetStripSectionBoundaryList(int dir, int num) const{ // active area boundaries + section boundaries
   StripSectionBoundaryList empty; // empty vector
   auto sectionBoundaryList=directionsStripSectionBoundaryList.find(std::pair<int, int>(dir, num));
   if(sectionBoundaryList==directionsStripSectionBoundaryList.end()) return empty;

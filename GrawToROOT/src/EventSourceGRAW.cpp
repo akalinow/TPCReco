@@ -9,8 +9,10 @@
 #include "TCollection.h"
 #include "TClonesArray.h"
 
+
 #include "EventSourceGRAW.h"
 //#include "EventRaw.h"
+#include "RunIdParser.h"
 #include "colorText.h"
 
 #include "get/graw2dataframe.h"
@@ -24,9 +26,6 @@ EventSourceGRAW::EventSourceGRAW(const std::string & geometryFileName) {
 
   std::string formatsFilePath = "./CoboFormats.xcfg";
   myFrameLoader.initialize(formatsFilePath);
- 
-  // minSignalCell = 2;//FIXME read from config
-  // maxSignalCell = 500;//FIXME read from config
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -40,7 +39,7 @@ void EventSourceGRAW::setRemovePedestal(bool aFlag){
 /////////////////////////////////////////////////////////
 std::shared_ptr<EventTPC> EventSourceGRAW::getNextEvent(){
 
-  unsigned long int currentEventId = myCurrentEvent->GetEventId();
+  auto currentEventId = myCurrentEvent->GetEventInfo().GetEventId();
   auto it = myFramesMap.find(currentEventId);
   unsigned int lastEventFrame = *it->second.rbegin();
   if(lastEventFrame<nEntries-1) ++lastEventFrame;
@@ -51,7 +50,7 @@ std::shared_ptr<EventTPC> EventSourceGRAW::getNextEvent(){
 /////////////////////////////////////////////////////////
 std::shared_ptr<EventTPC> EventSourceGRAW::getPreviousEvent(){
 
-  unsigned int currentEventId = myCurrentEvent->GetEventId();
+  auto currentEventId = myCurrentEvent->GetEventInfo().GetEventId();
   auto it = myFramesMap.find(currentEventId);
   unsigned int startingEventIndexFrame = *it->second.begin();
   if(startingEventIndexFrame>0) --startingEventIndexFrame; 
@@ -77,27 +76,11 @@ void EventSourceGRAW::loadDataFile(const std::string & fileName){
   }
 
   myFilePath = fileName;
-#ifdef EVENTSOURCEGRAW_NEXT_FILE_DISABLE  
-  myNextFilePath = fileName;
-#else
   myNextFilePath = getNextFilePath();
-#endif  
   myFramesMap.clear();
   myASADMap.clear();
   myReadEntriesSet.clear();
   isFullFileScanned = false;
-  /*
-  for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
-    loadGrawFrame(iEntry, false);
-    int currentEventId = myDataFrame.fHeader.fEventIdx;
-    int ASAD_idx = myDataFrame.fHeader.fAsadIdx;
-    std::cout<<"iEntry: "<<iEntry
-	     <<" currentEventId: "<<currentEventId
-	     <<" ASAD: "<<ASAD_idx
-	     <<std::endl;
-  }
-  std::cout<<KBLU<<"End of file"<<RST<<std::endl;  
-  */ 
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -173,6 +156,7 @@ void EventSourceGRAW::loadFileEntry(unsigned long int iEntry){
 
   myCurrentEntry = iEntry;
   loadGrawFrame(iEntry, false);
+  
   unsigned long int eventId = myDataFrame.fHeader.fEventIdx;
 
   std::cout<<KBLU
@@ -264,78 +248,28 @@ void EventSourceGRAW::collectEventFragments(unsigned int eventId){
 	       <<KRED<<" found: "<<RST<<it->second.size()
 	       <<RST<<std::endl;
   }
-  //long int eventNumberInFile = std::distance(myFramesMap.begin(), it);
+  //long int eventNumberInFile = std::distance(myFramesMap.begin(), it);  
+  myCurrentPEvent->Clear();
+  std::cout<<KYEL<<"Creating a new PEventTPC/Raw with eventId: "<<eventId<<RST<<std::endl;
+  std::set<int> asadCounter;
 
-  switch(fillEventType) {
-  case raw:  
-    myCurrentEventRaw->SetEventId(eventId);
-    myCurrentEvent->SetEventId(eventId); // for compatibility with EventSourceBase::currentEventNumber()
-    std::cout<<KYEL<<"Creating a new EventRaw with eventId: "<<eventId<<RST<<std::endl;
-    
-    for(auto aFragment: it->second){
-      loadGrawFrame(aFragment, true);
-      myCurrentEventRaw->SetEventTimestamp(myDataFrame.fHeader.fEventTime);
-      int  ASAD_idx = myDataFrame.fHeader.fAsadIdx;
-      unsigned long int eventId_fromFrame = myDataFrame.fHeader.fEventIdx;
-      if(eventId!=eventId_fromFrame){
-	std::cerr<<KRED<<__FUNCTION__
-		 <<": Event id mismatch! eventId="<<eventId
-		 <<", eventId_fromFrame="<<eventId_fromFrame
-		 <<RST<<std::endl;
-	return;
-      }     
-    std::cout<<KBLU<<"Found a frame for eventId: "<<RST<<eventId;
-    if(aFragment<nEntries) std::cout<<KBLU<<" in file entry: "<<RST<<aFragment<<RST;
-    else std::cout<<KBLU<<" in next file entry: "<<RST<<aFragment-nEntries<<RST;
-    std::cout<<KBLU<<" for  ASAD: "<<RST<<ASAD_idx<<RST<<std::endl;      
-    fillEventRawFromFrame(myDataFrame);
-    }
-    break;
-  case tpc:  // fill EventTPC class (skip EventRaw)
-  default:
-    myCurrentEvent->Clear();
-    myCurrentEvent->SetEventId(eventId);
-    myCurrentEvent->SetGeoPtr(myGeometryPtr);
-    
-    std::cout<<KYEL<<"Creating a new EventTPC with eventId: "<<eventId<<RST<<std::endl;
-    
-    for(auto aFragment: it->second){
-      loadGrawFrame(aFragment, true);
-      myCurrentEvent->SetEventTime(myDataFrame.fHeader.fEventTime);
-      //    myCurrentEvent->SetEventNumber(aFragment/myGeometryPtr->GetAsadNboards());
-      int  ASAD_idx = myDataFrame.fHeader.fAsadIdx;
-      unsigned long int eventId_fromFrame = myDataFrame.fHeader.fEventIdx;
-      if(eventId!=eventId_fromFrame){
-	std::cerr<<KRED<<__FUNCTION__
-		 <<": Event id mismatch!: eventId="<<eventId
-		 <<", eventId_fromFrame="<<eventId_fromFrame
-		 <<RST<<std::endl;
-	return;
-      }     
-    std::cout<<KBLU<<"Found a frame for eventId: "<<RST<<eventId;
-    if(aFragment<nEntries) std::cout<<KBLU<<" in file entry: "<<RST<<aFragment<<RST;
-    else std::cout<<KBLU<<" in next file entry: "<<RST<<aFragment-nEntries<<RST;
-    std::cout<<KBLU<<" for  ASAD: "<<RST<<ASAD_idx<<RST<<std::endl;      
-    fillEventFromFrame(myDataFrame);
-    }
-  };
-
-  /*  
-  myCurrentEvent->Clear();
-  myCurrentEvent->SetEventId(eventId);
-  myCurrentEvent->SetGeoPtr(myGeometryPtr);
-
-  std::cout<<KYEL<<"Creating a new event with eventId: "<<eventId<<RST<<std::endl;
-
+  RunIdParser runParser(myFilePath);
+  myCurrentEventInfo.SetRunId(runParser.runId());
+  
   for(auto aFragment: it->second){
     loadGrawFrame(aFragment, true);
-    myCurrentEvent->SetEventTime(myDataFrame.fHeader.fEventTime);
-    //    myCurrentEvent->SetEventNumber(aFragment/myGeometryPtr->GetAsadNboards());
     int  ASAD_idx = myDataFrame.fHeader.fAsadIdx;
     unsigned long int eventId_fromFrame = myDataFrame.fHeader.fEventIdx;
+    asadCounter.insert(ASAD_idx);
+
+    myCurrentEventInfo.SetEventId(eventId);
+    myCurrentEventInfo.SetRunId(eventId);
+    myCurrentEventInfo.SetEventTimestamp(myDataFrame.fHeader.fEventTime);
+    std::cout<<myCurrentEventInfo<<std::endl;
+    
     if(eventId!=eventId_fromFrame){
       std::cerr<<KRED<<__FUNCTION__
-	       <<": Event id mismatch! eventId="<<eventId
+	       <<": Event id mismatch!: eventId="<<eventId
 	       <<", eventId_fromFrame="<<eventId_fromFrame
 	       <<RST<<std::endl;
       return;
@@ -343,16 +277,18 @@ void EventSourceGRAW::collectEventFragments(unsigned int eventId){
     std::cout<<KBLU<<"Found a frame for eventId: "<<RST<<eventId;
     if(aFragment<nEntries) std::cout<<KBLU<<" in file entry: "<<RST<<aFragment<<RST;
     else std::cout<<KBLU<<" in next file entry: "<<RST<<aFragment-nEntries<<RST;
-    std::cout<<KBLU<<" for  ASAD: "<<RST<<ASAD_idx<<RST<<std::endl;      
-    fillEventFromFrame(myDataFrame);
+    std::cout<<KBLU<<" for  ASAD: "<<RST<<ASAD_idx<<RST<<std::endl;
+    if(fillEventType==EventType::tpc) fillEventFromFrame(myDataFrame);
+    else if(fillEventType==EventType::raw) fillEventRawFromFrame(myDataFrame);
   }
-  */
+  fillEventTPC();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void EventSourceGRAW::fillEventFromFrame(GET::GDataFrame & aGrawFrame){
 
   if(removePedestal) myPedestalCalculator.CalculateEventPedestals(aGrawFrame);
+  myCurrentEventInfo.SetPedestalSubtracted(removePedestal);
 
   int  COBO_idx = aGrawFrame.fHeader.fCoboIdx;
   int  ASAD_idx = aGrawFrame.fHeader.fAsadIdx;
@@ -367,9 +303,7 @@ void EventSourceGRAW::fillEventFromFrame(GET::GDataFrame & aGrawFrame){
   }
   
   for (Int_t agetId = 0; agetId < myGeometryPtr->GetAgetNchips(); ++agetId){
-    // loop over normal channels and update channel mask for clustering
     for (Int_t chanId = 0; chanId < myGeometryPtr->GetAgetNchannels(); ++chanId){
-      //      int iChannelGlobal     = myGeometryPtr->Global_normal2normal(COBO_idx, ASAD_idx, agetId, chanId);// 0-255 (without FPN)
       GET::GDataChannel* channel = aGrawFrame.SearchChannel(agetId, myGeometryPtr->Aget_normal2raw(chanId));
       if (!channel) continue;
 	  
@@ -377,35 +311,21 @@ void EventSourceGRAW::fillEventFromFrame(GET::GDataFrame & aGrawFrame){
 	GET::GDataSample* sample = (GET::GDataSample*) channel->fSamples.At(i);
 	// skip cells outside signal time-window
 	Int_t icell = sample->fBuckIdx;
-	if(icell<2 || icell>509 || icell<myPedestalCalculator.GetMinSignalCell() || icell>myPedestalCalculator.GetMaxSignalCell()) continue;
+	if(icell<2 || icell>509 ||
+	   icell<myPedestalCalculator.GetMinSignalCell() ||
+	   icell>myPedestalCalculator.GetMaxSignalCell()) continue;
 	    
 	Double_t rawVal  = sample->fValue;
 	Double_t corrVal = rawVal;
-//	if(myGeometryPtr->GetAsadNboards()==1){
-    // Beware HACK!!!
-  //TProfile with pedestals is only 256 (max chans in frame) long, pedestals are calculated for each frame and reset
-  //to fit into TProfile the global number of first chan in COBO/ASAD has to be substracted from global chanel
-  if(removePedestal){
-    //int minChannelGlobal = myGeometryPtr->Global_normal2normal(COBO_idx, ASAD_idx, 0, 0);
-    //    corrVal -= myPedestalCalculator.GetPedestalCorrection(iChannelGlobal-minChannelGlobal, agetId, icell);
-    corrVal -= myPedestalCalculator.GetPedestalCorrection(COBO_idx, ASAD_idx, agetId, chanId, icell);
-  }
-//	} 
-	myCurrentEvent->AddValByAgetChannel(COBO_idx, ASAD_idx, agetId, chanId, icell, corrVal);
+	if(removePedestal){
+	  corrVal -= myPedestalCalculator.GetPedestalCorrection(COBO_idx, ASAD_idx, agetId, chanId, icell);
+	}
+	std::shared_ptr<StripTPC> aStrip(myGeometryPtr->GetStripByAget(COBO_idx, ASAD_idx, agetId, chanId));
+	if(aStrip) myCurrentPEvent->AddValByStrip(aStrip, icell, corrVal);
       }
     }
   }
-
-  if(removePedestal){
-    myCurrentEvent->SetPedestalSubstracted(true);
-  }
-  ////// DEBUG
-  //  std::shared_ptr<TProfile> tp=myPedestalCalculator.GetPedestalProfilePerAsad(COBO_idx, ASAD_idx);
-  //  std::cout << __FUNCTION__ << ": TProfile[Cobo=" << COBO_idx
-  //  	    << ", Asad=" << ASAD_idx
-  //  	    << "]=" << tp->GetName()
-  //  	    << std::endl << std::flush;
-  ////// DEBUG
+  myCurrentPEvent->SetEventInfo(myCurrentEventInfo);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -432,12 +352,14 @@ void EventSourceGRAW::fillEventRawFromFrame(GET::GDataFrame & aGrawFrame){
   // reset EventRaw.channelData for given {COBO, ASAD} pair
   eventraw::AgetRawMap_t::iterator a_it;
   for(a_it=(myCurrentEventRaw->data).begin(); a_it!=(myCurrentEventRaw->data).end(); a_it++) {
-    if( (a_it->first).key1==COBO_idx && (a_it->first).key2==ASAD_idx) (a_it->second).channelData.resize(0);
+    MultiKey2 aKey(COBO_idx, ASAD_idx);
+    if(std::get<0>(a_it->first)==COBO_idx &&
+       std::get<1>(a_it->first)==ASAD_idx) (a_it->second).channelData.resize(0);
   }
   
   // temporary map of AGET channels
-  std::map< MultiKey2, eventraw::ChannelRaw, multikey2_less> map2; // index={agetIdx[0-3], channelIdx[0-67]}, val=ChannelRaw
-  std::map< MultiKey2, eventraw::ChannelRaw, multikey2_less>::iterator map2_it;
+  std::map< MultiKey2, eventraw::ChannelRaw> map2; // index={agetIdx[0-3], channelIdx[0-67]}, val=ChannelRaw
+  std::map< MultiKey2, eventraw::ChannelRaw>::iterator map2_it;
 
   TClonesArray* channels = aGrawFrame.GetChannels();
   GET::GDataChannel* channel = 0;
@@ -485,8 +407,8 @@ void EventSourceGRAW::fillEventRawFromFrame(GET::GDataFrame & aGrawFrame){
   // NOTE: map2 is sorted by KEY={aget[0-3], chan[0-67]}
   for(map2_it=map2.begin(); map2_it!=map2.end(); map2_it++) {
 
-    uint8_t AGET_idx = (uint8_t)map2_it->first.key1;
-    uint8_t CHAN_idx = (uint8_t)map2_it->first.key2;
+    uint8_t AGET_idx = std::get<0>(map2_it->first);
+    uint8_t CHAN_idx = std::get<1>(map2_it->first);
     MultiKey3_uint8 mkey(COBO_idx, ASAD_idx, AGET_idx);
 
     // add new AGET to map if necessary
@@ -537,6 +459,10 @@ void EventSourceGRAW::configurePedestal(const boost::property_tree::ptree &confi
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::string EventSourceGRAW::getNextFilePath(){
+
+#ifdef EVENTSOURCEGRAW_NEXT_FILE_DISABLE  
+  return myFilePath;
+#endif
 
   std::string token = "_";
   int index = myFilePath.rfind(token);

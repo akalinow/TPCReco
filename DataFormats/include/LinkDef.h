@@ -4,7 +4,8 @@
 #pragma link off all functions;
 #pragma link C++ nestedclasses;
 
-#pragma link C++ class EventTPC+;
+#pragma link C++ class projection+;
+#pragma link C++ class PEventTPC+;
 #pragma link C++ class GeometryTPC+;
 #pragma link C++ class StripTPC+;
 #pragma link C++ class SigClusterTPC+;

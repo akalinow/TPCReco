@@ -5,7 +5,7 @@
 #include <set>
 class EventFilter {
 public:
-  bool pass(const EventTPC &event) const;
+  bool pass(EventTPC &event) const;
   
   void setConditions(const boost::property_tree::ptree &conditions);
   const boost::property_tree::ptree getConditions() const;

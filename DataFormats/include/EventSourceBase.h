@@ -9,11 +9,14 @@
 #include "EventTPC.h"
 #include "GeometryTPC.h"
 
+#include "EventInfo.h"
+#include "PEventTPC.h"
+
+enum class EventType {raw, tpc};
+
 class EventSourceBase {
 
 public:
-
-  enum EventType {raw = 0, tpc = 1};
   
   EventSourceBase();
   
@@ -30,6 +33,8 @@ public:
   virtual void loadEventId(unsigned long int iEvent) = 0;
 
   std::string getCurrentPath() const;
+
+  std::shared_ptr<PEventTPC> getCurrentPEvent() const;
 
   std::shared_ptr<EventTPC> getCurrentEvent() const;
   
@@ -57,14 +62,19 @@ public:
   
 protected:
 
+  void fillEventTPC();
+
   std::string currentFilePath;
   
   unsigned long int nEntries;
   unsigned long int myCurrentEntry;
   EventFilter eventFilter;
 
-  std::shared_ptr<EventTPC> myCurrentEvent;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
+  eventraw::EventInfo myCurrentEventInfo;
+  std::shared_ptr<PEventTPC> myCurrentPEvent;
+  std::shared_ptr<EventTPC> myCurrentEvent;
+  
 };
 #endif
 

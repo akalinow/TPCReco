@@ -26,7 +26,7 @@
 // Setter methods
 
 // constructor
-UVWprojector::UVWprojector(GeometryTPC *geo, int n, int nx, int ny) 
+UVWprojector::UVWprojector(std::shared_ptr<GeometryTPC> geo, int n, int nx, int ny) 
   : area_npoints(1), 
     isOK_AreaMapping(false),    
     isOK_TimeMapping(false), 
@@ -256,12 +256,12 @@ bool UVWprojector::InitAreaMapping() {
   
   // DEBUG
   if(_debug) {
-    std::map<MultiKey2, BinFracMap, multikey2_less>::iterator it;
+    std::map<MultiKey2, BinFracMap>::iterator it;
     std::map<int, double>::iterator it2;
     for(it=fAreaFractionMap.begin(); it!=fAreaFractionMap.end(); it++) {
       for(it2=(it->second).FracMap.begin(); it2!=(it->second).FracMap.end(); it2++) {
-	std::cout << "TH2D bin IX=" << (it->first).key1 
-		  << ", IY=" << (it->first).key2
+	std::cout << "TH2D bin IX=" << std::get<0>(it->first) 
+		  << ", IY=" << std::get<1>(it->first)
 		  << ": TH2POLY_IBIN=" << it2->first 
 		  << ", WEIGHT=" << it2->second << std::endl;
       }
@@ -447,7 +447,50 @@ bool UVWprojector::InitTimeMapping() {
 }
 
 // Getter methods
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+void UVWprojector::fillPEventTPC(std::shared_ptr<PEventTPC> aEvent){
 
+  // sanity checks
+  if(is_input_2D || !geo_ptr || !(geo_ptr->IsOK()) || !isOK_TimeMapping || !isOK_AreaMapping) return;
+
+  TH3D *h3 = (TH3D*)input_hist;
+  // loop over all Z-slices
+  std::map<int, BinFracMap>::const_iterator it;
+  std::map<int, double>::const_iterator it2;
+  for(it=fTimeFractionMap.cbegin(); it!=fTimeFractionMap.cend(); it++) {
+    int iz = it->first; // Z-slice
+ 
+    // loop over all mapped time cells for a give Z-slice
+    for(it2=(it->second).FracMap.cbegin(); it2!=(it->second).FracMap.cend(); it2++) {	
+      
+      const double time_ibin = it2->first;
+      const double weightT = it2->second;
+
+      // loop over all mapped X,Y bins and project TH3D to TH2D using proper weights
+      std::map<MultiKey2, BinFracMap>::const_iterator it3;
+      std::map<int, double>::const_iterator it4;
+      for(it3=fAreaFractionMap.cbegin(); it3!=fAreaFractionMap.cend(); it3++) {
+	for(it4=(it3->second).FracMap.cbegin(); it4!=(it3->second).FracMap.cend(); it4++) {
+	  int ix = std::get<0>(it3->first);
+	  int iy = std::get<1>(it3->first);
+	  int ibin = it4->first;       // TH2Poly bin index
+	  
+	  std::shared_ptr<StripTPC> s = geo_ptr->GetTH2PolyStrip(ibin);
+	  if(s) { 
+	    const double weight = it4->second;
+	    if(weight<=0.0) continue;
+	    aEvent->AddValByStrip(s,
+				  time_ibin,
+				  h3->GetBinContent(ix, iy, iz)*weight*weightT);
+	  }
+	}
+      }  
+    }
+  }
+}
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 // Get TH1D of time-integrated strip projection for 3D or 2D event (SELECTED DIRECTION)
 TH1D * UVWprojector::GetStripProfile_TH1D(int dir) {
 
@@ -554,14 +597,14 @@ TH1D * UVWprojector::GetStripProfile_TH1D(int dir) {
 			  (geo_ptr->GetDirNstrips(dir)+1)*1.);
 
   // Project TH2D content to TH1D
-  std::map<MultiKey2, BinFracMap, multikey2_less>::const_iterator it;
+  std::map<MultiKey2, BinFracMap>::const_iterator it;
   std::map<int, double>::const_iterator it2;
   for(it=fAreaFractionMap.cbegin(); it!=fAreaFractionMap.cend(); it++) {
     for(it2=(it->second).FracMap.cbegin(); it2!=(it->second).FracMap.cend(); it2++) {
-      int ix = (it->first).key1;
-      int iy = (it->first).key2;
+      int ix = std::get<0>(it->first);
+      int iy = std::get<1>(it->first);
       int ibin = it2->first;       // TH2Poly
-      StripTPC *s = geo_ptr->GetTH2PolyStrip(ibin);
+      std::shared_ptr<StripTPC> s = geo_ptr->GetTH2PolyStrip(ibin);
       if( s && s->Dir()==dir ) {
 	int strip_num = s->Num(); // valid range [1-1024] 
 	double weight = it2->second;
@@ -654,15 +697,15 @@ TH2D* UVWprojector::GetStripVsTime_TH2D(int dir) {
       // DEBUG
 
       // loop over all mapped X,Y bins and project TH3D to TH2D using proper weights
-      std::map<MultiKey2, BinFracMap, multikey2_less>::const_iterator it3;
+      std::map<MultiKey2, BinFracMap>::const_iterator it3;
       std::map<int, double>::const_iterator it4;
       for(it3=fAreaFractionMap.cbegin(); it3!=fAreaFractionMap.cend(); it3++) {
 	for(it4=(it3->second).FracMap.cbegin(); it4!=(it3->second).FracMap.cend(); it4++) {
-	  int ix = (it3->first).key1;
-	  int iy = (it3->first).key2;
+	  int ix = std::get<0>(it3->first);
+	  int iy = std::get<1>(it3->first);
 	  int ibin = it4->first;       // TH2Poly bin index
 	  
-	  StripTPC *s = geo_ptr->GetTH2PolyStrip(ibin);
+	  std::shared_ptr<StripTPC> s = geo_ptr->GetTH2PolyStrip(ibin);
 	  if( s && s->Dir()==dir ) { 
 
 	    //////////// DEBUG 
@@ -840,12 +883,12 @@ TH2Poly* UVWprojector::GetStripProfile_TH2Poly() {
   }
 
   // Project TH2D content to TH2Poly  
-  std::map<MultiKey2, BinFracMap, multikey2_less>::const_iterator it;
+  std::map<MultiKey2, BinFracMap>::const_iterator it;
   std::map<int, double>::const_iterator it2;
   for(it=fAreaFractionMap.cbegin(); it!=fAreaFractionMap.cend(); it++) {
     for(it2=(it->second).FracMap.cbegin(); it2!=(it->second).FracMap.cend(); it2++) {
-      int ix = (it->first).key1;
-      int iy = (it->first).key2;
+      int ix = std::get<0>(it->first);
+      int iy = std::get<1>(it->first);
       int ibin = it2->first;
       double weight = it2->second;
       if(weight<=0.0) continue;

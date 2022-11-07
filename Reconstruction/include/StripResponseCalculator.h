@@ -6,9 +6,10 @@
 #include <tuple>
 #include <utility>
 
-class MultiKey2;
+#include "MultiKey.h"
+
 class GeometryTPC;
-class EventTPC;
+class PEventTPC;
 class TH1D;
 class TH2D;
 class TF1;
@@ -34,12 +35,12 @@ class StripResponseCalculator{
   bool setUVWprojectionsInMM(std::vector<TH2D*> aUVWprojectionsInMM); // pair={STRIP_DIR, TH2D pointer}
   bool setUVWprojectionsRaw(std::vector<std::shared_ptr<TH2D> > aUVWprojectionsRaw); // pair={STRIP_DIR, TH2D pointer}
   bool setUVWprojectionsInMM(std::vector<std::shared_ptr<TH2D> > aUVWprojectionsInMM); // pair={STRIP_DIR, TH2D pointer}
-  bool setEventTPC(EventTPC *aEventTPC);
-  bool setEventTPC(std::shared_ptr<EventTPC> aEventTPC);
+  //  bool setEventTPC(EventTPC *aEventTPC);
+  //  bool setEventTPC(std::shared_ptr<EventTPC> aEventTPC);
 
   // fill all declared objects (TH2 histograms and/or EventTPC) with smeared point-like charge
-  void addCharge(TVector3 position3d, double charge);
-  void addCharge(double x, double y, double z, double charge);
+  void addCharge(TVector3 position3d, double charge, std::shared_ptr<PEventTPC> aEventPtr=std::shared_ptr<PEventTPC>(nullptr));
+  void addCharge(double x, double y, double z, double charge, std::shared_ptr<PEventTPC> aEventPtr=std::shared_ptr<PEventTPC>(nullptr));
 
   void setDebug(bool enable) { debug_flag=enable; }
   int getDeltaStrips() const { return Nstrips; }
@@ -86,11 +87,9 @@ class StripResponseCalculator{
 
   bool has_UVWprojectionsRaw{false};
   bool has_UVWprojectionsInMM{false};
-  bool has_EventTPC{false};
   bool debug_flag{false};
   std::vector<TH2D*> fillUVWprojectionsRaw;
   std::vector<TH2D*> fillUVWprojectionsInMM;
-  std::shared_ptr<EventTPC> fillEventTPC;
   
   std::map<MultiKey2, TH2D*> responseMapPerMergedStrip; // key={strip_dir, relative (merged) strip index} 
   std::map<MultiKey3, TH2D*> responseMapPerStripSectionStart; // key={strip_dir, relative strip index, relative section start in pad units}

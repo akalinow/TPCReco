@@ -36,7 +36,7 @@ class DotFinder {
   void setEvent(std::shared_ptr<EventTPC> aEvent);
   void setCuts(unsigned int aHitThr, unsigned int aMinTotalCharge, float aMatchRadiusInMM);
   void reconstruct();
-  bool checkCuts(SigClusterTPC &aCluster);
+  bool checkCuts();
   void initializeHistograms();
   void resetHistograms();
 

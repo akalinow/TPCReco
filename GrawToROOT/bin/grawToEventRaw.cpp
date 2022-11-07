@@ -7,7 +7,6 @@
 #include "EventRaw.h"
 #include "PedestalCalculator.h"
 #include "EventSourceGRAW.h"
-#include "SigClusterTPC.h"
 
 #include "TFile.h"
 #include "TTree.h"
@@ -73,7 +72,7 @@ int main(int argc, char *argv[]) {
 
   auto myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
   myEventSource->setFrameLoadRange(160);
-  myEventSource->setFillEventType(EventSourceBase::raw);
+  myEventSource->setFillEventType(EventType::raw);
   myEventSource->loadDataFile(dataFileName);
   std::cout << "File with " << myEventSource->numberOfEntries() << " frames opened." << std::endl;
   
@@ -108,7 +107,7 @@ int main(int argc, char *argv[]) {
     std::cout << "==== GrawToEventRaw X-CHECK: EventSourceGRAW EventID="
     	      << myEventSource->currentEventNumber()
     	      << ", EventRaw EventID="
-    	      << myEventRawPtr->eventId
+    	      << *myEventRawPtr
     	      << " ====" << std::endl;
     ////// DEBUG
 #endif

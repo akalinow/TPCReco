@@ -24,7 +24,6 @@ void makePlots(std::string fileName){
 				     100, 2, 5);
   TH2D* hEnergyVsCosThetaCut2 = (TH2D*)hEnergyVsCosTheta->Clone("hEnergyVsCosThetaCut2");
   TH2D* hEnergyVsCosThetaCut3 = (TH2D*)hEnergyVsCosTheta->Clone("hEnergyVsCosThetaCut3");
-
   TH2D *hLength2D = new TH2D("hLength2D", "Track length; d[mm]; d [mm]", 400,0,200, 400,0,200);
   TH2D *hLength2DCut1 = (TH2D*)hLength2D->Clone("hLength2DCut1");
   
@@ -68,9 +67,9 @@ void makePlots(std::string fileName){
   hCosTheta->SetStats(kFALSE);
   TH1D *hCosThetaCut1 = (TH1D*)hCosTheta->Clone("hCosThetaCut1");
   
-
-  std::string qualityCut = "chi2<10 && charge>1000 && length>30 && eventType==3 && hypothesisChi2<1";
+  std::string qualityCut = "chi2<10 && charge>1000 && length>10 && carbonRange>1 && eventType==3 && hypothesisChi2<1";
   std::string fiducialXYCut = "abs(xAlphaEnd)<160 && abs(yAlphaEnd)<80 && abs(xCarbonEnd)<160 && abs(yCarbonEnd)<80";
+
   std::string fiducialZCut = "abs(zCarbonEnd - zAlphaEnd)<180";
   std::string vertexCut = "abs(yVtx+2)<6";
   
@@ -83,11 +82,11 @@ void makePlots(std::string fileName){
   cut1 += std::string("&&")+fiducialZCut;
 
   std::string cut2 = cut1;
-  std::string lengthCut = "length<90";
+  std::string lengthCut = "length<80";
   cut2 += std::string("&&")+lengthCut;
 
   std::string cut3 = cut1;
-  lengthCut = "length>90 && carbonRange<15";
+  lengthCut = "length>80 && carbonRange<15";
   cut3 += std::string("&&")+lengthCut;
 
   std::string cut4 = cut1;
@@ -198,7 +197,30 @@ void makePlots(std::string fileName){
   aCanvas->Divide(2,2);
 
   ////////////////////////////////
+  ////////////////////////////////  
   aCanvas->cd(1);
+  gPad->SetLeftMargin(0.12);
+  gPad->SetRightMargin(0.12);
+  
+  hAlphaRangeCut1->SetTitle("#alpha track length");
+  hAlphaRangeCut1->SetLineColor(4);
+  hAlphaRangeCut1->SetLineWidth(3);
+  hAlphaRangeCut1->SetStats(kTRUE);
+  hAlphaRangeCut1->GetXaxis()->SetRangeUser(50,150);
+  hAlphaRangeCut1->Draw("");
+  ////////////////////////////////
+  
+  aCanvas->cd(2);
+  gPad->SetLeftMargin(0.12);
+  gPad->SetRightMargin(0.12);
+  
+  hCarbonRangeCut1->SetTitle("^{12}C track length");
+  hCarbonRangeCut1->SetLineColor(4);
+  hCarbonRangeCut1->SetLineWidth(3);
+  hCarbonRangeCut1->GetXaxis()->SetRangeUser(0,25);
+  hCarbonRangeCut1->Draw("");
+  ////////////////////////////////
+  aCanvas->cd(3);
   gPad->SetLeftMargin(0.12);
   gPad->SetRightMargin(0.12);
   
@@ -218,28 +240,6 @@ void makePlots(std::string fileName){
   hLengthCut0->Draw("same");
   hLengthCut1->Draw();
   gPad->SetLogy();
-  ////////////////////////////////  
-  aCanvas->cd(2);
-  gPad->SetLeftMargin(0.12);
-  gPad->SetRightMargin(0.12);
-  
-  hAlphaRangeCut1->SetTitle("#alpha track length");
-  hAlphaRangeCut1->SetLineColor(4);
-  hAlphaRangeCut1->SetLineWidth(3);
-  hAlphaRangeCut1->SetStats(kTRUE);
-  hAlphaRangeCut1->GetXaxis()->SetRangeUser(50,150);
-  hAlphaRangeCut1->Draw("");
-  ////////////////////////////////
-  
-  aCanvas->cd(3);
-  gPad->SetLeftMargin(0.12);
-  gPad->SetRightMargin(0.12);
-  
-  hCarbonRangeCut1->SetTitle("^{12}C track length");
-  hCarbonRangeCut1->SetLineColor(4);
-  hCarbonRangeCut1->SetLineWidth(3);
-  hCarbonRangeCut1->GetXaxis()->SetRangeUser(0,25);
-  hCarbonRangeCut1->Draw("");
   ////////////////////////////////
   aCanvas->cd(4);
   gPad->SetLeftMargin(0.12);
@@ -270,8 +270,8 @@ void makePlots(std::string fileName){
 
   aLeg = new TLegend(0.6, 0.25,0.98, 0.45);
   aLeg->SetHeader("d(^{12}C)<15 mm");
-  aLeg->AddEntry(hEnergyCut2, "d(#alpha+^{12}C)<90 mm","l");
-  aLeg->AddEntry(hEnergyCut3, "d(#alpha+^{12}C)>90 mm","l");
+  aLeg->AddEntry(hEnergyCut2, "d(#alpha+^{12}C)<80 mm","l");
+  aLeg->AddEntry(hEnergyCut3, "d(#alpha+^{12}C)>80 mm","l");
   aLeg->Draw();
   ////////////////
   aCanvas->Print("Plots_set1.png");
@@ -392,7 +392,6 @@ void makePlots(std::string fileName){
   hLength2DCut1->SetXTitle("#alpha range [mm]");
   hLength2DCut1->SetYTitle("^{12}C range [mm]");
   hLength2DCut1->Draw("colz");
-
 
   aCanvas->Print("Plots_set4.png");
 }

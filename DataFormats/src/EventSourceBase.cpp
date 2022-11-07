@@ -9,6 +9,7 @@
 EventSourceBase::EventSourceBase() {
 
   myCurrentEvent =  std::make_shared<EventTPC>();
+  myCurrentPEvent =  std::make_shared<PEventTPC>();
   myCurrentEntry = 0;
   nEntries = 0;
 }
@@ -35,6 +36,13 @@ void EventSourceBase::loadGeometry(const std::string & fileName){
     std::cerr<<"Geometry not loaded! Refuse to work anymore."<<std::endl;
     exit(0);
   }
+  myCurrentEvent->SetGeoPtr(myGeometryPtr);
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::shared_ptr<PEventTPC> EventSourceBase::getCurrentPEvent() const{
+
+  return myCurrentPEvent;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -51,7 +59,7 @@ std::shared_ptr<EventTPC> EventSourceBase::getLastEvent(){
     myCurrentEntry = nEntries-1;
   }
 
-  return myCurrentEvent;
+  return getCurrentEvent();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -69,10 +77,10 @@ unsigned long int EventSourceBase::numberOfEntries() const{ return nEntries; }
 /////////////////////////////////////////////////////////
 unsigned long int EventSourceBase::currentEventNumber() const{
 
-  if(myCurrentEvent){
-    return myCurrentEvent->GetEventId();
+  if(getCurrentEvent()){
+    return getCurrentEvent()->GetEventInfo().GetEventId();
   }
-  return 0;
+  return -1;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -85,22 +93,33 @@ std::string EventSourceBase::getCurrentPath() const{
 std::shared_ptr<EventTPC> EventSourceBase::getNextEventLoop(){
   unsigned int currentEventIdx;
   do{
-    currentEventIdx=myCurrentEvent->GetEventId();
+    currentEventIdx=getCurrentEvent()->GetEventInfo().GetEventId();
     getNextEvent();
   }
-  while(!eventFilter.pass(*myCurrentEvent) && currentEventIdx!=myCurrentEvent->GetEventId());
-  return myCurrentEvent;
+  while(!eventFilter.pass(*getCurrentEvent()) &&
+	currentEventIdx!=getCurrentEvent()->GetEventInfo().GetEventId());
+  return getCurrentEvent();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::shared_ptr<EventTPC> EventSourceBase::getPreviousEventLoop(){
   unsigned int currentEventIdx;
   do{
-    currentEventIdx=myCurrentEvent->GetEventId();
+    currentEventIdx=getCurrentEvent()->GetEventInfo().GetEventId();
     getPreviousEvent();
   }
-  while(!eventFilter.pass(*myCurrentEvent) && currentEventIdx!=myCurrentEvent->GetEventId());
-  return myCurrentEvent;
+  while(!eventFilter.pass(*getCurrentEvent()) &&
+	currentEventIdx!=getCurrentEvent()->GetEventInfo().GetEventId());
+  return getCurrentEvent();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void EventSourceBase::fillEventTPC(){
+
+  myCurrentEvent->Clear();
+  myCurrentEvent->SetGeoPtr(myGeometryPtr);
+  myCurrentEvent->SetChargeMap(myCurrentPEvent->GetChargeMap());
+  myCurrentEvent->SetEventInfo(myCurrentPEvent->GetEventInfo());
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

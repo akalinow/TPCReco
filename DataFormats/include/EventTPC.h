@@ -1,162 +1,126 @@
 #ifndef __EVENTTPC_H__
 #define __EVENTTPC_H__
 
-/// TPC event class.
-///
-/// VERSION: 18 Oct 2021
-
-#include <cstdlib>
+#include <ostream>
 #include <vector>
 #include <map>
+#include <set>
 #include <string>
 #include <memory>
 
+#include <boost/property_tree/ptree.hpp>
+
 #include "TH1D.h"
 #include "TH2D.h"
-#include "TH3F.h"
+#include "TH3D.h"
 
+#include "EventInfo.h"
 #include "GeometryTPC.h"
-#include "SigClusterTPC.h"
-
-#define EVENTTPC_DEFAULT_RECO_METHOD 1  // 0 = equal charge division along the strip
-                                        // 1 = weighted charge division from complementary strip directions
-#define EVENTTPC_DEFAULT_STRIP_REBIN 2  // number of strips to rebin [1-1024] 
-#define EVENTTPC_DEFAULT_TIME_REBIN  5  // number of time cells to rebin [1-512]
-
-class TrackSegment3D;
+#include "PEventTPC.h"
 
 class EventTPC {
-  //  friend class SigClusterTPC;
- private:
-  Long64_t event_id, //event_number,
-    run_id, event_time;
-  std::shared_ptr<GeometryTPC> myGeometryPtr;  //! transient data member
-  SigClusterTPC myCluster;                     //! transient data member
   
-  std::map<MultiKey3, double, multikey3_less> chargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
-  std::map<MultiKey4, double, multikey4_less> chargeMap2; // key=(STRIP_DIR [0-2], SECTION [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
-  std::map<MultiKey2, double, multikey2_less> maxChargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024])
-  std::map<MultiKey3, double, multikey3_less> maxChargeMap2; // key=(STRIP_DIR [0-2], SECTION [0-2], STRIP_NUM [1-1024])
-  std::map<MultiKey2, double, multikey2_less> totalChargeMap; // key=(STRIP_DIR [0-2], STRIP_NUM [1-1024])
-  std::map<MultiKey2, double, multikey2_less> totalChargeMap2; // key=(STRIP_DIR [0-2], TIME_CELL [0-511])
-  std::map<int, double> totalChargeMap3; // key=TIME_CELL [0-511]
-  std::map<MultiKey3, double, multikey3_less> totalChargeMap4; // key=(STRIP_DIR [0-2], SECTION [0-2], STRIP_NUM [1-1024])
-  std::map<MultiKey3, double, multikey3_less> totalChargeMap5; // key=(STRIP_DIR [0-2], SECTION [0-2], TIME_CELL [0-511])
-  std::map<MultiKey2, int, multikey2_less> asadMap; // key=(COBO_id, ASAD_id [0-3])
-    
-  bool initOK;      // is geometry valid?
-  int time_rebin;   // how many raw data time bins to merge (default=1, i.e. none)
-
-  double max_charge[3];       // maximal value from each strip direction [0-2]
-  int max_charge_timing[3];   // range [0-511], RAW time cells
-  int max_charge_strip[3];    // range [1-1024]
-  double glb_max_charge;
-  int glb_max_charge_timing;  // range [0-511]
-  int glb_max_charge_channel; // range [0-1023]
-  double tot_charge[3];       // integral per strip direction
-  double glb_tot_charge;      // integral per event
-
-  bool isPedestalSubtracted{false}; // flag useful for reco/clustering 
-
  public:
   EventTPC();
 
-  ~EventTPC(){};
+  ~EventTPC();
 
   void Clear();
 
+  void SetChargeMap(const PEventTPC::chargeMapType & aChargeMap);
+  void SetEventInfo(const eventraw::EventInfo & aEvInfo) {myEventInfo = aEvInfo; };
   void SetGeoPtr(std::shared_ptr<GeometryTPC> aPtr);
-  void SetEventId(Long64_t aId) { event_id = aId; };
-  //  void SetEventNumber(Long64_t aNumber) { event_number = aNumber; };
-  void SetEventTime(Long64_t aTime) { event_time = aTime; };
-  void SetRunId(Long64_t aId) { run_id =  aId; };
-  // helper methods for inserting data points
-  // they return TRUE on success and FALSE on error
-  bool AddValByStrip(StripTPC* strip, int time_cell, double val);                      // valid range [0-511]
-  bool AddValByStrip(int strip_dir, int strip_section, int strip_number, int time_cell, double val);     // valid range [0-2][0-2][1-1024][0-511]
-  bool AddValByGlobalChannel(int glb_channel_idx, int time_cell, double val);         // valid range [0-1023][0-511]
-  bool AddValByGlobalChannel_raw(int glb_raw_channel_idx, int time_cell, double val); // valid range [0-1023+4*N][0-511]
-  bool AddValByAgetChannel(int cobo_idx, int asad_idx, int aget_idx, int channel_idx, int time_cell, double val); // valid range [0-1][0-3][0-3][0-63][0-511]
-  bool AddValByAgetChannel_raw(int cobo_idx, int asad_idx, int aget_idx, int raw_channel_idx, int time_cell, double val); // valid range [0-1][0-3][0-3][0-67][0-511]
-  bool CheckAsadNboards(); // verifies that all AsAd boards are present in this event
-    
-  // helper methods for extracting data points
-  // they return 0.0 for non-existing data points
-  double GetValByStrip(StripTPC* strip, int time_cell/*, bool &result*/);                   // valid range [0-511]
-  double GetValByStrip(int strip_dir, int strip_section, int strip_number, int time_cell/*, bool &result*/);  // valid range [0-2][1-1024][0-511]
-  double GetValByStripMerged(int strip_dir, int strip_number, int time_cell/*, bool &result*/);  // valid range [0-2][1-1024][0-511] (all sections)
-  double GetValByGlobalChannel(int glb_channel_idx, int time_cell/*, bool &result*/);         // valid range [0-1023][0-511]
-  double GetValByGlobalChannel_raw(int glb_raw_channel_idx, int time_cell/*, bool &result*/); // valid range [0-1023+4*N][0-511]
-  double GetValByAgetChannel(int cobo_idx, int asad_idx, int aget_idx, int channel_idx, int time_cell/*, bool &result*/); // valid range [0-1][0-3][0-3][0-63][0-511]
-  double GetValByAgetChannel_raw(int cobo_idx, int asad_idx, int aget_idx, int raw_channel_idx, int time_cell/*, bool &result*/); // valid range [0-1][0-3][0-3][0-67][0-511]
 
+  void setHitFilterConfig(filter_type filterType, const boost::property_tree::ptree &config);
+
+  // valid range [0-2][X-Y][1-1024][0-511] 
+  double GetValByStrip(int strip_dir, int strip_section, int strip_number, int time_cell) const;
+
+  // time_cell valid range [0-511]
+  double GetValByStrip(std::shared_ptr<StripTPC> strip, int time_cell) const;
+
+  // valid range [0-2][1-1024][0-511] (all sections)
+  double GetValByStripMerged(int strip_dir, int strip_number, int time_cell);  
+
+  const eventraw::EventInfo & GetEventInfo() const { return myEventInfo; };
   inline GeometryTPC * GetGeoPtr() const { return myGeometryPtr.get(); }
-  inline Long64_t GetEventId() const { return event_id; }
-  inline Long64_t GetEventTime() const { return event_time; }
-  //  inline Long64_t GetEventNumber() const { return event_number; }
-  inline Long64_t GetRunId() const { return run_id; }
-  inline bool IsOK() const { return initOK; }
-  inline int GetTimeRebin() const { return time_rebin; }       
-  bool SetTimeRebin(int rebin); // HAS NO EFFECT YET !!!!
 
-  long GetNhits() const { return chargeMap2.size(); } // total # of unique {electronics channel, time cell} pairs present in this event
-  double GetMaxCharge() const;             // maximal charge from all strips
-  double GetMaxCharge(int strip_dir);      // maximal charge from strips of a given direction
-  double GetMaxCharge(int strip_dir, int strip_number);      // maximal charge from merged strip of a given direction (all sections)
-  double GetMaxCharge(int strip_dir, int strip_section, int strip_number);      // maximal charge from single strip of a given direction (per section)
-  int GetMaxChargeTime(int strip_dir);     // arrival time of the maximal charge from strips of a given direction
-  int GetMaxChargeStrip(int strip_dir);    // strip number with the maximal charge in a given direction 
-  int GetMaxChargeTime();                  // arrival time of the maximal charge from all strips
-  int GetMaxChargeChannel();               // global channel number with the maximal charge from all strips
-  double GetTotalCharge() const;           // charge integral from all strips
-  double GetTotalCharge(int strip_dir);    // charge integral from strips of a given direction 
-  double GetTotalCharge(int strip_dir, int strip_number); // charge integral from merged strip of a given direction (all sections) 
-  double GetTotalCharge(int strip_dir, int strip_section, int strip_number); // charge integral from single strip of a given direction (per section) 
-  double GetTotalChargeByTimeCell(int time_cell); // charge integral from a single time cell from all strips
-  double GetTotalChargeByTimeCell(int strip_dir, int time_cell); // charge integral from a single time cell from all merged strips in a given direction (all sections)
-  double GetTotalChargeByTimeCell(int strip_dir, int strip_section, int time_cell); // charge integral from a single time cell from all strips in a given direction (per section)
+  std::shared_ptr<TH1D> get1DProjection(projection_type projType,
+					filter_type filterType,
+					scale_type scaleType);
 
-  void MakeOneCluster(double thr=-1, int delta_strips=5, int delta_timecells=25); // applies clustering threshold to all space-time data points 
-  const SigClusterTPC & GetOneCluster() const;
-  inline bool GetPedestalSubstracted() const {return isPedestalSubtracted;}
-  inline void SetPedestalSubstracted(bool isPedestalSubtracted){this->isPedestalSubtracted=isPedestalSubtracted;}
+  std::shared_ptr<TH2D> get2DProjection(projection_type projType,
+					filter_type filterType,
+					scale_type scaleType);
+
+  // maximal charge from strips of a given direction
+  double GetMaxCharge(int strip_dir=-1, int strip_section=-1, int strip_number=-1,
+		      filter_type filterType=filter_type::none);   
+
+  // total charge from strips of a given direction
+  double GetTotalCharge(int strip_dir=-1, int strip_section=-1, int strip_number=-1,
+			int time_cell=-1, filter_type filterType=filter_type::none);
+
+  // arrival time and strip number of the maximal charge from strips of a given direction
+  // or arrival time of the maximal charge from all strips
+  std::tuple<int,int> GetMaxChargePos(int aStrip_dir=-1, filter_type filterType=filter_type::none);
+
+  // Number of hit or strips in a given direction, section, strip number.
+  // If countHits==true individial hits (strip, time bin) are counted
+  long GetMultiplicity(bool countHits,
+		       int strip_dir, int strip_section, int strip_number,
+		       filter_type filterType);
+
+  // Min time,max time, min strip, max strip in a given direction (all sections)
+  std::tuple<int,int,int,int> GetSignalRange(int aStrip_dir, filter_type filterType);
+
+   // global channel number with the maximal charge from all strips
+  int GetMaxChargeChannel() const;
+
+  // valid range [0-1][0-3]
+  std::shared_ptr<TH2D> GetChannels(int cobo_idx, int asad_idx);
+
+  // valid range [0-1][0-3]
+  std::shared_ptr<TH2D> GetChannels_raw(int cobo_idx, int asad_idx); 
+
+  private:
+
+  void filterHits(filter_type filterType);
+
+  void addEnvelope(PEventTPC::chargeMapType::key_type key,
+		   std::set<PEventTPC::chargeMapType::key_type> & keyList);
+    
+  void create3DHistoTemplate();
   
-  std::shared_ptr<TH1D> GetStripProjection(const SigClusterTPC &cluster, int strip_dir);    // clustered hits only, valid dir range [0-2]
-  TH1D *GetTimeProjection(const SigClusterTPC &cluster, int strip_dir);     // clustered hits only, valid dir range [0-2]
-  TH1D *GetTimeProjection(const SigClusterTPC &cluster);                    // clustered hits only, all strip dirs
-  TH1D *GetStripProjection(int strip_dir);                            // whole,event, valid dir range [0-2]
-  TH1D *GetTimeProjection(int strip_dir);                             // whole,event, valid dir range [0-2]
-  TH1D *GetTimeProjection();                                          // whole event, all strip dirs
-  std::shared_ptr<TH1D> GetStripProjectionInMM(const SigClusterTPC &cluster, int strip_dir);    // clustered hits only, valid dir range [0-2]
-  std::shared_ptr<TH1D> GetTimeProjectionInMM(const SigClusterTPC &cluster, int strip_dir);     // clustered hits only, valid dir range [0-2]
-  std::shared_ptr<TH1D> GetTimeProjectionInMM(const SigClusterTPC &cluster);                    // clustered hits only, all strip dirs
-  std::shared_ptr<TH1D> GetStripProjectionInMM(int strip_dir);                            // whole,event, valid dir range [0-2]
-  std::shared_ptr<TH1D> GetTimeProjectionInMM(int strip_dir);                             // whole,event, valid dir range [0-2]
-  std::shared_ptr<TH1D> GetTimeProjectionInMM();                                          // whole event, all strip dirs
+  void updateHistosCache(filter_type filterType);
   
-  std::shared_ptr<TH2D> GetStripVsTime(const SigClusterTPC &cluster, int strip_dir);        // clustered hits only, valid dir range [0-2]
-  std::shared_ptr<TH2D> GetStripVsTime(int strip_dir);                               // whole event, all strip dirs
-  std::shared_ptr<TH2D> GetStripVsTimeInMM(const SigClusterTPC &cluster, int strip_dir);  // valid range [0-2]
-  std::shared_ptr<TH2D> GetStripVsTimeInMM(int strip_dir);  // whole event, valid range [0-2]
-  std::shared_ptr<TH2D> GetChannels(int cobo_idx, int asad_idx); // valid range [0-1][0-3]
-  std::shared_ptr<TH2D> GetChannels_raw(int cobo_idx, int asad_idx); // valid range [0-1][0-3]
-
-  std::vector<TH2D*> Get2D(const SigClusterTPC &cluster, double radius,          // clustered hits only,
-			   int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN,   // projections on: XY, XZ, YZ planes
-			   int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN, 
-			   int method=EVENTTPC_DEFAULT_RECO_METHOD);  
-
-  TH3D *Get3DFrame(int rebin_space, int rebin_time) const; //frame for plotting 3D reconstruction
+  void scale1DHistoToMM(TH1D *h1D, projection_type projType) const;
   
-  TH3D *Get3D(const SigClusterTPC &cluster, double radius,                       // clustered hits only, 3D view
-	      int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN, 
-	      int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN, 
-	      int method=EVENTTPC_DEFAULT_RECO_METHOD);  
+  void scale2DHistoToMM(TH2D *h2D, projection_type projType) const;
+  
+  void setHistoLabels(TH1 *h1,
+		      projection_type projType,
+		      filter_type filterType,
+		      scale_type scaleType) const;
 
-  TH2D *GetXY_TestUV(TH2D *h=NULL); // auxillary functions for x-check 
-  TH2D *GetXY_TestVW(TH2D *h=NULL); // auxillary functions for x-check 
-  TH2D *GetXY_TestWU(TH2D *h=NULL); // auxillary functions for x-check 
+  std::map<filter_type, bool> histoCacheUpdated = {{filter_type::none, false},
+						   {filter_type::threshold, false},
+						   {filter_type::island, false}};
+  
+  std::map<filter_type, std::shared_ptr<TH3D> > a3DHistoRawMap;
+  std::shared_ptr<TH3D> a3DHistoRawPtr;
+  
+  eventraw::EventInfo myEventInfo;
+  std::shared_ptr<GeometryTPC> myGeometryPtr;  
+
+  // key=(STRIP_DIR [0-2], SECTION [0-2], STRIP_NUM [1-1024], TIME_CELL [0-511])
+  PEventTPC::chargeMapType chargeMapWithSections;
+
+  std::map<filter_type, std::set<PEventTPC::chargeMapType::key_type> > keyLists;
+
+  std::map<filter_type, boost::property_tree::ptree> filterConfigs;
 
   friend std::ostream& operator<<(std::ostream& os, const EventTPC& e);
+ 
 };
 #endif

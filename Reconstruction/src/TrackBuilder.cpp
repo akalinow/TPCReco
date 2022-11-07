@@ -12,15 +12,12 @@
 #include "Math/Functor.h"
 
 #include "GeometryTPC.h"
-#include "SigClusterTPC.h"
 
 #include "TrackBuilder.h"
 #include "colorText.h"
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 TrackBuilder::TrackBuilder() {
-
-  myEvent = 0;
 
   nAccumulatorRhoBins = 50;//FIX ME move to configuarable
   nAccumulatorPhiBins = 2.0*M_PI/0.025;//FIX ME move to configuarable
@@ -33,9 +30,10 @@ TrackBuilder::TrackBuilder() {
   myRawHits.resize(3);
 
   fitter.Config().MinimizerOptions().SetMinimizerType("Minuit2");
-  fitter.Config().MinimizerOptions().SetMaxFunctionCalls(1000);
+  fitter.Config().MinimizerOptions().SetMaxFunctionCalls(2000);
   fitter.Config().MinimizerOptions().Print(std::cout);
   fitter.Config().MinimizerOptions().SetPrintLevel(0);
+  
   ///An offset used for filling the Hough transformation.
   ///to avoid having very small rho parameters, as
   ///orignally many tracks traverse close to X=0, Time=0
@@ -57,9 +55,9 @@ void TrackBuilder::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
   myRecHitBuilder.setGeometry(aGeometryPtr);
   
   phiPitchDirection.resize(3);
-  phiPitchDirection[DIR_U] = myGeometryPtr->GetStripPitchVector(DIR_U).Phi();
-  phiPitchDirection[DIR_V] = myGeometryPtr->GetStripPitchVector(DIR_V).Phi();
-  phiPitchDirection[DIR_W] = myGeometryPtr->GetStripPitchVector(DIR_W).Phi();
+  phiPitchDirection[projection_type::DIR_U] = myGeometryPtr->GetStripPitchVector(projection_type::DIR_U).Phi();
+  phiPitchDirection[projection_type::DIR_V] = myGeometryPtr->GetStripPitchVector(projection_type::DIR_V).Phi();
+  phiPitchDirection[projection_type::DIR_W] = myGeometryPtr->GetStripPitchVector(projection_type::DIR_W).Phi();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -70,24 +68,16 @@ void TrackBuilder::setPressure(double aPressure) {
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void TrackBuilder::setEvent(std::shared_ptr<EventTPC> aEvent, const double chargeThreshold, const int delta_timecells, const int delta_strips){
-  setEvent(aEvent.get(), chargeThreshold, delta_timecells, delta_strips);
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void TrackBuilder::setEvent(EventTPC* aEvent, const double chargeThreshold, const int delta_timecells, const int delta_strips){
-  myFittedTrack = Track3D();
-  if(!aEvent->GetPedestalSubstracted()){
-    throw std::logic_error("Pedestals not removed. Working without removed pedestals not implemented yet.");
-  }
-  myEvent = aEvent;
- 
-  myEvent->MakeOneCluster(chargeThreshold, delta_strips, delta_timecells);
-  
+void TrackBuilder::setEvent(std::shared_ptr<EventTPC> aEvent){
+
+  myEventPtr = aEvent;
+   
   std::string hName, hTitle;
-  if(!myHistoInitialized){     
-    for(int iDir=DIR_U;iDir<=DIR_W;++iDir){
-      std::shared_ptr<TH2D> hRawHits = myEvent->GetStripVsTimeInMM(getCluster(), iDir);     
+  if(!myHistoInitialized){
+    for(int iDir=projection_type::DIR_U;iDir<=projection_type::DIR_W;++iDir){
+      std::shared_ptr<TH2D> hRawHits = myEventPtr->get2DProjection(get2DProjectionType(iDir),
+								   filter_type::none,
+								   scale_type::mm);
       double minX = hRawHits->GetXaxis()->GetXmin();
       double minY = hRawHits->GetYaxis()->GetXmin();
       double maxX = hRawHits->GetXaxis()->GetXmax();
@@ -129,7 +119,7 @@ void TrackBuilder::setEvent(EventTPC* aEvent, const double chargeThreshold, cons
 			-M_PI, M_PI, nAccumulatorRhoBins, rhoMIN, rhoMAX);
       myAccumulators[iDir] = hAccumulator;
       myRawHits[iDir] = *hRawHits;
-      if(iDir==DIR_U) hTimeProjection = *hRawHits->ProjectionX();
+      if(iDir==projection_type::DIR_U) hTimeProjection = *hRawHits->ProjectionX();
     }
     myHistoInitialized = true;
   } 
@@ -139,13 +129,15 @@ void TrackBuilder::setEvent(EventTPC* aEvent, const double chargeThreshold, cons
 void TrackBuilder::reconstruct(){
 
   hTimeProjection.Reset();  
-  for(int iDir=DIR_U;iDir<=DIR_W;++iDir){
+  for(int iDir=projection_type::DIR_U;iDir<=projection_type::DIR_W;++iDir){
     makeRecHits(iDir);
     fillHoughAccumulator(iDir);
     my2DSeeds[iDir] = findSegment2DCollection(iDir);    
   }
   myZRange = getTimeProjectionEdges();
   myTrack3DSeed = buildSegment3D();
+  if(myTrack3DSeed.getLength()<1) return;
+  
   Track3D aTrackCandidate;
   aTrackCandidate.addSegment(myTrack3DSeed);
 
@@ -160,8 +152,9 @@ void TrackBuilder::reconstruct(){
 /////////////////////////////////////////////////////////
 void TrackBuilder::makeRecHits(int iDir){
 
-  myEvent->GetStripVsTimeInMM(getCluster(), iDir);
-  std::shared_ptr<TH2D> hProj = myEvent->GetStripVsTimeInMM(getCluster(), iDir);
+  std::shared_ptr<TH2D> hProj = myEventPtr->get2DProjection(get2DProjectionType(iDir),
+							 filter_type::threshold,
+							 scale_type::mm);
   myRecHits[iDir] = myRecHitBuilder.makeRecHits(*hProj);
   myRawHits[iDir] = myRecHitBuilder.makeCleanCluster(*hProj);
   hTimeProjection.Add(myRecHits[iDir].ProjectionX("hTimeProjection"));
@@ -323,7 +316,7 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
   double x=0.0, y=0.0;
   int nSegments = segmentsXY.size()/3/4;
   for(int iSegment=0;iSegment<nSegments;++iSegment){
-    for(int iDir = DIR_U; iDir<=DIR_W;++iDir){
+    for(int iDir = projection_type::DIR_U; iDir<=projection_type::DIR_W;++iDir){
       TrackSegment2D aSegment2D(iDir, myGeometryPtr);
       x = segmentsXY.at(iDir*4 + iSegment*12);
       y = segmentsXY.at(iDir*4 + iSegment*12 + 1);
@@ -336,22 +329,21 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
       my2DSeeds[iDir].push_back(aSegment2D);
     }
     TrackSegment3D a3DSeed = buildSegment3D(iSegment);
-    double startTime = my2DSeeds.at(DIR_U).at(iSegment).getStart().X();    
-    double endTime = my2DSeeds.at(DIR_U).at(iSegment).getEnd().X();
+    double startTime = my2DSeeds.at(projection_type::DIR_U).at(iSegment).getStart().X();    
+    double endTime = my2DSeeds.at(projection_type::DIR_U).at(iSegment).getEnd().X();
     double lambdaStartTime = a3DSeed.getLambdaAtZ(startTime);
     double lambdaEndTime = a3DSeed.getLambdaAtZ(endTime);
     TVector3 start =  a3DSeed.getStart() + lambdaStartTime*a3DSeed.getTangent();
     TVector3 end =  a3DSeed.getStart() + lambdaEndTime*a3DSeed.getTangent();
     a3DSeed.setStartEnd(start, end);
+    a3DSeed.setRecHits(myRawHits);
     aTrackCandidate.addSegment(a3DSeed);
   }
-  //auto xyRange = myGeometryPtr->rangeXY();
-  //aTrackCandidate.extendToChamberRange(xyRange, myZRange);
-  //myFittedTrack = fitTrack3D(aTrackCandidate);
+  std::cout<<KBLU<<"Hand cliked track: "<<RST<<std::endl;
+  std::cout<<aTrackCandidate<<std::endl;
+  
   myFittedTrack = aTrackCandidate;
   myFittedTrack.setHypothesisFitChi2(0);
-  std::cout<<KBLU<<"Hand cliked track: "<<RST<<std::endl;
-  std::cout<<myFittedTrack<<std::endl;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -360,9 +352,9 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   TrackSegment3D a3DSeed;
   a3DSeed.setGeometry(myGeometryPtr);  
 	     
-  const TrackSegment2D & segmentU = my2DSeeds[DIR_U][iTrack2DSeed];
-  const TrackSegment2D & segmentV = my2DSeeds[DIR_V][iTrack2DSeed];
-  const TrackSegment2D & segmentW = my2DSeeds[DIR_W][iTrack2DSeed];
+  const TrackSegment2D & segmentU = my2DSeeds[projection_type::DIR_U][iTrack2DSeed];
+  const TrackSegment2D & segmentV = my2DSeeds[projection_type::DIR_V][iTrack2DSeed];
+  const TrackSegment2D & segmentW = my2DSeeds[projection_type::DIR_W][iTrack2DSeed];
 
   int nHits_U = segmentU.getNAccumulatorHits();
   int nHits_V = segmentV.getNAccumulatorHits();
@@ -483,13 +475,13 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   a3DSeed.getTangent().Print();
   
   std::cout<<KRED<<"tagent from track, U proj.: "<<RST;
-  a3DSeed.get2DProjection(DIR_U, 0, 1).getTangent().Print();
+  a3DSeed.get2DProjection(projection_type::DIR_U, 0, 1).getTangent().Print();
 
   std::cout<<KRED<<"tagent from track, V proj.: "<<RST;
-  a3DSeed.get2DProjection(DIR_V, 0, 1).getTangent().Print();
+  a3DSeed.get2DProjection(projection_type::DIR_V, 0, 1).getTangent().Print();
 
   std::cout<<KRED<<"tagent from track, W proj.: "<<RST;
-  a3DSeed.get2DProjection(DIR_W, 0, 1).getTangent().Print();
+  a3DSeed.get2DProjection(projection_type::DIR_W, 0, 1).getTangent().Print();
 
   std::cout<<KRED<<"bias from track: "<<RST;
   a3DSeed.getBias().Print();
@@ -604,34 +596,54 @@ Track3D TrackBuilder::fitTrackNodesStartEnd(const Track3D & aTrack) const{
   ROOT::Math::Functor fcn(&aTrackCandidate, &Track3D::chi2FromNodesList, nParams);
   fitter.SetFCN(fcn, params.data());
   
-  double paramWindowWidth = 100.0;
+  //double paramWindowWidth = 10.0;
   for (int iPar = 0; iPar < nParams; ++iPar){
+    fitter.Config().ParSettings(iPar).Release();
     fitter.Config().ParSettings(iPar).SetValue(params[iPar]);
-    fitter.Config().ParSettings(iPar).SetStepSize(1);
-    fitter.Config().ParSettings(iPar).SetLimits(params[iPar]-paramWindowWidth,
-						params[iPar]+paramWindowWidth);
+    //fitter.Config().ParSettings(iPar).SetLimits(params[iPar]-paramWindowWidth,
+    //						params[iPar]+paramWindowWidth);
   }      
   bool fitStatus = fitter.FitFCN();
   if (!fitStatus) {
     Error(__FUNCTION__, "Track3D Fit failed");
-    std::cout<<KRED<<"Track3D Fit failed"<<RST<<std::endl;
-    //fitter.Result().Print(std::cout);
-    return aTrack;
+    std::cout<<KRED<<"Track3D nodes fit failed"<<RST<<std::endl;
+    fitter.Result().Print(std::cout);
+    //return aTrack;
   }
   const ROOT::Fit::FitResult & result = fitter.Result();
   aTrackCandidate.chi2FromNodesList(result.GetParams());
+
+  std::cout<<KBLU<<"Post-refit: "<<RST<<std::endl;
+  std::cout<<aTrackCandidate<<std::endl;
+  
   return aTrackCandidate;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
 
+  /*
+  return aTrackCandidate;
+  ////TEST
+  TVector3 a(0,0,0); 
+  //TVector3 b(0, 0 , 60); //theta = 0
+  //TVector3 b(60, 0, 3.67394e-15); //theta = M_PI/2, phi = 0
+  TVector3 b(42.4264, 42.4264, 3.67394e-15); //theta = M_PI/4, phi = M_PI/4
+
+  Track3D aCandidate1;
+  TrackSegment3D aSegment1;
+  aSegment1.setGeometry(myGeometryPtr);  
+  aSegment1.setStartEnd(a, b);
+  aSegment1.setRecHits(myRawHits);
+  aSegment1.setPID(pid_type::ALPHA);
+  aCandidate1.addSegment(aSegment1);
+  return aCandidate1;
+  ////////
+  */
   if(aTrackCandidate.getLength()<1) return aTrackCandidate;
 
-  const TrackSegment3D & aSegment = aTrackCandidate.getSegments().front();
-  TH1F hChargeProfile = aSegment.getChargeProfile();
-
-  if(hChargeProfile.GetMaximum()) hChargeProfile.Scale(1.0/hChargeProfile.GetMaximum());
+  const TrackSegment3D & aSegment = aTrackCandidate.getSegments().front(); 
+  TH1F hChargeProfile = aSegment.getChargeProfile(); 
   mydEdxFitter.fitHisto(hChargeProfile);
 
   pid_type eventType = mydEdxFitter.getBestFitEventType();
@@ -658,7 +670,7 @@ Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
   TrackSegment3D alphaSegment;
   alphaSegment.setGeometry(myGeometryPtr);  
   alphaSegment.setStartEnd(vertexPos, alphaEnd);
-  alphaSegment.setRecHits(myRecHits);
+  alphaSegment.setRecHits(myRawHits);
   alphaSegment.setPID(pid_type::ALPHA);
   aSplitTrackCandidate.addSegment(alphaSegment);
   
@@ -666,14 +678,13 @@ Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
     TrackSegment3D carbonSegment;
     carbonSegment.setGeometry(myGeometryPtr);  
     carbonSegment.setStartEnd(vertexPos, carbonEnd);
-    carbonSegment.setRecHits(myRecHits);
+    carbonSegment.setRecHits(myRawHits);
     carbonSegment.setPID(pid_type::CARBON_12);
     aSplitTrackCandidate.addSegment(carbonSegment);
   }
 
   std::cout<<KBLU<<"Post-split: "<<RST<<std::endl;
   std::cout<<aSplitTrackCandidate<<std::endl;
- 
   return aSplitTrackCandidate;
 }
 /////////////////////////////////////////////////////////

@@ -11,8 +11,6 @@
 #include "MultiKey.h"
 #include "CommonDefinitions.h"
 
-class MultiKey2;
-
 class IonRangeCalculator{
 
  public:

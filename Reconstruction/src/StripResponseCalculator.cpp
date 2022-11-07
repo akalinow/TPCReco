@@ -1,9 +1,8 @@
 #include <iostream>
 
-#include "MultiKey.h"
-#include "GeometryTPC.h"
-#include "EventTPC.h"
 #include "StripResponseCalculator.h"
+#include "GeometryTPC.h"
+#include "PEventTPC.h"
 #include "colorText.h"
 
 #include "TH1D.h"
@@ -23,7 +22,7 @@ StripResponseCalculator::StripResponseCalculator(std::shared_ptr<GeometryTPC> aG
 						 const char *fname,
                                                  bool debug_flag) :
   myGeometryPtr(aGeometryPtr), Nstrips(abs(delta_strips)), Ntimecells(abs(delta_timecells)), Npads(abs(delta_pads)),
-  sigma_xy(sigma_xy), sigma_z(sigma_z), has_UVWprojectionsRaw(false), has_UVWprojectionsInMM(false), has_EventTPC(false),
+  sigma_xy(sigma_xy), sigma_z(sigma_z), has_UVWprojectionsRaw(false), has_UVWprojectionsInMM(false),
   debug_flag(debug_flag) {
 
   // sanity checks
@@ -211,31 +210,14 @@ bool  StripResponseCalculator::setUVWprojectionsInMM(std::vector<std::shared_ptr
   return setUVWprojectionsInMM(vec);
 }
 
-// declare new EventTPC to be filled
-bool StripResponseCalculator::setEventTPC(std::shared_ptr<EventTPC> aEventTPC) {
-  has_EventTPC=false;
-  fillEventTPC=NULL;
-  if(!aEventTPC || !(aEventTPC->IsOK())) {
-    if(debug_flag) std::cout << __FUNCTION__ << KRED << ": Input EventTPC not initialized!" << RST << std::endl;
-    return false;
-  }
-  if(!(aEventTPC->GetGeoPtr()) || *(aEventTPC->GetGeoPtr())!=*(myGeometryPtr)) {
-    if(debug_flag) std::cout << __FUNCTION__ << KRED << ": Input EventTPC has different geoemetry than StripResponseCalculator!" << RST << std::endl;
-    return false;
-  }
-  fillEventTPC=aEventTPC;
-  has_EventTPC=true;
-  return has_EventTPC;
-}
-
 // fill all declared objects
-void StripResponseCalculator::addCharge(TVector3 position3d, double charge) {
-  addCharge(position3d.X(), position3d.Y(), position3d.Z(), charge);
+void StripResponseCalculator::addCharge(TVector3 position3d, double charge, std::shared_ptr<PEventTPC> aEventPtr) {
+  addCharge(position3d.X(), position3d.Y(), position3d.Z(), charge, aEventPtr);
 }
 
-void StripResponseCalculator::addCharge(double x, double y, double z, double charge) {
+void StripResponseCalculator::addCharge(double x, double y, double z, double charge, std::shared_ptr<PEventTPC> aEventPtr) {
 
-  if(charge==0.0 || (!has_EventTPC && !has_UVWprojectionsRaw && !has_UVWprojectionsInMM)) return; // nothing to do
+  if(charge==0.0 || (!has_UVWprojectionsRaw && !has_UVWprojectionsInMM && !aEventPtr)) return; // nothing to do
 
   // strip domain
   auto refNodePosInMM=TVector2(0,0);
@@ -262,7 +244,6 @@ void StripResponseCalculator::addCharge(double x, double y, double z, double cha
   ////// DEBUG
   if(debug_flag) std::cout << __FUNCTION__ << ": Relative postion=[dx=" << dx << ", dy=" << dy << ", dz=" << dz << "]"
 			   << ", Charge=" << charge
-			   << ", has_EventTPC=" << has_EventTPC
 			   << ", has_UVWprojectionsRaw=" << has_UVWprojectionsRaw
 			   << ", has_UVWprojectionsInMM=" << has_UVWprojectionsInMM
 			   << std::endl;
@@ -271,8 +252,8 @@ void StripResponseCalculator::addCharge(double x, double y, double z, double cha
   // fill all declared UZ, VZ, WZ projection histograms
   err=false;
   for(auto & respXY : responseMapPerMergedStrip) {
-    const auto smeared_strip_dir=respXY.first.key1; // DIR index
-    const auto smeared_strip_num=refStrips[smeared_strip_dir]+respXY.first.key2; // STRIP index
+    const auto smeared_strip_dir= std::get<0>(respXY.first); // DIR index
+    const auto smeared_strip_num=refStrips[smeared_strip_dir]+std::get<1>(respXY.first); // STRIP index
     const auto smeared_pos=myGeometryPtr->Strip2posUVW(smeared_strip_dir, smeared_strip_num, err);
     if(err) continue;
 
@@ -441,11 +422,12 @@ void StripResponseCalculator::addCharge(double x, double y, double z, double cha
       }
 
       // fill charge per {strip DIR, strip NUM, strip SECTION, time CELL} quadruplet
-      if(has_EventTPC) {
+      if(aEventPtr) {
 	for(auto & it2 : fractionPerSectionMap) {
 	  const auto smeared_charge_per_section = charge*smeared_fractionZ*it2.second;
 	  if(smeared_charge_per_section<Utils::NUMERICAL_TOLERANCE) continue; // speeds up filling
-	  fillEventTPC->AddValByStrip(smeared_strip_dir, it2.first, smeared_strip_num, smeared_timecell, smeared_charge_per_section);
+	  std::shared_ptr<StripTPC> aStrip = myGeometryPtr->GetStripByDir(smeared_strip_dir, it2.first, smeared_strip_num);
+	  aEventPtr->AddValByStrip(aStrip, smeared_timecell, smeared_charge_per_section);
 
 	  ////// DEBUG
 	  //	  	  if(debug_flag) std::cout << __FUNCTION__ << ": Unmerged strip "
@@ -695,7 +677,9 @@ void StripResponseCalculator::initializeStripResponse(unsigned long NpointsXY, i
 	std::cout << "center=[" << c1 << ", " << c2 << "], total_integral=" << sum << " (expected 1)" << std::endl;
 	//	if(!has_StripSections) continue;
 	for(auto & it3 : responseMapPerStripSectionStart) {
-	  auto it2=responseMapPerMergedStrip.find(MultiKey2((it3.first).key1, (it3.first).key2));
+	  int key1 = std::get<0>(it3.first);
+	  int key2 = std::get<1>(it3.first);	  
+	  auto it2=responseMapPerMergedStrip.find(MultiKey2(key1, key2));
 	  auto frac_per_strip = (it2->second)->GetBinContent(ibin1, ibin2);
 	  auto frac_per_section = (it3.second)->GetBinContent(ibin1, ibin2);
 	  if(frac_per_strip==0) continue;
