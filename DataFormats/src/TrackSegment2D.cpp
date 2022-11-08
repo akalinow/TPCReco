@@ -136,7 +136,7 @@ double TrackSegment2D::getIntegratedCharge(double lambdaCut, const Hit2DCollecti
     y = aHit.getPosStrip();
     aPoint.SetXYZ(x, y, 0.0);    
     std::tie(lambda, distance) = getPointLambdaAndDistance(aPoint);
-    if(lambda>getLength() && lambda<getLength() && distance>0 && distance<radiusCut) totalCharge += aHit.getCharge();
+    if(lambda>0 && lambda<getLength() && distance>0 && distance<radiusCut) totalCharge += aHit.getCharge();
   }
   return totalCharge;
 }
