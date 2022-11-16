@@ -17,11 +17,11 @@ class RunConditions {
 
   void setTriggerDelay(double d);
 
-  double getDriftVelocity() const;
+  double getDriftVelocity() const noexcept;
 
-  double getSamplingRate() const;
+  double getSamplingRate() const noexcept;
 
-  double getTriggerDelay() const;
+  double getTriggerDelay() const noexcept;
 
  private:
 

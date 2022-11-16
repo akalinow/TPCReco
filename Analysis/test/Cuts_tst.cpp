@@ -13,8 +13,8 @@ struct GeometryTPCMock {
   MOCK_METHOD(double, GetDriftCageZmin, (), (const));
   MOCK_METHOD(double, GetDriftCageZmax, (), (const));
   MOCK_METHOD(int, GetAgetNtimecells, (), (const));
-  MOCK_METHOD(double, Timecell2pos, (double, bool &));
-  MOCK_METHOD(TGraph, GetActiveAreaConvexHull, (double));
+  MOCK_METHOD(double, Timecell2pos, (double, bool &), (const));
+  MOCK_METHOD(TGraph, GetActiveAreaConvexHull, (double), (const));
 };
 
 struct TrackSegment3DMock {
@@ -261,6 +261,7 @@ TEST_F(Cut5Test, VertexOffCenter) {
   EXPECT_FALSE(cut(&track));
 }
 
+// Mock expectations broken by sorting 
 // class Cut6Test : public CutsTest {
 // public:
 //   pid_type firstPID = ALPHA;

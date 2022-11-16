@@ -84,7 +84,7 @@ using Cut3a = RectangularCut;
 class GlobalZSpan {
 public:
   template <class Geometry>
-  GlobalZSpan(Geometry *geometry, double lowerMarginTimeCells,
+  GlobalZSpan(const Geometry *geometry, double lowerMarginTimeCells,
               double upperMarginTimeCells) {
     lengthLimit =
         0.99 * (geometry->GetDriftCageZmax() - geometry->GetDriftCageZmin());
@@ -141,7 +141,7 @@ using Cut4 = GlobalZSpan;
 class VertexZSpan {
 public:
   template <class Geometry>
-  VertexZSpan(Geometry *geometry, double beamDiameter)
+  VertexZSpan(const Geometry *geometry, double beamDiameter)
       : driftCageLength(geometry->GetDriftCageZmax() -
                         geometry->GetDriftCageZmin()),
         beamDiameter(beamDiameter) {}

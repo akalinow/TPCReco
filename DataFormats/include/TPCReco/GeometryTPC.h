@@ -216,7 +216,7 @@ class GeometryTPC {
   double Timecell2pos(double position_in_cells, bool &err_flag)const; // [mm] output: position along Z-axis
   double Pos2timecell(double z, bool &err_flag)const; // output: time-cell number, valid range [0-511]
 
-  TGraph GetActiveAreaConvexHull(double vetoBand=0); // get convex hull [mm] of the entire UVW active area
+  TGraph GetActiveAreaConvexHull(double vetoBand=0) const; // get convex hull [mm] of the entire UVW active area
                                                      // with (optionally) excluded outer VETO band [mm]
   bool IsInsideActiveVolume(TVector3 point); // checks if 3D point [mm] has X,Y inside
                                              // UVW active area and Z within [zmin, zmax] range
