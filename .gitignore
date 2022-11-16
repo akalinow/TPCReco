@@ -52,3 +52,4 @@ Makefile
 # Data
 ###################
 *.graw
+/.vs
