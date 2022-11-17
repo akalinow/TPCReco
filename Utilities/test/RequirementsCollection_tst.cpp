@@ -1,5 +1,6 @@
 #include "TPCReco/RequirementsCollection.h"
 #include "gtest/gtest.h"
+#include "gmock/gmock.h"
 #include <functional>
 class GreaterThan {
 public:
