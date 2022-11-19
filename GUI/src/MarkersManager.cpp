@@ -389,6 +389,8 @@ void MarkersManager::HandleMarkerPosition(Int_t event, Int_t x, Int_t y, TObject
 void MarkersManager::repackSegmentsData(){
 
   fSegmentsXY.clear();
+  assert(fSegmentsContainer.at(DIR_U).size() == fSegmentsContainer.at(DIR_V).size());
+  assert(fSegmentsContainer.at(DIR_U).size() == fSegmentsContainer.at(DIR_W).size());
   int nSegments = fSegmentsContainer.at(DIR_U).size();
   for(int iSegment=0;iSegment<nSegments;++iSegment){
     for(auto & strip_segments: fSegmentsContainer){
