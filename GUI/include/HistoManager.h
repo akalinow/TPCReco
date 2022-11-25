@@ -144,8 +144,6 @@ public:
 
   Long64_t previousEventTime{-1};
   Long64_t previousEventNumber{-1};
-
-  bool recoClusterEnable{true};
 };
 #endif
 

@@ -58,22 +58,20 @@ int main(int argc, char **argv){
   if(varMap.count("singleAsadGrawFile")){
     tree.put("singleAsadGrawFile", varMap[""].as<bool>());
   }
-
-  boost::property_tree::ptree hitFilter_tree;      
+  
   if(varMap.count("recoClusterEnable")){
-    hitFilter_tree.put("recoClusterEnable", varMap["recoClusterEnable"].as<bool>());
+    tree.put("hitFilter.recoClusterEnable", varMap["recoClusterEnable"].as<bool>());
   }
   if(varMap.count("recoClusterThreshold")){
-    hitFilter_tree.put("recoClusterThreshold", varMap["recoClusterThreshold"].as<double>());
+    tree.put("hitFilter.recoClusterThreshold", varMap["recoClusterThreshold"].as<double>());
   }
   if(varMap.count("recoClusterDeltaStrips")){
-    hitFilter_tree.put("recoClusterDeltaStrips", varMap["recoClusterDeltaStrips"].as<int>());
+    tree.put("hitFilter.recoClusterDeltaStrips", varMap["recoClusterDeltaStrips"].as<int>());
   }
   if(varMap.count("recoClusterDeltaTimeCells")){
-    hitFilter_tree.put("recoClusterDeltaTimeCells", varMap["recoClusterDeltaTimeCells"].as<int>());
+    tree.put("hitFilter.recoClusterDeltaTimeCells", varMap["recoClusterDeltaTimeCells"].as<int>());
   }
-  tree.put_child("hitFilter",hitFilter_tree);
-    
+
   ROOT::EnableThreadSafety();
   TApplication theApp("App", &argc, argv);
   MainFrame mainWindow(gClient->GetRoot(),0, 0, tree);
