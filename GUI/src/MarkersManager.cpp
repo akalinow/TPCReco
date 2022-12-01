@@ -104,8 +104,8 @@ void MarkersManager::updateSegments(int strip_dir){
   else{
     double x1 = fMarkersContainer.at(strip_dir)->GetX();
     double y1 = fMarkersContainer.at(strip_dir)->GetY();
-    double x2 = x1;
-    double y2 = y1;
+    double x2 = std::nan("0");
+    double y2 = std::nan("0");
     if(aSegmentsContainer.size()){
       x1 = aSegmentsContainer.front().GetX1();
       y1 = aSegmentsContainer.front().GetY1();
@@ -124,12 +124,15 @@ void MarkersManager::updateSegments(int strip_dir){
   if(!aPad) return;
   aPad->cd();
   for(auto &item:aSegmentsContainer){
-    item.SetBit(kCannotPick);
-    item.Draw();
     TMarker aMarker(item.GetX1(), item.GetY1(), 21);
+    aMarker.SetBit(kCannotPick);
     aMarker.SetMarkerColor(item.GetLineColor());
     aMarker.DrawMarker(item.GetX1(), item.GetY1());
-    aMarker.DrawMarker(item.GetX2(), item.GetY2());
+    if(!std::isnan(item.GetX2()) && !std::isnan(item.GetY2())){
+      aMarker.DrawMarker(item.GetX2(), item.GetY2());
+      item.SetBit(kCannotPick);
+      item.Draw();
+    }
   }
 }
 /////////////////////////////////////////////////////////
@@ -389,6 +392,8 @@ void MarkersManager::HandleMarkerPosition(Int_t event, Int_t x, Int_t y, TObject
 void MarkersManager::repackSegmentsData(){
 
   fSegmentsXY.clear();
+  assert(fSegmentsContainer.at(DIR_U).size() == fSegmentsContainer.at(DIR_V).size());
+  assert(fSegmentsContainer.at(DIR_U).size() == fSegmentsContainer.at(DIR_W).size());
   int nSegments = fSegmentsContainer.at(DIR_U).size();
   for(int iSegment=0;iSegment<nSegments;++iSegment){
     for(auto & strip_segments: fSegmentsContainer){
@@ -458,8 +463,8 @@ bool MarkersManager::isLastSegmentComplete(int strip_dir){
   std::vector<TLine> &aSegmentsContainer = fSegmentsContainer.at(strip_dir);
 
   return !aSegmentsContainer.size() ||
-    (std::abs(aSegmentsContainer.back().GetX1() - aSegmentsContainer.back().GetX2())>1E-3 &&
-     std::abs(aSegmentsContainer.back().GetY1() - aSegmentsContainer.back().GetY2())>1E-3);
+   (!std::isnan(aSegmentsContainer.back().GetX2()) &&
+    !std::isnan(aSegmentsContainer.back().GetY2()));
 }
 ////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////// Added by MC - 19 Aug 2021
