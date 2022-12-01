@@ -405,9 +405,9 @@ std::shared_ptr<TH2D> EventTPC::get2DProjection(projection_type projType,
   auto projType1D = get1DProjectionType(projType);
   a3DHistoRawPtr->GetZaxis()->SetRange(static_cast<int>(projType1D)+1,
 				       static_cast<int>(projType1D)+1);
-  int minY = 0.5;
-  int maxY = myGeometryPtr->GetDirNstrips(projType1D)+minY;
-  a3DHistoRawPtr->GetYaxis()->SetRangeUser(minY, maxY);    
+  double minY = 0.5;
+  double maxY = myGeometryPtr->GetDirNstrips(projType1D)+minY;
+  a3DHistoRawPtr->GetYaxis()->SetRangeUser(minY, maxY);
   
   TH2D *h2D = (TH2D*)a3DHistoRawPtr->Project3D("yx");
   h2D->SetDirectory(0);
