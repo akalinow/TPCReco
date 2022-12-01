@@ -6,6 +6,11 @@
 #include <TMath.h>
 #include "TRandom3.h"
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif // M_PI
+
+
 TGraph* dEdxFitter::braggGraph_alpha = new TGraph("dEdx_corr_alpha_10MeV_CO2_250mbar.dat", "%lg %lg");
 TGraph* dEdxFitter::braggGraph_12C = new TGraph("dEdx_corr_12C_5MeV_CO2_250mbar.dat", "%lg %lg");
 double dEdxFitter::nominalPressure = 250.0;

@@ -79,9 +79,9 @@ class PedestalCalculator {
   //  std::vector< std::vector<uint> > FPN_entries_signal;
   //  std::vector< std::vector<double> > FPN_ave_signal;
   // array index: [cobo(>=0)][asad(0-3)][aget(0-3)][cell(0-511)]
-  std::vector< std::vector< std::vector< std::vector<uint> > > > FPN_entries_pedestal;
+  std::vector< std::vector< std::vector< std::vector<uint32_t> > > > FPN_entries_pedestal;
   std::vector< std::vector< std::vector< std::vector<double> > > > FPN_ave_pedestal;
-  std::vector< std::vector< std::vector< std::vector<uint> > > > FPN_entries_signal;
+  std::vector< std::vector< std::vector< std::vector<uint32_t> > > > FPN_entries_signal;
   std::vector< std::vector< std::vector< std::vector<double> > > > FPN_ave_signal;
   
   // GLOBAL - PEDESTAL CONTROL HISTOGRAMS  

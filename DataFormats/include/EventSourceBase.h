@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <boost/property_tree/ptree.hpp>
 
 #include "EventFilter.h"
 #include "EventTPC.h"
@@ -21,6 +22,8 @@ public:
   EventSourceBase();
   
   virtual ~EventSourceBase();
+
+  static std::shared_ptr<EventSourceBase> getEventSourceBaseInstance(boost::property_tree::ptree& myConfig); //awaits implementation
 
   bool isFileLoaded() const { return nEntries>0;}
 

@@ -18,6 +18,11 @@ EventSourceBase::EventSourceBase() {
 EventSourceBase::~EventSourceBase() { }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+std::shared_ptr<EventSourceBase> EventSourceBase::getEventSourceBaseInstance(boost::property_tree::ptree& myConfig) {
+    return std::shared_ptr<EventSourceBase>(); //TODO implementation
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 void EventSourceBase::loadDataFile(const std::string & fileName){
 
   if(!std::ifstream(fileName)){

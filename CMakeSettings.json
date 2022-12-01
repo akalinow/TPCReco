@@ -1,0 +1,80 @@
+﻿{
+  "configurations": [
+    {
+      "name": "x64-Debug",
+      "generator": "Ninja",
+      "configurationType": "Debug",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "variables": [
+        {
+          "name": "ROOT_DIR",
+          "value": "C:/root_v6.26.10",
+          "type": "PATH"
+        },
+        {
+          "name": "X_VCPKG_APPLOCAL_DEPS_INSTALL",
+          "value": "True",
+          "type": "BOOL"
+        },
+        {
+          "name": "Boost_PROGRAM_OPTIONS_LIBRARY_DEBUG",
+          "value": "D:\\Download/vcpkg/installed/x64-windows/lib",
+          "type": "FILEPATH"
+        },
+        {
+          "name": "Boost_PROGRAM_OPTIONS_LIBRARY_RELEASE",
+          "value": "D:/Download/vcpkg/installed/x64-windows/lib",
+          "type": "FILEPATH"
+        }
+      ]
+    },
+    {
+      "name": "x64-Release",
+      "generator": "Ninja",
+      "configurationType": "Release",
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "msvc_x64" ],
+      "variables": [
+        {
+          "name": "ROOT_DIR",
+          "value": "C:\\root_v6.26.10",
+          "type": "PATH"
+        },
+        {
+          "name": "Boost_PROGRAM_OPTIONS_LIBRARY_DEBUG",
+          "value": "D:/Download/vcpkg/installed/x64-windows/lib",
+          "type": "FILEPATH"
+        },
+        {
+          "name": "Boost_PROGRAM_OPTIONS_LIBRARY_RELEASE",
+          "value": "D:/Download/vcpkg/installed/x64-windows/lib",
+          "type": "FILEPATH"
+        },
+        {
+          "name": "Boost_FILESYSTEM_LIBRARY_DEBUG",
+          "value": "D:/Download/vcpkg/installed/x64-windows/lib",
+          "type": "FILEPATH"
+        },
+        {
+          "name": "Boost_FILESYSTEM_LIBRARY_RELEASE",
+          "value": "D:/Download/vcpkg/installed/x64-windows/lib",
+          "type": "FILEPATH"
+        },
+        {
+          "name": "CMAKE_CXX_FLAGS",
+          "value": "/DWIN32 /D_WINDOWS /W3 /GR /EHsc /std:c++17",
+          "type": "STRING"
+        }
+      ]
+    }
+  ]
+}
