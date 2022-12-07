@@ -22,7 +22,7 @@ referencePointHelper(const std::string &input,
   size_t fileId;
   try {
     auto id = RunIdParser(input);
-    point = id.timePoint();
+    point = id.exactTimePoint();
     fileId = chunk.empty() ? id.fileId() : chunk.as<size_t>();
   } catch (const RunIdParser::ParseError &e) {
     try {

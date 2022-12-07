@@ -68,7 +68,7 @@ void discoverFiles(const std::string &inputFilename,
                         : boost::filesystem::current_path();
   auto begin = boost::filesystem::directory_iterator(parentPath);
   auto end = boost::filesystem::directory_iterator{};
-  discoverFiles(inputId.timePoint(), inputId.fileId(), delay, begin, end,
+  discoverFiles(inputId.exactTimePoint(), inputId.fileId(), delay, begin, end,
                 output);
 }
 
@@ -99,8 +99,7 @@ template <class FilesIterator, class ExtensionsContainer>
 FilesIterator filterExtensions(FilesIterator first, FilesIterator last,
                                const ExtensionsContainer &extensions) {
   return std::remove_if(first, last, [&extensions](const auto &entry) {
-    auto extension =
-        boost::filesystem::path(entry).extension().string();
+    auto extension = boost::filesystem::path(entry).extension().string();
     return extensions.count(extension) == 0;
   });
 }

@@ -89,15 +89,15 @@ TEST(RunIdParser_GETFormat_Test, AsAdId) {
 TEST(RunIdParser_Test, timeComparison) {
   EXPECT_LE(
       RunIdParser("CoBo_ALL_AsAd_ALL_2021-09-08T09:26:36.627_0015.graw.gz")
-              .timePoint() -
+              .exactTimePoint() -
           RunIdParser("CoBo_ALL_AsAd_ALL_2021-09-08T09:26:36.626_0015.graw.gz")
-              .timePoint(),
+              .exactTimePoint(),
       std::chrono::milliseconds(2));
   EXPECT_GE(
       RunIdParser("CoBo_ALL_AsAd_ALL_2021-09-08T09:26:36.627_0015.graw.gz")
-              .timePoint() -
+              .exactTimePoint() -
           RunIdParser("CoBo_ALL_AsAd_ALL_2021-09-08T09:26:36.623_0015.graw.gz")
-              .timePoint(),
+              .exactTimePoint(),
       std::chrono::milliseconds(2));
 
   EXPECT_TRUE(
@@ -215,4 +215,112 @@ TEST(RunIdParser_Test, timePointFromRunId) {
       RunIdParser("CoBo_ALL_AsAd_ALL_2021-09-08T09:26:36.127_0015.graw.gz")
           .isClose(RunIdParser::timePointFromRunId("20210908092636"),
                    std::chrono::seconds(1)));
+  EXPECT_TRUE(
+      RunIdParser("CoBo_ALL_AsAd_ALL_2021-09-08T09:26:36.127_0015.graw.gz")
+          .isClose(RunIdParser::timePointFromRunId(20210908092636),
+                   std::chrono::seconds(1)));
+
+  auto parsed =
+      RunIdParser("CoBo_ALL_AsAd_ALL_2021-09-08T09:26:36.127_0015.graw.gz");
+  EXPECT_TRUE(parsed.isClose(RunIdParser::timePointFromRunId(parsed.runId()),
+                             std::chrono::seconds(1)));
+}
+
+TEST(RunIdParser_Test, unixTimestamp) {
+  EXPECT_EQ(
+      std::chrono::duration_cast<std::chrono::seconds>(
+          RunIdParser("CoBo_ALL_AsAd_ALL_1970-01-01T00:00:00.127_0001.graw")
+              .exactTimePoint()
+              .time_since_epoch())
+          .count(),
+      0);
+
+  EXPECT_EQ(
+      std::chrono::duration_cast<std::chrono::seconds>(
+          RunIdParser("CoBo_ALL_AsAd_ALL_1970-01-01T00:00:01.127_0001.graw")
+              .exactTimePoint()
+              .time_since_epoch())
+          .count(),
+      1);
+
+  EXPECT_EQ(
+      std::chrono::duration_cast<std::chrono::seconds>(
+          RunIdParser("CoBo_ALL_AsAd_ALL_1970-01-02T00:00:00.127_0001.graw")
+              .exactTimePoint()
+              .time_since_epoch())
+          .count(),
+      24 * 3600);
+
+  EXPECT_EQ(
+      std::chrono::duration_cast<std::chrono::seconds>(
+          RunIdParser("CoBo_ALL_AsAd_ALL_2021-09-08T09:26:36.127_0015.graw.gz")
+              .exactTimePoint()
+              .time_since_epoch())
+          .count(),
+      1631093196);
+}
+
+TEST(RunIdParser_Test, unixTimestampFromRunId) {
+  EXPECT_EQ(
+      std::chrono::duration_cast<std::chrono::seconds>(
+          RunIdParser::timePointFromRunId(19700101000000).time_since_epoch())
+          .count(),
+      0);
+
+  EXPECT_EQ(
+      std::chrono::duration_cast<std::chrono::seconds>(
+          RunIdParser::timePointFromRunId(19700101000001).time_since_epoch())
+          .count(),
+      1);
+
+  EXPECT_EQ(
+      std::chrono::duration_cast<std::chrono::seconds>(
+          RunIdParser::timePointFromRunId(20210908092636).time_since_epoch())
+          .count(),
+      1631093196);
+}
+
+TEST(RunIdParser_Test, unixTimestampFromRunIdString) {
+  EXPECT_EQ(
+      std::chrono::duration_cast<std::chrono::seconds>(
+          RunIdParser::timePointFromRunId("19700101000000").time_since_epoch())
+          .count(),
+      0);
+  EXPECT_EQ(
+      std::chrono::duration_cast<std::chrono::seconds>(
+          RunIdParser::timePointFromRunId("19700101000001").time_since_epoch())
+          .count(),
+      1);
+
+  EXPECT_EQ(
+      std::chrono::duration_cast<std::chrono::seconds>(
+          RunIdParser::timePointFromRunId("20210908092636").time_since_epoch())
+          .count(),
+      1631093196);
+}
+
+TEST(RunIdParser_Test, timePointVsExactTimePoint) {
+  auto parsed =
+      RunIdParser("CoBo_ALL_AsAd_ALL_2021-09-08T09:26:36.127_0015.graw.gz");
+  EXPECT_EQ(
+      (parsed.exactTimePoint() - parsed.timePoint()).count(),
+      std::chrono::duration_cast<typename RunIdParser::time_point::duration>(
+          std::chrono::milliseconds(127))
+          .count());
+}
+
+TEST(RunIdParser_Test, parsingTimePointVsRunIdTimePoint) {
+  EXPECT_EQ(
+      (RunIdParser("CoBo_ALL_AsAd_ALL_2021-09-08T09:26:36.127_0015.graw.gz")
+           .timePoint() -
+       RunIdParser::timePointFromRunId(20210908092636))
+          .count(),
+      0);
+
+  EXPECT_EQ(
+      (RunIdParser("CoBo_ALL_AsAd_ALL_2021-09-08T09:26:36.127_0015.graw.gz")
+           .timePoint() -
+       RunIdParser::timePointFromRunId("20210908092636"))
+          .count(),
+      0);
 }

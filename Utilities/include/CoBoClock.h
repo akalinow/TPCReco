@@ -1,14 +1,16 @@
 #ifndef TPCRECO_UTILITIES_COBO_CLOCK_H_
 #define TPCRECO_UTILITIES_COBO_CLOCK_H_
 
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <chrono>
-
 namespace tpcreco {
 using cobo_time_tick = std::ratio<1L, 100000000L>;
 using cobo_time_unit = std::chrono::duration<long, cobo_time_tick>;
 
+// Clock with time precision used by GET electronics
+// Clock epoch is unix epoch: 1970 Jan 1, 00:00:000
 class CoBoClock {
-  public:
+public:
   using duration = cobo_time_unit;
   using rep = duration::rep;
   using period = duration::period;
@@ -17,20 +19,21 @@ class CoBoClock {
   static constexpr bool is_steady = false;
 
   static time_point now() noexcept {
-    return time_point(std::chrono::duration_cast<duration>(
-        std::chrono::system_clock::now().time_since_epoch()));
+    return time_point(std::chrono::microseconds(
+        (boost::posix_time::microsec_clock::local_time() - epoch)
+            .total_microseconds()));
   }
 
-  // Map to C API
-  static std::time_t to_time_t(const time_point &t) noexcept {
-    return std::time_t(
-        std::chrono::duration_cast<duration>(t.time_since_epoch()).count());
-  }
-
-  static time_point from_time_t(std::time_t t) noexcept {
+  // Boost date_time API
+  // allows for portable calendar dates without thread-unsafe dependency on
+  // local timezone (looking at you C-like API)
+  static time_point from_ptime(const boost::posix_time::ptime &t) {
     return std::chrono::time_point_cast<duration>(
-        time_point(std::chrono::seconds(t)));
+        time_point(std::chrono::seconds((t - epoch).total_seconds())));
   }
+  
+private:
+  static boost::posix_time::ptime epoch;
 };
 
 using cobo_time_point = CoBoClock::time_point;

@@ -86,23 +86,34 @@ TEST(CoBoClockTest, nowTimePoint) {
   EXPECT_EQ((then - now).count(), static_cast<int>(5e8));
 }
 
-TEST(CoBoClockTest, now) {
-  auto now = CoBoClock::now();
-  auto later = now + std::chrono::seconds(5);
-  EXPECT_EQ((later - now).count(), static_cast<int>(5e8));
+TEST(CoBoClockTest, ptime_epoch) {
+  auto pEpoch = boost::posix_time::ptime(boost::gregorian::date(1970, 1, 1));
+  auto epochTimePoint = CoBoClock::from_ptime(pEpoch);
+  EXPECT_EQ(epochTimePoint.time_since_epoch().count(), 0);
 }
 
-TEST(CoBoClockTest, fromTimeStruct) {
-  std::tm tm{};
-  tm.tm_year = 2020 - 1900;
-  tm.tm_mon = 10 - 1;
-  tm.tm_mday = 15;
-  tm.tm_hour = 12;
-  tm.tm_min = 30;
-  tm.tm_sec = 5;
-  tm.tm_isdst = -1;
-  auto somewhen = CoBoClock::from_time_t(std::mktime(&tm));
-  tm.tm_sec += 10;
-  auto later = CoBoClock::from_time_t(std::mktime(&tm));
-  EXPECT_EQ((later - somewhen).count(), static_cast<int>(10e8));
+TEST(CoBoClockTest, ptime_calendarDate) {
+  auto timePoint = CoBoClock::from_ptime(boost::posix_time::ptime(
+      boost::gregorian::date(1970, 1, 1), boost::posix_time::seconds(1)));
+  EXPECT_EQ(std::chrono::duration_cast<std::chrono::seconds>(
+                timePoint.time_since_epoch())
+                .count(),
+            1);
+
+  timePoint = CoBoClock::from_ptime(
+      boost::posix_time::ptime(boost::gregorian::date(1971, 1, 1)));
+  EXPECT_EQ(std::chrono::duration_cast<std::chrono::seconds>(
+                timePoint.time_since_epoch())
+                .count(),
+            31536000);
+
+  timePoint = CoBoClock::from_ptime(
+      boost::posix_time::ptime(boost::gregorian::date(2022, 12, 7),
+                               boost::posix_time::time_duration(12, 45, 33)));
+  // GMT: Wednesday, December 7, 2022 12:45:33 PM
+  // timestamp: 1670417133
+  EXPECT_EQ(std::chrono::duration_cast<std::chrono::seconds>(
+                timePoint.time_since_epoch())
+                .count(),
+            1670417133);
 }
