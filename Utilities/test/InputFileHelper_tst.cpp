@@ -123,7 +123,7 @@ TEST_F(InputFileHelperTest, FileDiscoveryFromRunId) {
   std::vector<std::string> files;
   std::string runId = "20210712120340";
   auto timePoint = RunIdParser::timePointFromRunId(runId);
-  size_t chunk = 0;
+  unsigned long chunk = 0;
   auto begin =
       boost::filesystem::directory_iterator(boost::filesystem::path(directory));
   auto end = boost::filesystem::directory_iterator{};

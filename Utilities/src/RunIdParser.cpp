@@ -55,10 +55,7 @@ void RunIdParser::matchResults(const std::smatch &match,
       stream.getloc(), new boost::posix_time::time_facet(facetFormat.c_str())));
   stream << ptime;
   stream >> rundId_;
-  stream.str("");
-  stream.clear();
-  stream << match[positions.fileId];
-  stream >> fileId_;
+  fileId_ = std::stoul(match[positions.fileId]);
 }
 
 RunIdParser::Positions::Positions(size_t year, size_t month, size_t day,

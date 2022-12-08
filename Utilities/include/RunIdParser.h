@@ -17,8 +17,8 @@ public:
 
   using time_point = tpcreco::cobo_time_point;
 
-  inline size_t runId() const noexcept { return rundId_; }
-  inline size_t fileId() const noexcept { return fileId_; }
+  inline long runId() const noexcept { return rundId_; }
+  inline unsigned long fileId() const noexcept { return fileId_; }
   // AsAd id
   // returns -1 if no information
   inline int AsAdId() const noexcept { return AsAdId_; };
@@ -54,8 +54,8 @@ private:
 
   static const std::string facetFormat;
 
-  size_t rundId_;
-  size_t fileId_;
+  long rundId_;
+  unsigned long fileId_;
   int AsAdId_ = -1;
   int CoBoId_ = -1;
   time_point exactTimePoint_;

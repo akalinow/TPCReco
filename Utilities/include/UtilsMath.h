@@ -70,6 +70,6 @@ namespace Utils {
   double signedDistancePointPlane(TVector3 basepoint, TVector3 span1, TVector3 span2, TVector3 point);
 
   // combines run ID with relative CoBo timestamp (10ns units)
-  double getUnixTimestamp(time_t run_id, uint64_t elapsed_time_10ns);
+  double getUnixTimestamp(long run_id, uint64_t elapsed_time_10ns);
 };
 #endif // UTILITIES_UTILS_MATH_H_

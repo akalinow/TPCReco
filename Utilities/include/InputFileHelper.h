@@ -32,7 +32,7 @@ template <class It> std::string getExtension(It begin, It end) {
 }
 
 template <class Rep, class Period, class InputIterator, class OutputIterator>
-void discoverFiles(RunIdParser::time_point timePoint, size_t fileId,
+void discoverFiles(RunIdParser::time_point timePoint, unsigned long fileId,
                    std::chrono::duration<Rep, Period> delay,
                    InputIterator begin, InputIterator end,
                    OutputIterator output) {

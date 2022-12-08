@@ -327,7 +327,7 @@ double Utils::signedDistancePointPlane(TVector3 basepoint, TVector3 span1, TVect
 //          * elapsed_time_10ns - elepsed run time from the GET counter (10ns units)
 // output:  return Unix timestamp [s] with millisecond precision.
 //
-double Utils::getUnixTimestamp(time_t run_id, uint64_t elapsed_time_10ns) {
+double Utils::getUnixTimestamp(long run_id, uint64_t elapsed_time_10ns) {
 
   // decode run ID from YYYYMMDDhhmmss decimal format
   auto year=(int)(run_id*1e-10);

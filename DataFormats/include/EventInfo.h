@@ -4,6 +4,7 @@
 #include <iostream>
 #include <memory>
 #include <bitset>
+#include <Rtypes.h>
 
 class EventTPC;
 
@@ -17,21 +18,21 @@ namespace eventraw {
 
     void reset();
 
-    time_t GetRunId() const {return runId;}
+    long GetRunId() const {return runId;}
 
     uint32_t GetEventId() const {return eventId;}
 
-    uint64_t GetEventTimestamp() const {return timestamp;}
+    ULong_t GetEventTimestamp() const {return timestamp;}
 
     std::bitset<64> GetEventType() const {return std::bitset<64>(eventType);}
 
     bool GetPedestalSubtracted() const {return pedestalSubtracted;}
 
-    void SetRunId(time_t aRunId) {runId = aRunId;}
+    void SetRunId(long aRunId) {runId = aRunId;}
 
     void SetEventId(uint32_t aEventId) {eventId = aEventId;}
 
-    void SetEventTimestamp(uint64_t aTimestamp) {timestamp = aTimestamp;}
+    void SetEventTimestamp(ULong_t aTimestamp) {timestamp = aTimestamp;}
 
     void SetEventType(unsigned long aEventType) {eventType = aEventType;}
 
@@ -47,9 +48,9 @@ namespace eventraw {
 
   private:
 
-    time_t runId{0};
+    long runId{0};
     uint32_t eventId{0};   // 4-bytes
-    uint64_t timestamp{0}; // 6-bytes in 10ns CLK units (100 MHz)
+    ULong_t timestamp{0}; // 6-bytes in 10ns CLK units (100 MHz)
     unsigned long eventType{0};
     bool pedestalSubtracted{false};
     int asadCounter{0};
