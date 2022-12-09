@@ -16,12 +16,12 @@ cd $HOME/TPCReco/TPCReco-higs_04/build/resources
 (a) no clustering (FAST):
 
 cd $HOME/TPCReco/TPCReco-higs_04/build/resources
-../bin/rawSignalAnalysis ../config/config_GUI__OFFLINE_130mbar_1372Vdrift_25MHz_NGRAW.json --dataFile $( ../bin/grawls --input 20220828111932 --chunk 0 --separator "," --directory /data/edaq/2022/HIgS_2022/20220828_extTrg_CO2_130mbar --ms 1000 ) --outputFile TestTree.root --clusterEnable false |& tee rawSignalAnalysis.log
+../bin/rawSignalAnalysis ../config/config_GUI__OFFLINE_130mbar_1372Vdrift_25MHz_NGRAW.json --dataFile $( ../bin/grawls --input 20220828111932 --chunk 0 --separator "," --directory /data/edaq/2022/HIgS_2022/20220828_extTrg_CO2_130mbar --ms 1000 ) --outputFile TestTree.root --recoClusterEnable false |& tee rawSignalAnalysis.log
 
 (b) with clustering (SLOWER):
 
 cd $HOME/TPCReco/TPCReco-higs_04/build/resources
-../bin/rawSignalAnalysis ../config/config_GUI__OFFLINE_130mbar_1372Vdrift_25MHz_NGRAW.json --dataFile $( ../bin/grawls --input 20220828111932 --chunk 0 --separator "," --directory /data/edaq/2022/HIgS_2022/20220828_extTrg_CO2_130mbar --ms 1000 ) --outputFile TestTree_clustering.root --clusterEnable true --clusterThreshold 40 --clusterDeltaTimeCells 5 --clusterDeltaStrips 2 |& tee rawSignalAnalysis_clustering.log
+../bin/rawSignalAnalysis ../config/config_GUI__OFFLINE_130mbar_1372Vdrift_25MHz_NGRAW.json --dataFile $( ../bin/grawls --input 20220828111932 --chunk 0 --separator "," --directory /data/edaq/2022/HIgS_2022/20220828_extTrg_CO2_130mbar --ms 1000 ) --outputFile TestTree_clustering.root --recoClusterEnable true --recoClusterThreshold 40 --recoClusterDeltaTimeCells 5 --recoClusterDeltaStrips 2 |& tee rawSignalAnalysis_clustering.log
 
 
 
