@@ -45,7 +45,6 @@ public:
   void initialize();
   void finalize();
   void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);  // definition of LAB detector coordinates
-  //  double getUnixTimestamp(time_t run_id, uint64_t elapsed_time_10ns); // creates absolute Unix timestamp with millisecond precision [s]
 };
 
 #endif

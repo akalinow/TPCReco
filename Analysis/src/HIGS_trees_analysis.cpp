@@ -13,9 +13,12 @@
 #include "TrackSegment3D.h"
 #include "EventInfo.h"
 #include "HIGS_trees_analysis.h"
-#include "UtilsMath.h"
+#include "UtilsEventInfo.h"
 
 #include "colorText.h"
+
+using std::chrono::duration;
+using std::chrono::duration_cast;
 
 ///////////////////////////////
 ///////////////////////////////
@@ -156,14 +159,23 @@ void HIGS_trees_analysis::fillTrees1prong(Track3D *aTrack, eventraw::EventInfo *
   event1prong_->runId=(aEventInfo ? aEventInfo->GetRunId() : -1);
   event1prong_->eventId=(aEventInfo ? aEventInfo->GetEventId() : -1);
   event1prong_->eventType = aEventInfo ? aEventInfo->GetEventType().to_ulong() : 0;
-  event1prong_->unixTimeSec=(aEventInfo ? Utils::getUnixTimestamp( aEventInfo->GetRunId(), aEventInfo->GetEventTimestamp() ) : -1); // absolute Unix time [s]
+  event1prong_->unixTimeSec =
+      (aEventInfo
+           ? duration_cast<duration<long double>>(
+                 tpcreco::eventAbsoluteTime(*aEventInfo).time_since_epoch())
+                 .count()
+           : -1); // absolute Unix time [s]
   static double last_timestamp = 0;
   if(isFirst) {
     last_timestamp=event1prong_->unixTimeSec;
     isFirst=false;
   }
-  event1prong_->runTimeSec=(aEventInfo ? (double)(aEventInfo->GetEventTimestamp()*10.0e-9) : -1); // [s] converted from GET electronics timestamp (10ns units) to seconds
-  event1prong_->deltaTimeSec=(double)(aEventInfo ? event1prong_->unixTimeSec - last_timestamp : -1); // [s] time difference for rate measurements
+  event1prong_->runTimeSec =
+      (aEventInfo ? duration_cast<duration<long double>>(
+                        tpcreco::eventRelativeTime(*aEventInfo))
+                        .count()
+                  : -1); // [s]
+  event1prong_->deltaTimeSec= (aEventInfo ? event1prong_->unixTimeSec - last_timestamp : -1); // [s] time difference for rate measurements
   last_timestamp=event1prong_->unixTimeSec;
 
   event1prong_->vertexPos = list.front().getStart();
@@ -226,14 +238,23 @@ void HIGS_trees_analysis::fillTrees2prong(Track3D *aTrack, eventraw::EventInfo *
   event2prong_->runId=(aEventInfo ? aEventInfo->GetRunId() : -1);
   event2prong_->eventId=(aEventInfo ? aEventInfo->GetEventId() : -1);
   event2prong_->eventType = aEventInfo ? aEventInfo->GetEventType().to_ulong() : 0;
-  event2prong_->unixTimeSec=(aEventInfo ? Utils::getUnixTimestamp( aEventInfo->GetRunId(), aEventInfo->GetEventTimestamp() ) : -1); // absolute Unix time [s]
+  event2prong_->unixTimeSec =
+      (aEventInfo
+           ? duration_cast<duration<long double>>(
+                 tpcreco::eventAbsoluteTime(*aEventInfo).time_since_epoch())
+                 .count()
+           : -1); // absolute Unix time [s]
   static double last_timestamp = 0;
   if(isFirst) {
     last_timestamp=event2prong_->unixTimeSec;
     isFirst=false;
   }
-  event2prong_->runTimeSec=(aEventInfo ? (double)(aEventInfo->GetEventTimestamp()*10.0e-9) : -1); // [s] converted from GET electronics timestamp (10ns units) to seconds
-  event2prong_->deltaTimeSec=(double)(aEventInfo ? event2prong_->unixTimeSec - last_timestamp : -1); // [s] time difference for rate measurements
+  event2prong_->runTimeSec =
+      (aEventInfo ? duration_cast<duration<long double>>(
+                        tpcreco::eventRelativeTime(*aEventInfo))
+                        .count()
+                  : -1); // [s]
+  event2prong_->deltaTimeSec=(aEventInfo ? event2prong_->unixTimeSec - last_timestamp : -1); // [s] time difference for rate measurements
   last_timestamp=event2prong_->unixTimeSec;
 
   event2prong_->vertexPos = list.front().getStart();
@@ -303,14 +324,23 @@ void HIGS_trees_analysis::fillTrees3prong(Track3D *aTrack, eventraw::EventInfo *
   event3prong_->runId=(aEventInfo ? aEventInfo->GetRunId() : -1);
   event3prong_->eventId=(aEventInfo ? aEventInfo->GetEventId() : -1);
   event3prong_->eventType = aEventInfo ? aEventInfo->GetEventType().to_ulong() : 0;
-  event3prong_->unixTimeSec=(aEventInfo ? Utils::getUnixTimestamp( aEventInfo->GetRunId(), aEventInfo->GetEventTimestamp() ) : -1); // absolute Unix time [s]
+  event1prong_->unixTimeSec =
+      (aEventInfo
+           ? duration_cast<duration<long double>>(
+                 tpcreco::eventAbsoluteTime(*aEventInfo).time_since_epoch())
+                 .count()
+           : -1); // absolute Unix time [s]
   static double last_timestamp = 0;
   if(isFirst) {
     last_timestamp=event3prong_->unixTimeSec;
     isFirst=false;
   }
-  event3prong_->runTimeSec=(aEventInfo ? (double)(aEventInfo->GetEventTimestamp()*10.0e-9) : -1); // [s] converted from GET electronics timestamp (10ns units) to seconds
-  event3prong_->deltaTimeSec=(double)(aEventInfo ? event3prong_->unixTimeSec - last_timestamp : -1); // [s] time difference for rate measurements
+  event1prong_->runTimeSec =
+      (aEventInfo ? duration_cast<duration<long double>>(
+                        tpcreco::eventRelativeTime(*aEventInfo))
+                        .count()
+                  : -1); // [s]
+  event3prong_->deltaTimeSec=(aEventInfo ? event3prong_->unixTimeSec - last_timestamp : -1); // [s] time difference for rate measurements
   last_timestamp=event3prong_->unixTimeSec;
 
   event3prong_->vertexPos = list.front().getStart();

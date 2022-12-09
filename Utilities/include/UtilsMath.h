@@ -68,8 +68,5 @@ namespace Utils {
 
   // calculates signed distance (projection onto normal vector) of 3D point from 3D infinite plane
   double signedDistancePointPlane(TVector3 basepoint, TVector3 span1, TVector3 span2, TVector3 point);
-
-  // combines run ID with relative CoBo timestamp (10ns units)
-  double getUnixTimestamp(time_t run_id, uint64_t elapsed_time_10ns);
 };
 #endif // UTILITIES_UTILS_MATH_H_

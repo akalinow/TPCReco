@@ -45,7 +45,7 @@ MESSAGE( STATUS "GET libraries:         " ${GET_LIBRARIES} )
 MESSAGE( STATUS "GET includes:          " ${GET_VERSION_DIR}/include )
 MESSAGE( STATUS "GET compile flags:     " ${GET_CXX_FLAGS} )
 #####################################################################
-find_package(Boost 1.45.0 COMPONENTS program_options REQUIRED)
+find_package(Boost 1.45.0 COMPONENTS program_options date_time REQUIRED)
 if(Boost_FOUND)
   MESSAGE(STATUS "Boost verion found:" ${Boost_VERSION_STRING})
 else()

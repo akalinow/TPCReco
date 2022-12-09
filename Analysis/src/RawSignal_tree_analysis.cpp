@@ -12,9 +12,12 @@
 #include "EventInfo.h"
 #include "RawSignal_tree_analysis.h"
 #include "RawSignal_tree_dataFormat.h"
-#include "UtilsMath.h"
+#include "UtilsEventInfo.h"
 
 #include "colorText.h"
+
+using std::chrono::duration;
+using std::chrono::duration_cast;
 
 ///////////////////////////////
 ///////////////////////////////
@@ -83,14 +86,23 @@ void RawSignal_tree_analysis::fillTree(std::shared_ptr<EventTPC> aEventTPC, bool
 
   event_rawsignal_->runId=(aEventTPC ? aEventTPC->GetEventInfo().GetRunId() : -1); // run number
   event_rawsignal_->eventId=(aEventTPC ? aEventTPC->GetEventInfo().GetEventId() : -1); // event number
-  event_rawsignal_->unixTimeSec=(aEventTPC ? Utils::getUnixTimestamp( aEventTPC->GetEventInfo().GetRunId(), aEventTPC->GetEventInfo().GetEventTimestamp() ) : -1); // absolute Unix time [s]
   static double last_timestamp = 0;
+  event_rawsignal_->unixTimeSec =
+      (aEventTPC
+           ? duration_cast<duration<long double>>(
+                 tpcreco::eventAbsoluteTime(aEventTPC->GetEventInfo()).time_since_epoch())
+                 .count()
+           : -1); // absolute Unix time [s]  static double last_timestamp = 0;
   if(isFirst) {
     last_timestamp=event_rawsignal_->unixTimeSec;
     isFirst=false;
   }
-  event_rawsignal_->runTimeSec=(aEventTPC ? (double)(aEventTPC->GetEventInfo().GetEventTimestamp()*10.0e-9) : -1); // [s] converted from GET electronics timestamp (10ns units) to seconds
-  event_rawsignal_->deltaTimeSec=(double)(aEventTPC ? event_rawsignal_->unixTimeSec - last_timestamp : -1); // [s] time difference for rate measurements
+  event_rawsignal_->runTimeSec =
+      (aEventTPC ? duration_cast<duration<long double>>(
+                        tpcreco::eventRelativeTime(aEventTPC->GetEventInfo()))
+                        .count()
+                  : -1); // [s]
+  event_rawsignal_->deltaTimeSec=(aEventTPC ? event_rawsignal_->unixTimeSec - last_timestamp : -1); // [s] time difference for rate measurements
   last_timestamp=event_rawsignal_->unixTimeSec;
 
   // FILL CLUSTER PARAMETERS

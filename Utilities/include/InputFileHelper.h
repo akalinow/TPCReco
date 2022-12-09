@@ -32,7 +32,7 @@ template <class It> std::string getExtension(It begin, It end) {
 }
 
 template <class Rep, class Period, class InputIterator, class OutputIterator>
-void discoverFiles(RunIdParser::time_point timePoint, size_t fileId,
+void discoverFiles(RunIdParser::time_point timePoint, unsigned long fileId,
                    std::chrono::duration<Rep, Period> delay,
                    InputIterator begin, InputIterator end,
                    OutputIterator output) {
@@ -68,7 +68,7 @@ void discoverFiles(const std::string &inputFilename,
                         : boost::filesystem::current_path();
   auto begin = boost::filesystem::directory_iterator(parentPath);
   auto end = boost::filesystem::directory_iterator{};
-  discoverFiles(inputId.timePoint(), inputId.fileId(), delay, begin, end,
+  discoverFiles(inputId.exactTimePoint(), inputId.fileId(), delay, begin, end,
                 output);
 }
 
@@ -99,8 +99,7 @@ template <class FilesIterator, class ExtensionsContainer>
 FilesIterator filterExtensions(FilesIterator first, FilesIterator last,
                                const ExtensionsContainer &extensions) {
   return std::remove_if(first, last, [&extensions](const auto &entry) {
-    auto extension =
-        boost::filesystem::path(entry).extension().string();
+    auto extension = boost::filesystem::path(entry).extension().string();
     return extensions.count(extension) == 0;
   });
 }

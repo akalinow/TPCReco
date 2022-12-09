@@ -2,7 +2,7 @@
 #define _RawSignal_tree_dataFormat_H_
 
 struct Event_rawsignal{ // diagnostic data per event
-  time_t runId;
+  long runId;
   unsigned int eventId;
   double unixTimeSec; // [s] absolute unix timestamp since 1970/1/1 epoch with millisecond precision (combined runID and GET counter)
   double runTimeSec; // [s] elapsed time since start of the runID with 10ns precision from GET counter (100 MHz clock)
