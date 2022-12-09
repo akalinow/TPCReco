@@ -361,8 +361,8 @@ std::shared_ptr<TH1D> EventTPC::get1DProjection(projection_type projType,
      projType==projection_type::DIR_V ||
      projType==projection_type::DIR_W){
 
-    int minY = 0.5;
-    int maxY = myGeometryPtr->GetDirNstrips(projType)+minY;
+    double minY = 0.5;
+    double maxY = myGeometryPtr->GetDirNstrips(projType)+minY;
 
     h1D = a3DHistoRawPtr->ProjectionY("_py",0,-1,
 				      static_cast<int>(projType)+1, static_cast<int>(projType)+1);
