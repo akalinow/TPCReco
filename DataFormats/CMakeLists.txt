@@ -19,6 +19,9 @@ include_directories(${ROOTINCDIR})
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include)
 include_directories(${PROJECT_SOURCE_DIR}/Utilities/include)
+include_directories(${PROJECT_SOURCE_DIR}/GrawToROOT/include)
+include_directories(${PROJECT_SOURCE_DIR}/TrackGenerator/include)
+include_directories(${PROJECT_SOURCE_DIR}/GUI/include)
 ###############################################################################
 ## target definitions #########################################################
 ###############################################################################

@@ -23,8 +23,6 @@ public:
   
   virtual ~EventSourceBase();
 
-  static std::shared_ptr<EventSourceBase> getEventSourceBaseInstance(boost::property_tree::ptree& myConfig); //awaits implementation
-
   bool isFileLoaded() const { return nEntries>0;}
 
   void loadGeometry(const std::string & fileName);

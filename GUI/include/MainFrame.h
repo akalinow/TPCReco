@@ -36,6 +36,7 @@
 #include "EventSourceBase.h"
 #include "HistoManager.h"
 #include "DirectoryWatch.h"
+#include "EventSourceFactory.h"
 
 #include <boost/property_tree/json_parser.hpp>
 

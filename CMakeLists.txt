@@ -79,7 +79,7 @@ else()
   MESSAGE( STATUS "AUXILIARY TOOLS dir already exists in the installation dir" )
 endif()
 
-set(CMAKE_CXX_FLAGS "${ROOT_CXX_FLAGS} -std=c++17 -Wall -O3 -pthread -Wno-register -Werror")
+set(CMAKE_CXX_FLAGS "${ROOT_CXX_FLAGS} -std=c++17 -Wall -O3 -pthread")
 
 MESSAGE( STATUS "CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS})
 
