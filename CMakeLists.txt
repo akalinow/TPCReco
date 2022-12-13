@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0) # setting this is required
 project(TPCSoft)                   # this sets the project name
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 14)
 ###############################################################################
 ## dependencies ###############################################################
 ###############################################################################
@@ -79,7 +79,7 @@ else()
   MESSAGE( STATUS "AUXILIARY TOOLS dir already exists in the installation dir" )
 endif()
 
-set(CMAKE_CXX_FLAGS "${ROOT_CXX_FLAGS} -std=c++17 -Wall -O3 -pthread")
+set(CMAKE_CXX_FLAGS "${ROOT_CXX_FLAGS} -std=c++17 -Wall -Werror -O3 -pthread -Wno-register")
 
 MESSAGE( STATUS "CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS})
 

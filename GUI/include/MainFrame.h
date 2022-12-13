@@ -97,7 +97,6 @@ private:
   std::shared_ptr<EventSourceBase> myEventSource;
   HistoManager myHistoManager;
 
-  DirectoryWatch myDirWatch;
   std::thread fileWatchThread;
   std::mutex myMutex;
 
@@ -124,6 +123,8 @@ private:
   RunConditionsDialog *fRunConditionsDialog{0};
 
   ClassDef(MainFrame, 0);
+
+  friend class EventSourceFactory;
 };
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

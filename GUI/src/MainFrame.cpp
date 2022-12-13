@@ -107,7 +107,7 @@ void MainFrame::InitializeWindows() {
 void MainFrame::InitializeEventSource() {
 	std::string dataFileName = myConfig.get("dataFile", "");
 	std::string geometryFileName = myConfig.get("geometryFile", "");
-	myEventSource = EventSourceFactory::getFactory().makeEventSourceObject(myConfig, (Modes&)myWorkMode);
+	myEventSource = EventSourceFactory::getFactory().makeEventSourceObject(myConfig, *this);
 
 	if (myConfig.find("hitFilter") != myConfig.not_found()) {
 		myHistoManager.setConfig(myConfig.find("hitFilter")->second);

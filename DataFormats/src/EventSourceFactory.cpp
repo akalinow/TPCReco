@@ -5,6 +5,9 @@
 #include <fstream>
 #include <iomanip>
 #include <vector>
+#include <thread>
+
+#include "DirectoryWatch.h"
 
 #include <TApplication.h>
 #include "colorText.h"
@@ -30,7 +33,9 @@
 #include "EventSourceROOT.h"
 #include "EventSourceMC.h"
 
-inline std::shared_ptr<EventSourceBase> EventSourceFactory::makeEventSourceObject(boost::property_tree::ptree myConfig, Modes& myWorkMode) {
+#include "MainFrame.h"
+
+inline std::shared_ptr<EventSourceBase> EventSourceFactory::makeEventSourceObject(boost::property_tree::ptree myConfig, MainFrame& mf) {
 	std::string dataFileName = myConfig.get("dataFile", "");
 	std::string geometryFileName = myConfig.get("geometryFile", "");
 
@@ -39,7 +44,7 @@ inline std::shared_ptr<EventSourceBase> EventSourceFactory::makeEventSourceObjec
 	if (dataFileName.empty() || geometryFileName.empty()) {
 		std::cerr << "No data or geometry file path provided." << _endl_;
 		exit(1);
-		return;
+		return decltype(myEventSource)();
 	}
 	FileStat_t stat;
 
@@ -95,22 +100,22 @@ inline std::shared_ptr<EventSourceBase> EventSourceFactory::makeEventSourceObjec
 		<< _endl_;
 
 	if (dataFileVec.size() == 1 && ((stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG) && dataFileName.find(".root") != std::string::npos) {
-		myWorkMode = M_OFFLINE_ROOT_MODE;
+		mf.myWorkMode = M_OFFLINE_ROOT_MODE;
 		myEventSource = std::make_shared<EventSourceROOT>(geometryFileName);
 	}
 	else if (dataFileVec.size() == 1 && dataFileName.find("_MC_") != std::string::npos) {
-		myWorkMode = M_OFFLINE_MC_MODE;
+		mf.myWorkMode = M_OFFLINE_MC_MODE;
 		myEventSource = std::make_shared<EventSourceMC>(geometryFileName);
 	}
 
 #ifdef WITH_GET
 	else if (all_graw) { //(stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG) && dataFileName.find(".graw")!=std::string::npos){
 
-		myWorkMode = M_OFFLINE_GRAW_MODE;
+		mf.myWorkMode = M_OFFLINE_GRAW_MODE;
 		if (myConfig.find("singleAsadGrawFile") != myConfig.not_found()) {
 			bool singleAsadGrawFile = myConfig.get<bool>("singleAsadGrawFile");
 			if (singleAsadGrawFile) {
-				myWorkMode = M_OFFLINE_NGRAW_MODE;
+				mf.myWorkMode = M_OFFLINE_NGRAW_MODE;
 			}
 		}
 		switch (myWorkMode) {
@@ -119,7 +124,7 @@ inline std::shared_ptr<EventSourceBase> EventSourceFactory::makeEventSourceObjec
 			dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(myConfig.get("frameLoadRange", 100));
 			if (dataFileVec.size() > 1) {
 				std::cerr << KRED << "Provided too many GRAW files. Expected 1. dataFile: " << RST << dataFileName << _endl_;
-				return;
+				return decltype(myEventSource)();
 			}
 			break;
 		case M_OFFLINE_NGRAW_MODE:
@@ -127,7 +132,7 @@ inline std::shared_ptr<EventSourceBase> EventSourceFactory::makeEventSourceObjec
 			{ unsigned int AsadNboards = dynamic_cast<EventSourceGRAW*>(myEventSource.get())->getGeometry()->GetAsadNboards();
 			if (dataFileVec.size() > AsadNboards) {
 				std::cerr << KRED << "Provided too many GRAW files. Expected up to " << AsadNboards << ".dataFile: " << RST << dataFileName << _endl_;
-				return;
+				return decltype(myEventSource)();
 			}
 			}
 			break;
@@ -137,14 +142,14 @@ inline std::shared_ptr<EventSourceBase> EventSourceFactory::makeEventSourceObjec
 	}
 	else if (dataFileVec.size() == 1 && (stat.fMode & EFileModeMask::kS_IFDIR) == EFileModeMask::kS_IFDIR) {
 
-		myWorkMode = M_ONLINE_GRAW_MODE;
+		mf.myWorkMode = M_ONLINE_GRAW_MODE;
 		if (myConfig.find("singleAsadGrawFile") != myConfig.not_found()) {
 			bool singleAsadGrawFile = myConfig.get<bool>("singleAsadGrawFile");
 			if (singleAsadGrawFile) {
-				myWorkMode = M_ONLINE_NGRAW_MODE;
+				mf.myWorkMode = M_ONLINE_NGRAW_MODE;
 			}
 		}
-		switch (myWorkMode) {
+		switch (mf.myWorkMode) {
 		case M_ONLINE_GRAW_MODE:
 			myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
 			dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(myConfig.get("frameLoadRange", 10));
@@ -154,12 +159,12 @@ inline std::shared_ptr<EventSourceBase> EventSourceFactory::makeEventSourceObjec
 			break;
 		default:;
 		};
-		fileWatchThread = std::thread(&DirectoryWatch::watch, &myDirWatch, dataFileName);
+		mf.fileWatchThread = std::thread(&DirectoryWatch::watch, &mf.myDirWatch, dataFileName);
 		if (myConfig.find("updateInterval") != myConfig.not_found()) {
 			int updateInterval = myConfig.get<int>("updateInterval");
-			myDirWatch.setUpdateInterval(updateInterval);
+			mf.myDirWatch.setUpdateInterval(updateInterval);
 		}
-		myDirWatch.Connect("Message(const char *)", "MainFrame", this, "ProcessMessage(const char *)");
+		mf.myDirWatch.Connect("Message(const char *)", "MainFrame", this, "ProcessMessage(const char *)");
 	}
 	if (myConfig.find("removePedestal") != myConfig.not_found() && myEventSource.get()) {
 		bool removePedestal = myConfig.get<bool>("removePedestal");
@@ -176,9 +181,9 @@ inline std::shared_ptr<EventSourceBase> EventSourceFactory::makeEventSourceObjec
 		std::cerr << KRED << "and GRAW libriaries not set." << RST << _endl_;
 #endif
 		exit(0);
-		return;
+		return decltype(myEventSource)();
 	}
-	if (myWorkMode != M_ONLINE_GRAW_MODE && myWorkMode != M_ONLINE_NGRAW_MODE) {
+	if (mf.myWorkMode != M_ONLINE_GRAW_MODE && mf.myWorkMode != M_ONLINE_NGRAW_MODE) {
 		myEventSource->loadDataFile(dataFileName);
 		myEventSource->loadFileEntry(0);
 	}
