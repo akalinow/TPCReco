@@ -98,6 +98,8 @@ void HIGGS_analysis::bookHistos(){
   const float maxTotalEnergyMeV = 17e3; // [MeV] // O-18 = 18u
   const float maxKineticEnergyMeV = 10.0; // [MeV]
   const float maxDeltaMomentumMeV = 20.0; // [MeV]
+  const float minBeamEnergyMeV = photonEnergyInMeV_LAB - 0.5*photonEnergyInMeV_LAB; // min histogram range
+  const float maxBeamEnergyMeV = photonEnergyInMeV_LAB + 0.5*photonEnergyInMeV_LAB; // max histogram range
   float xmin, xmax, ymin, ymax, zmin, zmax; // [mm]
   std::tie(xmin, xmax, ymin, ymax) = myGeometryPtr->rangeXY();
   std::tie(zmin, zmax) = myGeometryPtr->rangeZ();
@@ -231,6 +233,61 @@ void HIGGS_analysis::bookHistos(){
 	new TH1F((prefix+"_Qvalue_CMS").c_str(),
 		 Form("%s;Q value in CMS [MeV];%s", info, perEventTitle),
 		 100, 0, maxKineticEnergyMeV);
+      histos1D[(prefix+"_gamma_E_LAB").c_str()]=
+	new TH1F((prefix+"_gamma_E_LAB").c_str(),
+		 Form("%s;Gamma beam energy in LAB [MeV]", info),
+		 100, minBeamEnergyMeV, maxBeamEnergyMeV);
+      // SPECIAL PLOTS: check dependence of gamma beam energy on vertex position perpendicular to the gamma beam axis
+      histos2D[(prefix+"_vertexX_lenSum").c_str()]=
+	new TH2F((prefix+"_vertexX_lenSUM").c_str(),
+		 Form("%s;Vertex position X_{DET} [mm];Sum of track lengths [mm];%s", info, perEventTitle),
+		 (xmax-xmin)/binSizeMM, xmin, xmax,
+		 maxLengthMM/binSizeMM, 0, maxLengthMM);
+      histos2D[(prefix+"_vertexY_lenSum").c_str()]=
+	new TH2F((prefix+"_vertexY_lenSUM").c_str(),
+		 Form("%s;Vertex position Y_{DET} [mm];Sum of track lengths [mm];%s", info, perEventTitle),
+		 (ymax-ymin)/binSizeMM, ymin, ymax,
+		 maxLengthMM/binSizeMM, 0, maxLengthMM);
+      histos2D[(prefix+"_vertexZ_lenSum").c_str()]=
+	new TH2F((prefix+"_vertexZ_lenSUM").c_str(),
+		 Form("%s;Vertex position Z_{DET} [mm];Sum of track lengths [mm];%s", info, perEventTitle),
+		 (zmax-zmin)/binSizeMM, zmin, zmax,
+		 maxLengthMM/binSizeMM, 0, maxLengthMM);
+      histos2D[(prefix+"_vertexY_gamma_E_LAB").c_str()]=
+	new TH2F((prefix+"_vertexY_gamma_E_LAB").c_str(),
+		 Form("%s;Vertex position Y_{DET} [mm];Beam energy in LAB [MeV];%s", info, perEventTitle),
+		 (ymax-ymin)/binSizeMM, ymin, ymax,
+		 100, minBeamEnergyMeV, maxBeamEnergyMeV);
+      histos2D[(prefix+"_vertexY_Qvalue_CMS").c_str()]=
+	new TH2F((prefix+"_vertexY_Qvalue_CMS").c_str(),
+		 Form("%s;Vertex position Y_{DET} [mm];Q value in CMS [MeV];%s", info, perEventTitle),
+		 (ymax-ymin)/binSizeMM, ymin, ymax,
+		 100, 0, maxKineticEnergyMeV);
+      profiles1D[(prefix+"_vertexX_lenSum_prof").c_str()]=
+	new TProfile((prefix+"_vertexX_lenSUM_prof").c_str(),
+		     Form("%s;Vertex position X_{DET} [mm];Average sum of track lengths [mm]", info),
+		     (xmax-xmin)/binSizeMM, xmin, xmax,
+		     0, maxLengthMM);
+      profiles1D[(prefix+"_vertexY_lenSum_prof").c_str()]=
+	new TProfile((prefix+"_vertexY_lenSUM_prof").c_str(),
+		     Form("%s;Vertex position Y_{DET} [mm];Average sum of track lengths [mm]", info),
+		     (ymax-ymin)/binSizeMM, ymin, ymax,
+		     0, maxLengthMM);
+      profiles1D[(prefix+"_vertexZ_lenSum_prof").c_str()]=
+	new TProfile((prefix+"_vertexZ_lenSUM_prof").c_str(),
+		     Form("%s;Vertex position Z_{DET} [mm];Average sum of track lengths [mm]", info),
+		     (zmax-zmin)/binSizeMM, zmin, zmax,
+		     0, maxLengthMM);
+      profiles1D[(prefix+"_vertexY_gamma_E_LAB_prof").c_str()]=
+	new TProfile((prefix+"_vertexY_gamma_E_LAB_prof").c_str(),
+		     Form("%s;Vertex position Y_{DET} [mm];Average beam energy in LAB [MeV]", info),
+		     (ymax-ymin)/binSizeMM, ymin, ymax,
+		     minBeamEnergyMeV, maxBeamEnergyMeV);
+      profiles1D[(prefix+"_vertexY_Qvalue_CMS_prof").c_str()]=
+	new TProfile((prefix+"_vertexY_Qvalue_CMS_prof").c_str(),
+		     Form("%s;Vertex position Y_{DET} [mm];Average Q value in CMS [MeV]", info),
+		     (ymax-ymin)/binSizeMM, ymin, ymax,
+		     0, maxKineticEnergyMeV);
       break;
     default: break;
     };
@@ -273,7 +330,6 @@ void HIGGS_analysis::bookHistos(){
 		 Form("%s;%s track #DeltaY_{DET} [mm];%s track #DeltaZ_{DET} [mm];%s", info, pidLatex, pidLatex, perTrackTitle),
 		 maxLengthMM/binSizeMM_2dYZ, -0.5*maxLengthMM, 0.5*maxLengthMM,
 		 maxLengthMM/binSizeMM_2dYZ, -0.5*maxLengthMM, 0.5*maxLengthMM);
-      
       // TRACK END_X/Y/Z : per category / per track
       histos1D[(prefix+pid+"_endX").c_str()]=
 	new TH1F((prefix+pid+"_endX").c_str(),
@@ -291,6 +347,7 @@ void HIGGS_analysis::bookHistos(){
 	new TH2F((prefix+pid+"_endXY").c_str(),
 		 Form("%s;%s track endpoint X_{DET} [mm];%s track endpoint Y_{DET} [mm];%s", info, pidLatex, pidLatex, perTrackTitle),
 		 (xmax-xmin)/binSizeMM_2dXY, xmin, xmax, (ymax-ymin)/binSizeMM_2dXY, ymin, ymax);
+
       // TRACK PHI_DET/THETA_DET/cos(THETA_DET) : per category / per track
       histos1D[(prefix+pid+"_phiDET").c_str()]=
 	new TH1F((prefix+pid+"_phiDET").c_str(),
@@ -329,7 +386,7 @@ void HIGGS_analysis::bookHistos(){
 		     100, -1, 1,
 		     0, maxLengthMM);
       
-      // TRACK OBSERVABLES IN CMS : per category / per track, only for 2,3-prong
+      // TRACK OBSERVABLES IN CMS/LAB : per category / per track, only for 2,3-prong
       switch(categoryPID[c].size()) {
       case 3:
       case 2: // 2,3-prong
@@ -358,6 +415,27 @@ void HIGGS_analysis::bookHistos(){
 	  new TProfile((prefix+pid+"_cosThetaBEAM_E_CMS_prof").c_str(),
 		       Form("%s;%s track cos(#theta_{BEAM}) in CMS;Average %s kinetic energy in CMS [MeV];%s", info, pidLatex, pidLatex, perTrackTitle),
 		       100, -1, 1,
+		       0, maxKineticEnergyMeV);
+	// SPECIAL PLOTS: check dependence of gamma beam energy on vertex position perpendicular to the gamma beam axis
+	histos2D[(prefix+"_vertexY"+pid+"_len").c_str()]=
+	  new TH2F((prefix+"_vertexY"+pid+"_len").c_str(),
+		   Form("%s;Vertex position Y_{DET} [mm];%s track length [mm];%s", info, pidLatex, perTrackTitle),
+		   (ymax-ymin)/binSizeMM, ymin, ymax,
+		   maxLengthMM/binSizeMM, 0, maxLengthMM);
+	histos2D[(prefix+"_vertexY"+pid+"_E_LAB").c_str()]=
+	  new TH2F((prefix+"_vertexY"+pid+"_E_LAB").c_str(),
+		   Form("%s;Vertex position Y_{DET} [mm];%s kinetic energy in LAB [mm];%s", info, pidLatex, perTrackTitle),
+		   (ymax-ymin)/binSizeMM, ymin, ymax,
+		   100, 0, maxKineticEnergyMeV);
+	profiles1D[(prefix+"_vertexY"+pid+"_len_prof").c_str()]=
+	  new TProfile((prefix+"_vertexY"+pid+"_len_prof").c_str(),
+		       Form("%s;Vertex position Y_{DET} [mm];Average %s track length [mm]", info, pidLatex),
+		       (ymax-ymin)/binSizeMM, ymin, ymax,
+		       0, maxLengthMM);
+	profiles1D[(prefix+"_vertexY"+pid+"_E_LAB_prof").c_str()]=
+	  new TProfile((prefix+"_vertexY"+pid+"_E_LAB_prof").c_str(),
+		       Form("%s;Vertex position Y_{DET} [mm];Average %s kinetic energy in LAB [mm]", info, pidLatex),
+		       (ymax-ymin)/binSizeMM, ymin, ymax,
 		       0, maxKineticEnergyMeV);
       case 1: // 1,2,3-prong
 	histos1D[(prefix+pid+"_E_LAB").c_str()]=
@@ -653,9 +731,10 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     // construct TLorentzVector in DET/LAB frame
     TLorentzVector alphaP4_DET_LAB(alpha_p_LAB*list.front().getTangent(), alphaMass+alpha_T_LAB);
     TLorentzVector carbonP4_DET_LAB(carbon_p_LAB*list.back().getTangent(), carbonMass+carbon_T_LAB);
+    TLorentzVector sumP4_DET_LAB = alphaP4_DET_LAB + carbonP4_DET_LAB;
     // boost P4 from DET/LAB frame to CMS frame (see TLorentzVector::Boost() convention!)
     const double oxygenMassGroundState=myRangeCalculator.getIonMassMeV(/*IonRangeCalculator::*/OXYGEN_16);
-    const TVector3 beta_DET_LAB=getBetaVectorOfCMS(oxygenMassGroundState);
+    const TVector3 beta_DET_LAB=getBetaVectorOfCMS(oxygenMassGroundState); // assume nominal direction and nominal gamma beam energy
     TLorentzVector alphaP4_CMS_DET(alphaP4_DET_LAB);
     TLorentzVector carbonP4_CMS_DET(carbonP4_DET_LAB);
     alphaP4_CMS_DET.Boost(-1.0*beta_DET_LAB); // see TLorentzVector::Boost for sign convention!
@@ -673,10 +752,17 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     double alpha_T_CMS=alphaP4_BEAM_CMS.E()-alphaP4_BEAM_CMS.M(); // [MeV]
     double carbon_T_CMS=carbonP4_BEAM_CMS.E()-carbonP4_BEAM_CMS.M(); // [MeV]
     //    double invariantMass=(alphaP4_BEAM_CMS+carbonP4_BEAM_CMS).M();// [MeV/c^2]
+    double photon_E_LAB=sumP4_DET_LAB.E()-oxygenMassGroundState; // reconstructed gamma beam energy in LAB
     double totalEnergy_CMS=(alphaP4_BEAM_CMS+carbonP4_BEAM_CMS).E(); // [MeV], mass of stationary excited Oxygen state
     double oxygenMassExcited=totalEnergy_CMS;
     double oxygenExcitationEnergy=oxygenMassExcited-oxygenMassGroundState;
     double Qvalue_CMS=oxygenMassExcited-alphaMass-carbonMass;
+    // DEBUG
+    //    std::cout << "X-CHECK: Alpha energies [MeV]: Etot_LAB=" << alphaP4_DET_LAB.E() << ", Ekin_LAB=" << alpha_T_LAB << ", Mass=" << alphaMass << std::endl;
+    //    std::cout << "X-CHECK: Carbon-12 energies [MeV]: Etot_LAB=" << carbonP4_DET_LAB.E() << ", Ekin_LAB=" << carbon_T_LAB << ", Mass=" << carbonMass << std::endl;
+    //    std::cout << "X-CHECK: Photon energy LAB [MeV]: Etot_LAB=" << sumP4_DET_LAB.E() << ", mass(Oxygen-16)=" << oxygenMassGroundState << ", Egamma_LAB=Etot_LAB-mass(Oxygen-16)="<<photon_E_LAB<<std::endl;
+    // DEBUG
+
     histos1D["h_2prong_alpha_E_LAB"]->Fill(alpha_T_LAB);
     histos1D["h_2prong_carbon_E_LAB"]->Fill(carbon_T_LAB);
     histos1D["h_2prong_alpha_E_CMS"]->Fill(alpha_T_CMS);
@@ -687,6 +773,27 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     histos1D["h_2prong_total_E_CMS"]->Fill(totalEnergy_CMS);
     histos1D["h_2prong_excitation_E_CMS"]->Fill(oxygenExcitationEnergy);
     histos1D["h_2prong_Qvalue_CMS"]->Fill(Qvalue_CMS);
+    histos1D["h_2prong_gamma_E_LAB"]->Fill(photon_E_LAB);
+
+    // SPECIAL PLOTS: check dependence of gamma beam energy on vertex position perpendicular to the gamma beam axis
+    histos2D["h_2prong_vertexX_lenSum"]->Fill(vertexPos.X(), alpha_len+carbon_len);
+    histos2D["h_2prong_vertexY_lenSum"]->Fill(vertexPos.Y(), alpha_len+carbon_len);
+    histos2D["h_2prong_vertexZ_lenSum"]->Fill(vertexPos.Z(), alpha_len+carbon_len);
+    histos2D["h_2prong_vertexY_alpha_len"]->Fill(vertexPos.Y(), alpha_len);
+    histos2D["h_2prong_vertexY_carbon_len"]->Fill(vertexPos.Y(), carbon_len);
+    histos2D["h_2prong_vertexY_alpha_E_LAB"]->Fill(vertexPos.Y(), alpha_T_LAB);
+    histos2D["h_2prong_vertexY_carbon_E_LAB"]->Fill(vertexPos.Y(), carbon_T_LAB);
+    histos2D["h_2prong_vertexY_gamma_E_LAB"]->Fill(vertexPos.Y(), photon_E_LAB);
+    histos2D["h_2prong_vertexY_Qvalue_CMS"]->Fill(vertexPos.Y(), Qvalue_CMS);
+    profiles1D["h_2prong_vertexX_lenSum_prof"]->Fill(vertexPos.X(), alpha_len+carbon_len);
+    profiles1D["h_2prong_vertexY_lenSum_prof"]->Fill(vertexPos.Y(), alpha_len+carbon_len);
+    profiles1D["h_2prong_vertexZ_lenSum_prof"]->Fill(vertexPos.Z(), alpha_len+carbon_len);
+    profiles1D["h_2prong_vertexY_alpha_len_prof"]->Fill(vertexPos.Y(), alpha_len);
+    profiles1D["h_2prong_vertexY_carbon_len_prof"]->Fill(vertexPos.Y(), carbon_len);
+    profiles1D["h_2prong_vertexY_alpha_E_LAB_prof"]->Fill(vertexPos.Y(), alpha_T_LAB);
+    profiles1D["h_2prong_vertexY_carbon_E_LAB_prof"]->Fill(vertexPos.Y(), carbon_T_LAB);
+    profiles1D["h_2prong_vertexY_gamma_E_LAB_prof"]->Fill(vertexPos.Y(), photon_E_LAB);
+    profiles1D["h_2prong_vertexY_Qvalue_CMS_prof"]->Fill(vertexPos.Y(), Qvalue_CMS);
 
     // calculate angles in CMS reference frame in BEAM coordinate system
     double delta_CMS=alphaP4_BEAM_CMS.Angle(carbonP4_BEAM_CMS.Vect()); // [rad]
@@ -723,7 +830,7 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     profiles1D["h_3prong_vertexXY_prof"]->Fill(vertexPos.X(), vertexPos.Y());
 
     const double carbonMassGroundState=myRangeCalculator.getIonMassMeV(/*IonRangeCalculator::*/CARBON_12);
-    const TVector3 beta_DET_LAB=getBetaVectorOfCMS(carbonMassGroundState);
+    const TVector3 beta_DET_LAB=getBetaVectorOfCMS(carbonMassGroundState); // assume nominal direction and nominal gamma beam energy
     const double alphaMass=myRangeCalculator.getIonMassMeV(/*IonRangeCalculator::*/ALPHA);
 
     // initialize array of track properties
@@ -742,6 +849,7 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     double lengthSUM=0.0; // [mm]
     double massSUM=0.0; // [MeV]
     TLorentzVector sumP4_BEAM_CMS(0,0,0,0); // [MeV]
+    TLorentzVector sumP4_DET_LAB(0,0,0,0); // [MeV]
 
     // calculate array of track properties and total sums
     for(auto i=0;i<3;i++) {
@@ -785,6 +893,7 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
       lengthSUM+=alpha_len[i];
       massSUM+=alphaMass;
       sumP4_BEAM_CMS+=alphaP4_BEAM_CMS[i];
+      sumP4_DET_LAB+=alphaP4_DET_LAB[i];
     }
 
     // fill properties per track
@@ -804,6 +913,12 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
       histos1D[Form("h_3prong_alpha%d_phiDET",i+1)]->Fill(track.getTangent().Phi());
       histos1D[Form("h_3prong_alpha%d_thetaDET",i+1)]->Fill(track.getTangent().Theta());
       histos1D[Form("h_3prong_alpha%d_cosThetaDET",i+1)]->Fill(track.getTangent().CosTheta());
+
+      // SPECIAL PLOTS: check dependence of gamma beam energy on vertex position perpendicular to the gamma beam axis
+      histos2D[Form("h_3prong_vertexY_alpha%d_E_LAB",i+1)]->Fill(vertexPos.Y(), alpha_T_LAB[i]);
+      histos2D[Form("h_3prong_vertexY_alpha%d_len",i+1)]->Fill(vertexPos.Y(), alpha_len[i]);
+      profiles1D[Form("h_3prong_vertexY_alpha%d_E_LAB_prof",i+1)]->Fill(vertexPos.Y(), alpha_T_LAB[i]);
+      profiles1D[Form("h_3prong_vertexY_alpha%d_len_prof",i+1)]->Fill(vertexPos.Y(), alpha_len[i]);
 
       // properties in LAB reference frame in BEAM coordinate system
       histos1D[Form("h_3prong_alpha%d_phiBEAM_LAB",i+1)]->Fill(alpha_phi_BEAM_LAB[i]);
@@ -845,6 +960,7 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     double carbonMassExcited=totalEnergy_CMS;
     double carbonExcitationEnergy=carbonMassExcited-carbonMassGroundState;
     double Qvalue_CMS=carbonMassExcited-massSUM;
+    double photon_E_LAB=sumP4_DET_LAB.E()-carbonMassGroundState; // reconstructed gamma beam energy in LAB
     histos1D["h_3prong_lenSUM"]->Fill(lengthSUM);
     histos1D["h_3prong_total_PxBEAM_CMS"]->Fill(sumP4_BEAM_CMS.Px());
     histos1D["h_3prong_total_PyBEAM_CMS"]->Fill(sumP4_BEAM_CMS.Py());
@@ -852,6 +968,25 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     histos1D["h_3prong_total_E_CMS"]->Fill(totalEnergy_CMS);
     histos1D["h_3prong_excitation_E_CMS"]->Fill(carbonExcitationEnergy);
     histos1D["h_3prong_Qvalue_CMS"]->Fill(Qvalue_CMS);
+    histos1D["h_3prong_gamma_E_LAB"]->Fill(photon_E_LAB);
+    // DEBUG
+    //    std::cout << "X-CHECK: Alpha1 energies [MeV]: Etot_LAB=" << alphaP4_DET_LAB[0].E() << ", Ekin_LAB=" << alpha_T_LAB[0] << ", Mass=" << alphaMass << std::endl;
+    //    std::cout << "X-CHECK: Alpha2 energies [MeV]: Etot_LAB=" << alphaP4_DET_LAB[1].E() << ", Ekin_LAB=" << alpha_T_LAB[1] << ", Mass=" << alphaMass << std::endl;
+    //    std::cout << "X-CHECK: Alpha3 energies [MeV]: Etot_LAB=" << alphaP4_DET_LAB[2].E() << ", Ekin_LAB=" << alpha_T_LAB[2] << ", Mass=" << alphaMass << std::endl;
+    //    std::cout << "X-CHECK: Photon energy LAB [MeV]: Etot_LAB=" << sumP4_DET_LAB.E() << ", mass(Carbon-12)=" << carbonMassGroundState << ", Egamma_LAB=Etot_LAB-mass(Carbon-12)="<<photon_E_LAB<<std::endl;
+    // DEBUG
+
+    // SPECIAL PLOTS: check dependence of gamma beam energy on vertex position perpendicular to the gamma beam axis
+    histos2D["h_3prong_vertexX_lenSum"]->Fill(vertexPos.X(), lengthSUM);
+    histos2D["h_3prong_vertexY_lenSum"]->Fill(vertexPos.Y(), lengthSUM);
+    histos2D["h_3prong_vertexZ_lenSum"]->Fill(vertexPos.Z(), lengthSUM);
+    histos2D["h_3prong_vertexY_gamma_E_LAB"]->Fill(vertexPos.Y(), photon_E_LAB);
+    histos2D["h_3prong_vertexY_Qvalue_CMS"]->Fill(vertexPos.Y(), Qvalue_CMS);
+    profiles1D["h_3prong_vertexX_lenSum_prof"]->Fill(vertexPos.X(), lengthSUM);
+    profiles1D["h_3prong_vertexY_lenSum_prof"]->Fill(vertexPos.Y(), lengthSUM);
+    profiles1D["h_3prong_vertexZ_lenSum_prof"]->Fill(vertexPos.Z(), lengthSUM);
+    profiles1D["h_3prong_vertexY_gamma_E_LAB_prof"]->Fill(vertexPos.Y(), photon_E_LAB);
+    profiles1D["h_3prong_vertexY_Qvalue_CMS_prof"]->Fill(vertexPos.Y(), Qvalue_CMS);
 
     // fill symmetrized Dalitz plots
     for(auto i1=0; i1<3; i1++) {
