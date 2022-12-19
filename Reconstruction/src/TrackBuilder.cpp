@@ -71,7 +71,8 @@ void TrackBuilder::setPressure(double aPressure) {
 void TrackBuilder::setEvent(std::shared_ptr<EventTPC> aEvent){
 
   myEventPtr = aEvent;
-   
+  myFittedTrack = Track3D();
+  
   std::string hName, hTitle;
   if(!myHistoInitialized){
     for(int iDir=projection_type::DIR_U;iDir<=projection_type::DIR_W;++iDir){
