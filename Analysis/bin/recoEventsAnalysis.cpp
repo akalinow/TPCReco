@@ -20,9 +20,10 @@
 
 int analyzeRecoEvents(const  std::string & geometryFileName, 
 		      const  std::string & dataFileName,
-		      const  float & beamEnergy,
-		      const  TVector3 & beamDir,
-		      const  double & pressure,
+		      const  float & beamEnergy, // [MeV]
+		      const  TVector3 & beamDir, // unit vector in LAB detector frame
+		      const  double & pressure, // [mbar]
+		      const  double & temperature, // [K]
 		      const  bool & makeTreeFlag);
 
 enum class BeamDirection{
@@ -55,7 +56,8 @@ boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
     ("beamEnergy", boost::program_options::value<float>()->required(), "float - LAB gamma beam energy [MeV]")
     ("beamDir", boost::program_options::value<BeamDirection>()->required(), "string - LAB gamma beam direction [\"x\" xor \"-x\"]")
     ("pressure", boost::program_options::value<float>()->required(), "float - CO2 pressure [mbar]")
-    ("noTree", boost::program_options::bool_switch()->default_value(false), "skip creating additional TTree for 1,2,3-prongs (true = runs a bit faster)");
+    ("temperature", boost::program_options::value<float>()->default_value(273.15+20), "(option) float - CO2 temperature [K], default=293.15K (20 C)")
+    ("noTree", boost::program_options::bool_switch()->default_value(false), "(option) bool - flag to skip creating additional TTree for 1,2,3-prongs, default=false ");
   
   boost::program_options::variables_map varMap;  
 
@@ -84,6 +86,7 @@ int main(int argc, char **argv){
   auto dataFileName = varMap["dataFile"].as<std::string>();
   auto beamEnergy = varMap["beamEnergy"].as<float>();
   auto pressure = varMap["pressure"].as<float>();
+  auto temperature = varMap["temperature"].as<float>();
   auto makeTreeFlag = !varMap["noTree"].as<bool>();
   TVector3 beamDir;
   switch(varMap["beamDir"].as<BeamDirection>()){
@@ -96,7 +99,7 @@ int main(int argc, char **argv){
     default:
       return 1;
   }
-  analyzeRecoEvents(geometryFileName, dataFileName, beamEnergy, beamDir, pressure, makeTreeFlag);
+  analyzeRecoEvents(geometryFileName, dataFileName, beamEnergy, beamDir, pressure, temperature, makeTreeFlag);
   return 0;
 }
 /////////////////////////////
@@ -108,10 +111,19 @@ std::shared_ptr<GeometryTPC> loadGeometry(const std::string fileName){
 ////////////////////////////
 int analyzeRecoEvents(const  std::string & geometryFileName,
 		      const  std::string & dataFileName,
-		      const  float & beamEnergy,
-		      const  TVector3 & beamDir,
-		      const  double & pressure,
+		      const  float & beamEnergy, // [MeV]
+		      const  TVector3 & beamDir, // unit vector in LAB detector frame
+		      const  double & pressure, // [mbar]
+		      const  double & temperature, // [K]
 		      const  bool & makeTreeFlag){
+
+  std::cout << __FUNCTION__ << ": Input parameters:" << std::endl
+	    << "* geometry file: " << geometryFileName << std::endl
+	    << "* input ROOT file: " << dataFileName << std::endl
+	    << "* LAB gamma beam energy: " << beamEnergy << " MeV" << std::endl
+	    << "* LAB gamma beam direction in DET coordinates: [x=" << beamDir.X() << ", y=" << beamDir.Y() << ", z=" << beamDir.Z() << "]" << std::endl
+	    << "* CO2 pressure (for ion ranges):  " << pressure <<" mbar" <<std::endl
+	    << "* CO2 temperature (for ion ranges): " << temperature << " K, "<< (temperature-273.15) << " C" << std::endl;
 
   TFile *aFile = new TFile(dataFileName.c_str());
   if(!aFile || !aFile->IsOpen()){
@@ -142,10 +154,15 @@ int analyzeRecoEvents(const  std::string & geometryFileName,
 	     <<std::endl;
     return -1;
   }
+  if(temperature<273.15 || temperature>273.15+50) {
+    std::cout<<KRED<<"Wrong CO2 temperature: "<<RST<<temperature<<" K"
+	     <<std::endl;
+    return -1;
+  }
 
-  std::shared_ptr<HIGGS_analysis> myAnalysis(new HIGGS_analysis(aGeometry, beamEnergy, beamDir, pressure));
+  std::shared_ptr<HIGGS_analysis> myAnalysis(new HIGGS_analysis(aGeometry, beamEnergy, beamDir, pressure, temperature));
   std::shared_ptr<HIGS_trees_analysis> myTreesAnalysis(0);
-  if(makeTreeFlag) myTreesAnalysis=std::make_shared<HIGS_trees_analysis>(aGeometry, beamEnergy, beamDir, pressure);
+  if(makeTreeFlag) myTreesAnalysis=std::make_shared<HIGS_trees_analysis>(aGeometry, beamEnergy, beamDir, pressure, temperature);
 
   TTree *aTree = (TTree*)aFile->Get("TPCRecoData");
   if(!aTree) {
