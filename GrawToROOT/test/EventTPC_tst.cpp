@@ -19,125 +19,144 @@ int testHits(std::shared_ptr<EventTPC> aEventPtr, filter_type filterType, std::v
   double epsilon = 1e-5;
   std::cout << std::boolalpha;
   std::string Filter_string;
-  if (filterType == filter_type::none) { Filter_string = "raw"; }
-  if (filterType == filter_type::threshold) { Filter_string = "Threshold"; }
+  std::string Filter;
+  if (filterType == filter_type::none) { Filter_string = "raw"; Filter="none";}
+  if (filterType == filter_type::threshold) { Filter_string = "Threshold";  Filter="threshold";}
 
-  //std::cout << KBLU << "1D projection on strips: U, V, W [raw]" << RST << std::endl;
-  bool Title_raw = std::string(aEventPtr->get1DProjection(projection_type::DIR_V, filterType, scale_type::raw)->GetTitle()) == "Event-89 selected by " + Filter_string + " from V integrated over time";
-  bool V_Strip = std::string(aEventPtr->get1DProjection(projection_type::DIR_V, filterType, scale_type::raw)->GetXaxis()->GetTitle()) == "V [strip]";
-  bool Charge_strip = std::string(aEventPtr->get1DProjection(projection_type::DIR_V, filterType, scale_type::raw)->GetYaxis()->GetTitle()) == "Charge/strip [arb.u.]";
-  error_list_bool.push_back(Title_raw);
-  error_list_bool.push_back(V_Strip);
-  error_list_bool.push_back(Charge_strip);
-  
-  bool Title_raw_time = std::string(aEventPtr->get1DProjection(projection_type::DIR_TIME, filterType, scale_type::raw)->GetTitle()) == "Event-89 selected by " + Filter_string + " from time ";
-  bool Time_bin = std::string(aEventPtr->get1DProjection(projection_type::DIR_TIME, filterType, scale_type::raw)->GetXaxis()->GetTitle()) == "Time [bin]";
-  bool Charge_time_bin = std::string(aEventPtr->get1DProjection(projection_type::DIR_TIME, filterType, scale_type::raw)->GetYaxis()->GetTitle()) == "Charge/time bin [arb.u.]";
-  error_list_bool.push_back(Title_raw_time);
-  error_list_bool.push_back(Time_bin);
-  error_list_bool.push_back(Charge_time_bin);
-  
-  bool  Title_raw_V = std::string(aEventPtr->get2DProjection(projection_type::DIR_TIME_V, filterType, scale_type::raw)->GetTitle()) == "Event-89 selected by " + Filter_string + " from V";
-  bool  Time_bin_V = std::string(aEventPtr->get2DProjection(projection_type::DIR_TIME_V, filterType, scale_type::raw)->GetXaxis()->GetTitle()) == "Time [bin]";
-  bool  V_Strip_ = std::string(aEventPtr->get2DProjection(projection_type::DIR_TIME_V, filterType, scale_type::raw)->GetYaxis()->GetTitle()) == "V [strip]";
-  error_list_bool.push_back(Title_raw_V);
-  error_list_bool.push_back(Time_bin_V);
-  error_list_bool.push_back(V_Strip_);
+  std::map<std::tuple<projection_type, filter_type, scale_type>, std::vector<std::pair<std::string, std::string>> > Test_GetTitle_1DProjection ={
+    {std::make_tuple(projection_type::DIR_V, filterType, scale_type::raw),
+    {{"get1DProjection(DIR_V, "+Filter+", raw)->GetTitle()", "Event-89 selected by " + Filter_string + " from V integrated over time"},
+    { "get1DProjection(DIR_V, "+Filter+", raw)->GetXaxis()->GetTitle()", "V [strip]"},
+    { "get1DProjection(DIR_V, "+Filter+", raw)->GetYaxis()->GetTitle()", "Charge/strip [arb.u.]"}}},
+    {std::make_tuple(projection_type::DIR_TIME, filterType, scale_type::raw),
+    {{"get1DProjection(DIR_TIME, "+Filter+", raw)->GetTitle()", "Event-89 selected by " + Filter_string + " from time "},
+    { "get1DProjection(DIR_TIME, "+Filter+", raw)->GetXaxis()->GetTitle()", "Time [bin]"},
+    { "get1DProjection(DIR_TIME, "+Filter+", raw)->GetYaxis()->GetTitle()", "Charge/time bin [arb.u.]"}}}
+  };
+  for(auto itr=Test_GetTitle_1DProjection.begin(); itr!=Test_GetTitle_1DProjection.end(); itr++){
+  std::shared_ptr<TH1D> temp = aEventPtr->get1DProjection(std::get<0>(itr->first) , std::get<1>(itr->first) , std::get<2>(itr->first)); 
+  if (bool (std::string(temp->GetTitle()) == itr->second[0].second)) {error_list_bool.push_back(true);} else {
+    std::cout << KRED << itr->second[0].first << RST << std::endl; error_list_bool.push_back(false);} 
+  if (bool (std::string(temp->GetXaxis()->GetTitle()) == itr->second[1].second)) {error_list_bool.push_back(true);} else {
+    std::cout << KRED << itr->second[1].first << RST << std::endl; error_list_bool.push_back(false);} 
+  if (bool (std::string(temp->GetYaxis()->GetTitle()) == itr->second[2].second)) {error_list_bool.push_back(true);} else {
+    std::cout << KRED << itr->second[2].first << RST << std::endl; error_list_bool.push_back(false);}}
 
-  bool  Title_raw_V_ = std::string(aEventPtr->get2DProjection(projection_type::DIR_TIME_V, filterType, scale_type::mm)->GetTitle()) == "Event-89 selected by " + Filter_string + " from V";
-  bool  Time_mm = std::string(aEventPtr->get2DProjection(projection_type::DIR_TIME_V, filterType, scale_type::mm)->GetXaxis()->GetTitle()) == "Time [mm]";
-  bool  V_Strip_mm = std::string(aEventPtr->get2DProjection(projection_type::DIR_TIME_V, filterType, scale_type::mm)->GetYaxis()->GetTitle()) == "V [mm]";
-  error_list_bool.push_back(Title_raw_V_);
-  error_list_bool.push_back(Time_mm);
-  error_list_bool.push_back(V_Strip_mm);
-  
-  std::shared_ptr<TH1D> U_raw = aEventPtr->get1DProjection(projection_type::DIR_U, filterType, scale_type::raw);
-  bool U_raw_bool = (std::string(U_raw->GetName()) == "h" + Filter_string + "_Upro_evt89" && int(U_raw->GetEntries()) == comparision1[0] && abs(double(U_raw->GetSumOfWeights()) - comparision1[1]) < epsilon);
-  std::shared_ptr<TH1D> V_raw = aEventPtr->get1DProjection(projection_type::DIR_V, filterType, scale_type::raw);
-  bool V_raw_bool = (std::string(V_raw->GetName()) == "h" + Filter_string + "_Vpro_evt89" && int(V_raw->GetEntries()) == comparision1[2] && abs(double(V_raw->GetSumOfWeights()) - comparision1[3]) < epsilon);
-  std::shared_ptr<TH1D> W_raw = aEventPtr->get1DProjection(projection_type::DIR_W, filterType, scale_type::raw);
-  bool W_raw_bool = (std::string(W_raw->GetName()) == "h" + Filter_string + "_Wpro_evt89" && int(W_raw->GetEntries()) == comparision1[4] && abs(double(W_raw->GetSumOfWeights()) - comparision1[5]) < epsilon);
-  error_list_bool.push_back(U_raw_bool);
-  error_list_bool.push_back(V_raw_bool);
-  error_list_bool.push_back(W_raw_bool);
+  std::map<std::tuple<projection_type, filter_type, scale_type>, std::vector<std::pair<std::string, std::string>> > Test_GetTitle_2DProjection ={
+    {std::make_tuple(projection_type::DIR_TIME_V, filterType, scale_type::raw),
+    {{"get2DProjection(DIR_TIME_V, "+Filter+", raw)->GetTitle()", "Event-89 selected by " + Filter_string + " from V"},
+    { "get2DProjection(DIR_TIME_V, "+Filter+", raw)->GetXaxis()->GetTitle()", "Time [bin]"},
+    { "get2DProjection(DIR_TIME_V, "+Filter+", raw)->GetYaxis()->GetTitle()", "V [strip]"}}},
+    {std::make_tuple(projection_type::DIR_TIME_V, filterType, scale_type::mm),
+    {{"get2DProjection(DIR_TIME_V, "+Filter+", mm)->GetTitle()", "Event-89 selected by " + Filter_string + " from V"},
+    { "get2DProjection(DIR_TIME_V, "+Filter+", mm)->GetXaxis()->GetTitle()", "Time [mm]"},
+    { "get2DProjection(DIR_TIME_V, "+Filter+", mm)->GetYaxis()->GetTitle()", "V [mm]"}}}};
+  for(auto itr=Test_GetTitle_2DProjection.begin(); itr!=Test_GetTitle_2DProjection.end(); itr++){
+  std::shared_ptr<TH2D> temp = aEventPtr->get2DProjection(std::get<0>(itr->first) , std::get<1>(itr->first) , std::get<2>(itr->first));
+  if (bool (std::string(temp->GetTitle()) == itr->second[0].second)) {error_list_bool.push_back(true);} else {
+    std::cout << KRED << itr->second[0].first << RST << std::endl; error_list_bool.push_back(false);} 
+  if (bool (std::string(temp->GetXaxis()->GetTitle()) == itr->second[1].second)) {error_list_bool.push_back(true);} else {
+    std::cout << KRED << itr->second[1].first << RST << std::endl; error_list_bool.push_back(false);} 
+  if (bool (std::string(temp->GetYaxis()->GetTitle()) == itr->second[2].second)) {error_list_bool.push_back(true);} else {
+    std::cout << KRED << itr->second[2].first << RST << std::endl; error_list_bool.push_back(false);}}
 
-  //std::cout << KBLU << "1D projection on strips U, V, W [mm]" << RST << std::endl;
-  std::shared_ptr<TH1D> U_mm = aEventPtr->get1DProjection(projection_type::DIR_U, filterType, scale_type::mm);
-  bool U_mm_bool = (std::string(U_mm->GetName()) == "h" + Filter_string + "_Upro_mm_evt89" && int(U_mm->GetEntries()) == comparision1[6] && abs(double(U_mm->GetSumOfWeights()) - comparision1[7]) < epsilon);
-  std::shared_ptr<TH1D> V_mm = aEventPtr->get1DProjection(projection_type::DIR_V, filterType, scale_type::mm);
-  bool V_mm_bool = (std::string(V_mm->GetName()) == "h" + Filter_string + "_Vpro_mm_evt89" && int(V_mm->GetEntries()) == comparision1[8] && abs(double(V_mm->GetSumOfWeights()) - comparision1[9]) < epsilon);
-  std::shared_ptr<TH1D> W_mm = aEventPtr->get1DProjection(projection_type::DIR_W, filterType, scale_type::mm);
-  bool W_mm_bool = (std::string(W_mm->GetName()) == "h" + Filter_string + "_Wpro_mm_evt89" && int(W_mm->GetEntries()) == comparision1[10] && abs(double(W_mm->GetSumOfWeights()) - comparision1[11]) < epsilon);
-  error_list_bool.push_back(U_mm_bool);
-  error_list_bool.push_back(V_mm_bool);
-  error_list_bool.push_back(W_mm_bool);
   
-  //std::cout << KBLU << "1D projection on time : global, U, V, W [raw]" << RST << std::endl;
-  std::shared_ptr<TH1D> TTime = aEventPtr->get1DProjection(projection_type::DIR_TIME, filterType, scale_type::raw);
-  bool TTime_bool = (std::string(TTime->GetName()) == "h" + Filter_string + "_timetime_evt89" && int(TTime->GetEntries()) == comparision1[12] && abs(double(TTime->GetSumOfWeights()) - comparision1[13]) < epsilon);
-  std::shared_ptr<TH1D> UTime = aEventPtr->get1DProjection(projection_type::DIR_TIME_U, filterType, scale_type::raw);
-  bool UTime_bool = (std::string(UTime->GetName()) == "h" + Filter_string + "_Utime_evt89" && int(UTime->GetEntries()) == comparision1[14] && abs(double(UTime->GetSumOfWeights()) - comparision1[15]) < epsilon);
-  std::shared_ptr<TH1D> VTime = aEventPtr->get1DProjection(projection_type::DIR_TIME_V, filterType, scale_type::raw);
-  bool VTime_bool = (std::string(VTime->GetName()) == "h" + Filter_string + "_Vtime_evt89" && int(VTime->GetEntries()) == comparision1[16] && abs(double(VTime->GetSumOfWeights()) - comparision1[17]) < epsilon);
-  std::shared_ptr<TH1D> WTime = aEventPtr->get1DProjection(projection_type::DIR_TIME_W, filterType, scale_type::raw);
-  bool WTime_bool = (std::string(WTime->GetName()) == "h" + Filter_string + "_Wtime_evt89" && int(WTime->GetEntries()) == comparision1[18] && abs(double(WTime->GetSumOfWeights()) - comparision1[19]) < epsilon);
-  error_list_bool.push_back(TTime_bool);
-  error_list_bool.push_back(UTime_bool);
-  error_list_bool.push_back(VTime_bool);
-  error_list_bool.push_back(WTime_bool);
-
-  //std::cout << KBLU << "1D projection on time : global, U, V, W [mm]" << RST << std::endl;
-  std::shared_ptr<TH1D> TTime_mm = aEventPtr->get1DProjection(projection_type::DIR_TIME, filterType, scale_type::mm);
-  bool TTime_mm_bool = (std::string(TTime_mm->GetName()) == "h" + Filter_string + "_timetime_mm_evt89" && int(TTime_mm->GetEntries()) == comparision1[20] && abs(double(TTime_mm->GetSumOfWeights()) - comparision1[21]) < epsilon);
-  std::shared_ptr<TH1D> UTime_mm = aEventPtr->get1DProjection(projection_type::DIR_TIME_U, filterType, scale_type::mm);
-  bool UTime_mm_bool = (std::string(UTime_mm->GetName()) == "h" + Filter_string + "_Utime_mm_evt89" && int(UTime_mm->GetEntries()) == comparision1[22] && abs(double(UTime_mm->GetSumOfWeights()) - comparision1[23]) < epsilon);
-  std::shared_ptr<TH1D> VTime_mm = aEventPtr->get1DProjection(projection_type::DIR_TIME_V, filterType, scale_type::mm);
-  bool VTime_mm_bool = (std::string(VTime_mm->GetName()) == "h" + Filter_string + "_Vtime_mm_evt89" && int(VTime_mm->GetEntries()) == comparision1[24] && abs(double(VTime_mm->GetSumOfWeights()) - comparision1[25]) < epsilon);
-  std::shared_ptr<TH1D> WTime_mm = aEventPtr->get1DProjection(projection_type::DIR_TIME_W, filterType, scale_type::mm);
-  bool WTime_mm_bool = (std::string(WTime_mm->GetName()) == "h" + Filter_string + "_Wtime_mm_evt89" && int(WTime_mm->GetEntries()) == comparision1[26] && abs(double(WTime_mm->GetSumOfWeights()) - comparision1[27]) < epsilon);
-  error_list_bool.push_back(TTime_mm_bool);
-  error_list_bool.push_back(UTime_mm_bool);
-  error_list_bool.push_back(VTime_mm_bool);
-  error_list_bool.push_back(WTime_mm_bool);
+  std::map<std::tuple<projection_type, filter_type, scale_type>, std::tuple<std::string, std::string, int, double>> Test_1DProjection ={
+    {std::make_tuple(projection_type::DIR_U, filterType, scale_type::raw),
+    std::make_tuple("get1DProjection(DIR_U, "+Filter+", raw)->GetName()/GetEntries()/GetSumOfWeights()",
+    "h" + Filter_string + "_Upro_evt89", comparision1[0], comparision1[1])},
+    {std::make_tuple(projection_type::DIR_V, filterType, scale_type::raw),
+    std::make_tuple("get1DProjection(DIR_V, "+Filter+", raw)->GetName()/GetEntries()/GetSumOfWeights()",
+    "h" + Filter_string + "_Vpro_evt89", comparision1[2], comparision1[3])},
+    {std::make_tuple(projection_type::DIR_W, filterType, scale_type::raw),
+    std::make_tuple("get1DProjection(DIR_W, "+Filter+", raw)->GetName()/GetEntries()/GetSumOfWeights()",
+    "h" + Filter_string + "_Wpro_evt89", comparision1[4], comparision1[5])},
+    {std::make_tuple(projection_type::DIR_U, filterType, scale_type::mm),
+    std::make_tuple("get1DProjection(DIR_U, "+Filter+", mm)->GetName()/GetEntries()/GetSumOfWeights()",
+    "h" + Filter_string + "_Upro_mm_evt89", comparision1[6], comparision1[7])},
+    {std::make_tuple(projection_type::DIR_V, filterType, scale_type::mm),
+    std::make_tuple("get1DProjection(DIR_V, "+Filter+", mm)->GetName()/GetEntries()/GetSumOfWeights()",
+    "h" + Filter_string + "_Vpro_mm_evt89", comparision1[8], comparision1[9])},
+    {std::make_tuple(projection_type::DIR_W, filterType, scale_type::mm),
+    std::make_tuple("get1DProjection(DIR_W, "+Filter+", mm)->GetName()/GetEntries()/GetSumOfWeights()",
+    "h" + Filter_string + "_Wpro_mm_evt89", comparision1[10], comparision1[11])},
+    {std::make_tuple(projection_type::DIR_TIME, filterType, scale_type::raw),
+    std::make_tuple("get1DProjection(DIR_TIME, "+Filter+", raw)->GetName()/GetEntries()/GetSumOfWeights()",
+    "h" + Filter_string + "_timetime_evt89", comparision1[12], comparision1[13])},
+    {std::make_tuple(projection_type::DIR_TIME_U, filterType, scale_type::raw),
+    std::make_tuple("get1DProjection(DIR_TIME_U, "+Filter+", raw)->GetName()/GetEntries()/GetSumOfWeights()",
+    "h" + Filter_string + "_Utime_evt89", comparision1[14], comparision1[15])},
+    {std::make_tuple(projection_type::DIR_TIME_V, filterType, scale_type::raw),
+    std::make_tuple("get1DProjection(DIR_TIME_V, "+Filter+", raw)->GetName()/GetEntries()/GetSumOfWeights()",
+    "h" + Filter_string + "_Vtime_evt89", comparision1[16], comparision1[17])},
+    {std::make_tuple(projection_type::DIR_TIME_W, filterType, scale_type::raw),
+    std::make_tuple("get1DProjection(DIR_TIME_W, "+Filter+", raw)->GetName()/GetEntries()/GetSumOfWeights()",
+    "h" + Filter_string + "_Wtime_evt89", comparision1[18], comparision1[19])},
+    {std::make_tuple(projection_type::DIR_TIME, filterType, scale_type::mm),
+    std::make_tuple("get1DProjection(DIR_TIME, "+Filter+", mm)->GetName()/GetEntries()/GetSumOfWeights()",
+    "h" + Filter_string + "_timetime_mm_evt89", comparision1[20], comparision1[21])},
+    {std::make_tuple(projection_type::DIR_TIME_U, filterType, scale_type::mm),
+    std::make_tuple("get1DProjection(DIR_TIME_U, "+Filter+", mm)->GetName()/GetEntries()/GetSumOfWeights()",
+    "h" + Filter_string + "_Utime_mm_evt89", comparision1[22], comparision1[23])},
+    {std::make_tuple(projection_type::DIR_TIME_V, filterType, scale_type::mm),
+    std::make_tuple("get1DProjection(DIR_TIME_V, "+Filter+", mm)->GetName()/GetEntries()/GetSumOfWeights()",
+    "h" + Filter_string + "_Vtime_mm_evt89", comparision1[24], comparision1[25])},
+    {std::make_tuple(projection_type::DIR_TIME_W, filterType, scale_type::mm),
+    std::make_tuple("get1DProjection(DIR_TIME_W, "+Filter+", mm)->GetName()/GetEntries()/GetSumOfWeights()",
+    "h" + Filter_string + "_Wtime_mm_evt89", comparision1[26], comparision1[27])}
+    };
+    for(auto itr=Test_1DProjection.begin(); itr!=Test_1DProjection.end(); itr++){
+    std::shared_ptr<TH1D> temp = aEventPtr->get1DProjection(std::get<0>(itr->first) , std::get<1>(itr->first) , std::get<2>(itr->first));
+    if (bool (std::string(temp->GetName()) == std::get<1>(itr->second) &&
+              int(temp->GetEntries()) == std::get<2>(itr->second) &&
+              abs(double(temp->GetSumOfWeights()) - std::get<3>(itr->second)) < epsilon)) {error_list_bool.push_back(true);} else {
+      std::cout << KRED << std::get<0>(itr->second) << RST << std::endl; error_list_bool.push_back(false);} 
+    }
   
-  //std::cout << KBLU << "2D projection time vs strips: U, V, W [raw]" << RST << std::endl;
-  std::shared_ptr<TH2D> U_vs_time = aEventPtr->get2DProjection(projection_type::DIR_TIME_U, filterType, scale_type::raw);
-  bool U_vs_time_bool = (std::string(U_vs_time->GetName()) == "h" + Filter_string + "_U_vs_time_evt89" && int(U_vs_time->GetEntries()) == comparision1[28] && abs(double(U_vs_time->GetSumOfWeights()) - comparision1[29]) < epsilon);
-  std::shared_ptr<TH2D> V_vs_time = aEventPtr->get2DProjection(projection_type::DIR_TIME_V, filterType, scale_type::raw);
-  bool V_vs_time_bool = (std::string(V_vs_time->GetName()) == "h" + Filter_string + "_V_vs_time_evt89" && int(V_vs_time->GetEntries()) == comparision1[30] && abs(double(V_vs_time->GetSumOfWeights()) - comparision1[31]) < epsilon);
-  std::shared_ptr<TH2D> W_vs_time = aEventPtr->get2DProjection(projection_type::DIR_TIME_W, filterType, scale_type::raw);
-  bool W_vs_time_bool = (std::string(W_vs_time->GetName()) == "h" + Filter_string + "_W_vs_time_evt89" && int(W_vs_time->GetEntries()) == comparision1[32] && abs(double(W_vs_time->GetSumOfWeights()) - comparision1[33]) < epsilon);
-  error_list_bool.push_back(U_vs_time_bool);
-  error_list_bool.push_back(V_vs_time_bool);
-  error_list_bool.push_back(W_vs_time_bool);
-
-  //std::cout << KBLU << "2D projection on time : global, U, V, W [mm]" << RST << std::endl;
-  std::shared_ptr<TH2D> U_vs_time_mm = aEventPtr->get2DProjection(projection_type::DIR_TIME_U, filterType, scale_type::mm);
-  bool U_vs_time_mm_bool = (std::string(U_vs_time_mm->GetName()) == "h" + Filter_string + "_U_vs_time_mm_evt89" && int(U_vs_time_mm->GetEntries()) == comparision1[34] && abs(double(U_vs_time_mm->GetSumOfWeights()) - comparision1[35]) < epsilon);
-  std::shared_ptr<TH2D> V_vs_time_mm = aEventPtr->get2DProjection(projection_type::DIR_TIME_V, filterType, scale_type::mm);
-  bool V_vs_time_mm_bool = (std::string(V_vs_time_mm->GetName()) == "h" + Filter_string + "_V_vs_time_mm_evt89" && int(V_vs_time_mm->GetEntries()) == comparision1[36] && abs(double(V_vs_time_mm->GetSumOfWeights()) - comparision1[37]) < epsilon);
-  std::shared_ptr<TH2D> W_vs_time_mm = aEventPtr->get2DProjection(projection_type::DIR_TIME_W, filterType, scale_type::mm);
-  bool W_vs_time_mm_bool = (std::string(W_vs_time_mm->GetName()) == "h" + Filter_string + "_W_vs_time_mm_evt89" && int(W_vs_time_mm->GetEntries()) == comparision1[38] && abs(double(W_vs_time_mm->GetSumOfWeights()) - comparision1[39]) < epsilon);
-  error_list_bool.push_back(U_vs_time_mm_bool);
-  error_list_bool.push_back(V_vs_time_mm_bool);
-  error_list_bool.push_back(W_vs_time_mm_bool);
+  std::map<std::tuple<projection_type, filter_type, scale_type>, std::tuple<std::string, std::string, int, double>> Test_2DProjection ={
+    {std::make_tuple(projection_type::DIR_TIME_U, filterType, scale_type::raw),
+    std::make_tuple("get2DProjection(DIR_TIME_U, "+Filter+", raw)->GetName()/GetEntries()/GetSumOfWeights()",
+    "h" + Filter_string + "_U_vs_time_evt89", comparision1[28], comparision1[29])},
+    {std::make_tuple(projection_type::DIR_TIME_V, filterType, scale_type::raw),
+    std::make_tuple("get2DProjection(DIR_TIME_V, "+Filter+", raw)->GetName()/GetEntries()/GetSumOfWeights()",
+    "h" + Filter_string + "_V_vs_time_evt89", comparision1[30], comparision1[31])},
+    {std::make_tuple(projection_type::DIR_TIME_W, filterType, scale_type::raw),
+    std::make_tuple("get2DProjection(DIR_TIME_W, "+Filter+", raw)->GetName()/GetEntries()/GetSumOfWeights()",
+    "h" + Filter_string + "_W_vs_time_evt89", comparision1[32], comparision1[33])},
+    {std::make_tuple(projection_type::DIR_TIME_U, filterType, scale_type::mm),
+    std::make_tuple("get2DProjection(DIR_TIME_U, "+Filter+", mm)->GetName()/GetEntries()/GetSumOfWeights()",
+    "h" + Filter_string + "_U_vs_time_mm_evt89", comparision1[34], comparision1[35])},
+    {std::make_tuple(projection_type::DIR_TIME_V, filterType, scale_type::mm),
+    std::make_tuple("get2DProjection(DIR_TIME_V, "+Filter+", mm)->GetName()/GetEntries()/GetSumOfWeights()",
+    "h" + Filter_string + "_V_vs_time_mm_evt89", comparision1[36], comparision1[37])},
+    {std::make_tuple(projection_type::DIR_TIME_W, filterType, scale_type::mm),
+    std::make_tuple("get2DProjection(DIR_TIME_W, "+Filter+", mm)->GetName()/GetEntries()/GetSumOfWeights()",
+    "h" + Filter_string + "_W_vs_time_mm_evt89", comparision1[38], comparision1[39])}
+    };
+    for(auto itr=Test_2DProjection.begin(); itr!=Test_2DProjection.end(); itr++){
+    std::shared_ptr<TH2D> temp = aEventPtr->get2DProjection(std::get<0>(itr->first) , std::get<1>(itr->first) , std::get<2>(itr->first));
+    if (bool (std::string(temp->GetName()) == std::get<1>(itr->second) &&
+              int(temp->GetEntries()) == std::get<2>(itr->second) &&
+              abs(double(temp->GetSumOfWeights()) - std::get<3>(itr->second)) < epsilon)) {error_list_bool.push_back(true);} else {
+      std::cout << KRED << std::get<0>(itr->second) << RST << std::endl; error_list_bool.push_back(false);} 
+    }
   
-  std::vector<std::string> error_list = { "Title_raw", "V_Strip", "Charge_strip" "Title_raw_time", "Time_bin", "Charge_time_bin", "Title_raw_V", "Time_bin_V", "V_Strip_", "Title_raw_V_", "Time_mm", "V_Strip_mm", "U_raw", "V_raw", "W_raw", "U_mm", "V_mm", "W_mm", "TTime", "UTime", "VTime", "WTime", "TTime_mm", "UTime_mm", "VTime_mm", "WTime_mm", "U_vs_time", "V_vs_time", "W_vs_time", "U_vs_time_mm", "V_vs_time_mm", "W_vs_time_mm", "charge", "charge_DIR_U", "charge_DIR_U_strip1", "charge_DIR_U_sec1_strip_58", "charge_time_cell128", "charge_DIR_U_time_cell128", "charge_DIR_U_sec1_time_cell28", "max_charge", "max_charge_DIR_U", "max_charge_DIR_U_strip1", "max_charge_DIR_U_sec1_strip58", "max_charge_time", "max_charge_channel", "max_charge_time_DIR_U", "max_charge_strip_DIR_U", "min_time", "max_time", "min_time_DIR_U", "max_time_DIR_U", "min_strip_DIR_U", "max_strip_DIR_U", "multiplicity_total", "multiplicity_DIR_U", "multiplicity_DIR_V", "multiplicity_DIR_W", "multiplicity_DIR_U_0", "multiplicity_DIR_V_0", "multiplicity_DIR_W_0", "Nhits_total", "Nhits_DIR_U", "Nhits_DIR_V", "Nhits_DIR_W", "Nhits_DIR_U_0", "Nhits_DIR_U_0_70", "NhitsMerged_DIR_U_70", "Channels" ,"Channels_raw" };
+  std::vector<std::string> error_list = { "Title_raw", "V_Strip", "Charge_strip", "Title_raw_time", "Time_bin", "Charge_time_bin", "Title_raw_V", "Time_bin_V", "V_Strip_", "Title_raw_V_", "Time_mm", "V_Strip_mm", "U_raw", "V_raw", "W_raw", "U_mm", "V_mm", "W_mm", "TTime", "UTime", "VTime", "WTime", "TTime_mm", "UTime_mm", "VTime_mm", "WTime_mm", "U_vs_time", "V_vs_time", "W_vs_time", "U_vs_time_mm", "V_vs_time_mm", "W_vs_time_mm", "charge", "charge_DIR_U", "charge_DIR_U_strip1", "charge_DIR_U_sec1_strip_58", "charge_time_cell128", "charge_DIR_U_time_cell128", "charge_DIR_U_sec1_time_cell28", "max_charge", "max_charge_DIR_U", "max_charge_DIR_U_strip1", "max_charge_DIR_U_sec1_strip58", "max_charge_time", "max_charge_channel", "max_charge_time_DIR_U", "max_charge_strip_DIR_U", "min_time", "max_time", "min_time_DIR_U", "max_time_DIR_U", "min_strip_DIR_U", "max_strip_DIR_U", "multiplicity_total", "multiplicity_DIR_U", "multiplicity_DIR_V", "multiplicity_DIR_W", "multiplicity_DIR_U_0", "multiplicity_DIR_V_0", "multiplicity_DIR_W_0", "Nhits_total", "Nhits_DIR_U", "Nhits_DIR_V", "Nhits_DIR_W", "Nhits_DIR_U_0", "Nhits_DIR_U_0_70", "NhitsMerged_DIR_U_70", "Channels" ,"Channels_raw" };
   
-  bool charge = (aEventPtr->GetTotalCharge(-1, -1, -1, -1, filterType) - comparision2[0]) < epsilon;                             
-  bool charge_DIR_U = (aEventPtr->GetTotalCharge(DIR_U, -1, -1, -1, filterType) - comparision2[1]) < epsilon;                    
-  bool charge_DIR_U_strip1 = (aEventPtr->GetTotalCharge(DIR_U, -1, 1, -1, filterType) - comparision2[2]) < epsilon;              
-  bool charge_DIR_U_sec1_strip_58 = (aEventPtr->GetTotalCharge(DIR_U, 1, 58, -1, filterType) - comparision2[3]) < epsilon;       
-  bool charge_time_cell128 = (aEventPtr->GetTotalCharge(-1, -1, -1, 128, filterType) - comparision2[4]) < epsilon;               
-  bool charge_DIR_U_time_cell128 = (aEventPtr->GetTotalCharge(DIR_U, -1, -1, 128, filterType) - comparision2[5]) < epsilon;      
-  bool charge_DIR_U_sec1_time_cell28 = (aEventPtr->GetTotalCharge(DIR_U, 1,  -1, 128, filterType) - comparision2[6]) < epsilon;  
-  error_list_bool.push_back(charge);
-  error_list_bool.push_back(charge_DIR_U);
-  error_list_bool.push_back(charge_DIR_U_strip1);
-  error_list_bool.push_back(charge_DIR_U_sec1_strip_58);
-  error_list_bool.push_back(charge_time_cell128);
-  error_list_bool.push_back(charge_DIR_U_time_cell128);
-  error_list_bool.push_back(charge_DIR_U_sec1_time_cell28);
+  std::map<std::tuple<double, double, double, double, filter_type>, std::pair<std::string, double>> Test_GetTotalCharge ={
+    {std::make_tuple(-1, -1, -1, -1, filterType),       {"total charge: Test_GetTotalCharge(-1, -1, -1, -1, "+Filter+")", comparision2[0]}},
+    {std::make_tuple(DIR_U, -1, -1, -1, filterType),    {"total charge DIR_U: Test_GetTotalCharge(DIR_U, -1, -1, -1, "+Filter+")", comparision2[1]}},
+    {std::make_tuple(DIR_U, -1, 1, -1, filterType),     {"total charge DIR_U, strip 1: Test_GetTotalCharge(DIR_U, -1, 1, -1, "+Filter+")", comparision2[2]}},
+    {std::make_tuple(DIR_U, 1, 58, -1, filterType),     {"total charge DIR_U, sec. 1, strip 58: Test_GetTotalCharge(DIR_U, 1, 58, -1, "+Filter+")", comparision2[3]}},
+    {std::make_tuple(-1, -1, -1, 128, filterType),      {"total charge time cell 128: Test_GetTotalCharge(-1, -1, -1, 128, "+Filter+")", comparision2[4]}},
+    {std::make_tuple(DIR_U, -1, -1, 128, filterType),   {"total charge DIR_U, time cell 128: Test_GetTotalCharge(DIR_U, -1, -1, 128, "+Filter+")", comparision2[5]}},
+    {std::make_tuple(DIR_U, 1,  -1, 128, filterType),   {"total charge DIR_U, sec. 1, time cell 128: Test_GetTotalCharge(DIR_U, 1,  -1, 128, "+Filter+")", comparision2[6]}}
+    };
+    for(auto itr=Test_GetTotalCharge.begin(); itr!=Test_GetTotalCharge.end(); itr++){
+    double temp = aEventPtr->GetTotalCharge(std::get<0>(itr->first), std::get<1>(itr->first), std::get<2>(itr->first), std::get<3>(itr->first), std::get<4>(itr->first));
+    if (bool ((temp - itr->second.second) < epsilon)) {error_list_bool.push_back(true);} else {
+      std::cout << KRED << itr->second.first << RST << std::endl; error_list_bool.push_back(false);} 
+    }
 
   bool max_charge = (aEventPtr->GetMaxCharge(-1,-1,-1,filterType) - comparision2[7]) < epsilon;                          
   bool max_charge_DIR_U = (aEventPtr->GetMaxCharge(DIR_U,-1,-1,filterType) - comparision2[8]) < epsilon;                 
@@ -218,9 +237,7 @@ int testHits(std::shared_ptr<EventTPC> aEventPtr, filter_type filterType, std::v
       error_list_bool.push_back(Channels_raw_bool);
   }
   int check = error_list_bool.size();
-  for(std::vector<bool>::iterator it = error_list_bool.begin(); it != error_list_bool.end(); ++it)
-    check -= *it;
-  
+  for(std::vector<bool>::iterator it = error_list_bool.begin(); it != error_list_bool.end(); ++it) {check -= *it;}
   if(check > 0){
     for(std::vector<std::string>::size_type i = 0; i != error_list.size(); i++) {
       if(error_list_bool[i]==0){
@@ -247,7 +264,7 @@ int main(int argc, char *argv[]) {
 
   std::vector<double> comparison_threshold2 = { 794935.22561 , 226979.29878 , 0 , 0 , 3425.77439024 , 1032.90243902 , 0 , 1732.16463415 , 1385.27439024 , 0 , 0 , 58 , 0 , 58 , 65 , 33 , 251 , 37 , 250 , 46 , 81 , 112 , 25 , 43 , 29 , 0 , 28 , 15 , 5874 , 1747 , 2266 , 1861 , 0 , 0 , 104};
 
-  std::vector<double> comparison_none1 = { 155908 ,155908.76829307 ,176881, 176881.810976, 188406, 188406.182927, 155908, 155908.768293 ,176881, 176882 - 0.189024, 188406, 188406 + 0.182927, 520098, 520098.542683, 155908, 155908.768293, 176881, 176881.81097561, 187307, 187307.96341464,
+  std::vector<double> comparison_none1 = { 155908 , 155908.76829307 , 176881, 176881.810976, 188406, 188406.182927, 155908, 155908.768293, 176881, 176882 - 0.189024, 188406, 188406 + 0.182927, 520098, 520098.542683, 155908, 155908.768293, 176881, 176881.81097561, 187307, 187307.96341464,
                                             520098, 520098.542683, 155908, 155908.768293, 176881, 176881.810976, 187307, 187307.9634146, 155908, 155908.768293, 176881, 176881.81097563, 187307, 187307.9634146, 224650, 155908.768293, 176881, 176881.810976, 304271, 187307.9634145, 131072, -5029.57317073, 139264, -5029.57317073 };
   std::vector<double> comparison_threshold1 = { 226979, 226979.29878 ,285676, 285676.20122 ,282279, 282279.72561 ,226979,226979.29878,285676, 285676.20122 ,282279, 282279.72561,794935, 794935.22561,226979, 226979.29878,285676, 285676.20122, 282279, 282279.72561,
                                                  794935,794935.22561, 226979,226979.29878,285676, 285676.20122,282279, 282279.72561,226979, 226979.29878, 285676,285676.20122, 282279,282279.72561,295721,226979.29878,285676, 285676.20122,399243, 282279.72561 };
