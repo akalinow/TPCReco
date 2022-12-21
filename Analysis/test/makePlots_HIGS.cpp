@@ -350,7 +350,7 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
   //// 2-prong, Sum of alpha + carbon track lengths, zoomed X=[30mm, 150mm], log Y scale @ 12.3 MeV
   if(plot_2prong) {
     c->Clear();
-    h1=(TH1D*)f->Get("h_2prong_lenSUM")->Clone(); // copy for modifications of the same histogram
+    h1=(TH1D*)f->Get("h_2prong_lenSum")->Clone(); // copy for modifications of the same histogram
     h1->SetTitle((energyInfo+h1->GetTitle()).c_str());
     gStyle->SetOptStat(10); // KISOURMEN : show entries only
     h1->Draw();
@@ -382,7 +382,7 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
   //// 2-prong, Sum of alpha + carbon track lengths, zoomed X=[30mm, 150mm], linear Y scale @ 12.3 MeV
   if(plot_2prong) {
     c->Clear();
-    h1=(TH1D*)f->Get("h_2prong_lenSUM")->Clone(); // copy for modifications of the same histogram
+    h1=(TH1D*)f->Get("h_2prong_lenSum")->Clone(); // copy for modifications of the same histogram
     h1->SetTitle((energyInfo+h1->GetTitle()).c_str());
     gStyle->SetOptStat(10); // KISOURMEN : show entries only
     h1->Draw();
@@ -820,7 +820,7 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
   //// 3-prong, Sum of alpha1 + alpha2 + alpha3 track lengths, zoomed X=[30mm, 130mm], log Y scale
   if(plot_3prong) {
     c->Clear();
-    h1=(TH1D*)f->Get("h_3prong_lenSUM")->Clone(); // copy for modifications of the same histogram
+    h1=(TH1D*)f->Get("h_3prong_lenSum")->Clone(); // copy for modifications of the same histogram
     h1->SetTitle((energyInfo+h1->GetTitle()).c_str());
     gStyle->SetOptStat(10); // KISOURMEN : show entries only
     h1->Rebin(4);
@@ -849,7 +849,7 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
   //// 3-prong, Sum of alpha1 + alpha2 + alpha3 track lengths, zoomed X=[30mm, 130mm], linear Y scale
   if(plot_3prong) {
     c->Clear();
-    h1=(TH1D*)f->Get("h_3prong_lenSUM")->Clone(); // copy for modifications of the same histogram
+    h1=(TH1D*)f->Get("h_3prong_lenSum")->Clone(); // copy for modifications of the same histogram
     h1->SetTitle((energyInfo+h1->GetTitle()).c_str());
     gStyle->SetOptStat(10); // KISOURMEN : show entries only
     h1->Rebin(4);
@@ -982,7 +982,6 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     c->Update();
     c->Modified();
     c->Print(((string)(prefix)+".pdf").c_str());
-
   }
 
   //// 3-prong, reaction Q-value, CMS, linear Y scale
@@ -1010,7 +1009,6 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     c->Update();
     c->Modified();
     c->Print(((string)(prefix)+".pdf").c_str());
-
   }
 
   //// 3-prong, Dalitz plot, invariant mass of each alpha pair (symmetrized)
@@ -1038,7 +1036,6 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     c->Update();
     c->Modified();
     c->Print(((string)(prefix)+".pdf").c_str());
-
   }
 
   //// 3-prong, Dalitz plot, chi/kappa variables (symmeterized)
@@ -1066,7 +1063,60 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     c->Update();
     c->Modified();
     c->Print(((string)(prefix)+".pdf").c_str());
+  }
 
+  //// 3-prong, Dalitz plot, Excitation energy vs Alpha energy in CMS
+  if(plot_3prong) {
+    c->Clear();
+    h2=(TH2D*)f->Get("h_3prong_Dalitz3_CMS")->Clone(); // copy for modifications of the same histogram
+    h2->SetTitle((energyInfo+h2->GetTitle()).c_str());
+    gStyle->SetOptStat(10); // KISOURMEN : show entries only
+    h2->Rebin2D(4,4);
+    h2->UseCurrentStyle();
+    h2->SetStats(true);
+    h2->Draw("COLZ");
+    gPad->SetLeftMargin(0.1);
+    gPad->SetRightMargin(0.14);
+    h2->SetTitleOffset(1.6, "X");
+    h2->SetTitleOffset(1.4, "Y");
+    h2->SetTitleOffset(1.2, "Z");
+    gPad->SetLogy(false);
+    gPad->SetLogz(false);
+    gPad->Update();
+    st = (TPaveStats *)c->GetPrimitive("stats");
+    if(st) {
+      st->SetX1NDC(statX3); st->SetX2NDC(statX3+lineW); st->SetY1NDC(statY3); st->SetY2NDC(statY3+lineH);
+    }
+    c->Update();
+    c->Modified();
+    c->Print(((string)(prefix)+".pdf").c_str());
+  }
+
+  //// 3-prong, Dalitz plot, Sum of alpha energies vs Alpha energy in CMS
+  if(plot_3prong) {
+    c->Clear();
+    h2=(TH2D*)f->Get("h_3prong_Dalitz4_CMS")->Clone(); // copy for modifications of the same histogram
+    h2->SetTitle((energyInfo+h2->GetTitle()).c_str());
+    gStyle->SetOptStat(10); // KISOURMEN : show entries only
+    h2->Rebin2D(4,4);
+    h2->UseCurrentStyle();
+    h2->SetStats(true);
+    h2->Draw("COLZ");
+    gPad->SetLeftMargin(0.1);
+    gPad->SetRightMargin(0.14);
+    h2->SetTitleOffset(1.6, "X");
+    h2->SetTitleOffset(1.4, "Y");
+    h2->SetTitleOffset(1.2, "Z");
+    gPad->SetLogy(false);
+    gPad->SetLogz(false);
+    gPad->Update();
+    st = (TPaveStats *)c->GetPrimitive("stats");
+    if(st) {
+      st->SetX1NDC(statX3); st->SetX2NDC(statX3+lineW); st->SetY1NDC(statY3); st->SetY2NDC(statY3+lineH);
+    }
+    c->Update();
+    c->Modified();
+    c->Print(((string)(prefix)+".pdf").c_str());
   }
 
   //////////////////////////////////
@@ -1110,7 +1160,7 @@ void makeCombinedPlots_report(std::string fileNameHistosAuto, std::string fileNa
 
   //// 2-prong, Sum of alpha + carbon track lengths - automatic RECO
   f1->cd();
-  h1=(TH1D*)f1->Get("h_2prong_lenSUM")->Clone(); // copy for modifications of the same histogram
+  h1=(TH1D*)f1->Get("h_2prong_lenSum")->Clone(); // copy for modifications of the same histogram
   if(!h1) { std::cout << "ERROR: missing 2-prong histogram!" << std::endl;  return; }
   h1->SetTitle((energyInfo+h1->GetTitle()).c_str());
   h1->UseCurrentStyle();
@@ -1125,7 +1175,7 @@ void makeCombinedPlots_report(std::string fileNameHistosAuto, std::string fileNa
 
   //// 2-prong, Sum of alpha + carbon track lengths - manual RECO
   f2->cd();
-  h1=(TH1D*)f2->Get("h_2prong_lenSUM")->Clone(); // copy for modifications of the same histogram
+  h1=(TH1D*)f2->Get("h_2prong_lenSum")->Clone(); // copy for modifications of the same histogram
   if(!h1) { std::cout << "ERROR: missing 2-prong histogram!" << std::endl;  return; }
   h1->SetTitle((energyInfo+h1->GetTitle()).c_str());
   h1->UseCurrentStyle();
@@ -1142,7 +1192,7 @@ void makeCombinedPlots_report(std::string fileNameHistosAuto, std::string fileNa
 
   //// 3-prong, Sum of alpha1 + alpha2 + alpha3 track lengths - AUTOMATIC RECO
   f1->cd();
-  h1=(TH1D*)f1->Get("h_3prong_lenSUM")->Clone(); // copy for modifications of the same histogram
+  h1=(TH1D*)f1->Get("h_3prong_lenSum")->Clone(); // copy for modifications of the same histogram
   if(!h1) { std::cout << "ERROR: missing 3-prong histogram!" << std::endl;  return; }
   h1->SetTitle((energyInfo+h1->GetTitle()).c_str());
   h1->UseCurrentStyle();
@@ -1161,7 +1211,7 @@ void makeCombinedPlots_report(std::string fileNameHistosAuto, std::string fileNa
 
   //// 3-prong, Sum of alpha1 + alpha2 + alpha3 track lengths - MANUAL RECO
   f2->cd();
-  h1=(TH1D*)f2->Get("h_3prong_lenSUM")->Clone(); // copy for modifications of the same histogram
+  h1=(TH1D*)f2->Get("h_3prong_lenSum")->Clone(); // copy for modifications of the same histogram
   if(!h1) { std::cout << "ERROR: missing 3-prong histogram!" << std::endl;  return; }
   h1->SetTitle((energyInfo+h1->GetTitle()).c_str());
   h1->UseCurrentStyle();

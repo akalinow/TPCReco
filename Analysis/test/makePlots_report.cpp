@@ -333,7 +333,7 @@ void makePlots_report(std::string fileNameHistos, float energyMeV, std::string c
   //// 2-prong, Sum of alpha + carbon track lengths, zoomed X=[30mm, 150mm], log Y scale @ 12.3 MeV
   if(plot_2prong) {
     c->Clear();
-    h1=(TH1D*)f->Get("h_2prong_lenSUM")->Clone(); // copy for modifications of the same histogram
+    h1=(TH1D*)f->Get("h_2prong_lenSum")->Clone(); // copy for modifications of the same histogram
     h1->SetTitle((energyInfo+h1->GetTitle()).c_str());
     gStyle->SetOptStat(10); // KISOURMEN : show entries only
     h1->Draw();
@@ -359,7 +359,7 @@ void makePlots_report(std::string fileNameHistos, float energyMeV, std::string c
   //// 2-prong, Sum of alpha + carbon track lengths, zoomed X=[30mm, 150mm], linear Y scale @ 12.3 MeV
   if(plot_2prong) {
     c->Clear();
-    h1=(TH1D*)f->Get("h_2prong_lenSUM")->Clone(); // copy for modifications of the same histogram
+    h1=(TH1D*)f->Get("h_2prong_lenSum")->Clone(); // copy for modifications of the same histogram
     h1->SetTitle((energyInfo+h1->GetTitle()).c_str());
     gStyle->SetOptStat(10); // KISOURMEN : show entries only
     h1->Draw();
@@ -759,7 +759,7 @@ void makePlots_report(std::string fileNameHistos, float energyMeV, std::string c
   //// 3-prong, Sum of alpha1 + alpha2 + alpha3 track lengths, zoomed X=[30mm, 130mm], log Y scale
   if(plot_3prong) {
     c->Clear();
-    h1=(TH1D*)f->Get("h_3prong_lenSUM")->Clone(); // copy for modifications of the same histogram
+    h1=(TH1D*)f->Get("h_3prong_lenSum")->Clone(); // copy for modifications of the same histogram
     h1->SetTitle((energyInfo+h1->GetTitle()).c_str());
     gStyle->SetOptStat(10); // KISOURMEN : show entries only
     h1->Rebin(4);
@@ -784,7 +784,7 @@ void makePlots_report(std::string fileNameHistos, float energyMeV, std::string c
   //// 3-prong, Sum of alpha1 + alpha2 + alpha3 track lengths, zoomed X=[30mm, 130mm], linear Y scale
   if(plot_3prong) {
     c->Clear();
-    h1=(TH1D*)f->Get("h_3prong_lenSUM")->Clone(); // copy for modifications of the same histogram
+    h1=(TH1D*)f->Get("h_3prong_lenSum")->Clone(); // copy for modifications of the same histogram
     h1->SetTitle((energyInfo+h1->GetTitle()).c_str());
     gStyle->SetOptStat(10); // KISOURMEN : show entries only
     h1->Rebin(4);
@@ -897,7 +897,7 @@ void makeCombinedPlots_report(std::string fileNameHistosAuto, std::string fileNa
 
   //// 2-prong, Sum of alpha + carbon track lengths - AUTOMATIC RECO
   f1->cd();
-  h1=(TH1D*)f1->Get("h_2prong_lenSUM")->Clone(); // copy for modifications of the same histogram
+  h1=(TH1D*)f1->Get("h_2prong_lenSum")->Clone(); // copy for modifications of the same histogram
   h1->SetTitle((energyInfo+h1->GetTitle()).c_str());
   h1->UseCurrentStyle();
   h1->SetStats(false);
@@ -909,7 +909,7 @@ void makeCombinedPlots_report(std::string fileNameHistosAuto, std::string fileNa
 
   //// 2-prong, Sum of alpha + carbon track lengths - MANUAL RECO
   f2->cd();
-  h1=(TH1D*)f2->Get("h_2prong_lenSUM")->Clone(); // copy for modifications of the same histogram
+  h1=(TH1D*)f2->Get("h_2prong_lenSum")->Clone(); // copy for modifications of the same histogram
   h1->SetTitle((energyInfo+h1->GetTitle()).c_str());
   h1->UseCurrentStyle();
   h1->SetStats(false);
@@ -924,7 +924,7 @@ void makeCombinedPlots_report(std::string fileNameHistosAuto, std::string fileNa
 
   //// 3-prong, Sum of alpha1 + alpha2 + alpha3 track lengths - MANUAL RECO
   f2->cd();
-  h1=(TH1D*)f2->Get("h_3prong_lenSUM")->Clone(); // copy for modifications of the same histogram
+  h1=(TH1D*)f2->Get("h_3prong_lenSum")->Clone(); // copy for modifications of the same histogram
   h1->SetTitle((energyInfo+h1->GetTitle()).c_str());
   h1->UseCurrentStyle();
   h1->SetStats(false);
