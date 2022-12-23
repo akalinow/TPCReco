@@ -13,7 +13,7 @@
 
 #include "colorText.h"
 
-int testHits(std::shared_ptr<EventTPC> aEventPtr, filter_type filterType, std::vector<double> comparision1, std::vector<double> comparision2){
+int testHits(std::shared_ptr<EventTPC> aEventPtr, filter_type filterType, std::vector<double> comparision1, std::vector<double> comparision2, std::map<std::string, double> Test_Reference){
   
   std::vector<bool> error_list_bool;
   double epsilon = 1e-5;
@@ -170,13 +170,13 @@ int testHits(std::shared_ptr<EventTPC> aEventPtr, filter_type filterType, std::v
   }
 
   std::map<std::tuple<double, double, double, double, filter_type>, std::pair<double, std::string>> Test_GetTotalCharge ={
-    {std::make_tuple(-1, -1, -1, -1, filterType),     {comparision2[0], "total charge: GetTotalCharge(-1, -1, -1, -1, "+Filter+")"}},
-    {std::make_tuple(DIR_U, -1, -1, -1, filterType),  {comparision2[1], "total charge DIR_U: GetTotalCharge(DIR_U, -1, -1, -1, "+Filter+")"}},
-    {std::make_tuple(DIR_U, -1, 1, -1, filterType),   {comparision2[2], "total charge DIR_U, strip 1: GetTotalCharge(DIR_U, -1, 1, -1, "+Filter+")"}},
-    {std::make_tuple(DIR_U, 1, 58, -1, filterType),   {comparision2[3], "total charge DIR_U, sec. 1, strip 58: GetTotalCharge(DIR_U, 1, 58, -1, "+Filter+")"}},
-    {std::make_tuple(-1, -1, -1, 128, filterType),    {comparision2[4], "total charge time cell 128: GetTotalCharge(-1, -1, -1, 128, "+Filter+")"}},
-    {std::make_tuple(DIR_U, -1, -1, 128, filterType), {comparision2[5], "total charge DIR_U, time cell 128: GetTotalCharge(DIR_U, -1, -1, 128, "+Filter+")"}},
-    {std::make_tuple(DIR_U, 1, -1, 128, filterType),  {comparision2[6], "total charge DIR_U, sec. 1, time cell 128: GetTotalCharge(DIR_U, 1,  -1, 128, "+Filter+")"}}
+    {std::make_tuple(-1, -1, -1, -1, filterType),     {Test_Reference["GetTotalCharge(-1, -1, -1, -1, filter_type::" + Filter + ")"    ], "total charge: GetTotalCharge(-1, -1, -1, -1, "+Filter+")"}},
+    {std::make_tuple(DIR_U, -1, -1, -1, filterType),  {Test_Reference["GetTotalCharge(DIR_U, -1, -1, -1, filter_type::" + Filter + ")" ], "total charge DIR_U: GetTotalCharge(DIR_U, -1, -1, -1, "+Filter+")"}},
+    {std::make_tuple(DIR_U, -1, 1, -1, filterType),   {Test_Reference["GetTotalCharge(DIR_U, -1, 1, -1, filter_type::" + Filter + ")"  ], "total charge DIR_U, strip 1: GetTotalCharge(DIR_U, -1, 1, -1, "+Filter+")"}},
+    {std::make_tuple(DIR_U, 1, 58, -1, filterType),   {Test_Reference["GetTotalCharge(DIR_U, 1, 58, -1, filter_type::" + Filter + ")"  ], "total charge DIR_U, sec. 1, strip 58: GetTotalCharge(DIR_U, 1, 58, -1, "+Filter+")"}},
+    {std::make_tuple(-1, -1, -1, 128, filterType),    {Test_Reference["GetTotalCharge(-1, -1, -1, 128, filter_type::" + Filter + ")"   ], "total charge time cell 128: GetTotalCharge(-1, -1, -1, 128, "+Filter+")"}},
+    {std::make_tuple(DIR_U, -1, -1, 128, filterType), {Test_Reference["GetTotalCharge(DIR_U, -1, -1, 128, filter_type::" + Filter + ")"], "total charge DIR_U, time cell 128: GetTotalCharge(DIR_U, -1, -1, 128, "+Filter+")"}},
+    {std::make_tuple(DIR_U, 1, -1, 128, filterType),  {Test_Reference["GetTotalCharge(DIR_U, 1,  -1, 128, filter_type::" + Filter + ")"], "total charge DIR_U, sec. 1, time cell 128: GetTotalCharge(DIR_U, 1,  -1, 128, "+Filter+")"}}
   };
   for(auto itr=Test_GetTotalCharge.begin(); itr!=Test_GetTotalCharge.end(); itr++){
     double temp = aEventPtr->GetTotalCharge(std::get<0>(itr->first), std::get<1>(itr->first), std::get<2>(itr->first), std::get<3>(itr->first), std::get<4>(itr->first));
@@ -185,10 +185,10 @@ int testHits(std::shared_ptr<EventTPC> aEventPtr, filter_type filterType, std::v
   }
 
   std::map<std::tuple<double, double, double, filter_type>, std::pair<double, std::string>> Test_GetMaxCharge ={
-    {std::make_tuple(-1, -1, -1, filterType),    {comparision2[7], "max charge: GetMaxCharge(-1, -1, -1, "+Filter+")"}},
-    {std::make_tuple(DIR_U, -1, -1, filterType), {comparision2[8], "max charge DIR_U: GetMaxCharge(DIR_U, -1, -1, "+Filter+")"}},
-    {std::make_tuple(DIR_U, -1, 1, filterType),  {comparision2[9], "max charge DIR_U, strip 1: GetMaxCharge(DIR_U, -1, 1, "+Filter+")"}},
-    {std::make_tuple(DIR_U, 1, 58, filterType),  {comparision2[10],"max charge DIR_U, sec. 1, strip 58: GetMaxCharge(DIR_U, 1, 58, "+Filter+")"}}
+    {std::make_tuple(-1, -1, -1, filterType),    {Test_Reference["GetMaxCharge(-1, -1, -1, filter_type::" + Filter + ")"   ], "max charge: GetMaxCharge(-1, -1, -1, "+Filter+")"}},
+    {std::make_tuple(DIR_U, -1, -1, filterType), {Test_Reference["GetMaxCharge(DIR_U, -1, -1, filter_type::" + Filter + ")"], "max charge DIR_U: GetMaxCharge(DIR_U, -1, -1, "+Filter+")"}},
+    {std::make_tuple(DIR_U, -1, 1, filterType),  {Test_Reference["GetMaxCharge(DIR_U, -1, 1, filter_type::" + Filter + ")" ], "max charge DIR_U, strip 1: GetMaxCharge(DIR_U, -1, 1, "+Filter+")"}},
+    {std::make_tuple(DIR_U, 1, 58, filterType),  {Test_Reference["GetMaxCharge(DIR_U, 1, 58, filter_type::" + Filter + ")" ],"max charge DIR_U, sec. 1, strip 58: GetMaxCharge(DIR_U, 1, 58, "+Filter+")"}}
   };
   for(auto itr=Test_GetMaxCharge.begin(); itr!=Test_GetMaxCharge.end(); itr++){
     double temp = aEventPtr->GetMaxCharge(std::get<0>(itr->first), std::get<1>(itr->first), std::get<2>(itr->first), std::get<3>(itr->first));
@@ -281,14 +281,29 @@ int main(int argc, char *argv[]) {
                                             520098, 520098.542683, 155908, 155908.768293, 176881, 176881.810976, 187307, 187307.9634146, 155908, 155908.768293, 176881, 176881.81097563, 187307, 187307.9634146, 224650, 155908.768293, 176881, 176881.810976, 304271, 187307.9634145, 131072, -5029.57317073, 139264, -5029.57317073 };
   std::vector<double> comparison_threshold1 = { 226979, 226979.29878 ,285676, 285676.20122 ,282279, 282279.72561 ,226979,226979.29878,285676, 285676.20122 ,282279, 282279.72561,794935, 794935.22561,226979, 226979.29878,285676, 285676.20122, 282279, 282279.72561,
                                                  794935,794935.22561, 226979,226979.29878,285676, 285676.20122,282279, 282279.72561,226979, 226979.29878, 285676,285676.20122, 282279,282279.72561,295721,226979.29878,285676, 285676.20122,399243, 282279.72561 };
+  
+  std::map<std::string, double> Test_Reference = {
+      {"GetTotalCharge(-1, -1, -1, -1, filter_type::none)"       , 520098.542683  } , {"GetTotalCharge(-1, -1, -1, -1, filter_type::threshold)"       , 794935.22561   } ,
+      {"GetTotalCharge(DIR_U, -1, -1, -1, filter_type::none)"    , 155908.768293  } , {"GetTotalCharge(DIR_U, -1, -1, -1, filter_type::threshold)"    , 226979.29878   } ,
+      {"GetTotalCharge(DIR_U, -1, 1, -1, filter_type::none)"     , 1407.329268293 } , {"GetTotalCharge(DIR_U, -1, 1, -1, filter_type::threshold)"     , 0              } ,
+      {"GetTotalCharge(DIR_U, 1, 58, -1, filter_type::none)"     , 367.042682927  } , {"GetTotalCharge(DIR_U, 1, 58, -1, filter_type::threshold)"     , 0              } ,
+      {"GetTotalCharge(-1, -1, -1, 128, filter_type::none)"      , 2890.25609756  } , {"GetTotalCharge(-1, -1, -1, 128, filter_type::threshold)"      , 3425.77439024  } ,
+      {"GetTotalCharge(DIR_U, -1, -1, 128, filter_type::none)"   , 950.109756098  } , {"GetTotalCharge(DIR_U, -1, -1, 128, filter_type::threshold)"   , 1032.90243902  } ,
+      {"GetTotalCharge(DIR_U, 1,  -1, 128, filter_type::none)"   , -79.378        } , {"GetTotalCharge(DIR_U, 1,  -1, 128, filter_type::threshold)"   , 0              } ,
+      {"GetMaxCharge(-1, -1, -1, filter_type::none)"             , 1735.09146341  } , {"GetMaxCharge(-1, -1, -1, filter_type::threshold)"             , 1732.16463415  } ,
+      {"GetMaxCharge(DIR_U, -1, -1, filter_type::none)"          , 1392.21341463  } , {"GetMaxCharge(DIR_U, -1, -1, filter_type::threshold)"          , 1385.27439024  } ,
+      {"GetMaxCharge(DIR_U, -1, 1, filter_type::none)"           , 23.7256        } , {"GetMaxCharge(DIR_U, -1, 1, filter_type::threshold)"           , 0              } ,
+      {"GetMaxCharge(DIR_U, 1, 58, filter_type::none)"           , 22.2561        } , {"GetMaxCharge(DIR_U, 1, 58, filter_type::threshold)"           , 0              } 
+      
+  };
   int check=0;
   auto myEventPtr = myEventSource->getCurrentEvent();
   for(int i=89;i<90;++i){
     myEventSource->loadFileEntry(i);
   
     std::cout<<myEventPtr->GetEventInfo()<<std::endl;
-    check += testHits(myEventPtr, filter_type::none , comparison_none1, comparison_none2);
-    check += testHits(myEventPtr, filter_type::threshold , comparison_threshold1, comparison_threshold2);
+    check += testHits(myEventPtr, filter_type::none , comparison_none1, comparison_none2, Test_Reference);
+    check += testHits(myEventPtr, filter_type::threshold , comparison_threshold1, comparison_threshold2, Test_Reference);
   }
   //std::cout<<"check"<<a+b<<std::endl;
   ///This part to be moved to GeometryTPC_tst.cpp
