@@ -25,7 +25,6 @@
 #include <TH3D.h>
 #include <TLatex.h>
 #include <TProfile.h>
-
 #ifdef WITH_GET
 #include "EventSourceGRAW.h"
 #include "EventSourceMultiGRAW.h"
@@ -35,7 +34,13 @@
 
 #include "MainFrame.h"
 
-inline std::shared_ptr<EventSourceBase> EventSourceFactory::makeEventSourceObject(boost::property_tree::ptree myConfig, MainFrame& mf) {
+inline std::shared_ptr<EventSourceBase> EventSourceFactory::makeEventSourceObject(boost::property_tree::ptree myConfig, Modes& myWorkMode) {
+	bool placeholder_bool_var;
+	return makeEventSourceObject(myConfig, myWorkMode, placeholder_bool_var);
+}
+
+inline std::shared_ptr<EventSourceBase> EventSourceFactory::makeEventSourceObject(boost::property_tree::ptree myConfig, Modes& myWorkMode, bool& useFileWatch) {
+	useFileWatch = false;
 	std::string dataFileName = myConfig.get("dataFile", "");
 	std::string geometryFileName = myConfig.get("geometryFile", "");
 
@@ -100,22 +105,22 @@ inline std::shared_ptr<EventSourceBase> EventSourceFactory::makeEventSourceObjec
 		<< _endl_;
 
 	if (dataFileVec.size() == 1 && ((stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG) && dataFileName.find(".root") != std::string::npos) {
-		mf.myWorkMode = M_OFFLINE_ROOT_MODE;
+		myWorkMode = M_OFFLINE_ROOT_MODE;
 		myEventSource = std::make_shared<EventSourceROOT>(geometryFileName);
 	}
 	else if (dataFileVec.size() == 1 && dataFileName.find("_MC_") != std::string::npos) {
-		mf.myWorkMode = M_OFFLINE_MC_MODE;
+		myWorkMode = M_OFFLINE_MC_MODE;
 		myEventSource = std::make_shared<EventSourceMC>(geometryFileName);
 	}
 
 #ifdef WITH_GET
 	else if (all_graw) { //(stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG) && dataFileName.find(".graw")!=std::string::npos){
 
-		mf.myWorkMode = M_OFFLINE_GRAW_MODE;
+		myWorkMode = M_OFFLINE_GRAW_MODE;
 		if (myConfig.find("singleAsadGrawFile") != myConfig.not_found()) {
 			bool singleAsadGrawFile = myConfig.get<bool>("singleAsadGrawFile");
 			if (singleAsadGrawFile) {
-				mf.myWorkMode = M_OFFLINE_NGRAW_MODE;
+				myWorkMode = M_OFFLINE_NGRAW_MODE;
 			}
 		}
 		switch (myWorkMode) {
@@ -141,15 +146,15 @@ inline std::shared_ptr<EventSourceBase> EventSourceFactory::makeEventSourceObjec
 
 	}
 	else if (dataFileVec.size() == 1 && (stat.fMode & EFileModeMask::kS_IFDIR) == EFileModeMask::kS_IFDIR) {
-
-		mf.myWorkMode = M_ONLINE_GRAW_MODE;
+		useFileWatch = true;
+		myWorkMode = M_ONLINE_GRAW_MODE;
 		if (myConfig.find("singleAsadGrawFile") != myConfig.not_found()) {
 			bool singleAsadGrawFile = myConfig.get<bool>("singleAsadGrawFile");
 			if (singleAsadGrawFile) {
-				mf.myWorkMode = M_ONLINE_NGRAW_MODE;
+				myWorkMode = M_ONLINE_NGRAW_MODE;
 			}
 		}
-		switch (mf.myWorkMode) {
+		switch (myWorkMode) {
 		case M_ONLINE_GRAW_MODE:
 			myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
 			dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(myConfig.get("frameLoadRange", 10));
@@ -159,12 +164,6 @@ inline std::shared_ptr<EventSourceBase> EventSourceFactory::makeEventSourceObjec
 			break;
 		default:;
 		};
-		mf.fileWatchThread = std::thread(&DirectoryWatch::watch, &mf.myDirWatch, dataFileName);
-		if (myConfig.find("updateInterval") != myConfig.not_found()) {
-			int updateInterval = myConfig.get<int>("updateInterval");
-			mf.myDirWatch.setUpdateInterval(updateInterval);
-		}
-		mf.myDirWatch.Connect("Message(const char *)", "MainFrame", this, "ProcessMessage(const char *)");
 	}
 	if (myConfig.find("removePedestal") != myConfig.not_found() && myEventSource.get()) {
 		bool removePedestal = myConfig.get<bool>("removePedestal");
@@ -183,14 +182,9 @@ inline std::shared_ptr<EventSourceBase> EventSourceFactory::makeEventSourceObjec
 		exit(0);
 		return decltype(myEventSource)();
 	}
-	if (mf.myWorkMode != M_ONLINE_GRAW_MODE && mf.myWorkMode != M_ONLINE_NGRAW_MODE) {
+	if (myWorkMode != M_ONLINE_GRAW_MODE && myWorkMode != M_ONLINE_NGRAW_MODE) {
 		myEventSource->loadDataFile(dataFileName);
 		myEventSource->loadFileEntry(0);
 	}
 	return myEventSource;
-}
-
-inline EventSourceFactory& EventSourceFactory::getFactory() {
-	static EventSourceFactory ESF;
-	return ESF;
 }

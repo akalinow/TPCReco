@@ -12,7 +12,6 @@ private:
 public:
 	~EventSourceFactory() {};
 
-	std::shared_ptr<EventSourceBase> makeEventSourceObject(boost::property_tree::ptree myConfig, MainFrame& myWorkMode);
-
-	static EventSourceFactory& getFactory();
+	static std::shared_ptr<EventSourceBase> makeEventSourceObject(boost::property_tree::ptree myConfig, Modes& myWorkMode);
+	static std::shared_ptr<EventSourceBase> makeEventSourceObject(boost::property_tree::ptree myConfig, Modes& myWorkMode, bool& useFileWatch);
 };
