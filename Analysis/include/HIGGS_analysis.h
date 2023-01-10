@@ -90,9 +90,10 @@ class HIGGS_analysis{
   //////////////////////////////////////////////////////////////////////////////////////////
  public:
   HIGGS_analysis(std::shared_ptr<GeometryTPC> aGeometryPtr, // definition of LAB detector coordinates
-		 float beamEnergy, // nominal gamma beam energy [keV] in detector LAB frame
-		 TVector3 beamDir, // nominal gamma beam direction in detector LAB frame
-		 double pressure); // CO2 pressure [mbar]
+		 float beamEnergy,   // nominal gamma beam energy [keV] in detector LAB frame
+		 TVector3 beamDir,   // nominal gamma beam direction in detector LAB frame
+		 double pressure,    // CO2 pressure [mbar]
+		 double temperature);// CO2 temperature [K]
 
   ~HIGGS_analysis();
 
@@ -107,7 +108,7 @@ class HIGGS_analysis{
 
   void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);  // definition of detector coordinates in LAB reference frame
   void setCuts(); // set event cuts // TODO - TO BE PARAMETERIZED!!!
-  void setIonRangeCalculator(double pressure); // CO2 pressure [mbar]
+  void setIonRangeCalculator(double pressure, double temperature); // CO2 pressure [mbar] and temperature [K]
   void setBeamProperties(float gammaBeamEnergyInMeV, // nominal gamma beam energy [MeV] in LAB reference
 			 TVector3 gammaBeamDir); // nominal gamma beam direction in LAB reference frame and detector coordinate system
   TVector3 getBetaVectorOfCMS(double nucleusMassInMeV); // dimensionless speed (c=1) of gamma-nucleus CMS reference frame wrt LAB reference frame in detector coordinate system

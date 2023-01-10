@@ -23,12 +23,13 @@ using std::chrono::duration_cast;
 ///////////////////////////////
 ///////////////////////////////
 HIGS_trees_analysis::HIGS_trees_analysis(std::shared_ptr<GeometryTPC> aGeometryPtr, // definition of LAB detector coordinates
-					 float beamEnergy, // nominal gamma beam energy [MeV] in detector LAB frame
-					 TVector3 beamDir, // nominal gamma beam direction in detector LAB frame
-					 double pressure){ // CO2 pressure [mbar]
+					 float beamEnergy,   // nominal gamma beam energy [MeV] in detector LAB frame
+					 TVector3 beamDir,   // nominal gamma beam direction in detector LAB frame
+					 double pressure,    // CO2 pressure [mbar]
+					 double temperature){// CO2 temperature [K]
   setGeometry(aGeometryPtr);
   setBeamProperties(beamEnergy, beamDir);
-  setIonRangeCalculator(pressure);
+  setIonRangeCalculator(pressure, temperature);
   open();
   /*
   auto gback=(TGraph*)(xyArea.back().bin->GetPolygon());
@@ -113,10 +114,10 @@ void HIGS_trees_analysis::setBeamProperties(float beamEnergy,   // nominal gamma
 }
 //////////////////////////
 //////////////////////////
-void HIGS_trees_analysis::setIonRangeCalculator(double pressure){ // CO2 pressure [mbar]
+void HIGS_trees_analysis::setIonRangeCalculator(double pressure, double temperature){ // CO2 pressure [mbar] and temperature [K]
 
-  // set current conditions: gas=CO2, pressure=190 mbar, temperature=20C
-  myRangeCalculator.setGasConditions(/*IonRangeCalculator::*/CO2, fabs(pressure), 273.15+20);
+  // set current conditions: gas=CO2, arbitrary temperature [K] and pressure [mbar]
+  myRangeCalculator.setGasConditions(/*IonRangeCalculator::*/CO2, fabs(pressure), fabs(temperature));
 }
 ///////////////////////////////
 ///////////////////////////////
