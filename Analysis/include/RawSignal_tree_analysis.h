@@ -29,7 +29,8 @@ class RawSignal_tree_analysis{
 public:
 
   RawSignal_tree_analysis(std::shared_ptr<GeometryTPC> aGeometryPtr,
-			  ClusterConfig &aClusterConfig); // definition of LAB detector coordinates
+			  ClusterConfig &aClusterConfig,
+			  std::string aOutputFileName="RawSignalTree.root"); // definition of LAB detector coordinates
   ~RawSignal_tree_analysis();
   
   void fillTree(std::shared_ptr<EventTPC> aEventTPC, bool & isFirst);//(eventraw::EventInfo *aEventInfo);
@@ -38,8 +39,9 @@ public:
 
   ClusterConfig myClusterConfig;
   Event_rawsignal *event_rawsignal_ = new Event_rawsignal;
-  std::shared_ptr<TFile> OutputFilePtr;
-  std::shared_ptr<TTree> OutputTreePtr;
+  std::string myOutputFileName;
+  std::shared_ptr<TFile> myOutputFilePtr;
+  std::shared_ptr<TTree> myOutputTreePtr;
   std::shared_ptr<GeometryTPC> myGeometryPtr; //! transient data member
   
   void initialize();
