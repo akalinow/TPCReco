@@ -1,14 +1,33 @@
 #include <iostream>
+#include <tuple>
 #include "IonRangeCalculator.h"
 
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
-IonRangeCalculator::IonRangeCalculator(gas_mixture_type gas, double p_mbar, double T_Kelvin){ // input: GAS index, pressure [mbar], temperature [K]
+IonRangeCalculator::IonRangeCalculator(gas_mixture_type gas, double p_mbar, double T_Kelvin, bool debug_flag){ // input: GAS index, pressure [mbar], temperature [K]
+  setDebug(debug_flag);
 
   // Initialize ion range curves obtained from SRIM simulations at reference temperature and pressure (T0=20 C, p0=250 mbar)
+  // Data file columns: E_kin[MeV] Range[mm]
+  addIonRangeCurve(pid_type::PROTON,    gas_mixture_type::CO2, 250.0, 273.15+20, "range_corr_thr_1keV_proton_2MeV_CO2_250mbar.dat");
   addIonRangeCurve(pid_type::ALPHA,     gas_mixture_type::CO2, 250.0, 273.15+20, "range_corr_thr_1keV_alpha_10MeV_CO2_250mbar.dat");
   addIonRangeCurve(pid_type::CARBON_12, gas_mixture_type::CO2, 250.0, 273.15+20, "range_corr_thr_1keV_12C_5MeV_CO2_250mbar.dat");
   addIonRangeCurve(pid_type::CARBON_14, gas_mixture_type::CO2, 250.0, 273.15+20, "range_corr_thr_1keV_12C_5MeV_CO2_250mbar.dat");//TEST
+
+  // Initialize ion Bragg curves obtained from SRIM simulations at reference temperature and pressure (T0=20 C, p0=250 mbar)
+  // Data file columns: Distance[mm] dE/dx[keV/mm]
+  addIonBraggCurve(pid_type::PROTON,    gas_mixture_type::CO2, 250.0, 273.15+20, "dEdx_corr_proton_2MeV_CO2_250mbar.dat");
+  addIonBraggCurve(pid_type::ALPHA,     gas_mixture_type::CO2, 250.0, 273.15+20, "dEdx_corr_alpha_10MeV_CO2_250mbar.dat");
+  addIonBraggCurve(pid_type::CARBON_12, gas_mixture_type::CO2, 250.0, 273.15+20, "dEdx_corr_12C_5MeV_CO2_250mbar.dat");
+  addIonBraggCurve(pid_type::CARBON_14, gas_mixture_type::CO2, 250.0, 273.15+20, "dEdx_corr_12C_5MeV_CO2_250mbar.dat");//TEST
+
+  // DEBUG
+  if(_debug) {
+    setGasConditions(gas, 250.0, 273.15+20);
+    std::cout<<__FUNCTION__<<": ALPHA: dE/dx integral=" << getIonBraggCurveIntegralMeV(pid_type::ALPHA, 10.0) << " MeV" << std::endl;
+    std::cout<<__FUNCTION__<<": C-12:  dE/dx integral=" << getIonBraggCurveIntegralMeV(pid_type::CARBON_12, 5.0) << " MeV" << std::endl;
+  }
+  // DEBUG
 
   // Rescale ion range curves for specific gas, pressure and temperature.
   setGasConditions(gas, p_mbar, T_Kelvin);
@@ -73,7 +92,6 @@ void IonRangeCalculator::setGasTemperature(double T_Kelvin){ // temperature [K]
     exit(-1);
   }
 }
-
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 void IonRangeCalculator::setGasConditions(gas_mixture_type gas, double p_mbar, double T_Kelvin){ // input: GAS index, pressure [mbar], temperature [K]
@@ -115,10 +133,16 @@ double IonRangeCalculator::getIonRangeMM(pid_type ion, double E_MeV){ // interpo
   
   // rescale output range to current {p, T} values assuming ideal gas pV=nRT formula
   double ref_range=(it->second)->Eval(E_MeV); // mm
-  //  std::cout<<__FUNCTION__<<": non-scaled range="<<ref_range<<" mm, "
-  //	   <<"T_ref="<<refGasTemperatureMap[it->first]<<" K, "
-  //	   <<"p_ref="<<refGasPressureMap[it->first]<<" mbar"<<std::endl;
-  return ref_range*(myGasTemperature/refGasTemperatureMap[it->first])*(refGasPressureMap[it->first]/myGasPressure); // result in [mm]
+
+  // DEBUG
+  if(_debug) {
+    std::cout<<__FUNCTION__<<": non-scaled range="<<ref_range<<" mm, "
+	     <<"T_ref="<<refGasRangeTemperatureMap[it->first]<<" K, "
+	     <<"p_ref="<<refGasRangePressureMap[it->first]<<" mbar"<<std::endl;
+  }
+  // DEBUG
+
+  return ref_range*(myGasTemperature/refGasRangeTemperatureMap[it->first])*(refGasRangePressureMap[it->first]/myGasPressure); // result in [mm]
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
@@ -136,10 +160,16 @@ double IonRangeCalculator::getIonEnergyMeV(pid_type ion, double range_mm){ // in
   }
 
   // rescale input range to reference {p_ref, T_ref} values assuming ideal gas pV=nRT formula
-  double ref_range=range_mm*(refGasTemperatureMap[it->first]/myGasTemperature)*(myGasPressure/refGasPressureMap[it->first]); // mm
-  //  std::cout<<__FUNCTION__<<": non-scaled range="<<ref_range<<" mm, "
-  //	   <<"T_ref="<<refGasTemperatureMap[it->first]<<" K, "
-  //	   <<"p_ref="<<refGasPressureMap[it->first]<<" mbar"<<std::endl;
+  double ref_range=range_mm*(refGasRangeTemperatureMap[it->first]/myGasTemperature)*(myGasPressure/refGasRangePressureMap[it->first]); // mm
+
+  // DEBUG
+  if(_debug) {
+    std::cout<<__FUNCTION__<<": non-scaled range="<<ref_range<<" mm, "
+	     <<"T_ref="<<refGasRangeTemperatureMap[it->first]<<" K, "
+	     <<"p_ref="<<refGasRangePressureMap[it->first]<<" mbar"<<std::endl;
+  }
+  // DEBUG
+
   return (it->second)->Eval(ref_range); // result in [MeV]
 }
 ////////////////////////////////////////////////
@@ -147,7 +177,7 @@ double IonRangeCalculator::getIonEnergyMeV(pid_type ion, double range_mm){ // in
 double IonRangeCalculator::getIonMassMeV(pid_type ion){ // particle or isotope mass in [MeV/c^2]
   auto it=massTableMap.end();
   if((it=massTableMap.find(ion))==massTableMap.end()) return 0;
- else return it->second;
+  else return it->second;
 }
 
 ////////////////////////////////////////////////
@@ -181,13 +211,15 @@ void IonRangeCalculator::addIonRangeCurve(pid_type ion, gas_mixture_type gas, do
 	std::cerr<<__FUNCTION__<<": ERROR: Wrong initialization of energy vs range TGraph using datafile="<<datafile<<"!"<<std::endl;
 	exit(-1);
       }
-    refGasPressureMap[mkey2]=p_mbar; // reference pressure [mbar]
-    refGasTemperatureMap[mkey2]=T_Kelvin; // reference tempereature T[K]
-    //    std::cout<<__FUNCTION__<<": Gas index="<<mkey2.key1<<", Ion index="<<mkey2.key2<<", Npoints="<<refEnergyCurveMap[mkey2]->GetN()<<std::endl;
-    //    double E=1.0;
-    //    double L=1.0;
-    //    std::cout<<__FUNCTION__<<": Cross check E="<<E<<" MeV: interpolated range="<<refGasRangeCurveMap[mkey2]->Eval(E)<<" mm"<<std::endl;
-    //    std::cout<<__FUNCTION__<<": Cross check L="<<L<<" mm: interpolated Ee="<<refEnergyCurveMap[mkey2]->Eval(L)<<" MeV"<<std::endl;
+    refGasRangePressureMap[mkey2]=p_mbar; // reference pressure [mbar]
+    refGasRangeTemperatureMap[mkey2]=T_Kelvin; // reference tempereature T[K]
+
+    // DEBUG
+    if(_debug) {
+      std::cout<<__FUNCTION__<<": Gas index="<<std::get<0>(mkey2)<<", Ion index="<<std::get<1>(mkey2)<<", Npoints="<<refEnergyCurveMap[mkey2]->GetN()<<std::endl;
+    }
+    // DEBUG
+
   } else {
     std::cerr<<__FUNCTION__<<": ERROR: Reference range/energy curve already exists for: gas index="<<gas<<", ion="<<ion<<"!"<<std::endl;
     exit(-1);
@@ -209,11 +241,183 @@ TGraph IonRangeCalculator::invertTGraph(const TGraph &aGraph) const{
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
+TGraph IonRangeCalculator::horizontalFlipTGraph(const TGraph &aGraph) const{
+
+  TGraph flippedGraph(aGraph);
+  double xmin, xmax, ymin, ymax;
+  flippedGraph.ComputeRange(xmin, ymin, xmax, ymax);
+  auto xmid=0.5*(xmin+xmax);
+  for(int iPoint=0;iPoint<aGraph.GetN();++iPoint){
+    double x, y;
+    aGraph.GetPoint(iPoint, x, y);
+    flippedGraph.SetPoint(iPoint, xmid-(x-xmid), y);
+  }
+  return flippedGraph;
+}
+////////////////////////////////////////////////
+////////////////////////////////////////////////
+void IonRangeCalculator::scaleTGraph(TGraph *aGraph, double factor){
+  if(!aGraph) return;
+  double x, y;
+  for(int iPoint=0;iPoint<aGraph->GetN();++iPoint){
+    aGraph->GetPoint(iPoint, x, y);
+    aGraph->SetPoint(iPoint, x, factor*y);
+  }
+}
+////////////////////////////////////////////////
+////////////////////////////////////////////////
+void IonRangeCalculator::zeroSuppressTGraph(TGraph *aGraph){
+  // iteratively remove all EMPTY points (if any) except the very last one
+  if(!aGraph) return;
+  auto exit_loop=false;
+  while(!exit_loop) {
+    double x1,x2,y1,y2;
+    aGraph->GetPoint(aGraph->GetN()-1, x2, y2);
+    aGraph->GetPoint(aGraph->GetN()-2, x1, y1);
+    if(y2==0 && y1==0) {
+      aGraph->RemovePoint(aGraph->GetN()-1);
+    } else {
+      exit_loop=true;
+    }
+  };
+}
+////////////////////////////////////////////////
+////////////////////////////////////////////////
+TGraph IonRangeCalculator::getIonBraggCurveMeVPerMM(pid_type ion, double E_MeV, int Npoints){
+
+  // sanity checks
+  if(Npoints<2) {
+    std::cerr<<__FUNCTION__<<": ERROR: Requested Bragg curve with insufficient number of points for: gas index="<<myGasMixture<<", ion="<<ion<<"!"<<std::endl;
+    exit(-1);
+  }
+  auto itB=refBraggCurveMap.find(MultiKey2((int)myGasMixture, (int)ion));
+  if(itB==refBraggCurveMap.end()) {
+    std::cerr<<__FUNCTION__<<": ERROR: Reference Bragg curve is missing for: gas index="<<myGasMixture<<", ion="<<ion<<"!"<<std::endl;
+    exit(-1);
+  }
+  auto itR=refGasRangeCurveMap.find(MultiKey2((int)myGasMixture, (int)ion));
+  if(itR==refGasRangeCurveMap.end()) {
+    std::cerr<<__FUNCTION__<<": ERROR: Reference range curve is missing for: gas index="<<myGasMixture<<", ion="<<ion<<"!"<<std::endl;
+    exit(-1);
+  }
+  if(E_MeV<=0.0) {
+    std::cerr<<__FUNCTION__<<": ERROR: Wrong energy E="<<E_MeV<<" MeV!"<<std::endl;
+    exit(-1);
+  }
+
+  TGraph aGraph(Npoints);
+
+  // multiplicative factor for rescaling current range to the reference {p_ref, T_ref} conditions
+  const auto factor=(refBraggTemperatureMap[itB->first]/myGasTemperature)*(myGasPressure/refBraggPressureMap[itB->first]); // Bragg curve reference {p_ref, T_ref}
+  auto range_mm=getIonRangeMM(ion, E_MeV); // current {p, T}
+  double ref_xmax_mm, ref_y;
+  itB->second->GetPoint(itB->second->GetN()-1, ref_xmax_mm, ref_y); // Bragg curve reference {p_ref, T_ref}
+
+  // DEBUG
+  if(_debug) {
+    double xmin, xmax, ymin, ymax;
+    itB->second->ComputeRange(xmin, ymin, xmax, ymax);
+    std::cout<<__FUNCTION__<<": Bragg x-check: Xmax(last-point)[mm]="<<ref_xmax_mm<<", Xmax(ComputeRange)="<<xmax<<std::endl;
+  }
+  // DEBUG
+
+  for(int ipoint=0; ipoint<Npoints; ipoint++){
+    auto x_mm = range_mm*ipoint/(Npoints-1); // current {p, T}
+    auto ref_x_mm = x_mm * factor; // reference Bragg curve {p_ref, T_ref}
+    aGraph.SetPoint(ipoint, x_mm, itB->second->Eval(ref_xmax_mm-ref_x_mm) * factor ); // current {p, T}
+  }
+  aGraph=horizontalFlipTGraph(aGraph);
+  aGraph.Sort();
+
+  // DEBUG
+  if(_debug) {
+    std::cout<<__FUNCTION__<<": Gas index="<<getGasMixture()<<", Ion index="<<ion<<", Npoints="<<aGraph.GetN()<<std::endl;
+    for(auto iPoint=0; iPoint<aGraph.GetN(); iPoint++) {
+      double x, y;
+      aGraph.GetPoint(iPoint, x, y);
+      std::cout<<__FUNCTION__<<": point="<<iPoint<<"  x[mm]="<<x<<"  dE/dx[MeV/mm]="<<y<<std::endl;
+    }
+  }
+  // DEBUG
+
+  return aGraph;
+}
+////////////////////////////////////////////////
+////////////////////////////////////////////////
+double IonRangeCalculator::getIonBraggCurveIntegralMeV(pid_type ion, double E_MeV, int Npoints){ // integral of dE/dx curve for the current {gas, p, T}
+
+  // assume that all dE/dx values are non-negative
+  TGraph aGraph(getIonBraggCurveMeVPerMM(ion, E_MeV, Npoints));
+  double xmin, xmax, ymin, ymax;
+  aGraph.ComputeRange(xmin, ymin, xmax, ymax);
+  aGraph.SetPoint(aGraph.GetN(), xmin, 0.0);
+  aGraph.SetPoint(aGraph.GetN(), xmax, 0.0);
+  aGraph.Sort();
+  double area=aGraph.Integral();
+  return area;
+}
+////////////////////////////////////////////////
+////////////////////////////////////////////////
+void IonRangeCalculator::addIonBraggCurve(pid_type ion, gas_mixture_type gas, double p_mbar, double T_Kelvin, const char *datafile){ // dE/dx(x) corresponding to {gas, p, T}
+
+  // sanity checks
+  if(ion<PID_MIN || ion>PID_MAX) {
+    std::cerr<<__FUNCTION__<<": ERROR: Wrong ion index="<<ion<<"!"<<std::endl;
+    exit(-1);
+  }
+  if(gas<GAS_MIN || gas>GAS_MAX) {
+    std::cerr<<__FUNCTION__<<": ERROR: Wrong gas mixture index="<<gas<<"!"<<std::endl;
+    exit(-1);
+  }
+
+  auto mkey2=MultiKey2((int)gas, (int)ion);
+  auto it=refBraggCurveMap.find(mkey2);
+
+  // add new map elements
+  if(it==refBraggCurveMap.end()) {
+    refBraggCurveMap[mkey2]=new TGraph(datafile, "%lg %lg"); // X=(position along the track [mm]), Y=(ionization energy loss dE/dx [keV/mm])
+    if(refBraggCurveMap[mkey2]->GetN()<2) {
+      std::cerr<<__FUNCTION__<<": ERROR: Wrong initialization of dE/dx TGraph using datafile="<<datafile<<"!"<<std::endl;
+      exit(-1);
+    }
+    scaleTGraph(refBraggCurveMap[mkey2], 1e-3); // convert keV/mm to MeV/mm
+    refBraggCurveMap[mkey2]->Sort(); // sort by distance along the track in ascending order
+    double first_pos,first_val;
+    refBraggCurveMap[mkey2]->GetPoint(0, first_pos, first_val);
+    if(first_pos<0.0) {
+	std::cerr<<__FUNCTION__<<": ERROR: Wrong initialization of dE/dx TGraph using datafile="<<datafile<<"!"<<std::endl;
+	exit(-1);
+    } else if(first_pos>0.0) {
+      refBraggCurveMap[mkey2]->SetPoint(refBraggCurveMap[mkey2]->GetN(), 0.0, first_val);
+      refBraggCurveMap[mkey2]->Sort(); // re-sort
+    }
+    zeroSuppressTGraph(refBraggCurveMap[mkey2]);
+    refBraggPressureMap[mkey2]=p_mbar; // reference pressure [mbar]
+    refBraggTemperatureMap[mkey2]=T_Kelvin; // reference tempereature T[K]
+
+    // DEBUG
+    if(_debug) {
+      std::cout<<__FUNCTION__<<": Gas index="<<std::get<0>(mkey2)<<", Ion index="<<std::get<1>(mkey2)<<", Npoints="<<refBraggCurveMap[mkey2]->GetN()<<std::endl;
+      for(auto iPoint=0; iPoint<refBraggCurveMap[mkey2]->GetN(); iPoint++) {
+	double x, y;
+	refBraggCurveMap[mkey2]->GetPoint(iPoint, x, y);
+	std::cout<<__FUNCTION__<<": point="<<iPoint<<"  x[mm]="<<x<<"  dE/dx[MeV/mm]="<<y<<std::endl;
+      }
+    }
+    // DEBUG
+
+  } else {
+    std::cerr<<__FUNCTION__<<": ERROR: Reference dE/dx curve already exists for: gas index="<<gas<<", ion="<<ion<<"!"<<std::endl;
+    exit(-1);
+  }
+}
+////////////////////////////////////////////////
+////////////////////////////////////////////////
 bool IonRangeCalculator::IsOK(){
   bool result=false;
   
   // check if there is at least one valid range/energy curve and p, T are valid
-  if(refGasRangeCurveMap.size() && myGasPressure>0 && myGasTemperature>0) result=true;
+  if(refGasRangeCurveMap.size() && refBraggCurveMap.size() && myGasPressure>0 && myGasTemperature>0) result=true;
   return result;
 }
 ////////////////////////////////////////////////
