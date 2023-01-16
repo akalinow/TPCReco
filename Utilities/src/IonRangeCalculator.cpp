@@ -39,6 +39,7 @@ IonRangeCalculator::IonRangeCalculator(std::string resourcesPath, gas_mixture_ty
 
   // Rescale ion range curves for specific gas, pressure and temperature.
   setGasConditions(gas, p_mbar, T_Kelvin);
+  ionProp=IonProperties::GetInstance();
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
