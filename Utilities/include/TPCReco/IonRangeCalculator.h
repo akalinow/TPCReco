@@ -9,6 +9,7 @@
 #include <TH1D.h>
 #include <TGraph.h>
 #include "TPCReco/CommonDefinitions.h"
+#include "IonProperties.h"
 
 class IonRangeCalculator{
 
@@ -69,9 +70,8 @@ class IonRangeCalculator{
   std::map<std::tuple<gas_mixture_type,pid_type>, double>  refBraggTemperatureMap;    // reference temperature for dE/dx(x) curve at given {gas, ion}
 
   gas_mixture_type myGasMixture{gas_mixture_type::GAS_MIN};   // GAS index 
-  std::map<pid_type, double> massTableMap; // particle or isotope mass table in [MeV/c^2]
   std::map<pid_type, std::tuple<double, double> > effectiveLengthCorrectionMap; // effective length correction (scale & offset [mm]) per particle/ion Id
-
+  std::shared_ptr<IonProperties> ionProp;
   double myGasTemperature{0}; // Kelvins
   double myGasPressure{0};    // mbar
 
