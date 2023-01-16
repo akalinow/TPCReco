@@ -71,4 +71,9 @@ enum gas_mixture_type{
   GAS_MAX=CO2
 };
 
+//conversion enum <--> string
+pid_type GetPidType(std::string& pidName);
+
+std::string GetPidName(pid_type type);
+
 #endif
