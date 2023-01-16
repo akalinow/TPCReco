@@ -25,14 +25,16 @@
 #include <TH3D.h>
 #include <TLatex.h>
 #include <TProfile.h>
+
+#include <boost/filesystem.hpp>
+
+//#define WITH_GET 1
 #ifdef WITH_GET
 #include "EventSourceGRAW.h"
 #include "EventSourceMultiGRAW.h"
 #endif
 #include "EventSourceROOT.h"
 #include "EventSourceMC.h"
-
-#include "MainFrame.h"
 
 inline std::shared_ptr<EventSourceBase> EventSourceFactory::makeEventSourceObject(boost::property_tree::ptree myConfig, Modes& myWorkMode) {
 	bool placeholder_bool_var;
@@ -51,60 +53,47 @@ inline std::shared_ptr<EventSourceBase> EventSourceFactory::makeEventSourceObjec
 		exit(1);
 		return decltype(myEventSource)();
 	}
-	FileStat_t stat;
 
 	// parse dataFile string for comma separated files
-	std::vector<std::string> dataFileVec;
+	std::vector<boost::filesystem::path>
+		dataFileVec,
+		dataFilePaths;
 	//  vector<std::string> basenameVec;
 	//  vector<std::string> dirnameVec;
-	TString list = dataFileName;
-	TObjArray* token = list.Tokenize(",");
-	//  token->Print();
+	size_t pos = 0;
+	std::string token;
+	while ((pos = dataFileName.find(",")) != std::string::npos) { //split paths from a string with "," delimiter
+		token = dataFileName.substr(0, pos);
+		dataFilePaths.push_back(token);
+		dataFileName.erase(0, pos + 1);
+	}
+
 #ifdef WITH_GET
 	bool all_graw = false;
 #endif
-	for (Int_t itoken = 0; itoken < token->GetEntries(); itoken++) {
-		//    TString list2=((TObjString *)(token->At(itoken)))->String(); // path + name of single file
-		std::string list2(((TObjString*)(token->At(itoken)))->String().Data());
-		if (gSystem->GetPathInfo(list2.c_str(), stat) != 0) {
-			if (list2.find("_MC_") != std::string::npos) {
-				dataFileVec.push_back(list2);
-				continue;
+	for (auto filePath : dataFilePaths) {
+		if (boost::filesystem::exists(filePath)) {
+			if (filePath.string().find("_MC_") != std::string::npos) {
+				dataFileVec.push_back(filePath);
 			}
-			std::cerr << KRED << "Invalid data path. No such file or directory: " << RST << list2 << _endl_;
+		}
+		else {
+			std::cerr << KRED << "Invalid data path. No such file or directory: " << RST << filePath << _endl_;
 			exit(1);
 		}
 #ifdef WITH_GET
-		if (((stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG) && list2.find(".graw") != std::string::npos) {
-			all_graw = true;
-		}
-		else {
-			all_graw = false;
-		}
+		all_graw = boost::filesystem::is_regular_file(filePath) && filePath.string().find(".graw") != std::string::npos;
 #endif
-		dataFileVec.push_back(list2);
-		//   TObjArray *token2 = list2.Tokenize("/");
-		//    TString dirName;
-		//    for (Int_t itoken2=0; itoken2 < token2->GetEntries()-1; itoken2++) {
-		//      dirName=((TObjString *)(token2->At(itoken2)))->String()+"/"; // path
-		//    }
-		//    TString baseName;
-		//    if(token2->GetEntries()-1 > 0) baseName=((TObjString *)(token2->At(token2-GetEntries()-1)))->String(); // basename
-		//    dirnameVec.push_back(dirName);
-		//    basenameVec.push_back(baseName);
+		dataFileVec.push_back(filePath);
 	}
 
-	//  if(gSystem->GetPathInfo(dataFileName.c_str(), stat) != 0){
-	//    std::cerr<<KRED<<"Invalid data path. No such file or directory: "<<RST<<dataFileName<<_endl_;
-	//   return;
-	//  }
-
 	std::cout << "dataFileVec.size(): " << dataFileVec.size()
-		<< " ((stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG): " << ((stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG)
+		<< " (boost::filesystem::is_regular_file(dataFileVec[0])): " << boost::filesystem::is_regular_file(dataFileVec[0])
 		<< "dataFileName.find(_MC_)!=std::string::npos: " << (dataFileName.find("_MC_") != std::string::npos)
 		<< _endl_;
 
-	if (dataFileVec.size() == 1 && ((stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG) && dataFileName.find(".root") != std::string::npos) {
+
+	if (dataFileVec.size() == 1 && boost::filesystem::is_regular_file(dataFileVec[0]) && dataFileName.find(".root") != std::string::npos) {
 		myWorkMode = M_OFFLINE_ROOT_MODE;
 		myEventSource = std::make_shared<EventSourceROOT>(geometryFileName);
 	}
@@ -114,7 +103,7 @@ inline std::shared_ptr<EventSourceBase> EventSourceFactory::makeEventSourceObjec
 	}
 
 #ifdef WITH_GET
-	else if (all_graw) { //(stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG) && dataFileName.find(".graw")!=std::string::npos){
+	else if (all_graw) { //ROOT_file_check && dataFileName.find(".graw")!=std::string::npos){
 
 		myWorkMode = M_OFFLINE_GRAW_MODE;
 		if (myConfig.find("singleAsadGrawFile") != myConfig.not_found()) {
@@ -134,18 +123,19 @@ inline std::shared_ptr<EventSourceBase> EventSourceFactory::makeEventSourceObjec
 			break;
 		case M_OFFLINE_NGRAW_MODE:
 			myEventSource = std::make_shared<EventSourceMultiGRAW>(geometryFileName);
-			{ unsigned int AsadNboards = dynamic_cast<EventSourceGRAW*>(myEventSource.get())->getGeometry()->GetAsadNboards();
-			if (dataFileVec.size() > AsadNboards) {
-				std::cerr << KRED << "Provided too many GRAW files. Expected up to " << AsadNboards << ".dataFile: " << RST << dataFileName << _endl_;
-				return decltype(myEventSource)();
-			}
+			{
+				unsigned int AsadNboards = dynamic_cast<EventSourceGRAW*>(myEventSource.get())->getGeometry()->GetAsadNboards();
+				if (dataFileVec.size() > AsadNboards) {
+					std::cerr << KRED << "Provided too many GRAW files. Expected up to " << AsadNboards << ".dataFile: " << RST << dataFileName << _endl_;
+					return decltype(myEventSource)();
+				}
 			}
 			break;
 		default:;
 		};
 
 	}
-	else if (dataFileVec.size() == 1 && (stat.fMode & EFileModeMask::kS_IFDIR) == EFileModeMask::kS_IFDIR) {
+	else if (dataFileVec.size() == 1 && boost::filesystem::is_directory(dataFileVec[0])) {
 		useFileWatch = true;
 		myWorkMode = M_ONLINE_GRAW_MODE;
 		if (myConfig.find("singleAsadGrawFile") != myConfig.not_found()) {
