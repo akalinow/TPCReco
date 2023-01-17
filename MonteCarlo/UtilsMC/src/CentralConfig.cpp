@@ -4,7 +4,7 @@
  * @brief      Implementation of CentralConfig class
  */
 
-#include <CentralConfig.hh>
+#include <CentralConfig.h>
 
 
 CentralConfig* CentralConfig::instance=nullptr;

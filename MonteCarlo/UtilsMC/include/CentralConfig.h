@@ -8,7 +8,7 @@
 #define CENTRALCONFIG_H
 /// \cond
 #include <iostream>
-#include "pugixml.hh"
+#include "pugixml.h"
 
 #include <fstream>
 #include <sstream>
