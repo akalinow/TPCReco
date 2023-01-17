@@ -5,26 +5,8 @@
 #include <fstream>
 #include <iomanip>
 #include <vector>
-#include <thread>
 
-#include "DirectoryWatch.h"
-
-#include <TApplication.h>
 #include "colorText.h"
-
-#include <TSystem.h>
-#include <TObjArray.h> 
-#include <TObjString.h>
-#include <TStyle.h>
-#include <TString.h>
-#include <TFrame.h>
-#include <TVirtualX.h>
-#include <TImage.h>
-
-#include <TH2D.h>
-#include <TH3D.h>
-#include <TLatex.h>
-#include <TProfile.h>
 
 #include <boost/filesystem.hpp>
 
@@ -58,8 +40,7 @@ inline std::shared_ptr<EventSourceBase> EventSourceFactory::makeEventSourceObjec
 	std::vector<boost::filesystem::path>
 		dataFileVec,
 		dataFilePaths;
-	//  vector<std::string> basenameVec;
-	//  vector<std::string> dirnameVec;
+
 	size_t pos = 0;
 	std::string token;
 	while ((pos = dataFileName.find(",")) != std::string::npos) { //split paths from a string with "," delimiter
