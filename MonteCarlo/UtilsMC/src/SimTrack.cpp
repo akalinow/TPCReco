@@ -4,7 +4,7 @@
 
 
 SimTrack::SimTrack()
-    :A{0}, Z{0}, pdgID{0}, particleID{UNKNOWN}, energy{0}, length{0}
+    :A{0}, Z{0}, pdgID{0}, particleID{UNKNOWN}, energy{0}
 {
 	startPos=ROOT::Math::XYZPoint(0,0,0);
 	stopPos=ROOT::Math::XYZPoint(0,0,0);
@@ -18,12 +18,10 @@ void SimTrack::SetStart(ROOT::Math::XYZPoint start)
 void SimTrack::SetStart(double x, double y, double z)
 {
 	startPos=ROOT::Math::XYZPoint(x,y,z);
-    length=(stopPos-startPos).R();
 }
 void SimTrack::SetStop(ROOT::Math::XYZPoint stop)
 {
 	stopPos=std::move(stop);
-	length=(stopPos-startPos).R();
 }
 void SimTrack::SetStop(double x, double y, double z)
 {

@@ -32,7 +32,6 @@ private:
 	unsigned int pdgID; ///< PDG ID of a particle (to allow identification of electrons, gammas etc. as primary particles)
 	pid_type particleID; ///< Particle ID from enum in TPCreco
 	double energy; ///< Energy of a particle in MeV
-	double length; ///< Length of a particle's track in mm
 	ROOT::Math::XYZVector momentum; ///< Momentum of a particle in MeV/c
 	SimHits hits; ///<Vector of simulated hits in detector volume
 public:
@@ -68,7 +67,7 @@ public:
 	unsigned int GetZ() const { return Z; }
 	unsigned int GetPDG() const { return pdgID; }
     pid_type GetID() const { return particleID; }
-	double GetLength() const {return length;};
+	double GetLength() const { return (stopPos-startPos).R(); }
 	double GetEdep() const; ///< Energy deposit in gas volume of a given track
 	unsigned int GetNHits() const { return hits.size(); }
 	SimHits GetHits() const { return hits; }
