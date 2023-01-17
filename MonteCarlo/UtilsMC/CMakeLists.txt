@@ -42,8 +42,8 @@ install(TARGETS ${MODULE_NAME} LIBRARY DESTINATION lib)
 
 install(
         FILES
-        ${CMAKE_CURRENT_BINARY_DIR}/libUtilsMcDict_rdict.pcm
-        ${CMAKE_CURRENT_BINARY_DIR}/libUtilsMcDict.rootmap
+        ${CMAKE_CURRENT_BINARY_DIR}/libUtilsMC_rdict.pcm
+        ${CMAKE_CURRENT_BINARY_DIR}/libUtilsMC.rootmap
         DESTINATION lib)
 
 
