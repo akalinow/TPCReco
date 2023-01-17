@@ -29,6 +29,7 @@ public:
 	 * @brief      Constructor
 	 */
 	SimEvent()=default;
+    virtual ~SimEvent()=default;
 
 	/**
 	 * @brief      Constructor taking vector of SimHit objects as an argument

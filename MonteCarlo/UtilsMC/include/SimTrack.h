@@ -40,6 +40,7 @@ public:
 	 * @brief      Constructor
 	 */
 	SimTrack();
+    virtual ~SimTrack()=default;
 	// setters:
 	
 	void SetStart(ROOT::Math::XYZPoint start);

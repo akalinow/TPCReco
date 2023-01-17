@@ -24,6 +24,7 @@ private:
 	double Edep; ///< Energy deposit of the hit in MeV
 public:
 	SimHit();
+    virtual ~SimHit()=default;
 	SimHit(ROOT::Math::XYZPoint &pos, double &edep);
 	SimHit(double x, double y, double z, double edep);
 	void SetPosition(ROOT::Math::XYZPoint &pos);
