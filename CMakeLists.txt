@@ -50,6 +50,7 @@ add_subdirectory(Reconstruction)
 add_subdirectory(Analysis)
 add_subdirectory(GUI)
 add_subdirectory(Simulation)
+add_subdirectory(MonteCarlo)
 
 if(NOT IS_DIRECTORY ${CMAKE_INSTALL_PREFIX}/resources)
   install(DIRECTORY resources DESTINATION ${CMAKE_INSTALL_PREFIX})
