@@ -32,7 +32,7 @@ public:
     virtual ~SimEvent()=default;
 
 	/**
-	 * @brief      Constructor taking vector of SimHit objects as an argument
+	 * @brief      Constructor taking vector of SimTrack objects as an argument
 
 	 */
 	explicit SimEvent(SimTracks &tracks);
