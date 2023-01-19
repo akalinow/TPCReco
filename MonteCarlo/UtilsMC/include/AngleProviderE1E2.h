@@ -9,11 +9,10 @@ class AngleProviderE1E2 : public AngleProvider{
 public:
     AngleProviderE1E2();
     double GetAngle() override;
-    double thetaEmission(double* x, double *par);
 protected:
     void ValidateParamValues() override;
 private:
-
+    double Theta(double* x, double *par);
     std::unique_ptr<TF1> thetaEmissionTF1;
     static unsigned int nInstances;
 };

@@ -14,6 +14,8 @@ public:
     void SetSingleParam(const std::string& pname, const double &pval);
     void SetParams(const std::map<std::string,double> &pars);
     double GetParam(const std::string &pname);
+    std::vector<std::string> GetParamNames();
+    void PrintParams();
 protected:
     std::unique_ptr<TRandom> randGen;
     std::map<std::string, double> paramVals;
