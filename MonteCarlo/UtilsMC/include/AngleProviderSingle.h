@@ -5,11 +5,13 @@
 
 class AngleProviderSingle : public AngleProvider{
 public:
-    AngleProviderSingle() :angle{0} {}
-    explicit AngleProviderSingle(double an) :angle{an} {}
-    double GetAngle() override { return angle; };
-private:
-    double angle;
+    AngleProviderSingle()
+    {
+        paramVals["singleAngle"]=0;
+    }
+    double GetAngle() override { return paramVals["singleAngle"]; };
+protected:
+    void ValidateParamValues() override {}
 };
 
 #endif //TPCSOFT_ANGLEPROVIDERSINGLE_H

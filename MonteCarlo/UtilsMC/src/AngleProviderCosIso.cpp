@@ -2,10 +2,23 @@
 #include "TMath.h"
 
 AngleProviderCosIso::AngleProviderCosIso()
-    : aCosMin{-1}, aCosMax{1} {}
-
-AngleProviderCosIso::AngleProviderCosIso(double min, double max)
 {
+    paramVals["minCos"]=-1;
+    paramVals["maxCos"]=1;
+}
+
+double AngleProviderCosIso::GetAngle()
+{
+    auto aCosMin=paramVals["minCos"];
+    auto aCosMax=paramVals["maxCos"];
+    auto cos=randGen->Uniform(aCosMin,aCosMax);
+    return TMath::ACos(cos);
+}
+
+void AngleProviderCosIso::ValidateParamValues()
+{
+    auto min=paramVals["cosMin"];
+    auto max=paramVals["cosMAx"];
     if(min<-1)
         throw std::invalid_argument(
                 "AngleProviderCosIso::AngleProviderCosIso: min cos is smaller than -1");
@@ -15,15 +28,6 @@ AngleProviderCosIso::AngleProviderCosIso(double min, double max)
     if(min>max)
         throw std::invalid_argument(
                 "AngleProviderCosIso::AngleProviderCosIso: min cos is larger than max cos!");
-
-    aCosMin=min;
-    aCosMax=max;
-}
-
-double AngleProviderCosIso::GetAngle()
-{
-    auto cos=randGen->Uniform(aCosMin,aCosMax);
-    return TMath::ACos(cos);
 }
 
 

@@ -2,16 +2,15 @@
 #define TPCSOFT_ANGLEPROVIDER_H
 
 #include <memory>
+#include "Provider.h"
 #include <TRandom3.h>
+#include <string>
+#include <map>
 
-class AngleProvider{
+class AngleProvider : public Provider{
 public:
-    AngleProvider()
-        :randGen{std::make_unique<TRandom3>()} {}
-    virtual ~AngleProvider()=default;
+    ~AngleProvider() override =default;
     virtual double GetAngle()=0;
-protected:
-    std::unique_ptr<TRandom> randGen;
 };
 
 #endif //TPCSOFT_ANGLEPROVIDER_H

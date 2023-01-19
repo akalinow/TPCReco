@@ -6,11 +6,9 @@
 class AngleProviderCosIso : public AngleProvider{
 public:
     AngleProviderCosIso();
-    AngleProviderCosIso(double min, double max);
     double GetAngle() override;
-private:
-    double aCosMin;
-    double aCosMax;
+protected:
+    void ValidateParamValues() override;
 };
 
 #endif //TPCSOFT_ANGLEPROVIDERCOSISO_H

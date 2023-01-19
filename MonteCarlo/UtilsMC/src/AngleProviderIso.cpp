@@ -2,26 +2,29 @@
 #include "Math/Math.h"
 #include "stdexcept"
 
-AngleProviderIso::AngleProviderIso()
-    :aMin{-ROOT::Math::Pi()}, aMax{ROOT::Math::Pi()}
-{}
 
 double AngleProviderIso::GetAngle()
 {
-    return randGen->Uniform(aMin,aMax);
+    return randGen->Uniform(paramVals["minAngle"],paramVals["maxAngle"]);
 }
 
-AngleProviderIso::AngleProviderIso(double min, double max)
+void AngleProviderIso::ValidateParamValues()
 {
-    if(min<-ROOT::Math::Pi())
+    auto aMin=paramVals["minAngle"];
+    auto aMax=paramVals["maxAngle"];
+    if(aMin<-ROOT::Math::Pi())
         throw std::invalid_argument(
-            "AngleProviderIso::AngleProviderIso: min angle is smaller than -pi!");
-    if(max>ROOT::Math::Pi())
+                "AngleProviderIso::AngleProviderIso: min angle is smaller than -pi!");
+    if(aMax>ROOT::Math::Pi())
         throw std::invalid_argument(
-            "AngleProviderIso::AngleProviderIso: max angle is larger than pi!");
-    if(min>max)
+                "AngleProviderIso::AngleProviderIso: max angle is larger than pi!");
+    if(aMin>aMax)
         throw std::invalid_argument(
-            "min angle is larger than max angle!");
-    aMin=min;
-    aMax=max;
+                "AngleProviderIso::AngleProviderIso: min angle is larger than max angle!");
+}
+
+AngleProviderIso::AngleProviderIso()
+{
+    paramVals["minAngle"]=-ROOT::Math::Pi();
+    paramVals["maxAngle"]=ROOT::Math::Pi();
 }
