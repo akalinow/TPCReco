@@ -35,8 +35,7 @@ private:                                                                 \
 
 class Provider{
 public:
-    Provider()
-        :randGen{std::make_unique<TRandom3>(0)} {}
+    Provider()=default;
     virtual ~Provider()=default;
     void SetSingleParam(const std::string& pname, const double &pval);
     void SetParams(const std::map<std::string,double> &pars);
@@ -45,7 +44,7 @@ public:
     void PrintParams();
     virtual std::string GetName()=0;
 protected:
-    std::unique_ptr<TRandom> randGen;
+    static std::unique_ptr<TRandom> randGen;
     std::map<std::string, double> paramVals;
     virtual void ValidateParamValues()=0;
     static unsigned int nInstances;

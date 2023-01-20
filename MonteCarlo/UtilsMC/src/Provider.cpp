@@ -4,6 +4,7 @@
 #include "iostream"
 
 unsigned int Provider::nInstances=0;
+std::unique_ptr<TRandom> Provider::randGen=std::make_unique<TRandom3>(0);
 
 void Provider::SetSingleParam(const std::string& pname, const double &pval)
 {
