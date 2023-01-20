@@ -12,15 +12,11 @@
   \ingroup testing
 */
 
-// header for unit test testObjectRegistrar
-
 #include <ObjectRegistrator.h>
 #include <ObjectFactory.h>
 #include "gtest/gtest.h"
 
-
 using namespace utl;
-
 
 namespace {
 
@@ -101,6 +97,9 @@ namespace {
         utl::ObjectRegistrator<ExternalObject<id>, ExternalObjectFactory> fAutoReg;
     };
 
+    template class ExternalObject<1>;
+    template class ExternalObject<3>;
+
 
 }
 
@@ -125,7 +124,7 @@ TEST(ObjectRegistrator, CreationMember)
     ASSERT_NE(p.get(), nullptr);
 }
 
-void testCreationExternal()
+TEST(ObjectRegistrator, CreationExternal)
 {
     ASSERT_EQ(ExternalObjectFactory::GetNumberOfCreators(), 2u);
 
