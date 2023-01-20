@@ -3,7 +3,7 @@
 #include "TF1.h"
 #include "Math/Math.h"
 
-unsigned int AngleProviderE1E2::nInstances=0;
+
 
 AngleProviderE1E2::AngleProviderE1E2()
 {

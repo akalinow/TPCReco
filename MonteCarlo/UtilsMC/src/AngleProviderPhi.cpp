@@ -2,7 +2,6 @@
 #include "TF1.h"
 #include "Math/Math.h"
 
-unsigned int AngleProviderPhi::nInstances=0;
 
 AngleProviderPhi::AngleProviderPhi()
 {

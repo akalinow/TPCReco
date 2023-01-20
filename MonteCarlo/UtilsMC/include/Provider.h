@@ -48,6 +48,7 @@ protected:
     std::unique_ptr<TRandom> randGen;
     std::map<std::string, double> paramVals;
     virtual void ValidateParamValues()=0;
+    static unsigned int nInstances;
 private:
     void ValidateParamName(const std::string& pname);
 };

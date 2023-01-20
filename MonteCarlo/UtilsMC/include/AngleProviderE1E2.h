@@ -14,7 +14,6 @@ protected:
 private:
     double Theta(double* x, double *par);
     std::unique_ptr<TF1> thetaEmissionTF1;
-    static unsigned int nInstances;
 
     REGISTER_PROVIDER(AngleProviderE1E2)
 };

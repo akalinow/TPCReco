@@ -3,6 +3,8 @@
 #include <algorithm>
 #include "iostream"
 
+unsigned int Provider::nInstances=0;
+
 void Provider::SetSingleParam(const std::string& pname, const double &pval)
 {
     ValidateParamName(pname);
