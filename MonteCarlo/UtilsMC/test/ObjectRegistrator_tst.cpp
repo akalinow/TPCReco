@@ -1,6 +1,6 @@
 /**
   \file
-  Test automatic registration in ObjectFacotry
+  Test automatic registration in ObjectFactory
 
   \author Lukas Nellen
   \version $Id$
@@ -26,7 +26,7 @@ namespace {
 
     class InheritObjectBase {
     public:
-        virtual ~InheritObjectBase() { }
+        virtual ~InheritObjectBase() = default;
         virtual int GetId() = 0;
     };
 
@@ -37,7 +37,7 @@ namespace {
     class InheritObject : public InheritObjectBase,
                           private ObjectRegistrator<InheritObject<id>, InheritObjectFactory> {
     public:
-        int GetId() { return GetRegistrationId(); }
+        int GetId() override { return GetRegistrationId(); }
 
         static typename InheritObjectFactory::IdentifierType
         GetRegistrationId()  { return id; }
@@ -52,7 +52,7 @@ namespace {
 
     class MemberObjectBase {
     public:
-        virtual ~MemberObjectBase() {}
+        virtual ~MemberObjectBase() = default;
         virtual int GetId() = 0;
     };
 
@@ -62,7 +62,7 @@ namespace {
     template<int id>
     class MemberObject : public MemberObjectBase {
     public:
-        int GetId() { return GetRegistrationId(); }
+        int GetId() override { return GetRegistrationId(); }
 
         static typename MemberObjectFactory::IdentifierType
         GetRegistrationId()  { return id; }
@@ -79,7 +79,7 @@ namespace {
     class ExternalObjectBase
     {
     public:
-        virtual ~ExternalObjectBase() {}
+        virtual ~ExternalObjectBase() = default;
         virtual int GetId() = 0;
     };
 
@@ -90,7 +90,7 @@ namespace {
             : public ExternalObjectBase
     {
     public:
-        int GetId() { return GetRegistrationId(); }
+        int GetId() override { return GetRegistrationId(); }
 
         static typename ExternalObjectFactory::IdentifierType
         GetRegistrationId()  { return id; }
