@@ -8,6 +8,8 @@
   \author Lukas Nellen
   \version $Id$
   \date 10 Mar 2004
+  Modified by Piotr.Podlaski@fuw.edu.pl
+  01.2023
 */
 
 #include <map>
@@ -28,10 +30,6 @@ namespace utl {
 
       In alternative inmplementations, this functions could throw an
       exception or try to load a library dynamically.
-
-      \author Lukas Nellen
-      \date 10 Mar 2004
-      \ingroup stl
     */
 
     template<typename IdentifierType, class ObjectPtrType>
@@ -71,9 +69,6 @@ namespace utl {
       The design is inspired by the object factory in the book Modern
       C++ Design by Andrei Alexandrescu.
 
-      \author Lukas Nellen
-      \date 10 Mar 2004
-      \ingroup stl
     */
 
     template<class ObjPtrType,

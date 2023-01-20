@@ -7,6 +7,9 @@
   \author Lukas Nellen
   \version $Id$
   \date 12 Mar 2004
+
+  Modified by Piotr.Podlaski@fuw.edu.pl
+  01.2023
 */
 
 #include "ObjectFactory.h"
@@ -22,9 +25,6 @@ namespace utl {
       This class provide the creator function for a class that provides
       a \c Create functions to create itself.
 
-      \author Lukas Nellen
-      \date 18 Mar 2004
-      \ingroup stl
     */
 
     template<class ObjectType, class ObjectFactory>
@@ -57,9 +57,6 @@ namespace utl {
        a static \c Create() function that creates the class with the
        default constructor.
 
-       \author Lukas Nellen
-       \date 12 Mar 2004
-       \ingroup stl
     */
 
     template<class ObjectType,
