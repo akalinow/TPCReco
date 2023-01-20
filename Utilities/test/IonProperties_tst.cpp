@@ -1,8 +1,6 @@
 #include "IonProperties.h"
 #include "gtest/gtest.h"
 
-
-
 TEST(IonProperties, GetZ) {
     auto prop=IonProperties::GetInstance();
     auto protonZ=prop->GetZ(pid_type::PROTON);
@@ -21,26 +19,23 @@ TEST(IonProperties, GetA) {
 
 TEST(IonProperties, GetMass) {
     auto prop=IonProperties::GetInstance();
-    auto protonMass= prop->GetAtomMassU(pid_type::PROTON);
-    auto alphaMass= prop->GetAtomMassU(pid_type::ALPHA);
-    EXPECT_DOUBLE_EQ(protonMass,1.00782503190);
-    EXPECT_DOUBLE_EQ(alphaMass,4.00260325413);
+    auto protonMass= prop->GetAtomMass(pid_type::PROTON);
+    auto alphaMass= prop->GetAtomMass(pid_type::ALPHA);
+    EXPECT_DOUBLE_EQ(protonMass,1.00782503190*IonProperties::atomicMassUnitMeV);
+    EXPECT_DOUBLE_EQ(alphaMass,4.00260325413*IonProperties::atomicMassUnitMeV);
 }
 
-TEST(IonProperties, AtomicMAssUnit) {
+TEST(IonProperties, AtomicMassUnit) {
     auto prop=IonProperties::GetInstance();
     auto u=prop->atomicMassUnitMeV;
     EXPECT_DOUBLE_EQ(u, 931.49410242);
-    auto protonMassU= prop->GetAtomMassU(pid_type::PROTON);
-    auto protonMassMeV= prop->GetAtomMassMeV(pid_type::PROTON);
-    EXPECT_DOUBLE_EQ(protonMassMeV,protonMassU*u);
 
 }
 
 TEST(IonProperties, Exceptions){
     auto prop=IonProperties::GetInstance();
     EXPECT_THROW(
-            prop->GetAtomMassU(pid_type::THREE_ALPHA),
+            prop->GetAtomMass(pid_type::THREE_ALPHA),
             std::out_of_range);
     EXPECT_THROW(
             prop->GetZ(pid_type::C12_ALPHA),

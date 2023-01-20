@@ -191,7 +191,7 @@ double IonRangeCalculator::getIonEnergyMeV(pid_type ion, double range_mm){ // in
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 double IonRangeCalculator::getIonMassMeV(pid_type ion){ // particle or isotope mass in [MeV/c^2]
-  return ionProp->GetAtomMassMeV(ion);
+  return ionProp->GetAtomMass(ion);
 }
 
 ////////////////////////////////////////////////

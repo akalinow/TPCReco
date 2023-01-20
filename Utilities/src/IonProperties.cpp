@@ -42,12 +42,8 @@ IonProperties::SingleIonProperty IonProperties::GetIonProperty(pid_type ionType)
     return propMap[ionType];
 }
 
-double IonProperties::GetAtomMassU(pid_type ionType){
-    return GetIonProperty(ionType).atomMassU;
-}
-
-double IonProperties::GetAtomMassMeV(pid_type ionType){
-    return GetAtomMassU(ionType) * atomicMassUnitMeV;
+double IonProperties::GetAtomMass(pid_type ionType){
+    return GetIonProperty(ionType).atomMassU * atomicMassUnitMeV;
 }
 
 int IonProperties::GetZ(pid_type ionType){

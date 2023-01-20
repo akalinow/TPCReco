@@ -12,8 +12,7 @@ public:
     IonProperties(const IonProperties&)=delete;
     IonProperties& operator=(const IonProperties&)=delete;
     static std::shared_ptr<IonProperties> GetInstance();
-    double GetAtomMassU(pid_type ionType);
-    double GetAtomMassMeV(pid_type ionType);
+    double GetAtomMass(pid_type ionType);
     int GetZ(pid_type ionType);
     int GetA(pid_type ionType);
     static double atomicMassUnitMeV;

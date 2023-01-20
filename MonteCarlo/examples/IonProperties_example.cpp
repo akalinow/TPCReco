@@ -12,13 +12,12 @@ int main()
     auto anIon=pid_type::ALPHA;
 
     //Collect all the info:
-    auto mMeV = ionProp->GetAtomMassMeV(anIon);
-    auto mU= ionProp->GetAtomMassU(anIon);
+    auto mMeV = ionProp->GetAtomMass(anIon);;
     auto A=ionProp->GetA(anIon);
     auto Z=ionProp->GetZ(anIon);
 
     //print it out to the console
     std::cout<<"Properties of \'"<<GetPidName(anIon)<<"\' ion:\n";
-    std::cout<<"\tm="<<mU<<" u,\n\tm="<<mMeV<<" MeV\n\t";
+    std::cout<<"\tm="<<mMeV<<" MeV\n\t";
     std::cout<<"A="<<A<<"\n\tZ="<<Z<<std::endl;
 }

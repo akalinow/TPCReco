@@ -25,7 +25,7 @@ public:
     //Wrappers around IonProperties, might be useful
     inline int GetA() { return IonProperties::GetInstance()->GetA(pID); }
     inline int GetZ() { return IonProperties::GetInstance()->GetZ(pID); }
-    inline double GetMassMeV() { return IonProperties::GetInstance()->GetAtomMassMeV(pID); }
+    inline double GetMassMeV() { return IonProperties::GetInstance()->GetAtomMass(pID); }
 
     void SetID(const pid_type &id) { pID=id; }
     void SetEmissionPoint(const ROOT::Math::XYZPoint& start) { emissionPoint=start; }
