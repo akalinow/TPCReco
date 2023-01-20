@@ -12,8 +12,8 @@ int main()
     auto anIon=pid_type::ALPHA;
 
     //Collect all the info:
-    auto mMeV = ionProp->GetMassMeV(anIon);
-    auto mU=ionProp->GetMassU(anIon);
+    auto mMeV = ionProp->GetAtomMassMeV(anIon);
+    auto mU= ionProp->GetAtomMassU(anIon);
     auto A=ionProp->GetA(anIon);
     auto Z=ionProp->GetZ(anIon);
 
