@@ -1,5 +1,6 @@
 #include "AngleProvider.h"
 #include "XYProvider.h"
+#include "EProvider.h"
 
 #include "TCanvas.h"
 #include "TH1D.h"
@@ -46,6 +47,17 @@ int main()
             h->Fill(r.first,r.second);
         }
         hVec2D.push_back(std::move(h));
+    }
+
+    //Energy distributions (skip all other ones):
+    for(const auto& p: ProviderFactory::GetRegiseredIdentifiers()){
+        auto prov=ProviderFactory::Create<EProvider>(p);
+        if(!prov) continue;
+        auto h=std::make_unique<TH1D>(p.c_str(),p.c_str(),1000,
+                                      5,15);
+        for(int i=0;i<100000;i++)
+            h->Fill(prov->GetEnergy());
+        hVec1D.push_back(std::move(h));
     }
 
     auto c = new TCanvas("c","",1024,768);
