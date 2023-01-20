@@ -47,15 +47,10 @@ AngleProviderE1E2::AngleProviderE1E2()
 }
 
 // 1D angular distribution to be used with TF1::GetRandom
-// Non-siotropic angular distrubution of alpha-particle emission angle wrt gamma beam
-// with E1 abd E2 components for Oxygen-16 photodisintegration reaction.
+// Non-isotropic angular distribution of alpha-particle emission angle wrt gamma beam
+// with E1 abd E2 components for Oxygen-16 photo disintegration reaction.
 // Ref: M.Assuncao et al., PRC 73 055801 (2006).
-//
-// x[0] = CMS theta_BEAM alpha-particle emission angle wrt gamma beam [rad]
-// par[0] = normalisation constant
-// par[1] = sigma_E1 - E1 cross section parameter [nb]
-// par[2] = sigma_E2 - E2 cross section parameter [nb]
-// par[3] = phase_12 - phase angle responsible for mixing E1/E2 [rad]
+
 double AngleProviderE1E2::Theta(double *x, double *par)
 {
     auto norm = 1.;

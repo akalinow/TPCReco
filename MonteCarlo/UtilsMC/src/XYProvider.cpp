@@ -40,3 +40,14 @@ void XYProviderGaussTail::ValidateParamValues()
     if(paramVals["flatR"]<0 )
         throw std::invalid_argument("XYProviderGaussTail::ValidateParamValues: radius cannot be smaller than 0!");
 }
+
+XYProviderSingle::XYProviderSingle()
+{
+    paramVals["singleX"]=0;
+    paramVals["singleY"]=0;
+}
+
+XYProvider::xyVal XYProviderSingle::GetXY()
+{
+    return {paramVals["singleX"],paramVals["singleY"]};
+}

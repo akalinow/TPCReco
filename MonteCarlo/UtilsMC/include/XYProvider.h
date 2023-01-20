@@ -26,4 +26,13 @@ private:
     REGISTER_PROVIDER(XYProviderGaussTail)
 };
 
+class XYProviderSingle: public XYProvider{
+    XYProviderSingle();
+    xyVal GetXY() override;
+protected:
+    void ValidateParamValues() override {}; //nothing to validate
+
+REGISTER_PROVIDER(XYProviderSingle)
+};
+
 #endif //TPCSOFT_XYPROVIDER_H
