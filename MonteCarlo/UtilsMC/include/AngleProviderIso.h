@@ -9,6 +9,8 @@ public:
     double GetAngle() override;
 protected:
     void ValidateParamValues() override;
+
+    REGISTER_PROVIDER(AngleProviderIso)
 };
 
 #endif //TPCSOFT_ANGLEPROVIDERISO_H

@@ -12,6 +12,7 @@ public:
     double GetAngle() override { return paramVals["singleAngle"]; };
 protected:
     void ValidateParamValues() override {}
+    REGISTER_PROVIDER(AngleProviderSingle)
 };
 
 #endif //TPCSOFT_ANGLEPROVIDERSINGLE_H

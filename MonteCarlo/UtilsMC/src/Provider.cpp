@@ -43,7 +43,7 @@ std::vector<std::string> Provider::GetParamNames()
 
 void Provider::PrintParams()
 {
-    std::cout<<"Parameters:\n";
+    std::cout<<"Parameters of "<<GetName()<<":\n";
     std::for_each(paramVals.begin(),paramVals.end(),
                   [](auto &p){
                         std::cout<<'\t'<<p.first<<": "<<p.second<<"\n";

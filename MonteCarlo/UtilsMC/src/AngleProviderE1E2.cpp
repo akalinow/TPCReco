@@ -9,7 +9,7 @@ AngleProviderE1E2::AngleProviderE1E2()
 {
     paramVals["sigmaE1"]=1;
     paramVals["sigmaE2"]=0;
-    paramVals["phaseE1E2"]=0;
+    paramVals["phaseE1E2"]=ROOT::Math::Pi()/2.;
     paramVals["phaseCosSign"]=1;
     std::string fName="AngleProviderE1E2TF1_"+std::to_string(nInstances++);
     thetaEmissionTF1=std::make_unique<TF1>(

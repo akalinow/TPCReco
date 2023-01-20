@@ -17,8 +17,8 @@ double AngleProviderCosIso::GetAngle()
 
 void AngleProviderCosIso::ValidateParamValues()
 {
-    auto min=paramVals["cosMin"];
-    auto max=paramVals["cosMAx"];
+    auto min=paramVals["minCos"];
+    auto max=paramVals["maxCos"];
     if(min<-1)
         throw std::invalid_argument(
                 "AngleProviderCosIso::AngleProviderCosIso: min cos is smaller than -1");

@@ -20,6 +20,7 @@ private:
 
     std::unique_ptr<TF1> phiEmissionTF1;
     static unsigned int nInstances;
+    REGISTER_PROVIDER(AngleProviderPhi)
 };
 
 #endif //TPCSOFT_ANGLEPROVIDERPHI_H
