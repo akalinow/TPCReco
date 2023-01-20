@@ -1,6 +1,7 @@
 #include "AngleProvider.h"
 #include "XYProvider.h"
 #include "EProvider.h"
+#include "ZProvider.h"
 
 #include "TCanvas.h"
 #include "TH1D.h"
@@ -12,9 +13,16 @@
 
 int main()
 {
-    //THIS IS NEITHER TYPICAL NOR PROPER USE CASE!
-    //FOR THE TYPICAL ONE, SEE LAS SECTION OF main()
-    //Purpose of this code is to present available distribution providers.
+    /*
+        ██     ██  █████  ██████  ███    ██ ██ ███    ██  ██████  ██
+        ██     ██ ██   ██ ██   ██ ████   ██ ██ ████   ██ ██       ██
+        ██  █  ██ ███████ ██████  ██ ██  ██ ██ ██ ██  ██ ██   ███ ██
+        ██ ███ ██ ██   ██ ██   ██ ██  ██ ██ ██ ██  ██ ██ ██    ██
+         ███ ███  ██   ██ ██   ██ ██   ████ ██ ██   ████  ██████  ██
+        THIS IS NEITHER TYPICAL NOR PROPER USE CASE!!!!
+        FOR THE TYPICAL ONE, SEE LAS SECTION OF main()
+        Purpose of this code is to present available distribution providers.
+     */
     gStyle->SetOptStat(0);
     std::vector<std::unique_ptr<TH1D>> hVec1D;
     std::vector<std::unique_ptr<TH2D>> hVec2D;
@@ -47,6 +55,17 @@ int main()
             h->Fill(r.first,r.second);
         }
         hVec2D.push_back(std::move(h));
+    }
+
+    //Z distributions (skip all other ones):
+    for(const auto& p: ProviderFactory::GetRegiseredIdentifiers()){
+        auto prov=ProviderFactory::Create<ZProvider>(p);
+        if(!prov) continue;
+        auto h=std::make_unique<TH1D>(p.c_str(),p.c_str(),1000,
+                                      -100,100);
+        for(int i=0;i<100000;i++)
+            h->Fill(prov->GetZ());
+        hVec1D.push_back(std::move(h));
     }
 
     //Energy distributions (skip all other ones):
