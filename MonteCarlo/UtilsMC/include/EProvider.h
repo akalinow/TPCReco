@@ -3,13 +3,13 @@
 
 #include "Provider.h"
 
-class EProvider : public Provider{
+class EProvider : public Provider {
 public:
     ~EProvider() override = default;
-    virtual double GetEnergy()=0;
+    virtual double GetEnergy() = 0;
 };
 
-class EProviderSingle : public EProvider{
+class EProviderSingle : public EProvider {
 public:
     EProviderSingle();
     double GetEnergy() override;
@@ -19,7 +19,7 @@ protected:
 REGISTER_PROVIDER(EProviderSingle)
 };
 
-class EProviderGaus : public EProvider{
+class EProviderGaus : public EProvider {
 public:
     EProviderGaus();
     double GetEnergy() override;

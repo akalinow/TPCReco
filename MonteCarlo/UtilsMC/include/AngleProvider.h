@@ -5,13 +5,13 @@
 
 class TF1;
 
-class AngleProvider : public Provider{
+class AngleProvider : public Provider {
 public:
-    ~AngleProvider() override =default;
-    virtual double GetAngle()=0;
+    ~AngleProvider() override = default;
+    virtual double GetAngle() = 0;
 };
 
-class AngleProviderCosIso : public AngleProvider{
+class AngleProviderCosIso : public AngleProvider {
 public:
     AngleProviderCosIso();
     double GetAngle() override;
@@ -21,20 +21,20 @@ protected:
 REGISTER_PROVIDER(AngleProviderCosIso)
 };
 
-class AngleProviderE1E2 : public AngleProvider{
+class AngleProviderE1E2 : public AngleProvider {
 public:
     AngleProviderE1E2();
     double GetAngle() override;
 protected:
     void ValidateParamValues() override;
 private:
-    double Theta(double* x, double *par);
+    double Theta(double *x, double *par);
     std::unique_ptr<TF1> thetaEmissionTF1;
 
 REGISTER_PROVIDER(AngleProviderE1E2)
 };
 
-class AngleProviderIso : public AngleProvider{
+class AngleProviderIso : public AngleProvider {
 public:
     AngleProviderIso();
     double GetAngle() override;
@@ -44,11 +44,11 @@ protected:
 REGISTER_PROVIDER(AngleProviderIso)
 };
 
-class AngleProviderPhi : public AngleProvider{
+class AngleProviderPhi : public AngleProvider {
 public:
     AngleProviderPhi();
     double GetAngle() override;
-    double Phi(double* x, double *par);
+    double Phi(double *x, double *par);
 protected:
     void ValidateParamValues() override;
 private:
@@ -57,15 +57,16 @@ private:
 REGISTER_PROVIDER(AngleProviderPhi)
 };
 
-class AngleProviderSingle : public AngleProvider{
+class AngleProviderSingle : public AngleProvider {
 public:
-    AngleProviderSingle()
-    {
-        paramVals["singleAngle"]=0;
+    AngleProviderSingle() {
+        paramVals["singleAngle"] = 0;
     }
+
     double GetAngle() override { return paramVals["singleAngle"]; };
 protected:
     void ValidateParamValues() override {}
+
 REGISTER_PROVIDER(AngleProviderSingle)
 };
 

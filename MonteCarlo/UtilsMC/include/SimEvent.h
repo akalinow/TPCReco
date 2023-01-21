@@ -22,29 +22,28 @@
  *
  * @brief      Class used to store information about simulated events.
  */
-class SimEvent : public TObject
-{	
+class SimEvent : public TObject {
 public:
-	/**
-	 * @brief      Constructor
-	 */
-	SimEvent()=default;
-    virtual ~SimEvent()=default;
+    /**
+     * @brief      Constructor
+     */
+    SimEvent() = default;
+    virtual ~SimEvent() = default;
 
-	/**
-	 * @brief      Constructor taking vector of SimTrack objects as an argument
+    /**
+     * @brief      Constructor taking vector of SimTrack objects as an argument
 
-	 */
-	explicit SimEvent(SimTracks &tracks);
+     */
+    explicit SimEvent(SimTracks &tracks);
 
-	void SetSimTracks(SimTracks &trcks);
-	SimTracks GetTracks();
-	SimTracksIterator TracksBegin();
-	SimTracksIterator TracksEnd();
-	
+    void SetSimTracks(SimTracks &trcks);
+    SimTracks GetTracks();
+    SimTracksIterator TracksBegin();
+    SimTracksIterator TracksEnd();
+
 private:
-	SimTracks tracks; /// Vector with simulated tracks (primary particles)
-	ClassDef(SimEvent,1); ///< ROOT macro to register SimEvent class
+    SimTracks tracks; /// Vector with simulated tracks (primary particles)
+ClassDef(SimEvent, 1); ///< ROOT macro to register SimEvent class
 };
 
 #endif

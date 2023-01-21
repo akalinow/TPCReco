@@ -11,27 +11,22 @@
 //ClassImp(SimEvent);
 
 
-SimEvent::SimEvent(SimTracks &tracks)
-{
-	this->tracks=tracks;
+SimEvent::SimEvent(SimTracks &tracks) {
+    this->tracks = tracks;
 }
 
-SimTracks SimEvent::GetTracks()
-{
-	return tracks;
+SimTracks SimEvent::GetTracks() {
+    return tracks;
 }
 
-SimTracksIterator SimEvent::TracksBegin()
-{
-	return tracks.begin();
+SimTracksIterator SimEvent::TracksBegin() {
+    return tracks.begin();
 }
 
-SimTracksIterator SimEvent::TracksEnd()
-{
-	return tracks.end();
+SimTracksIterator SimEvent::TracksEnd() {
+    return tracks.end();
 }
 
-void SimEvent::SetSimTracks(SimTracks &tracks)
-{
-	this->tracks=tracks;
+void SimEvent::SetSimTracks(SimTracks &tracks) {
+    this->tracks = tracks;
 }

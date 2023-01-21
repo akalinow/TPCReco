@@ -9,7 +9,7 @@
 
 class Provider;
 
-typedef utl::ObjectFactory<Provider*, std::string> ProviderFactory;
+typedef utl::ObjectFactory<Provider *, std::string> ProviderFactory;
 
 
 //Produce raw pointer here, we want to down-cast
@@ -33,23 +33,23 @@ private:                                                                 \
   utl::ObjectRegistrator<_moduleName_, ProviderFactory> fAutoModuleReg;
 
 
-class Provider{
+class Provider {
 public:
-    Provider()=default;
-    virtual ~Provider()=default;
-    void SetSingleParam(const std::string& pname, const double &pval);
-    void SetParams(const std::map<std::string,double> &pars);
+    Provider() = default;
+    virtual ~Provider() = default;
+    void SetSingleParam(const std::string &pname, const double &pval);
+    void SetParams(const std::map<std::string, double> &pars);
     double GetParam(const std::string &pname);
     std::vector<std::string> GetParamNames();
     void PrintParams();
-    virtual std::string GetName()=0;
+    virtual std::string GetName() = 0;
 protected:
     static std::unique_ptr<TRandom> randGen;
     std::map<std::string, double> paramVals;
-    virtual void ValidateParamValues()=0;
+    virtual void ValidateParamValues() = 0;
     static unsigned int nInstances;
 private:
-    void ValidateParamName(const std::string& pname);
+    void ValidateParamName(const std::string &pname);
 };
 
 #endif //TPCSOFT_PROVIDER_H

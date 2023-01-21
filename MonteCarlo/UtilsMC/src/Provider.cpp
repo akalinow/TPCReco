@@ -3,54 +3,48 @@
 #include <algorithm>
 #include "iostream"
 
-unsigned int Provider::nInstances=0;
-std::unique_ptr<TRandom> Provider::randGen=std::make_unique<TRandom3>(0);
+unsigned int Provider::nInstances = 0;
+std::unique_ptr<TRandom> Provider::randGen = std::make_unique<TRandom3>(0);
 
-void Provider::SetSingleParam(const std::string& pname, const double &pval)
-{
+void Provider::SetSingleParam(const std::string &pname, const double &pval) {
     ValidateParamName(pname);
-    paramVals[pname]=pval;
+    paramVals[pname] = pval;
     ValidateParamValues();
 }
 
-double Provider::GetParam(const std::string &pname)
-{
+double Provider::GetParam(const std::string &pname) {
     ValidateParamName(pname);
     return paramVals[pname];
 }
 
-void Provider::ValidateParamName(const std::string &pname)
-{
-    if(paramVals.find(pname)==paramVals.end())
-        throw std::runtime_error("Provider::ValidateParamName: Unknown parameter \'"+pname+"\'!");
+void Provider::ValidateParamName(const std::string &pname) {
+    if (paramVals.find(pname) == paramVals.end())
+        throw std::runtime_error("Provider::ValidateParamName: Unknown parameter \'" + pname + "\'!");
 }
 
-void Provider::SetParams(const std::map<std::string, double> &pars)
-{
-    for(auto &p: pars)
+void Provider::SetParams(const std::map<std::string, double> &pars) {
+    for (auto &p: pars)
     {
         ValidateParamName(p.first);
-        paramVals[p.first]=p.second;
+        paramVals[p.first] = p.second;
     }
     ValidateParamValues();
 }
 
-std::vector<std::string> Provider::GetParamNames()
-{
+std::vector<std::string> Provider::GetParamNames() {
     std::vector<std::string> v;
     std::transform(paramVals.begin(), paramVals.end(),
-                          std::back_inserter(v),
-                          [](auto &p){return p.first;});
+                   std::back_inserter(v),
+                   [](auto &p) { return p.first; });
     return v;
 }
 
-void Provider::PrintParams()
-{
-    std::cout<<"Parameters of "<<GetName()<<":\n";
-    std::for_each(paramVals.begin(),paramVals.end(),
-                  [](auto &p){
-                        std::cout<<'\t'<<p.first<<": "<<p.second<<"\n";
-                    }
-                  );
-    std::cout<<std::flush;
+void Provider::PrintParams() {
+    std::cout << "Parameters of " << GetName() << ":\n";
+    std::for_each(paramVals.begin(), paramVals.end(),
+                  [](auto &p) {
+                      std::cout << '\t' << p.first << ": " << p.second << "\n";
+                  }
+    );
+    std::cout << std::flush;
 }

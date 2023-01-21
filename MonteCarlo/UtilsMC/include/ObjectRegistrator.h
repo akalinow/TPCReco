@@ -31,8 +31,7 @@ namespace utl {
     class StandardCreator {
 
     public:
-        static typename ObjectFactory::CreatorType GetCreator()
-        { return ObjectType::Create; }
+        static typename ObjectFactory::CreatorType GetCreator() { return ObjectType::Create; }
 
     };
 
@@ -72,8 +71,7 @@ namespace utl {
         // The default constructor is required to force the instantiation
         // of the static member variable fgAutoRegistrar whose
         // initialization triggers the registration with the factory
-        ObjectRegistrator()
-        {
+        ObjectRegistrator() {
             if (!fgAutoRegistrar)
                 fgAutoRegistrar = new ObjectRegistrator(true);
         }
@@ -81,24 +79,23 @@ namespace utl {
     private:
         // This constructor in needed to avoid recursion during
         // initialization of fgAutoRegistrar. The bool argument is ignored
-        explicit ObjectRegistrator(bool) { }
+        explicit ObjectRegistrator(bool) {}
 
         static
-        ObjectRegistrator*
-        AutoRegister()
-        {
+        ObjectRegistrator *
+        AutoRegister() {
             ObjectFactoryType::Register(ObjectType::GetRegistrationId(),
                                         CreatorPolicy::GetCreator());
             return new ObjectRegistrator(true);
         }
 
-        static const ObjectRegistrator* fgAutoRegistrar;
+        static const ObjectRegistrator *fgAutoRegistrar;
 
     }; // ObjectRegistrator
 
 
     template<class Object, class ObjectFactory, class CreatorPolicy>
-    const ObjectRegistrator<Object, ObjectFactory, CreatorPolicy>*
+    const ObjectRegistrator<Object, ObjectFactory, CreatorPolicy> *
             ObjectRegistrator<Object, ObjectFactory, CreatorPolicy>::fgAutoRegistrar =
             ObjectRegistrator<Object, ObjectFactory, CreatorPolicy>::AutoRegister();
 

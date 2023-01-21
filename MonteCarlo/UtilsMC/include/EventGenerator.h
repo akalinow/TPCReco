@@ -4,8 +4,7 @@
 #include "PrimaryParticle.h"
 
 
-class EventGenerator
-{
+class EventGenerator {
 public:
     EventGenerator();
 private:

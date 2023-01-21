@@ -3,13 +3,13 @@
 
 #include "Provider.h"
 
-class ZProvider : public Provider{
+class ZProvider : public Provider {
 public:
     ~ZProvider() override = default;
-    virtual double GetZ()=0;
+    virtual double GetZ() = 0;
 };
 
-class ZProviderUniform: public ZProvider{
+class ZProviderUniform : public ZProvider {
 public:
     ZProviderUniform();
     double GetZ() override;
@@ -17,10 +17,11 @@ public:
 REGISTER_PROVIDER(ZProviderUniform)
 };
 
-class ZProviderSingle: public ZProvider{
+class ZProviderSingle : public ZProvider {
 public:
     ZProviderSingle();
     double GetZ() override;
+
     void ValidateParamValues() override {} //nothing to validate
 REGISTER_PROVIDER(ZProviderUniform)
 };

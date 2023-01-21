@@ -6,14 +6,14 @@
 
 class TF2;
 
-class XYProvider : public Provider{
+class XYProvider : public Provider {
 public:
-    typedef std::pair<double,double> xyVal;
-    ~XYProvider() override =default;
-    virtual xyVal GetXY()=0;
+    typedef std::pair<double, double> xyVal;
+    ~XYProvider() override = default;
+    virtual xyVal GetXY() = 0;
 };
 
-class XYProviderGaussTail : public XYProvider{
+class XYProviderGaussTail : public XYProvider {
 public:
     XYProviderGaussTail();
     xyVal GetXY() override;
@@ -23,10 +23,10 @@ private:
     double Profile(double *x, double *par);
     std::unique_ptr<TF2> profileTF2;
 
-    REGISTER_PROVIDER(XYProviderGaussTail)
+REGISTER_PROVIDER(XYProviderGaussTail)
 };
 
-class XYProviderSingle: public XYProvider{
+class XYProviderSingle : public XYProvider {
     XYProviderSingle();
     xyVal GetXY() override;
 protected:

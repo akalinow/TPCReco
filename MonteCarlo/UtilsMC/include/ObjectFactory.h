@@ -36,19 +36,16 @@ namespace utl {
     class FactoryErrorIgnore {
 
     public:
-        static ObjectPtrType Unregistered(const IdentifierType&)
-        { return 0; }
+        static ObjectPtrType Unregistered(const IdentifierType &) { return 0; }
 
         template<typename ArgumentType>
-        static ObjectPtrType Unregistered(const IdentifierType& /*theId*/,
-                                          const ArgumentType& /*theArg*/)
-        { return 0; }
+        static ObjectPtrType Unregistered(const IdentifierType & /*theId*/,
+                                          const ArgumentType & /*theArg*/) { return 0; }
 
         template<typename Argument1Type, typename Argument2Type>
-        static ObjectPtrType Unregistered(const IdentifierType& /*theId*/,
-                                          const Argument1Type& /*theArg1*/,
-                                          const Argument2Type& /*theArg2*/)
-        { return 0; }
+        static ObjectPtrType Unregistered(const IdentifierType & /*theId*/,
+                                          const Argument1Type & /*theArg1*/,
+                                          const Argument2Type & /*theArg2*/) { return 0; }
 
     };
 
@@ -87,43 +84,43 @@ namespace utl {
         typedef typename RegistryType::const_iterator Iterator;
 
     public:
-        ObjectFactory()=default;
-        ~ObjectFactory()=default;
+        ObjectFactory() = default;
+        ~ObjectFactory() = default;
 
         /// Register a factory function with an ID
         static
         bool
-        Register(const IdentifierType& theId,
-                 const CreatorType& theCreator)
-        {
+        Register(const IdentifierType &theId,
+                 const CreatorType &theCreator) {
             if (!fgRegistry)
                 fgRegistry = new RegistryType;
             return fgRegistry->insert(std::make_pair(theId, theCreator)).second;
         }
 
         /// Get number of object types know to this factory
-        static unsigned int GetNumberOfCreators()
-        { return fgRegistry ? fgRegistry->size() : 0; }
+        static unsigned int GetNumberOfCreators() { return fgRegistry ? fgRegistry->size() : 0; }
 
         /// Create an object (0-argument constructor)
 
         template<typename DerivedClassType>
         static
         std::unique_ptr<DerivedClassType>
-        Create(const IdentifierType& theId)
-        {
-            if (!fgRegistry) {
-                auto p=dynamic_cast<DerivedClassType *>(ObjectFactory::Unregistered(theId));
+        Create(const IdentifierType &theId) {
+            if (!fgRegistry)
+            {
+                auto p = dynamic_cast<DerivedClassType *>(ObjectFactory::Unregistered(theId));
                 return std::unique_ptr<DerivedClassType>(p);
             }
 
             const Iterator it = fgRegistry->find(theId);
-            if (it != fgRegistry->end()) {
-                auto p=dynamic_cast<DerivedClassType*>((it->second)());
+            if (it != fgRegistry->end())
+            {
+                auto p = dynamic_cast<DerivedClassType *>((it->second)());
                 return std::unique_ptr<DerivedClassType>(p);
             }
-            else{
-                auto p=dynamic_cast<DerivedClassType *>(ObjectFactory::Unregistered(theId));
+            else
+            {
+                auto p = dynamic_cast<DerivedClassType *>(ObjectFactory::Unregistered(theId));
                 return std::unique_ptr<DerivedClassType>(p);
             }
         }
@@ -131,8 +128,7 @@ namespace utl {
         /// Begin iterator over the internal map (read only)
         static
         Iterator
-        Begin()
-        {
+        Begin() {
             if (!fgRegistry)
                 fgRegistry = new RegistryType;
             return fgRegistry->begin();
@@ -141,8 +137,7 @@ namespace utl {
         /// End iterator over the internal map (read only)
         static
         Iterator
-        End()
-        {
+        End() {
             if (!fgRegistry)
                 fgRegistry = new RegistryType;
             return fgRegistry->end();
@@ -150,22 +145,22 @@ namespace utl {
 
         static
         std::vector<IdentType>
-        GetRegiseredIdentifiers(){
-            if(!fgRegistry)
-                fgRegistry=new RegistryType;
+        GetRegiseredIdentifiers() {
+            if (!fgRegistry)
+                fgRegistry = new RegistryType;
             std::vector<IdentType> v;
-                std::transform(fgRegistry->begin(), fgRegistry->end(),
-                               std::back_inserter(v),
-                               [](auto &p){return p.first;});
+            std::transform(fgRegistry->begin(), fgRegistry->end(),
+                           std::back_inserter(v),
+                           [](auto &p) { return p.first; });
 
             return v;
         }
 
     private:
-        ObjectFactory(const ObjectFactory& theObjectFactory);
-        ObjectFactory& operator=(const ObjectFactory& theObjectFactory);
+        ObjectFactory(const ObjectFactory &theObjectFactory);
+        ObjectFactory &operator=(const ObjectFactory &theObjectFactory);
 
-        static RegistryType* fgRegistry;
+        static RegistryType *fgRegistry;
 
     }; // ObjectFactory
 
@@ -176,7 +171,7 @@ namespace utl {
             typename CreatorType,
             class FactoryErrorPolicy>
     typename ObjectFactory<ObjectPtrType, IdentifierType,
-            CreatorType, FactoryErrorPolicy>::RegistryType*
+            CreatorType, FactoryErrorPolicy>::RegistryType *
             ObjectFactory<ObjectPtrType, IdentifierType,
                     CreatorType, FactoryErrorPolicy>::fgRegistry = 0;
 
