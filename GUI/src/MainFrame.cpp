@@ -162,10 +162,11 @@ void MainFrame::InitializeEventSource(){
   //  }
 
   std::cout<<"dataFileVec.size(): "<<dataFileVec.size()
-	   <<" ((stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG): "<<((stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG)
-	   <<"dataFileName.find(_MC_)!=std::string::npos: "<<(dataFileName.find("_MC_")!=std::string::npos)
+	   <<", ((stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG): "<<((stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG)
+	   <<", dataFileName.find(_MC_)!=std::string::npos: "<<(dataFileName.find("_MC_")!=std::string::npos)
+	   <<", dataFileName.find(.root)!=std::string::npos: "<<(dataFileName.find(".root")!=std::string::npos)
 	   <<std::endl;
-  
+
   if( dataFileVec.size()==1 && ((stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG) && dataFileName.find(".root")!=std::string::npos){
       myWorkMode = M_OFFLINE_ROOT_MODE;
       myEventSource = std::make_shared<EventSourceROOT>(geometryFileName);
@@ -239,7 +240,8 @@ void MainFrame::InitializeEventSource(){
        if(aGrawEventSrc) aGrawEventSrc->setRemovePedestal(removePedestal);
   }
   if(myConfig.find("pedestal")!=myConfig.not_found() && myEventSource.get()){
-    dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(myConfig.find("pedestal")->second);
+    EventSourceGRAW* aGrawEventSrc = dynamic_cast<EventSourceGRAW*>(myEventSource.get());
+    if(aGrawEventSrc) aGrawEventSrc->configurePedestal(myConfig.find("pedestal")->second);
   } 
 #endif
   else if(!myEventSource){
