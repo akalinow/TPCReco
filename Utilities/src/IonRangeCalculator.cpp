@@ -14,8 +14,13 @@ IonRangeCalculator::IonRangeCalculator(gas_mixture_type gas, double p_mbar, doub
   addIonRangeCurve(pid_type::CARBON_12, gas_mixture_type::CO2, 250.0, 273.15+20, "range_corr_thr_1keV_12C_5MeV_CO2_250mbar.dat");
   addIonRangeCurve(pid_type::CARBON_14, gas_mixture_type::CO2, 250.0, 273.15+20, "range_corr_thr_1keV_12C_5MeV_CO2_250mbar.dat");//TEST
 
+  // Initialize ion Bragg curves obtained from SRIM simulations at reference temperature and pressure (T0=20 C, p0=190 mbar)
+  // Data file columns: Depth[mm] dE/dx[keV/mm]
+  //  addIonBraggCurve(pid_type::ALPHA,     gas_mixture_type::CO2, 190.0, 273.15+20, "dEdx_uncorr_alpha_10MeV_CO2_190mbar.dat");
+  //  addIonBraggCurve(pid_type::CARBON_12, gas_mixture_type::CO2, 190.0, 273.15+20, "dEdx_uncorr_12C_5MeV_CO2_190mbar.dat");
+  //  addIonBraggCurve(pid_type::CARBON_14, gas_mixture_type::CO2, 190.0, 273.15+20, "dEdx_uncorr_14C_5MeV_CO2_190mbar.dat");//TEST
   // Initialize ion Bragg curves obtained from SRIM simulations at reference temperature and pressure (T0=20 C, p0=250 mbar)
-  // Data file columns: Distance[mm] dE/dx[keV/mm]
+  // Data file columns: Depth[mm] dE/dx[keV/mm]
   addIonBraggCurve(pid_type::PROTON,    gas_mixture_type::CO2, 250.0, 273.15+20, "dEdx_corr_proton_2MeV_CO2_250mbar.dat");
   addIonBraggCurve(pid_type::ALPHA,     gas_mixture_type::CO2, 250.0, 273.15+20, "dEdx_corr_alpha_10MeV_CO2_250mbar.dat");
   addIonBraggCurve(pid_type::CARBON_12, gas_mixture_type::CO2, 250.0, 273.15+20, "dEdx_corr_12C_5MeV_CO2_250mbar.dat");

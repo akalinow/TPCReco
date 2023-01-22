@@ -28,6 +28,8 @@ R__ADD_LIBRARY_PATH(../lib)
 #include "IonRangeCalculator.h"
 #include "HIGS_trees_dataFormat.h"
 
+// reads 2-prong TTree collection (produced by HIGS analysis) and converts reconstructed range [mm] to Ekin_LAB [MeV]
+// computes average E_kin of alpha and carbon-12 tracks from all events
 void test1(IonRangeCalculator *calc, const char *fname, double *average_E_alpha=NULL, double *average_E_carbon=NULL){ // MeV, MeV
 
   TFile *f = TFile::Open(fname, "OLD");
@@ -97,6 +99,7 @@ void test1(IonRangeCalculator *calc, const char *fname, double *average_E_alpha=
   if(average_E_carbon) *average_E_carbon=average_T_carbon_LAB; // MeV
 }
 
+// superimposes dE/dx [MeV/mm] profiles of alpha and carbon-12 at given Ekin_LAB [MeV] values
 void test2(IonRangeCalculator *calc, double E_alpha=4.0, double E_carbon=1.0) { // MeV, MeV
 
   double R_alpha=calc->getIonRangeMM(ALPHA, E_alpha); // mm
