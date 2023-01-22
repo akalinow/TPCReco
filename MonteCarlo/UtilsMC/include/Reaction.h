@@ -18,11 +18,12 @@ protected:
     void GetKinematics(const ROOT::Math::XYZVector &gammaMom, const double &targetMass);
 
     //Generate four momentum of a decay product. Use additional vector to define rotation axis for theta angle
-    static ROOT::Math::PxPyPzMVector
-    GenerateFourMomentum(double mom, double mass, double theta, double phi, const ROOT::Math::XYZVector &primaryDirection,
+    static ROOT::Math::PxPyPzEVector
+    GenerateFourMomentum(double mom, double mass, double theta, double phi,
+                         const ROOT::Math::XYZVector &primaryDirection,
                          const ROOT::Math::XYZVector &thetaPlaneNormal);
     double totalEnergy{};
-    ROOT::Math::PxPyPzMVector::BetaVector betaCM;
+    ROOT::Math::PxPyPzEVector::BetaVector betaCM;
 
 };
 

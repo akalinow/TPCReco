@@ -12,7 +12,8 @@ public:
             pid_type targetIon,
             pid_type prod1Ion,
             pid_type prod2Ion);
-    PrimaryParticles GeneratePrmaries(const ROOT::Math::XYZVector &gammaMom, const ROOT::Math::XYZPoint &vertexPos) override;
+    PrimaryParticles
+    GeneratePrmaries(const ROOT::Math::XYZVector &gammaMom, const ROOT::Math::XYZPoint &vertexPos) override;
 private:
     std::unique_ptr<AngleProvider> thetaProv;
     std::unique_ptr<AngleProvider> phiProv;

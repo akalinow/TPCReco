@@ -40,17 +40,18 @@ TwoProngReaction::GeneratePrmaries(const ROOT::Math::XYZVector &gammaMom, const 
     }
     auto p_CM = 0.5 * sqrt((pow(totalEnergy, 2) - pow(lightProdMass - heavyProdMass, 2)) *
                            (pow(totalEnergy, 2) - pow(lightProdMass + heavyProdMass, 2))) / totalEnergy;
-    auto thetaCM=thetaProv->GetAngle();
-    auto phiCM=phiProv->GetAngle();
+    auto thetaCM = thetaProv->GetAngle();
+    auto phiCM = phiProv->GetAngle();
     //rotate theta around -Z axis
-    auto p4LightCM= GenerateFourMomentum(p_CM,lightProdMass,thetaCM,phiCM,gammaMom,{0,0,-1});
-    auto p4HeavyCM= GenerateFourMomentum(p_CM,heavyProdMass,ROOT::Math::Pi()-thetaCM,-phiCM,gammaMom,{0,0,-1});
+    auto p4LightCM = GenerateFourMomentum(p_CM, lightProdMass, thetaCM, phiCM, gammaMom, {0, 0, -1});
+    auto p4HeavyCM = GenerateFourMomentum(p_CM, heavyProdMass, ROOT::Math::Pi() - thetaCM, -phiCM, gammaMom,
+                                          {0, 0, -1});
     auto bst = ROOT::Math::Boost(-betaCM);
-    auto p4LightLAB=bst(p4LightCM);
-    auto p4HeavyLAB=bst(p4HeavyCM);
+    auto p4LightLAB = bst(p4LightCM);
+    auto p4HeavyLAB = bst(p4HeavyCM);
     PrimaryParticles result;
-    result.emplace_back(lightProd, vertexPos, p4LightLAB.Vect(),p4LightLAB.E());
-    result.emplace_back(heavyProd, vertexPos, p4HeavyLAB.Vect(),p4HeavyLAB.E());
+    result.emplace_back(lightProd, vertexPos, p4LightLAB.Vect(), p4LightLAB.E());
+    result.emplace_back(heavyProd, vertexPos, p4HeavyLAB.Vect(), p4HeavyLAB.E());
     return result;
 
 }
