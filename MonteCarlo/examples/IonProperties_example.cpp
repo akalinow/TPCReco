@@ -17,7 +17,7 @@ int main()
     auto Z=ionProp->GetZ(anIon);
 
     //print it out to the console
-    std::cout<<"Properties of \'"<<GetPidName(anIon)<<"\' ion:\n";
+    std::cout<<"Properties of \'"<<enumDict::GetPidName(anIon)<<"\' ion:\n";
     std::cout<<"\tm="<<mMeV<<" MeV\n\t";
     std::cout<<"A="<<A<<"\n\tZ="<<Z<<std::endl;
 }

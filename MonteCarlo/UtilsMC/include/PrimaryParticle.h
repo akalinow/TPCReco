@@ -2,7 +2,7 @@
 #define TPCSOFT_PRIMARYPARTICLE_H
 
 #include "CommonDefinitions.h"
-#include "Math/Point3D.h"
+#include "Math/Vector4D.h"
 #include "Math/Vector3D.h"
 #include "IonProperties.h"
 #include <vector>
@@ -12,42 +12,33 @@ public:
     PrimaryParticle() = default;
 
     PrimaryParticle(pid_type id,
-                    ROOT::Math::XYZPoint start,
-                    ROOT::Math::XYZVector mom,
-                    double e)
+                    ROOT::Math::PxPyPzEVector fourMom)
             : pID{id},
-              emissionPoint{std::move(start)},
-              momentum{std::move(mom)},
-              eKin{e} {}
+              fourMomentum{std::move(fourMom)} {}
 
     pid_type GetID() { return pID; }
 
-    ROOT::Math::XYZPoint GetEmissionPoint() const { return emissionPoint; }
+    ROOT::Math::XYZVector GetMomentum() const { return fourMomentum.Vect(); }
 
-    ROOT::Math::XYZVector GetMomentum() const { return momentum; }
+    ROOT::Math::PxPyPzEVector GetFourMomentum() const { return fourMomentum; }
 
-    double GetEnergy() const { return eKin; }
+    double GetKineticEnergy() const { return fourMomentum.E()-fourMomentum.M(); }
 
     //Wrappers around IonProperties, might be useful
     inline int GetA() { return IonProperties::GetInstance()->GetA(pID); }
 
     inline int GetZ() { return IonProperties::GetInstance()->GetZ(pID); }
 
-    inline double GetMassMeV() { return IonProperties::GetInstance()->GetAtomMass(pID); }
+    inline double GetMass() { return fourMomentum.M(); }
 
     void SetID(const pid_type &id) { pID = id; }
 
-    void SetEmissionPoint(const ROOT::Math::XYZPoint &start) { emissionPoint = start; }
+    void SetFourMomentumLAB(const ROOT::Math::PxPyPzEVector &mom) { fourMomentum = mom; }
 
-    void SetMomentum(const ROOT::Math::XYZVector &mom) { momentum = mom; }
-
-    void SetEnergy(const double &e) { eKin = e; }
 
 private:
     pid_type pID{pid_type::UNKNOWN};
-    ROOT::Math::XYZPoint emissionPoint;
-    ROOT::Math::XYZVector momentum;
-    double eKin{};
+    ROOT::Math::PxPyPzEVector fourMomentum;
 };
 
 typedef std::vector<PrimaryParticle> PrimaryParticles;

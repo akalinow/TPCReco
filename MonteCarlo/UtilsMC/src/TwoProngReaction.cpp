@@ -33,7 +33,7 @@ TwoProngReaction::GeneratePrmaries(const ROOT::Math::XYZVector &gammaMom, const 
     if (Qvalue < 0)
     {
         auto msg = "Beam energy is too low to create "s;
-        msg += GetPidName(lightProd) + "+" + GetPidName(heavyProd);
+        msg += enumDict::GetPidName(lightProd) + "+" + enumDict::GetPidName(heavyProd);
         msg += " pair! Creating empty event";
         std::cout << msg << std::endl;
         return {};
@@ -50,8 +50,8 @@ TwoProngReaction::GeneratePrmaries(const ROOT::Math::XYZVector &gammaMom, const 
     auto p4LightLAB = bst(p4LightCM);
     auto p4HeavyLAB = bst(p4HeavyCM);
     PrimaryParticles result;
-    result.emplace_back(lightProd, vertexPos, p4LightLAB.Vect(), p4LightLAB.E());
-    result.emplace_back(heavyProd, vertexPos, p4HeavyLAB.Vect(), p4HeavyLAB.E());
+    result.emplace_back(lightProd, p4LightLAB);
+    result.emplace_back(heavyProd, p4HeavyLAB);
     return result;
 
 }

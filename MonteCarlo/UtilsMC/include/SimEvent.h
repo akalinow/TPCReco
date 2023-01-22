@@ -31,18 +31,25 @@ public:
     virtual ~SimEvent() = default;
 
     /**
-     * @brief      Constructor taking vector of SimTrack objects as an argument
+     * @brief      Constructor setting all parameters
 
      */
-    explicit SimEvent(SimTracks &tracks);
+    SimEvent(SimTracks &trackVector, ROOT::Math::XYZPoint vertexPos, reaction_type type);
 
-    void SetSimTracks(SimTracks &trcks);
+    void SetSimTracks(SimTracks &trackVector);
+    void SetStartVertexPosition(ROOT::Math::XYZPoint pos);
+    void SetReactionType(reaction_type type);
     SimTracks GetTracks();
     SimTracksIterator TracksBegin();
     SimTracksIterator TracksEnd();
+    ROOT::Math::XYZPoint GetVertexPosition();
+    reaction_type GetReactionType();
 
 private:
     SimTracks tracks; /// Vector with simulated tracks (primary particles)
+    ROOT::Math::XYZPoint vertexPosition;
+    reaction_type reactionType{reaction_type::UNKNOWN};
+    void UpdateSimTracksStartPoint();
 ClassDef(SimEvent, 1); ///< ROOT macro to register SimEvent class
 };
 

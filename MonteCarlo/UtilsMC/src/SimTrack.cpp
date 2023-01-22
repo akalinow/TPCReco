@@ -10,6 +10,10 @@ void SimTrack::SetStop(ROOT::Math::XYZPoint stop) {
     stopPos = std::move(stop);
 }
 
+void SimTrack::SetStart(ROOT::Math::XYZPoint start) {
+    startPos = std::move(start);
+}
+
 void SimTrack::InsertHit(const SimHit &hit) {
     hits.push_back(hit);
 }

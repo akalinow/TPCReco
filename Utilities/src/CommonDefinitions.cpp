@@ -44,37 +44,60 @@ definitions::projection_type get1DProjectionType(definitions::projection_type aS
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 
+namespace enumDict {
 //Keep type definition and dictionary in unnamed namespace not to expose them
-namespace{
-    typedef boost::bimap<pid_type, std::string> PidDictionary;
+    namespace{
+        typedef boost::bimap<::pid_type, std::string> PidDictionary;
 
-    const PidDictionary gPids =
-            boost::assign::list_of<PidDictionary::relation>
-            (UNKNOWN,        "UNKNOWN")
-            (ALPHA,          "ALPHA")
-            (CARBON_12,      "CARBON_12")
-            (CARBON_14,      "CARBON_14")
-            (C12_ALPHA,      "C12_ALPHA")
-            (PROTON,         "PROTON")
-            (CARBON_13,      "CARBON_14")
-            (NITROGEN_15,    "NITROGEN_15")
-            (OXYGEN_16,      "OXYGEN_16")
-            (OXYGEN_17,      "OXYGEN_17")
-            (OXYGEN_18,      "OXYGEN_18")
-            (THREE_ALPHA,    "THREE_ALPHA")
-            ;
-}
+        typedef boost::bimap<::reaction_type, std::string> ReactionDictionary;
 
-pid_type GetPidType(std::string &pidName)
-{
-    auto  it = gPids.right.find(pidName);
-    return it == gPids.right.end() ? pid_type::UNKNOWN : it->second;
-}
+        const PidDictionary gPids =
+                boost::assign::list_of<PidDictionary::relation>
+                (pid_type::UNKNOWN,                     "UNKNOWN")
+                (pid_type::ALPHA,                       "ALPHA")
+                (pid_type::CARBON_12,                   "CARBON_12")
+                (pid_type::CARBON_14,                   "CARBON_14")
+                (pid_type::C12_ALPHA,                   "C12_ALPHA")
+                (pid_type::PROTON,                      "PROTON")
+                (pid_type::CARBON_13,                   "CARBON_14")
+                (pid_type::NITROGEN_15,                 "NITROGEN_15")
+                (pid_type::OXYGEN_16,                   "OXYGEN_16")
+                (pid_type::OXYGEN_17,                   "OXYGEN_17")
+                (pid_type::OXYGEN_18,                   "OXYGEN_18")
+                (pid_type::THREE_ALPHA,                 "THREE_ALPHA")
+                ;
+        const ReactionDictionary gReactions =
+                boost::assign::list_of<ReactionDictionary::relation>
+                (reaction_type::UNKNOWN,                "UNKNOWN")
+                (reaction_type::C12_ALPHA,              "C12_ALPHA")
+                (reaction_type::C13_ALPHA,              "C13_ALPHA")
+                (reaction_type::N15_PROTON,             "N15_PROTON")
+                (reaction_type::THREE_ALPHA_DEMOCRATIC, "THREE_ALPHA_DEMOCRATIC")
+                (reaction_type::THREE_ALPHA_BE,         "THREE_ALPHA_BE")
+                ;
+    }
 
-std::string GetPidName(pid_type type)
-{
-    auto  it = gPids.left.find(type);
-    return it == gPids.left.end() ? "UNKNOWN" : it->second;
+
+
+    pid_type GetPidType(std::string &pidName) {
+        auto it = gPids.right.find(pidName);
+        return it == gPids.right.end() ? pid_type::UNKNOWN : it->second;
+    }
+
+    std::string GetPidName(pid_type type) {
+        auto it = gPids.left.find(type);
+        return it == gPids.left.end() ? "UNKNOWN" : it->second;
+    }
+
+    reaction_type GetReactionType(std::string &reactionName) {
+        auto it = gReactions.right.find(reactionName);
+        return it == gReactions.right.end() ? reaction_type::UNKNOWN : it->second;
+    }
+
+    std::string GetReactionName(reaction_type type) {
+        auto it = gReactions.left.find(type);
+        return it == gReactions.left.end() ? "UNKNOWN" : it->second;
+    }
 }
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////

@@ -37,7 +37,7 @@ IonProperties::SingleIonProperty IonProperties::GetIonProperty(pid_type ionType)
 {
     if(propMap.find(ionType)==propMap.end())
         throw std::out_of_range(
-                "Ion \""s+ GetPidName(ionType)+
+                "Ion \""s+ enumDict::GetPidName(ionType)+
                 "\" does not exist in IonProperties!"s);
     return propMap[ionType];
 }
