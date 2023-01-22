@@ -5,6 +5,7 @@
 #include "Math/Point3D.h"
 #include "Math/Vector3D.h"
 #include "IonProperties.h"
+#include <vector>
 
 class PrimaryParticle {
 public:
@@ -48,5 +49,7 @@ private:
     ROOT::Math::XYZVector momentum;
     double eKin{};
 };
+
+typedef std::vector<PrimaryParticle> PrimaryParticles;
 
 #endif //TPCSOFT_PRIMARYPARTICLE_H

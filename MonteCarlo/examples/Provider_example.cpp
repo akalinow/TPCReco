@@ -100,7 +100,7 @@ int main()
     //config-friendly, ane providers can be changed without changing the code.
     //Factory method down-casts the pointers to a sub-class selected via its
     // template parameter. This way, we are able to target specific interfaces
-    // in the generator - XYProvider will not go to AngleProvider slot by accident.
+    // in the generator - XYProvider will not go to VAngleProvider slot by accident.
 
     auto p = ProviderFactory::Create<AngleProvider>("AngleProviderE1E2");
     p->GetAngle();
