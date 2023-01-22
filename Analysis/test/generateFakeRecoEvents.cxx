@@ -2,8 +2,7 @@
 //
 // root
 // root [0] .L generateFakeRecoEvents.cxx
-// root [1] generateFakeRecoEvents("geometry.dat", 1000, 11.5, 1, 0, 0);
-//
+// root [1] generateFakeRecoEvents("geometry.dat", 250.0, 293.15, 1000, 11.5, 1, 0, 0);
 //
 //////////////////////////
 //////////////////////////
@@ -11,9 +10,9 @@
 // Below are parameters and flags that control behaviour of
 // the toy Monte Carlo generator:
 //
-#define SIMUL_CONTAINMENT_FLAG   false     // skip partially contained events within detector's volume?
+#define SIMUL_CONTAINMENT_FLAG   true    // skip partially contained events within detector's volume?
                                            // useful for calculating TPC geometric/electronics acceptance
-#define SIMUL_TRUNCATE_FLAG      true      // truncate partially contained tracks (detector's volume and/or GET history buffer)?
+#define SIMUL_TRUNCATE_FLAG      false      // truncate partially contained tracks (detector's volume and/or GET history buffer)?
 #define SIMUL_EXT_TRG_FLAG       true      // simulate external trigger and GET history buffer?
 #define SIMUL_EXT_TRG_ARRIVAL    0.1       // trigger position as a fraction of GET electronics full time scale [0-1]
 //#define SIMUL_BEAM_E_RESOL     0         // no energy smearing
@@ -29,8 +28,9 @@
 #define SIMUL_BEAM_TILT_OFFSET   -1.3      // [mm] beam tilt offset
 #define SIMUL_BEAM_TILT_ANGLE    3.0e-3    // [rad] beam tilt angle
                                            // where: y_det(x_det)=tan(angle)*x_det + offset
+//#define SIMUL_PRESSURE         250.0     // [mbar] CO2 pressure
 //#define SIMUL_PRESSURE         190.0     // [mbar] CO2 pressure
-#define SIMUL_PRESSURE           130.0     // [mbar] CO2 pressure
+//#define SIMUL_PRESSURE         130.0     // [mbar] CO2 pressure
 #define SIMUL_OXYGEN_E1E2_FLAG   true      // use anisotropic theta distribution for O-16?
 #define SIMUL_OXYGEN_E1E2_SIGMA1 0         // [nb] sigma_E1 cross section
 #define SIMUL_OXYGEN_E1E2_SIGMA2 1         // [nb] sigma_E2 cross section
@@ -111,7 +111,7 @@ TF1 phiEmissionTF1("phiEmissionTF1", "[0]*(1+[1]*cos(2*(x+[2])))", 0.0, TMath::T
 //////////////////////////
 //////////////////////////
 // 1D angular distribution to be used with TF1::GetRandom
-// Non-siotropic angular distrubution of alpha-particle emission angle wrt gamma beam
+// Non-isotropic angular distrubution of alpha-particle emission angle wrt gamma beam
 // with E1 abd E2 components for Oxygen-16 photodisintegration reaction.
 // Ref: M.Assuncao et al., PRC 73 055801 (2006).
 //
@@ -134,12 +134,12 @@ double thetaEmission(double *x, double *par)
 TF1 thetaEmissionTF1("thetaEmissionTF1", thetaEmission, 0.0, TMath::Pi(), 3);
 //////////////////////////
 //////////////////////////
-std::shared_ptr<IonRangeCalculator> loadRangeCalculator(){
+std::shared_ptr<IonRangeCalculator> loadRangeCalculator(double pressure_mbar, double temperature_K){
 
   std::shared_ptr<IonRangeCalculator> db = std::make_shared<IonRangeCalculator>();
 
-  // set current conditions: gas=CO2, pressure=190 mbar, temperature=20C
-  db->setGasConditions(/*IonRangeCalculator::*/CO2, SIMUL_PRESSURE, 273.15+20);
+  // set current conditions: gas=CO2, arbitrary pressure [mbar] and temperature [K]
+  db->setGasConditions(CO2, pressure_mbar, temperature_K);
   
   return db;
 }
@@ -388,21 +388,21 @@ Track3D generateFakeAlphaCarbonGenericEvent(std::shared_ptr<GeometryTPC> aGeomet
 
   Track3D empty_result;
 
-  // define some constants
-  const double atomicMassUnit = 931.49410242; // MeV/c^2
-  const double alphaMass = 4*atomicMassUnit + 2.4249; // A*u + Delta MeV/c^2
-  double carbonMass, oxygenMass;
+  pid_type alphaPID=pid_type::ALPHA, carbonPID, oxygenPID;
   if(Oxygen18_flag) {
-    carbonMass = 14.0032420*atomicMassUnit; // MeV/c^2, isotope C-14
-    oxygenMass = 17.9991610*atomicMassUnit; // MeV/c^2, isotope O-18
+    carbonPID=pid_type::CARBON_14;
+    oxygenPID=pid_type::OXYGEN_18;
   } else {
-    carbonMass = 12*atomicMassUnit; // MeV/c^2, isotope C-12
-    oxygenMass = 15.99491461956*atomicMassUnit; // MeV/c^2, isotope O-16
+    carbonPID=pid_type::CARBON_12;
+    oxygenPID=pid_type::OXYGEN_16;
   }
+  auto alphaMass = aRangeCalculator->getIonMassMeV(alphaPID);
+  auto carbonMass = aRangeCalculator->getIonMassMeV(carbonPID);
+  auto oxygenMass = aRangeCalculator->getIonMassMeV(oxygenPID);
 
   // detector reference frame (DET=LAB)
   double beamEnergyResolution=SIMUL_BEAM_E_RESOL; // LAB beam energy smearing factor
-  double beamEnergy_DET=photonEnergyMeV*r->Gaus(1, beamEnergyResolution); // smear beam energy by 5% // MeV
+  double beamEnergy_DET=photonEnergyMeV*r->Gaus(1, beamEnergyResolution); // smear beam energy
   TVector3 beamDir_DET(-1, 0, 0); // unit vector
   beamDir_DET.RotateZ(SIMUL_BEAM_TILT_ANGLE); // apply beam tilt
   TLorentzVector photonP4_DET(beamDir_DET.Unit()*beamEnergy_DET, beamEnergy_DET); // [MeV/c, MeV/c, MeV/c, MeV/c^2]
@@ -513,18 +513,13 @@ Track3D generateFakeAlphaCarbonGenericEvent(std::shared_ptr<GeometryTPC> aGeomet
   }
 
   // calculate alpha/carbon ranges [mm] in LAB/DET frame
-  double rangeAlpha_DET=aRangeCalculator->getIonRangeMM(/*IonRangeCalculator::*/ALPHA, alphaP4_DET.E()-alphaP4_DET.M()); // mm
-  double rangeCarbon_DET;
-  if(Oxygen18_flag) { // Alpha + Carbon-14
-    rangeCarbon_DET=aRangeCalculator->getIonRangeMM(/*IonRangeCalculator::*/CARBON_14, carbonP4_DET.E()-carbonP4_DET.M()); // mm
-  } else { // Alpha + Carbon-12
-    rangeCarbon_DET=aRangeCalculator->getIonRangeMM(/*IonRangeCalculator::*/CARBON_12, carbonP4_DET.E()-carbonP4_DET.M()); // mm
-  }
+  double rangeAlpha_DET=aRangeCalculator->getIonRangeMM(alphaPID, alphaP4_DET.E()-alphaP4_DET.M()); // mm
+  double rangeCarbon_DET=aRangeCalculator->getIonRangeMM(carbonPID, carbonP4_DET.E()-carbonP4_DET.M()); // mm
 
   // create list of tracks
-  std::vector<TVector3> list;
-  list.push_back(alphaP4_DET.Vect().Unit()*rangeAlpha_DET); // 1st track direction
-  list.push_back(carbonP4_DET.Vect().Unit()*rangeCarbon_DET); // 2nd track direction
+  std::vector< std::tuple<pid_type, TVector3> > list;
+  list.push_back( std::make_tuple(alphaPID, alphaP4_DET.Vect().Unit()*rangeAlpha_DET) ); // 1st track PID & direction
+  list.push_back( std::make_tuple(carbonPID, carbonP4_DET.Vect().Unit()*rangeCarbon_DET) ); // 2nd track PID & direction
 
   // smear vertex position in XYZ assuming:
   // - uniform distribution along X
@@ -549,7 +544,8 @@ Track3D generateFakeAlphaCarbonGenericEvent(std::shared_ptr<GeometryTPC> aGeomet
   TrackSegment3D aSegment;
   for(auto & seg: list) {
     aSegment.setGeometry(aGeometry);
-    aSegment.setStartEnd(vertex, vertex+seg);
+    aSegment.setStartEnd(vertex, vertex + std::get<1>(seg) );
+    aSegment.setPID(std::get<0>(seg));
     aTrack.addSegment(aSegment);
   }
   return aTrack;
@@ -568,19 +564,17 @@ Track3D generateFakeAlphaCarbon14Event(std::shared_ptr<GeometryTPC> aGeometry, s
 //////////////////////////
 Track3D generateFake3AlphaEvent(std::shared_ptr<GeometryTPC> aGeometry, std::shared_ptr<IonRangeCalculator> aRangeCalculator, double photonEnergyMeV, bool debug_flag=false){
 
-  //  auto r=new Trandom3();
   auto r=gRandom; // use global ROOT pointer
 
   Track3D empty_result;
 
-  // define some constants
-  const double atomicMassUnit = 931.49410242; //MeV/c^2
-  const double alphaMass = 4*atomicMassUnit + 2.4249; //A*u + Delta MeV/c^2
-  const double carbonMass = 12*atomicMassUnit;
+  pid_type alphaPID=pid_type::ALPHA, carbonPID=pid_type::CARBON_12;
+  auto alphaMass = aRangeCalculator->getIonMassMeV(alphaPID);
+  auto carbonMass = aRangeCalculator->getIonMassMeV(carbonPID);
 
   // detector reference frame (DET=LAB)
   double beamEnergyResolution=SIMUL_BEAM_E_RESOL; // LAB beam energy smearing factor
-  double beamEnergy_DET=photonEnergyMeV*r->Gaus(1, beamEnergyResolution); // smear beam energy by 5% // MeV
+  double beamEnergy_DET=photonEnergyMeV*r->Gaus(1, beamEnergyResolution); // smear beam energy
   TVector3 beamDir_DET(-1, 0, 0); // unit vector
   beamDir_DET.RotateZ(SIMUL_BEAM_TILT_ANGLE); // apply beam tilt
   TLorentzVector photonP4_DET(beamDir_DET.Unit()*beamEnergy_DET, beamEnergy_DET); // [MeV/c, MeV/c, MeV/c, MeV/c^2]
@@ -607,7 +601,7 @@ Track3D generateFake3AlphaEvent(std::shared_ptr<GeometryTPC> aGeometry, std::sha
 
   // stationary excited carbon state
   double carbonMassExcited=totalEnergy_CMS;
-  double carbonMassExcited_xcheck=beamEnergy_CMS_xcheck+sqrt(carbonMass*carbonMass+beamEnergy_CMS*beamEnergy_CMS); //
+  double carbonMassExcited_xcheck=beamEnergy_CMS_xcheck+sqrt(carbonMass*carbonMass+beamEnergy_CMS*beamEnergy_CMS);
   double Qvalue_CMS=carbonMassExcited-3*alphaMass;
   if(Qvalue_CMS<0) {
     if(debug_flag) std::cout<<"Beam energy is too low to create 3 alpha particles!"<<std::endl;
@@ -704,15 +698,15 @@ Track3D generateFake3AlphaEvent(std::shared_ptr<GeometryTPC> aGeometry, std::sha
   }
 
   // calculate alpha ranges [mm] in LAB/DET frame
-  double range1_DET=aRangeCalculator->getIonRangeMM(/*IonRangeCalculator::*/ALPHA, alpha1_P4_DET.E()-alpha1_P4_DET.M()); // mm
-  double range2_DET=aRangeCalculator->getIonRangeMM(/*IonRangeCalculator::*/ALPHA, alpha2_P4_DET.E()-alpha2_P4_DET.M()); // mm
-  double range3_DET=aRangeCalculator->getIonRangeMM(/*IonRangeCalculator::*/ALPHA, alpha3_P4_DET.E()-alpha3_P4_DET.M()); // mm
+  double range1_DET=aRangeCalculator->getIonRangeMM(alphaPID, alpha1_P4_DET.E()-alpha1_P4_DET.M()); // mm
+  double range2_DET=aRangeCalculator->getIonRangeMM(alphaPID, alpha2_P4_DET.E()-alpha2_P4_DET.M()); // mm
+  double range3_DET=aRangeCalculator->getIonRangeMM(alphaPID, alpha3_P4_DET.E()-alpha3_P4_DET.M()); // mm
 
   // create list of tracks
-  std::vector<TVector3> list;
-  list.push_back(alpha1_P4_DET.Vect().Unit()*range1_DET); // 1st track direction
-  list.push_back(alpha2_P4_DET.Vect().Unit()*range2_DET); // 2nd track direction
-  list.push_back(alpha3_P4_DET.Vect().Unit()*range3_DET); // 3rd track direction
+  std::vector<std::tuple<pid_type, TVector3> > list;
+  list.push_back( std::make_tuple(alphaPID, alpha1_P4_DET.Vect().Unit()*range1_DET) ); // 1st track PID & direction
+  list.push_back( std::make_tuple(alphaPID, alpha2_P4_DET.Vect().Unit()*range2_DET) ); // 2nd track PID & direction
+  list.push_back( std::make_tuple(alphaPID, alpha3_P4_DET.Vect().Unit()*range3_DET) ); // 3rd track PID & direction
 
   // smear vertex position in XYZ assuming:
   // - uniform distribution along X
@@ -737,14 +731,15 @@ Track3D generateFake3AlphaEvent(std::shared_ptr<GeometryTPC> aGeometry, std::sha
   TrackSegment3D aSegment;
   for(auto & seg: list) {
     aSegment.setGeometry(aGeometry);
-    aSegment.setStartEnd(vertex, vertex+seg);
+    aSegment.setStartEnd(vertex, vertex + std::get<1>(seg) );
+    aSegment.setPID(std::get<0>(seg));
     aTrack.addSegment(aSegment);
   }
   return aTrack;
 }
 //////////////////////////
 //////////////////////////
-void generateFakeRecoEvents(const std::string geometryName, unsigned int nEvents, double photonEnergyMeV, double brOxygen16=1, double brOxygen18=0, double brCarbon12_3alpha=0, bool debug_flag=false){
+void generateFakeRecoEvents(const std::string geometryName, double pressure_mbar, double temperature_K, unsigned int nEvents, double photonEnergyMeV, double brOxygen16=1, double brOxygen18=0, double brCarbon12_3alpha=0, bool debug_flag=false){
 
   if (!gROOT->GetClass("Track3D")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
@@ -754,7 +749,7 @@ void generateFakeRecoEvents(const std::string geometryName, unsigned int nEvents
   }
   R__LOAD_LIBRARY(libTPCUtilities.so);
   R__LOAD_LIBRARY(libMathMore.so);
-  
+
   // construct partial sum of BRs, normalized to 1
   std::vector<double> brSum;
   brSum.push_back(fabs(brOxygen16));
@@ -783,7 +778,7 @@ void generateFakeRecoEvents(const std::string geometryName, unsigned int nEvents
     std::cerr<<"ERROR: Wrong geometry file!"<<std::endl;
     return;
   }
-  auto myRangeCalculator=loadRangeCalculator();
+  auto myRangeCalculator=loadRangeCalculator(pressure_mbar, temperature_K);
   if(!myRangeCalculator->IsOK()) {
     std::cerr<<"ERROR: Cannot initialize range/energy calculator!"<<std::endl;
     return;
@@ -975,7 +970,7 @@ void generateFakeRecoEvents(const std::string geometryName, unsigned int nEvents
 //////////////////////////
 int main (const int argc, const char *args[]) {
 
-  if(argc!=7) return -1;
-  generateFakeRecoEvents(args[1], atol(args[2]), atof(args[3]), atof(args[4]), atof(args[5]), atof(args[6]));
+  if(argc!=9) return -1;
+  generateFakeRecoEvents(args[1], atol(args[2]), atof(args[3]), atof(args[4]), atof(args[5]), atof(args[6]), atof(args[7]), atof(args[8]));
   return 0;
 }
