@@ -39,6 +39,8 @@ private:
     static reaction_type ParseReactionType(pugi::xml_node descr);
 
     static double ParseBranchingRatio(pugi::xml_node descr);
+
+    void Info();
 };
 
 #endif //TPCSOFT_GENERATORSETUP_H

@@ -3,16 +3,15 @@
 #include "TwoProngReaction.h"
 
 GeneratorSetup::GeneratorSetup(const boost::filesystem::path &configFilePath) {
-    std::cout<<configFilePath.string()<<std::endl;
-    std::cout<<"XXXXX"<<std::endl;
     pugi::xml_document configTop;
     auto result = configTop.load_file(configFilePath.c_str());
     if (!result)
         throw std::runtime_error("Unable to parse \'" + configFilePath.string() + "\' file!");
     topNode = configTop.child("EventGeneratorConfig");
+    Info();
 }
 
-GeneratorSetup::GeneratorSetup(pugi::xml_node configNode) : topNode{configNode} {std::cout<<"XXXXX"<<std::endl;}
+GeneratorSetup::GeneratorSetup(pugi::xml_node configNode) : topNode{configNode} { Info(); }
 
 
 void GeneratorSetup::BuildReactionLibrary(ReactionLibrary &lib) {
@@ -21,7 +20,6 @@ void GeneratorSetup::BuildReactionLibrary(ReactionLibrary &lib) {
         auto reactionType = std::string(r.attribute("type").as_string());
         if (reactionType == "TwoProngReaction") {
             //parse particles:
-            std::cout<<reactionType<<std::endl;
             auto target = ParseParticle(r.child("Target"));
             auto firstProd = ParseParticle(r.child("FirstProduct"));
             auto secondProd = ParseParticle(r.child("SecondProduct"));
@@ -78,7 +76,6 @@ std::unique_ptr<ZProvider> GeneratorSetup::BuildZProvider() {
 }
 
 std::unique_ptr<XYProvider> GeneratorSetup::BuildXYProvider() {
-    std::cout<<"dedede"<<std::endl;
     if (!topNode.child("Vertex").child("VertexTransverse"))
         throw std::runtime_error("No VertexTransverse configuration found!");
     return BuildProvider<XYProvider>(topNode.child("Vertex").child("VertexTransverse"));
@@ -108,21 +105,27 @@ void GeneratorSetup::ReadBeamProperties(ROOT::Math::XYZPoint &beamPosition, doub
     angleZ = angle;
 }
 
+//TODO:To be checked, why sometimes factory registration gets optimized-out
+void GeneratorSetup::Info() {
+    std::cout << "Available providers and their default parameters:\n";
+    for (const auto &p: ProviderFactory::GetRegiseredIdentifiers()) {
+        auto prov = ProviderFactory::Create<Provider>(p);
+        prov->PrintParams();
+    }
+}
+
 template<typename ProviderType>
 std::unique_ptr<ProviderType> GeneratorSetup::BuildProvider(const pugi::xml_node &descr) {
     auto type = std::string(descr.attribute("type").as_string());
-    std::cout<<type<<std::endl;
-    auto prov = ProviderFactory::Create<AngleProvider>("AngleProviderE1E2");
-//    if (!prov)
-//        throw std::runtime_error(
-//                "Unable to build " + type + "! Check if naming is correct, or is it the right type of the provider.");
-//    Provider::paramMapType params;
-//    for (auto arg: descr.children()) {
-//        std::cout<<arg.name()<<" "<<arg.text()<<std::endl;
-//        //params[std::string(arg.name())] = arg.attribute("val").as_double();
-//    }
-//    prov->SetParams(params);
-//    return prov;
-return {};
+    auto prov = ProviderFactory::Create<ProviderType>(type);
+    if (!prov)
+        throw std::runtime_error(
+                "Unable to build " + type + "! Check if naming is correct, or is it the right type of the provider.");
+    Provider::paramMapType params;
+    for (auto arg: descr.children()) {
+        params[std::string(arg.name())] = arg.attribute("val").as_double();
+    }
+    prov->SetParams(params);
+    return prov;
 }
 
