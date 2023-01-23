@@ -19,10 +19,10 @@ double Provider::GetParam(const std::string &pname) {
 
 void Provider::ValidateParamName(const std::string &pname) {
     if (paramVals.find(pname) == paramVals.end())
-        throw std::runtime_error("Provider::ValidateParamName: Unknown parameter \'" + pname + "\'!");
+        throw std::runtime_error(GetName()+"::ValidateParamName: Unknown parameter \'" + pname + "\'!");
 }
 
-void Provider::SetParams(const std::map<std::string, double> &pars) {
+void Provider::SetParams(const paramMapType &pars) {
     for (auto &p: pars)
     {
         ValidateParamName(p.first);
@@ -47,4 +47,13 @@ void Provider::PrintParams() {
                   }
     );
     std::cout << std::flush;
+}
+
+void Provider::CheckCondition(bool cond, const std::string& message)
+{
+    if(!cond){
+        auto msg=GetName()+"::ValidateParamValues: ";
+        msg+=message;
+        throw std::invalid_argument(msg);
+    }
 }

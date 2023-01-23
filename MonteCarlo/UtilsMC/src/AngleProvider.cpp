@@ -20,15 +20,9 @@ double AngleProviderCosIso::GetAngle() {
 void AngleProviderCosIso::ValidateParamValues() {
     auto min = paramVals["minCos"];
     auto max = paramVals["maxCos"];
-    if (min < -1)
-        throw std::invalid_argument(
-                "AngleProviderCosIso::AngleProviderCosIso: min cos is smaller than -1");
-    if (max > 1)
-        throw std::invalid_argument(
-                "AngleProviderCosIso::AngleProviderCosIso: max cos is larger than 1");
-    if (min > max)
-        throw std::invalid_argument(
-                "AngleProviderCosIso::AngleProviderCosIso: min cos is larger than max cos!");
+    CheckCondition(min>=-1, "min cos is smaller than -1!");
+    CheckCondition(max<=-1, "max cos is larger than 1!");
+    CheckCondition(min<=max, "min cos is larger than max cos!");
 }
 
 AngleProviderE1E2::AngleProviderE1E2() {
@@ -64,10 +58,10 @@ double AngleProviderE1E2::Theta(double *x, double *par) {
 }
 
 void AngleProviderE1E2::ValidateParamValues() {
-    if (paramVals["sigmaE1"] < 0)
-        throw std::invalid_argument("AngleProviderE1E2::ValidateParamValues: sigmaE1 is smaller than 0!");
-    if (paramVals["sigmaE2"] < 0)
-        throw std::invalid_argument("AngleProviderE1E2::ValidateParamValues: sigmaE2 is smaller than 0!");
+    CheckCondition(paramVals["sigmaE1"] >= 0, "sigmaE1 is smaller than 0!");
+    CheckCondition(paramVals["sigmaE2"] >= 0, "sigmaE2 is smaller than 0!");
+    CheckCondition(paramVals["phaseCosSign"]==1 || paramVals["phaseCosSign"]==-1,
+                   "PhaseCosSign is not 1 or -1!");
 }
 
 double AngleProviderE1E2::GetAngle() {
@@ -82,15 +76,9 @@ double AngleProviderIso::GetAngle() {
 void AngleProviderIso::ValidateParamValues() {
     auto aMin = paramVals["minAngle"];
     auto aMax = paramVals["maxAngle"];
-    if (aMin < -ROOT::Math::Pi())
-        throw std::invalid_argument(
-                "AngleProviderIso::AngleProviderIso: min angle is smaller than -pi!");
-    if (aMax > ROOT::Math::Pi())
-        throw std::invalid_argument(
-                "AngleProviderIso::AngleProviderIso: max angle is larger than pi!");
-    if (aMin > aMax)
-        throw std::invalid_argument(
-                "AngleProviderIso::AngleProviderIso: min angle is larger than max angle!");
+    CheckCondition(aMin >= -ROOT::Math::Pi(), "min angle is smaller than -pi!");
+    CheckCondition(aMax <= ROOT::Math::Pi(), "max angle is larger than pi!");
+    CheckCondition(aMin <= aMax, "min angle is larger than max angle!");
 }
 
 AngleProviderIso::AngleProviderIso() {
@@ -112,12 +100,10 @@ double AngleProviderPhi::Phi(double *x, double *par) {
 }
 
 void AngleProviderPhi::ValidateParamValues() {
-    if (paramVals["polDegree"] < 0 || paramVals["polDegree"] > 1)
-        throw std::invalid_argument(
-                "AngleProviderPhi::ValidateParamValues: polarisation degree out of [0,1] interval!");
-    if (paramVals["polAngle"] < 0 || paramVals["polDegree"] > 2 * ROOT::Math::Pi())
-        throw std::invalid_argument(
-                "AngleProviderPhi::ValidateParamValues: polarisation angle out of [0,2*pi] interval!");
+    CheckCondition(paramVals["polDegree"] >= 0 && paramVals["polDegree"] <= 1,
+        "polarisation degree out of [0,1] interval!");
+    CheckCondition(paramVals["polAngle"] >= 0 || paramVals["polDegree"] <= 2 * ROOT::Math::Pi(),
+        "polarisation angle out of [0,2*pi] interval!");
 
 }
 

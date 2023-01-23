@@ -31,10 +31,8 @@ double XYProviderGaussTail::Profile(double *x, double *par) {
 }
 
 void XYProviderGaussTail::ValidateParamValues() {
-    if (paramVals["sigma"] < 0)
-        throw std::invalid_argument("XYProviderGaussTail::ValidateParamValues: sigma cannot be smaller than 0!");
-    if (paramVals["flatR"] < 0)
-        throw std::invalid_argument("XYProviderGaussTail::ValidateParamValues: radius cannot be smaller than 0!");
+    CheckCondition(paramVals["sigma"] >= 0, "sigma cannot be smaller than 0!");
+    CheckCondition(paramVals["flatR"] >= 0, "radius cannot be smaller than 0!");
 }
 
 XYProviderSingle::XYProviderSingle() {

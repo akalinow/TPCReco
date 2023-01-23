@@ -10,8 +10,7 @@ double ZProviderUniform::GetZ() {
 }
 
 void ZProviderUniform::ValidateParamValues() {
-    if (paramVals["maxZ"] < paramVals["minZ"])
-        throw std::invalid_argument("ZProviderUniform::ValidateParamValues: maxZ cannot be smaller than minZ!");
+    CheckCondition(paramVals["maxZ"] >= paramVals["minZ"], "maxZ cannot be smaller than minZ!");
 }
 
 ZProviderSingle::ZProviderSingle() {

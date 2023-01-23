@@ -103,6 +103,12 @@ int main()
     // in the generator - XYProvider will not go to VAngleProvider slot by accident.
 
     auto p = ProviderFactory::Create<AngleProvider>("AngleProviderE1E2");
+    Provider::paramMapType pars = {
+            {"sigmaE1", 1},
+            {"sigmaE2", 0},
+            {"phaseE1E2", 0}
+    };
+    p->SetParams(pars);
     p->GetAngle();
 
 

@@ -9,8 +9,7 @@ double EProviderSingle::GetEnergy() {
 }
 
 void EProviderSingle::ValidateParamValues() {
-    if (paramVals["singleE"] < 0)
-        throw std::invalid_argument("EProviderSingle::ValidateParamValues: energy cannot be smaller than 0!");
+    CheckCondition(paramVals["singleE"] >= 0, "energy cannot be smaller than 0!");
 }
 
 EProviderGaus::EProviderGaus() {
@@ -25,8 +24,6 @@ double EProviderGaus::GetEnergy() {
 }
 
 void EProviderGaus::ValidateParamValues() {
-    if (paramVals["sigmaE"] < 0)
-        throw std::invalid_argument("EProviderGaus::ValidateParamValues: sigma cannot be smaller than 0!");
-    if (paramVals["meanE"] < 0)
-        throw std::invalid_argument("EProviderGaus::ValidateParamValues: mean cannot be smaller than 0!");
+    CheckCondition(paramVals["sigmaE"] >= 0, "sigma cannot be smaller than 0!");
+    CheckCondition(paramVals["meanE"] >= 0, "mean cannot be smaller than 0!");
 }
