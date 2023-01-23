@@ -26,7 +26,7 @@ TwoProngReaction::TwoProngReaction(std::unique_ptr<AngleProvider> theta, std::un
 }
 
 PrimaryParticles
-TwoProngReaction::GeneratePrmaries(const ROOT::Math::XYZVector &gammaMom, const ROOT::Math::XYZPoint &vertexPos) {
+TwoProngReaction::GeneratePrmaries(const ROOT::Math::XYZVector &gammaMom) {
     GetKinematics(gammaMom, targetMass);
     auto Qvalue = totalEnergy - lightProdMass - heavyProdMass;
     //return empty vector if we do not have enough energy

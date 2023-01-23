@@ -12,7 +12,7 @@ public:
     Reaction();
     virtual ~Reaction() = default;
     virtual PrimaryParticles
-    GeneratePrmaries(const ROOT::Math::XYZVector &gammaMom, const ROOT::Math::XYZPoint &vertexPos) = 0;
+    GeneratePrmaries(const ROOT::Math::XYZVector &gammaMom) = 0;
 protected:
     std::shared_ptr<IonProperties> ionProp;
     void GetKinematics(const ROOT::Math::XYZVector &gammaMom, const double &targetMass);

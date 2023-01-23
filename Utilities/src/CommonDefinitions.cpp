@@ -71,6 +71,7 @@ namespace enumDict {
                 (reaction_type::UNKNOWN,                "UNKNOWN")
                 (reaction_type::C12_ALPHA,              "C12_ALPHA")
                 (reaction_type::C13_ALPHA,              "C13_ALPHA")
+                (reaction_type::C14_ALPHA,              "C14_ALPHA")
                 (reaction_type::N15_PROTON,             "N15_PROTON")
                 (reaction_type::THREE_ALPHA_DEMOCRATIC, "THREE_ALPHA_DEMOCRATIC")
                 (reaction_type::THREE_ALPHA_BE,         "THREE_ALPHA_BE")
@@ -79,7 +80,7 @@ namespace enumDict {
 
 
 
-    pid_type GetPidType(std::string &pidName) {
+    pid_type GetPidType(const std::string &pidName) {
         auto it = gPids.right.find(pidName);
         return it == gPids.right.end() ? pid_type::UNKNOWN : it->second;
     }
@@ -89,7 +90,7 @@ namespace enumDict {
         return it == gPids.left.end() ? "UNKNOWN" : it->second;
     }
 
-    reaction_type GetReactionType(std::string &reactionName) {
+    reaction_type GetReactionType(const std::string &reactionName) {
         auto it = gReactions.right.find(reactionName);
         return it == gReactions.right.end() ? reaction_type::UNKNOWN : it->second;
     }

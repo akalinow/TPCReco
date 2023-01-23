@@ -8,8 +8,7 @@ class AngleProviderDummy : public AngleProvider {
 };
 
 class ReactionFixture : public Reaction, public testing::Test {
-    PrimaryParticles GeneratePrmaries(const ROOT::Math::XYZVector &gammaMom,
-                                      const ROOT::Math::XYZPoint &vertexPos) override { return {}; }
+    PrimaryParticles GeneratePrmaries(const ROOT::Math::XYZVector &gammaMom) override { return {}; }
 };
 
 TEST_F(ReactionFixture, TestKinematics) {

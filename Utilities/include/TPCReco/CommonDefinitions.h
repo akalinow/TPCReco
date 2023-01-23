@@ -75,6 +75,7 @@ enum class reaction_type{
   UNKNOWN=0,
   C12_ALPHA,
   C13_ALPHA,
+  C14_ALPHA,
   N15_PROTON,
   THREE_ALPHA_DEMOCRATIC,
   THREE_ALPHA_BE
@@ -82,11 +83,11 @@ enum class reaction_type{
 
 namespace enumDict {
     //conversion enum <--> string for pid_type
-    pid_type GetPidType(std::string &pidName);
+    pid_type GetPidType(const std::string &pidName);
     std::string GetPidName(pid_type type);
 
     //conversion enum <--> string for reaction_type
-    reaction_type GetReactionType(std::string &reactionName);
+    reaction_type GetReactionType(const std::string &reactionName);
     std::string GetReactionName(reaction_type type);
 }
 
