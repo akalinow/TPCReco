@@ -160,12 +160,23 @@ void HIGS_trees_analysis::fillTrees1prong(Track3D *aTrack, eventraw::EventInfo *
   event1prong_->runId=(aEventInfo ? aEventInfo->GetRunId() : -1);
   event1prong_->eventId=(aEventInfo ? aEventInfo->GetEventId() : -1);
   event1prong_->eventType = aEventInfo ? aEventInfo->GetEventType().to_ulong() : 0;
+  // event1prong_->unixTimeSec = 
+  //     (aEventInfo
+  //          ? duration_cast<duration<long double>>(
+  //                tpcreco::eventAbsoluteTime(*aEventInfo).time_since_epoch())
+  //                .count()
+  //          : -1); // absolute Unix time [s]
+  //// DEBUG
+  // for runId=[0, 999999] (6 figures) skip parsing Unix time from 14-figure integer number in YYYYMMDDhhmmss representation
   event1prong_->unixTimeSec =
-      (aEventInfo
-           ? duration_cast<duration<long double>>(
-                 tpcreco::eventAbsoluteTime(*aEventInfo).time_since_epoch())
-                 .count()
-           : -1); // absolute Unix time [s]
+    (event1prong_->runId >= 999999
+     ? (aEventInfo
+	? duration_cast<duration<long double>>(
+	      tpcreco::eventAbsoluteTime(*aEventInfo).time_since_epoch())
+	.count()
+	: -1)
+     : -1); // absolute Unix time [s]
+  //// DEBUG
   static double last_timestamp = 0;
   if(isFirst) {
     last_timestamp=event1prong_->unixTimeSec;
@@ -239,12 +250,23 @@ void HIGS_trees_analysis::fillTrees2prong(Track3D *aTrack, eventraw::EventInfo *
   event2prong_->runId=(aEventInfo ? aEventInfo->GetRunId() : -1);
   event2prong_->eventId=(aEventInfo ? aEventInfo->GetEventId() : -1);
   event2prong_->eventType = aEventInfo ? aEventInfo->GetEventType().to_ulong() : 0;
+  // event2prong_->unixTimeSec =
+  //     (aEventInfo
+  //          ? duration_cast<duration<long double>>(
+  //                tpcreco::eventAbsoluteTime(*aEventInfo).time_since_epoch())
+  //                .count()
+  //          : -1); // absolute Unix time [s]
+  //// DEBUG
+  // for runId=[0, 999999] (6 figures) skip parsing Unix time from 14-figure integer number in YYYYMMDDhhmmss representation
   event2prong_->unixTimeSec =
-      (aEventInfo
-           ? duration_cast<duration<long double>>(
-                 tpcreco::eventAbsoluteTime(*aEventInfo).time_since_epoch())
-                 .count()
-           : -1); // absolute Unix time [s]
+    (event2prong_->runId >= 999999
+     ? (aEventInfo
+	? duration_cast<duration<long double>>(
+	      tpcreco::eventAbsoluteTime(*aEventInfo).time_since_epoch())
+	.count()
+	: -1)
+     : -1); // absolute Unix time [s]
+  //// DEBUG
   static double last_timestamp = 0;
   if(isFirst) {
     last_timestamp=event2prong_->unixTimeSec;
@@ -325,12 +347,23 @@ void HIGS_trees_analysis::fillTrees3prong(Track3D *aTrack, eventraw::EventInfo *
   event3prong_->runId=(aEventInfo ? aEventInfo->GetRunId() : -1);
   event3prong_->eventId=(aEventInfo ? aEventInfo->GetEventId() : -1);
   event3prong_->eventType = aEventInfo ? aEventInfo->GetEventType().to_ulong() : 0;
-  event1prong_->unixTimeSec =
-      (aEventInfo
-           ? duration_cast<duration<long double>>(
-                 tpcreco::eventAbsoluteTime(*aEventInfo).time_since_epoch())
-                 .count()
-           : -1); // absolute Unix time [s]
+  // event3prong_->unixTimeSec =
+  //     (aEventInfo
+  //          ? duration_cast<duration<long double>>(
+  //                tpcreco::eventAbsoluteTime(*aEventInfo).time_since_epoch())
+  //                .count()
+  //          : -1); // absolute Unix time [s]
+  //// DEBUG
+  // for runId=[0, 999999] (6 figures) skip parsing Unix time from 14-figure integer number in YYYYMMDDhhmmss representation
+  event3prong_->unixTimeSec =
+    (event3prong_->runId >= 999999
+     ? (aEventInfo
+	? duration_cast<duration<long double>>(
+	      tpcreco::eventAbsoluteTime(*aEventInfo).time_since_epoch())
+	.count()
+	: -1)
+     : -1); // absolute Unix time [s]
+  //// DEBUG
   static double last_timestamp = 0;
   if(isFirst) {
     last_timestamp=event3prong_->unixTimeSec;
