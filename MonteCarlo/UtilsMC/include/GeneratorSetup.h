@@ -40,7 +40,7 @@ private:
 
     static double ParseBranchingRatio(pugi::xml_node descr);
 
-    void Info();
+    static void Info();
 };
 
 #endif //TPCSOFT_GENERATORSETUP_H

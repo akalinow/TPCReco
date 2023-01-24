@@ -2,6 +2,7 @@
 #include <stdexcept>
 #include <algorithm>
 #include "iostream"
+#include <set>
 
 unsigned int Provider::nInstances = 0;
 std::unique_ptr<TRandom> Provider::randGen = std::make_unique<TRandom3>(0);
@@ -19,22 +20,36 @@ double Provider::GetParam(const std::string &pname) {
 
 void Provider::ValidateParamName(const std::string &pname) {
     if (paramVals.find(pname) == paramVals.end())
-        throw std::runtime_error(GetName()+"::ValidateParamName: Unknown parameter \'" + pname + "\'!");
+        throw std::runtime_error(GetName() + "::ValidateParamName: Unknown parameter \'" + pname + "\'!");
 }
 
+
 void Provider::SetParams(const paramMapType &pars) {
-    for (auto &p: pars)
-    {
+    std::set<paramMapType::key_type> modifiedPars;
+    for (auto &p: pars) {
         ValidateParamName(p.first);
         paramVals[p.first] = p.second;
+        modifiedPars.insert(p.first);
     }
+    auto allParams = GetParamNames();
+    if (modifiedPars != allParams) {
+        auto missing = std::set<paramMapType::key_type>();
+        std::set_difference(allParams.begin(), allParams.end(), modifiedPars.begin(), modifiedPars.end(),
+                            std::inserter(missing, missing.begin()));
+        std::string msg = "Not all parameter values provided to " + GetName() + "! Missing ones:";
+        for (auto p: missing)
+            msg += " " + p;
+        throw std::runtime_error(msg);
+    }
+
     ValidateParamValues();
 }
 
-std::vector<std::string> Provider::GetParamNames() {
-    std::vector<std::string> v;
+
+std::set<Provider::paramMapType::key_type> Provider::GetParamNames() {
+    std::set<paramMapType::key_type> v;
     std::transform(paramVals.begin(), paramVals.end(),
-                   std::back_inserter(v),
+                   std::inserter(v, v.begin()),
                    [](auto &p) { return p.first; });
     return v;
 }
@@ -49,11 +64,10 @@ void Provider::PrintParams() {
     std::cout << std::flush;
 }
 
-void Provider::CheckCondition(bool cond, const std::string& message)
-{
-    if(!cond){
-        auto msg=GetName()+"::ValidateParamValues: ";
-        msg+=message;
+void Provider::CheckCondition(bool cond, const std::string &message) {
+    if (!cond) {
+        auto msg = GetName() + "::ValidateParamValues: ";
+        msg += message;
         throw std::invalid_argument(msg);
     }
 }

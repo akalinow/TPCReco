@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <map>
+#include <set>
 #include "TRandom3.h"
 #include "ObjectFactory.h"
 #include "ObjectRegistrator.h"
@@ -30,26 +31,39 @@ public:                                                                  \
     return #_moduleName_;                                                \
   }                                                                      \
 private:                                                                 \
-  utl::ObjectRegistrator<_moduleName_, ProviderFactory> fAutoModuleReg;
+  utl::ObjectRegistrator<_moduleName_, ProviderFactory> fAutoModuleReg{};
 
 
 class Provider {
 public:
     typedef std::map<std::string, double> paramMapType;
+
     Provider() = default;
+
     virtual ~Provider() = default;
+
     void SetSingleParam(const std::string &pname, const double &pval);
+
     void SetParams(const paramMapType &pars);
+
     double GetParam(const std::string &pname);
-    std::vector<std::string> GetParamNames();
+
+    std::set<paramMapType::key_type> GetParamNames();
+
     void PrintParams();
+
     virtual std::string GetName() = 0;
+
 protected:
     static std::unique_ptr<TRandom> randGen;
     paramMapType paramVals;
+
     virtual void ValidateParamValues() = 0;
+
     static unsigned int nInstances;
-    void CheckCondition(bool cond, const std::string& message);
+
+    void CheckCondition(bool cond, const std::string &message);
+
 private:
     void ValidateParamName(const std::string &pname);
 };

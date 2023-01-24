@@ -107,10 +107,10 @@ void GeneratorSetup::ReadBeamProperties(ROOT::Math::XYZPoint &beamPosition, doub
 
 //TODO:To be checked, why sometimes factory registration gets optimized-out
 void GeneratorSetup::Info() {
-    std::cout << "Available providers and their default parameters:\n";
+    std::cout << "List of available providers:\n";
     for (const auto &p: ProviderFactory::GetRegiseredIdentifiers()) {
         auto prov = ProviderFactory::Create<Provider>(p);
-        prov->PrintParams();
+        std::cout << '\t' << prov->GetName() << std::endl;
     }
 }
 
