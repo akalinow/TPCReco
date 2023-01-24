@@ -7,11 +7,12 @@
 #include "XYProvider.h"
 #include "GeneratorSetup.h"
 #include "pugixml.h"
+#include "boost/property_tree/ptree.hpp"
 
 class EventGenerator {
 public:
     EventGenerator()=delete;
-    EventGenerator(const pugi::xml_node &configNode);
+    EventGenerator(boost::property_tree::ptree configNode);
     EventGenerator(const boost::filesystem::path &configFilePath);
 private:
     void Init();

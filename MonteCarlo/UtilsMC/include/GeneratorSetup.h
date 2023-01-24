@@ -8,6 +8,7 @@
 #include "ZProvider.h"
 #include "XYProvider.h"
 #include "EProvider.h"
+#include "boost/property_tree/ptree.hpp"
 
 
 class GeneratorSetup {
@@ -16,7 +17,7 @@ public:
 
     GeneratorSetup(const boost::filesystem::path &configFilePath);
 
-    explicit GeneratorSetup(pugi::xml_node configNode);
+    explicit GeneratorSetup(const boost::property_tree::ptree& configNode);
 
     void BuildReactionLibrary(ReactionLibrary &lib);
 
@@ -25,20 +26,19 @@ public:
     std::unique_ptr<ZProvider> BuildZProvider();
 
     std::unique_ptr<EProvider> BuildEProvider();
-
-    void ReadBeamProperties(ROOT::Math::XYZPoint &beamPosition, double &angleZ);
+//
+//    void ReadBeamProperties(ROOT::Math::XYZPoint &beamPosition, double &angleZ);
 
 private:
-    pugi::xml_node topNode;
+    boost::property_tree::ptree topNode;
 
     template<typename ProviderType>
-    static std::unique_ptr<ProviderType> BuildProvider(const pugi::xml_node &descr);
+    static std::unique_ptr<ProviderType> BuildProvider(const boost::property_tree::ptree& node);
 
-    static pid_type ParseParticle(pugi::xml_node descr);
+    static pid_type ParseParticle(const std::string& partName);
 
-    static reaction_type ParseReactionType(pugi::xml_node descr);
+    static reaction_type ParseReactionType(const std::string& reactionName);
 
-    static double ParseBranchingRatio(pugi::xml_node descr);
 
     static void Info();
 };

@@ -1,6 +1,6 @@
 #include "EventGenerator.h"
 
-EventGenerator::EventGenerator(const pugi::xml_node &configNode) : setup{configNode} {
+EventGenerator::EventGenerator(boost::property_tree::ptree configNode) : setup{configNode} {
     Init();
 }
 
@@ -12,7 +12,7 @@ EventGenerator::EventGenerator(const boost::filesystem::path &configFilePath) : 
 void EventGenerator::Init() {
     setup.BuildReactionLibrary(lib);
     xyProv = setup.BuildXYProvider();
-    //zProv=setup.BuildZProvider();
-    //eProv=setup.BuildEProvider();
-    //setup.ReadBeamProperties(beamPosition,beamAngleZ);
+    zProv=setup.BuildZProvider();
+    eProv=setup.BuildEProvider();
+//    setup.ReadBeamProperties(beamPosition,beamAngleZ);
 }

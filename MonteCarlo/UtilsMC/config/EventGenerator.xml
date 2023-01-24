@@ -16,7 +16,7 @@
             <flatR val="1"/>
             <sigma val="1"/>
         </VertexTransverse>
-        <VertexLongitudinal type="">
+        <VertexLongitudinal type="ZProviderUniform">
             <minZ val="-100"/>
             <maxZ val="100"/>
         </VertexLongitudinal>
