@@ -92,6 +92,23 @@ void GeneratorSetup::Info() {
     }
 }
 
+GeneratorSetup::BeamGeometry GeneratorSetup::ReadBeamGeometry() {
+    BeamGeometry g{};
+    g.phiNom=topNode.get<double>("Beam.BeamGeometry.BeamEulerAnglesNominal.phi");
+    g.thetaNom=topNode.get<double>("Beam.BeamGeometry.BeamEulerAnglesNominal.theta");
+    g.psiNom=topNode.get<double>("Beam.BeamGeometry.BeamEulerAnglesNominal.psi");
+
+    g.phiAct=topNode.get<double>("Beam.BeamGeometry.BeamEulerAnglesActual.phi");
+    g.thetaAct=topNode.get<double>("Beam.BeamGeometry.BeamEulerAnglesActual.theta");
+    g.psiAct=topNode.get<double>("Beam.BeamGeometry.BeamEulerAnglesActual.psi");
+
+    auto px=topNode.get<double>("Beam.BeamGeometry.BeamPosition.x");
+    auto py=topNode.get<double>("Beam.BeamGeometry.BeamPosition.y");
+    auto pz=topNode.get<double>("Beam.BeamGeometry.BeamPosition.z");
+    g.beamPos=ROOT::Math::XYZPoint{px,py,pz};
+    return g;
+}
+
 template<typename ProviderType>
 std::unique_ptr<ProviderType> GeneratorSetup::BuildProvider(const boost::property_tree::ptree &node) {
     auto type = node.get<std::string>("distribution");

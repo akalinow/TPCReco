@@ -13,6 +13,10 @@
 
 class GeneratorSetup {
 public:
+    struct BeamGeometry{
+        double phiNom, thetaNom,psiNom, phiAct,thetaAct,psiAct;
+        ROOT::Math::XYZPoint beamPos;
+    };
     GeneratorSetup() = delete;
 
     GeneratorSetup(const boost::filesystem::path &configFilePath);
@@ -26,8 +30,8 @@ public:
     std::unique_ptr<ZProvider> BuildZProvider();
 
     std::unique_ptr<EProvider> BuildEProvider();
-//
-//    void ReadBeamProperties(ROOT::Math::XYZPoint &beamPosition, double &angleZ);
+
+    BeamGeometry ReadBeamGeometry();
 
 private:
     boost::property_tree::ptree topNode;

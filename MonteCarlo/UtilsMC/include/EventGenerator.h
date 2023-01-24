@@ -21,8 +21,7 @@ private:
     std::unique_ptr<XYProvider> xyProv;
     std::unique_ptr<EProvider> eProv;
     GeneratorSetup setup;
-    ROOT::Math::XYZPoint beamPosition;
-    double beamAngleZ{};
+    GeneratorSetup::BeamGeometry beamGeometry;
 };
 
 

@@ -3,12 +3,12 @@
     "BeamGeometry": {
       "BeamEulerAnglesNominal": {
         "phi": -1.5708,
-        "theta": -1.5708,
+        "theta": 1.5708,
         "psi": 0.0
       },
       "BeamEulerAnglesActual": {
-        "phi": -1.5708,
-        "theta": -1.5708,
+        "phi": 0.0,
+        "theta": 0.0,
         "psi": 0.0
       },
       "BeamPosition": {

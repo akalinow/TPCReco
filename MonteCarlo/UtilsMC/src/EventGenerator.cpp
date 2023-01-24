@@ -14,5 +14,5 @@ void EventGenerator::Init() {
     xyProv = setup.BuildXYProvider();
     zProv=setup.BuildZProvider();
     eProv=setup.BuildEProvider();
-//    setup.ReadBeamProperties(beamPosition,beamAngleZ);
+    beamGeometry=setup.ReadBeamGeometry();
 }
