@@ -5,23 +5,24 @@
 #include "IonProperties.h"
 #include "Math/Vector4D.h"
 #include "Math/Point3D.h"
+#include "Math/Vector3D.h"
 #include "Math/Boost.h"
+#include "Math/Rotation3D.h"
 
 class Reaction {
 public:
     Reaction();
+
     virtual ~Reaction() = default;
+
     virtual PrimaryParticles
-    GeneratePrmaries(const ROOT::Math::XYZVector &gammaMom) = 0;
+    GeneratePrmaries(double gammaMom, ROOT::Math::Rotation3D &beamToDetRotation) = 0;
+
 protected:
     std::shared_ptr<IonProperties> ionProp;
-    void GetKinematics(const ROOT::Math::XYZVector &gammaMom, const double &targetMass);
 
-    //Generate four momentum of a decay product. Use additional vector to define rotation axis for theta angle
-    static ROOT::Math::PxPyPzEVector
-    GenerateFourMomentum(double mom, double mass, double theta, double phi,
-                         const ROOT::Math::XYZVector &primaryDirection,
-                         const ROOT::Math::XYZVector &thetaPlaneNormal);
+    void GetKinematics(double gammaMom, const double &targetMass);
+
     double totalEnergy{};
     ROOT::Math::PxPyPzEVector::BetaVector betaCM;
 

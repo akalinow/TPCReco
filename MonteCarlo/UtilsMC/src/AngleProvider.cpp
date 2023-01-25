@@ -21,7 +21,7 @@ void AngleProviderCosIso::ValidateParamValues() {
     auto min = paramVals["minCos"];
     auto max = paramVals["maxCos"];
     CheckCondition(min>=-1, "min cos is smaller than -1!");
-    CheckCondition(max<=-1, "max cos is larger than 1!");
+    CheckCondition(max<=1, "max cos is larger than 1!");
     CheckCondition(min<=max, "min cos is larger than max cos!");
 }
 

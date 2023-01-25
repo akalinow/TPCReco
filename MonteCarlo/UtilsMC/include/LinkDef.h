@@ -4,4 +4,6 @@
 #pragma link C++ class vector<SimHit>+;
 #pragma link C++ class SimTrack+;
 #pragma link C++ class vector<SimTrack>+;
+#pragma link C++ class PrimaryParticle+;
+#pragma link C++ class vector<PrimaryPArticle>+;
 #endif

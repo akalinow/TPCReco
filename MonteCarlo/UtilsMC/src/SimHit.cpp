@@ -4,32 +4,32 @@
 
 
 SimHit::SimHit() {
-    position = ROOT::Math::XYZPoint(0, 0, 0);
+    position = TVector3();
     Edep = 0;
 }
 
-SimHit::SimHit(ROOT::Math::XYZPoint &pos, double &edep) {
-    position = std::move(pos);
+SimHit::SimHit(const TVector3& pos, double edep) {
+    position = pos;
     Edep = edep;
 }
 
 SimHit::SimHit(double x, double y, double z, double edep) {
-    position = ROOT::Math::XYZPoint(x, y, z);
+    position = TVector3{x, y, z};
     Edep = edep;
 }
 
-void SimHit::SetPosition(ROOT::Math::XYZPoint &pos) {
-    position = std::move(pos);
+void SimHit::SetPosition(TVector3 &pos) {
+    position = pos;
 }
 
 void SimHit::SetEnergy(double &E) {
     Edep = E;
 }
 
-ROOT::Math::XYZPoint SimHit::GetPosition() {
+TVector3 SimHit::GetPosition() const {
     return position;
 }
 
-double SimHit::GetEnergy() {
+double SimHit::GetEnergy() const {
     return Edep;
 }

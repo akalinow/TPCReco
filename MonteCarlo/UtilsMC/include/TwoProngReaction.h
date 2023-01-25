@@ -12,17 +12,19 @@ public:
             pid_type targetIon,
             pid_type prod1Ion,
             pid_type prod2Ion);
+
     PrimaryParticles
-    GeneratePrmaries(const ROOT::Math::XYZVector &gammaMom) override;
+    GeneratePrmaries(double gammaMom, ROOT::Math::Rotation3D &beamToDetRotation) override;
+
 private:
     std::unique_ptr<AngleProvider> thetaProv;
     std::unique_ptr<AngleProvider> phiProv;
     pid_type target;
-    pid_type lightProd;
-    pid_type heavyProd;
+    pid_type prod1Pid;
+    pid_type prod2Pid;
     double targetMass;
-    double lightProdMass;
-    double heavyProdMass;
+    double prod1Mass;
+    double prod2Mass;
 };
 
 #endif //TPCSOFT_TWOPRONGREACTION_H

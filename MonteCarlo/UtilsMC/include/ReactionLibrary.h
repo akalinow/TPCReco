@@ -13,7 +13,7 @@ public:
 
     void RegisterReaction(std::unique_ptr<Reaction> reaction, double branchingRatio, reaction_type reactionType);
 
-    std::pair<PrimaryParticles, reaction_type> Generate(const ROOT::Math::XYZVector &gammaMom) const;
+    std::pair<PrimaryParticles, reaction_type> Generate(double gammaMom, ROOT::Math::Rotation3D &beamToDetRotation) const;
 
     void Init();
 

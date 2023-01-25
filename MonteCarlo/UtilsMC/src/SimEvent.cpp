@@ -11,8 +11,8 @@
 /// \endcond
 //ClassImp(SimEvent);
 
-SimEvent::SimEvent(SimTracks &trackVector, ROOT::Math::XYZPoint vertexPos, reaction_type type)
-        : tracks{trackVector}, vertexPosition{std::move(vertexPos)}, reactionType{type} {
+SimEvent::SimEvent(SimTracks &trackVector, const TVector3& vertexPos, reaction_type type)
+        : tracks{trackVector}, vertexPosition{vertexPos}, reactionType{type} {
     UpdateSimTracksStartPoint();
 }
 
@@ -33,12 +33,12 @@ void SimEvent::SetSimTracks(SimTracks &trackVector) {
     UpdateSimTracksStartPoint();
 }
 
-ROOT::Math::XYZPoint SimEvent::GetVertexPosition() {
+TVector3 SimEvent::GetVertexPosition() {
     return vertexPosition;
 }
 
-void SimEvent::SetStartVertexPosition(ROOT::Math::XYZPoint pos) {
-    vertexPosition = std::move(pos);
+void SimEvent::SetStartVertexPosition(TVector3 &pos) {
+    vertexPosition = pos;
 
 
 }

@@ -37,7 +37,7 @@ void Provider::SetParams(const paramMapType &pars) {
         std::set_difference(allParams.begin(), allParams.end(), modifiedPars.begin(), modifiedPars.end(),
                             std::inserter(missing, missing.begin()));
         std::string msg = "Not all parameter values provided to " + GetName() + "! Missing ones:";
-        for (auto p: missing)
+        for (const auto& p: missing)
             msg += " " + p;
         throw std::runtime_error(msg);
     }

@@ -1,5 +1,6 @@
 #include "ReactionLibrary.h"
 #include <stdexcept>
+#include "Math/Rotation3D.h"
 
 void ReactionLibrary::RegisterReaction(std::unique_ptr<Reaction> reaction, double branchingRatio,
                                        reaction_type reactionType) {
@@ -15,11 +16,12 @@ void ReactionLibrary::Init() {
     initialized = true;
 }
 
-std::pair<PrimaryParticles, reaction_type> ReactionLibrary::Generate(const ROOT::Math::XYZVector &gammaMom) const {
+std::pair<PrimaryParticles, reaction_type>
+ReactionLibrary::Generate(double gammaMom, ROOT::Math::Rotation3D &beamToDetRotation) const {
     if (!initialized)
         throw std::runtime_error("ReactionLibrary is not initialized! Call ReactionLibrary::Init() first!");
     auto reactionId = selectionHelperHisto->FindBin(selectionHelperHisto->GetRandom()) - 1;
-    auto primaries = reactions[reactionId].aReaction->GeneratePrmaries(gammaMom);
+    auto primaries = reactions[reactionId].aReaction->GeneratePrmaries(gammaMom, beamToDetRotation);
     auto type = reactions[reactionId].type;
     return {primaries, type};
 }

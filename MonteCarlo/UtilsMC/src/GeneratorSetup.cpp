@@ -20,8 +20,8 @@ void GeneratorSetup::BuildReactionLibrary(ReactionLibrary &lib) {
         if (reactionType == "TwoProngReaction") {
             //parse particles:
             auto target = ParseParticle(r.second.get<std::string>("target"));
-            auto firstProd = ParseParticle(r.second.get<std::string>("target"));
-            auto secondProd = ParseParticle(r.second.get<std::string>("target"));
+            auto firstProd = ParseParticle(r.second.get<std::string>("FirstProduct"));
+            auto secondProd = ParseParticle(r.second.get<std::string>("SecondProduct"));
             //parse angular distributions:
             auto thetaProv = BuildProvider<AngleProvider>(r.second.get_child("Theta"));
             auto phiProv = BuildProvider<AngleProvider>(r.second.get_child("Phi"));
@@ -35,6 +35,8 @@ void GeneratorSetup::BuildReactionLibrary(ReactionLibrary &lib) {
         } else
             throw std::runtime_error("Unknown reaction type: " + reactionType);
     }
+    //Initialize library:
+    lib.Init();
 }
 
 pid_type GeneratorSetup::ParseParticle(const std::string &partName) {
@@ -94,18 +96,18 @@ void GeneratorSetup::Info() {
 
 GeneratorSetup::BeamGeometry GeneratorSetup::ReadBeamGeometry() {
     BeamGeometry g{};
-    g.phiNom=topNode.get<double>("Beam.BeamGeometry.BeamEulerAnglesNominal.phi");
-    g.thetaNom=topNode.get<double>("Beam.BeamGeometry.BeamEulerAnglesNominal.theta");
-    g.psiNom=topNode.get<double>("Beam.BeamGeometry.BeamEulerAnglesNominal.psi");
+    g.phiNom = topNode.get<double>("Beam.BeamGeometry.EulerAnglesNominal.phi");
+    g.thetaNom = topNode.get<double>("Beam.BeamGeometry.EulerAnglesNominal.theta");
+    g.psiNom = topNode.get<double>("Beam.BeamGeometry.EulerAnglesNominal.psi");
 
-    g.phiAct=topNode.get<double>("Beam.BeamGeometry.BeamEulerAnglesActual.phi");
-    g.thetaAct=topNode.get<double>("Beam.BeamGeometry.BeamEulerAnglesActual.theta");
-    g.psiAct=topNode.get<double>("Beam.BeamGeometry.BeamEulerAnglesActual.psi");
+    g.phiAct = topNode.get<double>("Beam.BeamGeometry.EulerAnglesActual.phi");
+    g.thetaAct = topNode.get<double>("Beam.BeamGeometry.EulerAnglesActual.theta");
+    g.psiAct = topNode.get<double>("Beam.BeamGeometry.EulerAnglesActual.psi");
 
-    auto px=topNode.get<double>("Beam.BeamGeometry.BeamPosition.x");
-    auto py=topNode.get<double>("Beam.BeamGeometry.BeamPosition.y");
-    auto pz=topNode.get<double>("Beam.BeamGeometry.BeamPosition.z");
-    g.beamPos=ROOT::Math::XYZPoint{px,py,pz};
+    auto px = topNode.get<double>("Beam.BeamGeometry.BeamPosition.x");
+    auto py = topNode.get<double>("Beam.BeamGeometry.BeamPosition.y");
+    auto pz = topNode.get<double>("Beam.BeamGeometry.BeamPosition.z");
+    g.beamPos = ROOT::Math::XYZPoint{px, py, pz};
     return g;
 }
 

@@ -10,11 +10,11 @@
 #include "TObject.h"
 #include "TVector3.h"
 #include "SimHit.h"
-#include "Math/Point3D.h"
-#include "Math/Vector3D.h"
+#include "TVector3.h"
 #include "CommonDefinitions.h"
 #include "PrimaryParticle.h"
 /// \cond
+#include <utility>
 #include <vector>
 /// \endcond
 
@@ -25,21 +25,25 @@
  */
 class SimTrack {
 private:
-    ROOT::Math::XYZPoint stopPos; ///< Position of particle stop/exit point from simulation volume in mm
-    ROOT::Math::XYZPoint startPos; ///< Position of particle production mm
+    TVector3 stopPos; ///< Position of particle stop/exit point from simulation volume in mm
+    TVector3 startPos; ///< Position of particle production mm
     SimHits hits; ///<Vector of simulated hits in detector volume
     PrimaryParticle prim;
+    bool hasStopPos{false};
 public:
     /**
      * @brief      Constructor
      */
     SimTrack();
+    explicit SimTrack(PrimaryParticle p, const TVector3& start): startPos{start},prim{std::move(p)} {}
     virtual ~SimTrack() = default;
     // setters:
 
-    void SetStop(ROOT::Math::XYZPoint stop);
+    void SetStop(TVector3 &stop);
 
-    void SetStart(ROOT::Math::XYZPoint start);
+    void SetStart(TVector3 &start);
+
+    void SetPrimaryParticle(PrimaryParticle& p) {prim=p;}
 
     /**
      * @brief      Inserts SimHit object to a vector of hits
@@ -47,11 +51,11 @@ public:
     void InsertHit(const SimHit &hit);
 
     //getters:
-    ROOT::Math::XYZPoint GetStart() const { return startPos; }
+    TVector3 GetStart() const { return startPos; }
 
-    ROOT::Math::XYZPoint GetStop() const { return stopPos; }
+    TVector3 GetStop() const { return stopPos; }
 
-    double GetLength() const { return (stopPos - startPos).R(); }
+    double GetLength() const;
 
     double GetEdep() const; ///< Energy deposit in gas volume of a given track
     unsigned int GetNHits() const { return hits.size(); }

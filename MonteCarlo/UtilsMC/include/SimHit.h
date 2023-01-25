@@ -8,7 +8,7 @@
 #define SIMHIT_H
 
 #include "TObject.h"
-#include "Math/Point3D.h"
+#include "TVector3.h"
 /// \cond
 #include <vector>
 /// \endcond
@@ -19,17 +19,17 @@
  */
 class SimHit {
 private:
-    ROOT::Math::XYZPoint position; ///< Position of the deposit
+    TVector3 position; ///< Position of the deposit
     double Edep; ///< Energy deposit of the hit in MeV
 public:
     SimHit();
     virtual ~SimHit() = default;
-    SimHit(ROOT::Math::XYZPoint &pos, double &edep);
+    SimHit(const TVector3& pos, double edep);
     SimHit(double x, double y, double z, double edep);
-    void SetPosition(ROOT::Math::XYZPoint &pos);
+    void SetPosition(TVector3 &pos);
     void SetEnergy(double &E);
-    ROOT::Math::XYZPoint GetPosition();
-    double GetEnergy();
+    TVector3 GetPosition() const;
+    double GetEnergy() const;
 ClassDef(SimHit, 1); ///< ROOT macro to register SimHit class
 };
 

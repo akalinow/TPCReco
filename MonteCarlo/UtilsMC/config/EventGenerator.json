@@ -1,12 +1,12 @@
 {
   "Beam": {
     "BeamGeometry": {
-      "BeamEulerAnglesNominal": {
+      "EulerAnglesNominal": {
         "phi": -1.5708,
         "theta": 1.5708,
         "psi": 0.0
       },
-      "BeamEulerAnglesActual": {
+      "EulerAnglesActual": {
         "phi": 0.0,
         "theta": 0.0,
         "psi": 0.0
@@ -21,7 +21,7 @@
       "distribution": "EProviderGaus",
       "parameters": {
         "meanE": 11,
-        "sigmaE": 1
+        "sigmaE": 0.1
       }
     }
   },
@@ -31,15 +31,15 @@
       "parameters": {
         "meanX": 0,
         "meanY": 0,
-        "flatR": 1,
+        "flatR": 10,
         "sigma": 1
       }
     },
     "VertexLongitudinal": {
       "distribution": "ZProviderUniform",
       "parameters": {
-        "minZ": 0,
-        "maxZ": 0
+        "minZ": -100,
+        "maxZ": 100
       }
     }
   },
@@ -49,39 +49,13 @@
       "branchingRatio": 0.5,
       "tag": "C12_ALPHA",
       "target": "OXYGEN_16",
-      "FirstProduct": "CARBON_12",
-      "SecondProduct": "ALPHA",
+      "FirstProduct": "ALPHA",
+      "SecondProduct": "CARBON_12",
       "Theta": {
-        "distribution": "AngleProviderE1E2",
+        "distribution": "AngleProviderCosIso",
         "parameters": {
-          "sigmaE1": 1,
-          "sigmaE2": 0,
-          "phaseE1E2": 0,
-          "phaseCosSign": 1
-        }
-      },
-      "Phi": {
-        "distribution": "AngleProviderPhi",
-        "parameters": {
-          "polDegree": 0,
-          "polAngle": 0
-        }
-      }
-    },
-    {
-      "type": "TwoProngReaction",
-      "branchingRatio": 0.5,
-      "tag": "C14_ALPHA",
-      "target": "OXYGEN_18",
-      "FirstProduct": "CARBON_14",
-      "SecondProduct": "ALPHA",
-      "Theta": {
-        "distribution": "AngleProviderE1E2",
-        "parameters": {
-          "sigmaE1": 1,
-          "sigmaE2": 0,
-          "phaseE1E2": 0,
-          "phaseCosSign": 1
+          "minCos": -1,
+          "maxCos": 1
         }
       },
       "Phi": {
