@@ -35,7 +35,6 @@ TwoProngReaction::GeneratePrmaries(double gammaMom, ROOT::Math::Rotation3D &beam
     auto p4SecondCM = ROOT::Math::PxPyPzEVector(-p3.X(), -p3.Y(), -p3.Z(),
                                                 sqrt(p_CM * p_CM + prod2Mass * prod2Mass));
 
-    std::cout<<betaCM<<std::endl;
     auto bst = ROOT::Math::Boost(-betaCM);
     auto lRot = ROOT::Math::LorentzRotation(beamToDetRotation);
     auto p4FirstLAB = lRot * bst(p4FirstCM);

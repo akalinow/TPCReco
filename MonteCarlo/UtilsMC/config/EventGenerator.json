@@ -20,8 +20,8 @@
     "GammaEnergy": {
       "distribution": "EProviderGaus",
       "parameters": {
-        "meanE": 11,
-        "sigmaE": 0.1
+        "meanE": 8.86,
+        "sigmaE": 0.3
       }
     }
   },
