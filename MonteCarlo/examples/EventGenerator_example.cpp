@@ -1,0 +1,112 @@
+
+#include "EventGenerator.h"
+#include "Math/EulerAngles.h"
+#include "Math/LorentzRotation.h"
+#include "TFile.h"
+#include "TTree.h"
+#include "TH1D.h"
+#include "TH2D.h"
+#include "TCanvas.h"
+#include "TStyle.h"
+
+
+void generateEventsAndMakePlots(EventGenerator &g, int nEvents) {
+    gRandom->SetSeed(0);
+    gStyle->SetOptStat(0);
+    //definition of plots:
+    TH2D *hXY = new TH2D("hxy", ";y [mm];z [mm]", 200, 0, 0, 200, 0, 0);
+    auto hDot = new TH1D("hdot", "cos angle between tracks;cos(#alpha)", 1000, 0, 0);
+    auto hDotDeg = new TH1D("hdotdeglab", "angle between tracks LAB [deg];#alpha", 1000, 0, 0);
+    auto hDotDegCM = new TH1D("hdotdegcm", "angle between tracks CM [deg];#alpha", 1000, 170, 190);
+
+    auto hThetaLab = new TH1D("thetalab", "cos theta LAB;cos(#theta)", 1000, 0, 0);
+    auto hThetaCM = new TH1D("thetacm", "cos theta CM;cos(#theta)", 1000, 0, 0);
+    auto hMomLAB = new TH1D("momlab", "alpha momentum in LAB;p [MeV/#it{c}]", 1000, 0, 0);
+    auto hMomCM = new TH1D("momcm", "alpha momentum in CM;p [MeV/#it{c}]", 1000, 0, 0);
+    auto hAlphaTheta = new TH2D("AlphaTheta", "angle between tracks vs cos theta;cos(#theta);#alpha", 300, 0, 0, 300, 0,
+                                0);
+
+    for (int i = 0; i < nEvents; i++) {
+        auto e = g.GenerateEvent();
+        //we analyze only C12_ALPHA reactions
+        if (e.GetReactionType() != reaction_type::C12_ALPHA) continue;
+        if (i % 100000 == 0)
+            std::cout << "Generated event " << i / 1000 << "k" << std::endl;
+        hXY->Fill(e.GetVertexPosition().Y(), e.GetVertexPosition().Z());
+        auto tracks = e.GetTracks();
+        if (tracks.empty()) continue; //skip empty events
+        //only two-prong, so we have two tracks in each event
+        auto p41 = tracks[0].GetPrimaryParticle().GetFourMomentum();
+        auto p42 = tracks[1].GetPrimaryParticle().GetFourMomentum();
+        auto v1 = p41.Vect();
+        auto v2 = p42.Vect();
+
+        auto beta = 1 / ((p41 + p42).M()) * (v1 + v2);
+
+        hMomLAB->Fill(p41.P());
+
+        p41.Boost(-beta);
+        p42.Boost(-beta);
+
+        auto cosalpha = v1.Dot(v2) / (v1.Mag() * v2.Mag());
+        hDot->Fill(cosalpha);
+        hDotDeg->Fill(TMath::ACos(cosalpha) * 180. / ROOT::Math::Pi());
+        hThetaLab->Fill(-v1.X() / v1.Mag());
+        hThetaCM->Fill(-p41.X() / p41.Vect().Mag());
+        hAlphaTheta->Fill(-v1.X() / v1.Mag(), TMath::ACos(cosalpha) * 180. / ROOT::Math::Pi());
+
+        cosalpha = p41.Vect().Dot(p42.Vect()) / (p41.P() * p42.P());
+        hDotDegCM->Fill(TMath::ACos(cosalpha) * 180. / ROOT::Math::Pi());
+        hMomCM->Fill(p41.P());
+    }
+
+
+    auto c = new TCanvas("c", "", 1024, 768);
+
+    c->Print("plots.pdf[");
+
+    hXY->Draw("colz");
+    c->Print("plots.pdf");
+
+    hDot->Draw();
+    c->Print("plots.pdf");
+
+    hDotDeg->Draw();
+    c->Print("plots.pdf");
+
+    hDotDegCM->Draw();
+    c->Print("plots.pdf");
+
+    hThetaLab->Draw();
+    c->Print("plots.pdf");
+
+    hThetaCM->Draw();
+    c->Print("plots.pdf");
+
+    hAlphaTheta->Draw("colz");
+    c->Print("plots.pdf");
+
+    hMomLAB->Draw();
+    c->Print("plots.pdf");
+
+    hMomCM->Draw();
+    c->Print("plots.pdf");
+
+
+    c->Print("plots.pdf]");
+
+}
+
+int main(int argc, char **argv) {
+    if (argc < 3) {
+        std::cout << "usage: " + std::string(argv[0]) + " <config file> <number of events to generate>\n";
+        return -1;
+    }
+    auto nEvents = std::atoi(argv[2]);
+
+    auto g = EventGenerator(argv[1]);
+    generateEventsAndMakePlots(g, nEvents);
+
+
+    return 0;
+}

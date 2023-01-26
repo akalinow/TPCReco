@@ -1,12 +1,12 @@
-#ifndef TPCSOFT_TWOPRONGREACTION_H
-#define TPCSOFT_TWOPRONGREACTION_H
+#ifndef TPCSOFT_REACTIONTWOPRONG_H
+#define TPCSOFT_REACTIONTWOPRONG_H
 
 #include "Reaction.h"
 #include "AngleProvider.h"
 
-class TwoProngReaction : public Reaction {
+class ReactionTwoProng : public Reaction {
 public:
-    TwoProngReaction(
+    ReactionTwoProng(
             std::unique_ptr<AngleProvider> theta,
             std::unique_ptr<AngleProvider> phi,
             pid_type targetIon,
@@ -27,4 +27,4 @@ private:
     double prod2Mass;
 };
 
-#endif //TPCSOFT_TWOPRONGREACTION_H
+#endif //TPCSOFT_REACTIONTWOPRONG_H

@@ -45,8 +45,32 @@
   },
   "Reactions": [
     {
-      "type": "TwoProngReaction",
-      "branchingRatio": 0.5,
+      "type": "TwoProng",
+      "branchingRatio": 0,
+      "tag": "C12_ALPHA",
+      "target": "OXYGEN_16",
+      "FirstProduct": "ALPHA",
+      "SecondProduct": "CARBON_12",
+      "Theta": {
+        "distribution": "AngleProviderE1E2",
+        "parameters": {
+          "sigmaE1": 1,
+          "sigmaE2": 1,
+          "phaseE1E2": 1.5708,
+          "phaseCosSign": 1
+        }
+      },
+      "Phi": {
+        "distribution": "AngleProviderPhi",
+        "parameters": {
+          "polDegree": 0,
+          "polAngle": 0
+        }
+      }
+    },
+    {
+      "type": "TwoProng",
+      "branchingRatio": 1,
       "tag": "C12_ALPHA",
       "target": "OXYGEN_16",
       "FirstProduct": "ALPHA",

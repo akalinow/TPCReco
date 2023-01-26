@@ -1,10 +1,10 @@
-#include "TwoProngReaction.h"
+#include "ReactionTwoProng.h"
 #include "Math/Boost.h"
 #include "Math/LorentzRotation.h"
 
 using namespace std::string_literals;
 
-TwoProngReaction::TwoProngReaction(std::unique_ptr<AngleProvider> theta, std::unique_ptr<AngleProvider> phi,
+ReactionTwoProng::ReactionTwoProng(std::unique_ptr<AngleProvider> theta, std::unique_ptr<AngleProvider> phi,
                                    pid_type targetIon, pid_type prod1Ion, pid_type prod2Ion)
         : thetaProv{std::move(theta)}, phiProv{std::move(phi)}, target{targetIon}, prod1Pid{prod1Ion},
           prod2Pid{prod2Ion} {
@@ -14,7 +14,7 @@ TwoProngReaction::TwoProngReaction(std::unique_ptr<AngleProvider> theta, std::un
 }
 
 PrimaryParticles
-TwoProngReaction::GeneratePrmaries(double gammaMom, ROOT::Math::Rotation3D &beamToDetRotation) {
+ReactionTwoProng::GeneratePrmaries(double gammaMom, ROOT::Math::Rotation3D &beamToDetRotation) {
     GetKinematics(gammaMom, targetMass);
     auto Qvalue = totalEnergy - prod1Mass - prod2Mass;
     //return empty vector if we do not have enough energy

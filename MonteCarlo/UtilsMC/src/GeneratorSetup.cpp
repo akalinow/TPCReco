@@ -1,6 +1,6 @@
 #include "GeneratorSetup.h"
 #include "stdexcept"
-#include "TwoProngReaction.h"
+#include "ReactionTwoProng.h"
 #include <boost/property_tree/json_parser.hpp>
 
 
@@ -17,7 +17,7 @@ void GeneratorSetup::BuildReactionLibrary(ReactionLibrary &lib) {
     //auto reactions = topNode.get_child("Reactions");
     for (auto &r: topNode.get_child("Reactions")) {
         auto reactionType = r.second.get<std::string>("type");
-        if (reactionType == "TwoProngReaction") {
+        if (reactionType == "TwoProng") {
             //parse particles:
             auto target = ParseParticle(r.second.get<std::string>("target"));
             auto firstProd = ParseParticle(r.second.get<std::string>("FirstProduct"));
@@ -30,7 +30,7 @@ void GeneratorSetup::BuildReactionLibrary(ReactionLibrary &lib) {
             auto reaction = ParseReactionType(r.second.get<std::string>("tag"));
 
             auto twoProng = std::unique_ptr<Reaction>(
-                    new TwoProngReaction(std::move(thetaProv), std::move(phiProv), target, firstProd, secondProd));
+                    new ReactionTwoProng(std::move(thetaProv), std::move(phiProv), target, firstProd, secondProd));
             lib.RegisterReaction(std::move(twoProng), branchingRatio, reaction);
         } else
             throw std::runtime_error("Unknown reaction type: " + reactionType);
