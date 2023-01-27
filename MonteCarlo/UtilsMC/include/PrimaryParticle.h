@@ -11,7 +11,7 @@ public:
     PrimaryParticle() = default;
 
     PrimaryParticle(pid_type id,
-                    TLorentzVector &fourMom)
+                    const TLorentzVector &fourMom)
             : pID{id},
               fourMomentum{fourMom} {}
 

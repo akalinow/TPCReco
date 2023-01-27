@@ -1,6 +1,7 @@
 #include "GeneratorSetup.h"
 #include "stdexcept"
 #include "ReactionTwoProng.h"
+#include "ReactionThreeProngDemocratic.h"
 #include <boost/property_tree/json_parser.hpp>
 
 
@@ -16,8 +17,11 @@ GeneratorSetup::GeneratorSetup(const pt::ptree &configNode) : topNode{configNode
 void GeneratorSetup::BuildReactionLibrary(ReactionLibrary &lib) {
     //auto reactions = topNode.get_child("Reactions");
     for (auto &r: topNode.get_child("Reactions")) {
-        auto reactionType = r.second.get<std::string>("type");
-        if (reactionType == "TwoProng") {
+        auto reactionName = r.second.get<std::string>("type");
+        //parse BR and reaction type:
+        auto branchingRatio = r.second.get<double>("branchingRatio");
+        auto reaction = ParseReactionType(r.second.get<std::string>("tag"));
+        if (reactionName == "TwoProng") {
             //parse particles:
             auto target = ParseParticle(r.second.get<std::string>("target"));
             auto firstProd = ParseParticle(r.second.get<std::string>("FirstProduct"));
@@ -25,15 +29,15 @@ void GeneratorSetup::BuildReactionLibrary(ReactionLibrary &lib) {
             //parse angular distributions:
             auto thetaProv = BuildProvider<AngleProvider>(r.second.get_child("Theta"));
             auto phiProv = BuildProvider<AngleProvider>(r.second.get_child("Phi"));
-            //parse BR and reaction type:
-            auto branchingRatio = r.second.get<double>("branchingRatio");
-            auto reaction = ParseReactionType(r.second.get<std::string>("tag"));
 
             auto twoProng = std::unique_ptr<Reaction>(
                     new ReactionTwoProng(std::move(thetaProv), std::move(phiProv), target, firstProd, secondProd));
             lib.RegisterReaction(std::move(twoProng), branchingRatio, reaction);
+        } else if (reactionName == "ThreeProngDemocratic") {
+            auto threeProngDemocratic = std::unique_ptr<Reaction>(new ReactionThreeProngDemocratic());
+            lib.RegisterReaction(std::move(threeProngDemocratic), branchingRatio, reaction);
         } else
-            throw std::runtime_error("Unknown reaction type: " + reactionType);
+            throw std::runtime_error("Unknown reaction type: " + reactionName);
     }
     //Initialize library:
     lib.Init();
@@ -66,25 +70,7 @@ std::unique_ptr<EProvider> GeneratorSetup::BuildEProvider() {
     return BuildProvider<EProvider>(topNode.get_child("Beam.GammaEnergy"));
 }
 
-//void GeneratorSetup::ReadBeamProperties(ROOT::Math::XYZPoint &beamPosition, double &angleZ) {
-//
-//    const auto &beamNode = topNode.child("Beam");
-//    if (!beamNode)
-//        throw std::runtime_error("No Beam configuration found!");
-//    auto angle = beamNode.child("BeamAngleZ").attribute("val").as_double();
-//
-//    if (!beamNode.child("BeamPosition") || !beamNode.child("BeamPosition").attribute("x") ||
-//        !beamNode.child("BeamPosition").attribute("y") ||
-//        !beamNode.child("BeamPosition").attribute("z"))
-//        throw std::runtime_error("Missing or wrong BeamPosition configuration!");
-//
-//    auto xPos = beamNode.child("BeamPosition").attribute("x").as_double();
-//    auto yPos = beamNode.child("BeamPosition").attribute("y").as_double();
-//    auto zPos = beamNode.child("BeamPosition").attribute("z").as_double();
-//    beamPosition.SetCoordinates(xPos, yPos, zPos);
-//    angleZ = angle;
-//}
-//
+
 //TODO:To be checked, why sometimes factory registration gets optimized-out
 void GeneratorSetup::Info() {
     std::cout << "List of available providers:\n";

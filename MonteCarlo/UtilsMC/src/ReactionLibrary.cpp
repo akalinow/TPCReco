@@ -13,6 +13,8 @@ void ReactionLibrary::Init() {
     for (auto i = 0U; i < reactions.size(); i++) {
         selectionHelperHisto->SetBinContent(i + 1, reactions[i].BR);
     }
+    if(selectionHelperHisto->Integral()==0)
+        throw std::runtime_error("At least one reaction has to have non-zero branching ratio!");
     initialized = true;
 }
 

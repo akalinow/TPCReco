@@ -8,6 +8,7 @@ ReactionTwoProng::ReactionTwoProng(std::unique_ptr<AngleProvider> theta, std::un
                                    pid_type targetIon, pid_type prod1Ion, pid_type prod2Ion)
         : thetaProv{std::move(theta)}, phiProv{std::move(phi)}, target{targetIon}, prod1Pid{prod1Ion},
           prod2Pid{prod2Ion} {
+    CheckStoichiometry({targetIon},{prod1Ion,prod2Ion});
     targetMass = ionProp->GetAtomMass(target);
     prod1Mass = ionProp->GetAtomMass(prod1Ion);
     prod2Mass = ionProp->GetAtomMass(prod2Ion);

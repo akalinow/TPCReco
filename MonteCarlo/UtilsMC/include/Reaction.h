@@ -22,6 +22,7 @@ protected:
     std::shared_ptr<IonProperties> ionProp;
 
     void GetKinematics(double gammaMom, const double &targetMass);
+    static void CheckStoichiometry(const std::vector<pid_type> &substrates, const std::vector<pid_type> &products);
 
     double totalEnergy{};
     ROOT::Math::PxPyPzEVector::BetaVector betaCM;
