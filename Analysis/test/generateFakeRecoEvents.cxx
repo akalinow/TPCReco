@@ -10,16 +10,16 @@
 // Below are parameters and flags that control behaviour of
 // the toy Monte Carlo generator:
 //
-#define SIMUL_CONTAINMENT_FLAG   true    // skip partially contained events within detector's volume?
+#define SIMUL_CONTAINMENT_FLAG   true      // skip partially contained events within detector's volume?
                                            // useful for calculating TPC geometric/electronics acceptance
-#define SIMUL_TRUNCATE_FLAG      false      // truncate partially contained tracks (detector's volume and/or GET history buffer)?
+#define SIMUL_TRUNCATE_FLAG      false     // truncate partially contained tracks (detector's volume and/or GET history buffer)?
 #define SIMUL_EXT_TRG_FLAG       true      // simulate external trigger and GET history buffer?
 #define SIMUL_EXT_TRG_ARRIVAL    0.1       // trigger position as a fraction of GET electronics full time scale [0-1]
-//#define SIMUL_BEAM_E_RESOL     0         // no energy smearing
+#define SIMUL_BEAM_E_RESOL       0         // no energy smearing
 //#define SIMUL_BEAM_E_RESOL     0.00369   // [0-1] 0.369% energy sigma, fwhm=100 keV @ 11.5MeV
 //#define SIMUL_BEAM_E_RESOL     0.00554   // [0-1] 0.554% energy sigma, fwhm=150 keV @ 11.5MeV
 //#define SIMUL_BEAM_E_RESOL     0.00738   // [0-1] 0.738% energy sigma, fwhm=200 keV @ 11.5MeV
-#define SIMUL_BEAM_E_RESOL       0.00863   // [0-1] 0.863% energy sigma, fwhm=200 keV @ 9.845MeV
+//#define SIMUL_BEAM_E_RESOL     0.00863   // [0-1] 0.863% energy sigma, fwhm=200 keV @ 9.845MeV
 //#define SIMUL_BEAM_E_RESOL     0.0107    // [0-1] 1.107% energy sigma, fwhm=300 keV @ 11.5MeV
 //#define SIMUL_BEAM_E_RESOL     0.0148    // [0-1] 1.480% energy sigma, fwhm=400 keV @ 11.5MeV
 //#define SIMUL_BEAM_E_RESOL     0.01440   // [0-1] 1.440% energy sigma, fwhm=300 keV @ 8.86MeV
@@ -28,9 +28,6 @@
 #define SIMUL_BEAM_TILT_OFFSET   -1.3      // [mm] beam tilt offset
 #define SIMUL_BEAM_TILT_ANGLE    3.0e-3    // [rad] beam tilt angle
                                            // where: y_det(x_det)=tan(angle)*x_det + offset
-//#define SIMUL_PRESSURE         250.0     // [mbar] CO2 pressure
-//#define SIMUL_PRESSURE         190.0     // [mbar] CO2 pressure
-//#define SIMUL_PRESSURE         130.0     // [mbar] CO2 pressure
 #define SIMUL_OXYGEN_E1E2_FLAG   true      // use anisotropic theta distribution for O-16?
 #define SIMUL_OXYGEN_E1E2_SIGMA1 0         // [nb] sigma_E1 cross section
 #define SIMUL_OXYGEN_E1E2_SIGMA2 1         // [nb] sigma_E2 cross section

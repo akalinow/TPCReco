@@ -24,7 +24,8 @@ R__ADD_LIBRARY_PATH(../lib)
 #include "TTree.h"
 #include "TTreeIndex.h"
 
-//#include "UtilsMath.h"
+#define DEBUG
+
 #include "CommonDefinitions.h"
 #include "GeometryTPC.h"
 #include "EventTPC.h"
@@ -44,18 +45,21 @@ void generateResponse(double sigmaXY=1, double sigmaZ=-1, long npoints=1000000, 
   if (!gROOT->GetClass("StripResponseCalculator")){
     R__LOAD_LIBRARY(libTPCReconstruction.so);
   }
-  //  auto geo=std::make_shared<GeometryTPC>("geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat", false);
   auto geo=std::make_shared<GeometryTPC>(geometryFile, false);
-  //  geo->SetTH2PolyPartition(3*20,2*20); // higher TH2Poly granularity speeds up finding reference nodes
   geo->SetTH2PolyPartition(3*200,2*200); // higher TH2Poly granularity speeds up initialization of XY response histograms!
   auto nstrips=6;
   auto ncells=30;
   auto npads=nstrips*2;
   if(sigmaZ<0) sigmaZ=sigmaXY; // when sigmaZ is omitted assume that sigmaZ=sigmaXY
   auto calc=new StripResponseCalculator(geo, nstrips, ncells, npads, sigmaXY, sigmaZ);
+  const std::string resultFile(Form("myResponse_%dx%dx%d_T%gmm_L%gmm.root", nstrips, ncells, npads, sigmaXY, sigmaZ));
+  if(calc->loadHistograms(resultFile.c_str())) {
+    std::cout << "ERROR: Response histogram file " << resultFile << " already exists!" << std::endl;
+    return;
+  }
   calc->setDebug(true);
   calc->initializeStripResponse(npoints); // overwrite default value
-  calc->saveHistograms(Form("myResponse_%dx%dx%d_T%gmm_L%gmm.root", nstrips, ncells, npads, sigmaXY, sigmaZ));
+  calc->saveHistograms(resultFile.c_str());
 }
 
 //////////////////////////
@@ -83,7 +87,6 @@ void plotStripResponse(double sigmaXY=0.5, double sigmaZ=-1, const char *geometr
   auto ncells=30;
   auto npads=nstrips*2;
   if(sigmaZ<0) sigmaZ=sigmaXY; // when sigmaZ is omitted assume that sigmaZ=sigmaXY
-  //  auto geo=std::make_shared<GeometryTPC>("geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat", false);
   auto geo=std::make_shared<GeometryTPC>(geometryFile, false);
   auto calc=new StripResponseCalculator(geo, nstrips, ncells, npads, sigmaXY, sigmaZ, Form("myResponse_%dx%dx%d_T%gmm_L%gmm.root", nstrips, ncells, npads, sigmaXY, sigmaZ), true);
   auto c=new TCanvas("c","c",5*300, 2.5*300);
@@ -124,7 +127,6 @@ void plotTimeResponse(double sigmaXY=0.5, double sigmaZ=-1, const char *geometry
   auto npads=nstrips*2;
   if(sigmaZ<0) sigmaZ=sigmaXY; // when sigmaZ is omitted assume that sigmaZ=sigmaXY
   auto geo=std::make_shared<GeometryTPC>(geometryFile, false);
-  //  auto geo=std::make_shared<GeometryTPC>("geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat", false);
   auto calc=new StripResponseCalculator(geo, nstrips, ncells, npads, sigmaXY, sigmaZ, Form("myResponse_%dx%dx%d_T%gmm_L%gmm.root", nstrips, ncells, npads, sigmaXY, sigmaZ), true);
   auto c=new TCanvas("c","c",3*300, 2.5*300);
   auto pad=0;
@@ -222,7 +224,6 @@ void testResponse1(double sigmaXY=0.5, double sigmaZ=-1, const char *geometryFil
   auto ncells=30;
   auto npads=nstrips*2;
   if(sigmaZ<0) sigmaZ=sigmaXY; // when sigmaZ is omitted assume that sigmaZ=sigmaXY
-  // auto geo=std::make_shared<GeometryTPC>("geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat", false);
   auto geo=std::make_shared<GeometryTPC>(geometryFile, false);
   geo->SetTH2PolyPartition(3*20,2*20); // higher TH2Poly granularity speeds up finding reference nodes
   auto calc=new StripResponseCalculator(geo, nstrips, ncells, npads, sigmaXY, sigmaZ, Form("myResponse_%dx%dx%d_T%gmm_L%gmm.root", nstrips, ncells, npads, sigmaXY, sigmaZ));
@@ -288,7 +289,6 @@ void testResponse2(int nevents=1, const char *geometryFile="geometry_ELITPC_190m
   auto nstrips=6;
   auto ncells=30;
   auto npads=nstrips*2;
-  //  auto geo=std::make_shared<GeometryTPC>("geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat", false);
   auto geo=std::make_shared<GeometryTPC>(geometryFile, false);
   geo->SetTH2PolyPartition(3*20,2*20); // higher TH2Poly granularity speeds up finding reference nodes
   std::vector<double> sigma{0.5, 1, 2};
@@ -399,7 +399,6 @@ void testResponse3(int nevents=1, const char *geometryFile="geometry_ELITPC_190m
   auto ncells=30;
   auto npads=nstrips*2;
   auto geo=std::make_shared<GeometryTPC>(geometryFile, false);
-  //  auto geo=std::make_shared<GeometryTPC>("geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat", false);
   geo->SetTH2PolyPartition(3*20,2*20); // higher TH2Poly granularity speeds up finding reference nodes
   std::vector<double> sigma{0.5, 1, 2};
   std::vector<StripResponseCalculator*> calc(sigma.size());
@@ -427,7 +426,6 @@ void testResponse3(int nevents=1, const char *geometryFile="geometry_ELITPC_190m
       auto pos=pos0+TVector3(0, -50, 0)*i;
       auto charge=10000;
       auto length=50.0; // [mm]
-      //      auto npoints=100;
       auto npoints=(int)(3*length/geo->GetStripPitch());
       auto unit_vec=TVector3(1,1,1).Unit();
       for(auto ipoint=0; ipoint<npoints; ipoint++) {
@@ -491,9 +489,6 @@ void testResponse4(const char *fname, long maxevents=0, const char *geometryFile
   // initialize TPC geometry and electronics parameters
   //
   auto geo=std::make_shared<GeometryTPC>(geometryFile, false);
-  //  auto geo=std::make_shared<GeometryTPC>("geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat", false);
-  //  auto geo=std::make_shared<GeometryTPC>("geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat", false);
-  //  auto geo=std::make_shared<GeometryTPC>("geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat", false);
   geo->SetTH2PolyPartition(3*20,2*20); // higher TH2Poly granularity speeds up finding reference nodes
 
   // initialize strip response calculator
@@ -501,7 +496,7 @@ void testResponse4(const char *fname, long maxevents=0, const char *geometryFile
   // NOTE: From MAGBOLTZ simulations at { p=250 mbar, T=293K, E=2744V/196mm=140V/cm }:
   // * W   = 0.4050 cm/us
   // * D_T = 205.846 um/sqrt(cm)
-  // * D_L = 205.499 um/sqrt(cm) <--- TO BE CONFIRMED
+  // * D_L = 205.499 um/sqrt(cm)
   // Extrapolation to 98 mm of drift (nominal beam axis to GEM distance):
   // * sigma_x = sigma_y = D_T*sqrt(9.8cm/1cm)=0.64 mm
   // * sigma_z =           D_L*sqrt(9.8cm/1cm)=0.64 mm
@@ -570,7 +565,7 @@ void testResponse4(const char *fname, long maxevents=0, const char *geometryFile
   }
 
   // output ROOT file
-  TFile *outFile = new TFile("Fake_EventTPC.root", "RECREATE");
+  TFile *outFile = new TFile("Fake_PEventTPC.root", "RECREATE");
   TTree outTree("TPCData","");
   auto pevent=std::make_shared<PEventTPC>(); // empty PEventTPC
   auto persistent_pevent_ptr = pevent.get();
@@ -615,32 +610,29 @@ void testResponse4(const char *fname, long maxevents=0, const char *geometryFile
       auto pid=track.getPID();
       auto Ekin_LAB=calcIon->getIonEnergyMeV(pid, length); // MeV, Ekin should be equal to Bragg curve integral
       auto curve(calcIon->getIonBraggCurveMeVPerMM(pid, Ekin_LAB, npoints)); // MeV/mm
-
-      //// DEBUG
+#ifdef DEBUG
       double sum_charge=0.0;
-      //// DEBUG
-
+#endif
       for(auto ipoint=0; ipoint<npoints; ipoint++) { // generate NPOINTS hits along the track
 	auto depth=(ipoint+0.5)*length/npoints; // mm
 	auto hitPosition=origin+unit_vec*depth; // mm
 	auto hitCharge=adcPerMeV*curve.Eval(depth)*(length/npoints); // ADC units
 	calcStrip->addCharge(hitPosition, hitCharge, pevent);
-
-	//// DEBUG
+#ifdef DEBUG
 	sum_charge+=hitCharge;
-	//	std::cout << "sim depth=" << depth << ", sim charge=" << hitCharge << std::endl;
-	//// DEBUG
+	std::cout << "sim depth=" << depth << ", sim charge=" << hitCharge << std::endl;
+#endif
       }
-      //// DEBUG
+#ifdef DEBUG
       std::cout << "sim particle: PID=" << pid << ", sim.range[mm]=" << length
 		<< ", sim.charge[ADC units]=" << sum_charge
 		<< ", E(range)[MeV]=" << Ekin_LAB
 		<< ", charge/adcPerMeV[MeV]=" << sum_charge/adcPerMeV << std::endl;
-      //// DEBUG
+#endif
     }
     outTree.Fill();
     //    event->SetChargeMap(pevent->GetChargeMap());  // no need to fill EventTPC
-  }
+    }
   outTree.Write("", TObject::kOverwrite); // save only the new version of the tree
 
   t.Stop();
