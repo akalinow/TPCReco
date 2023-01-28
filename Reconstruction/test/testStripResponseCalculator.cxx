@@ -24,7 +24,7 @@ R__ADD_LIBRARY_PATH(../lib)
 #include "TTree.h"
 #include "TTreeIndex.h"
 
-#define DEBUG
+//#define DEBUG
 
 #include "CommonDefinitions.h"
 #include "GeometryTPC.h"
@@ -565,7 +565,7 @@ void testResponse4(const char *fname, long maxevents=0, const char *geometryFile
   }
 
   // output ROOT file
-  TFile *outFile = new TFile("Fake_PEventTPC.root", "RECREATE");
+  TFile *outFile = new TFile("Generated_PEventTPC.root", "RECREATE");
   TTree outTree("TPCData","");
   auto pevent=std::make_shared<PEventTPC>(); // empty PEventTPC
   auto persistent_pevent_ptr = pevent.get();

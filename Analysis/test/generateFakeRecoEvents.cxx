@@ -74,6 +74,7 @@ R__ADD_LIBRARY_PATH(../lib)
 #include "CommonDefinitions.h"
 #include "Track3D.h"
 #include "UtilsMath.h"
+#include "EventInfo.h"
 
 //////////////////////////
 //////////////////////////
@@ -736,7 +737,7 @@ Track3D generateFake3AlphaEvent(std::shared_ptr<GeometryTPC> aGeometry, std::sha
 }
 //////////////////////////
 //////////////////////////
-void generateFakeRecoEvents(const std::string geometryName, double pressure_mbar, double temperature_K, unsigned int nEvents, double photonEnergyMeV, double brOxygen16=1, double brOxygen18=0, double brCarbon12_3alpha=0, bool debug_flag=false){
+void generateFakeRecoEvents(const std::string geometryName, double pressure_mbar, double temperature_K, unsigned int nEvents, double photonEnergyMeV, double brOxygen16=1, double brOxygen18=0, double brCarbon12_3alpha=0, long MCrunId=100001, bool debug_flag=false){
 
   if (!gROOT->GetClass("Track3D")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
@@ -747,6 +748,11 @@ void generateFakeRecoEvents(const std::string geometryName, double pressure_mbar
   R__LOAD_LIBRARY(libTPCUtilities.so);
   R__LOAD_LIBRARY(libMathMore.so);
 
+  // check MC runId range
+  if(MCrunId<0 || MCrunId>=1e6) {
+    std::cerr<<"ERROR: Allowed Monte Carlo runId range is [0, 999999]!"<<std::endl;
+    return;
+  }
   // construct partial sum of BRs, normalized to 1
   std::vector<double> brSum;
   brSum.push_back(fabs(brOxygen16));
@@ -764,12 +770,13 @@ void generateFakeRecoEvents(const std::string geometryName, double pressure_mbar
     brSum[i] /= brSum.back();
   }
 
+  std::cout << __FUNCTION__ << ": Monte Carlo runId        = " << MCrunId << std::endl;
   std::cout << __FUNCTION__ << ": Reaction branching ratios" << std::endl;
   std::cout << __FUNCTION__ << ": BR(O-16 -> alpha + C-12) = " << brSum[0]*1e2 << " %" << std::endl;
   std::cout << __FUNCTION__ << ": BR(O-18 -> alpha + C-14) = " << (brSum[1]-brSum[0])*1e2 << " %" << std::endl;
   std::cout << __FUNCTION__ << ": BR(C-12 -> 3-alpha)      = " << (brSum[2]-brSum[1])*1e2 << " %" << std::endl;
 
-  const std::string fileName="Reco_FakeEvents.root";
+  const std::string fileName="Generated_Track3D.root";
   auto myGeometry=loadGeometry(geometryName);
   if(!myGeometry->IsOK()) {
     std::cerr<<"ERROR: Wrong geometry file!"<<std::endl;
@@ -781,7 +788,6 @@ void generateFakeRecoEvents(const std::string geometryName, double pressure_mbar
     return;
   }
   
-  //  TFile *aFile = new TFile(fileName.c_str(), "CREATE");
   TFile *aFile = new TFile(fileName.c_str(), "RECREATE");
   if(!aFile || !aFile->IsOpen()) {
     std::cerr<<"ERROR: Cannot create output file!"<<std::endl;
@@ -825,8 +831,10 @@ void generateFakeRecoEvents(const std::string geometryName, double pressure_mbar
 
   aFile->cd();
   TTree *aTree = new TTree("TPCRecoData","");
-  Track3D *aTrack = new Track3D();
-  aTree->Branch("RecoEvent", "Track3D", &aTrack);
+  auto *aTrack = new Track3D();
+  aTree->Branch("RecoEvent", &aTrack);
+  auto *aEventInfo = new eventraw::EventInfo();
+  aTree->Branch("EventInfo", &aEventInfo);
 
   //  auto r=new Trandom3(0);
   auto r=gRandom; // use global ROOT pointer
@@ -850,6 +858,7 @@ void generateFakeRecoEvents(const std::string geometryName, double pressure_mbar
   }
 
   Track3D (*func)(std::shared_ptr<GeometryTPC>, std::shared_ptr<IonRangeCalculator>, double, bool);
+  auto eventCounter=0L;
 
   for(auto i=0L; i<nEvents; i++) {
 
@@ -934,6 +943,14 @@ void generateFakeRecoEvents(const std::string geometryName, double pressure_mbar
       continue;
     }
 
+    // fill basic EventInfo
+    aEventInfo->SetRunId(MCrunId);
+    aEventInfo->SetEventId(eventCounter);
+    eventCounter++;
+    aEventInfo->SetEventTimestamp(0); // 1count=10ns from GET electronics time counter
+    aEventInfo->SetEventType(0); // event quality bits from tpcGUI
+    aEventInfo->SetPedestalSubtracted(true);
+
     aTree->Fill();
 
     // make 3D plot (optional)
@@ -967,7 +984,7 @@ void generateFakeRecoEvents(const std::string geometryName, double pressure_mbar
 //////////////////////////
 int main (const int argc, const char *args[]) {
 
-  if(argc!=9) return -1;
-  generateFakeRecoEvents(args[1], atol(args[2]), atof(args[3]), atof(args[4]), atof(args[5]), atof(args[6]), atof(args[7]), atof(args[8]));
+  if(argc!=10) return -1;
+  generateFakeRecoEvents(args[1], atol(args[2]), atof(args[3]), atof(args[4]), atof(args[5]), atof(args[6]), atof(args[7]), atof(args[8]), atof(args[9]));
   return 0;
 }
