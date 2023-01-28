@@ -2,7 +2,8 @@
 //
 // root
 // root [0] .L generateFakeRecoEvents.cxx
-// root [1] generateFakeRecoEvents("geometry.dat", 250.0, 293.15, 1000, 11.5, 1, 0, 0);
+// root [1] generateFakeReactions("geometry.dat", 250.0, 293.15, 1000, 11.5, 1, 0, 0);
+// root [1] generateFake1prongs("geometry.dat", 250.0, 293.15, 1000, ALPHA, 2.5);
 //
 //////////////////////////
 //////////////////////////
@@ -23,6 +24,10 @@
 //#define SIMUL_BEAM_E_RESOL     0.0107    // [0-1] 1.107% energy sigma, fwhm=300 keV @ 11.5MeV
 //#define SIMUL_BEAM_E_RESOL     0.0148    // [0-1] 1.480% energy sigma, fwhm=400 keV @ 11.5MeV
 //#define SIMUL_BEAM_E_RESOL     0.01440   // [0-1] 1.440% energy sigma, fwhm=300 keV @ 8.86MeV
+#define SIMUL_FIXED_VERTEX_FLAG  false     // false=vertex smeared along beam, true=point-like vertex
+#define SIMUL_FIXED_VERTEX_XDET  2.0       // [mm] true X_DET position in case of non-smeared vertex
+#define SIMUL_FIXED_VERTEX_YDET  -2.0      // [mm] true Y_DET position in case of non-smeared vertex
+#define SIMUL_FIXED_VERTEX_ZDET  0.0       // [mm] true Z_DET position in case of non-smeared vertex
 #define SIMUL_BEAM_SPREAD_R      5.25      // [mm] flat top intentsity radius
 #define SIMUL_BEAM_SPREAD_SIGMA  1.0       // [mm] intensity tail sigma
 #define SIMUL_BEAM_TILT_OFFSET   -1.3      // [mm] beam tilt offset
@@ -380,6 +385,94 @@ void truncateTracks(Track3D & aTrack, bool debug_flag, bool electronicsRange_fla
 }
 //////////////////////////
 //////////////////////////
+void smearVertex(TVector3 &vertex, std::shared_ptr<GeometryTPC> aGeometry, TRandom *r) {
+
+  if(!SIMUL_FIXED_VERTEX_FLAG) {
+    // smear vertex position in XYZ_DET assuming:
+    // - uniform distribution along X_DET
+    // - flat-top beam profile with gaussian tails in YZ_DET plane
+    // employs TF2::GetRandom2()
+    double xmin, xmax, ymin, ymax;
+    std::tie(xmin, xmax, ymin, ymax)=aGeometry->rangeXY();
+    double y_rnd=0, z_rnd=0;
+    beamProfileTF2.GetRandom2(y_rnd, z_rnd); // newer ROOT: (y_rnd, z_rnd, aRandom);
+
+    // optionally extend vertex production outside of active area
+    vertex=TVector3( r->Uniform(xmin-(SIMUL_EXTENSION_FLAG ? SIMUL_EXTENSION_ZONE : 0),
+				xmax+(SIMUL_EXTENSION_FLAG ? SIMUL_EXTENSION_ZONE : 0)),
+		     y_rnd, z_rnd);
+
+    // apply beam tilt & offset
+    vertex.RotateZ(SIMUL_BEAM_TILT_ANGLE);
+    vertex+=TVector3(0, SIMUL_BEAM_TILT_OFFSET, 0);
+  } else {
+    vertex=TVector3(SIMUL_FIXED_VERTEX_XDET, SIMUL_FIXED_VERTEX_YDET, SIMUL_FIXED_VERTEX_ZDET);
+  }
+}
+//////////////////////////
+//////////////////////////
+Track3D generateFakeIsotropicSingleParticleEvent(std::shared_ptr<GeometryTPC> aGeometry, std::shared_ptr<IonRangeCalculator> aRangeCalculator, pid_type ionPID, double ionEnergyMeV, bool debug_flag=false){
+
+  auto r=gRandom; // use global ROOT pointer
+
+  Track3D empty_result;
+
+  auto ionMass = aRangeCalculator->getIonMassMeV(ionPID);
+
+  // detector reference frame (DET=LAB)
+  TVector3 beamDir_DET(-1, 0, 0); // unit vector
+  beamDir_DET.RotateZ(SIMUL_BEAM_TILT_ANGLE); // apply beam tilt
+
+  // calculate momentum of ion in LAB frame
+  double T_ion_DET=ionEnergyMeV;
+  double p_ion_DET=sqrt(T_ion_DET*(T_ion_DET+ionMass));
+
+  double phi_BEAM, theta_BEAM;
+  // distribute isotropically ions in LAB frame
+  theta_BEAM=acos(r->Uniform(-1, 1)); // rad, dOmega=dPhi*d(cosTheta)
+  phi_BEAM=r->Uniform(0, TMath::TwoPi()); // rad
+  TVector3 p_BEAM;
+  p_BEAM.SetMagThetaPhi(p_ion_DET, theta_BEAM, phi_BEAM);
+
+  // 4-momentum vector in detector coordinate system, LAB reference frame:
+  // Z_DET (down)      -> -Y_BEAM, so Y_BEAM is up
+  // Y_DET (horiz)     ->  X_B (horiz)
+  // X_DET (anti-beam) -> -Z_BEAM, so Z_BEAM is along photon
+  TLorentzVector ionP4_DET(p_BEAM, ionMass+T_ion_DET);
+  ionP4_DET.RotateZ(-theta_BEAM); // rotate by theta_BEAM about Y_BEAM (up) = -Z_DET axis
+  ionP4_DET.Rotate(phi_BEAM, beamDir_DET); // rotate by phi_BEAM about beam axis = -X_DET
+
+  // print debug info
+  if(debug_flag) {
+    std::cout<<"Ion PID: "<<ionPID<<std::endl;
+    std::cout<<"Ion kin.energy in DET/LAB (2 methods): "<<T_ion_DET<<", "<<ionP4_DET.E()-ionP4_DET.M()<<std::endl;
+    std::cout<<"Ion momentum in DET/LAB (2 methods): "<<p_ion_DET<<", "<<ionP4_DET.P()<<std::endl;
+  }
+
+  // calculate ion range [mm] in LAB/DET frame
+  double range_DET=aRangeCalculator->getIonRangeMM(ionPID, T_ion_DET); // mm
+
+  // create list of tracks
+  std::vector< std::tuple<pid_type, TVector3> > list;
+  list.push_back( std::make_tuple(ionPID, ionP4_DET.Vect().Unit()*range_DET) ); // 1st track PID & direction
+
+  // smear vertex
+  TVector3 vertex(0,0,0);
+  smearVertex(vertex, aGeometry, r);
+
+  // create TrackSegment3D collection
+  Track3D aTrack;
+  TrackSegment3D aSegment;
+  for(auto & seg: list) {
+    aSegment.setGeometry(aGeometry);
+    aSegment.setStartEnd(vertex, vertex + std::get<1>(seg) );
+    aSegment.setPID(std::get<0>(seg));
+    aTrack.addSegment(aSegment);
+  }
+  return aTrack;
+}
+//////////////////////////
+//////////////////////////
 Track3D generateFakeAlphaCarbonGenericEvent(std::shared_ptr<GeometryTPC> aGeometry, std::shared_ptr<IonRangeCalculator> aRangeCalculator, double photonEnergyMeV, bool Oxygen18_flag=false, bool debug_flag=false){
 
   auto r=gRandom; // use global ROOT pointer
@@ -519,23 +612,9 @@ Track3D generateFakeAlphaCarbonGenericEvent(std::shared_ptr<GeometryTPC> aGeomet
   list.push_back( std::make_tuple(alphaPID, alphaP4_DET.Vect().Unit()*rangeAlpha_DET) ); // 1st track PID & direction
   list.push_back( std::make_tuple(carbonPID, carbonP4_DET.Vect().Unit()*rangeCarbon_DET) ); // 2nd track PID & direction
 
-  // smear vertex position in XYZ assuming:
-  // - uniform distribution along X
-  // - flat-top beam profile with gaussian tails in YZ plane
-  // employs TF2::GetRandom2()
-  double xmin, xmax, ymin, ymax;
-  std::tie(xmin, xmax, ymin, ymax)=aGeometry->rangeXY();
-  double y_rnd=0, z_rnd=0;
-  beamProfileTF2.GetRandom2(y_rnd, z_rnd); // newer ROOT: (y_rnd, z_rnd, r);
-
-  // optionally extend vertex production outside of active area
-  TVector3 vertex( r->Uniform(xmin-(SIMUL_EXTENSION_FLAG ? SIMUL_EXTENSION_ZONE : 0),
-			      xmax+(SIMUL_EXTENSION_FLAG ? SIMUL_EXTENSION_ZONE : 0)),
-		   y_rnd, z_rnd);
-
-  // apply beam tilt & offset
-  vertex.RotateZ(SIMUL_BEAM_TILT_ANGLE);
-  vertex+=TVector3(0, SIMUL_BEAM_TILT_OFFSET, 0);
+  // smear vertex
+  TVector3 vertex(0,0,0);
+  smearVertex(vertex, aGeometry, r);
 
   // create TrackSegment3D collection
   Track3D aTrack;
@@ -706,23 +785,9 @@ Track3D generateFake3AlphaEvent(std::shared_ptr<GeometryTPC> aGeometry, std::sha
   list.push_back( std::make_tuple(alphaPID, alpha2_P4_DET.Vect().Unit()*range2_DET) ); // 2nd track PID & direction
   list.push_back( std::make_tuple(alphaPID, alpha3_P4_DET.Vect().Unit()*range3_DET) ); // 3rd track PID & direction
 
-  // smear vertex position in XYZ assuming:
-  // - uniform distribution along X
-  // - flat-top beam profile with gaussian tails in YZ plane
-  // employs TF2::GetRandom2()
-  double xmin, xmax, ymin, ymax;
-  std::tie(xmin, xmax, ymin, ymax)=aGeometry->rangeXY();
-  double y_rnd=0, z_rnd=0;
-  beamProfileTF2.GetRandom2(y_rnd, z_rnd); // (y_rnd, z_rnf, r);
-
-  // optionally extend vertex production outside of active area
-  TVector3 vertex( r->Uniform(xmin-(SIMUL_EXTENSION_FLAG ? SIMUL_EXTENSION_ZONE : 0),
-			      xmax+(SIMUL_EXTENSION_FLAG ? SIMUL_EXTENSION_ZONE : 0)),
-		   y_rnd, z_rnd);
-
-  // apply beam tilt & offset
-  vertex.RotateZ(SIMUL_BEAM_TILT_ANGLE);
-  vertex+=TVector3(0, SIMUL_BEAM_TILT_OFFSET, 0);
+  // smear vertex
+  TVector3 vertex(0,0,0);
+  smearVertex(vertex, aGeometry, r);
 
   // create TrackSegment3D collection
   Track3D aTrack;
@@ -737,7 +802,7 @@ Track3D generateFake3AlphaEvent(std::shared_ptr<GeometryTPC> aGeometry, std::sha
 }
 //////////////////////////
 //////////////////////////
-void generateFakeRecoEvents(const std::string geometryName, double pressure_mbar, double temperature_K, unsigned int nEvents, double photonEnergyMeV, double brOxygen16=1, double brOxygen18=0, double brCarbon12_3alpha=0, long MCrunId=100001, bool debug_flag=false){
+void generateFakeReactions(const std::string geometryName, double pressure_mbar, double temperature_K, unsigned int nEvents, double photonEnergyMeV, double brOxygen16=1, double brOxygen18=0, double brCarbon12_3alpha=0, long MCrunId=100001, bool debug_flag=false){
 
   if (!gROOT->GetClass("Track3D")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
@@ -836,7 +901,7 @@ void generateFakeRecoEvents(const std::string geometryName, double pressure_mbar
   auto *aEventInfo = new eventraw::EventInfo();
   aTree->Branch("EventInfo", &aEventInfo);
 
-  //  auto r=new Trandom3(0);
+  //  auto r=new TRandom3(0);
   auto r=gRandom; // use global ROOT pointer
   r->SetSeed(0);
 
@@ -903,7 +968,210 @@ void generateFakeRecoEvents(const std::string geometryName, double pressure_mbar
     // skip bad or parially contained events
     if(aTrack->getSegments().size()==0) {
       if(debug_flag) std::cout<<"Fake event i="<<i<<" rejected!"<<std::endl;
-      continue; 
+      continue;
+    }
+
+    // simulates GET electronics:
+    // - TIME scale depends the sampling rate
+    // - triggering on the 1st track (arrival at 10% of TIME scale)
+    if(SIMUL_EXT_TRG_FLAG) {
+
+      // sort a copy of the track collection in ascending Z-coordinate order
+      auto list(aTrack->getSegments());
+      std::sort(list.begin(), list.end(),
+		[](const TrackSegment3D& a, const TrackSegment3D& b) {
+		  return std::min(a.getEnd().Z(), a.getStart().Z()) < std::min(b.getEnd().Z(), b.getStart().Z());
+		});
+      // calculate range in time cells [0-511] of the GET electronics
+      auto err=false;
+      auto zmin=myGeometry->Timecell2pos(0, err); // Z_DET corresponding to timecell=0
+      auto zmax=myGeometry->Timecell2pos(myGeometry->GetAgetNtimecells(), err); // Z_DET corresponding to timecell=512
+      const double true_zmin=std::min(list.front().getStart().Z(), list.front().getEnd().Z());
+      for(auto &seg: aTrack->getSegments()) {
+	seg.setStartEnd(TVector3(seg.getStart().X(), seg.getStart().Y(),
+				 seg.getStart().Z()-true_zmin+zmin+SIMUL_EXT_TRG_ARRIVAL*(zmax-zmin)),
+			TVector3(seg.getEnd().X(), seg.getEnd().Y(),
+				 seg.getEnd().Z()-true_zmin+zmin+SIMUL_EXT_TRG_ARRIVAL*(zmax-zmin)));
+      }
+    }
+
+    // check if all segments are fully contained within GET electronics Z_DET history buffer
+    if(SIMUL_TRUNCATE_FLAG) {
+      Track3D copy(*aTrack);
+      truncateTracks(copy, debug_flag, true); // truncate tracks to Z_DET slice corresponding to GET electronics history buffer
+      *aTrack=copy;
+    }
+
+    // skip bad or parially contained events
+    if(aTrack->getSegments().size()==0) {
+      if(debug_flag) std::cout<<"Fake event i="<<i<<" rejected!"<<std::endl;
+      continue;
+    }
+
+    // fill basic EventInfo
+    aEventInfo->SetRunId(MCrunId);
+    aEventInfo->SetEventId(eventCounter);
+    eventCounter++;
+    aEventInfo->SetEventTimestamp(0); // 1count=10ns from GET electronics time counter
+    aEventInfo->SetEventType(0); // event quality bits from tpcGUI
+    aEventInfo->SetPedestalSubtracted(true);
+
+    aTree->Fill();
+
+    // make 3D plot (optional)
+    if(SIMUL_PLOT3D_FLAG && outputCanvas) {
+      auto list=aTrack->getSegments();
+      const int ntracks=list.size();
+      //      auto l = new TPolyLine3D(ntracks*3);
+      for(auto i=0; i<ntracks; i++) {
+        TPolyLine3D l(2);
+	l.SetPoint(0, list.at(i).getStart().X(), list.at(i).getStart().Y(), list.at(i).getStart().Z());
+	l.SetPoint(1, list.at(i).getEnd().X(), list.at(i).getEnd().Y(), list.at(i).getEnd().Z());
+	l.SetLineColor(color);
+	l.SetLineWidth(2);
+	if(list.at(i).getLength()>1.0) l.DrawClone(); // skip tracks below 1mm
+      }
+    }
+
+  } // end of event loop
+
+  aTree->Write("",TObject::kOverwrite);
+  aFile->Close();
+
+  if(SIMUL_PLOT3D_FLAG && outputCanvas) {
+    outputCanvas->Modified();
+    outputCanvas->Update();
+    outputCanvas->Print("GeneratorLevel_FakeEvents3D.C");
+  }
+
+}
+//////////////////////////
+//////////////////////////
+void generateFake1prongs(const std::string geometryName, double pressure_mbar, double temperature_K, unsigned int nEvents, pid_type ionPID, double ionEnergyMeV, long MCrunId=100001, bool debug_flag=false){
+
+  if (!gROOT->GetClass("Track3D")){
+    R__LOAD_LIBRARY(libTPCDataFormats.so);
+  }
+  if (!gROOT->GetClass("IonRangeCalculator")){
+    R__LOAD_LIBRARY(libTPCReconstruction.so);
+  }
+  R__LOAD_LIBRARY(libTPCUtilities.so);
+  R__LOAD_LIBRARY(libMathMore.so);
+
+  // check MC runId range
+  if(MCrunId<0 || MCrunId>=1e6) {
+    std::cerr<<"ERROR: Allowed Monte Carlo runId range is [0, 999999]!"<<std::endl;
+    return;
+  }
+
+  std::cout << __FUNCTION__ << ": Monte Carlo runId = " << MCrunId << std::endl;
+  std::cout << __FUNCTION__ << ": Ion PID           = " << ionPID << std::endl;
+  std::cout << __FUNCTION__ << ": Ion kin.E_LAB     = " << ionEnergyMeV << std::endl;
+
+  const std::string fileName="Generated_Track3D.root";
+  auto myGeometry=loadGeometry(geometryName);
+  if(!myGeometry->IsOK()) {
+    std::cerr<<"ERROR: Wrong geometry file!"<<std::endl;
+    return;
+  }
+  auto myRangeCalculator=loadRangeCalculator(pressure_mbar, temperature_K);
+  if(!myRangeCalculator->IsOK()) {
+    std::cerr<<"ERROR: Cannot initialize range/energy calculator!"<<std::endl;
+    return;
+  }
+
+  TFile *aFile = new TFile(fileName.c_str(), "RECREATE");
+  if(!aFile || !aFile->IsOpen()) {
+    std::cerr<<"ERROR: Cannot create output file!"<<std::endl;
+    return;
+  }
+
+  // auxiliary canvas with all generated tracks (optional)
+  TCanvas *outputCanvas=0;
+  if(SIMUL_PLOT3D_FLAG) {
+    outputCanvas = new TCanvas("c", "all events", 500, 500);
+    outputCanvas->cd();
+    TView *view=TView::CreateView(1);
+    double xmin, xmax, ymin, ymax, zmin, zmax;
+    std::tie(xmin, xmax, ymin, ymax, zmin, zmax)=myGeometry->rangeXYZ();
+
+    if(SIMUL_EXT_TRG_FLAG) {
+      auto err=false;
+      auto get_zmin=myGeometry->Timecell2pos(0, err);
+      zmax=get_zmin+(zmax-zmin);
+      zmin=get_zmin;
+    }
+
+    auto view_span=0.8*std::max(std::max(xmax-xmin, ymax-ymin), zmax-zmin);
+    view->SetRange(0.5*(xmax+xmin)-0.5*view_span, 0.5*(ymax+ymin)-0.5*view_span, 0.5*(zmax+zmin)-0.5*view_span,
+		   0.5*(xmax+xmin)+0.5*view_span, 0.5*(ymax+ymin)+0.5*view_span, 0.5*(zmax+zmin)+0.5*view_span);
+    // plot active volume's faces
+    TGraph gr=myGeometry->GetActiveAreaConvexHull();
+    TPolyLine3D l(5*(gr.GetN()-1));
+    for(auto iedge=0; iedge<gr.GetN()-1; iedge++) {
+      l.SetPoint(iedge*5+0, gr.GetX()[iedge], gr.GetY()[iedge], zmin);
+      l.SetPoint(iedge*5+1, gr.GetX()[iedge+1], gr.GetY()[iedge+1], zmin);
+      l.SetPoint(iedge*5+2, gr.GetX()[iedge+1], gr.GetY()[iedge+1], zmax);
+      l.SetPoint(iedge*5+3, gr.GetX()[iedge], gr.GetY()[iedge], zmax);
+      l.SetPoint(iedge*5+4, gr.GetX()[iedge], gr.GetY()[iedge], zmin);
+    }
+    l.SetLineColor(kBlue);
+    l.DrawClone();
+    outputCanvas->Update();
+    outputCanvas->Modified();
+  }
+
+  aFile->cd();
+  TTree *aTree = new TTree("TPCRecoData","");
+  auto *aTrack = new Track3D();
+  aTree->Branch("RecoEvent", &aTrack);
+  auto *aEventInfo = new eventraw::EventInfo();
+  aTree->Branch("EventInfo", &aEventInfo);
+
+  //  auto r=new TRandom3(0);
+  auto r=gRandom; // use global ROOT pointer
+  r->SetSeed(0);
+
+  // initialize beam profile parameters
+  beamProfileTF2.SetParameters(SIMUL_BEAM_SPREAD_R, 1, SIMUL_BEAM_SPREAD_SIGMA);
+  beamProfileTF2.SetNpx(500);
+  beamProfileTF2.SetNpy(500);
+
+  //Track3D generateFakeGenericSingleParticleEvent(std::shared_ptr<GeometryTPC> aGeometry, std::shared_ptr<IonRangeCalculator> aRangeCalculator, pid_type ionPID, double ionEnergyMeV, bool debug_flag=false){
+
+  Track3D (*func)(std::shared_ptr<GeometryTPC>, std::shared_ptr<IonRangeCalculator>, pid_type, double, bool);
+  auto eventCounter=0L;
+
+  for(auto i=0L; i<nEvents; i++) {
+
+    int color=kBlack; // track color on 3D plot (optional)
+
+    if(debug_flag || (i<1000L && (i%100L)==0L) || (i%1000L)==0L ) std::cout<<"Generating fake track i="<<i<<std::endl;
+    *aTrack = generateFakeIsotropicSingleParticleEvent(myGeometry, myRangeCalculator, ionPID, ionEnergyMeV, debug_flag);
+
+    // check if all segments are fully contained inside detector's active volume
+    if( (SIMUL_CONTAINMENT_FLAG || SIMUL_TRUNCATE_FLAG) &&
+	!isFullyContainedEvent(*aTrack) ) {
+
+      if(debug_flag) { // DEBUG
+	std::cout<<"Event is not fully contained inside the active volume!"<<std::endl;
+      } // DEBUG
+
+      if(SIMUL_CONTAINMENT_FLAG) {
+	*aTrack=Track3D(); // return empty event
+      } else {
+	if(SIMUL_TRUNCATE_FLAG) {
+	  Track3D copy(*aTrack);
+	  truncateTracks(copy, debug_flag); // truncate tracks to detector's active volume
+	  *aTrack=copy;
+	}
+      }
+    }
+
+    // skip bad or parially contained events
+    if(aTrack->getSegments().size()==0) {
+      if(debug_flag) std::cout<<"Fake event i="<<i<<" rejected!"<<std::endl;
+      continue;
     }
 
     // simulates GET electronics:
@@ -985,6 +1253,6 @@ void generateFakeRecoEvents(const std::string geometryName, double pressure_mbar
 int main (const int argc, const char *args[]) {
 
   if(argc!=10) return -1;
-  generateFakeRecoEvents(args[1], atol(args[2]), atof(args[3]), atof(args[4]), atof(args[5]), atof(args[6]), atof(args[7]), atof(args[8]), atof(args[9]));
+  generateFakeReactions(args[1], atol(args[2]), atof(args[3]), atof(args[4]), atof(args[5]), atof(args[6]), atof(args[7]), atof(args[8]), atof(args[9]));
   return 0;
 }
