@@ -59,6 +59,7 @@ void generateResponse(double sigmaXY=1, double sigmaZ=-1, long npoints=1000000, 
   }
   calc->setDebug(true);
   calc->initializeStripResponse(npoints); // overwrite default value
+  std::cout << "Saving strip response matrix to file: "<< resultFile << std::endl;
   calc->saveHistograms(resultFile.c_str());
 }
 
@@ -514,10 +515,9 @@ void testResponse4(const char *fname, long maxevents=0, const char *geometryFile
   int nstrips=6;
   int ncells=30;
   int npads=nstrips*2;
-  auto calcStrip=std::make_shared<StripResponseCalculator>
-    (geo, nstrips, ncells, npads, sigmaXY, sigmaZ, Form("myResponse_%dx%dx%d_T%gmm_L%gmm.root",
-							nstrips, ncells, npads, sigmaXY, sigmaZ));
-
+  const std::string initFile(Form("myResponse_%dx%dx%d_T%gmm_L%gmm.root", nstrips, ncells, npads, sigmaXY, sigmaZ));
+  auto calcStrip=std::make_shared<StripResponseCalculator>(geo, nstrips, ncells, npads, sigmaXY, sigmaZ, initFile.c_str());
+  std::cout << "Loading strip response matrix from file: "<< initFile << std::endl;
   // initialize ion range and dE/dx calculator
   //
   auto calcIon=std::make_shared<IonRangeCalculator>(CO2, pressure_mbar, temperature_K, false);
