@@ -411,6 +411,62 @@ void smearVertex(TVector3 &vertex, std::shared_ptr<GeometryTPC> aGeometry, TRand
 }
 //////////////////////////
 //////////////////////////
+void wirePlotDriftCage3D(TCanvas *outputCanvas, std::shared_ptr<GeometryTPC> aGeometry, bool simul_ext_trg_flag) {
+
+  if(!outputCanvas) return;
+  outputCanvas->cd();
+
+  // make wire plot of drift cage in 3D
+  TView *view=TView::CreateView(1);
+  double xmin, xmax, ymin, ymax, zmin, zmax;
+  std::tie(xmin, xmax, ymin, ymax, zmin, zmax)=aGeometry->rangeXYZ();
+
+  if(simul_ext_trg_flag) {
+    auto err=false;
+    auto get_zmin=aGeometry->Timecell2pos(0, err);
+    zmax=get_zmin+(zmax-zmin);
+    zmin=get_zmin;
+  }
+
+  auto view_span=0.8*std::max(std::max(xmax-xmin, ymax-ymin), zmax-zmin);
+  view->SetRange(0.5*(xmax+xmin)-0.5*view_span, 0.5*(ymax+ymin)-0.5*view_span, 0.5*(zmax+zmin)-0.5*view_span,
+		 0.5*(xmax+xmin)+0.5*view_span, 0.5*(ymax+ymin)+0.5*view_span, 0.5*(zmax+zmin)+0.5*view_span);
+  // plot active volume's faces
+  TGraph gr=aGeometry->GetActiveAreaConvexHull();
+  TPolyLine3D l(5*(gr.GetN()-1));
+  for(auto iedge=0; iedge<gr.GetN()-1; iedge++) {
+    l.SetPoint(iedge*5+0, gr.GetX()[iedge], gr.GetY()[iedge], zmin);
+    l.SetPoint(iedge*5+1, gr.GetX()[iedge+1], gr.GetY()[iedge+1], zmin);
+    l.SetPoint(iedge*5+2, gr.GetX()[iedge+1], gr.GetY()[iedge+1], zmax);
+    l.SetPoint(iedge*5+3, gr.GetX()[iedge], gr.GetY()[iedge], zmax);
+    l.SetPoint(iedge*5+4, gr.GetX()[iedge], gr.GetY()[iedge], zmin);
+  }
+  l.SetLineColor(kBlue);
+  l.DrawClone();
+  outputCanvas->Update();
+  outputCanvas->Modified();
+}
+//////////////////////////
+//////////////////////////
+void wirePlotTrack3D(TCanvas *outputCanvas, Track3D *aTrack, int color=kRed) {
+
+  if(!outputCanvas || !aTrack) return;
+  outputCanvas->cd();
+
+  // make wire plot of track collection in 3D
+  auto list=aTrack->getSegments();
+  const int ntracks=list.size();
+  for(auto i=0; i<ntracks; i++) {
+    TPolyLine3D l(2);
+    l.SetPoint(0, list.at(i).getStart().X(), list.at(i).getStart().Y(), list.at(i).getStart().Z());
+    l.SetPoint(1, list.at(i).getEnd().X(), list.at(i).getEnd().Y(), list.at(i).getEnd().Z());
+    l.SetLineColor(color);
+    l.SetLineWidth(2);
+    if(list.at(i).getLength()>1.0) l.DrawClone(); // skip tracks below 1mm
+  }
+}
+//////////////////////////
+//////////////////////////
 Track3D generateFakeIsotropicSingleParticleEvent(std::shared_ptr<GeometryTPC> aGeometry, std::shared_ptr<IonRangeCalculator> aRangeCalculator, pid_type ionPID, double ionEnergyMeV, bool debug_flag=false){
 
   auto r=gRandom; // use global ROOT pointer
@@ -863,35 +919,7 @@ void generateFakeReactions(const std::string geometryName, double pressure_mbar,
   TCanvas *outputCanvas=0;
   if(SIMUL_PLOT3D_FLAG) {
     outputCanvas = new TCanvas("c", "all events", 500, 500);
-    outputCanvas->cd();
-    TView *view=TView::CreateView(1);
-    double xmin, xmax, ymin, ymax, zmin, zmax;
-    std::tie(xmin, xmax, ymin, ymax, zmin, zmax)=myGeometry->rangeXYZ();
-
-    if(SIMUL_EXT_TRG_FLAG) {
-      auto err=false;
-      auto get_zmin=myGeometry->Timecell2pos(0, err);
-      zmax=get_zmin+(zmax-zmin);
-      zmin=get_zmin;
-    }
-
-    auto view_span=0.8*std::max(std::max(xmax-xmin, ymax-ymin), zmax-zmin);
-    view->SetRange(0.5*(xmax+xmin)-0.5*view_span, 0.5*(ymax+ymin)-0.5*view_span, 0.5*(zmax+zmin)-0.5*view_span,
-		   0.5*(xmax+xmin)+0.5*view_span, 0.5*(ymax+ymin)+0.5*view_span, 0.5*(zmax+zmin)+0.5*view_span);
-    // plot active volume's faces
-    TGraph gr=myGeometry->GetActiveAreaConvexHull();
-    TPolyLine3D l(5*(gr.GetN()-1));
-    for(auto iedge=0; iedge<gr.GetN()-1; iedge++) {
-      l.SetPoint(iedge*5+0, gr.GetX()[iedge], gr.GetY()[iedge], zmin);
-      l.SetPoint(iedge*5+1, gr.GetX()[iedge+1], gr.GetY()[iedge+1], zmin);
-      l.SetPoint(iedge*5+2, gr.GetX()[iedge+1], gr.GetY()[iedge+1], zmax);
-      l.SetPoint(iedge*5+3, gr.GetX()[iedge], gr.GetY()[iedge], zmax);
-      l.SetPoint(iedge*5+4, gr.GetX()[iedge], gr.GetY()[iedge], zmin);
-    }
-    l.SetLineColor(kBlue);
-    l.DrawClone();
-    outputCanvas->Update();
-    outputCanvas->Modified();
+    wirePlotDriftCage3D(outputCanvas, myGeometry, SIMUL_EXT_TRG_FLAG);
   }
 
   aFile->cd();
@@ -1019,19 +1047,7 @@ void generateFakeReactions(const std::string geometryName, double pressure_mbar,
     aTree->Fill();
 
     // make 3D plot (optional)
-    if(SIMUL_PLOT3D_FLAG && outputCanvas) {
-      auto list=aTrack->getSegments();
-      const int ntracks=list.size();
-      //      auto l = new TPolyLine3D(ntracks*3);
-      for(auto i=0; i<ntracks; i++) {
-        TPolyLine3D l(2);
-	l.SetPoint(0, list.at(i).getStart().X(), list.at(i).getStart().Y(), list.at(i).getStart().Z());
-	l.SetPoint(1, list.at(i).getEnd().X(), list.at(i).getEnd().Y(), list.at(i).getEnd().Z());
-	l.SetLineColor(color);
-	l.SetLineWidth(2);
-	if(list.at(i).getLength()>1.0) l.DrawClone(); // skip tracks below 1mm
-      }
-    }
+    if(SIMUL_PLOT3D_FLAG) wirePlotTrack3D(outputCanvas, aTrack, color);
 
   } // end of event loop
 
@@ -1041,7 +1057,7 @@ void generateFakeReactions(const std::string geometryName, double pressure_mbar,
   if(SIMUL_PLOT3D_FLAG && outputCanvas) {
     outputCanvas->Modified();
     outputCanvas->Update();
-    outputCanvas->Print("GeneratorLevel_FakeEvents3D.C");
+    outputCanvas->Print("Generated_wirePlotTrack3D.C");
   }
 
 }
@@ -1090,35 +1106,7 @@ void generateFake1prongs(const std::string geometryName, double pressure_mbar, d
   TCanvas *outputCanvas=0;
   if(SIMUL_PLOT3D_FLAG) {
     outputCanvas = new TCanvas("c", "all events", 500, 500);
-    outputCanvas->cd();
-    TView *view=TView::CreateView(1);
-    double xmin, xmax, ymin, ymax, zmin, zmax;
-    std::tie(xmin, xmax, ymin, ymax, zmin, zmax)=myGeometry->rangeXYZ();
-
-    if(SIMUL_EXT_TRG_FLAG) {
-      auto err=false;
-      auto get_zmin=myGeometry->Timecell2pos(0, err);
-      zmax=get_zmin+(zmax-zmin);
-      zmin=get_zmin;
-    }
-
-    auto view_span=0.8*std::max(std::max(xmax-xmin, ymax-ymin), zmax-zmin);
-    view->SetRange(0.5*(xmax+xmin)-0.5*view_span, 0.5*(ymax+ymin)-0.5*view_span, 0.5*(zmax+zmin)-0.5*view_span,
-		   0.5*(xmax+xmin)+0.5*view_span, 0.5*(ymax+ymin)+0.5*view_span, 0.5*(zmax+zmin)+0.5*view_span);
-    // plot active volume's faces
-    TGraph gr=myGeometry->GetActiveAreaConvexHull();
-    TPolyLine3D l(5*(gr.GetN()-1));
-    for(auto iedge=0; iedge<gr.GetN()-1; iedge++) {
-      l.SetPoint(iedge*5+0, gr.GetX()[iedge], gr.GetY()[iedge], zmin);
-      l.SetPoint(iedge*5+1, gr.GetX()[iedge+1], gr.GetY()[iedge+1], zmin);
-      l.SetPoint(iedge*5+2, gr.GetX()[iedge+1], gr.GetY()[iedge+1], zmax);
-      l.SetPoint(iedge*5+3, gr.GetX()[iedge], gr.GetY()[iedge], zmax);
-      l.SetPoint(iedge*5+4, gr.GetX()[iedge], gr.GetY()[iedge], zmin);
-    }
-    l.SetLineColor(kBlue);
-    l.DrawClone();
-    outputCanvas->Update();
-    outputCanvas->Modified();
+    wirePlotDriftCage3D(outputCanvas, myGeometry, SIMUL_EXT_TRG_FLAG);
   }
 
   aFile->cd();
@@ -1136,8 +1124,6 @@ void generateFake1prongs(const std::string geometryName, double pressure_mbar, d
   beamProfileTF2.SetParameters(SIMUL_BEAM_SPREAD_R, 1, SIMUL_BEAM_SPREAD_SIGMA);
   beamProfileTF2.SetNpx(500);
   beamProfileTF2.SetNpy(500);
-
-  //Track3D generateFakeGenericSingleParticleEvent(std::shared_ptr<GeometryTPC> aGeometry, std::shared_ptr<IonRangeCalculator> aRangeCalculator, pid_type ionPID, double ionEnergyMeV, bool debug_flag=false){
 
   Track3D (*func)(std::shared_ptr<GeometryTPC>, std::shared_ptr<IonRangeCalculator>, pid_type, double, bool);
   auto eventCounter=0L;
@@ -1222,19 +1208,7 @@ void generateFake1prongs(const std::string geometryName, double pressure_mbar, d
     aTree->Fill();
 
     // make 3D plot (optional)
-    if(SIMUL_PLOT3D_FLAG && outputCanvas) {
-      auto list=aTrack->getSegments();
-      const int ntracks=list.size();
-      //      auto l = new TPolyLine3D(ntracks*3);
-      for(auto i=0; i<ntracks; i++) {
-        TPolyLine3D l(2);
-	l.SetPoint(0, list.at(i).getStart().X(), list.at(i).getStart().Y(), list.at(i).getStart().Z());
-	l.SetPoint(1, list.at(i).getEnd().X(), list.at(i).getEnd().Y(), list.at(i).getEnd().Z());
-	l.SetLineColor(color);
-	l.SetLineWidth(2);
-	if(list.at(i).getLength()>1.0) l.DrawClone(); // skip tracks below 1mm
-      }
-    }
+    if(SIMUL_PLOT3D_FLAG) wirePlotTrack3D(outputCanvas, aTrack, color);
 
   } // end of event loop
 
@@ -1244,7 +1218,7 @@ void generateFake1prongs(const std::string geometryName, double pressure_mbar, d
   if(SIMUL_PLOT3D_FLAG && outputCanvas) {
     outputCanvas->Modified();
     outputCanvas->Update();
-    outputCanvas->Print("GeneratorLevel_FakeEvents3D.C");
+    outputCanvas->Print("Generated_wirePlotTrack3D.C");
   }
 
 }
