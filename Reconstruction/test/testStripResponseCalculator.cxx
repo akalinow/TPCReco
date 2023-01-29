@@ -618,6 +618,7 @@ void testResponse4(const char *fname, long maxevents=0, const char *geometryFile
 	auto hitPosition=origin+unit_vec*depth; // mm
 	auto hitCharge=adcPerMeV*curve.Eval(depth)*(length/npoints); // ADC units
 	calcStrip->addCharge(hitPosition, hitCharge, pevent);
+	if(aEventInfo) pevent->SetEventInfo(*aEventInfo);
 #ifdef DEBUG
 	sum_charge+=hitCharge;
 	std::cout << "sim depth=" << depth << ", sim charge=" << hitCharge << std::endl;
