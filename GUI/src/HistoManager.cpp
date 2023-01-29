@@ -710,9 +710,11 @@ void HistoManager::makeAutozoom(TH1 * aHisto){
     int lowBin = aHisto->FindFirstBinAbove(threshold, iAxis);
     int highBin = aHisto->FindLastBinAbove(threshold, iAxis);
     margin += (highBin - lowBin)*0.1;
-    if(iAxis==1) aHisto->GetXaxis()->SetRange(lowBin-margin, highBin+margin);
-    else if(iAxis==2) aHisto->GetYaxis()->SetRange(lowBin-margin, highBin+margin);
-  }  
+    /////// TEST
+    if(iAxis==1) aHisto->GetXaxis()->SetRange(std::max(lowBin-margin,1) , std::min(highBin+margin, aHisto->GetXaxis()->GetNbins()));
+    else if(iAxis==2) aHisto->GetYaxis()->SetRange(std::max(lowBin-margin,1), std::min(highBin+margin, aHisto->GetYaxis()->GetNbins()));
+    /////// TEST
+  }
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
