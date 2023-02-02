@@ -79,10 +79,6 @@ class Track3D{
 
   void updateNodesChi2(int strip_dir);
 
-  void updateChargeProfile();
-
-  void updateHitDistanceProfile();
-
   double getSegmentsChi2() const;
 
   double getNodesChi2() const;
