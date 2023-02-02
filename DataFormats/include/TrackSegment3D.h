@@ -118,7 +118,7 @@ class TrackSegment3D{
   double myLenght{0};
   pid_type pid{pid_type::UNKNOWN};
 
-  std::vector<Hit2DCollection> myRecHits;
+  std::vector<Hit2DCollection> myRecHits; //! transient data member
   std::vector<double> myProjectionsChi2;
 };
 
