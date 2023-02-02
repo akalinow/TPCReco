@@ -52,7 +52,7 @@ void generateResponse(double sigmaXY=1, double sigmaZ=-1, long npoints=1000000, 
   auto npads=nstrips*2;
   if(sigmaZ<0) sigmaZ=sigmaXY; // when sigmaZ is omitted assume that sigmaZ=sigmaXY
   auto calc=new StripResponseCalculator(geo, nstrips, ncells, npads, sigmaXY, sigmaZ);
-  const std::string resultFile(Form("myResponse_%dx%dx%d_T%gmm_L%gmm.root", nstrips, ncells, npads, sigmaXY, sigmaZ));
+  const std::string resultFile(Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm.root", nstrips, ncells, npads, geo->GetSamplingRate(), geo->GetDriftVelocity(), sigmaXY, sigmaZ));
   if(calc->loadHistograms(resultFile.c_str())) {
     std::cout << "ERROR: Response histogram file " << resultFile << " already exists!" << std::endl;
     return;
@@ -89,7 +89,7 @@ void plotStripResponse(double sigmaXY=0.5, double sigmaZ=-1, const char *geometr
   auto npads=nstrips*2;
   if(sigmaZ<0) sigmaZ=sigmaXY; // when sigmaZ is omitted assume that sigmaZ=sigmaXY
   auto geo=std::make_shared<GeometryTPC>(geometryFile, false);
-  auto calc=new StripResponseCalculator(geo, nstrips, ncells, npads, sigmaXY, sigmaZ, Form("myResponse_%dx%dx%d_T%gmm_L%gmm.root", nstrips, ncells, npads, sigmaXY, sigmaZ), true);
+  auto calc=new StripResponseCalculator(geo, nstrips, ncells, npads, sigmaXY, sigmaZ, Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm.root", nstrips, ncells, npads, geo->GetSamplingRate(), geo->GetDriftVelocity(), sigmaXY, sigmaZ), true);
   auto c=new TCanvas("c","c",5*300, 2.5*300);
   auto pad=0;
   c->Divide(5,3);
@@ -128,7 +128,7 @@ void plotTimeResponse(double sigmaXY=0.5, double sigmaZ=-1, const char *geometry
   auto npads=nstrips*2;
   if(sigmaZ<0) sigmaZ=sigmaXY; // when sigmaZ is omitted assume that sigmaZ=sigmaXY
   auto geo=std::make_shared<GeometryTPC>(geometryFile, false);
-  auto calc=new StripResponseCalculator(geo, nstrips, ncells, npads, sigmaXY, sigmaZ, Form("myResponse_%dx%dx%d_T%gmm_L%gmm.root", nstrips, ncells, npads, sigmaXY, sigmaZ), true);
+  auto calc=new StripResponseCalculator(geo, nstrips, ncells, npads, sigmaXY, sigmaZ, Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm.root", nstrips, ncells, npads, geo->GetSamplingRate(), geo->GetDriftVelocity(), sigmaXY, sigmaZ), true);
   auto c=new TCanvas("c","c",3*300, 2.5*300);
   auto pad=0;
   std::vector<int> cells{-ncells, -ncells+1, -ncells+2, -1, 0, 1, ncells-2, ncells-1, ncells};
@@ -227,7 +227,7 @@ void testResponse1(double sigmaXY=0.5, double sigmaZ=-1, const char *geometryFil
   if(sigmaZ<0) sigmaZ=sigmaXY; // when sigmaZ is omitted assume that sigmaZ=sigmaXY
   auto geo=std::make_shared<GeometryTPC>(geometryFile, false);
   geo->SetTH2PolyPartition(3*20,2*20); // higher TH2Poly granularity speeds up finding reference nodes
-  auto calc=new StripResponseCalculator(geo, nstrips, ncells, npads, sigmaXY, sigmaZ, Form("myResponse_%dx%dx%d_T%gmm_L%gmm.root", nstrips, ncells, npads, sigmaXY, sigmaZ));
+  auto calc=new StripResponseCalculator(geo, nstrips, ncells, npads, sigmaXY, sigmaZ, Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm.root", nstrips, ncells, npads, geo->GetSamplingRate(), geo->GetDriftVelocity(), sigmaXY, sigmaZ));
 
   // create dummy event to get empty UZ/VZ/WZ projection histograms
   auto event=new EventTPC(); // empty event
@@ -297,7 +297,7 @@ void testResponse2(int nevents=1, const char *geometryFile="geometry_ELITPC_190m
   for(auto i=0; i<calc.size(); i++) {
     auto sigmaXY=sigma[i];
     auto sigmaZ=sigma[i];
-    calc[i]=new StripResponseCalculator(geo, nstrips, ncells, npads, sigmaXY, sigmaZ, Form("myResponse_%dx%dx%d_T%gmm_L%gmm.root", nstrips, ncells, npads, sigmaXY, sigmaZ));
+    calc[i]=new StripResponseCalculator(geo, nstrips, ncells, npads, sigmaXY, sigmaZ, Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm.root", nstrips, ncells, npads, geo->GetSamplingRate(), geo->GetDriftVelocity(), sigmaXY, sigmaZ));
   }
 
   TStopwatch t;
@@ -406,7 +406,7 @@ void testResponse3(int nevents=1, const char *geometryFile="geometry_ELITPC_190m
   for(auto i=0; i<calc.size(); i++) {
     auto sigmaXY=sigma[i];
     auto sigmaZ=sigma[i];
-    calc[i]=new StripResponseCalculator(geo, nstrips, ncells, npads, sigmaXY, sigmaZ, Form("myResponse_%dx%dx%d_T%gmm_L%gmm.root", nstrips, ncells, npads, sigmaXY, sigmaZ));
+    calc[i]=new StripResponseCalculator(geo, nstrips, ncells, npads, sigmaXY, sigmaZ, Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm.root", nstrips, ncells, npads, geo->GetSamplingRate(), geo->GetDriftVelocity(), sigmaXY, sigmaZ));
   }
 
   TStopwatch t;
@@ -476,7 +476,7 @@ void testResponse3(int nevents=1, const char *geometryFile="geometry_ELITPC_190m
 
 //////////////////////////
 //////////////////////////
-void testResponse4(const char *fname, long maxevents=0, const char *geometryFile="geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat", double pressure_mbar=130.0, double temperature_K=273.15+20) { // 0=all events
+void testResponse4(const char *fname, long maxevents=0, const char *geometryFile="geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat", double pressure_mbar=130.0, double temperature_K=273.15+20, double sigmaXY_mm=0.82, double sigmaZ_mm=0.82) { // 0=all events
   if (!gROOT->GetClass("GeometryTPC")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
   }
@@ -494,28 +494,50 @@ void testResponse4(const char *fname, long maxevents=0, const char *geometryFile
 
   // initialize strip response calculator
   //
-  // NOTE: From MAGBOLTZ simulations at { p=250 mbar, T=293K, E=2744V/196mm=140V/cm }:
+  // NOTE: From MAGBOLTZ simulations at { p=250 mbar, T=293 K }
+  // 1. For drift region at E = 2744 V / 196 mm = 140 V/cm::
   // * W   = 0.4050 cm/us
   // * D_T = 205.846 um/sqrt(cm)
   // * D_L = 205.499 um/sqrt(cm)
-  // Extrapolation to 98 mm of drift (nominal beam axis to GEM distance):
+  // 2. Extrapolation to 98 mm of drift (nominal beam axis to GEM distance):
   // * sigma_x = sigma_y = D_T*sqrt(9.8cm/1cm)=0.64 mm
   // * sigma_z =           D_L*sqrt(9.8cm/1cm)=0.64 mm
+  // 3. For transfer regions at E = 350 V / 3 mm = 1166.67 V/cm:
+  // * W   = 5.729 cm/us - linear interpolation between 1000 V/cm and 1250 V/cm
+  // * D_T = 242.980 um/sqrt(cm) - linear interpolation between 1000 V/cm and 1250 V/cm
+  // * D_L = 272.577 um/sqrt(cm) - linear interpolation between 1000 V/cm and 1250 V/cm
+  // 4. Extrapolation to drift across three transfer regions of 3 mm thickness each:
+  // * sigma_x = sigma_y = D_T*sqrt(3*0.3cm/1cm) = 0.23 mm
+  // * sigma_z =           D_L*sqrt(3*0.3cm/1cm) = 0.26 mm
+  // 5. Overall combined:
+  // * sigma_x = sigma_y = sqrt( 0.64^2 + 0.23^2 ) mm = 0.68 mm
+  // * sigma_z =           sqrt( 0.64^2 + 0.26^2 ) mm = 0.69 mm
   //
-  // NOTE: From MAGBOLTZ simulations at { p=130 mbar, T=293K, E=1764V/196mm=90V/cm }:
+  // NOTE: From MAGBOLTZ simulations at { p=130 mbar, T=293 K }
+  // 1. For drift region at E = 1764 V / 196 mm = 90 V/cm:
   // * W   = 0.5000 cm/us
   // * D_T = 262.422 um/sqrt(cm)
   // * D_L = 261.901 um/sqrt(cm)
-  // Extrapolation to 98 mm of drift (nominal beam axis to GEM distance):
+  // 2. Extrapolation to 98 mm of drift (nominal beam axis to GEM distance):
   // * sigma_x = sigma_y = D_T*sqrt(9.8cm/1cm)=0.82 mm
   // * sigma_z =           D_L*sqrt(9.8cm/1cm)=0.82 mm
+  // 3. For transfer regions at E = 310 V / 3 mm = 1033.33 V/cm:
+  // * W   = 4.7386 cm/us - linear interpolation between 1000 V/cm and 1250 V/cm
+  // * D_T = 218.494 um/sqrt(cm) - linear interpolation between 1000 V/cm and 1250 V/cm
+  // * D_L = 272.459 um/sqrt(cm) - linear interpolation between 1000 V/cm and 1250 V/cm
+  // 4. Extrapolation to drift across three transfer regions of 3 mm thickness each:
+  // * sigma_x = sigma_y = D_T*sqrt(3*0.3cm/1cm) = 0.21 mm
+  // * sigma_z =           D_L*sqrt(3*0.3cm/1cm) = 0.26 mm
+  // 5. Overall combined:
+  // * sigma_x = sigma_y = sqrt( 0.82^2 + 0.21^2 ) mm = 0.85 mm
+  // * sigma_z =           sqrt( 0.82^2 + 0.26^2 ) mm = 0.86 mm
   //
-  double sigmaXY=0.64; // educated guess of transverse charge spread after 10 cm of drift (middle of drift cage)
-  double sigmaZ=0.64; // educated guess of longitudinal charge spread after 10 cm of drift (middle of drift cage)
+  double sigmaXY=sigmaXY_mm; // 0.64; // educated guess of transverse charge spread after 10 cm of drift (middle of drift cage)
+  double sigmaZ=sigmaZ_mm; // 0.64; // educated guess of longitudinal charge spread after 10 cm of drift (middle of drift cage)
   int nstrips=6;
   int ncells=30;
   int npads=nstrips*2;
-  const std::string initFile(Form("myResponse_%dx%dx%d_T%gmm_L%gmm.root", nstrips, ncells, npads, sigmaXY, sigmaZ));
+  const std::string initFile(Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm.root", nstrips, ncells, npads, geo->GetSamplingRate(), geo->GetDriftVelocity(), sigmaXY, sigmaZ));
   auto calcStrip=std::make_shared<StripResponseCalculator>(geo, nstrips, ncells, npads, sigmaXY, sigmaZ, initFile.c_str());
   std::cout << "Loading strip response matrix from file: "<< initFile << std::endl;
   // initialize ion range and dE/dx calculator
