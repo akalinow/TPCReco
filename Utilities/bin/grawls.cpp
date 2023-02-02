@@ -26,7 +26,12 @@ referencePointHelper(const std::string &input,
     fileId = chunk.empty() ? id.fileId() : chunk.as<size_t>();
   } catch (const RunIdParser::ParseError &e) {
     try {
-      point = RunIdParser::timePointFromRunId(input);
+      auto id = RunId{std::stol(input)};
+      if (!id.isRegular()) {
+        throw std::logic_error(
+            "run id must be regular run Id YYYYmmDDHHMMSS");
+      }
+      point = id.toTimePoint();
       if (chunk.empty()) {
         throw std::logic_error(
             "input in form of run id requires providing chunk");

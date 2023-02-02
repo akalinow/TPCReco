@@ -6,6 +6,27 @@
 #include <locale>
 #include <sstream>
 
+const std::string RunId::facetFormat = "%Y%m%d%H%M%S";
+
+RunId::time_point RunId::toTimePoint() const {
+  if(isRegular()){
+     return toTimePoint_();
+  }
+  return time_point{};
+}
+
+RunId::time_point RunId::toTimePoint_() const {
+  std::stringstream stream;
+  stream << repr;
+  stream.exceptions(std::stringstream::failbit | std::stringstream::badbit);
+  stream.imbue(
+      std::locale(stream.getloc(),
+                  new boost::posix_time::time_input_facet(RunId::facetFormat)));
+  boost::posix_time::ptime ptime;
+  stream >> ptime;
+  return time_point::clock::from_ptime(ptime);
+}
+
 const std::array<std::pair<std::regex, RunIdParser::Positions>, 2>
     RunIdParser::regexes = {
         std::make_pair(
@@ -17,7 +38,6 @@ const std::array<std::pair<std::regex, RunIdParser::Positions>, 2>
                        Positions{1, 2, 3, 4, 5, 6, 7, 8, 0, 0})
 
 };
-const std::string RunIdParser::facetFormat = "%Y%m%d%H%M%S";
 
 RunIdParser::RunIdParser(const std::string &name) {
   for (auto &element : regexes) {
@@ -47,12 +67,12 @@ void RunIdParser::matchResults(const std::smatch &match,
                   boost::posix_time::minutes(get(positions.minutes)) +
                   boost::posix_time::seconds(get(positions.seconds));
   auto ptime = boost::posix_time::ptime(date, duration);
-  timePoint_ = time_point::clock::from_ptime(ptime);
+  auto timePoint = time_point::clock::from_ptime(ptime);
   exactTimePoint_ =
-      timePoint_ + std::chrono::milliseconds(get(positions.miliseconds));
+      timePoint + std::chrono::milliseconds(get(positions.miliseconds));
   std::stringstream stream;
-  stream.imbue(std::locale(
-      stream.getloc(), new boost::posix_time::time_facet(facetFormat.c_str())));
+  stream.imbue(std::locale(stream.getloc(), new boost::posix_time::time_facet(
+                                                RunId::facetFormat.c_str())));
   stream << ptime;
   stream >> rundId_;
   fileId_ = std::stoul(match[positions.fileId]);
@@ -73,13 +93,4 @@ RunIdParser::Positions::Positions(size_t year, size_t month, size_t day,
     throw std::logic_error("RunIdParser: No non-zero position.");
   }
   max_ = *std::max_element(elements.begin(), elements.end());
-}
-
-RunIdParser::time_point RunIdParser::timePointFromRunId_(std::istream &stream) {
-  stream.exceptions(std::stringstream::failbit | std::stringstream::badbit);
-  stream.imbue(std::locale(
-      stream.getloc(), new boost::posix_time::time_input_facet(facetFormat)));
-  boost::posix_time::ptime ptime;
-  stream >> ptime;
-  return time_point::clock::from_ptime(ptime);
 }

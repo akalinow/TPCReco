@@ -6,7 +6,6 @@ cobo_time_unit eventRelativeTime(const eventraw::EventInfo &info) noexcept {
 }
 
 cobo_time_point eventAbsoluteTime(const eventraw::EventInfo &info) {
-  return RunIdParser::timePointFromRunId(info.GetRunId()) +
-         eventRelativeTime(info);
+  return RunId{info.GetRunId()}.toTimePoint() + eventRelativeTime(info);
 }
 } // namespace tpcreco

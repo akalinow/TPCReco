@@ -213,17 +213,13 @@ TEST(RunIdParser_Test, OtherFormatsSpace_multigraw) {
 TEST(RunIdParser_Test, timePointFromRunId) {
   EXPECT_TRUE(
       RunIdParser("CoBo_ALL_AsAd_ALL_2021-09-08T09:26:36.127_0015.graw.gz")
-          .isClose(RunIdParser::timePointFromRunId("20210908092636"),
-                   std::chrono::seconds(1)));
-  EXPECT_TRUE(
-      RunIdParser("CoBo_ALL_AsAd_ALL_2021-09-08T09:26:36.127_0015.graw.gz")
-          .isClose(RunIdParser::timePointFromRunId(20210908092636),
+          .isClose(RunId(20210908092636).toTimePoint(),
                    std::chrono::seconds(1)));
 
   auto parsed =
       RunIdParser("CoBo_ALL_AsAd_ALL_2021-09-08T09:26:36.127_0015.graw.gz");
-  EXPECT_TRUE(parsed.isClose(RunIdParser::timePointFromRunId(parsed.runId()),
-                             std::chrono::seconds(1)));
+  EXPECT_TRUE(
+      parsed.isClose(parsed.runId().toTimePoint(), std::chrono::seconds(1)));
 }
 
 TEST(RunIdParser_Test, unixTimestamp) {
@@ -261,49 +257,27 @@ TEST(RunIdParser_Test, unixTimestamp) {
 }
 
 TEST(RunIdParser_Test, unixTimestampFromRunId) {
-  EXPECT_EQ(
-      std::chrono::duration_cast<std::chrono::seconds>(
-          RunIdParser::timePointFromRunId(19700101000000).time_since_epoch())
-          .count(),
-      0);
+  EXPECT_EQ(std::chrono::duration_cast<std::chrono::seconds>(
+                RunId(19700101000000).toTimePoint().time_since_epoch())
+                .count(),
+            0);
 
-  EXPECT_EQ(
-      std::chrono::duration_cast<std::chrono::seconds>(
-          RunIdParser::timePointFromRunId(19700101000001).time_since_epoch())
-          .count(),
-      1);
+  EXPECT_EQ(std::chrono::duration_cast<std::chrono::seconds>(
+                RunId(19700101000001).toTimePoint().time_since_epoch())
+                .count(),
+            1);
 
-  EXPECT_EQ(
-      std::chrono::duration_cast<std::chrono::seconds>(
-          RunIdParser::timePointFromRunId(20210908092636).time_since_epoch())
-          .count(),
-      1631093196);
-}
-
-TEST(RunIdParser_Test, unixTimestampFromRunIdString) {
-  EXPECT_EQ(
-      std::chrono::duration_cast<std::chrono::seconds>(
-          RunIdParser::timePointFromRunId("19700101000000").time_since_epoch())
-          .count(),
-      0);
-  EXPECT_EQ(
-      std::chrono::duration_cast<std::chrono::seconds>(
-          RunIdParser::timePointFromRunId("19700101000001").time_since_epoch())
-          .count(),
-      1);
-
-  EXPECT_EQ(
-      std::chrono::duration_cast<std::chrono::seconds>(
-          RunIdParser::timePointFromRunId("20210908092636").time_since_epoch())
-          .count(),
-      1631093196);
+  EXPECT_EQ(std::chrono::duration_cast<std::chrono::seconds>(
+                RunId(20210908092636).toTimePoint().time_since_epoch())
+                .count(),
+            1631093196);
 }
 
 TEST(RunIdParser_Test, timePointVsExactTimePoint) {
   auto parsed =
       RunIdParser("CoBo_ALL_AsAd_ALL_2021-09-08T09:26:36.127_0015.graw.gz");
   EXPECT_EQ(
-      (parsed.exactTimePoint() - parsed.timePoint()).count(),
+      (parsed.exactTimePoint() - parsed.runId().toTimePoint()).count(),
       std::chrono::duration_cast<typename RunIdParser::time_point::duration>(
           std::chrono::milliseconds(127))
           .count());
@@ -312,15 +286,24 @@ TEST(RunIdParser_Test, timePointVsExactTimePoint) {
 TEST(RunIdParser_Test, parsingTimePointVsRunIdTimePoint) {
   EXPECT_EQ(
       (RunIdParser("CoBo_ALL_AsAd_ALL_2021-09-08T09:26:36.127_0015.graw.gz")
-           .timePoint() -
-       RunIdParser::timePointFromRunId(20210908092636))
+           .runId()
+           .toTimePoint() -
+       RunId(20210908092636).toTimePoint())
           .count(),
       0);
+}
 
-  EXPECT_EQ(
-      (RunIdParser("CoBo_ALL_AsAd_ALL_2021-09-08T09:26:36.127_0015.graw.gz")
-           .timePoint() -
-       RunIdParser::timePointFromRunId("20210908092636"))
-          .count(),
-      0);
+TEST(RunIdParser_Test, RunIdIsRegular) {
+    EXPECT_EQ(RunId(0).isRegular(), false);
+    EXPECT_EQ(RunId(1).isRegular(), false);
+    EXPECT_EQ(RunId(999999).isRegular(), false);
+    EXPECT_EQ(RunId(1000000).isRegular(), true);
+}
+
+
+TEST(RunIdParser_Test, RunIdToTimePointIrregular) {
+    EXPECT_EQ(RunId(0).toTimePoint().time_since_epoch().count(), 0);
+    EXPECT_EQ(RunId(1).toTimePoint().time_since_epoch().count(), 0);
+    EXPECT_EQ(RunId(999999).toTimePoint().time_since_epoch().count(), 0);
+    EXPECT_THROW(RunId(9999999).toTimePoint().time_since_epoch().count(), std::exception);
 }
