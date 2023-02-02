@@ -38,9 +38,7 @@ public:
 
   private:
 
-  chargeMapType myChargeMap;
-  float myChargeArray[3][3][256][512];
-  
+  chargeMapType myChargeMap;  
 };
 
 
