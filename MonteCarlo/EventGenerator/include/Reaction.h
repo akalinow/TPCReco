@@ -16,7 +16,7 @@ public:
     virtual ~Reaction() = default;
 
     virtual PrimaryParticles
-    GeneratePrmaries(double gammaMom, ROOT::Math::Rotation3D &beamToDetRotation) = 0;
+    GeneratePrmaries(double gammaMom, const ROOT::Math::Rotation3D &beamToDetRotation) = 0;
 
 protected:
     std::shared_ptr<IonProperties> ionProp;

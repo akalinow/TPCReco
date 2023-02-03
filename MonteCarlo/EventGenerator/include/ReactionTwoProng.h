@@ -14,7 +14,7 @@ public:
             pid_type prod2Ion);
 
     PrimaryParticles
-    GeneratePrmaries(double gammaMom, ROOT::Math::Rotation3D &beamToDetRotation) override;
+    GeneratePrmaries(double gammaMom, const ROOT::Math::Rotation3D &beamToDetRotation) override;
 
 private:
     std::unique_ptr<AngleProvider> thetaProv;

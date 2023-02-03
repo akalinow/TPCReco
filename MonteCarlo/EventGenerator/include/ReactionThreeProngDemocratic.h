@@ -8,7 +8,7 @@ public:
     ReactionThreeProngDemocratic() = default;
 
     PrimaryParticles
-    GeneratePrmaries(double v, ROOT::Math::Rotation3D &beamToDetRotation) override;
+    GeneratePrmaries(double v, const ROOT::Math::Rotation3D &beamToDetRotation) override;
 };
 
 #endif //TPCSOFT_REACTIONTHREEPRONGDEMOCRATIC_H

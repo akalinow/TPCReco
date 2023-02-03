@@ -6,7 +6,7 @@
 using namespace std::string_literals;
 
 PrimaryParticles
-ReactionThreeProngDemocratic::GeneratePrmaries(double gammaMom, ROOT::Math::Rotation3D &beamToDetRotation) {
+ReactionThreeProngDemocratic::GeneratePrmaries(double gammaMom, const ROOT::Math::Rotation3D &beamToDetRotation) {
     //Basically a copy-paste from Mikolaj's generateFakeRecoEvents.cxx
     //slightly modified geometry definitions and adjusted to work with Reaction interface.
     auto r = gRandom; //random engine

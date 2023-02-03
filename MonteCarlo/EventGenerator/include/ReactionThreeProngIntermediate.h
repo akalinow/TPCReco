@@ -15,7 +15,7 @@ public:
             pid_type prod1Ion,
             pid_type prod2Ion) {}
     PrimaryParticles
-    GeneratePrmaries(double v, ROOT::Math::Rotation3D &beamToDetRotation) override;
+    GeneratePrmaries(double v, const ROOT::Math::Rotation3D &beamToDetRotation) override;
 };
 
 #endif //TPCSOFT_REACTIONTHREEPRONGINTERMEDIATE_H
