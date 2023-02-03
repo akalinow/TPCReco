@@ -31,6 +31,11 @@ void generateEventsAndMakePlots(EventGenerator &g, int nEvents) {
 
     auto hTheta3P = new TH1D("theta3p", "cos theta LAB, 3 prong, all prongs;cos(#theta)", 1000, 0, 0);
 
+    auto hInvMass3P = new TH1D("invmass3p", "invariant mass, alpha pairs, 3-prong;m_{inv} [MeV]", 1000, 0, 0);
+
+    auto hKineticE = new TH1D("kineticE", "kinetic energy;E_{k} [MeV]", 1000, 0, 0);
+    auto hKineticEinvMass = new TH2D("kineticEinvMass", "inv mass vs kinetic energy of third alpha;E_{K} [MeV];m_{inv} [MeV]", 1000, 0, 0,1000,0,0);
+
     for (int i = 0; i < nEvents; i++) {
         auto e = g.GenerateEvent();
         if (i % 100000 == 0)
@@ -72,10 +77,31 @@ void generateEventsAndMakePlots(EventGenerator &g, int nEvents) {
         }
         else if(rt==reaction_type::THREE_ALPHA_DEMOCRATIC)
         {
+            auto fourMom=tracks[0].GetPrimaryParticle().GetFourMomentum();
+            hTheta3P->Fill(-fourMom.X()/fourMom.P());
             for(auto &t: tracks){
                 auto fourMom=t.GetPrimaryParticle().GetFourMomentum();
                 hTheta3P->Fill(-fourMom.X()/fourMom.P());
             }
+
+            auto p1=tracks[0].GetPrimaryParticle().GetFourMomentum();
+            auto p2=tracks[1].GetPrimaryParticle().GetFourMomentum();
+            auto p3=tracks[2].GetPrimaryParticle().GetFourMomentum();
+
+            hInvMass3P->Fill((p1+p2).M());
+            hInvMass3P->Fill((p2+p3).M());
+            //std::cout<<p1.Mag()<<" "<<p2.Mag()<<" "<<p3.Mag()<<" "<<std::endl;
+            hInvMass3P->Fill((p3+p1).M());
+
+            hKineticEinvMass->Fill(p1.E()-p1.M(),(p2+p3).M());
+            hKineticEinvMass->Fill(p2.E()-p2.M(),(p1+p3).M());
+            hKineticEinvMass->Fill(p3.E()-p3.M(),(p1+p2).M());
+
+        }
+
+        for(auto &t: tracks){
+            auto fourMom=t.GetPrimaryParticle().GetFourMomentum();
+            hKineticE->Fill(fourMom.E()-fourMom.M());
         }
 
     }
@@ -119,6 +145,15 @@ void generateEventsAndMakePlots(EventGenerator &g, int nEvents) {
     c->Print("plots.pdf");
 
     hTheta3P->Draw();
+    c->Print("plots.pdf");
+
+    hInvMass3P->Draw();
+    c->Print("plots.pdf");
+
+    hKineticE->Draw();
+    c->Print("plots.pdf");
+
+    hKineticEinvMass->Draw("colz");
     c->Print("plots.pdf");
 
 

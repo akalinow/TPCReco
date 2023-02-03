@@ -18,10 +18,9 @@
       }
     },
     "GammaEnergy": {
-      "distribution": "EProviderGaus",
+      "distribution": "EProviderSingle",
       "parameters": {
-        "meanE": 8.86,
-        "sigmaE": 0.1
+        "singleE": 11
       }
     }
   },
@@ -46,7 +45,7 @@
   "Reactions": [
     {
       "type": "TwoProng",
-      "branchingRatio": 1,
+      "branchingRatio": 0,
       "tag": "C12_ALPHA",
       "target": "OXYGEN_16",
       "FirstProduct": "ALPHA",
@@ -70,7 +69,7 @@
     },
     {
       "type": "TwoProng",
-      "branchingRatio": 1,
+      "branchingRatio": 0,
       "tag": "C12_ALPHA",
       "target": "OXYGEN_18",
       "FirstProduct": "ALPHA",
@@ -94,8 +93,48 @@
     },
     {
       "type": "ThreeProngDemocratic",
-      "branchingRatio": 1,
+      "branchingRatio": 0,
       "tag": "THREE_ALPHA_DEMOCRATIC"
+    },
+    {
+      "type": "ThreeProngIntermediate",
+      "branchingRatio": 1,
+      "tag": "THREE_ALPHA_DEMOCRATIC",
+      "Theta1": {
+        "distribution": "AngleProviderCosIso",
+        "parameters": {
+          "minCos": -1,
+          "maxCos": 1
+        }
+      },
+      "Phi1": {
+        "distribution": "AngleProviderPhi",
+        "parameters": {
+          "polDegree": 0,
+          "polAngle": 0
+        }
+      },
+      "Theta2": {
+        "distribution": "AngleProviderCosIso",
+        "parameters": {
+          "minCos": -1,
+          "maxCos": 1
+        }
+      },
+      "Phi2": {
+        "distribution": "AngleProviderPhi",
+        "parameters": {
+          "polDegree": 0,
+          "polAngle": 0
+        }
+      },
+      "IntermediateStates": [
+        {
+          "mass": 7456.8945,
+          "width": 0.01,
+          "branchingRatio": 1
+        }
+      ]
     }
   ]
 }

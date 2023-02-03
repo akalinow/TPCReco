@@ -9,7 +9,7 @@ void ReactionLibrary::RegisterReaction(std::unique_ptr<Reaction> reaction, doubl
 
 void ReactionLibrary::Init() {
     auto nReactions = reactions.size();
-    selectionHelperHisto = std::make_unique<TH1D>("hLibraryHelper", "", nReactions, 0, nReactions);
+    selectionHelperHisto = std::make_unique<TH1D>("", "", nReactions, 0, nReactions);
     for (auto i = 0U; i < reactions.size(); i++) {
         selectionHelperHisto->SetBinContent(i + 1, reactions[i].BR);
     }
@@ -23,7 +23,7 @@ ReactionLibrary::Generate(double gammaMom, ROOT::Math::Rotation3D &beamToDetRota
     if (!initialized)
         throw std::runtime_error("ReactionLibrary is not initialized! Call ReactionLibrary::Init() first!");
     auto reactionId = selectionHelperHisto->FindBin(selectionHelperHisto->GetRandom()) - 1;
-    auto primaries = reactions[reactionId].aReaction->GeneratePrmaries(gammaMom, beamToDetRotation);
+    auto primaries = reactions[reactionId].aReaction->GeneratePrimaries(gammaMom, beamToDetRotation);
     auto type = reactions[reactionId].type;
     return {primaries, type};
 }

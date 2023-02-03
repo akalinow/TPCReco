@@ -15,7 +15,7 @@ private:
 };
 
 class ReactionFixture : public Reaction, public testing::Test {
-    PrimaryParticles GeneratePrmaries(double gammaMom, const ROOT::Math::Rotation3D &beamToDetRotation) override { return {}; }
+    PrimaryParticles GeneratePrimaries(double gammaMom, const ROOT::Math::Rotation3D &beamToDetRotation) override { return {}; }
 };
 
 TEST_F(ReactionFixture, TestKinematics) {
@@ -37,12 +37,12 @@ TEST(ReactionTwoProng, TestAngles){
     auto theta = std::unique_ptr<AngleProvider>(new AngleProviderDummy(0));
     auto phi = std::unique_ptr<AngleProvider>(new AngleProviderDummy(0));
     auto r=new ReactionTwoProng(std::move(theta),std::move(phi),OXYGEN_16,ALPHA,CARBON_12);
-    auto prim = r->GeneratePrmaries(0,ROOT::Math::Rotation3D());
+    auto prim = r->GeneratePrimaries(0, ROOT::Math::Rotation3D());
     //event should be empty with zero gamma momentum:
     EXPECT_EQ(prim.size(),0);
 
     //Particles produced along beam axis should have unchanged theta:
-    prim=r->GeneratePrmaries(10,ROOT::Math::Rotation3D());
+    prim= r->GeneratePrimaries(10, ROOT::Math::Rotation3D());
     EXPECT_DOUBLE_EQ(prim[0].GetFourMomentum().CosTheta(),1);
     EXPECT_DOUBLE_EQ(prim[1].GetFourMomentum().CosTheta(),-1);
 }

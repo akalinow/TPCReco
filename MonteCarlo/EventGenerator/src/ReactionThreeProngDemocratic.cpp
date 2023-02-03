@@ -6,7 +6,7 @@
 using namespace std::string_literals;
 
 PrimaryParticles
-ReactionThreeProngDemocratic::GeneratePrmaries(double gammaMom, const ROOT::Math::Rotation3D &beamToDetRotation) {
+ReactionThreeProngDemocratic::GeneratePrimaries(double gammaMom, const ROOT::Math::Rotation3D &beamToDetRotation) {
     //Basically a copy-paste from Mikolaj's generateFakeRecoEvents.cxx
     //slightly modified geometry definitions and adjusted to work with Reaction interface.
     auto r = gRandom; //random engine
@@ -15,6 +15,8 @@ ReactionThreeProngDemocratic::GeneratePrmaries(double gammaMom, const ROOT::Math
     auto product = pid_type::ALPHA;
     auto targetMass = ionProp->GetAtomMass(target);
     auto productMass = ionProp->GetAtomMass(product);
+
+    //sanity check, it will work for hard-coded particles, to keep good practise
     CheckStoichiometry({target}, {product, product, product});
     GetKinematics(gammaMom, targetMass);
     double Qvalue = totalEnergy - 3 * productMass;

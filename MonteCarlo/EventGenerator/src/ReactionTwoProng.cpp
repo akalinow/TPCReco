@@ -15,7 +15,7 @@ ReactionTwoProng::ReactionTwoProng(std::unique_ptr<AngleProvider> theta, std::un
 }
 
 PrimaryParticles
-ReactionTwoProng::GeneratePrmaries(double gammaMom, const ROOT::Math::Rotation3D &beamToDetRotation) {
+ReactionTwoProng::GeneratePrimaries(double gammaMom, const ROOT::Math::Rotation3D &beamToDetRotation) {
     GetKinematics(gammaMom, targetMass);
     auto Qvalue = totalEnergy - prod1Mass - prod2Mass;
     //return empty vector if we do not have enough energy
