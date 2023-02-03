@@ -728,7 +728,6 @@ void HistoManager::openOutputStream(const std::string & filePath){
   if(fileName.find("CoBo")==std::string::npos){
     fileName = fileName.replace(0,8,"CoBo_ALL_AsAd_ALL");
   }
-  myRunParser.reset(new RunIdParser(fileName)); 
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
