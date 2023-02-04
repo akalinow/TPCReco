@@ -53,7 +53,6 @@ namespace eventraw {
     ULong_t timestamp{0}; // 6-bytes in 10ns CLK units (100 MHz)
     unsigned long eventType{0};
     bool pedestalSubtracted{false};
-    //    int asadCounter{0};
     
     static const uint eventTypeBits = 64;
 

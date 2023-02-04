@@ -38,8 +38,7 @@ public:
 
   private:
 
-  chargeMapType myChargeMap;
-  
+  chargeMapType myChargeMap;  
 };
 
 

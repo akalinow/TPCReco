@@ -27,7 +27,6 @@ class TH3D;
 
 class GeometryTPC;
 class EventTPC;
-class RunIdParser;
 
 class HistoManager {
 
@@ -125,7 +124,6 @@ public:
   TrackBuilder myTkBuilder;
   RecoOutput myRecoOutput;
 
-  std::shared_ptr<RunIdParser> myRunParser; 
   std::shared_ptr<EventTPC> myEventPtr;
   eventraw::EventInfo myEventInfo;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
