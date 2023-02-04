@@ -7,7 +7,7 @@ Generation of random variables from various distributions is done with a help of
   * `AngleProviderIso` - angles from isotropic distribution
   * `AngleProviderCosIso` - angle from distribution with flat distribution of cosine of the angle (e.g. for theta in spherical coordinates)
   * `AngleProviderE1E2` - angle from distributions specific to nuclear decays, as presented [here](https://doi.org/10.1103/PhysRevC.73.055801)
-  * `AngleProviderPhi` - $\phi$ provider with beam polarisation
+  * `AngleProviderPhi` - phi provider with beam polarisation
 * [EProvider](include/EProvider.h) - for gamma energy distribution
   * `EProviderSingle` - single pre-defined energy
   * `EProviderGaus` - energy from a gaussian distribution
@@ -31,3 +31,9 @@ Parameters of various types of providers are listed and described [here](#config
 ## Configuration
 ### Configuring providers
 #### AngleProviderSingle
+Parameters:
+* *singleAngle* -  returned single angle, any value
+
+#### AngleProviderIso
+Parameters:
+* *minAngle* - minimal angle

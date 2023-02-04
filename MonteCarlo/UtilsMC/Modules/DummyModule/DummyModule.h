@@ -1,0 +1,15 @@
+#ifndef TPCSOFT_DUMMYMODULE_H
+#define TPCSOFT_DUMMYMODULE_H
+
+#include "VModule.h"
+
+class DummyModule : public fwk::VModule{
+public:
+    EResultFlag Init(boost::property_tree::ptree config) override;
+    fwk::VModule::EResultFlag Process(evt::Event& event) override;
+    fwk::VModule::EResultFlag Finish() override;
+
+    REGISTER_MODULE(DummyModule);
+};
+
+#endif //TPCSOFT_DUMMYMODULE_H

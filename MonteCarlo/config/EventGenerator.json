@@ -45,7 +45,7 @@
   "Reactions": [
     {
       "type": "TwoProng",
-      "branchingRatio": 0,
+      "branchingRatio": 1,
       "tag": "C12_ALPHA",
       "target": "OXYGEN_16",
       "FirstProduct": "ALPHA",
@@ -69,7 +69,7 @@
     },
     {
       "type": "TwoProng",
-      "branchingRatio": 0,
+      "branchingRatio": 1,
       "tag": "C12_ALPHA",
       "target": "OXYGEN_18",
       "FirstProduct": "ALPHA",

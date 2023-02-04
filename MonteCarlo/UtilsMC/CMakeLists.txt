@@ -12,6 +12,13 @@ set(TPCRECO_LIBRARIES ${TPCRECO_LIBRARIES} ${TPCRECO_PREFIX}${MODULE_NAME} PAREN
 #
 file(GLOB_RECURSE sources       ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 
+ADD_SUBDIRECTORY(Modules)
+
+SET(util_sources
+        ${sources}
+        #${module_sources}
+        )
+
 ###############################################################################
 ## dependencies ###############################################################
 ###############################################################################
@@ -22,7 +29,7 @@ include_directories(${PROJECT_SOURCE_DIR}/Utilities/include)
 ###############################################################################
 ## target definitions #########################################################
 ###############################################################################
-add_library(${MODULE_NAME} SHARED ${sources} UtilsMcDict.cxx)
+add_library(${MODULE_NAME} SHARED ${util_sources} UtilsMcDict.cxx)
 add_library(${TPCRECO_PREFIX}${MODULE_NAME} ALIAS ${MODULE_NAME})
 set_target_properties(${MODULE_NAME} PROPERTIES PREFIX ${TPCRECO_PREFIX})
 
