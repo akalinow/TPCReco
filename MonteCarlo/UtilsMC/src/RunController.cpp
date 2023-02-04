@@ -72,6 +72,8 @@ namespace fwk {
 
     void
     RunController::Init(const boost::property_tree::ptree &config) {
+        fTiming=config.get<bool>("EnableTiming");
+        fModuleTracing=config.get<bool>("EnableModuleTracing");
         BuildModules(config.get_child("ModuleSequence"));
         InitModules(config.get_child("ModuleConfiguration"));
     }
@@ -79,7 +81,12 @@ namespace fwk {
 
     void
     RunController::Run() {
-
+        for(const auto& m :fModules){
+            if(!fTiming)
+                m.second->Process(*fCurrentEvent);
+            else
+                m.second->ProcessWithTiming(*fCurrentEvent);
+        }
     }
 
 
@@ -102,14 +109,11 @@ namespace fwk {
 
         // NB call finish in reverse order as init, for reasons of compatibility
         // with legacy clients
-        for (auto it = fUsedModuleNames.rbegin();
-             it != fUsedModuleNames.rend(); ++it) {
-
-            VModule &module = GetModule(*it);
+        for(const auto& m :fModules){
 
             if (fTiming) {
-                auto stopwatch = module.GetStopwatch();
-                auto realTimeStopwatch = module.GetRealTimeStopwatch();
+                auto stopwatch = m.second->GetStopwatch();
+                auto realTimeStopwatch = m.second->GetRealTimeStopwatch();
                 const double moduleUTime = stopwatch.GetCPUTime(Stopwatch::eUser) / second;
                 const double moduleSTime = stopwatch.GetCPUTime(Stopwatch::eSystem) / second;
                 const double moduleRTime = realTimeStopwatch.GetTime() / second;
@@ -118,13 +122,13 @@ namespace fwk {
                 moduleRTimeSum += moduleRTime;
                 const double frac = int(1000 * (moduleUTime + moduleSTime) / totalTime + 0.5) / 10.;
 
-                tab << *it << endc << moduleUTime << endc << moduleSTime << endc << moduleRTime << endc << frac << endr;
+                tab << m.first << endc << moduleUTime << endc << moduleSTime << endc << moduleRTime << endc << frac << endr;
             }
 
-            const VModule::EResultFlag flag = module.Finish();
+            const VModule::EResultFlag flag = m.second->Finish();
             if (flag == VModule::eFailure)
                 failureMessage << (failureMessage.str().empty() ? "" : "\n")
-                               << "Received Failure message from Finish method of module: " << *it;
+                               << "Received Failure message from Finish method of module: " << m.first;
         }
 
         if (fTiming) {
@@ -186,8 +190,6 @@ namespace fwk {
                      << GetRegisteredModuleNames();
                 throw std::runtime_error(emsg.str());
             }
-            std::cout << "Module: " << mod->GetName() << std::endl;
-            mod->Finish();
             fModules[moduleName] = std::move(mod);
         }
     }
@@ -201,6 +203,8 @@ namespace fwk {
                 throw std::runtime_error(emsg.str());
             }
             m.second->Init(*modCfg);
+            if(fTiming)
+                m.second->InitTiming();
         }
     }
 

@@ -127,7 +127,7 @@ private:                                                                 \
         {
             fRealTimeStopwatch.Start();
             fStopwatch.Start();
-            const EResultFlag flag = Process(event);
+            auto flag = Process(event);
             fStopwatch.Stop();
             fRealTimeStopwatch.Stop();
             return flag;

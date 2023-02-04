@@ -1,6 +1,9 @@
 {
+  "EnableTiming": true,
+  "EnableModuleTracing": false,
   "ModuleSequence": [
-    "Generator"
+    "Generator",
+    "DummyModule"
   ],
   "ModuleConfiguration": {
     "Generator": {
@@ -144,6 +147,7 @@
           }
         ]
       }
-    }
+    },
+    "DummyModule": {}
   }
 }
