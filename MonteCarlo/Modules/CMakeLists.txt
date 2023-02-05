@@ -3,12 +3,9 @@ set(MODULE_NAME "MonteCarloModules")
 ADD_SUBDIRECTORY(Generator)
 ADD_SUBDIRECTORY(DummyModule)
 
-file(GLOB_RECURSE fwk_sources ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
-
 SET (module_sources
         ${generator_sources}
         ${dummy_sources}
-        ${fwk_sources}
         )
 
 include_directories(${ROOTINCDIR})
