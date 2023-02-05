@@ -1,12 +1,12 @@
 {
   "EnableTiming": true,
-  "EnableModuleTracing": false,
   "ModuleSequence": [
-    "Generator"
+    "Generator",
+    "EventFileExporter"
   ],
   "ModuleConfiguration": {
     "Generator": {
-      "NumberOfEvents": 2000000,
+      "NumberOfEvents": 2000,
       "EventGenerator": {
         "Beam": {
           "BeamGeometry": {
@@ -147,6 +147,12 @@
           }
         ]
       }
+    },
+    "EventFileExporter": {
+      "FileName": "out.root",
+      "EnabledBranches": [
+        "SimEvent"
+      ]
     }
   }
 }

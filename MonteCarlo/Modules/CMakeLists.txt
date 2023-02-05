@@ -2,10 +2,12 @@ set(MODULE_NAME "MonteCarloModules")
 
 ADD_SUBDIRECTORY(Generator)
 ADD_SUBDIRECTORY(DummyModule)
+ADD_SUBDIRECTORY(EventFileExporter)
 
 SET (module_sources
         ${generator_sources}
         ${dummy_sources}
+        ${event_file_exporter_sources}
         )
 
 include_directories(${ROOTINCDIR})

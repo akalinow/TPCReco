@@ -6,7 +6,6 @@
 #include "colorText.h"
 
 
-
 using namespace std;
 using namespace utl;
 namespace pt = boost::property_tree;
@@ -14,46 +13,9 @@ namespace pt = boost::property_tree;
 namespace fwk {
 
     RunController::RunController() :
-            fTiming(false),
-            fModuleTracing(false) {
+            fTiming(false) {
         fCurrentEvent = new ModuleExchangeSpace;
     }
-
-
-    VModule &
-    RunController::GetModule(const string &moduleName)
-    const {
-        auto m = VModuleFactory::Create<VModule>(moduleName);
-
-        if (find(fUsedModuleNames.begin(), fUsedModuleNames.end(), moduleName) == fUsedModuleNames.end()) {
-            fUsedModuleNames.push_back(moduleName);
-        }
-
-
-        if (!m) {
-            ostringstream emsg;
-            emsg << "No module creator found for module with name : '" << moduleName << "' "
-                                                                                        "Most likely reasons:\n"
-                                                                                        "1) You misspelled the module name, or the module doesn't exist.\n"
-                                                                                        "2) You declared a default constructor for your module\n"
-                                                                                        "   but did not provide an implementation.\n"
-                                                                                        "3) You linked with static libraries (currently not supported).\n"
-                                                                                        "Note : the following modules are registered : \n"
-                 << GetRegisteredModuleNames();
-            throw std::runtime_error(emsg.str());
-        }
-
-        auto rawModule = m.release();
-        return *rawModule;
-    }
-
-
-//    bool
-//    RunController::HasModule(const string& moduleName)
-//    const
-//    {
-//        return VModuleFactory::Create(moduleName);
-//    }
 
 
     unsigned int
@@ -75,7 +37,6 @@ namespace fwk {
     void
     RunController::Init(const boost::property_tree::ptree &config) {
         fTiming = config.get<bool>("EnableTiming");
-        fModuleTracing = config.get<bool>("EnableModuleTracing");
         BuildModules(config.get_child("ModuleSequence"));
         InitModules(config.get_child("ModuleConfiguration"));
     }
@@ -86,20 +47,20 @@ namespace fwk {
         fwk::VModule::EResultFlag res;
         for (const auto &m: fModuleSequence) {
             if (!fTiming)
-                res=fModules[m]->Process(*fCurrentEvent);
+                res = fModules[m]->Process(*fCurrentEvent);
             else
-                res=fModules[m]->ProcessWithTiming(*fCurrentEvent);
-            if(res!=fwk::VModule::eSuccess)
+                res = fModules[m]->ProcessWithTiming(*fCurrentEvent);
+            if (res != fwk::VModule::eSuccess)
                 break;
         }
-        if(res==fwk::VModule::eSuccess || res==fwk::VModule::eContinueLoop)
+        if (res == fwk::VModule::eSuccess || res == fwk::VModule::eContinueLoop)
             return eNoBreak;
         return eBreak;
     }
 
     void
     RunController::RunFull() {
-        while(RunSingle()==eNoBreak);
+        while (RunSingle() == eNoBreak);
     }
 
 
@@ -150,7 +111,7 @@ namespace fwk {
                 << moduleSTimeSum << endc << moduleRTimeSum << endc << frac << endr
                 << "Total" << endc << totalUTime << endc << totalSTime << endc << "" << endc << 100;
             ostringstream info;
-            info << "\n\nCPU user and system time in Module::RunSingle()\n"
+            info << "\n\nCPU user and system time in Module::Process()\n"
                  << tab;
             std::cout << info.str() << std::endl;
         }
