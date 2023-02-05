@@ -55,3 +55,13 @@ void SimEvent::SetReactionType(reaction_type type) {
 reaction_type SimEvent::GetReactionType() {
     return reactionType;
 }
+
+
+void SimEvent::Clear(Option_t *op) {
+    //clear SimTracks:
+    tracks.clear();
+    //set reaction type to unknown:
+    reactionType=reaction_type::UNKNOWN;
+    //zero-out vertex position:
+    vertexPosition={0,0,0};
+}

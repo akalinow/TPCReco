@@ -5,6 +5,8 @@
 #include <VModule.h>
 #include "colorText.h"
 
+
+
 using namespace std;
 using namespace utl;
 namespace pt = boost::property_tree;
@@ -14,7 +16,7 @@ namespace fwk {
     RunController::RunController() :
             fTiming(false),
             fModuleTracing(false) {
-        fCurrentEvent = new evt::Event();
+        fCurrentEvent = new ModuleExchangeSpace;
     }
 
 
@@ -72,21 +74,32 @@ namespace fwk {
 
     void
     RunController::Init(const boost::property_tree::ptree &config) {
-        fTiming=config.get<bool>("EnableTiming");
-        fModuleTracing=config.get<bool>("EnableModuleTracing");
+        fTiming = config.get<bool>("EnableTiming");
+        fModuleTracing = config.get<bool>("EnableModuleTracing");
         BuildModules(config.get_child("ModuleSequence"));
         InitModules(config.get_child("ModuleConfiguration"));
     }
 
 
-    void
-    RunController::Run() {
-        for(const auto& m :fModules){
-            if(!fTiming)
-                m.second->Process(*fCurrentEvent);
+    RunController::EBreakStatus
+    RunController::RunSingle() {
+        fwk::VModule::EResultFlag res;
+        for (const auto &m: fModuleSequence) {
+            if (!fTiming)
+                res=fModules[m]->Process(*fCurrentEvent);
             else
-                m.second->ProcessWithTiming(*fCurrentEvent);
+                res=fModules[m]->ProcessWithTiming(*fCurrentEvent);
+            if(res!=fwk::VModule::eSuccess)
+                break;
         }
+        if(res==fwk::VModule::eSuccess || res==fwk::VModule::eContinueLoop)
+            return eNoBreak;
+        return eBreak;
+    }
+
+    void
+    RunController::RunFull() {
+        while(RunSingle()==eNoBreak);
     }
 
 
@@ -107,13 +120,11 @@ namespace fwk {
         tab << "Module" << endc << "USR" << endc << "SYS" << endc << "REAL" << endc << "%" << endr
             << hline;
 
-        // NB call finish in reverse order as init, for reasons of compatibility
-        // with legacy clients
-        for(const auto& m :fModules){
+        for (const auto &m: fModuleSequence) {
 
             if (fTiming) {
-                auto stopwatch = m.second->GetStopwatch();
-                auto realTimeStopwatch = m.second->GetRealTimeStopwatch();
+                auto stopwatch = fModules[m]->GetStopwatch();
+                auto realTimeStopwatch = fModules[m]->GetRealTimeStopwatch();
                 const double moduleUTime = stopwatch.GetCPUTime(Stopwatch::eUser) / second;
                 const double moduleSTime = stopwatch.GetCPUTime(Stopwatch::eSystem) / second;
                 const double moduleRTime = realTimeStopwatch.GetTime() / second;
@@ -122,13 +133,14 @@ namespace fwk {
                 moduleRTimeSum += moduleRTime;
                 const double frac = int(1000 * (moduleUTime + moduleSTime) / totalTime + 0.5) / 10.;
 
-                tab << m.first << endc << moduleUTime << endc << moduleSTime << endc << moduleRTime << endc << frac << endr;
+                tab << m << endc << moduleUTime << endc << moduleSTime << endc << moduleRTime << endc << frac
+                    << endr;
             }
 
-            const VModule::EResultFlag flag = m.second->Finish();
+            const VModule::EResultFlag flag = fModules[m]->Finish();
             if (flag == VModule::eFailure)
                 failureMessage << (failureMessage.str().empty() ? "" : "\n")
-                               << "Received Failure message from Finish method of module: " << m.first;
+                               << "Received Failure message from Finish method of module: " << m;
         }
 
         if (fTiming) {
@@ -138,7 +150,7 @@ namespace fwk {
                 << moduleSTimeSum << endc << moduleRTimeSum << endc << frac << endr
                 << "Total" << endc << totalUTime << endc << totalSTime << endc << "" << endc << 100;
             ostringstream info;
-            info << "\n\nCPU user and system time in Module::Run()\n"
+            info << "\n\nCPU user and system time in Module::RunSingle()\n"
                  << tab;
             std::cout << info.str() << std::endl;
         }
@@ -175,7 +187,6 @@ namespace fwk {
     }
 
     void RunController::BuildModules(const boost::property_tree::ptree &moduleSequence) {
-        //std::cout<<moduleSequence<<std::endl;
         for (const auto &m: moduleSequence) {
             auto moduleName = std::string(m.second.data());
             auto mod = VModuleFactory::Create<VModule>(moduleName);
@@ -190,21 +201,22 @@ namespace fwk {
                      << GetRegisteredModuleNames();
                 throw std::runtime_error(emsg.str());
             }
+            fModuleSequence.push_back(moduleName);
             fModules[moduleName] = std::move(mod);
         }
     }
 
     void RunController::InitModules(const boost::property_tree::ptree &moduleConfig) {
-        for(const auto& m :fModules){
-            auto modCfg = moduleConfig.get_child_optional(m.first);
-            if(!modCfg) {
+        for (const auto &m: fModuleSequence) {
+            auto modCfg = moduleConfig.get_child_optional(m);
+            if (!modCfg) {
                 ostringstream emsg;
-                emsg<<"No configuration for module with name: '"<<m.first<<"'!\n";
+                emsg << "No configuration for module with name: '" << m << "'!\n";
                 throw std::runtime_error(emsg.str());
             }
-            m.second->Init(*modCfg);
-            if(fTiming)
-                m.second->InitTiming();
+            fModules[m]->Init(*modCfg);
+            if (fTiming)
+                fModules[m]->InitTiming();
         }
     }
 

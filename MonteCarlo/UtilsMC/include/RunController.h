@@ -6,6 +6,7 @@
 #include <map>
 #include <VModule.h>
 #include "boost/property_tree/ptree.hpp"
+#include "ModuleExchangeSpace.h"
 
 
 namespace evt {
@@ -20,7 +21,7 @@ namespace fwk {
 
     public:
         enum EBreakStatus {
-            eNoBreak, eBreak, eContinue
+            eNoBreak, eBreak
         };
 
         RunController();
@@ -44,7 +45,7 @@ namespace fwk {
         bool HasModule(const std::string &moduleName) const;
 
         /// Get Event currently being processed
-        evt::Event &GetCurrentEvent() const { return *fCurrentEvent; }
+        ModuleExchangeSpace &GetCurrentEvent() const { return *fCurrentEvent; }
 
         /// Is timing enabled?
         bool IsTiming() const { return fTiming; }
@@ -53,7 +54,8 @@ namespace fwk {
         bool IsModuleTracing() const { return fModuleTracing; }
 
         virtual void Init(const boost::property_tree::ptree &config);
-        virtual void Run();
+        virtual EBreakStatus RunSingle();
+        virtual void RunFull();
         virtual void Finish();
 
     protected:
@@ -74,8 +76,9 @@ namespace fwk {
         void InitModules(const boost::property_tree::ptree &moduleConfig);
         mutable std::list<std::string> fUsedModuleNames;
         std::map<std::string,std::unique_ptr<VModule>> fModules;
+        std::vector<std::string> fModuleSequence;
 
-        evt::Event *fCurrentEvent;
+        ModuleExchangeSpace *fCurrentEvent;
 
         bool fTiming;
         bool fModuleTracing;

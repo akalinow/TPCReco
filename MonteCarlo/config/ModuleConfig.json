@@ -2,11 +2,11 @@
   "EnableTiming": true,
   "EnableModuleTracing": false,
   "ModuleSequence": [
-    "Generator",
-    "DummyModule"
+    "Generator"
   ],
   "ModuleConfiguration": {
     "Generator": {
+      "NumberOfEvents": 2000000,
       "EventGenerator": {
         "Beam": {
           "BeamGeometry": {
@@ -147,7 +147,6 @@
           }
         ]
       }
-    },
-    "DummyModule": {}
+    }
   }
 }

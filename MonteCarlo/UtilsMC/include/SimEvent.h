@@ -44,6 +44,8 @@ public:
     TVector3 GetVertexPosition();
     reaction_type GetReactionType();
 
+    virtual void Clear(Option_t* op);
+
 private:
     SimTracks tracks; /// Vector with simulated tracks (primary particles)
     TVector3 vertexPosition;

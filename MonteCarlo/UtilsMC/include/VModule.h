@@ -8,13 +8,10 @@
 #include <ObjectFactory.h>
 #include "Stopwatch.h"
 #include "RealTimeStopwatch.h"
+#include "ModuleExchangeSpace.h"
 
 #include "boost/property_tree/ptree.hpp"
 
-
-namespace evt {
-    class Event;
-}
 
 namespace fwk {
 
@@ -111,7 +108,7 @@ private:                                                                 \
         /** This method is for things that should be done once per event
             {\em You must override this method in your concrete module}
         */
-        virtual EResultFlag Process(evt::Event& event) = 0;
+        virtual EResultFlag Process(ModuleExchangeSpace &event) = 0;
 
         /// Finish: invoked at end of the run (NOT end of the event)
         /** This method is for things that should be done at the end of the run (for
@@ -123,7 +120,7 @@ private:                                                                 \
         void InitTiming() { fStopwatch.Reset(); fRealTimeStopwatch.Reset(); }
 
         EResultFlag
-        ProcessWithTiming(evt::Event& event)
+        ProcessWithTiming(ModuleExchangeSpace &event)
         {
             fRealTimeStopwatch.Start();
             fStopwatch.Start();
