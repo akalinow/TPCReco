@@ -7,9 +7,17 @@
 
 #include "TH1D.h"
 #include "TH2D.h"
+//// TEST
+#include "TProfile.h"
+#include "TProfile2D.h"
+//// TEST
 
 class TH1F;
 class TH2F;
+//// TEST
+class TProfile;
+class TProfile2D;
+//// TEST
 class Track3D;
 namespace eventraw{
   class EventInfo;
@@ -38,6 +46,10 @@ public:
   TFile *outputFile;
   std::map<std::string, TH1F*> histos1D;
   std::map<std::string, TH2F*> histos2D;
+  //// TEST
+  std::map<std::string, TProfile*> profiles1D;
+  std::map<std::string, TProfile2D*> profiles2D;
+  //// TEST
   std::shared_ptr<GeometryTPC> myGeometryPtr; 
 };
 
