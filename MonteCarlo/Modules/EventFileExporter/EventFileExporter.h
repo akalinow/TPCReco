@@ -19,7 +19,7 @@ private:
     std::vector<std::string> offBranches;
     std::vector<std::string> onBranches;
 
-    REGISTER_MODULE(EventFileExporter);
+    REGISTER_MODULE(EventFileExporter)
 };
 
 #endif //TPCSOFT_EVENTFILEEXPORTER_H

@@ -16,7 +16,7 @@ private:
     unsigned int nEventsToGenerate{0};
     unsigned int nEventsGenerated{0};
 
-    REGISTER_MODULE(Generator);
+    REGISTER_MODULE(Generator)
 };
 
 #endif //TPCSOFT_GENERATOR_H
