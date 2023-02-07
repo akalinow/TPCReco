@@ -7,6 +7,21 @@
 #include <regex>
 #include <utility>
 
+class RunId {
+public:
+  RunId(long runId) noexcept { repr = runId; }
+  inline operator long() const noexcept { return repr; }
+  using time_point = tpcreco::cobo_time_point;
+
+  bool inline isRegular() const noexcept { return repr >= 1000000; }
+  time_point toTimePoint() const;
+
+  static const std::string facetFormat;
+private:
+  time_point toTimePoint_() const;
+  long repr = 0;
+};
+
 class RunIdParser {
 public:
   RunIdParser(const std::string &name);
@@ -17,7 +32,7 @@ public:
 
   using time_point = tpcreco::cobo_time_point;
 
-  inline long runId() const noexcept { return rundId_; }
+  inline RunId runId() const noexcept { return RunId(rundId_); }
   inline unsigned long fileId() const noexcept { return fileId_; }
   // AsAd id
   // returns -1 if no information
@@ -27,8 +42,6 @@ public:
   inline int CoBoId() const noexcept { return CoBoId_; };
   // time point corressponding to parsed time (runId + miliseconds)
   inline time_point exactTimePoint() const noexcept { return exactTimePoint_; }
-  // time_point corresponding to runId
-  inline time_point timePoint() const noexcept { return timePoint_; }
 
   template <class Rep, class Period>
   bool isClose(const time_point &other,
@@ -42,24 +55,19 @@ public:
                std::chrono::duration<Rep, Period> delay) const {
     return isClose(other.exactTimePoint(), delay);
   }
-
-  template <class T> static time_point timePointFromRunId(T runId) {
-    std::stringstream stream;
-    stream << runId;
-    return timePointFromRunId_(stream);
+  
+  [[deprecated("Use RunId(id).toTimePoint() instead")]]
+  static time_point timePointFromRunId(RunId id) {
+    return id.toTimePoint();
   }
 
 private:
-  static time_point timePointFromRunId_(std::istream &stream);
-
-  static const std::string facetFormat;
 
   long rundId_;
   unsigned long fileId_;
   int AsAdId_ = -1;
   int CoBoId_ = -1;
   time_point exactTimePoint_;
-  time_point timePoint_;
 
   class Positions {
   public:

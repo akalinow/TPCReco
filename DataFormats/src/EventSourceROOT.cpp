@@ -99,6 +99,7 @@ void EventSourceROOT::loadDataFile(const std::string & fileName){
   case EventType::tpc:
   default:
     myTree->SetBranchAddress("Event", &aPtr);
+    myTree->BuildIndex("myEventInfo.runId", "myEventInfo.eventId");
     break;
   };
   
@@ -159,9 +160,10 @@ void EventSourceROOT::loadEventId(unsigned long int iEvent){
     std::cerr<<"ROOT tree not available!"<<std::endl;
     return;
   }
-  // assumes that TTree::BuildIndex() was performed while storing myTree
-  //loadFileEntry(myTree->GetEntryNumberWithIndex(iEvent));
-  
+  // primary method: assumes that TTree::BuildIndex() was performed while storing/reading myTree
+  loadFileEntry(myTree->GetEntryNumberWithIndex(getCurrentEvent()->GetEventInfo().GetRunId(), iEvent));
+
+  // secondary (failover) method: when TTree::BuildIndex() did not work properly
   unsigned long int iEntry = 0;
   while(currentEventNumber()!=iEvent && iEntry<nEntries){  
     loadFileEntry(iEntry);

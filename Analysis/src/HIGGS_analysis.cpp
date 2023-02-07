@@ -775,10 +775,10 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     // boost P4 from DET/LAB frame to CMS frame (see TLorentzVector::Boost() convention!)
     const double oxygenMassGroundState=myRangeCalculator.getIonMassMeV(/*IonRangeCalculator::*/OXYGEN_16);
     double photon_E_LAB=sumP4_DET_LAB.E()-oxygenMassGroundState; // reconstructed gamma beam energy in LAB
-    const TVector3 beta_DET_LAB=getBetaVectorOfCMS(oxygenMassGroundState); // assume nominal direction and nominal gamma beam energy
+    //    const TVector3 beta_DET_LAB=getBetaVectorOfCMS(oxygenMassGroundState); // assume nominal direction and nominal gamma beam energy
     // DEBUG
     // assume nominal beam direction, but use reconstructed gamma beam energy per event
-    //    const TVector3 beta_DET_LAB=getBetaVectorOfCMS(oxygenMassGroundState).Unit()*(photon_E_LAB/(photon_E_LAB+oxygenMassGroundState));
+    const TVector3 beta_DET_LAB=getBetaVectorOfCMS(oxygenMassGroundState).Unit()*(photon_E_LAB/(photon_E_LAB+oxygenMassGroundState));
     // DEBUG
 
     TLorentzVector alphaP4_CMS_DET(alphaP4_DET_LAB);
@@ -939,10 +939,10 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     }
 
     double photon_E_LAB=sumP4_DET_LAB.E()-carbonMassGroundState; // reconstructed gamma beam energy in LAB
-    const TVector3 beta_DET_LAB=getBetaVectorOfCMS(carbonMassGroundState); // assume nominal direction and nominal gamma beam energy
+    //    const TVector3 beta_DET_LAB=getBetaVectorOfCMS(carbonMassGroundState); // assume nominal direction and nominal gamma beam energy
     // DEBUG
     // assume nominal beam direction, but use reconstructed gamma beam energy per event
-    //    const TVector3 beta_DET_LAB=getBetaVectorOfCMS(carbonMassGroundState).Unit()*(photon_E_LAB/(photon_E_LAB+carbonMassGroundState));
+    const TVector3 beta_DET_LAB=getBetaVectorOfCMS(carbonMassGroundState).Unit()*(photon_E_LAB/(photon_E_LAB+carbonMassGroundState));
     // DEBUG
 
     // calculate array of track properties and total sums in CMS

@@ -28,7 +28,8 @@ boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
     ("recoClusterThreshold",  boost::program_options::value<float>(), "float - ADC threshold above pedestal used for clustering")
     ("recoClusterDeltaStrips",  boost::program_options::value<int>(), "int - Envelope in strip units around seed hits for clustering")
     ("recoClusterDeltaTimeCells",  boost::program_options::value<int>(), "int - Envelope in time cell units around seed hits for clustering")
-    ("outputFile", boost::program_options::value<std::string>(), "string - path to the output ROOT file");
+    ("outputFile", boost::program_options::value<std::string>(), "string - path to the output ROOT file")
+    ("maxNevents", boost::program_options::value<unsigned int>()->default_value(0), "int - number of events to process");
   
   boost::program_options::variables_map varMap;
 
@@ -75,6 +76,9 @@ int main(int argc, char **argv){
   if (varMap.count("dataFile")) {
     tree.put("dataFile", varMap["dataFile"].as<std::string>());
   }
+  if (varMap.count("maxNevents")) {
+    tree.put("maxNevents", varMap["maxNevents"].as<unsigned int>());
+  }
   if (varMap.count("removePedestal")) {
     tree.put("removePedestal", varMap["removePedestal"].as<bool>());
   }
@@ -118,6 +122,8 @@ int main(int argc, char **argv){
      tree.get_child("hitFilter").find("recoClusterDeltaStrips")==tree.not_found() ||
      tree.get_child("hitFilter").find("recoClusterDeltaTimeCells")==tree.not_found() ||
      tree.find("removePedestal")==tree.not_found()     
+     ||
+     tree.find("maxNevents")==tree.not_found()
      ) {
     std::cerr << std::endl
 	      << __FUNCTION__ << KRED << ": Some configuration options are missing!" << RST << std::endl << std::endl;
@@ -131,6 +137,7 @@ int main(int argc, char **argv){
     std::cout << "singleAsadGrawFile: " << tree.count("singleAsadGrawFile") << std::endl;
     std::cout << "frameLoadRange: " << tree.count("frameLoadRange") << std::endl;
     std::cout << "removePedestal: " << tree.count("removePedestal") << std::endl;
+    std::cout << "maxNevents:" << tree.count("maxNevents") << std::endl;
     exit(1);
   }
 
@@ -151,6 +158,7 @@ void analyzeRawEvents(const boost::property_tree::ptree &aConfig){
   auto singleAsadGrawFile = aConfig.get<bool>("singleAsadGrawFile"); // true = multi-GRAW mode
   auto frameLoadRange = aConfig.get<unsigned int>("frameLoadRange"); // used in single-GRAW mode only
   auto removePedestal = aConfig.get<bool>("removePedestal");
+  auto maxNevents = aConfig.get<unsigned int>("maxNevents");
 
   std::cout << std::endl << "analyzeRawEvents: Parameter settings: " << std::endl << std::endl
 	    << "Data file(s)             = " << dataFileName << std::endl
@@ -162,7 +170,8 @@ void analyzeRawEvents(const boost::property_tree::ptree &aConfig){
 	    << "recoCluster delta time cells = " << clusterDeltaTimeCells << std::endl
 	    << "Frame load range         = " << frameLoadRange << std::endl
 	    << "Multi-GRAW mode          = " << singleAsadGrawFile << std::endl
-	    << "Pedestal removal enable  = " << removePedestal << std::endl;
+	    << "Pedestal removal enable  = " << removePedestal << std::endl
+	    << "Max. events to precess   = " << maxNevents << " (0=all)" << std::endl;
     
   if (dataFileName.find(".graw") == std::string::npos ||
       geometryFileName.find(".dat") == std::string::npos ||
@@ -233,14 +242,14 @@ void analyzeRawEvents(const boost::property_tree::ptree &aConfig){
   myClusterConfig.clusterThreshold = clusterThreshold;
   myClusterConfig.clusterDeltaStrips = clusterDeltaStrips;
   myClusterConfig.clusterDeltaTimeCells = clusterDeltaTimeCells;
-  RawSignal_tree_analysis myAnalysis(myEventSource->getGeometry(), myClusterConfig); //dynamic_cast<EventSourceGRAW*>(myEventSource.get())->getGeometry());
+  RawSignal_tree_analysis myAnalysis(myEventSource->getGeometry(), myClusterConfig, outputFileName); //dynamic_cast<EventSourceGRAW*>(myEventSource.get())->getGeometry());
 
   // loop over ALL events
   Long64_t currentEventIdx=-1;
   bool isFirst=true; // flag to indicate first event for time period / rate calculations
 
   ////// DEBUG
-  //  Long64_t counter=0;
+  Long64_t counter=0;
   ////// DEBUG
 
   do {
@@ -259,7 +268,7 @@ void analyzeRawEvents(const boost::property_tree::ptree &aConfig){
     myEventSource->getNextEvent();
 
     ////// DEBUG
-    //    if(++counter==100) break;
+    if(maxNevents && (maxNevents-1)==++counter ) break;
     ////// DEBUG
   }
   while(currentEventIdx!=(Long64_t)myEventSource->currentEventNumber());

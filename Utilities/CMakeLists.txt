@@ -43,5 +43,7 @@ target_link_libraries(grawls PRIVATE ${MODULE_NAME} ${TPCRECO_LIBRARIES_LOCAL} B
 install(TARGETS grawls RUNTIME DESTINATION bin)
 install(TARGETS ${MODULE_NAME} LIBRARY DESTINATION lib)
 install(PROGRAMS $<1:${PROJECT_SOURCE_DIR}/${MODULE_NAME}/python/> DESTINATION python)
+file(GLOB ROOT_CXX_MACROS "${PROJECT_SOURCE_DIR}/${MODULE_NAME}/test/*.cxx")
+install(FILES $<1:${ROOT_CXX_MACROS}> DESTINATION test)
 
 reco_add_test_subdirector(test)

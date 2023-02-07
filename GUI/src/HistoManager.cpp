@@ -106,6 +106,7 @@ void HistoManager::drawRawHistos(TCanvas *aCanvas, bool isRateDisplayOn){
     aCanvas->Modified();
     aCanvas->Update();
     auto projType = get2DProjectionType(strip_dir);
+    aPad->SetFrameFillColor(kAzure-6);
     get2DProjection(projType, filter_type::none, scale_type::raw)->DrawCopy("colz");
     aPad->RedrawAxis();
   }
@@ -165,6 +166,8 @@ void HistoManager::drawRecoHistos(TCanvas *aCanvas){
 
      auto projType = get2DProjectionType(strip_dir);     
      auto histo2D = get2DProjection(projType, filterType, scale_type::mm);
+     aPad->SetFrameFillColor(kAzure-6);
+     /*
      if(myConfig.get<bool>("recoClusterEnable")){
        histo2D->SetMinimum(0.0);
        histo2D->DrawCopy("colz");
@@ -174,7 +177,7 @@ void HistoManager::drawRecoHistos(TCanvas *aCanvas){
        histo2D->DrawCopy("colz same");
        drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);	    
      }
-     else histo2D->DrawCopy("colz");
+     else */histo2D->DrawCopy("colz");
    }
    int strip_dir=3;
    TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
@@ -182,8 +185,8 @@ void HistoManager::drawRecoHistos(TCanvas *aCanvas){
    aPad->cd();
    aCanvas->Modified();
    aCanvas->Update();
-   if(myConfig.get<bool>("recoClusterEnable")) drawChargeAlongTrack3D(aPad);
-   else  get1DProjection(projection_type::DIR_TIME, filterType, scale_type::mm)->DrawCopy("hist");
+   /*   if(myConfig.get<bool>("recoClusterEnable")) drawChargeAlongTrack3D(aPad);
+	else  */get1DProjection(projection_type::DIR_TIME, filterType, scale_type::mm)->DrawCopy("hist");
 
    aCanvas->Modified();
    aCanvas->Update(); 
@@ -707,9 +710,11 @@ void HistoManager::makeAutozoom(TH1 * aHisto){
     int lowBin = aHisto->FindFirstBinAbove(threshold, iAxis);
     int highBin = aHisto->FindLastBinAbove(threshold, iAxis);
     margin += (highBin - lowBin)*0.1;
-    if(iAxis==1) aHisto->GetXaxis()->SetRange(lowBin-margin, highBin+margin);
-    else if(iAxis==2) aHisto->GetYaxis()->SetRange(lowBin-margin, highBin+margin);
-  }  
+    /////// TEST
+    if(iAxis==1) aHisto->GetXaxis()->SetRange(std::max(lowBin-margin,1) , std::min(highBin+margin, aHisto->GetXaxis()->GetNbins()));
+    else if(iAxis==2) aHisto->GetYaxis()->SetRange(std::max(lowBin-margin,1), std::min(highBin+margin, aHisto->GetYaxis()->GetNbins()));
+    /////// TEST
+  }
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -728,7 +733,6 @@ void HistoManager::openOutputStream(const std::string & filePath){
   if(fileName.find("CoBo")==std::string::npos){
     fileName = fileName.replace(0,8,"CoBo_ALL_AsAd_ALL");
   }
-  myRunParser.reset(new RunIdParser(fileName)); 
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

@@ -121,8 +121,8 @@ TEST(InputFileHelper, ExtensionsFilter) {
 
 TEST_F(InputFileHelperTest, FileDiscoveryFromRunId) {
   std::vector<std::string> files;
-  std::string runId = "20210712120340";
-  auto timePoint = RunIdParser::timePointFromRunId(runId);
+  auto runId = 20210712120340l;
+  auto timePoint = RunId(runId).toTimePoint();
   unsigned long chunk = 0;
   auto begin =
       boost::filesystem::directory_iterator(boost::filesystem::path(directory));

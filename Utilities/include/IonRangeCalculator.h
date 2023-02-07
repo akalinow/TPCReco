@@ -15,7 +15,7 @@ class IonRangeCalculator{
 
  public:
 
-  IonRangeCalculator(gas_mixture_type gas=CO2, double p_mbar=250.0, double T_Kelvin=293.15); // default gas: CO2, 250 mbar, 20C
+  IonRangeCalculator(gas_mixture_type gas=CO2, double p_mbar=250.0, double T_Kelvin=293.15, bool debug_flag=false); // default gas: CO2, 250 mbar, 20C
 
   void setGasMixture(gas_mixture_type gas); // set current GAS index
 
@@ -38,15 +38,24 @@ class IonRangeCalculator{
   double getIonEnergyMeV(pid_type ion, double range_mm); // interpolated result in [MeV] for the current {gas, p, T}
 
   double getIonMassMeV(pid_type ion); // particle or isotope mass in [MeV/c^2]
+
+  TGraph getIonBraggCurveMeVPerMM(pid_type ion, double E_MeV, int Npoints=1000); // dE/dx curve in [MeV/mm] for the current {gas, p, T}
+
+  double getIonBraggCurveIntegralMeV(pid_type ion, double E_MeV, int Npoints=1000); // integral of dE/dx curve for the current {gas, p, T}
   
   bool IsOK(); // check if there is at least one valid range/energy curve
+
+  inline void setDebug(bool flag) { _debug=flag; }
     
  private:
 
-  std::map<MultiKey2, TGraph*> refGasRangeCurveMap;  // reference curve for given {gas, ion} pair
-  std::map<MultiKey2, TGraph*> refEnergyCurveMap; // reference inverted curve for given {gas, ion} pair
-  std::map<MultiKey2, double>  refGasPressureMap;    // reference pressure for given {gas, ion} pair
-  std::map<MultiKey2, double>  refGasTemperatureMap; // reference temperature for given {gas, ion} pair
+  std::map<MultiKey2, TGraph*> refGasRangeCurveMap;       // reference Range(E_kin) curve at given {gas, ion}
+  std::map<MultiKey2, TGraph*> refEnergyCurveMap;         // reference inverted Range(E_kin) curve at given {gas, ion}
+  std::map<MultiKey2, TGraph*> refBraggCurveMap;          // reference dE/dx(x) curve at given {gas, ion}
+  std::map<MultiKey2, double>  refGasRangePressureMap;    // reference pressure for Range(E_kin) curve at given {gas, ion}
+  std::map<MultiKey2, double>  refGasRangeTemperatureMap; // reference temperature for Range(E_kin) curve at given {gas, ion}
+  std::map<MultiKey2, double>  refBraggPressureMap;       // reference pressure for dE/dx(x) curve at given {gas, ion}
+  std::map<MultiKey2, double>  refBraggTemperatureMap;    // reference temperature for dE/dx(x) curve at given {gas, ion}
 
   gas_mixture_type myGasMixture{gas_mixture_type::GAS_MIN};   // GAS index 
   std::map<pid_type, double> massTableMap; // particle or isotope mass table in [MeV/c^2]
@@ -55,8 +64,13 @@ class IonRangeCalculator{
   double myGasPressure{0};    // mbar
   
   void addIonRangeCurve(pid_type ion, gas_mixture_type gas, double p_mbar, double T_Kelvin, const char *datafile); // range(E_kin) corresponding to {gas, p, T}
-
+  void addIonBraggCurve(pid_type ion, gas_mixture_type gas, double p_mbar, double T_Kelvin, const char *datafile); // dE/dx(x) corresponding to {gas, p, T}
   TGraph invertTGraph(const TGraph &aGraph) const;
+  TGraph horizontalFlipTGraph(const TGraph &aGraph) const;
+  void scaleTGraph(TGraph *aGraph, double factor);
+  void zeroSuppressTGraph(TGraph *aGraph);
+
+  bool _debug{false};
 
 };
 

@@ -166,6 +166,7 @@ void HIGS_trees_analysis::fillTrees1prong(Track3D *aTrack, eventraw::EventInfo *
                  tpcreco::eventAbsoluteTime(*aEventInfo).time_since_epoch())
                  .count()
            : -1); // absolute Unix time [s]
+  // NOTE: for irregular runs with runId=[0, 999999] (6 figures) the parser returns absolute Unix time = 0
   static double last_timestamp = 0;
   if(isFirst) {
     last_timestamp=event1prong_->unixTimeSec;
@@ -245,6 +246,7 @@ void HIGS_trees_analysis::fillTrees2prong(Track3D *aTrack, eventraw::EventInfo *
                  tpcreco::eventAbsoluteTime(*aEventInfo).time_since_epoch())
                  .count()
            : -1); // absolute Unix time [s]
+  // NOTE: for irregular runs with runId=[0, 999999] (6 figures) the parser returns absolute Unix time = 0
   static double last_timestamp = 0;
   if(isFirst) {
     last_timestamp=event2prong_->unixTimeSec;
@@ -325,12 +327,13 @@ void HIGS_trees_analysis::fillTrees3prong(Track3D *aTrack, eventraw::EventInfo *
   event3prong_->runId=(aEventInfo ? aEventInfo->GetRunId() : -1);
   event3prong_->eventId=(aEventInfo ? aEventInfo->GetEventId() : -1);
   event3prong_->eventType = aEventInfo ? aEventInfo->GetEventType().to_ulong() : 0;
-  event1prong_->unixTimeSec =
+  event3prong_->unixTimeSec =
       (aEventInfo
            ? duration_cast<duration<long double>>(
                  tpcreco::eventAbsoluteTime(*aEventInfo).time_since_epoch())
                  .count()
            : -1); // absolute Unix time [s]
+  // NOTE: for irregular runs with runId=[0, 999999] (6 figures) the parser returns absolute Unix time = 0
   static double last_timestamp = 0;
   if(isFirst) {
     last_timestamp=event3prong_->unixTimeSec;

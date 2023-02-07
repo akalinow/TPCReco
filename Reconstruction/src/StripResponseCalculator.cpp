@@ -598,9 +598,8 @@ void StripResponseCalculator::initializeStripResponse(unsigned long NpointsXY, i
   gauss2d.SetNpy(NbinsXY*10);
   const auto weight=1./(double)NpointsXY;
   const auto hist=responseMapPerMergedStrip.begin()->second;
-  ////// DEBUG - optimized for speed
-  const auto R2=myGeometryPtr->GetPadSize()*myGeometryPtr->GetPadSize() + hist->GetXaxis()->GetBinWidth(1)*hist->GetYaxis()->GetBinWidth(1);
-  ////// DEBUG - optimized for speed
+  // calculate optimized acceptance radius (PAD SIZE + epsilon) to speed up initialziation
+  const auto R2=pow(myGeometryPtr->GetPadSize()+sqrt(pow(hist->GetXaxis()->GetBinWidth(1), 2)+pow(hist->GetYaxis()->GetBinWidth(1), 2)), 2); // [mm^2]
   for(unsigned long ipoint=0L; ipoint<NpointsXY; ipoint++) {
     double delta_x, delta_y;
     gauss2d.GetRandom2(delta_x, delta_y);
@@ -612,9 +611,7 @@ void StripResponseCalculator::initializeStripResponse(unsigned long NpointsXY, i
       double c1=hist->GetXaxis()->GetBinCenter(ibin1);
       for(auto ibin2=1; ibin2<=hist->GetNbinsY(); ibin2++) {
 	double c2=hist->GetYaxis()->GetBinCenter(ibin2);
-	////// DEBUG - optimized for speed
-	if(c1*c1+c2*c2>R2) continue; // stay within radius of PAD SIZE
-	////// DEBUG - optimized for speed
+	if(c1*c1+c2*c2>R2) continue; // stay within radius of (PAD SIZE + epsilon)
         const auto x=c1+delta_x; // [mm] wrt reference strip node
 	const auto y=c2+delta_y; // [mm] wrt reference strip node
 	const auto strip=myGeometryPtr->GetTH2PolyStrip( myGeometryPtr->GetTH2Poly()->FindBin(refNodePosInMM.X()+x, refNodePosInMM.Y()+y) );
