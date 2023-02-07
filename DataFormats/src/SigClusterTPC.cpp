@@ -61,9 +61,9 @@ SigClusterTPC::SigClusterTPC(EventTPC *e)
 // return value=key(REBIN_TIME_CELL [0-511], STRIP_NUM [1-1024])
 std::vector<MultiKey2> SigClusterTPC::GetHitListByDirMerged(int strip_dir) const{
   switch(strip_dir) {
-  case projection_type::DIR_U:
-  case projection_type::DIR_V:
-  case projection_type::DIR_W: return hitListByDir.find(strip_dir)->second;
+  case definitions::projection_type::DIR_U:
+  case definitions::projection_type::DIR_V:
+  case definitions::projection_type::DIR_W: return hitListByDir.find(strip_dir)->second;
   };
   std::vector<MultiKey2> empty;
   return empty;
@@ -73,9 +73,9 @@ std::vector<MultiKey2> SigClusterTPC::GetHitListByDirMerged(int strip_dir) const
 // return value=key(REBIN_TIME_CELL [0-511], STRIP_SECTION [0-2], STRIP_NUM [1-1024])
 std::vector<MultiKey3> SigClusterTPC::GetHitListByDir(int strip_dir) const{
   switch(strip_dir) {
-  case projection_type::DIR_U:
-  case projection_type::DIR_V:
-  case projection_type::DIR_W: return hitListByDir2.find(strip_dir)->second;
+  case definitions::projection_type::DIR_U:
+  case definitions::projection_type::DIR_V:
+  case definitions::projection_type::DIR_W: return hitListByDir2.find(strip_dir)->second;
   };
   std::vector<MultiKey3> empty;
   return empty;
@@ -121,9 +121,9 @@ bool SigClusterTPC::CheckByStripMerged(int strip_dir, int strip_number, int time
   
   if(!IsOK() || time_cell<0 || time_cell>=512 || strip_number<1 || strip_number>evt_ptr->GetGeoPtr()->GetDirNstrips(strip_dir)) return false;
   switch(strip_dir) {
-  case projection_type::DIR_U:
-  case projection_type::DIR_V:
-  case projection_type::DIR_W: return find(hitListByDir.find(strip_dir)->second.begin(),
+  case definitions::projection_type::DIR_U:
+  case definitions::projection_type::DIR_V:
+  case definitions::projection_type::DIR_W: return find(hitListByDir.find(strip_dir)->second.begin(),
 			  hitListByDir.find(strip_dir)->second.end(),
 			  MultiKey2(time_cell, strip_number))!=hitListByDir.find(strip_dir)->second.end();
   };
@@ -138,9 +138,9 @@ bool SigClusterTPC::CheckByStrip(int strip_dir, int strip_section, int strip_num
      strip_section<0 || strip_section>2 ||
      strip_number<1 || strip_number>evt_ptr->GetGeoPtr()->GetDirNstrips(strip_dir)) return false;
   switch(strip_dir) {
-  case projection_type::DIR_U:
-  case projection_type::DIR_V:
-  case projection_type::DIR_W: return find(hitListByDir2.find(strip_dir)->second.begin(),
+  case definitions::projection_type::DIR_U:
+  case definitions::projection_type::DIR_V:
+  case definitions::projection_type::DIR_W: return find(hitListByDir2.find(strip_dir)->second.begin(),
 			  hitListByDir2.find(strip_dir)->second.end(),
 			  MultiKey3(time_cell, strip_section, strip_number))!=hitListByDir2.find(strip_dir)->second.end();
   };
@@ -171,9 +171,9 @@ bool SigClusterTPC::CheckByAgetChannel_raw(int cobo_idx, int asad_idx, int aget_
 long SigClusterTPC::GetNhitsByStripMerged(int strip_dir, int strip_num) const{   // # of hits in a given merged strip (all sections)
   if(!IsOK() || strip_num<1 || strip_num>evt_ptr->GetGeoPtr()->GetDirNstrips(strip_dir)) return ERROR;
   switch(strip_dir) {
-  case projection_type::DIR_U: 
-  case projection_type::DIR_V: 
-  case projection_type::DIR_W:
+  case definitions::projection_type::DIR_U: 
+  case definitions::projection_type::DIR_V: 
+  case definitions::projection_type::DIR_W:
     MultiKey2 mkey(strip_dir, strip_num);
 
     // check if hit exists
@@ -191,9 +191,9 @@ long SigClusterTPC::GetNhitsByStrip(int strip_dir, int strip_section, int strip_
      strip_section<0 || strip_section>2 ||
      strip_num>evt_ptr->GetGeoPtr()->GetDirNstrips(strip_dir)) return ERROR;
   switch(strip_dir) {
-  case projection_type::DIR_U: 
-  case projection_type::DIR_V: 
-  case projection_type::DIR_W:
+  case definitions::projection_type::DIR_U: 
+  case definitions::projection_type::DIR_V: 
+  case definitions::projection_type::DIR_W:
     MultiKey3 mkey(strip_dir, strip_section, strip_num);
 
     // check if hit exists
@@ -209,9 +209,9 @@ long SigClusterTPC::GetNhitsByStrip(int strip_dir, int strip_section, int strip_
 long SigClusterTPC::GetNhits(int strip_dir, int strip_section) const{   // # of hits in a given direction (per section)
   if(!IsOK() || strip_section<0 || strip_section>2) return ERROR;
   switch(strip_dir) {
-  case projection_type::DIR_U: 
-  case projection_type::DIR_V: 
-  case projection_type::DIR_W:
+  case definitions::projection_type::DIR_U: 
+  case definitions::projection_type::DIR_V: 
+  case definitions::projection_type::DIR_W:
     MultiKey2 mkey(strip_dir, strip_section);
 
     // check if hit exists
@@ -227,25 +227,25 @@ long SigClusterTPC::GetNhits(int strip_dir, int strip_section) const{   // # of 
 long SigClusterTPC::GetNhits(int strip_dir) const{   // # of hits in a given direction
   if(!IsOK()) return ERROR;
   switch(strip_dir) {
-  case projection_type::DIR_U: 
-  case projection_type::DIR_V: 
-  case projection_type::DIR_W: return nhits[strip_dir];
+  case definitions::projection_type::DIR_U: 
+  case definitions::projection_type::DIR_V: 
+  case definitions::projection_type::DIR_W: return nhits[strip_dir];
   };
   return ERROR;
 }
 
 long SigClusterTPC::GetNhits() const{  // global # of hits
   if(!IsOK()) return ERROR;
-  return nhits[projection_type::DIR_U]+nhits[projection_type::DIR_V]+nhits[projection_type::DIR_W];
+  return nhits[definitions::projection_type::DIR_U]+nhits[definitions::projection_type::DIR_V]+nhits[definitions::projection_type::DIR_W];
 }
 
 int SigClusterTPC::GetMultiplicity(int strip_dir, int strip_section) const{  // # of strips with hits in a given direction (per section)
   int strip_multiplicity=0;
   if(!IsOK() || strip_section<0 || strip_section>2) return ERROR;
   switch(strip_dir) {
-  case projection_type::DIR_U: 
-  case projection_type::DIR_V: 
-  case projection_type::DIR_W: if(GetNhits(strip_dir, strip_section)>0) {
+  case definitions::projection_type::DIR_U: 
+  case definitions::projection_type::DIR_V: 
+  case definitions::projection_type::DIR_W: if(GetNhits(strip_dir, strip_section)>0) {
       for(int strip_num=min_strip[strip_dir]; strip_num<=max_strip[strip_dir]; strip_num++) {
 	if(GetNhitsByStrip(strip_dir, strip_section, strip_num)>0) strip_multiplicity++;
       }
@@ -258,24 +258,24 @@ int SigClusterTPC::GetMultiplicity(int strip_dir, int strip_section) const{  // 
 int SigClusterTPC::GetMultiplicity(int strip_dir) const{  // # of strips with hits in a given direction
   if(!IsOK()) return ERROR;
   switch(strip_dir) {
-  case projection_type::DIR_U: 
-  case projection_type::DIR_V: 
-  case projection_type::DIR_W: return nstrips[strip_dir];
+  case definitions::projection_type::DIR_U: 
+  case definitions::projection_type::DIR_V: 
+  case definitions::projection_type::DIR_W: return nstrips[strip_dir];
   };
   return ERROR;
 }
 
 int SigClusterTPC::GetMultiplicity() const{  // global # of strips with hits from all strips
   if(!IsOK()) return ERROR;
-  return nstrips[projection_type::DIR_U]+nstrips[projection_type::DIR_V]+nstrips[projection_type::DIR_W];
+  return nstrips[definitions::projection_type::DIR_U]+nstrips[definitions::projection_type::DIR_V]+nstrips[definitions::projection_type::DIR_W];
 }  
 
 int SigClusterTPC::GetMinStrip(int strip_dir) const{  // minimal strip number in a given direction
   if(!IsOK()) return ERROR;
   switch(strip_dir) {
-  case projection_type::DIR_U: 
-  case projection_type::DIR_V: 
-  case projection_type::DIR_W: return min_strip[strip_dir];
+  case definitions::projection_type::DIR_U: 
+  case definitions::projection_type::DIR_V: 
+  case definitions::projection_type::DIR_W: return min_strip[strip_dir];
   };
   return ERROR;
 }
@@ -283,9 +283,9 @@ int SigClusterTPC::GetMinStrip(int strip_dir) const{  // minimal strip number in
 int SigClusterTPC::GetMaxStrip(int strip_dir) const{ // maximal strip number in a given direction
   if(!IsOK()) return ERROR;
   switch(strip_dir) {
-  case projection_type::DIR_U: 
-  case projection_type::DIR_V: 
-  case projection_type::DIR_W: return max_strip[strip_dir];
+  case definitions::projection_type::DIR_U: 
+  case definitions::projection_type::DIR_V: 
+  case definitions::projection_type::DIR_W: return max_strip[strip_dir];
   };
   return ERROR;
 }
@@ -293,9 +293,9 @@ int SigClusterTPC::GetMaxStrip(int strip_dir) const{ // maximal strip number in 
 int SigClusterTPC::GetMinTime(int strip_dir) const{  // minimal time cell in a given direction
   if(!IsOK()) return ERROR;
   switch(strip_dir) {
-  case projection_type::DIR_U: 
-  case projection_type::DIR_V: 
-  case projection_type::DIR_W: return min_time[strip_dir];
+  case definitions::projection_type::DIR_U: 
+  case definitions::projection_type::DIR_V: 
+  case definitions::projection_type::DIR_W: return min_time[strip_dir];
   };
   return ERROR;
 }
@@ -303,9 +303,9 @@ int SigClusterTPC::GetMinTime(int strip_dir) const{  // minimal time cell in a g
 int SigClusterTPC::GetMaxTime(int strip_dir) const{  // maximal time cell in a given direction
   if(!IsOK()) return ERROR;
   switch(strip_dir) {
-  case projection_type::DIR_U: 
-  case projection_type::DIR_V: 
-  case projection_type::DIR_W: return max_time[strip_dir];
+  case definitions::projection_type::DIR_U: 
+  case definitions::projection_type::DIR_V: 
+  case definitions::projection_type::DIR_W: return max_time[strip_dir];
   };
   return ERROR;
 }
@@ -323,9 +323,9 @@ int SigClusterTPC::GetMaxTime() const{  // maximal time cell from all cluster hi
 double SigClusterTPC::GetMaxCharge(int strip_dir, int strip_section, int strip_number) const{ // maximal charge from cluster hits in a given strip (per section, if any)
   if(!IsOK()) return 0.0;
   switch(strip_dir) {
-  case projection_type::DIR_U:
-  case projection_type::DIR_V:
-  case projection_type::DIR_W: 
+  case definitions::projection_type::DIR_U:
+  case definitions::projection_type::DIR_V:
+  case definitions::projection_type::DIR_W: 
     MultiKey3 mkey(strip_dir, strip_section, strip_number);
 
     // check if hit is unique
@@ -341,9 +341,9 @@ double SigClusterTPC::GetMaxCharge(int strip_dir, int strip_section, int strip_n
 double SigClusterTPC::GetMaxCharge(int strip_dir, int strip_number) const{ // maximal charge from cluster hits in a given strip (all sections, if any)
   if(!IsOK()) return 0.0;
   switch(strip_dir) {
-  case projection_type::DIR_U:
-  case projection_type::DIR_V:
-  case projection_type::DIR_W: 
+  case definitions::projection_type::DIR_U:
+  case definitions::projection_type::DIR_V:
+  case definitions::projection_type::DIR_W: 
     MultiKey2 mkey(strip_dir, strip_number);
 
     // check if hit is unique
@@ -359,9 +359,9 @@ double SigClusterTPC::GetMaxCharge(int strip_dir, int strip_number) const{ // ma
 double SigClusterTPC::GetMaxCharge(int strip_dir) const{  // maximal charge from all cluster hits in a given direction
   if(!IsOK()) return 0.0;
   switch(strip_dir) {
-  case projection_type::DIR_U:
-  case projection_type::DIR_V:
-  case projection_type::DIR_W: return max_charge[strip_dir];
+  case definitions::projection_type::DIR_U:
+  case definitions::projection_type::DIR_V:
+  case definitions::projection_type::DIR_W: return max_charge[strip_dir];
   };
   return 0.0;    
 }
@@ -374,9 +374,9 @@ double SigClusterTPC::GetMaxCharge() const{  // maximal charge from all cluster 
 int SigClusterTPC::GetMaxChargeTime(int strip_dir) const{  // arrival time of the maximal charge from cluster hits in a given direction
   if(!IsOK()) return ERROR;
   switch(strip_dir) {
-  case projection_type::DIR_U:
-  case projection_type::DIR_V:
-  case projection_type::DIR_W: return max_charge_timing[strip_dir];
+  case definitions::projection_type::DIR_U:
+  case definitions::projection_type::DIR_V:
+  case definitions::projection_type::DIR_W: return max_charge_timing[strip_dir];
   };
   return ERROR;
 }
@@ -384,9 +384,9 @@ int SigClusterTPC::GetMaxChargeTime(int strip_dir) const{  // arrival time of th
 int SigClusterTPC::GetMaxChargeStrip(int strip_dir) const{  // strip number with the maximal charge from cluster hits in a given direction
   if(!IsOK()) return ERROR;
   switch(strip_dir) {
-  case projection_type::DIR_U:
-  case projection_type::DIR_V:
-  case projection_type::DIR_W: return max_charge_strip[strip_dir];
+  case definitions::projection_type::DIR_U:
+  case definitions::projection_type::DIR_V:
+  case definitions::projection_type::DIR_W: return max_charge_strip[strip_dir];
   };
   return ERROR;
 }
@@ -404,9 +404,9 @@ int SigClusterTPC::GetMaxChargeChannel() const{  // global channel number with t
 double SigClusterTPC::GetTotalCharge(int strip_dir, int strip_section, int strip_number) const{ // charge integral from cluster hits in a given strip (per section, if any)
   if(!IsOK() || strip_section<0 || strip_section>2) return 0.0;
   switch(strip_dir) {
-  case projection_type::DIR_U:
-  case projection_type::DIR_V:
-  case projection_type::DIR_W: 
+  case definitions::projection_type::DIR_U:
+  case definitions::projection_type::DIR_V:
+  case definitions::projection_type::DIR_W: 
     MultiKey3 mkey(strip_dir, strip_section, strip_number);
 
     // check if hit is unique
@@ -422,9 +422,9 @@ double SigClusterTPC::GetTotalCharge(int strip_dir, int strip_section, int strip
 double SigClusterTPC::GetTotalCharge(int strip_dir, int strip_number) const{ // charge integral from cluster hits in a given merged strip (all sections, if any)
   if(!IsOK()) return 0.0;
   switch(strip_dir) {
-  case projection_type::DIR_U:
-  case projection_type::DIR_V:
-  case projection_type::DIR_W: 
+  case definitions::projection_type::DIR_U:
+  case definitions::projection_type::DIR_V:
+  case definitions::projection_type::DIR_W: 
     MultiKey2 mkey(strip_dir, strip_number);
 
     // check if hit is unique
@@ -440,9 +440,9 @@ double SigClusterTPC::GetTotalCharge(int strip_dir, int strip_number) const{ // 
 double SigClusterTPC::GetTotalCharge(int strip_dir) const{  // charge integral from all cluster hits in a given direction
   if(!IsOK()) return 0.0;
   switch(strip_dir) {
-  case projection_type::DIR_U:
-  case projection_type::DIR_V:
-  case projection_type::DIR_W: return tot_charge[strip_dir];
+  case definitions::projection_type::DIR_U:
+  case definitions::projection_type::DIR_V:
+  case definitions::projection_type::DIR_W: return tot_charge[strip_dir];
   };
   return 0.0;    
 }
@@ -457,9 +457,9 @@ double SigClusterTPC::GetTotalChargeByTimeCell(int strip_dir, int strip_section,
     return 0.0;
   }
   switch(strip_dir) {
-  case projection_type::DIR_U:
-  case projection_type::DIR_V:
-  case projection_type::DIR_W: 
+  case definitions::projection_type::DIR_U:
+  case definitions::projection_type::DIR_V:
+  case definitions::projection_type::DIR_W: 
     MultiKey3 mkey(strip_dir, strip_section, time_cell);
 
     // check if time slice is unique
@@ -477,9 +477,9 @@ double SigClusterTPC::GetTotalChargeByTimeCell(int strip_dir, int time_cell) con
     return 0.0;
   }
   switch(strip_dir) {
-  case projection_type::DIR_U:
-  case projection_type::DIR_V:
-  case projection_type::DIR_W: 
+  case definitions::projection_type::DIR_U:
+  case definitions::projection_type::DIR_V:
+  case definitions::projection_type::DIR_W: 
     MultiKey2 mkey(strip_dir, time_cell);
 
     // check if time slice is unique

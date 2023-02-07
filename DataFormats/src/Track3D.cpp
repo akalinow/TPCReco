@@ -173,7 +173,7 @@ void Track3D::updateChi2(){
   nodeAngleChi2.clear();
   if(mySegments.size()) nodeAngleChi2.resize(mySegments.size()-1);
 
-  for(int strip_dir=projection_type::DIR_U;strip_dir<=projection_type::DIR_W;++strip_dir){
+  for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
     updateNodesChi2(strip_dir);
   }
   */

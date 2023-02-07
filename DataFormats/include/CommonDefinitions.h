@@ -17,6 +17,7 @@ enum class filter_type{
 		 island
 };
 
+namespace definitions {
 enum  projection_type{
   NONE = -1, 
   DIR_U=0,          // U-direction channel index
@@ -31,12 +32,13 @@ enum  projection_type{
   DIR_TIME_W,
   DIR_TIME,
 };
+} //namespace definitions
 
-projection_type get2DProjectionType(int aStrip_dir);
-projection_type get2DProjectionType(projection_type aStrip_dir);
+definitions::projection_type get2DProjectionType(int aStrip_dir);
+definitions::projection_type get2DProjectionType(definitions::projection_type aStrip_dir);
 
-projection_type get1DProjectionType(int aStrip_dir);
-projection_type get1DProjectionType(projection_type aStrip_dir);
+definitions::projection_type get1DProjectionType(int aStrip_dir);
+definitions::projection_type get1DProjectionType(definitions::projection_type aStrip_dir);
 
 enum pid_type{
   UNKNOWN=0,        //           <-- for backward compatibilty with data analyzed before 20 May 2022
@@ -88,7 +90,7 @@ public:
 	};
 };
 
-inline std::ostream& operator<<(std::ostream& str, projection_type proj) {
+inline std::ostream& operator<<(std::ostream& str, definitions::projection_type proj) {
 	return (str << int(proj));
 }
 
