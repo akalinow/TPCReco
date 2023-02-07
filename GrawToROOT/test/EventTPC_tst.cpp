@@ -63,53 +63,53 @@ void testHits(std::shared_ptr<EventTPC> aEventPtr, filter_type filterType){
   }
   
   std::cout<<"total charge: "<< aEventPtr->GetTotalCharge(-1, -1, -1, -1, filterType)<<std::endl;
-  std::cout<<"total charge DIR_U: "<< aEventPtr->GetTotalCharge(DIR_U, -1, -1, -1, filterType)<<std::endl;  
-  std::cout<<"total charge DIR_U, strip 1: "<< aEventPtr->GetTotalCharge(DIR_U, -1, 1, -1, filterType)<<std::endl;
-  std::cout<<"total charge DIR_U, sec. 1, strip 58: "<< aEventPtr->GetTotalCharge(DIR_U, 1, 58, -1, filterType)<<std::endl;
+  std::cout<<"total charge projection_type::DIR_U: "<< aEventPtr->GetTotalCharge(projection_type::DIR_U, -1, -1, -1, filterType)<<std::endl;  
+  std::cout<<"total charge projection_type::DIR_U, strip 1: "<< aEventPtr->GetTotalCharge(projection_type::DIR_U, -1, 1, -1, filterType)<<std::endl;
+  std::cout<<"total charge projection_type::DIR_U, sec. 1, strip 58: "<< aEventPtr->GetTotalCharge(projection_type::DIR_U, 1, 58, -1, filterType)<<std::endl;
   std::cout<<"total charge time cell 128: "<< aEventPtr->GetTotalCharge(-1, -1, -1, 128, filterType)<<std::endl;
-  std::cout<<"total charge DIR_U, time cell 128: "<< aEventPtr->GetTotalCharge(DIR_U, -1, -1, 128, filterType)<<std::endl;
-  std::cout<<"total charge DIR_U, sec. 1, time cell 128: "<< aEventPtr->GetTotalCharge(DIR_U, 1,  -1, 128, filterType)<<std::endl;
+  std::cout<<"total charge projection_type::DIR_U, time cell 128: "<< aEventPtr->GetTotalCharge(projection_type::DIR_U, -1, -1, 128, filterType)<<std::endl;
+  std::cout<<"total charge projection_type::DIR_U, sec. 1, time cell 128: "<< aEventPtr->GetTotalCharge(projection_type::DIR_U, 1,  -1, 128, filterType)<<std::endl;
 
   std::cout<<"max charge: "<< aEventPtr->GetMaxCharge(-1,-1,-1,filterType)<<std::endl;
-  std::cout<<"max charge DIR_U: "<< aEventPtr->GetMaxCharge(DIR_U,-1,-1,filterType)<<std::endl;
-  std::cout<<"max charge DIR_U, strip 1: "<< aEventPtr->GetMaxCharge(DIR_U, -1, 1, filterType)<<std::endl;
-  std::cout<<"max charge DIR_U, sec. 1, strip 58: "<< aEventPtr->GetMaxCharge(DIR_U, 1, 58,filterType)<<std::endl;
+  std::cout<<"max charge projection_type::DIR_U: "<< aEventPtr->GetMaxCharge(projection_type::DIR_U,-1,-1,filterType)<<std::endl;
+  std::cout<<"max charge projection_type::DIR_U, strip 1: "<< aEventPtr->GetMaxCharge(projection_type::DIR_U, -1, 1, filterType)<<std::endl;
+  std::cout<<"max charge projection_type::DIR_U, sec. 1, strip 58: "<< aEventPtr->GetMaxCharge(projection_type::DIR_U, 1, 58,filterType)<<std::endl;
 
   int maxTime = 0, maxStrip = 0;
   std::tie(maxTime, maxStrip) = aEventPtr->GetMaxChargePos(-1,filterType);
   std::cout<<"max charge time: "<<maxTime<<std::endl;
   std::cout<<"max charge channel: "<<0<<std::endl;
-  std::tie(maxTime, maxStrip) = aEventPtr->GetMaxChargePos(DIR_U, filterType);
-  std::cout<<"max charge time DIR_U: "<<maxTime<<std::endl;
-  std::cout<<"max charge strip DIR_U: "<<maxStrip<<std::endl;
+  std::tie(maxTime, maxStrip) = aEventPtr->GetMaxChargePos(projection_type::DIR_U, filterType);
+  std::cout<<"max charge time projection_type::DIR_U: "<<maxTime<<std::endl;
+  std::cout<<"max charge strip projection_type::DIR_U: "<<maxStrip<<std::endl;
 
   int minTime=0, minStrip=0;
   std::tie(minTime, maxTime, minStrip, maxStrip) = aEventPtr->GetSignalRange(-1, filterType);
   std::cout<<"min time: "<<minTime<<std::endl;
   std::cout<<"max time: "<<maxTime<<std::endl;
 
-  std::tie(minTime, maxTime, minStrip, maxStrip) = aEventPtr->GetSignalRange(DIR_U, filterType);
-  std::cout<<"min time DIR_U: "<<minTime<<std::endl;
-  std::cout<<"max time DIR_U: "<<maxTime<<std::endl;
-  std::cout<<"min strip DIR_U: "<<minStrip<<std::endl;
-  std::cout<<"max strip DIR_U: "<<maxStrip<<std::endl;
+  std::tie(minTime, maxTime, minStrip, maxStrip) = aEventPtr->GetSignalRange(projection_type::DIR_U, filterType);
+  std::cout<<"min time projection_type::DIR_U: "<<minTime<<std::endl;
+  std::cout<<"max time projection_type::DIR_U: "<<maxTime<<std::endl;
+  std::cout<<"min strip projection_type::DIR_U: "<<minStrip<<std::endl;
+  std::cout<<"max strip projection_type::DIR_U: "<<maxStrip<<std::endl;
   
   std::cout<<"multiplicity(total): "<<aEventPtr->GetMultiplicity(false, -1, -1, -1, filterType)<<std::endl;
-  std::cout<<"multiplicity(DIR_U): "<<aEventPtr->GetMultiplicity(false, DIR_U, -1, -1, filterType)<<std::endl;
-  std::cout<<"multiplicity(DIR_V): "<<aEventPtr->GetMultiplicity(false, DIR_V, -1, -1, filterType)<<std::endl;
-  std::cout<<"multiplicity(DIR_W): "<<aEventPtr->GetMultiplicity(false, DIR_W, -1, -1, filterType)<<std::endl;
+  std::cout<<"multiplicity(projection_type::DIR_U): "<<aEventPtr->GetMultiplicity(false, projection_type::DIR_U, -1, -1, filterType)<<std::endl;
+  std::cout<<"multiplicity(projection_type::DIR_V): "<<aEventPtr->GetMultiplicity(false, projection_type::DIR_V, -1, -1, filterType)<<std::endl;
+  std::cout<<"multiplicity(projection_type::DIR_W): "<<aEventPtr->GetMultiplicity(false, projection_type::DIR_W, -1, -1, filterType)<<std::endl;
   
-  std::cout<<"multiplicity(DIR_U, 0): "<<aEventPtr->GetMultiplicity(false, DIR_U, 0, -1, filterType)<<std::endl;
-  std::cout<<"multiplicity(DIR_V, 0): "<<aEventPtr->GetMultiplicity(false, DIR_V, 0, -1, filterType)<<std::endl;
-  std::cout<<"multiplicity(DIR_W, 0): "<<aEventPtr->GetMultiplicity(false, DIR_W, 0, -1, filterType)<<std::endl;
+  std::cout<<"multiplicity(projection_type::DIR_U, 0): "<<aEventPtr->GetMultiplicity(false, projection_type::DIR_U, 0, -1, filterType)<<std::endl;
+  std::cout<<"multiplicity(projection_type::DIR_V, 0): "<<aEventPtr->GetMultiplicity(false, projection_type::DIR_V, 0, -1, filterType)<<std::endl;
+  std::cout<<"multiplicity(projection_type::DIR_W, 0): "<<aEventPtr->GetMultiplicity(false, projection_type::DIR_W, 0, -1, filterType)<<std::endl;
 
   std::cout<<"Nhits(total): "<<aEventPtr->GetMultiplicity(true, -1, -1, -1, filterType)<<std::endl;
-  std::cout<<"Nhits(DIR_U): "<<aEventPtr->GetMultiplicity(true, DIR_U, -1, -1, filterType)<<std::endl;
-  std::cout<<"Nhits(DIR_V): "<<aEventPtr->GetMultiplicity(true, DIR_V, -1, -1, filterType)<<std::endl;
-  std::cout<<"Nhits(DIR_W): "<<aEventPtr->GetMultiplicity(true, DIR_W, -1, -1, filterType)<<std::endl;
-  std::cout<<"Nhits(DIR_U, 0): "<<aEventPtr->GetMultiplicity(true, DIR_U, 0, -1, filterType)<<std::endl;
-  std::cout<<"Nhits(DIR_U, 0, 70): "<<aEventPtr->GetMultiplicity(true, DIR_U, 0, 70, filterType)<<std::endl;
-  std::cout<<"NhitsMerged(DIR_U, 70): "<<aEventPtr->GetMultiplicity(true, DIR_U, -1, 70, filterType)<<std::endl;
+  std::cout<<"Nhits(projection_type::DIR_U): "<<aEventPtr->GetMultiplicity(true, projection_type::DIR_U, -1, -1, filterType)<<std::endl;
+  std::cout<<"Nhits(projection_type::DIR_V): "<<aEventPtr->GetMultiplicity(true, projection_type::DIR_V, -1, -1, filterType)<<std::endl;
+  std::cout<<"Nhits(projection_type::DIR_W): "<<aEventPtr->GetMultiplicity(true, projection_type::DIR_W, -1, -1, filterType)<<std::endl;
+  std::cout<<"Nhits(projection_type::DIR_U, 0): "<<aEventPtr->GetMultiplicity(true, projection_type::DIR_U, 0, -1, filterType)<<std::endl;
+  std::cout<<"Nhits(projection_type::DIR_U, 0, 70): "<<aEventPtr->GetMultiplicity(true, projection_type::DIR_U, 0, 70, filterType)<<std::endl;
+  std::cout<<"NhitsMerged(projection_type::DIR_U, 70): "<<aEventPtr->GetMultiplicity(true, projection_type::DIR_U, -1, 70, filterType)<<std::endl;
 }
 /////////////////////////////////////
 /////////////////////////////////////

@@ -53,10 +53,10 @@ GeometryTPC::GeometryTPC(const char *fname, bool debug)
 
   // Set indices and names of strip coordinates
   dir2name.clear();
-  dir2name.insert(std::pair<int, std::string>(DIR_U, "U"));
-  dir2name.insert(std::pair<int, std::string>(DIR_V, "V"));
-  dir2name.insert(std::pair<int, std::string>(DIR_W, "W"));
-  dir2name.insert(std::pair<int, std::string>(DIR_TIME, "time"));
+  dir2name.insert(std::pair<int, std::string>(projection_type::DIR_U, "U"));
+  dir2name.insert(std::pair<int, std::string>(projection_type::DIR_V, "V"));
+  dir2name.insert(std::pair<int, std::string>(projection_type::DIR_W, "W"));
+  dir2name.insert(std::pair<int, std::string>(projection_type::DIR_TIME, "time"));
   dir2name.insert(std::pair<int, std::string>(FPN_CH, "FPN"));
 
   name2dir.clear();
@@ -117,12 +117,12 @@ bool GeometryTPC::Load(const char *fname) {
             fmod(angle3, 180.) !=
                 fmod(angle1,
                      180.)) { // reject parallel / anti-parallel duplicates
-          angle[DIR_U] = angle1;
-          angle[DIR_V] = angle2;
-          angle[DIR_W] = angle3;
+          angle[projection_type::DIR_U] = angle1;
+          angle[projection_type::DIR_V] = angle2;
+          angle[projection_type::DIR_W] = angle3;
           std::cout
               << Form("Angle of U/V/W strips wrt X axis = %lf / %lf / %lf deg",
-                      angle[DIR_U], angle[DIR_V], angle[DIR_W])
+                      angle[projection_type::DIR_U], angle[projection_type::DIR_V], angle[projection_type::DIR_W])
               << std::endl;
           break;
         } else {
@@ -268,19 +268,19 @@ bool GeometryTPC::Load(const char *fname) {
 
     // set unit vectors (along strips) and strip pitch vectors (perpendicular to
     // strips)
-    strip_unit_vec[DIR_U].Set(TMath::Cos(angle[DIR_U] * TMath::DegToRad()),
-                              TMath::Sin(angle[DIR_U] * TMath::DegToRad()));
-    strip_unit_vec[DIR_V].Set(TMath::Cos(angle[DIR_V] * TMath::DegToRad()),
-                              TMath::Sin(angle[DIR_V] * TMath::DegToRad()));
-    strip_unit_vec[DIR_W].Set(TMath::Cos(angle[DIR_W] * TMath::DegToRad()),
-                              TMath::Sin(angle[DIR_W] * TMath::DegToRad()));
+    strip_unit_vec[projection_type::DIR_U].Set(TMath::Cos(angle[projection_type::DIR_U] * TMath::DegToRad()),
+                              TMath::Sin(angle[projection_type::DIR_U] * TMath::DegToRad()));
+    strip_unit_vec[projection_type::DIR_V].Set(TMath::Cos(angle[projection_type::DIR_V] * TMath::DegToRad()),
+                              TMath::Sin(angle[projection_type::DIR_V] * TMath::DegToRad()));
+    strip_unit_vec[projection_type::DIR_W].Set(TMath::Cos(angle[projection_type::DIR_W] * TMath::DegToRad()),
+                              TMath::Sin(angle[projection_type::DIR_W] * TMath::DegToRad()));
 
-    pitch_unit_vec[DIR_U] =
-        -1.0 * (strip_unit_vec[DIR_W] + strip_unit_vec[DIR_V]).Unit();
-    pitch_unit_vec[DIR_V] =
-        (strip_unit_vec[DIR_U] + strip_unit_vec[DIR_W]).Unit();
-    pitch_unit_vec[DIR_W] =
-        (strip_unit_vec[DIR_V] - strip_unit_vec[DIR_U]).Unit();
+    pitch_unit_vec[projection_type::DIR_U] =
+        -1.0 * (strip_unit_vec[projection_type::DIR_W] + strip_unit_vec[projection_type::DIR_V]).Unit();
+    pitch_unit_vec[projection_type::DIR_V] =
+        (strip_unit_vec[projection_type::DIR_U] + strip_unit_vec[projection_type::DIR_W]).Unit();
+    pitch_unit_vec[projection_type::DIR_W] =
+        (strip_unit_vec[projection_type::DIR_V] - strip_unit_vec[projection_type::DIR_U]).Unit();
 
     bool found = false;
     f.seekg(0, f.beg);
@@ -345,7 +345,7 @@ bool GeometryTPC::Load(const char *fname) {
           mapByAget_raw[MultiKey4(cobo, asad, aget, chan_num_raw)] = strip; 
 
           // update reverse map (by: strip direction, strip number)
-          if (dir == DIR_U || dir == DIR_V || dir == DIR_W) {
+          if (dir == projection_type::DIR_U || dir == projection_type::DIR_V || dir == projection_type::DIR_W) {
             mapByStrip[MultiKey3(dir, section, strip_num)] =
                 strip; // Global_normal2normal(aget, chan_num);
           }
@@ -449,12 +449,12 @@ bool GeometryTPC::Load(const char *fname) {
 
   // print statistics
   std::cout << std::endl << "Geometry config file = " << fname << std::endl;
-  std::cout << "Total number of " << this->GetDirName(DIR_U)
-            << " strips = " << this->GetDirNstrips(DIR_U) << std::endl;
-  std::cout << "Total number of " << this->GetDirName(DIR_V)
-            << " strips = " << this->GetDirNstrips(DIR_V) << std::endl;
-  std::cout << "Total number of " << this->GetDirName(DIR_W)
-            << " strips = " << this->GetDirNstrips(DIR_W) << std::endl;
+  std::cout << "Total number of " << this->GetDirName(projection_type::DIR_U)
+            << " strips = " << this->GetDirNstrips(projection_type::DIR_U) << std::endl;
+  std::cout << "Total number of " << this->GetDirName(projection_type::DIR_V)
+            << " strips = " << this->GetDirNstrips(projection_type::DIR_V) << std::endl;
+  std::cout << "Total number of " << this->GetDirName(projection_type::DIR_W)
+            << " strips = " << this->GetDirNstrips(projection_type::DIR_W) << std::endl;
   std::cout << "Number of active channels per AGET chip = "
             << this->GetAgetNchannels() << std::endl;
   std::cout << "Number of " << this->GetDirName(FPN_CH)
@@ -1159,9 +1159,9 @@ int GeometryTPC::GetDirNstrips(int dir) const{
   if (!IsOK())
     return -1;
   switch (dir) {
-  case DIR_U:
-  case DIR_V:
-  case DIR_W:
+  case projection_type::DIR_U:
+  case projection_type::DIR_V:
+  case projection_type::DIR_W:
     return GetDirNStripsMerged(dir);
     break;
   case FPN_CH:
@@ -1185,10 +1185,10 @@ const char *GeometryTPC::GetDirName(int dir) const{
   if (!IsOK())
     return NULL; // "ERROR";
   switch (dir) {
-  case DIR_U:
-  case DIR_V:
-  case DIR_W:
-  case DIR_TIME:
+  case projection_type::DIR_U:
+  case projection_type::DIR_V:
+  case projection_type::DIR_W:
+  case projection_type::DIR_TIME:
   case FPN_CH:
     return dir2name.at(dir).c_str(); // dir2name[dir];
   };
@@ -1237,9 +1237,9 @@ const char *GeometryTPC::GetStripName(std::shared_ptr<StripTPC> s) const{
     return NULL; // "ERROR";
   std::stringstream ss;
   switch (s->Dir()) {
-  case DIR_U:
-  case DIR_V:
-  case DIR_W:
+  case projection_type::DIR_U:
+  case projection_type::DIR_V:
+  case projection_type::DIR_W:
   case FPN_CH: {
     if (s->Num() >= 1 && s->Num() <= stripN.at(s->Dir())) {
       ss << dir2name.at(s->Dir()) << s->Num();
@@ -1633,9 +1633,9 @@ TVector2 GeometryTPC::GetStripUnitVector(int dir) const{ // XY ([mm],[mm])
   if (!IsOK())
     return empty; // ERROR
   switch (dir) {
-  case DIR_U:
-  case DIR_V:
-  case DIR_W:
+  case projection_type::DIR_U:
+  case projection_type::DIR_V:
+  case projection_type::DIR_W:
     return strip_unit_vec.at(dir);
   };
   return empty; // ERROR
@@ -1647,9 +1647,9 @@ TVector2 GeometryTPC::GetStripPitchVector(int dir) const{ // XY ([mm],[mm])
     return empty; // ERROR
   }
   switch (dir) {
-  case DIR_U:
-  case DIR_V:
-  case DIR_W:
+  case projection_type::DIR_U:
+  case projection_type::DIR_V:
+  case projection_type::DIR_W:
     return pitch_unit_vec.at(dir);
   };
   return empty; // ERROR
@@ -1674,7 +1674,7 @@ double GeometryTPC::Strip2posUVW(int dir, int num, bool &err_flag) const{ // (al
   for(unsigned int isec=0; isec<this->GetDirSectionIndexList(dir).size(); isec++) {
     x = Strip2posUVW(dir, this->GetDirSectionIndexList(dir).at(isec), num, err_flag);
     /////// DEBUG
-    //      if(dir==DIR_U) std::cout << "Strip2pos: dir=" << dir << ", strip=" << num << ", section=" << this->GetDirSectionIndexList(dir).at(isec)
+    //      if(dir==projection_type::DIR_U) std::cout << "Strip2pos: dir=" << dir << ", strip=" << num << ", section=" << this->GetDirSectionIndexList(dir).at(isec)
     //			       << ": X[mm]=" << x << ", err_flag=" << err_flag << std::endl;
     /////// DEBUG
     if(!err_flag) return x; // find first section that contains the given strip number
@@ -1693,9 +1693,9 @@ double GeometryTPC::Strip2posUVW(std::shared_ptr<StripTPC>strip, bool &err_flag)
   err_flag = true;
   if (!strip) return 0.0; // ERROR
   switch (strip->Dir()) {
-  case DIR_U:
-  case DIR_V:
-  case DIR_W:
+  case projection_type::DIR_U:
+  case projection_type::DIR_V:
+  case projection_type::DIR_W:
     err_flag = false; // valid strip
     return (reference_point + strip->Offset()) *
       pitch_unit_vec.at(strip->Dir()); // [mm]
@@ -1734,9 +1734,9 @@ double GeometryTPC::Cartesian2posUVW(double x, double y, int dir,
 double GeometryTPC::Cartesian2posUVW(TVector2 pos, int dir, bool &err_flag) const{
   err_flag = true;
   switch (dir) {
-  case DIR_U:
-  case DIR_V:
-  case DIR_W:
+  case projection_type::DIR_U:
+  case projection_type::DIR_V:
+  case projection_type::DIR_W:
     err_flag = false;                 // valid DIR
     return pos * pitch_unit_vec.at(dir); // [mm]
   };

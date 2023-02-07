@@ -166,7 +166,7 @@ int main(int argc, char *argv[]) {
     aLine.SetLineColor(2);
     double startX, startY, endX, endY;
 
-    int aDir = DIR_V;
+    int aDir = projection_type::DIR_V;
     TH2D *hProjection = aEvent->GetStripVsTime(aCluster, aDir);
     double rho = sqrt(500*500 + 92*92);
     double theta = 0.0;
@@ -190,7 +190,7 @@ int main(int argc, char *argv[]) {
     canvas->GetPad(1)->Clear();
     canvas->GetPad(1)->Update();
 
-    for(int aDir=DIR_U;aDir<=DIR_W;++aDir){
+    for(int aDir=projection_type::DIR_U;aDir<=projection_type::DIR_W;++aDir){
       canvas->cd(2);
       gPad->cd(1+aDir);
       TH2D *hProj = aEvent->GetStripVsTime(aCluster, aDir);
@@ -217,13 +217,13 @@ int main(int argc, char *argv[]) {
 
     canvas->cd(3);
     gPad->cd(1);
-    myUVWProjector.GetStripVsTime_TH2D(DIR_U)->Draw("colz");
+    myUVWProjector.GetStripVsTime_TH2D(projection_type::DIR_U)->Draw("colz");
     canvas->cd(3);
     gPad->cd(2);
-    myUVWProjector.GetStripVsTime_TH2D(DIR_V)->Draw("colz");
+    myUVWProjector.GetStripVsTime_TH2D(projection_type::DIR_V)->Draw("colz");
     canvas->cd(3);
     gPad->cd(3);
-    myUVWProjector.GetStripVsTime_TH2D(DIR_W)->Draw("colz");
+    myUVWProjector.GetStripVsTime_TH2D(projection_type::DIR_W)->Draw("colz");
     */
     app.Run(kTRUE);
   }

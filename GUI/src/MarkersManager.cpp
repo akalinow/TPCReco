@@ -156,7 +156,7 @@ void MarkersManager::resetSegments(){
 /////////////////////////////////////////////////////////
 void MarkersManager::setPadsEditable(bool isEditable){
 
-  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+  for(int strip_dir=projection_type::DIR_U;strip_dir<=projection_type::DIR_W;++strip_dir){
     std::string padName = "Histograms_"+std::to_string(strip_dir+1);
     TPad *aPad = (TPad*)gROOT->FindObject(padName.c_str());
     if(!aPad) continue;
@@ -176,7 +176,7 @@ void MarkersManager::resetMarkers(bool force){
   for(auto aObj : fObjClones) delete aObj;
   fObjClones.clear();
 
-  int strip_dir = DIR_U;//FIX ME
+  int strip_dir = projection_type::DIR_U;//FIX ME
   if(force || isLastSegmentComplete(strip_dir)){
     acceptPoints = false;
     if(myButtons.find("Add segment")!=myButtons.end() &&
@@ -240,13 +240,13 @@ void MarkersManager::processClickCoordinates(int strip_dir, float x, float y){
   if(strip_dir==3){
     if(!timeMarker){
       timeMarker = new TMarker(x, y, 1);
-      drawFixedTimeLines(DIR_U, x);
-      drawFixedTimeLines(DIR_W, x);
-      drawFixedTimeLines(DIR_W, x);
+      drawFixedTimeLines(projection_type::DIR_U, x);
+      drawFixedTimeLines(projection_type::DIR_W, x);
+      drawFixedTimeLines(projection_type::DIR_W, x);
     }
   }
   */
-  if(strip_dir<DIR_U || strip_dir>=(int)fMarkersContainer.size() || fMarkersContainer.at(strip_dir)) return;
+  if(strip_dir<projection_type::DIR_U || strip_dir>=(int)fMarkersContainer.size() || fMarkersContainer.at(strip_dir)) return;
   //if(timeMarker){ x = timeMarker->GetX(); }
   if(firstMarker){ x = firstMarker->GetX(); }
   
@@ -276,9 +276,9 @@ void MarkersManager::processClickCoordinates(int strip_dir, float x, float y){
     TPad *aPad = (TPad*)gROOT->FindObject(padName.c_str());
     aPad->cd();
     aMarker->Draw();
-    updateSegments(DIR_U);
-    updateSegments(DIR_V);
-    updateSegments(DIR_W);
+    updateSegments(projection_type::DIR_U);
+    updateSegments(projection_type::DIR_V);
+    updateSegments(projection_type::DIR_W);
     resetMarkers();
   }
   fLastPanelHelperLine.clear();
@@ -294,7 +294,7 @@ void MarkersManager::drawFixedTimeLines(int strip_dir, double time){
 /////////////////////////////////////////////////////////
 int MarkersManager::findMissingMarkerDir(){
 
- for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+ for(int strip_dir=projection_type::DIR_U;strip_dir<=projection_type::DIR_W;++strip_dir){
     TMarker *item = fMarkersContainer.at(strip_dir);
     if(!item) return strip_dir;
     }
@@ -310,7 +310,7 @@ double MarkersManager::getMissingYCoordinate(unsigned int missingMarkerDir){
   int dir[2] = { -1, -1 };
   double pos[2];
   int counter=0;
-  for(unsigned int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+  for(unsigned int strip_dir=projection_type::DIR_U;strip_dir<=projection_type::DIR_W;++strip_dir){
     TMarker *item = fMarkersContainer.at(strip_dir);
     if(!item || strip_dir==missingMarkerDir) continue;
     dir[counter] = strip_dir;    // UVW direction index
@@ -392,9 +392,9 @@ void MarkersManager::HandleMarkerPosition(Int_t event, Int_t x, Int_t y, TObject
 void MarkersManager::repackSegmentsData(){
 
   fSegmentsXY.clear();
-  assert(fSegmentsContainer.at(DIR_U).size() == fSegmentsContainer.at(DIR_V).size());
-  assert(fSegmentsContainer.at(DIR_U).size() == fSegmentsContainer.at(DIR_W).size());
-  int nSegments = fSegmentsContainer.at(DIR_U).size();
+  assert(fSegmentsContainer.at(projection_type::DIR_U).size() == fSegmentsContainer.at(projection_type::DIR_V).size());
+  assert(fSegmentsContainer.at(projection_type::DIR_U).size() == fSegmentsContainer.at(projection_type::DIR_W).size());
+  int nSegments = fSegmentsContainer.at(projection_type::DIR_U).size();
   for(int iSegment=0;iSegment<nSegments;++iSegment){
     for(auto & strip_segments: fSegmentsContainer){
       TLine &aLine = strip_segments.at(iSegment);
