@@ -99,7 +99,7 @@ void HistoManager::drawRawHistos(TCanvas *aCanvas, bool isRateDisplayOn){
   int padNumberOffset = 0;
   if(std::string(aCanvas->GetName())=="fRawHistosCanvas") padNumberOffset = 100;
   
-  for(int strip_dir=projection_type::DIR_U;strip_dir<=projection_type::DIR_W;++strip_dir){
+  for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
     TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
     if(!aPad) return;
     aPad->cd();
@@ -120,7 +120,7 @@ void HistoManager::drawRawHistos(TCanvas *aCanvas, bool isRateDisplayOn){
   if(isRateDisplayOn){
     fObjClones.push_back(getEventRateGraph()->DrawClone("AP"));
   } else{
-    get1DProjection(projection_type::DIR_TIME, filter_type::none, scale_type::raw)->DrawCopy("hist");
+    get1DProjection(definitions::projection_type::DIR_TIME, filter_type::none, scale_type::raw)->DrawCopy("hist");
   }
   aCanvas->Modified();
   aCanvas->Update();
@@ -157,7 +157,7 @@ void HistoManager::drawRecoHistos(TCanvas *aCanvas){
   filter_type filterType = filter_type::threshold;
   if(!myConfig.get<bool>("recoClusterEnable")) filterType = filter_type::none;
 
-   for(int strip_dir=projection_type::DIR_U;strip_dir<=projection_type::DIR_W;++strip_dir){
+   for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
      TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
      if(!aPad) return;
      aPad->cd();
@@ -186,7 +186,7 @@ void HistoManager::drawRecoHistos(TCanvas *aCanvas){
    aCanvas->Modified();
    aCanvas->Update();
    /*   if(myConfig.get<bool>("recoClusterEnable")) drawChargeAlongTrack3D(aPad);
-	else  */get1DProjection(projection_type::DIR_TIME, filterType, scale_type::mm)->DrawCopy("hist");
+	else  */get1DProjection(definitions::projection_type::DIR_TIME, filterType, scale_type::mm)->DrawCopy("hist");
 
    aCanvas->Modified();
    aCanvas->Update(); 
@@ -197,7 +197,7 @@ void HistoManager::drawRecoFromMarkers(TCanvas *aCanvas, std::vector<double> * s
 
   reconstructSegmentsFromMarkers(segmentsXY);
   
-  for(int strip_dir=projection_type::DIR_U;strip_dir<=projection_type::DIR_W;++strip_dir){
+  for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
     TVirtualPad *aPad = aCanvas->cd(strip_dir+1);
     aCanvas->Modified();
     aCanvas->Update();
@@ -225,7 +225,7 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
   filter_type filterType = filter_type::threshold;
   if(!myConfig.get<bool>("recoClusterEnable")) filterType = filter_type::none;
 
-   for(int strip_dir=projection_type::DIR_U;strip_dir<=projection_type::DIR_W;++strip_dir){
+   for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
      TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
      if(!aPad) return;
      aPad->cd();
@@ -252,7 +252,7 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
    aCanvas->Modified();
    aCanvas->Update();
    if(myConfig.get<bool>("recoClusterEnable")) drawChargeAlongTrack3D(aPad);
-   else  get1DProjection(projection_type::DIR_TIME, filterType, scale_type::mm)->DrawCopy("hist");
+   else  get1DProjection(definitions::projection_type::DIR_TIME, filterType, scale_type::mm)->DrawCopy("hist");
 
    aCanvas->Modified();
    aCanvas->Update();
@@ -311,8 +311,8 @@ void HistoManager::setDetLayout(){
   // - UVW STRIP projection range from all directions
   // - DRIFT projection range
   float strip_min, strip_max;
-  std::tie(strip_min, strip_max)=myGeometryPtr->rangeStripDirInMM(projection_type::DIR_U);
-  for(int idir=projection_type::DIR_V; idir<=projection_type::DIR_W; ++idir) {
+  std::tie(strip_min, strip_max)=myGeometryPtr->rangeStripDirInMM(definitions::projection_type::DIR_U);
+  for(int idir=definitions::projection_type::DIR_V; idir<=definitions::projection_type::DIR_W; ++idir) {
     float a, b;
     std::tie(a, b)=myGeometryPtr->rangeStripDirInMM(idir);
     if(a<strip_min) strip_min=a;
@@ -364,7 +364,7 @@ void HistoManager::setDetLayoutVetoBand(double distance){ // [mm]
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<TH1D> HistoManager::get1DProjection(projection_type projType,
+std::shared_ptr<TH1D> HistoManager::get1DProjection(definitions::projection_type projType,
 						    filter_type filterType,
 						    scale_type scaleType){
   
@@ -379,7 +379,7 @@ std::shared_ptr<TH1D> HistoManager::get1DProjection(projection_type projType,
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<TH2D> HistoManager::get2DProjection(projection_type projType,
+std::shared_ptr<TH2D> HistoManager::get2DProjection(definitions::projection_type projType,
 						    filter_type filterType,
 						    scale_type scaleType){
 

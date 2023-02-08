@@ -189,18 +189,18 @@ bool DotFinder::checkCuts(){
     return false;
   }
 
-  int multiplicityU = myEvent->GetMultiplicity(false, projection_type::DIR_U, -1, -1,  filter_type::threshold);
-  int multiplicityV = myEvent->GetMultiplicity(false, projection_type::DIR_V, -1, -1,  filter_type::threshold);
-  int multiplicityW = myEvent->GetMultiplicity(false, projection_type::DIR_W, -1, -1,  filter_type::threshold);
+  int multiplicityU = myEvent->GetMultiplicity(false, definitions::projection_type::DIR_U, -1, -1,  filter_type::threshold);
+  int multiplicityV = myEvent->GetMultiplicity(false, definitions::projection_type::DIR_V, -1, -1,  filter_type::threshold);
+  int multiplicityW = myEvent->GetMultiplicity(false, definitions::projection_type::DIR_W, -1, -1,  filter_type::threshold);
   
   if(multiplicityU + multiplicityV + multiplicityW<2){
     //////// DEBUG
     std::cout << "DotFinder::checkCuts: Cluster has not enough hits => event rejected." << std::endl
-	      << "                      Dir=" << DIR_U
+	      << "                      Dir=" << definitions::projection_type::DIR_U
 	      << ": mult= "<<multiplicityU<< std::endl
-      	      << "                      Dir=" << DIR_V
+      	      << "                      Dir=" << definitions::projection_type::DIR_V
 	      << ": mult= "<<multiplicityV<< std::endl
-      	      << "                      Dir=" << DIR_W
+      	      << "                      Dir=" << definitions::projection_type::DIR_W
 	      << ": mult= "<<multiplicityV<< std::endl
 	      << std::endl;
     //////// DEBUG
@@ -218,9 +218,9 @@ bool DotFinder::checkCuts(){
   int minTimeU=0, maxTimeU=0, minStripU=0, maxStripU=0;
   int minTimeV=0, maxTimeV=0, minStripV=0, maxStripV=0;
   int minTimeW=0, maxTimeW=0, minStripW=0, maxStripW=0;
-  std::tie(minTimeU, maxTimeU, minStripU, maxStripU) = myEvent->GetSignalRange(projection_type::DIR_U, filter_type::threshold);
-  std::tie(minTimeV, maxTimeV, minStripV, maxStripV) = myEvent->GetSignalRange(projection_type::DIR_V, filter_type::threshold);
-  std::tie(minTimeW, maxTimeW, minStripW, maxStripW) = myEvent->GetSignalRange(projection_type::DIR_W, filter_type::threshold);
+  std::tie(minTimeU, maxTimeU, minStripU, maxStripU) = myEvent->GetSignalRange(definitions::projection_type::DIR_U, filter_type::threshold);
+  std::tie(minTimeV, maxTimeV, minStripV, maxStripV) = myEvent->GetSignalRange(definitions::projection_type::DIR_V, filter_type::threshold);
+  std::tie(minTimeW, maxTimeW, minStripW, maxStripW) = myEvent->GetSignalRange(definitions::projection_type::DIR_W, filter_type::threshold);
 
    if(multiplicityU > (int)myMaxStripsPerDir ||
      multiplicityV > (int)myMaxStripsPerDir ||
@@ -235,39 +235,39 @@ bool DotFinder::checkCuts(){
 
   myDotDeltaZ = fabs(maxTime - minTime + 1 )*(10.0*myEvent->GetGeoPtr()->GetDriftVelocity()     // [ 10mm/cm * 1cm/us / 1MHz ]=[mm]
 					      /myEvent->GetGeoPtr()->GetSamplingRate());      
-  if(myEvent->GetMultiplicity(false, projection_type::DIR_U, -1, -1,  filter_type::threshold) > maxStrips ||
-     myEvent->GetMultiplicity(false, projection_type::DIR_V, -1, -1,  filter_type::threshold) > maxStrips ||
-     myEvent->GetMultiplicity(false, projection_type::DIR_W, -1, -1,  filter_type::threshold) > maxStrips ||
+  if(myEvent->GetMultiplicity(false, definitions::projection_type::DIR_U, -1, -1,  filter_type::threshold) > maxStrips ||
+     myEvent->GetMultiplicity(false, definitions::projection_type::DIR_V, -1, -1,  filter_type::threshold) > maxStrips ||
+     myEvent->GetMultiplicity(false, definitions::projection_type::DIR_W, -1, -1,  filter_type::threshold) > maxStrips ||
      maxTime - minTime > maxTimeCells ) {
 
     //////// DEBUG
     int minTimeU=0, maxTimeU=0, minStripU=0, maxStripU=0;
     int minTimeV=0, maxTimeV=0, minStripV=0, maxStripV=0;
     int minTimeW=0, maxTimeW=0, minStripW=0, maxStripW=0;
-    std::tie(minTimeU, maxTimeU, minStripU, maxStripU) = myEvent->GetSignalRange(projection_type::DIR_U, filter_type::threshold);
-    std::tie(minTimeV, maxTimeV, minStripV, maxStripV) = myEvent->GetSignalRange(projection_type::DIR_V, filter_type::threshold);
-    std::tie(minTimeW, maxTimeW, minStripW, maxStripW) = myEvent->GetSignalRange(projection_type::DIR_W, filter_type::threshold);
+    std::tie(minTimeU, maxTimeU, minStripU, maxStripU) = myEvent->GetSignalRange(definitions::projection_type::DIR_U, filter_type::threshold);
+    std::tie(minTimeV, maxTimeV, minStripV, maxStripV) = myEvent->GetSignalRange(definitions::projection_type::DIR_V, filter_type::threshold);
+    std::tie(minTimeW, maxTimeW, minStripW, maxStripW) = myEvent->GetSignalRange(definitions::projection_type::DIR_W, filter_type::threshold);
 
     std::cout << "DotFinder::checkCuts: Cluster is too wide => event rejected." << std::endl
-	      << "                      Dir=" << DIR_U
+	      << "                      Dir=" << definitions::projection_type::DIR_U
 	      << ": mult="
-	      << myEvent->GetMultiplicity(false, projection_type::DIR_U, -1, -1,  filter_type::threshold)
+	      << myEvent->GetMultiplicity(false, definitions::projection_type::DIR_U, -1, -1,  filter_type::threshold)
 	      << " (limit=" << maxStrips << "), strip_min="
 	      << minStripU
 	      << ", strip_max="
 	      << maxStripU
 	      << std::endl
-      	      << "                      Dir=" << DIR_V
+      	      << "                      Dir=" << definitions::projection_type::DIR_V
 	      << ": mult="
-	      << myEvent->GetMultiplicity(false, projection_type::DIR_V, -1, -1,  filter_type::threshold)
+	      << myEvent->GetMultiplicity(false, definitions::projection_type::DIR_V, -1, -1,  filter_type::threshold)
 	      << " (limit=" << maxStrips << "), strip_min="
 	      << minStripV
 	      << ", strip_max="
 	      << maxStripV
 	      << std::endl
-      	      << "                      Dir=" << DIR_W
+      	      << "                      Dir=" << definitions::projection_type::DIR_W
 	      << ": mult="
-	      << myEvent->GetMultiplicity(false, projection_type::DIR_W, -1, -1,  filter_type::threshold)
+	      << myEvent->GetMultiplicity(false, definitions::projection_type::DIR_W, -1, -1,  filter_type::threshold)
 	      << " (limit=" << maxStrips << "), strip_min="
 	      << minStripW
 	      << ", strip_max="
@@ -290,9 +290,9 @@ bool DotFinder::checkCuts(){
   int maxTimeU=0, maxStripU=0;
   int maxTimeV=0, maxStripV=0;
   int maxTimeW=0, maxStripW=0;
-  std::tie(maxTimeU, maxStripU) = myEvent->GetMaxChargePos(projection_type::DIR_U, filter_type::threshold);
-  std::tie(maxTimeV, maxStripV) = myEvent->GetMaxChargePos(projection_type::DIR_V, filter_type::threshold);
-  std::tie(maxTimeW, maxStripW) = myEvent->GetMaxChargePos(projection_type::DIR_W, filter_type::threshold);
+  std::tie(maxTimeU, maxStripU) = myEvent->GetMaxChargePos(definitions::projection_type::DIR_U, filter_type::threshold);
+  std::tie(maxTimeV, maxStripV) = myEvent->GetMaxChargePos(definitions::projection_type::DIR_V, filter_type::threshold);
+  std::tie(maxTimeW, maxStripW) = myEvent->GetMaxChargePos(definitions::projection_type::DIR_W, filter_type::threshold);
       
   double ZinMM[3] = { myEvent->GetGeoPtr()->Timecell2pos(maxTimeU, err_flag0[0]),
 		      myEvent->GetGeoPtr()->Timecell2pos(maxTimeV, err_flag0[1]),
@@ -315,15 +315,15 @@ bool DotFinder::checkCuts(){
   err_flag1[0] = false;
   err_flag1[1] = false;
   err_flag1[2] = false;
-  double UVWinMM[3] = {  myEvent->GetGeoPtr()->Strip2posUVW(DIR_U, UVWstrip[0], err_flag1[0]),
-			 myEvent->GetGeoPtr()->Strip2posUVW(DIR_V, UVWstrip[1], err_flag1[1]),
-			 myEvent->GetGeoPtr()->Strip2posUVW(DIR_W, UVWstrip[2], err_flag1[2]) };
+  double UVWinMM[3] = {  myEvent->GetGeoPtr()->Strip2posUVW(definitions::projection_type::DIR_U, UVWstrip[0], err_flag1[0]),
+			 myEvent->GetGeoPtr()->Strip2posUVW(definitions::projection_type::DIR_V, UVWstrip[1], err_flag1[1]),
+			 myEvent->GetGeoPtr()->Strip2posUVW(definitions::projection_type::DIR_W, UVWstrip[2], err_flag1[2]) };
   if( ((int)err_flag1[0] + (int)err_flag1[1] + (int)err_flag1[2]) > 1 ) {
     //////// DEBUG
     std::cout << "DotFinder::checkCuts: STEP3: XY-coordinate matching error => event rejected." << std::endl
-	      << "                      Dir=" << DIR_U << ": coord=" << UVWinMM[0] << "mm, err=" << err_flag1[0] << std::endl
-      	      << "                      Dir=" << DIR_V << ": coord=" << UVWinMM[1] << "mm, err=" << err_flag1[1] << std::endl
-      	      << "                      Dir=" << DIR_W << ": coord=" << UVWinMM[2] << "mm, err=" << err_flag1[2] << std::endl;
+	      << "                      Dir=" << definitions::projection_type::DIR_U << ": coord=" << UVWinMM[0] << "mm, err=" << err_flag1[0] << std::endl
+      	      << "                      Dir=" << definitions::projection_type::DIR_V << ": coord=" << UVWinMM[1] << "mm, err=" << err_flag1[1] << std::endl
+      	      << "                      Dir=" << definitions::projection_type::DIR_W << ": coord=" << UVWinMM[2] << "mm, err=" << err_flag1[2] << std::endl;
     //////// DEBUG
     return false;
   }
@@ -331,9 +331,9 @@ bool DotFinder::checkCuts(){
   // check each pair
   TVector2 XYinMM[3]; // [mm, mm]
   bool err_flag2[3];
-  err_flag2[0] = err_flag1[0] || err_flag1[1] || (! myEvent->GetGeoPtr()->GetUVWCrossPointInMM(DIR_U, UVWinMM[0], DIR_V, UVWinMM[1], XYinMM[0]));
-  err_flag2[1] = err_flag1[1] || err_flag1[2] || (! myEvent->GetGeoPtr()->GetUVWCrossPointInMM(DIR_V, UVWinMM[1], DIR_W, UVWinMM[2], XYinMM[1]));
-  err_flag2[2] = err_flag1[2] || err_flag1[0] || (! myEvent->GetGeoPtr()->GetUVWCrossPointInMM(DIR_W, UVWinMM[2], DIR_U, UVWinMM[0], XYinMM[2]));
+  err_flag2[0] = err_flag1[0] || err_flag1[1] || (! myEvent->GetGeoPtr()->GetUVWCrossPointInMM(definitions::projection_type::DIR_U, UVWinMM[0], definitions::projection_type::DIR_V, UVWinMM[1], XYinMM[0]));
+  err_flag2[1] = err_flag1[1] || err_flag1[2] || (! myEvent->GetGeoPtr()->GetUVWCrossPointInMM(definitions::projection_type::DIR_V, UVWinMM[1], definitions::projection_type::DIR_W, UVWinMM[2], XYinMM[1]));
+  err_flag2[2] = err_flag1[2] || err_flag1[0] || (! myEvent->GetGeoPtr()->GetUVWCrossPointInMM(definitions::projection_type::DIR_W, UVWinMM[2], definitions::projection_type::DIR_U, UVWinMM[0], XYinMM[2]));
 
   const auto nbad_pairs = (int)err_flag2[0] + (int)err_flag2[1] + (int)err_flag2[2];
   if( nbad_pairs > 2 ||
