@@ -17,7 +17,6 @@ void GELITrackingAction::PreUserTrackingAction(const G4Track* aTrack)
   if(aTrack->GetParentID()==0 && aTrack->GetUserInformation()==0)
   {
     GELITrackInformation* anInfo = new GELITrackInformation(aTrack);
-    G4Track* theTrack = (G4Track*)aTrack;
     aTrack->SetUserInformation(anInfo);
   }
 }

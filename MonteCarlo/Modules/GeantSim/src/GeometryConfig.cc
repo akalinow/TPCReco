@@ -48,7 +48,7 @@ void GeometryConfig::ParseGeometry()
 		std::string solid_name=sol.name();
 		int instance=0;
 		glob(pattern.c_str(),GLOB_TILDE,NULL,&glob_result);// find stl files matching pattern
-		for(int i=0; i<glob_result.gl_pathc; i++)
+		for(unsigned int i=0; i<glob_result.gl_pathc; i++)
 		{
 			//std::cout<<glob_result.gl_pathv[i]<<std::endl;
 			SolidDescriptor s;
