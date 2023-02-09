@@ -1,5 +1,4 @@
 set(MODULE_NAME "MonteCarloModules")
-list(APPEND CMAKE_INSTALL_RPATH "/usr/local/lib" )
 
 ADD_SUBDIRECTORY(Generator)
 ADD_SUBDIRECTORY(DummyModule)
