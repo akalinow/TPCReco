@@ -233,6 +233,18 @@ void HIGGS_analysis::bookHistos(){
 	new TH1F((prefix+"_total_PzBEAM_CMS").c_str(),
 		 Form("%s;Total momentum Z_{BEAM} in CMS [MeV/c];%s", info, perEventTitle),
 		 100, -maxDeltaMomentumMeV, maxDeltaMomentumMeV);
+      histos1D[(prefix+"_total_PxBEAM_LAB").c_str()]=
+	new TH1F((prefix+"_total_PxBEAM_LAB").c_str(),
+		 Form("%s;Total momentum X_{BEAM} in LAB [MeV/c];%s", info, perEventTitle),
+		 100, -maxDeltaMomentumMeV, maxDeltaMomentumMeV);
+      histos1D[(prefix+"_total_PyBEAM_LAB").c_str()]=
+	new TH1F((prefix+"_total_PyBEAM_LAB").c_str(),
+		 Form("%s;Total momentum Y_{BEAM} in LAB [MeV/c];%s", info, perEventTitle),
+		 100, -maxDeltaMomentumMeV, maxDeltaMomentumMeV);
+      histos1D[(prefix+"_total_PzBEAM_LAB").c_str()]=
+	new TH1F((prefix+"_total_PzBEAM_LAB").c_str(),
+		 Form("%s;Total momentum Z_{BEAM} in LAB [MeV/c];%s", info, perEventTitle),
+		 100, -maxDeltaMomentumMeV, maxDeltaMomentumMeV);
       histos1D[(prefix+"_total_E_CMS").c_str()]=
 	new TH1F((prefix+"_total_E_CMS").c_str(),
 		 Form("%s;Total energy in CMS [MeV];%s", info, perEventTitle),
@@ -781,10 +793,6 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     const TVector3 beta_DET_LAB=getBetaVectorOfCMS(oxygenMassGroundState).Unit()*(photon_E_LAB/(photon_E_LAB+oxygenMassGroundState));
     // DEBUG
 
-    TLorentzVector alphaP4_CMS_DET(alphaP4_DET_LAB);
-    TLorentzVector carbonP4_CMS_DET(carbonP4_DET_LAB);
-    alphaP4_CMS_DET.Boost(-1.0*beta_DET_LAB); // see TLorentzVector::Boost for sign convention!
-    carbonP4_CMS_DET.Boost(-1.0*beta_DET_LAB); // see TLorentzVector::Boost for sign convention!
     // TODO
     // TODO switch to DET->BEAM dedicated converter class!!!
     // TODO
@@ -793,8 +801,23 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     // X_DET -> -Z_BEAM
     // Y_DET ->  X_BEAM
     // Z_DET -> -Y_BEAM
-    TLorentzVector alphaP4_BEAM_CMS(alphaP4_CMS_DET.Py(), -alphaP4_CMS_DET.Pz(), -alphaP4_CMS_DET.Px(), alphaP4_CMS_DET.E());
-    TLorentzVector carbonP4_BEAM_CMS(carbonP4_CMS_DET.Py(), -carbonP4_CMS_DET.Pz(), -carbonP4_CMS_DET.Px(), carbonP4_CMS_DET.E());
+    TLorentzVector alphaP4_BEAM_LAB(alphaP4_DET_LAB.Py(), -alphaP4_DET_LAB.Pz(), -alphaP4_DET_LAB.Px(), alphaP4_DET_LAB.E());
+    TLorentzVector carbonP4_BEAM_LAB(carbonP4_DET_LAB.Py(), -carbonP4_DET_LAB.Pz(), -carbonP4_DET_LAB.Px(), carbonP4_DET_LAB.E());
+
+    TLorentzVector alphaP4_DET_CMS(alphaP4_DET_LAB);
+    TLorentzVector carbonP4_DET_CMS(carbonP4_DET_LAB);
+    alphaP4_DET_CMS.Boost(-1.0*beta_DET_LAB); // see TLorentzVector::Boost for sign convention!
+    carbonP4_DET_CMS.Boost(-1.0*beta_DET_LAB); // see TLorentzVector::Boost for sign convention!
+    // TODO
+    // TODO switch to DET->BEAM dedicated converter class!!!
+    // TODO
+    // change DET-->BEAM coordinate transformation for the HIGS experiment
+    // formulas below are valid provided that beam direction is anti-paralell to X_DET (HIGS case):
+    // X_DET -> -Z_BEAM
+    // Y_DET ->  X_BEAM
+    // Z_DET -> -Y_BEAM
+    TLorentzVector alphaP4_BEAM_CMS(alphaP4_DET_CMS.Py(), -alphaP4_DET_CMS.Pz(), -alphaP4_DET_CMS.Px(), alphaP4_DET_CMS.E());
+    TLorentzVector carbonP4_BEAM_CMS(carbonP4_DET_CMS.Py(), -carbonP4_DET_CMS.Pz(), -carbonP4_DET_CMS.Px(), carbonP4_DET_CMS.E());
     double alpha_T_CMS=alphaP4_BEAM_CMS.E()-alphaP4_BEAM_CMS.M(); // [MeV]
     double carbon_T_CMS=carbonP4_BEAM_CMS.E()-carbonP4_BEAM_CMS.M(); // [MeV]
     //    double invariantMass=(alphaP4_BEAM_CMS+carbonP4_BEAM_CMS).M();// [MeV/c^2]
@@ -815,6 +838,9 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     histos1D["h_2prong_total_PxBEAM_CMS"]->Fill((alphaP4_BEAM_CMS+carbonP4_BEAM_CMS).Px());
     histos1D["h_2prong_total_PyBEAM_CMS"]->Fill((alphaP4_BEAM_CMS+carbonP4_BEAM_CMS).Py());
     histos1D["h_2prong_total_PzBEAM_CMS"]->Fill((alphaP4_BEAM_CMS+carbonP4_BEAM_CMS).Pz());
+    histos1D["h_2prong_total_PxBEAM_LAB"]->Fill((alphaP4_BEAM_LAB+carbonP4_BEAM_LAB).Px());
+    histos1D["h_2prong_total_PyBEAM_LAB"]->Fill((alphaP4_BEAM_LAB+carbonP4_BEAM_LAB).Py());
+    histos1D["h_2prong_total_PzBEAM_LAB"]->Fill((alphaP4_BEAM_LAB+carbonP4_BEAM_LAB).Pz());
     histos1D["h_2prong_total_E_CMS"]->Fill(totalEnergy_CMS);
     histos1D["h_2prong_excitation_E_CMS"]->Fill(oxygenExcitationEnergy);
     histos1D["h_2prong_Qvalue_CMS"]->Fill(Qvalue_CMS);
@@ -901,6 +927,7 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     double alpha_T_CMS[3]; // [MeV]
     double alpha_p_LAB[3]; // [MeV/c]
     TLorentzVector alphaP4_DET_LAB[3]; // [MeV]
+    TLorentzVector alphaP4_BEAM_LAB[3]; // [MeV]
     TLorentzVector alphaP4_DET_CMS[3]; // [MeV]
     TLorentzVector alphaP4_BEAM_CMS[3]; // [MeV]
     // initialize total sums
@@ -908,6 +935,7 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     double massSUM=0.0; // [MeV]
     TLorentzVector sumP4_BEAM_CMS(0,0,0,0); // [MeV]
     TLorentzVector sumP4_DET_LAB(0,0,0,0); // [MeV]
+    TLorentzVector sumP4_BEAM_LAB(0,0,0,0); // [MeV]
 
     // calculate array of track properties and total sums in LAB
     for(auto i=0;i<3;i++) {
@@ -931,11 +959,21 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
       alpha_p_LAB[i]=sqrt(alpha_T_LAB[i]*(alpha_T_LAB[i]+2*alphaMass));
       // construct TLorentzVector in DET/LAB frame
       alphaP4_DET_LAB[i]=TLorentzVector(alpha_p_LAB[i]*track.getTangent(), alphaMass+alpha_T_LAB[i]);
+      // TODO
+      // TODO switch to DET->BEAM dedicated converter class!!!
+      // TODO
+      // change DET-->BEAM coordinate transformation for the HIGS experiment
+      // formulas below are valid provided that beam direction is anti-paralell to X_DET (HIGS case):
+      // X_DET -> -Z_BEAM
+      // Y_DET ->  X_BEAM
+      // Z_DET -> -Y_BEAM
+      alphaP4_BEAM_LAB[i]=TLorentzVector(alphaP4_DET_LAB[i].Py(), -alphaP4_DET_LAB[i].Pz(), -alphaP4_DET_LAB[i].Px(), alphaP4_DET_LAB[i].E());
 
       // update total sums
       lengthSUM+=alpha_len[i];
       massSUM+=alphaMass;
       sumP4_DET_LAB+=alphaP4_DET_LAB[i];
+      sumP4_BEAM_LAB+=alphaP4_BEAM_LAB[i];
     }
 
     double photon_E_LAB=sumP4_DET_LAB.E()-carbonMassGroundState; // reconstructed gamma beam energy in LAB
@@ -1041,6 +1079,9 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     histos1D["h_3prong_total_PxBEAM_CMS"]->Fill(sumP4_BEAM_CMS.Px());
     histos1D["h_3prong_total_PyBEAM_CMS"]->Fill(sumP4_BEAM_CMS.Py());
     histos1D["h_3prong_total_PzBEAM_CMS"]->Fill(sumP4_BEAM_CMS.Pz());
+    histos1D["h_3prong_total_PxBEAM_LAB"]->Fill(sumP4_BEAM_LAB.Px());
+    histos1D["h_3prong_total_PyBEAM_LAB"]->Fill(sumP4_BEAM_LAB.Py());
+    histos1D["h_3prong_total_PzBEAM_LAB"]->Fill(sumP4_BEAM_LAB.Pz());
     histos1D["h_3prong_total_E_CMS"]->Fill(totalEnergy_CMS);
     histos1D["h_3prong_excitation_E_CMS"]->Fill(carbonExcitationEnergy);
     histos1D["h_3prong_Qvalue_CMS"]->Fill(Qvalue_CMS);
