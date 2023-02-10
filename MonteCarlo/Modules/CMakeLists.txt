@@ -1,5 +1,13 @@
 set(MODULE_NAME "MonteCarloModules")
 
+include_directories(${ROOTINCDIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(${PROJECT_SOURCE_DIR}/DataFormats/include)
+include_directories(${PROJECT_SOURCE_DIR}/Utilities/include)
+include_directories(${PROJECT_SOURCE_DIR}/MonteCarlo/UtilsMC/include)
+include_directories(${PROJECT_SOURCE_DIR}/MonteCarlo/EventGenerator/include)
+
+
 ADD_SUBDIRECTORY(Generator)
 ADD_SUBDIRECTORY(DummyModule)
 ADD_SUBDIRECTORY(EventFileExporter)
@@ -20,12 +28,7 @@ SET(module_sources
         ${geant_sim_sources}
         )
 
-include_directories(${ROOTINCDIR})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-include_directories(${PROJECT_SOURCE_DIR}/DataFormats/include)
-include_directories(${PROJECT_SOURCE_DIR}/Utilities/include)
-include_directories(${PROJECT_SOURCE_DIR}/MonteCarlo/UtilsMC/include)
-include_directories(${PROJECT_SOURCE_DIR}/MonteCarlo/EventGenerator/include)
+
 
 
 

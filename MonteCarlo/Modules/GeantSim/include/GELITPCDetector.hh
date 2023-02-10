@@ -12,16 +12,15 @@ class G4LogicalVolume;
 /**
  * @brief      Class represents TPC detector
  */
-class GELITPCDetector
-{
+class GELITPCDetector {
 public:
-	
-	/**
-	 * @brief      Builds TPC detector
-	 * @details    mother_log is used as a mother volume for the detector
-	 */
-	static void BuildTPCDetector(G4LogicalVolume* mother_log);
-	
+
+    /**
+     * @brief      Builds TPC detector
+     * @details    mother_log is used as a mother volume for the detector
+     */
+    static void BuildTPCDetector(G4LogicalVolume *mother_log);
+
 };
 
 #endif

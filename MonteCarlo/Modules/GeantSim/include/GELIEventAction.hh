@@ -9,7 +9,7 @@
 
 #include "G4UserEventAction.hh"
 #include "globals.hh"
-#include "GELIAnalysisManager.hh"
+#include "DataBuffer.h"
 
 
 /**
@@ -17,10 +17,9 @@
  *
  * @brief      Class to handle event action in the simulation
  */
-class GELIEventAction : public G4UserEventAction
-{
-  public:
-  
+class GELIEventAction : public G4UserEventAction {
+public:
+
     /**
      * @brief      Constructor
      * @details    It takes a pointer to GELIAnalysisManager. It is important,
@@ -29,30 +28,18 @@ class GELIEventAction : public G4UserEventAction
      *             properly in MT mode
      *
      */
-    GELIEventAction(GELIAnalysisManager *ana);
-   ~GELIEventAction();
+    explicit GELIEventAction(DataBuffer &buf) : buffer{buf} {}
 
-    /**
-     * @brief      This method is called at the begining of each event
-     * @details    It is used to print the number of current event to the
-     *             console
-     */
-    void BeginOfEventAction(const G4Event*);
     /**
      * @brief      This method is called at the end of each event @detaild It is
      *             used to store information about the event to output file(s)
      *
      */
-    void   EndOfEventAction(const G4Event*);
-    
-    /**
-     * @brief      Sets the modulo value for printing current event number
-     */
-    void SetPrintModulo(G4int    val)  {printModulo = val;};
-        
-  private:
-    GELIAnalysisManager* analysis; ///< Pointer to GELIAnalysisManager object that handles file output
-    G4int printModulo; ///< Modulo printing value for event number
+    void EndOfEventAction(const G4Event *) override;
+
+
+private:
+    DataBuffer &buffer;
 };
 
 #endif

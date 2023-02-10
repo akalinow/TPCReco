@@ -16,7 +16,7 @@ SimEvent::SimEvent(SimTracks &trackVector, const TVector3& vertexPos, reaction_t
     UpdateSimTracksStartPoint();
 }
 
-SimTracks SimEvent::GetTracks() {
+SimTracks & SimEvent::GetTracks() {
     return tracks;
 }
 

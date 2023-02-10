@@ -39,9 +39,9 @@ public:
     virtual ~SimTrack() = default;
     // setters:
 
-    void SetStop(TVector3 &stop);
+    void SetStop(const TVector3& stop);
 
-    void SetStart(TVector3 &start);
+    void SetStart(const TVector3& start);
 
     void SetPrimaryParticle(PrimaryParticle& p) {prim=p;}
 
@@ -50,6 +50,10 @@ public:
      */
     void InsertHit(const SimHit &hit);
 
+    void SortHits();
+
+    void RecalculateStopPosition();
+
     //getters:
     TVector3 GetStart() const { return startPos; }
 
@@ -57,12 +61,12 @@ public:
 
     double GetLength() const;
 
-    double GetEdep() const; ///< Energy deposit in gas volume of a given track
+    double GetEnergyDeposit() const; ///< Energy deposit in gas volume of a given track
     unsigned int GetNHits() const { return hits.size(); }
 
     SimHits GetHits() const { return hits; }
 
-    PrimaryParticle &GetPrimaryParticle() { return prim; }
+    const PrimaryParticle &GetPrimaryParticle() const { return prim; }
 
     SimHitsIterator HitsBegin() { return hits.begin(); }
 

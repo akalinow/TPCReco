@@ -2,12 +2,12 @@
   "EnableTiming": true,
   "ModuleSequence": [
     "Generator",
-    "EventFileExporter",
-    "GeantSim"
+    "GeantSim",
+    "EventFileExporter"
   ],
   "ModuleConfiguration": {
     "Generator": {
-      "NumberOfEvents": 2000,
+      "NumberOfEvents": 10000,
       "EventGenerator": {
         "Beam": {
           "BeamGeometry": {
@@ -61,12 +61,10 @@
             "FirstProduct": "ALPHA",
             "SecondProduct": "CARBON_12",
             "Theta": {
-              "distribution": "AngleProviderE1E2",
+              "distribution": "AngleProviderCosIso",
               "parameters": {
-                "sigmaE1": 0,
-                "sigmaE2": 1,
-                "phaseE1E2": 1.5708,
-                "phaseCosSign": 1
+                "minCos": -1,
+                "maxCos": 1
               }
             },
             "Phi": {
@@ -76,75 +74,6 @@
                 "polAngle": 0
               }
             }
-          },
-          {
-            "type": "TwoProng",
-            "branchingRatio": 1,
-            "tag": "C12_ALPHA",
-            "target": "OXYGEN_18",
-            "FirstProduct": "ALPHA",
-            "SecondProduct": "CARBON_14",
-            "Theta": {
-              "distribution": "AngleProviderE1E2",
-              "parameters": {
-                "sigmaE1": 1,
-                "sigmaE2": 0,
-                "phaseE1E2": 1.5708,
-                "phaseCosSign": 1
-              }
-            },
-            "Phi": {
-              "distribution": "AngleProviderPhi",
-              "parameters": {
-                "polDegree": 0,
-                "polAngle": 0
-              }
-            }
-          },
-          {
-            "type": "ThreeProngDemocratic",
-            "branchingRatio": 0,
-            "tag": "THREE_ALPHA_DEMOCRATIC"
-          },
-          {
-            "type": "ThreeProngIntermediate",
-            "branchingRatio": 1,
-            "tag": "THREE_ALPHA_DEMOCRATIC",
-            "Theta1": {
-              "distribution": "AngleProviderCosIso",
-              "parameters": {
-                "minCos": -1,
-                "maxCos": 1
-              }
-            },
-            "Phi1": {
-              "distribution": "AngleProviderPhi",
-              "parameters": {
-                "polDegree": 0,
-                "polAngle": 0
-              }
-            },
-            "Theta2": {
-              "distribution": "AngleProviderCosIso",
-              "parameters": {
-                "minCos": -1,
-                "maxCos": 1
-              }
-            },
-            "Phi2": {
-              "distribution": "AngleProviderPhi",
-              "parameters": {
-                "polDegree": 0,
-                "polAngle": 0
-              }
-            },
-            "IntermediateStates": [
-              {
-                "mass": 7456.8945,
-                "width": 0.01,
-                "branchingRatio": 1
-              }
-            ]
           }
         ]
       }

@@ -11,9 +11,9 @@
 #include "G4VPVParameterisation.hh"
 #include "G4PVParameterised.hh"
 #include "G4Tubs.hh"
-#include "GELIAnalysisManager.hh"
 
 class GELIDetectorConstruction;
+
 class GELIAnalysisManager;
 
 
@@ -22,32 +22,32 @@ class GELIAnalysisManager;
  *
  * @brief      Class handles action executed during track steps
  */
-class GELITrackingAction : public G4UserTrackingAction
-{
+class GELITrackingAction : public G4UserTrackingAction {
 public:
 
-  
-  /**
-   * @brief      Constructor
-   *
-   * @details    It takes a pointer to GELIAnalysisManager. It is important,
-   *             that the GELIAnalysisManager class instance is created in
-   *             GELIActionInitializer, only in this configuration it works
-   *             properly in MT mode
-   */
-  GELITrackingAction();
-  
-  ~GELITrackingAction();
-  
-  /**
-   * @brief      Method invoked at each step
-   *
-   * @details    It is used to store energy deposit information into files
-   */
-  void PreUserTrackingAction(const G4Track* aTrack);
-  void PostUserTrackingAction(const G4Track* aTrack);
 
-  
+    /**
+     * @brief      Constructor
+     *
+     * @details    It takes a pointer to GELIAnalysisManager. It is important,
+     *             that the GELIAnalysisManager class instance is created in
+     *             GELIActionInitializer, only in this configuration it works
+     *             properly in MT mode
+     */
+    GELITrackingAction();
+
+    ~GELITrackingAction();
+
+    /**
+     * @brief      Method invoked at each step
+     *
+     * @details    It is used to store energy deposit information into files
+     */
+    void PreUserTrackingAction(const G4Track *aTrack);
+
+    void PostUserTrackingAction(const G4Track *aTrack);
+
+
 };
 
 #endif

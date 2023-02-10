@@ -8,36 +8,46 @@
 #include "G4Allocator.hh"
 #include "G4VUserTrackInformation.hh"
 
-class GELITrackInformation : public G4VUserTrackInformation 
-{
-  public:
+class GELITrackInformation : public G4VUserTrackInformation {
+public:
     GELITrackInformation();
-    GELITrackInformation(const G4Track* aTrack);
-    GELITrackInformation(const GELITrackInformation* aTrackInfo);
+
+    GELITrackInformation(const G4Track *aTrack, size_t pId);
+
+    GELITrackInformation(const GELITrackInformation *aTrackInfo);
+
     virtual ~GELITrackInformation();
-   
- //   inline void *operator new(size_t);
- //   inline void operator delete(void *aTrackInfo);
-    inline int operator ==(const GELITrackInformation& right) const
-    {return (this==&right);}
+
+    //   inline void *operator new(size_t);
+    //   inline void operator delete(void *aTrackInfo);
+    inline int operator==(const GELITrackInformation &right) const { return (this == &right); }
 
     void Print() const;
 
-  private:
-    G4int                 originalTrackID;
-    G4ParticleDefinition* particleDefinition;
-    G4ThreeVector         originalPosition;
-    G4ThreeVector         originalMomentum;
-    G4double              originalEnergy;
-    G4double              originalTime;
+private:
+    G4int originalTrackID;
+    G4ParticleDefinition *particleDefinition;
+    G4ThreeVector originalPosition;
+    G4ThreeVector originalMomentum;
+    G4double originalEnergy;
+    G4double originalTime;
+    size_t primID;
 
-  public:
-    inline G4int GetOriginalTrackID() const {return originalTrackID;}
-    inline G4ParticleDefinition* GetOriginalParticle() const {return particleDefinition;}
-    inline G4ThreeVector GetOriginalPosition() const {return originalPosition;}
-    inline G4ThreeVector GetOriginalMomentum() const {return originalMomentum;}
-    inline G4double GetOriginalEnergy() const {return originalEnergy;}
-    inline G4double GetOriginalTime() const {return originalTime;}
+
+public:
+    inline G4int GetOriginalTrackID() const { return originalTrackID; }
+
+    inline G4ParticleDefinition *GetOriginalParticle() const { return particleDefinition; }
+
+    inline G4ThreeVector GetOriginalPosition() const { return originalPosition; }
+
+    inline G4ThreeVector GetOriginalMomentum() const { return originalMomentum; }
+
+    inline G4double GetOriginalEnergy() const { return originalEnergy; }
+
+    inline G4double GetOriginalTime() const { return originalTime; }
+
+    inline size_t GetOriginalPrimaryId() const { return primID; }
 };
 /*
 extern G4Allocator<GELITrackInformation> aTrackInformationAllocator;

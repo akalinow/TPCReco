@@ -23,23 +23,15 @@
 /// \endcond
 
 
-GELIDetectorConstruction::GELIDetectorConstruction()
-{
 
-}
 
-GELIDetectorConstruction::~GELIDetectorConstruction()
-{
-}
-
-G4VPhysicalVolume* GELIDetectorConstruction::Construct()
-{
-    MaterialBuilder* mat_builder=MaterialBuilder::GetInstance();
-    G4Material* mixture=mat_builder->GetMaterial("mixture");
-    world_solid = new G4Box("world_solid", 100*cm, 100*cm, 100*cm);
-    world_logical = new G4LogicalVolume(world_solid, mixture,"world_logical",0,0,0);
+G4VPhysicalVolume *GELIDetectorConstruction::Construct() {
+    MaterialBuilder *mat_builder = MaterialBuilder::GetInstance();
+    G4Material *mixture = mat_builder->GetMaterial("mixture");
+    world_solid = new G4Box("world_solid", 100 * cm, 100 * cm, 100 * cm);
+    world_logical = new G4LogicalVolume(world_solid, mixture, "world_logical", 0, 0, 0);
     world_physical = new G4PVPlacement(0, G4ThreeVector(), world_logical,
-       "world_physical", 0, false, 0);
+                                       "world_physical", 0, false, 0);
     world_logical->SetVisAttributes(G4VisAttributes::Invisible);
 
     GELITPCDetector::BuildTPCDetector(world_logical);
@@ -47,27 +39,25 @@ G4VPhysicalVolume* GELIDetectorConstruction::Construct()
     return world_physical;
 }
 
-void GELIDetectorConstruction::ConstructSDandField()
-{
+void GELIDetectorConstruction::ConstructSDandField() {
 //  Magnetic Field - Purging magnet
-  CentralConfig* config=CentralConfig::GetInstance();
-  if(config->GetI("magnetic_field","magnetic_field_ON"))
-  if (magneticField.Get() == 0)
-  {
+    CentralConfig *config = CentralConfig::GetInstance();
+    if (config->GetI("magnetic_field", "magnetic_field_ON"))
+        if (magneticField.Get() == nullptr) {
 
-    std::string mag_file_name=config->Get("magnetic_field","magnetic_field_map");
-    double mag_offset=config->GetD("magnetic_field","magnetic_field_offset");
-    G4MagneticField* GELIField= new GELITabulatedField3D(mag_file_name.c_str(), mag_offset*mm);
-    magneticField.Put(GELIField);
+            std::string mag_file_name = config->Get("magnetic_field", "magnetic_field_map");
+            double mag_offset = config->GetD("magnetic_field", "magnetic_field_offset");
+            G4MagneticField *GELIField = new GELITabulatedField3D(mag_file_name.c_str(), mag_offset * mm);
+            magneticField.Put(GELIField);
 
-  //This is thread-local
-    G4FieldManager* pFieldMgr = 
-    G4TransportationManager::GetTransportationManager()->GetFieldManager();
+            //This is thread-local
+            G4FieldManager *pFieldMgr =
+                    G4TransportationManager::GetTransportationManager()->GetFieldManager();
 
-    G4cout<< "DeltaStep "<<pFieldMgr->GetDeltaOneStep()/mm <<"mm" <<endl;
+            G4cout << "DeltaStep " << pFieldMgr->GetDeltaOneStep() / mm << "mm" << endl;
 
 
-    pFieldMgr->SetDetectorField(magneticField.Get());
-    pFieldMgr->CreateChordFinder(magneticField.Get());
-  }
+            pFieldMgr->SetDetectorField(magneticField.Get());
+            pFieldMgr->CreateChordFinder(magneticField.Get());
+        }
 }

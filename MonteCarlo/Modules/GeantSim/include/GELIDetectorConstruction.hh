@@ -16,9 +16,10 @@
 #include "G4Cache.hh"
 
 
-
 class G4VSolid;
+
 class G4LogicalVolume;
+
 class G4VPhysicalVolume;
 
 
@@ -27,32 +28,32 @@ class G4VPhysicalVolume;
  *
  * @brief      Mandatory DetectorConstruction class
  */
-class GELIDetectorConstruction : public G4VUserDetectorConstruction
-{
-  public:
+class GELIDetectorConstruction : public G4VUserDetectorConstruction {
+public:
     /** Constructor*/
-    GELIDetectorConstruction();
+    GELIDetectorConstruction() = default;
+
     /** Destructor */
-    ~GELIDetectorConstruction();
+    ~GELIDetectorConstruction() override = default;
 
     /**
      * @brief      Constructs detector geometry @detaild Mandatory
      *             implementation of G4VUserDetectorConstruction virtual method
      */
-    G4VPhysicalVolume* Construct();
+    G4VPhysicalVolume *Construct() override;
 
     /**
      * @brief      Constructs sensitive detectors and fields inside geometry
      *             @detaild This method condtructs magnetic field used in the
      *             simulation, no sensitive detectors are used
      */
-    void ConstructSDandField();
+    void ConstructSDandField() override;
 
-  private:
-    G4VSolid * world_solid; ///< Pointer to solid of world volume
-    G4LogicalVolume* world_logical; ///< Pointer to world logical volume
-    G4VPhysicalVolume* world_physical; ///< Pointer to world physical volume
-    G4Cache<G4MagneticField*> magneticField; ///< Thread local magnetic field handler
+private:
+    G4VSolid *world_solid{}; ///< Pointer to solid of world volume
+    G4LogicalVolume *world_logical{}; ///< Pointer to world logical volume
+    G4VPhysicalVolume *world_physical{}; ///< Pointer to world physical volume
+    G4Cache<G4MagneticField *> magneticField; ///< Thread local magnetic field handler
 };
 
 #endif

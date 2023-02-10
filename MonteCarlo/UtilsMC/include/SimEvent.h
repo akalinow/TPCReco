@@ -28,29 +28,39 @@ public:
      * @brief      Constructor
      */
     SimEvent() = default;
+
     virtual ~SimEvent() = default;
 
     /**
      * @brief      Constructor setting all parameters
      */
-    SimEvent(SimTracks &trackVector, const TVector3& vertexPos, reaction_type type);
+    SimEvent(SimTracks &trackVector, const TVector3 &vertexPos, reaction_type type);
 
     void SetSimTracks(SimTracks &trackVector);
+
     void SetStartVertexPosition(TVector3 &pos);
+
     void SetReactionType(reaction_type type);
-    SimTracks GetTracks();
+
+    SimTracks & GetTracks();
+
     SimTracksIterator TracksBegin();
+
     SimTracksIterator TracksEnd();
+
     TVector3 GetVertexPosition();
+
     reaction_type GetReactionType();
 
-    virtual void Clear(Option_t* op);
+    virtual void Clear(Option_t *op);
 
 private:
     SimTracks tracks; /// Vector with simulated tracks (primary particles)
     TVector3 vertexPosition;
     reaction_type reactionType{reaction_type::UNKNOWN};
+
     void UpdateSimTracksStartPoint();
+
 ClassDef(SimEvent, 1); ///< ROOT macro to register SimEvent class
 };
 

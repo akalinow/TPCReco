@@ -14,27 +14,27 @@
  */
 class GELISteppingVerbose : public G4SteppingVerbose {
 
-public:   
-  
-  /**
-   * @brief      Constructor
-   */
-  GELISteppingVerbose();
+public:
 
-  /**
-   * @brief      Destructor
-   */
-  ~GELISteppingVerbose();
-  
-  /**
-   * @brief      Drop step info
-   */
-  void StepInfo();
+    /**
+     * @brief      Constructor
+     */
+    GELISteppingVerbose();
 
-  /**
-   * @brief      Drop info on tracking start
-   */
-  void TrackingStarted();
+    /**
+     * @brief      Destructor
+     */
+    ~GELISteppingVerbose();
+
+    /**
+     * @brief      Drop step info
+     */
+    void StepInfo();
+
+    /**
+     * @brief      Drop info on tracking start
+     */
+    void TrackingStarted();
 
 };
 
