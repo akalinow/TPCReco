@@ -159,9 +159,13 @@ void MaterialBuilder::BuildMaterials() {
 }
 
 G4Material *MaterialBuilder::GetMaterial(const G4String &material_name) {
-    if (!materials.count(material_name))
+    if (!materials.count(material_name)) {
+        std::string desc = "Requested material '" + material_name +
+                           "' does not exist. Check config for typos and make sure that the material is defined properly in MaterialBuilder::BuildMaterials";
         G4Exception("MaterialBuilder::GetMaterial", "No such material",
-                    FatalException,
-                    "Requested material does not exist. Check config for typos and make sure that the material is defined properly in MaterialBuilder::BuildMaterials");
+                    FatalException, desc.c_str()
+        );
+    }
+
     return materials[material_name];
 }

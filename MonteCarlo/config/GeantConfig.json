@@ -56,7 +56,41 @@
       ],
       "stainless": [
         "*drift_conn*",
-        "*pcb_compression_plate*"
+        "*M2*",
+        "*pcb_compression_plate*",
+        "*vessel_collar*",
+        "*vessel_barrel_wall*",
+        "*ISO_KF40_weld_flange*",
+        "*vessel_endcap1*",
+        "*vessel_endcap2*",
+        "*ISO_KF40_full_nipple_130mm*",
+        "*ISO_KF40_window_flange_35mm*",
+        "ISO_KF40_centering_ring_modified*",
+        "*PFEIFFER_170SFK040-06"
+      ],
+      "copper": [
+        "*gem_cu_layer1*",
+        "*gem_cu_layer2*",
+        "*pcb_gnd_top*",
+        "*pcb_gnd_bottom*"
+      ],
+      "aluminium": [
+        "drift_strip1",
+        "drift_strip2",
+        "*cathode_plate*",
+        "*ISO_KF40_clamp*"
+      ],
+      "peek": [
+        "*gem_frame*",
+        "*drift_rod*",
+        "*drift_screw*",
+        "*drift_spacer*",
+        "*drift_spacer2*",
+        "*drift_frame1*",
+        "*drift_frame2*"
+      ],
+      "FR4":[
+        "*pcb_readout_core*"
       ]
     }
   }
