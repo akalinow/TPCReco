@@ -13,6 +13,7 @@
 #include <sstream>
 #include <string>
 #include <map>
+#include "boost/property_tree/ptree.hpp"
 /// \endcond
 #include <SolidDescriptor.hh>
 #include <G4String.hh>
@@ -20,9 +21,6 @@
 #include <G4Color.hh>
 #include <CentralConfig.hh>
 #include "globals.hh"
-/// \cond
-#include "pugixml.hh"
-/// \endcond
 
 /**
  * @brief      Class handles parsing and interface to geometry config file
@@ -61,13 +59,12 @@ private:
 
     static GeometryConfig *instance; ///< Pointer to uniqe instance of GeometryConfig class
     std::vector<SolidDescriptor> solids; ///< Vector with solids
-    //void ParseGeometry();
-    std::string config_name = "geometry.xml"; ///< Name of geometry config file
     CentralConfig *central_config; ///< Pointer to CentralConfig object
-    pugi::xml_document config; ///< XML parser node for top level document
-    pugi::xml_parse_result result; ///< Result of XML parser
     std::map<std::string, G4Color> material_colors; ///< Map with material colors
     std::string path_to_stl; ///< Parth to directory with 3D model STL files
+
+    boost::property_tree::ptree geometryNode;
+
 
 };
 

@@ -74,8 +74,8 @@ void MaterialBuilder::BuildMaterials() {
     materials["stainless"] = StainlessSteel;
 
     CentralConfig *config = CentralConfig::GetInstance();
-    float p_he = static_cast<float>(config->GetD("gas_mixture", "he"));
-    float p_co2 = static_cast<float>(config->GetD("gas_mixture", "co2"));
+    auto p_he = config->Get<float>("gas_mixture.he");
+    auto p_co2 = config->Get<float>("gas_mixture.co2");
 
     auto CO2 = new G4Material("Carbonic gas", 1.805 * mg / cm3, 2,
                               kStateGas, 293. * kelvin, p_co2 * bar);

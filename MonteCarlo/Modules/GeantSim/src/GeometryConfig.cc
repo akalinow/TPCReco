@@ -24,47 +24,40 @@ GeometryConfig *GeometryConfig::GetInstance() {
 
 GeometryConfig::GeometryConfig() {
     central_config = CentralConfig::GetInstance();
-    config_name = central_config->Get("geometry_config_path");
-    result = config.load_file(config_name.c_str());
-    if (!result)
-        std::cerr
-                << "\e[31mError opening geometry config file. Check if file exists, and that the formatting is correct!!\e[0m"
-                << std::endl;
-    path_to_stl = config.child("model_path").text().as_string();
+    geometryNode = central_config->GetNode("GeometryConfig");
+    path_to_stl = geometryNode.get<std::string>("ModelPath");
     ParseMaterialColors();
     ParseGeometry();
 }
 
 void GeometryConfig::ParseGeometry() {
-    pugi::xml_node pugi_solids = config.child("solids");
-    for (auto sol: pugi_solids) {
 
-        glob_t glob_result;
-        std::string pattern = path_to_stl + sol.text().as_string();
-        std::string material_name = sol.attribute("material").value();
-        std::string solid_name = sol.name();
-        int instanceID = 0;
-        glob(pattern.c_str(), GLOB_TILDE, nullptr, &glob_result);// find stl files matching pattern
-        for (unsigned int i = 0; i < glob_result.gl_pathc; i++) {
-            SolidDescriptor solDesc;
-            solDesc.name = solid_name + "_" + std::to_string(instanceID++);
-            solDesc.filename = glob_result.gl_pathv[i];
-            solDesc.material = material_name;
-            solDesc.color = material_colors[material_name];
-            solids.push_back(solDesc);
+    for (const auto &mat: geometryNode.get_child("Solids")) {
+        auto matName = mat.first;
+        for (auto p: mat.second) {
+            auto pattern = path_to_stl + std::string(p.second.data());
+            glob_t glob_result;
+            glob(pattern.c_str(), GLOB_TILDE, nullptr, &glob_result);// find stl files matching pattern
+            for (unsigned int i = 0; i < glob_result.gl_pathc; i++) {
+                SolidDescriptor solDesc;
+                solDesc.name = std::string(glob_result.gl_pathv[i]);
+                solDesc.filename = glob_result.gl_pathv[i];
+                solDesc.material = matName;
+                solDesc.color = material_colors[matName];
+                solids.push_back(solDesc);
+            }
         }
-
     }
 }
 
 void GeometryConfig::ParseMaterialColors() {
-    pugi::xml_node materials = config.child("materials");
-    for (auto child: materials.children()) {
-        std::string mat_name = child.name();
-        int red = child.child("r").text().as_int();
-        int green = child.child("g").text().as_int();
-        int blue = child.child("b").text().as_int();
-        float alpha = child.child("alpha").text().as_float();
+    auto materials = geometryNode.get_child("MaterialColors");
+    for (const auto &child: materials) {
+        std::string mat_name = child.first;
+        auto red = child.second.get<int>("r");
+        auto green = child.second.get<int>("g");
+        auto blue = child.second.get<int>("b");
+        auto alpha = child.second.get<float>("alpha");
         material_colors[mat_name] = G4Color(red / 255., green / 255., blue / 255., alpha);
     }
 }

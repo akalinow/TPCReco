@@ -11,6 +11,8 @@
 #include <ctime>
 
 fwk::VModule::EResultFlag GeantSim::Init(boost::property_tree::ptree config) {
+    auto cc = CentralConfig::GetInstance();
+    cc->SetTopNode(config);
     CLHEP::HepRandom::setTheEngine(&fCLHEPRandomEngine);
     //TODO: set better seed!
     CLHEP::HepRandom::setTheSeed(time(nullptr));
