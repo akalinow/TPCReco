@@ -25,9 +25,21 @@
 //#define SIMUL_BEAM_E_RESOL     0.0148    // [0-1] 1.480% energy sigma, fwhm=400 keV @ 11.5MeV
 //#define SIMUL_BEAM_E_RESOL     0.01440   // [0-1] 1.440% energy sigma, fwhm=300 keV @ 8.86MeV
 #define SIMUL_FIXED_VERTEX_FLAG  false     // false=vertex smeared along beam, true=point-like vertex
-#define SIMUL_FIXED_VERTEX_XDET  2.0       // [mm] true X_DET position in case of non-smeared vertex
-#define SIMUL_FIXED_VERTEX_YDET  -2.0      // [mm] true Y_DET position in case of non-smeared vertex
+#define SIMUL_FIXED_VERTEX_XDET  -0.433035 // [mm] true X_DET position in case of non-smeared vertex
+#define SIMUL_FIXED_VERTEX_YDET  -0.750000 // [mm] true Y_DET position in case of non-smeared vertex
 #define SIMUL_FIXED_VERTEX_ZDET  0.0       // [mm] true Z_DET position in case of non-smeared vertex
+// NOTE: The FIXED vertex is located at the intersection of 3 central strips: U_67, V_113 and W_113.
+//       Coordinates can be obtained using this minimal ROOT example code:
+// -----
+//   gSystem->Load("../lib/libTPCDataFormats.so");
+//   auto geo = new GeometryTPC("geometry_ELITPC.dat", false);
+//   bool err;
+//   TVector2 point;
+//   geo->GetUVWCrossPointInMM(DIR_U, geo->Strip2posUVW(DIR_U, 67, err), DIR_W, geo->Strip2posUVW(DIR_W, 113, err), point);
+//   point.Print();
+// -----
+// TVector2 A 2D physics vector (x,y)=(-0.433035,-0.750000) (rho,phi)=(0.866037,239.998700)
+// -----
 #define SIMUL_BEAM_SPREAD_R      5.25      // [mm] flat top intentsity radius
 #define SIMUL_BEAM_SPREAD_SIGMA  1.0       // [mm] intensity tail sigma
 #define SIMUL_BEAM_TILT_OFFSET   -1.3      // [mm] beam tilt offset
@@ -529,7 +541,7 @@ Track3D generateFakeIsotropicSingleParticleEvent(std::shared_ptr<GeometryTPC> aG
 }
 //////////////////////////
 //////////////////////////
-Track3D generateFakeAlphaCarbonGenericEvent(std::shared_ptr<GeometryTPC> aGeometry, std::shared_ptr<IonRangeCalculator> aRangeCalculator, double photonEnergyMeV, bool Oxygen18_flag=false, bool debug_flag=false){
+Track3D generateFakeAlphaCarbonGenericEvent(std::shared_ptr<GeometryTPC> aGeometry, std::shared_ptr<IonRangeCalculator> aRangeCalculator, double photonEnergyMeV, bool Oxygen18_flag=false, bool boost_CMS_to_LAB_flag=true, bool debug_flag=false){
 
   auto r=gRandom; // use global ROOT pointer
 
@@ -562,8 +574,10 @@ Track3D generateFakeAlphaCarbonGenericEvent(std::shared_ptr<GeometryTPC> aGeomet
   // boosting P4 from DET/LAB frame to CMS frame
   TLorentzVector photonP4_CMS(photonP4_DET);
   TLorentzVector oxygenP4_CMS(oxygenP4_DET);
-  photonP4_CMS.Boost(-beta_DET); // see TLorentzVector::Boost() for sign convention!
-  oxygenP4_CMS.Boost(-beta_DET); // see TLorentzVector::Boost() for sign convention!
+  if(boost_CMS_to_LAB_flag) {
+    photonP4_CMS.Boost(-beta_DET); // see TLorentzVector::Boost() for sign convention!
+    oxygenP4_CMS.Boost(-beta_DET); // see TLorentzVector::Boost() for sign convention!
+  }
 
   // check total energy in CMS frame
   double totalEnergy_CMS=(photonP4_CMS+oxygenP4_CMS).E();
@@ -627,8 +641,10 @@ Track3D generateFakeAlphaCarbonGenericEvent(std::shared_ptr<GeometryTPC> aGeomet
   // boosting P4 from CMS frame to DET/LAB frame (see TlorentzVector::Boost() convention!)
   TLorentzVector alphaP4_DET(alphaP4_CMS);
   TLorentzVector carbonP4_DET(carbonP4_CMS);
-  alphaP4_DET.Boost(beta_DET);
-  carbonP4_DET.Boost(beta_DET);
+  if(boost_CMS_to_LAB_flag) {
+    alphaP4_DET.Boost(beta_DET);
+    carbonP4_DET.Boost(beta_DET);
+  }
 
   // print debug info
   //  bool debug_flag=true;
@@ -685,17 +701,17 @@ Track3D generateFakeAlphaCarbonGenericEvent(std::shared_ptr<GeometryTPC> aGeomet
 }
 //////////////////////////
 //////////////////////////
-Track3D generateFakeAlphaCarbon12Event(std::shared_ptr<GeometryTPC> aGeometry, std::shared_ptr<IonRangeCalculator> aRangeCalculator, double photonEnergyMeV, bool debug_flag=false){
-  return generateFakeAlphaCarbonGenericEvent(aGeometry, aRangeCalculator, photonEnergyMeV, false, debug_flag);
+Track3D generateFakeAlphaCarbon12Event(std::shared_ptr<GeometryTPC> aGeometry, std::shared_ptr<IonRangeCalculator> aRangeCalculator, double photonEnergyMeV, bool boost_CMS_to_LAB_flag=true, bool debug_flag=false){
+  return generateFakeAlphaCarbonGenericEvent(aGeometry, aRangeCalculator, photonEnergyMeV, false, boost_CMS_to_LAB_flag, debug_flag);
 }
 //////////////////////////
 //////////////////////////
-Track3D generateFakeAlphaCarbon14Event(std::shared_ptr<GeometryTPC> aGeometry, std::shared_ptr<IonRangeCalculator> aRangeCalculator, double photonEnergyMeV, bool debug_flag=false){
-  return generateFakeAlphaCarbonGenericEvent(aGeometry, aRangeCalculator, photonEnergyMeV, true, debug_flag);
+Track3D generateFakeAlphaCarbon14Event(std::shared_ptr<GeometryTPC> aGeometry, std::shared_ptr<IonRangeCalculator> aRangeCalculator, double photonEnergyMeV, bool boost_CMS_to_LAB_flag=true, bool debug_flag=false){
+  return generateFakeAlphaCarbonGenericEvent(aGeometry, aRangeCalculator, photonEnergyMeV, true, boost_CMS_to_LAB_flag, debug_flag);
 }
 //////////////////////////
 //////////////////////////
-Track3D generateFake3AlphaEvent(std::shared_ptr<GeometryTPC> aGeometry, std::shared_ptr<IonRangeCalculator> aRangeCalculator, double photonEnergyMeV, bool debug_flag=false){
+Track3D generateFake3AlphaEvent(std::shared_ptr<GeometryTPC> aGeometry, std::shared_ptr<IonRangeCalculator> aRangeCalculator, double photonEnergyMeV, bool boost_CMS_to_LAB_flag=true, bool debug_flag=false){
 
   auto r=gRandom; // use global ROOT pointer
 
@@ -718,10 +734,12 @@ Track3D generateFake3AlphaEvent(std::shared_ptr<GeometryTPC> aGeometry, std::sha
   TVector3 beta_DET=beamDir_DET.Unit()*beta;
 
   // boosting P4 from DET/LAB frame to CMS frame (see TlorentzVector::Boost() convention!)
-  TLorentzVector photonP4_CMS(photonP4_DET); 
-  TLorentzVector carbonP4_CMS(carbonP4_DET); 
-  photonP4_CMS.Boost(-beta_DET);
-  carbonP4_CMS.Boost(-beta_DET);
+  TLorentzVector photonP4_CMS(photonP4_DET);
+  TLorentzVector carbonP4_CMS(carbonP4_DET);
+  if(boost_CMS_to_LAB_flag) {
+    photonP4_CMS.Boost(-beta_DET);
+    carbonP4_CMS.Boost(-beta_DET);
+  }
 
   // check total energy in CMS frame
   double totalEnergy_CMS=(photonP4_CMS+carbonP4_CMS).E();
@@ -786,12 +804,14 @@ Track3D generateFake3AlphaEvent(std::shared_ptr<GeometryTPC> aGeometry, std::sha
   alpha3_P4_CMS.SetVectM( -(alpha1_P4_CMS.Vect()+alpha2_P4_CMS.Vect()), alphaMass);
 
   // boosting P4 from CMS frame to DET/LAB frame (see TlorentzVector::Boost() convention!)
-  TLorentzVector alpha1_P4_DET(alpha1_P4_CMS); 
-  TLorentzVector alpha2_P4_DET(alpha2_P4_CMS); 
-  TLorentzVector alpha3_P4_DET(alpha3_P4_CMS); 
-  alpha1_P4_DET.Boost(beta_DET);
-  alpha2_P4_DET.Boost(beta_DET);
-  alpha3_P4_DET.Boost(beta_DET);
+  TLorentzVector alpha1_P4_DET(alpha1_P4_CMS);
+  TLorentzVector alpha2_P4_DET(alpha2_P4_CMS);
+  TLorentzVector alpha3_P4_DET(alpha3_P4_CMS);
+  if(boost_CMS_to_LAB_flag) {
+    alpha1_P4_DET.Boost(beta_DET);
+    alpha2_P4_DET.Boost(beta_DET);
+    alpha3_P4_DET.Boost(beta_DET);
+  }
 
   // print debug info
   //  bool debug_flag=true;
@@ -858,7 +878,7 @@ Track3D generateFake3AlphaEvent(std::shared_ptr<GeometryTPC> aGeometry, std::sha
 }
 //////////////////////////
 //////////////////////////
-void generateFakeReactions(const std::string geometryName, double pressure_mbar, double temperature_K, unsigned int nEvents, double photonEnergyMeV, double brOxygen16=1, double brOxygen18=0, double brCarbon12_3alpha=0, long MCrunId=100001, bool debug_flag=false){
+void generateFakeReactions(const std::string geometryName, double pressure_mbar, double temperature_K, unsigned int nEvents, double photonEnergyMeV, double brOxygen16=1, double brOxygen18=0, double brCarbon12_3alpha=0, long MCrunId=100001, bool boost_CMS_to_LAB_flag=true, bool debug_flag=false){
 
   if (!gROOT->GetClass("Track3D")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
@@ -950,7 +970,7 @@ void generateFakeReactions(const std::string geometryName, double pressure_mbar,
     phiEmissionTF1.SetNpx(10000);
   }
 
-  Track3D (*func)(std::shared_ptr<GeometryTPC>, std::shared_ptr<IonRangeCalculator>, double, bool);
+  Track3D (*func)(std::shared_ptr<GeometryTPC>, std::shared_ptr<IonRangeCalculator>, double, bool, bool);
   auto eventCounter=0L;
 
   for(auto i=0L; i<nEvents; i++) {
@@ -972,7 +992,7 @@ void generateFakeReactions(const std::string geometryName, double pressure_mbar,
     }
 
     if(debug_flag || (i<1000L && (i%100L)==0L) || (i%1000L)==0L ) std::cout<<"Generating fake track i="<<i<<std::endl;
-    *aTrack = func(myGeometry, myRangeCalculator, photonEnergyMeV, debug_flag);
+    *aTrack = func(myGeometry, myRangeCalculator, photonEnergyMeV, boost_CMS_to_LAB_flag, debug_flag);
 
     // check if all segments are fully contained inside detector's active volume
     if( (SIMUL_CONTAINMENT_FLAG || SIMUL_TRUNCATE_FLAG) &&
