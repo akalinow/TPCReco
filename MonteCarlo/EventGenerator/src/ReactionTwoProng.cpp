@@ -30,14 +30,14 @@ ReactionTwoProng::GeneratePrimaries(double gammaMom, const ROOT::Math::Rotation3
                            (pow(totalEnergy, 2) - pow(prod1Mass + prod2Mass, 2))) / totalEnergy;
     auto thetaCM = thetaProv->GetAngle();
     auto phiCM = phiProv->GetAngle();
-    auto p3 = ROOT::Math::Polar3DVector(p_CM, thetaCM, phiCM);
-    auto p4FirstCM = ROOT::Math::PxPyPzEVector(p3.X(), p3.Y(), p3.Z(),
+    ROOT::Math::Polar3DVector p3(p_CM, thetaCM, phiCM);
+    ROOT::Math::PxPyPzEVector p4FirstCM(p3.X(), p3.Y(), p3.Z(),
                                                sqrt(p_CM * p_CM + prod1Mass * prod1Mass));
-    auto p4SecondCM = ROOT::Math::PxPyPzEVector(-p3.X(), -p3.Y(), -p3.Z(),
+    ROOT::Math::PxPyPzEVector p4SecondCM(-p3.X(), -p3.Y(), -p3.Z(),
                                                 sqrt(p_CM * p_CM + prod2Mass * prod2Mass));
 
-    auto bst = ROOT::Math::Boost(-betaCM);
-    auto lRot = ROOT::Math::LorentzRotation(beamToDetRotation);
+    ROOT::Math::Boost bst(-betaCM);
+    ROOT::Math::LorentzRotation lRot(beamToDetRotation);
     auto p4FirstLAB = lRot * bst(p4FirstCM);
     auto p4SecondLAB = lRot * bst(p4SecondCM);
     PrimaryParticles result;

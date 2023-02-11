@@ -30,7 +30,7 @@ fwk::VModule::EResultFlag EventFileExporter::Process(ModuleExchangeSpace &event)
 fwk::VModule::EResultFlag EventFileExporter::Finish() {
     utl::SaveCurrentTDirectory s;
     file->cd();
-    tree->Write();
+    tree->Write("",TObject::kWriteDelete);
     file->Close();
     delete file;
     return fwk::VModule::eSuccess;

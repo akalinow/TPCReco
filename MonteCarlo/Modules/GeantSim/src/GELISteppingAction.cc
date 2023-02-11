@@ -28,6 +28,17 @@
 void GELISteppingAction::UserSteppingAction(const G4Step *aStep) {
     //Collection at SSD in N-tuples. Electrons and photons separated
     //Prestep point in World, next volume MeasureVolume, process transportation
+
+
+    //register only hits in gas mixture (world is gas)
+    auto namepre = aStep->GetPostStepPoint()->GetTouchableHandle()->GetVolume()->GetName();
+    auto namepost = aStep->GetPostStepPoint()->GetTouchableHandle()->GetVolume()->GetName();
+
+    if(namepre!="world_physical" || namepost != "world_physical")
+        return;
+
+
+
     G4double x, y, z, Edep;
     G4ThreeVector v1;
     G4ThreeVector v2;

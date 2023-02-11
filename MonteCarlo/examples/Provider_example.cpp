@@ -39,6 +39,10 @@ int main()
         if(!prov) continue;
         auto h=std::make_unique<TH1D>(p.c_str(),p.c_str(),1000,
                           -ROOT::Math::Pi(),ROOT::Math::Pi());
+        TAxis* a = h->GetXaxis();
+        a->SetNdivisions(-502);
+        a->ChangeLabel(1,-1,-1,-1,-1,-1,"-#pi");
+        a->ChangeLabel(-1,-1,-1,-1,-1,-1,"#pi");
         for(int i=0;i<100000;i++)
             h->Fill(prov->GetAngle());
         hVec1D.push_back(std::move(h));
