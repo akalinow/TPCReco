@@ -7,6 +7,7 @@
 
 #include "TH1D.h"
 #include "TH2D.h"
+#include "TF1.h"
 #include "TF2.h"
 #include "TVector2.h"
 #include "TVector3.h"
@@ -19,10 +20,11 @@ StripResponseCalculator::StripResponseCalculator(std::shared_ptr<GeometryTPC> aG
 						 int delta_timecells, // consider +/- neighbour time cells
 						 int delta_pads, // consider +/- pads for the nearest strip section boundary
                                                  double sigma_xy, double sigma_z, // horizontal and vertical gaussian spread [mm]
+						 double peaking_time, // [ns] AGET peaking time, 0=NONE
 						 const char *fname,
                                                  bool debug_flag) :
   myGeometryPtr(aGeometryPtr), Nstrips(abs(delta_strips)), Ntimecells(abs(delta_timecells)), Npads(abs(delta_pads)),
-  sigma_xy(sigma_xy), sigma_z(sigma_z), has_UVWprojectionsRaw(false), has_UVWprojectionsInMM(false),
+  sigma_xy(sigma_xy), sigma_z(sigma_z), peaking_time(peaking_time), has_UVWprojectionsRaw(false), has_UVWprojectionsInMM(false),
   debug_flag(debug_flag) {
 
   // sanity checks
@@ -38,13 +40,24 @@ StripResponseCalculator::StripResponseCalculator(std::shared_ptr<GeometryTPC> aG
     std::cout<<__FUNCTION__<<KRED<<": Wrong vertical smearing parameters!"<<RST<<std::endl;
     exit(-1);
   }
-  if(fname==NULL || strlen(fname)==0 || (strlen(fname)>0 && !loadHistograms(fname))) {
+  if(peaking_time<0) {
+    std::cout<<__FUNCTION__<<KRED<<": Wrong AGET peaking time parameter!"<<RST<<std::endl;
+    exit(-1);
+  }
+  if(fname && strlen(fname)>0 && !loadHistograms(fname)) {
+    std::cout<<__FUNCTION__<<KRED<<": Wrong input file!"<<RST<<std::endl;
+    exit(-1);
+  }
+  if(fname==NULL || strlen(fname)==0) {
     initializeStripResponse();
     initializeTimeResponse();
   }
   ////// DEBUG
-  for(auto & it : responseMapPerMergedStrip) {
-    if(debug_flag) {
+  if(debug_flag) {
+    for(auto & it : responseMapPerMergedStrip) {
+      std::cout << __FUNCTION__ << ": " << it.second->GetName() << ", integral=" << it.second->Integral() << std::endl;
+    }
+    for(auto & it : responseMapPerTimecell) {
       std::cout << __FUNCTION__ << ": " << it.second->GetName() << ", integral=" << it.second->Integral() << std::endl;
     }
   }
@@ -70,7 +83,7 @@ bool StripResponseCalculator::loadHistograms(const char *fname) {
 	if(debug_flag) std::cout<<__FUNCTION__<<KRED<<": Cannot find histogram: "<<getStripResponseHistogramName(strip_dir, istrip)<<"!"<<RST<<std::endl;
 	return false;
       }
-      hist->SetDirectory(0); // do not assiciate this histogram with any TFile directory
+      hist->SetDirectory(0); // do not associate this histogram with any TFile directory
       responseMapPerMergedStrip[MultiKey2(strip_dir, istrip)]=hist;
     }
   }
@@ -89,7 +102,7 @@ bool StripResponseCalculator::loadHistograms(const char *fname) {
 	  if(debug_flag) std::cout<<__FUNCTION__<<KRED<<": Cannot find histogram: "<<getStripSectionStartResponseHistogramName(strip_dir, istrip, ipad)<<"!"<<RST<<std::endl;
 	  return false;
 	}
-	hist->SetDirectory(0); // do not assiciate this histogram with any TFile directory
+	hist->SetDirectory(0); // do not associate this histogram with any TFile directory
 	responseMapPerStripSectionStart[MultiKey3(strip_dir, istrip, ipad)]=hist;
 	////// DEBUG
 	if(debug_flag) std::cout << __FUNCTION__ << ": dir=" << strip_dir << ", delta_strip=" << istrip << ", delta_pad=" << ipad << ", hist=" << hist << std::endl;
@@ -109,15 +122,18 @@ bool StripResponseCalculator::loadHistograms(const char *fname) {
       if(debug_flag) std::cout<<__FUNCTION__<<KRED<<": Cannot find histogram: "<<getTimeResponseHistogramName(icell)<<"!"<<RST<<std::endl;
       return false;
     }
-    hist->SetDirectory(0); // do not assiciate this histogram with any TFile directory
+    hist->SetDirectory(0); // do not associate this histogram with any TFile directory
     responseMapPerTimecell[icell]=hist;
   }
 
   f.Close();
 
   ////// DEBUG
-  for(auto & it : responseMapPerMergedStrip) {
-    if(debug_flag) {
+  if(debug_flag) {
+    for(auto & it : responseMapPerMergedStrip) {
+      std::cout << __FUNCTION__ << ": " << it.second->GetName() << ", integral=" << it.second->Integral() << std::endl;
+    }
+    for(auto & it : responseMapPerTimecell) {
       std::cout << __FUNCTION__ << ": " << it.second->GetName() << ", integral=" << it.second->Integral() << std::endl;
     }
   }
@@ -692,7 +708,7 @@ void StripResponseCalculator::initializeStripResponse(unsigned long NpointsXY, i
 }
 
 // re-generate time response histograms with arbitrary granularity
-void StripResponseCalculator::initializeTimeResponse(int NbinsZ) {
+void StripResponseCalculator::initializeTimeResponse(unsigned long NpointsPeakingTime, int NbinsZ) {
   for(auto & it : responseMapPerTimecell) {
     if(it.second) delete it.second;
   }
@@ -708,6 +724,7 @@ void StripResponseCalculator::initializeTimeResponse(int NbinsZ) {
 
   // Each histogram corresponds to time cell with Z-range=[a,b], where a=start of time cell [mm], b=end of time cell [mm].
   // Center of each bin corresponds to the mean value Z=c [mm] of 1D normal distribution with spread sigmaZ.
+  // Values of c range from 0 to the witdh of a single time cell expressed in [mm].
   // Fill each bin with fraction of the charge in slice [a,b] computed as:
   //   f = Integral[ exp(- 0.5 * (z-c)^2 / sigmaZ^2 ) / sqrt(2*Pi)/sigmaZ, {z, a, b}] =
   //     = 0.5 * ( Erf[(c-a)/sqrt(2)/sigmaZ] - Erf[(c-b)/sqrt(2)/sigmaZ] )
@@ -736,7 +753,96 @@ void StripResponseCalculator::initializeTimeResponse(int NbinsZ) {
       }
       std::cout << "center=" << c << ", total_integral=" << sum << " (expected 1)" << std::endl;
     }    
-    std::cout << __FUNCTION__ << ": Initialized " << responseMapPerTimecell.size() << " vertical response 1D histograms." << std::endl;
+    std::cout << __FUNCTION__ << ": Initialized " << responseMapPerTimecell.size() << " vertical response 1D histograms (GAUSS only)." << std::endl;
+  }
+  ////// DEBUG
+
+  // Apply additional non-Gaussian smearing due to GET electronics filtering & shaping effects.
+  // Each histogram corresponds to time cell with Z-range=[a,b], where a=start of time cell [mm], b=end of time cell [mm].
+  // Center of each bin corresponds to the mean value Z=c [mm] of 1D normal distribution convoluted with
+  // approximate parameterized 1D distribution of AGET response function with characteristic peaking time (70...1014 ns).
+  // Values of c range from 0 to the witdh of a single time cell expressed in [mm].
+  // Fill each bin with fraction of the charge in slice [a,b] computed using random sampling technique.
+  //
+  if(peaking_time>0) {
+
+    // 1D distribution to be used with TF1::GetRandom
+    // Approximate GET electronics response function taking into account combined signal filtering & shaping in the AGET chip.
+    // Ref: J.Giovinazzo et al., Nuclear Instruments and Methods in Physics Research A 840 (2016) 1527 (see Sec 4.2).
+    //
+    // x[0] = Time [ns]
+    // p[0] = Normalization factor of the response function [ADC units / nA]
+    // p[1] = AGET peaking time [ns]
+    //        (valid values are: 70, 117, 232, 280, 334, 383, 502, 541, 568, 632, 721, 760, 831, 870, 976, 1014 ns)
+    // p[2] = relative (positive) position of input delta-function from the beginnig of reference time cell [ns]
+    //
+    const auto factor_ns2mm=(1e-9)*(myGeometryPtr->GetDriftVelocity()*10.0/1e-6); // Z[mm]=factor*T[ns]
+    TF1 responseShape1d("f_responseShape1d", [](double* x, double*p) {
+	double tau = p[1]; // [ns]
+	double frac = std::max( 0., (x[0]-p[2])/tau ); // unitless
+	return std::max( 0., p[0] * exp(-3*frac) * pow(frac, 3) * sin(frac) ); // [ADC units / nA]
+      },
+      0.0, myGeometryPtr->GetTimeBinWidth()/factor_ns2mm+peaking_time*4, 3, 1); // 3 parameters, 1 dimension
+    responseShape1d.SetParameters(1.0, peaking_time, 0.0);
+    responseShape1d.SetNpx(1000);
+
+    // create a working copy of the response map (same indices, new pointers to empty histogram copies)
+    auto responseMapPerTimecellWithPeakingTime(responseMapPerTimecell); // working copy
+    for(auto & it : responseMapPerTimecellWithPeakingTime) {
+      auto hist = it.second; // pointer to existing histogram
+      it.second = new TH1D(*hist);
+      it.second->Reset(); // reset all content
+    }
+
+    // perform convolution using random sampling technique
+    for(unsigned long ipoint=0L; ipoint<NpointsPeakingTime; ipoint++) {
+      if(debug_flag && ( (ipoint<1000 && ipoint%100==0) ||
+			 ipoint%1000==0 )) {
+	std::cout << __FUNCTION__ << ": Generating point=" << ipoint << std::endl;
+      }
+      // get relative smeared position
+      auto delta_z_mm=factor_ns2mm * responseShape1d.GetRandom(); // [mm]
+      for(auto & it : responseMapPerTimecell) {
+	auto hist=it.second; // original histogram (without GET electronics effects)
+	for(auto ibin=1; ibin<=hist->GetNbinsX(); ibin++) {
+	  auto c=hist->GetBinCenter(ibin);
+	  auto charge_frac=hist->GetBinContent(ibin); // amount of charge to be smeared
+	  const auto weight=charge_frac/(double)NpointsPeakingTime; // contribution of a single sampling point
+	  // determine relative time cell index and corresponding histogram (with GET electronics effects)
+	  auto index_fill=(int)((c+delta_z_mm)/myGeometryPtr->GetTimeBinWidth()); // relative time cell
+	  if(responseMapPerTimecellWithPeakingTime.find(index_fill)!=responseMapPerTimecellWithPeakingTime.end()) {
+	    responseMapPerTimecellWithPeakingTime[index_fill]->Fill(c, weight);
+	    //// DEBUG
+	    // if(debug_flag && ( (ipoint<1000 && ipoint%100==0) ||
+	    // 		       ipoint%1000==0 )) {
+	    //   auto index=it.first; // relative time cell
+	    //   std::cout << __FUNCTION__ << ": Generating point: " << ipoint << ": Original [cell, pos]=[" << index << ", " << c << "], Smeared cell=" << index_fill << std::endl;
+	    // }
+	    //// DEBUG
+	  }
+	}
+      }
+    }
+    // replace original response map
+    for(auto & it : responseMapPerTimecell) {
+      if(it.second) delete it.second;
+    }
+    responseMapPerTimecell.clear();
+    responseMapPerTimecell=responseMapPerTimecellWithPeakingTime;
+  }
+
+  ////// DEBUG
+  if(debug_flag) {
+    auto hist=responseMapPerTimecell.begin()->second;
+    for(auto ibin=1; ibin<=hist->GetNbinsX(); ibin++) {
+      auto sum=0.0;
+      auto c=hist->GetBinCenter(ibin);
+      for(auto & it : responseMapPerTimecell) {
+	sum+=it.second->GetBinContent(ibin);
+      }
+      std::cout << "center=" << c << ", total_integral=" << sum << " (expected 1)" << std::endl;
+    }
+    std::cout << __FUNCTION__ << ": Initialized " << responseMapPerTimecell.size() << " vertical response 1D histograms (GAUSS + PEAKING TIME)." << std::endl;
   }
   ////// DEBUG
 }

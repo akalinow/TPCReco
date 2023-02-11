@@ -5,6 +5,7 @@
 #include <map>
 #include <tuple>
 #include <utility>
+#include <cmath>
 
 #include "MultiKey.h"
 
@@ -14,6 +15,7 @@ class TH1D;
 class TH2D;
 class TF1;
 class TF2;
+class TF1;
 class TVector2;
 class TVector3;
 
@@ -27,6 +29,7 @@ class StripResponseCalculator{
 			  int delta_timecells, // consider +/- neighbour time cells
 			  int delta_pads, // consider +/- neighbour pads for the nearest strip section boundary
 			  double sigma_xy, double sigma_z, // horizontal and vertical gaussian spread [mm]
+			  double peaking_time=0, // [ns] AGET peaking time, 0=none
 			  const char *fname=NULL, // optional file with pre-computed response histograms
 			  bool debug_flag=false); // optional debug flag
 
@@ -48,6 +51,7 @@ class StripResponseCalculator{
   int getDeltaTimecells() const { return Ntimecells; }
   double getSigmaXY() const { return sigma_xy; } // [mm]
   double getSigmaZ() const { return sigma_z; } // [mm]
+  double getPeakingTime() const { return peaking_time; } // [ns]
   std::shared_ptr<GeometryTPC> getGeometryPtr() const { return myGeometryPtr; }
 
   // returns clone of underlying response histogram
@@ -71,19 +75,26 @@ class StripResponseCalculator{
   // re-generate underlying response histograms
   void initializeStripResponse(unsigned long NpointsXY=StripResponseCalculator::default_NpointsXY,
 			       int NbinsXY=StripResponseCalculator::default_NbinsXY);
-  void initializeTimeResponse(int NbinsZ=StripResponseCalculator::default_NbinsZ);
+  void initializeTimeResponse(unsigned long NpointsPeakingTime=StripResponseCalculator::default_NpointsPeakingTime,
+			      int NbinsZ=StripResponseCalculator::default_NbinsZ);
 
  private:
 
-  std::shared_ptr<GeometryTPC> myGeometryPtr;
+  std::shared_ptr<GeometryTPC> myGeometryPtr; //! transient member
   int Nstrips{0};
   int Ntimecells{0};
   int Npads{0};
   static const int default_NbinsZ{20};  // {5}; // granularity of strip response histograms in Z domain (sub-time cell resolution)
   static const int default_NbinsXY{10}; // {7}; // granularity of strip response histograms in X/Y domain (sub-strip resolution)
   static const unsigned long default_NpointsXY{10000}; // # of sampling points for initialization of strip response histograms
+  //// TEST
+  static const unsigned long default_NpointsPeakingTime{10000}; // # of sampling points for GET electronics smearing
+  //// TEST
   double sigma_xy{0}; // [mm]
   double sigma_z{0}; // [mm]
+  //// TEST
+  double peaking_time{0}; // AGET peaking time [ns], 0=none, valid range: 70-1014 ns
+  //// TEST
 
   bool has_UVWprojectionsRaw{false};
   bool has_UVWprojectionsInMM{false};

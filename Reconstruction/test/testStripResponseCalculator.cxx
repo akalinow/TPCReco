@@ -8,8 +8,8 @@
 // root [4] testResponse1(1.0);
 // root [5] testResponse2();
 // root [6] testResponse3();
-// root [7] generateResponse(0.82, 0.82, 100000, "geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat");
-// root [8] testResponse4("Reco_FakeEvents.root", 10, "geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat", 130, 273.15+20);
+// root [7] generateResponse(0.85, 0.86, 232, 1000000L, 1000000L, "geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat");
+// root [8] testResponse4("Reco_FakeEvents.root", 10, "geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat", 130, 273.15+20, 0.85, 0.86, 232);
 //
 //////////////////////////
 
@@ -35,7 +35,7 @@ R__ADD_LIBRARY_PATH(../lib)
 
 //////////////////////////
 //////////////////////////
-void generateResponse(double sigmaXY=1, double sigmaZ=-1, long npoints=1000000, const char *geometryFile="geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat") { // generates histograms and saves them to a separate ROOT file
+void generateResponse(double sigmaXY=1, double sigmaZ=-1, double peakingTime=-1, long npointsSpace=1000000, long npointsTime=100000, const char *geometryFile="geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat") { // generates histograms and saves them to a separate ROOT file
   if (!gROOT->GetClass("GeometryTPC")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
   }
@@ -51,14 +51,22 @@ void generateResponse(double sigmaXY=1, double sigmaZ=-1, long npoints=1000000, 
   auto ncells=30;
   auto npads=nstrips*2;
   if(sigmaZ<0) sigmaZ=sigmaXY; // when sigmaZ is omitted assume that sigmaZ=sigmaXY
-  auto calc=new StripResponseCalculator(geo, nstrips, ncells, npads, sigmaXY, sigmaZ);
-  const std::string resultFile(Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm.root", nstrips, ncells, npads, geo->GetSamplingRate(), geo->GetDriftVelocity(), sigmaXY, sigmaZ));
+  if(peakingTime<0) peakingTime=0; // when peakingTime is ommitted turn off additional smearing due to GET electronics
+  auto calc=new StripResponseCalculator(geo, nstrips, ncells, npads, sigmaXY, sigmaZ, peakingTime);
+  const std::string resultFile( (peakingTime==0 ?
+				 Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm.root",
+				      nstrips, ncells, npads, geo->GetSamplingRate(), geo->GetDriftVelocity(),
+				      sigmaXY, sigmaZ) :
+				 Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm_P%gns.root",
+				      nstrips, ncells, npads, geo->GetSamplingRate(), geo->GetDriftVelocity(),
+				      sigmaXY, sigmaZ, peakingTime) ) );
   if(calc->loadHistograms(resultFile.c_str())) {
     std::cout << "ERROR: Response histogram file " << resultFile << " already exists!" << std::endl;
     return;
   }
   calc->setDebug(true);
-  calc->initializeStripResponse(npoints); // overwrite default value
+  calc->initializeStripResponse(npointsSpace); // overwrite default value
+  calc->initializeTimeResponse(npointsTime); // overwrite default value
   std::cout << "Saving strip response matrix to file: "<< resultFile << std::endl;
   calc->saveHistograms(resultFile.c_str());
 }
@@ -74,7 +82,7 @@ void generateResponseAll() {
 
 //////////////////////////
 //////////////////////////
-void plotStripResponse(double sigmaXY=0.5, double sigmaZ=-1, const char *geometryFile="geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat") {
+void plotStripResponse(double sigmaXY=0.5, double sigmaZ=-1, double peakingTime=-1, const char *geometryFile="geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat") {
   if (!gROOT->GetClass("GeometryTPC")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
   }
@@ -88,8 +96,16 @@ void plotStripResponse(double sigmaXY=0.5, double sigmaZ=-1, const char *geometr
   auto ncells=30;
   auto npads=nstrips*2;
   if(sigmaZ<0) sigmaZ=sigmaXY; // when sigmaZ is omitted assume that sigmaZ=sigmaXY
+  if(peakingTime<0) peakingTime=0; // when peakingTime is ommitted turn off additional smearing due to GET electronics
   auto geo=std::make_shared<GeometryTPC>(geometryFile, false);
-  auto calc=new StripResponseCalculator(geo, nstrips, ncells, npads, sigmaXY, sigmaZ, Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm.root", nstrips, ncells, npads, geo->GetSamplingRate(), geo->GetDriftVelocity(), sigmaXY, sigmaZ), true);
+  auto calc=new StripResponseCalculator(geo, nstrips, ncells, npads, sigmaXY, sigmaZ, peakingTime,
+					(peakingTime==0 ?
+					 Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm.root",
+					      nstrips, ncells, npads, geo->GetSamplingRate(), geo->GetDriftVelocity(),
+					      sigmaXY, sigmaZ) :
+					 Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm_P%gns.root",
+					      nstrips, ncells, npads, geo->GetSamplingRate(), geo->GetDriftVelocity(),
+					      sigmaXY, sigmaZ, peakingTime) ), true);
   auto c=new TCanvas("c","c",5*300, 2.5*300);
   auto pad=0;
   c->Divide(5,3);
@@ -113,7 +129,7 @@ void plotStripResponse(double sigmaXY=0.5, double sigmaZ=-1, const char *geometr
 
 //////////////////////////
 //////////////////////////
-void plotTimeResponse(double sigmaXY=0.5, double sigmaZ=-1, const char *geometryFile="geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat") {
+void plotTimeResponse(double sigmaXY=0.5, double sigmaZ=-1, double peakingTime=-1, const char *geometryFile="geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat") {
   if (!gROOT->GetClass("GeometryTPC")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
   }
@@ -127,12 +143,22 @@ void plotTimeResponse(double sigmaXY=0.5, double sigmaZ=-1, const char *geometry
   auto ncells=30;
   auto npads=nstrips*2;
   if(sigmaZ<0) sigmaZ=sigmaXY; // when sigmaZ is omitted assume that sigmaZ=sigmaXY
+  if(peakingTime<0) peakingTime=0; // when peakingTime is ommitted turn off additional smearing due to GET electronics
   auto geo=std::make_shared<GeometryTPC>(geometryFile, false);
-  auto calc=new StripResponseCalculator(geo, nstrips, ncells, npads, sigmaXY, sigmaZ, Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm.root", nstrips, ncells, npads, geo->GetSamplingRate(), geo->GetDriftVelocity(), sigmaXY, sigmaZ), true);
+  auto calc=new StripResponseCalculator(geo, nstrips, ncells, npads, sigmaXY, sigmaZ, peakingTime,
+					(peakingTime==0 ?
+					 Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm.root",
+					      nstrips, ncells, npads, geo->GetSamplingRate(), geo->GetDriftVelocity(),
+					      sigmaXY, sigmaZ) :
+					 Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm_P%gns.root",
+					      nstrips, ncells, npads, geo->GetSamplingRate(), geo->GetDriftVelocity(),
+					      sigmaXY, sigmaZ, peakingTime) ), true);
   auto c=new TCanvas("c","c",3*300, 2.5*300);
   auto pad=0;
-  std::vector<int> cells{-ncells, -ncells+1, -ncells+2, -1, 0, 1, ncells-2, ncells-1, ncells};
-  c->Divide(3,3);
+  //  std::vector<int> cells{-ncells, -ncells+1, -ncells+2, -1, 0, 1, ncells-2, ncells-1, ncells};
+  std::vector<int> cells{-2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13};
+  //  c->Divide(3,3);
+  c->Divide(4,4);
   for(auto & cell : cells) {
     pad++;
     c->cd(pad);
@@ -149,9 +175,9 @@ void plotTimeResponse(double sigmaXY=0.5, double sigmaZ=-1, const char *geometry
     h->SetTitleOffset(1.8, "Y");
     h->DrawClone("HISTO");
   }
-  c->Print(TString(Form("plot_responseZ_L%gmm", sigmaZ)).ReplaceAll(".","_")+".pdf");
-  c->Print(TString(Form("plot_responseZ_L%gmm", sigmaZ)).ReplaceAll(".","_")+".png");
-  c->Print(TString(Form("plot_responseZ_L%gmm", sigmaZ)).ReplaceAll(".","_")+".root");
+  c->Print(TString(Form("plot_responseZ_L%gmm_P%gns", sigmaZ, peakingTime)).ReplaceAll(".","_")+".pdf");
+  c->Print(TString(Form("plot_responseZ_L%gmm_P%gns", sigmaZ, peakingTime)).ReplaceAll(".","_")+".png");
+  c->Print(TString(Form("plot_responseZ_L%gmm_P%gns", sigmaZ, peakingTime)).ReplaceAll(".","_")+".root");
 
   // alternative representation
   c->Clear();
@@ -188,13 +214,42 @@ void plotTimeResponse(double sigmaXY=0.5, double sigmaZ=-1, const char *geometry
   }
   first_hist->SetMinimum(ymin*0.95);
   first_hist->SetMaximum(ymax*1.05);
-  first_hist->SetTitle(Form("Vertical response for #sigma_{Z}=%g mm", sigmaZ));
+  first_hist->SetTitle(Form("Vertical response for #sigma_{Z}=%g mm, #tau=%g ns", sigmaZ, peakingTime));
   first_hist->SetTitleOffset(1.8, "Y");
   c->Update();
   c->Modified();
-  c->Print(TString(Form("plot2_responseZ_L%gmm", sigmaZ)).ReplaceAll(".","_")+".pdf");
-  c->Print(TString(Form("plot2_responseZ_L%gmm", sigmaZ)).ReplaceAll(".","_")+".png");
-  c->Print(TString(Form("plot2_responseZ_L%gmm", sigmaZ)).ReplaceAll(".","_")+".root");
+  c->Print(TString(Form("plot2_responseZ_L%gmm_P%gns", sigmaZ, peakingTime)).ReplaceAll(".","_")+".pdf");
+  c->Print(TString(Form("plot2_responseZ_L%gmm_P%gns", sigmaZ, peakingTime)).ReplaceAll(".","_")+".png");
+  c->Print(TString(Form("plot2_responseZ_L%gmm_P%gns", sigmaZ, peakingTime)).ReplaceAll(".","_")+".root");
+
+  // intergral x-check per center position
+  c->Clear();
+  c->Divide(1,1);
+  c->cd(1);
+  gPad->SetLeftMargin(0.15);
+  gPad->SetRightMargin(0.05);
+  gPad->SetLogy(false);
+  TH1D* h_sum=NULL;
+  for(auto cell=-ncells; cell<=ncells; cell++) {
+    auto h=calc->getTimeResponseHistogram(cell);
+    if(!h) continue;
+    if(!h_sum) {
+      h_sum=(TH1D*)(h->Clone("h_sum"));
+    } else {
+      h_sum->Add(h.get());
+    }
+  }
+  h_sum->SetStats(false);
+  h_sum->SetLineWidth(2);
+  h_sum->SetTitleOffset(2, "Y");
+  h_sum->SetTitle(Form("Integrals of vertical response for #sigma_{Z}=%g mm, #tau=%g ns", sigmaZ, peakingTime));
+  h_sum->SetTitleOffset(1.8, "Y");
+  h_sum->DrawClone("HISTO");
+  c->Update();
+  c->Modified();
+  c->Print(TString(Form("plot3_responseZ_L%gmm_P%gns", sigmaZ, peakingTime)).ReplaceAll(".","_")+".pdf");
+  c->Print(TString(Form("plot3_responseZ_L%gmm_P%gns", sigmaZ, peakingTime)).ReplaceAll(".","_")+".png");
+  c->Print(TString(Form("plot3_responseZ_L%gmm_P%gns", sigmaZ, peakingTime)).ReplaceAll(".","_")+".root");
 }
 
 //////////////////////////
@@ -211,7 +266,7 @@ void addConstantToTH2D(TH2D* h, double c) {
 
 //////////////////////////
 //////////////////////////
-void testResponse1(double sigmaXY=0.5, double sigmaZ=-1, const char *geometryFile="geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat") {
+void testResponse1(double sigmaXY=0.5, double sigmaZ=-1, double peakingTime=-1, const char *geometryFile="geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat") {
   if (!gROOT->GetClass("GeometryTPC")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
   }
@@ -225,9 +280,21 @@ void testResponse1(double sigmaXY=0.5, double sigmaZ=-1, const char *geometryFil
   auto ncells=30;
   auto npads=nstrips*2;
   if(sigmaZ<0) sigmaZ=sigmaXY; // when sigmaZ is omitted assume that sigmaZ=sigmaXY
+  if(peakingTime<0) peakingTime=0; // when peakingTime is ommitted turn off additional smearing due to GET electronics
   auto geo=std::make_shared<GeometryTPC>(geometryFile, false);
   geo->SetTH2PolyPartition(3*20,2*20); // higher TH2Poly granularity speeds up finding reference nodes
-  auto calc=new StripResponseCalculator(geo, nstrips, ncells, npads, sigmaXY, sigmaZ, Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm.root", nstrips, ncells, npads, geo->GetSamplingRate(), geo->GetDriftVelocity(), sigmaXY, sigmaZ));
+  auto calc=new StripResponseCalculator(geo, nstrips, ncells, npads, sigmaXY, sigmaZ, peakingTime,
+					(peakingTime==0 ?
+					 Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm.root",
+					      nstrips, ncells, npads, geo->GetSamplingRate(), geo->GetDriftVelocity(),
+					      sigmaXY, sigmaZ) :
+					 Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm_P%gns.root",
+					      nstrips, ncells, npads, geo->GetSamplingRate(), geo->GetDriftVelocity(),
+					      sigmaXY, sigmaZ, peakingTime) ) );
+
+  // define point-like charge
+  auto pos=TVector3(50.0, 0.0, 0.0);
+  auto charge=1000;
 
   // create dummy event to get empty UZ/VZ/WZ projection histograms
   auto event=new EventTPC(); // empty event
@@ -242,23 +309,27 @@ void testResponse1(double sigmaXY=0.5, double sigmaZ=-1, const char *geometryFil
     addConstantToTH2D(histosRaw[strip_dir].get(), minval);
   }
 
+  // first example of use: fills EventTPC/PEventTPC and then extacts time projection from all strips
+  //
+  auto pevent=std::make_shared<PEventTPC>(); // empty PEventTPC
+  calc->addCharge(pos, charge, pevent);
+  event->SetChargeMap(pevent->GetChargeMap());
+  auto hProjectionInMM=event->get1DProjection(projection_type::DIR_TIME, filter_type::none, scale_type::mm); // FIX
+  auto hProjectionRaw=event->get1DProjection(projection_type::DIR_TIME, filter_type::none, scale_type::raw); // FIX
+
+  // second example of use: directly fills UZ/VZ/WZ histograms
+  //
   // associate UZ/VZ/WZ histograms with reponse calculator
   calc->setUVWprojectionsRaw(histosRaw);
   calc->setUVWprojectionsInMM(histosInMM);
-
-  // fill UZ/VZ/WZ histograms
-  auto pos=TVector3(50.0, 0.0, -10.0); // 10.0, -10.0);
-  auto charge=1000;
-  auto length=50.0; // [mm]
-  auto npoints=(int)(2*length/geo->GetStripPitch());
-  auto unit_vec=TVector3(1,1,1).Unit();
   calc->addCharge(pos, charge);
 
   // plot results
-  auto c=new TCanvas("c","c",3*500, 500);
+  auto c=new TCanvas("c","c",4*500, 500);
   auto pad=0;
-  c->Divide(3,1);
-  for(auto & h : histosInMM) {
+  c->Divide(4,1);
+  //  for(auto & h : histosInRaw) {
+  for(auto & h : histosRaw) {
     pad++;
     c->cd(pad);
     gPad->SetRightMargin(0.2);
@@ -270,9 +341,21 @@ void testResponse1(double sigmaXY=0.5, double sigmaZ=-1, const char *geometryFil
     h->SetTitleOffset(1.8, "Z");
     h->DrawClone("COLZ");
   }
-  c->Print(TString(Form("plot_UVW_T%gmm_L%gmm", sigmaXY, sigmaZ)).ReplaceAll(".","_")+".pdf");
-  c->Print(TString(Form("plot_UVW_T%gmm_L%gmm", sigmaXY, sigmaZ)).ReplaceAll(".","_")+".png");
-  c->Print(TString(Form("plot_UVW_T%gmm_L%gmm", sigmaXY, sigmaZ)).ReplaceAll(".","_")+".root");
+  pad++;
+  c->cd(pad);
+  gPad->SetRightMargin(0.2);
+  gPad->SetLogy(false);
+  auto h=hProjectionRaw;
+  // auto h=hProjectionInMM;
+  h->SetMinimum(minval); // for log scale
+  h->SetStats(false);
+  h->SetTitleOffset(1.5, "X");
+  h->SetTitleOffset(1.5, "Y");
+  h->DrawClone("HISTO");
+
+  c->Print(TString(Form("plot_UVW_T%gmm_L%gmm_P%gns", sigmaXY, sigmaZ, peakingTime)).ReplaceAll(".","_")+".pdf");
+  c->Print(TString(Form("plot_UVW_T%gmm_L%gmm_P%gns", sigmaXY, sigmaZ, peakingTime)).ReplaceAll(".","_")+".png");
+  c->Print(TString(Form("plot_UVW_T%gmm_L%gmm_P%gns", sigmaXY, sigmaZ, peakingTime)).ReplaceAll(".","_")+".root");
 }
 
 //////////////////////////
@@ -297,7 +380,7 @@ void testResponse2(int nevents=1, const char *geometryFile="geometry_ELITPC_190m
   for(auto i=0; i<calc.size(); i++) {
     auto sigmaXY=sigma[i];
     auto sigmaZ=sigma[i];
-    calc[i]=new StripResponseCalculator(geo, nstrips, ncells, npads, sigmaXY, sigmaZ, Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm.root", nstrips, ncells, npads, geo->GetSamplingRate(), geo->GetDriftVelocity(), sigmaXY, sigmaZ));
+    calc[i]=new StripResponseCalculator(geo, nstrips, ncells, npads, sigmaXY, sigmaZ, 0, Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm.root", nstrips, ncells, npads, geo->GetSamplingRate(), geo->GetDriftVelocity(), sigmaXY, sigmaZ));
   }
 
   TStopwatch t;
@@ -406,7 +489,7 @@ void testResponse3(int nevents=1, const char *geometryFile="geometry_ELITPC_190m
   for(auto i=0; i<calc.size(); i++) {
     auto sigmaXY=sigma[i];
     auto sigmaZ=sigma[i];
-    calc[i]=new StripResponseCalculator(geo, nstrips, ncells, npads, sigmaXY, sigmaZ, Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm.root", nstrips, ncells, npads, geo->GetSamplingRate(), geo->GetDriftVelocity(), sigmaXY, sigmaZ));
+    calc[i]=new StripResponseCalculator(geo, nstrips, ncells, npads, sigmaXY, sigmaZ, 0, Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm.root", nstrips, ncells, npads, geo->GetSamplingRate(), geo->GetDriftVelocity(), sigmaXY, sigmaZ));
   }
 
   TStopwatch t;
@@ -476,7 +559,7 @@ void testResponse3(int nevents=1, const char *geometryFile="geometry_ELITPC_190m
 
 //////////////////////////
 //////////////////////////
-void testResponse4(const char *fname, long maxevents=0, const char *geometryFile="geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat", double pressure_mbar=130.0, double temperature_K=273.15+20, double sigmaXY_mm=0.82, double sigmaZ_mm=0.82) { // 0=all events
+void testResponse4(const char *fname, long maxevents=0, const char *geometryFile="geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat", double pressure_mbar=130.0, double temperature_K=273.15+20, double sigmaXY_mm=0.85, double sigmaZ_mm=0.86, double peakingTime=232) { // 0=all events
   if (!gROOT->GetClass("GeometryTPC")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
   }
@@ -534,11 +617,18 @@ void testResponse4(const char *fname, long maxevents=0, const char *geometryFile
   //
   double sigmaXY=sigmaXY_mm; // 0.64; // educated guess of transverse charge spread after 10 cm of drift (middle of drift cage)
   double sigmaZ=sigmaZ_mm; // 0.64; // educated guess of longitudinal charge spread after 10 cm of drift (middle of drift cage)
+  if(peakingTime<0) peakingTime=0; // when peakingTime is ommitted turn off additional smearing due to GET electronics
   int nstrips=6;
   int ncells=30;
   int npads=nstrips*2;
-  const std::string initFile(Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm.root", nstrips, ncells, npads, geo->GetSamplingRate(), geo->GetDriftVelocity(), sigmaXY, sigmaZ));
-  auto calcStrip=std::make_shared<StripResponseCalculator>(geo, nstrips, ncells, npads, sigmaXY, sigmaZ, initFile.c_str());
+  const std::string initFile( (peakingTime==0 ?
+			       Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm.root",
+				    nstrips, ncells, npads, geo->GetSamplingRate(), geo->GetDriftVelocity(),
+				    sigmaXY, sigmaZ) :
+			       Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm_P%gns.root",
+				    nstrips, ncells, npads, geo->GetSamplingRate(), geo->GetDriftVelocity(),
+				    sigmaXY, sigmaZ, peakingTime) ) );
+  auto calcStrip=std::make_shared<StripResponseCalculator>(geo, nstrips, ncells, npads, sigmaXY, sigmaZ, peakingTime, initFile.c_str());
   std::cout << "Loading strip response matrix from file: "<< initFile << std::endl;
   // initialize ion range and dE/dx calculator
   //
