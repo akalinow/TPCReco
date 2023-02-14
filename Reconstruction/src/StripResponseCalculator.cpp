@@ -768,7 +768,7 @@ void StripResponseCalculator::initializeTimeResponse(unsigned long NpointsPeakin
 
     // 1D distribution to be used with TF1::GetRandom
     // Approximate GET electronics response function taking into account combined signal filtering & shaping in the AGET chip.
-    // Ref: J.Giovinazzo et al., Nuclear Instruments and Methods in Physics Research A 840 (2016) 1527 (see Sec 4.2).
+    // Ref: J.Giovinazzo et al., Nuclear Instruments and Methods in Physics Research A 840 (2016) 15 (see Sec 4.2).
     //
     // x[0] = Time [ns]
     // p[0] = Normalization factor of the response function [ADC units / nA]
