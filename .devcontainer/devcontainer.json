@@ -5,7 +5,7 @@
         "context": "..",
         "args": {
             "GET_VERSION": "20190315_patched",
-            "ROOT_VERSION": "6.24",
+            "ROOT_VERSION": "6.08",
             "UBUNTU_VERSION": "xenial"
         }
     },
