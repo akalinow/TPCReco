@@ -17,7 +17,7 @@ enum class EventType {raw, tpc};
 class EventSourceBase {
 
 public:
-  using EventFilterType = EventFilter<std::function<bool(const EventTPC&)>>;
+  using EventFilterType = EventFilter<std::function<bool(EventTPC&)>>;
   
   EventSourceBase();
   

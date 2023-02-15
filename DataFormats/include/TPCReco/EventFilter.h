@@ -7,7 +7,7 @@
 
 template <class T> class EventFilter {
 public:
-  template <class Event> bool pass(const Event &event) {
+  template <class Event> bool pass(Event &event) {
     return enabled ? filters(event) : true;
   }
   void setConditions(const boost::property_tree::ptree &conditions);

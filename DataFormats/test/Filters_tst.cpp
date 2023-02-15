@@ -1,10 +1,15 @@
 #include "TPCReco/Filters.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+
+struct EventInfoMock{
+  MOCK_METHOD(uint32_t, GetEventId, (), (const));
+};
 struct EventMock {
   MOCK_METHOD(double, GetTotalCharge, (), (const));
   MOCK_METHOD(double, GetMaxCharge, (), (const));
-  MOCK_METHOD(size_t, GetEventId, (), (const));
+  const EventInfoMock& GetEventInfo(){return eventInfo;}
+  EventInfoMock eventInfo;
 };
 
 using namespace tpcreco::filters;
@@ -49,18 +54,18 @@ TEST(Filters, MaxChargeUpperBound) {
 TEST(Filters, IndexInSetInitalizer_list) {
   IndexInSet filter = {2, 4};
   EventMock event;
-  EXPECT_CALL(event, GetEventId()).Times(1).WillOnce(Return(1));
+  EXPECT_CALL(event.eventInfo, GetEventId()).Times(1).WillOnce(Return(1));
   EXPECT_FALSE(filter(event));
-  EXPECT_CALL(event, GetEventId()).Times(1).WillOnce(Return(2));
+  EXPECT_CALL(event.eventInfo, GetEventId()).Times(1).WillOnce(Return(2));
   EXPECT_TRUE(filter(event));
 }
 
 TEST(Filters, IndexInSetInsertion) {
   IndexInSet filter;
   EventMock event;
-  EXPECT_CALL(event, GetEventId()).Times(1).WillRepeatedly(Return(1));
+  EXPECT_CALL(event.eventInfo, GetEventId()).Times(1).WillRepeatedly(Return(1));
   EXPECT_FALSE(filter(event));
   filter.insert(1);
-  EXPECT_CALL(event, GetEventId()).Times(1).WillRepeatedly(Return(1));
+  EXPECT_CALL(event.eventInfo, GetEventId()).Times(1).WillRepeatedly(Return(1));
   EXPECT_TRUE(filter(event));
 }
