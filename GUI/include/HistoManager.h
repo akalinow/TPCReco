@@ -78,11 +78,11 @@ public:
   
   TH2Poly *getDetectorLayout() const;
 
-  std::shared_ptr<TH1D> get1DProjection(projection_type projType,
+  std::shared_ptr<TH1D> get1DProjection(definitions::projection_type projType,
 					filter_type filterType,
 					scale_type scaleType);
 
-  std::shared_ptr<TH2D> get2DProjection(projection_type projType,
+  std::shared_ptr<TH2D> get2DProjection(definitions::projection_type projType,
 					filter_type filterType,
 					scale_type scaleType);
     

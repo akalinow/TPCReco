@@ -53,9 +53,9 @@ int main(int argc, char *argv[]) {
   c1->Print("UVZProjection.png");
   std::cout << "th2poly: ptr=" << tp1 << ", integral=" << tp1->Integral() << std::endl;
 
-  TH2D *hUZProjection =  myUVWProjector.GetStripVsTime_TH2D(DIR_U);
-  TH2D *hVZProjection =  myUVWProjector.GetStripVsTime_TH2D(DIR_V);
-  TH2D *hWZProjection =  myUVWProjector.GetStripVsTime_TH2D(DIR_W);
+  TH2D *hUZProjection =  myUVWProjector.GetStripVsTime_TH2D(definitions::projection_type::DIR_U);
+  TH2D *hVZProjection =  myUVWProjector.GetStripVsTime_TH2D(definitions::projection_type::DIR_V);
+  TH2D *hWZProjection =  myUVWProjector.GetStripVsTime_TH2D(definitions::projection_type::DIR_W);
 
   hUZProjection->Print();
   hVZProjection->Print();
@@ -80,17 +80,17 @@ int main(int argc, char *argv[]) {
       time_cell = iBinX;
       strip_number = iBinY;
       value = hUZProjection->GetBinContent(iBinX, iBinY);
-      evt.AddValByStrip(DIR_U, strip_number, time_cell, value);
+      evt.AddValByStrip(definitions::projection_type::DIR_U, strip_number, time_cell, value);
 
       value = hVZProjection->GetBinContent(iBinX, iBinY);
-      evt.AddValByStrip(DIR_V, strip_number, time_cell, value);
+      evt.AddValByStrip(definitions::projection_type::DIR_V, strip_number, time_cell, value);
 
       value = hWZProjection->GetBinContent(iBinX, iBinY);
-      evt.AddValByStrip(DIR_W, strip_number, time_cell, value);
+      evt.AddValByStrip(definitions::projection_type::DIR_W, strip_number, time_cell, value);
     }
   }
 
-  evt.GetStripVsTime(DIR_U)->Draw("colz");
+  evt.GetStripVsTime(definitions::projection_type::DIR_U)->Draw("colz");
   c1->Print("UZProjection_fromEventTPC.png");
 
   TFile aFile("EventTPC.root","RECREATE");
@@ -110,7 +110,7 @@ int main(int argc, char *argv[]) {
   aTree2->SetBranchAddress("Event", &persistent_event);
   aTree2->GetEntry(0);
   persistent_event->SetGeoPtr(myGeometryPtr);
-  persistent_event->GetStripVsTime(DIR_U)->Draw("colz");
+  persistent_event->GetStripVsTime(definitions::projection_type::DIR_U)->Draw("colz");
   c1->Print("UZProjection_fromPersistentEventTPC.png");
 
   return 0;

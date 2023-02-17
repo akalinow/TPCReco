@@ -45,11 +45,11 @@ class EventTPC {
   const eventraw::EventInfo & GetEventInfo() const { return myEventInfo; };
   inline GeometryTPC * GetGeoPtr() const { return myGeometryPtr.get(); }
 
-  std::shared_ptr<TH1D> get1DProjection(projection_type projType,
+  std::shared_ptr<TH1D> get1DProjection(definitions::projection_type projType,
 					filter_type filterType,
 					scale_type scaleType);
 
-  std::shared_ptr<TH2D> get2DProjection(projection_type projType,
+  std::shared_ptr<TH2D> get2DProjection(definitions::projection_type projType,
 					filter_type filterType,
 					scale_type scaleType);
 
@@ -94,12 +94,12 @@ class EventTPC {
   
   void updateHistosCache(filter_type filterType);
   
-  void scale1DHistoToMM(TH1D *h1D, projection_type projType) const;
+  void scale1DHistoToMM(TH1D *h1D, definitions::projection_type projType) const;
   
-  void scale2DHistoToMM(TH2D *h2D, projection_type projType) const;
+  void scale2DHistoToMM(TH2D *h2D, definitions::projection_type projType) const;
   
   void setHistoLabels(TH1 *h1,
-		      projection_type projType,
+		      definitions::projection_type projType,
 		      filter_type filterType,
 		      scale_type scaleType) const;
 

@@ -767,8 +767,8 @@ void testResponse4(const char *fname, long maxevents=0, const char *geometryFile
     addConstantToTH2D(histosInMM[strip_dir].get(), minval);
     addConstantToTH2D(histosRaw[strip_dir].get(), minval);
   }
-  histoTimeProjInMM = event->get1DProjection(projection_type::DIR_TIME, filter_type::none, scale_type::mm);
-  histoTimeProjRaw =  event->get1DProjection(projection_type::DIR_TIME, filter_type::none, scale_type::raw);
+  histoTimeProjInMM = event->get1DProjection(definitions::projection_type::DIR_TIME, filter_type::none, scale_type::mm);
+  histoTimeProjRaw =  event->get1DProjection(definitions::projection_type::DIR_TIME, filter_type::none, scale_type::raw);
 
   aFile->Close();
 

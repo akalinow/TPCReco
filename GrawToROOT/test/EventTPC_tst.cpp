@@ -14,47 +14,47 @@
 void testHits(std::shared_ptr<EventTPC> aEventPtr, filter_type filterType){
   
   std::cout<<KBLU<<"1D projection on strips: U, V, W [raw]"<<RST<<std::endl;
-  std::cout<<aEventPtr->get1DProjection(projection_type::DIR_V, filterType, scale_type::raw)->GetTitle()<<std::endl;
-  std::cout<<aEventPtr->get1DProjection(projection_type::DIR_V, filterType, scale_type::raw)->GetXaxis()->GetTitle()<<std::endl;
-  std::cout<<aEventPtr->get1DProjection(projection_type::DIR_V, filterType, scale_type::raw)->GetYaxis()->GetTitle()<<std::endl;
+  std::cout<<aEventPtr->get1DProjection(definitions::projection_type::DIR_V, filterType, scale_type::raw)->GetTitle()<<std::endl;
+  std::cout<<aEventPtr->get1DProjection(definitions::projection_type::DIR_V, filterType, scale_type::raw)->GetXaxis()->GetTitle()<<std::endl;
+  std::cout<<aEventPtr->get1DProjection(definitions::projection_type::DIR_V, filterType, scale_type::raw)->GetYaxis()->GetTitle()<<std::endl;
 
-  std::cout<<aEventPtr->get1DProjection(projection_type::DIR_TIME, filterType, scale_type::raw)->GetTitle()<<std::endl;
-  std::cout<<aEventPtr->get1DProjection(projection_type::DIR_TIME, filterType, scale_type::raw)->GetXaxis()->GetTitle()<<std::endl;
-  std::cout<<aEventPtr->get1DProjection(projection_type::DIR_TIME, filterType, scale_type::raw)->GetYaxis()->GetTitle()<<std::endl;
+  std::cout<<aEventPtr->get1DProjection(definitions::projection_type::DIR_TIME, filterType, scale_type::raw)->GetTitle()<<std::endl;
+  std::cout<<aEventPtr->get1DProjection(definitions::projection_type::DIR_TIME, filterType, scale_type::raw)->GetXaxis()->GetTitle()<<std::endl;
+  std::cout<<aEventPtr->get1DProjection(definitions::projection_type::DIR_TIME, filterType, scale_type::raw)->GetYaxis()->GetTitle()<<std::endl;
   
-  std::cout<<aEventPtr->get2DProjection(projection_type::DIR_TIME_V, filterType, scale_type::raw)->GetTitle()<<std::endl;
-  std::cout<<aEventPtr->get2DProjection(projection_type::DIR_TIME_V, filterType, scale_type::raw)->GetXaxis()->GetTitle()<<std::endl;
-  std::cout<<aEventPtr->get2DProjection(projection_type::DIR_TIME_V, filterType, scale_type::raw)->GetYaxis()->GetTitle()<<std::endl;
+  std::cout<<aEventPtr->get2DProjection(definitions::projection_type::DIR_TIME_V, filterType, scale_type::raw)->GetTitle()<<std::endl;
+  std::cout<<aEventPtr->get2DProjection(definitions::projection_type::DIR_TIME_V, filterType, scale_type::raw)->GetXaxis()->GetTitle()<<std::endl;
+  std::cout<<aEventPtr->get2DProjection(definitions::projection_type::DIR_TIME_V, filterType, scale_type::raw)->GetYaxis()->GetTitle()<<std::endl;
   
-  std::cout<<aEventPtr->get2DProjection(projection_type::DIR_TIME_V, filterType, scale_type::mm)->GetTitle()<<std::endl;
-  std::cout<<aEventPtr->get2DProjection(projection_type::DIR_TIME_V, filterType, scale_type::mm)->GetXaxis()->GetTitle()<<std::endl;
-  std::cout<<aEventPtr->get2DProjection(projection_type::DIR_TIME_V, filterType, scale_type::mm)->GetYaxis()->GetTitle()<<std::endl;
+  std::cout<<aEventPtr->get2DProjection(definitions::projection_type::DIR_TIME_V, filterType, scale_type::mm)->GetTitle()<<std::endl;
+  std::cout<<aEventPtr->get2DProjection(definitions::projection_type::DIR_TIME_V, filterType, scale_type::mm)->GetXaxis()->GetTitle()<<std::endl;
+  std::cout<<aEventPtr->get2DProjection(definitions::projection_type::DIR_TIME_V, filterType, scale_type::mm)->GetYaxis()->GetTitle()<<std::endl;
 
-  aEventPtr->get1DProjection(projection_type::DIR_U, filterType, scale_type::raw)->Print();
-  aEventPtr->get1DProjection(projection_type::DIR_V, filterType, scale_type::raw)->Print();
-  aEventPtr->get1DProjection(projection_type::DIR_W, filterType, scale_type::raw)->Print();
+  aEventPtr->get1DProjection(definitions::projection_type::DIR_U, filterType, scale_type::raw)->Print();
+  aEventPtr->get1DProjection(definitions::projection_type::DIR_V, filterType, scale_type::raw)->Print();
+  aEventPtr->get1DProjection(definitions::projection_type::DIR_W, filterType, scale_type::raw)->Print();
   std::cout<<KBLU<<"1D projection on strips U, V, W [mm]"<<RST<<std::endl;
-  aEventPtr->get1DProjection(projection_type::DIR_U, filterType, scale_type::mm)->Print();
-  aEventPtr->get1DProjection(projection_type::DIR_V, filterType, scale_type::mm)->Print();
-  aEventPtr->get1DProjection(projection_type::DIR_W, filterType, scale_type::mm)->Print();   
+  aEventPtr->get1DProjection(definitions::projection_type::DIR_U, filterType, scale_type::mm)->Print();
+  aEventPtr->get1DProjection(definitions::projection_type::DIR_V, filterType, scale_type::mm)->Print();
+  aEventPtr->get1DProjection(definitions::projection_type::DIR_W, filterType, scale_type::mm)->Print();   
   std::cout<<KBLU<<"1D projection on time : global, U, V, W [raw]"<<RST<<std::endl;
-  aEventPtr->get1DProjection(projection_type::DIR_TIME, filterType, scale_type::raw)->Print();
-  aEventPtr->get1DProjection(projection_type::DIR_TIME_U, filterType, scale_type::raw)->Print();
-  aEventPtr->get1DProjection(projection_type::DIR_TIME_V, filterType, scale_type::raw)->Print();
-  aEventPtr->get1DProjection(projection_type::DIR_TIME_W, filterType, scale_type::raw)->Print();
+  aEventPtr->get1DProjection(definitions::projection_type::DIR_TIME, filterType, scale_type::raw)->Print();
+  aEventPtr->get1DProjection(definitions::projection_type::DIR_TIME_U, filterType, scale_type::raw)->Print();
+  aEventPtr->get1DProjection(definitions::projection_type::DIR_TIME_V, filterType, scale_type::raw)->Print();
+  aEventPtr->get1DProjection(definitions::projection_type::DIR_TIME_W, filterType, scale_type::raw)->Print();
   std::cout<<KBLU<<"1D projection on time : global, U, V, W [mm]"<<RST<<std::endl;
-  aEventPtr->get1DProjection(projection_type::DIR_TIME, filterType, scale_type::mm)->Print();
-  aEventPtr->get1DProjection(projection_type::DIR_TIME_U, filterType, scale_type::mm)->Print();
-  aEventPtr->get1DProjection(projection_type::DIR_TIME_V, filterType, scale_type::mm)->Print();
-  aEventPtr->get1DProjection(projection_type::DIR_TIME_W, filterType, scale_type::mm)->Print();
+  aEventPtr->get1DProjection(definitions::projection_type::DIR_TIME, filterType, scale_type::mm)->Print();
+  aEventPtr->get1DProjection(definitions::projection_type::DIR_TIME_U, filterType, scale_type::mm)->Print();
+  aEventPtr->get1DProjection(definitions::projection_type::DIR_TIME_V, filterType, scale_type::mm)->Print();
+  aEventPtr->get1DProjection(definitions::projection_type::DIR_TIME_W, filterType, scale_type::mm)->Print();
   std::cout<<KBLU<<"2D projection time vs strips: U, V, W [raw]"<<RST<<std::endl;
-  aEventPtr->get2DProjection(projection_type::DIR_TIME_U, filterType, scale_type::raw)->Print();
-  aEventPtr->get2DProjection(projection_type::DIR_TIME_V, filterType, scale_type::raw)->Print();
-  aEventPtr->get2DProjection(projection_type::DIR_TIME_W, filterType, scale_type::raw)->Print();
+  aEventPtr->get2DProjection(definitions::projection_type::DIR_TIME_U, filterType, scale_type::raw)->Print();
+  aEventPtr->get2DProjection(definitions::projection_type::DIR_TIME_V, filterType, scale_type::raw)->Print();
+  aEventPtr->get2DProjection(definitions::projection_type::DIR_TIME_W, filterType, scale_type::raw)->Print();
   std::cout<<KBLU<<"2D projection on time : global, U, V, W [mm]"<<RST<<std::endl;
-  aEventPtr->get2DProjection(projection_type::DIR_TIME_U, filterType, scale_type::mm)->Print();
-  aEventPtr->get2DProjection(projection_type::DIR_TIME_V, filterType, scale_type::mm)->Print();
-  aEventPtr->get2DProjection(projection_type::DIR_TIME_W, filterType, scale_type::mm)->Print();
+  aEventPtr->get2DProjection(definitions::projection_type::DIR_TIME_U, filterType, scale_type::mm)->Print();
+  aEventPtr->get2DProjection(definitions::projection_type::DIR_TIME_V, filterType, scale_type::mm)->Print();
+  aEventPtr->get2DProjection(definitions::projection_type::DIR_TIME_W, filterType, scale_type::mm)->Print();
 
   if(filterType==filter_type::none){
     std::cout<<KBLU<<"2D projection on time cells vs AGET channels"<<RST<<std::endl;
@@ -63,53 +63,53 @@ void testHits(std::shared_ptr<EventTPC> aEventPtr, filter_type filterType){
   }
   
   std::cout<<"total charge: "<< aEventPtr->GetTotalCharge(-1, -1, -1, -1, filterType)<<std::endl;
-  std::cout<<"total charge DIR_U: "<< aEventPtr->GetTotalCharge(DIR_U, -1, -1, -1, filterType)<<std::endl;  
-  std::cout<<"total charge DIR_U, strip 1: "<< aEventPtr->GetTotalCharge(DIR_U, -1, 1, -1, filterType)<<std::endl;
-  std::cout<<"total charge DIR_U, sec. 1, strip 58: "<< aEventPtr->GetTotalCharge(DIR_U, 1, 58, -1, filterType)<<std::endl;
+  std::cout<<"total charge definitions::projection_type::DIR_U: "<< aEventPtr->GetTotalCharge(definitions::projection_type::DIR_U, -1, -1, -1, filterType)<<std::endl;  
+  std::cout<<"total charge definitions::projection_type::DIR_U, strip 1: "<< aEventPtr->GetTotalCharge(definitions::projection_type::DIR_U, -1, 1, -1, filterType)<<std::endl;
+  std::cout<<"total charge definitions::projection_type::DIR_U, sec. 1, strip 58: "<< aEventPtr->GetTotalCharge(definitions::projection_type::DIR_U, 1, 58, -1, filterType)<<std::endl;
   std::cout<<"total charge time cell 128: "<< aEventPtr->GetTotalCharge(-1, -1, -1, 128, filterType)<<std::endl;
-  std::cout<<"total charge DIR_U, time cell 128: "<< aEventPtr->GetTotalCharge(DIR_U, -1, -1, 128, filterType)<<std::endl;
-  std::cout<<"total charge DIR_U, sec. 1, time cell 128: "<< aEventPtr->GetTotalCharge(DIR_U, 1,  -1, 128, filterType)<<std::endl;
+  std::cout<<"total charge definitions::projection_type::DIR_U, time cell 128: "<< aEventPtr->GetTotalCharge(definitions::projection_type::DIR_U, -1, -1, 128, filterType)<<std::endl;
+  std::cout<<"total charge definitions::projection_type::DIR_U, sec. 1, time cell 128: "<< aEventPtr->GetTotalCharge(definitions::projection_type::DIR_U, 1,  -1, 128, filterType)<<std::endl;
 
   std::cout<<"max charge: "<< aEventPtr->GetMaxCharge(-1,-1,-1,filterType)<<std::endl;
-  std::cout<<"max charge DIR_U: "<< aEventPtr->GetMaxCharge(DIR_U,-1,-1,filterType)<<std::endl;
-  std::cout<<"max charge DIR_U, strip 1: "<< aEventPtr->GetMaxCharge(DIR_U, -1, 1, filterType)<<std::endl;
-  std::cout<<"max charge DIR_U, sec. 1, strip 58: "<< aEventPtr->GetMaxCharge(DIR_U, 1, 58,filterType)<<std::endl;
+  std::cout<<"max charge definitions::projection_type::DIR_U: "<< aEventPtr->GetMaxCharge(definitions::projection_type::DIR_U,-1,-1,filterType)<<std::endl;
+  std::cout<<"max charge definitions::projection_type::DIR_U, strip 1: "<< aEventPtr->GetMaxCharge(definitions::projection_type::DIR_U, -1, 1, filterType)<<std::endl;
+  std::cout<<"max charge definitions::projection_type::DIR_U, sec. 1, strip 58: "<< aEventPtr->GetMaxCharge(definitions::projection_type::DIR_U, 1, 58,filterType)<<std::endl;
 
   int maxTime = 0, maxStrip = 0;
   std::tie(maxTime, maxStrip) = aEventPtr->GetMaxChargePos(-1,filterType);
   std::cout<<"max charge time: "<<maxTime<<std::endl;
   std::cout<<"max charge channel: "<<0<<std::endl;
-  std::tie(maxTime, maxStrip) = aEventPtr->GetMaxChargePos(DIR_U, filterType);
-  std::cout<<"max charge time DIR_U: "<<maxTime<<std::endl;
-  std::cout<<"max charge strip DIR_U: "<<maxStrip<<std::endl;
+  std::tie(maxTime, maxStrip) = aEventPtr->GetMaxChargePos(definitions::projection_type::DIR_U, filterType);
+  std::cout<<"max charge time definitions::projection_type::DIR_U: "<<maxTime<<std::endl;
+  std::cout<<"max charge strip definitions::projection_type::DIR_U: "<<maxStrip<<std::endl;
 
   int minTime=0, minStrip=0;
   std::tie(minTime, maxTime, minStrip, maxStrip) = aEventPtr->GetSignalRange(-1, filterType);
   std::cout<<"min time: "<<minTime<<std::endl;
   std::cout<<"max time: "<<maxTime<<std::endl;
 
-  std::tie(minTime, maxTime, minStrip, maxStrip) = aEventPtr->GetSignalRange(DIR_U, filterType);
-  std::cout<<"min time DIR_U: "<<minTime<<std::endl;
-  std::cout<<"max time DIR_U: "<<maxTime<<std::endl;
-  std::cout<<"min strip DIR_U: "<<minStrip<<std::endl;
-  std::cout<<"max strip DIR_U: "<<maxStrip<<std::endl;
+  std::tie(minTime, maxTime, minStrip, maxStrip) = aEventPtr->GetSignalRange(definitions::projection_type::DIR_U, filterType);
+  std::cout<<"min time definitions::projection_type::DIR_U: "<<minTime<<std::endl;
+  std::cout<<"max time definitions::projection_type::DIR_U: "<<maxTime<<std::endl;
+  std::cout<<"min strip definitions::projection_type::DIR_U: "<<minStrip<<std::endl;
+  std::cout<<"max strip definitions::projection_type::DIR_U: "<<maxStrip<<std::endl;
   
   std::cout<<"multiplicity(total): "<<aEventPtr->GetMultiplicity(false, -1, -1, -1, filterType)<<std::endl;
-  std::cout<<"multiplicity(DIR_U): "<<aEventPtr->GetMultiplicity(false, DIR_U, -1, -1, filterType)<<std::endl;
-  std::cout<<"multiplicity(DIR_V): "<<aEventPtr->GetMultiplicity(false, DIR_V, -1, -1, filterType)<<std::endl;
-  std::cout<<"multiplicity(DIR_W): "<<aEventPtr->GetMultiplicity(false, DIR_W, -1, -1, filterType)<<std::endl;
+  std::cout<<"multiplicity(definitions::projection_type::DIR_U): "<<aEventPtr->GetMultiplicity(false, definitions::projection_type::DIR_U, -1, -1, filterType)<<std::endl;
+  std::cout<<"multiplicity(definitions::projection_type::DIR_V): "<<aEventPtr->GetMultiplicity(false, definitions::projection_type::DIR_V, -1, -1, filterType)<<std::endl;
+  std::cout<<"multiplicity(definitions::projection_type::DIR_W): "<<aEventPtr->GetMultiplicity(false, definitions::projection_type::DIR_W, -1, -1, filterType)<<std::endl;
   
-  std::cout<<"multiplicity(DIR_U, 0): "<<aEventPtr->GetMultiplicity(false, DIR_U, 0, -1, filterType)<<std::endl;
-  std::cout<<"multiplicity(DIR_V, 0): "<<aEventPtr->GetMultiplicity(false, DIR_V, 0, -1, filterType)<<std::endl;
-  std::cout<<"multiplicity(DIR_W, 0): "<<aEventPtr->GetMultiplicity(false, DIR_W, 0, -1, filterType)<<std::endl;
+  std::cout<<"multiplicity(definitions::projection_type::DIR_U, 0): "<<aEventPtr->GetMultiplicity(false, definitions::projection_type::DIR_U, 0, -1, filterType)<<std::endl;
+  std::cout<<"multiplicity(definitions::projection_type::DIR_V, 0): "<<aEventPtr->GetMultiplicity(false, definitions::projection_type::DIR_V, 0, -1, filterType)<<std::endl;
+  std::cout<<"multiplicity(definitions::projection_type::DIR_W, 0): "<<aEventPtr->GetMultiplicity(false, definitions::projection_type::DIR_W, 0, -1, filterType)<<std::endl;
 
   std::cout<<"Nhits(total): "<<aEventPtr->GetMultiplicity(true, -1, -1, -1, filterType)<<std::endl;
-  std::cout<<"Nhits(DIR_U): "<<aEventPtr->GetMultiplicity(true, DIR_U, -1, -1, filterType)<<std::endl;
-  std::cout<<"Nhits(DIR_V): "<<aEventPtr->GetMultiplicity(true, DIR_V, -1, -1, filterType)<<std::endl;
-  std::cout<<"Nhits(DIR_W): "<<aEventPtr->GetMultiplicity(true, DIR_W, -1, -1, filterType)<<std::endl;
-  std::cout<<"Nhits(DIR_U, 0): "<<aEventPtr->GetMultiplicity(true, DIR_U, 0, -1, filterType)<<std::endl;
-  std::cout<<"Nhits(DIR_U, 0, 70): "<<aEventPtr->GetMultiplicity(true, DIR_U, 0, 70, filterType)<<std::endl;
-  std::cout<<"NhitsMerged(DIR_U, 70): "<<aEventPtr->GetMultiplicity(true, DIR_U, -1, 70, filterType)<<std::endl;
+  std::cout<<"Nhits(definitions::projection_type::DIR_U): "<<aEventPtr->GetMultiplicity(true, definitions::projection_type::DIR_U, -1, -1, filterType)<<std::endl;
+  std::cout<<"Nhits(definitions::projection_type::DIR_V): "<<aEventPtr->GetMultiplicity(true, definitions::projection_type::DIR_V, -1, -1, filterType)<<std::endl;
+  std::cout<<"Nhits(definitions::projection_type::DIR_W): "<<aEventPtr->GetMultiplicity(true, definitions::projection_type::DIR_W, -1, -1, filterType)<<std::endl;
+  std::cout<<"Nhits(definitions::projection_type::DIR_U, 0): "<<aEventPtr->GetMultiplicity(true, definitions::projection_type::DIR_U, 0, -1, filterType)<<std::endl;
+  std::cout<<"Nhits(definitions::projection_type::DIR_U, 0, 70): "<<aEventPtr->GetMultiplicity(true, definitions::projection_type::DIR_U, 0, 70, filterType)<<std::endl;
+  std::cout<<"NhitsMerged(definitions::projection_type::DIR_U, 70): "<<aEventPtr->GetMultiplicity(true, definitions::projection_type::DIR_U, -1, 70, filterType)<<std::endl;
 }
 /////////////////////////////////////
 /////////////////////////////////////
@@ -134,9 +134,9 @@ int main(int argc, char *argv[]) {
 
   ///This part to be moved to GeometryTPC_tst.cpp
   std::cout<<KBLU<<"Strip direction has reversed strip numbering wrt. cartesian coordinates: "<<RST<<std::endl;
-  std::cout<<KBLU<<"U: "<<RST<<myEventPtr->GetGeoPtr()->IsStripDirReversed(projection_type::DIR_U)<<std::endl;
-  std::cout<<KBLU<<"V: "<<RST<<myEventPtr->GetGeoPtr()->IsStripDirReversed(projection_type::DIR_V)<<std::endl;
-  std::cout<<KBLU<<"W: "<<RST<<myEventPtr->GetGeoPtr()->IsStripDirReversed(projection_type::DIR_W)<<std::endl;
+  std::cout<<KBLU<<"U: "<<RST<<myEventPtr->GetGeoPtr()->IsStripDirReversed(definitions::projection_type::DIR_U)<<std::endl;
+  std::cout<<KBLU<<"V: "<<RST<<myEventPtr->GetGeoPtr()->IsStripDirReversed(definitions::projection_type::DIR_V)<<std::endl;
+  std::cout<<KBLU<<"W: "<<RST<<myEventPtr->GetGeoPtr()->IsStripDirReversed(definitions::projection_type::DIR_W)<<std::endl;
   /////
   
   return 0;

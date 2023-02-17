@@ -77,7 +77,7 @@ bool StripResponseCalculator::loadHistograms(const char *fname) {
   }
   responseMapPerMergedStrip.clear();
   for(int istrip=-Nstrips; istrip<=Nstrips; istrip++) {
-    for(int strip_dir=DIR_U; strip_dir<=DIR_W; strip_dir++) {
+    for(int strip_dir=definitions::projection_type::DIR_U; strip_dir<=definitions::projection_type::DIR_W; strip_dir++) {
       auto hist=(TH2D*)f.Get(getStripResponseHistogramName(strip_dir, istrip));
       if(!hist) {
 	if(debug_flag) std::cout<<__FUNCTION__<<KRED<<": Cannot find histogram: "<<getStripResponseHistogramName(strip_dir, istrip)<<"!"<<RST<<std::endl;
@@ -94,7 +94,7 @@ bool StripResponseCalculator::loadHistograms(const char *fname) {
   }
   responseMapPerStripSectionStart.clear();
   for(int istrip=-Nstrips; istrip<=Nstrips; istrip++) {
-    for(int strip_dir=DIR_U; strip_dir<=DIR_W; strip_dir++) {
+    for(int strip_dir=definitions::projection_type::DIR_U; strip_dir<=definitions::projection_type::DIR_W; strip_dir++) {
       if(myGeometryPtr->GetDirNSections(strip_dir)<2) continue; // just one section per strip direction
       for(int ipad=-Npads; ipad<=Npads+abs((istrip%2)); ipad++) { // add 1 extra pad for odd relative strip index
 	auto hist=(TH2D*)f.Get(getStripSectionStartResponseHistogramName(strip_dir, istrip, ipad));
@@ -492,7 +492,7 @@ std::vector<int> StripResponseCalculator::getReferenceStripNode(double x, double
   const auto nodePos=strip_startPos+myGeometryPtr->GetStripUnitVector(strip_dir)*(distance_to_start-distance_to_node); // absolute position of the nearest strip node
 
   // find strip numbers for 2 complementary strip directions
-  for(int check_dir=DIR_U; check_dir<=DIR_W; check_dir++) {
+  for(int check_dir=definitions::projection_type::DIR_U; check_dir<=definitions::projection_type::DIR_W; check_dir++) {
     if(check_dir==strip_dir) continue;
 
     for(auto isign=-1; isign<=1; isign+=2) { // probe 2 adjacent pads for each direction index
@@ -547,7 +547,7 @@ void StripResponseCalculator::initializeStripResponse(unsigned long NpointsXY, i
   //
   // create empty 2D response histograms
   for(int istrip=-Nstrips; istrip<=Nstrips; istrip++) {
-    for(int strip_dir=DIR_U; strip_dir<=DIR_W; strip_dir++) {
+    for(int strip_dir=definitions::projection_type::DIR_U; strip_dir<=definitions::projection_type::DIR_W; strip_dir++) {
       auto hist=
 	new TH2D(getStripResponseHistogramName(strip_dir, istrip),
 		 Form("Horizontal response for %s-strip %s%d;#Deltax wrt nearest strip node [mm];#Deltay wrt nearest node [mm];Charge fraction [arb.u.]",
@@ -565,7 +565,7 @@ void StripResponseCalculator::initializeStripResponse(unsigned long NpointsXY, i
   }
   responseMapPerStripSectionStart.clear();
   for(int istrip=-Nstrips; istrip<=Nstrips; istrip++) {
-    for(int strip_dir=DIR_U; strip_dir<=DIR_W; strip_dir++) {
+    for(int strip_dir=definitions::projection_type::DIR_U; strip_dir<=definitions::projection_type::DIR_W; strip_dir++) {
       //      if(myGeometryPtr->GetDirSectionIndexList(strip_dir).size()<2) continue; // just one section per strip direction
       //      if(myGeometryPtr->GetDirNSections(strip_dir)<2) continue; // just one section per strip direction
       for(int ipad=-Npads; ipad<=Npads+abs((istrip%2)); ipad++) { // add 1 extra pad for odd relative strip index
