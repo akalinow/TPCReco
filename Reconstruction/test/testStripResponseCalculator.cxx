@@ -314,8 +314,8 @@ void testResponse1(double sigmaXY=0.5, double sigmaZ=-1, double peakingTime=-1, 
   auto pevent=std::make_shared<PEventTPC>(); // empty PEventTPC
   calc->addCharge(pos, charge, pevent);
   event->SetChargeMap(pevent->GetChargeMap());
-  auto hProjectionInMM=event->get1DProjection(projection_type::DIR_TIME, filter_type::none, scale_type::mm); // FIX
-  auto hProjectionRaw=event->get1DProjection(projection_type::DIR_TIME, filter_type::none, scale_type::raw); // FIX
+  auto hProjectionInMM=event->get1DProjection(definitions::projection_type::DIR_TIME, filter_type::none, scale_type::mm); // FIX
+  auto hProjectionRaw=event->get1DProjection(definitions::projection_type::DIR_TIME, filter_type::none, scale_type::raw); // FIX
 
   // second example of use: directly fills UZ/VZ/WZ histograms
   //
