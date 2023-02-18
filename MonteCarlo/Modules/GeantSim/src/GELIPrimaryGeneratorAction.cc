@@ -15,7 +15,7 @@
 #include "G4String.hh"
 #include "G4GeneralParticleSource.hh"
 
-#include "IonProperties.h"
+
 /// \cond
 #include <vector>
 /// \endcond
@@ -39,6 +39,7 @@ void GELIPrimaryGenerator::GeneratePrimaryVertex(G4Event *evt) {
                 mom.Pz()
         );
         g4particle->SetUserInformation(new GELIPrimaryParticleInfo(i));
+        g4particle->SetMass(prop->GetAtomMass(primPart.GetID()));
         vtx->SetPrimary(g4particle);
 
     }
@@ -49,7 +50,6 @@ void GELIPrimaryGenerator::GeneratePrimaryVertex(G4Event *evt) {
 /// \param particleID - id of the particle
 /// \return pointer to G4ParticleDefinition
 const G4ParticleDefinition *GELIPrimaryGenerator::GetGeantParticleDefinition(const pid_type particleID) {
-    auto prop = IonProperties::GetInstance();
     auto A = prop->GetA(particleID);
     auto Z = prop->GetZ(particleID);
     G4IonTable *iTable = G4IonTable::GetIonTable();

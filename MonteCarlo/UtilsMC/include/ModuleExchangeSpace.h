@@ -3,9 +3,11 @@
 //A structure to hold information exchanged between the modules
 
 #include "SimEvent.h"
+#include "PEventTPC.h"
 
 struct ModuleExchangeSpace {
     SimEvent simEvt;
+    PEventTPC tpcPEvt;
 };
 
 

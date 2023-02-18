@@ -17,6 +17,7 @@
 #include "CentralConfig.hh"
 #include "DataBuffer.h"
 #include "CommonDefinitions.h"
+#include "IonProperties.h"
 
 
 class G4ParticleGun;
@@ -41,14 +42,15 @@ public:
 
 class GELIPrimaryGenerator : public G4VPrimaryGenerator {
 public:
-    explicit GELIPrimaryGenerator(DataBuffer &buf) : buffer{buf} {}
+    explicit GELIPrimaryGenerator(DataBuffer &buf) : buffer{buf}, prop{IonProperties::GetInstance()} {}
 
     void GeneratePrimaryVertex(G4Event *evt) override;
 
 private:
-    static const G4ParticleDefinition *GetGeantParticleDefinition(const pid_type particleID);
+    const G4ParticleDefinition *GetGeantParticleDefinition(const pid_type particleID);
 
     DataBuffer &buffer;
+    std::shared_ptr<IonProperties> prop;
 
 };
 

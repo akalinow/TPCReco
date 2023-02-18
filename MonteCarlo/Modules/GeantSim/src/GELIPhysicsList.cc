@@ -8,6 +8,7 @@
 #include "G4ParticleDefinition.hh"
 #include "G4ProcessManager.hh"
 #include "G4PhysicsListHelper.hh"
+#include "G4hMultipleScattering.hh"
 
 #include "G4ComptonScattering.hh"
 #include "G4GammaConversion.hh"
@@ -61,7 +62,7 @@
 
 
 GELIPhysicsList::GELIPhysicsList() : G4VUserPhysicsList() {
-    defaultCutValue = 0 * micrometer;
+    defaultCutValue = 0* millimeter;
     cutForGamma = defaultCutValue;
     cutForElectron = defaultCutValue;
     cutForPositron = defaultCutValue;
@@ -165,7 +166,7 @@ void GELIPhysicsList::ConstructEM() {
             G4ionIonisation *ionIoni = new G4ionIonisation();
             ionIoni->SetStepFunction(0.000001, 50 * um);
             ph->RegisterProcess(ionIoni, particle);
-            ph->RegisterProcess(new G4NuclearStopping(), particle);
+            //ph->RegisterProcess(new G4NuclearStopping(), particle);
 
         } else if (particleName == "GenericIon") {
 
@@ -174,6 +175,9 @@ void GELIPhysicsList::ConstructEM() {
             ionIoni->SetStepFunction(0.000001, 50 * um);
             ph->RegisterProcess(ionIoni, particle);
             ph->RegisterProcess(new G4NuclearStopping(), particle);
+//            pmanager->AddProcess(new G4hMultipleScattering,-1, 1,1);
+//            pmanager->AddProcess(new G4ionIonisation,     -1, 2,2);
+
 
         } else if (particleName == "anti_proton") {
             //antiproton

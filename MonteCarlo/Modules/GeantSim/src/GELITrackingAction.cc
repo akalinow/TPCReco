@@ -25,7 +25,7 @@ void GELITrackingAction::PreUserTrackingAction(const G4Track *aTrack) {
                 const G4PrimaryParticle *primaryParticle =
                         primaryVertex->GetPrimary(iParticle);
 
-                const auto *userInfo = dynamic_cast<GELIPrimaryParticleInfo *>(primaryParticle->GetUserInformation());
+                const auto userInfo = dynamic_cast<GELIPrimaryParticleInfo *>(primaryParticle->GetUserInformation());
                 auto primId = userInfo->primId;
                 auto trackIdPrim = primaryParticle->GetTrackID();
                 if (trackId == trackIdPrim)

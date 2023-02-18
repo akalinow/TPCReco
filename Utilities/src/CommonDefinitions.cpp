@@ -75,6 +75,7 @@ namespace enumDict {
                 (reaction_type::N15_PROTON,             "N15_PROTON")
                 (reaction_type::THREE_ALPHA_DEMOCRATIC, "THREE_ALPHA_DEMOCRATIC")
                 (reaction_type::THREE_ALPHA_BE,         "THREE_ALPHA_BE")
+                (reaction_type::PARTICLE_GUN,           "PARTICLE_GUN")
                 ;
     }
 

@@ -3,6 +3,7 @@
 #include "ReactionTwoProng.h"
 #include "ReactionThreeProngDemocratic.h"
 #include "ReactionThreeProngIntermediate.h"
+#include "ReactionParticleGun.h"
 #include <boost/property_tree/json_parser.hpp>
 
 
@@ -17,14 +18,12 @@ GeneratorSetup::GeneratorSetup(const pt::ptree &configNode) : topNode{configNode
 
 void GeneratorSetup::BuildReactionLibrary(ReactionLibrary &lib) {
     //auto reactions = topNode.get_child("Reactions");
-    for (auto &r: topNode.get_child("Reactions"))
-    {
+    for (auto &r: topNode.get_child("Reactions")) {
         auto reactionName = r.second.get<std::string>("type");
         //parse BR and reaction type:
         auto branchingRatio = r.second.get<double>("branchingRatio");
         auto reaction = ParseReactionType(r.second.get<std::string>("tag"));
-        if (reactionName == "TwoProng")
-        {
+        if (reactionName == "TwoProng") {
             //parse particles:
             auto target = ParseParticle(r.second.get<std::string>("target"));
             auto firstProd = ParseParticle(r.second.get<std::string>("FirstProduct"));
@@ -36,21 +35,16 @@ void GeneratorSetup::BuildReactionLibrary(ReactionLibrary &lib) {
             auto twoProng = std::unique_ptr<Reaction>(
                     new ReactionTwoProng(std::move(thetaProv), std::move(phiProv), target, firstProd, secondProd));
             lib.RegisterReaction(std::move(twoProng), branchingRatio, reaction);
-        }
-        else if (reactionName == "ThreeProngDemocratic")
-        {
+        } else if (reactionName == "ThreeProngDemocratic") {
             auto threeProngDemocratic = std::unique_ptr<Reaction>(new ReactionThreeProngDemocratic());
             lib.RegisterReaction(std::move(threeProngDemocratic), branchingRatio, reaction);
-        }
-        else if (reactionName == "ThreeProngIntermediate")
-        {
+        } else if (reactionName == "ThreeProngIntermediate") {
             auto thetaProv1 = BuildProvider<AngleProvider>(r.second.get_child("Theta1"));
             auto phiProv1 = BuildProvider<AngleProvider>(r.second.get_child("Phi1"));
             auto thetaProv2 = BuildProvider<AngleProvider>(r.second.get_child("Theta2"));
             auto phiProv2 = BuildProvider<AngleProvider>(r.second.get_child("Phi2"));
             std::vector<ReactionThreeProngIntermediate::IntermediateState> intermediates;
-            for (auto &is: r.second.get_child("IntermediateStates"))
-            {
+            for (auto &is: r.second.get_child("IntermediateStates")) {
                 auto m = is.second.get<double>("mass");
                 auto w = is.second.get<double>("width");
                 auto br = is.second.get<double>("branchingRatio");
@@ -60,8 +54,15 @@ void GeneratorSetup::BuildReactionLibrary(ReactionLibrary &lib) {
                     new ReactionThreeProngIntermediate(std::move(thetaProv1), std::move(phiProv1),
                                                        std::move(thetaProv2), std::move(phiProv2), intermediates));
             lib.RegisterReaction(std::move(threeProngIntermediate), branchingRatio, reaction);
-        }
-        else
+        } else if (reactionName == "ParticleGun") {
+            auto thetaProv = BuildProvider<AngleProvider>(r.second.get_child("Theta"));
+            auto phiProv = BuildProvider<AngleProvider>(r.second.get_child("Phi"));
+            auto eProv = BuildProvider<EProvider>(r.second.get_child("KineticEnergy"));
+            auto particle = ParseParticle(r.second.get<std::string>("Particle"));
+            auto particleGun = std::unique_ptr<Reaction>(new ReactionParticleGun(std::move(thetaProv),std::move(phiProv),std::move(eProv),particle));
+            lib.RegisterReaction(std::move(particleGun),branchingRatio,reaction);
+
+        } else
             throw std::runtime_error("Unknown reaction type: " + reactionName);
     }
     //Initialize library:
@@ -99,8 +100,7 @@ std::unique_ptr<EProvider> GeneratorSetup::BuildEProvider() {
 //TODO:To be checked, why sometimes factory registration gets optimized-out
 void GeneratorSetup::Info() {
     std::cout << "List of available providers:\n";
-    for (const auto &p: ProviderFactory::GetRegiseredIdentifiers())
-    {
+    for (const auto &p: ProviderFactory::GetRegiseredIdentifiers()) {
         auto prov = ProviderFactory::Create<Provider>(p);
         std::cout << '\t' << prov->GetName() << std::endl;
     }
@@ -131,8 +131,7 @@ std::unique_ptr<ProviderType> GeneratorSetup::BuildProvider(const boost::propert
         throw std::runtime_error(
                 "Unable to build " + type + "! Check if naming is correct, or is it the right type of the provider.");
     Provider::paramMapType params;
-    for (auto &arg: node.get_child("parameters"))
-    {
+    for (auto &arg: node.get_child("parameters")) {
         params[arg.first] = arg.second.get<double>("");
     }
     prov->SetParams(params);

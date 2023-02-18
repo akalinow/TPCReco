@@ -77,18 +77,22 @@ void MaterialBuilder::BuildMaterials() {
     auto p_he = config->Get<float>("gas_mixture.he");
     auto p_co2 = config->Get<float>("gas_mixture.co2");
 
-    auto CO2 = new G4Material("Carbonic gas", 1.805 * mg / cm3, 2,
+
+    //G4double CO2_density = 1.805 * mg / cm3;
+    G4double CO2_density = 1.8393 * mg / cm3;
+    auto CO2 = new G4Material("Carbonic gas", CO2_density, 2,
                               kStateGas, 293. * kelvin, p_co2 * bar);
     CO2->AddElement(C, 1);
     CO2->AddElement(O, 2);
     materials["co2"] = CO2;
 
-    auto He_gas = new G4Material("Helium gas", 0.1645 * mg / cm3, 1,
+    G4double He_density = 0.1645 * mg / cm3;
+    auto He_gas = new G4Material("Helium gas", He_density, 1,
                                  kStateGas, 293. * kelvin, p_he * bar);
     He_gas->AddElement(He, 1);
     materials["he"] = He_gas;
 
-    auto mixture = new G4Material("mixture", p_co2 * 1.805 * mg / cm3 + p_he * 0.1645 * mg / cm3,
+    auto mixture = new G4Material("mixture", p_co2 * CO2_density+ p_he * He_density,
                                   2,
                                   kStateGas, temperature, (p_co2 + p_co2) * bar);
     mixture->AddMaterial(He_gas, p_he / (p_he + p_co2));

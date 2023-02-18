@@ -18,9 +18,10 @@
       }
     },
     "GammaEnergy": {
-      "distribution": "EProviderSingle",
+      "distribution": "EProviderGaus",
       "parameters": {
-        "singleE": 11
+        "meanE": 11.9,
+        "sigmaE": 0.25
       }
     }
   },
@@ -45,7 +46,7 @@
   "Reactions": [
     {
       "type": "TwoProng",
-      "branchingRatio": 1,
+      "branchingRatio": 0,
       "tag": "C12_ALPHA",
       "target": "OXYGEN_16",
       "FirstProduct": "ALPHA",
@@ -53,7 +54,7 @@
       "Theta": {
         "distribution": "AngleProviderE1E2",
         "parameters": {
-          "sigmaE1": 0,
+          "sigmaE1": 1,
           "sigmaE2": 1,
           "phaseE1E2": 1.5708,
           "phaseCosSign": 1
@@ -69,7 +70,7 @@
     },
     {
       "type": "TwoProng",
-      "branchingRatio": 1,
+      "branchingRatio": 0,
       "tag": "C12_ALPHA",
       "target": "OXYGEN_18",
       "FirstProduct": "ALPHA",
@@ -130,8 +131,8 @@
       },
       "IntermediateStates": [
         {
-          "mass": 7456.8945,
-          "width": 0.01,
+          "mass": 7459,
+          "width": 0.5,
           "branchingRatio": 1
         }
       ]

@@ -3,11 +3,12 @@
   "ModuleSequence": [
     "Generator",
     "GeantSim",
+    "TPCDigitizerRandom",
     "EventFileExporter"
   ],
   "ModuleConfiguration": {
     "Generator": {
-      "NumberOfEvents": 10000,
+      "NumberOfEvents": 100,
       "EventGenerator": {
         "Beam": {
           "BeamGeometry": {
@@ -45,8 +46,8 @@
           "VertexLongitudinal": {
             "distribution": "ZProviderUniform",
             "parameters": {
-              "minZ": -250,
-              "maxZ": 250
+              "minZ": -150,
+              "maxZ": 150
             }
           }
         },
@@ -72,6 +73,11 @@
                 "polAngle": 0
               }
             }
+          },
+          {
+            "type": "ThreeProngDemocratic",
+            "branchingRatio": 1,
+            "tag": "C12_ALPHA"
           }
         ]
       }
@@ -79,13 +85,14 @@
     "EventFileExporter": {
       "FileName": "out.root",
       "EnabledBranches": [
-        "SimEvent"
+        "SimEvent",
+        "PEventTPC"
       ]
     },
     "GeantSim": {
       "geometry_config_path": "geometry.xml",
       "gas_mixture": {
-        "co2": 0.19,
+        "co2": 0.25,
         "he": 0.0
       },
       "magnetic_field": {
@@ -178,6 +185,9 @@
           ]
         }
       }
+    },
+    "TPCDigitizerRandom": {
+      "GeometryConfig": "/scratch/TPCReco/build/resources/geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat"
     }
   }
 }

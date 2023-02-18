@@ -8,6 +8,7 @@
 #include "TH2D.h"
 #include "TCanvas.h"
 #include "TStyle.h"
+#include "TFile.h"
 
 
 void generateEventsAndMakePlots(EventGenerator &g, int nEvents) {
@@ -81,6 +82,7 @@ void generateEventsAndMakePlots(EventGenerator &g, int nEvents) {
             hTheta3P->Fill(-fourMom.X()/fourMom.P());
             for(auto &t: tracks){
                 auto fourMom=t.GetPrimaryParticle().GetFourMomentum();
+                hMomLAB->Fill(fourMom.P());
                 hTheta3P->Fill(-fourMom.X()/fourMom.P());
             }
 
@@ -158,6 +160,7 @@ void generateEventsAndMakePlots(EventGenerator &g, int nEvents) {
 
 
     c->Print("plots.pdf]");
+
 
 }
 

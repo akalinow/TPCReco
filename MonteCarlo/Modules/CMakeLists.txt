@@ -11,6 +11,7 @@ include_directories(${PROJECT_SOURCE_DIR}/MonteCarlo/EventGenerator/include)
 ADD_SUBDIRECTORY(Generator)
 ADD_SUBDIRECTORY(DummyModule)
 ADD_SUBDIRECTORY(EventFileExporter)
+ADD_SUBDIRECTORY(TPCDigitizerRandom)
 
 IF (BUILD_GEANT_MODULE)
     find_package(Geant4 REQUIRED ui_all vis_all)
@@ -26,6 +27,7 @@ SET(module_sources
         ${dummy_sources}
         ${event_file_exporter_sources}
         ${geant_sim_sources}
+        ${tpc_digitizer_random_sources}
         )
 
 

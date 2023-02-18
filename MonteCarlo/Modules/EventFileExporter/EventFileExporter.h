@@ -16,6 +16,7 @@ private:
     TTree* tree;
     TBranch* simEventBranch;
     SimEvent* currSimEvent;
+    PEventTPC* currPEventTPC;
     std::vector<std::string> offBranches;
     std::vector<std::string> onBranches;
 

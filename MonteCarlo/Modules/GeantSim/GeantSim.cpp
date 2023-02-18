@@ -7,6 +7,7 @@
 #include "GELISteppingAction.hh"
 #include "GELITrackingAction.hh"
 #include "GELIEventAction.hh"
+#include "G4PhysListFactory.hh"
 
 #include <ctime>
 
@@ -28,6 +29,11 @@ fwk::VModule::EResultFlag GeantSim::Init(boost::property_tree::ptree config) {
     fRunManager->SetUserAction(new GELIEventAction(buffer));
 
     fRunManager->Initialize();
+
+    G4PhysListFactory *physListFactory = new G4PhysListFactory();
+
+    for(auto & l: physListFactory->AvailablePhysLists())
+        std::cout<<l<<std::endl;
 
     return fwk::VModule::eSuccess;
 }

@@ -78,7 +78,8 @@ enum class reaction_type{
   C14_ALPHA,
   N15_PROTON,
   THREE_ALPHA_DEMOCRATIC,
-  THREE_ALPHA_BE
+  THREE_ALPHA_BE,
+  PARTICLE_GUN
 };
 
 namespace enumDict {

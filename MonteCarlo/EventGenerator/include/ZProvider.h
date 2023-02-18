@@ -23,7 +23,7 @@ public:
     double GetZ() override;
 
     void ValidateParamValues() override {} //nothing to validate
-REGISTER_PROVIDER(ZProviderUniform)
+REGISTER_PROVIDER(ZProviderSingle)
 };
 
 #endif //TPCSOFT_ZPROVIDER_H
