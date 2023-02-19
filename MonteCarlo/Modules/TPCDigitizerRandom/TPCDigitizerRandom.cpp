@@ -7,8 +7,8 @@ fwk::VModule::EResultFlag TPCDigitizerRandom::Init(boost::property_tree::ptree c
     aEventInfo->SetPedestalSubtracted(true);
     aEventInfo->SetRunId(100);
     MeVToChargeScale = config.get<double>("MeVToChargeScale");
-    diffSigmaXY = config.get<double>("Diffusion.sigmaXY");
-    diffSigmaZ = config.get<double>("Diffusion.sigmaZ");
+    diffSigmaXY = config.get<double>("sigmaXY");
+    diffSigmaZ = config.get<double>("sigmaZ");
     nSamplesPerHit = config.get<unsigned int>("NSamplesPerHit");
     return fwk::VModule::eSuccess;
 }

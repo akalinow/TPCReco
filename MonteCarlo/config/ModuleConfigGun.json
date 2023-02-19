@@ -3,7 +3,7 @@
   "ModuleSequence": [
     "Generator",
     "GeantSim",
-    "TPCDigitizerRandom",
+    "TPCDigitizerSRC",
     "EventFileExporter"
   ],
   "ModuleConfiguration": {
@@ -188,12 +188,23 @@
     },
     "TPCDigitizerRandom": {
       "GeometryConfig": "/scratch/TPCReco/build/resources/geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat",
-      "Diffusion":{
-        "sigmaXY": 0.68,
-        "sigmaZ": 0.68
-      },
+      "sigmaXY": 0.68,
+      "sigmaZ": 0.68,
       "NSamplesPerHit": 100,
       "MeVToChargeScale": 100000
+    },
+    "TPCDigitizerSRC": {
+      "GeometryConfig": "/scratch/TPCReco/build/resources/geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat",
+      "StripResponsePath": "/scratch/TPCReco/build/resources",
+      "sigmaXY": 0.68,
+      "sigmaZ": 0.68,
+      "MeVToChargeScale": 100000,
+      "th2PolyPartitionX": 60,
+      "th2PolyPartitionY": 40,
+      "peakingTime": 232,
+      "nStrips": 6,
+      "nCells": 30,
+      "nPads": 12
     }
   }
 }

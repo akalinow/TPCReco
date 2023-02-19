@@ -5,13 +5,16 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 include_directories(${PROJECT_SOURCE_DIR}/DataFormats/include)
 include_directories(${PROJECT_SOURCE_DIR}/Utilities/include)
 include_directories(${PROJECT_SOURCE_DIR}/MonteCarlo/UtilsMC/include)
+include_directories(${PROJECT_SOURCE_DIR}/Reconstruction/include)
 include_directories(${PROJECT_SOURCE_DIR}/MonteCarlo/EventGenerator/include)
+
 
 
 ADD_SUBDIRECTORY(Generator)
 ADD_SUBDIRECTORY(DummyModule)
 ADD_SUBDIRECTORY(EventFileExporter)
 ADD_SUBDIRECTORY(TPCDigitizerRandom)
+ADD_SUBDIRECTORY(TPCDigitizerSRC)
 
 IF (BUILD_GEANT_MODULE)
     find_package(Geant4 REQUIRED ui_all vis_all)
@@ -28,6 +31,7 @@ SET(module_sources
         ${event_file_exporter_sources}
         ${geant_sim_sources}
         ${tpc_digitizer_random_sources}
+        ${tpc_digitizer_src_sources}
         )
 
 
@@ -40,7 +44,7 @@ ADD_LIBRARY(${MODULE_NAME} SHARED
 
 set_target_properties(${MODULE_NAME} PROPERTIES PREFIX ${TPCRECO_PREFIX})
 
-target_link_libraries(${MODULE_NAME} ${ROOT_LIBRARIES} GenVector Utilities UtilsMC EventGenerator)
+target_link_libraries(${MODULE_NAME} ${ROOT_LIBRARIES} GenVector Utilities UtilsMC EventGenerator Reconstruction)
 IF (BUILD_GEANT_MODULE)
     target_link_libraries(${MODULE_NAME} ${Geant4_LIBRARIES} ${cadmesh_LIBRARIES})
 ENDIF ()
