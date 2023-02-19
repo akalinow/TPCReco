@@ -11,12 +11,12 @@
 /// \endcond
 //ClassImp(SimEvent);
 
-SimEvent::SimEvent(SimTracks &trackVector, const TVector3& vertexPos, reaction_type type)
+SimEvent::SimEvent(SimTracks &trackVector, const TVector3 &vertexPos, reaction_type type)
         : tracks{trackVector}, vertexPosition{vertexPos}, reactionType{type} {
     UpdateSimTracksStartPoint();
 }
 
-SimTracks & SimEvent::GetTracks() {
+SimTracks &SimEvent::GetTracks() {
     return tracks;
 }
 
@@ -49,7 +49,7 @@ void SimEvent::UpdateSimTracksStartPoint() {
 }
 
 void SimEvent::SetReactionType(reaction_type type) {
-    reactionType=type;
+    reactionType = type;
 }
 
 reaction_type SimEvent::GetReactionType() {
@@ -61,7 +61,7 @@ void SimEvent::Clear(Option_t *op) {
     //clear SimTracks:
     tracks.clear();
     //set reaction type to unknown:
-    reactionType=reaction_type::UNKNOWN;
+    reactionType = reaction_type::UNKNOWN;
     //zero-out vertex position:
-    vertexPosition={0,0,0};
+    vertexPosition = {0, 0, 0};
 }

@@ -2,39 +2,40 @@
 #include "TRandom.h"
 
 fwk::VModule::EResultFlag TPCDigitizerRandom::Init(boost::property_tree::ptree config) {
-    geometry=std::make_unique<GeometryTPC>(config.get<std::string>("GeometryConfig").c_str());
-    aEventInfo=std::make_unique<eventraw::EventInfo>();
+    geometry = std::make_unique<GeometryTPC>(config.get<std::string>("GeometryConfig").c_str());
+    aEventInfo = std::make_unique<eventraw::EventInfo>();
     aEventInfo->SetPedestalSubtracted(true);
     aEventInfo->SetRunId(100);
-    MeVToChargeScale=100000;
+    MeVToChargeScale = config.get<double>("MeVToChargeScale");
+    diffSigmaXY = config.get<double>("Diffusion.sigmaXY");
+    diffSigmaZ = config.get<double>("Diffusion.sigmaZ");
+    nSamplesPerHit = config.get<unsigned int>("NSamplesPerHit");
     return fwk::VModule::eSuccess;
 }
 
 fwk::VModule::EResultFlag TPCDigitizerRandom::Process(ModuleExchangeSpace &event) {
     aEventInfo->SetEventId(eventID++);
-    auto& currentSimEvent = event.simEvt;
-    auto& currentPEventTPC = event.tpcPEvt;
+    auto &currentSimEvent = event.simEvt;
+    auto &currentPEventTPC = event.tpcPEvt;
     currentPEventTPC.Clear();
-    float sigma = 0.68;
-    int nTries=100;
-    bool err_flag=false;
-    //looop over tracks
-    for(const auto &t: currentSimEvent.GetTracks()){
-        //loop over hits:
-        for(const auto& h : t.GetHits()){
+    bool err_flag = false;
+    //loop over tracks
+    for (const auto &t: currentSimEvent.GetTracks()) {
+        //loop over hits
+        for (const auto &h: t.GetHits()) {
             auto pos = h.GetPosition();
-            auto edep=h.GetEnergy();
-            for(int i=0;i<nTries;i++){
+            auto edep = h.GetEnergy();
+            for (unsigned int i = 0; i < nSamplesPerHit; i++) {
                 auto smearedPosition = TVector3(
-                        gRandom->Gaus(pos.X(),sigma),
-                        gRandom->Gaus(pos.Y(),sigma),
-                        gRandom->Gaus(pos.Z(),sigma)
-                        );
+                        gRandom->Gaus(pos.X(), diffSigmaXY),
+                        gRandom->Gaus(pos.Y(), diffSigmaXY),
+                        gRandom->Gaus(pos.Z(), diffSigmaZ)
+                );
                 auto iPolyBin = geometry->GetTH2Poly()->FindBin(smearedPosition.X(), smearedPosition.Y());
-                auto iCell = geometry->Pos2timecell(smearedPosition.Z(), err_flag);
-                auto strip =  geometry->GetTH2PolyStrip(iPolyBin);
-                if(strip){
-                    currentPEventTPC.AddValByStrip(strip,iCell,edep/nTries*MeVToChargeScale);
+                auto iCell = static_cast<int>(geometry->Pos2timecell(smearedPosition.Z(), err_flag));
+                auto strip = geometry->GetTH2PolyStrip(iPolyBin);
+                if (strip) {
+                    currentPEventTPC.AddValByStrip(strip, iCell, edep / nSamplesPerHit * MeVToChargeScale);
                 }
             }
         }

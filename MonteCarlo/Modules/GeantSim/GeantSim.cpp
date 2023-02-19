@@ -30,7 +30,7 @@ fwk::VModule::EResultFlag GeantSim::Init(boost::property_tree::ptree config) {
 
     fRunManager->Initialize();
 
-    G4PhysListFactory *physListFactory = new G4PhysListFactory();
+    auto physListFactory = new G4PhysListFactory();
 
     for(auto & l: physListFactory->AvailablePhysLists())
         std::cout<<l<<std::endl;

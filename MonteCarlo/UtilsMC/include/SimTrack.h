@@ -35,15 +35,17 @@ public:
      * @brief      Constructor
      */
     SimTrack();
-    explicit SimTrack(PrimaryParticle p, const TVector3& start): startPos{start},prim{std::move(p)} {}
+
+    explicit SimTrack(PrimaryParticle p, const TVector3 &start) : startPos{start}, prim{std::move(p)} {}
+
     virtual ~SimTrack() = default;
     // setters:
 
-    void SetStop(const TVector3& stop);
+    void SetStop(const TVector3 &stop);
 
-    void SetStart(const TVector3& start);
+    void SetStart(const TVector3 &start);
 
-    void SetPrimaryParticle(PrimaryParticle& p) {prim=p;}
+    void SetPrimaryParticle(PrimaryParticle &p) { prim = p; }
 
     /**
      * @brief      Inserts SimHit object to a vector of hits

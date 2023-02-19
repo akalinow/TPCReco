@@ -46,8 +46,6 @@ void SimTrack::SortHits() {
 
 void SimTrack::RecalculateStopPosition() {
     //set stop position to be equal to the position of the last hit
-    if(!hits.empty())
+    if (!hits.empty())
         SetStop(hits[hits.size() - 1].GetPosition());
 }
-
-

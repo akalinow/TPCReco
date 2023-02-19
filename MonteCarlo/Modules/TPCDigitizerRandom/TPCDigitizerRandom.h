@@ -17,8 +17,11 @@ public:
 private:
     std::unique_ptr<GeometryTPC> geometry;
     std::unique_ptr<eventraw::EventInfo> aEventInfo;
-    uint32_t eventID{0};
+    uint32_t eventID{};
     double MeVToChargeScale{1};
+    double diffSigmaXY{};
+    double diffSigmaZ{};
+    unsigned int nSamplesPerHit{};
 
     REGISTER_MODULE(TPCDigitizerRandom)
 };

@@ -14,7 +14,6 @@ class EventFileExporter: public fwk::VModule{
 private:
     TFile* file;
     TTree* tree;
-    TBranch* simEventBranch;
     SimEvent* currSimEvent;
     PEventTPC* currPEventTPC;
     std::vector<std::string> offBranches;

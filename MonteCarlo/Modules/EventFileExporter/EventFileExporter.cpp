@@ -2,7 +2,7 @@
 #include "SaveCurrentTDirectory.h"
 
 EventFileExporter::EventFileExporter()
-        : file{nullptr}, tree{nullptr}, simEventBranch{nullptr}, currSimEvent{nullptr} {}
+        : file{nullptr}, tree{nullptr}, currSimEvent{nullptr}, currPEventTPC{nullptr} {}
 
 fwk::VModule::EResultFlag EventFileExporter::Init(boost::property_tree::ptree config) {
     //create file and ttree
