@@ -3,12 +3,11 @@
   "ModuleSequence": [
     "Generator",
     "GeantSim",
-    "TPCDigitizerSRC",
     "EventFileExporter"
   ],
   "ModuleConfiguration": {
     "Generator": {
-      "NumberOfEvents": 100,
+      "NumberOfEvents": 1000,
       "EventGenerator": {
         "Beam": {
           "BeamGeometry": {
@@ -44,40 +43,36 @@
             }
           },
           "VertexLongitudinal": {
-            "distribution": "ZProviderUniform",
+            "distribution": "ZProviderSingle",
             "parameters": {
-              "minZ": -150,
-              "maxZ": 150
+              "singleZ": -250
             }
           }
         },
         "Reactions": [
           {
-            "type": "TwoProng",
+            "type": "ParticleGun",
             "branchingRatio": 1,
-            "tag": "C12_ALPHA",
-            "target": "OXYGEN_16",
-            "FirstProduct": "ALPHA",
-            "SecondProduct": "CARBON_12",
+            "tag": "PARTICLE_GUN",
+            "Particle": "ALPHA",
             "Theta": {
-              "distribution": "AngleProviderCosIso",
+              "distribution": "AngleProviderSingle",
               "parameters": {
-                "minCos": -1,
-                "maxCos": 1
+                "singleAngle": 0
               }
             },
             "Phi": {
-              "distribution": "AngleProviderPhi",
+              "distribution": "AngleProviderSingle",
               "parameters": {
-                "polDegree": 0,
-                "polAngle": 0
+                "singleAngle": 0
+              }
+            },
+            "KineticEnergy": {
+              "distribution": "EProviderSingle",
+              "parameters": {
+                "singleE": 10
               }
             }
-          },
-          {
-            "type": "ThreeProngDemocratic",
-            "branchingRatio": 1,
-            "tag": "C12_ALPHA"
           }
         ]
       }
@@ -185,26 +180,6 @@
           ]
         }
       }
-    },
-    "TPCDigitizerRandom": {
-      "GeometryConfig": "/scratch/TPCReco/build/resources/geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat",
-      "sigmaXY": 0.68,
-      "sigmaZ": 0.68,
-      "NSamplesPerHit": 100,
-      "MeVToChargeScale": 100000
-    },
-    "TPCDigitizerSRC": {
-      "GeometryConfig": "/scratch/TPCReco/build/resources/geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat",
-      "StripResponsePath": "/scratch/TPCReco/build/resources",
-      "sigmaXY": 0.68,
-      "sigmaZ": 0.68,
-      "MeVToChargeScale": 100000,
-      "th2PolyPartitionX": 60,
-      "th2PolyPartitionY": 40,
-      "peakingTime": 232,
-      "nStrips": 6,
-      "nCells": 30,
-      "nPads": 12
     }
   }
 }
