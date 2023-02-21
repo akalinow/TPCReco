@@ -57,7 +57,7 @@
         "Reactions": [
           {
             "type": "TwoProng",
-            "branchingRatio": 0,
+            "branchingRatio": 1,
             "tag": "C12_ALPHA",
             "target": "OXYGEN_16",
             "FirstProduct": "ALPHA",
@@ -81,7 +81,7 @@
           },
           {
             "type": "ThreeProngDemocratic",
-            "branchingRatio": 0,
+            "branchingRatio": 1,
             "tag": "THREE_ALPHA_DEMOCRATIC"
           }
         ]
