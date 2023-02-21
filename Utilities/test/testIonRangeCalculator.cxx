@@ -21,6 +21,7 @@ R__ADD_LIBRARY_PATH(../lib)
 #include "TTree.h"
 #include "TGraph.h"
 #include "TMultiGraph.h"
+#include "TLegend.h"
 #include "TSystem.h"
 #include "TPad.h"
 
@@ -105,7 +106,7 @@ void test2(IonRangeCalculator *calc, double E_alpha=4.0, double E_carbon=1.0) { 
   double R_alpha=calc->getIonRangeMM(ALPHA, E_alpha); // mm
   double R_carbon=calc->getIonRangeMM(CARBON_12, E_carbon); // mm
 
-  const double nPointsPerMM=2; // density of TGraph points along the track
+  const double nPointsPerMM=10; // density of TGraph points along the track
   const int nPoints_alpha=(int)(R_alpha*nPointsPerMM+0.5);
   const int nPoints_carbon=(int)(R_carbon*nPointsPerMM+0.5);
   TGraph gr_alpha(calc->getIonBraggCurveMeVPerMM(ALPHA, E_alpha, nPoints_alpha));
@@ -115,15 +116,51 @@ void test2(IonRangeCalculator *calc, double E_alpha=4.0, double E_carbon=1.0) { 
   std::cout << "ALPHA: E_kin=" << E_alpha << " MeV,  range=" << R_alpha << " mm,  dE/dx integral=" << calc->getIonBraggCurveIntegralMeV(ALPHA, E_alpha) << " MeV" << std::endl;
   std::cout << "C-12:  E_kin=" << E_carbon << " MeV,  range=" << R_carbon << " mm,  dE/dx integral=" << calc->getIonBraggCurveIntegralMeV(CARBON_12, E_carbon) << " MeV" << std::endl;
 
+  // flip carbon Bragg curve about Y axis for drawing purposes
+  for(auto ipoint=0; ipoint<gr_carbon.GetN(); ipoint++) {
+    double x=0.0, y=0.0;
+    gr_carbon.GetPoint(ipoint, x, y);
+    gr_carbon.SetPoint(ipoint, -x, y);
+  }
+  gr_carbon.Sort();
+  // add point {x=0, dE/dx=0} for drawing purposes
+  gr_alpha.SetPoint(gr_alpha.GetN(), 0., 0.);
+  gr_carbon.SetPoint(gr_carbon.GetN(), 0., 0.);
+  gr_alpha.Sort();
+
   TMultiGraph mg;
-  mg.Add(&gr_alpha, "L*");
-  mg.Add(&gr_carbon, "L*");
+  TLegend leg(0.80,0.75,0.95,0.85);
+  mg.Add(&gr_alpha, "L");
+  mg.Add(&gr_carbon, "L");
+
   gr_alpha.SetLineColor(kRed);
+  gr_alpha.SetLineWidth(3);
   gr_alpha.SetMarkerColor(kRed);
   gr_carbon.SetLineColor(kBlue);
+  gr_carbon.SetLineWidth(3);
   gr_carbon.SetMarkerColor(kBlue);
   mg.Draw("A");
-  gPad->Print("graph.pdf");
+  mg.GetXaxis()->SetTitle("Relative distance from vertex [mm]");
+  mg.GetXaxis()->SetTitleOffset(1.4);
+  mg.GetYaxis()->SetTitle("Energy loss #frac{dE}{dx} [MeV/mm]");
+  mg.GetYaxis()->SetTitleOffset(1.4);
+  leg.AddEntry(&gr_alpha,"#alpha track", "L*");
+  leg.AddEntry(&gr_carbon,"^{12}C track", "L*");
+  leg.Draw();
+
+  gPad->SetLogy(false);
+  gPad->Update();
+  gPad->Modified();
+  gPad->SetRightMargin(0.02);
+  gPad->Print("bragg_graph_lin.pdf");
+  gPad->Print("bragg_graph_lin.root");
+
+  gPad->SetLogy(true);
+  mg.SetMinimum(1e-2); // 1e-2 MeV/mm = 10 keV/mm
+  gPad->Update();
+  gPad->Modified();
+  gPad->Print("bragg_graph_log.pdf");
+  gPad->Print("bragg_graph_log.root");
 }
 
 void testIonRangeCalculator(const char *fname, double pressure=250.0, double temperature=273.15+20) { // mbar, Kelvins

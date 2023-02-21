@@ -22,7 +22,10 @@
 
 int compareRecoEvents(const  std::string & geometryFileName, 
 		      const  std::string & referenceDataFileName,
-		      const  std::string & testDataFileName);
+		      const  std::string & testDataFileName,
+		      const  double & pressure, // [mbar]
+		      const  double & temperature // [K]
+);
 /////////////////////////////////////
 /////////////////////////////////////
 boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
@@ -31,8 +34,10 @@ boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
   cmdLineOptDesc.add_options()
     ("help", "produce help message")
     ("geometryFile",  boost::program_options::value<std::string>()->required(), "string - path to the geometry file")
-    ("referenceDataFile",  boost::program_options::value<std::string>()->required(), "string - path to reference data file")
-    ("testDataFile",  boost::program_options::value<std::string>()->required(), "string - path to test data file");
+    ("referenceDataFile",  boost::program_options::value<std::string>()->required(), "string - path to REFERENCE Reco data file")
+    ("testDataFile",  boost::program_options::value<std::string>()->required(), "string - path to TEST Reco data file")
+    ("pressure", boost::program_options::value<float>()->required(), "float - CO2 pressure [mbar]")
+    ("temperature", boost::program_options::value<float>()->default_value(273.15+20), "(option) float - CO2 temperature [K], default=293.15K (20 C)");
   
   boost::program_options::variables_map varMap;        
   try {     
@@ -59,7 +64,9 @@ int main(int argc, char **argv){
   auto geometryFileName = varMap["geometryFile"].as<std::string>();
   auto referenceDataFileName = varMap["referenceDataFile"].as<std::string>();
   auto testDataFileName = varMap["testDataFile"].as<std::string>();
-  compareRecoEvents(geometryFileName, referenceDataFileName, testDataFileName);
+  auto pressure = varMap["pressure"].as<float>();
+  auto temperature = varMap["temperature"].as<float>();
+  compareRecoEvents(geometryFileName, referenceDataFileName, testDataFileName, pressure, temperature);
   return 0;
 }
 /////////////////////////////
@@ -97,7 +104,9 @@ std::vector<Long64_t> setBranchAdressesAndIndex(TTree *&aTree, eventraw::EventIn
 ////////////////////////////
 int compareRecoEvents(const  std::string & geometryFileName,
 		      const  std::string & referenceDataFileName,
-		      const  std::string & testDataFileName){
+		      const  std::string & testDataFileName,
+		      const  double & pressure, // [mbar]
+		      const  double & temperature){ // [K]
 
   TFile *aRefFile = new TFile(referenceDataFileName.c_str());
   if(!aRefFile || !aRefFile->IsOpen()){
@@ -174,7 +183,7 @@ int compareRecoEvents(const  std::string & geometryFileName,
     theTree->AddFriend(aTestTree,"TestEvents");
   }
 
-  Comp_analysis myAnalysis(aGeometry); 
+  Comp_analysis myAnalysis(aGeometry, pressure, temperature);
   for(auto entryIndex: mergedTreeIndex){
 
     aRefEventInfo->reset();

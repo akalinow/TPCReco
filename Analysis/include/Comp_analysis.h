@@ -7,20 +7,28 @@
 
 #include "TH1D.h"
 #include "TH2D.h"
+#include "TProfile.h"
+#include "TProfile2D.h"
+
+#include "GeometryTPC.h"
+#include "IonRangeCalculator.h"
 
 class TH1F;
 class TH2F;
+class TProfile;
+class TProfile2D;
 class Track3D;
 namespace eventraw{
   class EventInfo;
 }
-class GeometryTPC;
 
 class Comp_analysis{
 
 public:
 
-  Comp_analysis(std::shared_ptr<GeometryTPC> aGeometryPtr);
+  Comp_analysis(std::shared_ptr<GeometryTPC> aGeometryPtr,
+		double pressure,    // CO2 pressure [mbar]
+		double temperature);// CO2 temperature [K]
   
   ~Comp_analysis();
 
@@ -35,10 +43,15 @@ public:
 
   void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr); 
 
+  void setIonRangeCalculator(double pressure, double temperature); // CO2 pressure [mbar] and temperature [K]
+
   TFile *outputFile;
   std::map<std::string, TH1F*> histos1D;
   std::map<std::string, TH2F*> histos2D;
-  std::shared_ptr<GeometryTPC> myGeometryPtr; 
+  std::map<std::string, TProfile*> profiles1D;
+  std::map<std::string, TProfile2D*> profiles2D;
+  std::shared_ptr<GeometryTPC> myGeometryPtr;
+  IonRangeCalculator myRangeCalculator;
 };
 
 #endif
