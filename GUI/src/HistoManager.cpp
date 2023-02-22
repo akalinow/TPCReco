@@ -25,8 +25,6 @@
 #include "TPCReco/colorText.h"
 
 #include "TPCReco/HistoManager.h"
-
-#include "TPCReco/CoordinateConverter.h"
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 HistoManager::HistoManager() {
