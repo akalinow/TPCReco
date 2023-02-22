@@ -22,13 +22,16 @@ RUN wget https://github.com/Geant4/geant4/archive/refs/tags/v${GEANT4_VERSION}.t
 RUN cmake -S geant4-${GEANT4_VERSION} -Bbuild \
     -DGEANT4_INSTALL_DATA=ON -DCMAKE_INSTALL_PREFIX=/usr/local/ \
     && cmake --build build --target install -- -j 10 \
-    && rm -r build geant4-${GEANT4_VERSION}
+    && rm -r build geant4-${GEANT4_VERSION} \
+    && ldconfig
+
 RUN wget https://github.com/christopherpoole/CADMesh/archive/refs/tags/v${CADMESH_VERSION}.tar.gz -O cadmesh.tar.gz \
     && tar xf cadmesh.tar.gz && rm cadmesh.tar.gz
 RUN cmake -S CADMesh-${CADMESH_VERSION} -Bbuild \
     -DCMAKE_INSTALL_PREFIX=/usr/local/ \
     && cmake --build build --target install \
-    && rm -r build CADMesh-${CADMESH_VERSION}
+    && rm -r build CADMesh-${CADMESH_VERSION} \
+    && ldconfig
 
 # grrr source geant4.sh is configured on build
 ENV G4LEVELGAMMADATA=/usr/local/share/Geant4-${GEANT4_VERSION}/data/PhotonEvaporation5.2
