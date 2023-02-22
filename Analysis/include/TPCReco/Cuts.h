@@ -13,7 +13,7 @@ namespace cuts {
 // cut: reject empty events
 struct NonEmpty {
   template <class Track> bool operator()(Track *track) {
-    return track->getSegments().size() != 0;
+    return (track != nullptr) && (track->getSegments().size() != 0);
   }
 };
 using Cut1 = NonEmpty;
