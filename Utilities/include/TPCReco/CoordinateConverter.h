@@ -1,10 +1,9 @@
 #ifndef COORDINATE_CONVERTER_H
 #define COORDINATE_CONVERTER_H
 
-#include <ostream>
-
-#include <TVector3.h>
 #include <TRotation.h>
+#include <TVector3.h>
+#include <ostream>
 
 /*
 3D Rotation is made using the Euler angles in the X-convention:
@@ -13,33 +12,24 @@
 2. rotation about the new X-axis with angle theta
 3. rotation about the new Z-axis with angle psi
 */
-    
-class CoordinateConverter{
-
-public:
-
-  CoordinateConverter(double aPhi=0.0, double aTheta=0.0, double aPsi=0.0);
-
-  ~CoordinateConverter();
-
-  TVector3 detToBeam(const TVector3 & aVec) const;
-
-  TVector3 detToBeam(double x, double y, double z) const;
-
-  TVector3 beamToDet(const TVector3 & aVec) const;
-
-  TVector3 beamToDet(double x, double y, double z) const;
-
-  void printRotation(std::ostream &out) const;
-
-private:
-
-  TRotation detToNominalBeamRotation;
-  TRotation nominalToActualBeamRotation;
-  TRotation totalRotation;
-
+struct EulerAngles {
+  double phi = 0;
+  double theta = 0;
+  double psi = 0;
 };
 
-std::ostream & operator << (std::ostream &out, const CoordinateConverter &aConverter);
+class CoordinateConverter {
+public:
+  CoordinateConverter(EulerAngles nominal, EulerAngles correction = {});
 
-#endif 
+  TVector3 detToBeam(const TVector3 &vector) const;
+  TVector3 beamToDet(const TVector3 &vector) const;
+
+private:
+  TRotation rotation;
+};
+
+std::ostream &operator<<(std::ostream &out,
+                         const CoordinateConverter &converter);
+
+#endif

@@ -1,95 +1,50 @@
 #include "TPCReco/CoordinateConverter.h"
-
 #include "TPCReco/colorText.h"
 
 ////////////////////////////////////////////
 ////////////////////////////////////////////
-CoordinateConverter::CoordinateConverter(double aPhi, double aTheta, double aPsi){
+CoordinateConverter::CoordinateConverter(EulerAngles nominal,
+                                         EulerAngles correction) {
 
-  detToNominalBeamRotation.SetXEulerAngles(-M_PI/2.0, M_PI/2.0, 0.0);
-  nominalToActualBeamRotation.SetXEulerAngles(aPhi, aTheta, aPsi);
-  totalRotation = nominalToActualBeamRotation*detToNominalBeamRotation;
-    
+  auto detToNominalBeamRotation =
+      TRotation{}.SetXEulerAngles(nominal.phi, nominal.theta, nominal.psi);
+  auto nominalToActualBeamRotation = TRotation{}.SetXEulerAngles(
+      correction.phi, correction.theta, correction.psi);
+  rotation = nominalToActualBeamRotation * detToNominalBeamRotation;
 }
-////////////////////////////////////////////
-////////////////////////////////////////////
-CoordinateConverter::~CoordinateConverter() {}
-////////////////////////////////////////////
-////////////////////////////////////////////
-TVector3 CoordinateConverter::detToBeam(const TVector3 & aVec) const{
 
-  return totalRotation*aVec;
-  
+////////////////////////////////////////////
+////////////////////////////////////////////
+TVector3 CoordinateConverter::detToBeam(const TVector3 &vector) const {
+  return rotation * vector;
 }
-////////////////////////////////////////////
-////////////////////////////////////////////
-TVector3 CoordinateConverter::detToBeam(double x, double y, double z) const{
 
-  return totalRotation*TVector3(x,y,z);
-  
+////////////////////////////////////////////
+////////////////////////////////////////////
+TVector3 CoordinateConverter::beamToDet(const TVector3 &vector) const {
+  return rotation.Inverse() * vector;
 }
+////////////////////////////////////
 ////////////////////////////////////////////
-////////////////////////////////////////////
-TVector3 CoordinateConverter::beamToDet(const TVector3 & aVec) const{
+std::ostream &operator<<(std::ostream &out,
+                         const CoordinateConverter &converter) {
+  auto vectors = {TVector3{1, 0, 0}, TVector3{0, 1, 0}, TVector3{0, 0, 1}};
 
-  return totalRotation.Inverse()*aVec;
-
-}
-////////////////////////////////////////////
-////////////////////////////////////////////
-TVector3 CoordinateConverter::beamToDet(double x, double y, double z) const{
-
-  return totalRotation.Inverse()*TVector3(x,y,z);
-  
-}
-////////////////////////////////////////////
-////////////////////////////////////////////
-void CoordinateConverter::printRotation(std::ostream &out) const{
-
-  TVector3 x(1,0,0);
-  TVector3 y(0,1,0);
-  TVector3 z(0,0,1);
-
-  out<<KBLU<<"DETECTOR  --> BEAM"<<RST<<std::endl;
-  out<<"("<<x.X()<<", "<<x.Y()<<", "<<x.Z()<<")"
-     <<KBLU<<" --> "<<RST
-     <<"("<<detToBeam(x).X()<<", "<<detToBeam(x).Y()<<", "<<detToBeam(x).Z()<<")"
-     <<std::endl;
-
-  out<<"("<<y.X()<<", "<<y.Y()<<", "<<y.Z()<<")"
-     <<KBLU<<" --> "<<RST
-     <<"("<<detToBeam(y).X()<<", "<<detToBeam(y).Y()<<", "<<detToBeam(y).Z()<<")"
-     <<std::endl;
-
-  out<<"("<<z.X()<<", "<<z.Y()<<", "<<z.Z()<<")"
-     <<KBLU<<" --> "<<RST
-     <<"("<<detToBeam(z).X()<<", "<<detToBeam(z).Y()<<", "<<detToBeam(z).Z()<<")"
-     <<std::endl;
-
-  out<<KBLU<<"BEAM      --> DETECTOR"<<RST<<std::endl;
-  out<<"("<<x.X()<<", "<<x.Y()<<", "<<x.Z()<<")"
-     <<KBLU<<" --> "<<RST
-     <<"("<<beamToDet(x).X()<<", "<<beamToDet(x).Y()<<", "<<beamToDet(x).Z()<<")"
-     <<std::endl;
-  
-  out<<"("<<y.X()<<", "<<y.Y()<<", "<<y.Z()<<")"
-     <<KBLU<<" --> "<<RST
-     <<"("<<beamToDet(y).X()<<", "<<beamToDet(y).Y()<<", "<<beamToDet(y).Z()<<")"
-     <<std::endl;
-  
-  out<<"("<<z.X()<<", "<<z.Y()<<", "<<z.Z()<<")"
-     <<KBLU<<" --> "<<RST
-     <<"("<<beamToDet(z).X()<<", "<<beamToDet(z).Y()<<", "<<beamToDet(z).Z()<<")"
-     <<std::endl;
-}
-////////////////////////////////////////////
-////////////////////////////////////////////
-std::ostream & operator << (std::ostream &out, const CoordinateConverter &aConverter){
-
-  aConverter.printRotation(out);
+  out << KBLU << "DETECTOR --> BEAM" << RST << std::endl;
+  for (auto vector : vectors) {
+    auto result = converter.detToBeam(vector);
+    out << "(" << vector.X() << ", " << vector.Y() << ", " << vector.Z() << ")"
+        << KBLU << " --> " << RST << "(" << result.X() << ", " << result.Y()
+        << ", " << result.Z() << ")" << std::endl;
+  }
+  out << KBLU << "BEAM --> DETECTOR" << RST << std::endl;
+  for (auto vector : vectors) {
+    auto result = converter.beamToDet(vector);
+    out << "(" << vector.X() << ", " << vector.Y() << ", " << vector.Z() << ")"
+        << KBLU << " --> " << RST << "(" << result.X() << ", " << result.Y()
+        << ", " << result.Z() << ")" << std::endl;
+  }
   return out;
-  
 }
 ////////////////////////////////////////////
 ////////////////////////////////////////////
-
