@@ -26,7 +26,6 @@ HIGGS_analysis::HIGGS_analysis(std::shared_ptr<GeometryTPC> aGeometryPtr, // def
   setGeometry(aGeometryPtr);
   setBeamProperties(beamEnergy, beamDir);
   setIonRangeCalculator(pressure, temperature);
-  setCuts();
   bookHistos();
 }
 ///////////////////////////////
@@ -99,46 +98,6 @@ void HIGGS_analysis::bookHistos(){
   float xmin, xmax, ymin, ymax, zmin, zmax; // [mm]
   std::tie(xmin, xmax, ymin, ymax) = myGeometryPtr->rangeXY();
   std::tie(zmin, zmax) = myGeometryPtr->rangeZ();
-  //  zmin = myGeometryPtr->GetDriftCageZmin();
-  //  zmax = myGeometryPtr->GetDriftCageZmax();
-
-  ///////// DEBUG
-  //  outputCanvas = new TCanvas("c", "all events", 500, 500);
-  //  TView *view = TView::CreateView(1);
-  //  view->SetRange(xmin-0.5*(xmax-xmin), ymin-0.5*(ymax-ymin), zmin-0.5*(zmax-zmin),
-  //		 xmax+0.5*(xmax-xmin), ymax+0.5*(ymax-ymin), zmax+0.5*(zmax-zmin));
-  //
-  //  // plot active volume's faces
-  //  TGraph gr=myGeometryPtr->GetActiveAreaConvexHull();
-  //  auto l=new TPolyLine3D(5*(gr.GetN()-1));
-  //  for(auto iedge=0; iedge<gr.GetN()-1; iedge++) {
-  //    l->SetPoint(iedge*5+0,
-  //		gr.GetX()[iedge],
-  //		gr.GetY()[iedge],
-  //		zmin);
-  //    l->SetPoint(iedge*5+1,
-  //		gr.GetX()[iedge+1],
-  //		gr.GetY()[iedge+1],
-  //		zmin);
-  //    l->SetPoint(iedge*5+2,
-  //		gr.GetX()[iedge+1],
-  //		gr.GetY()[iedge+1],
-  //		zmax);
-  //   l->SetPoint(iedge*5+3,
-  //		gr.GetX()[iedge],
-  //		gr.GetY()[iedge],
-  //		zmax);
-  //    l->SetPoint(iedge*5+4,
-  //		gr.GetX()[iedge],
-  //		gr.GetY()[iedge],
-  //		zmin);
-  //  }
-  //  l->SetLineColor(kBlue);
-  //  l->Draw();
-  //  outputCanvas->Update();
-  //  outputCanvas->Modified();
-  //  outputCanvas->Print("aaa.root");
-  ///////// DEBUG
 
   // GLOBAL HISTOGRAMS
   //
@@ -584,8 +543,6 @@ void HIGGS_analysis::bookHistos(){
 ///////////////////////////////
 ///////////////////////////////
 void HIGGS_analysis::fillHistos(Track3D *aTrack){
-
-  if( !eventFilter(aTrack) ) return;
   
   // The following assumptions are made:
   // - event is a collection of straight 3D segments
@@ -820,11 +777,6 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     double oxygenMassExcited=totalEnergy_CMS;
     double oxygenExcitationEnergy=oxygenMassExcited-oxygenMassGroundState;
     double Qvalue_CMS=oxygenMassExcited-alphaMass-carbonMass;
-    // DEBUG
-    //    std::cout << "X-CHECK: Alpha energies [MeV]: Etot_LAB=" << alphaP4_DET_LAB.E() << ", Ekin_LAB=" << alpha_T_LAB << ", Mass=" << alphaMass << std::endl;
-    //    std::cout << "X-CHECK: Carbon-12 energies [MeV]: Etot_LAB=" << carbonP4_DET_LAB.E() << ", Ekin_LAB=" << carbon_T_LAB << ", Mass=" << carbonMass << std::endl;
-    //    std::cout << "X-CHECK: Photon energy LAB [MeV]: Etot_LAB=" << sumP4_DET_LAB.E() << ", mass(Oxygen-16)=" << oxygenMassGroundState << ", Egamma_LAB=Etot_LAB-mass(Oxygen-16)="<<photon_E_LAB<<std::endl;
-    // DEBUG
 
     histos1D["h_2prong_alpha_E_LAB"]->Fill(alpha_T_LAB);
     histos1D["h_2prong_carbon_E_LAB"]->Fill(carbon_T_LAB);
@@ -1083,12 +1035,6 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     histos1D["h_3prong_gamma_E_LAB"]->Fill(photon_E_LAB);
     histos1D["h_3prong_E_CMS"]->Fill(alpha_T_LAB[0]+alpha_T_LAB[1]+alpha_T_LAB[2]);
     histos1D["h_3prong_E_LAB"]->Fill(alpha_T_CMS[0]+alpha_T_CMS[1]+alpha_T_CMS[2]);
-    // DEBUG
-    //    std::cout << "X-CHECK: Alpha1 energies [MeV]: Etot_LAB=" << alphaP4_DET_LAB[0].E() << ", Ekin_LAB=" << alpha_T_LAB[0] << ", Mass=" << alphaMass << std::endl;
-    //    std::cout << "X-CHECK: Alpha2 energies [MeV]: Etot_LAB=" << alphaP4_DET_LAB[1].E() << ", Ekin_LAB=" << alpha_T_LAB[1] << ", Mass=" << alphaMass << std::endl;
-    //    std::cout << "X-CHECK: Alpha3 energies [MeV]: Etot_LAB=" << alphaP4_DET_LAB[2].E() << ", Ekin_LAB=" << alpha_T_LAB[2] << ", Mass=" << alphaMass << std::endl;
-    //    std::cout << "X-CHECK: Photon energy LAB [MeV]: Etot_LAB=" << sumP4_DET_LAB.E() << ", mass(Carbon-12)=" << carbonMassGroundState << ", Egamma_LAB=Etot_LAB-mass(Carbon-12)="<<photon_E_LAB<<std::endl;
-    // DEBUG
 
     // SPECIAL PLOTS: check dependence of gamma beam energy on vertex position perpendicular to the gamma beam axis
     histos2D["h_3prong_vertexX_lenSum"]->Fill(vertexPos.X(), lengthSUM);
@@ -1129,22 +1075,8 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
       
     }
   }
-  //////// DEBUG
-  //  auto l = new TPolyLine3D(ntracks*3);
-  //  for(auto i=0; i<ntracks; i++) {
-  //    l->SetPoint(i*3, list.at(i).getStart().X(), list.at(i).getStart().Y(), list.at(i).getStart().Z());
-  //    l->SetPoint(i*3+1, list.at(i).getEnd().X(), list.at(i).getEnd().Y(), list.at(i).getEnd().Z());
-  //    l->SetPoint(i*3+2, list.at(i).getStart().X(), list.at(i).getStart().Y(), list.at(i).getStart().Z());
-  //  }
-  //  l->SetLineColor(kBlack);
-  //  l->Draw();
-  //////// DEBUG
 }
-///////////////////////////////
-///////////////////////////////
-bool HIGGS_analysis::eventFilter(Track3D *aTrack){
-  return cuts(aTrack);
-}
+
 ///////////////////////////////
 ///////////////////////////////
 void HIGGS_analysis::finalize(){
@@ -1163,11 +1095,6 @@ void HIGGS_analysis::finalize(){
     p.second->SetTitleOffset(1.4, "X");
     p.second->SetTitleOffset(1.4, "Y");
   }
-  ////////// DEBUG
-  //  outputCanvas->Update();
-  //  outputCanvas->Modified();
-  //  outputCanvas->Write();
-  ////////// DEBUG
   outputFile->Write();
 }
 ///////////////////////////////
@@ -1181,25 +1108,13 @@ void HIGGS_analysis::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
     exit(-1);
   }
 }
-///////////////////////////////
-///////////////////////////////
-void HIGGS_analysis::setCuts(){
-  cuts.push_back(tpcreco::cuts::Cut1{});
-  cuts.push_back(tpcreco::cuts::Cut2{beam_offset, beam_slope, beam_diameter});
-  cuts.push_back(tpcreco::cuts::Cut3{myGeometryPtr.get(), 5});
-  cuts.push_back(tpcreco::cuts::Cut4{myGeometryPtr.get(), 25, 5});
-  cuts.push_back(tpcreco::cuts::Cut5{myGeometryPtr.get(), beam_diameter});
-  ////cuts.push_back(tpcreco::cuts::Cut6{ALPHA,CARBON_12,10,5,30,1000});
-}
+
 ///////////////////////////////
 ///////////////////////////////
 void HIGGS_analysis::setBeamProperties(float beamEnergyInMeV, // nominal gamma beam energy [MeV] in LAB reference frame
 				       TVector3 beamDir) { // nominal gamma beam direction in LAB reference frame and detector coordinate system
   photonEnergyInMeV_LAB = fabs(beamEnergyInMeV);
   photonUnitVec_DET_LAB = beamDir.Unit();
-  beam_slope=tan(3.0e-3); // [rad], measured slope: Y_DET(X_DET)=offset+slope*X_DET
-  beam_offset=-1.3; // [mm], measured offset: Y_DET of beam axis at X_DET=0
-  beam_diameter=12.0; // [mm] // TODO - TO BE PARAMETERIZED !!!
 }
 ///////////////////////////////
 ///////////////////////////////

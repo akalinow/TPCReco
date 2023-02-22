@@ -15,11 +15,11 @@
 #include "TPCReco/GeometryTPC.h"
 #include "TPCReco/IonRangeCalculator.h"
 #include "TPCReco/RequirementsCollection.h"
+#include "TPCReco/Track3D.h"
 
 class TH1F;
 class TH2F;
 class Track3D;
-
 
 class HIGGS_analysis{
 
@@ -33,7 +33,6 @@ class HIGGS_analysis{
   ~HIGGS_analysis();
 
   void fillHistos(Track3D *aTrack);
-  bool eventFilter(Track3D *aTrack); // 1 = pass, 0 = reject
   
  private:
 
@@ -42,7 +41,6 @@ class HIGGS_analysis{
   void finalize();
 
   void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);  // definition of detector coordinates in LAB reference frame
-  void setCuts(); // set event cuts // TODO - TO BE PARAMETERIZED!!!
   void setIonRangeCalculator(double pressure, double temperature); // CO2 pressure [mbar] and temperature [K]
   void setBeamProperties(float gammaBeamEnergyInMeV, // nominal gamma beam energy [MeV] in LAB reference
 			 TVector3 gammaBeamDir); // nominal gamma beam direction in LAB reference frame and detector coordinate system
@@ -50,9 +48,6 @@ class HIGGS_analysis{
   double getBetaOfCMS(double nucleusMassInMeV); // dimensionless speed (c=1) of gamma-nucleus CMS reference frame wrt LAB reference frame in detector coordinate system
 
   TFile *outputFile;
-  //////// DEBUG
-  //  TCanvas *outputCanvas; // DEBUG
-  //////// DEBUG
   std::map<std::string, TH1F*> histos1D;
   std::map<std::string, TH2F*> histos2D;
   std::map<std::string, TProfile*> profiles1D;
@@ -60,9 +55,5 @@ class HIGGS_analysis{
   IonRangeCalculator myRangeCalculator;
   TVector3 photonUnitVec_DET_LAB; // dimensionless, LAB reference frame, detector coordinate system
   float photonEnergyInMeV_LAB{0};  // MeV
-  float beam_slope{0}; // [rad], measured slope: Y_DET(X_DET)=offset+slope*X_DET
-  float beam_offset{0}; // [mm], measured offset: Y_DET of beam axis at X_DET=0
-  float beam_diameter{0}; // [mm] // TODO - TO BE PARAMETERIZED !!!
-  RequirementsCollection<std::function<bool(Track3D*)>> cuts;
 };
 #endif
