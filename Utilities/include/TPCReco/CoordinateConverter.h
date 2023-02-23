@@ -3,6 +3,7 @@
 
 #include <TRotation.h>
 #include <TVector3.h>
+#include <TLorentzVector.h>
 #include <ostream>
 
 /*
@@ -23,7 +24,9 @@ public:
   CoordinateConverter(EulerAngles nominal, EulerAngles correction = {});
 
   TVector3 detToBeam(const TVector3 &vector) const;
+  TLorentzVector detToBeam(const TLorentzVector &vector) const;
   TVector3 beamToDet(const TVector3 &vector) const;
+  TLorentzVector beamToDet(const TLorentzVector &vector) const;
 
 private:
   TRotation rotation;
