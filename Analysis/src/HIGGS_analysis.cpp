@@ -21,11 +21,12 @@
 HIGGS_analysis::HIGGS_analysis(std::shared_ptr<GeometryTPC> aGeometryPtr, // definition of LAB detector coordinates
 			       float beamEnergy,   // nominal gamma beam energy [MeV] in detector LAB frame
 			       TVector3 beamDir,   // nominal gamma beam direction in detector LAB frame
-			       double pressure,    // CO2 pressure [mbar]
-			       double temperature){// CO2 temperature [K]
+			       IonRangeCalculator ionRangeCalculator,
+             CoordinateConverter coordinateConverter)
+  : myRangeCalculator(ionRangeCalculator),
+    coordinateConverter(coordinateConverter) {
   setGeometry(aGeometryPtr);
   setBeamProperties(beamEnergy, beamDir);
-  setIonRangeCalculator(pressure, temperature);
   bookHistos();
 }
 ///////////////////////////////
@@ -35,13 +36,7 @@ HIGGS_analysis::~HIGGS_analysis(){
   finalize();
   delete outputFile;
 }
-//////////////////////////
-//////////////////////////
-void HIGGS_analysis::setIonRangeCalculator(double pressure, double temperature){ // CO2 pressure [mbar] and temperature [K]
 
-  // set current conditions: gas=CO2, arbitrary temperature [K] and pressure [mbar]
-  myRangeCalculator.setGasConditions(/*IonRangeCalculator::*/CO2, fabs(pressure), fabs(temperature));
-}
 ///////////////////////////////
 ///////////////////////////////
 void HIGGS_analysis::bookHistos(){
