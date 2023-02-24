@@ -717,31 +717,15 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     const TVector3 beta_DET_LAB=getBetaVectorOfCMS(oxygenMassGroundState).Unit()*(photon_E_LAB/(photon_E_LAB+oxygenMassGroundState));
     // DEBUG
 
-    // TODO
-    // TODO switch to DET->BEAM dedicated converter class!!!
-    // TODO
-    // change DET-->BEAM coordinate transformation for the HIGS experiment
-    // formulas below are valid provided that beam direction is anti-paralell to X_DET (HIGS case):
-    // X_DET -> -Z_BEAM
-    // Y_DET ->  X_BEAM
-    // Z_DET -> -Y_BEAM
-    TLorentzVector alphaP4_BEAM_LAB(alphaP4_DET_LAB.Py(), -alphaP4_DET_LAB.Pz(), -alphaP4_DET_LAB.Px(), alphaP4_DET_LAB.E());
-    TLorentzVector carbonP4_BEAM_LAB(carbonP4_DET_LAB.Py(), -carbonP4_DET_LAB.Pz(), -carbonP4_DET_LAB.Px(), carbonP4_DET_LAB.E());
-
+    TLorentzVector alphaP4_BEAM_LAB = coordinateConverter.detToBeam(alphaP4_DET_LAB);
+    TLorentzVector carbonP4_BEAM_LAB = coordinateConverter.detToBeam(carbonP4_DET_LAB);
     TLorentzVector alphaP4_DET_CMS(alphaP4_DET_LAB);
     TLorentzVector carbonP4_DET_CMS(carbonP4_DET_LAB);
-    alphaP4_DET_CMS.Boost(-1.0*beta_DET_LAB); // see TLorentzVector::Boost for sign convention!
-    carbonP4_DET_CMS.Boost(-1.0*beta_DET_LAB); // see TLorentzVector::Boost for sign convention!
-    // TODO
-    // TODO switch to DET->BEAM dedicated converter class!!!
-    // TODO
-    // change DET-->BEAM coordinate transformation for the HIGS experiment
-    // formulas below are valid provided that beam direction is anti-paralell to X_DET (HIGS case):
-    // X_DET -> -Z_BEAM
-    // Y_DET ->  X_BEAM
-    // Z_DET -> -Y_BEAM
-    TLorentzVector alphaP4_BEAM_CMS(alphaP4_DET_CMS.Py(), -alphaP4_DET_CMS.Pz(), -alphaP4_DET_CMS.Px(), alphaP4_DET_CMS.E());
-    TLorentzVector carbonP4_BEAM_CMS(carbonP4_DET_CMS.Py(), -carbonP4_DET_CMS.Pz(), -carbonP4_DET_CMS.Px(), carbonP4_DET_CMS.E());
+    alphaP4_DET_CMS.Boost(-1.0*beta_DET_LAB);
+    carbonP4_DET_CMS.Boost(-1.0*beta_DET_LAB);
+
+    TLorentzVector alphaP4_BEAM_CMS = coordinateConverter.detToBeam(alphaP4_DET_CMS);
+    TLorentzVector carbonP4_BEAM_CMS = coordinateConverter.detToBeam(carbonP4_DET_CMS);
     double alpha_T_CMS=alphaP4_BEAM_CMS.E()-alphaP4_BEAM_CMS.M(); // [MeV]
     double carbon_T_CMS=carbonP4_BEAM_CMS.E()-carbonP4_BEAM_CMS.M(); // [MeV]
     //    double invariantMass=(alphaP4_BEAM_CMS+carbonP4_BEAM_CMS).M();// [MeV/c^2]
@@ -901,15 +885,7 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
       // boost P4 from DET/LAB frame to CMS frame (see TLorentzVector::Boost() convention!)
       alphaP4_DET_CMS[i]=TLorentzVector(alphaP4_DET_LAB[i]);
       alphaP4_DET_CMS[i].Boost(-1.0*beta_DET_LAB);
-      // TODO
-      // TODO switch to DET->BEAM dedicated converter class!!!
-      // TODO
-      // change DET-->BEAM coordinate transformation for the HIGS experiment
-      // formulas below are valid provided that beam direction is anti-paralell to X_DET (HIGS case):
-      // X_DET -> -Z_BEAM
-      // Y_DET ->  X_BEAM
-      // Z_DET -> -Y_BEAM
-      alphaP4_BEAM_CMS[i]=TLorentzVector(alphaP4_DET_CMS[i].Py(), -alphaP4_DET_CMS[i].Pz(), -alphaP4_DET_CMS[i].Px(), alphaP4_DET_CMS[i].E());
+      alphaP4_BEAM_CMS[i] = coordinateConverter.detToBeam(alphaP4_DET_CMS[i]);
       alpha_T_CMS[i]=alphaP4_BEAM_CMS[i].E()-alphaP4_BEAM_CMS[i].M(); // [MeV]
       alpha_phi_BEAM_CMS[i]=alphaP4_BEAM_CMS[i].Phi(); // [rad], azimuthal angle from X axis
       alpha_cosTheta_BEAM_CMS[i]=alphaP4_BEAM_CMS[i].CosTheta(); // [rad], azimuthal angle from X axis
