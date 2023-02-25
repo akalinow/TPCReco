@@ -35,7 +35,7 @@ R__ADD_LIBRARY_PATH(../lib)
 
 //////////////////////////
 //////////////////////////
-void generateResponse(double sigmaXY=1, double sigmaZ=-1, double peakingTime=-1, long npointsSpace=1000000, long npointsTime=100000, const char *geometryFile="geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat") { // generates histograms and saves them to a separate ROOT file
+void generateResponse(double sigmaXY=1, double sigmaZ=-1, double peakingTime=-1, long npointsSpace=1000000, long npointsTime=100000, const char *geometryFile="geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat", int nbinsSpace=10, int nbinsTime=20) { // generates histograms and saves them to a separate ROOT file
   if (!gROOT->GetClass("GeometryTPC")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
   }
@@ -65,8 +65,8 @@ void generateResponse(double sigmaXY=1, double sigmaZ=-1, double peakingTime=-1,
     return;
   }
   calc->setDebug(true);
-  calc->initializeStripResponse(npointsSpace); // overwrite default value
-  calc->initializeTimeResponse(npointsTime); // overwrite default value
+  calc->initializeStripResponse(npointsSpace, nbinsSpace); // overwrite default value
+  calc->initializeTimeResponse(npointsTime, nbinsTime); // overwrite default value
   std::cout << "Saving strip response matrix to file: "<< resultFile << std::endl;
   calc->saveHistograms(resultFile.c_str());
 }
