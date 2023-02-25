@@ -27,6 +27,10 @@ public:
 
   void configurePedestal(const boost::property_tree::ptree &config);
 
+  std::shared_ptr<TProfile> getPedestalProfilePerAsad(int coboId, int asadId) { return myPedestalCalculator.GetPedestalProfilePerAsad(coboId, asadId); }
+
+  std::shared_ptr<TH1D> getFpnProfilePerAget(int coboId, int asadId, int agetId) { return myPedestalCalculator.GetFpnProfilePerAget(coboId, asadId, agetId); }
+
   std::shared_ptr<EventTPC> getNextEvent();
   
   std::shared_ptr<EventTPC> getPreviousEvent();
