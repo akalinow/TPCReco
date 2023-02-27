@@ -45,6 +45,7 @@ class PedestalCalculator {
   int GetMinPedestalCell() const {return minPedestalCell;}
   int GetMaxPedestalCell() const {return maxPedestalCell;}
   std::shared_ptr<TProfile> GetPedestalProfilePerAsad(int coboId, int asadId);
+  std::shared_ptr<TH1D> GetFpnProfilePerAget(int coboId, int asadId, int agetId);
 
   void SetMinSignalCell(int minSignalCell ) {this->minSignalCell=minSignalCell;}
   void SetMaxSignalCell(int maxSignalCell) {this->maxSignalCell=maxSignalCell;}
