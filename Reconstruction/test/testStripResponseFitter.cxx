@@ -13,11 +13,13 @@ R__ADD_LIBRARY_PATH(../lib)
 #endif
 
 #include <vector>
+
 #include <TMath.h>
 #include <TRandom3.h>
+#if DEBUG_SIGNAL
 #include <TCanvas.h> // DEBUG
-#include <TFile.h> // DEBUG
-#include <TGraph.h> // DEBUG
+#endif
+#include <TFile.h>
 #include <TString.h>
 #include <TH2D.h>
 #include <TVector3.h>
@@ -36,8 +38,7 @@ R__ADD_LIBRARY_PATH(../lib)
 #include "UtilsMath.h"
 
 #define DEBUG_CHARGE    false
-#define DEBUG_SIGNAL    false
-#define DEBUG_PAR0      false
+#define DEBUG_SIGNAL    false // plot UVW projections for reference data and starting point template
 #define DEBUG_CHI2      false
 
 using namespace ROOT::Math;
@@ -133,34 +134,46 @@ private:
     }
     
     //// DEBUG
-#if defined(DEBUG_SIGNAL) && DEBUG_SIGNAL
-    TFile f("fit_ref_histos.root", "RECREATE");
-    f.cd();
-    TCanvas c("c", "c", 1200, 400);
-    c.Divide(3,1);
-    int ipad=0;
-    for(auto &it: myRefHistosInMM) {
-      ipad++;
-      c.cd(ipad);
-      auto h=(TH2D*)(it->DrawClone("COLZ"));
-      h->SetDirectory(0);    
+#if DEBUG_SIGNAL
+    static auto isFirst=true;
+    if(isFirst) {
+      TFile f("fit_ref_histos.root", "RECREATE");
+      f.cd();
+      TCanvas c("c", "c", 1200, 400);
+      c.SetName("c_ref");
+      c.SetTitle(c.GetName());
+      c.Divide(3,1);
+      int ipad=0;
+      for(auto &it: myRefHistosInMM) {
+	ipad++;
+	c.cd(ipad);
+	auto h=(TH2D*)(it->DrawClone("COLZ"));
+	h->SetDirectory(0);
+	h->SetName(Form("ref_%s",h->GetName()));
+	h->SetTitle(Form("REF %s;%s;%s;%s",h->GetTitle(),h->GetXaxis()->GetTitle(),h->GetYaxis()->GetTitle(),h->GetZaxis()->GetTitle()));
+      }
+      c.Update();
+      c.Modified();
+      c.Write();
+      c.Clear();
+      c.SetName("c_fit");
+      c.SetTitle(c.GetName());
+      c.Divide(3,1);
+      ipad=0;
+      for(auto &it: myFitHistosInMM) {
+	ipad++;
+	c.cd(ipad);
+	auto h=(TH2D*)(it->DrawClone("COLZ"));
+	h->SetDirectory(0);
+	h->SetName(Form("fit_%s",h->GetName()));
+	h->SetTitle(Form("FIT %s;%s;%s;%s",h->GetTitle(),h->GetXaxis()->GetTitle(),h->GetYaxis()->GetTitle(),h->GetZaxis()->GetTitle()));
+      }
+      c.Update();
+      c.Modified();
+      c.Write();
+      f.Close();
+      isFirst=false;
     }
-    c.Update();
-    c.Modified();
-    c.Write();
-    c.Clear();
-    c.Divide(3,1);
-    ipad=0;
-    for(auto &it: myFitHistosInMM) {
-      ipad++;
-      c.cd(ipad);
-      auto h=(TH2D*)(it->DrawClone("COLZ"));
-      h->SetDirectory(0);    
-    }
-    c.Update();
-    c.Modified();
-    c.Write();
-    f.Close();
 #endif
     //// DEBUG
   }
@@ -507,50 +520,50 @@ public:
 
 // _______________________________________
 //
-// Define simple data structure
+// Define simple data structure for N-prong fit (1<=N<=3)
 //
-typedef struct {Float_t eventId, runId,
-    energy, // MeV
-    pid,
+typedef struct {Float_t eventId, runId, ntracks,
+    energy[3]={0,0,0}, // MeV
+    pid[3]={0,0,0},
     chi2,
     ndf,
     status,
     ncalls,
-    lengthTrue, // mm
-    phiTrue, // rad
-    cosThetaTrue,
+    lengthTrue[3]={0,0,0}, // mm
+    phiTrue[3]={0,0,0}, // rad
+    cosThetaTrue[3]={0,0,0},
     scaleTrue, // ADC/MeV
     xVtxTrue, yVtxTrue, zVtxTrue, // mm
-    xEndTrue, yEndTrue, zEndTrue, // mm
-    lengthReco, // mm
-    phiReco, // rad
-    cosThetaReco,
+    xEndTrue[3]={0,0,0}, yEndTrue[3]={0,0,0}, zEndTrue[3]={0,0,0}, // mm
+    lengthReco[3]={0,0,0}, // mm
+    phiReco[3]={0,0,0}, // rad
+    cosThetaReco[3]={0,0,0},
     scaleReco, // ADC/MeV
     xVtxReco, yVtxReco, zVtxReco, // mm
-    xEndReco, yEndReco, zEndReco, // mm
+    xEndReco[3]={0,0,0}, yEndReco[3]={0,0,0}, zEndReco[3]={0,0,0}, // mm
     scaleRecoErr, // ADC/MeV
     xVtxRecoErr, yVtxRecoErr, zVtxRecoErr, // mm
-    xEndRecoErr, yEndRecoErr, zEndRecoErr, // mm
+    xEndRecoErr[3]={0,0,0}, yEndRecoErr[3]={0,0,0}, zEndRecoErr[3]={0,0,0}, // mm
     initScaleDeviation, // intial conditions: fabs(difference from TRUE) [ADC/MeV]
     initVtxDeviation, // initial conditions: radius from TRUE vertex position [mm]
-    initEndDeviation; // initial conditions: radius from TRUE endpoint position [mm]
-    } FitDebugData;
+    initEndDeviation[3]={0,0,0}; // initial conditions: radius from TRUE endpoint position [mm]
+    } FitDebugData3prong;
 /////////////////////////
 
 // _______________________________________
 //
-// This function: generates and fits a single, straight pseudo-track.
+// This function: generates and fits N (1<=N<=3) straight pseudo-tracks.having common vertex
 // It returns CHI2 of the fit.
-// It also fills FitDebugData structure.
+// It also fills FitDebugData3prong structure.
 //
-double fit_1prong(std::vector<std::shared_ptr<TH2D> > &referenceHistosInMM,
+double fit_Nprong(std::vector<std::shared_ptr<TH2D> > &referenceHistosInMM,
 		  std::shared_ptr<GeometryTPC> geo,
 		  std::shared_ptr<StripResponseCalculator> calcResponse,
 		  std::shared_ptr<IonRangeCalculator> calcRange,
 		  std::vector<pid_type> pidList, // determines hypothesis and number of tracks
 		  std::vector<double> initialParameters, // starting points of parametric fit
 		  double maxDeviationInMM, // for setting parameter limits
-		  FitDebugData &fit_debug_data
+		  FitDebugData3prong &fit_debug_data
 		  ) {
 
   // initilize fitter
@@ -571,28 +584,6 @@ double fit_1prong(std::vector<std::shared_ptr<TH2D> > &referenceHistosInMM,
     index++;
   }
 
-  //// DEBUG
-#if defined(DEBUG_PAR0) && DEBUG_PAR0
-  std::cout << __FUNCTION__<< ": Initial CHI2=" << myFit(pStart) << std::endl;
-  TFile f("chi2_vs_par0_graph.root", "RECREATE");
-  f.cd();
-  TCanvas c("c", "c", 1200, 1200);
-  int np=1000;
-  TGraph tg;
-  for(auto i=0; i<=np; i++) {
-    auto par0 = adcPerMeV-0.5*adcPerMeV*(0.5-1.0*i/np);
-    pStart[0]=par0;
-    tg.SetPoint(tg.GetN(), par0, fitter.myFit(pStart));
-  }
-  tg.Draw("AL");
-  c.Update();
-  c.Modified();
-  c.Write();
-  f.Close();
-  return 0;
-#endif
-  //// DEBUG
-  
   fitter.SetFCN(fcn, pStart, myFit.getRefNpoints(), true);
 
   // compute better ADC scaling factor
@@ -600,21 +591,21 @@ double fit_1prong(std::vector<std::shared_ptr<TH2D> > &referenceHistosInMM,
   for(auto &it: referenceHistosInMM) { ref_integral += it->Integral(); }
   double fit_integral=0.0; // integral of initial fitted histograms
   double chi2=myFit(pStart);
-  std::cout << __FUNCTION__ << ": CHI2 evaluated at INITIAL starting point ="<<chi2<<std::endl; 
+  std::cout << __FUNCTION__ << ": CHI2 evaluated at INITIAL starting point =" << chi2 << std::endl;
   for(auto &it: myFit.getFitHistogramsInMM()) { fit_integral += it->Integral(); }
   double corr_factor=ref_integral/fit_integral; // correction factor for ADC scale
-  std::cout << __FUNCTION__ << ": Multiplying original ADC scaling factor by "<<corr_factor<<std::endl;
+  std::cout << __FUNCTION__ << ": Multiplying original ADC scaling factor by " << corr_factor << std::endl;
   pStart[0]*=corr_factor;
   fitter.Config().ParSettings(0).SetValue(pStart[0]);
   chi2=myFit(pStart);
-  std::cout << __FUNCTION__ << ": CHI2 evaluated at CORRECTED starting point ="<<chi2<<std::endl;
+  std::cout << __FUNCTION__ << ": CHI2 evaluated at CORRECTED starting point =" << chi2 << std::endl;
 
   // set limits on the fitted ADC scale
   // to be within factor of 2 from initial guess value
   fitter.Config().ParSettings(0).SetLimits(0.5*pStart[0], 2.0*pStart[0]);
-  std::cout<<"Setting par["<<0<<"]  limits=["
-	   <<fitter.Config().ParSettings(0).LowerLimit()<<", "
-	   <<fitter.Config().ParSettings(0).UpperLimit()<<"]"<<std::endl;    
+  std::cout << "Setting par[" << 0 << "]  limits=["
+	    << fitter.Config().ParSettings(0).LowerLimit()<<", "
+	    << fitter.Config().ParSettings(0).UpperLimit()<<"]" << std::endl;
 
   // set limits on the fitted position of track's vertex & reference_endpoint
   // to be within +/- maxDeviationInMM from initial guess values
@@ -686,281 +677,47 @@ double fit_1prong(std::vector<std::shared_ptr<TH2D> > &referenceHistosInMM,
     std::cout<<__FUNCTION__<<": STEP 1 (Minuit2/Fumili2) --> Fit ok."<<std::endl;
   }
 
-  /*
-  ////////// STEP 1 - SIMPLEX - free scale, fixed vertex, endpoint
-  //
-  std::cout<<"Releasing par["<<0<<"]"<<std::endl;
-  fitter.Config().ParSettings(0).Release();
-  for (int i = 1; i < myFit.getNparams(); ++i) {
-    std::cout<<"Fixing par["<<i<<"]="<<fitter.Config().ParSettings(i).Value()<<std::endl;
-    fitter.Config().ParSettings(i).Fix();
-  }
-  fitter.Config().MinimizerOptions().SetMinimizerType("Minuit"); // default
-  //  fitter.Config().MinimizerOptions().SetMinimizerType("Minuit2"); // TEST
-  fitter.Config().MinimizerOptions().SetMinimizerAlgorithm("Simplex"); // TEST
-  //  fitter.Config().MinimizerOptions().SetMinimizerAlgorithm("Migrad"); // default
-  //  fitter.Config().MinimizerOptions().SetMinimizerAlgorithm("Minimize"); // TEST
-  fitter.Config().MinimizerOptions().SetMaxFunctionCalls(1000); // TEST
-  fitter.Config().MinimizerOptions().SetMaxIterations(1000); // TEST
-  fitter.Config().MinimizerOptions().SetStrategy(1); // default
-  //  fitter.Config().MinimizerOptions().SetStrategy(2); // TEST
-  // check fit results
-  ok = fitter.FitFCN();
-  if (!ok) {
-    std::cout<<__FUNCTION__<<": Fit failed."<<std::endl;
-    //    return 1;
-  }
-
-  ////////// STEP 2 - MIGRAD - free scale, fixed vertex, endpoint
-  //
-  //  fitter.Config().MinimizerOptions().SetMinimizerType("Minuit2"); // TEST
-  fitter.Config().MinimizerOptions().SetMinimizerAlgorithm("Simplex"); // default
-  fitter.Config().MinimizerOptions().SetMaxFunctionCalls(1000); // TEST
-  fitter.Config().MinimizerOptions().SetStrategy(1); // TEST
-  // check fit results
-  ok = fitter.FitFCN();
-  if (!ok) {
-    std::cout<<__FUNCTION__<<": Fit failed."<<std::endl;
-    //    return 1;
-  }
-
-  ////////// STEP 3 - MINIMIZE - free scale, fixed vertex, endpoint
-  //
-  //  fitter.Config().MinimizerOptions().SetMinimizerType("Minuit2"); // TEST
-  fitter.Config().MinimizerOptions().SetMinimizerAlgorithm("Simplex"); // TEST
-  fitter.Config().MinimizerOptions().SetMaxFunctionCalls(1000); // TEST
-  fitter.Config().MinimizerOptions().SetStrategy(1); // TEST
-  // check fit results
-  ok = fitter.FitFCN();
-  if (!ok) {
-    std::cout<<__FUNCTION__<<": Fit failed."<<std::endl;
-    //    return 1;
-  }
-
-  ////////// STEP 4 - SIMPLEX - fixed scale, vertex, free endpoint
-  //
-  std::cout<<"Fixing par["<<0<<"]="<<fitter.Config().ParSettings(0).Value()<<std::endl;
-  fitter.Config().ParSettings(0).Fix();
-  for (int i = 4; i < myFit.getNparams(); ++i) {
-    std::cout<<"Releasing par["<<i<<"]"<<std::endl;
-    fitter.Config().ParSettings(i).Release();
-  }
-  //  fitter.Config().MinimizerOptions().SetMinimizerType("Minuit2"); // TEST
-  fitter.Config().MinimizerOptions().SetMinimizerAlgorithm("Simplex"); // TEST
-  fitter.Config().MinimizerOptions().SetMaxFunctionCalls(1000); // TEST
-  fitter.Config().MinimizerOptions().SetStrategy(1); // TEST
-  // check fit results
-  ok = fitter.FitFCN();
-  if (!ok) {
-    std::cout<<__FUNCTION__<<": Fit failed."<<std::endl;
-    //    return 1;
-  }
-
-  ////////// STEP 5 - SIMPLEX - fixed scale, endpoint, free vertex
-  //
-  std::cout<<"Fixing par["<<0<<"]="<<fitter.Config().ParSettings(0).Value()<<std::endl;
-  fitter.Config().ParSettings(0).Fix();
-  for (int i = 1; i < 4; ++i) {
-    std::cout<<"Releasing par["<<i<<"]"<<std::endl;
-    fitter.Config().ParSettings(i).Release();
-  }
-  for (int i = 4; i < myFit.getNparams(); ++i) {
-    std::cout<<"Fixing par["<<i<<"]="<<fitter.Config().ParSettings(i).Value()<<std::endl;
-    fitter.Config().ParSettings(i).Fix();
-  }
-  //  fitter.Config().MinimizerOptions().SetMinimizerType("Minuit2"); // TEST
-  fitter.Config().MinimizerOptions().SetMinimizerAlgorithm("Simplex"); // TEST
-  fitter.Config().MinimizerOptions().SetMaxFunctionCalls(1000); // TEST
-  fitter.Config().MinimizerOptions().SetStrategy(1); // TEST
-  // check fit results
-  ok = fitter.FitFCN();
-  if (!ok) {
-    std::cout<<__FUNCTION__<<": Fit failed."<<std::endl;
-    //    return 1;
-  }
-
-  ////////// STEP 5 - SIMPLEX - fixed scale, free endpoint, vertex
-  //
-  std::cout<<"Fixing par["<<0<<"]="<<fitter.Config().ParSettings(0).Value()<<std::endl;
-  fitter.Config().ParSettings(0).Fix();
-  for (int i = 1; i < myFit.getNparams(); ++i) {
-    std::cout<<"Releasing par["<<i<<"]"<<std::endl;
-    fitter.Config().ParSettings(i).Release();
-  }
-  //  fitter.Config().MinimizerOptions().SetMinimizerType("Minuit2"); // TEST
-  fitter.Config().MinimizerOptions().SetMinimizerAlgorithm("Simplex"); // TEST
-  fitter.Config().MinimizerOptions().SetMaxFunctionCalls(1000); // TEST
-  fitter.Config().MinimizerOptions().SetStrategy(1); // TEST
-  // check fit results
-  ok = fitter.FitFCN();
-  if (!ok) {
-    std::cout<<__FUNCTION__<<": Fit failed."<<std::endl;
-    //    return 1;
-  }
-
-  ////////// STEP 6 - SIMPLEX - fixed scale, free vertex, endpoint
-  //
-  //  fitter.Config().MinimizerOptions().SetMinimizerType("Minuit2"); // TEST
-  fitter.Config().MinimizerOptions().SetMinimizerAlgorithm("Simplex"); // default
-  fitter.Config().MinimizerOptions().SetMaxFunctionCalls(1000); // TEST
-  fitter.Config().MinimizerOptions().SetStrategy(1); // TEST
-  // check fit results
-  ok = fitter.FitFCN();
-  if (!ok) {
-    std::cout<<__FUNCTION__<<": Fit failed."<<std::endl;
-    //    return 1;
-  }
-*/
-  /*
-  ////////// NEW STEP 1 - SCAN - free scale, vertex and endpoints
-  //
-  for (int i = 0; i < myFit.getNparams(); ++i) {
-    fitter.Config().ParSettings(i).Release(); // free scale, vertex, endpoints
-    std::cout<<"Releasing par["<<i<<"]"<<std::endl;
-  }
-  fitter.Config().MinimizerOptions().SetMinimizerType("Minuit"); // default
-  //  fitter.Config().MinimizerOptions().SetMinimizerType("Minuit2"); // TEST
-  fitter.Config().MinimizerOptions().SetMinimizerAlgorithm("Scan"); // TEST
-  //  fitter.Config().MinimizerOptions().SetMinimizerAlgorithm("Migrad"); // default
-  //  fitter.Config().MinimizerOptions().SetMinimizerAlgorithm("Minimize"); // TEST
-  fitter.Config().MinimizerOptions().SetMaxFunctionCalls(1000); // TEST
-  fitter.Config().MinimizerOptions().SetMaxIterations(1000); // TEST
-  fitter.Config().MinimizerOptions().SetStrategy(1); // default
-  //  fitter.Config().MinimizerOptions().SetStrategy(2); // TEST
-  // check fit results
-  ok = fitter.FitFCN();
-  if (!ok) {
-    std::cout<<__FUNCTION__<<": STEP 1 --> Fit failed."<<std::endl;
-    //    return 1;
-  } else {
-    std::cout<<__FUNCTION__<<": STEP 1 --> Fit ok."<<std::endl;
-  }
-
-  ////////// NEW STEP 7 - SIMPLEX - fix scale, free endpoint, vertex
-  //
-  fitter.Config().ParSettings(0).Fix(); // release ADC scale
-  std::cout<<"Fixing par["<<0<<"]="<<fitter.Config().ParSettings(0).Value()<<std::endl;
-  for (int i = 1; i < myFit.getNparams(); ++i) {
-    fitter.Config().ParSettings(i).Release(); // free vertex, endpoints
-    std::cout<<"Releasing par["<<i<<"]"<<std::endl;
-  }  
-  fitter.Config().MinimizerOptions().SetMinimizerType("Minuit"); // default
-  //  fitter.Config().MinimizerOptions().SetMinimizerType("Minuit2"); // TEST
-  fitter.Config().MinimizerOptions().SetMinimizerAlgorithm("Simplex"); // TEST
-  fitter.Config().MinimizerOptions().SetMaxFunctionCalls(10000); // TEST
-  fitter.Config().MinimizerOptions().SetMaxIterations(100); // TEST
-  fitter.Config().MinimizerOptions().SetStrategy(1); // TEST
-  //  fitter.Config().MinimizerOptions().SetStrategy(2); // TEST
-  // check fit results
-  ok = fitter.FitFCN();
-  if (!ok) {
-    std::cout<<__FUNCTION__<<": STEP 7 --> Fit failed."<<std::endl;
-    //    return 1;
-  } else {
-    std::cout<<__FUNCTION__<<": STEP 7 --> Fit ok."<<std::endl;
-  }
-
-  ////////// NEW STEP 8 - SIMPLEX - free scale, fixed endpoint, vertex
-  //
-  fitter.Config().ParSettings(0).Release(); // release ADC scale
-  std::cout<<"Releasing par["<<0<<"]"<<std::endl;
-  for (int i = 1; i < myFit.getNparams(); ++i) {
-    fitter.Config().ParSettings(i).Fix(); // fixed vertex, endpoints
-    std::cout<<"Fixing par["<<i<<"]="<<fitter.Config().ParSettings(i).Value()<<std::endl;
-  }
-  fitter.Config().MinimizerOptions().SetMinimizerType("Minuit"); // default
-  //  fitter.Config().MinimizerOptions().SetMinimizerType("Minuit2"); // TEST
-  fitter.Config().MinimizerOptions().SetMinimizerAlgorithm("Simplex"); // TEST
-  fitter.Config().MinimizerOptions().SetMaxFunctionCalls(10000); // TEST
-  fitter.Config().MinimizerOptions().SetMaxIterations(100); // TEST
-  fitter.Config().MinimizerOptions().SetStrategy(1); // TEST
-  // check fit results
-  ok = fitter.FitFCN();
-  if (!ok) {
-    std::cout<<__FUNCTION__<<": STEP 8 --> Fit failed."<<std::endl;
-    //    return 1;
-  } else {
-    std::cout<<__FUNCTION__<<": STEP 8 --> Fit ok."<<std::endl;
-  }
-
-  ////////// NEW STEP 9 - SIMPLEX - free scale, fixed endpoint, vertex
-  //
-  for (int i = 0; i < myFit.getNparams(); ++i) {
-    fitter.Config().ParSettings(i).Release(); // free scale, vertex, endpoints
-    std::cout<<"Releasing par["<<i<<"]"<<std::endl;
-  }
-  fitter.Config().MinimizerOptions().SetMinimizerType("Minuit"); // default
-  //  fitter.Config().MinimizerOptions().SetMinimizerType("Minuit2"); // TEST
-  fitter.Config().MinimizerOptions().SetMinimizerAlgorithm("Simplex"); // TEST
-  fitter.Config().MinimizerOptions().SetMaxFunctionCalls(10000); // TEST
-  fitter.Config().MinimizerOptions().SetMaxIterations(100); // TEST
-  fitter.Config().MinimizerOptions().SetStrategy(1); // TEST
-  // check fit results
-  ok = fitter.FitFCN();
-  if (!ok) {
-    std::cout<<__FUNCTION__<<": STEP 9 --> Fit failed."<<std::endl;
-    //    return 1;
-  } else {
-    std::cout<<__FUNCTION__<<": STEP 9 --> Fit ok."<<std::endl;
-  }
-
-  ////////// NEW STEP 10 - MINIMIZE=SIMPLEX+MIGRAD - free scale, endpoint, vertex
-  //
-  for (int i = 0; i < myFit.getNparams(); ++i) {
-    fitter.Config().ParSettings(i).Release(); // free scale, vertex, endpoints
-    std::cout<<"Releasing par["<<i<<"]"<<std::endl;
-  }
-  fitter.Config().MinimizerOptions().SetMinimizerType("Minuit"); // default
-  //  fitter.Config().MinimizerOptions().SetMinimizerType("Minuit2"); // TEST
-  fitter.Config().MinimizerOptions().SetMinimizerAlgorithm("Minimize"); // TEST
-  fitter.Config().MinimizerOptions().SetMaxFunctionCalls(10000); // TEST
-  fitter.Config().MinimizerOptions().SetMaxIterations(100); // TEST
-  fitter.Config().MinimizerOptions().SetStrategy(2); // TEST
-  // check fit results
-  ok = fitter.FitFCN();
-  if (!ok) {
-    std::cout<<__FUNCTION__<<": STEP 10 --> Fit failed."<<std::endl;
-    //    return 1;
-  } else {
-    std::cout<<__FUNCTION__<<": STEP 10 --> Fit ok."<<std::endl;
-  }
-  */
   // get fit parameters
   const ROOT::Fit::FitResult & result = fitter.Result();
   const double * parFit = result.GetParams();
   const double * parErr = result.GetErrors();
-  
+
   result.Print(std::cout);
 
-  // create TrackSegment3D collections with RECO information
-  TrackSegment3D fit_seg;
-  fit_seg.setGeometry(geo);
-  fit_seg.setStartEnd(TVector3(parFit[1], parFit[2], parFit[3]), TVector3(parFit[4], parFit[5], parFit[6]));
-  fit_seg.setPID(pidList.front());
-
-  // fill FitDebugData with RECO information
+  // fill FitDebugData with RECO information per event
   fit_debug_data.chi2 = result.Chi2();
   fit_debug_data.ndf = 1.*result.Ndf();
   fit_debug_data.status = 1.*result.Status();
   fit_debug_data.ncalls = 1.*result.NCalls();
   fit_debug_data.scaleReco = parFit[0];
   fit_debug_data.scaleRecoErr = parErr[0];
-  fit_debug_data.lengthReco = fit_seg.getLength();
-  fit_debug_data.phiReco = fit_seg.getTangent().Phi();
-  fit_debug_data.cosThetaReco = fit_seg.getTangent().CosTheta();
-  fit_debug_data.xVtxReco = fit_seg.getStart().X();
-  fit_debug_data.yVtxReco = fit_seg.getStart().Y();
-  fit_debug_data.zVtxReco = fit_seg.getStart().Z();
-  fit_debug_data.xEndReco = fit_seg.getEnd().X();
-  fit_debug_data.yEndReco = fit_seg.getEnd().Y();
-  fit_debug_data.zEndReco = fit_seg.getEnd().Z();
+  fit_debug_data.xVtxReco = parFit[1];
+  fit_debug_data.yVtxReco = parFit[2];
+  fit_debug_data.zVtxReco = parFit[3];
   fit_debug_data.xVtxRecoErr = parErr[1];
   fit_debug_data.yVtxRecoErr = parErr[2];
   fit_debug_data.zVtxRecoErr = parErr[3];
-  fit_debug_data.xEndRecoErr = parErr[4];
-  fit_debug_data.yEndRecoErr = parErr[5];
-  fit_debug_data.zEndRecoErr = parErr[6];
 
+  for(int itrack=0; itrack<pidList.size(); itrack++) {
+
+    // create TrackSegment3D collections with RECO information
+    TrackSegment3D fit_seg;
+    fit_seg.setGeometry(geo);
+    fit_seg.setStartEnd(TVector3(parFit[1], parFit[2], parFit[3]),
+			TVector3(parFit[4+itrack*3], parFit[5+itrack*3], parFit[6+itrack*3]));
+    fit_seg.setPID(pidList[itrack]);
+
+    // fill FitDebugData with RECO information per track
+    fit_debug_data.lengthReco[itrack] = fit_seg.getLength();
+    fit_debug_data.phiReco[itrack] = fit_seg.getTangent().Phi();
+    fit_debug_data.cosThetaReco[itrack] = fit_seg.getTangent().CosTheta();
+    fit_debug_data.xEndReco[itrack] = fit_seg.getEnd().X();
+    fit_debug_data.yEndReco[itrack] = fit_seg.getEnd().Y();
+    fit_debug_data.zEndReco[itrack] = fit_seg.getEnd().Z();
+    fit_debug_data.xEndRecoErr[itrack] = parErr[4+itrack*3];
+    fit_debug_data.yEndRecoErr[itrack] = parErr[5+itrack*3];
+    fit_debug_data.zEndRecoErr[itrack] = parErr[6+itrack*3];
+  }
   return result.MinFcnValue();
 }
 
@@ -982,16 +739,25 @@ int loop(const long maxIter=1, const int runId=1234) {
 
   /////////// input parameters
   //
-  const auto pid=CARBON_12; // particle ID
-  const auto E_MeV=1.0; // particle kinetic energy [MeV]
-  // const auto pid=ALPHA; // particle ID
-  // const auto E_MeV=3.0; // particle kinetic energy [MeV]
+  std::vector<pid_type> pidList{ALPHA, CARBON_12}; // particle ID
+  std::vector<double> E_MeV{3.0, 1.0}; // particle kinetic energy [MeV]
+  // std::vector<pid_type> pidList{CARBON_12}; // particle ID
+  // std::vector<double> E_MeV{1.0}; // particle kinetic energy [MeV]
+  // std::vector<pid_type> pidList{ALPHA}; // particle ID
+  // std::vector<double> E_MeV{3.0}; // particle kinetic energy [MeV]
+
   const auto sigmaXY_mm=2.0; // mm
   const auto sigmaZ_mm=2.0; // mm
   const auto peakingTime_ns=0.0; // ns
+  const std::string geometryFileName = "geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat";
   const auto pressure_mbar = 250.0; // mbar
   const auto temperature_K = 273.15+20; // K
-  const std::string geometryFileName = "geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat";
+
+  const auto reference_adcPerMeV=1e5;
+  const auto reference_nPointsMin=1000; // fine granularity for crearing reference UVW histograms to be fitted
+  const auto reference_nPointsPerMM=100.0; // fine granularity for creating reference UVW histograms to be fitted
+  const auto maxDeviationInADC=reference_adcPerMeV*0.5; // for smearing starting point and setting parameter limits
+  const auto maxDeviationInMM=5.0; // for smearing fit starting point and setting parameter limits
 
   /////////// initialize TPC geometry, electronic parameters and gas conditions
   //
@@ -1048,7 +814,7 @@ int loop(const long maxIter=1, const int runId=1234) {
   }
   outputROOTFile->cd();
   TTree *tree = new TTree("t", "Fit debug tree");
-  FitDebugData fit_debug_data;
+  FitDebugData3prong fit_debug_data;
   tree->Branch("fit",&fit_debug_data);
 
   const std::vector<std::string> fileName={ "Generated_Track3D.root", "Reco_Track3D.root" };
@@ -1068,6 +834,12 @@ int loop(const long maxIter=1, const int runId=1234) {
     treePtr[ifile]->Branch("RecoEvent", &trackPtr[ifile]);
     eventInfoPtr[ifile] = new eventraw::EventInfo();
     treePtr[ifile]->Branch("EventInfo", &eventInfoPtr[ifile]);
+  }
+
+  // sanity check before main loop
+  if(pidList.size()<1 || pidList.size()>3) {
+    std::cout << __FUNCTION__ << ": Invalid number of tracks for FitDebugData3prong!" << std::endl << std::flush;
+    exit(1);
   }
 
   // measure elapsed time
@@ -1092,113 +864,123 @@ int loop(const long maxIter=1, const int runId=1234) {
       it->Reset();
     }
     aCalcResponse->setUVWprojectionsInMM(referenceHistosInMM);
-    const auto reference_nPointsMin=1000; // fine granularity for crearing reference UVW histograms to be fitted
-    const auto reference_nPointsPerMM=100.0; // fine granularity for creating reference UVW histograms to be fitted
-    std::vector<pid_type> pidList{pid};
+
+    // create pseudo-data histograms to be fitted
     const auto reference_origin=origin; // mm
-    const auto length=aCalcRange->getIonRangeMM(pid, E_MeV); // mm
-    auto unit_vec=getRandomDir(gRandom);
-    auto reference_endpoint=reference_origin+unit_vec*length;
-    const int reference_npoints=std::max((int)(reference_nPointsPerMM*length+0.5), reference_nPointsMin);
-    const double reference_adcPerMeV=1e5;
-    auto curve(aCalcRange->getIonBraggCurveMeVPerMM(pidList.front(), E_MeV, reference_npoints)); // MeV/mm
-    for(auto ipoint=0; ipoint<reference_npoints; ipoint++) { // generate NPOINTS hits along the track
-      auto depth=(ipoint+0.5)*length/reference_npoints; // mm
-      auto hitPosition=reference_origin+unit_vec*depth; // mm
-      auto hitCharge=reference_adcPerMeV*curve.Eval(depth)*(length/reference_npoints); // ADC units, arbitrary scaling factor
-      aCalcResponse->addCharge(hitPosition, hitCharge); // fill referenceHistosInMM
+    std::vector<TVector3> reference_endpoint(pidList.size());
+    for(int itrack=0; itrack<pidList.size(); itrack++) {
+      const auto length=aCalcRange->getIonRangeMM(pidList[itrack], E_MeV[itrack]); // mm
+      auto unit_vec=getRandomDir(gRandom);
+
+      ////// DEBUG - quick hack for creating 2-prong back-to-back events in LAB reference frame
+      if(pidList.size()==2 && itrack==1) {
+	unit_vec=-(reference_endpoint[0]-reference_origin).Unit();
+      }
+      ////// DEBUG
+
+      reference_endpoint[itrack]=reference_origin+unit_vec*length;
+      const int reference_npoints=std::max((int)(reference_nPointsPerMM*length+0.5), reference_nPointsMin);
+      auto curve(aCalcRange->getIonBraggCurveMeVPerMM(pidList[itrack], E_MeV[itrack], reference_npoints)); // MeV/mm
+      for(auto ipoint=0; ipoint<reference_npoints; ipoint++) { // generate NPOINTS hits along the track
+	auto depth=(ipoint+0.5)*length/reference_npoints; // mm
+	auto hitPosition=reference_origin+unit_vec*depth; // mm
+	auto hitCharge=reference_adcPerMeV*curve.Eval(depth)*(length/reference_npoints); // ADC units, arbitrary scaling factor
+	aCalcResponse->addCharge(hitPosition, hitCharge); // fill referenceHistosInMM
+      }
     }
 
     // create fit starting point
-    const double maxDeviationInADC=reference_adcPerMeV*0.5; // for smearing starting point and setting parameter limits
-    const double maxDeviationInMM=5.0; // for smearing fit starting point and setting parameter limits
-    TVector3 deviationDir[] = { getRandomDir(gRandom), getRandomDir(gRandom) }; // origin, endpoint
-    const auto deviationStepInMM = 1.0; // [mm]
+    const auto deviationDir=getRandomDir(gRandom); // for origin
+    const auto deviationStepInMM=1.0; // [mm]
     auto deviationRadiusInMM = deviationStepInMM * (gRandom->Integer((int)(maxDeviationInMM/deviationStepInMM))+1);
-    // std::vector<double> pStart{ reference_adcPerMeV,
-    //                             reference_origin.X(), reference_origin.Y(), reference_origin.Z(),
-    //                             reference_endpoint.X(), reference_endpoint.Y(), reference_endpoint.Z() };
-    // std::vector<double> pStart{ reference_adcPerMeV,
-    // 		      reference_origin.X()+gRandom->Uniform(-maxDeviationInMM, maxDeviationInMM),
-    // 		      reference_origin.Y()+gRandom->Uniform(-maxDeviationInMM, maxDeviationInMM),
-    // 		      reference_origin.Z()+gRandom->Uniform(-maxDeviationInMM, maxDeviationInMM),
-    // 		      reference_endpoint.X()+gRandom->Uniform(-maxDeviationInMM, maxDeviationInMM),
-    // 		      reference_endpoint.Y()+gRandom->Uniform(-maxDeviationInMM, maxDeviationInMM),
-    // 		      reference_endpoint.Z()+gRandom->Uniform(-maxDeviationInMM, maxDeviationInMM) };
     std::vector<double> pStart{
       reference_adcPerMeV+gRandom->Uniform(-maxDeviationInADC, maxDeviationInADC),
-	reference_origin.X() + deviationRadiusInMM*deviationDir[0].X(),
-	reference_origin.Y() + deviationRadiusInMM*deviationDir[0].Y(),
-	reference_origin.Z() + deviationRadiusInMM*deviationDir[0].Z(),
-	reference_endpoint.X() + deviationRadiusInMM*deviationDir[1].X(),
-	reference_endpoint.Y() + deviationRadiusInMM*deviationDir[1].Y(),
-	reference_endpoint.Z() + deviationRadiusInMM*deviationDir[1].Z() };
+	reference_origin.X() + deviationRadiusInMM*deviationDir.X(),
+	reference_origin.Y() + deviationRadiusInMM*deviationDir.Y(),
+	reference_origin.Z() + deviationRadiusInMM*deviationDir.Z() };
+    for(int itrack=0; itrack<pidList.size(); itrack++) {
+      const auto deviationDir = getRandomDir(gRandom); // for each endpoint
+      pStart.push_back(reference_endpoint[itrack].X() + deviationRadiusInMM*deviationDir.X());
+      pStart.push_back(reference_endpoint[itrack].Y() + deviationRadiusInMM*deviationDir.Y());
+      pStart.push_back(reference_endpoint[itrack].Z() + deviationRadiusInMM*deviationDir.Z());
+    }
 
     // create TrackSegment3D collections with TRUE information
     Track3D reference_track3d;
-    TrackSegment3D reference_seg;
-    reference_seg.setGeometry(aGeometry);
-    reference_seg.setStartEnd(reference_origin, reference_endpoint);
-    reference_seg.setPID(pid);
-    reference_track3d.addSegment(reference_seg);
+    for(int itrack=0; itrack<pidList.size(); itrack++) {
+      TrackSegment3D reference_seg;
+      reference_seg.setGeometry(aGeometry);
+      reference_seg.setStartEnd(reference_origin, reference_endpoint[itrack]);
+      reference_seg.setPID(pidList[itrack]);
+      reference_track3d.addSegment(reference_seg);
+    }
     *trackPtr[0]=reference_track3d;
 
-    // fill FitDebugData with TRUE information
-    fit_debug_data.scaleTrue = reference_adcPerMeV;
-    fit_debug_data.lengthTrue = reference_seg.getLength();
-    fit_debug_data.phiTrue = reference_seg.getTangent().Phi();
-    fit_debug_data.cosThetaTrue = reference_seg.getTangent().CosTheta();
-    fit_debug_data.xVtxTrue = reference_seg.getStart().X();
-    fit_debug_data.yVtxTrue = reference_seg.getStart().Y();
-    fit_debug_data.zVtxTrue = reference_seg.getStart().Z();
-    fit_debug_data.xEndTrue = reference_seg.getEnd().X();
-    fit_debug_data.yEndTrue = reference_seg.getEnd().Y();
-    fit_debug_data.zEndTrue = reference_seg.getEnd().Z();
-    fit_debug_data.initScaleDeviation = fabs(pStart[0]-fit_debug_data.scaleTrue);
-    fit_debug_data.initVtxDeviation = sqrt( pow(pStart[1]-fit_debug_data.xVtxTrue, 2) +
-					    pow(pStart[2]-fit_debug_data.yVtxTrue, 2) +
-					    pow(pStart[3]-fit_debug_data.zVtxTrue, 2) );
-    fit_debug_data.initEndDeviation = sqrt( pow(pStart[4]-fit_debug_data.xEndTrue, 2) +
-					    pow(pStart[5]-fit_debug_data.yEndTrue, 2) +
-					    pow(pStart[6]-fit_debug_data.zEndTrue, 2) );
-
-    // get fit results
-    auto chi2 = fit_1prong(referenceHistosInMM, aGeometry, aCalcResponse, aCalcRange, pidList, pStart, maxDeviationInMM, fit_debug_data);
-
-    // create TrackSegment3D collections with RECO information
-    Track3D fit_track3d;
-    TrackSegment3D fit_seg;
-    fit_seg.setGeometry(aGeometry);
-    fit_seg.setStartEnd(TVector3(fit_debug_data.xVtxReco,fit_debug_data.yVtxReco,fit_debug_data.zVtxReco),
-			TVector3(fit_debug_data.xEndReco,fit_debug_data.yEndReco,fit_debug_data.zEndReco));
-    fit_seg.setPID(pid);
-    fit_track3d.addSegment(fit_seg);
-    *trackPtr[1]=fit_track3d;
-
-    // fill FitDebugData with RECO information
+    // fill FitDebugData with TRUE information per event
     fit_debug_data.eventId = iter;
     fit_debug_data.runId = runId;
-    fit_debug_data.energy = E_MeV;
-    fit_debug_data.pid = pid;
-    fit_debug_data.chi2 = chi2;
+    fit_debug_data.ntracks = pidList.size();
+    fit_debug_data.scaleTrue = reference_adcPerMeV;
+    fit_debug_data.xVtxTrue = reference_origin.X();
+    fit_debug_data.yVtxTrue = reference_origin.Y();
+    fit_debug_data.zVtxTrue = reference_origin.Z();
+    fit_debug_data.initScaleDeviation = fabs(pStart[0]-reference_adcPerMeV);
+    fit_debug_data.initVtxDeviation = sqrt( pow(pStart[1]-reference_origin.X(), 2) +
+					    pow(pStart[2]-reference_origin.Y(), 2) +
+					    pow(pStart[3]-reference_origin.Z(), 2) );
+
+    // fill FitDebugData with TRUE information per track
+    for(int itrack=0; itrack<pidList.size(); itrack++) {
+      fit_debug_data.energy[itrack] = E_MeV[itrack];
+      fit_debug_data.pid[itrack] = pidList[itrack];
+      fit_debug_data.lengthTrue[itrack] = reference_track3d.getSegments().at(itrack).getLength();
+      fit_debug_data.phiTrue[itrack] = reference_track3d.getSegments().at(itrack).getTangent().Phi();
+      fit_debug_data.cosThetaTrue[itrack] = reference_track3d.getSegments().at(itrack).getTangent().CosTheta();
+      fit_debug_data.xEndTrue[itrack] = reference_endpoint[itrack].X();
+      fit_debug_data.yEndTrue[itrack] = reference_endpoint[itrack].Y();
+      fit_debug_data.zEndTrue[itrack] = reference_endpoint[itrack].Z();
+      fit_debug_data.initEndDeviation[itrack] = sqrt( pow(pStart[4]-reference_endpoint[itrack].X(), 2) +
+						      pow(pStart[5]-reference_endpoint[itrack].Y(), 2) +
+						      pow(pStart[6]-reference_endpoint[itrack].Z(), 2) );
+    }
+
+    // get fit results
+    auto chi2 = fit_Nprong(referenceHistosInMM, aGeometry, aCalcResponse, aCalcRange, pidList, pStart, maxDeviationInMM, fit_debug_data);
 
     // compare TRUE and RECO observables
     std::cout << "Final FCN value " << fit_debug_data.chi2
 	      << " (Status=" << fit_debug_data.status << ", Ncalls=" << fit_debug_data.ncalls << ", Ndf=" << fit_debug_data.ndf << ")" << std::endl;
     std::cout << "\nFitted SCALE [ADC/MeV] = " << fit_debug_data.scaleReco << " +/- " << fit_debug_data.scaleRecoErr << std::endl
 	      <<   "  True SCALE [ADC/MeV] = " << fit_debug_data.scaleTrue << std::endl;
-    std::cout << "\nFitted X_START [mm] = " << fit_debug_data.xVtxReco << " +/- " << fit_debug_data.xVtxRecoErr << std::endl
-	      <<   "  True X_START [mm] = " << fit_debug_data.xVtxTrue << std::endl;
-    std::cout << "\nFitted Y_START [mm] = " << fit_debug_data.yVtxReco << " +/- " << fit_debug_data.yVtxRecoErr << std::endl
-	      <<   "  True Y_START [mm] = " << fit_debug_data.yVtxTrue << std::endl;
-    std::cout << "\nFitted Z_START [mm] = " << fit_debug_data.zVtxReco << " +/- " << fit_debug_data.zVtxRecoErr << std::endl
-	      <<   "  True Z_START [mm] = " << fit_debug_data.zVtxTrue << std::endl;
-    std::cout << "\nFitted X_END [mm] = " << fit_debug_data.xEndReco << " +/- " << fit_debug_data.xEndRecoErr << std::endl
-	      <<   "  True X_END [mm] = " << fit_debug_data.xEndTrue << std::endl;
-    std::cout << "\nFitted Y_END [mm] = " << fit_debug_data.yEndReco << " +/- " << fit_debug_data.yEndRecoErr << std::endl
-	      <<   "  True Y_END [mm] = " << fit_debug_data.yEndTrue << std::endl;
-    std::cout << "\nFitted Z_END [mm] = " << fit_debug_data.zEndReco << " +/- " << fit_debug_data.zEndRecoErr << std::endl
-	      <<   "  True Z_END [mm] = " << fit_debug_data.zEndTrue << std::endl;
+    std::cout << "\nFitted X_VTX [mm] = " << fit_debug_data.xVtxReco << " +/- " << fit_debug_data.xVtxRecoErr << std::endl
+	      <<   "  True X_VTX [mm] = " << fit_debug_data.xVtxTrue << std::endl;
+    std::cout << "\nFitted Y_VTX [mm] = " << fit_debug_data.yVtxReco << " +/- " << fit_debug_data.yVtxRecoErr << std::endl
+	      <<   "  True Y_VTX [mm] = " << fit_debug_data.yVtxTrue << std::endl;
+    std::cout << "\nFitted Z_VTX [mm] = " << fit_debug_data.zVtxReco << " +/- " << fit_debug_data.zVtxRecoErr << std::endl
+	      <<   "  True Z_VTX [mm] = " << fit_debug_data.zVtxTrue << std::endl;
+    for(int itrack=0; itrack<pidList.size(); itrack++) {
+      std::cout << "\nTrack " << itrack+1 << ": Fitted X_END [mm] = " << fit_debug_data.xEndReco[itrack]
+		<< " +/- " << fit_debug_data.xEndRecoErr[itrack] << std::endl
+		<<   "Track " << itrack+1 << ":   True X_END [mm] = " << fit_debug_data.xEndTrue[itrack] << std::endl;
+      std::cout << "\nTrack " << itrack+1 << ": Fitted Y_END [mm] = " << fit_debug_data.yEndReco[itrack]
+		<< " +/- " << fit_debug_data.yEndRecoErr[itrack] << std::endl
+		<<   "Track " << itrack+1 << ":   True Y_END [mm] = " << fit_debug_data.yEndTrue[itrack] << std::endl;
+      std::cout << "\nTrack " << itrack+1 << ": Fitted Z_END [mm] = " << fit_debug_data.zEndReco[itrack]
+		<< " +/- " << fit_debug_data.zEndRecoErr[itrack] << std::endl
+		<<   "Track " << itrack+1 << ":   True Z_END [mm] = " << fit_debug_data.zEndTrue[itrack] << std::endl;
+    }
+
+    // create TrackSegment3D collections with RECO information
+    Track3D fit_track3d;
+    for(int itrack=0; itrack<pidList.size(); itrack++) {
+      TrackSegment3D fit_seg;
+      fit_seg.setGeometry(aGeometry);
+      fit_seg.setStartEnd(TVector3(fit_debug_data.xVtxReco,fit_debug_data.yVtxReco,fit_debug_data.zVtxReco),
+			  TVector3(fit_debug_data.xEndReco[itrack],fit_debug_data.yEndReco[itrack],fit_debug_data.zEndReco[itrack]));
+      fit_seg.setPID(pidList[itrack]);
+      fit_track3d.addSegment(fit_seg);
+    }
+    *trackPtr[1]=fit_track3d;
 
     // update trees
     outputROOTFile->cd();
