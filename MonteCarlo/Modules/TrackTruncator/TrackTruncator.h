@@ -12,7 +12,6 @@ public:
 
     EResultFlag Finish() override;
 private:
-    std::shared_ptr<GeometryTPC> geometry;
 
 };
 

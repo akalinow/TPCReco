@@ -2,8 +2,6 @@
 #include "TRandom.h"
 
 fwk::VModule::EResultFlag Track3DBuilder::Init(boost::property_tree::ptree config) {
-    geometry = std::make_shared<GeometryTPC>(config.get<std::string>("GeometryConfig").c_str());
-
     return fwk::VModule::eSuccess;
 }
 

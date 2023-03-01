@@ -1,7 +1,6 @@
 #include "TriggerSimulator.h"
 
 fwk::VModule::EResultFlag TriggerSimulator::Init(boost::property_tree::ptree config) {
-    geometry = std::make_shared<GeometryTPC>(config.get<std::string>("GeometryConfig").c_str());
     triggerArrival = config.get<double>("TriggerArrival");
     auto err=false;
     getZmin = geometry->Timecell2pos(config.get<double>("GetCellMin"),err);

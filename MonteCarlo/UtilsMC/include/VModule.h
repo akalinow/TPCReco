@@ -2,6 +2,7 @@
 #define TPCSOFT_VMODULE_H
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <ObjectRegistrator.h>
@@ -9,6 +10,7 @@
 #include "Stopwatch.h"
 #include "RealTimeStopwatch.h"
 #include "ModuleExchangeSpace.h"
+#include "GeometryTPC.h"
 
 #include "boost/property_tree/ptree.hpp"
 
@@ -17,7 +19,7 @@ namespace fwk {
 
     class VModule;
 
-    typedef utl::ObjectFactory<VModule*, std::string> VModuleFactory;
+    typedef utl::ObjectFactory<VModule *, std::string> VModuleFactory;
 
 
 #define REGISTER_MODULE(_moduleName_)                                    \
@@ -73,11 +75,12 @@ private:                                                                 \
     class VModule {
 
     public:
-        VModule()=default;
+        VModule() = default;
 
         // prevent copying
-        VModule(const VModule&) = delete;
-        VModule& operator=(const VModule&) = delete;
+        VModule(const VModule &) = delete;
+
+        VModule &operator=(const VModule &) = delete;
 
         virtual ~VModule() = default;
 
@@ -117,11 +120,13 @@ private:                                                                 \
         */
         virtual EResultFlag Finish() = 0;
 
-        void InitTiming() { fStopwatch.Reset(); fRealTimeStopwatch.Reset(); }
+        void InitTiming() {
+            fStopwatch.Reset();
+            fRealTimeStopwatch.Reset();
+        }
 
         EResultFlag
-        ProcessWithTiming(ModuleExchangeSpace &event)
-        {
+        ProcessWithTiming(ModuleExchangeSpace &event) {
             fRealTimeStopwatch.Start();
             fStopwatch.Start();
             auto flag = Process(event);
@@ -130,26 +135,21 @@ private:                                                                 \
             return flag;
         }
 
-        utl::Stopwatch& GetStopwatch() { return fStopwatch; }
-        const utl::Stopwatch& GetStopwatch() const { return fStopwatch; }
+        utl::Stopwatch &GetStopwatch() { return fStopwatch; }
 
-        utl::RealTimeStopwatch& GetRealTimeStopwatch() { return fRealTimeStopwatch; }
-        const utl::RealTimeStopwatch& GetRealTimeStopwatch() const { return fRealTimeStopwatch; }
+        const utl::Stopwatch &GetStopwatch() const { return fStopwatch; }
+
+        utl::RealTimeStopwatch &GetRealTimeStopwatch() { return fRealTimeStopwatch; }
+
+        const utl::RealTimeStopwatch &GetRealTimeStopwatch() const { return fRealTimeStopwatch; }
 
         virtual std::string GetName() const = 0;
 
+        void SetGeometry(std::shared_ptr<GeometryTPC> geom) { geometry = std::move(geom); }
 
 
     protected:
-
-
-        /**
-           initialize verbosity given top XML branch of module
-           if \<verbosity\> is found, set to given value, otherwise
-           to default "global" verbosity from ErrorLogger (can be
-           changed with command line options.
-           To be called by user in e.g. Init() function of his/her module
-        */
+        std::shared_ptr<GeometryTPC> geometry;
     private:
         utl::Stopwatch fStopwatch;
         utl::RealTimeStopwatch fRealTimeStopwatch;

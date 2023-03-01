@@ -4,7 +4,6 @@
 namespace fs = boost::filesystem;
 
 fwk::VModule::EResultFlag TPCDigitizerSRC::Init(boost::property_tree::ptree config) {
-    geometry = std::make_shared<GeometryTPC>(config.get<std::string>("GeometryConfig").c_str());
     aEventInfo = std::make_unique<eventraw::EventInfo>();
     aEventInfo->SetPedestalSubtracted(true);
     aEventInfo->SetRunId(100);

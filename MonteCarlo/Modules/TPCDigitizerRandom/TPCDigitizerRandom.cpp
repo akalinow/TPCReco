@@ -2,7 +2,6 @@
 #include "TRandom.h"
 
 fwk::VModule::EResultFlag TPCDigitizerRandom::Init(boost::property_tree::ptree config) {
-    geometry = std::make_unique<GeometryTPC>(config.get<std::string>("GeometryConfig").c_str());
     aEventInfo = std::make_unique<eventraw::EventInfo>();
     aEventInfo->SetPedestalSubtracted(true);
     aEventInfo->SetRunId(100);

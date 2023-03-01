@@ -15,7 +15,6 @@ public:
     EResultFlag Finish() override;
 
 private:
-    std::shared_ptr<GeometryTPC> geometry;
     uint32_t eventID{};
 
     REGISTER_MODULE(Track3DBuilder)

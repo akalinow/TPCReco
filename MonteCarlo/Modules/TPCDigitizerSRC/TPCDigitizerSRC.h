@@ -17,7 +17,6 @@ public:
     EResultFlag Finish() override;
 
 private:
-    std::shared_ptr<GeometryTPC> geometry;
     std::unique_ptr<eventraw::EventInfo> aEventInfo;
     std::unique_ptr<StripResponseCalculator> calculator;
     std::shared_ptr<PEventTPC> currentPEventTPC;

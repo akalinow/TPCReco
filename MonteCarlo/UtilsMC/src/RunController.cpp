@@ -37,8 +37,9 @@ namespace fwk {
     void
     RunController::Init(const boost::property_tree::ptree &config) {
         fTiming = config.get<bool>("EnableTiming");
+        auto geom = std::make_shared<GeometryTPC>(config.get<std::string>("GeometryConfig").c_str());
         BuildModules(config.get_child("ModuleSequence"));
-        InitModules(config.get_child("ModuleConfiguration"));
+        InitModules(config.get_child("ModuleConfiguration"), geom);
     }
 
 
@@ -167,7 +168,8 @@ namespace fwk {
         }
     }
 
-    void RunController::InitModules(const boost::property_tree::ptree &moduleConfig) {
+    void
+    RunController::InitModules(const boost::property_tree::ptree &moduleConfig, const std::shared_ptr<GeometryTPC>& geom) {
         for (const auto &m: fModuleSequence) {
             auto modCfg = moduleConfig.get_child_optional(m);
             if (!modCfg) {
@@ -175,6 +177,7 @@ namespace fwk {
                 emsg << "No configuration for module with name: '" << m << "'!\n";
                 throw std::runtime_error(emsg.str());
             }
+            fModules[m]->SetGeometry(geom);
             fModules[m]->Init(*modCfg);
             if (fTiming)
                 fModules[m]->InitTiming();

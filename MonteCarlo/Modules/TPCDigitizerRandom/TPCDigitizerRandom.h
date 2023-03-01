@@ -15,7 +15,6 @@ public:
     EResultFlag Finish() override;
 
 private:
-    std::unique_ptr<GeometryTPC> geometry;
     std::unique_ptr<eventraw::EventInfo> aEventInfo;
     uint32_t eventID{};
     double MeVToChargeScale{1};

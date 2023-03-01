@@ -8,6 +8,7 @@
     "Track3DBuilder",
     "EventFileExporter"
   ],
+  "GeometryConfig": "/scratch/TPCReco/build/resources/geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat",
   "ModuleConfiguration": {
     "Generator": {
       "NumberOfEvents": 1000,
@@ -194,14 +195,12 @@
       }
     },
     "TPCDigitizerRandom": {
-      "GeometryConfig": "/scratch/TPCReco/build/resources/geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat",
       "sigmaXY": 0.68,
       "sigmaZ": 0.68,
       "NSamplesPerHit": 100,
       "MeVToChargeScale": 100000
     },
     "TPCDigitizerSRC": {
-      "GeometryConfig": "/scratch/TPCReco/build/resources/geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat",
       "StripResponsePath": "/scratch/TPCReco/build/resources",
       "sigmaXY": 0.68,
       "sigmaZ": 0.68,
@@ -214,10 +213,8 @@
       "nPads": 12
     },
     "Track3DBuilder": {
-      "GeometryConfig": "/scratch/TPCReco/build/resources/geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat"
     },
     "TriggerSimulator": {
-      "GeometryConfig": "/scratch/TPCReco/build/resources/geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat",
       "TriggerArrival": 0.1,
       "GetCellMin": 0,
       "GetCellMax": 511

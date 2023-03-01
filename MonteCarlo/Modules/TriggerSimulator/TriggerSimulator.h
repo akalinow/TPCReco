@@ -16,7 +16,7 @@ private:
 
     double triggerArrival{};
     double getZmin{}, getZmax{};
-    std::shared_ptr<GeometryTPC> geometry;
+
 REGISTER_MODULE(TriggerSimulator)
 };
 
