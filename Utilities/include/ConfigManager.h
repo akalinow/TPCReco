@@ -13,7 +13,7 @@ class ConfigManager
     void configureTree(boost::property_tree::ptree &, int, char**);//czy pracować na kopii czy oryginale?
     /*użycie:
     boost::property_tree::ptree tree;
-    configureTree(tree&);
+    configureTree(tree&); 
     */
     private:
 
