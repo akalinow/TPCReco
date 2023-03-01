@@ -11,6 +11,9 @@ fwk::VModule::EResultFlag Track3DBuilder::Process(ModuleExchangeSpace &event) {
     Track3D aTrack;
     //loop over tracks
     for (const auto &t: currentSimEvent.GetTracks()) {
+        //do not add segments when track is fully out of active volume
+        if(t.IsOutOfActiveVolume())
+            continue;
         aSegment.setGeometry(geometry);
         aSegment.setStartEnd(t.GetTruncatedStart(), t.GetTruncatedStop());
         aSegment.setPID(t.GetPrimaryParticle().GetID());
