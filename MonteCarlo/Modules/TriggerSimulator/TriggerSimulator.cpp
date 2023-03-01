@@ -3,8 +3,8 @@
 fwk::VModule::EResultFlag TriggerSimulator::Init(boost::property_tree::ptree config) {
     triggerArrival = config.get<double>("TriggerArrival");
     auto err=false;
-    getZmin = geometry->Timecell2pos(config.get<double>("GetCellMin"),err);
-    getZmax = geometry->Timecell2pos(config.get<double>("GetCellMax"),err);
+    getZmin = geometry->Timecell2pos(0,err);
+    getZmax = geometry->Timecell2pos(geometry->GetAgetNtimecells()-1,err);
     return eSuccess;
 }
 

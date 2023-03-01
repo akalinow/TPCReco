@@ -215,9 +215,7 @@
     "Track3DBuilder": {
     },
     "TriggerSimulator": {
-      "TriggerArrival": 0.1,
-      "GetCellMin": 0,
-      "GetCellMax": 511
+      "TriggerArrival": 0.1
     }
   }
 }
