@@ -12,7 +12,7 @@ public:
 
     EResultFlag Finish() override;
 private:
-    static double findMinZ(SimEvent& ev);
+    double findMinZ(SimEvent& ev);
 
     double triggerArrival{};
     double getZmin{}, getZmax{};

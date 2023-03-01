@@ -21,12 +21,16 @@ fwk::VModule::EResultFlag TriggerSimulator::Finish() {
     return eSuccess;
 }
 
+//take into account only points in active area
 double TriggerSimulator::findMinZ(SimEvent &ev) {
-    std::vector<double> zEnds;
+    std::vector<double> zPoints;
     for(const auto& t: ev.GetTracks() ){
-        zEnds.push_back(t.GetStart().Z());
-        zEnds.push_back(t.GetStop().Z());
+        for(const auto& h: t.GetHits()){
+            auto pos = h.GetPosition();
+            if(geometry->IsInsideActiveVolume(pos))
+                zPoints.push_back(pos.Z());
+        }
     }
 
-    return *std::min_element(zEnds.begin(),zEnds.end());
+    return *std::min_element(zPoints.begin(), zPoints.end());
 }
