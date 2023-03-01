@@ -4,6 +4,7 @@
     "Generator",
     "GeantSim",
     "TriggerSimulator",
+    "TrackTruncator",
     "TPCDigitizerSRC",
     "Track3DBuilder",
     "EventFileExporter"
@@ -52,8 +53,8 @@
           "VertexLongitudinal": {
             "distribution": "ZProviderUniform",
             "parameters": {
-              "minZ": -100,
-              "maxZ": 100
+              "minZ": -300,
+              "maxZ": 300
             }
           }
         },
@@ -213,6 +214,9 @@
       "nPads": 12
     },
     "Track3DBuilder": {
+    },
+    "TrackTruncator": {
+      "IncludeElectronicsRange": true
     },
     "TriggerSimulator": {
       "TriggerArrival": 0.1

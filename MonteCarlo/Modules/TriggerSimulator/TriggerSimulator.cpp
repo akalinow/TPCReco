@@ -31,6 +31,8 @@ double TriggerSimulator::findMinZ(SimEvent &ev) {
                 zPoints.push_back(pos.Z());
         }
     }
-
+    //if there are no energy deposits inside the active volume we return zero here
+    if(zPoints.empty())
+        return 0;
     return *std::min_element(zPoints.begin(), zPoints.end());
 }

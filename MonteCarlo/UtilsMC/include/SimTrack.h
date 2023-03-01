@@ -39,13 +39,17 @@ public:
 
     void SetStart(const TVector3 &start);
 
-    void SetStopTruncated(const TVector3 &stop);
+    void SetTruncatedStop(const TVector3 &stop);
 
-    void SetStartTruncated(const TVector3 &start);
+    void SetTruncatedStart(const TVector3 &start);
 
     void SetPrimaryParticle(PrimaryParticle &p) { prim = p; }
 
-    void Shift(TVector3& offset);
+    void SetOutOfActiveVolume(bool out) { isOutOfActiveVolume = out; }
+
+    void SetFullyContained(bool cont) { isFullyContained = cont; }
+
+    void Shift(TVector3 &offset);
 
     /**
      * @brief      Inserts SimHit object to a vector of hits
@@ -61,9 +65,9 @@ public:
 
     TVector3 GetStop() const { return stopPos; }
 
-    TVector3 GetStartTruncated() const { return startPosTruncated; }
+    TVector3 GetTruncatedStart() const { return truncatedStartPos; }
 
-    TVector3 GetStopTruncated() const { return stopPosTruncated; }
+    TVector3 GetTruncatedStop() const { return truncatedStopPos; }
 
     double GetRange() const;
 
@@ -80,15 +84,21 @@ public:
 
     SimHitsIterator HitsEnd() { return hits.end(); }
 
+    bool IsOutOfActiveVolume() const { return isOutOfActiveVolume; }
+
+    bool IsFullyContained() const { return isFullyContained; }
+
 private:
     TVector3 stopPos; ///< Position of particle stop/exit point from simulation volume in mm
     TVector3 startPos; ///< Position of particle production mm
     //Same just truncated to active volume:
-    TVector3 stopPosTruncated;
-    TVector3 startPosTruncated;
+    TVector3 truncatedStopPos;
+    TVector3 truncatedStartPos;
     SimHits hits; ///<Vector of simulated hits in detector volume
     PrimaryParticle prim;
     bool hasStopPos{false};
+    bool isOutOfActiveVolume{false};
+    bool isFullyContained{false};
 
 ClassDef(SimTrack, 1); ///< ROOT macro to register SimTrack class
 

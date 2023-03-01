@@ -16,8 +16,8 @@ void GELIEventAction::EndOfEventAction(const G4Event *evt) {
         track.RecalculateStopPosition();
 
         //set truncated positions to be tha same as the real ones - no truncation has been performed yet
-        track.SetStartTruncated(track.GetStart());
-        track.SetStopTruncated(track.GetStop());
+        track.SetTruncatedStart(track.GetStart());
+        track.SetTruncatedStop(track.GetStop());
     }
 }
 

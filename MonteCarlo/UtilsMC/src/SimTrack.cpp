@@ -13,12 +13,12 @@ void SimTrack::SetStart(const TVector3 &start) {
     startPos = start;
 }
 
-void SimTrack::SetStopTruncated(const TVector3 &stop) {
-    stopPosTruncated = stop;
+void SimTrack::SetTruncatedStop(const TVector3 &stop) {
+    truncatedStopPos = stop;
 }
 
-void SimTrack::SetStartTruncated(const TVector3 &start) {
-    startPosTruncated = start;
+void SimTrack::SetTruncatedStart(const TVector3 &start) {
+    truncatedStartPos = start;
 }
 
 
@@ -42,7 +42,7 @@ double SimTrack::GetRange() const {
 }
 
 double SimTrack::GetTruncatedRange() const {
-    return (stopPosTruncated - startPosTruncated).Mag();
+    return (truncatedStopPos - truncatedStartPos).Mag();
 }
 
 
@@ -67,8 +67,8 @@ void SimTrack::RecalculateStopPosition() {
 void SimTrack::Shift(TVector3 &offset) {
     startPos += offset;
     stopPos += offset;
-    startPosTruncated += offset;
-    stopPosTruncated += offset;
+    truncatedStartPos += offset;
+    truncatedStopPos += offset;
     for (auto &h: hits) {
         h.SetPosition(h.GetPosition() + offset);
     }

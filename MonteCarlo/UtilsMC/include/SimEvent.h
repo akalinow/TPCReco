@@ -45,8 +45,6 @@ public:
 
     void SetReactionType(reaction_type type);
 
-    void SetFullyContained(bool cont);
-
     SimTracks & GetTracks();
 
     SimTracksIterator TracksBegin();
@@ -70,7 +68,6 @@ private:
     TVector3 trueVertexPosition;
     TVector3 trigShiftedVertexPosition;
     reaction_type reactionType{reaction_type::UNKNOWN};
-    bool isFullyContained{false};
 
     void UpdateSimTracksStartPoint();
 

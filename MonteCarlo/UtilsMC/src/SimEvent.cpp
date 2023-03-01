@@ -74,11 +74,12 @@ void SimEvent::Clear(Option_t *op) {
 }
 
 bool SimEvent::IsFullyContained() const {
-    return isFullyContained;
-}
 
-void SimEvent::SetFullyContained(bool cont) {
-    isFullyContained=cont;
+    bool isFullyContained=true;
+    for(const auto & t: tracks){
+        isFullyContained = isFullyContained && t.IsFullyContained();
+    }
+    return isFullyContained;
 }
 
 void SimEvent::Shift(TVector3 &offset) {

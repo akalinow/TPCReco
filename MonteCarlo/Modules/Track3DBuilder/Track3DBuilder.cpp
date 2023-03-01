@@ -12,7 +12,7 @@ fwk::VModule::EResultFlag Track3DBuilder::Process(ModuleExchangeSpace &event) {
     //loop over tracks
     for (const auto &t: currentSimEvent.GetTracks()) {
         aSegment.setGeometry(geometry);
-        aSegment.setStartEnd(t.GetStartTruncated(), t.GetStopTruncated());
+        aSegment.setStartEnd(t.GetTruncatedStart(), t.GetTruncatedStop());
         aSegment.setPID(t.GetPrimaryParticle().GetID());
         aTrack.addSegment(aSegment);
     }
