@@ -3,13 +3,14 @@
   "ModuleSequence": [
     "Generator",
     "GeantSim",
+    "TriggerSimulator",
     "TPCDigitizerSRC",
     "Track3DBuilder",
     "EventFileExporter"
   ],
   "ModuleConfiguration": {
     "Generator": {
-      "NumberOfEvents": 100,
+      "NumberOfEvents": 1000,
       "EventGenerator": {
         "Beam": {
           "BeamGeometry": {
@@ -214,6 +215,12 @@
     },
     "Track3DBuilder": {
       "GeometryConfig": "/scratch/TPCReco/build/resources/geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat"
+    },
+    "TriggerSimulator": {
+      "GeometryConfig": "/scratch/TPCReco/build/resources/geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat",
+      "TriggerArrival": 0.1,
+      "GetCellMin": 0,
+      "GetCellMax": 511
     }
   }
 }

@@ -58,3 +58,13 @@ void SimTrack::RecalculateStopPosition() {
     if (!hits.empty())
         SetStop(hits[hits.size() - 1].GetPosition());
 }
+
+void SimTrack::Shift(TVector3 &offset) {
+    startPos += offset;
+    stopPos += offset;
+    startPosTruncated += offset;
+    stopPosTruncated += offset;
+    for (auto &h: hits) {
+        h.SetPosition(h.GetPosition() + offset);
+    }
+}

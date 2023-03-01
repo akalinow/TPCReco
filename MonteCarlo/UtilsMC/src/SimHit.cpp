@@ -18,7 +18,7 @@ SimHit::SimHit(double x, double y, double z, double edep) {
     Edep = edep;
 }
 
-void SimHit::SetPosition(TVector3 &pos) {
+void SimHit::SetPosition(const TVector3 &pos) {
     position = pos;
 }
 

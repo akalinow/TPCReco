@@ -45,6 +45,8 @@ public:
 
     void SetPrimaryParticle(PrimaryParticle &p) { prim = p; }
 
+    void Shift(TVector3& offset);
+
     /**
      * @brief      Inserts SimHit object to a vector of hits
      */
