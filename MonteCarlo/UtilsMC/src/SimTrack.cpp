@@ -34,12 +34,17 @@ double SimTrack::GetEnergyDeposit() const {
     return edep;
 }
 
-double SimTrack::GetLength() const {
+double SimTrack::GetRange() const {
     if (hasStopPos)
         return (stopPos - startPos).Mag();
     else
         return 0;
 }
+
+double SimTrack::GetTruncatedRange() const {
+    return (stopPosTruncated - startPosTruncated).Mag();
+}
+
 
 void SimTrack::SortHits() {
     //sort by distance from the emission point

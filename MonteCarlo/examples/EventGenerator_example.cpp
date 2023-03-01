@@ -43,7 +43,7 @@ void generateEventsAndMakePlots(EventGenerator &g, int nEvents) {
             std::cout << "Generated event " << i / 1000 << "k" << std::endl;
         //we analyze only C12_ALPHA reactions
         auto rt=e.GetReactionType();
-        hXY->Fill(e.GetVertexPosition().Y(), e.GetVertexPosition().Z());
+        hXY->Fill(e.GetTrueVertexPosition().Y(), e.GetTrueVertexPosition().Z());
         auto tracks = e.GetTracks();
         if (tracks.empty()) continue; //skip empty events
 

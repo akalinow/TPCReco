@@ -65,7 +65,9 @@ public:
 
     TVector3 GetStopTruncated() const { return stopPosTruncated; }
 
-    double GetLength() const;
+    double GetRange() const;
+
+    double GetTruncatedRange() const;
 
     double GetEnergyDeposit() const; ///< Energy deposit in gas volume of a given track
     unsigned int GetNHits() const { return hits.size(); }

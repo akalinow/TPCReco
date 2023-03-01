@@ -67,7 +67,7 @@ int main(int argc, char** argv)
             if(i<nEventsToDraw);
                 TH1D* h=new TH1D("h",Form("E=%.2fMeV A=%d Z=%d event=%d",e,a,z,i),100,0,braggUpperRange);
             auto start=track.GetStart();
-            hRange->Fill(track.GetLength());
+            hRange->Fill(track.GetRange());
             for(const auto& hit : track.GetHits())
             {
                 auto pos=hit.GetPosition();

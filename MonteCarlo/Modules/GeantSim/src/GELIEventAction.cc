@@ -14,6 +14,10 @@ void GELIEventAction::EndOfEventAction(const G4Event *evt) {
         track.SortHits();
         //Now we set the track stop position (hit furthest from the start):
         track.RecalculateStopPosition();
+
+        //set truncated positions to be tha same as the real ones - no truncation has been performed yet
+        track.SetStartTruncated(track.GetStart());
+        track.SetStopTruncated(track.GetStop());
     }
 }
 

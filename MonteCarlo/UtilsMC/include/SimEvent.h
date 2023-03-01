@@ -39,7 +39,9 @@ public:
 
     void SetSimTracks(SimTracks &trackVector);
 
-    void SetStartVertexPosition(TVector3 &pos);
+    void SetTrueVertexPosition(const TVector3 &pos);
+
+    void SetTrigShiftedVertexPosition(const TVector3 &pos);
 
     void SetReactionType(reaction_type type);
 
@@ -51,17 +53,22 @@ public:
 
     SimTracksIterator TracksEnd();
 
-    TVector3 GetVertexPosition() const;
+    TVector3 GetTrueVertexPosition() const;
+
+    TVector3 GetTrigShiftedVertexPosition() const;
 
     reaction_type GetReactionType() const;
 
     bool IsFullyContained() const;
 
+    void Shift(TVector3& offset);
+
     virtual void Clear(Option_t *op);
 
 private:
     SimTracks tracks; /// Vector with simulated tracks (primary particles)
-    TVector3 vertexPosition;
+    TVector3 trueVertexPosition;
+    TVector3 trigShiftedVertexPosition;
     reaction_type reactionType{reaction_type::UNKNOWN};
     bool isFullyContained{false};
 

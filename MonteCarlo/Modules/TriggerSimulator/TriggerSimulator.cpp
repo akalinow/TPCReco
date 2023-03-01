@@ -13,9 +13,7 @@ fwk::VModule::EResultFlag TriggerSimulator::Process(ModuleExchangeSpace &event) 
     auto minZFromTrack = findMinZ(currentSimEv);
     auto zOffset = -minZFromTrack + getZmin + triggerArrival * (getZmax - getZmin);
     TVector3 offset{0,0,zOffset};
-    for(auto& t: currentSimEv.GetTracks()){
-        t.Shift(offset);
-    }
+    currentSimEv.Shift(offset);
     return eSuccess;
 }
 

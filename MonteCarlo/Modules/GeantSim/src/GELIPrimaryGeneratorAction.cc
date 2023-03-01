@@ -26,7 +26,7 @@ void GELIPrimaryParticleInfo::Print() const {
 
 
 void GELIPrimaryGenerator::GeneratePrimaryVertex(G4Event *evt) {
-    auto vtxPos = buffer.simEv->GetVertexPosition();
+    auto vtxPos = buffer.simEv->GetTrueVertexPosition();
     auto tracks = buffer.simEv->GetTracks();
     auto vtx = new G4PrimaryVertex(vtxPos.X(), vtxPos.Y(), vtxPos.Z(), 0);
     for (size_t i = 0; i < tracks.size(); i++) {

@@ -12,7 +12,7 @@
 //ClassImp(SimEvent);
 
 SimEvent::SimEvent(SimTracks &trackVector, const TVector3 &vertexPos, reaction_type type)
-        : tracks{trackVector}, vertexPosition{vertexPos}, reactionType{type} {
+        : tracks{trackVector}, trueVertexPosition{vertexPos}, trigShiftedVertexPosition{vertexPos}, reactionType{type} {
     UpdateSimTracksStartPoint();
 }
 
@@ -33,19 +33,26 @@ void SimEvent::SetSimTracks(SimTracks &trackVector) {
     UpdateSimTracksStartPoint();
 }
 
-TVector3 SimEvent::GetVertexPosition() const {
-    return vertexPosition;
+TVector3 SimEvent::GetTrueVertexPosition() const {
+    return trueVertexPosition;
 }
 
-void SimEvent::SetStartVertexPosition(TVector3 &pos) {
-    vertexPosition = pos;
+TVector3 SimEvent::GetTrigShiftedVertexPosition() const {
+    return trigShiftedVertexPosition;
+}
 
 
+void SimEvent::SetTrueVertexPosition(const TVector3 &pos) {
+    trueVertexPosition = pos;
+}
+
+void SimEvent::SetTrigShiftedVertexPosition(const TVector3 &pos) {
+    trigShiftedVertexPosition = pos;
 }
 
 void SimEvent::UpdateSimTracksStartPoint() {
     for (auto &t: tracks)
-        t.SetStart(vertexPosition);
+        t.SetStart(trueVertexPosition);
 }
 
 void SimEvent::SetReactionType(reaction_type type) {
@@ -63,7 +70,7 @@ void SimEvent::Clear(Option_t *op) {
     //set reaction type to unknown:
     reactionType = reaction_type::UNKNOWN;
     //zero-out vertex position:
-    vertexPosition = {0, 0, 0};
+    trueVertexPosition = {0, 0, 0};
 }
 
 bool SimEvent::IsFullyContained() const {
@@ -72,4 +79,11 @@ bool SimEvent::IsFullyContained() const {
 
 void SimEvent::SetFullyContained(bool cont) {
     isFullyContained=cont;
+}
+
+void SimEvent::Shift(TVector3 &offset) {
+    trigShiftedVertexPosition+=offset;
+    for(auto& t: tracks){
+        t.Shift(offset);
+    }
 }
