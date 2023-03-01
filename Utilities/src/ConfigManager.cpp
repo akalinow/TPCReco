@@ -5,7 +5,7 @@ ConfigManager::ConfigManager(){}
 boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv)
 {
     boost::program_options::options_description cmdLineOptDesc("Allowed options");
-    cmdLineOptDesc.add_options()
+    cmdLineOptDesc.add_options()//przykładowe opcje, konieczne opracowanie sposobu na skatalogowanie wszystkich możliwych opcji
         ("help", "produce help message")
         ("dataFile",  boost::program_options::value<std::string>(), "string - path to data file (OFFLINE) or directory (ONLINE). Overrides the value from the config file. In multi-GRAW mode specify several files separated by commas.")
         ("singleAsadGrawFile", boost::program_options::value<bool>(), "bool - Flag enabling multi-GRAW mode. One file stream per each AsAd board.")
