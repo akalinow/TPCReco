@@ -79,7 +79,7 @@ void MaterialBuilder::BuildMaterials() {
 
 
     //G4double CO2_density = 1.805 * mg / cm3;
-    G4double CO2_density = 1.8393 * mg / cm3;
+    G4double CO2_density = 1.787 * mg / cm3;
     auto CO2 = new G4Material("Carbonic gas", CO2_density, 2,
                               kStateGas, 293. * kelvin, p_co2 * bar);
     CO2->AddElement(C, 1);
