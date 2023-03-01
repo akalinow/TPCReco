@@ -2,7 +2,6 @@
 #define TPCSOFT_GENERATORSETUP_H
 
 #include "boost/filesystem.hpp"
-#include "pugixml.h"
 #include "ReactionLibrary.h"
 #include "AngleProvider.h"
 #include "ZProvider.h"

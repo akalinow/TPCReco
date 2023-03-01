@@ -41,6 +41,7 @@ fwk::VModule::EResultFlag TPCDigitizerRandom::Process(ModuleExchangeSpace &event
         }
     }
     currentPEventTPC.SetEventInfo(*aEventInfo);
+    event.eventInfo = *aEventInfo;
     return fwk::VModule::eSuccess;
 }
 

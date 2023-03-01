@@ -15,6 +15,7 @@ ADD_SUBDIRECTORY(DummyModule)
 ADD_SUBDIRECTORY(EventFileExporter)
 ADD_SUBDIRECTORY(TPCDigitizerRandom)
 ADD_SUBDIRECTORY(TPCDigitizerSRC)
+ADD_SUBDIRECTORY(Track3DBuilder)
 
 IF (BUILD_GEANT_MODULE)
     find_package(Geant4 REQUIRED ui_all vis_all)
@@ -32,6 +33,7 @@ SET(module_sources
         ${geant_sim_sources}
         ${tpc_digitizer_random_sources}
         ${tpc_digitizer_src_sources}
+        ${build_track3d_sources}
         )
 
 

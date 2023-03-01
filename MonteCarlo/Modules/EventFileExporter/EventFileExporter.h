@@ -13,9 +13,12 @@ class EventFileExporter: public fwk::VModule{
     fwk::VModule::EResultFlag Finish() override;
 private:
     TFile* file;
-    TTree* tree;
+    TTree* tpcDataTree;
+    TTree* tpcRecoDataTree;
     SimEvent* currSimEvent;
     PEventTPC* currPEventTPC;
+    Track3D* currTrack3D;
+    eventraw::EventInfo* currEventInfo;
     std::vector<std::string> offBranches;
     std::vector<std::string> onBranches;
 

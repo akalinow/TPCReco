@@ -13,6 +13,15 @@ void SimTrack::SetStart(const TVector3 &start) {
     startPos = start;
 }
 
+void SimTrack::SetStopTruncated(const TVector3 &stop) {
+    stopPosTruncated = stop;
+}
+
+void SimTrack::SetStartTruncated(const TVector3 &start) {
+    startPosTruncated = start;
+}
+
+
 void SimTrack::InsertHit(const SimHit &hit) {
     hits.push_back(hit);
 }

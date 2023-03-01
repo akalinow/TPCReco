@@ -24,12 +24,6 @@
  * @brief      Class to hold information about primary tracks generated in GEANT4 simulation
  */
 class SimTrack {
-private:
-    TVector3 stopPos; ///< Position of particle stop/exit point from simulation volume in mm
-    TVector3 startPos; ///< Position of particle production mm
-    SimHits hits; ///<Vector of simulated hits in detector volume
-    PrimaryParticle prim;
-    bool hasStopPos{false};
 public:
     /**
      * @brief      Constructor
@@ -44,6 +38,10 @@ public:
     void SetStop(const TVector3 &stop);
 
     void SetStart(const TVector3 &start);
+
+    void SetStopTruncated(const TVector3 &stop);
+
+    void SetStartTruncated(const TVector3 &start);
 
     void SetPrimaryParticle(PrimaryParticle &p) { prim = p; }
 
@@ -61,6 +59,10 @@ public:
 
     TVector3 GetStop() const { return stopPos; }
 
+    TVector3 GetStartTruncated() const { return startPosTruncated; }
+
+    TVector3 GetStopTruncated() const { return stopPosTruncated; }
+
     double GetLength() const;
 
     double GetEnergyDeposit() const; ///< Energy deposit in gas volume of a given track
@@ -73,6 +75,16 @@ public:
     SimHitsIterator HitsBegin() { return hits.begin(); }
 
     SimHitsIterator HitsEnd() { return hits.end(); }
+
+private:
+    TVector3 stopPos; ///< Position of particle stop/exit point from simulation volume in mm
+    TVector3 startPos; ///< Position of particle production mm
+    //Same just truncated to active volume:
+    TVector3 stopPosTruncated;
+    TVector3 startPosTruncated;
+    SimHits hits; ///<Vector of simulated hits in detector volume
+    PrimaryParticle prim;
+    bool hasStopPos{false};
 
 ClassDef(SimTrack, 1); ///< ROOT macro to register SimTrack class
 

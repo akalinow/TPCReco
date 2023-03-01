@@ -14,6 +14,7 @@
 #include "SimTrack.h"
 /// \cond
 #include <vector>
+#include "boost/optional.hpp"
 /// \endcond
 
 
@@ -42,15 +43,19 @@ public:
 
     void SetReactionType(reaction_type type);
 
+    void SetFullyContained(bool cont);
+
     SimTracks & GetTracks();
 
     SimTracksIterator TracksBegin();
 
     SimTracksIterator TracksEnd();
 
-    TVector3 GetVertexPosition();
+    TVector3 GetVertexPosition() const;
 
-    reaction_type GetReactionType();
+    reaction_type GetReactionType() const;
+
+    bool IsFullyContained() const;
 
     virtual void Clear(Option_t *op);
 
@@ -58,6 +63,7 @@ private:
     SimTracks tracks; /// Vector with simulated tracks (primary particles)
     TVector3 vertexPosition;
     reaction_type reactionType{reaction_type::UNKNOWN};
+    bool isFullyContained{false};
 
     void UpdateSimTracksStartPoint();
 

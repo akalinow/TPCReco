@@ -8,6 +8,7 @@
 #define GELIPhysicsList_h 1
 
 #include "G4VUserPhysicsList.hh"
+#include "G4EmStandardPhysics_option4.hh"
 #include "globals.hh"
 
 class G4GammaConversion;
@@ -63,6 +64,8 @@ private:
     G4double cutForElectron;
     G4double cutForPositron;
     G4double cutForProton;
+
+    G4EmStandardPhysics_option4* emPhys;
 
 protected:
     // these methods Construct particles

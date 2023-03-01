@@ -4,10 +4,13 @@
 
 #include "SimEvent.h"
 #include "PEventTPC.h"
+#include "Track3D.h"
 
 struct ModuleExchangeSpace {
     SimEvent simEvt;
     PEventTPC tpcPEvt;
+    Track3D track3D;
+    eventraw::EventInfo eventInfo;
 };
 
 

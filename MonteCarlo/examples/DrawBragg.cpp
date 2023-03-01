@@ -45,11 +45,12 @@ int main(int argc, char** argv)
     int nEntries=t->GetEntries();
     TCanvas *c=new TCanvas("c","",1024,768);
     c->Print("bragg.pdf[");
-    double braggUpperRange=500;
-    TH1D* hall=new TH1D("hall","A",1000,0,braggUpperRange);
-    auto hXZ = new TH2D("hXZ","energy deposit, XZ-plane;x[mm];z[mm]",200,-300,300,200,-100,100);
-    auto hYZ = new TH2D("hYZ","energy deposit, YZ-plane;y[mm];z[mm]",200,-100,100,200,-100,100);
-    auto hXY = new TH2D("hXY","energy deposit, XY-plane;x[mm];y[mm]",200,-300,300,200,-100,100);
+    double braggUpperRange=60;
+    double depXYrange = 0.2;
+    TH1D* hall=new TH1D("hall","A",200,0,braggUpperRange);
+    auto hXZ = new TH2D("hXZ","energy deposit, XZ-plane;x[mm];z[mm]",200,-300,300,200,-depXYrange,depXYrange);
+    auto hYZ = new TH2D("hYZ","energy deposit, YZ-plane;y[mm];z[mm]",200,-depXYrange,depXYrange,200,-depXYrange,depXYrange);
+    auto hXY = new TH2D("hXY","energy deposit, XY-plane;x[mm];y[mm]",200,-300,300,200,-depXYrange,depXYrange);
     auto hRange = new TH1D("hRange","Range of particles;Range [mm]",200,0,braggUpperRange);
     for(int i=0;i<t->GetEntries();i++)
     {
@@ -115,15 +116,18 @@ int main(int argc, char** argv)
     }
 
     auto rCal = std::make_unique<IonRangeCalculator>();
-    auto g = rCal->getIonBraggCurveMeVPerMM(pid_type::ALPHA,10,1000);
+    auto g = rCal->getIonBraggCurveMeVPerMM(pid_type::ALPHA,3,1000);
+
+    c->SetGridx();
+    c->SetGridy();
 
     hall->Scale(1./t->GetEntries());
-    std::cout<<"Total deposit: "<<hall->Integral()<<" "<<rCal->getIonBraggCurveIntegralMeV(pid_type::ALPHA, 10.0)<<std::endl;
+    std::cout<<"Total deposit: "<<hall->Integral()<<" "<<rCal->getIonBraggCurveIntegralMeV(pid_type::ALPHA, 3.0,1000)<<std::endl;
     hall->Scale(1/hall->GetBinWidth(1));
     hall->GetXaxis()->SetTitle("Distance [mm]");
     hall->GetYaxis()->SetTitle("Energy deposit [MeV/mm]");
     hall->SetFillColorAlpha(kBlue-6,0.4);
-    hall->SetTitle("E_{k} = 10 MeV, p = 250 mbar");
+    hall->SetTitle("E_{k} = 3 MeV, p = 250 mbar");
     hall->Draw("hist");
     g.SetLineColor(kRed);
     g.SetLineWidth(2);

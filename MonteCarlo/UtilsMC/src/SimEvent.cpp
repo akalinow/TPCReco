@@ -33,7 +33,7 @@ void SimEvent::SetSimTracks(SimTracks &trackVector) {
     UpdateSimTracksStartPoint();
 }
 
-TVector3 SimEvent::GetVertexPosition() {
+TVector3 SimEvent::GetVertexPosition() const {
     return vertexPosition;
 }
 
@@ -52,7 +52,7 @@ void SimEvent::SetReactionType(reaction_type type) {
     reactionType = type;
 }
 
-reaction_type SimEvent::GetReactionType() {
+reaction_type SimEvent::GetReactionType() const {
     return reactionType;
 }
 
@@ -64,4 +64,12 @@ void SimEvent::Clear(Option_t *op) {
     reactionType = reaction_type::UNKNOWN;
     //zero-out vertex position:
     vertexPosition = {0, 0, 0};
+}
+
+bool SimEvent::IsFullyContained() const {
+    return isFullyContained;
+}
+
+void SimEvent::SetFullyContained(bool cont) {
+    isFullyContained=cont;
 }

@@ -7,7 +7,7 @@
   ],
   "ModuleConfiguration": {
     "Generator": {
-      "NumberOfEvents": 1000,
+      "NumberOfEvents": 500,
       "EventGenerator": {
         "Beam": {
           "BeamGeometry": {
@@ -70,7 +70,7 @@
             "KineticEnergy": {
               "distribution": "EProviderSingle",
               "parameters": {
-                "singleE": 10
+                "singleE": 3
               }
             }
           }
@@ -81,7 +81,8 @@
       "FileName": "out.root",
       "EnabledBranches": [
         "SimEvent",
-        "PEventTPC"
+        "PEventTPC",
+        "Track3D"
       ]
     },
     "GeantSim": {

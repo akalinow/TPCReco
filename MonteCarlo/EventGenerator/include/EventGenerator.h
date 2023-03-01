@@ -6,7 +6,6 @@
 #include "ZProvider.h"
 #include "XYProvider.h"
 #include "GeneratorSetup.h"
-#include "pugixml.h"
 #include "boost/property_tree/ptree.hpp"
 #include "Math/Rotation3D.h"
 #include "SimEvent.h"

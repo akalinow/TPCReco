@@ -4,6 +4,7 @@
     "Generator",
     "GeantSim",
     "TPCDigitizerSRC",
+    "Track3DBuilder",
     "EventFileExporter"
   ],
   "ModuleConfiguration": {
@@ -91,7 +92,8 @@
       "FileName": "out.root",
       "EnabledBranches": [
         "SimEvent",
-        "PEventTPC"
+        "PEventTPC",
+        "Track3D"
       ]
     },
     "GeantSim": {
@@ -209,6 +211,9 @@
       "nStrips": 6,
       "nCells": 30,
       "nPads": 12
+    },
+    "Track3DBuilder": {
+      "GeometryConfig": "/scratch/TPCReco/build/resources/geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat"
     }
   }
 }
