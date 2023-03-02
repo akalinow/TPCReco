@@ -24,12 +24,16 @@ fwk::VModule::EResultFlag TriggerSimulator::Finish() {
 //take into account only points in active area
 double TriggerSimulator::findMinZ(SimEvent &ev) {
     std::vector<double> zPoints;
-    for(const auto& t: ev.GetTracks() ){
+    for(auto& t: ev.GetTracks() ){
+        bool trackInside = false;
         for(const auto& h: t.GetHits()){
             auto pos = h.GetPosition();
-            if(geometry->IsInsideActiveVolume(pos))
+            if(geometry->IsInsideActiveVolume(pos)) {
                 zPoints.push_back(pos.Z());
+                trackInside =true;
+            }
         }
+        t.SetOutOfActiveVolume(!trackInside);
     }
     //if there are no energy deposits inside the active volume we return zero here
     if(zPoints.empty())

@@ -8,17 +8,12 @@
 #include "GELITrackingAction.hh"
 #include "GELIEventAction.hh"
 #include "G4PhysListFactory.hh"
-
-
-
-#include <ctime>
+#include "TRandom.h"
 
 fwk::VModule::EResultFlag GeantSim::Init(boost::property_tree::ptree config) {
     auto cc = CentralConfig::GetInstance();
     cc->SetTopNode(config);
     CLHEP::HepRandom::setTheEngine(&fCLHEPRandomEngine);
-    //TODO: set better seed!
-    CLHEP::HepRandom::setTheSeed(time(nullptr));
 
     fRunManager = new G4RunManager;
     // set mandatory initialization classes
@@ -41,8 +36,13 @@ fwk::VModule::EResultFlag GeantSim::Init(boost::property_tree::ptree config) {
 }
 
 fwk::VModule::EResultFlag GeantSim::Process(ModuleExchangeSpace &event) {
+    //Random seed 'magic' works here because there are no calls to gRandom in Geant code
+    //pass by the seed to Geant
+    CLHEP::HepRandom::setTheSeed(gRandom->GetSeed());
     buffer.simEv = &event.simEvt;
     fRunManager->BeamOn(1);
+    //return the seed to gRandom
+    gRandom->SetSeed(CLHEP::HepRandom::getTheSeed());
     return fwk::VModule::eSuccess;
 }
 

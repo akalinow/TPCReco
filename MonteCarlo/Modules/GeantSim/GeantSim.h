@@ -24,8 +24,8 @@ public:
     fwk::VModule::EResultFlag Finish() override;
 
 private:
-    /** Given ROOT's TRandom3, the random engine used natively in
-        Shine, not only uses the same algorithm as CLHEP's
+    /** Given ROOT's TRandom3, the random engine used natively,
+        not only uses the same algorithm as CLHEP's
         MTwistEngine but is actually based on it, it is quite obvious
         which HepRandomEngine we should use. */
     CLHEP::MTwistEngine fCLHEPRandomEngine;
