@@ -7,12 +7,21 @@
 
 #ifndef __ROOTLOGON__
 R__ADD_INCLUDE_PATH(../../DataFormats/include)
+R__ADD_INCLUDE_PATH(../../GrawToROOT/include)
+R__ADD_INCLUDE_PATH($GET_DIR/GetSoftware_bin/$GET_RELEASE/include) // /home/euser/GetSoftware_bin/20190315_patched_v2/include/
 R__ADD_INCLUDE_PATH(../../Reconstruction/include)
 R__ADD_INCLUDE_PATH(../../Utilities/include)
+R__ADD_INCLUDE_PATH(../../Analysis/include)
 R__ADD_LIBRARY_PATH(../lib)
 #endif
 
 #include <vector>
+#include <iostream>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
+#include <boost/property_tree/xml_parser.hpp>
+#include <boost/program_options.hpp>
+#include "colorText.h"
 
 #include <TMath.h>
 #include <TRandom3.h>
@@ -23,7 +32,7 @@ R__ADD_LIBRARY_PATH(../lib)
 #include <TString.h>
 #include <TH2D.h>
 #include <TVector3.h>
-#include <TFile.h>
+#include <TTree.h>
 #include <TBranch.h>
 #include <Math/Functor.h>
 #include <Fit/Fitter.h>
@@ -31,15 +40,33 @@ R__ADD_LIBRARY_PATH(../lib)
 #include "CommonDefinitions.h"
 #include "GeometryTPC.h"
 #include "EventTPC.h"
+#include "EventSourceBase.h"
+#include "EventSourceGRAW.h"
+#include "EventSourceMultiGRAW.h"
 #include "TrackSegment3D.h"
 #include "Track3D.h"
 #include "IonRangeCalculator.h"
 #include "StripResponseCalculator.h"
 #include "UtilsMath.h"
+#include "RunIdParser.h"
+#include "HIGGS_analysis.h"
 
 #define DEBUG_CHARGE    false
 #define DEBUG_SIGNAL    false // plot UVW projections for reference data and starting point template
 #define DEBUG_CHI2      false
+
+#define MISSING_PID_REPLACEMENT_ENABLE true // TODO - to be parameterized
+#define MISSING_PID_1PRONG             ALPHA // TODO - to be parameterized
+#define MISSING_PID_2PRONG_LEADING     ALPHA // TODO - to be parameterized
+#define MISSING_PID_2PRONG_TRAILING    CARBON_12 // TODO - to be parameterized
+#define MISSING_PID_3PRONG_LEADING     ALPHA // TODO - to be parameterized
+#define MISSING_PID_3PRONG_MIDDLE      ALPHA // TODO - to be parameterized
+#define MISSING_PID_3PRONG_TRAILING    ALPHA // TODO - to be parameterized
+
+enum class BeamDirection{
+  X,
+  MINUS_X
+};
 
 using namespace ROOT::Math;
 
@@ -48,6 +75,7 @@ class StripResponseCalculator;
 class IonRangeCalculator;
 class TrackSegment3D;
 class Track3D;
+class HIGGS_analysis;
 
 TVector3 getRandomDir(TRandom *r) {
   if(!r) {
@@ -218,13 +246,13 @@ private:
     switch (h->GetDimension()) {
     case 1:
       for(auto iBin=1; iBin <= h->GetNbinsX(); iBin++) {
-	if(h->GetBinError(iBin)) result++;
+	if(h->GetBinError(iBin) || h->GetBinContent(iBin)) result++;
       }
       break;
     case 2:
       for(auto iBinX=1; iBinX <= h->GetNbinsX(); iBinX++) {
 	for(auto iBinY=1; iBinY <= h->GetNbinsY(); iBinY++) {
-	  if(h->GetBinError(iBinX, iBinY)) result++;
+	  if(h->GetBinError(iBinX, iBinY) || h->GetBinContent(iBinX, iBinY)) result++;
 	}
       }
       break;
@@ -252,6 +280,7 @@ private:
       myRefHistosInMM.push_back(it);
       myRefNpoints += countNonEmptyBins(it);
     }
+    std::cout << __FUNCTION__ << ": There are " << myRefNpoints << " non-empty bins in REFERENCE histograms to be fitted." << std::endl;
   }
 
   /////////////////////////////////////////////////////////
@@ -563,6 +592,7 @@ double fit_Nprong(std::vector<std::shared_ptr<TH2D> > &referenceHistosInMM,
 		  std::vector<pid_type> pidList, // determines hypothesis and number of tracks
 		  std::vector<double> initialParameters, // starting points of parametric fit
 		  double maxDeviationInMM, // for setting parameter limits
+		  double tolerance,
 		  FitDebugData3prong &fit_debug_data
 		  ) {
 
@@ -602,7 +632,8 @@ double fit_Nprong(std::vector<std::shared_ptr<TH2D> > &referenceHistosInMM,
 
   // set limits on the fitted ADC scale
   // to be within factor of 2 from initial guess value
-  fitter.Config().ParSettings(0).SetLimits(0.5*pStart[0], 2.0*pStart[0]);
+  //  fitter.Config().ParSettings(0).SetLimits(0.5*pStart[0], 2.0*pStart[0]);
+  fitter.Config().ParSettings(0).SetLimits(0.1*pStart[0], 10.0*pStart[0]);
   std::cout << "Setting par[" << 0 << "]  limits=["
 	    << fitter.Config().ParSettings(0).LowerLimit()<<", "
 	    << fitter.Config().ParSettings(0).UpperLimit()<<"]" << std::endl;
@@ -643,7 +674,7 @@ double fit_Nprong(std::vector<std::shared_ptr<TH2D> > &referenceHistosInMM,
   }
 
   // set numerical tolerance
-  fitter.Config().MinimizerOptions().SetTolerance( 1e-4 ); // TEST
+  fitter.Config().MinimizerOptions().SetTolerance(tolerance); // default=1e-4 for MC-MC tests
 
   // set print debug level
   fitter.Config().MinimizerOptions().SetPrintLevel(2);
@@ -665,7 +696,7 @@ double fit_Nprong(std::vector<std::shared_ptr<TH2D> > &referenceHistosInMM,
   fitter.Config().MinimizerOptions().SetMaxFunctionCalls(10000);
   fitter.Config().MinimizerOptions().SetMaxIterations(1000);
   fitter.Config().MinimizerOptions().SetStrategy(1);
-  fitter.Config().MinimizerOptions().SetTolerance( 1e-4 ); // 1e-3 // increased to speed up calculations
+  fitter.Config().MinimizerOptions().SetTolerance(tolerance); // default=1e-4 for MC-MC comparison
   fitter.Config().MinimizerOptions().SetPrecision( 1e-6 ); // 1e-4 //increased to speed up calculations
 
   // check fit results
@@ -730,7 +761,7 @@ int loop(const long maxIter=1, const int runId=1234) {
   if (!gROOT->GetClass("GeometryTPC")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
   }
-  if (!gROOT->GetClass("IonRangeCalculator")){ // FIX
+  if (!gROOT->GetClass("IonRangeCalculator")){
     R__LOAD_LIBRARY(libTPCUtilities.so);
   }
   if (!gROOT->GetClass("StripResponseCalculator")){
@@ -753,6 +784,7 @@ int loop(const long maxIter=1, const int runId=1234) {
   const auto pressure_mbar = 250.0; // mbar
   const auto temperature_K = 273.15+20; // K
 
+  const auto tolerance=1e-4; // default=1e-4 for MC-MC comparison
   const auto reference_adcPerMeV=1e5;
   const auto reference_nPointsMin=1000; // fine granularity for crearing reference UVW histograms to be fitted
   const auto reference_nPointsPerMM=100.0; // fine granularity for creating reference UVW histograms to be fitted
@@ -781,15 +813,15 @@ int loop(const long maxIter=1, const int runId=1234) {
   int nstrips=6;
   int ncells=30;
   int npads=nstrips*2;
-  const std::string initFile( (peakingTime_ns==0 ?
+  const std::string responseFileName( (peakingTime_ns==0 ?
 			       Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm.root",
 				    nstrips, ncells, npads, aGeometry->GetSamplingRate(), aGeometry->GetDriftVelocity(),
 				    sigmaXY_mm, sigmaZ_mm) :
 			       Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm_P%gns.root",
 				    nstrips, ncells, npads, aGeometry->GetSamplingRate(), aGeometry->GetDriftVelocity(),
 				    sigmaXY_mm, sigmaZ_mm, peakingTime_ns) ) );
-  auto aCalcResponse=std::make_shared<StripResponseCalculator>(aGeometry, nstrips, ncells, npads, sigmaXY_mm, sigmaZ_mm, peakingTime_ns, initFile.c_str());
-  std::cout << "Loading strip response matrix from file: "<< initFile << std::endl;
+  auto aCalcResponse=std::make_shared<StripResponseCalculator>(aGeometry, nstrips, ncells, npads, sigmaXY_mm, sigmaZ_mm, peakingTime_ns, responseFileName.c_str());
+  std::cout << "Loading strip response matrix from file: "<< responseFileName << std::endl;
 
   ////////// initialize ion range and dE/dx calculator
   //
@@ -945,7 +977,7 @@ int loop(const long maxIter=1, const int runId=1234) {
     }
 
     // get fit results
-    auto chi2 = fit_Nprong(referenceHistosInMM, aGeometry, aCalcResponse, aCalcRange, pidList, pStart, maxDeviationInMM, fit_debug_data);
+    auto chi2 = fit_Nprong(referenceHistosInMM, aGeometry, aCalcResponse, aCalcRange, pidList, pStart, maxDeviationInMM, tolerance, fit_debug_data);
 
     // compare TRUE and RECO observables
     std::cout << "Final FCN value " << fit_debug_data.chi2
@@ -1010,6 +1042,510 @@ int loop(const long maxIter=1, const int runId=1234) {
   outputROOTFile->cd();
   tree->Write("",TObject::kOverwrite);
   outputROOTFile->Close();
+
+  return 0;
+}
+
+// _______________________________________
+//
+// Takes Track3D input tree as a starting point to fit the corresponding GRAW raw-data file(s).
+// Events from the two sources are are matched by their {runId, eventId}.
+//
+int loop_Graw_Track3D(const char *recoInputFile, // Track3D collection with initial RECO data corresponding to GRAW file(s)
+		      const char *grawInputFile, // comma-separated list of GRAW files
+		      unsigned long firstEvent=0,        // first eventId to process
+		      unsigned long lastEvent=0,         // last eventId to process (0 = up to the end)
+		      const char *geometryFile="geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat",
+		      double pressure_mbar=250.0,
+		      double temperature_K=273.15+20,
+		      double sigmaXY_mm=2,
+		      double sigmaZ_mm=2,
+		      double peakingTime_ns=232,
+		      bool flag_fiducial_cuts=true, // enable detector/electronics fiducial cuts as in HIGS_analysis
+		      bool flag_1prong=true, // enable fitting of 1-prong events
+		      bool flag_2prong=true, // enable fitting of 2-prong events
+		      bool flag_3prong=true  // enable fitting of 3-prong events
+		      ) {
+  if (!gROOT->GetClass("GeometryTPC")){
+    R__LOAD_LIBRARY(libTPCDataFormats.so);
+  }
+  if (!gROOT->GetClass("IonRangeCalculator")){
+    R__LOAD_LIBRARY(libTPCUtilities.so);
+  }
+  if (!gROOT->GetClass("StripResponseCalculator")){
+    R__LOAD_LIBRARY(libTPCReconstruction.so);
+  }
+  if (!gROOT->GetClass("EventSourceGRAW")){
+    R__LOAD_LIBRARY(libTPCGrawToROOT.so);
+  }
+  if (!gROOT->GetClass("HIGGS_analysis")){
+    R__LOAD_LIBRARY(libTPCAnalysis.so);
+  }
+
+  /////////// set parameters of EventTPC clustering
+  //
+  filter_type filterType = filter_type::threshold;
+  //
+  // NOTE: ptree::find() with nested nodes does not work properly in interactive ROOT mode!
+  //       Below is a workaround employing simple node.
+  // boost::property_tree::ptree aConfig;
+  // aConfig.put("hitFilter.recoClusterEnable", true);
+  // aConfig.put("hitFilter.recoClusterThreshold", 35.0); // [ADC units] - seed hits
+  // aConfig.put("hitFilter.recoClusterDeltaStrips", 2); // band around seed hit in strip units
+  // aConfig.put("hitFilter.recoClusterDeltaTimeCells", 5); // band around seed hit in time cells
+  // aConfig.put("pedestal.minPedestalCell", 5);
+  // aConfig.put("pedestal.maxPedestalCell", 25);
+  // aConfig.put("pedestal.minSignalCell", 5);
+  // aConfig.put("pedestal.maxSignalCell", 506);
+  boost::property_tree::ptree pedestalConfig, hitFilterConfig;
+  hitFilterConfig.put("recoClusterEnable", true);
+  hitFilterConfig.put("recoClusterThreshold", 35.0); // [ADC units] - seed hits
+  hitFilterConfig.put("recoClusterDeltaStrips", 2); // band around seed hit in strip units
+  hitFilterConfig.put("recoClusterDeltaTimeCells", 5); // band around seed hit in time cells
+  pedestalConfig.put("minPedestalCell", 5);
+  pedestalConfig.put("maxPedestalCell", 25);
+  pedestalConfig.put("minSignalCell", 5);
+  pedestalConfig.put("maxSignalCell", 506);
+  //  std::cout << "BOOST_PTREE: " << aConfig.get<bool>("hitFilter.recoClusterEnable", false) << std::endl;
+  //  std::cout << "BOOST_PTREE: " << aConfig.get<bool>("hitFilter.recoClusterEnable") << std::endl;
+  //  std::cout << "BOOST_PTREE: " << aConfig.count("hitFilter.recoClusterEnable") << std::endl;
+  //  std::cout << "BOOST_PTREE: " << (bool)(aConfig.find("hitFilter.recoClusterEnable")==aConfig.not_found()) << std::endl;
+  //  std::cout << "BOOST_PTREE: " << (bool)(aConfig.find("hitFilter")==aConfig.not_found()) << std::endl;
+
+  /////////// initialize TPC geometry, electronic parameters and gas conditions
+  //
+  auto aGeometry = std::make_shared<GeometryTPC>(geometryFile, false);
+  aGeometry->SetTH2PolyPartition(3*20,2*20); // higher TH2Poly granularity speeds up finding reference nodes
+
+  ////////// initialize strip response calculator
+  //
+  const auto reference_adcPerMeV=1e5;
+  const auto maxDeviationInADC=reference_adcPerMeV*0.5; // for smearing starting point and setting parameter limits
+  const auto maxDeviationInMM=5.0; // for smearing fit starting point and setting parameter limits
+  double sigmaXY=sigmaXY_mm; // 0.64; // educated guess of transverse charge spread after 10 cm of drift (middle of drift cage)
+  double sigmaZ=sigmaZ_mm; // 0.64; // educated guess of longitudinal charge spread after 10 cm of drift (middle of drift cage)
+  auto peakingTime=peakingTime_ns;
+  if(peakingTime<0) peakingTime=0; // when peakingTime is ommitted turn off additional smearing due to GET electronics
+  int nstrips=6;
+  int ncells=30;
+  int npads=nstrips*2;
+  const std::string responseFileName( (peakingTime_ns==0 ?
+			       Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm.root",
+				    nstrips, ncells, npads, aGeometry->GetSamplingRate(), aGeometry->GetDriftVelocity(),
+				    sigmaXY_mm, sigmaZ_mm) :
+			       Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm_P%gns.root",
+				    nstrips, ncells, npads, aGeometry->GetSamplingRate(), aGeometry->GetDriftVelocity(),
+				    sigmaXY_mm, sigmaZ_mm, peakingTime_ns) ) );
+  auto aCalcResponse=std::make_shared<StripResponseCalculator>(aGeometry, nstrips, ncells, npads, sigmaXY_mm, sigmaZ_mm, peakingTime_ns, responseFileName.c_str());
+  std::cout << "Loading strip response matrix from file: "<< responseFileName << std::endl;
+
+  ////////// initialize ion range and dE/dx calculator
+  //
+  auto aCalcRange=std::make_shared<IonRangeCalculator>(CO2, pressure_mbar, temperature_K, false);
+
+  // ////////// create dummy EventTPC to get empty UVW projections
+  // //
+  // auto event=std::make_shared<EventTPC>(); // empty event
+  // event->SetGeoPtr(aGeometry);
+  // std::vector<std::shared_ptr<TH2D> > referenceHistosInMM(3);
+  // for(auto strip_dir=0; strip_dir<3; strip_dir++) {
+  //   referenceHistosInMM[strip_dir] = event->get2DProjection(get2DProjectionType(strip_dir), filter_type::none, scale_type::mm);
+  // }
+
+  //////// initialize event filter
+  //
+  auto beamDirPreset=BeamDirection::MINUS_X;
+  TVector3 beamDir; // unit vector in DET coordinate system
+  switch(beamDirPreset){
+  case BeamDirection::X :
+    beamDir = TVector3(1,0,0);
+    break;
+  case BeamDirection::MINUS_X :
+    beamDir = TVector3(-1,0,0);
+    break;
+  default:
+    std::cerr<<"ERROR: Wrong beam direction preset!"<<std::endl;
+    return 1;
+  }
+  auto beamEnergy_MeV=10.0; // [MeV] - some dummy value, not used in detector fiducial cuts
+  HIGGS_analysis myAnalysisFilter(aGeometry, beamEnergy_MeV, beamDir, pressure_mbar, temperature_K); // just for filtering
+
+  ////////// opens input ROOT file with tracks (Track3D objects)
+  //
+  // NOTE: Tree's and branch names are kept the same as in HIGS_analysis
+  //       for easy MC-reco comparison. To be replaced with better
+  //
+  //       class/object in future toy MC.
+  TFile *aFile = new TFile(recoInputFile, "OLD");
+  TTree *aTree=(TTree*)aFile->Get("TPCRecoData");
+  if(!aTree) {
+    std::cerr<<"ERROR: Cannot find 'TPCRecoData' tree!"<<std::endl;
+    return 1;
+  }
+  Track3D *aTrack = new Track3D();
+  TBranch *aBranch  = aTree->GetBranch("RecoEvent");
+  if(!aBranch) {
+    std::cerr<<"ERROR: Cannot find 'RecoEvent' branch!"<<std::endl;
+    return 1;
+  }
+  aBranch->SetAddress(&aTrack);
+  eventraw::EventInfo *aEventInfo = 0;
+  TBranch *aBranchInfo = aTree->GetBranch("EventInfo");
+  if(!aBranchInfo) {
+    std::cerr<<"ERROR: Cannot find 'EventInfo' branch!"<<std::endl;
+    return 1;
+  }
+  aEventInfo = new eventraw::EventInfo();
+  aBranchInfo->SetAddress(&aEventInfo);
+
+  const unsigned int nEntries = aTree->GetEntries();
+
+  ////////// sort input tree in ascending order of {runID, eventID}
+  //
+  TTreeIndex *I=NULL;
+  Long64_t* index=NULL;
+  if(aBranchInfo) {
+    aTree->BuildIndex("runId", "eventId");
+    I=(TTreeIndex*)aTree->GetTreeIndex(); // get the tree index
+    index=I->GetIndex();
+  }
+
+  ////////// initialize EventSource
+  //
+  const char del = ','; // delimiter character
+  std::set<std::string> fileNameList; // list of unique strings
+  std::stringstream sstream(grawInputFile);
+  std::string fileName;
+  while (std::getline(sstream, fileName, del)) {
+    if(fileName.size()>0) fileNameList.insert(fileName);
+  };
+  const int frameLoadRange=150; // important for single GRAW file mode
+  const unsigned int AsadNboards=aGeometry->GetAsadNboards();
+  std::shared_ptr<EventSourceBase> myEventSource;
+  if(fileNameList.size()==AsadNboards) {
+    myEventSource = std::make_shared<EventSourceMultiGRAW>(geometryFile);
+  } else if (fileNameList.size()==1) {
+    myEventSource = std::make_shared<EventSourceGRAW>(geometryFile);
+    dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(frameLoadRange);
+  } else {
+    std::cerr << __FUNCTION__ << KRED << ": Invalid number of GRAW files!" << RST << std::endl << std::flush;
+    return 1;
+  }
+
+  // initialize pedestal removal parameters for EventSource
+  // NOTE: ptree::find() with nested nodes does not work properly in interactive ROOT mode!
+  //       Below is a workaround employing simple node.
+  // if(aConfig.find("pedestal")!=aConfig.not_found()) {
+  //   dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setRemovePedestal(false);
+  //   dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(pedestalConfig);
+  //   dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(aConfig.find("pedestal")->second);
+  // }
+  // else {
+  //   std::cerr << __FUNCTION__ << KRED << ": Some pedestal configuration options are missing!" << RST << std::endl << std::flush;
+  //   return 1;
+  // }
+  dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setRemovePedestal(true);
+  dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(pedestalConfig);
+
+  myEventSource->loadDataFile(grawInputFile);
+  std::cout << "File with " << myEventSource->numberOfEntries() << " frames loaded."
+	    << std::endl;
+  myEventSource->loadFileEntry(0); // load 1st frame (NOTE: otherwise LoadEventId does not work)
+
+  // DEBUG - parsing RunId from file name
+  auto id = RunIdParser(grawInputFile);
+  std::cout << "Parsing whole file name list: " << grawInputFile
+	    << ": run=" << id.runId() << ", chunk=" << id.fileId() << ", cobo=" << id.CoBoId() << ", asad=" << id.AsAdId() << std::endl;
+  // DEBUG
+
+  /////////// open output ROOT files
+  //
+  const std::string debugFileName = "FitDebug.root";
+  TFile* debugFile = new TFile(debugFileName.c_str(),"RECREATE");
+  if(!debugFile || !debugFile->IsOpen()) {
+    std::cerr<<"ERROR: Cannot create DEBUG output file: "<<debugFileName<<"!"<<std::endl;
+    return 1;
+  }
+  debugFile->cd();
+  TTree *debugTree = new TTree("t", "Fit debug tree");
+  FitDebugData3prong fit_debug_data;
+  debugTree->Branch("fit",&fit_debug_data);
+
+  const std::string outFileName = "Reco_Track3D.root";
+  TFile* outFile = new TFile(outFileName.c_str(), "RECREATE");
+  if(!outFile || !outFile->IsOpen()) {
+    std::cerr<<"ERROR: Cannot create RECO output file: "<<outFileName<<"!"<<std::endl;
+    return 1;
+  }
+  outFile->cd();
+  Track3D* outTrack = new Track3D();
+  TTree* outTree = new TTree("TPCRecoData","");
+  outTree->Branch("RecoEvent", &outTrack);
+  eventraw::EventInfo* outEventInfo = new eventraw::EventInfo();
+  outTree->Branch("EventInfo", &outEventInfo);
+
+  ////////// measure elapsed time
+  //
+  TStopwatch t;
+  t.Start();
+
+  ////////// main event processing loop
+  //
+  long maxevents=-1; // scan all events
+  long unsigned fitted_event_count=0; // actual number of fitted events
+  maxevents=(maxevents<=0 ? nEntries : std::min((unsigned int)maxevents, nEntries));
+  for(auto ievent=0; ievent<maxevents; ievent++) {
+    if(index) {
+      aBranch->GetEntry(index[ievent]);
+      aBranchInfo->GetEntry(index[ievent]);
+    } else {
+      aBranch->GetEntry(ievent);
+      aBranchInfo->GetEntry(ievent);
+    }
+
+    const unsigned long runId = (unsigned long)aEventInfo->GetRunId();
+    const unsigned long eventId = (unsigned long)aEventInfo->GetEventId();
+    const int nTracks = aTrack->getSegments().size();
+
+    std::cout << "#####################" << std::endl
+	      << "#### FIT ITER=" << ievent<< ", RUN=" << runId << ", EVENT=" << eventId << ", NTRACKS=" << nTracks << std::endl
+	      << "#####################" << std::endl;
+
+
+    if((firstEvent>0 && eventId<firstEvent) || (lastEvent>0 && eventId>lastEvent)) {
+      std::cout << __FUNCTION__ << KRED << ": Skipping event outside allowed eventId range: run=" << runId << ", event=" << eventId
+		<< RST << std::endl << std::flush;
+      continue;
+    }
+
+    switch(nTracks) {
+    case 3:
+      if(!flag_3prong) { // ignore 3-prong events on request
+	std::cout << __FUNCTION__ << KRED << ": Skipping event with 3-prong tracks: run=" << runId << ", event=" << eventId
+		  << RST << std::endl << std::flush;
+	continue;
+      }
+      break;
+    case 2:
+      if(!flag_2prong) { // ignore 2-prong events on request
+	std::cout << __FUNCTION__ << KRED << ": Skipping event with 2-prong tracks: run=" << runId << ", event=" << eventId
+		  << RST << std::endl << std::flush;
+	continue;
+      }
+      break;
+    case 1:
+      if(!flag_1prong) { // ignore 1-prong events on request
+	std::cout << __FUNCTION__ << KRED << ": Skipping event with 1-prong tracks: run=" << runId << ", event=" << eventId
+		  << RST << std::endl << std::flush;
+	continue;
+      }
+      break;
+    default:;
+    };
+
+    // sanity check
+    if(nTracks<1 || nTracks>3) {
+      std::cout << __FUNCTION__ << KRED << ": Skipping event with wrong number of initial tracks: run=" << runId << ", event=" << eventId
+		<< RST << std::endl << std::flush;
+      continue;
+    }
+
+    // get sorted list of tracks (descending order by track length)
+    auto coll=aTrack->getSegments();
+    std::sort(coll.begin(), coll.end(),
+	      [](const TrackSegment3D& a, const TrackSegment3D& b) {
+		return a.getLength() > b.getLength();
+	      });
+
+#if(MISSING_PID_REPLACEMENT_ENABLE) // TODO - to be parameterized
+    // assign missing PID to REF data file by track length
+    switch(nTracks) {
+    case 3:
+      if(coll.front().getPID()==UNKNOWN) coll.front().setPID(MISSING_PID_3PRONG_LEADING); // TODO - to be parameterized
+      if(coll.at(1).getPID()==UNKNOWN) coll.at(1).setPID(MISSING_PID_3PRONG_MIDDLE); // TODO - to be parameterized
+      if(coll.back().getPID()==UNKNOWN) coll.back().setPID(MISSING_PID_3PRONG_TRAILING); // TODO - to be parameterized
+      break;
+    case 2:
+      if(coll.front().getPID()==UNKNOWN) coll.front().setPID(MISSING_PID_2PRONG_LEADING); // TODO - to be parameterized
+      if(coll.back().getPID()==UNKNOWN) coll.back().setPID(MISSING_PID_2PRONG_TRAILING); // TODO - to be parameterized
+      break;
+    case 1:
+      if(coll.front().getPID()==UNKNOWN) coll.front().setPID(MISSING_PID_1PRONG); // TODO - to be parameterized
+      break;
+    default:;
+    };
+#endif
+
+    //////// apply fiducial cuts on initial input tracks using HIGS_analysis::eventFilter method
+    //
+    if(!myAnalysisFilter.eventFilter(aTrack)) {
+      std::cout << __FUNCTION__ << KRED << ": Skipping event that failed HIGS_analysis quality cuts: run=" << runId << ", event=" << eventId
+		<< RST << std::endl << std::flush;
+      continue;
+    }
+
+    // initialize list of PIDs to be fitted
+    std::vector<pid_type> pidList;
+    for(auto &aSeg: coll) {
+      pidList.push_back(aSeg.getPID());
+    }
+
+    // load EventTPC to be fitted from the GRAW file
+    myEventSource->loadEventId(eventId);
+    auto aEventTPC = myEventSource->getCurrentEvent();
+    auto currentEventId = aEventTPC->GetEventInfo().GetEventId();
+    auto currentRunId = aEventTPC->GetEventInfo().GetRunId();
+
+    // sanity check
+    if(currentRunId!=runId || currentEventId!=eventId) {
+      std::cout << __FUNCTION__ << KRED << ": Skipping event with missing RAW data: run=" << runId << ", event=" << eventId
+		<< RST << std::endl << std::flush;
+      continue;
+    }
+
+    std::cout << "EventInfo: " << aEventTPC->GetEventInfo()<<std::endl;
+
+    // prepare clustered UVW projections to be fitted
+    // NOTE: ptree::find() with nested nodes does not work properly in interactive ROOT mode!
+    //       Below is a workaround employing simple node.
+    //    aEventTPC->setHitFilterConfig(filterType, aConfig.find("hitFilter")->second);
+    aEventTPC->setHitFilterConfig(filterType, hitFilterConfig);
+    std::vector<std::shared_ptr<TH2D> > referenceHistosInMM(3);
+    for(auto strip_dir=0; strip_dir<3; strip_dir++) {
+      referenceHistosInMM[strip_dir] = aEventTPC->get2DProjection(get2DProjectionType(strip_dir), filter_type::threshold, scale_type::mm);
+    }
+
+    //////// create TrackSegment3D collections with TRUE/INIT information
+    //
+    const auto reference_origin=coll.front().getStart(); // mm
+    std::vector<TVector3> reference_endpoint(pidList.size());
+    for(int itrack=0; itrack<pidList.size(); itrack++) {
+      reference_endpoint[itrack] = coll.at(itrack).getEnd();
+    }
+
+    //////// create starting point (optionally smeared around TRUE/INIT value)
+    //
+    const auto tolerance = 1e-5; // default=1e-4 for MC-MC comparison
+    const auto deviationDir=getRandomDir(gRandom); // for origin, enpoints
+    //    const auto deviationStepInMM=1.0; // [mm]
+    //    auto deviationRadiusInMM = deviationStepInMM * (gRandom->Integer((int)(maxDeviationInMM/deviationStepInMM))+1);
+    auto deviationRadiusInMM = 0.0; // no deviation
+    auto maxDeviationInMM=7.0; // [mm] - for setting perameter limits (and for optional smearing of the starting points)
+    auto reference_adcPerMeV=1e5; // [ADC units / MeV] - order of magnitude, this will be refinend automatically
+    std::vector<double> pStart{
+      reference_adcPerMeV,
+      reference_origin.X() + deviationRadiusInMM*deviationDir.X(),
+      reference_origin.Y() + deviationRadiusInMM*deviationDir.Y(),
+      reference_origin.Z() + deviationRadiusInMM*deviationDir.Z() };
+    for(int itrack=0; itrack<pidList.size(); itrack++) {
+      const auto deviationDir = getRandomDir(gRandom); // for each endpoint
+      pStart.push_back(reference_endpoint[itrack].X() + deviationRadiusInMM*deviationDir.X());
+      pStart.push_back(reference_endpoint[itrack].Y() + deviationRadiusInMM*deviationDir.Y());
+      pStart.push_back(reference_endpoint[itrack].Z() + deviationRadiusInMM*deviationDir.Z());
+    }
+
+    // fill FitDebugData with TRUE/INIT information per event
+    fit_debug_data.eventId = eventId;
+    fit_debug_data.runId = runId;
+    fit_debug_data.ntracks = pidList.size();
+    fit_debug_data.scaleTrue = reference_adcPerMeV;
+    fit_debug_data.xVtxTrue = reference_origin.X();
+    fit_debug_data.yVtxTrue = reference_origin.Y();
+    fit_debug_data.zVtxTrue = reference_origin.Z();
+    fit_debug_data.initScaleDeviation = fabs(pStart[0]-reference_adcPerMeV);
+    fit_debug_data.initVtxDeviation = sqrt( pow(pStart[1]-reference_origin.X(), 2) +
+					    pow(pStart[2]-reference_origin.Y(), 2) +
+					    pow(pStart[3]-reference_origin.Z(), 2) );
+
+    // fill FitDebugData with TRUE/INIT information per track
+    for(int itrack=0; itrack<pidList.size(); itrack++) {
+      fit_debug_data.energy[itrack] = aCalcRange->getIonEnergyMeV(pidList[itrack], coll.at(itrack).getLength()); // MeV
+      fit_debug_data.pid[itrack] = pidList[itrack];
+      fit_debug_data.lengthTrue[itrack] = coll.at(itrack).getLength(); // mm
+      fit_debug_data.phiTrue[itrack] = coll.at(itrack).getTangent().Phi(); // rad
+      fit_debug_data.cosThetaTrue[itrack] = coll.at(itrack).getTangent().CosTheta();
+      fit_debug_data.xEndTrue[itrack] = reference_endpoint[itrack].X(); // mm
+      fit_debug_data.yEndTrue[itrack] = reference_endpoint[itrack].Y(); // mm
+      fit_debug_data.zEndTrue[itrack] = reference_endpoint[itrack].Z(); // mm
+      fit_debug_data.initEndDeviation[itrack] = sqrt( pow(pStart[4]-reference_endpoint[itrack].X(), 2) +
+						      pow(pStart[5]-reference_endpoint[itrack].Y(), 2) +
+						      pow(pStart[6]-reference_endpoint[itrack].Z(), 2) ); // mm
+    }
+
+    // get fit results
+    auto chi2 = fit_Nprong(referenceHistosInMM, aGeometry, aCalcResponse, aCalcRange, pidList, pStart, maxDeviationInMM, tolerance, fit_debug_data);
+    fitted_event_count++;
+
+    // compare TRUE and RECO observables
+    std::cout << "Final FCN value " << fit_debug_data.chi2
+	      << " (Status=" << fit_debug_data.status << ", Ncalls=" << fit_debug_data.ncalls << ", Ndf=" << fit_debug_data.ndf << ")" << std::endl;
+    std::cout << "\nFitted SCALE [ADC/MeV] = " << fit_debug_data.scaleReco << " +/- " << fit_debug_data.scaleRecoErr << std::endl
+	      <<   "  TRUE/INIT SCALE [ADC/MeV] = " << fit_debug_data.scaleTrue << std::endl;
+    std::cout << "\nFitted X_VTX [mm] = " << fit_debug_data.xVtxReco << " +/- " << fit_debug_data.xVtxRecoErr << std::endl
+	      <<   "  TRUE/INIT X_VTX [mm] = " << fit_debug_data.xVtxTrue << std::endl;
+    std::cout << "\nFitted Y_VTX [mm] = " << fit_debug_data.yVtxReco << " +/- " << fit_debug_data.yVtxRecoErr << std::endl
+	      <<   "  TRUE/INIT Y_VTX [mm] = " << fit_debug_data.yVtxTrue << std::endl;
+    std::cout << "\nFitted Z_VTX [mm] = " << fit_debug_data.zVtxReco << " +/- " << fit_debug_data.zVtxRecoErr << std::endl
+	      <<   "  TRUE/INIT Z_VTX [mm] = " << fit_debug_data.zVtxTrue << std::endl;
+    for(int itrack=0; itrack<pidList.size(); itrack++) {
+      std::cout << "\nTrack " << itrack+1 << ": Fitted X_END [mm] = " << fit_debug_data.xEndReco[itrack]
+		<< " +/- " << fit_debug_data.xEndRecoErr[itrack] << std::endl
+		<<   "Track " << itrack+1 << ":   TRUE/INIT X_END [mm] = " << fit_debug_data.xEndTrue[itrack] << std::endl;
+      std::cout << "\nTrack " << itrack+1 << ": Fitted Y_END [mm] = " << fit_debug_data.yEndReco[itrack]
+		<< " +/- " << fit_debug_data.yEndRecoErr[itrack] << std::endl
+		<<   "Track " << itrack+1 << ":   TRUE/INIT Y_END [mm] = " << fit_debug_data.yEndTrue[itrack] << std::endl;
+      std::cout << "\nTrack " << itrack+1 << ": Fitted Z_END [mm] = " << fit_debug_data.zEndReco[itrack]
+		<< " +/- " << fit_debug_data.zEndRecoErr[itrack] << std::endl
+		<<   "Track " << itrack+1 << ":   TRUE/INIT Z_END [mm] = " << fit_debug_data.zEndTrue[itrack] << std::endl;
+    }
+
+    //////// create TrackSegment3D collections with RECO information
+    //
+    Track3D fit_track3d;
+    for(int itrack=0; itrack<pidList.size(); itrack++) {
+      TrackSegment3D fit_seg;
+      fit_seg.setGeometry(aGeometry);
+      fit_seg.setStartEnd(TVector3(fit_debug_data.xVtxReco,fit_debug_data.yVtxReco,fit_debug_data.zVtxReco),
+			  TVector3(fit_debug_data.xEndReco[itrack],fit_debug_data.yEndReco[itrack],fit_debug_data.zEndReco[itrack]));
+      fit_seg.setPID(pidList[itrack]);
+      fit_track3d.addSegment(fit_seg);
+    }
+    *outTrack=fit_track3d;
+
+    //////// update trees
+    //
+    debugFile->cd();
+    debugTree->Fill();
+    outFile->cd();
+    outEventInfo->SetRunId(runId);
+    outEventInfo->SetEventId(eventId);
+    outTree->Fill();
+
+    //////// discard UVW projectons that are not needed anymore
+    //
+    for(auto strip_dir=0; strip_dir<3; strip_dir++) {
+      referenceHistosInMM[strip_dir].reset();
+    }
+
+  } // end of main processing loop
+
+  ////////// measure elapsed time
+  //
+  t.Stop();
+  std::cout << "===========" << std::endl;
+  std::cout << "CPU time needed to fit " << fitted_event_count << " events:" << std::endl;
+  t.Print();
+  std::cout << "===========" << std::endl;
+
+  ////////// write trees and close output ROOT files
+  //
+  outFile->cd();
+  outTree->Write("",TObject::kOverwrite);
+  outFile->Close();
+  debugFile->cd();
+  debugTree->Write("",TObject::kOverwrite);
+  debugFile->Close();
+  aFile->Close();
 
   return 0;
 }
