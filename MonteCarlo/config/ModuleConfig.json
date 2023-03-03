@@ -3,9 +3,6 @@
   "ModuleSequence": [
     "Generator",
     "GeantSim",
-    "TriggerSimulator",
-    "TrackTruncator",
-    "TPCDigitizerSRC",
     "Track3DBuilder",
     "EventFileExporter"
   ],
@@ -42,19 +39,17 @@
         },
         "Vertex": {
           "VertexTransverse": {
-            "distribution": "XYProviderGaussTail",
+            "distribution": "XYProviderSingle",
             "parameters": {
-              "meanX": 0,
-              "meanY": 0,
-              "flatR": 10,
-              "sigma": 1
+              "singleX": 0,
+              "singleY": 0
             }
           },
           "VertexLongitudinal": {
             "distribution": "ZProviderUniform",
             "parameters": {
-              "minZ": -300,
-              "maxZ": 300
+              "minZ": -200,
+              "maxZ": 200
             }
           }
         },

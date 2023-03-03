@@ -17,7 +17,7 @@ include_directories(${PROJECT_SOURCE_DIR}/Utilities/include)
 foreach( example_source ${sources} )
     get_filename_component(example ${example_source} NAME_WE)
     add_executable( ${example} ${example_source} )
-    target_link_libraries( ${example} Utilities DataFormats UtilsMC EventGenerator MonteCarloModules )
+    target_link_libraries( ${example} Utilities DataFormats UtilsMC EventGenerator MonteCarloModules ${Boost_LIBRARIES} )
     install(TARGETS ${example} RUNTIME DESTINATION bin/examples)
 endforeach( example_source ${sources} )
 
