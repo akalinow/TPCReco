@@ -10,13 +10,25 @@ All modules inherit from an abstract class [fwk::VModule](../UtilsMC/include/VMo
 
 
 ## Available modules
-* [Generator](Generator) - wrapper for [EventGenerator](../EventGenerator/README.md) for generating `SimEvent`s
-* [EventFileExporter](EventFileExporter) - module for writting simulation results into ROOT files
-* [GeantSim](GeantSim) - Module that handles GEANT simulation of detector response - it takes `SimEvent` and tracks primary particles through the detector
+* [Generator](Generator) - Wrapper for [EventGenerator](../EventGenerator/README.md) for generating `SimEvent`s
+* [EventFileExporter](EventFileExporter) - Writes simulation results into ROOT files
+* [GeantSim](GeantSim) - Handles GEANT simulation of detector response - it takes `SimEvent` and tracks primary particles through the detector
 * [TPCDigitizerRandom](TPCDigitizerRandom) - TPC digitizer based on Artur's approach for UVW projection. Each deposit is smeared with a 3D gaussian function by sampling with configurable number of points
-* [TPCDigitizerSRC](TPCDigitizerSRC) - TPC digitizer based on Mikolaj's `StripResponseCalculator`. It can either read a generated strip response histograms from a ROOT file or generate new ones with default parameters, if the response does not exist. 
+* [TPCDigitizerSRC](TPCDigitizerSRC) - TPC digitizer based on Mikolaj's `StripResponseCalculator`. It can either read a generated strip response histograms from a ROOT file or generate new ones with default parameters, if the response does not exist.
+* [Track3DBuilder](Track3DBuilder) - Builds `Track3D` objects from `SimEvent` objects - they are required by the existing legacy code used for comparison between pure and reconstructed MonteCarlo
+* [TrackTruncator](TrackTruncator) - Truncates `SimTrack`s in a `SimEvent` to active volume of the detector and possibly to GET electronics range
+* [TriggerSimulator](TriggerSimulator) - Simulates self-triggering of the TPC by finding `z` position of first energy deposit that reaches the readout plane and shifts the whole event appropriately
 
 `RunController` creates all the modules, initializes them (`Init` method), runs `Process` method in the right order, and then cleans up with `Finish` method.
+
+## ModuleExchangeSpace
+The modules communicate with each-other through [ModuleExchangeSpace](../UtilsMC/include/ModuleExchangeSpace.h). It contains:
+* `SimEvent`
+* `PEventTPC`
+* `Track3D`
+* `eventraw::EventInfo`
+
+`RunController` keeps one instance of `ModuleExchangeSpace` and passes it by reference to the modules' `Process` methods, that way the modules have read/write access.
 
 # Configuration
 Configuration template:
@@ -28,6 +40,7 @@ Configuration template:
     "ModuleB",
     "ModuleC"
   ],
+  "GeometryConfig": {},
   "ModuleConfiguration": {
     "ModuleA": {},
     "ModuleB": {},
@@ -38,6 +51,7 @@ Configuration template:
 where:
 * `"EnableTiming"` - `bool`, flag enabling timing benchmark of the sequence
 * `"ModuleSequence"` - vector of `string`, sequence of modules to be run in the same order, here `"ModuleA"`, `"ModuleB"` and "`"ModuleC"`"
+* `"GeometryConfig"` - `string`, path to `geometry_ELITPC` configuration
 * `"ModuleConfiguration"` - configuration of modules, each module receives a `JSON` object parsed into `boost::property_tree::ptree` object as an argument to `ModuleName::Init` method
 
 # Configuration of modules
@@ -69,6 +83,7 @@ where:
 * `"EnabledBranches"` - vector of `string` describing branches to be saved into file, available branches:
   * `"SimEvent"` - pure Monnte Carlo data (`SimEvent`)
   * `"PEventTPC"` - *raw* data (`PEventTPC`)
+  * `"Track3D"` - *'reconstructed'* data (`Track3D`)
 
 ## GeantSim
 Configuration template:
@@ -228,6 +243,33 @@ where:
 * `"nStrips"` - `int`, number of neighbouring strips considered during UVW projection
 * `"nCells"` - `int`, number of neighbouring cells considered during UVW projection
 * `"nPads"` - `int`, number of neighbouring pads considered during UVW projection
+
+## Track3DBuilder
+Configuration template:
+```json
+{
+}
+```
+**Note**: When module does not have any configuration parameters an empty JSON object has to be provided anyway.
+## TrackTruncator
+Configuration template:
+```json
+{
+  "IncludeElectronicsRange": true
+}
+```
+where:
+* `"IncludeElectronicsRange"` - `bool`, flag to select if electronics range should be used during track truncation
+## TriggerSimulator
+Configuration template:
+```json
+{
+  "TriggerArrival": 0.1
+}
+```
+where:
+* `"TriggerArrival"` - `double`, fraction of the electronics time range at which the self trigger arrives
+
 
 # Example configuration
 Example of the full configuration can be found in [ModuleConfig.json](../config/ModuleConfig.json). It can be run with `build/bin/examples/RunControllerExample /path/to/config/file`
