@@ -110,7 +110,8 @@ int main()
     Provider::paramMapType pars = {
             {"sigmaE1", 1},
             {"sigmaE2", 0},
-            {"phaseE1E2", 0}
+            {"phaseE1E2", 0},
+            {"phaseCosSign", 1}
     };
     p->SetParams(pars);
     p->GetAngle();
