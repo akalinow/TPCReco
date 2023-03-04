@@ -3,7 +3,10 @@
   "ModuleSequence": [
     "Generator",
     "GeantSim",
+    "TriggerSimulator",
+    "TrackTruncator",
     "Track3DBuilder",
+    "TPCDigitizerSRC",
     "EventFileExporter"
   ],
   "GeometryConfig": "/scratch/TPCReco/build/resources/geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat",

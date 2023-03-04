@@ -8,7 +8,7 @@
   "GeometryConfig": "/scratch/TPCReco/build/resources/geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat",
   "ModuleConfiguration": {
     "Generator": {
-      "NumberOfEvents": 500,
+      "NumberOfEvents": 10000,
       "EventGenerator": {
         "Beam": {
           "BeamGeometry": {
@@ -46,7 +46,7 @@
           "VertexLongitudinal": {
             "distribution": "ZProviderSingle",
             "parameters": {
-              "singleZ": -250
+              "singleZ": 0
             }
           }
         },
@@ -59,7 +59,7 @@
             "Theta": {
               "distribution": "AngleProviderSingle",
               "parameters": {
-                "singleAngle": 0
+                "singleAngle": 3.14159265
               }
             },
             "Phi": {

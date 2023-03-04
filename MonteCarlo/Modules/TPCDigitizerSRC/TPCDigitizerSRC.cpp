@@ -46,12 +46,15 @@ fwk::VModule::EResultFlag TPCDigitizerSRC::Process(ModuleExchangeSpace &event) {
     currentPEventTPC = std::shared_ptr<PEventTPC>(&event.tpcPEvt,boost::null_deleter());
     currentPEventTPC->Clear();
     //loop over tracks
-    for (const auto &t: currentSimEvent.GetTracks()) {
+    for (auto &t: currentSimEvent.GetTracks()) {
         //loop over hits
-        for (const auto &h: t.GetHits()) {
+        for (auto &h: t.GetHits()) {
             auto pos = h.GetPosition();
             auto edep = h.GetEnergy();
-            calculator->addCharge(pos, edep * MeVToChargeScale, currentPEventTPC);
+            auto isIn = geometry->IsInsideActiveVolume(pos);
+            h.SetInside(isIn);
+            if(isIn)
+                calculator->addCharge(pos, edep * MeVToChargeScale, currentPEventTPC);
         }
     }
     currentPEventTPC->SetEventInfo(*aEventInfo);

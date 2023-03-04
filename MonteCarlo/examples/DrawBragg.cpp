@@ -32,7 +32,7 @@ int main(int argc, char** argv)
     }
 
 
-    TFile *f=new TFile(fname.c_str());
+    auto f=new TFile(fname.c_str());
     TTree *t;
     f->GetObject("TPCData",t);
     if(argc>2)
@@ -40,18 +40,19 @@ int main(int argc, char** argv)
     else
         nEventsToDraw=t->GetEntries();
 
-    SimEvent* event=new SimEvent();
+    auto event=new SimEvent();
     t->SetBranchAddress("SimEvent",&event);
     int nEntries=t->GetEntries();
-    TCanvas *c=new TCanvas("c","",1024,768);
+    auto c=new TCanvas("c","",1024,768);
     c->Print("bragg.pdf[");
     double braggUpperRange=60;
-    double depXYrange = 0.2;
+    double depXYrange = 10;
     TH1D* hall=new TH1D("hall","A",200,0,braggUpperRange);
-    auto hXZ = new TH2D("hXZ","energy deposit, XZ-plane;x[mm];z[mm]",200,-300,300,200,-depXYrange,depXYrange);
+    auto hXZ = new TH2D("hXZ","energy deposit, XZ-plane;x[mm];z[mm]",200,0,100,200,-depXYrange,depXYrange);
     auto hYZ = new TH2D("hYZ","energy deposit, YZ-plane;y[mm];z[mm]",200,-depXYrange,depXYrange,200,-depXYrange,depXYrange);
-    auto hXY = new TH2D("hXY","energy deposit, XY-plane;x[mm];y[mm]",200,-300,300,200,-depXYrange,depXYrange);
-    auto hRange = new TH1D("hRange","Range of particles;Range [mm]",200,0,braggUpperRange);
+    auto hXY = new TH2D("hXY","energy deposit, XY-plane;x[mm];y[mm]",200,0,100,200,-depXYrange,depXYrange);
+    auto hRange = new TH1D("hRange","Range of particles;Range [mm]",200,40,braggUpperRange);
+    auto hScatDev = new TH1D("hScatDev","ange between momentum and displacement;arccos(#vec{d} #upoint #vec{p}/(|#vec{d}| #upoint |#vec{p}|)) [deg];",1000,0,30);
     for(int i=0;i<t->GetEntries();i++)
     {
         if(i==nEntries)
@@ -81,6 +82,8 @@ int main(int argc, char** argv)
                 }
                 hall->Fill(d.Mag(),  eDep);
             }
+            auto cos = (track.GetStop()-track.GetStart()).Dot(track.GetPrimaryParticle().GetMomentum().Unit())/(track.GetRange());
+            hScatDev->Fill(TMath::ACos(cos)*180/TMath::Pi());
             if(i<nEventsToDraw) {
                 h->Scale(1 / h->GetBinWidth(1));
                 h->GetXaxis()->SetTitle("Distance [mm]");
@@ -151,7 +154,8 @@ int main(int argc, char** argv)
     hRange->Draw();
     c->Print("bragg.pdf");
 
-
+    c->SetLogy();
+    hScatDev->Draw();
     c->Print("bragg.pdf");
 
     c->Print("bragg.pdf]");

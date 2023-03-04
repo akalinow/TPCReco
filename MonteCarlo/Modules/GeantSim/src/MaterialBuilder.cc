@@ -94,7 +94,7 @@ void MaterialBuilder::BuildMaterials() {
 
     auto mixture = new G4Material("mixture", p_co2 * CO2_density+ p_he * He_density,
                                   2,
-                                  kStateGas, temperature, (p_co2 + p_co2) * bar);
+                                  kStateGas, temperature, (p_co2 + p_he) * bar);
     mixture->AddMaterial(He_gas, p_he / (p_he + p_co2));
     mixture->AddMaterial(CO2, p_co2 / (p_he + p_co2));
     materials["mixture"] = mixture;

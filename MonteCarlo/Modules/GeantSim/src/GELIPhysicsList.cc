@@ -167,7 +167,7 @@ void GELIPhysicsList::ConstructEM() {
         } else if (particleName == "alpha" ||
                    particleName == "He3") {
 
-            G4ionIonisation *ionIoni = new G4ionIonisation();
+            auto ionIoni = new G4ionIonisation();
             ionIoni->SetStepFunction(0.000001, 50 * um);
             ph->RegisterProcess(ionIoni, particle);
             //ph->RegisterProcess(new G4NuclearStopping(), particle);
@@ -180,7 +180,7 @@ void GELIPhysicsList::ConstructEM() {
 //            ionIoni->SetStepFunction(0.000001, 50 * um);
 //            ph->RegisterProcess(ionIoni, particle);
 //            ph->RegisterProcess(new G4NuclearStopping(), particle);
-            pmanager->AddProcess(new G4hMultipleScattering,-1, 1,1);
+            //pmanager->AddProcess(new G4hMultipleScattering,-1, 1,1);
             pmanager->AddProcess(new G4ionIonisation,     -1, 2,2);
 
 

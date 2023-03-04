@@ -33,3 +33,11 @@ TVector3 SimHit::GetPosition() const {
 double SimHit::GetEnergy() const {
     return Edep;
 }
+
+void SimHit::SetInside(bool in) {
+    isInside=in;
+}
+
+bool SimHit::IsInside() const {
+    return isInside;
+}

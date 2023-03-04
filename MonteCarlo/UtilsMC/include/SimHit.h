@@ -21,6 +21,7 @@ class SimHit {
 private:
     TVector3 position; ///< Position of the deposit
     double Edep; ///< Energy deposit of the hit in MeV
+    bool isInside{false};
 public:
     SimHit();
     virtual ~SimHit() = default;
@@ -28,8 +29,10 @@ public:
     SimHit(double x, double y, double z, double edep);
     void SetPosition(const TVector3 &pos);
     void SetEnergy(double &E);
+    void SetInside(bool in);
     TVector3 GetPosition() const;
     double GetEnergy() const;
+    bool IsInside() const;
 ClassDef(SimHit, 1); ///< ROOT macro to register SimHit class
 };
 
