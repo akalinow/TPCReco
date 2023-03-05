@@ -40,6 +40,7 @@ Parameters of various types of providers are listed and described [here](#config
 * [ReactionTwoProng](include/ReactionTwoProng.h) - a generic two prong event in which gamma particle hits a target nucleus, which then decays into two products
 * [ReactionThreeProngDemocratic](include/ReactionThreeProngDemocratic.h) - a reaction, where 12C nucleus is hit by a gamma particle and decays into three alpha particles **simultaneously** - constant R-matrix
 * [ReactionThreeProngIntermediate](include/ReactionThreeProngIntermediate.h) - a reaction, where 12C nucleus is hit by a gamma particle and decays into three alpha particles through intermediate state(s) of a given width(s)
+* [ReactionParticleGun](include/ReactionParticleGun.h) - a generic particle gun reaction, gamma energy is ignored here
 
 Each reaction implements a virtual method `GeneratePrimaries(double gammaMom, const ROOT::Math::Rotation3D &beamToDetRotation)` in which it generates primary particle based on its type, internal kinematics and energy of incoming gamma particle. The 3D rotation matrix passed as a second argument to `GeneratePrimaries` allows for rotation of the momenta of generated particles from BEAM to DET coordinates.
 
@@ -51,7 +52,8 @@ This reaction utilizes two `AngleProvider` objects to generate angular distribut
 This reaction takes no parameters, it assumes 12C as a target and calculates kinematics of three alpha products based on incident gamma energy and constant R-matrix.
 #### ReactionThreeProngIntermediate
 This reaction also assumes 12C as a target and three alpha particle as its products but the decay happens through intermediate state (or states). The intermediate state can have non-zero width - at each invocation of the reaction the invariant mass will be selected from Breit-Wigner distribution of a given width and center value. At the first stage the target nucleus decays into alpha particle and intermediate ion, the alpha particle is one of the final ones. Then, the intermediate ion decays into two alpha particles. It is possible to have multiple intermediate states with different masses, widths and branching ratios. This reaction accepts four `AngleProvider` objects for polar and azimuthal angle distributions of both decays.
-
+#### reactionParticleGun
+This reaction provides particles of specific kind emitted with angular distribution described by two `AnglerProvider` objects. Kinetic energy of the particle is described with a `EProvider`.
 
 
 #### ReactionLibrary
@@ -210,6 +212,24 @@ where:
 * `"mass"` - `float`, mass of the state in MeV
 * `"width"` - `float`, width of the state in MeV
 * `"branchingRatio"` - `float`, BR for selection between different intermediate states
+
+#### ReactionParticleGun
+Configuration template:
+```json
+{
+  "type": "ParticleGun",
+  "branchingRatio": 1,
+  "tag": "PARTICLE_GUN",
+  "Particle": "ALPHA",
+  "Theta": {},
+  "Phi": {},
+  "KineticEnergy": {}
+}
+```
+where: 
+* `"Theta"` - `JSON`, configuration of theta `AngleProvider`
+* `"Phi"` - `JSON`, configuration of phi `AngleProvider`
+* `"KineticEnergy"` - `JSON`, configuration of `EProvider` for kinetic energy
 
 ## Example full configuration
 Note, that dummy numbers were put in place of relevant physical parameters.
