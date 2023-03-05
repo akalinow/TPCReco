@@ -16,6 +16,9 @@ fwk::VModule::EResultFlag Generator::Process(ModuleExchangeSpace &event) {
     if(event.simEvt.GetTracks().empty())
         return fwk::VModule::eContinueLoop;
     nEventsGenerated++;
+    if(nEventsGenerated%1000 == 0){
+        std::cout<<"EventGenerator generated: "<<nEventsGenerated<<" events."<<std::endl;
+    }
     return fwk::VModule::eSuccess;
 }
 
