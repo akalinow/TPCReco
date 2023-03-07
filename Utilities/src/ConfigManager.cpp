@@ -26,12 +26,12 @@ boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv)
     return varMap;
 }
 
-void configureTree(boost::property_tree::ptree & tree, int argc, char **argv)
+boost::property_tree::ptree configureTree(boost::property_tree::ptree tree, int argc, char **argv)
 {
     boost::program_options::variables_map varMap = parseCmdLineArgs(argc, argv);
     if(argc<1){
         std::cout<<" Usage: tpcGUI config.json"<<std::endl;
-        return;
+        return tree;
     }
     else {
         std::cout<<"Using configFileName: "<<argv[1]<<std::endl;

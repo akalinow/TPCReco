@@ -9,12 +9,11 @@ class ConfigManager
 {
     public:
     ConfigManager();
-    boost::program_options::variables_map parseCmdLineArgs(int, char **);
-    void configureTree(boost::property_tree::ptree &, int, char**);//czy pracować na kopii czy oryginale?
+    void configureTree(boost::property_tree::ptree, int, char**);//czy pracować na kopii czy oryginale?
     /*użycie:
     boost::property_tree::ptree tree;
-    configureTree(tree&); 
+    boost::property_tree::ptree confTree = configureTree(tree); 
     */
     private:
-
+    boost::program_options::variables_map parseCmdLineArgs(int, char **);
 };
