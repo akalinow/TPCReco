@@ -8,27 +8,27 @@
 #include <boost/program_options.hpp>
 
 
-#include "GeometryTPC.h"
-#include "EventTPC.h"
-#include "PEventTPC.h"
-#include "PedestalCalculator.h"
-#include "EventSourceGRAW.h"
-#include "EventSourceMultiGRAW.h"
+#include "TPCReco/GeometryTPC.h"
+#include "TPCReco/EventTPC.h"
+#include "TPCReco/PEventTPC.h"
+#include "TPCReco/PedestalCalculator.h"
+#include "TPCReco/EventSourceGRAW.h"
+#include "TPCReco/EventSourceMultiGRAW.h"
 
-#include "TFile.h"
-#include "TTree.h"
+#include <TFile.h>
+#include <TTree.h>
 
-#include "colorText.h"
+#include "TPCReco/colorText.h"
 
-#include "utl/Logging.h"
-#include "get/GDataSample.h"
-#include "get/GDataChannel.h"
-#include "get/GDataFrame.h"
-#include "get/TGrawFile.h"
-#include "mfm/FrameDictionary.h"
+#include <utl/Logging.h>
+#include <get/GDataSample.h>
+#include <get/GDataChannel.h>
+#include <get/GDataFrame.h>
+#include <get/TGrawFile.h>
+#include <mfm/FrameDictionary.h>
 
 #ifdef DEBUG
-#include "EventSourceROOT.h" 
+#include "TPCReco/EventSourceROOT.h" 
 #endif
 
 /////////////////////////////////////

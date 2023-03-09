@@ -1,6 +1,6 @@
 #include <iostream>
 #include <tuple>
-#include "IonRangeCalculator.h"
+#include "TPCReco/IonRangeCalculator.h"
 
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
@@ -68,7 +68,7 @@ void IonRangeCalculator::setGasMixture(gas_mixture_type gas){ // GAS index
   // check that at least one range/energy curve exists for this gas index
   bool valid=false;
   for(auto ion=pid_type::PID_MIN; ion!=pid_type::PID_MAX; ion=pid_type(ion+1)) {
-    if(refGasRangeCurveMap.find(MultiKey2((int)gas, (int)ion))!=refGasRangeCurveMap.end()) {
+    if(refGasRangeCurveMap.find(std::make_tuple(gas, ion))!=refGasRangeCurveMap.end()) {
       valid=true;
       break;
     }
@@ -126,7 +126,7 @@ std::tuple<gas_mixture_type, double, double> IonRangeCalculator::getGasCondition
 double IonRangeCalculator::getIonRangeMM(pid_type ion, double E_MeV){ // interpolated result in [mm] for current {gas, p, T}
 
   // sanity checks
-  auto it=refGasRangeCurveMap.find(MultiKey2((int)myGasMixture, (int)ion));
+  auto it=refGasRangeCurveMap.find(std::make_tuple(myGasMixture, ion));
   if(it==refGasRangeCurveMap.end()) {
     std::cerr<<__FUNCTION__<<": ERROR: Reference range/energy curve is missing for: gas index="<<myGasMixture<<", ion="<<ion<<"!"<<std::endl;
     exit(-1);
@@ -154,7 +154,7 @@ double IonRangeCalculator::getIonRangeMM(pid_type ion, double E_MeV){ // interpo
 double IonRangeCalculator::getIonEnergyMeV(pid_type ion, double range_mm){ // interpolated result in [MeV] for current {gas, p, T}
 
   // sanity checks
-  auto it=refEnergyCurveMap.find(MultiKey2((int)myGasMixture, (int)ion));
+  auto it=refEnergyCurveMap.find(std::make_tuple(myGasMixture, ion));
   if(it==refEnergyCurveMap.end()) {
     std::cerr<<__FUNCTION__<<": ERROR: Reference range/energy curve is missing for: gas index="<<myGasMixture<<", ion="<<ion<<"!"<<std::endl;
     exit(-1);
@@ -199,29 +199,29 @@ void IonRangeCalculator::addIonRangeCurve(pid_type ion, gas_mixture_type gas, do
     exit(-1);
   }
   
-  auto mkey2=MultiKey2((int)gas, (int)ion);
-  auto it=refGasRangeCurveMap.find(mkey2);
+  auto key=std::make_tuple(gas,ion);
+  auto it=refGasRangeCurveMap.find(key);
 
   // add new map elements
   if(it==refGasRangeCurveMap.end()) {
-    refGasRangeCurveMap[mkey2]=new TGraph(datafile, "%lg %lg");
-    refGasRangeCurveMap[mkey2]->SetPoint(refGasRangeCurveMap[mkey2]->GetN(), 0.0, 0.0);
-    refGasRangeCurveMap[mkey2]->Sort();
-    if(refGasRangeCurveMap[mkey2]->GetN()<2) {
+    refGasRangeCurveMap[key]=new TGraph(datafile, "%lg %lg");
+    refGasRangeCurveMap[key]->SetPoint(refGasRangeCurveMap[key]->GetN(), 0.0, 0.0);
+    refGasRangeCurveMap[key]->Sort();
+    if(refGasRangeCurveMap[key]->GetN()<2) {
 	std::cerr<<__FUNCTION__<<": ERROR: Wrong initialization of range vs energy TGraph using datafile="<<datafile<<"!"<<std::endl;
 	exit(-1);
       }
-    refEnergyCurveMap[mkey2]=(TGraph*)invertTGraph(*refGasRangeCurveMap[mkey2]).Clone();
-    if(refEnergyCurveMap[mkey2]->GetN()<2) {
+    refEnergyCurveMap[key]=(TGraph*)invertTGraph(*refGasRangeCurveMap[key]).Clone();
+    if(refEnergyCurveMap[key]->GetN()<2) {
 	std::cerr<<__FUNCTION__<<": ERROR: Wrong initialization of energy vs range TGraph using datafile="<<datafile<<"!"<<std::endl;
 	exit(-1);
       }
-    refGasRangePressureMap[mkey2]=p_mbar; // reference pressure [mbar]
-    refGasRangeTemperatureMap[mkey2]=T_Kelvin; // reference tempereature T[K]
+    refGasRangePressureMap[key]=p_mbar; // reference pressure [mbar]
+    refGasRangeTemperatureMap[key]=T_Kelvin; // reference tempereature T[K]
 
     // DEBUG
     if(_debug) {
-      std::cout<<__FUNCTION__<<": Gas index="<<std::get<0>(mkey2)<<", Ion index="<<std::get<1>(mkey2)<<", Npoints="<<refEnergyCurveMap[mkey2]->GetN()<<std::endl;
+      std::cout<<__FUNCTION__<<": Gas index="<<std::get<0>(key)<<", Ion index="<<std::get<1>(key)<<", Npoints="<<refEnergyCurveMap[key]->GetN()<<std::endl;
     }
     // DEBUG
 
@@ -295,12 +295,12 @@ TGraph IonRangeCalculator::getIonBraggCurveMeVPerMM(pid_type ion, double E_MeV, 
     std::cerr<<__FUNCTION__<<": ERROR: Requested Bragg curve with insufficient number of points for: gas index="<<myGasMixture<<", ion="<<ion<<"!"<<std::endl;
     exit(-1);
   }
-  auto itB=refBraggCurveMap.find(MultiKey2((int)myGasMixture, (int)ion));
+  auto itB=refBraggCurveMap.find(std::make_tuple(myGasMixture,ion));
   if(itB==refBraggCurveMap.end()) {
     std::cerr<<__FUNCTION__<<": ERROR: Reference Bragg curve is missing for: gas index="<<myGasMixture<<", ion="<<ion<<"!"<<std::endl;
     exit(-1);
   }
-  auto itR=refGasRangeCurveMap.find(MultiKey2((int)myGasMixture, (int)ion));
+  auto itR=refGasRangeCurveMap.find(std::make_tuple(myGasMixture,ion));
   if(itR==refGasRangeCurveMap.end()) {
     std::cerr<<__FUNCTION__<<": ERROR: Reference range curve is missing for: gas index="<<myGasMixture<<", ion="<<ion<<"!"<<std::endl;
     exit(-1);
@@ -375,37 +375,37 @@ void IonRangeCalculator::addIonBraggCurve(pid_type ion, gas_mixture_type gas, do
     exit(-1);
   }
 
-  auto mkey2=MultiKey2((int)gas, (int)ion);
-  auto it=refBraggCurveMap.find(mkey2);
+  auto key=std::make_tuple(gas,ion);
+  auto it=refBraggCurveMap.find(key);
 
   // add new map elements
   if(it==refBraggCurveMap.end()) {
-    refBraggCurveMap[mkey2]=new TGraph(datafile, "%lg %lg"); // X=(position along the track [mm]), Y=(ionization energy loss dE/dx [keV/mm])
-    if(refBraggCurveMap[mkey2]->GetN()<2) {
+    refBraggCurveMap[key]=new TGraph(datafile, "%lg %lg"); // X=(position along the track [mm]), Y=(ionization energy loss dE/dx [keV/mm])
+    if(refBraggCurveMap[key]->GetN()<2) {
       std::cerr<<__FUNCTION__<<": ERROR: Wrong initialization of dE/dx TGraph using datafile="<<datafile<<"!"<<std::endl;
       exit(-1);
     }
-    scaleTGraph(refBraggCurveMap[mkey2], 1e-3); // convert keV/mm to MeV/mm
-    refBraggCurveMap[mkey2]->Sort(); // sort by distance along the track in ascending order
+    scaleTGraph(refBraggCurveMap[key], 1e-3); // convert keV/mm to MeV/mm
+    refBraggCurveMap[key]->Sort(); // sort by distance along the track in ascending order
     double first_pos,first_val;
-    refBraggCurveMap[mkey2]->GetPoint(0, first_pos, first_val);
+    refBraggCurveMap[key]->GetPoint(0, first_pos, first_val);
     if(first_pos<0.0) {
 	std::cerr<<__FUNCTION__<<": ERROR: Wrong initialization of dE/dx TGraph using datafile="<<datafile<<"!"<<std::endl;
 	exit(-1);
     } else if(first_pos>0.0) {
-      refBraggCurveMap[mkey2]->SetPoint(refBraggCurveMap[mkey2]->GetN(), 0.0, first_val);
-      refBraggCurveMap[mkey2]->Sort(); // re-sort
+      refBraggCurveMap[key]->SetPoint(refBraggCurveMap[key]->GetN(), 0.0, first_val);
+      refBraggCurveMap[key]->Sort(); // re-sort
     }
-    zeroSuppressTGraph(refBraggCurveMap[mkey2]);
-    refBraggPressureMap[mkey2]=p_mbar; // reference pressure [mbar]
-    refBraggTemperatureMap[mkey2]=T_Kelvin; // reference tempereature T[K]
+    zeroSuppressTGraph(refBraggCurveMap[key]);
+    refBraggPressureMap[key]=p_mbar; // reference pressure [mbar]
+    refBraggTemperatureMap[key]=T_Kelvin; // reference tempereature T[K]
 
     // DEBUG
     if(_debug) {
-      std::cout<<__FUNCTION__<<": Gas index="<<std::get<0>(mkey2)<<", Ion index="<<std::get<1>(mkey2)<<", Npoints="<<refBraggCurveMap[mkey2]->GetN()<<std::endl;
-      for(auto iPoint=0; iPoint<refBraggCurveMap[mkey2]->GetN(); iPoint++) {
+      std::cout<<__FUNCTION__<<": Gas index="<<std::get<0>(key)<<", Ion index="<<std::get<1>(key)<<", Npoints="<<refBraggCurveMap[key]->GetN()<<std::endl;
+      for(auto iPoint=0; iPoint<refBraggCurveMap[key]->GetN(); iPoint++) {
 	double x, y;
-	refBraggCurveMap[mkey2]->GetPoint(iPoint, x, y);
+	refBraggCurveMap[key]->GetPoint(iPoint, x, y);
 	std::cout<<__FUNCTION__<<": point="<<iPoint<<"  x[mm]="<<x<<"  dE/dx[MeV/mm]="<<y<<std::endl;
       }
     }

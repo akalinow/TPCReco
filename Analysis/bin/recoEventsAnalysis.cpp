@@ -2,21 +2,21 @@
 #include <iostream>
 #include <vector>
 
-#include "TFile.h"
-#include "TTree.h"
-#include "TCanvas.h"
-#include "TLatex.h"
-#include "TString.h"
-#include "TTreeIndex.h"
+#include <TFile.h>
+#include <TTree.h>
+#include <TCanvas.h>
+#include <TLatex.h>
+#include <TString.h>
+#include <TTreeIndex.h>
 
 #include <boost/program_options.hpp>
 
-#include "GeometryTPC.h"
-#include "Track3D.h"
-#include "HIGGS_analysis.h"
-#include "HIGS_trees_analysis.h"
+#include "TPCReco/GeometryTPC.h"
+#include "TPCReco/Track3D.h"
+#include "TPCReco/HIGGS_analysis.h"
+#include "TPCReco/HIGS_trees_analysis.h"
 
-#include "colorText.h"
+#include "TPCReco/colorText.h"
 
 int analyzeRecoEvents(const  std::string & geometryFileName, 
 		      const  std::string & dataFileName,

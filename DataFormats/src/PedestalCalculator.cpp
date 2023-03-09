@@ -4,7 +4,7 @@
 
 #include <iostream>
 
-#include "PedestalCalculator.h"
+#include "TPCReco/PedestalCalculator.h"
 
 PedestalCalculator::PedestalCalculator(){
 }

@@ -2,26 +2,16 @@
 #include <vector>
 #include <map>
 #include <iterator>
-/*
-#include <cstdlib>
-#include <cstdio>
-#include <string>
-#include <sstream>
-#include <fstream>
-#include <utility>
-#include <algorithm> // for find_if
-#include "TMath.h"
-*/
 
-#include "TH1D.h"
-#include "TH3F.h"
-#include "TVector2.h"
-#include "TVector3.h"
+#include <TH1D.h>
+#include <TH3F.h>
+#include <TVector2.h>
+#include <TVector3.h>
 
-#include "GeometryTPC.h"
-#include "EventTPC.h"
-#include "TrackSegmentTPC.h"
-#include "SigClusterTPC.h"
+#include "TPCReco/GeometryTPC.h"
+#include "TPCReco/EventTPC.h"
+#include "TPCReco/TrackSegmentTPC.h"
+#include "TPCReco/SigClusterTPC.h"
 
 /* ============= 3D TRACK SEGMENT CLASS ===========*/
 TrackSegment3D::TrackSegment3D(const TVector3 & p1,

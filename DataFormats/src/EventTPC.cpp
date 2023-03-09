@@ -5,14 +5,14 @@
 #include <algorithm>
 #include <numeric>
 
-#include "TH1D.h"
-#include "TH2D.h"
-#include "TH3F.h"
+#include <TH1D.h>
+#include <TH2D.h>
+#include <TH3F.h>
 
-#include "EventTPC.h"
-#include "TrackSegmentTPC.h"
+#include "TPCReco/EventTPC.h"
+#include "TPCReco/TrackSegmentTPC.h"
 
-#include "colorText.h"
+#include "TPCReco/colorText.h"
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 EventTPC::EventTPC(){

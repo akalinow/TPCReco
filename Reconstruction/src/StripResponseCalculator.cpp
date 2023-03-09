@@ -1,19 +1,19 @@
 #include <iostream>
 
-#include "StripResponseCalculator.h"
-#include "GeometryTPC.h"
-#include "PEventTPC.h"
-#include "colorText.h"
+#include "TPCReco/StripResponseCalculator.h"
+#include "TPCReco/GeometryTPC.h"
+#include "TPCReco/PEventTPC.h"
+#include "TPCReco/colorText.h"
 
-#include "TH1D.h"
-#include "TH2D.h"
-#include "TF1.h"
-#include "TF2.h"
-#include "TVector2.h"
-#include "TVector3.h"
-#include "TMath.h"
-#include "TRandom3.h"
-#include "TFile.h"
+#include <TH1D.h>
+#include <TH2D.h>
+#include <TF1.h>
+#include <TF2.h>
+#include <TVector2.h>
+#include <TVector3.h>
+#include <TMath.h>
+#include <TRandom3.h>
+#include <TFile.h>
 
 StripResponseCalculator::StripResponseCalculator(std::shared_ptr<GeometryTPC> aGeometryPtr,
                                                  int delta_strips, // consider +/- neighbour strips

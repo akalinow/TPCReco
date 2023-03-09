@@ -1,4 +1,4 @@
-#include "RunIdParser.h"
+#include "TPCReco/RunIdParser.h"
 #include "gtest/gtest.h"
 
 TEST(RunIdParser_Test, IncorrectNames) {

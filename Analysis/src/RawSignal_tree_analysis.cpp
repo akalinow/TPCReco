@@ -5,16 +5,15 @@
 
 #include <boost/property_tree/ptree.hpp>
 
-#include "TFile.h"
-#include "TTree.h"
+#include <TFile.h>
+#include <TTree.h>
 
-#include "GeometryTPC.h"
-#include "EventInfo.h"
-#include "RawSignal_tree_analysis.h"
-#include "RawSignal_tree_dataFormat.h"
-#include "UtilsEventInfo.h"
+#include "TPCReco/GeometryTPC.h"
+#include "TPCReco/EventInfo.h"
+#include "TPCReco/RawSignal_tree_analysis.h"
+#include "TPCReco/RawSignal_tree_dataFormat.h"
 
-#include "colorText.h"
+#include "TPCReco/colorText.h"
 
 using std::chrono::duration;
 using std::chrono::duration_cast;

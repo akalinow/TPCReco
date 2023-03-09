@@ -1,12 +1,12 @@
 #include <cstdlib>
 #include <iostream>
 
-#include "TFile.h"
-#include "TTree.h"
+#include <TFile.h>
+#include <TTree.h>
 
-#include "colorText.h"
-#include "EventSourceROOT.h"
-#include "PedestalCalculator.h"
+#include "TPCReco/colorText.h"
+#include "TPCReco/EventSourceROOT.h"
+#include "TPCReco/PedestalCalculator.h"
 
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

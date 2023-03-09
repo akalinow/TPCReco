@@ -2,21 +2,20 @@
 #include <iostream>
 #include <algorithm>
 
-#include "TVector3.h"
-#include "TVector2.h"
-#include "TH1D.h"
-#include "TH2D.h"
-#include "TProfile.h"
-#include "TProfile2D.h"
-//#include "TTree.h"
-#include "TFile.h"
+#include <TVector3.h>
+#include <TVector2.h>
+#include <TH1D.h>
+#include <TH2D.h>
+#include <TProfile.h>
+#include <TProfile2D.h>
+#include <TFile.h>
 
-#include "GeometryTPC.h"
-#include "EventTPC.h"
-#include "SigClusterTPC.h"
+#include "TPCReco/GeometryTPC.h"
+#include "TPCReco/EventTPC.h"
+#include "TPCReco/SigClusterTPC.h"
 
-#include "DotFinder.h"
-#include "colorText.h"
+#include "TPCReco/DotFinder.h"
+#include "TPCReco/colorText.h"
 
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

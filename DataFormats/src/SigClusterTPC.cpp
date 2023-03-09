@@ -10,8 +10,8 @@
 #include <utility>
 #include <algorithm> // for find_if
 
-#include "SigClusterTPC.h"
-#include "EventTPC.h"
+#include "TPCReco/SigClusterTPC.h"
+#include "TPCReco/EventTPC.h"
 /* ============= SPACE-TIME CLUSTER CLASS ===========*/
 
 SigClusterTPC::SigClusterTPC(EventTPC *e)

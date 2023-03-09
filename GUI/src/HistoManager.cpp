@@ -2,31 +2,31 @@
 #include <iostream>
 #include <tuple>
 
-#include "TCanvas.h"
-#include "TH2D.h"
-#include "TH3D.h"
-#include "TSpectrum2.h"
-#include "TVector3.h"
-#include "TPolyLine3D.h"
-#include "TView.h"
-#include "TVirtualViewer3D.h"
-#include "TF1.h"
-#include "TLegend.h"
-#include "TText.h"
-#include "TPaletteAxis.h"
-#include "TLatex.h"
-#include "TLorentzVector.h"
+#include <TCanvas.h>
+#include <TH2D.h>
+#include <TH3D.h>
+#include <TSpectrum2.h>
+#include <TVector3.h>
+#include <TPolyLine3D.h>
+#include <TView.h>
+#include <TVirtualViewer3D.h>
+#include <TF1.h>
+#include <TLegend.h>
+#include <TText.h>
+#include <TPaletteAxis.h>
+#include <TLatex.h>
+#include <TLorentzVector.h>
 
-#include "CommonDefinitions.h"
-#include "MakeUniqueName.h"
-#include "GeometryTPC.h"
-#include "EventTPC.h"
-#include "RunIdParser.h"
-#include "colorText.h"
+#include "TPCReco/CommonDefinitions.h"
+#include "TPCReco/MakeUniqueName.h"
+#include "TPCReco/GeometryTPC.h"
+#include "TPCReco/EventTPC.h"
+#include "TPCReco/RunIdParser.h"
+#include "TPCReco/colorText.h"
 
-#include "HistoManager.h"
+#include "TPCReco/HistoManager.h"
 
-#include "CoordinateConverter.h"
+#include "TPCReco/CoordinateConverter.h"
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 HistoManager::HistoManager() {

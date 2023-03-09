@@ -6,16 +6,15 @@
 #include <map>
 #include <cstdint>
 
-#include "TCollection.h"
-#include "TClonesArray.h"
+#include <TCollection.h>
+#include <TClonesArray.h>
 
 
-#include "EventSourceGRAW.h"
-//#include "EventRaw.h"
-#include "RunIdParser.h"
-#include "colorText.h"
+#include "TPCReco/EventSourceGRAW.h"
+#include "TPCReco/RunIdParser.h"
+#include "TPCReco/colorText.h"
 
-#include "get/graw2dataframe.h"
+#include <get/graw2dataframe.h>
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 EventSourceGRAW::EventSourceGRAW(const std::string & geometryFileName) {

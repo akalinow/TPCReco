@@ -1,6 +1,6 @@
-#include "CoordinateConverter.h"
+#include "TPCReco/CoordinateConverter.h"
 
-#include "colorText.h"
+#include "TPCReco/colorText.h"
 
 ////////////////////////////////////////////
 ////////////////////////////////////////////
