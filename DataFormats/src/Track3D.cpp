@@ -1,9 +1,9 @@
 #include <iostream>
 #include <algorithm>
 
-#include "Track3D.h"
-#include "GeometryTPC.h"
-#include "colorText.h"
+#include "TPCReco/Track3D.h"
+#include "TPCReco/GeometryTPC.h"
+#include "TPCReco/colorText.h"
 
 #include <Fit/Fitter.h>
 #include <Math/Functor.h>

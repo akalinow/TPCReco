@@ -1,78 +1,40 @@
 set(MODULE_NAME "GrawToROOT")
 
-if(EXISTS ${GET_VERSION_DIR})
+if(NOT ${GET_FOUND})
+  message(WARNING "No GET software found. " ${MODULE_NAME}
+                  " will not be build.")
+  return()
+endif()
 
-  MESSAGE( STATUS "Adding CMake fragment for module:         " ${MODULE_NAME} )
-  set(TPCRECO_LIBRARIES ${TPCRECO_LIBRARIES} ${TPCRECO_PREFIX}${MODULE_NAME}  PARENT_SCOPE)
-  set(TPCRECO_LIBRARIES_LOCAL ${TPCRECO_LIBRARIES})
-  ###############################################################################
-  ## file globbing ##############################################################
-  ###############################################################################
+message(STATUS "Adding CMake fragment for module:\t${MODULE_NAME}")
 
-  # These instructions search the directory tree when cmake is
-  # invoked and put all files that match the pattern in the variable
-  # `sources`
-  #
-  file(GLOB_RECURSE sources       ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/src/*.cpp)
+reco_add_library(${MODULE_NAME})
+reco_add_executable(grawToEventTPC bin/grawToEventTPC.cpp)
+reco_add_executable(grawToEventRaw bin/grawToEventRaw.cpp)
+reco_add_executable(rawPedestalAnalysis bin/rawPedestalAnalysis.cpp)
 
-  ###############################################################################
-  ## dependencies ###############################################################
-  ###############################################################################
-  include_directories(${ROOTINCDIR})
-  include_directories(${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include)
-  include_directories(${PROJECT_SOURCE_DIR}/DataFormats/include)
-  include_directories(${PROJECT_SOURCE_DIR}/Utilities/include)
-
-  ###############################################################################
-  ## target definitions #########################################################
-  ###############################################################################
-  add_library(${MODULE_NAME} SHARED ${sources})
-  add_library(${TPCRECO_PREFIX}${MODULE_NAME} ALIAS ${MODULE_NAME})
-  set_target_properties(${MODULE_NAME} PROPERTIES PREFIX ${TPCRECO_PREFIX})
-  
-  target_link_libraries(${MODULE_NAME} ${TPCRECO_LIBRARIES_LOCAL} ${ROOT_LIBRARIES} ${GET_LIBRARIES})
-  # The data is just added to the executable, because in some IDEs (QtCreator) 
-  # files are invisible when they are not explicitly part of the project.
-  #
-  add_executable(grawToEventTPC bin/grawToEventTPC.cpp)
-  add_executable(testEventTPCread test/testEventTPCread.cpp)
-  add_executable(testEventTPCreadTChain test/testEventTPCreadTChain.cpp)
-  add_executable(grawToEventRaw bin/grawToEventRaw.cpp)
-  add_executable(EventTPC_tst test/EventTPC_tst.cpp)
-  # Compiler flags.
-  #
-  MESSAGE( STATUS ${GET_CXX_FLAGS})
-  
-  target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS} ${GET_CXX_FLAGS})
-  target_compile_options(grawToEventTPC PUBLIC ${CMAKE_ROOT_CFLAGS} ${GET_CXX_FLAGS})
-  target_compile_options(testEventTPCread PUBLIC ${CMAKE_ROOT_CFLAGS})
-  target_compile_options(testEventTPCreadTChain PUBLIC ${CMAKE_ROOT_CFLAGS})
-  target_compile_options(grawToEventRaw PUBLIC ${CMAKE_ROOT_CFLAGS} ${GET_CXX_FLAGS})
-  target_compile_options(EventTPC_tst PUBLIC ${CMAKE_ROOT_CFLAGS} ${GET_CXX_FLAGS})
-
-  # Linker flags
-  #
-  target_link_libraries(grawToEventTPC PUBLIC ${MODULE_NAME} ${TPCRECO_LIBRARIES} ${GET_LIBRARIES} ${Boost_LIBRARIES})
-  target_link_libraries(testEventTPCread PUBLIC ${MODULE_NAME} ${TPCRECO_LIBRARIES})
-  target_link_libraries(testEventTPCreadTChain PUBLIC ${MODULE_NAME} ${TPCRECO_LIBRARIES})
-  target_link_libraries(grawToEventRaw PUBLIC ${MODULE_NAME} ${TPCRECO_LIBRARIES} ${GET_LIBRARIES} ${Boost_LIBRARIES})
-  target_link_libraries(EventTPC_tst PUBLIC ${MODULE_NAME} ${TPCRECO_LIBRARIES} ${GET_LIBRARIES} ${Boost_LIBRARIES})
-
-  # All install commands get the same destination. this allows us to use paths
-  # relative to the executable.
-  set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib:${GET_VERSION_DIR}/lib)
-  MESSAGE( STATUS "CMAKE_INSTALL_RPATH " ${CMAKE_INSTALL_RPATH})
-
-  install(TARGETS ${MODULE_NAME} LIBRARY DESTINATION lib)
-  install(TARGETS grawToEventTPC RUNTIME DESTINATION bin)
-  install(TARGETS testEventTPCread RUNTIME DESTINATION bin)
-  install(TARGETS testEventTPCreadTChain RUNTIME DESTINATION bin)
-  install(TARGETS grawToEventRaw RUNTIME DESTINATION bin)
-  install(TARGETS EventTPC_tst RUNTIME DESTINATION test)
-  install(DIRECTORY DESTINATION results)
-  install(PROGRAMS $<1:${PROJECT_SOURCE_DIR}/${MODULE_NAME}/python/> DESTINATION python)
-  
+# Enable/disable searching next file with N+1 index (default=ON)
+option(EVENTSOURCEGRAW_NEXT_FILE_DISABLE
+       "Define EVENTSOURCEGRAW_NEXT_FILE_DISABLE variable" ON)
+if(EVENTSOURCEGRAW_NEXT_FILE_DISABLE)
+  message(STATUS "EventSourceGRAW automatic next file index disabled")
+  target_compile_definitions(${MODULE_NAME}
+                             PRIVATE EVENTSOURCEGRAW_NEXT_FILE_DISABLE)
 else()
-    MESSAGE( WARNING "No GET software found. " ${MODULE_NAME} " will not be build.")
+  message(STATUS "EventSourceGRAW automatic next file index enabled")
+endif()
 
-endif()  
+target_link_libraries(
+  ${MODULE_NAME} PUBLIC ${ROOT_LIBRARIES} ${ROOT_EXE_LINKER_FLAGS} DataFormats
+                        GET::cobo-frame-graw2frame GET::MultiFrame Utilities)
+target_link_libraries(grawToEventTPC PRIVATE Boost::program_options
+                                             ${MODULE_NAME})
+target_link_libraries(grawToEventRaw PRIVATE Boost::program_options
+                                             ${MODULE_NAME})
+target_link_libraries(rawPedestalAnalysis PRIVATE Boost::program_options
+                                                  ${MODULE_NAME})
+
+reco_install_targets(${MODULE_NAME} grawToEventTPC grawToEventRaw
+                     rawPedestalAnalysis)
+
+install(PROGRAMS $<1:${CMAKE_CURRENT_SOURCE_DIR}/python/> DESTINATION python)

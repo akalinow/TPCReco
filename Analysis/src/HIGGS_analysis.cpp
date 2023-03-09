@@ -2,24 +2,18 @@
 #include <iostream>
 #include <iomanip>
 
-#include "TH1F.h"
-#include "TH2F.h"
-#include "TProfile.h"
-#include "TFile.h"
-#include "TVector3.h"
-#include "TLorentzVector.h"
-//////// DEBUG
-//#include "TCanvas.h"
-//#include "TView.h"
-//#include "TPolyLine3D.h"
-//////// DEBUG
+#include <TH1F.h>
+#include <TH2F.h>
+#include <TProfile.h>
+#include <TFile.h>
+#include <TVector3.h>
+#include <TLorentzVector.h>
 
-#include "GeometryTPC.h"
-#include "Track3D.h"
-#include "CommonDefinitions.h"
-#include "HIGGS_analysis.h"
-
-#include "colorText.h"
+#include "TPCReco/GeometryTPC.h"
+#include "TPCReco/Track3D.h"
+#include "TPCReco/CommonDefinitions.h"
+#include "TPCReco/HIGGS_analysis.h"
+#include "TPCReco/colorText.h"
 
 ///////////////////////////////
 ///////////////////////////////

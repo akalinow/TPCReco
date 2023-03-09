@@ -2,14 +2,14 @@
 #include <string>
 #include <memory>
 
-#include "GeometryTPC.h"
-#include "EventTPC.h"
-#include "PEventTPC.h"
-#include "EventSourceMultiGRAW.h"
+#include "TPCReco/GeometryTPC.h"
+#include "TPCReco/EventTPC.h"
+#include "TPCReco/PEventTPC.h"
+#include "TPCReco/EventSourceMultiGRAW.h"
 
-#include "TFile.h"
+#include <TFile.h>
 
-#include "colorText.h"
+#include "TPCReco/colorText.h"
 
 void testHits(std::shared_ptr<EventTPC> aEventPtr, filter_type filterType){
   

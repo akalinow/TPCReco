@@ -3,22 +3,22 @@
 #include <vector>
 #include <algorithm>
 
-#include "TFile.h"
-#include "TTree.h"
-#include "TCanvas.h"
-#include "TLatex.h"
-#include "TString.h"
-#include "TTreeIndex.h"
+#include <TFile.h>
+#include <TTree.h>
+#include <TCanvas.h>
+#include <TLatex.h>
+#include <TString.h>
+#include <TTreeIndex.h>
 
 
 #include <boost/program_options.hpp>
 
-#include "GeometryTPC.h"
-#include "Track3D.h"
-#include "EventInfo.h"
-#include "Comp_analysis.h"
+#include "TPCReco/GeometryTPC.h"
+#include "TPCReco/Track3D.h"
+#include "TPCReco/EventInfo.h"
+#include "TPCReco/Comp_analysis.h"
 
-#include "colorText.h"
+#include "TPCReco/colorText.h"
 
 int compareRecoEvents(const  std::string & geometryFileName, 
 		      const  std::string & referenceDataFileName,

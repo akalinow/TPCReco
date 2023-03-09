@@ -10,15 +10,14 @@
 #include <TGFontDialog.h>
 #include <TFrame.h>
 
-#include "colorText.h"
-#include "GUI_commons.h"
-#include "MarkersManager.h"
-#include "MainFrame.h"
-#include "HistoManager.h"
-#include "CommonDefinitions.h"
-
-#include <RunConditionsDialog.h>
-#include <MainFrame.h>
+#include "TPCReco/colorText.h"
+#include "TPCReco/GUI_commons.h"
+#include "TPCReco/MarkersManager.h"
+#include "TPCReco/MainFrame.h"
+#include "TPCReco/HistoManager.h"
+#include "TPCReco/CommonDefinitions.h"
+#include "TPCReco/RunConditionsDialog.h"
+#include "TPCReco/MainFrame.h"
 
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

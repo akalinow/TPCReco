@@ -1,4 +1,4 @@
-#include "InputFileHelper.h"
+#include "TPCReco/InputFileHelper.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include <boost/filesystem.hpp>

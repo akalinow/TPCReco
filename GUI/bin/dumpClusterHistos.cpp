@@ -1,10 +1,9 @@
 #ifdef WITH_GET
 
-#include "TFile.h"
+#include <TFile.h>
 
-#include "HistoManager.h"
-//#include "EventSourceROOT.h"
-#include "EventSourceGRAW.h"
+#include "TPCReco/HistoManager.h"
+#include "TPCReco/EventSourceGRAW.h"
 
 #include <boost/property_tree/json_parser.hpp>
 
@@ -114,7 +113,7 @@ int main(int argc, char *argv[]) {
 }
 #else
 
-#include "colorText.h"
+#include "TPCReco/colorText.h"
 #include <iostream>
 
 int main(){

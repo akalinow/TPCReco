@@ -4,14 +4,15 @@
 
 #include <TROOT.h>
 #include <TApplication.h>
-#include <MainFrame.h>
 #include <TH1F.h>
+#include "TPCReco/MainFrame.h"
+
 
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/program_options.hpp>
 
-#include "colorText.h"
+#include "TPCReco/colorText.h"
 
 boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
 

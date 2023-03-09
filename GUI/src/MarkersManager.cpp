@@ -11,11 +11,11 @@
 #include <TGFontDialog.h>
 #include <TFrame.h>
 
-#include "colorText.h"
-#include "MarkersManager.h"
-#include "MainFrame.h"
-#include "HistoManager.h"
-#include "CommonDefinitions.h"
+#include "TPCReco/colorText.h"
+#include "TPCReco/MarkersManager.h"
+#include "TPCReco/MainFrame.h"
+#include "TPCReco/HistoManager.h"
+#include "TPCReco/CommonDefinitions.h"
 
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

@@ -5,10 +5,10 @@
 #include <vector>
 
 #include <TApplication.h>
-#include "MainFrame.h"
-#include "SelectionBox.h"
-#include "MarkersManager.h"
-#include "colorText.h"
+#include "TPCReco/MainFrame.h"
+#include "TPCReco/SelectionBox.h"
+#include "TPCReco/MarkersManager.h"
+#include "TPCReco/colorText.h"
 
 #include <TSystem.h>
 #include <TObjArray.h> 
@@ -25,14 +25,14 @@
 #include <TProfile.h>
 
 #ifdef WITH_GET
-#include "EventSourceGRAW.h"
-#include "EventSourceMultiGRAW.h"
+#include "TPCReco/EventSourceGRAW.h"
+#include "TPCReco/EventSourceMultiGRAW.h"
 #endif
-#include "EventSourceROOT.h"
-#include "EventSourceMC.h"
+#include "TPCReco/EventSourceROOT.h"
+#include "TPCReco/EventSourceMC.h"
 
-#include "TGButtonGroup.h"
-#include "TGButton.h"
+#include <TGButtonGroup.h>
+#include <TGButton.h>
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h,  const boost::property_tree::ptree &aConfig)

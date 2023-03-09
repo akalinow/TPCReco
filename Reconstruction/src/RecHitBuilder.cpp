@@ -1,10 +1,10 @@
-#include "TH2D.h"
-#include "TF1.h"
+#include <TH2D.h>
+#include <TF1.h>
 
-#include "GeometryTPC.h"
-#include "RecHitBuilder.h"
+#include "TPCReco/GeometryTPC.h"
+#include "TPCReco/RecHitBuilder.h"
 
-#include "colorText.h"
+#include "TPCReco/colorText.h"
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 RecHitBuilder::RecHitBuilder(){

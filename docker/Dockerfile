@@ -14,4 +14,6 @@ WORKDIR /opt/soft/TPCReco-src/build
 RUN cmake -DCMAKE_INSTALL_PREFIX=/opt/soft/TPCReco ..
 RUN make -j && make install && make clean
 ENV PATH=${PATH}:/opt/soft/TPCReco/bin
+ENV LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/opt/soft/TPCReco/lib
+ENV CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/soft/TPCReco/lib/cmake
 WORKDIR /opt/soft/TPCReco/resources

@@ -1,4 +1,4 @@
-#include "CoBoClock.h"
+#include "TPCReco/CoBoClock.h"
 #include "gtest/gtest.h"
 
 using namespace tpcreco;

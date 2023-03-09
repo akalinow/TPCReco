@@ -1,13 +1,12 @@
 #include <cstdlib>
 #include <iostream>
 
-#include "TFile.h"
-#include "TTree.h"
+#include <TFile.h>
+#include <TTree.h>
 
-
-#include "Track3D.h"
-#include "RecoOutput.h"
-#include "colorText.h"
+#include "TPCReco/Track3D.h"
+#include "TPCReco/RecoOutput.h"
+#include "TPCReco/colorText.h"
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 RecoOutput::RecoOutput() {

@@ -1,4 +1,4 @@
-#include "GlobWrapper.h"
+#include "TPCReco/GlobWrapper.h"
 #include "gtest/gtest.h"
 
 #include <boost/filesystem.hpp>

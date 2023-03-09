@@ -1,6 +1,6 @@
-#include "StripTPC.h"
-#include "GeometryTPC.h"
-#include "colorText.h"
+#include "TPCReco/StripTPC.h"
+#include "TPCReco/GeometryTPC.h"
+#include "TPCReco/colorText.h"
 
 
 /////////////////////////////////////////////////////////////////////////
