@@ -14,13 +14,16 @@ double dEdxFitter::nominalPressure = 250.0;
 double dEdxFitter::currentPressure = 190.0;
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
-dEdxFitter::dEdxFitter(double aPressure){
+dEdxFitter::dEdxFitter(double aPressure): dEdxFitter(TPCRECO_RESOURCE_DIR, aPressure)
+{}
+
+dEdxFitter::dEdxFitter(std::string resources, double aPressure){
   //initialize bragg graphs if they are null:
   if(!braggGraph_alpha){
-    braggGraph_alpha = new TGraph("dEdx_corr_alpha_10MeV_CO2_250mbar.dat", "%lg %lg");
+    braggGraph_alpha = new TGraph((resources+"dEdx_corr_alpha_10MeV_CO2_250mbar.dat").c_str(), "%lg %lg");
   }
   if(!braggGraph_12C){
-    braggGraph_12C = new TGraph("dEdx_corr_12C_5MeV_CO2_250mbar.dat", "%lg %lg");
+    braggGraph_12C = new TGraph((resources+"dEdx_corr_12C_5MeV_CO2_250mbar.dat").c_str(), "%lg %lg");
   }
   setPressure(aPressure);
 

@@ -1,18 +1,21 @@
 #include <iostream>
 #include <tuple>
 #include "TPCReco/IonRangeCalculator.h"
+////////////////////////////////////////////////
+////////////////////////////////////////////////
+IonRangeCalculator::IonRangeCalculator(gas_mixture_type gas, double p_mbar, double T_Kelvin, bool debug_flag)
+ : IonRangeCalculator(TPCRECO_RESOURCE_DIR, gas, p_mbar, T_Kelvin, debug_flag)
+{}
 
-////////////////////////////////////////////////
-////////////////////////////////////////////////
-IonRangeCalculator::IonRangeCalculator(gas_mixture_type gas, double p_mbar, double T_Kelvin, bool debug_flag){ // input: GAS index, pressure [mbar], temperature [K]
+IonRangeCalculator::IonRangeCalculator(std::string resourcesPath, gas_mixture_type gas, double p_mbar, double T_Kelvin, bool debug_flag){ // input: GAS index, pressure [mbar], temperature [K]
   setDebug(debug_flag);
 
   // Initialize ion range curves obtained from SRIM simulations at reference temperature and pressure (T0=20 C, p0=250 mbar)
   // Data file columns: E_kin[MeV] Range[mm]
-  addIonRangeCurve(pid_type::PROTON,    gas_mixture_type::CO2, 250.0, 273.15+20, "range_corr_thr_1keV_proton_2MeV_CO2_250mbar.dat");
-  addIonRangeCurve(pid_type::ALPHA,     gas_mixture_type::CO2, 250.0, 273.15+20, "range_corr_thr_1keV_alpha_10MeV_CO2_250mbar.dat");
-  addIonRangeCurve(pid_type::CARBON_12, gas_mixture_type::CO2, 250.0, 273.15+20, "range_corr_thr_1keV_12C_5MeV_CO2_250mbar.dat");
-  addIonRangeCurve(pid_type::CARBON_14, gas_mixture_type::CO2, 250.0, 273.15+20, "range_corr_thr_1keV_12C_5MeV_CO2_250mbar.dat");//TEST
+  addIonRangeCurve(pid_type::PROTON,    gas_mixture_type::CO2, 250.0, 273.15+20, resourcesPath+"range_corr_thr_1keV_proton_2MeV_CO2_250mbar.dat");
+  addIonRangeCurve(pid_type::ALPHA,     gas_mixture_type::CO2, 250.0, 273.15+20, resourcesPath+"range_corr_thr_1keV_alpha_10MeV_CO2_250mbar.dat");
+  addIonRangeCurve(pid_type::CARBON_12, gas_mixture_type::CO2, 250.0, 273.15+20, resourcesPath+"range_corr_thr_1keV_12C_5MeV_CO2_250mbar.dat");
+  addIonRangeCurve(pid_type::CARBON_14, gas_mixture_type::CO2, 250.0, 273.15+20, resourcesPath+"range_corr_thr_1keV_12C_5MeV_CO2_250mbar.dat");//TEST
 
   // Initialize ion Bragg curves obtained from SRIM simulations at reference temperature and pressure (T0=20 C, p0=190 mbar)
   // Data file columns: Depth[mm] dE/dx[keV/mm]
@@ -21,10 +24,10 @@ IonRangeCalculator::IonRangeCalculator(gas_mixture_type gas, double p_mbar, doub
   //  addIonBraggCurve(pid_type::CARBON_14, gas_mixture_type::CO2, 190.0, 273.15+20, "dEdx_uncorr_14C_5MeV_CO2_190mbar.dat");//TEST
   // Initialize ion Bragg curves obtained from SRIM simulations at reference temperature and pressure (T0=20 C, p0=250 mbar)
   // Data file columns: Depth[mm] dE/dx[keV/mm]
-  addIonBraggCurve(pid_type::PROTON,    gas_mixture_type::CO2, 250.0, 273.15+20, "dEdx_corr_proton_2MeV_CO2_250mbar.dat");
-  addIonBraggCurve(pid_type::ALPHA,     gas_mixture_type::CO2, 250.0, 273.15+20, "dEdx_corr_alpha_10MeV_CO2_250mbar.dat");
-  addIonBraggCurve(pid_type::CARBON_12, gas_mixture_type::CO2, 250.0, 273.15+20, "dEdx_corr_12C_5MeV_CO2_250mbar.dat");
-  addIonBraggCurve(pid_type::CARBON_14, gas_mixture_type::CO2, 250.0, 273.15+20, "dEdx_corr_12C_5MeV_CO2_250mbar.dat");//TEST
+  addIonBraggCurve(pid_type::PROTON,    gas_mixture_type::CO2, 250.0, 273.15+20, resourcesPath+"dEdx_corr_proton_2MeV_CO2_250mbar.dat");
+  addIonBraggCurve(pid_type::ALPHA,     gas_mixture_type::CO2, 250.0, 273.15+20, resourcesPath+"dEdx_corr_alpha_10MeV_CO2_250mbar.dat");
+  addIonBraggCurve(pid_type::CARBON_12, gas_mixture_type::CO2, 250.0, 273.15+20, resourcesPath+"dEdx_corr_12C_5MeV_CO2_250mbar.dat");
+  addIonBraggCurve(pid_type::CARBON_14, gas_mixture_type::CO2, 250.0, 273.15+20, resourcesPath+"dEdx_corr_12C_5MeV_CO2_250mbar.dat");//TEST
 
   // DEBUG
   if(_debug) {
@@ -187,7 +190,7 @@ double IonRangeCalculator::getIonMassMeV(pid_type ion){ // particle or isotope m
 
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
-void IonRangeCalculator::addIonRangeCurve(pid_type ion, gas_mixture_type gas, double p_mbar, double T_Kelvin, const char *datafile){ // range(E_kin) corresponding to {gas, p, T}
+void IonRangeCalculator::addIonRangeCurve(pid_type ion, gas_mixture_type gas, double p_mbar, double T_Kelvin, const std::string &datafile){ // range(E_kin) corresponding to {gas, p, T}
 
   // sanity checks
   if(ion<PID_MIN || ion>PID_MAX) {
@@ -204,7 +207,7 @@ void IonRangeCalculator::addIonRangeCurve(pid_type ion, gas_mixture_type gas, do
 
   // add new map elements
   if(it==refGasRangeCurveMap.end()) {
-    refGasRangeCurveMap[key]=new TGraph(datafile, "%lg %lg");
+    refGasRangeCurveMap[key]=new TGraph(datafile.c_str(), "%lg %lg");
     refGasRangeCurveMap[key]->SetPoint(refGasRangeCurveMap[key]->GetN(), 0.0, 0.0);
     refGasRangeCurveMap[key]->Sort();
     if(refGasRangeCurveMap[key]->GetN()<2) {
@@ -363,7 +366,7 @@ double IonRangeCalculator::getIonBraggCurveIntegralMeV(pid_type ion, double E_Me
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
-void IonRangeCalculator::addIonBraggCurve(pid_type ion, gas_mixture_type gas, double p_mbar, double T_Kelvin, const char *datafile){ // dE/dx(x) corresponding to {gas, p, T}
+void IonRangeCalculator::addIonBraggCurve(pid_type ion, gas_mixture_type gas, double p_mbar, double T_Kelvin, const std::string &datafile){ // dE/dx(x) corresponding to {gas, p, T}
 
   // sanity checks
   if(ion<PID_MIN || ion>PID_MAX) {
@@ -380,7 +383,7 @@ void IonRangeCalculator::addIonBraggCurve(pid_type ion, gas_mixture_type gas, do
 
   // add new map elements
   if(it==refBraggCurveMap.end()) {
-    refBraggCurveMap[key]=new TGraph(datafile, "%lg %lg"); // X=(position along the track [mm]), Y=(ionization energy loss dE/dx [keV/mm])
+    refBraggCurveMap[key]=new TGraph(datafile.c_str(), "%lg %lg"); // X=(position along the track [mm]), Y=(ionization energy loss dE/dx [keV/mm])
     if(refBraggCurveMap[key]->GetN()<2) {
       std::cerr<<__FUNCTION__<<": ERROR: Wrong initialization of dE/dx TGraph using datafile="<<datafile<<"!"<<std::endl;
       exit(-1);
