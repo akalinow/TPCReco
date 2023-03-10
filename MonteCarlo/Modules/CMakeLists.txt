@@ -18,6 +18,7 @@ ADD_SUBDIRECTORY(TPCDigitizerSRC)
 ADD_SUBDIRECTORY(Track3DBuilder)
 ADD_SUBDIRECTORY(TrackTruncator)
 ADD_SUBDIRECTORY(TriggerSimulator)
+ADD_SUBDIRECTORY(ToyIonizationSimulator)
 
 IF (BUILD_GEANT_MODULE)
     find_package(Geant4 REQUIRED ui_all vis_all)
@@ -38,6 +39,7 @@ SET(module_sources
         ${build_track3d_sources}
         ${track_truncator_sources}
         ${trigger_simulator_sources}
+        ${toy_ionization_simulator_sources}
         )
 
 

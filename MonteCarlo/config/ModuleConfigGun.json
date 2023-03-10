@@ -182,6 +182,11 @@
           ]
         }
       }
+    },
+    "ToyIonizationSimulator": {
+      "Temperature": "293.15",
+      "Pressure": "0.25",
+      "PointsPerMm": 10.0
     }
   }
 }

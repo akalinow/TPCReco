@@ -10,9 +10,10 @@ All modules inherit from an abstract class [fwk::VModule](../UtilsMC/include/VMo
 
 
 ## Available modules
-* [Generator](Generator) - Wrapper for [EventGenerator](../EventGenerator/README.md) for generating `SimEvent`s
 * [EventFileExporter](EventFileExporter) - Writes simulation results into ROOT files
 * [GeantSim](GeantSim) - Handles GEANT simulation of detector response - it takes `SimEvent` and tracks primary particles through the detector
+* [Generator](Generator) - Wrapper for [EventGenerator](../EventGenerator/README.md) for generating `SimEvent`s
+* [ToyIonizationSimulator](ToyIonizationSimulator) - Simple ionization simulator based on `IonRangeCalculator`
 * [TPCDigitizerRandom](TPCDigitizerRandom) - TPC digitizer based on Artur's approach for UVW projection. Each deposit is smeared with a 3D gaussian function by sampling with configurable number of points
 * [TPCDigitizerSRC](TPCDigitizerSRC) - TPC digitizer based on Mikolaj's `StripResponseCalculator`. It can either read a generated strip response histograms from a ROOT file or generate new ones with default parameters, if the response does not exist.
 * [Track3DBuilder](Track3DBuilder) - Builds `Track3D` objects from `SimEvent` objects - they are required by the existing legacy code used for comparison between pure and reconstructed MonteCarlo
@@ -55,17 +56,6 @@ where:
 * `"ModuleConfiguration"` - configuration of modules, each module receives a `JSON` object parsed into `boost::property_tree::ptree` object as an argument to `ModuleName::Init` method
 
 # Configuration of modules
-## Generator
-Configuration template:
-```json
-{
-  "NumberOfEvents": {},
-  "EventGenerator": {}
-}
-```
-where:
-* `"NumberOfEvents"` - `int`, number of events to be generated
-* `"EventGenerator"` - `JSON`, configuration of `EventGenerator`, as described [here](../EventGenerator/README.md)
 
 ## EventFileExporter
 Configuration template:
@@ -195,6 +185,32 @@ where:
   * `"ModelPath"` - `string`, path to the directory with STL files
   * `"MaterialColors"` - definition of material colors, as in the config above
   * `"Solids"` - definition of different solids for each material, wildcards can be used
+
+## Generator
+Configuration template:
+```json
+{
+  "NumberOfEvents": {},
+  "EventGenerator": {}
+}
+```
+where:
+* `"NumberOfEvents"` - `int`, number of events to be generated
+* `"EventGenerator"` - `JSON`, configuration of `EventGenerator`, as described [here](../EventGenerator/README.md)
+
+## ToyIonizationSimulator
+Configuration template:
+```json
+{
+  "Temperature": {},
+  "Pressure": {},
+  "PointsPerMm": {}
+}
+```
+where:
+* `"Temperature"` - `float`, temperature in K
+* `"Pressure"` - `float`, pressure in bar
+* `"PointsPerMm"` - `float`, number of energy deposits per milimeter to be simulated
 
 ## TPCDigitizerRandom
 Configuration template:

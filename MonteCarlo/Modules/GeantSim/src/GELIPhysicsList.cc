@@ -181,7 +181,9 @@ void GELIPhysicsList::ConstructEM() {
 //            ph->RegisterProcess(ionIoni, particle);
 //            ph->RegisterProcess(new G4NuclearStopping(), particle);
             //pmanager->AddProcess(new G4hMultipleScattering,-1, 1,1);
-            pmanager->AddProcess(new G4ionIonisation,     -1, 2,2);
+            auto ionIoni = new G4ionIonisation();
+            ionIoni->SetStepFunction(0.000001, 50 * um);
+            pmanager->AddProcess(ionIoni,     -1, 2,2);
 
 
         } else if (particleName == "anti_proton") {
