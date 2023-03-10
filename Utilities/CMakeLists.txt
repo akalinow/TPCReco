@@ -15,8 +15,10 @@ reco_add_executable(grawls bin/grawls.cpp)
 
 target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
 target_link_libraries(
-  ${MODULE_NAME} PUBLIC ${ROOT_LIBRARIES} ${ROOT_EXE_LINKER_FLAGS}
-                        Boost::filesystem Boost::date_time)
+  ${MODULE_NAME}
+  PUBLIC ${ROOT_LIBRARIES} ${ROOT_EXE_LINKER_FLAGS} Boost::filesystem
+         Boost::date_time
+  PRIVATE Resources)
 target_link_libraries(grawls PRIVATE Boost::program_options ${MODULE_NAME})
 
 reco_install_targets(grawls ${MODULE_NAME})

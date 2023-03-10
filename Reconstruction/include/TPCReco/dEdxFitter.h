@@ -15,7 +15,8 @@
 class dEdxFitter{
 
 public:
-
+  dEdxFitter(std::string resources, double aPressure=190);
+  // defaults resource directory to installed directory
   dEdxFitter(double aPressure=190);
 
   void setPressure(double aPressure); 

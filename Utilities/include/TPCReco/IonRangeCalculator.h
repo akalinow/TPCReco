@@ -14,7 +14,9 @@ class IonRangeCalculator{
 
  public:
 
-  IonRangeCalculator(gas_mixture_type gas=CO2, double p_mbar=250.0, double T_Kelvin=293.15, bool debug_flag=false); // default gas: CO2, 250 mbar, 20C
+  IonRangeCalculator(std::string resourcesPath, gas_mixture_type gas=CO2, double p_mbar=250.0, double T_Kelvin=293.15, bool debug_flag=false);
+  // defaults resource directory to installed directory
+  IonRangeCalculator(gas_mixture_type gas=CO2, double p_mbar=250.0, double T_Kelvin=293.15, bool debug_flag=false);
 
   void setGasMixture(gas_mixture_type gas); // set current GAS index
 
@@ -62,8 +64,8 @@ class IonRangeCalculator{
   double myGasTemperature{0}; // Kelvins
   double myGasPressure{0};    // mbar
   
-  void addIonRangeCurve(pid_type ion, gas_mixture_type gas, double p_mbar, double T_Kelvin, const char *datafile); // range(E_kin) corresponding to {gas, p, T}
-  void addIonBraggCurve(pid_type ion, gas_mixture_type gas, double p_mbar, double T_Kelvin, const char *datafile); // dE/dx(x) corresponding to {gas, p, T}
+  void addIonRangeCurve(pid_type ion, gas_mixture_type gas, double p_mbar, double T_Kelvin, const std::string &datafile); // range(E_kin) corresponding to {gas, p, T}
+  void addIonBraggCurve(pid_type ion, gas_mixture_type gas, double p_mbar, double T_Kelvin, const std::string &datafile); // dE/dx(x) corresponding to {gas, p, T}
   TGraph invertTGraph(const TGraph &aGraph) const;
   TGraph horizontalFlipTGraph(const TGraph &aGraph) const;
   void scaleTGraph(TGraph *aGraph, double factor);
