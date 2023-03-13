@@ -15,7 +15,8 @@ class ConfigManager
     boost::property_tree::ptree tree;
     boost::property_tree::ptree tree1 = configureTree(tree); 
     */
-    void addEventType(boost::property_tree::ptree &tree, std::string evtype);
+    void setEventType(boost::property_tree::ptree &tree, std::string evtype);
+    std::string getEventType(boost::property_tree::ptree tree);
 
     private:
     boost::program_options::variables_map parseCmdLineArgs(int, char **);
