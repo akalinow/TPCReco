@@ -26,12 +26,12 @@ boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv)
     return varMap;
 }
 
-boost::property_tree::ptree configureTree(boost::property_tree::ptree tree, int argc, char **argv)
+void configureTree(boost::property_tree::ptree &tree, int argc, char **argv)
 {
     boost::program_options::variables_map varMap = parseCmdLineArgs(argc, argv);
     if(argc<1){
         std::cout<<" Usage: tpcGUI config.json"<<std::endl;
-        return tree;
+        return;
     }
     else {
         std::cout<<"Using configFileName: "<<argv[1]<<std::endl;
@@ -60,9 +60,14 @@ boost::property_tree::ptree configureTree(boost::property_tree::ptree tree, int 
         tree.put("hitFilter.recoClusterDeltaTimeCells", varMap["recoClusterDeltaTimeCells"].as<int>());
     }
 }
+
 void setEventType(boost::property_tree::ptree &tree, std::string evtype)
 {
-    tree.put("eventType",etype.as<std::string>());
+    tree.put("eventType",evtype);
+}
+void setEventType(boost::property_tree::ptree &tree, std::string evtype)
+{
+    return tree.get<std::string>("eventType");
 }
 
 void addParam(boost::property_tree::ptree &tree, std::string etype){}
