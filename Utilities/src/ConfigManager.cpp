@@ -65,7 +65,8 @@ void setEventType(boost::property_tree::ptree &tree, std::string evtype)
 {
     tree.put("eventType",evtype);
 }
-void setEventType(boost::property_tree::ptree &tree, std::string evtype)
+
+std::string getEventType(boost::property_tree::ptree &tree)
 {
     return tree.get<std::string>("eventType");
 }

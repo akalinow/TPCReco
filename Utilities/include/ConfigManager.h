@@ -17,15 +17,13 @@ public:
     */
     void setEventType(boost::property_tree::ptree& tree, std::string evtype);
 
-    std::string getEventType(boost::property_tree::ptree& tree) {};
+    std::string getEventType(boost::property_tree::ptree& tree);
 
     void setOnlineFlag(boost::property_tree::ptree& tree, bool flag) {};
 
     bool getOnlineFlag(boost::property_tree::ptree& tree) {};
 
     void configureTree(boost::property_tree::ptree &, int, char**);
-    void setEventType(boost::property_tree::ptree &tree, std::string evtype);
-    std::string getEventType(boost::property_tree::ptree tree);
 
     private:
     boost::program_options::variables_map parseCmdLineArgs(int, char **);
