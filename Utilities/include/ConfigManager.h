@@ -6,17 +6,26 @@
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/program_options.hpp>
 
-class ConfigManager
+class ConfigManager : public boost::property_tree::ptree
 {
-    public:
+public:
     ConfigManager();
     void configureTree(boost::property_tree::ptree, int, char**);//czy pracować na kopii czy oryginale?
     /*użycie:
     boost::property_tree::ptree tree;
-    boost::property_tree::ptree tree1 = configureTree(tree); 
+    boost::property_tree::ptree tree1 = configureTree(tree);
     */
-    void addEventType(boost::property_tree::ptree &tree, std::string evtype);
+    void setEventType(boost::property_tree::ptree& tree, std::string evtype);
+
+    std::string getEventType(boost::property_tree::ptree& tree) {};
+
+    void setOnlineFlag(boost::property_tree::ptree& tree, bool flag) {};
+
+    bool getOnlineFlag(boost::property_tree::ptree& tree) {};
+
 
     private:
     boost::program_options::variables_map parseCmdLineArgs(int, char **);
+
+    boost::property_tree::ptree tree_internal;
 };

@@ -2,6 +2,7 @@
 #include "EventSourceBase.h"
 #include <boost/property_tree/json_parser.hpp>
 #include "GUI_commons.h"
+#include "ConfigManager.h"
 
 class MainFrame;
 
@@ -12,6 +13,5 @@ private:
 public:
 	~EventSourceFactory() {};
 
-	static std::shared_ptr<EventSourceBase> makeEventSourceObject(boost::property_tree::ptree myConfig, Modes& myWorkMode);
-	static std::shared_ptr<EventSourceBase> makeEventSourceObject(boost::property_tree::ptree myConfig, Modes& myWorkMode, bool& useFileWatch);
+	static std::shared_ptr<EventSourceBase> makeEventSourceObject(boost::property_tree::ptree myConfig);
 };

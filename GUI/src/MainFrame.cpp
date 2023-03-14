@@ -107,10 +107,13 @@ void MainFrame::InitializeWindows() {
 void MainFrame::InitializeEventSource() {
 	std::string dataFileName = myConfig.get("dataFile", "");
 	std::string geometryFileName = myConfig.get("geometryFile", "");
-#ifdef WITH_GET
-	bool useFileWatch = false;
-	myEventSource = EventSourceFactory::makeEventSourceObject(myConfig, (Modes&)myWorkMode, useFileWatch);
-	if (useFileWatch) {
+	myEventSource = EventSourceFactory::makeEventSourceObject(myConfig);
+
+	ConfigManager cm; //TEMPORARY???
+	std::string eventType = cm.getEventType(myConfig);
+	bool onlineFlag = cm.getOnlineFlag(myConfig);
+
+	if (onlineFlag) {
 		fileWatchThread = std::thread(&DirectoryWatch::watch, &myDirWatch, dataFileName);
 		if (myConfig.find("updateInterval") != myConfig.not_found()) {
 			int updateInterval = myConfig.get<int>("updateInterval");
@@ -118,9 +121,20 @@ void MainFrame::InitializeEventSource() {
 		}
 		myDirWatch.Connect("Message(const char *)", "MainFrame", this, "ProcessMessage(const char *)");
 	}
-#else
-	myEventSource = EventSourceFactory::makeEventSourceObject(myConfig, (Modes&)myWorkMode);
-#endif
+
+
+	if (eventType == "EventSourceROOT") {
+		myWorkMode = M_OFFLINE_ROOT_MODE;
+	}
+	else if (eventType == "EventSourceMC") {
+		myWorkMode = M_OFFLINE_MC_MODE;
+	}
+	else if (eventType == "EventSourceGRAW") {
+		myWorkMode = (onlineFlag ? M_ONLINE_GRAW_MODE : M_OFFLINE_GRAW_MODE);
+	}
+	else if (eventType == "EventSourceMultiGRAW") {
+		myWorkMode = (onlineFlag ? M_ONLINE_NGRAW_MODE : M_OFFLINE_NGRAW_MODE);
+	}
 
 	if (myConfig.find("hitFilter") != myConfig.not_found()) {
 		myHistoManager.setConfig(myConfig.find("hitFilter")->second);
