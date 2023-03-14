@@ -60,12 +60,15 @@ boost::property_tree::ptree configureTree(boost::property_tree::ptree tree, int 
         tree.put("hitFilter.recoClusterDeltaTimeCells", varMap["recoClusterDeltaTimeCells"].as<int>());
     }
 }
+
 void setEventType(boost::property_tree::ptree &tree, std::string evtype)
 {
-    tree.put("eventType",etype.as<std::string>());
+    tree.put("eventType",evtype);
 }
+
 std::string getEventType(boost::property_tree::ptree tree)
 {
+    return tree.get<std::string>("eventType");
 }
 
 void addParam(boost::property_tree::ptree &tree, std::string etype){}
