@@ -1,3 +1,10 @@
+#include <TCanvas.h>
+#include <TFile.h>
+#include <TLatex.h>
+#include <TString.h>
+#include <TTree.h>
+#include <TTreeIndex.h>
+#include <boost/program_options.hpp>
 #include <cstdlib>
 #include <iostream>
 #include <vector>
@@ -11,11 +18,12 @@
 
 #include <boost/program_options.hpp>
 
+#include "TPCReco/Cuts.h"
+#include "TPCReco/RequirementsCollection.h"
 #include "TPCReco/GeometryTPC.h"
 #include "TPCReco/Track3D.h"
 #include "TPCReco/HIGGS_analysis.h"
 #include "TPCReco/HIGS_trees_analysis.h"
-
 #include "TPCReco/colorText.h"
 
 int analyzeRecoEvents(const  std::string & geometryFileName, 
@@ -160,79 +168,62 @@ int analyzeRecoEvents(const  std::string & geometryFileName,
     return -1;
   }
 
-  std::shared_ptr<HIGGS_analysis> myAnalysis(new HIGGS_analysis(aGeometry, beamEnergy, beamDir, pressure, temperature));
-  std::shared_ptr<HIGS_trees_analysis> myTreesAnalysis(0);
-  if(makeTreeFlag) myTreesAnalysis=std::make_shared<HIGS_trees_analysis>(aGeometry, beamEnergy, beamDir, pressure, temperature);
+
+
+  double beam_offset = -1.3;
+  double beam_slope = 3.0E-3;
+  double beam_diameter = 12.;
+  auto cuts = RequirementsCollection<std::function<bool(Track3D *)>>{};
+  cuts.push_back(tpcreco::cuts::Cut1{});
+  cuts.push_back(tpcreco::cuts::Cut2{beam_offset, beam_slope, beam_diameter});
+  cuts.push_back(tpcreco::cuts::Cut3{aGeometry.get(), 5});
+  cuts.push_back(tpcreco::cuts::Cut4{aGeometry.get(), 25, 5});
+  cuts.push_back(tpcreco::cuts::Cut5{aGeometry.get(), beam_diameter});
+
+  auto myAnalysis = HIGGS_analysis(aGeometry, beamEnergy, beamDir, pressure, temperature);
+  auto myTreesAnalysis= std::unique_ptr<HIGS_trees_analysis>(nullptr);
+  if(makeTreeFlag) myTreesAnalysis=std::make_unique<HIGS_trees_analysis>(aGeometry, beamEnergy, beamDir, pressure, temperature);
 
   TTree *aTree = (TTree*)aFile->Get("TPCRecoData");
   if(!aTree) {
     std::cerr<<KRED<<"ERROR: Cannot find 'TPCRecoData' tree!"<<RST<<std::endl;
     return -1;
   }
-  // NOTE: * branch RecoEvent - must always be present
-  //       * branch EventInfo - is optional (eg. for Monte Carlo)
-  Track3D *aTrack = new Track3D();
+  
   TBranch *aBranch  = aTree->GetBranch("RecoEvent");
   if(!aBranch) {
     std::cerr<<KRED<<"ERROR: Cannot find 'RecoEvent' branch!"<<RST<<std::endl;
     return -1;
   }
+  auto *aTrack = new Track3D();
   aBranch->SetAddress(&aTrack);
   
-  eventraw::EventInfo *aEventInfo = 0;
   TBranch *aBranchInfo = aTree->GetBranch("EventInfo");
   if(!aBranchInfo) {
    std::cerr<<KRED<<"WARNING: "
 	    <<"Cannot find 'EventInfo' branch!"<<RST<<std::endl;
+    return -1;
   }
-  else{
-    aEventInfo = new eventraw::EventInfo();
-    aBranchInfo->SetAddress(&aEventInfo);
-  }
-
-  unsigned int nEntries = aTree->GetEntries();
+  auto *aEventInfo = new eventraw::EventInfo();
+  aBranchInfo->SetAddress(&aEventInfo);
   
-  // When (optional) "EventInfo" branch is present try to sort input tree in ascending order of {runID, eventID}
-  if(!aBranchInfo) {
-    
-    std::cout << __FUNCTION__ << ": Starting to loop " << nEntries << " events without sorting" << std::endl;
-    for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
-      aBranch->GetEntry(iEntry); 
-      for (auto & aSegment: aTrack->getSegments())  aSegment.setGeometry(aGeometry); // need TPC geometry for track projections
-      myAnalysis->fillHistos(aTrack);
-      if(makeTreeFlag) myTreesAnalysis->fillTrees(aTrack, aEventInfo);
-    }
-    
-  } else {
-    
-    std::cout << __FUNCTION__ << ": Starting to loop " << nEntries << " events with sorting by {runId, eventId}" << std::endl;
-    aTree->BuildIndex("runId", "eventId");
-    TTreeIndex *I=(TTreeIndex*)aTree->GetTreeIndex(); // get the tree index
-    Long64_t* index=I->GetIndex();
+  std::cout << __FUNCTION__ << ": Starting to loop " << aTree->GetEntries() << " events with sorting by {runId, eventId}" << std::endl;
+  aTree->BuildIndex("runId", "eventId");
+  auto index =static_cast<TTreeIndex*>(aTree->GetTreeIndex())->GetIndex();
 
-    for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
-      aBranch->GetEntry(index[iEntry]);
-      aBranchInfo->GetEntry(index[iEntry]);
+  for(unsigned int iEntry=0;iEntry<aTree->GetEntries();++iEntry){
+    aTree->GetEntry(index[iEntry]);
 
-      ////// DEBUG
-      //      std::cout << __FUNCTION__ << ": run=" << aEventInfo->GetRunId() << ", event=" << aEventInfo->GetEventId() << std::endl;
-      ////// DEBUG
-      
-      for (auto & aSegment: aTrack->getSegments())  aSegment.setGeometry(aGeometry); // need TPC geometry for track projections
-      myAnalysis->fillHistos(aTrack);
-      if(makeTreeFlag) myTreesAnalysis->fillTrees(aTrack, aEventInfo);
-    }
-    
-  }
-  /*
-    for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
-    aBranch->GetEntry(iEntry); 
-    if(aBranchInfo) aBranchInfo->GetEntry(iEntry); // this branch is optional
     for (auto & aSegment: aTrack->getSegments())  aSegment.setGeometry(aGeometry); // need TPC geometry for track projections
-    myAnalysis->fillHistos(aTrack);
+    
+    if(!cuts(aTrack)){
+      continue;
+    }
+
+    myAnalysis.fillHistos(aTrack);
     if(makeTreeFlag) myTreesAnalysis->fillTrees(aTrack, aEventInfo);
-    }			      
-  */
+  }
+
   return 0;
 }
 /////////////////////////////

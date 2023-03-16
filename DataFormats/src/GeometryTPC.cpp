@@ -951,7 +951,7 @@ bool GeometryTPC::InitActiveAreaConvexHull(TGraph *g) {
 // $ bin->GetPolygon()->Draw("AL*");
 // $ cout << "Is (x=0, y=0) inside polygon: " << bin->IsInside(0,0) << endl;
 //
-TGraph GeometryTPC::GetActiveAreaConvexHull(double vetoBand){
+TGraph GeometryTPC::GetActiveAreaConvexHull(double vetoBand) const{
 
   if(vetoBand<0.0) {
     if (_debug) {

@@ -14,6 +14,7 @@
 #include "TPCReco/CommonDefinitions.h"
 #include "TPCReco/HIGGS_analysis.h"
 #include "TPCReco/colorText.h"
+#include "TPCReco/Cuts.h"
 
 ///////////////////////////////
 ///////////////////////////////
@@ -25,7 +26,6 @@ HIGGS_analysis::HIGGS_analysis(std::shared_ptr<GeometryTPC> aGeometryPtr, // def
   setGeometry(aGeometryPtr);
   setBeamProperties(beamEnergy, beamDir);
   setIonRangeCalculator(pressure, temperature);
-  setCuts();
   bookHistos();
 }
 ///////////////////////////////
@@ -98,46 +98,6 @@ void HIGGS_analysis::bookHistos(){
   float xmin, xmax, ymin, ymax, zmin, zmax; // [mm]
   std::tie(xmin, xmax, ymin, ymax) = myGeometryPtr->rangeXY();
   std::tie(zmin, zmax) = myGeometryPtr->rangeZ();
-  //  zmin = myGeometryPtr->GetDriftCageZmin();
-  //  zmax = myGeometryPtr->GetDriftCageZmax();
-
-  ///////// DEBUG
-  //  outputCanvas = new TCanvas("c", "all events", 500, 500);
-  //  TView *view = TView::CreateView(1);
-  //  view->SetRange(xmin-0.5*(xmax-xmin), ymin-0.5*(ymax-ymin), zmin-0.5*(zmax-zmin),
-  //		 xmax+0.5*(xmax-xmin), ymax+0.5*(ymax-ymin), zmax+0.5*(zmax-zmin));
-  //
-  //  // plot active volume's faces
-  //  TGraph gr=myGeometryPtr->GetActiveAreaConvexHull();
-  //  auto l=new TPolyLine3D(5*(gr.GetN()-1));
-  //  for(auto iedge=0; iedge<gr.GetN()-1; iedge++) {
-  //    l->SetPoint(iedge*5+0,
-  //		gr.GetX()[iedge],
-  //		gr.GetY()[iedge],
-  //		zmin);
-  //    l->SetPoint(iedge*5+1,
-  //		gr.GetX()[iedge+1],
-  //		gr.GetY()[iedge+1],
-  //		zmin);
-  //    l->SetPoint(iedge*5+2,
-  //		gr.GetX()[iedge+1],
-  //		gr.GetY()[iedge+1],
-  //		zmax);
-  //   l->SetPoint(iedge*5+3,
-  //		gr.GetX()[iedge],
-  //		gr.GetY()[iedge],
-  //		zmax);
-  //    l->SetPoint(iedge*5+4,
-  //		gr.GetX()[iedge],
-  //		gr.GetY()[iedge],
-  //		zmin);
-  //  }
-  //  l->SetLineColor(kBlue);
-  //  l->Draw();
-  //  outputCanvas->Update();
-  //  outputCanvas->Modified();
-  //  outputCanvas->Print("aaa.root");
-  ///////// DEBUG
 
   // GLOBAL HISTOGRAMS
   //
@@ -583,8 +543,6 @@ void HIGGS_analysis::bookHistos(){
 ///////////////////////////////
 ///////////////////////////////
 void HIGGS_analysis::fillHistos(Track3D *aTrack){
-
-  if( !eventFilter(aTrack) ) return;
   
   // The following assumptions are made:
   // - event is a collection of straight 3D segments
@@ -819,11 +777,6 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     double oxygenMassExcited=totalEnergy_CMS;
     double oxygenExcitationEnergy=oxygenMassExcited-oxygenMassGroundState;
     double Qvalue_CMS=oxygenMassExcited-alphaMass-carbonMass;
-    // DEBUG
-    //    std::cout << "X-CHECK: Alpha energies [MeV]: Etot_LAB=" << alphaP4_DET_LAB.E() << ", Ekin_LAB=" << alpha_T_LAB << ", Mass=" << alphaMass << std::endl;
-    //    std::cout << "X-CHECK: Carbon-12 energies [MeV]: Etot_LAB=" << carbonP4_DET_LAB.E() << ", Ekin_LAB=" << carbon_T_LAB << ", Mass=" << carbonMass << std::endl;
-    //    std::cout << "X-CHECK: Photon energy LAB [MeV]: Etot_LAB=" << sumP4_DET_LAB.E() << ", mass(Oxygen-16)=" << oxygenMassGroundState << ", Egamma_LAB=Etot_LAB-mass(Oxygen-16)="<<photon_E_LAB<<std::endl;
-    // DEBUG
 
     histos1D["h_2prong_alpha_E_LAB"]->Fill(alpha_T_LAB);
     histos1D["h_2prong_carbon_E_LAB"]->Fill(carbon_T_LAB);
@@ -1082,12 +1035,6 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     histos1D["h_3prong_gamma_E_LAB"]->Fill(photon_E_LAB);
     histos1D["h_3prong_E_CMS"]->Fill(alpha_T_LAB[0]+alpha_T_LAB[1]+alpha_T_LAB[2]);
     histos1D["h_3prong_E_LAB"]->Fill(alpha_T_CMS[0]+alpha_T_CMS[1]+alpha_T_CMS[2]);
-    // DEBUG
-    //    std::cout << "X-CHECK: Alpha1 energies [MeV]: Etot_LAB=" << alphaP4_DET_LAB[0].E() << ", Ekin_LAB=" << alpha_T_LAB[0] << ", Mass=" << alphaMass << std::endl;
-    //    std::cout << "X-CHECK: Alpha2 energies [MeV]: Etot_LAB=" << alphaP4_DET_LAB[1].E() << ", Ekin_LAB=" << alpha_T_LAB[1] << ", Mass=" << alphaMass << std::endl;
-    //    std::cout << "X-CHECK: Alpha3 energies [MeV]: Etot_LAB=" << alphaP4_DET_LAB[2].E() << ", Ekin_LAB=" << alpha_T_LAB[2] << ", Mass=" << alphaMass << std::endl;
-    //    std::cout << "X-CHECK: Photon energy LAB [MeV]: Etot_LAB=" << sumP4_DET_LAB.E() << ", mass(Carbon-12)=" << carbonMassGroundState << ", Egamma_LAB=Etot_LAB-mass(Carbon-12)="<<photon_E_LAB<<std::endl;
-    // DEBUG
 
     // SPECIAL PLOTS: check dependence of gamma beam energy on vertex position perpendicular to the gamma beam axis
     histos2D["h_3prong_vertexX_lenSum"]->Fill(vertexPos.X(), lengthSUM);
@@ -1128,168 +1075,8 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
       
     }
   }
-  //////// DEBUG
-  //  auto l = new TPolyLine3D(ntracks*3);
-  //  for(auto i=0; i<ntracks; i++) {
-  //    l->SetPoint(i*3, list.at(i).getStart().X(), list.at(i).getStart().Y(), list.at(i).getStart().Z());
-  //    l->SetPoint(i*3+1, list.at(i).getEnd().X(), list.at(i).getEnd().Y(), list.at(i).getEnd().Z());
-  //    l->SetPoint(i*3+2, list.at(i).getStart().X(), list.at(i).getStart().Y(), list.at(i).getStart().Z());
-  //  }
-  //  l->SetLineColor(kBlack);
-  //  l->Draw();
-  //////// DEBUG
 }
-///////////////////////////////
-///////////////////////////////
-bool HIGGS_analysis::eventFilter(Track3D *aTrack){
 
-  //  return true;
-
-  // NOTE: for manual reconstruction disable dE/dx fit quality checks (cut #6)
-  bool checkFitQualityOf2prongs=false; // TODO - TO BE PARAMETERIZED !!!
-
-  // print statistics on demand
-  const auto printAccepted=false; // TODO - TO BE PARAMETERIZED !!!
-  const auto printRejected=false; // TODO - TO BE PARAMETERIZED !!!
-
-  static TrackSegment3DCollection list;
-  static TVector3 vertexPos;
-  bool result=true;
-
-  // cut #1 :reject empty events
-  if(!aTrack || (list=aTrack->getSegments()).size()==0) {
-    result=false;
-    if(printRejected) {
-      std::cout<<KRED<<__FUNCTION__<<": REJECTED (empty event)"<<RST<<std::endl;
-    }
-  }
-
-  // get sorted list of tracks (descending order by track length)
-  std::sort(list.begin(), list.end(),
-	    [](const TrackSegment3D& a, const TrackSegment3D& b) {
-	      return a.getLength() > b.getLength();
-	    });
-
-  // cut #2 : XY plane : vertex position per event, corrected for beam tilt
-  if(result) {
-    vertexPos = list.front().getStart();
-    if( fabs( vertexPos.Y() - (beam_offset+beam_slope*vertexPos.X()) ) > 0.5*beam_diameter ) {
-      result=false;
-      if(printRejected) {
-	std::cout<<KRED<<__FUNCTION__<<": REJECTED (horizontal: vertex too far from beam axis)"<<RST<<std::endl;
-      }
-    }
-  }
-  
-  // cut #3 : XY plane : minimal distance to the border of UVW active area
-  // - less strict than simple XY rectangular cut, allows to gain some statistics
-  if(result) {
-    for(auto &track: list) {
-      if( !xyAreaCut.IsInside(track.getEnd().X(), track.getEnd().Y()) ||
-	  !xyAreaCut.IsInside(track.getStart().X(), track.getStart().Y()) ) {
-	result=false;
-	if(printRejected) {
-	  std::cout<<KRED<<__FUNCTION__<<": REJECTED (horizontal: track too close to UVW border)"<<RST<<std::endl;
-	}
-	break;
-      }
-    }
-  }
-  /*
-  // cut #3a : XY plane : rectangular cut per track
-  if(result) {
-    for(auto &track: list) {
-      if( fabs(track.getEnd().X()) > 160.0   || // TODO - TO BE PARAMETERIZED !!!
-	  fabs(track.getEnd().Y()) > 80.0    || // TODO - TO BE PARAMETERIZED !!!
-	  fabs(track.getStart().X()) > 160.0 || // TODO - TO BE PARAMETERIZED !!!
-	  fabs(track.getStart().Y()) > 80.0 ) { // TODO - TO BE PARAMETERIZED !!!
-	result=false;
-	if(printRejected) {
-	  std::cout<<KRED<<__FUNCTION__<<": REJECTED (horizontal: track outside acceptance rectangle)"<<RST<<std::endl;
-	}
-	break;
-      }
-    }
-  }
-  */
-
-  // cut #4 : global Z-span per event, verifies that:
-  // - vertical projection length is below physical drift cage length
-  // - tracks do not overlap with pedestal exclusion zone, begin of history buffer
-  // - tracks not too close to end of history buffer
-  if(result) {
-    auto zmin=list.at(0).getStart().Z(), zmax=zmin;
-    for(auto i=0u; i<list.size(); i++) {
-      zmin=std::min(zmin, (std::min(list.at(i).getStart().Z(), list.at(i).getEnd().Z())));
-      zmax=std::max(zmax, (std::max(list.at(i).getStart().Z(), list.at(i).getEnd().Z())));
-    }
-    if(!zRangeCut.IsInside(zmin, zmax)) {
-      result=false;
-      if(printRejected) {
-	std::cout<<KRED<<__FUNCTION__<<": REJECTED (vertical: too close to electronics limits / too close to drift cage height)"<<RST<<std::endl;
-      }
-    }
-  }
-
-  // cut #5 : Z-span wrt vertex per track per event, verifies that:
-  // - vertical distance of endpoint to vertex is less than half of drift cage height
-  //   corrected for maximal vertical beam spread
-  // - ensures that 2,3-prong events hit neither the GEM plane nor the cathode plane
-  // NOTE: does not protect against 1-prong events (eg. background) originating
-  //       from the GEM plane or the cathode plane
-  if(result) {
-    for(auto i=0u; i<list.size(); i++) {
-      if(fabs(list.at(i).getEnd().Z()-vertexPos.Z())>0.5*(myGeometryPtr->GetDriftCageZmax()-myGeometryPtr->GetDriftCageZmin()-beam_diameter)) {
-      result=false;
-	if(printRejected) {
-	  std::cout<<KRED<<__FUNCTION__<<": REJECTED (vertical: too long wrt vertex)"<<RST<<std::endl;
-	}
-	break;
-      }
-    }
-  }
-
-  // cut #6 : Additional quality cuts for 2-prong events used by Artur for plots from automatic
-  // reconstruction that employs lustering + dE/dx method:
-  // - chi2 < 10
-  // - charge > 1000
-  // - length > 30 mm
-  // - eventType = 3
-  // - hypothesisChi2 < 5
-  // NOTE: For manual reconstruction disable these dE/dx fit quality checks
-  // NOTE: Those cuts are currently impossible to apply to results from manual data
-  // reconstruction and to fake data generated by toy MC. If we are going to use results
-  // from automatic reconstruction for demonstration of cross section measurement then those
-  // cuts must be taken into account as well while correcting the rates!
-  if(result && checkFitQualityOf2prongs && list.size()==2) {
-    auto length = aTrack->getLength();
-    auto charge = aTrack->getIntegratedCharge(length);
-    auto chi2 = aTrack->getChi2();
-    auto hypothesisChi2 = aTrack->getHypothesisFitChi2();
-    auto correctPID = list.front().getPID()==ALPHA && list.back().getPID()==CARBON_12; // TODO - TO BE PARAMETERIZED!!!
-    if(!correctPID        ||
-       chi2 > 10          || // TODO - TO BE PARAMETERIZED!!!
-       hypothesisChi2 > 5 || // TODO - TO BE PARAMETERIZED!!! (conservative cut from Artur's 11_05_2022 reprocessing)
-       length < 30        || // TODO - TO BE PARAMETERIZED!!! (same as sum of lengths [mm])
-       charge < 1000) {      // TODO - TO BE PARAMETERIZED!!!
-      result=false;
-      if(printRejected) {
-	  std::cout<<KRED<<__FUNCTION__<<": REJECTED (failed 2-prong quality cuts)"<<RST
-	    //		   <<" length="<<length
-	    //		   <<", charge="<<charge
-	    //		   <<", chi2="<<chi2
-	    //		   <<", hypothesisChi2="<<hypothesisChi2
-	    //		   <<", pid_ok="<<correctPID
-		   <<std::endl;
-      }
-    }
-  }
-
-  if(printAccepted && result) {
-    std::cout<<KGRN<<__FUNCTION__<<": ACCEPTED"<<RST<<std::endl;
-  }
-  return result;
-}
 ///////////////////////////////
 ///////////////////////////////
 void HIGGS_analysis::finalize(){
@@ -1308,11 +1095,6 @@ void HIGGS_analysis::finalize(){
     p.second->SetTitleOffset(1.4, "X");
     p.second->SetTitleOffset(1.4, "Y");
   }
-  ////////// DEBUG
-  //  outputCanvas->Update();
-  //  outputCanvas->Modified();
-  //  outputCanvas->Write();
-  ////////// DEBUG
   outputFile->Write();
 }
 ///////////////////////////////
@@ -1326,27 +1108,13 @@ void HIGGS_analysis::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
     exit(-1);
   }
 }
-///////////////////////////////
-///////////////////////////////
-void HIGGS_analysis::setCuts(){
 
-  // set safety margin around UVW active area
-  xyAreaCut.initialize(myGeometryPtr, 5.0); // TODO - TO BE PARAMETERIZED
-
-  // set allowed window in time cells:
-  // - event starts >25 time cells for unibiased pedestal calculation (0-25 zone)
-  // - event ends >5 time cells from the end of history buffer
-  zRangeCut.initialize(myGeometryPtr, 25, 5); // TODO - TO BE PARAMETERIZED
-}
 ///////////////////////////////
 ///////////////////////////////
 void HIGGS_analysis::setBeamProperties(float beamEnergyInMeV, // nominal gamma beam energy [MeV] in LAB reference frame
 				       TVector3 beamDir) { // nominal gamma beam direction in LAB reference frame and detector coordinate system
   photonEnergyInMeV_LAB = fabs(beamEnergyInMeV);
   photonUnitVec_DET_LAB = beamDir.Unit();
-  beam_slope=tan(3.0e-3); // [rad], measured slope: Y_DET(X_DET)=offset+slope*X_DET
-  beam_offset=-1.3; // [mm], measured offset: Y_DET of beam axis at X_DET=0
-  beam_diameter=12.0; // [mm] // TODO - TO BE PARAMETERIZED !!!
 }
 ///////////////////////////////
 ///////////////////////////////
