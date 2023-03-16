@@ -21,11 +21,12 @@
 HIGGS_analysis::HIGGS_analysis(std::shared_ptr<GeometryTPC> aGeometryPtr, // definition of LAB detector coordinates
 			       float beamEnergy,   // nominal gamma beam energy [MeV] in detector LAB frame
 			       TVector3 beamDir,   // nominal gamma beam direction in detector LAB frame
-			       double pressure,    // CO2 pressure [mbar]
-			       double temperature){// CO2 temperature [K]
+			       IonRangeCalculator ionRangeCalculator,
+             CoordinateConverter coordinateConverter)
+  : myRangeCalculator(ionRangeCalculator),
+    coordinateConverter(coordinateConverter) {
   setGeometry(aGeometryPtr);
   setBeamProperties(beamEnergy, beamDir);
-  setIonRangeCalculator(pressure, temperature);
   bookHistos();
 }
 ///////////////////////////////
@@ -35,13 +36,7 @@ HIGGS_analysis::~HIGGS_analysis(){
   finalize();
   delete outputFile;
 }
-//////////////////////////
-//////////////////////////
-void HIGGS_analysis::setIonRangeCalculator(double pressure, double temperature){ // CO2 pressure [mbar] and temperature [K]
 
-  // set current conditions: gas=CO2, arbitrary temperature [K] and pressure [mbar]
-  myRangeCalculator.setGasConditions(/*IonRangeCalculator::*/CO2, fabs(pressure), fabs(temperature));
-}
 ///////////////////////////////
 ///////////////////////////////
 void HIGGS_analysis::bookHistos(){
@@ -586,17 +581,9 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     histos1D["h_all_thetaDET"]->Fill(track.getTangent().Theta());
     histos1D["h_all_cosThetaDET"]->Fill(track.getTangent().CosTheta());
 
-    // calculate angles in LAB reference frame in BEAM coordinate system
-    // TODO
-    // TODO switch to DET->BEAM dedicated converter class!!!
-    // TODO
-    // change DET-->BEAM coordinate transformation for the HIGS experiment
-    // formulas below are valid provided that beam direction is anti-paralell to X_DET (HIGS case):
-    // X_DET -> -Z_BEAM
-    // Y_DET ->  X_BEAM
-    // Z_DET -> -Y_BEAM
-    double phi_BEAM_LAB=atan2(-track.getTangent().Z(), track.getTangent().Y()); // [rad], azimuthal angle from horizontal axis
-    double cosTheta_BEAM_LAB=track.getTangent()*photonUnitVec_DET_LAB; // polar angle wrt beam axis
+    auto tangent_BEAM_LAB = coordinateConverter.detToBeam(track.getTangent());
+    double phi_BEAM_LAB = tangent_BEAM_LAB.Phi();
+    double cosTheta_BEAM_LAB = tangent_BEAM_LAB.CosTheta();
     histos1D["h_all_phiBEAM_LAB"]->Fill(phi_BEAM_LAB);
     histos1D["h_all_thetaBEAM_LAB"]->Fill(acos(cosTheta_BEAM_LAB));
     histos1D["h_all_cosThetaBEAM_LAB"]->Fill(cosTheta_BEAM_LAB);
@@ -629,17 +616,9 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     histos1D["h_1prong_alpha_thetaDET"]->Fill(track.getTangent().Theta());
     histos1D["h_1prong_alpha_cosThetaDET"]->Fill(track.getTangent().CosTheta());
 
-    // calculate angles in LAB reference frame in BEAM coordinate system
-    // TODO
-    // TODO switch to DET->BEAM dedicated converter class!!!
-    // TODO
-    // change DET-->BEAM coordinate transformation for the HIGS experiment
-    // formulas below are valid provided that beam direction is anti-paralell to X_DET (HIGS case):
-    // X_DET -> -Z_BEAM
-    // Y_DET ->  X_BEAM
-    // Z_DET -> -Y_BEAM
-    double phi_BEAM_LAB=atan2(-track.getTangent().Z(), track.getTangent().Y()); // [rad], azimuthal angle from horizontal axis
-    double cosTheta_BEAM_LAB=track.getTangent()*photonUnitVec_DET_LAB; // polar angle wrt beam axis
+    auto tangent_BEAM_LAB = coordinateConverter.detToBeam(track.getTangent());
+    double phi_BEAM_LAB = tangent_BEAM_LAB.Phi();
+    double cosTheta_BEAM_LAB = tangent_BEAM_LAB.CosTheta();
     histos1D["h_1prong_alpha_phiBEAM_LAB"]->Fill(phi_BEAM_LAB);
     histos1D["h_1prong_alpha_thetaBEAM_LAB"]->Fill(acos(cosTheta_BEAM_LAB));
     histos1D["h_1prong_alpha_cosThetaBEAM_LAB"]->Fill(cosTheta_BEAM_LAB);
@@ -701,19 +680,12 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     histos1D["h_2prong_alpha_carbon_delta_LAB"]->Fill(delta_LAB);
     histos1D["h_2prong_alpha_carbon_cosDelta_LAB"]->Fill(cos(delta_LAB));
 
-    // calculate angles in LAB reference frame in BEAM coordinate system
-    // TODO
-    // TODO switch to DET->BEAM dedicated converter class!!!
-    // TODO
-    // change DET-->BEAM coordinate transformation for the HIGS experiment
-    // formulas below are valid provided that beam direction is anti-paralell to X_DET (HIGS case):
-    // X_DET -> -Z_BEAM
-    // Y_DET ->  X_BEAM
-    // Z_DET -> -Y_BEAM
-    double alpha_phi_BEAM_LAB=atan2(-list.front().getTangent().Z(), list.front().getTangent().Y()); // [rad], azimuthal angle from horizontal axis
-    double carbon_phi_BEAM_LAB=atan2(-list.back().getTangent().Z(), list.back().getTangent().Y()); // [rad], azimuthal angle from horizontal axis
-    double alpha_cosTheta_BEAM_LAB=list.front().getTangent()*photonUnitVec_DET_LAB; // polar angle wrt beam axis
-    double carbon_cosTheta_BEAM_LAB=list.back().getTangent()*photonUnitVec_DET_LAB; // polar angle wrt beam axis
+    auto alpha_tangent_BEAM_LAB = coordinateConverter.detToBeam(list.front().getTangent());
+    auto carbon_tangent_BEAM_LAB = coordinateConverter.detToBeam(list.back().getTangent());
+    double alpha_phi_BEAM_LAB = alpha_tangent_BEAM_LAB.Phi();
+    double carbon_phi_BEAM_LAB = carbon_tangent_BEAM_LAB.Phi();
+    double alpha_cosTheta_BEAM_LAB = alpha_tangent_BEAM_LAB.CosTheta();
+    double carbon_cosTheta_BEAM_LAB = carbon_tangent_BEAM_LAB.CosTheta();
     histos1D["h_2prong_alpha_phiBEAM_LAB"]->Fill(alpha_phi_BEAM_LAB);
     histos1D["h_2prong_alpha_thetaBEAM_LAB"]->Fill(acos(alpha_cosTheta_BEAM_LAB));
     histos1D["h_2prong_alpha_cosThetaBEAM_LAB"]->Fill(alpha_cosTheta_BEAM_LAB);
@@ -745,31 +717,15 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     const TVector3 beta_DET_LAB=getBetaVectorOfCMS(oxygenMassGroundState).Unit()*(photon_E_LAB/(photon_E_LAB+oxygenMassGroundState));
     // DEBUG
 
-    // TODO
-    // TODO switch to DET->BEAM dedicated converter class!!!
-    // TODO
-    // change DET-->BEAM coordinate transformation for the HIGS experiment
-    // formulas below are valid provided that beam direction is anti-paralell to X_DET (HIGS case):
-    // X_DET -> -Z_BEAM
-    // Y_DET ->  X_BEAM
-    // Z_DET -> -Y_BEAM
-    TLorentzVector alphaP4_BEAM_LAB(alphaP4_DET_LAB.Py(), -alphaP4_DET_LAB.Pz(), -alphaP4_DET_LAB.Px(), alphaP4_DET_LAB.E());
-    TLorentzVector carbonP4_BEAM_LAB(carbonP4_DET_LAB.Py(), -carbonP4_DET_LAB.Pz(), -carbonP4_DET_LAB.Px(), carbonP4_DET_LAB.E());
-
+    TLorentzVector alphaP4_BEAM_LAB = coordinateConverter.detToBeam(alphaP4_DET_LAB);
+    TLorentzVector carbonP4_BEAM_LAB = coordinateConverter.detToBeam(carbonP4_DET_LAB);
     TLorentzVector alphaP4_DET_CMS(alphaP4_DET_LAB);
     TLorentzVector carbonP4_DET_CMS(carbonP4_DET_LAB);
-    alphaP4_DET_CMS.Boost(-1.0*beta_DET_LAB); // see TLorentzVector::Boost for sign convention!
-    carbonP4_DET_CMS.Boost(-1.0*beta_DET_LAB); // see TLorentzVector::Boost for sign convention!
-    // TODO
-    // TODO switch to DET->BEAM dedicated converter class!!!
-    // TODO
-    // change DET-->BEAM coordinate transformation for the HIGS experiment
-    // formulas below are valid provided that beam direction is anti-paralell to X_DET (HIGS case):
-    // X_DET -> -Z_BEAM
-    // Y_DET ->  X_BEAM
-    // Z_DET -> -Y_BEAM
-    TLorentzVector alphaP4_BEAM_CMS(alphaP4_DET_CMS.Py(), -alphaP4_DET_CMS.Pz(), -alphaP4_DET_CMS.Px(), alphaP4_DET_CMS.E());
-    TLorentzVector carbonP4_BEAM_CMS(carbonP4_DET_CMS.Py(), -carbonP4_DET_CMS.Pz(), -carbonP4_DET_CMS.Px(), carbonP4_DET_CMS.E());
+    alphaP4_DET_CMS.Boost(-1.0*beta_DET_LAB);
+    carbonP4_DET_CMS.Boost(-1.0*beta_DET_LAB);
+
+    TLorentzVector alphaP4_BEAM_CMS = coordinateConverter.detToBeam(alphaP4_DET_CMS);
+    TLorentzVector carbonP4_BEAM_CMS = coordinateConverter.detToBeam(carbonP4_DET_CMS);
     double alpha_T_CMS=alphaP4_BEAM_CMS.E()-alphaP4_BEAM_CMS.M(); // [MeV]
     double carbon_T_CMS=carbonP4_BEAM_CMS.E()-carbonP4_BEAM_CMS.M(); // [MeV]
     //    double invariantMass=(alphaP4_BEAM_CMS+carbonP4_BEAM_CMS).M();// [MeV/c^2]
@@ -889,17 +845,9 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
       auto track=list.at(i);
       alpha_len[i] = track.getLength();
 
-      // calculate angles in LAB reference frame in BEAM coordinate system
-      // TODO
-      // TODO switch to DET->BEAM dedicated converter class!!!
-      // TODO
-      // change DET-->BEAM coordinate transformation for the HIGS experiment
-      // formulas below are valid provided that beam direction is anti-paralell to X_DET (HIGS case):
-      // X_DET -> -Z_BEAM
-      // Y_DET ->  X_BEAM
-      // Z_DET -> -Y_BEAM
-      alpha_phi_BEAM_LAB[i]=atan2(-track.getTangent().Z(), track.getTangent().Y()); // [rad], azimuthal angle from horizontal axis
-      alpha_cosTheta_BEAM_LAB[i]=track.getTangent()*photonUnitVec_DET_LAB; // polar angle wrt beam axis
+      auto alpha_tangent_BEAM_LAB = coordinateConverter.detToBeam(track.getTangent());
+      alpha_phi_BEAM_LAB[i] = alpha_tangent_BEAM_LAB.Phi();
+      alpha_cosTheta_BEAM_LAB[i] = alpha_tangent_BEAM_LAB.CosTheta();
       
       // reconstruct kinetic energy from particle range [mm]
       alpha_T_LAB[i]=myRangeCalculator.getIonEnergyMeV(/*IonRangeCalculator::*/ALPHA, alpha_len[i]);
@@ -937,15 +885,7 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
       // boost P4 from DET/LAB frame to CMS frame (see TLorentzVector::Boost() convention!)
       alphaP4_DET_CMS[i]=TLorentzVector(alphaP4_DET_LAB[i]);
       alphaP4_DET_CMS[i].Boost(-1.0*beta_DET_LAB);
-      // TODO
-      // TODO switch to DET->BEAM dedicated converter class!!!
-      // TODO
-      // change DET-->BEAM coordinate transformation for the HIGS experiment
-      // formulas below are valid provided that beam direction is anti-paralell to X_DET (HIGS case):
-      // X_DET -> -Z_BEAM
-      // Y_DET ->  X_BEAM
-      // Z_DET -> -Y_BEAM
-      alphaP4_BEAM_CMS[i]=TLorentzVector(alphaP4_DET_CMS[i].Py(), -alphaP4_DET_CMS[i].Pz(), -alphaP4_DET_CMS[i].Px(), alphaP4_DET_CMS[i].E());
+      alphaP4_BEAM_CMS[i] = coordinateConverter.detToBeam(alphaP4_DET_CMS[i]);
       alpha_T_CMS[i]=alphaP4_BEAM_CMS[i].E()-alphaP4_BEAM_CMS[i].M(); // [MeV]
       alpha_phi_BEAM_CMS[i]=alphaP4_BEAM_CMS[i].Phi(); // [rad], azimuthal angle from X axis
       alpha_cosTheta_BEAM_CMS[i]=alphaP4_BEAM_CMS[i].CosTheta(); // [rad], azimuthal angle from X axis

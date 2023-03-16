@@ -19,6 +19,7 @@
 #include <boost/program_options.hpp>
 
 #include "TPCReco/Cuts.h"
+#include "TPCReco/CoordinateConverter.h"
 #include "TPCReco/RequirementsCollection.h"
 #include "TPCReco/GeometryTPC.h"
 #include "TPCReco/Track3D.h"
@@ -168,8 +169,6 @@ int analyzeRecoEvents(const  std::string & geometryFileName,
     return -1;
   }
 
-
-
   double beam_offset = -1.3;
   double beam_slope = 3.0E-3;
   double beam_diameter = 12.;
@@ -180,7 +179,10 @@ int analyzeRecoEvents(const  std::string & geometryFileName,
   cuts.push_back(tpcreco::cuts::Cut4{aGeometry.get(), 25, 5});
   cuts.push_back(tpcreco::cuts::Cut5{aGeometry.get(), beam_diameter});
 
-  auto myAnalysis = HIGGS_analysis(aGeometry, beamEnergy, beamDir, pressure, temperature);
+  auto coordinateConverter = CoordinateConverter({-M_PI/2, M_PI/2,0}, {});
+  auto ionRangeCalculator = IonRangeCalculator(gas_mixture_type::CO2, pressure, temperature);
+
+  auto myAnalysis = HIGGS_analysis(aGeometry, beamEnergy, beamDir, ionRangeCalculator, coordinateConverter);
   auto myTreesAnalysis= std::unique_ptr<HIGS_trees_analysis>(nullptr);
   if(makeTreeFlag) myTreesAnalysis=std::make_unique<HIGS_trees_analysis>(aGeometry, beamEnergy, beamDir, pressure, temperature);
 
