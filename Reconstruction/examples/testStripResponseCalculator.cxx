@@ -609,8 +609,7 @@ void testResponse4(const char *fname,
 		   double peakingTime=232,
 		   int nstrips=6,
 		   int npads=12, // nstrips*2
-		   int ncells=30) { 
-) { // 0=all events
+		   int ncells=30) { // 0=all events
   if (!gROOT->GetClass("GeometryTPC")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
   }
