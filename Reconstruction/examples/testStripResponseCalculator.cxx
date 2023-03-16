@@ -35,7 +35,21 @@ R__ADD_LIBRARY_PATH(../lib)
 
 //////////////////////////
 //////////////////////////
-void generateResponse(double sigmaXY=1, double sigmaZ=-1, double peakingTime=-1, long npointsSpace=1000000, long npointsTime=100000, const char *geometryFile="geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat", int nbinsSpace=10, int nbinsTime=20) { // generates histograms and saves them to a separate ROOT file
+//
+// generates response histograms and saves them to a separate ROOT file
+//
+void generateResponse(double sigmaXY=1, // [mm] - effective diffusion along XY_DET
+		      double sigmaZ=-1, // [mm] - effective diffusion along Z_DET
+		      double peakingTime=-1, // [ns] - GET electronics peaking time
+		      long npointsSpace=1000000, // use: >=10M to get smooth response distributions
+		      long npointsTime=100000,   // use: >=10M to get smooth response distributions
+		      const char *geometryFile="geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat",
+		      int nbinsSpace=10, // use: >=50 for fitting purposes
+		      int nbinsTime=20,  // use: >=50 for fitting purposes
+		      int nstrips=6, // use: nstrips>(3*sigmaXY)/strip_pitch
+		      int npads=12,  // use: (nstrips*2)
+		      int ncells=30  // use: ncells>(3*sigmaZ)/(drift_velocity/sampling_frequency)
+		      ) {
   if (!gROOT->GetClass("GeometryTPC")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
   }
@@ -47,9 +61,9 @@ void generateResponse(double sigmaXY=1, double sigmaZ=-1, double peakingTime=-1,
   }
   auto geo=std::make_shared<GeometryTPC>(geometryFile, false);
   geo->SetTH2PolyPartition(3*200,2*200); // higher TH2Poly granularity speeds up initialization of XY response histograms!
-  auto nstrips=6;
-  auto ncells=30;
-  auto npads=nstrips*2;
+  //  auto nstrips=6;
+  //  auto ncells=30;
+  //  auto npads=nstrips*2;
   if(sigmaZ<0) sigmaZ=sigmaXY; // when sigmaZ is omitted assume that sigmaZ=sigmaXY
   if(peakingTime<0) peakingTime=0; // when peakingTime is ommitted turn off additional smearing due to GET electronics
   auto calc=new StripResponseCalculator(geo, nstrips, ncells, npads, sigmaXY, sigmaZ, peakingTime);
@@ -82,7 +96,13 @@ void generateResponseAll() {
 
 //////////////////////////
 //////////////////////////
-void plotStripResponse(double sigmaXY=0.5, double sigmaZ=-1, double peakingTime=-1, const char *geometryFile="geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat") {
+void plotStripResponse(double sigmaXY=0.5,
+		       double sigmaZ=-1,
+		       double peakingTime=-1,
+		       const char *geometryFile="geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat",
+		       int nstrips=6,
+		       int npads=12, // nstrips*2
+		       int ncells=30) {
   if (!gROOT->GetClass("GeometryTPC")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
   }
@@ -92,9 +112,9 @@ void plotStripResponse(double sigmaXY=0.5, double sigmaZ=-1, double peakingTime=
   if (!gROOT->GetClass("StripResponseCalculator")){
     R__LOAD_LIBRARY(libTPCReconstruction.so);
   }
-  auto nstrips=6;
-  auto ncells=30;
-  auto npads=nstrips*2;
+  //  auto nstrips=6;
+  //  auto ncells=30;
+  //  auto npads=nstrips*2;
   if(sigmaZ<0) sigmaZ=sigmaXY; // when sigmaZ is omitted assume that sigmaZ=sigmaXY
   if(peakingTime<0) peakingTime=0; // when peakingTime is ommitted turn off additional smearing due to GET electronics
   auto geo=std::make_shared<GeometryTPC>(geometryFile, false);
@@ -129,7 +149,13 @@ void plotStripResponse(double sigmaXY=0.5, double sigmaZ=-1, double peakingTime=
 
 //////////////////////////
 //////////////////////////
-void plotTimeResponse(double sigmaXY=0.5, double sigmaZ=-1, double peakingTime=-1, const char *geometryFile="geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat") {
+void plotTimeResponse(double sigmaXY=0.5,
+		      double sigmaZ=-1,
+		      double peakingTime=-1,
+		      const char *geometryFile="geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat",
+		      int nstrips=6,
+		      int npads=12, // nstrips*2
+		      int ncells=30) {
   if (!gROOT->GetClass("GeometryTPC")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
   }
@@ -139,9 +165,9 @@ void plotTimeResponse(double sigmaXY=0.5, double sigmaZ=-1, double peakingTime=-
   if (!gROOT->GetClass("StripResponseCalculator")){
     R__LOAD_LIBRARY(libTPCReconstruction.so);
   }
-  auto nstrips=6;
-  auto ncells=30;
-  auto npads=nstrips*2;
+  //  auto nstrips=6;
+  //  auto ncells=30;
+  //  auto npads=nstrips*2;
   if(sigmaZ<0) sigmaZ=sigmaXY; // when sigmaZ is omitted assume that sigmaZ=sigmaXY
   if(peakingTime<0) peakingTime=0; // when peakingTime is ommitted turn off additional smearing due to GET electronics
   auto geo=std::make_shared<GeometryTPC>(geometryFile, false);
@@ -266,7 +292,13 @@ void addConstantToTH2D(TH2D* h, double c) {
 
 //////////////////////////
 //////////////////////////
-void testResponse1(double sigmaXY=0.5, double sigmaZ=-1, double peakingTime=-1, const char *geometryFile="geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat") {
+void testResponse1(double sigmaXY=0.5,
+		   double sigmaZ=-1,
+		   double peakingTime=-1,
+		   const char *geometryFile="geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat",
+		   int nstrips=6,
+		   int npads=12, // nstrips*2
+		   int ncells=30) {
   if (!gROOT->GetClass("GeometryTPC")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
   }
@@ -276,9 +308,9 @@ void testResponse1(double sigmaXY=0.5, double sigmaZ=-1, double peakingTime=-1, 
   if (!gROOT->GetClass("StripResponseCalculator")){
     R__LOAD_LIBRARY(libTPCReconstruction.so);
   }
-  auto nstrips=6;
-  auto ncells=30;
-  auto npads=nstrips*2;
+  //  auto nstrips=6;
+  //  auto ncells=30;
+  //  auto npads=nstrips*2;
   if(sigmaZ<0) sigmaZ=sigmaXY; // when sigmaZ is omitted assume that sigmaZ=sigmaXY
   if(peakingTime<0) peakingTime=0; // when peakingTime is ommitted turn off additional smearing due to GET electronics
   auto geo=std::make_shared<GeometryTPC>(geometryFile, false);
@@ -360,7 +392,11 @@ void testResponse1(double sigmaXY=0.5, double sigmaZ=-1, double peakingTime=-1, 
 
 //////////////////////////
 //////////////////////////
-void testResponse2(int nevents=1, const char *geometryFile="geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat") {
+void testResponse2(int nevents=1,
+		   const char *geometryFile="geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat",
+		   int nstrips=6,
+		   int npads=12, // nstrips*2
+		   int ncells=30) {
   if (!gROOT->GetClass("GeometryTPC")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
   }
@@ -370,9 +406,9 @@ void testResponse2(int nevents=1, const char *geometryFile="geometry_ELITPC_190m
   if (!gROOT->GetClass("StripResponseCalculator")){
     R__LOAD_LIBRARY(libTPCReconstruction.so);
   }
-  auto nstrips=6;
-  auto ncells=30;
-  auto npads=nstrips*2;
+  //  auto nstrips=6;
+  //  auto ncells=30;
+  //  auto npads=nstrips*2;
   auto geo=std::make_shared<GeometryTPC>(geometryFile, false);
   geo->SetTH2PolyPartition(3*20,2*20); // higher TH2Poly granularity speeds up finding reference nodes
   std::vector<double> sigma{0.5, 1, 2};
@@ -469,7 +505,11 @@ void testResponse2(int nevents=1, const char *geometryFile="geometry_ELITPC_190m
 
 //////////////////////////
 //////////////////////////
-void testResponse3(int nevents=1, const char *geometryFile="geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat") {
+void testResponse3(int nevents=1,
+		   const char *geometryFile="geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat",
+		   int nstrips=6,
+		   int npads=12, // nstrips*2
+		   int ncells=30) {
   if (!gROOT->GetClass("GeometryTPC")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
   }
@@ -479,9 +519,9 @@ void testResponse3(int nevents=1, const char *geometryFile="geometry_ELITPC_190m
   if (!gROOT->GetClass("StripResponseCalculator")){
     R__LOAD_LIBRARY(libTPCReconstruction.so);
   }
-  auto nstrips=6;
-  auto ncells=30;
-  auto npads=nstrips*2;
+  //  auto nstrips=6;
+  //  auto ncells=30;
+  //  auto npads=nstrips*2;
   auto geo=std::make_shared<GeometryTPC>(geometryFile, false);
   geo->SetTH2PolyPartition(3*20,2*20); // higher TH2Poly granularity speeds up finding reference nodes
   std::vector<double> sigma{0.5, 1, 2};
@@ -559,7 +599,18 @@ void testResponse3(int nevents=1, const char *geometryFile="geometry_ELITPC_190m
 
 //////////////////////////
 //////////////////////////
-void testResponse4(const char *fname, long maxevents=0, const char *geometryFile="geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat", double pressure_mbar=130.0, double temperature_K=273.15+20, double sigmaXY_mm=0.85, double sigmaZ_mm=0.86, double peakingTime=232) { // 0=all events
+void testResponse4(const char *fname,
+		   long maxevents=0,
+		   const char *geometryFile="geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat",
+		   double pressure_mbar=130.0,
+		   double temperature_K=273.15+20,
+		   double sigmaXY_mm=0.85,
+		   double sigmaZ_mm=0.86,
+		   double peakingTime=232,
+		   int nstrips=6,
+		   int npads=12, // nstrips*2
+		   int ncells=30) { 
+) { // 0=all events
   if (!gROOT->GetClass("GeometryTPC")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
   }
@@ -618,9 +669,9 @@ void testResponse4(const char *fname, long maxevents=0, const char *geometryFile
   double sigmaXY=sigmaXY_mm; // 0.64; // educated guess of transverse charge spread after 10 cm of drift (middle of drift cage)
   double sigmaZ=sigmaZ_mm; // 0.64; // educated guess of longitudinal charge spread after 10 cm of drift (middle of drift cage)
   if(peakingTime<0) peakingTime=0; // when peakingTime is ommitted turn off additional smearing due to GET electronics
-  int nstrips=6;
-  int ncells=30;
-  int npads=nstrips*2;
+  //  int nstrips=6;
+  //  int ncells=30;
+  //  int npads=nstrips*2;
   const std::string initFile( (peakingTime==0 ?
 			       Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm.root",
 				    nstrips, ncells, npads, geo->GetSamplingRate(), geo->GetDriftVelocity(),
