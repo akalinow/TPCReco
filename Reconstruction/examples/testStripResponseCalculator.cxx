@@ -96,6 +96,76 @@ void generateResponseAll() {
 
 //////////////////////////
 //////////////////////////
+//
+// This function reads existing response histograms (both XY_DET and Z_DET part) that correspond to some REFERENCE time settings:
+// - REF peaking time input argument,
+// - REF longitudinal diffusion input argument,
+// - REF geometry file with drift velocity and sampling rate,
+// and recomputes only Z_DET part using one or more NEW time settings:
+// - NEW peaking time input argument,
+// - NEW longitudinal diffusion input argument,
+// - NEW geometry input file with drift velocity and samping rate,
+// - NEW number of sampling points to generate Z_DET part,
+// - NEW number of bins for sub-cell resolution for Z_DET part.
+// In this way the most time consuming XY_DET part, which does not depend on longitudinal diffusion, drift velocity,
+// sampling rate and peaking time, can be recycled to speed up generation of necessary strip response combinations.
+// 
+void replaceTimeResponse(double ref_sigmaXY=0.5,         // [mm] - same for REF and NEW response histograms
+			 double ref_sigmaZ=-1,           // [mm]
+			 double ref_peakingTime=-1,      // [ns]
+			 const char *ref_geometryFile="geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat",
+			 double new_sigmaZ=-1,           // [mm]
+			 double new_peakingTime=232,     // [ns]
+			 const char *new_geometryFile="geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat",
+			 long new_npointsTime=10000000L, // use: >=10M to get smooth response distributions
+			 int new_nbinsTime=50,           // use: >=50 for fitting purposes
+			 int nstrips=6,                  // same for REF and NEW response histograms
+			 int npads=12,                   // same for REF and NEW response histograms
+			 int ncells=30) {                // same for REF and NEW response histograms
+  if (!gROOT->GetClass("GeometryTPC")){
+    R__LOAD_LIBRARY(libTPCDataFormats.so);
+  }
+  if (!gROOT->GetClass("IonRangeCalculator")){ // FIX
+    R__LOAD_LIBRARY(libTPCUtilities.so);
+  }
+  if (!gROOT->GetClass("StripResponseCalculator")){
+    R__LOAD_LIBRARY(libTPCReconstruction.so);
+  }
+  if(ref_sigmaZ<0) ref_sigmaZ=ref_sigmaXY; // when REF sigmaZ is omitted assume that REF sigmaZ=sigmaXY
+  auto new_sigmaXY=ref_sigmaXY;
+  if(new_sigmaZ<0) new_sigmaZ=new_sigmaXY; // when NEW sigmaZ is omitted assume that NEW sigmaZ=sigmaXY
+  if(ref_peakingTime<0) ref_peakingTime=0; // when REF peakingTime is ommitted turn off additional smearing due to GET electronics
+  if(new_peakingTime<0) new_peakingTime=0; // when NEW peakingTime is ommitted turn off additional smearing due to GET electronics
+  auto ref_geo=std::make_shared<GeometryTPC>(ref_geometryFile, false);
+  auto new_geo=std::make_shared<GeometryTPC>(new_geometryFile, false);
+  const std::string referenceFile( (ref_peakingTime==0 ?
+				    Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm.root",
+					 nstrips, ncells, npads, ref_geo->GetSamplingRate(), ref_geo->GetDriftVelocity(),
+					 ref_sigmaXY, ref_sigmaZ) :
+				    Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm_P%gns.root",
+					 nstrips, ncells, npads, ref_geo->GetSamplingRate(), ref_geo->GetDriftVelocity(),
+					 ref_sigmaXY, ref_sigmaZ, ref_peakingTime) ) );
+  const std::string resultFile( (new_peakingTime==0 ?
+				 Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm.root",
+				      nstrips, ncells, npads, new_geo->GetSamplingRate(), new_geo->GetDriftVelocity(),
+				      new_sigmaXY, new_sigmaZ) :
+				 Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm_P%gns.root",
+				      nstrips, ncells, npads, new_geo->GetSamplingRate(), new_geo->GetDriftVelocity(),
+				      new_sigmaXY, new_sigmaZ, new_peakingTime) ) );
+  auto new_calc=new StripResponseCalculator(new_geo, nstrips, ncells, npads, new_sigmaXY, new_sigmaZ, new_peakingTime,
+					    referenceFile.c_str(), true);
+  if(new_calc->loadHistograms(resultFile.c_str())) {
+    std::cout << "ERROR: Response histogram file " << resultFile << " already exists!" << std::endl;
+    return;
+  }
+  new_calc->setDebug(true);
+  new_calc->initializeTimeResponse(new_npointsTime, new_nbinsTime); // overwrite default value
+  std::cout << "Saving strip response matrix to file: "<< resultFile << std::endl;
+  new_calc->saveHistograms(resultFile.c_str());
+}
+
+//////////////////////////
+//////////////////////////
 void plotStripResponse(double sigmaXY=0.5,
 		       double sigmaZ=-1,
 		       double peakingTime=-1,
