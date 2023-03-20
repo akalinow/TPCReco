@@ -4,6 +4,7 @@
 // Mikolaj Cwiok (UW) - 25 Feb 2023
 //
 //
+#define WITH_GET // temporary HACK - TO BE REPLACED WITH PROPER CMAKE FLAG
 
 #ifndef __ROOTLOGON__
 R__ADD_INCLUDE_PATH(../../DataFormats/include)
@@ -16,6 +17,7 @@ R__ADD_LIBRARY_PATH(../lib)
 #endif
 
 #include <vector>
+#include <set>
 #include <iostream>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
@@ -25,15 +27,16 @@ R__ADD_LIBRARY_PATH(../lib)
 
 #include <TMath.h>
 #include <TRandom3.h>
-#if DEBUG_SIGNAL
-#include <TCanvas.h> // DEBUG
-#endif
 #include <TFile.h>
 #include <TString.h>
 #include <TH2D.h>
 #include <TVector3.h>
 #include <TTree.h>
 #include <TBranch.h>
+#include <TCanvas.h>
+#include <TMarker.h>
+#include <TLine.h>
+#include <TLatex.h>
 #include <Math/Functor.h>
 #include <Fit/Fitter.h>
 
@@ -41,8 +44,11 @@ R__ADD_LIBRARY_PATH(../lib)
 #include "GeometryTPC.h"
 #include "EventTPC.h"
 #include "EventSourceBase.h"
+#ifdef WITH_GET
 #include "EventSourceGRAW.h"
 #include "EventSourceMultiGRAW.h"
+#endif
+#include "EventSourceROOT.h"
 #include "TrackSegment3D.h"
 #include "Track3D.h"
 #include "IonRangeCalculator.h"
@@ -52,8 +58,10 @@ R__ADD_LIBRARY_PATH(../lib)
 #include "HIGGS_analysis.h"
 
 #define DEBUG_CHARGE    false
-#define DEBUG_SIGNAL    false // plot UVW projections for reference data and starting point template
+#define DEBUG_SIGNAL    false // plot UVW projections for reference data and starting point template at each step
 #define DEBUG_CHI2      false
+#define DEBUG_DRAW_FIT  true  // plot UVW projections of final fitted templates
+
 
 #define MISSING_PID_REPLACEMENT_ENABLE true // TODO - to be parameterized
 #define MISSING_PID_1PRONG             ALPHA // TODO - to be parameterized
@@ -319,6 +327,27 @@ private:
     myNparams = 3 * ( myParticleList.size() + 1 ) + 1;
     myTrackFit=Track3D();
   }
+  /////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////
+  // intializes underlying Track3D collection out of current fit parameters
+  void initializeTrack3D(const int npar, const double *par) {
+
+    // sanity checks
+    if (npar != myNparams || par==NULL) {
+      std::cout << __FUNCTION__ << " Wrong input NPAR or PAR value!" << std::endl << std::flush;
+      exit(1);
+    }
+    Track3D aTrack;
+    for(auto itrack=0; itrack<myParticleList.size(); itrack++) {
+      TrackSegment3D aSeg;
+      aSeg.setGeometry(myGeometryPtr);
+      aSeg.setStartEnd(TVector3(par[1], par[2], par[3]), TVector3(par[4+itrack*3], par[5+itrack*3], par[6+itrack*3]));
+      aSeg.setPID(myParticleList[itrack]);
+      aTrack.addSegment(aSeg);
+    }
+    myScale=par[0]; // set global scaling factor for dE/dx
+    myTrackFit=aTrack; // set track collection
+  }
 public:
   /////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////
@@ -357,6 +386,19 @@ public:
   
   /////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////
+  // returns clone of undeerlying reference histograms
+  std::vector<std::shared_ptr<TH2D> > getRefHistogramsInMM() {
+    std::vector<std::shared_ptr<TH2D> > aHistVec;
+    for(auto &it: myRefHistosInMM) {
+      TH2D* hist=(TH2D*)(it->Clone());
+      if(hist) hist->SetDirectory(0); // do not associate this clone with any TFile dir to prevent memory leaks
+      aHistVec.push_back( std::shared_ptr<TH2D>(hist) );
+    }
+    return aHistVec;
+  }
+
+  /////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////
   // returns clone of undeerlying fit/test hypothesis histograms
   std::vector<std::shared_ptr<TH2D> > getFitHistogramsInMM() {
     std::vector<std::shared_ptr<TH2D> > aHistVec;
@@ -367,12 +409,13 @@ public:
     }
     return aHistVec;
   }
-  
+
   /////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////
   double getChi2() {
     const int nhist=myRefHistosInMM.size();
     const double expected_rms_noise=7.0; // [ADC units] - typical rms of noise from pedestal runs @ 12.5 MHz
+                                         // TODO : TO BE PARAMETERIZED
     double sumChi2=0.0;
     auto ndf=0L;
     for(auto ihist=0; ihist<nhist; ihist++) {
@@ -511,33 +554,11 @@ public:
 
   /////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////
-  // generates Track3D collection out of current fit parameters
-  void convertParamsToTracks(const int npar, const double *par) {
-
-    // sanity checks
-    if (npar != myNparams || par==NULL) {
-      std::cout << __FUNCTION__ << " Wrong input NPAR or PAR value!" << std::endl << std::flush;
-      exit(1);
-    }
-    Track3D aTrack;
-    for(auto itrack=0; itrack<myParticleList.size(); itrack++) {
-      TrackSegment3D aSeg;
-      aSeg.setGeometry(myGeometryPtr);
-      aSeg.setStartEnd(TVector3(par[1], par[2], par[3]), TVector3(par[4+itrack*3], par[5+itrack*3], par[6+itrack*3]));
-      aSeg.setPID(myParticleList[itrack]);
-      aTrack.addSegment(aSeg);
-    }
-    myScale=par[0]; // set global scaling factor for dE/dx
-    myTrackFit=aTrack; // set track collection 
-  }
-  
-  /////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////
   // implementation of the function to be minimized
   double operator() (const double *par) {
 
     // convert params to new Track3D collection
-    convertParamsToTracks(myNparams, par);
+    initializeTrack3D(myNparams, par);
 
     // convert current Track3D collection to new set of TH2D UVW projections
     fillFitHistogramsInMM();
@@ -546,6 +567,120 @@ public:
     return getChi2();
   }
 };
+
+// _______________________________________
+//
+// Adds visualization of a vertex to the specified TPad with existing world coordinate system:
+// * x = Z_DET [mm] - position along drift electric field
+// * y = U, V or W [mm] - postion along a given strip direction wrt (X=0,Y=0)_DET
+// Also sets line and marker attributes such that they cannot be edited.
+//
+void DrawVertexOnUVWProjection(TPad *tpad, TrackSegment3D &aSeg, int dir, int color=kMagenta) {
+  if(!tpad) return;
+  if(dir<definitions::projection_type::DIR_U || dir>definitions::projection_type::DIR_W) return;
+  const auto vertex_marker=kCircle;
+  const auto vertex_marker2=kPlus;
+  const auto vertex_color=color;
+  const auto vertex_size=2;
+  const auto vtx=aSeg.getStart();
+  const auto geo=aSeg.getGeometry();
+  if(!geo) return;
+  auto err=false;
+  double strip_pos=geo->Cartesian2posUVW(vtx.X(), vtx.Y(), dir, err); // strip position [mm] for a given XY_DET position
+  if(err) return;
+  double z_pos=vtx.Z(); // drift time [mm]
+  tpad->cd();
+  auto *m1=new TMarker(z_pos, strip_pos, vertex_marker);
+  m1->SetMarkerColor(vertex_color);
+  m1->SetMarkerSize(vertex_size);
+  m1->Draw();
+  m1->SetBit(kCannotPick); // prevents editing
+  auto *m2=new TMarker(z_pos, strip_pos, vertex_marker2);
+  m2->SetMarkerColor(vertex_color);
+  m2->SetMarkerSize(vertex_size);
+  m2->Draw();
+  m2->SetBit(kCannotPick); // prevents editing
+  tpad->Modified();
+}
+// _______________________________________
+//
+// Adds visualization of a track endpoint to the specified TPad with existing world coordinate system:
+// * x = Z_DET [mm] - position along drift electric field
+// * y = U, V or W [mm] - postion along a given strip direction wrt (X=0,Y=0)_DET
+// Also sets line and marker attributes such that they cannot be edited.
+//
+void DrawEndpointOnUVWProjection(TPad *tpad, TrackSegment3D &aSeg, int dir, int color=kBlack) {
+  if(!tpad) return;
+  if(dir<definitions::projection_type::DIR_U || dir>definitions::projection_type::DIR_W) return;
+  const auto line_color=color;
+  const auto line_width=2;
+  const auto line_style=kSolid;
+  const auto endpoint_marker=kCircle; // open circle
+  const auto endpoint_color=color;
+  const auto endpoint_size=2;
+  const auto vtx=aSeg.getStart();
+  const auto endpoint=aSeg.getEnd();
+  const auto geo=aSeg.getGeometry();
+  if(!geo) return;
+  auto err=false;
+  double sstart_pos=geo->Cartesian2posUVW(vtx.X(), vtx.Y(), dir, err); // strip position [mm] for a given XY_DET position
+  double send_pos=geo->Cartesian2posUVW(endpoint.X(), endpoint.Y(), dir, err); // strip position [mm] for a given XY_DET position
+  if(err) return;
+  double zstart_pos=vtx.Z(); // drift time [mm]
+  double zend_pos=endpoint.Z(); // drift time [mm]
+  tpad->cd();
+  auto *m=new TMarker(zend_pos, send_pos, endpoint_marker);
+  m->SetMarkerColor(endpoint_color);
+  m->SetMarkerSize(endpoint_size);
+  m->Draw();
+  m->SetBit(kCannotPick); // prevents editing
+  auto *l=new TLine(zstart_pos, sstart_pos, zend_pos, send_pos);
+  l->SetLineColor(line_color);
+  l->SetLineWidth(line_width);
+  l->SetLineStyle(line_style);
+  l->Draw();
+  l->SetBit(kCannotPick); // prevents editing
+  tpad->Modified();
+}
+// _______________________________________
+//
+// Adds visualization of all tracks to the specified TPad with existing world coordinate system:
+// * x = Z_DET [mm] - position along drift electric field
+// * y = U, V or W [mm] - postion along a given strip direction wrt (X=0,Y=0)_DET
+// Also sets line and marker attributes such that they cannot be edited.
+//
+void DrawTracksOnUVWProjection(TPad *tpad, Track3D *aTrack, int dir, bool useUniformColor=false) {
+  if(!tpad || !aTrack || aTrack->getSegments().size()==0) return;
+  auto vertex_color = (useUniformColor ? kWhite : kMagenta);
+  std::vector<int> track_color={ kRed, kGreen, kBlue };
+  DrawVertexOnUVWProjection(tpad, aTrack->getSegments().at(0), dir, vertex_color);
+  auto track_index=0;
+  for(auto & aSeg: aTrack->getSegments()) {
+    auto color = (useUniformColor ? kWhite : track_color[track_index % track_color.size()] );
+    DrawEndpointOnUVWProjection(tpad, aSeg, dir, color);
+    track_index++;
+  }
+}
+// _______________________________________
+//
+// Adds arbitrary comment using NDC coordinates of the pad.
+//
+void DrawTLatexOnUVWProjection(TPad *tpad, const double xNDC, const double yNDC, const char *comment="") {
+  if(!tpad) return;
+  const auto text_color=kBlack;
+  const auto text_font=42; // Arial normal, precision=2 (scalable, size in NDC)
+  const auto text_size=0.05; // size in NDC
+  tpad->cd();
+  auto *t=new TLatex(xNDC, yNDC, comment);
+  t->SetTextAlign(22); // horizontal=centered, vertical=middle
+  t->SetNDC(true);
+  t->SetTextFont(text_font);
+  t->SetTextColor(text_color);
+  t->SetTextSize(text_size);
+  t->Draw();
+  t->ResetBit(kCannotPick); // prevents editing
+  tpad->Modified();
+}
 
 // _______________________________________
 //
@@ -581,6 +716,112 @@ typedef struct {Float_t eventId, runId, ntracks,
 
 // _______________________________________
 //
+// Divide existing TCanvas into multiple TPads to visualize tracks (initial and/or fitted)
+// separately for each U/V/W projection.
+//
+void DrawFitResults(TCanvas *tcanvas, // input TCanvas
+		    std::vector<std::shared_ptr<TH2D> > *refHistogramsInMM, // REF histogram used in the fit
+		    std::vector<std::shared_ptr<TH2D> > *fitHistogramsInMM=NULL, // result of the fit to be displayed
+		    Track3D *fitTrack=NULL, // result of the fit to be displayed
+		    Track3D *initialTrack=NULL, // intitial conditions used in the fit
+		    FitDebugData3prong *fit_debug_data=NULL) { // optional debug info to be displayed
+  if(!tcanvas || !refHistogramsInMM || refHistogramsInMM->size()>3) return;
+  const auto hasFitHistos=(fitHistogramsInMM && fitHistogramsInMM->size()==refHistogramsInMM->size());
+  const auto hasFitTrack=(fitTrack && fitTrack->getSegments().size()>0);
+  const auto hasInitTrack=(initialTrack && initialTrack->getSegments().size()>0);
+  const auto hasFitInfo=(fit_debug_data!=NULL);
+  const auto pad_width=500;
+  const auto pad_right_margin=0.15;
+  const auto pad_left_margin=0.15;
+  const auto npadx=refHistogramsInMM->size();
+  const auto npady=1+hasFitHistos*2; // REF + (FIT + DIFFERENCE)
+  tcanvas->Clear();
+  tcanvas->SetWindowSize(pad_width*npadx, pad_width*npady);
+  tcanvas->Divide(npadx,npady);
+
+  // reference histograms
+  int idir=definitions::projection_type::DIR_U;
+  auto ipad=1;
+  for(auto &it: *refHistogramsInMM) {
+    tcanvas->cd(ipad);
+    if(gPad) {
+      gPad->SetFrameFillColor(kAzure-6); // show empty bins in ligh blue (matches standard kBird palette)
+      gPad->SetLogx(false);
+      gPad->SetLogy(false);
+      gPad->SetLogz(false);
+      gPad->SetLeftMargin(pad_left_margin);
+      gPad->SetRightMargin(pad_right_margin);
+    }
+    auto h=(TH2D*)(it->DrawClone("COLZ"));
+    h->SetDirectory(0);
+    h->SetStats(false);
+    h->SetName(Form("ref_%s",h->GetName()));
+    h->SetTitle(Form("REF %s;%s;%s;%s",h->GetTitle(),h->GetXaxis()->GetTitle(),h->GetYaxis()->GetTitle(),h->GetZaxis()->GetTitle()));
+    // draw initial conditions
+    if(hasInitTrack) DrawTracksOnUVWProjection((TPad*)gPad, initialTrack, idir, true); // white markers/lines
+    // draw fit results
+    if(hasFitTrack) DrawTracksOnUVWProjection((TPad*)gPad, fitTrack, idir, false); // multi-color markrers/lines
+    ipad++;
+    idir++;
+  }
+
+  // fitted + residual histograms
+  std::vector<TH2D*> residualHistogramsInMM;
+  if(hasFitHistos) {
+    idir=definitions::projection_type::DIR_U;
+    ipad=npadx+1;
+    for(auto &it: *fitHistogramsInMM) {
+      tcanvas->cd(ipad);
+      if(gPad) {
+	gPad->SetFrameFillColor(kAzure-6); // show empty bins in ligh blue (matches standard kBird palette)
+	gPad->SetLogx(false);
+	gPad->SetLogy(false);
+	gPad->SetLogz(false);
+	gPad->SetLeftMargin(pad_left_margin);
+	gPad->SetRightMargin(pad_right_margin);
+      }
+      auto h=(TH2D*)(it->DrawClone("COLZ"));
+      h->SetDirectory(0);
+      h->SetStats(false);
+      h->SetName(Form("fit_%s",h->GetName()));
+      h->SetTitle(Form("FIT %s;%s;%s;%s",h->GetTitle(),h->GetXaxis()->GetTitle(),h->GetYaxis()->GetTitle(),h->GetZaxis()->GetTitle()));
+      if(hasFitTrack) DrawTracksOnUVWProjection((TPad*)gPad, fitTrack, idir);
+      ipad++;
+      idir++;
+      residualHistogramsInMM.push_back((TH2D*)h->Clone());
+    }
+    idir=definitions::projection_type::DIR_U;
+    ipad=2*npadx+1;
+    for(auto &it: residualHistogramsInMM) {
+      it->Add(refHistogramsInMM->at(idir).get(), -1.0); // subtract REFERENCE histogram from FIT histogram
+      tcanvas->cd(ipad);
+      if(gPad) {
+	gPad->SetLogx(false);
+	gPad->SetLogy(false);
+	gPad->SetLogz(false);
+	gPad->SetLeftMargin(pad_left_margin);
+	gPad->SetRightMargin(pad_right_margin);
+      }
+      auto h=(TH2D*)(it->DrawClone("COLZ"));
+      h->SetDirectory(0);
+      h->SetStats(false);
+      h->SetName(Form("diff_%s",h->GetName()));
+      h->SetTitle(Form("RESIDUAL %s;%s;%s;%s",h->GetTitle(),h->GetXaxis()->GetTitle(),h->GetYaxis()->GetTitle(),h->GetZaxis()->GetTitle()));
+      if(hasFitTrack) DrawTracksOnUVWProjection((TPad*)gPad, fitTrack, idir);
+      if(hasFitInfo) DrawTLatexOnUVWProjection((TPad*)gPad, 0.6, 0.2,
+					       Form("#splitline{#chi^{2} = %.5lg}{ndf = %ld}",
+						    (double)fit_debug_data->chi2,
+						    (long)fit_debug_data->ndf));
+      ipad++;
+      idir++;
+    }
+  }
+  tcanvas->Update();
+  tcanvas->Modified();
+}
+
+// _______________________________________
+//
 // This function: generates and fits N (1<=N<=3) straight pseudo-tracks.having common vertex
 // It returns CHI2 of the fit.
 // It also fills FitDebugData3prong structure.
@@ -593,9 +834,13 @@ double fit_Nprong(std::vector<std::shared_ptr<TH2D> > &referenceHistosInMM,
 		  std::vector<double> initialParameters, // starting points of parametric fit
 		  double maxDeviationInMM, // for setting parameter limits
 		  double tolerance,
-		  FitDebugData3prong &fit_debug_data
-		  ) {
-
+		  FitDebugData3prong &fit_debug_data,
+		  std::vector<std::shared_ptr<TH2D> > *fitted_histograms_coll=NULL, // optional pointer to a vector
+                                                                                    // of TH2D pointers for storing the
+                                                                                    // final fit result in UVW projections
+		  std::vector<std::set<int> > fixedParametersMask=std::vector<std::set<int> >()) { // optional list of
+                                                                                                   // parameters to be frozen
+                                                                                                   // at STEP1, STEP2, etc
   // initilize fitter
   //
   HypothesisFit myFit(referenceHistosInMM, calcResponse, calcRange, pidList);
@@ -681,32 +926,101 @@ double fit_Nprong(std::vector<std::shared_ptr<TH2D> > &referenceHistosInMM,
 
   bool ok=false;
 
-  ////////// STEP 1 - Minuit2 / Fumili2
-  //
-  for (int i = 0; i < myFit.getNparams(); ++i) {
-    std::cout<<"Releasing par["<<i<<"]"<<std::endl;
-    fitter.Config().ParSettings(i).Release();
-  }
-  // for (int i = 0; i < myFit.getNparams(); ++i) {
-  //   std::cout<<"Fixing par["<<i<<"]="<<fitter.Config().ParSettings(i).Value()<<std::endl;
-  //   fitter.Config().ParSettings(i).Fix();
-  // }
-  fitter.Config().MinimizerOptions().SetMinimizerType("Minuit2");
-  fitter.Config().MinimizerOptions().SetMinimizerAlgorithm("Fumili2");
-  fitter.Config().MinimizerOptions().SetMaxFunctionCalls(10000);
-  fitter.Config().MinimizerOptions().SetMaxIterations(1000);
-  fitter.Config().MinimizerOptions().SetStrategy(1);
-  fitter.Config().MinimizerOptions().SetTolerance(tolerance); // default=1e-4 for MC-MC comparison
-  fitter.Config().MinimizerOptions().SetPrecision( 1e-6 ); // 1e-4 //increased to speed up calculations
+  // perform fit either in single step, or in steps using extrnal list of frozen parameters per step
+  switch(fixedParametersMask.size()) {
+  case 0:
+    ////////// STEP 1 - Minuit2 / Fumili2
+    //
+    for (int i = 0; i < myFit.getNparams(); ++i) {
+      std::cout <<"Initial value of par[" << i << "]=" << fitter.Config().ParSettings(i).Value() <<" limits=["
+		<< fitter.Config().ParSettings(i).LowerLimit()<<", "
+		<< fitter.Config().ParSettings(i).UpperLimit()<<"]" << std::endl;
+      std::cout<<"Releasing par["<<i<<"]"<<std::endl;
+      fitter.Config().ParSettings(i).Release();
+    }
+    // for (int i = 0; i < myFit.getNparams(); ++i) {
+    //   std::cout<<"Fixing par["<<i<<"]="<<fitter.Config().ParSettings(i).Value()<<std::endl;
+    //   fitter.Config().ParSettings(i).Fix();
+    // }
+    fitter.Config().MinimizerOptions().SetMinimizerType("Minuit2");
+    fitter.Config().MinimizerOptions().SetMinimizerAlgorithm("Fumili2");
+    fitter.Config().MinimizerOptions().SetMaxFunctionCalls(10000);
+    fitter.Config().MinimizerOptions().SetMaxIterations(1000);
+    fitter.Config().MinimizerOptions().SetStrategy(1);
+    fitter.Config().MinimizerOptions().SetTolerance(tolerance); // default=1e-4 for MC-MC comparison
+    fitter.Config().MinimizerOptions().SetPrecision( 1e-6 ); // 1e-4 //increased to speed up calculations
 
-  // check fit results
-  ok = fitter.FitFCN();
-  if (!ok) {
-    std::cout<<__FUNCTION__<<": STEP 1 (Minuit2/Fumili2) --> Fit failed."<<std::endl;
-    //    return 1;
-  } else {
-    std::cout<<__FUNCTION__<<": STEP 1 (Minuit2/Fumili2) --> Fit ok."<<std::endl;
-  }
+    // check fit results
+    ok = fitter.FitFCN();
+    if (!ok) {
+      std::cout<<__FUNCTION__<<": STEP 1 (Minuit2/Fumili2) --> Fit failed."<<std::endl;
+      //    return 1;
+    } else {
+      std::cout<<__FUNCTION__<<": STEP 1 (Minuit2/Fumili2) --> Fit ok."<<std::endl;
+    }
+    break;
+
+  default:
+    auto istep=0;
+    for(auto &mask: fixedParametersMask) {
+      istep++;
+      ////////// STEP N - Minuit2 / Fumili2
+      //
+      if(istep>1) {
+	const ROOT::Fit::FitResult & result = fitter.Result();
+	std::cout << ">>>>>> STEP " << istep << " out of " << fixedParametersMask.size() << " <<<<<<" << std::endl;
+	result.Print(std::cout);
+      }
+      for (int i = 0; i < myFit.getNparams(); ++i) {
+	if(istep==1) {
+	  std::cout << "STEP " << istep << " out of " << fixedParametersMask.size()
+		    <<": Initial value of par[" << i << "]=" << fitter.Config().ParSettings(i).Value() <<" limits=["
+		    << fitter.Config().ParSettings(i).LowerLimit()<<", "
+		    << fitter.Config().ParSettings(i).UpperLimit()<<"]" << std::endl;
+	} else {
+	  const ROOT::Fit::FitResult & result = fitter.Result();
+	  auto parmin=fitter.Config().ParSettings(i).LowerLimit();
+	  auto parmax=fitter.Config().ParSettings(i).UpperLimit();
+	  auto parval=result.GetParams()[i];
+	  //	  fitter.Config().SetFromFitResult(result); // prepare starting point for next step
+	  std::cout << "STEP " << istep << " out of " << fixedParametersMask.size()
+		    <<": Current value of par[" << i << "]=" << fitter.Config().ParSettings(i).Value() <<" limits=["
+		    << fitter.Config().ParSettings(i).LowerLimit()<<", "
+		    << fitter.Config().ParSettings(i).UpperLimit()<<"]" << std::endl;
+	  fitter.Config().ParSettings(i).RemoveLimits();
+	  fitter.Config().ParSettings(i).SetLimits(parmin, parmax);
+	  fitter.Config().ParSettings(i).SetValue(parval);
+	}
+	fitter.Config().ParSettings(i).Release();
+	std::cout<<"STEP " << istep << " out of " << fixedParametersMask.size()
+		 << ": Releasing par["<<i<<"]  isFixed=" << fitter.Config().ParSettings(i).IsFixed()
+		 << " isBound=" << fitter.Config().ParSettings(i).IsBound() << std::endl;
+      }
+      for(auto &ipar: mask) {
+	fitter.Config().ParSettings(ipar).Fix();
+	std::cout<<"STEP " << istep << " out of " << fixedParametersMask.size()
+		 << ": Fixing par["<<ipar<<"]="<<fitter.Config().ParSettings(ipar).Value()
+		 << " isFixed=" << fitter.Config().ParSettings(ipar).IsFixed()
+		 << " isBound=" << fitter.Config().ParSettings(ipar).IsBound() << std::endl;
+      }
+      fitter.Config().MinimizerOptions().SetMinimizerType("Minuit2");
+      fitter.Config().MinimizerOptions().SetMinimizerAlgorithm("Fumili2");
+      fitter.Config().MinimizerOptions().SetMaxFunctionCalls(10000);
+      fitter.Config().MinimizerOptions().SetMaxIterations(1000);
+      fitter.Config().MinimizerOptions().SetStrategy(1);
+      fitter.Config().MinimizerOptions().SetTolerance(tolerance); // default=1e-4 for MC-MC comparison
+      fitter.Config().MinimizerOptions().SetPrecision( 1e-6 ); // 1e-4 //increased to speed up calculations
+
+      // check fit results
+      ok = fitter.FitFCN();
+      if (!ok) {
+	std::cout<<__FUNCTION__<<": STEP " << istep << " out of " << fixedParametersMask.size() << " (Minuit2/Fumili2) --> Fit failed."<<std::endl;
+	//    return 1;
+      } else {
+	std::cout<<__FUNCTION__<<": STEP " << istep << " out of " << fixedParametersMask.size() << " (Minuit2/Fumili2) --> Fit ok."<<std::endl;
+      }
+    }
+  };
 
   // get fit parameters
   const ROOT::Fit::FitResult & result = fitter.Result();
@@ -749,10 +1063,31 @@ double fit_Nprong(std::vector<std::shared_ptr<TH2D> > &referenceHistosInMM,
     fit_debug_data.yEndRecoErr[itrack] = parErr[5+itrack*3];
     fit_debug_data.zEndRecoErr[itrack] = parErr[6+itrack*3];
   }
+  // on request, store final fitted TH2D histograms as well
+  if(fitted_histograms_coll) {
+    for(auto &hist: *fitted_histograms_coll) {
+      if(hist) hist->Delete();
+    }
+    fitted_histograms_coll->resize(0);
+    auto chi2=myFit(parFit);
+
+    ////// DEBUG
+    std::cout << __FUNCTION__ << ": CHI2 evaluated at FINAL point: myFit()=" << chi2 << ", fitter.Result().Chi2()=" << result.Chi2() << std::endl;
+    ////// DEBUG
+
+    *fitted_histograms_coll = myFit.getFitHistogramsInMM();
+  }
   return result.MinFcnValue();
 }
 
 // _______________________________________
+//
+// Generates a sample of randomly generated pseudo-events
+// according to a given reaction hypothesis and strip response model
+// and then tries to reconstruct all tracks taking as a strting point
+// randomly smeared true vertex and true track endpoints.
+// Can be used to measure stability of the fit as a function
+// of divergence of the starting point from the true value.
 //
 int loop(const long maxIter=1, const int runId=1234) {
 
@@ -868,6 +1203,15 @@ int loop(const long maxIter=1, const int runId=1234) {
     treePtr[ifile]->Branch("EventInfo", &eventInfoPtr[ifile]);
   }
 
+#if(DEBUG_DRAW_FIT)
+  ////////// opens output ROOT file with TCanvas
+  //
+  const std::string rootFileNameCanvas = "fit_ref_histos.root";
+  TFile *outputCanvasROOTFile=new TFile(rootFileNameCanvas.c_str(), "RECREATE");
+  outputCanvasROOTFile->cd();
+  TCanvas *outputCanvas=new TCanvas("c_result", "c_result", 500, 500);
+#endif
+
   // sanity check before main loop
   if(pidList.size()<1 || pidList.size()>3) {
     std::cout << __FUNCTION__ << ": Invalid number of tracks for FitDebugData3prong!" << std::endl << std::flush;
@@ -977,8 +1321,14 @@ int loop(const long maxIter=1, const int runId=1234) {
     }
 
     // get fit results
+#if(DEBUG_DRAW_FIT)
+    std::vector<std::shared_ptr<TH2D> > fit_histograms;
+    //    static bool isFirst=true;
+    //    auto chi2 = fit_Nprong(referenceHistosInMM, aGeometry, aCalcResponse, aCalcRange, pidList, pStart, maxDeviationInMM, tolerance, fit_debug_data, (isFirst ? &fit_histograms : NULL));
+    auto chi2 = fit_Nprong(referenceHistosInMM, aGeometry, aCalcResponse, aCalcRange, pidList, pStart, maxDeviationInMM, tolerance, fit_debug_data, &fit_histograms);
+#else
     auto chi2 = fit_Nprong(referenceHistosInMM, aGeometry, aCalcResponse, aCalcRange, pidList, pStart, maxDeviationInMM, tolerance, fit_debug_data);
-
+#endif
     // compare TRUE and RECO observables
     std::cout << "Final FCN value " << fit_debug_data.chi2
 	      << " (Status=" << fit_debug_data.status << ", Ncalls=" << fit_debug_data.ncalls << ", Ndf=" << fit_debug_data.ndf << ")" << std::endl;
@@ -1023,6 +1373,18 @@ int loop(const long maxIter=1, const int runId=1234) {
       eventInfoPtr[ifile]->SetEventId(iter);
       treePtr[ifile]->Fill();
     }
+
+    // optionally draw resulting histograms as well
+#if(DEBUG_DRAW_FIT)
+    // if(isFirst) {
+    outputCanvasROOTFile->cd();
+    DrawFitResults(outputCanvas, &referenceHistosInMM, &fit_histograms, trackPtr[1], trackPtr[0], &fit_debug_data);
+    outputCanvas->SetName(Form("c_run%ld_evt%ld", (long)fit_debug_data.runId, (long)fit_debug_data.eventId));
+    outputCanvas->SetTitle(outputCanvas->GetName());
+    outputCanvas->Write();
+    // isFirst=false;
+    // }
+#endif
   }
 
   // measure elapsed time
@@ -1042,6 +1404,9 @@ int loop(const long maxIter=1, const int runId=1234) {
   outputROOTFile->cd();
   tree->Write("",TObject::kOverwrite);
   outputROOTFile->Close();
+#if(DEBUG_DRAW_FIT)
+  outputCanvasROOTFile->Close();
+#endif
 
   return 0;
 }
@@ -1052,7 +1417,7 @@ int loop(const long maxIter=1, const int runId=1234) {
 // Events from the two sources are are matched by their {runId, eventId}.
 //
 int loop_Graw_Track3D(const char *recoInputFile, // Track3D collection with initial RECO data corresponding to GRAW file(s)
-		      const char *grawInputFile, // comma-separated list of GRAW files
+		      const char *rawInputFile, // single ROOT file, or single GRAW, or comma-separated list of GRAW files
 		      unsigned long firstEvent=0,        // first eventId to process
 		      unsigned long lastEvent=0,         // last eventId to process (0 = up to the end)
 		      const char *geometryFile="geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat",
@@ -1064,7 +1429,9 @@ int loop_Graw_Track3D(const char *recoInputFile, // Track3D collection with init
 		      bool flag_fiducial_cuts=true, // enable detector/electronics fiducial cuts as in HIGS_analysis
 		      bool flag_1prong=true, // enable fitting of 1-prong events
 		      bool flag_2prong=true, // enable fitting of 2-prong events
-		      bool flag_3prong=true  // enable fitting of 3-prong events
+		      bool flag_3prong=true,  // enable fitting of 3-prong events
+		      bool flag_clustering=true,  // enable fitting of clustered RAW data
+		      bool flag_subtract_pedestals=true  // enable pedestal subtraction in case of GRAW files
 		      ) {
   if (!gROOT->GetClass("GeometryTPC")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
@@ -1084,7 +1451,7 @@ int loop_Graw_Track3D(const char *recoInputFile, // Track3D collection with init
 
   /////////// set parameters of EventTPC clustering
   //
-  filter_type filterType = filter_type::threshold;
+  filter_type filterType = (flag_clustering ? filter_type::threshold : filter_type::none);
   //
   // NOTE: ptree::find() with nested nodes does not work properly in interactive ROOT mode!
   //       Below is a workaround employing simple node.
@@ -1098,7 +1465,7 @@ int loop_Graw_Track3D(const char *recoInputFile, // Track3D collection with init
   // aConfig.put("pedestal.minSignalCell", 5);
   // aConfig.put("pedestal.maxSignalCell", 506);
   boost::property_tree::ptree pedestalConfig, hitFilterConfig;
-  hitFilterConfig.put("recoClusterEnable", true);
+  hitFilterConfig.put("recoClusterEnable", flag_clustering);
   hitFilterConfig.put("recoClusterThreshold", 35.0); // [ADC units] - seed hits
   hitFilterConfig.put("recoClusterDeltaStrips", 2); // band around seed hit in strip units
   hitFilterConfig.put("recoClusterDeltaTimeCells", 5); // band around seed hit in time cells
@@ -1212,50 +1579,65 @@ int loop_Graw_Track3D(const char *recoInputFile, // Track3D collection with init
 
   ////////// initialize EventSource
   //
-  const char del = ','; // delimiter character
-  std::set<std::string> fileNameList; // list of unique strings
-  std::stringstream sstream(grawInputFile);
-  std::string fileName;
-  while (std::getline(sstream, fileName, del)) {
-    if(fileName.size()>0) fileNameList.insert(fileName);
-  };
-  const int frameLoadRange=150; // important for single GRAW file mode
-  const unsigned int AsadNboards=aGeometry->GetAsadNboards();
   std::shared_ptr<EventSourceBase> myEventSource;
-  if(fileNameList.size()==AsadNboards) {
-    myEventSource = std::make_shared<EventSourceMultiGRAW>(geometryFile);
-  } else if (fileNameList.size()==1) {
-    myEventSource = std::make_shared<EventSourceGRAW>(geometryFile);
-    dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(frameLoadRange);
+  if(std::string(rawInputFile).find(".graw")!=std::string::npos){
+#ifdef WITH_GET
+   const char del = ','; // delimiter character
+    std::set<std::string> fileNameList; // list of unique strings
+    std::stringstream sstream(rawInputFile);
+    std::string fileName;
+    while (std::getline(sstream, fileName, del)) {
+      if(fileName.size()>0) fileNameList.insert(fileName);
+    };
+    const int frameLoadRange=150; // important for single GRAW file mode
+    const unsigned int AsadNboards=aGeometry->GetAsadNboards();
+    if(fileNameList.size()==AsadNboards) {
+      myEventSource = std::make_shared<EventSourceMultiGRAW>(geometryFile);
+    } else if (fileNameList.size()==1) {
+      myEventSource = std::make_shared<EventSourceGRAW>(geometryFile);
+      dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(frameLoadRange);
+    } else {
+      std::cerr << __FUNCTION__ << KRED << ": Invalid number of GRAW files!" << RST << std::endl << std::flush;
+      return 1;
+    }
+
+    // initialize pedestal removal parameters for EventSource
+    // NOTE: ptree::find() with nested nodes does not work properly in interactive ROOT mode!
+    //       Below is a workaround employing simple node.
+    // if(aConfig.find("pedestal")!=aConfig.not_found()) {
+    //   dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setRemovePedestal(false);
+    //   dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(pedestalConfig);
+    //   dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(aConfig.find("pedestal")->second);
+    // }
+    // else {
+    //   std::cerr << __FUNCTION__ << KRED << ": Some pedestal configuration options are missing!" << RST << std::endl << std::flush;
+    //   return 1;
+    // }
+    dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setRemovePedestal(flag_subtract_pedestals);
+    dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(pedestalConfig);
+#else
+    std::cerr << __FUNCTION__ << KRED << ": Program compiled without GET libraries!" << RST << std::endl << std::flush;
+    return 1;
+#endif
+  } else if(std::string(rawInputFile).find(".root")!=std::string::npos){
+    myEventSource = std::make_shared<EventSourceROOT>(geometryFile);
   } else {
-    std::cerr << __FUNCTION__ << KRED << ": Invalid number of GRAW files!" << RST << std::endl << std::flush;
+    std::cerr << __FUNCTION__ << KRED << ": Invalid raw-data input file: " << RST << rawInputFile << std::endl << std::flush;
     return 1;
   }
-
-  // initialize pedestal removal parameters for EventSource
-  // NOTE: ptree::find() with nested nodes does not work properly in interactive ROOT mode!
-  //       Below is a workaround employing simple node.
-  // if(aConfig.find("pedestal")!=aConfig.not_found()) {
-  //   dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setRemovePedestal(false);
-  //   dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(pedestalConfig);
-  //   dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(aConfig.find("pedestal")->second);
-  // }
-  // else {
-  //   std::cerr << __FUNCTION__ << KRED << ": Some pedestal configuration options are missing!" << RST << std::endl << std::flush;
-  //   return 1;
-  // }
-  dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setRemovePedestal(true);
-  dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(pedestalConfig);
-
-  myEventSource->loadDataFile(grawInputFile);
+  myEventSource->loadDataFile(rawInputFile);
   std::cout << "File with " << myEventSource->numberOfEntries() << " frames loaded."
 	    << std::endl;
   myEventSource->loadFileEntry(0); // load 1st frame (NOTE: otherwise LoadEventId does not work)
 
-  // DEBUG - parsing RunId from file name
-  auto id = RunIdParser(grawInputFile);
-  std::cout << "Parsing whole file name list: " << grawInputFile
-	    << ": run=" << id.runId() << ", chunk=" << id.fileId() << ", cobo=" << id.CoBoId() << ", asad=" << id.AsAdId() << std::endl;
+  // DEBUG - parsing RunId from GRAW file name
+#ifdef WITH_GET
+  if(dynamic_cast<EventSourceGRAW*>(myEventSource.get())) {
+    auto id = RunIdParser(rawInputFile);
+    std::cout << "Parsing whole file name list: " << rawInputFile
+	      << ": run=" << id.runId() << ", chunk=" << id.fileId() << ", cobo=" << id.CoBoId() << ", asad=" << id.AsAdId() << std::endl;
+  }
+#endif
   // DEBUG
 
   /////////// open output ROOT files
@@ -1283,6 +1665,15 @@ int loop_Graw_Track3D(const char *recoInputFile, // Track3D collection with init
   outTree->Branch("RecoEvent", &outTrack);
   eventraw::EventInfo* outEventInfo = new eventraw::EventInfo();
   outTree->Branch("EventInfo", &outEventInfo);
+
+#if(DEBUG_DRAW_FIT)
+  ////////// opens output ROOT file with TCanvas
+  //
+  const std::string rootFileNameCanvas = "fit_ref_histos.root";
+  TFile *outputCanvasROOTFile=new TFile(rootFileNameCanvas.c_str(), "RECREATE");
+  outputCanvasROOTFile->cd();
+  TCanvas *outputCanvas=new TCanvas("c_result", "c_result", 500, 500);
+#endif
 
   ////////// measure elapsed time
   //
@@ -1350,6 +1741,12 @@ int loop_Graw_Track3D(const char *recoInputFile, // Track3D collection with init
       continue;
     }
 
+    /////// assign correct geometry pointer to initial track segments
+    //
+    for(auto &aSeg: aTrack->getSegments()) {
+      aSeg.setGeometry(aGeometry);
+    }
+
     // get sorted list of tracks (descending order by track length)
     auto coll=aTrack->getSegments();
     std::sort(coll.begin(), coll.end(),
@@ -1375,6 +1772,10 @@ int loop_Graw_Track3D(const char *recoInputFile, // Track3D collection with init
     default:;
     };
 #endif
+
+    /////// DEBUG
+    //    if(nTracks!=3) continue; // accept only 3-prongs
+    /////// DEBUG
 
     //////// apply fiducial cuts on initial input tracks using HIGS_analysis::eventFilter method
     //
@@ -1412,7 +1813,7 @@ int loop_Graw_Track3D(const char *recoInputFile, // Track3D collection with init
     aEventTPC->setHitFilterConfig(filterType, hitFilterConfig);
     std::vector<std::shared_ptr<TH2D> > referenceHistosInMM(3);
     for(auto strip_dir=0; strip_dir<3; strip_dir++) {
-      referenceHistosInMM[strip_dir] = aEventTPC->get2DProjection(get2DProjectionType(strip_dir), filter_type::threshold, scale_type::mm);
+      referenceHistosInMM[strip_dir] = aEventTPC->get2DProjection(get2DProjectionType(strip_dir), filterType, scale_type::mm);
     }
 
     //////// create TrackSegment3D collections with TRUE/INIT information
@@ -1472,8 +1873,28 @@ int loop_Graw_Track3D(const char *recoInputFile, // Track3D collection with init
 						      pow(pStart[6]-reference_endpoint[itrack].Z(), 2) ); // mm
     }
 
+    // prepare fitting strategy for 3-prong case
+    std::vector<std::set<int> > fixedParametersMask;
+    if(nTracks==3) {
+      fixedParametersMask.push_back({1, 2, 4, 5, 7, 8, 10, 11});              // STEP 1: fix only XY_DET coordinates
+      fixedParametersMask.push_back({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}); // STEP 2: fix vertex + all endpoints
+      fixedParametersMask.push_back({4, 5, 6, 7, 8, 9, 10, 11, 12});          // STEP 3: fix all endpoints
+      fixedParametersMask.push_back({1, 2, 3, 7, 8, 9, 10, 11, 12});          // STEP 4: fix vertex + track 2 & 3
+      fixedParametersMask.push_back({1, 2, 3, 4, 5, 6, 10, 11, 12});          // STEP 5: fix vertex + track 1 & 3
+      fixedParametersMask.push_back({1, 2, 3, 4, 5, 6, 7, 8, 9});             // STEP 6: fix vertex + track 1 & 2
+      fixedParametersMask.push_back({4, 5, 6, 7, 8, 9, 10, 11, 12});          // STEP 7: fix all endpoints
+      fixedParametersMask.push_back({1, 2, 3});                               // STEP 8: fix vertex
+      fixedParametersMask.push_back({0});                                     // STEP 9: all free but scale
+      fixedParametersMask.push_back(std::set<int>());                         // STEP 10: all free
+    }
+
     // get fit results
-    auto chi2 = fit_Nprong(referenceHistosInMM, aGeometry, aCalcResponse, aCalcRange, pidList, pStart, maxDeviationInMM, tolerance, fit_debug_data);
+#if(DEBUG_DRAW_FIT)
+    std::vector<std::shared_ptr<TH2D> > fit_histograms;
+    auto chi2 = fit_Nprong(referenceHistosInMM, aGeometry, aCalcResponse, aCalcRange, pidList, pStart, maxDeviationInMM, tolerance, fit_debug_data, &fit_histograms, fixedParametersMask);
+#else
+    auto chi2 = fit_Nprong(referenceHistosInMM, aGeometry, aCalcResponse, aCalcRange, pidList, pStart, maxDeviationInMM, tolerance, fit_debug_data, NULL, fixedParametersMask);
+#endif
     fitted_event_count++;
 
     // compare TRUE and RECO observables
@@ -1521,11 +1942,45 @@ int loop_Graw_Track3D(const char *recoInputFile, // Track3D collection with init
     outEventInfo->SetEventId(eventId);
     outTree->Fill();
 
+    //////// optionally draw resulting histograms as well
+    //
+#if(DEBUG_DRAW_FIT)
+    ////// DEBUG
+    if(aTrack) for(auto &aSeg: aTrack->getSegments()) {
+	std::cout << __FUNCTION__ << ": ATRACK initial track: vtx=[" << aSeg.getStart().X()
+		  << ", " << aSeg.getStart().Y()
+		  << ", " << aSeg.getStart().Z()
+		  << "], end=[" << aSeg.getEnd().X()
+		  << ", " << aSeg.getEnd().Y()
+		  << ", " << aSeg.getEnd().Z() << "], is_geometry_null=" << (bool)(aSeg.getGeometry()==NULL) << std::endl;
+      }
+    if(aTrack) for(auto &aSeg: coll) {
+	std::cout << __FUNCTION__ << ": COLL initial track: vtx=[" << aSeg.getStart().X()
+		  << ", " << aSeg.getStart().Y()
+		  << ", " << aSeg.getStart().Z()
+		  << "], end=[" << aSeg.getEnd().X()
+		  << ", " << aSeg.getEnd().Y()
+		  << ", " << aSeg.getEnd().Z() << "], is_geometry_null=" << (bool)(aSeg.getGeometry()==NULL) << std::endl;
+      }
+    ////// DEBUG
+
+    outputCanvasROOTFile->cd();
+    DrawFitResults(outputCanvas, &referenceHistosInMM, &fit_histograms, &fit_track3d, aTrack, &fit_debug_data);
+    outputCanvas->SetName(Form("c_run%ld_evt%ld", runId, eventId));
+    outputCanvas->SetTitle(outputCanvas->GetName());
+    outputCanvas->Write();
+    aFile->cd();
+#endif
+
     //////// discard UVW projectons that are not needed anymore
     //
     for(auto strip_dir=0; strip_dir<3; strip_dir++) {
       referenceHistosInMM[strip_dir].reset();
     }
+
+    ////// DEBUG
+    if(fitted_event_count==1) break; // stop after 1st fitted 3-prong
+    ////// DEBUG
 
   } // end of main processing loop
 
@@ -1546,6 +2001,353 @@ int loop_Graw_Track3D(const char *recoInputFile, // Track3D collection with init
   debugTree->Write("",TObject::kOverwrite);
   debugFile->Close();
   aFile->Close();
+#if(DEBUG_DRAW_FIT)
+  outputCanvasROOTFile->Close();
+#endif
+  return 0;
+}
+
+// _______________________________________
+//
+// Overlays Track3D from RECO file on top of PEventTPC raw-data deposits from GRAW file.
+// Pedestal calculation and clustering settings have to be adjusted for the real-data and the Monte Carlo cases.
+//
+int loop_Graw_Track3D_Display(const char *recoInputFile, // Track3D collection with RECO/MC data corresponding to RAW file
+			      const char *rawInputFile, // single ROOT file, or single GRAW, or comma-separated list of GRAW files
+			      unsigned long firstEvent=0,        // first eventId to process
+			      unsigned long lastEvent=0,         // last eventId to process (0 = up to the end)
+			      const char *geometryFile="geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat",
+			      double beamEnergy_MeV=13.1,
+			      double pressure_mbar=250.0,
+			      double temperature_K=273.15+20,
+			      bool flag_fiducial_cuts=true, // enable detector/electronics fiducial cuts as in HIGS_analysis
+			      bool flag_1prong=true, // enable fitting of 1-prong events
+			      bool flag_2prong=true, // enable fitting of 2-prong events
+			      bool flag_3prong=true, // enable fitting of 3-prong events
+			      bool flag_clustering=false,  // enable displaying clustered RAW data
+			      bool flag_subtract_pedestals=true  // enable pedestal subtraction in case of GRAW files
+			      ) {
+  if (!gROOT->GetClass("GeometryTPC")){
+    R__LOAD_LIBRARY(libTPCDataFormats.so);
+  }
+  if (!gROOT->GetClass("IonRangeCalculator")){
+    R__LOAD_LIBRARY(libTPCUtilities.so);
+  }
+  if (!gROOT->GetClass("StripResponseCalculator")){
+    R__LOAD_LIBRARY(libTPCReconstruction.so);
+  }
+  if (!gROOT->GetClass("EventSourceGRAW")){
+    R__LOAD_LIBRARY(libTPCGrawToROOT.so);
+  }
+  if (!gROOT->GetClass("HIGGS_analysis")){
+    R__LOAD_LIBRARY(libTPCAnalysis.so);
+  }
+
+  /////////// set parameters of EventTPC clustering
+  //
+  filter_type filterType = (flag_clustering ? filter_type::threshold : filter_type::none);
+  //
+  // NOTE: ptree::find() with nested nodes does not work properly in interactive ROOT mode!
+  //       Below is a workaround employing simple node.
+  // boost::property_tree::ptree aConfig;
+  // aConfig.put("hitFilter.recoClusterEnable", true);
+  // aConfig.put("hitFilter.recoClusterThreshold", 35.0); // [ADC units] - seed hits
+  // aConfig.put("hitFilter.recoClusterDeltaStrips", 2); // band around seed hit in strip units
+  // aConfig.put("hitFilter.recoClusterDeltaTimeCells", 5); // band around seed hit in time cells
+  // aConfig.put("pedestal.minPedestalCell", 5);
+  // aConfig.put("pedestal.maxPedestalCell", 25);
+  // aConfig.put("pedestal.minSignalCell", 5);
+  // aConfig.put("pedestal.maxSignalCell", 506);
+  boost::property_tree::ptree pedestalConfig, hitFilterConfig;
+  hitFilterConfig.put("recoClusterEnable", flag_clustering);
+  hitFilterConfig.put("recoClusterThreshold", 35.0); // [ADC units] - seed hits
+  hitFilterConfig.put("recoClusterDeltaStrips", 2); // band around seed hit in strip units
+  hitFilterConfig.put("recoClusterDeltaTimeCells", 5); // band around seed hit in time cells
+  pedestalConfig.put("minPedestalCell", 5);
+  pedestalConfig.put("maxPedestalCell", 25);
+  pedestalConfig.put("minSignalCell", 5);
+  pedestalConfig.put("maxSignalCell", 506);
+  //  std::cout << "BOOST_PTREE: " << aConfig.get<bool>("hitFilter.recoClusterEnable", false) << std::endl;
+  //  std::cout << "BOOST_PTREE: " << aConfig.get<bool>("hitFilter.recoClusterEnable") << std::endl;
+  //  std::cout << "BOOST_PTREE: " << aConfig.count("hitFilter.recoClusterEnable") << std::endl;
+  //  std::cout << "BOOST_PTREE: " << (bool)(aConfig.find("hitFilter.recoClusterEnable")==aConfig.not_found()) << std::endl;
+  //  std::cout << "BOOST_PTREE: " << (bool)(aConfig.find("hitFilter")==aConfig.not_found()) << std::endl;
+
+  /////////// initialize TPC geometry, electronic parameters and gas conditions
+  //
+  auto aGeometry = std::make_shared<GeometryTPC>(geometryFile, false);
+  aGeometry->SetTH2PolyPartition(3*20,2*20); // higher TH2Poly granularity speeds up finding reference nodes
+
+  //////// initialize event filter
+  //
+  auto beamDirPreset=BeamDirection::MINUS_X;
+  TVector3 beamDir; // unit vector in DET coordinate system
+  switch(beamDirPreset){
+  case BeamDirection::X :
+    beamDir = TVector3(1,0,0);
+    break;
+  case BeamDirection::MINUS_X :
+    beamDir = TVector3(-1,0,0);
+    break;
+  default:
+    std::cerr<<"ERROR: Wrong beam direction preset!"<<std::endl;
+    return 1;
+  }
+  HIGGS_analysis myAnalysisFilter(aGeometry, beamEnergy_MeV, beamDir, pressure_mbar, temperature_K); // just for filtering
+
+  ////////// opens input ROOT file with tracks (Track3D objects)
+  //
+  // NOTE: Tree's and branch names are kept the same as in HIGS_analysis
+  //       for easy MC-reco comparison. To be replaced with better
+  //       class/object in future toy MC.
+  TFile *aFile = new TFile(recoInputFile, "OLD");
+  TTree *aTree=(TTree*)aFile->Get("TPCRecoData");
+  if(!aTree) {
+    std::cerr<<"ERROR: Cannot find 'TPCRecoData' tree!"<<std::endl;
+    return 1;
+  }
+  Track3D *aTrack = new Track3D();
+  TBranch *aBranch  = aTree->GetBranch("RecoEvent");
+  if(!aBranch) {
+    std::cerr<<"ERROR: Cannot find 'RecoEvent' branch!"<<std::endl;
+    return 1;
+  }
+  aBranch->SetAddress(&aTrack);
+  eventraw::EventInfo *aEventInfo = 0;
+  TBranch *aBranchInfo = aTree->GetBranch("EventInfo");
+  if(!aBranchInfo) {
+    std::cerr<<"ERROR: Cannot find 'EventInfo' branch!"<<std::endl;
+    return 1;
+  }
+  aEventInfo = new eventraw::EventInfo();
+  aBranchInfo->SetAddress(&aEventInfo);
+
+  const unsigned int nEntries = aTree->GetEntries();
+
+  ////////// sort input tree in ascending order of {runID, eventID}
+  //
+  TTreeIndex *I=NULL;
+  Long64_t* index=NULL;
+  if(aBranchInfo) {
+    aTree->BuildIndex("runId", "eventId");
+    I=(TTreeIndex*)aTree->GetTreeIndex(); // get the tree index
+    index=I->GetIndex();
+  }
+
+  ////////// initialize EventSource
+  //
+  std::shared_ptr<EventSourceBase> myEventSource;
+  if(std::string(rawInputFile).find(".graw")!=std::string::npos){
+#ifdef WITH_GET
+   const char del = ','; // delimiter character
+    std::set<std::string> fileNameList; // list of unique strings
+    std::stringstream sstream(rawInputFile);
+    std::string fileName;
+    while (std::getline(sstream, fileName, del)) {
+      if(fileName.size()>0) fileNameList.insert(fileName);
+    };
+    const int frameLoadRange=150; // important for single GRAW file mode
+    const unsigned int AsadNboards=aGeometry->GetAsadNboards();
+    if(fileNameList.size()==AsadNboards) {
+      myEventSource = std::make_shared<EventSourceMultiGRAW>(geometryFile);
+    } else if (fileNameList.size()==1) {
+      myEventSource = std::make_shared<EventSourceGRAW>(geometryFile);
+      dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(frameLoadRange);
+    } else {
+      std::cerr << __FUNCTION__ << KRED << ": Invalid number of GRAW files!" << RST << std::endl << std::flush;
+      return 1;
+    }
+
+    // initialize pedestal removal parameters for EventSource
+    // NOTE: ptree::find() with nested nodes does not work properly in interactive ROOT mode!
+    //       Below is a workaround employing simple node.
+    // if(aConfig.find("pedestal")!=aConfig.not_found()) {
+    //   dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setRemovePedestal(false);
+    //   dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(pedestalConfig);
+    //   dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(aConfig.find("pedestal")->second);
+    // }
+    // else {
+    //   std::cerr << __FUNCTION__ << KRED << ": Some pedestal configuration options are missing!" << RST << std::endl << std::flush;
+    //   return 1;
+    // }
+    dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setRemovePedestal(flag_subtract_pedestals);
+    dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(pedestalConfig);
+#else
+    std::cerr << __FUNCTION__ << KRED << ": Program compiled without GET libraries!" << RST << std::endl << std::flush;
+    return 1;
+#endif
+  } else if(std::string(rawInputFile).find(".root")!=std::string::npos){
+    myEventSource = std::make_shared<EventSourceROOT>(geometryFile);
+  } else {
+    std::cerr << __FUNCTION__ << KRED << ": Invalid raw-data input file: " << RST << rawInputFile << std::endl << std::flush;
+    return 1;
+  }
+  myEventSource->loadDataFile(rawInputFile);
+  std::cout << "File with " << myEventSource->numberOfEntries() << " frames loaded."
+	    << std::endl;
+  myEventSource->loadFileEntry(0); // load 1st frame (NOTE: otherwise LoadEventId does not work)
+
+  ////////// initialize output ROOT file with TCanvas
+  //
+  const std::string rootFileNameCanvas = "fit_ref_histos.root";
+  TFile *outputCanvasROOTFile=new TFile(rootFileNameCanvas.c_str(), "RECREATE");
+  outputCanvasROOTFile->cd();
+  TCanvas *outputCanvas=new TCanvas("c_result", "c_result", 500, 500);
+
+  ////////// main event processing loop
+  //
+  long maxevents=-1; // scan all events
+  long unsigned displayed_event_count=0; // actual number of displayed events
+  maxevents=(maxevents<=0 ? nEntries : std::min((unsigned int)maxevents, nEntries));
+  for(auto ievent=0; ievent<maxevents; ievent++) {
+    if(index) {
+      aBranch->GetEntry(index[ievent]);
+      aBranchInfo->GetEntry(index[ievent]);
+    } else {
+      aBranch->GetEntry(ievent);
+      aBranchInfo->GetEntry(ievent);
+    }
+
+    const unsigned long runId = (unsigned long)aEventInfo->GetRunId();
+    const unsigned long eventId = (unsigned long)aEventInfo->GetEventId();
+    const int nTracks = aTrack->getSegments().size();
+
+    std::cout << "#####################" << std::endl
+	      << "#### EVENT PLAYER ITER=" << ievent<< ", RUN=" << runId << ", EVENT=" << eventId << ", NTRACKS=" << nTracks << std::endl
+	      << "#####################" << std::endl;
+
+
+    if((firstEvent>0 && eventId<firstEvent) || (lastEvent>0 && eventId>lastEvent)) {
+      std::cout << __FUNCTION__ << KRED << ": Skipping event outside allowed eventId range: run=" << runId << ", event=" << eventId
+		<< RST << std::endl << std::flush;
+      continue;
+    }
+
+    switch(nTracks) {
+    case 3:
+      if(!flag_3prong) { // ignore 3-prong events on request
+	std::cout << __FUNCTION__ << KRED << ": Skipping event with 3-prong tracks: run=" << runId << ", event=" << eventId
+		  << RST << std::endl << std::flush;
+	continue;
+      }
+      break;
+    case 2:
+      if(!flag_2prong) { // ignore 2-prong events on request
+	std::cout << __FUNCTION__ << KRED << ": Skipping event with 2-prong tracks: run=" << runId << ", event=" << eventId
+		  << RST << std::endl << std::flush;
+	continue;
+      }
+      break;
+    case 1:
+      if(!flag_1prong) { // ignore 1-prong events on request
+	std::cout << __FUNCTION__ << KRED << ": Skipping event with 1-prong tracks: run=" << runId << ", event=" << eventId
+		  << RST << std::endl << std::flush;
+	continue;
+      }
+      break;
+    default:;
+    };
+
+    // sanity check
+    if(nTracks<1 || nTracks>3) {
+      std::cout << __FUNCTION__ << KRED << ": Skipping event with wrong number of initial tracks: run=" << runId << ", event=" << eventId
+		<< RST << std::endl << std::flush;
+      continue;
+    }
+
+    /////// assign correct geometry pointer to initial track segments
+    //
+    for(auto &aSeg: aTrack->getSegments()) {
+      aSeg.setGeometry(aGeometry);
+    }
+
+    // get sorted list of tracks (descending order by track length)
+    auto coll=aTrack->getSegments();
+    std::sort(coll.begin(), coll.end(),
+	      [](const TrackSegment3D& a, const TrackSegment3D& b) {
+		return a.getLength() > b.getLength();
+	      });
+
+#if(MISSING_PID_REPLACEMENT_ENABLE) // TODO - to be parameterized
+    // assign missing PID to REF data file by track length
+    switch(nTracks) {
+    case 3:
+      if(coll.front().getPID()==UNKNOWN) coll.front().setPID(MISSING_PID_3PRONG_LEADING); // TODO - to be parameterized
+      if(coll.at(1).getPID()==UNKNOWN) coll.at(1).setPID(MISSING_PID_3PRONG_MIDDLE); // TODO - to be parameterized
+      if(coll.back().getPID()==UNKNOWN) coll.back().setPID(MISSING_PID_3PRONG_TRAILING); // TODO - to be parameterized
+      break;
+    case 2:
+      if(coll.front().getPID()==UNKNOWN) coll.front().setPID(MISSING_PID_2PRONG_LEADING); // TODO - to be parameterized
+      if(coll.back().getPID()==UNKNOWN) coll.back().setPID(MISSING_PID_2PRONG_TRAILING); // TODO - to be parameterized
+      break;
+    case 1:
+      if(coll.front().getPID()==UNKNOWN) coll.front().setPID(MISSING_PID_1PRONG); // TODO - to be parameterized
+      break;
+    default:;
+    };
+#endif
+
+    /////// DEBUG
+    //   if(nTracks!=3) continue; // accept only 3-prongs
+    /////// DEBUG
+
+    //////// apply fiducial cuts on initial input tracks using HIGS_analysis::eventFilter method
+    //
+    if(!myAnalysisFilter.eventFilter(aTrack)) {
+      std::cout << __FUNCTION__ << KRED << ": Skipping event that failed HIGS_analysis quality cuts: run=" << runId << ", event=" << eventId
+		<< RST << std::endl << std::flush;
+      continue;
+    }
+
+    // load EventTPC to be displayed from the RAW file
+    myEventSource->loadEventId(eventId);
+    auto aEventTPC = myEventSource->getCurrentEvent();
+    auto currentEventId = aEventTPC->GetEventInfo().GetEventId();
+    auto currentRunId = aEventTPC->GetEventInfo().GetRunId();
+
+    // sanity check
+    if(currentRunId!=runId || currentEventId!=eventId) {
+      std::cout << __FUNCTION__ << KRED << ": Skipping event with missing RAW data: run=" << runId << ", event=" << eventId
+		<< RST << std::endl << std::flush;
+      continue;
+    }
+
+    std::cout << "EventInfo: " << aEventTPC->GetEventInfo()<<std::endl;
+
+    // prepare UVW projections to be displayed
+    // NOTE: ptree::find() with nested nodes does not work properly in interactive ROOT mode!
+    //       Below is a workaround employing simple node.
+    //    aEventTPC->setHitFilterConfig(filterType, aConfig.find("hitFilter")->second);
+    aEventTPC->setHitFilterConfig(filterType, hitFilterConfig);
+    std::vector<std::shared_ptr<TH2D> > referenceHistosInMM(3);
+    for(auto strip_dir=0; strip_dir<3; strip_dir++) {
+      referenceHistosInMM[strip_dir] = aEventTPC->get2DProjection(get2DProjectionType(strip_dir), filterType, scale_type::mm);
+    }
+
+    //////// display UVW histograms
+    //
+    outputCanvasROOTFile->cd();
+    DrawFitResults(outputCanvas, &referenceHistosInMM, NULL, NULL, aTrack, NULL);
+    outputCanvas->SetName(Form("c_run%ld_evt%ld", runId, eventId));
+    outputCanvas->SetTitle(outputCanvas->GetName());
+    outputCanvas->Write();
+    aFile->cd();
+    displayed_event_count++;
+
+    //////// discard UVW projectons that are not needed anymore
+    //
+    for(auto strip_dir=0; strip_dir<3; strip_dir++) {
+      referenceHistosInMM[strip_dir].reset();
+    }
+
+    ////// DEBUG
+    //    if(displayed_event_count==1) break; // stop after 1st displayed event
+    ////// DEBUG
+
+  } // end of main processing loop
+
+  aFile->Close();
+  outputCanvasROOTFile->Close();
 
   return 0;
 }
