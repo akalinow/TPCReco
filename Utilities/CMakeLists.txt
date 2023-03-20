@@ -24,5 +24,6 @@ target_link_libraries(grawls PRIVATE Boost::program_options ${MODULE_NAME})
 reco_install_targets(grawls ${MODULE_NAME})
 reco_install_root_dict(${MODULE_NAME})
 install(PROGRAMS $<1:${CMAKE_CURRENT_SOURCE_DIR}/python/> DESTINATION python)
+install(DIRECTORY examples DESTINATION ${CMAKE_INSTALL_PREFIX})
 
 reco_add_test_subdirectory(test)
