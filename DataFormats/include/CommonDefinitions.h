@@ -32,6 +32,13 @@ enum  projection_type{
   DIR_TIME,
 };
 
+enum class event_type {
+	EventSourceROOT,
+	EventSourceMC,
+	EventSourceGRAW,
+	EventSourceMultiGRAW
+};
+
 projection_type get2DProjectionType(int aStrip_dir);
 projection_type get2DProjectionType(projection_type aStrip_dir);
 

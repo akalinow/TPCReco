@@ -109,8 +109,8 @@ void MainFrame::InitializeEventSource() {
 	std::string geometryFileName = myConfig.get("geometryFile", "");
 	myEventSource = EventSourceFactory::makeEventSourceObject(myConfig);
 
-	ConfigManager cm; //TEMPORARY???
-	std::string eventType = cm.getEventType(myConfig);
+	ConfigManager cm; //TEMPORARY
+	event_type eventType = cm.getEventType(myConfig);
 	bool onlineFlag = cm.getOnlineFlag(myConfig);
 
 	if (onlineFlag) {
@@ -123,16 +123,16 @@ void MainFrame::InitializeEventSource() {
 	}
 
 
-	if (eventType == "EventSourceROOT") {
+	if (eventType == event_type::EventSourceROOT) {
 		myWorkMode = M_OFFLINE_ROOT_MODE;
 	}
-	else if (eventType == "EventSourceMC") {
+	else if (eventType == event_type::EventSourceMC) {
 		myWorkMode = M_OFFLINE_MC_MODE;
 	}
-	else if (eventType == "EventSourceGRAW") {
+	else if (eventType == event_type::EventSourceGRAW) {
 		myWorkMode = (onlineFlag ? M_ONLINE_GRAW_MODE : M_OFFLINE_GRAW_MODE);
 	}
-	else if (eventType == "EventSourceMultiGRAW") {
+	else if (eventType == event_type::EventSourceMultiGRAW) {
 		myWorkMode = (onlineFlag ? M_ONLINE_NGRAW_MODE : M_OFFLINE_NGRAW_MODE);
 	}
 

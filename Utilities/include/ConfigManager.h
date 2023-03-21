@@ -6,6 +6,8 @@
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/program_options.hpp>
 
+#include "CommonDefinitions.h"
+
 class ConfigManager : public boost::property_tree::ptree
 {
 public:
@@ -15,9 +17,9 @@ public:
     boost::property_tree::ptree tree;
     boost::property_tree::ptree tree1 = configureTree(tree);
     */
-    void setEventType(boost::property_tree::ptree& tree, std::string evtype);
+    void setEventType(boost::property_tree::ptree& tree, event_type evtype);
 
-    std::string getEventType(boost::property_tree::ptree& tree);
+    event_type getEventType(boost::property_tree::ptree& tree);
 
     void setOnlineFlag(boost::property_tree::ptree& tree, bool flag) {};
 

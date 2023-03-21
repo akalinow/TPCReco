@@ -61,14 +61,14 @@ void configureTree(boost::property_tree::ptree &tree, int argc, char **argv)
     }
 }
 
-void setEventType(boost::property_tree::ptree &tree, std::string evtype)
+void setEventType(boost::property_tree::ptree &tree, event_type evtype)
 {
     tree.put("eventType",evtype);
 }
 
 std::string getEventType(boost::property_tree::ptree &tree)
 {
-    return tree.get<std::string>("eventType");
+    return tree.get<event_type>("eventType");
 }
 
 void addParam(boost::property_tree::ptree &tree, std::string etype){}
