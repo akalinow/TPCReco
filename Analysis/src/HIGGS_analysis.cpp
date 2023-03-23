@@ -632,17 +632,8 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
 	    [](const TrackSegment3D& a, const TrackSegment3D& b) {
 	      return a.getLength() > b.getLength();
 	    });
-  /*
-  // calculates shift of the centre of BEAM coord. system w.r.t. the centre of DET coord. system
-  // preserves X_DET=0 position (so it becomes new Z_BEAM=0)
-  double dist=Utils::distancePointLine(TVector2(0, beamOffsetInMM_DET_LAB), // point on beam line (DET)
-				       TVector2(cos(atan(beamSlope_DET_LAB)),sin(atan(beamSlope_DET_LAB))),// tangent of beam line (DET)
-				       TVector2(0,0)); // origin position (DET)
-  TVector3 originShift_BEAM_LAB(-TMath::Sign(1, dist)*dist, 0, 0); // [mm] in BEAM coordinate system
-*/
   // ALL event categories
   TVector3 vertexPos = list.front().getStart(); // DET coordintate system, LAB reference frame
-  //  TVector3 vertexPos_BEAM_LAB = coordinateConverter.detToBeam(vertexPos) + originShift_BEAM_LAB; // corrected BEAM position
   TVector3 vertexPos_BEAM_LAB = coordinateConverter.detToBeamWithOffset(vertexPos);
   histos1D["h_all_vertexX"]->Fill(vertexPos.X());
   histos1D["h_all_vertexY"]->Fill(vertexPos.Y());
