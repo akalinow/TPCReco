@@ -4,6 +4,7 @@
 #pragma link off all functions;
 #pragma link C++ nestedclasses;
 
+#pragma link C++ class EulerAngles+;
 #pragma link C++ class CoordinateConverter+;
 #pragma link C++ class IonRangeCalculator+;
 #pragma link C++ enum pid_type;
