@@ -21,15 +21,18 @@ struct EulerAngles {
 
 class CoordinateConverter {
 public:
-  CoordinateConverter(EulerAngles nominal, EulerAngles correction = {});
+  CoordinateConverter(EulerAngles nominal, EulerAngles correction = {}, TVector3 offset = {0, 0, 0});
 
   TVector3 detToBeam(const TVector3 &vector) const;
+  TVector3 detToBeamWithOffset(const TVector3 &vector) const; // only valid for point positions
   TLorentzVector detToBeam(const TLorentzVector &vector) const;
   TVector3 beamToDet(const TVector3 &vector) const;
+  TVector3 beamToDetWithOffset(const TVector3 &vector) const; // only valid for point positions
   TLorentzVector beamToDet(const TLorentzVector &vector) const;
 
 private:
-  TRotation rotation;
+  TRotation rotation; // rotation matrix from DET coordinates to BEAM coordinates
+  TVector3 beamOriginInDet; // position [mm] of the origin of the BEAM coordinate system expressed in DET coordinates
 };
 
 std::ostream &operator<<(std::ostream &out,
