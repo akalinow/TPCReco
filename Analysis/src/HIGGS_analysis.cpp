@@ -15,6 +15,7 @@
 #include "TPCReco/HIGGS_analysis.h"
 #include "TPCReco/colorText.h"
 #include "TPCReco/Cuts.h"
+#include "TPCReco/UtilsMath.h"
 
 ///////////////////////////////
 ///////////////////////////////
@@ -133,6 +134,30 @@ void HIGGS_analysis::bookHistos(){
       new TProfile((prefix+"_vertexXY_prof").c_str(),
 		   Form("%s;Vertex position X_{DET} [mm];Average vertex position Y_{DET} [mm];%s", info, perEventTitle),
 		   (xmax-xmin)/binSizeMM_prof, xmin, xmax, ymin, ymax);
+    histos1D[(prefix+"_vertexXBEAM").c_str()]=
+      new TH1F((prefix+"_vertexXBEAM").c_str(),
+	       Form("%s;Vertex position X_{BEAM} [mm];%s", info, perEventTitle),
+	       (ymax-ymin)/binSizeMM, ymin, ymax); // X_BEAM -> Y_DET
+    histos1D[(prefix+"_vertexYBEAM").c_str()]=
+      new TH1F((prefix+"_vertexYBEAM").c_str(),
+	       Form("%s;Vertex position Y_{BEAM} [mm];%s", info, perEventTitle),
+	       (zmax-zmin)/binSizeMM, zmin, zmax); // Y_BEAM -> -Z_DET
+    histos1D[(prefix+"_vertexZBEAM").c_str()]=
+      new TH1F((prefix+"_vertexZBEAM").c_str(),
+	       Form("%s;Vertex position Z_{BEAM} [mm];%s", info, perEventTitle),
+	       (xmax-xmin)/binSizeMM, xmin, xmax); // Z_BEAM -> -X_DET
+    histos2D[(prefix+"_vertexZXBEAM").c_str()]=
+      new TH2F((prefix+"_vertexZXBEAM").c_str(),
+	       Form("%s;Vertex position Z_{BEAM} [mm];Vertex position X_{BEAM} [mm];%s", info, perEventTitle),
+	       (xmax-xmin)/binSizeMM_2dXY, xmin, xmax, (ymax-ymin)/binSizeMM_2dXY, ymin, ymax); // ZX_BEAM -> XY_DET
+    histos2D[(prefix+"_vertexXYBEAM").c_str()]=
+      new TH2F((prefix+"_vertexXYBEAM").c_str(),
+	       Form("%s;Vertex position X_{BEAM} [mm];Vertex position Y_{BEAM} [mm];%s", info, perEventTitle),
+	       (ymax-ymin)/binSizeMM_2dYZ, ymin, ymax, (zmax-zmin)/binSizeMM_2dYZ, zmin, zmax); // XY_BEAM -> YZ_DET
+    profiles1D[(prefix+"_vertexZXBEAM_prof").c_str()]=
+      new TProfile((prefix+"_vertexZXBEAM_prof").c_str(),
+		   Form("%s;Vertex position Z_{BEAM} [mm];Average vertex position X_{BEAM} [mm];%s", info, perEventTitle),
+		   (xmax-xmin)/binSizeMM_prof, xmin, xmax, ymin, ymax); // ZX_BEAM -> XY_DET
     
     // TOTAL OBSERVABLE : per category
     switch(categoryPID[c].size()) {
@@ -218,7 +243,7 @@ void HIGGS_analysis::bookHistos(){
 	new TH1F((prefix+"_E_LAB").c_str(),
 		 Form("%s;Kinetic energy sum in LAB [MeV];%s", info, perEventTitle),
 		 100, 0, maxKineticEnergyMeV);
-      // SPECIAL PLOTS: check dependence of gamma beam energy on vertex position perpendicular to the gamma beam axis
+      // SPECIAL PLOTS: check dependence of gamma beam energy on vertex position (Y_DET) horizontal & perpendicular to the gamma beam axis
       histos2D[(prefix+"_vertexX_lenSum").c_str()]=
 	new TH2F((prefix+"_vertexX_lenSum").c_str(),
 		 Form("%s;Vertex position X_{DET} [mm];Sum of track lengths [mm];%s", info, perEventTitle),
@@ -268,6 +293,27 @@ void HIGGS_analysis::bookHistos(){
 	new TProfile((prefix+"_vertexY_Qvalue_CMS_prof").c_str(),
 		     Form("%s;Vertex position Y_{DET} [mm];Average Q value in CMS [MeV]", info),
 		     (ymax-ymin)/binSizeMM, ymin, ymax,
+		     0, maxKineticEnergyMeV);
+      // SPECIAL PLOTS: check dependence of gamma beam energy on vertex position (X_BEAM) horizontal & perpendicular to the gamma beam axis
+      histos2D[(prefix+"_vertexXBEAM_gamma_E_LAB").c_str()]=
+	new TH2F((prefix+"_vertexXBEAM_gamma_E_LAB").c_str(),
+		 Form("%s;Vertex position X_{BEAM} [mm];Beam energy in LAB [MeV];%s", info, perEventTitle),
+		 (ymax-ymin)/binSizeMM, ymin, ymax, // X_BEAM -> Y_DET
+		 100, minBeamEnergyMeV, maxBeamEnergyMeV);
+      histos2D[(prefix+"_vertexXBEAM_Qvalue_CMS").c_str()]=
+	new TH2F((prefix+"_vertexXBEAM_Qvalue_CMS").c_str(),
+		 Form("%s;Vertex position X_{BEAM} [mm];Q value in CMS [MeV];%s", info, perEventTitle),
+		 (ymax-ymin)/binSizeMM, ymin, ymax, // X_BEAM -> Y_DET
+		 100, 0, maxKineticEnergyMeV);
+      profiles1D[(prefix+"_vertexXBEAM_gamma_E_LAB_prof").c_str()]=
+	new TProfile((prefix+"_vertexXBEAM_gamma_E_LAB_prof").c_str(),
+		     Form("%s;Vertex position X_{BEAM} [mm];Average beam energy in LAB [MeV]", info),
+		     (ymax-ymin)/binSizeMM, ymin, ymax, // X_BEAM -> Y_DET
+		     minBeamEnergyMeV, maxBeamEnergyMeV);
+      profiles1D[(prefix+"_vertexXBEAM_Qvalue_CMS_prof").c_str()]=
+	new TProfile((prefix+"_vertexXBEAM_Qvalue_CMS_prof").c_str(),
+		     Form("%s;Vertex position X_{BEAM} [mm];Average Q value in CMS [MeV]", info),
+		     (ymax-ymin)/binSizeMM, ymin, ymax, // X_BEAM -> Y_DET
 		     0, maxKineticEnergyMeV);
       break;
     default: break;
@@ -397,7 +443,7 @@ void HIGGS_analysis::bookHistos(){
 		       Form("%s;%s track cos(#theta_{BEAM}) in CMS;Average %s kinetic energy in CMS [MeV];%s", info, pidLatex, pidLatex, perTrackTitle),
 		       100, -1, 1,
 		       0, maxKineticEnergyMeV);
-	// SPECIAL PLOTS: check dependence of gamma beam energy on vertex position perpendicular to the gamma beam axis
+	// SPECIAL PLOTS: check dependence of gamma beam energy on vertex position position (Y_DET) horizontal & perpendicular to the gamma beam axis
 	histos2D[(prefix+"_vertexY"+pid+"_len").c_str()]=
 	  new TH2F((prefix+"_vertexY"+pid+"_len").c_str(),
 		   Form("%s;Vertex position Y_{DET} [mm];%s track length [mm];%s", info, pidLatex, perTrackTitle),
@@ -437,6 +483,37 @@ void HIGGS_analysis::bookHistos(){
 	  new TProfile((prefix+"_vertexY"+pid+"_E_CMS_prof").c_str(),
 		       Form("%s;Vertex position Y_{DET} [mm];Average %s kinetic energy in CMS [mm]", info, pidLatex),
 		       (ymax-ymin)/binSizeMM, ymin, ymax,
+		       0, maxKineticEnergyMeV);
+	// SPECIAL PLOTS: check dependence of gamma beam energy on vertex position position (X_BEAM) horizontal & perpendicular to the gamma beam axis
+	histos2D[(prefix+"_vertexXBEAM"+pid+"_E_LAB").c_str()]=
+	  new TH2F((prefix+"_vertexXBEAM"+pid+"_E_LAB").c_str(),
+		   Form("%s;Vertex position X_{BEAM} [mm];%s kinetic energy in LAB [mm];%s", info, pidLatex, perTrackTitle),
+		   (ymax-ymin)/binSizeMM, ymin, ymax, // X_BEAM -> Y_DET
+		   100, 0, maxKineticEnergyMeV);
+	histos2D[(prefix+"_vertexXBEAM"+pid+"_E_CMS").c_str()]=
+	  new TH2F((prefix+"_vertexXBEAM"+pid+"_E_CMS").c_str(),
+		   Form("%s;Vertex position X_{BEAM} [mm];%s kinetic energy in CMS [mm];%s", info, pidLatex, perTrackTitle),
+		   (ymax-ymin)/binSizeMM, ymin, ymax, // X_BEAM -> Y_DET
+		   100, 0, maxKineticEnergyMeV);
+	histos2D[(prefix+"_vertexXBEAM"+pid+"_cosThetaBEAM_LAB").c_str()]=
+	  new TH2F((prefix+"_vertexXBEAM"+pid+"_cosThetaBEAM_LAB").c_str(),
+		   Form("%s;Vertex position X_{BEAM} [mm];%s track cos(#theta_{BEAM}) in LAB [mm];%s", info, pidLatex, perTrackTitle),
+		   (ymax-ymin)/binSizeMM, ymin, ymax, // X_BEAM -> Y_DET
+		   100, -1, 1);
+	histos2D[(prefix+"_vertexXBEAM"+pid+"_cosThetaBEAM_CMS").c_str()]=
+	  new TH2F((prefix+"_vertexXBEAM"+pid+"_cosThetaBEAM_CMS").c_str(),
+		   Form("%s;Vertex position X_{BEAM} [mm];%s track cos(#theta_{BEAM}) in CMS [mm];%s", info, pidLatex, perTrackTitle),
+		   (ymax-ymin)/binSizeMM, ymin, ymax, // X_BEAM -> Y_DET
+		   100, -1, 1);
+	profiles1D[(prefix+"_vertexXBEAM"+pid+"_E_LAB_prof").c_str()]=
+	  new TProfile((prefix+"_vertexXBEAM"+pid+"_E_LAB_prof").c_str(),
+		       Form("%s;Vertex position X_{BEAM} [mm];Average %s kinetic energy in LAB [mm]", info, pidLatex),
+		       (ymax-ymin)/binSizeMM, ymin, ymax, // X_BEAM -> Y_DET
+		       0, maxKineticEnergyMeV);
+	profiles1D[(prefix+"_vertexXBEAM"+pid+"_E_CMS_prof").c_str()]=
+	  new TProfile((prefix+"_vertexXBEAM"+pid+"_E_CMS_prof").c_str(),
+		       Form("%s;Vertex position X_{BEAM} [mm];Average %s kinetic energy in CMS [mm]", info, pidLatex),
+		       (ymax-ymin)/binSizeMM, ymin, ymax, // X_BEAM -> Y_DET
 		       0, maxKineticEnergyMeV);
       case 1: // 1,2,3-prong
 	histos1D[(prefix+pid+"_E_LAB").c_str()]=
@@ -548,22 +625,37 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
   const int ntracks = aTrack->getSegments().size();
   histos1D["h_ntracks"]->Fill(ntracks);
   if (ntracks==0) return;
-
+  
   // get sorted list of tracks (descending order by track length)
   TrackSegment3DCollection list = aTrack->getSegments();
-    std::sort(list.begin(), list.end(),
+  std::sort(list.begin(), list.end(),
 	    [](const TrackSegment3D& a, const TrackSegment3D& b) {
-        return a.getLength() > b.getLength();
-      });
-
+	      return a.getLength() > b.getLength();
+	    });
+  /*
+  // calculates shift of the centre of BEAM coord. system w.r.t. the centre of DET coord. system
+  // preserves X_DET=0 position (so it becomes new Z_BEAM=0)
+  double dist=Utils::distancePointLine(TVector2(0, beamOffsetInMM_DET_LAB), // point on beam line (DET)
+				       TVector2(cos(atan(beamSlope_DET_LAB)),sin(atan(beamSlope_DET_LAB))),// tangent of beam line (DET)
+				       TVector2(0,0)); // origin position (DET)
+  TVector3 originShift_BEAM_LAB(-TMath::Sign(1, dist)*dist, 0, 0); // [mm] in BEAM coordinate system
+*/
   // ALL event categories
-  TVector3 vertexPos = list.front().getStart();
+  TVector3 vertexPos = list.front().getStart(); // DET coordintate system, LAB reference frame
+  //  TVector3 vertexPos_BEAM_LAB = coordinateConverter.detToBeam(vertexPos) + originShift_BEAM_LAB; // corrected BEAM position
+  TVector3 vertexPos_BEAM_LAB = coordinateConverter.detToBeamWithOffset(vertexPos);
   histos1D["h_all_vertexX"]->Fill(vertexPos.X());
   histos1D["h_all_vertexY"]->Fill(vertexPos.Y());
   histos1D["h_all_vertexZ"]->Fill(vertexPos.Z());
   histos2D["h_all_vertexXY"]->Fill(vertexPos.X(), vertexPos.Y());
   histos2D["h_all_vertexYZ"]->Fill(vertexPos.Y(), vertexPos.Z());
   profiles1D["h_all_vertexXY_prof"]->Fill(vertexPos.X(), vertexPos.Y());
+  histos1D["h_all_vertexXBEAM"]->Fill(vertexPos_BEAM_LAB.X());
+  histos1D["h_all_vertexYBEAM"]->Fill(vertexPos_BEAM_LAB.Y());
+  histos1D["h_all_vertexZBEAM"]->Fill(vertexPos_BEAM_LAB.Z());
+  histos2D["h_all_vertexZXBEAM"]->Fill(vertexPos_BEAM_LAB.Z(), vertexPos_BEAM_LAB.X());
+  histos2D["h_all_vertexXYBEAM"]->Fill(vertexPos_BEAM_LAB.X(), vertexPos_BEAM_LAB.Y());
+  profiles1D["h_all_vertexZXBEAM_prof"]->Fill(vertexPos_BEAM_LAB.Z(), vertexPos_BEAM_LAB.X());
   for(auto & track: list) {
     const double len=track.getLength();
     histos1D["h_all_len"]->Fill(len);
@@ -599,6 +691,12 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     histos2D["h_1prong_vertexXY"]->Fill(vertexPos.X(), vertexPos.Y());
     histos2D["h_1prong_vertexYZ"]->Fill(vertexPos.Y(), vertexPos.Z());
     profiles1D["h_1prong_vertexXY_prof"]->Fill(vertexPos.X(), vertexPos.Y());
+    histos1D["h_1prong_vertexXBEAM"]->Fill(vertexPos_BEAM_LAB.X());
+    histos1D["h_1prong_vertexYBEAM"]->Fill(vertexPos_BEAM_LAB.Y());
+    histos1D["h_1prong_vertexZBEAM"]->Fill(vertexPos_BEAM_LAB.Z());
+    histos2D["h_1prong_vertexZXBEAM"]->Fill(vertexPos_BEAM_LAB.Z(), vertexPos_BEAM_LAB.X());
+    histos2D["h_1prong_vertexXYBEAM"]->Fill(vertexPos_BEAM_LAB.X(), vertexPos_BEAM_LAB.Y());
+    profiles1D["h_1prong_vertexZXBEAM_prof"]->Fill(vertexPos_BEAM_LAB.Z(), vertexPos_BEAM_LAB.X());
     auto track=list.front();
     const double len=track.getLength(); // [mm]
     histos1D["h_1prong_alpha_len"]->Fill(len);
@@ -641,6 +739,12 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     histos2D["h_2prong_vertexXY"]->Fill(vertexPos.X(), vertexPos.Y());
     histos2D["h_2prong_vertexYZ"]->Fill(vertexPos.Y(), vertexPos.Z());
     profiles1D["h_2prong_vertexXY_prof"]->Fill(vertexPos.X(), vertexPos.Y());
+    histos1D["h_2prong_vertexXBEAM"]->Fill(vertexPos_BEAM_LAB.X());
+    histos1D["h_2prong_vertexYBEAM"]->Fill(vertexPos_BEAM_LAB.Y());
+    histos1D["h_2prong_vertexZBEAM"]->Fill(vertexPos_BEAM_LAB.Z());
+    histos2D["h_2prong_vertexZXBEAM"]->Fill(vertexPos_BEAM_LAB.Z(), vertexPos_BEAM_LAB.X());
+    histos2D["h_2prong_vertexXYBEAM"]->Fill(vertexPos_BEAM_LAB.X(), vertexPos_BEAM_LAB.Y());
+    profiles1D["h_2prong_vertexZXBEAM_prof"]->Fill(vertexPos_BEAM_LAB.Z(), vertexPos_BEAM_LAB.X());
 
     const double alpha_len = list.front().getLength(); // longest = alpha
     const double carbon_len = list.back().getLength(); // shortest = carbon
@@ -780,7 +884,7 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     histos2D["h_2prong_alpha_E_carbon_E_CMS"]->Fill(alpha_T_CMS, carbon_T_CMS);
     histos2D["h_2prong_alpha_E_carbon_E_LAB"]->Fill(alpha_T_LAB, carbon_T_LAB);
 
-    // SPECIAL PLOTS: check dependence of gamma beam energy on vertex position perpendicular to the gamma beam axis
+    // SPECIAL PLOTS: check dependence of gamma beam energy on vertex position (Y_DET) horizontal & perpendicular to the gamma beam axis
     histos2D["h_2prong_vertexX_lenSum"]->Fill(vertexPos.X(), alpha_len+carbon_len);
     histos2D["h_2prong_vertexY_lenSum"]->Fill(vertexPos.Y(), alpha_len+carbon_len);
     histos2D["h_2prong_vertexZ_lenSum"]->Fill(vertexPos.Z(), alpha_len+carbon_len);
@@ -807,6 +911,23 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     profiles1D["h_2prong_vertexY_carbon_E_CMS_prof"]->Fill(vertexPos.Y(), carbon_T_CMS);
     profiles1D["h_2prong_vertexY_gamma_E_LAB_prof"]->Fill(vertexPos.Y(), photon_E_LAB);
     profiles1D["h_2prong_vertexY_Qvalue_CMS_prof"]->Fill(vertexPos.Y(), Qvalue_CMS);
+    // SPECIAL PLOTS: check dependence of gamma beam energy on vertex position (X_BEAM) horizontal & perpendicular to the gamma beam axis
+    histos2D["h_2prong_vertexXBEAM_alpha_E_LAB"]->Fill(vertexPos_BEAM_LAB.X(), alpha_T_LAB);
+    histos2D["h_2prong_vertexXBEAM_carbon_E_LAB"]->Fill(vertexPos_BEAM_LAB.X(), carbon_T_LAB);
+    histos2D["h_2prong_vertexXBEAM_alpha_E_CMS"]->Fill(vertexPos_BEAM_LAB.X(), alpha_T_CMS);
+    histos2D["h_2prong_vertexXBEAM_carbon_E_CMS"]->Fill(vertexPos_BEAM_LAB.X(), carbon_T_CMS);
+    histos2D["h_2prong_vertexXBEAM_alpha_cosThetaBEAM_LAB"]->Fill(vertexPos_BEAM_LAB.X(), alpha_cosTheta_BEAM_LAB);
+    histos2D["h_2prong_vertexXBEAM_carbon_cosThetaBEAM_LAB"]->Fill(vertexPos_BEAM_LAB.X(), carbon_cosTheta_BEAM_LAB);
+    histos2D["h_2prong_vertexXBEAM_alpha_cosThetaBEAM_CMS"]->Fill(vertexPos_BEAM_LAB.X(), alpha_cosTheta_BEAM_CMS);
+    histos2D["h_2prong_vertexXBEAM_carbon_cosThetaBEAM_CMS"]->Fill(vertexPos_BEAM_LAB.X(), carbon_cosTheta_BEAM_CMS);
+    histos2D["h_2prong_vertexXBEAM_gamma_E_LAB"]->Fill(vertexPos_BEAM_LAB.X(), photon_E_LAB);
+    histos2D["h_2prong_vertexXBEAM_Qvalue_CMS"]->Fill(vertexPos_BEAM_LAB.X(), Qvalue_CMS);
+    profiles1D["h_2prong_vertexXBEAM_alpha_E_LAB_prof"]->Fill(vertexPos_BEAM_LAB.X(), alpha_T_LAB);
+    profiles1D["h_2prong_vertexXBEAM_carbon_E_LAB_prof"]->Fill(vertexPos_BEAM_LAB.X(), carbon_T_LAB);
+    profiles1D["h_2prong_vertexXBEAM_alpha_E_CMS_prof"]->Fill(vertexPos_BEAM_LAB.X(), alpha_T_CMS);
+    profiles1D["h_2prong_vertexXBEAM_carbon_E_CMS_prof"]->Fill(vertexPos_BEAM_LAB.X(), carbon_T_CMS);
+    profiles1D["h_2prong_vertexXBEAM_gamma_E_LAB_prof"]->Fill(vertexPos_BEAM_LAB.X(), photon_E_LAB);
+    profiles1D["h_2prong_vertexXBEAM_Qvalue_CMS_prof"]->Fill(vertexPos_BEAM_LAB.X(), Qvalue_CMS);
   }
   // 3-prong (triple alpha)
   if(ntracks==3) {
@@ -816,6 +937,12 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     histos2D["h_3prong_vertexXY"]->Fill(vertexPos.X(), vertexPos.Y());
     histos2D["h_3prong_vertexYZ"]->Fill(vertexPos.Y(), vertexPos.Z());
     profiles1D["h_3prong_vertexXY_prof"]->Fill(vertexPos.X(), vertexPos.Y());
+    histos1D["h_3prong_vertexXBEAM"]->Fill(vertexPos_BEAM_LAB.X());
+    histos1D["h_3prong_vertexYBEAM"]->Fill(vertexPos_BEAM_LAB.Y());
+    histos1D["h_3prong_vertexZBEAM"]->Fill(vertexPos_BEAM_LAB.Z());
+    histos2D["h_3prong_vertexZXBEAM"]->Fill(vertexPos_BEAM_LAB.Z(), vertexPos_BEAM_LAB.X());
+    histos2D["h_3prong_vertexXYBEAM"]->Fill(vertexPos_BEAM_LAB.X(), vertexPos_BEAM_LAB.Y());
+    profiles1D["h_3prong_vertexZXBEAM_prof"]->Fill(vertexPos_BEAM_LAB.Z(), vertexPos_BEAM_LAB.X());
 
     const double carbonMassGroundState=myRangeCalculator.getIonMassMeV(/*IonRangeCalculator::*/CARBON_12);
     const double alphaMass=myRangeCalculator.getIonMassMeV(/*IonRangeCalculator::*/ALPHA);
@@ -862,7 +989,8 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
       // X_DET -> -Z_BEAM
       // Y_DET ->  X_BEAM
       // Z_DET -> -Y_BEAM
-      alphaP4_BEAM_LAB[i]=TLorentzVector(alphaP4_DET_LAB[i].Py(), -alphaP4_DET_LAB[i].Pz(), -alphaP4_DET_LAB[i].Px(), alphaP4_DET_LAB[i].E());
+      //      alphaP4_BEAM_LAB[i]=TLorentzVector(alphaP4_DET_LAB[i].Py(), -alphaP4_DET_LAB[i].Pz(), -alphaP4_DET_LAB[i].Px(), alphaP4_DET_LAB[i].E());
+      alphaP4_BEAM_LAB[i] = coordinateConverter.detToBeam(alphaP4_DET_LAB[i]);
 
       // update total sums
       lengthSUM+=alpha_len[i];
@@ -930,7 +1058,7 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
       profiles1D[Form("h_3prong_alpha%d_cosThetaBEAM_E_CMS_prof",i+1)]->Fill(alpha_cosTheta_BEAM_CMS[i], alpha_T_CMS[i]);
       histos1D[Form("h_3prong_alpha%d_E_CMS",i+1)]->Fill(alpha_T_CMS[i]);
 
-      // SPECIAL PLOTS: check dependence of gamma beam energy on vertex position perpendicular to the gamma beam axis
+      // SPECIAL PLOTS: check dependence of gamma beam energy on vertex position (Y_DET) horizontal & perpendicular to the gamma beam axis
       histos2D[Form("h_3prong_vertexY_alpha%d_E_LAB",i+1)]->Fill(vertexPos.Y(), alpha_T_LAB[i]);
       histos2D[Form("h_3prong_vertexY_alpha%d_E_CMS",i+1)]->Fill(vertexPos.Y(), alpha_T_CMS[i]);
       histos2D[Form("h_3prong_vertexY_alpha%d_len",i+1)]->Fill(vertexPos.Y(), alpha_len[i]);
@@ -939,6 +1067,13 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
       profiles1D[Form("h_3prong_vertexY_alpha%d_E_LAB_prof",i+1)]->Fill(vertexPos.Y(), alpha_T_LAB[i]);
       profiles1D[Form("h_3prong_vertexY_alpha%d_E_CMS_prof",i+1)]->Fill(vertexPos.Y(), alpha_T_CMS[i]);
       profiles1D[Form("h_3prong_vertexY_alpha%d_len_prof",i+1)]->Fill(vertexPos.Y(), alpha_len[i]);
+      // SPECIAL PLOTS: check dependence of gamma beam energy on vertex position (X_BEAM) horizontal & perpendicular to the gamma beam axis
+      histos2D[Form("h_3prong_vertexXBEAM_alpha%d_E_LAB",i+1)]->Fill(vertexPos_BEAM_LAB.X(), alpha_T_LAB[i]);
+      histos2D[Form("h_3prong_vertexXBEAM_alpha%d_E_CMS",i+1)]->Fill(vertexPos_BEAM_LAB.X(), alpha_T_CMS[i]);
+      histos2D[Form("h_3prong_vertexXBEAM_alpha%d_cosThetaBEAM_LAB",i+1)]->Fill(vertexPos_BEAM_LAB.X(), alpha_cosTheta_BEAM_LAB[i]);
+      histos2D[Form("h_3prong_vertexXBEAM_alpha%d_cosThetaBEAM_CMS",i+1)]->Fill(vertexPos_BEAM_LAB.X(), alpha_cosTheta_BEAM_CMS[i]);
+      profiles1D[Form("h_3prong_vertexXBEAM_alpha%d_E_LAB_prof",i+1)]->Fill(vertexPos_BEAM_LAB.X(), alpha_T_LAB[i]);
+      profiles1D[Form("h_3prong_vertexXBEAM_alpha%d_E_CMS_prof",i+1)]->Fill(vertexPos_BEAM_LAB.X(), alpha_T_CMS[i]);
 
       // fill properties per track pair
       for(auto i2=i+1;i2<3;i2++) {
@@ -976,7 +1111,7 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     histos1D["h_3prong_E_CMS"]->Fill(alpha_T_LAB[0]+alpha_T_LAB[1]+alpha_T_LAB[2]);
     histos1D["h_3prong_E_LAB"]->Fill(alpha_T_CMS[0]+alpha_T_CMS[1]+alpha_T_CMS[2]);
 
-    // SPECIAL PLOTS: check dependence of gamma beam energy on vertex position perpendicular to the gamma beam axis
+    // SPECIAL PLOTS: check dependence of gamma beam energy on vertex position (Y_DET) horizontal & perpendicular to the gamma beam axis
     histos2D["h_3prong_vertexX_lenSum"]->Fill(vertexPos.X(), lengthSUM);
     histos2D["h_3prong_vertexY_lenSum"]->Fill(vertexPos.Y(), lengthSUM);
     histos2D["h_3prong_vertexZ_lenSum"]->Fill(vertexPos.Z(), lengthSUM);
@@ -987,6 +1122,11 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     profiles1D["h_3prong_vertexZ_lenSum_prof"]->Fill(vertexPos.Z(), lengthSUM);
     profiles1D["h_3prong_vertexY_gamma_E_LAB_prof"]->Fill(vertexPos.Y(), photon_E_LAB);
     profiles1D["h_3prong_vertexY_Qvalue_CMS_prof"]->Fill(vertexPos.Y(), Qvalue_CMS);
+    // SPECIAL PLOTS: check dependence of gamma beam energy on vertex position (X_BEAM) horizontal & perpendicular to the gamma beam axis
+    histos2D["h_3prong_vertexXBEAM_gamma_E_LAB"]->Fill(vertexPos_BEAM_LAB.X(), photon_E_LAB);
+    histos2D["h_3prong_vertexXBEAM_Qvalue_CMS"]->Fill(vertexPos_BEAM_LAB.X(), Qvalue_CMS);
+    profiles1D["h_3prong_vertexXBEAM_gamma_E_LAB_prof"]->Fill(vertexPos_BEAM_LAB.X(), photon_E_LAB);
+    profiles1D["h_3prong_vertexXBEAM_Qvalue_CMS_prof"]->Fill(vertexPos_BEAM_LAB.X(), Qvalue_CMS);
 
     // fill symmetrized Dalitz plots
     for(auto i1=0; i1<3; i1++) {

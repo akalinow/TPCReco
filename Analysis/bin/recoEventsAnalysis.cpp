@@ -31,6 +31,9 @@ int analyzeRecoEvents(const  std::string & geometryFileName,
 		      const  std::string & dataFileName,
 		      const  float & beamEnergy, // [MeV]
 		      const  TVector3 & beamDir, // unit vector in LAB detector frame
+		      const  double & beam_offset, // offset Y_DET [mm] and
+		      const  double & beam_slope,  // slope (dy/dx)_DET of the actual beam axis: Y_DET = slope * X_DET + offset
+		      const  double & beam_diameter, // beam spot diameter [mm] used by event quality cuts
 		      const  double & pressure, // [mbar]
 		      const  double & temperature, // [K]
 		      const  bool & makeTreeFlag);
@@ -64,6 +67,9 @@ boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
     ("dataFile",  boost::program_options::value<std::string>()->required(), "string - path to data file")
     ("beamEnergy", boost::program_options::value<float>()->required(), "float - LAB gamma beam energy [MeV]")
     ("beamDir", boost::program_options::value<BeamDirection>()->required(), "string - LAB gamma beam direction [\"x\" xor \"-x\"]")
+    ("beamOffset", boost::program_options::value<float>()->default_value(0.0), "float - offset in Y_DET [mm] of actual beam line: Y_DET=slope*X_DET+offset")
+    ("beamSlope", boost::program_options::value<float>()->default_value(0.0), "float - slope (dY/dX)_DET of actual beam line: Y_DET=slope*X_DET+offset")
+    ("beamDiameter", boost::program_options::value<float>()->default_value(12.0), "float - beam spot diameter [mm] used by event quality cuts")
     ("pressure", boost::program_options::value<float>()->required(), "float - CO2 pressure [mbar]")
     ("temperature", boost::program_options::value<float>()->default_value(273.15+20), "(option) float - CO2 temperature [K], default=293.15K (20 C)")
     ("noTree", boost::program_options::bool_switch()->default_value(false), "(option) bool - flag to skip creating additional TTree for 1,2,3-prongs, default=false ");
@@ -97,6 +103,9 @@ int main(int argc, char **argv){
   auto pressure = varMap["pressure"].as<float>();
   auto temperature = varMap["temperature"].as<float>();
   auto makeTreeFlag = !varMap["noTree"].as<bool>();
+  auto beamOffset = varMap["beamOffset"].as<float>();
+  auto beamSlope = varMap["beamSlope"].as<float>();
+  auto beamDiameter = varMap["beamDiameter"].as<float>();
   TVector3 beamDir;
   switch(varMap["beamDir"].as<BeamDirection>()){
     case BeamDirection::X : 
@@ -108,7 +117,7 @@ int main(int argc, char **argv){
     default:
       return 1;
   }
-  analyzeRecoEvents(geometryFileName, dataFileName, beamEnergy, beamDir, pressure, temperature, makeTreeFlag);
+  analyzeRecoEvents(geometryFileName, dataFileName, beamEnergy, beamDir, beamOffset, beamSlope, beamDiameter, pressure, temperature, makeTreeFlag);
   return 0;
 }
 /////////////////////////////
@@ -122,6 +131,9 @@ int analyzeRecoEvents(const  std::string & geometryFileName,
 		      const  std::string & dataFileName,
 		      const  float & beamEnergy, // [MeV]
 		      const  TVector3 & beamDir, // unit vector in LAB detector frame
+		      const  double & beam_offset, // offset Y_DET [mm] and
+		      const  double & beam_slope,  // slope (dy/dx)_DET of the actual beam axis: Y_DET = slope * X_DET + offset
+		      const  double & beam_diameter, // beam spot diameter [mm] used by event quality cuts
 		      const  double & pressure, // [mbar]
 		      const  double & temperature, // [K]
 		      const  bool & makeTreeFlag){
@@ -169,9 +181,9 @@ int analyzeRecoEvents(const  std::string & geometryFileName,
     return -1;
   }
 
-  double beam_offset = -1.3;
-  double beam_slope = 3.0E-3;
-  double beam_diameter = 12.;
+  // double beam_offset = -1.3;  // [mm]    Beam central line on horizontal UVW / XY_DET plane is parameterized as:
+  // double beam_slope = 3.0E-3; // [rad]   Y_DET(X_DET) = beam_slope * X_DET + beam_offset
+  // double beam_diameter = 12.; // [mm]
   auto cuts = RequirementsCollection<std::function<bool(Track3D *)>>{};
   cuts.push_back(tpcreco::cuts::Cut1{});
   cuts.push_back(tpcreco::cuts::Cut2{beam_offset, beam_slope, beam_diameter});
@@ -179,7 +191,28 @@ int analyzeRecoEvents(const  std::string & geometryFileName,
   cuts.push_back(tpcreco::cuts::Cut4{aGeometry.get(), 25, 5});
   cuts.push_back(tpcreco::cuts::Cut5{aGeometry.get(), beam_diameter});
 
-  auto coordinateConverter = CoordinateConverter({-M_PI/2, M_PI/2,0}, {});
+  // 1. Nominal transformation between DET-->BEAM coordinates for the HIGS experiment
+  //    provided that beam direction is anti-paralell to X_DET (HIGS case):
+  //    X_DET -> -Z_BEAM
+  //    Y_DET ->  X_BEAM
+  //    Z_DET -> -Y_BEAM
+  //    This corresponds to the "nominal" rotation matrix DET-->BEAM with Euler angles: PHI=-Pi/2, THETA=Pi/2, PSI=0.
+  // 2. Correction for tilt in horizontal XY_DET (or XZ_BEAM) plane of the central beam axis parameterized as:
+  //    Y_DET = beam_slope * X_DET + beam_offset
+  //    is equivalent to:
+  //    X_BEAM = beam_slope * (-Z_BEAM) + beam_offset.
+  //    This corresponds to the rotation about Y_BEAM axis by ATAN(beam_slope) angle,
+  //    which is equivalent to the "correction" rotation matrix with Euler angles: PHI=Pi/2, THETA=ATAN(-beam_slope), PSI=-Pi/2.
+  // 3. Correction for offset in horizontal XY_DET (or XZ_BEAM) plane of the central beam axis is done in such way
+  //    that vertex positioned at X_DET=0 (detector center) will be positioned at Z_BEAM=0.
+  //    This corresponds to translation of the origin of the BEAM coordinate system by vector [DX, DY, DZ]_DET, where:
+  //    DX_DET = - beam_offset * sin(atan(beam_slope))
+  //    DY_DET =   beam_offset * cos(atan(beam_slope))
+  //    DZ_DET = 0.
+  //
+  auto coordinateConverter = CoordinateConverter({-M_PI/2, M_PI/2, 0},
+						 {M_PI/2, atan(-beam_slope), -M_PI/2},
+						 {-beam_offset*sin(atan(beam_slope)), beam_offset*cos(atan(beam_slope)), 0});
   auto ionRangeCalculator = IonRangeCalculator(gas_mixture_type::CO2, pressure, temperature);
 
   auto myAnalysis = HIGGS_analysis(aGeometry, beamEnergy, beamDir, ionRangeCalculator, coordinateConverter);
