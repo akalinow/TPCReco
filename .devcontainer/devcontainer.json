@@ -16,12 +16,16 @@
     "mounts": [
         "source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind"
     ],
-    "extensions": [
-        "ms-vscode.cpptools",
-        "ms-vscode.cmake-tools",
-        "ms-python.python",
-        "ms-python.vscode-pylance",
-        "eamodio.gitlens",
-        "mhutchie.git-graph"
-    ]
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.cpptools",
+                "ms-vscode.cmake-tools",
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "eamodio.gitlens",
+                "mhutchie.git-graph"
+            ]
+        }
+    }
 }
