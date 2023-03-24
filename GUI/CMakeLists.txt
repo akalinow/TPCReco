@@ -8,8 +8,11 @@ include_directories(${PROJECT_SOURCE_DIR}/Analysis/include)
 include_directories(${PROJECT_SOURCE_DIR}/Utilities/include)
 include_directories(${PROJECT_SOURCE_DIR}/GUI/include)
 root_generate_dictionary(
-  G__${TPCRECO_PREFIX}${MODULE_NAME} include/TPCReco/MainFrame.h
-  include/TPCReco/SelectionBox.h include/TPCReco/DirectoryWatch.h LINKDEF
+  G__${TPCRECO_PREFIX}${MODULE_NAME}
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/MainFrame.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/SelectionBox.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/DirectoryWatch.h
+  LINKDEF
   LinkDef.h)
 #
 
