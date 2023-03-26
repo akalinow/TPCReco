@@ -37,7 +37,6 @@ R__ADD_LIBRARY_PATH(../lib)
 
 #include "TPCReco/Track3D.h"
 #include "TPCReco/EventInfo.h"
-#include "TPCReco/UtilsEventInfo.h"
 
 void runTimeSec(const char *filename, const double max_interval_sec=1000) {
 
