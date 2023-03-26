@@ -19,6 +19,7 @@ R__ADD_LIBRARY_PATH(../lib)
 #include <vector>
 #include <set>
 #include <iostream>
+#include <algorithm>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/xml_parser.hpp>
@@ -60,8 +61,12 @@ R__ADD_LIBRARY_PATH(../lib)
 #define DEBUG_CHARGE    false
 #define DEBUG_SIGNAL    false // plot UVW projections for reference data and starting point template at each step
 #define DEBUG_CHI2      false
-#define DEBUG_DRAW_FIT  true  // plot UVW projections of final fitted templates
-
+#define DEBUG_DRAW_FIT  false // plot UVW projections of final fitted templates
+#define DRAW_AUTO_ZOOM  true  // plot UVW projection using automatic zoom algorithm
+#define DRAW_SAME_SCALE false // plot UVW projection using the same scale of dE/dx for all strip directions
+#define DRAW_SAME_SCALE_MARGIN 0.05 // add +/- 5% margin for common dE/dx scale
+#define DRAW_AUTO_ZOOM_MARGIN 0.4 // add +/- 40% margin for histogram ranges in AUTO ZOOM mode (if possible)
+#define DRAW_PAD_FILL_COLOR kAzure-6 // matches default kBird palette
 
 #define MISSING_PID_REPLACEMENT_ENABLE true // TODO - to be parameterized
 #define MISSING_PID_1PRONG             ALPHA // TODO - to be parameterized
@@ -168,7 +173,7 @@ private:
       // }
       //// DEBUG
     }
-    
+
     //// DEBUG
 #if DEBUG_SIGNAL
     static auto isFirst=true;
@@ -739,13 +744,84 @@ void DrawFitResults(TCanvas *tcanvas, // input TCanvas
   tcanvas->SetWindowSize(pad_width*npadx, pad_width*npady);
   tcanvas->Divide(npadx,npady);
 
-  // reference histograms
-  int idir=definitions::projection_type::DIR_U;
+  int idir;
+#if(DRAW_AUTO_ZOOM)
+  // find bounding boxes per UVW projection from fitted and initial tracks
+  double zDET_min=1E30; // mm
+  double zDET_max=-1E30; // mm
+  std::vector<double> posUVW_min{1E30, 1E30, 1E30}; // mm
+  std::vector<double> posUVW_max{-1E30, -1E30, -1E30};; // mm
+  if(hasInitTrack) {
+    for(auto &aSeg: initialTrack->getSegments()) {
+      zDET_min=std::min(zDET_min, std::min(aSeg.getStart().Z(), aSeg.getEnd().Z()));
+      zDET_max=std::max(zDET_max, std::max(aSeg.getStart().Z(), aSeg.getEnd().Z()));
+      auto err=false;
+      const auto vtx=aSeg.getStart();
+      const auto endpoint=aSeg.getEnd();
+      const auto geo=aSeg.getGeometry();
+      if(!geo) continue;
+      for(int idir=definitions::projection_type::DIR_U; idir<=definitions::projection_type::DIR_W; idir++) {
+	double sstart_pos=geo->Cartesian2posUVW(vtx.X(), vtx.Y(), idir, err); // strip position [mm] for a given XY_DET position
+	double send_pos=geo->Cartesian2posUVW(endpoint.X(), endpoint.Y(), idir, err); // strip position [mm] for a given XY_DET position
+	posUVW_min[idir]=std::min(posUVW_min[idir], std::min(sstart_pos, send_pos));
+	posUVW_max[idir]=std::max(posUVW_max[idir], std::max(sstart_pos, send_pos));
+      }
+    }
+  }
+  if(hasFitTrack) {
+    for(auto &aSeg: fitTrack->getSegments()) {
+      zDET_min=std::min(zDET_min, std::min(aSeg.getStart().Z(), aSeg.getEnd().Z()));
+      zDET_max=std::max(zDET_max, std::max(aSeg.getStart().Z(), aSeg.getEnd().Z()));
+      auto err=false;
+      const auto vtx=aSeg.getStart();
+      const auto endpoint=aSeg.getEnd();
+      const auto geo=aSeg.getGeometry();
+      if(!geo) continue;
+      for(int idir=definitions::projection_type::DIR_U; idir<=definitions::projection_type::DIR_W; idir++) {
+	double sstart_pos=geo->Cartesian2posUVW(vtx.X(), vtx.Y(), idir, err); // strip position [mm] for a given XY_DET position
+	double send_pos=geo->Cartesian2posUVW(endpoint.X(), endpoint.Y(), idir, err); // strip position [mm] for a given XY_DET position
+	posUVW_min[idir]=std::min(posUVW_min[idir], std::min(sstart_pos, send_pos));
+	posUVW_max[idir]=std::max(posUVW_max[idir], std::max(sstart_pos, send_pos));
+      }
+    }
+  }
+#endif
+
+#if(DRAW_SAME_SCALE)
+  // first pass to set common Z range
+  idir=definitions::projection_type::DIR_U;
+  auto ref_min=1E30;
+  auto ref_max=-1E30;
+  for(auto &it: *refHistogramsInMM) {
+    ref_min=std::min(ref_min, it->GetBinContent(it->GetMinimumBin())); // true MIN of histogram
+    ref_max=std::max(ref_max, it->GetBinContent(it->GetMaximumBin())); // true MAX of histogram
+    idir++;
+  }
+  for(auto &it: *refHistogramsInMM) {
+    it->SetMinimum( ref_min-DRAW_SAME_SCALE_MARGIN*(ref_max-ref_min) );
+    it->SetMaximum( ref_max+DRAW_SAME_SCALE_MARGIN*(ref_max-ref_min) );
+  }
+#endif
+#if(DRAW_AUTO_ZOOM)
+  idir=definitions::projection_type::DIR_U;
+  for(auto &it: *refHistogramsInMM) {
+    auto xcenter=0.5*(zDET_min+zDET_max);
+    auto ycenter=0.5*(posUVW_min[idir]+posUVW_max[idir]);
+    auto width=std::max(zDET_max-zDET_min, posUVW_max[idir]-posUVW_min[idir]); // common width to keep aspect ratio
+    it->GetXaxis()->SetRangeUser( xcenter-(1.0+DRAW_AUTO_ZOOM_MARGIN)*0.5*width, xcenter+(1.0+DRAW_AUTO_ZOOM_MARGIN)*0.5*width );
+    it->GetYaxis()->SetRangeUser( ycenter-(1.0+DRAW_AUTO_ZOOM_MARGIN)*0.5*width, ycenter+(1.0+DRAW_AUTO_ZOOM_MARGIN)*0.5*width );
+    //    it->GetXaxis()->SetRangeUser( zDET_min-DRAW_AUTO_ZOOM_MARGIN*(zDET_max-zDET_min), zDET_max+DRAW_AUTO_ZOOM_MARGIN*(zDET_max-zDET_min) );
+    //    it->GetYaxis()->SetRangeUser( posUVW_min[idir]-DRAW_AUTO_ZOOM_MARGIN*(posUVW_max[idir]-posUVW_min[idir]), posUVW_max[idir]+DRAW_AUTO_ZOOM_MARGIN*(posUVW_max[idir]-posUVW_min[idir]) );
+    idir++;
+  }
+#endif
+  // draw reference histograms
+  idir=definitions::projection_type::DIR_U;
   auto ipad=1;
   for(auto &it: *refHistogramsInMM) {
     tcanvas->cd(ipad);
     if(gPad) {
-      gPad->SetFrameFillColor(kAzure-6); // show empty bins in ligh blue (matches standard kBird palette)
+      gPad->SetFrameFillColor(DRAW_PAD_FILL_COLOR); // show empty bins in ligh blue (matches standard kBird palette)
       gPad->SetLogx(false);
       gPad->SetLogy(false);
       gPad->SetLogz(false);
@@ -765,15 +841,44 @@ void DrawFitResults(TCanvas *tcanvas, // input TCanvas
     idir++;
   }
 
-  // fitted + residual histograms
+  // draw fitted + residual histograms
   std::vector<TH2D*> residualHistogramsInMM;
   if(hasFitHistos) {
+#if(DRAW_SAME_SCALE)
+    // first pass to get min/max values
+    idir=definitions::projection_type::DIR_U;
+    auto fit_min=1E30;
+    auto fit_max=-1E30;
+    for(auto &it: *fitHistogramsInMM) {
+      fit_min=std::min(fit_min, it->GetBinContent(it->GetMinimumBin())); // true MIN of histogram
+      fit_max=std::max(fit_max, it->GetBinContent(it->GetMaximumBin())); // true MAX of histogram
+      idir++;
+    }
+    for(auto &it: *fitHistogramsInMM) {
+      it->SetMinimum( fit_min-DRAW_SAME_SCALE_MARGIN*(fit_max-fit_min) );
+      it->SetMaximum( fit_max+DRAW_SAME_SCALE_MARGIN*(fit_max-fit_min) );
+    }
+#endif
+#if(DRAW_AUTO_ZOOM)
+  idir=definitions::projection_type::DIR_U;
+  for(auto &it: *fitHistogramsInMM) {
+    auto xcenter=0.5*(zDET_min+zDET_max);
+    auto ycenter=0.5*(posUVW_min[idir]+posUVW_max[idir]);
+    auto width=std::max(zDET_max-zDET_min, posUVW_max[idir]-posUVW_min[idir]); // common width to keep aspect ratio
+    it->GetXaxis()->SetRangeUser( xcenter-(1.0+DRAW_AUTO_ZOOM_MARGIN)*0.5*width, xcenter+(1.0+DRAW_AUTO_ZOOM_MARGIN)*0.5*width );
+    it->GetYaxis()->SetRangeUser( ycenter-(1.0+DRAW_AUTO_ZOOM_MARGIN)*0.5*width, ycenter+(1.0+DRAW_AUTO_ZOOM_MARGIN)*0.5*width );
+    //    it->GetXaxis()->SetRangeUser( zDET_min-DRAW_AUTO_ZOOM_MARGIN*(zDET_max-zDET_min), zDET_max+DRAW_AUTO_ZOOM_MARGIN*(zDET_max-zDET_min) );
+    //    it->GetYaxis()->SetRangeUser( posUVW_min[idir]-DRAW_AUTO_ZOOM_MARGIN*(posUVW_max[idir]-posUVW_min[idir]), posUVW_max[idir]+DRAW_AUTO_ZOOM_MARGIN*(posUVW_max[idir]-posUVW_min[idir]) );
+    idir++;
+  }
+#endif
+    // draw fit histograms
     idir=definitions::projection_type::DIR_U;
     ipad=npadx+1;
     for(auto &it: *fitHistogramsInMM) {
       tcanvas->cd(ipad);
       if(gPad) {
-	gPad->SetFrameFillColor(kAzure-6); // show empty bins in ligh blue (matches standard kBird palette)
+	gPad->SetFrameFillColor(DRAW_PAD_FILL_COLOR); // show empty bins in ligh blue (matches standard kBird palette)
 	gPad->SetLogx(false);
 	gPad->SetLogy(false);
 	gPad->SetLogz(false);
@@ -790,10 +895,45 @@ void DrawFitResults(TCanvas *tcanvas, // input TCanvas
       idir++;
       residualHistogramsInMM.push_back((TH2D*)h->Clone());
     }
+    // calculate residual (FIT-REF) histograms
+    idir=definitions::projection_type::DIR_U;
+    for(auto &it: residualHistogramsInMM) {
+      it->Add(refHistogramsInMM->at(idir).get(), -1.0); // subtract REFERENCE histogram from FIT histogram
+      idir++;
+    }
+#if(DRAW_SAME_SCALE)
+    // first pass to set common min/max value
+    idir=definitions::projection_type::DIR_U;
+    auto diff_min=1E30;
+    auto diff_max=-1E30;
+    for(auto &it: residualHistogramsInMM) {
+      diff_min=std::min(diff_min, it->GetBinContent(it->GetMinimumBin())); // true MIN of histogram
+      diff_max=std::max(diff_max, it->GetBinContent(it->GetMaximumBin())); // true MAX of histogram
+      idir++;
+    }
+    for(auto &it: residualHistogramsInMM) {
+      it->SetMinimum( diff_min-DRAW_SAME_SCALE_MARGIN*(diff_max-diff_min) );
+      it->SetMaximum( diff_max+DRAW_SAME_SCALE_MARGIN*(diff_max-diff_min) );
+    }
+#endif
+#if(DRAW_AUTO_ZOOM)
+  idir=definitions::projection_type::DIR_U;
+  for(auto &it: residualHistogramsInMM) {
+    auto xcenter=0.5*(zDET_min+zDET_max);
+    auto ycenter=0.5*(posUVW_min[idir]+posUVW_max[idir]);
+    auto width=std::max(zDET_max-zDET_min, posUVW_max[idir]-posUVW_min[idir]); // common width to keep aspect ratio
+    it->GetXaxis()->SetRangeUser( xcenter-(1.0+DRAW_AUTO_ZOOM_MARGIN)*0.5*width, xcenter+(1.0+DRAW_AUTO_ZOOM_MARGIN)*0.5*width );
+    it->GetYaxis()->SetRangeUser( ycenter-(1.0+DRAW_AUTO_ZOOM_MARGIN)*0.5*width, ycenter+(1.0+DRAW_AUTO_ZOOM_MARGIN)*0.5*width );
+    //    it->GetXaxis()->SetRangeUser( zDET_min-DRAW_AUTO_ZOOM_MARGIN*(zDET_max-zDET_min), zDET_max+DRAW_AUTO_ZOOM_MARGIN*(zDET_max-zDET_min) );
+    //    it->GetYaxis()->SetRangeUser( posUVW_min[idir]-DRAW_AUTO_ZOOM_MARGIN*(posUVW_max[idir]-posUVW_min[idir]), posUVW_max[idir]+DRAW_AUTO_ZOOM_MARGIN*(posUVW_max[idir]-posUVW_min[idir]) );
+    idir++;
+  }
+#endif
+    // draw residual (FIT-REF) histograms
     idir=definitions::projection_type::DIR_U;
     ipad=2*npadx+1;
     for(auto &it: residualHistogramsInMM) {
-      it->Add(refHistogramsInMM->at(idir).get(), -1.0); // subtract REFERENCE histogram from FIT histogram
+      //      it->Add(refHistogramsInMM->at(idir).get(), -1.0); // subtract REFERENCE histogram from FIT histogram
       tcanvas->cd(ipad);
       if(gPad) {
 	gPad->SetLogx(false);
@@ -802,7 +942,7 @@ void DrawFitResults(TCanvas *tcanvas, // input TCanvas
 	gPad->SetLeftMargin(pad_left_margin);
 	gPad->SetRightMargin(pad_right_margin);
       }
-      auto h=(TH2D*)(it->DrawClone("COLZ"));
+      auto h=(TH2D*)(it->DrawClone("COLZ1")); // skip zero
       h->SetDirectory(0);
       h->SetStats(false);
       h->SetName(Form("diff_%s",h->GetName()));
@@ -1084,7 +1224,7 @@ double fit_Nprong(std::vector<std::shared_ptr<TH2D> > &referenceHistosInMM,
 //
 // Generates a sample of randomly generated pseudo-events
 // according to a given reaction hypothesis and strip response model
-// and then tries to reconstruct all tracks taking as a strting point
+// and then tries to reconstruct all tracks taking as a starting point
 // randomly smeared true vertex and true track endpoints.
 // Can be used to measure stability of the fit as a function
 // of divergence of the starting point from the true value.
@@ -1773,10 +1913,6 @@ int loop_Graw_Track3D(const char *recoInputFile, // Track3D collection with init
     };
 #endif
 
-    /////// DEBUG
-    //    if(nTracks!=3) continue; // accept only 3-prongs
-    /////// DEBUG
-
     //////// apply fiducial cuts on initial input tracks using HIGS_analysis::eventFilter method
     //
     if(!myAnalysisFilter.eventFilter(aTrack)) {
@@ -1873,9 +2009,15 @@ int loop_Graw_Track3D(const char *recoInputFile, // Track3D collection with init
 						      pow(pStart[6]-reference_endpoint[itrack].Z(), 2) ); // mm
     }
 
-    // prepare fitting strategy for 3-prong case
+    // prepare fitting strategy for 2-prong and 3-prong cases
     std::vector<std::set<int> > fixedParametersMask;
-    if(nTracks==3) {
+    if(nTracks==2) {
+      fixedParametersMask.push_back({1, 2, 4, 5, 7, 8});                      // STEP 1: fix only XY_DET coordinates
+      fixedParametersMask.push_back({4, 5, 6, 7, 8, 9});                      // STEP 2: fix all endpoints
+      fixedParametersMask.push_back({1, 2, 3});                               // STEP 3: fix vertex
+      fixedParametersMask.push_back({0});                                     // STEP 4: all free but scale
+      fixedParametersMask.push_back(std::set<int>());                         // STEP 5: all free
+    } else if(nTracks==3) {
       fixedParametersMask.push_back({1, 2, 4, 5, 7, 8, 10, 11});              // STEP 1: fix only XY_DET coordinates
       fixedParametersMask.push_back({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}); // STEP 2: fix vertex + all endpoints
       fixedParametersMask.push_back({4, 5, 6, 7, 8, 9, 10, 11, 12});          // STEP 3: fix all endpoints
@@ -1979,7 +2121,7 @@ int loop_Graw_Track3D(const char *recoInputFile, // Track3D collection with init
     }
 
     ////// DEBUG
-    if(fitted_event_count==1) break; // stop after 1st fitted 3-prong
+    //    if(fitted_event_count==1) break; // stop after 1st fitted event
     ////// DEBUG
 
   } // end of main processing loop
@@ -2286,10 +2428,6 @@ int loop_Graw_Track3D_Display(const char *recoInputFile, // Track3D collection w
     default:;
     };
 #endif
-
-    /////// DEBUG
-    //   if(nTracks!=3) continue; // accept only 3-prongs
-    /////// DEBUG
 
     //////// apply fiducial cuts on initial input tracks using HIGS_analysis::eventFilter method
     //
