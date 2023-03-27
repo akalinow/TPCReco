@@ -4,13 +4,15 @@
 ////////////////////////////////////////////
 ////////////////////////////////////////////
 CoordinateConverter::CoordinateConverter(EulerAngles nominal,
-                                         EulerAngles correction) {
+                                         EulerAngles correction,
+					 TVector3 offset) {
 
   auto detToNominalBeamRotation =
       TRotation{}.SetXEulerAngles(nominal.phi, nominal.theta, nominal.psi);
   auto nominalToActualBeamRotation = TRotation{}.SetXEulerAngles(
       correction.phi, correction.theta, correction.psi);
   rotation = nominalToActualBeamRotation * detToNominalBeamRotation;
+  beamOriginInDet = offset;
 }
 
 ////////////////////////////////////////////
@@ -19,6 +21,14 @@ TVector3 CoordinateConverter::detToBeam(const TVector3 &vector) const {
   return rotation * vector;
 }
 
+////////////////////////////////////////////
+////////////////////////////////////////////
+TVector3 CoordinateConverter::detToBeamWithOffset(const TVector3 &vector) const {
+  return rotation * (vector - beamOriginInDet);
+}
+
+////////////////////////////////////////////
+////////////////////////////////////////////
 TLorentzVector CoordinateConverter::detToBeam(const TLorentzVector &vector) const {
   return TLorentzVector{rotation * vector.Vect(), vector.T()};
 }
@@ -29,10 +39,19 @@ TVector3 CoordinateConverter::beamToDet(const TVector3 &vector) const {
   return rotation.Inverse() * vector;
 }
 
+////////////////////////////////////////////
+////////////////////////////////////////////
+TVector3 CoordinateConverter::beamToDetWithOffset(const TVector3 &vector) const {
+  return rotation.Inverse() * vector + beamOriginInDet;
+}
+
+////////////////////////////////////////////
+////////////////////////////////////////////
 TLorentzVector CoordinateConverter::beamToDet(const TLorentzVector &vector) const {
   return TLorentzVector{rotation.Inverse() * vector.Vect(), vector.T()};
 }
-////////////////////////////////////
+
+////////////////////////////////////////////
 ////////////////////////////////////////////
 std::ostream &operator<<(std::ostream &out,
                          const CoordinateConverter &converter) {

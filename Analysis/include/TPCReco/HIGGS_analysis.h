@@ -28,8 +28,8 @@ class HIGGS_analysis{
   HIGGS_analysis(std::shared_ptr<GeometryTPC> aGeometryPtr, // definition of LAB detector coordinates
 		 float beamEnergy,   // nominal gamma beam energy [keV] in detector LAB frame
 		 TVector3 beamDir,   // nominal gamma beam direction in detector LAB frame
-     IonRangeCalculator ionRangeCalculator,
-     CoordinateConverter coordinateConverter);
+		 IonRangeCalculator ionRangeCalculator,
+		 CoordinateConverter coordinateConverter);
 
   ~HIGGS_analysis();
 
