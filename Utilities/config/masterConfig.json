@@ -1,0 +1,20 @@
+{
+    "dataFile": "/data/edaq/2018/CoBo_2018-06-20T10:35:30.853_0000.graw",
+    "geometryFile": "/home/mfila/ELITPC/data/neutrons/geometry_mini_eTPC_2018-06-19T10:35:30.853.dat",
+    "resourcesPath": "/home/mfila/TPCReco/build/resources/",
+    "updateInterval": 3000,
+    "removePedestal": true,
+    "display": {
+        "autoZoom": true
+    },
+    "eventFilter": {
+        "enabled": true,
+        "events": [
+            4,
+            5,
+            9,
+            12
+        ],
+        "totalChargeLowerBound": 1200.5
+    }
+}

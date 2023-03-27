@@ -2,8 +2,8 @@
 
 ConfigManager::ConfigManager(){}
 
-boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv)
-{
+boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
+    
     boost::program_options::options_description cmdLineOptDesc("Allowed options");
     cmdLineOptDesc.add_options()//przykładowe opcje, konieczne opracowanie sposobu na skatalogowanie wszystkich możliwych opcji
         ("help", "produce help message")
@@ -26,11 +26,13 @@ boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv)
     return varMap;
 }
 
-boost::property_tree::ptree configureTree(boost::property_tree::ptree tree, int argc, char **argv)
-{
+boost::property_tree::ptree getConfig(int argc, char **argv){
+
+    boost::property_tree::ptree tree;
     boost::program_options::variables_map varMap = parseCmdLineArgs(argc, argv);
-    if(argc<1){
-        std::cout<<" Usage: tpcGUI config.json"<<std::endl;
+    if(argc<2){
+        std::cout<<" Usage: masterConfig.json"<<std::endl;
+        //wczytanie danych z jsona
         return tree;
     }
     else {
@@ -59,10 +61,19 @@ boost::property_tree::ptree configureTree(boost::property_tree::ptree tree, int 
     if(varMap.count("recoClusterDeltaTimeCells")){
         tree.put("hitFilter.recoClusterDeltaTimeCells", varMap["recoClusterDeltaTimeCells"].as<int>());
     }
-}
-void addEventType(boost::property_tree::ptree &tree, std::string evtype)
-{
-    tree.put("eventType",etype.as<std::string>());
-}
 
-void addParam(boost::property_tree::ptree &tree, std::string etype){}
+}
+event_type getEventType(boost::property_tree::ptree tree){
+    int eventTypeCount = tree.count( "eventType" );
+    // if( eventTypeCount == 0 ){
+    //     std::cout<<"Failed : eventType not found"<<std::endl;
+    //     return event_type::Undefined;
+    // }
+    // else{
+    //     return tree.get<event_type>("eventType");
+    // }
+    return tree.get<event_type>("eventType");
+}
+void setEventType(boost::property_tree::ptree &tree, event_type evtype){
+    tree.put("eventType",evtype)
+}
