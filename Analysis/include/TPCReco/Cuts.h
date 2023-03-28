@@ -200,6 +200,41 @@ struct ReconstructionQuality2Prong {
 };
 using Cut6 = ReconstructionQuality2Prong;
 
+// cut #7 : Additional selection cuts for 2-prong events to identify O-16 photo-dissociation candidates
+// - tracks are sorted by length (longest first)
+// - uncorrected length [mm] of the longest track must be within certain [min, max] range
+// - uncorrected length [mm] of the shortest track must be within certain [min, max] range
+// - optionally PIDs of the shortest and the longest track can be verifiesd as well (e.g. for automatic reconstruction)
+struct ReconstructionLengthCorrelation2Prong {
+  const bool enablePIDcheck;
+  const pid_type firstPID; // not used unless enablePIDcheck=true
+  const double firstLengthMin; // mm
+  const double firstLengthMax; // mm
+  const pid_type secondPID; // not used unless enablePIDcheck=true
+  const double secondLengthMin; // mm
+  const double secondLengthMax; // mm
+  template <class Track> bool operator()(Track *track) {
+    if (track->getSegments().size() != 2) {
+      return true;
+    }
+    auto segments = track->getSegments();
+    std::sort(segments.begin(), segments.end(),
+              [](const auto &a, const auto &b) {
+                return a.getLength() > b.getLength();
+              });
+    return (!enablePIDcheck ||
+	    (enablePIDcheck &&
+	     segments.front().getPID() == firstPID &&
+	     segments.back().getPID() == secondPID)) &&
+      segments.front().getLength()>firstLengthMin &&
+      segments.front().getLength()<firstLengthMax &&
+      segments.back().getLength()>secondLengthMin &&
+      segments.back().getLength()<secondLengthMax;
+  }
+};
+
+using Cut7 = ReconstructionLengthCorrelation2Prong;
+
 } // namespace cuts
 } // namespace tpcreco
 
