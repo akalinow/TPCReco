@@ -26,6 +26,12 @@ class IonRangeCalculator{
 
   void setGasConditions(gas_mixture_type gas, double p_mbar, double T_Kelvin); // input: GAS index, pressure [mbar], temperature [K]
 
+  void setEffectiveLengthCorrection(pid_type ion, double lengthScale=1.0, double lengthOffset_mm=0.0); // effective correction for range to energy conversion
+
+  void resetEffectiveLengthCorrection(pid_type ion);
+
+  void resetEffectiveLengthCorrections();
+
   gas_mixture_type getGasMixture(); // get current GAS index
 
   double getGasPressure(); // get current gas pressure [mbar]
@@ -43,11 +49,15 @@ class IonRangeCalculator{
   TGraph getIonBraggCurveMeVPerMM(pid_type ion, double E_MeV, int Npoints=1000); // dE/dx curve in [MeV/mm] for the current {gas, p, T}
 
   double getIonBraggCurveIntegralMeV(pid_type ion, double E_MeV, int Npoints=1000); // integral of dE/dx curve for the current {gas, p, T}
-  
+
+  double getEffectiveLengthCorrectionScale(pid_type ion);
+
+  double getEffectiveLengthCorrectionOffsetMM(pid_type ion);
+
   bool IsOK(); // check if there is at least one valid range/energy curve
 
   inline void setDebug(bool flag) { _debug=flag; }
-    
+
  private:
 
   std::map<std::tuple<gas_mixture_type,pid_type>, TGraph*> refGasRangeCurveMap;       // reference Range(E_kin) curve at given {gas, ion}
@@ -60,10 +70,11 @@ class IonRangeCalculator{
 
   gas_mixture_type myGasMixture{gas_mixture_type::GAS_MIN};   // GAS index 
   std::map<pid_type, double> massTableMap; // particle or isotope mass table in [MeV/c^2]
-  
+  std::map<pid_type, std::tuple<double, double> > effectiveLengthCorrectionMap; // effective length correction (scale & offset [mm]) per particle/ion Id
+
   double myGasTemperature{0}; // Kelvins
   double myGasPressure{0};    // mbar
-  
+
   void addIonRangeCurve(pid_type ion, gas_mixture_type gas, double p_mbar, double T_Kelvin, const std::string &datafile); // range(E_kin) corresponding to {gas, p, T}
   void addIonBraggCurve(pid_type ion, gas_mixture_type gas, double p_mbar, double T_Kelvin, const std::string &datafile); // dE/dx(x) corresponding to {gas, p, T}
   TGraph invertTGraph(const TGraph &aGraph) const;

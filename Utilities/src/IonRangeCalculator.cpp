@@ -39,7 +39,7 @@ IonRangeCalculator::IonRangeCalculator(std::string resourcesPath, gas_mixture_ty
 
   // Rescale ion range curves for specific gas, pressure and temperature.
   setGasConditions(gas, p_mbar, T_Kelvin);
-  
+
   // Initialize masses of netural atoms.
   // Sources:
   // [1] W.J. Huang et al., "The AME 2020 atomic mass evaluation (I). Evaluation of input data, and adjustment procedures",
@@ -67,7 +67,7 @@ void IonRangeCalculator::setGasMixture(gas_mixture_type gas){ // GAS index
     std::cerr<<__FUNCTION__<<": ERROR: Wrong gas mixture index="<<gas<<"!"<<std::endl;
     exit(-1);
   }
-  
+
   // check that at least one range/energy curve exists for this gas index
   bool valid=false;
   for(auto ion=pid_type::PID_MIN; ion!=pid_type::PID_MAX; ion=pid_type(ion+1)) {
@@ -80,6 +80,10 @@ void IonRangeCalculator::setGasMixture(gas_mixture_type gas){ // GAS index
     std::cerr<<__FUNCTION__<<": ERROR: Reference range/energy curves do not exist for gas mixture index="<<gas<<std::endl;
     exit(-1);
   }
+
+  // Reset effective length corrections
+  resetEffectiveLengthCorrections();
+
   myGasMixture=gas;
 }
 ////////////////////////////////////////////////
@@ -90,6 +94,9 @@ void IonRangeCalculator::setGasPressure(double p_mbar){ // pressure [mbar]
     std::cerr<<__FUNCTION__<<": ERROR: Wrong gas pressure p="<<p_mbar<<" mbar!"<<std::endl;
     exit(-1);
   }
+
+  // Reset effective length corrections
+  resetEffectiveLengthCorrections();
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
@@ -99,6 +106,9 @@ void IonRangeCalculator::setGasTemperature(double T_Kelvin){ // temperature [K]
     std::cerr<<__FUNCTION__<<": ERROR: Wrong gas temperature T="<<T_Kelvin<<" K!"<<std::endl;
     exit(-1);
   }
+
+  // Reset effective length corrections
+  resetEffectiveLengthCorrections();
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
@@ -138,7 +148,7 @@ double IonRangeCalculator::getIonRangeMM(pid_type ion, double E_MeV){ // interpo
     std::cerr<<__FUNCTION__<<": ERROR: Wrong energy="<<E_MeV<<" MeV!"<<std::endl;
     exit(-1);
   }
-  
+
   // rescale output range to current {p, T} values assuming ideal gas pV=nRT formula
   double ref_range=(it->second)->Eval(E_MeV); // mm
 
@@ -150,7 +160,16 @@ double IonRangeCalculator::getIonRangeMM(pid_type ion, double E_MeV){ // interpo
   }
   // DEBUG
 
-  return ref_range*(myGasTemperature/refGasRangeTemperatureMap[it->first])*(refGasRangePressureMap[it->first]/myGasPressure); // result in [mm]
+  auto range_mm = ref_range*(myGasTemperature/refGasRangeTemperatureMap[it->first])*(refGasRangePressureMap[it->first]/myGasPressure); // result in [mm]
+
+  // apply effective range correction for the current gas conditions (if any)
+  auto range_corr_mm=range_mm;
+  auto it2=effectiveLengthCorrectionMap.find(ion);
+  if(it2!=effectiveLengthCorrectionMap.end()) {
+    range_corr_mm = std::get<0>(it2->second)*range_mm + std::get<1>(it2->second);
+  }
+
+  return range_corr_mm;
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
@@ -167,8 +186,14 @@ double IonRangeCalculator::getIonEnergyMeV(pid_type ion, double range_mm){ // in
     exit(-1);
   }
 
+  // apply effective range correction for the current gas conditions (if any)
+  auto range_corr_mm=range_mm;
+  auto it2=effectiveLengthCorrectionMap.find(ion);
+  if(it2!=effectiveLengthCorrectionMap.end()) {
+    range_corr_mm = std::get<0>(it2->second)*range_mm + std::get<1>(it2->second);
+  }
   // rescale input range to reference {p_ref, T_ref} values assuming ideal gas pV=nRT formula
-  double ref_range=range_mm*(refGasRangeTemperatureMap[it->first]/myGasTemperature)*(myGasPressure/refGasRangePressureMap[it->first]); // mm
+  double ref_range=range_corr_mm*(refGasRangeTemperatureMap[it->first]/myGasTemperature)*(myGasPressure/refGasRangePressureMap[it->first]); // mm
 
   // DEBUG
   if(_debug) {
@@ -201,7 +226,7 @@ void IonRangeCalculator::addIonRangeCurve(pid_type ion, gas_mixture_type gas, do
     std::cerr<<__FUNCTION__<<": ERROR: Wrong gas mixture index="<<gas<<"!"<<std::endl;
     exit(-1);
   }
-  
+
   auto key=std::make_tuple(gas,ion);
   auto it=refGasRangeCurveMap.find(key);
 
@@ -430,3 +455,80 @@ bool IonRangeCalculator::IsOK(){
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
+void IonRangeCalculator::setEffectiveLengthCorrection(pid_type ion, double lengthScale, double lengthOffset_mm){ // effective correction for range to energy conversion
+
+  // sanity checks
+  auto it=refGasRangeCurveMap.find(std::make_tuple(myGasMixture, ion));
+  if(it==refGasRangeCurveMap.end()) {
+    std::cerr<<__FUNCTION__<<": ERROR: Reference range/energy curve is missing for: gas index="<<myGasMixture<<", ion="<<ion<<"!"<<std::endl;
+    exit(-1);
+  }
+  if(lengthScale==0.0) {
+    std::cerr<<__FUNCTION__<<": ERROR: Wrong length correction scale="<<lengthScale<<std::endl;
+    exit(-1);
+  }
+  effectiveLengthCorrectionMap[ion]=std::make_tuple(lengthScale, lengthOffset_mm);
+
+  // DEBUG
+  if(_debug) {
+    std::cout<<__FUNCTION__<<": set effective length correction for gas index="<<myGasMixture<<", ion="<<ion
+	     <<": scale="<<lengthScale<<", offset="<<lengthOffset_mm<<" mm"<<std::endl;
+  }
+  // DEBUG
+}
+////////////////////////////////////////////////
+////////////////////////////////////////////////
+void IonRangeCalculator::resetEffectiveLengthCorrection(pid_type ion){
+
+  setEffectiveLengthCorrection(ion, 1.0, 0.0);
+
+  // DEBUG
+  if(_debug) {
+    std::cout<<__FUNCTION__<<": reset effective length correction for gas index="<<myGasMixture<<", ion="<<ion<<std::endl;
+  }
+  // DEBUG
+}
+////////////////////////////////////////////////
+////////////////////////////////////////////////
+void IonRangeCalculator::resetEffectiveLengthCorrections(){
+
+  effectiveLengthCorrectionMap.empty();
+
+  // DEBUG
+  if(_debug) {
+    std::cout<<__FUNCTION__<<": reset ALL effective length correction for gas index="<<myGasMixture<<std::endl;
+  }
+  // DEBUG
+}
+////////////////////////////////////////////////
+////////////////////////////////////////////////
+double IonRangeCalculator::getEffectiveLengthCorrectionScale(pid_type ion){
+
+  double result=1.0; // no scale correction
+  auto it=effectiveLengthCorrectionMap.find(ion);
+  if(it!=effectiveLengthCorrectionMap.end()) {
+    result = std::get<0>(it->second); // unitless
+  }
+  // DEBUG
+  if(_debug) {
+    std::cout<<__FUNCTION__<<": effective length correction SCALE for gas index="<<myGasMixture<<", ion="<<ion<<":"<<result<<std::endl;
+  }
+  // DEBUG
+  return result;
+}
+////////////////////////////////////////////////
+////////////////////////////////////////////////
+double IonRangeCalculator::getEffectiveLengthCorrectionOffsetMM(pid_type ion){
+
+  double result=0.0; // no shift correction
+  auto it=effectiveLengthCorrectionMap.find(ion);
+  if(it!=effectiveLengthCorrectionMap.end()) {
+    result = std::get<1>(it->second); // mm
+  }
+  // DEBUG
+  if(_debug) {
+    std::cout<<__FUNCTION__<<": effective length correction OFFSET for gas index="<<myGasMixture<<", ion="<<ion<<":"<<result<<" mm"<<std::endl;
+  }
+  // DEBUG
+  return result;
+}
