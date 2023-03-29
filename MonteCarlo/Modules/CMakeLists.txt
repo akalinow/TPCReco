@@ -27,6 +27,17 @@ IF (BUILD_GEANT_MODULE)
     include_directories(${Geant4_INCLUDE_DIRS})
     include_directories(${CADMESH_INCLUDE_DIRS})
     include_directories(GeantSim/include)
+
+    include(ExternalProject)
+    ExternalProject_Add(geant_model
+            URL https://cernbox.cern.ch/remote.php/dav/public-files/DWjBUbnsCuwE15M/elitpc_STL_model_20180302.tar.gz
+            SOURCE_DIR "${CMAKE_INSTALL_PREFIX}/resources/Geant_STL_model"
+            DOWNLOAD_DIR "${CMAKE_INSTALL_PREFIX}/resources/Geant_STL_model"
+            URL_HASH MD5=0c2999ee658f0dec54f729ed889eff01
+            BUILD_COMMAND ""
+            INSTALL_COMMAND ""
+            CONFIGURE_COMMAND ""
+            )
 ENDIF ()
 
 SET(module_sources
@@ -50,6 +61,9 @@ ADD_LIBRARY(${MODULE_NAME} SHARED
         ${module_sources}
         )
 
+IF (BUILD_GEANT_MODULE)
+    add_dependencies(${MODULE_NAME} geant_model)
+ENDIF()
 set_target_properties(${MODULE_NAME} PROPERTIES PREFIX ${TPCRECO_PREFIX})
 
 target_link_libraries(${MODULE_NAME} ${ROOT_LIBRARIES} GenVector Utilities UtilsMC EventGenerator Reconstruction)
