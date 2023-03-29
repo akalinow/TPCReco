@@ -22,8 +22,6 @@ inline std::shared_ptr<EventSourceBase> EventSourceFactory::makeEventSourceObjec
 	std::string dataFileName = myConfig.get("dataFile", "");
 	std::string geometryFileName = myConfig.get("geometryFile", "");
 
-	ConfigManager cm; //TEMPORARY
-
 	std::shared_ptr<EventSourceBase> myEventSource;
 
 	if (dataFileName.empty() || geometryFileName.empty()) {
@@ -71,20 +69,20 @@ inline std::shared_ptr<EventSourceBase> EventSourceFactory::makeEventSourceObjec
 
 	if (dataFileVec.size() == 1 && boost::filesystem::is_regular_file(dataFileVec[0]) && dataFileName.find(".root") != std::string::npos) {
 		myEventSource = std::make_shared<EventSourceROOT>(geometryFileName);
-		cm.setEventType(myConfig, event_type::EventSourceROOT);
+		myConfig.put("eventType", event_type::EventSourceROOT);
 	}
 	else if (dataFileVec.size() == 1 && dataFileName.find("_MC_") != std::string::npos) {
 		myEventSource = std::make_shared<EventSourceMC>(geometryFileName);
-		cm.setEventType(myConfig, event_type::EventSourceMC);
+		myConfig.put("eventType", event_type::EventSourceMC);
 	}
 
 #ifdef WITH_GET
 	else if (all_graw) { //ROOT_file_check && dataFileName.find(".graw")!=std::string::npos){
-
-		mc.setOnlineFlag(myConfig, false);
+		
+		myConfig.put("onlineFlag", false);
 		if (myConfig.find("singleAsadGrawFile") != myConfig.not_found() && myConfig.get<bool>("singleAsadGrawFile")) {
 			myEventSource = std::make_shared<EventSourceMultiGRAW>(geometryFileName);
-			cm.setEventType(myConfig, event_type::EventSourceMultiGRAW);
+			myConfig.put("eventType", event_type::EventSourceMultiGRAW);
 			{
 				unsigned int AsadNboards = dynamic_cast<EventSourceGRAW*>(myEventSource.get())->getGeometry()->GetAsadNboards();
 				if (dataFileVec.size() > AsadNboards) {
@@ -95,7 +93,7 @@ inline std::shared_ptr<EventSourceBase> EventSourceFactory::makeEventSourceObjec
 		}
 		else {
 			myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
-			cm.setEventType(myConfig, event_type::EventSourceGRAW);
+			myConfig.put("eventType", event_type::EventSourceGRAW);
 			dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(myConfig.get("frameLoadRange", 100));
 			if (dataFileVec.size() > 1) {
 				std::cerr << KRED << "Provided too many GRAW files. Expected 1. dataFile: " << RST << dataFileName << _endl_;
@@ -104,14 +102,14 @@ inline std::shared_ptr<EventSourceBase> EventSourceFactory::makeEventSourceObjec
 		}
 	}
 	else if (dataFileVec.size() == 1 && boost::filesystem::is_directory(dataFileVec[0])) {
-		mc.setOnlineFlag(myConfig, true);
+		myConfig.put("onlineFlag", true);
 		if (myConfig.find("singleAsadGrawFile") != myConfig.not_found() && myConfig.get<bool>("singleAsadGrawFile")) {
 			myEventSource = std::make_shared<EventSourceMultiGRAW>(geometryFileName);
-			cm.setEventType(myConfig, event_type::EventSourceMultiGRAW);
+			myConfig.put("eventType", event_type::EventSourceMultiGRAW);
 		}
 		else {
 			myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
-			cm.setEventType(myConfig, event_type::EventSourceGRAW);
+			myConfig.put("eventType", event_type::EventSourceGRAW);
 			dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(myConfig.get("frameLoadRange", 10));
 		}
 	}

@@ -2,9 +2,6 @@
 #include "EventSourceBase.h"
 #include <boost/property_tree/json_parser.hpp>
 #include "GUI_commons.h"
-#include "ConfigManager.h"
-
-class MainFrame;
 
 class EventSourceFactory {
 private:

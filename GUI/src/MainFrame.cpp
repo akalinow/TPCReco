@@ -109,9 +109,8 @@ void MainFrame::InitializeEventSource() {
 	std::string geometryFileName = myConfig.get("geometryFile", "");
 	myEventSource = EventSourceFactory::makeEventSourceObject(myConfig);
 
-	ConfigManager cm; //TEMPORARY
-	event_type eventType = cm.getEventType(myConfig);
-	bool onlineFlag = cm.getOnlineFlag(myConfig);
+	event_type eventType = myConfig.get<event_type>("eventType");
+	bool onlineFlag = myConfig.get<bool>("onlineFlag");
 
 	if (onlineFlag) {
 		fileWatchThread = std::thread(&DirectoryWatch::watch, &myDirWatch, dataFileName);
