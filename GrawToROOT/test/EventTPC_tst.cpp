@@ -203,14 +203,6 @@ int main(int argc, char *argv[]) {
   int check = error_list_bool.size(); 
   for (std::vector<bool>::iterator it = error_list_bool.begin(); it != error_list_bool.end(); ++it) { check -= *it; } // checking if all Tests returns correct values
 
-  /////
-  ///This part to be moved to GeometryTPC_tst.cpp
-  //std::cout<<KBLU<<"Strip direction has reversed strip numbering wrt. cartesian coordinates: "<<RST<<std::endl;
-  //std::cout<<KBLU<<"U: "<<RST<<myEventPtr->GetGeoPtr()->IsStripDirReversed(projection_type::DIR_U)<<std::endl;
-  //std::cout<<KBLU<<"V: "<<RST<<myEventPtr->GetGeoPtr()->IsStripDirReversed(projection_type::DIR_V)<<std::endl;
-  //std::cout<<KBLU<<"W: "<<RST<<myEventPtr->GetGeoPtr()->IsStripDirReversed(projection_type::DIR_W)<<std::endl;
-  /////
-
   if(check>0){return -1;}
   return 0;
 }
