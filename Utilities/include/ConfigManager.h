@@ -17,8 +17,6 @@ public:
 
     event_type getEventType(boost::property_tree::ptree tree);
     void setEventType(boost::property_tree::ptree &tree, event_type evtype);
-    void setOnlineFlag(boost::property_tree::ptree& tree, bool flag) {};
-    bool getOnlineFlag(boost::property_tree::ptree& tree) {};
 
 private:
     boost::program_options::variables_map parseCmdLineArgs(int, char **);   

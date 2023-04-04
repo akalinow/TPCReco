@@ -1,5 +1,9 @@
 {
     "dataFile": "/home/mfila/TPCReco/build/lineEvents.root",
-    "geometryFile": "/home/mfila/TPCReco/resources/geometry_mini_eTPC.dat",
-    "resourcesPath":"/home/mfila/TPCReco/build/resources/"   
+    "geometryFile": "/home/akalinow/scratch/resources/geometry_mini_eTPC.dat",
+    "resourcesPath":"/home/akalinow/scratch/ELITPC/TPCReco/build/resources/",
+    "singleAsadGrawFile":false,
+    "noTree":false,
+    
+
 }
