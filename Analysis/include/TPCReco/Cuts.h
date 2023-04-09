@@ -7,6 +7,9 @@
 #include <algorithm>
 #include <map>
 #include <memory>
+/////// DEBUG
+#include <iostream> // for DEBUG std::cout
+/////// DEBUG
 namespace tpcreco {
 namespace cuts {
 
@@ -191,11 +194,22 @@ struct ReconstructionQuality2Prong {
               [](const auto &a, const auto &b) {
                 return a.getLength() > b.getLength();
               });
+    /////// DEBUG
+    //    std::cout<<__FUNCTION__<<": (track.front=="<<firstPID<<")=" << (segments.front().getPID() == firstPID)
+    //	     << ", (track.back=="<<secondPID<<")=" << (segments.back().getPID() == secondPID)
+    //	     << ", (track.Chi2<="<<chi2<<")=" << (track->getChi2() <= chi2)
+    //	     << ", (track->HypothesisFitChi2<="<<hypothesisChi2<<")=" << (track->getHypothesisFitChi2() <= hypothesisChi2)
+    //	     << ", (track.len>="<<length<<")=" << (track->getLength() >= length)
+    //	     << ", (track.charge>"<<charge<<")=" << (track->getIntegratedCharge(track->getLength()) >= charge)
+    //	     << ", track.charge=" << track->getIntegratedCharge(track->getLength())
+    //	     << std::endl;
+    /////// DEBUG
     return segments.front().getPID() == firstPID &&
            segments.back().getPID() == secondPID && track->getChi2() <= chi2 &&
            track->getHypothesisFitChi2() <= hypothesisChi2 &&
-           track->getLength() >= length &&
-           track->getIntegratedCharge(track->getLength()) >= charge;
+      track->getLength() >= length; //// DEBUG //&&
+      //           track->getIntegratedCharge(track->getLength()) >= charge;
+      ///// DEBUG
   }
 };
 using Cut6 = ReconstructionQuality2Prong;
