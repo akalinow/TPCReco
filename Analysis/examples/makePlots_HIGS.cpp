@@ -20,7 +20,7 @@ R__ADD_LIBRARY_PATH(../lib)
 #define BEAM_TILT_FIT_XMIN   -150.0 // [mm]
 #define BEAM_TILT_FIT_XMAX    150.0 // [mm]
 #define BEAM_TILT_FIT_ENABLE  false
-#define TCUT_COSTHETA_VS_LENGTH_ENABLE false
+#define TCUT_COSTHETA_VS_LENGTH_ENABLE true
 
 void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cutInfo="") {
 
@@ -540,7 +540,7 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
 
   //// 16O : 2-prong, Alpha track length, zoomed X=[20mm, 40mm], linear Y scale @ 8.66 MeV
   //// 2-prong, Alpha track length, zoomed X=[40mm, 70mm], linear Y scale @ 9.845 MeV
-  //// 2-prong, Alpha track length, zoomed X=[60mm, 80mm], linear Y scale @ 11.5 MeV
+  //// 2-prong, Alpha track length, zoomed X=[50mm, 90mm], linear Y scale @ 11.5 MeV
   //// 2-prong, Alpha track length, zoomed X=[60mm, 90mm], linear Y scale @ 11.9 MeV
   //// 2-prong, Alpha track length, zoomed X=[75mm, 105mm], linear Y scale @ 12.3 MeV
   if(plot_2prong) {
@@ -589,7 +589,7 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     h1->SetLineWidth(2);
     h1->SetFillColor(plot_fill_color);
     h1->SetFillStyle(plot_fill_style);
-    //    h1->GetXaxis()->SetRangeUser(0.5, 3.0); // valid for 9.845 MeV
+    //   h1->GetXaxis()->SetRangeUser(0.5, 3.0); // valid for 9.845 MeV
     h1->GetXaxis()->SetRangeUser(0.5, 2.5); // valid for 9.845 MeV after 16O selection
     //    h1->GetXaxis()->SetRangeUser(2.0, 4.0); // valid for 11.5 MeV after 16O selection
     //    h1->GetXaxis()->SetRangeUser(2.5, 4.5); // valid for 11.9 MeV after 16O selection
@@ -852,14 +852,14 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
   mycut->SetLineColor(kRed);
   mycut->SetLineWidth(3);
   
-  //// 2-prong, Alpha track length (X) vs Alpha cos(theta_BEAM_LAB), zoomed Y=[20mm, 120mm]
+  //// 2-prong, Alpha track length (X) vs Alpha cos(theta_BEAM_LAB), zoomed Y=[30mm, 120mm]
   if(plot_2prong && TCUT_COSTHETA_VS_LENGTH_ENABLE) {
     c->Clear();
     h2=(TH2D*)f->Get("h_2prong_alpha_cosThetaBEAM_len_LAB")->Clone(); // copy for modifications of the same histogram
     c->SetName(Form("c_%s",h2->GetName()));
     h2->SetTitle((energyInfo+h2->GetTitle()).c_str());
     gStyle->SetOptStat(10); // KISOURMEN : show entries only
-    h2->Rebin2D(2,2);
+    //    h2->Rebin2D(2,2);
     h2->UseCurrentStyle();
     h2->SetStats(true);
     h2->Draw("COLZ");
@@ -868,8 +868,9 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     h2->SetTitleOffset(1.6, "X");
     h2->SetTitleOffset(1.4, "Y");
     h2->SetTitleOffset(1.2, "Z");
-    //    h2->GetYaxis()->SetRangeUser(0, 80); // valid for 8.66 MeV
-    h2->GetYaxis()->SetRangeUser(0, 100); // valid for 11.9 MeV
+    h2->GetYaxis()->SetRangeUser(0, 80); // valid for 8.66 MeV
+    //    h2->GetYaxis()->SetRangeUser(30, 110); // valid for 11.5 MeV
+    //    h2->GetYaxis()->SetRangeUser(30, 120); // valid for 11.9 MeV
     gPad->Update();
     st = (TPaveStats *)c->GetPrimitive("stats");
     if(st) {
@@ -1256,7 +1257,7 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     //    h1->GetXaxis()->SetRangeUser(30.0, 130.0); // valid for 11.9 MeV
     //    h1->GetXaxis()->SetRangeUser(20.0, 100.0); // valid for 8.66 MeV
     h1->GetXaxis()->SetRangeUser(20.0, 100.0); // valid for 9.845 MeV
-   gPad->SetLeftMargin(0.125);
+    gPad->SetLeftMargin(0.125);
     gPad->SetRightMargin(0.1);
     gPad->SetLogy(true);
     gPad->Update();
@@ -1410,6 +1411,7 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     //    h1->GetXaxis()->SetRangeUser(10.0, 14.0); // valid for 11.9 MeV
     //    h1->GetXaxis()->SetRangeUser(9.0, 13.0); // valid for 11.5 MeV
     h1->GetXaxis()->SetRangeUser(7.5, 11.0); // valid for 9.845 MeV 
+    //    h1->GetXaxis()->SetRangeUser(6.5, 10.5); // valid for 8.66 MeV
     //    h1->GetXaxis()->SetRangeUser(0.0, 10.0);
     gPad->SetLeftMargin(0.125);
     gPad->SetRightMargin(0.1);
