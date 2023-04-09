@@ -67,6 +67,7 @@ R__ADD_LIBRARY_PATH(../lib)
 #define DRAW_SAME_SCALE_MARGIN 0.05 // add +/- 5% margin for common dE/dx scale
 #define DRAW_AUTO_ZOOM_MARGIN 0.4 // add +/- 40% margin for histogram ranges in AUTO ZOOM mode (if possible)
 #define DRAW_PAD_FILL_COLOR kAzure-6 // matches default kBird palette
+#define DRAW_LOG_SCALE true // use LOG scale for dE/dx axis (NOTE: differential plots will still use LIN scale)
 
 #define MISSING_PID_REPLACEMENT_ENABLE true // TODO - to be parameterized
 #define MISSING_PID_1PRONG             ALPHA // TODO - to be parameterized
@@ -657,7 +658,7 @@ void DrawEndpointOnUVWProjection(TPad *tpad, TrackSegment3D &aSeg, int dir, int 
 void DrawTracksOnUVWProjection(TPad *tpad, Track3D *aTrack, int dir, bool useUniformColor=false) {
   if(!tpad || !aTrack || aTrack->getSegments().size()==0) return;
   auto vertex_color = (useUniformColor ? kWhite : kMagenta);
-  std::vector<int> track_color={ kRed, kGreen, kBlue };
+  std::vector<int> track_color={ kRed, kGreen, kAzure+7}; // kBlue };
   DrawVertexOnUVWProjection(tpad, aTrack->getSegments().at(0), dir, vertex_color);
   auto track_index=0;
   for(auto & aSeg: aTrack->getSegments()) {
@@ -824,7 +825,7 @@ void DrawFitResults(TCanvas *tcanvas, // input TCanvas
       gPad->SetFrameFillColor(DRAW_PAD_FILL_COLOR); // show empty bins in ligh blue (matches standard kBird palette)
       gPad->SetLogx(false);
       gPad->SetLogy(false);
-      gPad->SetLogz(false);
+      gPad->SetLogz(DRAW_LOG_SCALE);
       gPad->SetLeftMargin(pad_left_margin);
       gPad->SetRightMargin(pad_right_margin);
     }
@@ -881,7 +882,7 @@ void DrawFitResults(TCanvas *tcanvas, // input TCanvas
 	gPad->SetFrameFillColor(DRAW_PAD_FILL_COLOR); // show empty bins in ligh blue (matches standard kBird palette)
 	gPad->SetLogx(false);
 	gPad->SetLogy(false);
-	gPad->SetLogz(false);
+	gPad->SetLogz(DRAW_LOG_SCALE);
 	gPad->SetLeftMargin(pad_left_margin);
 	gPad->SetRightMargin(pad_right_margin);
       }
@@ -2154,7 +2155,7 @@ int loop_Graw_Track3D(const char *recoInputFile, // Track3D collection with init
 // Overlays Track3D from RECO file on top of PEventTPC raw-data deposits from GRAW file.
 // Pedestal calculation and clustering settings have to be adjusted for the real-data and the Monte Carlo cases.
 //
-int loop_Graw_Track3D_Display(const char *recoInputFile, // Track3D collection with RECO/MC data corresponding to RAW file
+int loop_Graw_Track3D_Display(const char *recoInputFile, // Track3D collection with RECO data (e.g.FIT) corresponding to RAW file
 			      const char *rawInputFile, // single ROOT file, or single GRAW, or comma-separated list of GRAW files
 			      unsigned long firstEvent=0,        // first eventId to process
 			      unsigned long lastEvent=0,         // last eventId to process (0 = up to the end)
@@ -2167,7 +2168,8 @@ int loop_Graw_Track3D_Display(const char *recoInputFile, // Track3D collection w
 			      bool flag_2prong=true, // enable fitting of 2-prong events
 			      bool flag_3prong=true, // enable fitting of 3-prong events
 			      bool flag_clustering=false,  // enable displaying clustered RAW data
-			      bool flag_subtract_pedestals=true  // enable pedestal subtraction in case of GRAW files
+			      bool flag_subtract_pedestals=true,  // enable pedestal subtraction in case of GRAW files
+			      const char *refInputFile=NULL // optional Track3D collection with REFERENCE (e.g. TRUE MC) RECO data corresponding to RAW file
 			      ) {
   if (!gROOT->GetClass("GeometryTPC")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
@@ -2237,12 +2239,16 @@ int loop_Graw_Track3D_Display(const char *recoInputFile, // Track3D collection w
   }
   HIGGS_analysis myAnalysisFilter(aGeometry, beamEnergy_MeV, beamDir, pressure_mbar, temperature_K); // just for filtering
 
-  ////////// opens input ROOT file with tracks (Track3D objects)
+  ////////// opens MAIN input ROOT file with tracks (Track3D objects)
   //
   // NOTE: Tree's and branch names are kept the same as in HIGS_analysis
   //       for easy MC-reco comparison. To be replaced with better
   //       class/object in future toy MC.
   TFile *aFile = new TFile(recoInputFile, "OLD");
+  if(!aFile && strlen(recoInputFile)>0) {
+    std::cerr<<"ERROR: Cannot open MAIN RECO file:" << recoInputFile << "!" << std::endl;
+    return 1;
+  }
   TTree *aTree=(TTree*)aFile->Get("TPCRecoData");
   if(!aTree) {
     std::cerr<<"ERROR: Cannot find 'TPCRecoData' tree!"<<std::endl;
@@ -2266,6 +2272,47 @@ int loop_Graw_Track3D_Display(const char *recoInputFile, // Track3D collection w
 
   const unsigned int nEntries = aTree->GetEntries();
 
+  ////////// opens optional REERENCE input ROOT file with tracks (Track3D objects)
+  //
+  TFile *refFile=NULL;
+  TTree *refTree=NULL;
+  Track3D *refTrack=NULL;
+  TBranch *refBranch=NULL;
+  eventraw::EventInfo *refEventInfo=NULL;
+  TBranch *refBranchInfo=NULL;
+  if(refInputFile) {
+    refFile = new TFile(refInputFile, "OLD");
+    if(!refFile) {
+      std::cerr<<"ERROR: Cannot open REFERENCE RECO file:" << refInputFile << "!" << std::endl;
+      return 1;
+    }
+  }
+  if(refFile) {
+    refTree=(TTree*)refFile->Get("TPCRecoData");
+    if(!refTree) {
+      std::cerr<<"ERROR: Cannot find 'TPCRecoData' tree!"<<std::endl;
+    }
+  }
+  if(refTree) {
+    refTrack = new Track3D();
+    refBranch  = refTree->GetBranch("RecoEvent");
+    if(!refBranch) {
+      std::cerr<<"ERROR: Cannot find 'RecoEvent' branch!"<<std::endl;
+      return 1;
+    }
+    refBranch->SetAddress(&refTrack);
+    refBranchInfo = refTree->GetBranch("EventInfo");
+    if(!refBranchInfo) {
+      std::cerr<<"ERROR: Cannot find 'EventInfo' branch!"<<std::endl;
+      return 1;
+    }
+    refEventInfo = new eventraw::EventInfo();
+    refBranchInfo->SetAddress(&refEventInfo);
+
+    // set friend class
+    aTree->AddFriend(refTree);
+  }
+
   ////////// sort input tree in ascending order of {runID, eventID}
   //
   TTreeIndex *I=NULL;
@@ -2275,6 +2322,14 @@ int loop_Graw_Track3D_Display(const char *recoInputFile, // Track3D collection w
     I=(TTreeIndex*)aTree->GetTreeIndex(); // get the tree index
     index=I->GetIndex();
   }
+  Long64_t* refIndex=NULL;
+  if(refTree && refBranchInfo) {
+    TTreeIndex *I=NULL;
+    refTree->BuildIndex("runId", "eventId");
+    I=(TTreeIndex*)refTree->GetTreeIndex(); // get the tree index
+    refIndex=I->GetIndex();
+  }
+
 
   ////////// initialize EventSource
   //
@@ -2354,6 +2409,22 @@ int loop_Graw_Track3D_Display(const char *recoInputFile, // Track3D collection w
     const unsigned long eventId = (unsigned long)aEventInfo->GetEventId();
     const int nTracks = aTrack->getSegments().size();
 
+    // sanity check for optional REFERNCE tracks
+    bool refOK=false;
+    if(refTree) {
+      if(refIndex) {
+	refBranch->GetEntry(refTree->GetEntryNumberWithIndex(runId, eventId));
+	refBranchInfo->GetEntry(refTree->GetEntryNumberWithIndex(runId, eventId));
+      }
+      std::cout << "REF CHECK: refEventInfo=" << refEventInfo << ", refTrack=" << refTrack << std::endl;
+      std::cout << "REF CHECK: refEventInfo: " << *refEventInfo << std::endl;
+      std::cout << "REF CHECK: refTrack: ntracks=" << refTrack->getSegments().size()<<std::endl;
+      const unsigned long refRunId = (unsigned long)refEventInfo->GetRunId();
+      const unsigned long refEventId = (unsigned long)refEventInfo->GetEventId();
+      const int refNTracks = refTrack->getSegments().size();
+      if(refRunId==runId && refEventId==eventId && nTracks==refNTracks) refOK=true;
+    }
+
     std::cout << "#####################" << std::endl
 	      << "#### EVENT PLAYER ITER=" << ievent<< ", RUN=" << runId << ", EVENT=" << eventId << ", NTRACKS=" << nTracks << std::endl
 	      << "#####################" << std::endl;
@@ -2397,10 +2468,15 @@ int loop_Graw_Track3D_Display(const char *recoInputFile, // Track3D collection w
       continue;
     }
 
-    /////// assign correct geometry pointer to initial track segments
+    /////// assign correct geometry pointer to track segments
     //
     for(auto &aSeg: aTrack->getSegments()) {
       aSeg.setGeometry(aGeometry);
+    }
+    if(refTree) {
+      for(auto &refSeg: refTrack->getSegments()) {
+	refSeg.setGeometry(aGeometry);
+      }
     }
 
     // get sorted list of tracks (descending order by track length)
@@ -2428,6 +2504,34 @@ int loop_Graw_Track3D_Display(const char *recoInputFile, // Track3D collection w
     default:;
     };
 #endif
+
+    if(refTree) {
+      // get sorted list of tracks (descending order by track length)
+      auto coll2=refTrack->getSegments();
+      std::sort(coll2.begin(), coll2.end(),
+		[](const TrackSegment3D& a, const TrackSegment3D& b) {
+		  return a.getLength() > b.getLength();
+		});
+
+#if(MISSING_PID_REPLACEMENT_ENABLE) // TODO - to be parameterized
+      // assign missing PID to REF data file by track length
+      switch(nTracks) {
+      case 3:
+	if(coll2.front().getPID()==UNKNOWN) coll2.front().setPID(MISSING_PID_3PRONG_LEADING); // TODO - to be parameterized
+	if(coll2.at(1).getPID()==UNKNOWN) coll2.at(1).setPID(MISSING_PID_3PRONG_MIDDLE); // TODO - to be parameterized
+	if(coll2.back().getPID()==UNKNOWN) coll2.back().setPID(MISSING_PID_3PRONG_TRAILING); // TODO - to be parameterized
+	break;
+      case 2:
+	if(coll2.front().getPID()==UNKNOWN) coll2.front().setPID(MISSING_PID_2PRONG_LEADING); // TODO - to be parameterized
+	if(coll2.back().getPID()==UNKNOWN) coll2.back().setPID(MISSING_PID_2PRONG_TRAILING); // TODO - to be parameterized
+	break;
+      case 1:
+	if(coll2.front().getPID()==UNKNOWN) coll2.front().setPID(MISSING_PID_1PRONG); // TODO - to be parameterized
+	break;
+      default:;
+      };
+#endif
+    }
 
     //////// apply fiducial cuts on initial input tracks using HIGS_analysis::eventFilter method
     //
@@ -2465,7 +2569,7 @@ int loop_Graw_Track3D_Display(const char *recoInputFile, // Track3D collection w
     //////// display UVW histograms
     //
     outputCanvasROOTFile->cd();
-    DrawFitResults(outputCanvas, &referenceHistosInMM, NULL, NULL, aTrack, NULL);
+    DrawFitResults(outputCanvas, &referenceHistosInMM, NULL, aTrack, (refOK ? refTrack : NULL) );
     outputCanvas->SetName(Form("c_run%ld_evt%ld", runId, eventId));
     outputCanvas->SetTitle(outputCanvas->GetName());
     outputCanvas->Write();
@@ -2485,6 +2589,9 @@ int loop_Graw_Track3D_Display(const char *recoInputFile, // Track3D collection w
   } // end of main processing loop
 
   aFile->Close();
+  if(refFile) {
+    refFile->Close();
+  }
   outputCanvasROOTFile->Close();
 
   return 0;
