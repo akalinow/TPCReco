@@ -6,16 +6,16 @@ include_directories(${PROJECT_SOURCE_DIR}/DataFormats/include/)
 include_directories(${PROJECT_SOURCE_DIR}/Utilities/include/)
 root_generate_dictionary(
   G__${TPCRECO_PREFIX}${MODULE_NAME}
-  include/TPCReco/EventTPC.h
-  include/TPCReco/GeometryTPC.h
-  include/TPCReco/SigClusterTPC.h
-  include/TPCReco/Hit2D.h
-  include/TPCReco/Track3D.h
-  include/TPCReco/TrackSegment3D.h
-  include/TPCReco/TrackSegment2D.h
-  include/TPCReco/MultiKey.h
-  include/TPCReco/EventRaw.h
-  include/TPCReco/EventInfo.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/EventTPC.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/GeometryTPC.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/SigClusterTPC.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/Hit2D.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/Track3D.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/TrackSegment3D.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/TrackSegment2D.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/MultiKey.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/EventRaw.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/EventInfo.h
   LINKDEF
   LinkDef.h)
 #
