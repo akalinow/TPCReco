@@ -231,7 +231,12 @@ int analyzeRecoEvents(const  std::string & geometryFileName,
   cuts.push_back(tpcreco::cuts::Cut3{aGeometry.get(), 5});
   cuts.push_back(tpcreco::cuts::Cut4{aGeometry.get(), 25, 5});
   cuts.push_back(tpcreco::cuts::Cut5{aGeometry.get(), beam_diameter}); // affects 2-prong only
-  cuts.push_back(tpcreco::cuts::Cut6{pid_type::ALPHA, pid_type::CARBON_12, 10.0, 5.0, 30.0, 1000.0}); // affects 2-prong only (enable only for automatic reconstruction)
+  //
+  // NOTE: Cut #6 is disabled by default.
+  //       It should be DISABLED for manually reconstructed events and ENABLED for automatically reconstructed ones.
+  //
+  // cuts.push_back(tpcreco::cuts::Cut6{pid_type::ALPHA, pid_type::CARBON_12, 10.0, 5.0, 30.0, 1000.0}); // affects 2-prong only
+  //
   cuts.push_back(tpcreco::cuts::Cut7{false, // affects 2-prong only
 	pid_type::ALPHA, std::min(alphaMinCut, alphaMaxCut), std::max(alphaMinCut, alphaMaxCut),
 	pid_type::CARBON_12, std::min(carbonMinCut, carbonMaxCut), std::max(carbonMinCut, carbonMaxCut)});
