@@ -4,8 +4,9 @@ message(STATUS "Adding CMake fragment for module:\t${MODULE_NAME}")
 # ROOT 6.08 dictionary MODULE workaround
 include_directories(${PROJECT_SOURCE_DIR}/Analysis/include/)
 root_generate_dictionary(
-  G__${TPCRECO_PREFIX}${MODULE_NAME} include/TPCReco/HIGS_trees_dataFormat.h
-  LINKDEF LinkDef.h)
+  G__${TPCRECO_PREFIX}${MODULE_NAME}
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/HIGS_trees_dataFormat.h LINKDEF
+  LinkDef.h)
 #
 
 reco_add_library(${MODULE_NAME} EXTRA_SOURCES
