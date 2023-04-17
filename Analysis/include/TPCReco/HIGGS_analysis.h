@@ -29,7 +29,8 @@ class HIGGS_analysis{
 		 float beamEnergy,   // nominal gamma beam energy [keV] in detector LAB frame
 		 TVector3 beamDir,   // nominal gamma beam direction in detector LAB frame
 		 IonRangeCalculator ionRangeCalculator,
-		 CoordinateConverter coordinateConverter);
+		 CoordinateConverter coordinateConverter,
+		 bool nominalBoostFlag); // forces to use nominal gamma beam energy for LAB<->CMS boost
 
   ~HIGGS_analysis();
 
@@ -56,5 +57,6 @@ class HIGGS_analysis{
   CoordinateConverter coordinateConverter;
   TVector3 photonUnitVec_DET_LAB; // dimensionless, LAB reference frame, detector coordinate system
   float photonEnergyInMeV_LAB{0};  // MeV
+  bool useNominalPhotonEnergyForBoost{false}; // true=(use nominal photon energy for LAB->CMS boost) / false=(use reconstructed event-by-event photon energy for LAB->CMS boost)
 };
 #endif

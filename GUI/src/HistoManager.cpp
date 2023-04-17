@@ -655,6 +655,10 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   
   TF1 dEdx = myTkBuilder.getdEdx();
   if(!dEdx.GetNpar()) return;
+  //////// HACK by MC - for prettier HistoManager::drawDevelHistos (1/04/2023)
+  const double points_per_mm = 100;
+  dEdx.SetNpx((dEdx.GetXmax()-dEdx.GetXmin())*points_per_mm);
+  //////// HACK by MC - for prettier HistoManager::drawDevelHistos (1/04/2023)
   double carbonScale = dEdx.GetParameter("carbonScale");
   
   dEdx.SetLineColor(kBlack);
@@ -669,6 +673,9 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   dEdx.SetLineStyle(2);
   dEdx.SetLineWidth(2);
   TObject *aObj1 = dEdx.DrawCopy("same");
+  //////// HACK by MC - for prettier HistoManager::drawDevelHistos (1/04/2023)
+  if((TF1*)aObj1) ((TF1*)aObj1)->SetName("alpha_model");
+  //////// HACK by MC - for prettier HistoManager::drawDevelHistos (1/04/2023)
   aLegend->AddEntry(aObj1,"#alpha","l");
   fObjClones.push_back(aObj1);
   
@@ -678,6 +685,9 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   dEdx.SetLineStyle(2);
   dEdx.SetLineWidth(2);
   TObject *aObj2  = dEdx.DrawCopy("same");
+  //////// HACK by MC - for prettier HistoManager::drawDevelHistos (1/04/2023)
+  if((TF1*)aObj2) ((TF1*)aObj2)->SetName("carbon_model");
+  //////// HACK by MC - for prettier HistoManager::drawDevelHistos (1/04/2023)
   aLegend->AddEntry(aObj2,"^{12}C","l");
   fObjClones.push_back(aObj2);
   aLegend->Draw();
