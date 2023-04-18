@@ -5,7 +5,7 @@ message(STATUS "Adding CMake fragment for module:\t${MODULE_NAME}")
 include_directories(${PROJECT_SOURCE_DIR}/Analysis/include/)
 root_generate_dictionary(
   G__${TPCRECO_PREFIX}${MODULE_NAME}
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/HIGS_trees_dataFormat.h LINKDEF
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/HIGS_trees_dataFormat.h ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/RawSignal_tree_dataFormat.h LINKDEF
   LinkDef.h)
 #
 
