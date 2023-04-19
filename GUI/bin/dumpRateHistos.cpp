@@ -9,111 +9,15 @@
 #include "EventSourceGRAW.h"
 #include "EventSourceMultiGRAW.h"
 #include "DotFinder.h"
+#include "ConfigManager.h"
 
 void analyzeRawEvents(const boost::property_tree::ptree &aConfig);
 
-boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
-
-  boost::program_options::options_description cmdLineOptDesc("Allowed command line options");
-
-  cmdLineOptDesc.add_options()
-    ("help", "produce help message")
-    ("geometryFile",  boost::program_options::value<std::string>(), "string - path to TPC geometry file")
-    ("dataFile",  boost::program_options::value<std::string>(), "string - path to raw data file in single-GRAW mode (or list of comma-separated raw data files in multi-GRAW mode)")
-    ("frameLoadRange", boost::program_options::value<unsigned int>(), "int - maximal number of frames to be read by event builder in single-GRAW mode")
-    ("singleAsadGrawFile", boost::program_options::bool_switch()->default_value(false), "flag indicating multi-GRAW mode")
-    ("hitThr", boost::program_options::value<unsigned int>(), "int - minimal hit charge after pedestal subtraction [ADC units]")
-    ("totalChargeThr", boost::program_options::value<unsigned int>(), "int - minimal event total charge after pedestal subtraction [ADC units]")
-    ("matchRadiusInMM", boost::program_options::value<float>(), "float - matching radius for strips and time cells from different U/V/W directions [mm]")
-    ("outputFile", boost::program_options::value<std::string>(), "string - path to the output ROOT file");
-
-  boost::program_options::variables_map varMap;
-
-  try {
-    boost::program_options::store(boost::program_options::parse_command_line(argc, argv, cmdLineOptDesc), varMap);
-    if (varMap.count("help")) {
-      std::cout << std::endl
-		<< "dumpRateHistos config.json [options]" << std::endl << std::endl;
-      std::cout << cmdLineOptDesc << std::endl;
-      exit(1);
-    }
-    boost::program_options::notify(varMap);
-  } catch (const std::exception &e) {
-    std::cerr << e.what() << '\n';
-    std::cout << cmdLineOptDesc << std::endl;
-    exit(1);
-  }
-
-  return varMap;
-}
 /////////////////////////////////////
 /////////////////////////////////////
 int main(int argc, char **argv){
-
-  boost::program_options::variables_map varMap = parseCmdLineArgs(argc, argv);
-  boost::property_tree::ptree tree;
-  if(argc<2){
-    std::cout << std::endl
-	      << "dumpRateHistos config.json [options]" << std::endl << std::endl;
-    return 0;
-  }
-  else {
-    std::cout<<"Using configFileName: "<<argv[1]<<std::endl;
-    boost::property_tree::read_json(argv[1], tree);
-  }
-
-  // optional overrides of the JSON config file
-  if (varMap.count("outputFile")) {
-    tree.put("outputFile",varMap["outputFile"].as<std::string>());
-  }
-  if (varMap.count("geometryFile")) {
-    tree.put("geometryFile",varMap["geometryFile"].as<std::string>());
-  }
-  if (varMap.count("dataFile")) {
-    tree.put("dataFile",varMap["dataFile"].as<std::string>());
-  }
-  if(varMap.count("hitThr")){
-    tree.put("hitThr", varMap["hitThr"].as<unsigned int>());
-  }
-  if(varMap.count("totalChargeThr")){
-    tree.put("totalChargeThr", varMap["totalChargeThr"].as<unsigned int>());
-  }
-  if(varMap.count("matchRadiusInMM")){
-    tree.put("matchRadiusInMM", varMap["matchRadiusInMM"].as<float>());
-  }
-  if( (tree.find("singleAsadGrawFile")==tree.not_found() || // if not present in config JSON
-       tree.get<bool>("singleAsadGrawFile")==false) && // or single-GRAW mode is FALSE
-      varMap.count("singleAsadGrawFile")){ // then allow to override JSON settings
-    tree.put("singleAsadGrawFile", varMap["singleAsadGrawFile"].as<bool>());
-  }
-  if( tree.get<bool>("singleAsadGrawFile")==false && // if in single-GRAW mode
-      varMap.count("frameLoadRange")) { // then allow to override JSON settings
-    tree.put("frameLoadRange", varMap["frameLoadRange"].as<unsigned int>());
-  }
-
-  //sanity checks
-  if(tree.find("dataFile")==tree.not_found() ||
-     tree.find("geometryFile")==tree.not_found() ||
-     tree.find("outputFile")==tree.not_found() ||
-     tree.find("hitThr")==tree.not_found() ||
-     tree.find("totalChargeThr")==tree.not_found() ||
-     tree.find("matchRadiusInMM")==tree.not_found()  ||
-     tree.find("singleAsadGrawFile")==tree.not_found() ||
-     (tree.find("singleAsadGrawFile")!=tree.not_found() &&
-     tree.find("frameLoadRange")==tree.not_found())
-) {
-    std::cerr << std::endl
-	      << __FUNCTION__ << KRED << ": Some configuration options are missing!" << RST << std::endl << std::endl;
-    std::cout << "dataFile: " << tree.count("dataFile") << std::endl;
-    std::cout << "geometryFile: " << tree.count("geometryFile") << std::endl;
-    std::cout << "outputFile: " << tree.count("outputFile") << std::endl;
-    std::cout << "hitThr: " << tree.count("hitThr") << std::endl;
-    std::cout << "totalChargeThr: " << tree.count("totalChargeThr") << std::endl;
-    std::cout << "matchRadiusInMM: " << tree.count("matchRadiusInMM") << std::endl;
-    std::cout << "singleAsadGrawFile: " << tree.count("singleAsadGrawFile") << std::endl;
-    std::cout << "frameLoadRange: " << tree.count("frameLoadRange") << std::endl;
-    exit(1);
-  }
+  std::vector<std::string> = {"dataFile","geometryFile","outputFile","hitThr","totalChargeThr","matchRadiusInMM","singleAsadGrawFile"};
+  boost::property_tree::ptree tree = getConfig(argc,argv,requiredOptions);
 
   // start analysis job
   analyzeRawEvents(tree);

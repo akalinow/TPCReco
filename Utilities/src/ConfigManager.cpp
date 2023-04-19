@@ -16,7 +16,7 @@ boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
         ("clusterThreshold", boost::program_options::value<float>(), "float - ADC threshold above pedestal used for clustering")
         ("dataFile",  boost::program_options::value<std::string>(), "string - path to data file (OFFLINE) or directory (ONLINE). Overrides the value from the config file. In multi-GRAW mode specify several files separated by commas.")
         ("directory,d", boost::program_options::value<std::string>(),"string - directory to browse. Mutually exclusive with \"files\"")
-        //("dry-run", "testing without modyfing files")
+        ("dry-run", "testing without modyfing files")
         ("ext",boost::program_options::value<std::vector<std::string>>()->multitoken()->default_value(std::vector<std::string>{std::string{".graw"}},".graw"),"allowed extensions")
         ("files,f",boost::program_options::value<std::vector<std::string>>()->multitoken(),"strings - list of files to browse. Mutually exclusive with \"directory\"")
         ("frameLoadRange", boost::program_options::value<unsigned int>(), "int - maximal number of frames to be read by event builder in single-GRAW mode")
@@ -26,10 +26,10 @@ boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
         ("input,i", boost::program_options::value<std::string>(),"input root file")
         ("matchRadiusInMM", boost::program_options::value<float>(), "float - matching radius for strips and time cells from different U/V/W directions [mm]")
         ("ms", boost::program_options::value<int>(),"int - delay in ms")
-        // ("no-info", "skip printing file and tree info on every line")
-        // ("no-presence", "skip printing extra and missing events")
-        // ("no-segments", "skip comparing number of segments")
-        // ("no-type", "skip comparing event type")
+        ("no-info", "skip printing file and tree info on every line")
+        ("no-presence", "skip printing extra and missing events")
+        ("no-segments", "skip comparing number of segments")
+        ("no-type", "skip comparing event type")
         ("noTree", boost::program_options::bool_switch()->default_value(false), "skip creating additional TTree for 1,2,3-prongs (true = runs a bit faster)")
         ("output,o", boost::program_options::value<std::string>(),"output root file,mutally exclusive with 'inplace'")
         ("outputFile", boost::program_options::value<std::string>(), "string - path to the output ROOT file")
@@ -58,10 +58,18 @@ boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
     return varMap;
 }
 
-boost::property_tree::ptree getConfig(int argc, char **argv){
+boost::property_tree::ptree getConfig(int argc, char **argv, std::vector<std::string> requiredOpt = {}){
 
     boost::property_tree::ptree tree;
     boost::program_options::variables_map varMap = parseCmdLineArgs(argc, argv);
+    if(!requiredOpt.empty()){
+        for(auto option : requiredOpt){
+            if (!varMap.count(option)){
+                std::cout<<"Missing required option: "<<option<<std::endl;
+                exit(1);
+            }
+        }
+    }
     if(argc<2){
         std::cout<<" Usage: masterConfig.json"<<std::endl;
         boost::property_tree::read_json("/scratch/TPCReco/Utilities/config/masterConfig.json",tree);
@@ -71,8 +79,6 @@ boost::property_tree::ptree getConfig(int argc, char **argv){
         std::cout<<"Using configFileName: "<<argv[1]<<std::endl;
         boost::property_tree::read_json(argv[1], tree);
     }
-
-
     if (varMap.count("beamDir")) {
         tree.put("beamDir", varMap["beamDir"].as<BeamDirection>());
     }
@@ -104,14 +110,9 @@ boost::property_tree::ptree getConfig(int argc, char **argv){
     if (varMap.count("directory")) {
         tree.put("directory", varMap["directory"].as<std::string>());
     }
-    // if (varMap.count("dry-run")) {
-    //     auto count = boost::size(tpcreco::utilities::filterDuplicates(
-    //             inputTree, varMap.count("verbose")));
-    //     std::cout << "Removed " << inputTree->GetEntries() - count
-    //             << " duplicated entries keeping the younger (dry run)\n";
-    //     inputFile->Close();
-    //     return 0;
-    // }
+    if (varMap.count("dry-run")) {
+        tree.put("dry-run",true);
+    }
     if (varMap.count("ext")) {
         tree.put("ext", varMap["ext"].as<std::vector<std::string>>());
     }
@@ -136,18 +137,18 @@ boost::property_tree::ptree getConfig(int argc, char **argv){
     if (varMap.count("ms")) {
         tree.put("ms", varMap["ms"].as<int>());
     }
-    // if (varMap.count("no-info")) {
-    //     tree.put("no-info", true);
-    // }
-    // if (varMap.count("no-presence")) {
-    //     tree.put("no-presence", true);
-    // }
-    // if (varMap.count("no-segments")) {
-    //     tree.put("no-segments", true);
-    // }
-    // if (varMap.count("no-type")) {
-    //     tree.put("no-type", true);
-    // }
+    if (varMap.count("no-info")) {
+        tree.put("no-info", true);
+    }
+    if (varMap.count("no-presence")) {
+        tree.put("no-presence", true);
+    }
+    if (varMap.count("no-segments")) {
+        tree.put("no-segments", true);
+    }
+    if (varMap.count("no-type")) {
+        tree.put("no-type", true);
+    }
     if (varMap.count("noTree")) {
         tree.put("noTree", varMap["noTree"].as<bool>());
     }
@@ -210,10 +211,4 @@ boost::property_tree::ptree getConfig(int argc, char **argv){
     if (varMap.count("verbose")) {
         tree.put("verbose", true);
     }
-
-
-}
-
-void setEventType(boost::property_tree::ptree &tree, event_type evtype){
-    tree.put("eventType",evtype)
 }

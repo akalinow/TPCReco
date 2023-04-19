@@ -5,6 +5,7 @@
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/program_options.hpp>
 #include "colorText.h"
+#include "ConfigManager.h"
 #include "TFile.h"
 #include "GeometryTPC.h"
 #include "EventSourceGRAW.h"
@@ -13,50 +14,11 @@
 #include "RunIdParser.h"
 
 void analyzeRawEvents(const boost::property_tree::ptree& aConfig);
-
-boost::program_options::variables_map parseCmdLineArgs(int argc, char** argv) {
-
-	boost::program_options::options_description cmdLineOptDesc("Allowed command line options");
-
-	cmdLineOptDesc.add_options()
-		("help", "produce help message")
-		("geometryFile", boost::program_options::value<std::string>(), "string - path to TPC geometry file")
-		("dataFile", boost::program_options::value<std::string>(), "string - path to raw data file in single-GRAW mode (or list of comma-separated raw data files in multi-GRAW mode)")
-		("frameLoadRange", boost::program_options::value<unsigned int>(), "int - maximal number of frames to be read by event builder in single-GRAW mode")
-		("singleAsadGrawFile", boost::program_options::bool_switch()->default_value(false), "flag indicating multi-GRAW mode (default=FALSE)")
-		("removePedestal", boost::program_options::value<bool>(), "bool - Flag to control pedestal removal. Overrides the value from config file.")
-		("clusterEnable", boost::program_options::value<bool>(), "bool - Flag to enable clustering")
-		("clusterThreshold", boost::program_options::value<float>(), "float - ADC threshold above pedestal used for clustering")
-		("clusterDeltaStrips", boost::program_options::value<int>(), "int - Envelope in strip units around seed hits for clustering")
-		("clusterDeltaTimeCells", boost::program_options::value<int>(), "int - Envelope in time cell units around seed hits for clustering")
-		("outputFile", boost::program_options::value<std::string>(), "string - path to the output ROOT file");
-
-	boost::program_options::variables_map varMap;
-
-	try {
-		boost::program_options::store(boost::program_options::parse_command_line(argc, argv, cmdLineOptDesc), varMap);
-		if (varMap.count("help")) {
-			std::cout << _endl_
-				<< "rawSignalAnalysis config.json [options]" << _endl_ << _endl_;
-			std::cout << cmdLineOptDesc << _endl_;
-			exit(1);
-		}
-		boost::program_options::notify(varMap);
-	}
-	catch (const std::exception& e) {
-		std::cerr << e.what() << '\n';
-		std::cout << cmdLineOptDesc << _endl_;
-		exit(1);
-	}
-
-	return varMap;
-}
-/////////////////////////////////////
-/////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
 int main(int argc, char** argv) {
 
-	boost::program_options::variables_map varMap = parseCmdLineArgs(argc, argv);
-	boost::property_tree::ptree tree;
+	boost::property_tree::ptree tree = getConfig(argc,argv);
 	if (argc < 2) {
 		std::cout << _endl_
 			<< "rawSignalAnalysis config.json [options]" << _endl_ << _endl_;

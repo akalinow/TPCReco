@@ -17,6 +17,7 @@
 #include "Track3D.h"
 #include "EventInfo.h"
 #include "Comp_analysis.h"
+#include "ConfigManager.h"
 
 #include "colorText.h"
 
@@ -25,40 +26,13 @@ int compareRecoEvents(const  std::string & geometryFileName,
 		      const  std::string & testDataFileName);
 /////////////////////////////////////
 /////////////////////////////////////
-boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
-
-  boost::program_options::options_description cmdLineOptDesc("Allowed options");
-  cmdLineOptDesc.add_options()
-    ("help", "produce help message")
-    ("geometryFile",  boost::program_options::value<std::string>()->required(), "string - path to the geometry file")
-    ("referenceDataFile",  boost::program_options::value<std::string>()->required(), "string - path to reference data file")
-    ("testDataFile",  boost::program_options::value<std::string>()->required(), "string - path to test data file");
-  
-  boost::program_options::variables_map varMap;        
-  try {     
-    boost::program_options::store(boost::program_options::parse_command_line(argc, argv, cmdLineOptDesc), varMap);
-    if (varMap.count("help")) {
-      std::cout << "recoEventsComparison" << "\n\n";
-      std::cout << cmdLineOptDesc << std::endl;
-      exit(1);
-    }
-    boost::program_options::notify(varMap);
-  } catch (const std::exception &e) {
-    std::cerr << e.what() << '\n';
-    std::cout << cmdLineOptDesc << std::endl;
-    exit(1);
-  }
-
-  return varMap;
-}
-/////////////////////////////////////
-/////////////////////////////////////
 int main(int argc, char **argv){
 
-  auto varMap = parseCmdLineArgs(argc, argv);
-  auto geometryFileName = varMap["geometryFile"].as<std::string>();
-  auto referenceDataFileName = varMap["referenceDataFile"].as<std::string>();
-  auto testDataFileName = varMap["testDataFile"].as<std::string>();
+  std::vector<std::string> requiredOptions = {"geometryFile","referenceDataFile","testDataFile"};
+  boost::property_tree::ptree tree = getConfig(argc,argv,requiredOptions);
+  auto geometryFileName = tree.get("geometryFile","");
+  auto referenceDataFileName = tree.get("referenceDataFile","");
+  auto testDataFileName = tree.get("testDataFile","");
   compareRecoEvents(geometryFileName, referenceDataFileName, testDataFileName);
   return 0;
 }

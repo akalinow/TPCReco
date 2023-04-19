@@ -43,69 +43,16 @@ referencePointHelper(const std::string &input,
   return std::make_pair(point, fileId);
 }
 
-boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv) {
-  boost::program_options::options_description cmdLineOptDesc("Allowed options");
-  cmdLineOptDesc.add_options()("help", "produce help message")(
-      "input,i", boost::program_options::value<std::string>()->required(),
-      "string - reference file or runId")(
-      "chunk", boost::program_options::value<size_t>(), "uint - file chunk")(
-      "separator",
-      boost::program_options::value<std::string>()->default_value("\n"),
-      "string - separator")(
-      "directory,d", boost::program_options::value<std::string>(),
-      "string - directory to browse. Mutually exclusive with \"files\"")(
-      "ms", boost::program_options::value<int>()->required(),
-      "int - delay in ms")(
-      "files,f",
-      boost::program_options::value<std::vector<std::string>>()->multitoken(),
-      "strings - list of files to browse. Mutually "
-      "exclusive with \"directory\"")(
-      "ext",
-      boost::program_options::value<std::vector<std::string>>()->multitoken()
-       ->default_value(std::vector<std::string>{std::string{".graw"}},".graw")
-      ,
-      "allowed extensions");
-
-  boost::program_options::positional_options_description cmdLinePosDesc;
-  cmdLinePosDesc.add("input", 1).add("files", -1);
-
-  boost::program_options::variables_map varMap;
-
-  try {
-    boost::program_options::store(
-        boost::program_options::command_line_parser(argc, argv)
-            .options(cmdLineOptDesc)
-            .positional(cmdLinePosDesc)
-            .run(),
-        varMap);
-    if (varMap.count("help")) {
-      std::cout << "grawls"
-                << "\nList graw files by run timestamp\n";
-      std::cout << cmdLineOptDesc << std::endl;
-      exit(0);
-    }
-
-    boost::program_options::notify(varMap);
-    conflicting_options(varMap, "files", "directory");
-
-  } catch (const std::exception &e) {
-    std::cerr << e.what() << '\n';
-    std::cout << cmdLineOptDesc << std::endl;
-    exit(1);
-  }
-
-  return varMap;
-}
-
 int main(int argc, char **argv) {
-  auto varMap = parseCmdLineArgs(argc, argv);
-  auto input = varMap["input"].as<std::string>();
-  auto delay = std::chrono::milliseconds(varMap["ms"].as<int>());
-  auto separator = varMap["separator"].as<std::string>();
+  std::vector<std::string> requiredOptions = {"input","ms"};
+  boost::property_tree::ptree tree = getConfig(argc,argv,requiredOptions);
+  auto input = tree.get("input","");
+  auto delay = std::chrono::milliseconds(tree.get("ms",""));
+  auto separator = tree.get("separator","");
 
   std::set<std::string> extensionsSet;
   {
-    auto extensions = varMap["ext"].as<std::vector<std::string>>();
+    auto extensions = tree.get("ext","");
     std::transform(std::begin(extensions), std::end(extensions),
                    std::inserter(extensionsSet, std::begin(extensionsSet)),
                    [](auto entry) {
@@ -117,16 +64,18 @@ int main(int argc, char **argv) {
   std::vector<std::string> output;
   try {
     auto referencePoint =
-        referencePointHelper(input, varMap["chunk"], varMap["directory"]);
-    if (varMap.count("files")) {
+        referencePointHelper(input, tree.get("chunk",""), tree.get("directory",""));
+        std::string files = tree.get("files","");
+    if (files.size()>0) {
       auto sequence = varMap["files"].as<std::vector<std::string>>();
       InputFileHelper::discoverFiles(
           referencePoint.first, referencePoint.second, delay, sequence.begin(),
           sequence.end(), std::back_inserter(output));
     } else {
       boost::filesystem::path dir;
-      if (varMap.count("directory")) {
-        dir = boost::filesystem::path(varMap["directory"].as<std::string>());
+      std::string directory = tree.get("directory","");
+      if (directory.size()>0) {
+        dir = boost::filesystem::path(directory);
       } else {
         auto inputPath = boost::filesystem::path(input);
         dir = inputPath.has_parent_path() ? inputPath.parent_path()
