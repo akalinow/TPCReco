@@ -1,5 +1,13 @@
 {
-    "dataFile": "/home/mfila/TPCReco/build/lineEvents.root",
-    "geometryFile": "/home/mfila/TPCReco/resources/geometry_mini_eTPC.dat",
-    "resourcesPath":"/home/mfila/TPCReco/build/resources/"   
+    "dataFile": "PLACEHOLDER_FOR_DATAFILE",
+    "geometryFile": "PLACEHOLDER_FOR_GEOMETRYFILE",
+    "resourcesPath":"/scratch/ELITPC/TPCReco/build/resources/",
+    "singleAsadGrawFile":false,
+    "noTree":false,
+    "pedestal": {
+        "minPedestalCell": 5.0,
+        "maxPedestalCell": 25,
+        "minSignalCell": 5,
+        "maxSignalCell": 506
+    }
 }

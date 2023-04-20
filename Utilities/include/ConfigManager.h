@@ -1,6 +1,7 @@
 #include <map>
 #include <iostream>
 #include <string>
+#include <vector>
 
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/xml_parser.hpp>
@@ -13,13 +14,8 @@ class ConfigManager
 {
 public:
     ConfigManager();
-    boost::property_tree::ptree getConfig(int, char**);
-
-    event_type getEventType(boost::property_tree::ptree tree);
-    void setEventType(boost::property_tree::ptree &tree, event_type evtype);
-    void setOnlineFlag(boost::property_tree::ptree& tree, bool flag) {};
-    bool getOnlineFlag(boost::property_tree::ptree& tree) {};
+    boost::property_tree::ptree getConfig(int argc, char** argv, std::vector<std::string> requiredOpt);
 
 private:
-    boost::program_options::variables_map parseCmdLineArgs(int, char **);   
+    boost::program_options::variables_map parseCmdLineArgs(int argc, char ** argv);   
 };
