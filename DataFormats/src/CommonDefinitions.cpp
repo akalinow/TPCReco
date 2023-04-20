@@ -40,16 +40,6 @@ projection_type get1DProjectionType(projection_type aStrip_dir){
 }
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
-#include <iostream>
-#include <string>
-
-enum class event_type {
-    EventSourceROOT,
-    EventSourceMC,
-    EventSourceGRAW,
-    EventSourceMultiGRAW
-};
-
 std::ostream& operator<<(std::ostream& os, const event_type& et) {
     switch (et) {
     case event_type::EventSourceROOT:
