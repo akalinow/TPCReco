@@ -39,6 +39,9 @@ enum class event_type {
 	EventSourceMultiGRAW
 };
 
+std::ostream& operator<<(std::ostream& os, const event_type& et);
+std::istream& operator>>(std::istream& is, event_type& et);
+
 projection_type get2DProjectionType(int aStrip_dir);
 projection_type get2DProjectionType(projection_type aStrip_dir);
 
