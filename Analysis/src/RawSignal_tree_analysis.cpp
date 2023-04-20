@@ -147,8 +147,27 @@ void RawSignal_tree_analysis::fillTree(std::shared_ptr<EventTPC> aEventTPC, bool
       // compute integrated charge per half-cluster / horizontal (strip domain)
       int mid_strip_num=(int)((minStrip+maxStrip)/2);
       double strip_charge_sum[2]={0,0};
-      for(int strip_num=minStrip; strip_num<=maxStrip; strip_num++) {
-	auto strip_charge=aEventTPC->GetTotalCharge(strip_dir, -1, strip_num, -1, filterType);
+      std::map<int, double> chargePerStrip;
+      switch(filterType) {
+      case filter_type::none: // NOTE: special case handled differently to speed up calculations
+	{
+	  auto h=aEventTPC->get1DProjection(static_cast<definitions::projection_type>(strip_dir), filter_type::none, scale_type::raw);
+	  h->SetDirectory(0);
+	  for(int strip_num=minStrip; strip_num<=maxStrip; strip_num++) {
+	    chargePerStrip[strip_num]=h->GetBinContent(h->FindBin(strip_num));
+	  }
+	}
+	break;
+      case filter_type::threshold:
+	for(int strip_num=minStrip; strip_num<=maxStrip; strip_num++) {
+	  chargePerStrip[strip_num]=aEventTPC->GetTotalCharge(strip_dir, -1, strip_num, -1, filterType);
+	}
+	break;
+      default:;
+      }
+      for(auto & it: chargePerStrip) {
+	auto strip_num=it.first;
+	auto strip_charge=it.second;
 	if(strip_num<mid_strip_num) {
 	  strip_charge_sum[0] += strip_charge;
 	}
@@ -170,8 +189,27 @@ void RawSignal_tree_analysis::fillTree(std::shared_ptr<EventTPC> aEventTPC, bool
       // compute integrated charge per half-cluster / vertical (time domain)
       int mid_time_cell=(int)((minTime+maxTime)/2);
       double time_charge_sum[2]={0,0};
-      for(int time_cell=minTime; time_cell<=maxTime; time_cell++) {
-	auto time_cell_charge=aEventTPC->GetTotalCharge(strip_dir, -1, -1, time_cell, filterType);
+      std::map<int, double> chargePerTimecell;
+      switch(filterType) {
+      case filter_type::none: // NOTE: special case handled differently to speed up calculations
+	{
+	  auto h=aEventTPC->get1DProjection(get2DProjectionType(strip_dir), filter_type::none, scale_type::raw);
+	  h->SetDirectory(0);
+	  for(int time_cell=minTime; time_cell<=maxTime; time_cell++) {
+	    chargePerTimecell[time_cell]=h->GetBinContent(h->FindBin(time_cell));
+	  }
+	}
+	break;
+      case filter_type::threshold:
+	for(int time_cell=minTime; time_cell<=maxTime; time_cell++) {
+	  chargePerTimecell[time_cell]=aEventTPC->GetTotalCharge(strip_dir, -1, -1, time_cell, filterType);
+	}
+	break;
+      default:;
+      }
+      for(auto & it: chargePerTimecell) {
+	auto time_cell=it.first;
+	auto time_cell_charge=it.second;
 	if(time_cell<mid_time_cell) {
 	  time_charge_sum[0] += time_cell_charge;
 	}

@@ -262,14 +262,12 @@ void analyzeRawEvents(const boost::property_tree::ptree &aConfig){
 
     // fill statistical histograms per run (before & after user-defined cuts)
     myAnalysis.fillTree(myEventSource->getCurrentEvent(), isFirst);
-    
+
+    if(maxNevents && maxNevents==++counter ) break;
+
     // load next event (if any)
     currentEventIdx=myEventSource->currentEventNumber();
     myEventSource->getNextEvent();
-
-    ////// DEBUG
-    if(maxNevents && (maxNevents-1)==++counter ) break;
-    ////// DEBUG
   }
   while(currentEventIdx!=(Long64_t)myEventSource->currentEventNumber());
 

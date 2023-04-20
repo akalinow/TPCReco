@@ -69,17 +69,28 @@ void EventTPC::filterHits(filter_type filterType){
   else histoCacheUpdated.at(filterType)=true;
 
   std::set<PEventTPC::chargeMapType::key_type> keyList;
-  const auto & config = filterConfigs.at(filter_type::threshold);
-  double chargeThreshold = config.get<double>("recoClusterThreshold");
-  
-  for(const auto & item: chargeMapWithSections){
-    auto key = item.first;
-    auto value = item.second;
-    if(value>chargeThreshold || filterType==filter_type::none){
-      keyList.insert(key);      
-      if(filterType==filter_type::threshold) addEnvelope(key, keyList);
+
+  switch(filterType){
+  case filter_type::threshold: {
+    const auto & config = filterConfigs.at(filter_type::threshold);
+    double chargeThreshold = config.get<double>("recoClusterThreshold");
+    for(const auto & item: chargeMapWithSections){
+      auto key = item.first;
+      auto value = item.second;
+      if(value>chargeThreshold){
+	keyList.insert(key);
+	addEnvelope(key, keyList);
+      }
+    }}
+    break;
+  case filter_type::none:
+    for(const auto & item: chargeMapWithSections){
+      keyList.insert(item.first);
     }
+    break;
+  default:;
   }
+
  keyLists[filterType] = keyList;
  updateHistosCache(filterType);
 }
@@ -392,7 +403,7 @@ std::shared_ptr<TH1D> EventTPC::get1DProjection(definitions::projection_type pro
   if(scaleType==scale_type::mm) scale1DHistoToMM(h1D, projType);
   setHistoLabels(h1D, projType, filterType, scaleType);
 
-  return std::shared_ptr<TH1D>(h1D);    
+  return std::shared_ptr<TH1D>(h1D);
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
