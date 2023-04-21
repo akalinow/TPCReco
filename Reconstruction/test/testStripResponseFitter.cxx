@@ -1,15 +1,61 @@
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 //
 // Example of using ROOT fitter with PEventTPC, Track3D, StripResponseCalculator, IonRangeCalculator
 //
-// Mikolaj Cwiok (UW) - 25 Feb 2023
+// Mikolaj Cwiok (UW) - 21 Apr 2023
 //
 //
+// 1. Example of single event reconstruction:
+// root -l << EOF |& tee log
+// root[0] .L ../test/testStripResponseFitter.cxx
+// root[1] loop(1)
+// root[2] EOF
+//
+// 2. EVENT FITTER (PEventTPC from Toy MC digitizer and TRUE tracks from Toy MC generator, events 0..100):
+// root -l << EOF |& tee log
+// root[0] .L ../test/testStripResponseFitter.cxx
+// root[1] loop_Graw_Track3D("/mnt/data/mikolaj/TPCReco/results/fake_tracks_HIGS/sample_20230212/Gen/Generated_Track3D__250mbar_13.1MeV_sigma0keV__noBoost_ISO_O16_fixedVtx_extTrg_contained__100k.root","/mnt/data/mikolaj/TPCReco/results/fake_tracks_HIGS/sample_20230212/Gen/jobs/Generated_PEventTPC__250mbar_13.1MeV_sigma0keV__noBoost_ISO_O16_fixedVtx_extTrg_contained__20k_1001.root", 0, 100, "geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat", 250.0, 293.15, 0.68, 0.69, 232, true, true, true, true, false, false);
+// root[2] EOF
+//
+// 3. EVENT FITTER WITH PENALTY TERMS (GRAW from real data, starting point from human-based RECO, 2- and 3-prong events 3852..4052):
+// root -l << EOF |& tee log
+// root[0] .L ../test/testStripResponseFitter.cxx
+// root[1] FitOptionType options;
+// root[2] options.use_penalty_momentum_CMS=true;
+// root[3] options.use_penalty_carbon_length=true;
+// root[4] options.use_penalty_alpha_length=true;
+// root[5] options.photonUnitVec_DET_LAB=TVector3(-1,0,0);
+// root[6] options.photonEnergyInMeV_LAB=9.845;
+// root[7] options.maxDeviationInMM=7.0;
+// root[8] options.expectedAdcNoiseRMS=7.0;
+// root[9] loop_Graw_Track3D("/mnt/NAS_STORAGE_ANALYSIS/higs_2022/MonteCarlo/DataFit_9.845MeV/Reco_init/Reco_20220822T220311_0001_mk.root", "/mnt/NAS_STORAGE/20220822_extTrg_CO2_130mbar/CoBo0_AsAd0_2022-08-22T22:03:11.798_0001.graw,/mnt/NAS_STORAGE/20220822_extTrg_CO2_130mbar/CoBo0_AsAd1_2022-08-22T22:03:11.798_0001.graw,/mnt/NAS_STORAGE/20220822_extTrg_CO2_130mbar/CoBo0_AsAd2_2022-08-22T22:03:11.798_0001.graw,/mnt/NAS_STORAGE/20220822_extTrg_CO2_130mbar/CoBo0_AsAd3_2022-08-22T22:03:11.798_0001.graw", 3852, 3852+200, "geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat", 130.0, 293.15, 1.2, 1.2, 232, true, false, true, true, true, true, options);
+// root[10] EOF
+//
+// 4. EVENT PLAYER (PEventTPC from Toy MC digitizer and TRUE tracks from Toy MC generator, events 0..100):
+// root -l
+// root[0] .L ../test/testStripResponseFitter.cxx
+// root[1] loop_Graw_Track3D_Display("/mnt/data/mikolaj/TPCReco/results/fake_tracks_HIGS/sample_20230212/Gen/Generated_Track3D__250mbar_13.1MeV_sigma0keV__noBoost_ISO_O16_fixedVtx_extTrg_contained__100k.root","/mnt/data/mikolaj/TPCReco/results/fake_tracks_HIGS/sample_20230212/Gen/jobs/Generated_PEventTPC__250mbar_13.1MeV_sigma0keV__noBoost_ISO_O16_fixedVtx_extTrg_contained__20k_1001.root", 0, 100, "geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat", 13.1, 250.0, 293.15, true, true, true, true, false, false);
+//
+// 5. EVENT PLAYER (GRAW from real data, FITTED tracks from human-based RECO, 2- and 3-prong events 3852..4052)
+// root -l
+// root[0] .L ../test/testStripResponseFitter.cxx
+// root[1] loop_Graw_Track3D_Display("/mnt/NAS_STORAGE_ANALYSIS/higs_2022/9_85MeV/clicked/Reco_20220822T220311_0001_mk.root", "/mnt/NAS_STORAGE/20220822_extTrg_CO2_130mbar/CoBo0_AsAd0_2022-08-22T22:03:11.798_0001.graw,/mnt/NAS_STORAGE/20220822_extTrg_CO2_130mbar/CoBo0_AsAd1_2022-08-22T22:03:11.798_0001.graw,/mnt/NAS_STORAGE/20220822_extTrg_CO2_130mbar/CoBo0_AsAd2_2022-08-22T22:03:11.798_0001.graw,/mnt/NAS_STORAGE/20220822_extTrg_CO2_130mbar/CoBo0_AsAd3_2022-08-22T22:03:11.798_0001.graw", 3852, 3852+200, "geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat", 9.845, 130.0, 293.15, true, false, true, true, false, true);
+//
+// 6. EVENT PLAYER (GRAW from real data, FITTED track from automatic RECO, REFERENCE/TRUE tracks from human-based RECO, 2- and 3-prong events 3852..7703)
+// root -l
+// root[0] .L ../test/testStripResponseFitter.cxx
+// root[1] loop_Graw_Track3D_Display("/mnt/NAS_STORAGE_ANALYSIS/higs_2022/MonteCarlo/DataFit_9.845MeV/Reco_T1.5mm_L1.5mm_P232ns_50x50bins/Reco_Track3D_0001.root","/mnt/NAS_STORAGE/20220822_extTrg_CO2_130mbar/CoBo0_AsAd0_2022-08-22T22:03:11.798_0001.graw,/mnt/NAS_STORAGE/20220822_extTrg_CO2_130mbar/CoBo0_AsAd1_2022-08-22T22:03:11.798_0001.graw,/mnt/NAS_STORAGE/20220822_extTrg_CO2_130mbar/CoBo0_AsAd2_2022-08-22T22:03:11.798_0001.graw,/mnt/NAS_STORAGE/20220822_extTrg_CO2_130mbar/CoBo0_AsAd3_2022-08-22T22:03:11.798_0001.graw", 3852, 3852+3852-1, "geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat", 9.845, 130.0, 293.15, true, false, true, true, false, true, "/mnt/NAS_STORAGE_ANALYSIS/higs_2022/MonteCarlo/DataFit_9.845MeV/Reco_init/Reco_20220822T220311_0001_mk.root");
+//
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+
 #define WITH_GET // temporary HACK - TO BE REPLACED WITH PROPER CMAKE FLAG
 
 #ifndef __ROOTLOGON__
 R__ADD_INCLUDE_PATH(../../DataFormats/include)
 R__ADD_INCLUDE_PATH(../../GrawToROOT/include)
-R__ADD_INCLUDE_PATH($GET_DIR/GetSoftware_bin/$GET_RELEASE/include) // /home/euser/GetSoftware_bin/20190315_patched_v2/include/
+R__ADD_INCLUDE_PATH($GET_DIR/GetSoftware_bin/$GET_RELEASE/include)
 R__ADD_INCLUDE_PATH(../../Reconstruction/include)
 R__ADD_INCLUDE_PATH(../../Utilities/include)
 R__ADD_INCLUDE_PATH(../../Analysis/include)
@@ -78,7 +124,7 @@ R__ADD_LIBRARY_PATH(../lib)
 #define MISSING_PID_3PRONG_TRAILING    ALPHA // TODO - to be parameterized
 
 enum class BeamDirection{
-  X,
+  PLUS_X,
   MINUS_X
 };
 
@@ -91,6 +137,47 @@ class TrackSegment3D;
 class Track3D;
 class HIGGS_analysis;
 
+// _______________________________________
+//
+// helper struct for storing fit parameters and constraints
+typedef struct {
+  // fitter parameters:
+  double tolerance{1e-4}; // ROOT::Fit::Fitter TOLERANCE parameter
+  double expectedAdcNoiseRMS{7.0}; // ADC units, estimate of RMS noise per channel per time cell, e.g. from pedestal runs
+  double maxDeviationInMM{7.0}; // mm, maximal deviation from the starting point for setting parameter limits
+  double maxAdcFactor{10.0}; // maximal multiplicative deviation (>1) from the starting point for setting ADC scale limits
+  // region of interest to be fitted:
+  bool use_initial_track_region{false};
+  double radius_initial_track_region{10.0}; // mm, radius/width of slot-shaped region of interest around initial track segments
+  // chi2 penalty terms:
+  bool use_penalty_momentum_CMS{false};
+  bool use_penalty_momentum_LAB{false};
+  bool use_penalty_carbon_length{false};
+  bool use_penalty_alpha_length{false};
+  double scale_penalty_momentum{1.0}; // penalty=1 when (out_of_limit_discrepancy/scale)=1
+  double scale_penalty_carbon_length{1.0}; // penalty=1 when (out_of_limit_discrepancy/scale)=1
+  double scale_penalty_alpha_length{1.0}; // penalty=1 when (out_of_limit_discrepancy/scale)=1
+  double delta_momentum_max{10.0}; // MeV/c, maximal allowed discrepancy for CMS/LAB momentum conservation
+  double carbon_length_min{2.0}; // mm, minimal allowed length of carbon track
+  double carbon_length_max{30.0}; // mm, maximal allowed length of carbon track
+  double alpha_length_min{5.0}; // mm, minimal allowed length of alpha track
+  double alpha_length_max{300.0}; // mm, maximal allowed length of alpha track
+  bool use_nominal_beam_energy{true}; // for LAB-CMS boosts and momentum conservation constraints
+  TVector3 photonUnitVec_DET_LAB{0,0,0}; // dimensionless, LAB reference frame, detector coordinate system
+  double photonEnergyInMeV_LAB{0}; // MeV, nominal energy of the gamma beam for momentum conservation constraints
+} FitOptionType;
+// _______________________________________
+//
+// helper function to define shape of the penalty term:
+// * for x < 0 : returns 0
+// * for x > 0 : returns x^2
+// This function is non-negative and differentiable at x=0.
+double penaltyFunc(double x) {
+  return pow(std::max(0.0, x), 2.0);
+}
+// _______________________________________
+//
+// helper class for smearing track endpoints (for fit convergence tests)
 TVector3 getRandomDir(TRandom *r) {
   if(!r) {
     std::cout << __FUNCTION__ << ": Wrong random generator pointer!" << std::endl << std::flush;
@@ -105,8 +192,8 @@ TVector3 getRandomDir(TRandom *r) {
 // function Object to be minimized / maximized
 class HypothesisFit {
 private:
-  
-  std::vector<TH2D*> myRefHistosInMM; // pointers to UVW projections in mm (for reference)
+  std::vector<TH2D*> myRefHistosInMM_orig; // pointers to UVW projections in mm (for reference, original)
+  std::vector<TH2D*> myRefHistosInMM; // pointers to UVW projections in mm (for reference, after optional modifications)
   std::vector<TH2D*> myFitHistosInMM; // pointers to TEST UVW projections in mm (to be cleared and filled at each fit iteration)
   std::shared_ptr<StripResponseCalculator> myResponseCalc; // external calculator (must be properly initialized beforehand)
   std::shared_ptr<IonRangeCalculator> myRangeCalc; // external calculator (must be properly initialized beforehand)
@@ -122,7 +209,8 @@ private:
                     // 4-6 --> endpoint XYZ_DET [mm] of the 1st track
                     // 7-9 --> endpoint XYZ_DET [mm] of the 2nd track (optional), etc.
   unsigned long myRefNpoints{0}; // total number of non-empty bins in UVW reference histograms to be fitted
-   
+  FitOptionType myOptions;
+
   /////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////
   // generates three UVW projections out of fitted Track3D collection
@@ -243,6 +331,7 @@ private:
 	  std::cout << __FUNCTION__ << ": Cannot duplicate external reference TH2D histogram!" << std::endl << std::flush;
 	  exit(1);
 	}
+	h->SetDirectory(0);
 	h->Sumw2(true);
 	h->Reset();
        myFitHistosInMM.push_back(h);
@@ -279,22 +368,151 @@ private:
 
   /////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////
-  void setRefHistogramsInMM(const std::vector<TH2D*> &reference_data) {
+  // modifies original 2D histogram and
+  // leaves only hits inside specific regions of interest given by TGraphs
+  void cropCutRegion2D(TH2D *h2, std::vector<TGraph> cuts) const {
+    if(!h2) return;
+    for(auto &gr: cuts) if(gr.GetN()<3) return;
+    auto h2_copy=(TH2D*)h2->Clone(Form("%s_clone", h2->GetName())); // make a complete copy
+    if(!h2_copy) return;
+    h2->Reset(); // remove all content
+    for(auto iBinX=1; iBinX <= h2_copy->GetNbinsX(); iBinX++) {
+      for(auto iBinY=1; iBinY <= h2_copy->GetNbinsY(); iBinY++) {
+	double val=0.0, err=0.0;
+	if((err=h2_copy->GetBinError(iBinX, iBinY)) || (val=h2_copy->GetBinContent(iBinX, iBinY))) {
+	  for(auto &gr: cuts) {
+	    if(gr.IsInside(h2_copy->GetXaxis()->GetBinCenter(iBinX), h2_copy->GetYaxis()->GetBinCenter(iBinY))) {
+	      h2->SetBinContent(iBinX, iBinY, val); // allow hits inside specific region of interest
+	      h2->SetBinError(iBinX, iBinY, err);
+	      break; // skip other remaining cuts (logic OR)
+	    }
+	  }
+	}
+      }
+    }
+    h2_copy->Delete();
+  }
+
+  /////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////
+  // creates a closed-loop slot-shaped region along track segment projection for a given UZ/VZ/WZ projection
+  TGraph initializeCutRegion2D(TrackSegment3D &aSeg, int dir) {
+    TGraph result;
+    if(dir<definitions::projection_type::DIR_U || dir>definitions::projection_type::DIR_W) return result;
+    const auto vtx=aSeg.getStart();
+    const auto endpoint=aSeg.getEnd();
+    const auto geo=aSeg.getGeometry();
+    if(!geo) return result;
+    auto err=false;
+    double sstart_pos=geo->Cartesian2posUVW(vtx.X(), vtx.Y(), dir, err); // strip position [mm] for a given XY_DET position
+    double send_pos=geo->Cartesian2posUVW(endpoint.X(), endpoint.Y(), dir, err); // strip position [mm] for a given XY_DET position
+    if(err) return result;
+    double zstart_pos=vtx.Z(); // drift time [mm]
+    double zend_pos=endpoint.Z(); // drift time [mm]
+    const auto radius=myOptions.radius_initial_track_region; // mm
+    const auto density=1.0; // points/mm for arc
+    const auto narc=(int)(TMath::Pi()*radius*density);
+
+    auto point=TVector2(zstart_pos, sstart_pos); // position
+    auto track=TVector2(zend_pos-zstart_pos, send_pos-sstart_pos); // direction
+
+    for(auto ipoint=0; ipoint<=narc; ipoint++) {
+      auto p=point + radius*(track.Rotate(TMath::Pi()*(0.5+(double)(ipoint)/narc)).Unit());
+      result.SetPoint(result.GetN(), p.X(), p.Y());
+    }
+    for(auto ipoint=0; ipoint<=narc; ipoint++) {
+      auto p=point + track + radius*(track.Rotate(TMath::Pi()*(-0.5+(double)(ipoint)/narc)).Unit());
+      result.SetPoint(result.GetN(), p.X(), p.Y());
+    }
+    return result;
+  }
+
+  /////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////
+  // creates list of 2D cuts (TGraph objects) for a given UZ/VZ/WZ projection
+  // and Track3D collection
+  std::vector<TGraph> initializeCutRegion2DList(Track3D *aTrack, int dir) {
+    std::vector<TGraph> result;
+    if(!aTrack) return result;
+    for(auto &aSeg: aTrack->getSegments()) {
+      auto gr = initializeCutRegion2D(aSeg, dir);
+      if(gr.GetN()==0) continue;
+      result.push_back(gr);
+    }
+    return result;
+  }
+
+  /////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////
+  void restoreOriginalRefHistogramsInMM() {
     myRefNpoints=0;
+    // update existing histograms or create new ones
+    if(myRefHistosInMM.size()==myRefHistosInMM_orig.size()) {
+      int dir=0;
+      for(auto &it: myRefHistosInMM_orig) {
+	myRefNpoints += countNonEmptyBins(it);
+	it->Copy(*myRefHistosInMM[dir]);
+	dir++;
+      }
+    } else if(myRefHistosInMM.size()==0) {
+      for(auto &it: myRefHistosInMM_orig) {
+	myRefNpoints += countNonEmptyBins(it);
+	TH2D* h=(TH2D*)(it->Clone(Form("%s_copy",it->GetName())));
+	if(h) h->SetDirectory(0); // do not associate this clone with any TFile dir to prevent memory leaks
+	myRefHistosInMM.push_back(h);
+      }
+    }
+  }
+
+public:
+  /////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////
+  // current reference histograms will be replaced by their copy
+  // with applied 2D cuts around Track3D collections corresponding
+  // to a given set of parameters (e.g. initial starting point, final fit results)
+  void cropRefHistogramsInMM(const int npar, const double *par) {
+    // sanity check
+    if(!myOptions.use_initial_track_region || myOptions.radius_initial_track_region<=0.0) return; // nothing to do
+    if (npar != myNparams || par==NULL) {
+      std::cout << __FUNCTION__ << " Wrong input NPAR or PAR value!" << std::endl << std::flush;
+      exit(1);
+    }
+    Track3D aTrack = calculateTrack3D(npar, par); // set track collection for 2D cuts
+    restoreOriginalRefHistogramsInMM();
+    auto dir=0;
+    myRefNpoints=0;
+    for(auto &it: myRefHistosInMM) {
+      if(!it) {
+	std::cout << __FUNCTION__ << ": Wrong pointer of external UVW reference histogram!" << std::endl << std::flush;
+	exit(1);
+      }
+      // crop reference histograms to the region of interest around initial/seed tracks
+      auto cuts = initializeCutRegion2DList(&aTrack, dir);
+      cropCutRegion2D(it, cuts);
+      myRefNpoints += countNonEmptyBins(it);
+      dir++;
+    }
+    std::cout << __FUNCTION__ << ": There are " << myRefNpoints << " non-empty bins in REFERENCE histograms to be fitted." << std::endl;
+  }
+
+private:
+  /////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////
+  void setRefHistogramsInMM(const std::vector<TH2D*> &reference_data) {
     // sanity check
     if( reference_data.size()!=3 ) {
       std::cout << __FUNCTION__<<": Wrong number of external UVW reference histograms!" << std::endl << std::flush;
       exit(1);
     }
+    myRefHistosInMM_orig.clear();
     for(auto &it: reference_data) {
       if(!it) {
 	std::cout << __FUNCTION__ << ": Wrong pointer of external UVW reference histogram!" << std::endl << std::flush;
 	exit(1);
       }
-      myRefHistosInMM.push_back(it);
-      myRefNpoints += countNonEmptyBins(it);
+      myRefHistosInMM_orig.push_back(it);
     }
-    std::cout << __FUNCTION__ << ": There are " << myRefNpoints << " non-empty bins in REFERENCE histograms to be fitted." << std::endl;
+    restoreOriginalRefHistogramsInMM();
   }
 
   /////////////////////////////////////////////////////////
@@ -333,12 +551,12 @@ private:
     myNparams = 3 * ( myParticleList.size() + 1 ) + 1;
     myTrackFit=Track3D();
   }
-  /////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////
-  // intializes underlying Track3D collection out of current fit parameters
-  void initializeTrack3D(const int npar, const double *par) {
 
-    // sanity checks
+  /////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////
+  // computes Track3D collection corresponding to a given set of fitted parameters
+  Track3D calculateTrack3D(const int npar, const double *par) {
+    // sanity check
     if (npar != myNparams || par==NULL) {
       std::cout << __FUNCTION__ << " Wrong input NPAR or PAR value!" << std::endl << std::flush;
       exit(1);
@@ -351,20 +569,37 @@ private:
       aSeg.setPID(myParticleList[itrack]);
       aTrack.addSegment(aSeg);
     }
-    myScale=par[0]; // set global scaling factor for dE/dx
-    myTrackFit=aTrack; // set track collection
+    return aTrack;
   }
+
+  /////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////
+  // intializes all global scale and Track3D collection for a given set of fit parameters
+  void initializeTrack3D(const int npar, const double *par) {
+    // sanity check
+    if (npar==0 || par==NULL) {
+      std::cout << __FUNCTION__ << " Wrong input NPAR or PAR value!" << std::endl << std::flush;
+      exit(1);
+    }
+    myScale=par[0]; // set global scaling factor for dE/dx
+    myTrackFit=calculateTrack3D(npar, par); // set track collection
+  }
+
 public:
   /////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////
   HypothesisFit(const std::vector<std::shared_ptr<TH2D> > &reference_data,
 		const std::shared_ptr<StripResponseCalculator> &aResponseCalc,
 		const std::shared_ptr<IonRangeCalculator> &aRangeCalc,
-		const std::vector<pid_type> &aParticleList)
+		const std::vector<pid_type> &aParticleList,
+		const FitOptionType &aOption)
+    : myOptions(aOption)
   {
+    myOptions.photonUnitVec_DET_LAB=myOptions.photonUnitVec_DET_LAB.Unit(); // protection
+    myOptions.photonEnergyInMeV_LAB=fabs(myOptions.photonEnergyInMeV_LAB); // protection
     setRefHistogramsInMM(reference_data);
     setCalculators(aResponseCalc, aRangeCalc);
-    setParticleList(aParticleList); 
+    setParticleList(aParticleList);
     initializeFitHistogramsInMM();
   }
 
@@ -373,9 +608,12 @@ public:
   HypothesisFit(const std::vector<TH2D*> &reference_data,
 		const std::shared_ptr<StripResponseCalculator> &aResponseCalc,
 		const std::shared_ptr<IonRangeCalculator> &aRangeCalc,
-		const std::vector<pid_type> &aParticleList)
-    : myRefHistosInMM(reference_data)
+		const std::vector<pid_type> &aParticleList,
+		const FitOptionType &aOption)
+    : myRefHistosInMM(reference_data), myOptions(aOption)
   {
+    myOptions.photonUnitVec_DET_LAB=myOptions.photonUnitVec_DET_LAB.Unit(); // protection
+    myOptions.photonEnergyInMeV_LAB=fabs(myOptions.photonEnergyInMeV_LAB); // protection
     setRefHistogramsInMM(reference_data);
     setCalculators(aResponseCalc, aRangeCalc);
     setParticleList(aParticleList);
@@ -392,7 +630,7 @@ public:
   
   /////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////
-  // returns clone of undeerlying reference histograms
+  // returns clone of underlying reference histograms
   std::vector<std::shared_ptr<TH2D> > getRefHistogramsInMM() {
     std::vector<std::shared_ptr<TH2D> > aHistVec;
     for(auto &it: myRefHistosInMM) {
@@ -416,12 +654,172 @@ public:
     return aHistVec;
   }
 
+private:
+  /////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////
+  // helper function for penalty Chi^2 calculation
+  TLorentzVector getTotalP4_DET_LAB() {
+    TLorentzVector sumP4_DET_LAB{0,0,0,0};
+
+    // loop over hypothesis tracks
+    const int ntracks = myTrackFit.getSegments().size();
+    auto list = myTrackFit.getSegments();
+    for(auto & track: list) {
+      auto origin=track.getStart(); // mm
+      auto length=track.getLength(); // mm
+      auto unit_vec=track.getTangent();
+      auto pid=track.getPID();
+      auto Ekin_LAB=myRangeCalc->getIonEnergyMeV(pid, length); // MeV, Ekin should be equal to Bragg curve integral
+      auto mass=myRangeCalc->getIonMassMeV(pid); // MeV/c^2, isotopic mass
+      auto p_LAB=sqrt(Ekin_LAB*(Ekin_LAB+2*mass)); // MeV/c
+      sumP4_DET_LAB += TLorentzVector(p_LAB*unit_vec, Ekin_LAB+mass); // [MeV/c, MeV/c, MeV/c, MeV/c^2]
+    }
+    return sumP4_DET_LAB;
+  }
+  /////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////
+  // helper function for penalty Chi^2 calculation
+  double getChi2PenaltyTerm_momentumLAB() {
+    double result=0.0;
+    if(!myOptions.use_penalty_momentum_LAB) return result;
+
+    auto delta_momentum_LAB=getTotalP4_DET_LAB().Mag(); // MeV/c
+    result=penaltyFunc((delta_momentum_LAB-myOptions.delta_momentum_max)/myOptions.scale_penalty_momentum);
+
+#if(DEBUG_CHI2)
+    std::cout<<__FUNCTION__<<": Chi2 penalty term for momentum conservation in LAB = "<<result<<std::endl;
+#endif
+    return result;
+  }
+  ///////////////////////////////
+  ///////////////////////////////
+  // helper function for penalty Chi^2 calculation
+  // dimensionless speed (c=1) of gamma-nucleus CMS reference frame wrt LAB reference frame in detector coordinate system
+  TVector3 getBetaVectorOfCMS(double nucleusMassInMeV) {
+    return getBetaOfCMS(nucleusMassInMeV)*myOptions.photonUnitVec_DET_LAB;
+  }
+  ///////////////////////////////
+  ///////////////////////////////
+  // helper function for penalty Chi^2 calculation
+  // dimensionless speed (c=1) of gamma-nucleus CMS reference frame wrt LAB reference frame in detector coordinate system
+  double getBetaOfCMS(double nucleusMassInMeV) {
+    return myOptions.photonEnergyInMeV_LAB/(myOptions.photonEnergyInMeV_LAB+nucleusMassInMeV);
+  }
+  /////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////
+  // helper function for penalty Chi^2 calculation
+  double getChi2PenaltyTerm_momentumCMS() {
+    double result=0.0;
+    if(!myOptions.use_penalty_momentum_CMS) return result;
+
+    // loop over hypothesis tracks and determine parent nucleus
+    auto parentPID=pid_type::UNKNOWN;
+    const int ntracks = myTrackFit.getSegments().size();
+    auto list = myTrackFit.getSegments();
+    switch(ntracks) {
+    case 2:
+      if(list.front().getPID()==pid_type::ALPHA &&
+	 list.back().getPID()==pid_type::CARBON_12) {
+	parentPID=pid_type::OXYGEN_16;
+	break;
+      }
+      if(list.front().getPID()==pid_type::ALPHA &&
+	 list.back().getPID()==pid_type::CARBON_13) {
+	parentPID=pid_type::OXYGEN_17;
+	break;
+      }
+      if(list.front().getPID()==pid_type::ALPHA &&
+	 list.back().getPID()==pid_type::CARBON_14) {
+	parentPID=pid_type::OXYGEN_18;
+	break;
+      }
+      if(list.front().getPID()==pid_type::PROTON &&
+	 list.back().getPID()==pid_type::NITROGEN_15) {
+	parentPID=pid_type::OXYGEN_16;
+	break;
+      }
+    case 3:
+     if(list.at(0).getPID()==pid_type::ALPHA &&
+	list.at(1).getPID()==pid_type::ALPHA &&
+	list.at(2).getPID()==pid_type::ALPHA) {
+       parentPID=pid_type::CARBON_12;
+       break;
+      }
+    default: return result;  // only selected 2-prong or 3-prongs reactions are supported
+    };
+
+    // get total P4 in DET/LAB frame
+    auto sumP4_DET_LAB=getTotalP4_DET_LAB(); // [MeV/c, MeV/c, MeV/c, MeV/c^2]
+    auto sumP4_DET_CMS=TLorentzVector(sumP4_DET_LAB);
+    auto parentMassGroundState=myRangeCalc->getIonMassMeV(parentPID); // MeV/c^2, isotopic mass
+    TVector3 beta_DET_LAB;
+    if(myOptions.use_nominal_beam_energy) {
+      beta_DET_LAB=getBetaVectorOfCMS(parentMassGroundState); // assume nominal direction and nominal gamma beam energy
+    } else {
+      const double photon_E_LAB=sumP4_DET_LAB.E()-parentMassGroundState; // reconstructed gamma beam energy in LAB
+      beta_DET_LAB=getBetaVectorOfCMS(parentMassGroundState).Unit()*(photon_E_LAB/(photon_E_LAB+parentMassGroundState));
+    }
+    // boost P4 from DET/LAB frame to CMS frame (see TLorentzVector::Boost() convention!)
+    sumP4_DET_CMS.Boost(-1.0*beta_DET_LAB);
+    auto delta_momentum_CMS=sumP4_DET_CMS.Vect().Mag(); // MeV/c
+    result=penaltyFunc((delta_momentum_CMS-myOptions.delta_momentum_max)/myOptions.scale_penalty_momentum);
+
+#if(DEBUG_CHI2)
+    std::cout<<__FUNCTION__<<": Chi2 penalty term for momentum conservation in CMS = "<<result<<std::endl;
+#endif
+    return result;
+  }
+  /////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////
+  double getChi2PenaltyTerm_alphaLength() {
+    double result=0.0;
+    if(!myOptions.use_penalty_alpha_length) return result;
+
+    // loop over hypothesis tracks
+    TrackSegment3DCollection list = myTrackFit.getSegments();
+    for(auto & track: list) {
+      auto length=track.getLength(); // mm
+      auto pid=track.getPID();
+      if(pid==pid_type::ALPHA) {
+	result += penaltyFunc((length-myOptions.alpha_length_max)/myOptions.scale_penalty_alpha_length) +
+	  penaltyFunc((-length+myOptions.alpha_length_min)/myOptions.scale_penalty_alpha_length);
+      }
+    }
+
+#if(DEBUG_CHI2)
+    std::cout<<__FUNCTION__<<": Chi2 penalty term for ALPHA length range = "<<result<<std::endl;
+#endif
+    return result;
+  }
+  /////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////
+  double getChi2PenaltyTerm_carbonLength() {
+    double result=0.0;
+    if(!myOptions.use_penalty_carbon_length) return result;
+
+    // loop over hypothesis tracks
+    TrackSegment3DCollection list = myTrackFit.getSegments();
+    for(auto & track: list) {
+      auto length=track.getLength(); // mm
+      auto pid=track.getPID();
+      if(pid==pid_type::CARBON_12 || pid==pid_type::CARBON_13 || pid==pid_type::CARBON_14) {
+	result += penaltyFunc((length-myOptions.carbon_length_max)/myOptions.scale_penalty_carbon_length) +
+	  penaltyFunc((-length+myOptions.carbon_length_min)/myOptions.scale_penalty_carbon_length);
+      }
+    }
+
+#if(DEBUG_CHI2)
+    std::cout<<__FUNCTION__<<": Chi2 penalty term for CARBON length range = "<<result<<std::endl;
+#endif
+    return result;
+  }
+
+public:
   /////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////
   double getChi2() {
     const int nhist=myRefHistosInMM.size();
-    const double expected_rms_noise=7.0; // [ADC units] - typical rms of noise from pedestal runs @ 12.5 MHz
-                                         // TODO : TO BE PARAMETERIZED
+    const double expected_rms_noise=myOptions.expectedAdcNoiseRMS;// [ADC units] - typical rms of noise from pedestal runs @ 12.5 MHz
     double sumChi2=0.0;
     auto ndf=0L;
     for(auto ihist=0; ihist<nhist; ihist++) {
@@ -442,121 +840,13 @@ public:
 #if(DEBUG_CHI2)
     std::cout<<__FUNCTION__<<": Sum of chi2 from "<<nhist<<" histograms = "<<sumChi2<<", ndf="<<ndf<<std::endl;
 #endif
-    return sumChi2 /* /ndf */ * 0.5; // NOTE: for FUMILI minimizer the returned function should be: chi^2 / 2
-    //    return sumChi2/ndf;
+    sumChi2 *= 1.0 +
+               getChi2PenaltyTerm_momentumLAB() +
+	       getChi2PenaltyTerm_momentumCMS() +
+	       getChi2PenaltyTerm_alphaLength() +
+               getChi2PenaltyTerm_carbonLength();
+    return sumChi2 * 0.5; // NOTE: for FUMILI minimizer the returned function should be: 0.5 * chi^2
   }
-
-  /////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////
-  //   double getChi2() {
-  //     const int nhist=myRefHistosInMM.size();
-  //     const double expected_resolution=10.0/1000.0; // (typical rms noise)/(typical pulse height)
-  //     double sumChi2=0.0;
-  //     auto ndf=0L;
-  //     for(auto ihist=0; ihist<nhist; ihist++) {
-  //       for(auto ix=1; ix<=myRefHistosInMM[ihist]->GetNbinsX(); ix++) {
-  //   	for(auto iy=1; iy<=myRefHistosInMM[ihist]->GetNbinsY(); iy++) {
-  //   	  auto ibin=myRefHistosInMM[ihist]->GetBin(ix, iy);
-  //   	  auto val1=myRefHistosInMM[ihist]->GetBinContent(ibin); // observed (experimental data)
-  //   	  auto val2=myFitHistosInMM[ihist]->GetBinContent(ibin); // expected (fitted model)
-  //   	  auto err1=myRefHistosInMM[ihist]->GetBinError(ibin);
-  //   	  auto err2=myFitHistosInMM[ihist]->GetBinError(ibin);
-  //   	  if((err1 || err2) && val2) {
-  // 	    sumChi2 += (val1-val2)*(val1-val2)/fabs(val2);
-  // 	    ndf++;
-  // 	  }
-  //   	}
-  //       }
-  //     }
-  // #if(DEBUG_CHI2)
-  //     std::cout<<__FUNCTION__<<": Sum of chi2 from "<<nhist<<" histograms = "<<sumChi2<<", ndf="<<ndf<<std::endl;
-  // #endif
-  //     return (sumChi2/ndf)/(expected_resolution);
-  //   }
-
-  /////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////
-  // double getChi2() {
-  //   const int nhist=myRefHistosInMM.size();
-  //   double sumChi2=0.0;
-  //   auto ndf=0L;
-  //   for(auto ihist=0; ihist<nhist; ihist++) {
-  //     for(auto ix=1; ix<=myRefHistosInMM[ihist]->GetNbinsX(); ix++) {
-  // 	for(auto iy=1; iy<=myRefHistosInMM[ihist]->GetNbinsY(); iy++) {
-  // 	  auto ibin=myRefHistosInMM[ihist]->GetBin(ix, iy);
-  // 	  auto val1=myRefHistosInMM[ihist]->GetBinContent(ibin);
-  // 	  auto val2=myFitHistosInMM[ihist]->GetBinContent(ibin);
-  // 	  auto err1=myRefHistosInMM[ihist]->GetBinError(ibin);
-  // 	  auto err2=myFitHistosInMM[ihist]->GetBinError(ibin);
-  // 	  if((err1 || err2) && val1+val2) {
-  // 	    sumChi2 += 2.0*(val1-val2)*(val1-val2)/fabs(val1+val2); // symmetric formula
-  // 	    ndf++;
-  // 	  }
-  // 	}
-  //     }
-  //   }
-// #if(DEBUG_CHI2)
-//     std::cout<<__FUNCTION__<<": Sum of chi2 from "<<nhist<<" histograms = "<<sumChi2<<", ndf="<<ndf<<std::endl;
-// #endif
-  //   return sumChi2/ndf;
-  // }
-
-  /////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////
-  // double getChi2() {
-  //   const int nhist=myRefHistosInMM.size();
-  //   double sumChi2=0.0;
-  //   auto ref_hits=0L;
-  //   auto fit_hits=0L;
-  //   auto ndf=0L;
-  //   for(auto ihist=0; ihist<nhist; ihist++) {
-  //     for(auto ix=1; ix<=myRefHistosInMM[ihist]->GetNbinsX(); ix++) {
-  // 	for(auto iy=1; iy<=myRefHistosInMM[ihist]->GetNbinsY(); iy++) {
-  // 	  //	  auto found=false;
-  // 	  auto ibin=myRefHistosInMM[ihist]->GetBin(ix, iy);
-  // 	  auto val1=myRefHistosInMM[ihist]->GetBinContent(ibin);
-  // 	  auto err1=myRefHistosInMM[ihist]->GetBinError(ibin);
-  // 	  auto val2=myFitHistosInMM[ihist]->GetBinContent(ibin);
-  // 	  auto err2=myFitHistosInMM[ihist]->GetBinError(ibin);
-  // 	  // if(fabs(val1)>1) {
-  // 	  //   ref_hits++;
-  // 	  //   found=true;
-  // 	  // }
-  // 	  // if(fabs(val2)>1) {
-  // 	  //   fit_hits++;
-  // 	  //   found=true;
-  // 	  // }
-  // 	  if(err1 || err2) {
-  // 	    ndf++;
-  // 	    sumChi2+=(val1-val2)*(val1-val2)/(err1*err1+err2*err2);
-  // 	  }
-  // 	}
-  //     }
-  //   }
-  // #if(DEBUG_CHI2)
-  //     std::cout<<__FUNCTION__<<": Sum of chi2 from "<<nhist<<" histograms = "<<sumChi2<<", ndf="<<ndf<<std::endl;
-  // #endif
-  //   return sumChi2/ndf;
-  // }
-
-  /////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////
-  // double getChi2() {
-  //   const int nhist=myRefHistosInMM.size();
-  //   double sumChi2=0.0;
-  //   for(auto ihist=0; ihist<nhist; ihist++) {
-  //     double chi2=0.0;
-  //     int ndf=0;
-  //     int igood=0;
-  //     double p = myRefHistosInMM[ihist]->Chi2TestX(myFitHistosInMM[ihist], chi2, ndf, igood, "WW P");
-  //     //      std::cout<<__FUNCTION__<<": DIR=" << ihist << ", prob=" << p << ", igood=" << igood << ", chi2=" << chi2 << ", ndf=" << ndf << std::endl;
-  //     //      sumChi2 += chi2/ndf;
-  //     sumChi2 += chi2;
-  //   }
-  //   std::cout<<__FUNCTION__<<": Sum of chi2 from "<<nhist<<" histograms = "<<sumChi2<<std::endl;
-  //   //    return sumChi2/nhist;
-  //   return sumChi2;
-  // }
 
   /////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////
@@ -692,7 +982,7 @@ void DrawTLatexOnUVWProjection(TPad *tpad, const double xNDC, const double yNDC,
 //
 // Define simple data structure for N-prong fit (1<=N<=3)
 //
-typedef struct {Float_t eventId, runId, ntracks,
+typedef struct { Float_t eventId, runId, ntracks,
     energy[3]={0,0,0}, // MeV
     pid[3]={0,0,0},
     chi2,
@@ -717,7 +1007,7 @@ typedef struct {Float_t eventId, runId, ntracks,
     initScaleDeviation, // intial conditions: fabs(difference from TRUE) [ADC/MeV]
     initVtxDeviation, // initial conditions: radius from TRUE vertex position [mm]
     initEndDeviation[3]={0,0,0}; // initial conditions: radius from TRUE endpoint position [mm]
-    } FitDebugData3prong;
+} FitDebugData3prong;
 /////////////////////////
 
 // _______________________________________
@@ -789,7 +1079,7 @@ void DrawFitResults(TCanvas *tcanvas, // input TCanvas
 #endif
 
 #if(DRAW_SAME_SCALE)
-  // first pass to set common Z range
+  // first pass to set common Z rangef
   idir=definitions::projection_type::DIR_U;
   auto ref_min=1E30;
   auto ref_max=-1E30;
@@ -963,7 +1253,7 @@ void DrawFitResults(TCanvas *tcanvas, // input TCanvas
 
 // _______________________________________
 //
-// This function: generates and fits N (1<=N<=3) straight pseudo-tracks.having common vertex
+// This function: fits N (1<=N<=3) straight pseudo-tracks.having common vertex
 // It returns CHI2 of the fit.
 // It also fills FitDebugData3prong structure.
 //
@@ -973,18 +1263,17 @@ double fit_Nprong(std::vector<std::shared_ptr<TH2D> > &referenceHistosInMM,
 		  std::shared_ptr<IonRangeCalculator> calcRange,
 		  std::vector<pid_type> pidList, // determines hypothesis and number of tracks
 		  std::vector<double> initialParameters, // starting points of parametric fit
-		  double maxDeviationInMM, // for setting parameter limits
-		  double tolerance,
+		  FitOptionType &fit_options,
 		  FitDebugData3prong &fit_debug_data,
 		  std::vector<std::shared_ptr<TH2D> > *fitted_histograms_coll=NULL, // optional pointer to a vector
                                                                                     // of TH2D pointers for storing the
                                                                                     // final fit result in UVW projections
 		  std::vector<std::set<int> > fixedParametersMask=std::vector<std::set<int> >()) { // optional list of
-                                                                                                   // parameters to be frozen
-                                                                                                   // at STEP1, STEP2, etc
+		                                                                                   // parameters to be frozen
+		                                                                                   // at STEP1, STEP2, etc
   // initilize fitter
   //
-  HypothesisFit myFit(referenceHistosInMM, calcResponse, calcRange, pidList);
+  HypothesisFit myFit(referenceHistosInMM, calcResponse, calcRange, pidList, fit_options); //beamEnergyInMeV, beamDir);
   const int npar=myFit.getNparams();
   ROOT::Fit::Fitter fitter;
   ROOT::Math::Functor fcn(myFit, npar); // this line must be called after fixing all local charge density function parameters
@@ -999,8 +1288,27 @@ double fit_Nprong(std::vector<std::shared_ptr<TH2D> > &referenceHistosInMM,
     pStart[index] = it;
     index++;
   }
-
+  // optionally consider only hits inside slot-shaped regions of interest around initial tracks in all UZ/VZ/WZ projections
+  // NOTE: such regions of interest are independent from hit cluster settings
+  myFit.cropRefHistogramsInMM(npar, pStart);
   fitter.SetFCN(fcn, pStart, myFit.getRefNpoints(), true);
+  ////// DEBUG
+  // std::cout << __FUNCTION__ << " After fitter.SetFCN" << std::endl << std::flush;
+  // auto coll=myFit.getRefHistogramsInMM();
+  // auto c=new TCanvas("c","c",300*coll.size(), 300);
+  // c->Divide(coll.size(), 1);
+  // c->cd();
+  // int ipad=1;
+  // for(auto &it: coll) {
+  //   c->cd(ipad);
+  //   it->DrawClone("COLZ");
+  //   ipad++;
+  //   gPad->Update();
+  //   gPad->Modified();
+  // }
+  // c->Print("c.root");
+  // c->Print("c.pdf");
+  ////// DEBUG
 
   // compute better ADC scaling factor
   double ref_integral=0.0; // integral of reference (data) histograms
@@ -1017,9 +1325,12 @@ double fit_Nprong(std::vector<std::shared_ptr<TH2D> > &referenceHistosInMM,
   std::cout << __FUNCTION__ << ": CHI2 evaluated at CORRECTED starting point =" << chi2 << std::endl;
 
   // set limits on the fitted ADC scale
-  // to be within factor of 2 from initial guess value
-  //  fitter.Config().ParSettings(0).SetLimits(0.5*pStart[0], 2.0*pStart[0]);
-  fitter.Config().ParSettings(0).SetLimits(0.1*pStart[0], 10.0*pStart[0]);
+  if(fit_options.maxAdcFactor<1.0) {
+    std::cout << "Wrong maximal ADC scaling factor!" << std::endl;
+    fitter.Config().ParSettings(0).SetLimits(0.0, 1E30);
+  } else {
+    fitter.Config().ParSettings(0).SetLimits(pStart[0]/fit_options.maxAdcFactor, pStart[0]*fit_options.maxAdcFactor);
+  }
   std::cout << "Setting par[" << 0 << "]  limits=["
 	    << fitter.Config().ParSettings(0).LowerLimit()<<", "
 	    << fitter.Config().ParSettings(0).UpperLimit()<<"]" << std::endl;
@@ -1032,16 +1343,16 @@ double fit_Nprong(std::vector<std::shared_ptr<TH2D> > &referenceHistosInMM,
     std::tie(xmin, xmax, ymin, ymax, zmin, zmax)=geo->rangeXYZ();
     switch((i-1)%3) {
     case 0: // X_DET
-      parmin = std::max( xmin, pStart[i]-maxDeviationInMM );
-      parmax = std::min( xmax, pStart[i]+maxDeviationInMM );
+      parmin = std::max( xmin, pStart[i]-fit_options.maxDeviationInMM );
+      parmax = std::min( xmax, pStart[i]+fit_options.maxDeviationInMM );
       break;
     case 1: // Y_DET
-      parmin = std::max( ymin, pStart[i]-maxDeviationInMM );
-      parmax = std::min( ymax, pStart[i]+maxDeviationInMM );
+      parmin = std::max( ymin, pStart[i]-fit_options.maxDeviationInMM );
+      parmax = std::min( ymax, pStart[i]+fit_options.maxDeviationInMM );
       break;
     case 2: // Z_DET
-      parmin = std::max( zmin, pStart[i]-maxDeviationInMM );
-      parmax = std::min( zmax, pStart[i]+maxDeviationInMM );
+      parmin = std::max( zmin, pStart[i]-fit_options.maxDeviationInMM );
+      parmax = std::min( zmax, pStart[i]+fit_options.maxDeviationInMM );
       break;
     default:
       std::cout << __FUNCTION__ << ": Invalid coordinate index!" << std::endl << std::flush;
@@ -1060,7 +1371,7 @@ double fit_Nprong(std::vector<std::shared_ptr<TH2D> > &referenceHistosInMM,
   }
 
   // set numerical tolerance
-  fitter.Config().MinimizerOptions().SetTolerance(tolerance); // default=1e-4 for MC-MC tests
+  fitter.Config().MinimizerOptions().SetTolerance(fit_options.tolerance); // default=1e-4 for MC-MC tests
 
   // set print debug level
   fitter.Config().MinimizerOptions().SetPrintLevel(2);
@@ -1088,7 +1399,7 @@ double fit_Nprong(std::vector<std::shared_ptr<TH2D> > &referenceHistosInMM,
     fitter.Config().MinimizerOptions().SetMaxFunctionCalls(10000);
     fitter.Config().MinimizerOptions().SetMaxIterations(1000);
     fitter.Config().MinimizerOptions().SetStrategy(1);
-    fitter.Config().MinimizerOptions().SetTolerance(tolerance); // default=1e-4 for MC-MC comparison
+    fitter.Config().MinimizerOptions().SetTolerance(fit_options.tolerance); // default=1e-4 for MC-MC comparison
     fitter.Config().MinimizerOptions().SetPrecision( 1e-6 ); // 1e-4 //increased to speed up calculations
 
     // check fit results
@@ -1149,7 +1460,7 @@ double fit_Nprong(std::vector<std::shared_ptr<TH2D> > &referenceHistosInMM,
       fitter.Config().MinimizerOptions().SetMaxFunctionCalls(10000);
       fitter.Config().MinimizerOptions().SetMaxIterations(1000);
       fitter.Config().MinimizerOptions().SetStrategy(1);
-      fitter.Config().MinimizerOptions().SetTolerance(tolerance); // default=1e-4 for MC-MC comparison
+      fitter.Config().MinimizerOptions().SetTolerance(fit_options.tolerance); // default=1e-4 for MC-MC comparison
       fitter.Config().MinimizerOptions().SetPrecision( 1e-6 ); // 1e-4 //increased to speed up calculations
 
       // check fit results
@@ -1233,6 +1544,9 @@ double fit_Nprong(std::vector<std::shared_ptr<TH2D> > &referenceHistosInMM,
 int loop(const long maxIter=1, const int runId=1234) {
 
   gRandom->SetSeed(0);
+  ////// DEBUG
+  //  gRandom->SetSeed(12345678);
+  ////// DEBUG
   
   if (!gROOT->GetClass("GeometryTPC")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
@@ -1255,17 +1569,17 @@ int loop(const long maxIter=1, const int runId=1234) {
 
   const auto sigmaXY_mm=2.0; // mm
   const auto sigmaZ_mm=2.0; // mm
-  const auto peakingTime_ns=0.0; // ns
-  const std::string geometryFileName = "geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat";
-  const auto pressure_mbar = 250.0; // mbar
+  //  const auto peakingTime_ns=0.0; // ns
+  const auto peakingTime_ns=232.0; // ns
+  const std::string geometryFileName = "geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat";
+  const auto pressure_mbar = 130.0; // mbar
+  //  const std::string geometryFileName = "geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat";
+  //  const auto pressure_mbar = 250.0; // mbar
   const auto temperature_K = 273.15+20; // K
 
-  const auto tolerance=1e-4; // default=1e-4 for MC-MC comparison
   const auto reference_adcPerMeV=1e5;
   const auto reference_nPointsMin=1000; // fine granularity for crearing reference UVW histograms to be fitted
   const auto reference_nPointsPerMM=100.0; // fine granularity for creating reference UVW histograms to be fitted
-  const auto maxDeviationInADC=reference_adcPerMeV*0.5; // for smearing starting point and setting parameter limits
-  const auto maxDeviationInMM=5.0; // for smearing fit starting point and setting parameter limits
 
   /////////// initialize TPC geometry, electronic parameters and gas conditions
   //
@@ -1286,8 +1600,8 @@ int loop(const long maxIter=1, const int runId=1234) {
 
   ////////// initialize strip response calculator
   //
-  int nstrips=6;
-  int ncells=30;
+  int nstrips=7; // 6;  // NOTE: for sigmas < 2mm use 6x30x12 model while for sigmas >= 2mm use 7x50x14 model
+  int ncells=50; // 30; // NOTE: for sigmas < 2mm use 6x30x12 model while for sigmas >= 2mm use 7x50x14 model
   int npads=nstrips*2;
   const std::string responseFileName( (peakingTime_ns==0 ?
 			       Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm.root",
@@ -1353,6 +1667,15 @@ int loop(const long maxIter=1, const int runId=1234) {
   TCanvas *outputCanvas=new TCanvas("c_result", "c_result", 500, 500);
 #endif
 
+  ////////// sets fit options
+  //
+  const auto tolerance = 1e-4; // default=1e-4 for MC-MC comparison
+  const auto maxDeviationInADC=reference_adcPerMeV*0.5; // for smearing starting point and setting parameter limits
+  const auto maxDeviationInMM=5.0; // mm, for smearing fit starting point and setting parameter limits
+  FitOptionType fit_options;
+  fit_options.tolerance = tolerance;
+  fit_options.maxDeviationInMM=maxDeviationInMM;
+
   // sanity check before main loop
   if(pidList.size()<1 || pidList.size()>3) {
     std::cout << __FUNCTION__ << ": Invalid number of tracks for FitDebugData3prong!" << std::endl << std::flush;
@@ -1363,7 +1686,7 @@ int loop(const long maxIter=1, const int runId=1234) {
   TStopwatch t;
   t.Start();
 
-  /////////// pereform fits of randomly generated events
+  /////////// perform fits of randomly generated events
   //
   for(auto iter=0; iter<maxIter; iter++) {
     std::cout << "#####################" << std::endl
@@ -1464,11 +1787,11 @@ int loop(const long maxIter=1, const int runId=1234) {
     // get fit results
 #if(DEBUG_DRAW_FIT)
     std::vector<std::shared_ptr<TH2D> > fit_histograms;
-    //    static bool isFirst=true;
-    //    auto chi2 = fit_Nprong(referenceHistosInMM, aGeometry, aCalcResponse, aCalcRange, pidList, pStart, maxDeviationInMM, tolerance, fit_debug_data, (isFirst ? &fit_histograms : NULL));
-    auto chi2 = fit_Nprong(referenceHistosInMM, aGeometry, aCalcResponse, aCalcRange, pidList, pStart, maxDeviationInMM, tolerance, fit_debug_data, &fit_histograms);
+    auto chi2 = fit_Nprong(referenceHistosInMM, aGeometry, aCalcResponse, aCalcRange, pidList, pStart,
+			   fit_options, fit_debug_data, &fit_histograms);
 #else
-    auto chi2 = fit_Nprong(referenceHistosInMM, aGeometry, aCalcResponse, aCalcRange, pidList, pStart, maxDeviationInMM, tolerance, fit_debug_data);
+    auto chi2 = fit_Nprong(referenceHistosInMM, aGeometry, aCalcResponse, aCalcRange, pidList, pStart,
+			   fit_options, fit_debug_data);
 #endif
     // compare TRUE and RECO observables
     std::cout << "Final FCN value " << fit_debug_data.chi2
@@ -1557,6 +1880,7 @@ int loop(const long maxIter=1, const int runId=1234) {
 // Takes Track3D input tree as a starting point to fit the corresponding GRAW raw-data file(s).
 // Events from the two sources are are matched by their {runId, eventId}.
 //
+static FitOptionType fit_options_default;
 int loop_Graw_Track3D(const char *recoInputFile, // Track3D collection with initial RECO data corresponding to GRAW file(s)
 		      const char *rawInputFile, // single ROOT file, or single GRAW, or comma-separated list of GRAW files
 		      unsigned long firstEvent=0,        // first eventId to process
@@ -1572,7 +1896,8 @@ int loop_Graw_Track3D(const char *recoInputFile, // Track3D collection with init
 		      bool flag_2prong=true, // enable fitting of 2-prong events
 		      bool flag_3prong=true,  // enable fitting of 3-prong events
 		      bool flag_clustering=true,  // enable fitting of clustered RAW data
-		      bool flag_subtract_pedestals=true  // enable pedestal subtraction in case of GRAW files
+		      bool flag_subtract_pedestals=true, // enable pedestal subtraction in case of GRAW files
+		      FitOptionType input_fit_options=fit_options_default
 		      ) {
   if (!gROOT->GetClass("GeometryTPC")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
@@ -1628,14 +1953,14 @@ int loop_Graw_Track3D(const char *recoInputFile, // Track3D collection with init
   ////////// initialize strip response calculator
   //
   const auto reference_adcPerMeV=1e5;
-  const auto maxDeviationInADC=reference_adcPerMeV*0.5; // for smearing starting point and setting parameter limits
-  const auto maxDeviationInMM=5.0; // for smearing fit starting point and setting parameter limits
+  //  const auto maxDeviationInADC=reference_adcPerMeV*0.5; // for smearing starting point and setting parameter limits
+  //  const auto maxDeviationInMM=5.0; // for setting parameter limits
   double sigmaXY=sigmaXY_mm; // 0.64; // educated guess of transverse charge spread after 10 cm of drift (middle of drift cage)
   double sigmaZ=sigmaZ_mm; // 0.64; // educated guess of longitudinal charge spread after 10 cm of drift (middle of drift cage)
   auto peakingTime=peakingTime_ns;
   if(peakingTime<0) peakingTime=0; // when peakingTime is ommitted turn off additional smearing due to GET electronics
-  int nstrips=6;
-  int ncells=30;
+  int nstrips=6;  // NOTE: for sigmas < 2mm use 6x30x12 model while for sigmas >= 2mm use 7x50x14 model
+  int ncells=30; // NOTE: for sigmas < 2mm use 6x30x12 model while for sigmas >= 2mm use 7x50x14 model
   int npads=nstrips*2;
   const std::string responseFileName( (peakingTime_ns==0 ?
 			       Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm.root",
@@ -1651,21 +1976,12 @@ int loop_Graw_Track3D(const char *recoInputFile, // Track3D collection with init
   //
   auto aCalcRange=std::make_shared<IonRangeCalculator>(CO2, pressure_mbar, temperature_K, false);
 
-  // ////////// create dummy EventTPC to get empty UVW projections
-  // //
-  // auto event=std::make_shared<EventTPC>(); // empty event
-  // event->SetGeoPtr(aGeometry);
-  // std::vector<std::shared_ptr<TH2D> > referenceHistosInMM(3);
-  // for(auto strip_dir=0; strip_dir<3; strip_dir++) {
-  //   referenceHistosInMM[strip_dir] = event->get2DProjection(get2DProjectionType(strip_dir), filter_type::none, scale_type::mm);
-  // }
-
   //////// initialize event filter
   //
   auto beamDirPreset=BeamDirection::MINUS_X;
   TVector3 beamDir; // unit vector in DET coordinate system
   switch(beamDirPreset){
-  case BeamDirection::X :
+  case BeamDirection::PLUS_X :
     beamDir = TVector3(1,0,0);
     break;
   case BeamDirection::MINUS_X :
@@ -1680,10 +1996,9 @@ int loop_Graw_Track3D(const char *recoInputFile, // Track3D collection with init
 
   ////////// opens input ROOT file with tracks (Track3D objects)
   //
-  // NOTE: Tree's and branch names are kept the same as in HIGS_analysis
-  //       for easy MC-reco comparison. To be replaced with better
+  // NOTE: Names of trees and branches are kept the same as in HIGS_analysis
+  //       for easy MC-reco comparison. To be replaced with a better class/object in the future.
   //
-  //       class/object in future toy MC.
   TFile *aFile = new TFile(recoInputFile, "OLD");
   TTree *aTree=(TTree*)aFile->Get("TPCRecoData");
   if(!aTree) {
@@ -1815,6 +2130,10 @@ int loop_Graw_Track3D(const char *recoInputFile, // Track3D collection with init
   outputCanvasROOTFile->cd();
   TCanvas *outputCanvas=new TCanvas("c_result", "c_result", 500, 500);
 #endif
+
+  ////////// sets fit options
+  //
+  FitOptionType fit_options=input_fit_options;
 
   ////////// measure elapsed time
   //
@@ -1963,12 +2282,10 @@ int loop_Graw_Track3D(const char *recoInputFile, // Track3D collection with init
 
     //////// create starting point (optionally smeared around TRUE/INIT value)
     //
-    const auto tolerance = 1e-5; // default=1e-4 for MC-MC comparison
     const auto deviationDir=getRandomDir(gRandom); // for origin, enpoints
     //    const auto deviationStepInMM=1.0; // [mm]
     //    auto deviationRadiusInMM = deviationStepInMM * (gRandom->Integer((int)(maxDeviationInMM/deviationStepInMM))+1);
     auto deviationRadiusInMM = 0.0; // no deviation
-    auto maxDeviationInMM=7.0; // [mm] - for setting perameter limits (and for optional smearing of the starting points)
     auto reference_adcPerMeV=1e5; // [ADC units / MeV] - order of magnitude, this will be refinend automatically
     std::vector<double> pStart{
       reference_adcPerMeV,
@@ -2034,9 +2351,11 @@ int loop_Graw_Track3D(const char *recoInputFile, // Track3D collection with init
     // get fit results
 #if(DEBUG_DRAW_FIT)
     std::vector<std::shared_ptr<TH2D> > fit_histograms;
-    auto chi2 = fit_Nprong(referenceHistosInMM, aGeometry, aCalcResponse, aCalcRange, pidList, pStart, maxDeviationInMM, tolerance, fit_debug_data, &fit_histograms, fixedParametersMask);
+    auto chi2 = fit_Nprong(referenceHistosInMM, aGeometry, aCalcResponse, aCalcRange, pidList, pStart,
+			   fit_options, fit_debug_data, &fit_histograms, fixedParametersMask);
 #else
-    auto chi2 = fit_Nprong(referenceHistosInMM, aGeometry, aCalcResponse, aCalcRange, pidList, pStart, maxDeviationInMM, tolerance, fit_debug_data, NULL, fixedParametersMask);
+    auto chi2 = fit_Nprong(referenceHistosInMM, aGeometry, aCalcResponse, aCalcRange, pidList, pStart,
+			   fit_options, fit_debug_data, NULL, fixedParametersMask);
 #endif
     fitted_event_count++;
 
@@ -2227,7 +2546,7 @@ int loop_Graw_Track3D_Display(const char *recoInputFile, // Track3D collection w
   auto beamDirPreset=BeamDirection::MINUS_X;
   TVector3 beamDir; // unit vector in DET coordinate system
   switch(beamDirPreset){
-  case BeamDirection::X :
+  case BeamDirection::PLUS_X :
     beamDir = TVector3(1,0,0);
     break;
   case BeamDirection::MINUS_X :
