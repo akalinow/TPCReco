@@ -25,6 +25,16 @@ private:
 
     std::vector<TVector3> FindIntersections(const TVector3 &offset, const TVector3 &tangent);
 
+    double offsetU{0};
+    double offsetV{0};
+    double offsetW{0};
+    double stripPitch{1};
+    int dirU{1};
+    int dirV{1};
+    int dirW{1};
+
+
+
 
     std::vector<Plane3D> planes;
     bool includeElectronicsRange{false};

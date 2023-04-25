@@ -18,6 +18,12 @@
 #include <vector>
 /// \endcond
 
+struct UVWTpos {
+    double U{-1};
+    double V{-1};
+    double W{-1};
+    double T{-1};
+};
 
 
 /**
@@ -42,6 +48,10 @@ public:
     void SetTruncatedStop(const TVector3 &stop);
 
     void SetTruncatedStart(const TVector3 &start);
+
+    void SetTruncatedStopUVWT(const UVWTpos &stop);
+
+    void SetTruncatedStartUVWT(const UVWTpos &start);
 
     void SetPrimaryParticle(PrimaryParticle &p) { prim = p; }
 
@@ -69,6 +79,10 @@ public:
 
     TVector3 GetTruncatedStop() const { return truncatedStopPos; }
 
+    UVWTpos GetTruncatedStartUVWT() const { return truncatedStartPosUVWT; }
+
+    UVWTpos GetTruncatedStopUVWT() const { return truncatedStopPosUVWT; }
+
     double GetRange() const;
 
     double GetTruncatedRange() const;
@@ -94,6 +108,8 @@ private:
     //Same just truncated to active volume:
     TVector3 truncatedStopPos;
     TVector3 truncatedStartPos;
+    UVWTpos truncatedStartPosUVWT;
+    UVWTpos truncatedStopPosUVWT;
     SimHits hits; ///<Vector of simulated hits in detector volume
     PrimaryParticle prim;
     bool hasStopPos{false};

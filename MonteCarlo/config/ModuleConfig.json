@@ -12,7 +12,7 @@
   "GeometryConfig": "/scratch/TPCReco/build/resources/geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat",
   "ModuleConfiguration": {
     "Generator": {
-      "NumberOfEvents": 1000,
+      "NumberOfEvents": 10,
       "EventGenerator": {
         "Beam": {
           "BeamGeometry": {
@@ -51,8 +51,8 @@
           "VertexLongitudinal": {
             "distribution": "ZProviderUniform",
             "parameters": {
-              "minZ": -200,
-              "maxZ": 200
+              "minZ": -120,
+              "maxZ": -100
             }
           }
         },
@@ -83,7 +83,7 @@
           },
           {
             "type": "ThreeProngDemocratic",
-            "branchingRatio": 1,
+            "branchingRatio": 0,
             "tag": "THREE_ALPHA_DEMOCRATIC"
           }
         ]

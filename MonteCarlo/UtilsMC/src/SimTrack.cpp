@@ -73,3 +73,11 @@ void SimTrack::Shift(TVector3 &offset) {
         h.SetPosition(h.GetPosition() + offset);
     }
 }
+
+void SimTrack::SetTruncatedStopUVWT(const UVWTpos &stop) {
+    truncatedStopPosUVWT = stop;
+}
+
+void SimTrack::SetTruncatedStartUVWT(const UVWTpos &start) {
+    truncatedStartPosUVWT = start;
+}
