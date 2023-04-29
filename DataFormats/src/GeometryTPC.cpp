@@ -1704,10 +1704,13 @@ double GeometryTPC::Strip2posUVW(std::shared_ptr<StripTPC>strip, bool &err_flag)
 }
 
 
+// Checks if strip order in [mm] is reversed or normal.
+// Returns TRUE when (signed) distance of projections of central axes of
+// strip N_max wrt strip N_min is NEGATIVE.
 bool GeometryTPC::IsStripDirReversed(int dir) const{
 
   if(dir<definitions::projection_type::DIR_U || dir>definitions::projection_type::DIR_W) return false;
-  int section = 1;
+  int section = GetDirSectionIndexList(dir).front(); // first valid strip section
   int minStrip = GetDirMinStrip(dir, section);
   int maxStrip = GetDirMaxStrip(dir, section);
   bool err_flag = false;
