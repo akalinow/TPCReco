@@ -2260,7 +2260,7 @@ int loop_Graw_Track3D(const char *recoInputFile, // Track3D collection with init
       continue;
     }
 
-    std::cout << "EventInfo: " << aEventTPC->GetEventInfo()<<std::endl;
+    std::cout << __FUNCTION__ << ": " << aEventTPC->GetEventInfo()<<std::endl; exit(1);
 
     // prepare clustered UVW projections to be fitted
     // NOTE: ptree::find() with nested nodes does not work properly in interactive ROOT mode!
@@ -2873,7 +2873,7 @@ int loop_Graw_Track3D_Display(const char *recoInputFile, // Track3D collection w
       continue;
     }
 
-    std::cout << "EventInfo: " << aEventTPC->GetEventInfo()<<std::endl;
+    std::cout << __FUNCTION__ << ": " << aEventTPC->GetEventInfo() << std::endl;
 
     // prepare UVW projections to be displayed
     // NOTE: ptree::find() with nested nodes does not work properly in interactive ROOT mode!
