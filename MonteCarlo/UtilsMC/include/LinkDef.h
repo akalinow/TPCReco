@@ -6,5 +6,4 @@
 #pragma link C++ class vector<SimTrack>+;
 #pragma link C++ class PrimaryParticle+;
 #pragma link C++ class vector<PrimaryPArticle>+;
-#pragma link C++ class UVWTpos+;
 #endif

@@ -5,21 +5,6 @@
 fwk::VModule::EResultFlag TrackTruncator::Init(boost::property_tree::ptree config) {
     includeElectronicsRange = config.get<bool>("IncludeElectronicsRange");
     BuildPlanes();
-    bool err;
-    offsetU = geometry->Strip2posUVW(definitions::DIR_U,1,err);
-    offsetV = geometry->Strip2posUVW(definitions::DIR_V,1,err);
-    offsetW = geometry->Strip2posUVW(definitions::DIR_W,1,err);
-
-    if(geometry->IsStripDirReversed(definitions::DIR_U))
-        dirU=-1;
-
-    if(geometry->IsStripDirReversed(definitions::DIR_V))
-        dirV=-1;
-
-    if(geometry->IsStripDirReversed(definitions::DIR_W))
-        dirW=-1;
-
-    stripPitch = geometry->GetStripPitch();
     return eSuccess;
 }
 
@@ -73,24 +58,7 @@ fwk::VModule::EResultFlag TrackTruncator::Process(ModuleExchangeSpace &event) {
 
         t.SetTruncatedStart(intersections.front());
         t.SetTruncatedStop(intersections.back());
-    }
-    //second loop over tracks - assign truncated positions to UVWT coordinates
-    for (auto &t: currentSimEvent.GetTracks()) {
-        auto start = t.GetTruncatedStart();
-        auto stop = t.GetTruncatedStop();
-        bool err;
-        auto startU = dirU*(geometry->Cartesian2posUVW(start.X(), start.Y(), definitions::DIR_U, err) - offsetU)/stripPitch+1;
-        auto startV = dirV*(geometry->Cartesian2posUVW(start.X(), start.Y(), definitions::DIR_V, err) - offsetV)/stripPitch+1;
-        auto startW = dirW*(geometry->Cartesian2posUVW(start.X(), start.Y(), definitions::DIR_W, err) - offsetW)/stripPitch+1;
-        auto startT = geometry->Pos2timecell(start.Z(),err);
 
-        auto stopU = dirU*(geometry->Cartesian2posUVW(stop.X(), stop.Y(), definitions::DIR_U, err) - offsetU)/stripPitch+1;
-        auto stopV = dirV*(geometry->Cartesian2posUVW(stop.X(), stop.Y(), definitions::DIR_V, err) - offsetV)/stripPitch+1;
-        auto stopW = dirW*(geometry->Cartesian2posUVW(stop.X(), stop.Y(), definitions::DIR_W, err) - offsetW)/stripPitch+1;
-        auto stopT = geometry->Pos2timecell(stop.Z(),err);
-
-        t.SetTruncatedStartUVWT({startU,startV,startW,startT});
-        t.SetTruncatedStopUVWT({stopU,stopV,stopW,stopT});
 
     }
 
