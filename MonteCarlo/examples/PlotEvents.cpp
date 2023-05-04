@@ -3,8 +3,8 @@
 #include "TCanvas.h"
 #include "TView.h"
 #include "TPolyLine3D.h"
-#include "GeometryTPC.h"
-#include "Track3D.h"
+#include "TPCReco/GeometryTPC.h"
+#include "TPCReco/Track3D.h"
 
 #include <boost/program_options.hpp>
 

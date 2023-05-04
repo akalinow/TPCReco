@@ -3,7 +3,7 @@
 
 #include <memory>
 #include "Reaction.h"
-#include "CommonDefinitions.h"
+#include "TPCReco/CommonDefinitions.h"
 #include "TH1D.h"
 #include "Math/Vector3D.h"
 

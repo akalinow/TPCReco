@@ -11,7 +11,7 @@
 #include "TVector3.h"
 #include "SimHit.h"
 #include "TVector3.h"
-#include "CommonDefinitions.h"
+#include "TPCReco/CommonDefinitions.h"
 #include "PrimaryParticle.h"
 /// \cond
 #include <utility>

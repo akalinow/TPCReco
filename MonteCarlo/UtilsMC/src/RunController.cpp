@@ -3,7 +3,6 @@
 #include <iostream>
 #include <boost/lexical_cast.hpp>
 #include <VModule.h>
-#include "colorText.h"
 
 
 using namespace std;
@@ -28,7 +27,7 @@ namespace fwk {
     RunController::GetRegisteredModuleNames() {
         ostringstream modules;
         for (const auto &p: fwk::VModuleFactory::GetRegiseredIdentifiers()) {
-            modules << KBLU << p << RST "\n";
+            modules  << p << "\n";
         }
         return modules.str();
     }

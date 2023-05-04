@@ -2,8 +2,8 @@
 #define TPCSOFT_TPCDIGITIZERRANDOM_H
 
 #include "VModule.h"
-#include "GeometryTPC.h"
-#include "EventInfo.h"
+#include "TPCReco/GeometryTPC.h"
+#include "TPCReco/EventInfo.h"
 
 
 class TPCDigitizerRandom : public fwk::VModule {

@@ -3,8 +3,8 @@
 //A structure to hold information exchanged between the modules
 
 #include "SimEvent.h"
-#include "PEventTPC.h"
-#include "Track3D.h"
+#include "TPCReco/PEventTPC.h"
+#include "TPCReco/Track3D.h"
 
 struct ModuleExchangeSpace {
     SimEvent simEvt;

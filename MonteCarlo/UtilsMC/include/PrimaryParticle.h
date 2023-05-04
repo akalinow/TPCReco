@@ -1,7 +1,7 @@
 #ifndef TPCSOFT_PRIMARYPARTICLE_H
 #define TPCSOFT_PRIMARYPARTICLE_H
 
-#include "CommonDefinitions.h"
+#include "TPCReco/CommonDefinitions.h"
 #include "TLorentzVector.h"
 #include "IonProperties.h"
 #include <vector>

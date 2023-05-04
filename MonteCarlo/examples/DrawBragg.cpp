@@ -11,7 +11,7 @@
 #include "TStyle.h"
 #include "TLegend.h"
 
-#include "IonRangeCalculator.h"
+#include "TPCReco/IonRangeCalculator.h"
 
 
 int main(int argc, char** argv)

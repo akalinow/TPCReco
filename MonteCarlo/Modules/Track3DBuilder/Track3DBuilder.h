@@ -2,8 +2,8 @@
 #define TPCSOFT_TRACK3DBUILDER_H
 
 #include "VModule.h"
-#include "GeometryTPC.h"
-#include "EventInfo.h"
+#include "TPCReco/GeometryTPC.h"
+#include "TPCReco/EventInfo.h"
 
 
 class Track3DBuilder : public fwk::VModule {

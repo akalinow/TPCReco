@@ -3,7 +3,7 @@
 
 #include<memory>
 #include<map>
-#include "CommonDefinitions.h"
+#include "TPCReco/CommonDefinitions.h"
 
 
 class IonProperties{

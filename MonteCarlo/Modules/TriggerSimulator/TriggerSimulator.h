@@ -2,7 +2,7 @@
 #define TPCSOFT_TRIGGERSIMULATOR_H
 
 #include "VModule.h"
-#include "GeometryTPC.h"
+#include "TPCReco/GeometryTPC.h"
 
 class TriggerSimulator : public fwk::VModule{
 public:

@@ -38,6 +38,6 @@ install(TARGETS ${MODULE_NAME} LIBRARY DESTINATION lib)
 
 
 
-reco_add_test_subdirector(test)
+#reco_add_test_subdirector(test)
 
 

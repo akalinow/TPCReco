@@ -16,7 +16,7 @@
 /// \endcond
 #include "CentralConfig.hh"
 #include "DataBuffer.h"
-#include "CommonDefinitions.h"
+#include "TPCReco/CommonDefinitions.h"
 #include "IonProperties.h"
 
 

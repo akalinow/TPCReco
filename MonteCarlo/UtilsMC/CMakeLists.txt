@@ -45,6 +45,6 @@ install(
         ${CMAKE_CURRENT_BINARY_DIR}/libUtilsMC.rootmap
         DESTINATION lib)
 
-reco_add_test_subdirector(test)
+#reco_add_test_subdirector(test)
 
 

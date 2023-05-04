@@ -2,9 +2,9 @@
 #define TPCSOFT_TPCDIGITIZERSRC_H
 
 #include "VModule.h"
-#include "GeometryTPC.h"
-#include "EventInfo.h"
-#include "StripResponseCalculator.h"
+#include "TPCReco/GeometryTPC.h"
+#include "TPCReco/EventInfo.h"
+#include "TPCReco/StripResponseCalculator.h"
 #include "boost/filesystem.hpp"
 
 

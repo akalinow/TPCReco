@@ -10,7 +10,7 @@
 #include "Stopwatch.h"
 #include "RealTimeStopwatch.h"
 #include "ModuleExchangeSpace.h"
-#include "GeometryTPC.h"
+#include "TPCReco/GeometryTPC.h"
 
 #include "boost/property_tree/ptree.hpp"
 
