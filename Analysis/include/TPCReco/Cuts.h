@@ -23,6 +23,10 @@ using Cut1 = NonEmpty;
 
 // cut: XY plane : vertex position per event, corrected for beam tilt
 struct VertexPosition {
+#ifndef __CINT__                                                        // FIX for ROOT macros
+  VertexPosition(double offset=0., double slope=0., double diameter=0.) // FIX for ROOT macros
+    : beamOffset(offset), beamSlope(slope), beamDiameter(diameter) { }  // FIX for ROOT macros
+#endif                                                                  // FIX for ROOT macros
   const double beamOffset = 0.;
   const double beamSlope = 0.;
   const double beamDiameter = 0.;
@@ -45,8 +49,13 @@ public:
   }
   template <class Track> bool operator()(Track *track) {
     const auto &segments = track->getSegments();
+#ifdef __CINT__                                                              // FIX for ROOT macros
     return std::all_of(std::cbegin(segments), std::cend(segments),
                        [this](const auto &segment) {
+#else                                                                        // FIX for ROOT macros
+    return std::all_of(segments.cbegin(), segments.cend(),                   // FIX for ROOT macros
+                       [this](const decltype(*segments.cbegin()) &segment) { // FIX for ROOT macros
+#endif                                                                       // FIX for ROOT macros
                          return this->isInside(segment.getStart()) &&
                                 this->isInside(segment.getEnd());
                        });
@@ -60,14 +69,23 @@ using Cut3 = DistanceToBorder;
 
 // cut: XY plane : rectangular cut per track
 struct RectangularCut {
+#ifndef __CINT__                                                         // FIX for ROOT macros
+  RectangularCut(double _minX, double _maxX, double _minY, double _maxY) // FIX for ROOT macros
+      : minX(_minX), maxX(_maxX), minY(_minY), maxY(_maxY) { }           // FIX for ROOT macros
+#endif                                                                   // FIX for ROOT macros
   const double minX;
   const double maxX;
   const double minY;
   const double maxY;
   template <class Track> bool operator()(Track *track) {
     const auto &segments = track->getSegments();
+#ifdef __CINT__                                                              // FIX for ROOT macros
     return std::all_of(std::cbegin(segments), std::cend(segments),
                        [this](const auto &segment) {
+#else                                                                        // FIX for ROOT macros
+    return std::all_of(segments.cbegin(), segments.cend(),                   // FIX for ROOT macros
+                       [this](const decltype(*segments.cbegin()) &segment) { // FIX for ROOT macros
+#endif                                                                       // FIX for ROOT macros
                          auto start = segment.getStart();
                          auto stop = segment.getEnd();
                          return start.X() < maxX && start.X() > minX &&
@@ -152,8 +170,13 @@ public:
   template <class Track> bool operator()(Track *track) {
     auto &segments = track->getSegments();
     auto vertexZ = segments.front().getStart().Z();
+#ifdef __CINT__                                                                       // FIX for ROOT macros
     return std::all_of(std::cbegin(segments), std::cend(segments),
                        [this, vertexZ](const auto &segment) {
+#else                                                                                 // FIX for ROOT macros
+    return std::all_of(segments.cbegin(), segments.cend(),                            // FIX for ROOT macros
+                       [this, vertexZ](const decltype(*segments.cbegin()) &segment) { // FIX for ROOT macros
+#endif                                                                                // FIX for ROOT macros
                          return std::abs(segment.getEnd().Z() - vertexZ) <=
                                 0.5 * (driftCageLength - beamDiameter);
                        });
@@ -179,6 +202,12 @@ using Cut5 = VertexZSpan;
 // section measurement then those cuts must be taken into account as well
 // while correcting the rates!
 struct ReconstructionQuality2Prong {
+#ifndef __CINT__                                                                      // FIX for ROOT macros
+  ReconstructionQuality2Prong(pid_type _firstPID, pid_type _secondPID, double _chi2,  // FIX for ROOT macros
+			      double _hypothesisChi2, double _length, double _charge) // FIX for ROOT macros
+      : firstPID(_firstPID), secondPID(_secondPID), chi2(_chi2),                      // FIX for ROOT macros
+        hypothesisChi2(_hypothesisChi2), length(_length), charge(_charge) { }         // FIX for ROOT macros
+#endif                                                                                // FIX for ROOT macros
   const pid_type firstPID;
   const pid_type secondPID;
   const double chi2;
@@ -191,7 +220,11 @@ struct ReconstructionQuality2Prong {
     }
     auto segments = track->getSegments();
     std::sort(segments.begin(), segments.end(),
+#ifdef __CINT__                                                                                        // FIX for ROOT macros
               [](const auto &a, const auto &b) {
+#else                                                                                                  // FIX for ROOT macros
+	      [](const decltype(*std::begin(segments)) &a, const decltype(*std::begin(segments)) &b) { // FIX for ROOT macros
+#endif                                                                                                 // FIX for ROOT macros
                 return a.getLength() > b.getLength();
               });
     /////// DEBUG
@@ -220,6 +253,16 @@ using Cut6 = ReconstructionQuality2Prong;
 // - uncorrected length [mm] of the shortest track must be within certain [min, max] range
 // - optionally PIDs of the shortest and the longest track can be verifiesd as well (e.g. for automatic reconstruction)
 struct ReconstructionLengthCorrelation2Prong {
+#ifndef __CINT__                                                                         // FIX for ROOT macros
+  ReconstructionLengthCorrelation2Prong(bool _enablePIDcheck, pid_type _firstPID,        // FIX for ROOT macros
+					double _firstLengthMin, double _firstLengthMax,  // FIX for ROOT macros
+					pid_type _secondPID, double _secondLengthMin,    // FIX for ROOT macros
+					double _secondLengthMax)                         // FIX for ROOT macros
+      : enablePIDcheck(_enablePIDcheck), firstPID(_firstPID),                            // FIX for ROOT macros
+        firstLengthMin(_firstLengthMin), firstLengthMax(_firstLengthMax),                // FIX for ROOT macros
+        secondPID(_secondPID), secondLengthMin(_secondLengthMin),                        // FIX for ROOT macros
+        secondLengthMax(_secondLengthMax) { }                                            // FIX for ROOT macros
+#endif                                                                                   // FIX for ROOT macros
   const bool enablePIDcheck;
   const pid_type firstPID; // not used unless enablePIDcheck=true
   const double firstLengthMin; // mm
@@ -233,7 +276,11 @@ struct ReconstructionLengthCorrelation2Prong {
     }
     auto segments = track->getSegments();
     std::sort(segments.begin(), segments.end(),
+#ifdef __CINT__                                                                                        // FIX for ROOT macros
               [](const auto &a, const auto &b) {
+#else                                                                                                  // FIX for ROOT macros
+	      [](const decltype(*std::begin(segments)) &a, const decltype(*std::begin(segments)) &b) { // FIX for ROOT macros
+#endif                                                                                                 // FIX for ROOT macros
                 return a.getLength() > b.getLength();
               });
     return (!enablePIDcheck ||

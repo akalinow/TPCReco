@@ -3,24 +3,24 @@
 //
 // Example of using ROOT fitter with PEventTPC, Track3D, StripResponseCalculator, IonRangeCalculator
 //
-// Mikolaj Cwiok (UW) - 21 Apr 2023
+// Mikolaj Cwiok (UW) - 4 May 2023
 //
 //
 // 1. Example of single event reconstruction:
 // root -l << EOF |& tee log
-// root[0] .L ../test/testStripResponseFitter.cxx
+// root[0] .L ../examples/testStripResponseFitter.cxx
 // root[1] loop(1)
 // root[2] EOF
 //
 // 2. EVENT FITTER (PEventTPC from Toy MC digitizer and TRUE tracks from Toy MC generator, events 0..100):
 // root -l << EOF |& tee log
-// root[0] .L ../test/testStripResponseFitter.cxx
+// root[0] .L ../examples/testStripResponseFitter.cxx
 // root[1] loop_Graw_Track3D("/mnt/data/mikolaj/TPCReco/results/fake_tracks_HIGS/sample_20230212/Gen/Generated_Track3D__250mbar_13.1MeV_sigma0keV__noBoost_ISO_O16_fixedVtx_extTrg_contained__100k.root","/mnt/data/mikolaj/TPCReco/results/fake_tracks_HIGS/sample_20230212/Gen/jobs/Generated_PEventTPC__250mbar_13.1MeV_sigma0keV__noBoost_ISO_O16_fixedVtx_extTrg_contained__20k_1001.root", 0, 100, "geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat", 250.0, 293.15, 0.68, 0.69, 232, true, true, true, true, false, false);
 // root[2] EOF
 //
 // 3. EVENT FITTER WITH PENALTY TERMS (GRAW from real data, starting point from human-based RECO, 2- and 3-prong events 3852..4052):
 // root -l << EOF |& tee log
-// root[0] .L ../test/testStripResponseFitter.cxx
+// root[0] .L ../examples/testStripResponseFitter.cxx
 // root[1] FitOptionType options;
 // root[2] options.use_penalty_momentum_CMS=true;
 // root[3] options.use_penalty_carbon_length=true;
@@ -34,17 +34,17 @@
 //
 // 4. EVENT PLAYER (PEventTPC from Toy MC digitizer and TRUE tracks from Toy MC generator, events 0..100):
 // root -l
-// root[0] .L ../test/testStripResponseFitter.cxx
+// root[0] .L ../examples/testStripResponseFitter.cxx
 // root[1] loop_Graw_Track3D_Display("/mnt/data/mikolaj/TPCReco/results/fake_tracks_HIGS/sample_20230212/Gen/Generated_Track3D__250mbar_13.1MeV_sigma0keV__noBoost_ISO_O16_fixedVtx_extTrg_contained__100k.root","/mnt/data/mikolaj/TPCReco/results/fake_tracks_HIGS/sample_20230212/Gen/jobs/Generated_PEventTPC__250mbar_13.1MeV_sigma0keV__noBoost_ISO_O16_fixedVtx_extTrg_contained__20k_1001.root", 0, 100, "geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat", 13.1, 250.0, 293.15, true, true, true, true, false, false);
 //
 // 5. EVENT PLAYER (GRAW from real data, FITTED tracks from human-based RECO, 2- and 3-prong events 3852..4052)
 // root -l
-// root[0] .L ../test/testStripResponseFitter.cxx
+// root[0] .L ../examples/testStripResponseFitter.cxx
 // root[1] loop_Graw_Track3D_Display("/mnt/NAS_STORAGE_ANALYSIS/higs_2022/9_85MeV/clicked/Reco_20220822T220311_0001_mk.root", "/mnt/NAS_STORAGE/20220822_extTrg_CO2_130mbar/CoBo0_AsAd0_2022-08-22T22:03:11.798_0001.graw,/mnt/NAS_STORAGE/20220822_extTrg_CO2_130mbar/CoBo0_AsAd1_2022-08-22T22:03:11.798_0001.graw,/mnt/NAS_STORAGE/20220822_extTrg_CO2_130mbar/CoBo0_AsAd2_2022-08-22T22:03:11.798_0001.graw,/mnt/NAS_STORAGE/20220822_extTrg_CO2_130mbar/CoBo0_AsAd3_2022-08-22T22:03:11.798_0001.graw", 3852, 3852+200, "geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat", 9.845, 130.0, 293.15, true, false, true, true, false, true);
 //
 // 6. EVENT PLAYER (GRAW from real data, FITTED track from automatic RECO, REFERENCE/TRUE tracks from human-based RECO, 2- and 3-prong events 3852..7703)
 // root -l
-// root[0] .L ../test/testStripResponseFitter.cxx
+// root[0] .L ../examples/testStripResponseFitter.cxx
 // root[1] loop_Graw_Track3D_Display("/mnt/NAS_STORAGE_ANALYSIS/higs_2022/MonteCarlo/DataFit_9.845MeV/Reco_T1.5mm_L1.5mm_P232ns_50x50bins/Reco_Track3D_0001.root","/mnt/NAS_STORAGE/20220822_extTrg_CO2_130mbar/CoBo0_AsAd0_2022-08-22T22:03:11.798_0001.graw,/mnt/NAS_STORAGE/20220822_extTrg_CO2_130mbar/CoBo0_AsAd1_2022-08-22T22:03:11.798_0001.graw,/mnt/NAS_STORAGE/20220822_extTrg_CO2_130mbar/CoBo0_AsAd2_2022-08-22T22:03:11.798_0001.graw,/mnt/NAS_STORAGE/20220822_extTrg_CO2_130mbar/CoBo0_AsAd3_2022-08-22T22:03:11.798_0001.graw", 3852, 3852+3852-1, "geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat", 9.845, 130.0, 293.15, true, false, true, true, false, true, "/mnt/NAS_STORAGE_ANALYSIS/higs_2022/MonteCarlo/DataFit_9.845MeV/Reco_init/Reco_20220822T220311_0001_mk.root");
 //
 /////////////////////////////////////////////////////////
@@ -62,6 +62,7 @@ R__ADD_INCLUDE_PATH(../../Analysis/include)
 R__ADD_LIBRARY_PATH(../lib)
 #endif
 
+#include <cstdlib>
 #include <vector>
 #include <set>
 #include <iostream>
@@ -70,7 +71,6 @@ R__ADD_LIBRARY_PATH(../lib)
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/program_options.hpp>
-#include "colorText.h"
 
 #include <TMath.h>
 #include <TRandom3.h>
@@ -87,22 +87,24 @@ R__ADD_LIBRARY_PATH(../lib)
 #include <Math/Functor.h>
 #include <Fit/Fitter.h>
 
-#include "CommonDefinitions.h"
-#include "GeometryTPC.h"
-#include "EventTPC.h"
-#include "EventSourceBase.h"
+#include "TPCReco/colorText.h"
+#include "TPCReco/CommonDefinitions.h"
+#include "TPCReco/GeometryTPC.h"
+#include "TPCReco/EventTPC.h"
+#include "TPCReco/EventSourceBase.h"
 #ifdef WITH_GET
-#include "EventSourceGRAW.h"
-#include "EventSourceMultiGRAW.h"
+#include "TPCReco/EventSourceGRAW.h"
+#include "TPCReco/EventSourceMultiGRAW.h"
 #endif
-#include "EventSourceROOT.h"
-#include "TrackSegment3D.h"
-#include "Track3D.h"
-#include "IonRangeCalculator.h"
-#include "StripResponseCalculator.h"
-#include "UtilsMath.h"
-#include "RunIdParser.h"
-#include "HIGGS_analysis.h"
+#include "TPCReco/EventSourceROOT.h"
+#include "TPCReco/TrackSegment3D.h"
+#include "TPCReco/Track3D.h"
+#include "TPCReco/IonRangeCalculator.h"
+#include "TPCReco/StripResponseCalculator.h"
+#include "TPCReco/UtilsMath.h"
+#include "TPCReco/RunIdParser.h"
+#include "TPCReco/Cuts.h"
+#include "TPCReco/RequirementsCollection.h"
 
 #define DEBUG_CHARGE    false
 #define DEBUG_SIGNAL    false // plot UVW projections for reference data and starting point template at each step
@@ -135,7 +137,6 @@ class StripResponseCalculator;
 class IonRangeCalculator;
 class TrackSegment3D;
 class Track3D;
-class HIGGS_analysis;
 
 // _______________________________________
 //
@@ -165,6 +166,7 @@ typedef struct {
   bool use_nominal_beam_energy{true}; // for LAB-CMS boosts and momentum conservation constraints
   TVector3 photonUnitVec_DET_LAB{0,0,0}; // dimensionless, LAB reference frame, detector coordinate system
   double photonEnergyInMeV_LAB{0}; // MeV, nominal energy of the gamma beam for momentum conservation constraints
+  bool use_uvw_normalization{false}; // normalize chi^2 per strip direction according to total charge integral
 } FitOptionType;
 // _______________________________________
 //
@@ -1840,14 +1842,11 @@ int loop(const long maxIter=1, const int runId=1234) {
 
     // optionally draw resulting histograms as well
 #if(DEBUG_DRAW_FIT)
-    // if(isFirst) {
     outputCanvasROOTFile->cd();
     DrawFitResults(outputCanvas, &referenceHistosInMM, &fit_histograms, trackPtr[1], trackPtr[0], &fit_debug_data);
     outputCanvas->SetName(Form("c_run%ld_evt%ld", (long)fit_debug_data.runId, (long)fit_debug_data.eventId));
     outputCanvas->SetTitle(outputCanvas->GetName());
     outputCanvas->Write();
-    // isFirst=false;
-    // }
 #endif
   }
 
@@ -1911,7 +1910,7 @@ int loop_Graw_Track3D(const char *recoInputFile, // Track3D collection with init
   if (!gROOT->GetClass("EventSourceGRAW")){
     R__LOAD_LIBRARY(libTPCGrawToROOT.so);
   }
-  if (!gROOT->GetClass("HIGGS_analysis")){
+  if (!gROOT->GetClass("CutsFactory")){
     R__LOAD_LIBRARY(libTPCAnalysis.so);
   }
 
@@ -1955,12 +1954,12 @@ int loop_Graw_Track3D(const char *recoInputFile, // Track3D collection with init
   const auto reference_adcPerMeV=1e5;
   //  const auto maxDeviationInADC=reference_adcPerMeV*0.5; // for smearing starting point and setting parameter limits
   //  const auto maxDeviationInMM=5.0; // for setting parameter limits
-  double sigmaXY=sigmaXY_mm; // 0.64; // educated guess of transverse charge spread after 10 cm of drift (middle of drift cage)
-  double sigmaZ=sigmaZ_mm; // 0.64; // educated guess of longitudinal charge spread after 10 cm of drift (middle of drift cage)
+  double sigmaXY=sigmaXY_mm; // educated guess of transverse charge spread after 10 cm of drift (middle of drift cage)
+  double sigmaZ=sigmaZ_mm; // educated guess of longitudinal charge spread after 10 cm of drift (middle of drift cage)
   auto peakingTime=peakingTime_ns;
   if(peakingTime<0) peakingTime=0; // when peakingTime is ommitted turn off additional smearing due to GET electronics
-  int nstrips=6;  // NOTE: for sigmas < 2mm use 6x30x12 model while for sigmas >= 2mm use 7x50x14 model
-  int ncells=30; // NOTE: for sigmas < 2mm use 6x30x12 model while for sigmas >= 2mm use 7x50x14 model
+  int nstrips=7;  // NOTE: for sigmas < 2mm use 6x30x12 or 7x50x14 models, while for sigmas >= 2mm use 7x50x14 model
+  int ncells=50;  // NOTE: for sigmas < 2mm use 6x30x12 or 7x50x14 models, while for sigmas >= 2mm use 7x50x14 model
   int npads=nstrips*2;
   const std::string responseFileName( (peakingTime_ns==0 ?
 			       Form("StripResponseModel_%dx%dx%d_S%gMHz_V%gcmus_T%gmm_L%gmm.root",
@@ -1991,8 +1990,29 @@ int loop_Graw_Track3D(const char *recoInputFile, // Track3D collection with init
     std::cerr<<"ERROR: Wrong beam direction preset!"<<std::endl;
     return 1;
   }
-  auto beamEnergy_MeV=10.0; // [MeV] - some dummy value, not used in detector fiducial cuts
-  HIGGS_analysis myAnalysisFilter(aGeometry, beamEnergy_MeV, beamDir, pressure_mbar, temperature_K); // just for filtering
+
+  const double beam_slope=0.0; // no beam tilt, use loose cuts
+  const double beam_offset=0.0; // no beam offset, use loose cuts
+  const double beam_diameter=15.0; // [mm], use loose cuts
+  const double alphaMinCut=0.0; // [mm], no ID cuts
+  const double alphaMaxCut=330.0; // [mm], no ID cuts
+  const double carbonMinCut=0.0; // [mm], no ID cuts
+  const double carbonMaxCut=330.0; // [mm], no ID cuts
+  auto cuts = RequirementsCollection<std::function<bool(Track3D *)>>{};
+  cuts.push_back(tpcreco::cuts::Cut1{});
+  cuts.push_back(tpcreco::cuts::Cut2{beam_offset, beam_slope, beam_diameter});
+  cuts.push_back(tpcreco::cuts::Cut3{aGeometry.get(), 5});
+  cuts.push_back(tpcreco::cuts::Cut4{aGeometry.get(), 25, 5});
+  cuts.push_back(tpcreco::cuts::Cut5{aGeometry.get(), beam_diameter}); // affects 2-prong only
+  //
+  // NOTE: Cut #6 is disabled by default.
+  //       It should be DISABLED for manually reconstructed events and ENABLED for automatically reconstructed ones.
+  //
+  // cuts.push_back(tpcreco::cuts::Cut6{pid_type::ALPHA, pid_type::CARBON_12, 10.0, 5.0, 30.0, 1000.0}); // affects 2-prong only
+  //
+  cuts.push_back(tpcreco::cuts::Cut7{false, // affects 2-prong only
+	pid_type::ALPHA, std::min(alphaMinCut, alphaMaxCut), std::max(alphaMinCut, alphaMaxCut),
+	pid_type::CARBON_12, std::min(carbonMinCut, carbonMaxCut), std::max(carbonMinCut, carbonMaxCut)});
 
   ////////// opens input ROOT file with tracks (Track3D objects)
   //
@@ -2233,9 +2253,9 @@ int loop_Graw_Track3D(const char *recoInputFile, // Track3D collection with init
     };
 #endif
 
-    //////// apply fiducial cuts on initial input tracks using HIGS_analysis::eventFilter method
+    //////// apply fiducial cuts on initial input tracks similar to HIGS_analysis
     //
-    if(!myAnalysisFilter.eventFilter(aTrack)) {
+    if(!cuts(aTrack)){
       std::cout << __FUNCTION__ << KRED << ": Skipping event that failed HIGS_analysis quality cuts: run=" << runId << ", event=" << eventId
 		<< RST << std::endl << std::flush;
       continue;
@@ -2260,7 +2280,7 @@ int loop_Graw_Track3D(const char *recoInputFile, // Track3D collection with init
       continue;
     }
 
-    std::cout << __FUNCTION__ << ": " << aEventTPC->GetEventInfo()<<std::endl; exit(1);
+    std::cout << __FUNCTION__ << ": " << aEventTPC->GetEventInfo()<<std::endl;
 
     // prepare clustered UVW projections to be fitted
     // NOTE: ptree::find() with nested nodes does not work properly in interactive ROOT mode!
@@ -2502,7 +2522,7 @@ int loop_Graw_Track3D_Display(const char *recoInputFile, // Track3D collection w
   if (!gROOT->GetClass("EventSourceGRAW")){
     R__LOAD_LIBRARY(libTPCGrawToROOT.so);
   }
-  if (!gROOT->GetClass("HIGGS_analysis")){
+  if (!gROOT->GetClass("CutsFactory")){
     R__LOAD_LIBRARY(libTPCAnalysis.so);
   }
 
@@ -2556,7 +2576,29 @@ int loop_Graw_Track3D_Display(const char *recoInputFile, // Track3D collection w
     std::cerr<<"ERROR: Wrong beam direction preset!"<<std::endl;
     return 1;
   }
-  HIGGS_analysis myAnalysisFilter(aGeometry, beamEnergy_MeV, beamDir, pressure_mbar, temperature_K); // just for filtering
+
+  const double beam_slope=0.0; // no beam tilt, use loose cuts
+  const double beam_offset=0.0; // no beam offset, use loose cuts
+  const double beam_diameter=15.0; // [mm], use loose cuts
+  const double alphaMinCut=0.0; // [mm], no ID cuts
+  const double alphaMaxCut=330.0; // [mm], no ID cuts
+  const double carbonMinCut=0.0; // [mm], no ID cuts
+  const double carbonMaxCut=330.0; // [mm], no ID cuts
+  auto cuts = RequirementsCollection<std::function<bool(Track3D *)>>{};
+  cuts.push_back(tpcreco::cuts::Cut1{});
+  cuts.push_back(tpcreco::cuts::Cut2{beam_offset, beam_slope, beam_diameter});
+  cuts.push_back(tpcreco::cuts::Cut3{aGeometry.get(), 5});
+  cuts.push_back(tpcreco::cuts::Cut4{aGeometry.get(), 25, 5});
+  cuts.push_back(tpcreco::cuts::Cut5{aGeometry.get(), beam_diameter}); // affects 2-prong only
+  //
+  // NOTE: Cut #6 is disabled by default.
+  //       It should be DISABLED for manually reconstructed events and ENABLED for automatically reconstructed ones.
+  //
+  // cuts.push_back(tpcreco::cuts::Cut6{pid_type::ALPHA, pid_type::CARBON_12, 10.0, 5.0, 30.0, 1000.0}); // affects 2-prong only
+  //
+  cuts.push_back(tpcreco::cuts::Cut7{false, // affects 2-prong only
+	pid_type::ALPHA, std::min(alphaMinCut, alphaMaxCut), std::max(alphaMinCut, alphaMaxCut),
+	pid_type::CARBON_12, std::min(carbonMinCut, carbonMaxCut), std::max(carbonMinCut, carbonMaxCut)});
 
   ////////// opens MAIN input ROOT file with tracks (Track3D objects)
   //
@@ -2852,9 +2894,9 @@ int loop_Graw_Track3D_Display(const char *recoInputFile, // Track3D collection w
 #endif
     }
 
-    //////// apply fiducial cuts on initial input tracks using HIGS_analysis::eventFilter method
+    //////// apply fiducial cuts on initial input tracks similar to HIGS_analysis
     //
-    if(!myAnalysisFilter.eventFilter(aTrack)) {
+    if(!cuts(aTrack)){
       std::cout << __FUNCTION__ << KRED << ": Skipping event that failed HIGS_analysis quality cuts: run=" << runId << ", event=" << eventId
 		<< RST << std::endl << std::flush;
       continue;
