@@ -7,6 +7,7 @@ root_generate_dictionary(
   G__${TPCRECO_PREFIX}${MODULE_NAME}
   ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/HIGS_trees_dataFormat.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/RawSignal_tree_dataFormat.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/TrackDiffusion_tree_dataFormat.h
   LINKDEF
   LinkDef.h)
 #
@@ -21,6 +22,7 @@ add_executable(makeMCTrackTree bin/makeMCTrackTree.cpp)
 add_executable(recoEventsAnalysis bin/recoEventsAnalysis.cpp)
 add_executable(recoEventsComparison bin/recoEventsComparison.cpp)
 add_executable(rawSignalAnalysis bin/rawSignalAnalysis.cpp)
+add_executable(rawTrackDiffusionAnalysis bin/rawTrackDiffusionAnalysis.cpp)
 add_executable(recoEventsClean bin/recoEventsClean.cpp)
 add_executable(recoEventsDiff bin/recoEventsDiff.cpp)
 
@@ -38,6 +40,8 @@ target_link_libraries(recoEventsComparison PRIVATE ${MODULE_NAME}
                                                    Boost::program_options)
 target_link_libraries(rawSignalAnalysis PRIVATE ${MODULE_NAME}
                                                 Boost::program_options)
+target_link_libraries(rawTrackDiffusionAnalysis PRIVATE ${MODULE_NAME}
+                                                Boost::program_options)
 target_link_libraries(recoEventsClean PRIVATE ${MODULE_NAME}
                                               Boost::program_options)
 target_link_libraries(recoEventsDiff PRIVATE ${MODULE_NAME}
@@ -50,6 +54,7 @@ reco_install_targets(
   recoEventsAnalysis
   recoEventsComparison
   rawSignalAnalysis
+  rawTrackDiffusionAnalysis
   recoEventsClean
   recoEventsDiff)
 reco_install_root_dict(${MODULE_NAME})

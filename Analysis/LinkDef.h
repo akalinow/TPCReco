@@ -9,5 +9,6 @@
 #pragma link C++ class Event_3prong+;
 
 #pragma link C++ class Event_rawsignal+;
+#pragma link C++ class Event_rawdiffusion+;
 
 #endif
