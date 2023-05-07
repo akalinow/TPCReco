@@ -247,6 +247,24 @@ double Utils::distancePointLine(TVector2 offset, TVector2 tangent, TVector2 poin
 ////////////////////
 ////////////////////
 //
+// calculates signed distance of 2D point (P) from 2D infinite line
+// input:   * offset    - absolute position of a point on the line
+//          * tangent   - tangent vector of the line (not normalized to 1)
+//          * point     - absolute position of tested point
+// output:  returns signed distance from the closest point (C) on the line
+//          distance>0 : if tangent vector rotated by 90deg clockwise is parallel to CP vector
+//          distance<0 : if tangent vector rotated by 90deg anti-clockwise is parallel to CP vector
+//
+double Utils::signedDistancePointLine(TVector2 offset, TVector2 tangent, TVector2 point) {
+  const TVector2 unit_vec=tangent.Unit();
+  const TVector2 relative_vec=point-offset;
+  const TVector2 transverse_vec=relative_vec-(relative_vec*unit_vec)*unit_vec;
+  return (unit_vec.Rotate(0.5*TMath::Pi())*transverse_vec < 0 ? -1 : 1)*
+    transverse_vec.Mod();
+}
+////////////////////
+////////////////////
+//
 // calculates distance of 2D point from 2D edge of finite length
 // input:   * offset    - absolute position of start-point of the edge
 //          * tangent   - relative position of end-point wrt start-point (length of the edge)
