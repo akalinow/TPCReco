@@ -8,6 +8,7 @@ COPY requirements_pip3.txt /tmp
 RUN apt-get update -qq \
     && apt-get -y install $(cat /tmp/requirements_apt.txt) \ 
     gdb valgrind git \
+    binutils linux-tools-generic #gprof, perf \
     vim emacs nano \
     && rm -rf /var/lib/apt/lists/*
 RUN yes | pip3 install --no-cache-dir -r /tmp/requirements_pip3.txt
