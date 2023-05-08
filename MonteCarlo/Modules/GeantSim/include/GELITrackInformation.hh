@@ -14,15 +14,15 @@ public:
 
     GELITrackInformation(const G4Track *aTrack, size_t pId);
 
-    GELITrackInformation(const GELITrackInformation *aTrackInfo);
+    explicit GELITrackInformation(const GELITrackInformation *aTrackInfo);
 
-    virtual ~GELITrackInformation();
+    ~GELITrackInformation() override = default;
 
     //   inline void *operator new(size_t);
     //   inline void operator delete(void *aTrackInfo);
     inline int operator==(const GELITrackInformation &right) const { return (this == &right); }
 
-    void Print() const;
+    void Print() const override;
 
 private:
     G4int originalTrackID;
@@ -49,17 +49,5 @@ public:
 
     inline size_t GetOriginalPrimaryId() const { return primID; }
 };
-/*
-extern G4Allocator<GELITrackInformation> aTrackInformationAllocator;
 
-inline void* GELITrackInformation::operator new(size_t)
-{ void* aTrackInfo;
-  aTrackInfo = (void*)aTrackInformationAllocator.MallocSingle();
-  return aTrackInfo;
-}
-
-inline void GELITrackInformation::operator delete(void *aTrackInfo)
-{std::cout<<"Deleted: "<<aTrackInfo<<std::endl;
- aTrackInformationAllocator.FreeSingle((GELITrackInformation*)aTrackInfo);}
-*/
 #endif

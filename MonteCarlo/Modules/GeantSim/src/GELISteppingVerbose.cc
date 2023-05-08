@@ -10,12 +10,6 @@
 #include "G4UnitsTable.hh"
 
 
-GELISteppingVerbose::GELISteppingVerbose() {}
-
-
-GELISteppingVerbose::~GELISteppingVerbose() {}
-
-
 void GELISteppingVerbose::StepInfo() {
     CopyState();
 
@@ -47,13 +41,13 @@ void GELISteppingVerbose::StepInfo() {
                << std::setw(6) << G4BestUnit(fTrack->GetTrackLength(), "Length");
 
         // if( fStepStatus != fWorldBoundary){
-        if (fTrack->GetNextVolume() != 0) {
+        if (fTrack->GetNextVolume() != nullptr) {
             G4cout << std::setw(10) << fTrack->GetNextVolume()->GetName();
         } else {
             G4cout << std::setw(10) << "OutOfWorld";
         }
 
-        if (fStep->GetPostStepPoint()->GetProcessDefinedStep() != NULL) {
+        if (fStep->GetPostStepPoint()->GetProcessDefinedStep() != nullptr) {
             G4cout << std::setw(10) << fStep->GetPostStepPoint()->GetProcessDefinedStep()
                     ->GetProcessName();
         } else {

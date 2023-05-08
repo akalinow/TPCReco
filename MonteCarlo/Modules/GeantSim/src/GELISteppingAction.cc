@@ -4,25 +4,18 @@
  * @brief      Implementation of GELISteppingAction class
  */
 
-/// \cond
-#include <iostream>
-#include <fstream>
-/// \endcond
 #include "GELISteppingAction.hh"
 
 #include "G4SteppingManager.hh"
 #include "G4VTouchable.hh"
-#include "G4VPhysicalVolume.hh"
 #include "G4SystemOfUnits.hh"
 #include "G4EventManager.hh"
 #include "GELITrackInformation.hh"
 
 
 #include "G4RunManager.hh"
-#include "TH3D.h"
 #include "TFile.h"
 #include "TTree.h"
-#include "TStyle.h"
 
 
 void GELISteppingAction::UserSteppingAction(const G4Step *aStep) {
@@ -67,38 +60,5 @@ void GELISteppingAction::UserSteppingAction(const G4Step *aStep) {
 
 
     buffer.simEv->GetTracks()[primID].InsertHit({x, y, z, Edep});
-
-    //std::cout<<"HIT: "<<x<<" "<<y<<" "<<z<<" "<<Edep<<" "<<primID<<std::endl;
-
-//	event_number=G4EventManager::GetEventManager()->GetConstCurrentEvent()->GetEventID();
-//
-//	bool isPrim=true;
-//	if(aStep->GetTrack()->GetParentID())
-//		isPrim=false;
-
-    //analysis->Fill(x,y,z,Edep,event_number,primID,isPrim);
-//	G4double xp,yp,zp,px,py,pz, energy;
-//	G4int id, A,Z;
-//	xp=info->GetOriginalPosition().getX();
-//	yp=info->GetOriginalPosition().getY();
-//	zp=info->GetOriginalPosition().getZ();
-//	px=info->GetOriginalMomentum().getX()/(keV/CLHEP::c_light);
-//	py=info->GetOriginalMomentum().getY()/(keV/CLHEP::c_light);
-//	pz=info->GetOriginalMomentum().getZ()/(keV/CLHEP::c_light);
-//	energy=info->GetOriginalEnergy()/keV;
-//	auto primPart=info->GetOriginalParticle();
-//	id=primPart->GetPDGEncoding();
-//	A=primPart->GetAtomicMass();
-//	Z=primPart->GetAtomicNumber();
-//
-//	//analysis->AddPrimary(xp,yp,zp,px,py,pz,energy,id,event_number,A,Z,primID);
-
-
-
-
-
-
-
-
 }
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo....

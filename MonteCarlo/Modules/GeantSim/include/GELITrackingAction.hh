@@ -14,8 +14,6 @@
 
 class GELIDetectorConstruction;
 
-class GELIAnalysisManager;
-
 
 /**
  * @class      GELITrackingAction
@@ -34,18 +32,18 @@ public:
      *             GELIActionInitializer, only in this configuration it works
      *             properly in MT mode
      */
-    GELITrackingAction();
+    GELITrackingAction() = default;
 
-    ~GELITrackingAction();
+    ~GELITrackingAction() override = default;
 
     /**
      * @brief      Method invoked at each step
      *
      * @details    It is used to store energy deposit information into files
      */
-    void PreUserTrackingAction(const G4Track *aTrack);
+    void PreUserTrackingAction(const G4Track *aTrack) override;
 
-    void PostUserTrackingAction(const G4Track *aTrack);
+    void PostUserTrackingAction(const G4Track *aTrack) override;
 
 
 };

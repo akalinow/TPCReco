@@ -36,28 +36,6 @@ protected:
 
     void SetCuts() override;
 
-public:
-    // Set Cuts
-    void SetGammaCut(G4double);
-
-    void SetElectronCut(G4double);
-
-    void SetPositronCut(G4double);
-
-    void SetProtonCut(G4double);
-
-    void SetGammaLowLimit(G4double);
-
-    void SetElectronLowLimit(G4double);
-
-    void SetPositronLowLimit(G4double);
-
-    void SetProtonLowLimit(G4double);
-
-    void SetGEPLowLimit(G4double);
-
-    void SetGELowLimit(G4double);
-
 private:
 
     G4double cutForGamma;
@@ -65,21 +43,17 @@ private:
     G4double cutForPositron;
     G4double cutForProton;
 
-    G4EmStandardPhysics_option4* emPhys;
-
 protected:
     // these methods Construct particles
-    void ConstructBosons();
+    static void ConstructBosons();
 
-    void ConstructLeptons();
+    static void ConstructLeptons();
 
-    void ConstructBarions();
+    static void ConstructBarions();
 
-    void ConstructIons();
+    static void ConstructIons();
 
 protected:
-    // these methods Construct physics processes and register them
-    void ConstructGeneral();
 
     void ConstructEM();
 

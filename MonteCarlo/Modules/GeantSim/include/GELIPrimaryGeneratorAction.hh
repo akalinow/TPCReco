@@ -20,12 +20,8 @@
 #include "IonProperties.h"
 
 
-class G4ParticleGun;
 
 class G4Event;
-
-class G4DataVector;
-
 class G4ParticleDefinition;
 
 
@@ -47,7 +43,7 @@ public:
     void GeneratePrimaryVertex(G4Event *evt) override;
 
 private:
-    const G4ParticleDefinition *GetGeantParticleDefinition(const pid_type particleID);
+    const G4ParticleDefinition *GetGeantParticleDefinition(pid_type particleID);
 
     DataBuffer &buffer;
     std::shared_ptr<IonProperties> prop;

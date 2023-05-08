@@ -7,9 +7,6 @@
 #include <G4EventManager.hh>
 #include "GELIPrimaryGeneratorAction.hh"
 
-GELITrackingAction::GELITrackingAction() { ; }
-
-GELITrackingAction::~GELITrackingAction() { ; }
 
 void GELITrackingAction::PreUserTrackingAction(const G4Track *aTrack) {
 
@@ -50,3 +47,4 @@ void GELITrackingAction::PostUserTrackingAction(const G4Track *aTrack) {
         }
     }
 }
+

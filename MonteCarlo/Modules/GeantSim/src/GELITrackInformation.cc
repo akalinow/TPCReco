@@ -5,7 +5,7 @@
 
 GELITrackInformation::GELITrackInformation() {
     originalTrackID = 0;
-    particleDefinition = 0;
+    particleDefinition = nullptr;
     originalPosition = G4ThreeVector(0., 0., 0.);
     originalMomentum = G4ThreeVector(0., 0., 0.);
     originalEnergy = 0.;
@@ -33,7 +33,6 @@ GELITrackInformation::GELITrackInformation(const GELITrackInformation *aTrackInf
     primID = aTrackInfo->primID;
 }
 
-GELITrackInformation::~GELITrackInformation() { ; }
 
 void GELITrackInformation::Print() const {
     G4cout

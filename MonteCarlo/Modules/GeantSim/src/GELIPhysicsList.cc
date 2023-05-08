@@ -4,61 +4,29 @@
  * @brief      Implementation of GELIPhysicsList class
  */
 
-#include "G4BuilderType.hh"
 #include "G4ParticleDefinition.hh"
 #include "G4ProcessManager.hh"
 #include "G4PhysicsListHelper.hh"
 #include "G4hMultipleScattering.hh"
-
 #include "G4ComptonScattering.hh"
 #include "G4GammaConversion.hh"
 #include "G4PhotoElectricEffect.hh"
-#include "G4RayleighScattering.hh"
-#include "G4KleinNishinaModel.hh"
-
 #include "G4eIonisation.hh"
 #include "G4eBremsstrahlung.hh"
 #include "G4eplusAnnihilation.hh"
-
-#include "G4MuIonisation.hh"
-#include "G4MuBremsstrahlung.hh"
-#include "G4MuPairProduction.hh"
-
-#include "G4hIonisation.hh"
-#include "G4hBremsstrahlung.hh"
-#include "G4hPairProduction.hh"
-
 #include "G4ionIonisation.hh"
 #include "G4IonParametrisedLossModel.hh"
-#include "G4NuclearStopping.hh"
-
 #include "G4LossTableManager.hh"
 #include "G4UAtomicDeexcitation.hh"
-
 #include "G4SystemOfUnits.hh"
-
 #include "GELIPhysicsList.hh"
-
 #include "G4SystemOfUnits.hh"
-#include "G4ParticleDefinition.hh"
-#include "G4ParticleWithCuts.hh"
-#include "G4ProcessManager.hh"
 #include "G4ParticleTypes.hh"
-#include "G4ParticleTable.hh"
-#include "G4Material.hh"
 #include "G4UnitsTable.hh"
 #include "G4ios.hh"
 
 #include "G4eMultipleScattering.hh"
-#include "G4hMultipleScattering.hh"
-// Bosons
-#include "G4PhotoElectricEffect.hh"
-#include "G4ComptonScattering.hh"
-#include "G4GammaConversion.hh"
-// Leptons
-#include "G4eIonisation.hh"
-#include "G4eBremsstrahlung.hh"
-#include "G4eplusAnnihilation.hh"
+
 
 
 GELIPhysicsList::GELIPhysicsList() : G4VUserPhysicsList() {
@@ -68,13 +36,11 @@ GELIPhysicsList::GELIPhysicsList() : G4VUserPhysicsList() {
     cutForPositron = defaultCutValue;
     cutForProton = defaultCutValue;
 
-    emPhys = new G4EmStandardPhysics_option4();
-
     SetVerboseLevel(1);
 }
 
 
-GELIPhysicsList::~GELIPhysicsList() {}
+GELIPhysicsList::~GELIPhysicsList() = default;
 
 
 void GELIPhysicsList::ConstructParticle() {
@@ -124,8 +90,7 @@ void GELIPhysicsList::ConstructBarions() {
 void GELIPhysicsList::ConstructProcess() {
     AddTransportation();
     ConstructEM();
-    //ConstructGeneral();
-    //emPhys->ConstructProcess();
+
 }
 
 
@@ -138,10 +103,9 @@ void GELIPhysicsList::ConstructEM() {
         G4ProcessManager *pmanager = particle->GetProcessManager();
         G4String particleName = particle->GetParticleName();
 
-        G4eIonisation *eIoni = new G4eIonisation();
-        G4eBremsstrahlung *eBrem = new G4eBremsstrahlung();
+        auto eIoni = new G4eIonisation();
+        auto eBrem = new G4eBremsstrahlung();
         eIoni->SetStepFunction(0.000001, 500 * um);
-        //eBrem->SetStepFunction(0.00001, 1*um);
 
         if (particleName == "gamma") {
             //gamma
@@ -170,17 +134,10 @@ void GELIPhysicsList::ConstructEM() {
             auto ionIoni = new G4ionIonisation();
             ionIoni->SetStepFunction(0.000001, 50 * um);
             ph->RegisterProcess(ionIoni, particle);
-            //ph->RegisterProcess(new G4NuclearStopping(), particle);
             //pmanager->AddProcess(new G4hMultipleScattering,-1, 1,1);
 
         } else if (particleName == "GenericIon") {
 
-//            G4ionIonisation *ionIoni = new G4ionIonisation();
-//            ionIoni->SetEmModel(new G4IonParametrisedLossModel());
-//            ionIoni->SetStepFunction(0.000001, 50 * um);
-//            ph->RegisterProcess(ionIoni, particle);
-//            ph->RegisterProcess(new G4NuclearStopping(), particle);
-            //pmanager->AddProcess(new G4hMultipleScattering,-1, 1,1);
             auto ionIoni = new G4ionIonisation();
             ionIoni->SetStepFunction(0.000001, 50 * um);
             pmanager->AddProcess(ionIoni,     -1, 2,2);
@@ -192,9 +149,6 @@ void GELIPhysicsList::ConstructEM() {
         }
     }
 }
-
-
-void GELIPhysicsList::ConstructGeneral() {}
 
 
 void GELIPhysicsList::SetCuts() {
@@ -220,109 +174,17 @@ void GELIPhysicsList::SetCuts() {
 }
 
 
-void GELIPhysicsList::SetGammaLowLimit(G4double lowcut) {
-    if (verboseLevel > 0) {
-        G4cout << "GELIPhysicsList::SetCuts:";
-        G4cout << "Gamma cut in energy: " << lowcut * MeV << " (MeV)" << G4endl;
-    }
-
-    SetGELowLimit(lowcut);
-}
-
-
-void GELIPhysicsList::SetElectronLowLimit(G4double lowcut) {
-    if (verboseLevel > 0) {
-
-        G4cout << "GELIPhysicsList::SetCuts:";
-        G4cout << "Electron cut in energy: " << lowcut * MeV << " (MeV)" << G4endl;
-    }
-    SetGELowLimit(lowcut);
-}
-
-
-void GELIPhysicsList::SetPositronLowLimit(G4double lowcut) {
-    if (verboseLevel > 0) {
-
-        G4cout << "GELIPhysicsList::SetCuts:";
-        G4cout << "Positron cut in energy: " << lowcut * MeV << " (MeV)" << G4endl;
-    }
-
-    G4cerr << "GELIPhysicsList::SetPositronLowLimit: Not currently able to set Positron LowLimit." << G4endl;
-    G4Exception("GELIPhysicsList::SetPositronLowLimit()", "PurMag001",
-                FatalException, "Positron Low Limit: not implemented in GELIPhysicsList");
-    //
-    // G4Positron::SetEnergyRange(lowcut,1e5);
-}
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo....
-
-void GELIPhysicsList::SetProtonLowLimit(G4double lowcut) {
-    if (verboseLevel > 0) {
-
-        G4cout << "GELIPhysicsList::SetCuts:";
-        G4cout << "Proton cut in energy: " << lowcut * MeV << " (MeV)" << G4endl;
-    }
-
-    G4cerr << "GELIPhysicsList::SetProtonLowLimit: Not currently able to set Proton LowLimit." << G4endl;
-    G4Exception("GELIPhysicsList::SetProtonLowLimit()", "PurMag002",
-                FatalException, "Proton Low Limit: not implemented in GELIPhysicsList");
-    //
-    // G4Proton::SetEnergyRange(lowcut,1e5);
-    // G4AntiProton::SetEnergyRange(lowcut,1e5);
-}
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo....
-
-void GELIPhysicsList::SetGEPLowLimit(G4double lowcut) {
-    if (verboseLevel > 0) {
-        G4cout << "GELIPhysicsList::SetGEPLowLimit:";
-        G4cout << "Gamma and Electron cut in energy: " << lowcut * MeV << " (MeV)" << G4endl;
-    }
-
-    // G4Gamma::SetEnergyRange(lowcut,1e5);
-    // G4Electron::SetEnergyRange(lowcut,1e5);
-    // G4Positron::SetEnergyRange(lowcut,1e5);
-    this->SetGELowLimit(lowcut);
-
-    G4cerr << " SetGEPLowLimit : Uncertain whether setting Positron low limit " << G4endl;
-}
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo....
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo....
-void GELIPhysicsList::SetGELowLimit(G4double lowcut) {
-    if (verboseLevel > 0) {
-        G4cout << "GELIPhysicsList::SetGELowLimit:";
-        G4cout << "Gamma and Electron cut in energy: " << lowcut * MeV << " (MeV)" << G4endl;
-    }
-
-    G4ProductionCutsTable::GetProductionCutsTable()->SetEnergyRange(lowcut, 1e5);
-}
-
-void GELIPhysicsList::SetGammaCut(G4double val) {
-    ResetCuts();
-    cutForGamma = val;
-}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo....
 
-void GELIPhysicsList::SetElectronCut(G4double val) {
-    //  ResetCuts();
-    cutForElectron = val;
-}
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo....
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo....
 
-void GELIPhysicsList::SetPositronCut(G4double val) {
-    //  ResetCuts();
-    cutForPositron = val;
-}
-
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo....
-
-void GELIPhysicsList::SetProtonCut(G4double val) {
-    //ResetCuts();
-    cutForProton = val;
-}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo....
 

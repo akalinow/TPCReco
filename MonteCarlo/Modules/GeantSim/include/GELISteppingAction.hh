@@ -15,9 +15,6 @@
 
 class GELIDetectorConstruction;
 
-class GELIAnalysisManager;
-
-
 /**
  * @class      GELISteppingAction
  *

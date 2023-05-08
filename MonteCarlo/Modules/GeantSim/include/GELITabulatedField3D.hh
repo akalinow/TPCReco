@@ -56,6 +56,6 @@ public:
      * @brief      Access to value of the magnetic field used for tracking
      */
     void GetFieldValue(const double Point[4],
-                       double *Bfield) const;
+                       double *Bfield) const override;
 };
 
