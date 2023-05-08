@@ -12,7 +12,7 @@
   "GeometryConfig": "/scratch/TPCReco/build/resources/geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat",
   "ModuleConfiguration": {
     "Generator": {
-      "NumberOfEvents": 10,
+      "NumberOfEvents": 10000,
       "EventGenerator": {
         "Beam": {
           "BeamGeometry": {
@@ -35,7 +35,7 @@
           "GammaEnergy": {
             "distribution": "EProviderSingle",
             "parameters": {
-              "singleE": 13.5
+              "singleE": 11.9
             }
           }
         },
@@ -94,6 +94,10 @@
         "SimEvent",
         "PEventTPC",
         "Track3D"
+      ],
+      "DisabledBranches": [
+        "TPCData.myChargeMap",
+        "TPCData.tracks.hits"
       ]
     },
     "GeantSim": {
@@ -200,12 +204,12 @@
     },
     "TPCDigitizerSRC": {
       "StripResponsePath": "/scratch/TPCReco/build/resources",
-      "sigmaXY": 0.68,
-      "sigmaZ": 0.68,
+      "sigmaXY": 2.5,
+      "sigmaZ": 2.5,
       "MeVToChargeScale": 100000,
       "th2PolyPartitionX": 60,
       "th2PolyPartitionY": 40,
-      "peakingTime": 232,
+      "peakingTime": 0,
       "nStrips": 6,
       "nCells": 30,
       "nPads": 12

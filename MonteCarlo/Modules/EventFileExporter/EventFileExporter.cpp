@@ -13,7 +13,7 @@ fwk::VModule::EResultFlag EventFileExporter::Init(boost::property_tree::ptree co
     tpcDataTree = new TTree("TPCData", "");
     tpcRecoDataTree = new TTree("TPCRecoData", "");
 
-    //setup branches:
+    //setup ON branches:
     for (const auto &br: config.get_child("EnabledBranches")) {
         auto branchName = std::string(br.second.data());
         if (branchName == "SimEvent")
@@ -24,7 +24,21 @@ fwk::VModule::EResultFlag EventFileExporter::Init(boost::property_tree::ptree co
             tpcRecoDataTree->Branch("RecoEvent", &currTrack3D);
             tpcRecoDataTree->Branch("EventInfo", &currEventInfo);
         }
-
+    }
+    //setup OFF branches if there are any:
+    auto disabledBranches = config.get_child_optional("DisabledBranches");
+    if(disabledBranches) {
+        for (const auto &br: *disabledBranches) {
+            auto branchName = std::string(br.second.data());
+            auto treeName = branchName.substr(0, branchName.find('.'));
+            auto offBranchName = branchName.substr(branchName.find('.')+1);
+            if( treeName == "TPCData" ) {
+                tpcDataTree->SetBranchStatus(offBranchName.c_str(),false);
+            }
+            if( treeName == "TPCRecoData") {
+                tpcRecoDataTree->SetBranchStatus(offBranchName.c_str(),false);
+            }
+        }
     }
     return fwk::VModule::eSuccess;
 }
