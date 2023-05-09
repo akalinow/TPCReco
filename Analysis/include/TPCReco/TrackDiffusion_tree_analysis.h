@@ -58,6 +58,8 @@ class TrackDiffusion_tree_analysis{
   void initialize();
   void finalize();
   void clear();
+  void updateMeanRms();
+
   void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);  // definition of LAB detector coordinates
   TrackDiffusionCropList getCropList(TrackSegment3DCollection &aColl, int dir); // returns list of TGraphs with crop areas around each track segment (for a given strip dir)
   bool verifyCropList(TrackDiffusionCropList &aList); // returns TRUE when ROIs do not overlap (for a given strip dir)

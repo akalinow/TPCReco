@@ -22,7 +22,20 @@ int analyzeTrackDiffusion(const boost::property_tree::ptree aConfig);
 
 boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
 
-  boost::program_options::options_description cmdLineOptDesc("Allowed command line options");
+  boost::program_options::options_description cmdLineOptDesc
+    ("This tool fills a ROOT tree with MEAN and RMS of 2D hits projected onto\n"
+     "transverse axis w.r.t. direction of the leading track in each event.\n"
+     "The transverse axis is taken by rotating the track direction clockwise\n"
+     "by 90 deg (this is important for correct interpretatation of the signed MEAN value).\n"
+     "The observables are computed separately for UZ, VZ and WZ projections.\n"
+     "Only hits within certain rectangular region of interest (ROI) of WIDTH x HEIGHT\n"
+     "are accepted, where:\n"
+     " * WIDTH = 2 * trackDistaneMM,\n"
+      "* HEIGHT = (1-trackFractionStart-trackFractionEnd) * track_length,\n"
+     " * trackFractionStart >0,  trackFractionEnd >0, (trackFractionStart + trackFractionEnd) <1.\n"
+     "If ROIs are overlapping in case of multi-track events then computation of MEAN, RMS for\n"
+     "a given strip projection is skipped and corresponding quality flag is set to FALSE.\n"
+     "Allowed command line options");
 
   cmdLineOptDesc.add_options()
     ("help", "produce help message")
@@ -36,12 +49,15 @@ boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
 #else
     ("dataFile",  boost::program_options::value<std::string>(), "string - path to a raw data file in ROOT format")
 #endif
-    ("recoClusterEnable",  boost::program_options::value<bool>(), "bool - flag to enable clustering")
+    ("recoClusterEnable",  boost::program_options::bool_switch()->default_value(false), "bool - flag to enable clustering (default=FALSE)")
     ("recoClusterThreshold",  boost::program_options::value<float>(), "float - ADC threshold above pedestal used for clustering")
     ("recoClusterDeltaStrips",  boost::program_options::value<int>(), "int - envelope in strip units around seed hits for clustering")
     ("recoClusterDeltaTimeCells",  boost::program_options::value<int>(), "int - envelope in time cell units around seed hits for clustering")
+    ("trackFractionStart",  boost::program_options::value<float>(), "float - hit veto region at the beginning of the track as a fraction [0-1] of track length (default=0.2)")
+    ("trackFractionEnd",  boost::program_options::value<float>(), "float - hit veto region at the end of the track as as fraction [0-1] of track length (default=0.1)")
+    ("trackDistanceMM",  boost::program_options::value<float>(), "float - maximal allowed hit distance [mm] from the track axis (default=10mm)")
     ("outputFile", boost::program_options::value<std::string>(), "string - path to the output ROOT file")
-    ("maxNevents", boost::program_options::value<unsigned int>()->default_value(0), "int - number of events to process");
+    ("maxNevents", boost::program_options::value<unsigned int>()->default_value(0), "int - number of events to process (default=0=all)");
 
   boost::program_options::variables_map varMap;
 
@@ -112,6 +128,15 @@ int main(int argc, char **argv){
       }
     }
   }
+  if(varMap.count("trackFractionStart")) {
+    tree.put("trackDiffusion.trackFractionStart", varMap["trackFractionStart"].as<float>());
+  }
+  if(varMap.count("trackFractionEnd")) {
+    tree.put("trackDiffusion.trackFractionEnd", varMap["trackFractionEnd"].as<float>());
+  }
+  if(varMap.count("trackDistanceMM")) {
+    tree.put("trackDiffusion.trackDistanceMM", varMap["trackDistanceMM"].as<float>());
+  }
 #ifdef WITH_GET
   if (varMap.count("removePedestal")) {
     tree.put("removePedestal", varMap["removePedestal"].as<bool>());
@@ -165,7 +190,6 @@ int main(int argc, char **argv){
 
   // start analysis job
   int nEventsProcessed = analyzeTrackDiffusion(tree);
-  std::cout << __FUNCTION__ << ": END..." << std::endl;
   return 0;
 }
 
@@ -179,6 +203,9 @@ int analyzeTrackDiffusion(const boost::property_tree::ptree aConfig){
   auto clusterThreshold = ( clusterEnable ? aConfig.get<float>("hitFilter.recoClusterThreshold") : 0 );
   auto clusterDeltaStrips = ( clusterEnable ? aConfig.get<unsigned int>("hitFilter.recoClusterDeltaStrips") : 0 );
   auto clusterDeltaTimeCells = ( clusterEnable ? aConfig.get<unsigned int>("hitFilter.recoClusterDeltaTimeCells") : 0 );
+  auto trackFractionStart = aConfig.get<float>("trackDiffusion.trackFractionStart");
+  auto trackFractionEnd = aConfig.get<float>("trackDiffusion.trackFractionEnd");
+  auto trackDistanceMM = aConfig.get<float>("trackDiffusion.trackDistanceMM");
 #ifdef WITH_GET
   auto singleAsadGrawFile = aConfig.get<bool>("singleAsadGrawFile"); // true = multi-GRAW mode
   auto frameLoadRange = aConfig.get<unsigned int>("frameLoadRange"); // used in single-GRAW mode only
@@ -187,21 +214,25 @@ int analyzeTrackDiffusion(const boost::property_tree::ptree aConfig){
   auto maxNevents = aConfig.get<unsigned int>("maxNevents");
 
   std::cout << std::endl << "analyzeRawEvents: Parameter settings: " << std::endl << std::endl
-	    << "Reco file                = " << recoFileName << std::endl
-	    << "Data file(s)             = " << dataFileName << std::endl
-	    << "TPC geometry file        = " << geometryFileName << std::endl
-	    << "Output file              = " << outputFileName << std::endl
-	    << "recoCluster enable           = " << clusterEnable << std::endl
-	    << "recoCluster threshold        = " << clusterThreshold << std::endl
-	    << "recoCluster delta strips     = " << clusterDeltaStrips << std::endl
-	    << "recoCluster delta time cells = " << clusterDeltaTimeCells << std::endl
+	    << "Reco file                    = " << recoFileName << std::endl
+	    << "Data file(s)                 = " << dataFileName << std::endl
+	    << "TPC geometry file            = " << geometryFileName << std::endl
+	    << "Output file                  = " << outputFileName << std::endl
+	    << "RecoCluster enable           = " << clusterEnable << std::endl
+	    << "RecoCluster threshold        = " << clusterThreshold << std::endl
+	    << "RecoCluster delta strips     = " << clusterDeltaStrips << std::endl
+	    << "RecoCluster delta time cells = " << clusterDeltaTimeCells << std::endl
+	    << "Track fraction at start      = " << trackFractionStart << std::endl
+	    << "Track fraction at end        = " << trackFractionEnd << std::endl
+	    << "Max. distance to track       = " << trackDistanceMM << " mm" << std::endl
 #ifdef WITH_GET
-	    << "Frame load range         = " << frameLoadRange << std::endl
-	    << "Multi-GRAW mode          = " << singleAsadGrawFile << std::endl
-	    << "Pedestal removal enable  = " << removePedestal << std::endl
+	    << "Frame load range             = " << frameLoadRange << std::endl
+	    << "Multi-GRAW mode              = " << singleAsadGrawFile << std::endl
+	    << "Pedestal removal enable      = " << removePedestal << std::endl
 #endif
-	    << "Max. events to precess   = " << maxNevents << " (0=all)" << std::endl;
+	    << "Max. events to process       = " << maxNevents << " (0=all)" << std::endl;
 
+  // sanity checks
   if(recoFileName.find(".root") == std::string::npos ||
 #ifdef WITH_GET
      (dataFileName.find(".graw") == std::string::npos && dataFileName.find(".root") == std::string::npos) ||
@@ -218,6 +249,12 @@ int analyzeTrackDiffusion(const boost::property_tree::ptree aConfig){
 #endif
 	      << "The output ROOT file must not be present."
               << RST << std::endl;
+    exit(1);
+  }
+  if(trackDistanceMM<=0.0 || trackFractionStart<0.0 || trackFractionEnd<0.0 || (trackFractionStart+trackFractionEnd)>1.0) {
+    std::cerr << __FUNCTION__ << KRED << ": Wrong input argument(s)." << std::endl
+	      << "Check that (trackDistanceMM >0) and (trackFractionStart >=0) and (trackFractionEnd >=0)"
+	      << " and (trackFractionStart+trackFractionEnd <=1)." << RST << std::endl;
     exit(1);
   }
 
@@ -341,16 +378,20 @@ int analyzeTrackDiffusion(const boost::property_tree::ptree aConfig){
   myConfig.clusterThreshold = clusterThreshold;
   myConfig.clusterDeltaStrips = clusterDeltaStrips;
   myConfig.clusterDeltaTimeCells = clusterDeltaTimeCells;
+  myConfig.trackFractionStart = trackFractionStart;
+  myConfig.trackFractionEnd = trackFractionEnd;
+  myConfig.trackDistanceMM = trackDistanceMM;
   TrackDiffusion_tree_analysis myAnalysis(myEventSource->getGeometry(), myConfig, outputFileName);
 
-  //  std::cout << "AFTER INIT: aTrack=" << aTrack << ", aEventInfo=" << aEventInfo << ", index=" << index << std::endl;  
   // loop over ALL events
   Long64_t currentEventIdx=-1;
   Long64_t counter=0;
   Long64_t maxevents=(maxNevents<=0 ? nEntries : std::min((unsigned int)maxNevents, nEntries));
   for(auto ievent=0; ievent<maxevents; ievent++) {
     if(index) {
+      ////// DEBUG
       //      std::cout << "GETENTRY: index=" << index << ", index[" << ievent << "]=" << index[ievent] << std::endl;
+      ////// DEBUG
       aBranch->GetEntry(index[ievent]);
       aBranchInfo->GetEntry(index[ievent]);
     } else {
@@ -363,7 +404,7 @@ int analyzeTrackDiffusion(const boost::property_tree::ptree aConfig){
     const int nTracks = aTrack->getSegments().size();
 
     ////// DEBUG
-    std::cout << __FUNCTION__ << ": RECO run=" << runId << " evt=" << eventId << " NTRACKS=" << nTracks << std::endl;
+    std::cout << __FUNCTION__ << ": RECO: run=" << runId << ", evt=" << eventId << ", ntracks=" << nTracks << std::endl;
     ////// DEBUG
 
     // load EventTPC from the RAW file
@@ -378,7 +419,9 @@ int analyzeTrackDiffusion(const boost::property_tree::ptree aConfig){
     		<< RST << std::endl << std::flush;
       continue;
     }
-    std::cout << __FUNCTION__ << ": " << aEventTPC->GetEventInfo() << std::endl;
+    ////// DEBUG
+    std::cout << __FUNCTION__ << ": RAW DATA: " << aEventTPC->GetEventInfo() << std::endl;
+    ////// DEBUG
     
     // assign correct geometry pointer to track segments
     for(auto &aSeg: aTrack->getSegments()) {

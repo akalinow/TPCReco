@@ -51,8 +51,9 @@ void TrackDiffusion_tree_analysis::initialize(){
   myOutputTreePtr = std::make_shared<TTree>(treeName.c_str(),"");
   myOutputTreePtr->Branch("data", &event_rawdiffusion);
   myOutputTreePtr->SetDirectory(myOutputFilePtr.get());
-  
-  std::cout << __FUNCTION__ << ": TTree current TFile ptr=" << myOutputTreePtr->GetCurrentFile() << std::endl;
+  ////// DEBUG
+  // std::cout << __FUNCTION__ << ": TTree current TFile ptr=" << myOutputTreePtr->GetCurrentFile() << std::endl;
+  ////// DEBUG
 }
 ///////////////////////////////
 ///////////////////////////////
@@ -64,29 +65,17 @@ void TrackDiffusion_tree_analysis::finalize(){
   	     <<std::endl;
     return;
   }
-
-  ////// DEBUG
-  std::cout << __FUNCTION__ << ": TTree current TFile ptr=" << myOutputTreePtr->GetCurrentFile() << std::endl;
-  ////// DEBUG
-
   myOutputFilePtr->Write("", TObject::kOverwrite);
-  std::cout << __FUNCTION__ << ": TTree current TFile ptr=" << myOutputTreePtr->GetCurrentFile() << std::endl;
-  // myOutputTreePtr->Write("", TObject::kOverwrite);
-  // myOutputTreePtr->SetDirectory(myOutputFilePtr.get());
-  // myOutputTreePtr->Write("", TObject::kOverwrite);
-  //  myOutputTreePtr->SetDirectory(0);
-  // myOutputTreePtr->ResetBranchAddresses();
-  //  std::cout << __FUNCTION__ << ": BEFORE CLOSE TFile use_count=" << myOutputFilePtr.use_count() << ", TTree use_count=" << myOutputTreePtr.use_count() << std::endl;
-  //////////  myOutputFilePtr->Close();
-  //  std::cout << __FUNCTION__ << ": AFTER CLOSE TFile use_count=" << myOutputFilePtr.use_count() << ", TTree use_count=" << myOutputTreePtr.use_count() << std::endl;
-  //  myOutputFilePtr.reset();
-  //  myOutputTreePtr.reset();
-  //////////  std::cout << __FUNCTION__ << ": AFTER RESET TFile use_count=" << myOutputFilePtr.use_count() << ", TTree use_count=" << myOutputTreePtr.use_count() << std::endl;
+  ////// DEBUG
+  // std::cout << __FUNCTION__ << ": TTree current TFile ptr=" << myOutputTreePtr->GetCurrentFile() << std::endl;
+  ////// DEBUG
 }
 ///////////////////////////////
 ///////////////////////////////
 //void TrackDiffusion_tree_analysis::fillTree(const std::shared_ptr<EventTPC> aEventTPC, const std::shared_ptr<Track3D> aTrack){
 void TrackDiffusion_tree_analysis::fillTree(const std::shared_ptr<EventTPC> aEventTPC, Track3D *aTrack){
+
+  clear();
 
   if(!myOutputTreePtr){
     std::cout<<KRED<<"TrackDiffusion_tree_analysis::fillTree"<<RST
@@ -94,19 +83,6 @@ void TrackDiffusion_tree_analysis::fillTree(const std::shared_ptr<EventTPC> aEve
   	     <<std::endl;
     return;
   }
-
-  // FILL EVENT INFO
-
-  clear();
-  event_rawdiffusion.runId=(aEventTPC ? aEventTPC->GetEventInfo().GetRunId() : -1); // run number
-  event_rawdiffusion.eventId=(aEventTPC ? aEventTPC->GetEventInfo().GetEventId() : -1); // event number
-
-  // FILL CLUSTERING INPUT PARAMETERS
-  
-  event_rawdiffusion.clusterFlag = myConfig.clusterEnable; // is clustering enabled?
-  event_rawdiffusion.clusterThr = myConfig.clusterThreshold; // clustering threshold in ADC units for seed hits
-  event_rawdiffusion.clusterDeltaStrips = myConfig.clusterDeltaStrips; // clustering envelope size in +/- strip units around seed hits 
-  event_rawdiffusion.clusterDeltaTimeCells = myConfig.clusterDeltaTimeCells; // clustering size in +/- time cell units around seed hits
 
   filter_type filterType = filter_type::none;
   if(myConfig.clusterEnable) { // CLUSTER
@@ -119,29 +95,55 @@ void TrackDiffusion_tree_analysis::fillTree(const std::shared_ptr<EventTPC> aEve
   }
   
   // MAKE A CLUSTER AND EXTRACT 2D PROJECTIONS IN MM
-
   std::vector<std::shared_ptr<TH2D> > histosInMM(3);
   for(auto strip_dir=0; strip_dir<3; strip_dir++) {
     histosInMM[strip_dir] = aEventTPC->get2DProjection(get2DProjectionType(strip_dir), filterType, scale_type::mm);
-    std::cout << "HIST DIR=" << strip_dir << ": ptr=" << (histosInMM[strip_dir]).get()
-	      << ", entries=" << (histosInMM[strip_dir] ? histosInMM[strip_dir]->GetEntries() : 0)  << std::endl;
+    ////// DEBUG
+    // std::cout << __FUNCTION__ << ": 2D strip vs time:  dir=" << strip_dir << ", ptr=" << (histosInMM[strip_dir]).get()
+    // 	      << ", entries=" << (histosInMM[strip_dir] ? histosInMM[strip_dir]->GetEntries() : 0)  << std::endl;
+    ////// DEBUG
   }
   std::shared_ptr<TH1D> histoTimeProjInMM;
   histoTimeProjInMM = aEventTPC->get1DProjection(definitions::projection_type::DIR_TIME, filterType, scale_type::mm);
-  std::cout << "HIST DIR_TIME: ptr=" << histoTimeProjInMM.get()
-	    << ", entries=" << (histoTimeProjInMM ? histoTimeProjInMM->GetEntries() : 0) << std::endl;
+  ////// DEBUG
+  // std::cout << __FUNCTION__ << ": 1D time:  ptr=" << histoTimeProjInMM.get()
+  // 	    << ", entries=" << (histoTimeProjInMM ? histoTimeProjInMM->GetEntries() : 0) << std::endl;
+  ////// DEBUG
 
   // COMPUTE DIFFUSION PROPERTIES PER STRIP DIRECTION PER TRACK
   auto isOK=false;
   for(auto strip_dir=0; strip_dir<3; strip_dir++) {
     auto aColl = aTrack->getSegments();
     TrackDiffusionCropList aList = getCropList(aColl, strip_dir);
-    isOK=processCropList(aList, aColl, histosInMM[strip_dir], strip_dir); // loop over histogram hits and fill event_rawdiffusion
-    if(!isOK) break;
+    isOK |= processCropList(aList, aColl, histosInMM[strip_dir], strip_dir); // loop over histogram hits and fill event_rawdiffusion
   }
 
-  // update tree data
-  if(isOK) myOutputTreePtr->Fill();
+  // FILL EVENT INFO
+  event_rawdiffusion.runId=(aEventTPC ? aEventTPC->GetEventInfo().GetRunId() : -1); // run number
+  event_rawdiffusion.eventId=(aEventTPC ? aEventTPC->GetEventInfo().GetEventId() : -1); // event number
+
+  // FILL CLUSTERING INPUT PARAMETERS
+  event_rawdiffusion.clusterFlag = myConfig.clusterEnable; // is clustering enabled?
+  event_rawdiffusion.clusterThr = myConfig.clusterThreshold; // clustering threshold in ADC units for seed hits
+  event_rawdiffusion.clusterDeltaStrips = myConfig.clusterDeltaStrips; // clustering envelope size in +/- strip units around seed hits
+  event_rawdiffusion.clusterDeltaTimeCells = myConfig.clusterDeltaTimeCells; // clustering size in +/- time cell units around seed hits
+
+  // FILL RECO TRACK DATA
+  auto aColl = aTrack->getSegments();
+  auto aSeg = aColl.front();
+  event_rawdiffusion.ntracks = aColl.size();
+  event_rawdiffusion.pid = aSeg.getPID();
+  event_rawdiffusion.vertexPos = aSeg.getStart();
+  event_rawdiffusion.endPos = aSeg.getEnd();;
+  event_rawdiffusion.length = aSeg.getLength();
+  event_rawdiffusion.phiDET = aSeg.getTangent().Phi(); // [rad]
+  event_rawdiffusion.cosThetaDET = aSeg.getTangent().CosTheta(); // [-1, 1]
+
+  // UPDATE MEAN AND RMS
+  updateMeanRms();
+
+  // UPDATE TREE
+  myOutputTreePtr->Fill();
 
   // discard U/V/W/TIME projectons that are not needed anymore
   for(auto strip_dir=0; strip_dir<3; strip_dir++) {
@@ -171,9 +173,6 @@ TrackDiffusionCropList TrackDiffusion_tree_analysis::getCropList(TrackSegment3DC
   if(dir<definitions::projection_type::DIR_U || dir>definitions::projection_type::DIR_W) return aList;
   if(aColl.front().getGeometry()!=myGeometryPtr) return aList;
 
-  ////// DEBUG
-  std::cout << __FUNCTION__ << ": dir=" << dir << ": NTRACKS=" << aColl.size() << std::endl;
-  ////// DEBUG
   for(auto &aSeg : aColl) {
     TGraph gr;
     const auto vtx=aSeg.getStart();
@@ -210,22 +209,9 @@ TrackDiffusionCropList TrackDiffusion_tree_analysis::getCropList(TrackSegment3DC
       // repeat 1st corner point to close the loop
       p -= (1-myConfig.trackFractionEnd-myConfig.trackFractionStart)*tangent;
       gr.SetPoint(gr.GetN(), p.X(), p.Y());
-
-      ////// DEBUG
-      std::cout << __FUNCTION__ << ": Adding polygon :";
-      for(auto ipoint=0; ipoint<gr.GetN(); ipoint++) {
-	double x, y;
-	gr.GetPoint(ipoint, x, y);
-	std::cout << " (x="<<x<<", y="<<y<<")";
-      }
-      std::cout<<std::endl;
-      std::cout<<__FUNCTION__ << ": for track: VERTEX(x="<<offset.X()<<", y="<<offset.Y()<<")  END=(x="<<(offset+tangent).X()<<", y="<<(offset+tangent).Y()<<")"<<std::endl;
-      ////// DEBUG
     }
-    
     aList.push_back(gr);
   }
-    
   return aList;
 }
 ///////////////////////////////
@@ -278,25 +264,6 @@ bool TrackDiffusion_tree_analysis::processCropList(TrackDiffusionCropList &aList
       }
     }
   }
-  if(myHitMap.find(dir)==myHitMap.end()) return true;
-
-  // compute mean and rms
-  double sum_x=0.0, sum_x2=0.0, sum_w=0.0;
-  for(auto &hit : myHitMap[dir]) {
-    auto w = fabs(hit.q);
-    auto x = hit.x;
-    sum_x2 += x * x * w;
-    sum_x += x * w;
-    sum_w += w;
-  }
-  if(sum_w==0) return true;
-  auto mean = sum_x / sum_w;
-  auto mean2 = sum_x2 / sum_w;
-  auto rms = sqrt( mean2 - mean*mean );
-  ////// DEBUG
-  std::cout << __FUNCTION__ << ": dir=" << dir << ": mean=" << mean << ", rms=" << rms << std::endl;
-  ////// DEBUG
-  
   return true;
 }
 ///////////////////////////////
@@ -341,6 +308,53 @@ bool TrackDiffusion_tree_analysis::edgesIntersect(TGraph &g1, TGraph &g2) {
     }
   }
   return false;
+}
+///////////////////////////////
+///////////////////////////////
+void TrackDiffusion_tree_analysis::updateMeanRms() {
+
+  // calculate MEAN and RMS per strip direction
+  double totalSum_x=0.0, totalSum_x2=0.0, totalSum_w=0.0;
+  for(auto dir=0; dir<3; dir++) {
+    double sum_x=0.0, sum_x2=0.0, sum_w=0.0;
+    for(auto &hit : myHitMap[dir]) {
+      auto w = fabs(hit.q);
+      if(w==0) continue;
+      auto x = hit.x;
+      sum_x2 += x * x * w;
+      sum_x += x * w;
+      sum_w += w;
+    }
+    double mean=0.0, mean2=0.0, rms=0.0;
+    if(sum_w) {
+      totalSum_x2 += sum_x2;
+      totalSum_x += sum_x;
+      totalSum_w += sum_w;
+      mean = sum_x / sum_w;
+      mean2 = sum_x2 / sum_w;
+      rms = sqrt( mean2 - mean*mean );
+      event_rawdiffusion.flagPerDir[dir]=true;
+    }
+    ////// DEBUG
+    std::cout << __FUNCTION__ << ": dir=" << dir << ": mean=" << mean << ", rms=" << rms << std::endl;
+    ////// DEBUG
+    event_rawdiffusion.meanPerDir[dir]=mean;
+    event_rawdiffusion.sigmaPerDir[dir]=rms;
+  }
+  // calculate total MEAN and RMS from all strip directions
+  // NOTE: total RMS can be larger than RMS[dir] when MEAN[i] non-zero (e.g due to GET electronics peaking time effect)
+  double totalMean=0.0, totalMean2=0.0, totalRms=0.0;
+  if(totalSum_w) {
+    totalMean = totalSum_x / totalSum_w;
+    totalMean2 = totalSum_x2 / totalSum_w;
+    totalRms = sqrt( totalMean2 - totalMean*totalMean );
+    event_rawdiffusion.flagAll=true;
+  }
+  ////// DEBUG
+  std::cout << __FUNCTION__ << ": mean=" << totalMean << ", rms=" << totalRms << std::endl;
+  ////// DEBUG
+  event_rawdiffusion.meanAll=totalMean;
+  event_rawdiffusion.sigmaAll=totalRms;
 }
 ///////////////////////////////
 ///////////////////////////////

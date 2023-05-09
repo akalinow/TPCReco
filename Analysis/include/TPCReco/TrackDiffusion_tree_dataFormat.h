@@ -17,12 +17,12 @@ struct Event_rawdiffusion{ // diffusion measurements per leading track of an eve
   float length{0}; // [mm] leading track length
   float phiDET{0}; // [rad] leading track PHI_DET
   float cosThetaDET{0}; // leading track cos(THETA_DET)
+  bool flagPerDir[3]{false, false, false}; // valid (mean,rms) pair exists per U/V/W strip direction
   float meanPerDir[3]={0,0,0}; // [mm] relative position (wrt track axis) of the mean of the distribution of projected hits from the region of interest per U/V/W direction
   float sigmaPerDir[3]={0,0,0}; // [mm] standard deviation of the distribution of projected hits from the region of interest per U/V/W direction
+  bool flagAll{false}; // valid (mean,rms) pair exists
   float meanAll{0}; // [mm] relative position (wrt track axis) of the mean of the distribution of projected hits from the region of interest from all directions
   float sigmaAll{0}; // [mm] standard deviation of the distribution of projected hits from the region of interest from all directions
-  float meanZ{0}; // [mm] relative position (wrt track axis) of the mean of the distribution of projected hits from the region of interest per TIME/Z_DET projection
-  float sigmaZ{0}; // [mm] standard deviation of the distribution of projected hits from the region of interest per TIME/Z_DET projection
 };
 
 #endif
