@@ -8,12 +8,12 @@ foreach(example_source ${sources})
   reco_add_executable(${example} ${example_source})
   target_link_libraries(
     ${example}
-    ${ROOT_LIBRARIES}
-    Utilities
-    DataFormats
-    UtilsMC
-    EventGenerator
-    MonteCarloModules
-    ${Boost_LIBRARIES})
+    PRIVATE ${ROOT_LIBRARIES}
+            Utilities
+            DataFormats
+            UtilsMC
+            EventGenerator
+            MonteCarloModules
+            ${Boost_LIBRARIES})
   install(TARGETS ${example} RUNTIME DESTINATION bin/examples)
 endforeach(example_source ${sources})
