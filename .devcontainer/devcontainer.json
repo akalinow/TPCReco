@@ -3,6 +3,7 @@
     "build": {
         "dockerfile": "../docker/dev.dockerfile",
         "context": "..",
+        "target": "dev",
         "args": {
             "GET_VERSION": "20190315_patched",
             "ROOT_VERSION": "6.08",
