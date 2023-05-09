@@ -1,4 +1,4 @@
-ADD_SUBDIRECTORY(UtilsMC)
-ADD_SUBDIRECTORY(EventGenerator)
-ADD_SUBDIRECTORY(examples)
-ADD_SUBDIRECTORY(Modules)
+add_subdirectory(UtilsMC)
+add_subdirectory(EventGenerator)
+add_subdirectory(examples)
+add_subdirectory(Modules)
