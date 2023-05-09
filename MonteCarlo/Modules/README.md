@@ -65,6 +65,10 @@ Configuration template:
   "EnabledBranches": [
     {},
     {}
+  ],
+  "DisabledBranches": [
+    {},
+    {}
   ]
 }
 ```
@@ -74,6 +78,12 @@ where:
   * `"SimEvent"` - pure Monnte Carlo data (`SimEvent`)
   * `"PEventTPC"` - *raw* data (`PEventTPC`)
   * `"Track3D"` - *'reconstructed'* data (`Track3D`)
+* `"DisabledBranches"` - vector of `string` describing branches to be excluded from saving into file. 
+Branches can belong to two ROOT `TTree`'s stored into the output file (`"TPCData"` and `"TPCRecoData"`).
+List of all possibilities can be found by running `TTree::Print()` on the given tree. Branches occupying most space:
+  * `"TPCData.myChargeMap"` - `std::map` with all the charges
+  * `"TPCData.tracks.hits"` - `std::vector` with all ADC values coming from digitized by Geant/ToyMC hits
+  * `"myChargeArray[3][3][256][512]"` - C-style array holding same information as `std::map` from previous point
 
 ## GeantSim
 Configuration template:
