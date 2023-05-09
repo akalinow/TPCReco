@@ -1,4 +1,3 @@
-//#include "RunController.h"
 #include <boost/property_tree/json_parser.hpp>
 #include "TRandom.h"
 #include "TPCReco/RunController.h"
