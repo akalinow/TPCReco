@@ -5,7 +5,7 @@
     "GeantSim",
     "EventFileExporter"
   ],
-  "GeometryConfig": "/scratch/TPCReco/build/resources/geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat",
+  "GeometryConfig": "@CMAKE_INSTALL_PREFIX@/resources/geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat",
   "ModuleConfiguration": {
     "Generator": {
       "NumberOfEvents": 10000,
@@ -87,18 +87,17 @@
       ]
     },
     "GeantSim": {
-      "geometry_config_path": "geometry.xml",
       "gas_mixture": {
         "co2": 0.25,
         "he": 0.0
       },
       "magnetic_field": {
         "magnetic_field_ON": false,
-        "magnetic_field_map": "/scratch/MonteCarloSimulations/Geant4/PurgMag3D.TABLE",
+        "magnetic_field_map": "",
         "magnetic_field_offset": 200
       },
       "GeometryConfig": {
-        "ModelPath": "/scratch/MonteCarloSimulations/Geant4/GEANT_elitpc_model_20180302/STwwL/",
+        "ModelPath": "@CMAKE_INSTALL_PREFIX@/resources/Geant_STL_model/",
         "MaterialColors": {
           "aluminium": {
             "r": 132,
@@ -182,11 +181,6 @@
           ]
         }
       }
-    },
-    "ToyIonizationSimulator": {
-      "Temperature": "293.15",
-      "Pressure": "0.25",
-      "PointsPerMm": 10.0
     }
   }
 }
