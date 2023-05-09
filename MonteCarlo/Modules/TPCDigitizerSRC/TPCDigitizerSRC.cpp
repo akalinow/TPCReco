@@ -29,11 +29,11 @@ fwk::VModule::EResultFlag TPCDigitizerSRC::Init(boost::property_tree::ptree conf
         calculator = std::make_unique<StripResponseCalculator>(geometry, nStrips, nCells, nPads, diffSigmaXY,
                                                                diffSigmaZ, peakingTime, filePath.c_str());
     } else {
-        std::cout << "File " << filePath
-                  << " does not exist, generating strip response with default parameters form StripResponseCalculator!"
+        std::stringstream msg;
+        msg << "File " << filePath
+                  << " does not exist! Please make sure a ROOT file with strip responses is present in given directory!"
                   << std::endl;
-        calculator = std::make_unique<StripResponseCalculator>(geometry, nStrips, nCells, nPads, diffSigmaXY,
-                                                               diffSigmaZ, peakingTime);
+        throw std::runtime_error(msg.str());
     }
 
     return fwk::VModule::eSuccess;
