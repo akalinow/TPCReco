@@ -1,4 +1,4 @@
-#include "EProvider.h"
+#include "TPCReco/EProvider.h"
 
 EProviderSingle::EProviderSingle() {
     paramVals["singleE"] = 11.5;

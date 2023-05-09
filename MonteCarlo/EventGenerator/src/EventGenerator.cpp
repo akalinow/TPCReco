@@ -1,4 +1,4 @@
-#include "EventGenerator.h"
+#include "TPCReco/EventGenerator.h"
 #include "Math/EulerAngles.h"
 
 EventGenerator::EventGenerator(const boost::property_tree::ptree &configNode) : setup{configNode} {

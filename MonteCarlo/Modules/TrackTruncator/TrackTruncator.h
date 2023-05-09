@@ -1,7 +1,7 @@
 #ifndef TPCSOFT_TRACKTRUNCATOR_H
 #define TPCSOFT_TRACKTRUNCATOR_H
 
-#include "VModule.h"
+#include "TPCReco/VModule.h"
 #include "TPCReco/GeometryTPC.h"
 
 class TrackTruncator : public fwk::VModule {

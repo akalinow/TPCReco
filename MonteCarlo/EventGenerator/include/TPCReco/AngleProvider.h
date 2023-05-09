@@ -1,7 +1,7 @@
 #ifndef TPCSOFT_ANGLEPROVIDER_H
 #define TPCSOFT_ANGLEPROVIDER_H
 
-#include "Provider.h"
+#include "TPCReco/Provider.h"
 
 class TF1;
 

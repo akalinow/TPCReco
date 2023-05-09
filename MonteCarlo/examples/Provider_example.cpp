@@ -1,7 +1,7 @@
-#include "AngleProvider.h"
-#include "XYProvider.h"
-#include "EProvider.h"
-#include "ZProvider.h"
+#include "TPCReco/AngleProvider.h"
+#include "TPCReco/XYProvider.h"
+#include "TPCReco/EProvider.h"
+#include "TPCReco/ZProvider.h"
 
 #include "TCanvas.h"
 #include "TH1D.h"

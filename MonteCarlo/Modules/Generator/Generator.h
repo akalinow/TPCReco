@@ -1,8 +1,8 @@
 #ifndef TPCSOFT_GENERATOR_H
 #define TPCSOFT_GENERATOR_H
 
-#include "VModule.h"
-#include "EventGenerator.h"
+#include "TPCReco/VModule.h"
+#include "TPCReco/EventGenerator.h"
 
 class Generator : public fwk::VModule{
 public:

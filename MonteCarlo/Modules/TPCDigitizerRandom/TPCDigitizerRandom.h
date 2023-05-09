@@ -1,7 +1,7 @@
 #ifndef TPCSOFT_TPCDIGITIZERRANDOM_H
 #define TPCSOFT_TPCDIGITIZERRANDOM_H
 
-#include "VModule.h"
+#include "TPCReco/VModule.h"
 #include "TPCReco/GeometryTPC.h"
 #include "TPCReco/EventInfo.h"
 

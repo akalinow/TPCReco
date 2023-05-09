@@ -1,10 +1,10 @@
 #ifndef TPCSOFT_EVENTFILEEXPORTER_H
 #define TPCSOFT_EVENTFILEEXPORTER_H
 
-#include "VModule.h"
+#include "TPCReco/VModule.h"
 #include "TTree.h"
 #include "TFile.h"
-#include "ModuleExchangeSpace.h"
+#include "TPCReco/ModuleExchangeSpace.h"
 
 class EventFileExporter: public fwk::VModule{
     EventFileExporter();

@@ -1,5 +1,5 @@
 
-#include "EventGenerator.h"
+#include "TPCReco/EventGenerator.h"
 #include "Math/EulerAngles.h"
 #include "Math/LorentzRotation.h"
 #include "TFile.h"

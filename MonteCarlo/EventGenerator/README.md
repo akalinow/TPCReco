@@ -4,9 +4,9 @@
 
 ### Providers
 
-Generation of random variables from various distributions is done with a help of [Provider](../UtilsMC/include/Provider.h) objects. `Provider` is an abstract base class for following types of providers:
+Generation of random variables from various distributions is done with a help of [Provider](../UtilsMC/include/TPCReco/Provider.h) objects. `Provider` is an abstract base class for following types of providers:
 
-* [AngleProvider](include/AngleProvider.h) - for angular distributions
+* [AngleProvider](include/TPCReco/AngleProvider.h) - for angular distributions
     * `AngleProviderSingle` - single pre-defined value
     * `AngleProviderIso` - angles from isotropic distribution
     * `AngleProviderCosIso` - angle from distribution with flat distribution of cosine of the angle (e.g. for theta in
@@ -14,17 +14,17 @@ Generation of random variables from various distributions is done with a help of
     * `AngleProviderE1E2` - angle from distributions specific to nuclear decays, as
       presented [here](https://doi.org/10.1103/PhysRevC.73.055801)
     * `AngleProviderPhi` - phi provider with beam polarisation
-* [EProvider](include/EProvider.h) - for gamma energy distribution
+* [EProvider](include/TPCReco/EProvider.h) - for gamma energy distribution
     * `EProviderSingle` - single pre-defined energy
     * `EProviderGaus` - energy from a gaussian distribution
-* [XYProvider](include/XYProvider.h) - for position distribution in plane perpendicular to the beam axis
+* [XYProvider](include/TPCReco/XYProvider.h) - for position distribution in plane perpendicular to the beam axis
     * `XYProviderSingle` - single pre-defined value
     * `XYProviderGaussTail` - flat distribution with gaussian tails
-* [ZProvider](include/ZProvider.h) - for position distribution along the beam axis
+* [ZProvider](include/TPCReco/ZProvider.h) - for position distribution along the beam axis
     * `ZProviderSingle` - single pre-defined value
     * `ZProviderUniform` - uniform distribution
 
-All providers are registered in an abstract [ObjectFactory](../UtilsMC/include/ObjectFactory.h). To get a `std::unique_ptr` to, for example, given AngleProvider one has to just run:
+All providers are registered in an abstract [ObjectFactory](../UtilsMC/include/TPCReco/ObjectFactory.h). To get a `std::unique_ptr` to, for example, given AngleProvider one has to just run:
 
 ```C++
 #include "AngleProvider.h"
@@ -36,11 +36,11 @@ prov->GetAngle(); //Get angle (with default parameter values)
 Parameters of various types of providers are listed and described [here](#configuring-providers). For a way to set them see `GeneratorSetup::BuildProvider` template method in [GeneratorSetup.cpp](src/GeneratorSetup.cpp).
 
 ### Reactions
-[Reactions](include/Reaction.h) are used to produce four-momenta of primary particles generated in an event. So far following reactions are available:
-* [ReactionTwoProng](include/ReactionTwoProng.h) - a generic two prong event in which gamma particle hits a target nucleus, which then decays into two products
-* [ReactionThreeProngDemocratic](include/ReactionThreeProngDemocratic.h) - a reaction, where 12C nucleus is hit by a gamma particle and decays into three alpha particles **simultaneously** - constant R-matrix
-* [ReactionThreeProngIntermediate](include/ReactionThreeProngIntermediate.h) - a reaction, where 12C nucleus is hit by a gamma particle and decays into three alpha particles through intermediate state(s) of a given width(s)
-* [ReactionParticleGun](include/ReactionParticleGun.h) - a generic particle gun reaction, gamma energy is ignored here
+[Reactions](include/TPCReco/Reaction.h) are used to produce four-momenta of primary particles generated in an event. So far following reactions are available:
+* [ReactionTwoProng](include/TPCReco/ReactionTwoProng.h) - a generic two prong event in which gamma particle hits a target nucleus, which then decays into two products
+* [ReactionThreeProngDemocratic](include/TPCReco/ReactionThreeProngDemocratic.h) - a reaction, where 12C nucleus is hit by a gamma particle and decays into three alpha particles **simultaneously** - constant R-matrix
+* [ReactionThreeProngIntermediate](include/TPCReco/ReactionThreeProngIntermediate.h) - a reaction, where 12C nucleus is hit by a gamma particle and decays into three alpha particles through intermediate state(s) of a given width(s)
+* [ReactionParticleGun](include/TPCReco/ReactionParticleGun.h) - a generic particle gun reaction, gamma energy is ignored here
 
 Each reaction implements a virtual method `GeneratePrimaries(double gammaMom, const ROOT::Math::Rotation3D &beamToDetRotation)` in which it generates primary particle based on its type, internal kinematics and energy of incoming gamma particle. The 3D rotation matrix passed as a second argument to `GeneratePrimaries` allows for rotation of the momenta of generated particles from BEAM to DET coordinates.
 
@@ -57,7 +57,7 @@ This reaction provides particles of specific kind emitted with angular distribut
 
 
 #### ReactionLibrary
-All reactions used in a given configuration of `EventGenerator` are added to the [ReactionLibrary](include/ReactionLibrary.h), which based on the branching ratios selects a reaction to be used in a given event. All events are equipped with `reaction_type` tag, which allows to tell what was the process which generated the event.
+All reactions used in a given configuration of `EventGenerator` are added to the [ReactionLibrary](include/TPCReco/ReactionLibrary.h), which based on the branching ratios selects a reaction to be used in a given event. All events are equipped with `reaction_type` tag, which allows to tell what was the process which generated the event.
 
 
 ### Putting it all together

@@ -1,7 +1,7 @@
 #ifndef TPCSOFT_GEANTSIM_H
 #define TPCSOFT_GEANTSIM_H
 
-#include "VModule.h"
+#include "TPCReco/VModule.h"
 #include "DataBuffer.h"
 
 #include <CLHEP/Random/MTwistEngine.h>

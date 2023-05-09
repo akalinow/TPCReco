@@ -1,8 +1,8 @@
-#include "RunController.h"
-#include "TabularStream.h"
+#include "TPCReco/RunController.h"
+#include "TPCReco/TabularStream.h"
 #include <iostream>
 #include <boost/lexical_cast.hpp>
-#include <VModule.h>
+#include "TPCReco/VModule.h"
 
 
 using namespace std;

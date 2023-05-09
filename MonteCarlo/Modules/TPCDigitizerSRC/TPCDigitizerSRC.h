@@ -1,7 +1,7 @@
 #ifndef TPCSOFT_TPCDIGITIZERSRC_H
 #define TPCSOFT_TPCDIGITIZERSRC_H
 
-#include "VModule.h"
+#include "TPCReco/VModule.h"
 #include "TPCReco/GeometryTPC.h"
 #include "TPCReco/EventInfo.h"
 #include "TPCReco/StripResponseCalculator.h"

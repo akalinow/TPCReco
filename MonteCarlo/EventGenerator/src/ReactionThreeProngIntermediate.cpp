@@ -1,4 +1,4 @@
-#include "ReactionThreeProngIntermediate.h"
+#include "TPCReco/ReactionThreeProngIntermediate.h"
 #include "Math/EulerAngles.h"
 #include "Math/LorentzRotation.h"
 

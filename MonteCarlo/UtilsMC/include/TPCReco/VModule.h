@@ -5,8 +5,8 @@
 #include <utility>
 #include <vector>
 
-#include <ObjectRegistrator.h>
-#include <ObjectFactory.h>
+#include "ObjectRegistrator.h"
+#include "ObjectFactory.h"
 #include "Stopwatch.h"
 #include "RealTimeStopwatch.h"
 #include "ModuleExchangeSpace.h"

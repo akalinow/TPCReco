@@ -4,7 +4,7 @@
 #include <string>
 #include <list>
 #include <map>
-#include <VModule.h>
+#include "VModule.h"
 #include "boost/property_tree/ptree.hpp"
 #include "ModuleExchangeSpace.h"
 

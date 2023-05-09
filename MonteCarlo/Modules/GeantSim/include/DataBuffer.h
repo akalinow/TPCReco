@@ -1,7 +1,7 @@
 #ifndef TPCSOFT_DATABUFFER_H
 #define TPCSOFT_DATABUFFER_H
 
-#include "SimEvent.h"
+#include "TPCReco/SimEvent.h"
 
 
 //so far it is (almost)identical to ModuleExchangeSpace, we keep it separate to have flexibility

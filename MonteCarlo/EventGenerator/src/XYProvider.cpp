@@ -1,4 +1,4 @@
-#include "XYProvider.h"
+#include "TPCReco/XYProvider.h"
 #include "TF2.h"
 
 XYProviderGaussTail::XYProviderGaussTail() {

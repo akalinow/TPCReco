@@ -1,7 +1,7 @@
 //#include "RunController.h"
 #include <boost/property_tree/json_parser.hpp>
 #include "TRandom.h"
-#include "RunController.h"
+#include "TPCReco/RunController.h"
 //Interesting bug that I (PP) was not able to solve:
 //Without including at least one .h file with the usage of REGISTER_MODULE macro the registration does not work,
 //so this dummy module is sort of a workaround this issue. The problem seems to be happening due to modules and factory being in separate libraries...

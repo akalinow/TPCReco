@@ -4,7 +4,7 @@
  * @brief      Implementation of SimEvent class and PrimaryParticle struct
  */
 
-#include "SimEvent.h"
+#include "TPCReco/SimEvent.h"
 /// \cond
 #include<iostream>
 #include <utility>

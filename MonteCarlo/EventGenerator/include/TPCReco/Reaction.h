@@ -1,7 +1,7 @@
 #ifndef TPCSOFT_REACTION_H
 #define TPCSOFT_REACTION_H
 
-#include "PrimaryParticle.h"
+#include "TPCReco/PrimaryParticle.h"
 #include "IonProperties.h"
 #include "Math/Vector4D.h"
 #include "Math/Point3D.h"

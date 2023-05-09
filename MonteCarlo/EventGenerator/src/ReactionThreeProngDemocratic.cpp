@@ -1,4 +1,4 @@
-#include "ReactionThreeProngDemocratic.h"
+#include "TPCReco/ReactionThreeProngDemocratic.h"
 #include "TRandom3.h"
 #include "Math/LorentzVector.h"
 #include "Math/LorentzRotation.h"

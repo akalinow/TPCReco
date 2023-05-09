@@ -1,7 +1,7 @@
 #ifndef TPCSOFT_XYPROVIDER_H
 #define TPCSOFT_XYPROVIDER_H
 
-#include "Provider.h"
+#include "TPCReco/Provider.h"
 #include <utility>
 
 class TF2;

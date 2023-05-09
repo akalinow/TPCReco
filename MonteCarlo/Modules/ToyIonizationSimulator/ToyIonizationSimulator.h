@@ -1,7 +1,7 @@
 #ifndef TPCSOFT_TOYIONIZATIONSIMULATOR_H
 #define TPCSOFT_TOYIONIZATIONSIMULATOR_H
 
-#include "VModule.h"
+#include "TPCReco/VModule.h"
 #include "TPCReco/IonRangeCalculator.h"
 
 class ToyIonizationSimulator : public fwk::VModule{

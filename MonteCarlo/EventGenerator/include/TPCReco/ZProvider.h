@@ -1,7 +1,7 @@
 #ifndef TPCSOFT_ZPROVIDER_H
 #define TPCSOFT_ZPROVIDER_H
 
-#include "Provider.h"
+#include "TPCReco/Provider.h"
 
 class ZProvider : public Provider {
 public:

@@ -12,8 +12,8 @@
   \ingroup testing
 */
 
-#include <ObjectRegistrator.h>
-#include <ObjectFactory.h>
+#include "TPCReco/ObjectRegistrator.h"
+#include "TPCReco/ObjectFactory.h"
 #include "gtest/gtest.h"
 
 using namespace utl;

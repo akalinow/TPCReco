@@ -1,14 +1,5 @@
 set(MODULE_NAME "MonteCarloModules")
-
-include_directories(${ROOTINCDIR})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-include_directories(${PROJECT_SOURCE_DIR}/DataFormats/include)
-include_directories(${PROJECT_SOURCE_DIR}/Utilities/include)
-include_directories(${PROJECT_SOURCE_DIR}/MonteCarlo/UtilsMC/include)
-include_directories(${PROJECT_SOURCE_DIR}/Reconstruction/include)
-include_directories(${PROJECT_SOURCE_DIR}/MonteCarlo/EventGenerator/include)
-
-
+message(STATUS "Adding CMake fragment for module:\t${MODULE_NAME}")
 
 ADD_SUBDIRECTORY(Generator)
 ADD_SUBDIRECTORY(DummyModule)
@@ -55,11 +46,8 @@ SET(module_sources
 
 
 
-
-
-ADD_LIBRARY(${MODULE_NAME} SHARED
-        ${module_sources}
-        )
+reco_add_library(${MODULE_NAME} EXTRA_SOURCES
+        ${module_sources})
 
 IF (BUILD_GEANT_MODULE)
     add_dependencies(${MODULE_NAME} geant_model)
@@ -75,4 +63,4 @@ ENDIF ()
 
 target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
 
-install(TARGETS ${MODULE_NAME} LIBRARY DESTINATION lib)
+install(TARGETS ${MODULE_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})

@@ -1,9 +1,9 @@
-#include "GeneratorSetup.h"
+#include "TPCReco/GeneratorSetup.h"
 #include "stdexcept"
-#include "ReactionTwoProng.h"
-#include "ReactionThreeProngDemocratic.h"
-#include "ReactionThreeProngIntermediate.h"
-#include "ReactionParticleGun.h"
+#include "TPCReco/ReactionTwoProng.h"
+#include "TPCReco/ReactionThreeProngDemocratic.h"
+#include "TPCReco/ReactionThreeProngIntermediate.h"
+#include "TPCReco/ReactionParticleGun.h"
 #include <boost/property_tree/json_parser.hpp>
 
 

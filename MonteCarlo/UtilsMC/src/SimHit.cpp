@@ -1,4 +1,4 @@
-#include "SimHit.h"
+#include "TPCReco/SimHit.h"
 
 #include <utility>
 

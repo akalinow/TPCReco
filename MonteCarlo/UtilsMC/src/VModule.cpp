@@ -1,6 +1,6 @@
 // $Id$
 
-#include <VModule.h>
+#include "TPCReco/VModule.h"
 
 using namespace std;
 

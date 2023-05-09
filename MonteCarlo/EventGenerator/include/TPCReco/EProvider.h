@@ -1,7 +1,7 @@
 #ifndef TPCSOFT_EPROVIDER_H
 #define TPCSOFT_EPROVIDER_H
 
-#include "Provider.h"
+#include "TPCReco/Provider.h"
 
 class EProvider : public Provider {
 public:

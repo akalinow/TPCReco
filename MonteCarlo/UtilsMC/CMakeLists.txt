@@ -1,50 +1,22 @@
 set(MODULE_NAME "UtilsMC")
-MESSAGE( STATUS "Adding CMake fragment for module:         " ${MODULE_NAME} )
-set(TPCRECO_LIBRARIES ${TPCRECO_LIBRARIES} " " ${TPCRECO_PREFIX}${MODULE_NAME}  PARENT_SCOPE)
-set(TPCRECO_LIBRARIES ${TPCRECO_LIBRARIES} ${TPCRECO_PREFIX}${MODULE_NAME} PARENT_SCOPE)
-###############################################################################
-## file globbing ##############################################################
-###############################################################################
+MESSAGE(STATUS "Adding CMake fragment for module:\t${MODULE_NAME}")
 
-# These instructions search the directory tree when cmake is
-# invoked and put all files that match the pattern in the variable
-# `sources`
-#
-file(GLOB_RECURSE sources       ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
+include_directories(${PROJECT_SOURCE_DIR}/Utilities/include/)
 
-###############################################################################
-## dependencies ###############################################################
-###############################################################################
-include_directories(${ROOTINCDIR})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-include_directories(${PROJECT_SOURCE_DIR}/DataFormats/include)
-include_directories(${PROJECT_SOURCE_DIR}/Utilities/include)
-###############################################################################
-## target definitions #########################################################
-###############################################################################
-add_library(${MODULE_NAME} SHARED ${sources} UtilsMcDict.cxx)
-add_library(${TPCRECO_PREFIX}${MODULE_NAME} ALIAS ${MODULE_NAME})
-set_target_properties(${MODULE_NAME} PROPERTIES PREFIX ${TPCRECO_PREFIX})
+root_generate_dictionary(
+        G__${TPCRECO_PREFIX}${MODULE_NAME}
+        include/TPCReco/SimEvent.h
+        LINKDEF LinkDef.h
+)
 
-target_link_libraries(${MODULE_NAME} ${ROOT_LIBRARIES} MathMore GenVector Utilities)
-# Compiler flags.
-target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
+reco_add_library(${MODULE_NAME} EXTRA_SOURCES
+        G__${TPCRECO_PREFIX}${MODULE_NAME}.cxx)
 
-ROOT_GENERATE_DICTIONARY(UtilsMcDict
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/SimEvent.h
-        LINKDEF ${CMAKE_CURRENT_SOURCE_DIR}/include/LinkDef.h
-        MODULE ${MODULE_NAME})
+target_link_libraries(${MODULE_NAME} ${ROOT_LIBRARIES} MathMore GenVector Utilities DataFormats)
 
-# All install commands get the same destination. this allows us to use paths
-# relative to the executable.
-install(TARGETS ${MODULE_NAME} LIBRARY DESTINATION lib)
+reco_install_targets(${MODULE_NAME})
 
-install(
-        FILES
-        ${CMAKE_CURRENT_BINARY_DIR}/libUtilsMC_rdict.pcm
-        ${CMAKE_CURRENT_BINARY_DIR}/libUtilsMC.rootmap
-        DESTINATION lib)
+reco_install_root_dict(${MODULE_NAME})
 
-#reco_add_test_subdirector(test)
-
+reco_add_test_subdirectory(test)
 

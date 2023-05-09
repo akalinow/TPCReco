@@ -1,7 +1,7 @@
 #ifndef TPCSOFT_DUMMYMODULE_H
 #define TPCSOFT_DUMMYMODULE_H
 
-#include "VModule.h"
+#include "TPCReco/VModule.h"
 
 class DummyModule : public fwk::VModule{
 public:

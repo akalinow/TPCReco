@@ -14,7 +14,7 @@
 
 // header for unit test ObjectFactoryTest
 
-#include <ObjectFactory.h>
+#include "TPCReco/ObjectFactory.h"
 #include <string>
 #include "gtest/gtest.h"
 

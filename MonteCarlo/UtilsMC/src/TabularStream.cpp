@@ -1,7 +1,7 @@
 #include <map>
 #include <algorithm>
 #include <iterator>
-#include <TabularStream.h>
+#include "TPCReco/TabularStream.h"
 
 using namespace utl;
 using namespace std;

@@ -1,4 +1,4 @@
-#include "ReactionParticleGun.h"
+#include "TPCReco/ReactionParticleGun.h"
 #include "Math/LorentzRotation.h"
 
 ReactionParticleGun::ReactionParticleGun(std::unique_ptr<AngleProvider> theta, std::unique_ptr<AngleProvider> phi,

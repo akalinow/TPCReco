@@ -3,7 +3,7 @@ The key concept of the framework is to encapsulate each functional block of the 
 
 
 # Modules
-All modules inherit from an abstract class [fwk::VModule](../UtilsMC/include/VModule.h). Each module has to implement `VModule`'s pure virtual methods:
+All modules inherit from an abstract class [fwk::VModule](../UtilsMC/include/TPCReco/VModule.h). Each module has to implement `VModule`'s pure virtual methods:
 * `EResultFlag Init(boost::property_tree::ptree config)` - initialize module, called at the beginning of the simulation, takes `boost` configuration as an argument 
 * `EResultFlag Process(ModuleExchangeSpace &event)` - main *player*, do what module's work, module is able to read from and write to `ModuleExchangeSpace`, which is used for inter-module communication
 * `EResultFlag Finish()` - finish the run, called for each module at the end of the simulation, used for cleanup
@@ -23,7 +23,7 @@ All modules inherit from an abstract class [fwk::VModule](../UtilsMC/include/VMo
 `RunController` creates all the modules, initializes them (`Init` method), runs `Process` method in the right order, and then cleans up with `Finish` method.
 
 ## ModuleExchangeSpace
-The modules communicate with each-other through [ModuleExchangeSpace](../UtilsMC/include/ModuleExchangeSpace.h). It contains:
+The modules communicate with each-other through [ModuleExchangeSpace](../UtilsMC/include/TPCReco/ModuleExchangeSpace.h). It contains:
 * `SimEvent`
 * `PEventTPC`
 * `Track3D`
