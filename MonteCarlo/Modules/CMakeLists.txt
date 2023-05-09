@@ -48,7 +48,6 @@ reco_add_library(${MODULE_NAME} EXTRA_SOURCES ${module_sources})
 if(BUILD_GEANT_MODULE)
   add_dependencies(${MODULE_NAME} geant_model)
 endif()
-set_target_properties(${MODULE_NAME} PROPERTIES PREFIX ${TPCRECO_PREFIX})
 
 target_link_libraries(
   ${MODULE_NAME} PUBLIC ${ROOT_LIBRARIES} GenVector Utilities UtilsMC
