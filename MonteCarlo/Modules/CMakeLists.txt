@@ -23,12 +23,14 @@ if(BUILD_GEANT_MODULE)
   ExternalProject_Add(
     geant_model
     URL https://cernbox.cern.ch/remote.php/dav/public-files/DWjBUbnsCuwE15M/elitpc_STL_model_20180302.tar.gz
-    SOURCE_DIR "${CMAKE_INSTALL_PREFIX}/resources/Geant_STL_model"
-    DOWNLOAD_DIR "${CMAKE_INSTALL_PREFIX}/resources/Geant_STL_model"
+    SOURCE_DIR Geant_STL_model
+    DOWNLOAD_DIR Geant_STL_model
     URL_HASH MD5=0c2999ee658f0dec54f729ed889eff01
     BUILD_COMMAND ""
     INSTALL_COMMAND ""
     CONFIGURE_COMMAND "")
+  install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Geant_STL_model
+          DESTINATION ${CMAKE_INSTALL_PREFIX}/resources)
 endif()
 
 set(module_sources
@@ -48,18 +50,13 @@ reco_add_library(${MODULE_NAME} EXTRA_SOURCES ${module_sources})
 if(BUILD_GEANT_MODULE)
   add_dependencies(${MODULE_NAME} geant_model)
 endif()
-set_target_properties(${MODULE_NAME} PROPERTIES PREFIX ${TPCRECO_PREFIX})
 
 target_link_libraries(
-  ${MODULE_NAME}
-  ${ROOT_LIBRARIES}
-  GenVector
-  Utilities
-  UtilsMC
-  EventGenerator
-  Reconstruction)
+  ${MODULE_NAME} PUBLIC ${ROOT_LIBRARIES} GenVector Utilities UtilsMC
+                        EventGenerator Reconstruction)
 if(BUILD_GEANT_MODULE)
-  target_link_libraries(${MODULE_NAME} ${Geant4_LIBRARIES} ${cadmesh_LIBRARIES})
+  target_link_libraries(${MODULE_NAME} PUBLIC ${Geant4_LIBRARIES}
+                                              ${cadmesh_LIBRARIES})
 endif()
 
 target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
