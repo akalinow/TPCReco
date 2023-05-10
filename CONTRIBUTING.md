@@ -7,7 +7,7 @@ The easiest way to start developing is to run container with developemnt envirom
 To build docker image locally:
 
 ```
-docker build --no-cache --rm --target dev -t elitpc/tpcreco-dev:latest -f docker/dev.dockerfile . 
+docker build --no-cache --rm --target dev -t elitpc/tpcreco-dev:latest -f docker/Dockerfile . 
 ```
 
 To run development container:

@@ -1,7 +1,7 @@
 {
     "name": "TPCReco-dev:latest",
     "build": {
-        "dockerfile": "../docker/dev.dockerfile",
+        "dockerfile": "../docker/Dockerfile",
         "context": "..",
         "target": "dev",
         "args": {
