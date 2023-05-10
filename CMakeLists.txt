@@ -42,6 +42,8 @@ set(TPCRECO_RESOURCE_DIR
 target_compile_definitions(
   Resources INTERFACE TPCRECO_RESOURCE_DIR=\"${TPCRECO_RESOURCE_DIR}\")
 
+option(BUILD_GEANT_MODULE "Build Geant4 simulation" OFF)
+
 set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 add_subdirectory(Utilities)
 add_subdirectory(DataFormats)
@@ -50,6 +52,7 @@ add_subdirectory(Reconstruction)
 add_subdirectory(Analysis)
 add_subdirectory(GUI)
 add_subdirectory(Simulation)
+add_subdirectory(MonteCarlo)
 
 if(NOT IS_DIRECTORY ${CMAKE_INSTALL_PREFIX}/resources)
   install(DIRECTORY resources DESTINATION ${CMAKE_INSTALL_PREFIX})

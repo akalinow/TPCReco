@@ -19,7 +19,7 @@ enum class filter_type{
 
 namespace definitions {
 enum  projection_type{
-  NONE = -1, 
+  NONE = -1,
   DIR_U=0,          // U-direction channel index
   DIR_V=1,          // V-direction channel index
   DIR_W=2,          // W-direction channel index
@@ -70,5 +70,26 @@ enum gas_mixture_type{
   GAS_MIN=CO2,
   GAS_MAX=CO2
 };
+
+enum class reaction_type{
+  UNKNOWN=0,
+  C12_ALPHA,
+  C13_ALPHA,
+  C14_ALPHA,
+  N15_PROTON,
+  THREE_ALPHA_DEMOCRATIC,
+  THREE_ALPHA_BE,
+  PARTICLE_GUN
+};
+
+namespace enumDict {
+    //conversion enum <--> string for pid_type
+    pid_type GetPidType(const std::string &pidName);
+    std::string GetPidName(pid_type type);
+
+    //conversion enum <--> string for reaction_type
+    reaction_type GetReactionType(const std::string &reactionName);
+    std::string GetReactionName(reaction_type type);
+}
 
 #endif

@@ -39,24 +39,7 @@ IonRangeCalculator::IonRangeCalculator(std::string resourcesPath, gas_mixture_ty
 
   // Rescale ion range curves for specific gas, pressure and temperature.
   setGasConditions(gas, p_mbar, T_Kelvin);
-
-  // Initialize masses of netural atoms.
-  // Sources:
-  // [1] W.J. Huang et al., "The AME 2020 atomic mass evaluation (I). Evaluation of input data, and adjustment procedures",
-  //     Chinese Phys. C 45 (2021) 030002; DOI 10.1088/1674-1137/abddb0.
-  // [2] M.Wang et al., "The AME 2020 atomic mass evaluation (II). Tables, graphs and references",
-  //     Chinese Phys. C 45 (2021) 030003; DOI 10.1088/1674-1137/abddaf.
-  //
-  const double atomicMassUnit = 931.49410242;                            // 1u in MeV/c^2                         [1]
-  massTableMap[pid_type::PROTON]      = 1.00782503190  * atomicMassUnit; // isotope Hydrogen-1  (Z=1, N=0, A=1)   [2]
-  massTableMap[pid_type::ALPHA]       = 4.00260325413  * atomicMassUnit; // isotope Helium-4    (Z=2, N=2, A=4)   [2]
-  massTableMap[pid_type::CARBON_12]   = 12             * atomicMassUnit; // isotope Carbon-12   (Z=6, N=6, A=12)  [2]
-  massTableMap[pid_type::CARBON_13]   = 13.00335483534 * atomicMassUnit; // isotope Carbon-13   (Z=6, N=7, A=13)  [2]
-  massTableMap[pid_type::CARBON_14]   = 14.003241989   * atomicMassUnit; // isotope Carbon-14   (Z=6, N=8, A=14)  [2]
-  massTableMap[pid_type::NITROGEN_15] = 15.0001088983  * atomicMassUnit; // isotope Nitrogen-15 (Z=7, N=8, A=15)  [2]
-  massTableMap[pid_type::OXYGEN_16]   = 15.9949146193  * atomicMassUnit; // isotope Oxygen-16   (Z=8, N=8, A=16)  [2]
-  massTableMap[pid_type::OXYGEN_17]   = 16.9991317560  * atomicMassUnit; // isotope Oxygen-17   (Z=8, N=9, A=17)  [2]
-  massTableMap[pid_type::OXYGEN_18]   = 17.9991596121  * atomicMassUnit; // isotope Oxygen-18   (Z=8, N=10, A=18) [2]
+  ionProp=IonProperties::GetInstance();
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
@@ -208,9 +191,7 @@ double IonRangeCalculator::getIonEnergyMeV(pid_type ion, double range_mm){ // in
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 double IonRangeCalculator::getIonMassMeV(pid_type ion){ // particle or isotope mass in [MeV/c^2]
-  auto it=massTableMap.end();
-  if((it=massTableMap.find(ion))==massTableMap.end()) return 0;
-  else return it->second;
+  return ionProp->GetAtomMass(ion);
 }
 
 ////////////////////////////////////////////////

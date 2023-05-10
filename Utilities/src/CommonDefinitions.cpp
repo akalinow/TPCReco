@@ -1,4 +1,6 @@
 #include "TPCReco/CommonDefinitions.h"
+#include <boost/bimap.hpp>
+#include <boost/assign.hpp>
 
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
@@ -37,6 +39,67 @@ definitions::projection_type get1DProjectionType(definitions::projection_type aS
     throw std::logic_error("get1DProjectionType(): 2D definitions::projection_type not convertible to 1D projection type");
   }
   return projType;
+}
+
+/////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+
+namespace enumDict {
+//Keep type definition and dictionary in unnamed namespace not to expose them
+    namespace{
+        typedef boost::bimap<::pid_type, std::string> PidDictionary;
+
+        typedef boost::bimap<::reaction_type, std::string> ReactionDictionary;
+
+        const PidDictionary gPids =
+                boost::assign::list_of<PidDictionary::relation>
+                (pid_type::UNKNOWN,                     "UNKNOWN")
+                (pid_type::ALPHA,                       "ALPHA")
+                (pid_type::CARBON_12,                   "CARBON_12")
+                (pid_type::CARBON_14,                   "CARBON_14")
+                (pid_type::C12_ALPHA,                   "C12_ALPHA")
+                (pid_type::PROTON,                      "PROTON")
+                (pid_type::CARBON_13,                   "CARBON_14")
+                (pid_type::NITROGEN_15,                 "NITROGEN_15")
+                (pid_type::OXYGEN_16,                   "OXYGEN_16")
+                (pid_type::OXYGEN_17,                   "OXYGEN_17")
+                (pid_type::OXYGEN_18,                   "OXYGEN_18")
+                (pid_type::THREE_ALPHA,                 "THREE_ALPHA")
+                ;
+        const ReactionDictionary gReactions =
+                boost::assign::list_of<ReactionDictionary::relation>
+                (reaction_type::UNKNOWN,                "UNKNOWN")
+                (reaction_type::C12_ALPHA,              "C12_ALPHA")
+                (reaction_type::C13_ALPHA,              "C13_ALPHA")
+                (reaction_type::C14_ALPHA,              "C14_ALPHA")
+                (reaction_type::N15_PROTON,             "N15_PROTON")
+                (reaction_type::THREE_ALPHA_DEMOCRATIC, "THREE_ALPHA_DEMOCRATIC")
+                (reaction_type::THREE_ALPHA_BE,         "THREE_ALPHA_BE")
+                (reaction_type::PARTICLE_GUN,           "PARTICLE_GUN")
+                ;
+    }
+
+
+
+    pid_type GetPidType(const std::string &pidName) {
+        auto it = gPids.right.find(pidName);
+        return it == gPids.right.end() ? pid_type::UNKNOWN : it->second;
+    }
+
+    std::string GetPidName(pid_type type) {
+        auto it = gPids.left.find(type);
+        return it == gPids.left.end() ? "UNKNOWN" : it->second;
+    }
+
+    reaction_type GetReactionType(const std::string &reactionName) {
+        auto it = gReactions.right.find(reactionName);
+        return it == gReactions.right.end() ? reaction_type::UNKNOWN : it->second;
+    }
+
+    std::string GetReactionName(reaction_type type) {
+        auto it = gReactions.left.find(type);
+        return it == gReactions.left.end() ? "UNKNOWN" : it->second;
+    }
 }
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
