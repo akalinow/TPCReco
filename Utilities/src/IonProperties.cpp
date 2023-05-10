@@ -5,7 +5,7 @@
 //     Chinese Phys. C 45 (2021) 030003; DOI 10.1088/1674-1137/abddaf.
 //
 
-#include "IonProperties.h"
+#include "TPCReco/IonProperties.h"
 #include <stdexcept>
 #include <string>
 

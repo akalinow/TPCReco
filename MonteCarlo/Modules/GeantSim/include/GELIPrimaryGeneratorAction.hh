@@ -17,7 +17,7 @@
 #include "CentralConfig.hh"
 #include "DataBuffer.h"
 #include "TPCReco/CommonDefinitions.h"
-#include "IonProperties.h"
+#include "TPCReco/IonProperties.h"
 
 
 
