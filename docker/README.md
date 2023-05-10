@@ -21,7 +21,7 @@ This image uses `elitpc/get` as its base. Make sure that image is already presen
 ```
 git clone ssh://git@dracula.hep.fuw.edu.pl:8822/akalinowski/TPCReco.git
 cd TPCReco
-docker build --no-cache --rm -t elitpc/tpcreco:latest -f docker/Dockerfile . 
+docker build --no-cache --rm --target user -t elitpc/tpcreco:latest -f docker/Dockerfile . 
 ```
 ## Getting started with Singularity
 
