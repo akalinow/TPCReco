@@ -1,38 +1,59 @@
-# Concept 
-The key concept of the framework is to encapsulate each functional block of the simulation into `Module`. Modules are run sequentially and can pass information to the ones after them in a sequence (for example result of the simulation can be written to a file by the exporter module).
+# Concept
 
+The key concept of the framework is to encapsulate each functional block of the simulation into `Module`. Modules are
+run sequentially and can pass information to the ones after them in a sequence (for example result of the simulation can
+be written to a file by the exporter module).
 
 # Modules
-All modules inherit from an abstract class [fwk::VModule](../UtilsMC/include/TPCReco/VModule.h). Each module has to implement `VModule`'s pure virtual methods:
-* `EResultFlag Init(boost::property_tree::ptree config)` - initialize module, called at the beginning of the simulation, takes `boost` configuration as an argument 
-* `EResultFlag Process(ModuleExchangeSpace &event)` - main *player*, do what module's work, module is able to read from and write to `ModuleExchangeSpace`, which is used for inter-module communication
+
+All modules inherit from an abstract class [fwk::VModule](../UtilsMC/include/TPCReco/VModule.h). Each module has to
+implement `VModule`'s pure virtual methods:
+
+* `EResultFlag Init(boost::property_tree::ptree config)` - initialize module, called at the beginning of the simulation,
+  takes `boost` configuration as an argument
+* `EResultFlag Process(ModuleExchangeSpace &event)` - main *player*, do what module's work, module is able to read from
+  and write to `ModuleExchangeSpace`, which is used for inter-module communication
 * `EResultFlag Finish()` - finish the run, called for each module at the end of the simulation, used for cleanup
 
-
 ## Available modules
+
 * [EventFileExporter](EventFileExporter) - Writes simulation results into ROOT files
-* [GeantSim](GeantSim) - Handles GEANT simulation of detector response - it takes `SimEvent` and tracks primary particles through the detector
+* [GeantSim](GeantSim) - Handles GEANT simulation of detector response - it takes `SimEvent` and tracks primary
+  particles through the detector
 * [Generator](Generator) - Wrapper for [EventGenerator](../EventGenerator/README.md) for generating `SimEvent`s
 * [ToyIonizationSimulator](ToyIonizationSimulator) - Simple ionization simulator based on `IonRangeCalculator`
-* [TPCDigitizerRandom](TPCDigitizerRandom) - TPC digitizer based on Artur's approach for UVW projection. Each deposit is smeared with a 3D gaussian function by sampling with configurable number of points
-* [TPCDigitizerSRC](TPCDigitizerSRC) - TPC digitizer based on Mikolaj's `StripResponseCalculator`. It can either read a generated strip response histograms from a ROOT file or generate new ones with default parameters, if the response does not exist.
-* [Track3DBuilder](Track3DBuilder) - Builds `Track3D` objects from `SimEvent` objects - they are required by the existing legacy code used for comparison between pure and reconstructed MonteCarlo
-* [TrackTruncator](TrackTruncator) - Truncates `SimTrack`s in a `SimEvent` to active volume of the detector and possibly to GET electronics range
-* [TriggerSimulator](TriggerSimulator) - Simulates self-triggering of the TPC by finding `z` position of first energy deposit that reaches the readout plane and shifts the whole event appropriately
+* [TPCDigitizerRandom](TPCDigitizerRandom) - TPC digitizer based on Artur's approach for UVW projection. Each deposit is
+  smeared with a 3D gaussian function by sampling with configurable number of points
+* [TPCDigitizerSRC](TPCDigitizerSRC) - TPC digitizer based on Mikolaj's `StripResponseCalculator`. It can either read a
+  generated strip response histograms from a ROOT file or generate new ones with default parameters, if the response
+  does not exist.
+* [Track3DBuilder](Track3DBuilder) - Builds `Track3D` objects from `SimEvent` objects - they are required by the
+  existing legacy code used for comparison between pure and reconstructed MonteCarlo
+* [TrackTruncator](TrackTruncator) - Truncates `SimTrack`s in a `SimEvent` to active volume of the detector and possibly
+  to GET electronics range
+* [TriggerSimulator](TriggerSimulator) - Simulates self-triggering of the TPC by finding `z` position of first energy
+  deposit that reaches the readout plane and shifts the whole event appropriately
 
-`RunController` creates all the modules, initializes them (`Init` method), runs `Process` method in the right order, and then cleans up with `Finish` method.
+`RunController` creates all the modules, initializes them (`Init` method), runs `Process` method in the right order, and
+then cleans up with `Finish` method.
 
 ## ModuleExchangeSpace
-The modules communicate with each-other through [ModuleExchangeSpace](../UtilsMC/include/TPCReco/ModuleExchangeSpace.h). It contains:
+
+The modules communicate with each-other through [ModuleExchangeSpace](../UtilsMC/include/TPCReco/ModuleExchangeSpace.h).
+It contains:
+
 * `SimEvent`
 * `PEventTPC`
 * `Track3D`
 * `eventraw::EventInfo`
 
-`RunController` keeps one instance of `ModuleExchangeSpace` and passes it by reference to the modules' `Process` methods, that way the modules have read/write access.
+`RunController` keeps one instance of `ModuleExchangeSpace` and passes it by reference to the modules' `Process`
+methods, that way the modules have read/write access.
 
 # Configuration
+
 Configuration template:
+
 ```json
 {
   "EnableTiming": {},
@@ -49,16 +70,22 @@ Configuration template:
   }
 }
 ```
+
 where:
+
 * `"EnableTiming"` - `bool`, flag enabling timing benchmark of the sequence
-* `"ModuleSequence"` - vector of `string`, sequence of modules to be run in the same order, here `"ModuleA"`, `"ModuleB"` and "`"ModuleC"`"
+* `"ModuleSequence"` - vector of `string`, sequence of modules to be run in the same order,
+  here `"ModuleA"`, `"ModuleB"` and "`"ModuleC"`"
 * `"GeometryConfig"` - `string`, path to `geometry_ELITPC` configuration
-* `"ModuleConfiguration"` - configuration of modules, each module receives a `JSON` object parsed into `boost::property_tree::ptree` object as an argument to `ModuleName::Init` method
+* `"ModuleConfiguration"` - configuration of modules, each module receives a `JSON` object parsed
+  into `boost::property_tree::ptree` object as an argument to `ModuleName::Init` method
 
 # Configuration of modules
 
 ## EventFileExporter
+
 Configuration template:
+
 ```json
 {
   "FileName": {},
@@ -72,21 +99,26 @@ Configuration template:
   ]
 }
 ```
+
 where:
+
 * `"FileName"` - `string`, name of the output file
 * `"EnabledBranches"` - vector of `string` describing branches to be saved into file, available branches:
   * `"SimEvent"` - pure Monnte Carlo data (`SimEvent`)
   * `"PEventTPC"` - *raw* data (`PEventTPC`)
   * `"Track3D"` - *'reconstructed'* data (`Track3D`)
-* `"DisabledBranches"` - vector of `string` describing branches to be excluded from saving into file. 
-Branches can belong to two ROOT `TTree`'s stored into the output file (`"TPCData"` and `"TPCRecoData"`).
-List of all possibilities can be found by running `TTree::Print()` on the given tree. Branches occupying most space:
-  * `"TPCData.myChargeMap"` - `std::map` with all the charges
-  * `"TPCData.tracks.hits"` - `std::vector` with all ADC values coming from digitized by Geant/ToyMC hits
-  * `"TPCData.myChargeArray[3][3][256][512]"` - C-style array holding same information as `std::map` from previous point
+* `"DisabledBranches"` - vector of `string` describing branches to be excluded from saving into file.
+  Branches can belong to two ROOT `TTree`'s stored into the output file (`"TPCData"` and `"TPCRecoData"`).
+  List of all possibilities can be found by running `TTree::Print()` on the given tree. Branches occupying most space:
+  * `"TPCData.tracks.hits"` - `std::vector` with all energy deposits generated by Geant/ToyMC
+  * `"TPCData.myChargeMap"` - `std::map` with all the digitized charges
+  * `"TPCData.myChargeArray[3][3][256][512]"` - C-style array holding the *same* information as `std::map` from
+    previous point, for ML purposes
 
 ## GeantSim
+
 Configuration template:
+
 ```json
 {
   "gas_mixture": {
@@ -185,7 +217,9 @@ Configuration template:
   }
 }
 ```
+
 where:
+
 * `"gas_mixture"` - describes partial pressures of mixture components in bar
 * `"magnetic_field"` - configuration of the magnetic field of the purging magnet
   * `"magnetic_field_ON"` - `bool`, magnetic field ON(`true`) or OFF(`false`)
@@ -197,19 +231,25 @@ where:
   * `"Solids"` - definition of different solids for each material, wildcards can be used
 
 ## Generator
+
 Configuration template:
+
 ```json
 {
   "NumberOfEvents": {},
   "EventGenerator": {}
 }
 ```
+
 where:
+
 * `"NumberOfEvents"` - `int`, number of events to be generated
 * `"EventGenerator"` - `JSON`, configuration of `EventGenerator`, as described [here](../EventGenerator/README.md)
 
 ## ToyIonizationSimulator
+
 Configuration template:
+
 ```json
 {
   "Temperature": {},
@@ -217,13 +257,17 @@ Configuration template:
   "PointsPerMm": {}
 }
 ```
+
 where:
+
 * `"Temperature"` - `float`, temperature in K
 * `"Pressure"` - `float`, pressure in bar
 * `"PointsPerMm"` - `float`, number of energy deposits per milimeter to be simulated
 
 ## TPCDigitizerRandom
+
 Configuration template:
+
 ```json
 {
   "GeometryConfig": {},
@@ -233,7 +277,9 @@ Configuration template:
   "MeVToChargeScale": {}
 }
 ```
+
 where:
+
 * `"GeometryConfig"` - `string`, path to `geometry_ELITPC` configuration
 * `"sigmaXY"` - `float`, sigma for diffusion in plane perpendicular to drift direction
 * `"sigmaZ"` - `float`, sigma for diffusion along drift direction
@@ -241,7 +287,9 @@ where:
 * `"MeVToChargeScale"` - `float`, number of ADC samples per MeV
 
 ## TPCDigitizerSRC
+
 Configuration template:
+
 ```json
 {
   "GeometryConfig": {},
@@ -257,7 +305,9 @@ Configuration template:
   "nPads": {}
 }
 ```
+
 where:
+
 * `"GeometryConfig"` - `string`, path to `geometry_ELITPC` configuration
 * `"StripResponsePath"` - `string`, path to directory where strip responses are stored
 * `"sigmaXY"` - `float`, sigma for diffusion in plane perpendicular to drift direction
@@ -271,31 +321,45 @@ where:
 * `"nPads"` - `int`, number of neighbouring pads considered during UVW projection
 
 ## Track3DBuilder
+
 Configuration template:
+
 ```json
 {
 }
 ```
+
 **Note**: When module does not have any configuration parameters an empty JSON object has to be provided anyway.
+
 ## TrackTruncator
+
 Configuration template:
+
 ```json
 {
   "IncludeElectronicsRange": true
 }
 ```
+
 where:
+
 * `"IncludeElectronicsRange"` - `bool`, flag to select if electronics range should be used during track truncation
+
 ## TriggerSimulator
+
 Configuration template:
+
 ```json
 {
   "TriggerArrival": 0.1
 }
 ```
+
 where:
+
 * `"TriggerArrival"` - `double`, fraction of the electronics time range at which the self trigger arrives
 
-
 # Example configuration
-Example of the full configuration can be found in [ModuleConfig.json](../config/ModuleConfig.json). It can be run with `build/bin/examples/RunControllerExample /path/to/config/file`
+
+Example of the full configuration can be found in [ModuleConfig.json](../config/ModuleConfig.json). It can be run
+with `build/bin/examples/RunControllerExample /path/to/config/file`
