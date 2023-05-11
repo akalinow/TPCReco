@@ -63,10 +63,7 @@ int main(int argc, char** argv)
             int a=track.GetPrimaryParticle().GetA();
             int z=track.GetPrimaryParticle().GetZ();
             double e=track.GetPrimaryParticle().GetKineticEnergy();
-            //double range=track.GetLength();
-            //TH1D* h=new TH1D("h",Form("E=%.2fMeV A=%d Z=%d event=%d",e,a,z,i),100,0,1.2*range);
-            if(i<nEventsToDraw);
-                TH1D* h=new TH1D("h",Form("E=%.2fMeV A=%d Z=%d event=%d",e,a,z,i),100,0,braggUpperRange);
+            auto h=new TH1D("h",Form("E=%.2fMeV A=%d Z=%d event=%d",e,a,z,i),100,0,braggUpperRange);
             auto start=track.GetStart();
             hRange->Fill(track.GetRange());
             for(const auto& hit : track.GetHits())
