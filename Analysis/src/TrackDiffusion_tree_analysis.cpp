@@ -77,10 +77,17 @@ void TrackDiffusion_tree_analysis::fillTree(const std::shared_ptr<EventTPC> aEve
 
   clear();
 
+  // sanity checks
   if(!myOutputTreePtr){
     std::cout<<KRED<<"TrackDiffusion_tree_analysis::fillTree"<<RST
-  	     <<" pointer to output tree not set!"
-  	     <<std::endl;
+	     <<" pointer to output tree not set!"
+	     <<std::endl;
+    return;
+  }
+  if(!aTrack || aTrack->getSegments().size()==0) {
+    std::cout<<KRED<<"TrackDiffusion_tree_analysis::fillTree"<<RST
+	     <<" pointer to Track3D not set or empty TrackSegment3D collection in Track3D!"
+	     <<std::endl;
     return;
   }
 

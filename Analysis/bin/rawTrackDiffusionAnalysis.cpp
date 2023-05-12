@@ -23,18 +23,19 @@ int analyzeTrackDiffusion(const boost::property_tree::ptree aConfig);
 boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
 
   boost::program_options::options_description cmdLineOptDesc
-    ("This tool fills a ROOT tree with MEAN and RMS of 2D hits projected onto\n"
-     "transverse axis w.r.t. direction of the leading track in each event.\n"
-     "The transverse axis is taken by rotating the track direction clockwise\n"
-     "by 90 deg (this is important for correct interpretatation of the signed MEAN value).\n"
-     "The observables are computed separately for UZ, VZ and WZ projections.\n"
-     "Only hits within certain rectangular region of interest (ROI) of WIDTH x HEIGHT\n"
-     "are accepted, where:\n"
-     " * WIDTH = 2 * trackDistaneMM,\n"
-      "* HEIGHT = (1-trackFractionStart-trackFractionEnd) * track_length,\n"
-     " * trackFractionStart >0,  trackFractionEnd >0, (trackFractionStart + trackFractionEnd) <1.\n"
-     "If ROIs are overlapping in case of multi-track events then computation of MEAN, RMS for\n"
-     "a given strip projection is skipped and corresponding quality flag is set to FALSE.\n"
+    ("Fills a ROOT tree with MEAN and RMS of 2D hits projected onto the transverse axis\n"
+     "w.r.t. the direction of the leading track in each event.\n\n"
+     "The transverse axis is defined by rotating the track direction clockwise by 90 deg\n"
+     "(NOTE: this is important for correct interpretatation of the signed MEAN value).\n"
+     "Separate MEAN and RMS sets are computed for each of UZ, VZ and WZ projections\n"
+     "as well as for combination of all three strip direcions.\n"
+     "For a given 2D projection only hits within certain rectangular region of interest (ROI)\n"
+     "of WIDTH x HEIGHT area are accepted, where:\n\n"
+     "- WIDTH = 2 * trackDistaneMM\n"
+     "- HEIGHT = track_length * (1 - trackFractionStart - trackFractionEnd)\n"
+     "- trackFractionStart > 0, trackFractionEnd > 0, trackFractionStart + trackFractionEnd < 1.\n\n"
+     "In case of overlapping ROIs for multiple tracks, the MEAN and RMS will not be calculated\n"
+     "for a given strip projection, and the corresponding quality flag will be set to FALSE.\n\n"
      "Allowed command line options");
 
   cmdLineOptDesc.add_options()
@@ -53,11 +54,11 @@ boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
     ("recoClusterThreshold",  boost::program_options::value<float>(), "float - ADC threshold above pedestal used for clustering")
     ("recoClusterDeltaStrips",  boost::program_options::value<int>(), "int - envelope in strip units around seed hits for clustering")
     ("recoClusterDeltaTimeCells",  boost::program_options::value<int>(), "int - envelope in time cell units around seed hits for clustering")
-    ("trackFractionStart",  boost::program_options::value<float>(), "float - hit veto region at the beginning of the track as a fraction [0-1] of track length (default=0.2)")
-    ("trackFractionEnd",  boost::program_options::value<float>(), "float - hit veto region at the end of the track as as fraction [0-1] of track length (default=0.1)")
-    ("trackDistanceMM",  boost::program_options::value<float>(), "float - maximal allowed hit distance [mm] from the track axis (default=10mm)")
+    ("trackFractionStart",  boost::program_options::value<float>(), "float - hit veto region at the beginning of the track as a fraction [0-1] of track length")
+    ("trackFractionEnd",  boost::program_options::value<float>(), "float - hit veto region at the end of the track as a fraction [0-1] of track length")
+    ("trackDistanceMM",  boost::program_options::value<float>(), "float - maximal allowed hit distance [mm] from the track axis")
     ("outputFile", boost::program_options::value<std::string>(), "string - path to the output ROOT file")
-    ("maxNevents", boost::program_options::value<unsigned int>()->default_value(0), "int - number of events to process (default=0=all)");
+    ("maxNevents", boost::program_options::value<unsigned int>()->default_value(0), "int - number of events to process (0=all)");
 
   boost::program_options::variables_map varMap;
 
@@ -407,6 +408,13 @@ int analyzeTrackDiffusion(const boost::property_tree::ptree aConfig){
     std::cout << __FUNCTION__ << ": RECO: run=" << runId << ", evt=" << eventId << ", ntracks=" << nTracks << std::endl;
     ////// DEBUG
 
+    // sanity check
+    if(nTracks==0) {
+      std::cout << __FUNCTION__ << KRED << ": Skipping event without any tracks: run=" << runId << ", event=" << eventId
+		<< RST << std::endl << std::flush;
+      continue;
+    }
+
     // load EventTPC from the RAW file
     myEventSource->loadEventId(eventId);
     auto aEventTPC = myEventSource->getCurrentEvent();
@@ -416,7 +424,7 @@ int analyzeTrackDiffusion(const boost::property_tree::ptree aConfig){
     // sanity check
     if(currentRunId!=runId || currentEventId!=eventId) {
       std::cout << __FUNCTION__ << KRED << ": Skipping event with missing RAW data: run=" << runId << ", event=" << eventId
-    		<< RST << std::endl << std::flush;
+		<< RST << std::endl << std::flush;
       continue;
     }
     ////// DEBUG
