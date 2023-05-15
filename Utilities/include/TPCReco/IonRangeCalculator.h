@@ -9,7 +9,7 @@
 #include <TH1D.h>
 #include <TGraph.h>
 #include "TPCReco/CommonDefinitions.h"
-#include "IonProperties.h"
+#include "TPCReco/IonProperties.h"
 
 class IonRangeCalculator{
 

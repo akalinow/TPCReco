@@ -3,7 +3,7 @@
 
 #include "TPCReco/CommonDefinitions.h"
 #include "TLorentzVector.h"
-#include "IonProperties.h"
+#include "TPCReco/IonProperties.h"
 #include <vector>
 
 class PrimaryParticle {
