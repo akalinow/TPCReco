@@ -18,7 +18,7 @@
 #include "EventSourceROOT.h"
 #include "EventSourceMC.h"
 
-inline std::shared_ptr<EventSourceBase> EventSourceFactory::makeEventSourceObject(boost::property_tree::ptree myConfig) {
+inline std::shared_ptr<EventSourceBase> EventSourceFactory::makeEventSourceObject(boost::property_tree::ptree& myConfig) {
 	std::string dataFileName = myConfig.get("dataFile", "");
 	std::string geometryFileName = myConfig.get("geometryFile", "");
 

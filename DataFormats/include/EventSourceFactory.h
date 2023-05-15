@@ -10,5 +10,5 @@ private:
 public:
 	~EventSourceFactory() {};
 
-	static std::shared_ptr<EventSourceBase> makeEventSourceObject(boost::property_tree::ptree myConfig);
+	static std::shared_ptr<EventSourceBase> makeEventSourceObject(boost::property_tree::ptree& myConfig);
 };
