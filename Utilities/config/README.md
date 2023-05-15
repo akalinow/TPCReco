@@ -4,7 +4,7 @@ Currently `tpcGUI` takes [JSON](https://en.wikipedia.org/wiki/JSON#Syntax) forma
 
 ## Formatting requirements
 
-The first [JSON](https://en.wikipedia.org/wiki/JSON#Syntax) object in a config file has to be called "Options" and then to include options as JSON objects within. Every option has to have four values specified: type, defaultValue, description and isRequired.
+The first(main) [JSON](https://en.wikipedia.org/wiki/JSON#Syntax) object in a config file has to be called "Options", a list of allowed options and command line arguments is a list of JSON objects within "Options" object. Every option has to have four values specified: type, defaultValue, description and isRequired.
 
 
 ## Example
