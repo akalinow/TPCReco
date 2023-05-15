@@ -4,7 +4,8 @@ Currently `tpcGUI` takes [JSON](https://en.wikipedia.org/wiki/JSON#Syntax) forma
 
 ## Formatting requirements
 
-The first(main) [JSON](https://en.wikipedia.org/wiki/JSON#Syntax) object in a config file has to be called "Options", a list of allowed options and command line arguments is a list of JSON objects within "Options" object. Every option has to have four values specified: type, defaultValue, description and isRequired.
+The first(main) [JSON](https://en.wikipedia.org/wiki/JSON#Syntax) object in a config file has to be called "Options", a list of allowed options and command line arguments is a list of JSON objects within "Options" object. Every option has to have four values specified: type (currently known: int, unsigned int, float, double, bool, std::string, std::vector<std::string>), defaultValue, description (string) and isRequired(bool).
+
 
 
 ## Example
