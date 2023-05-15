@@ -1,4 +1,4 @@
-# Configuration files
+# Configuration files with allowed options list
 
 Currently `tpcGUI` takes [JSON](https://en.wikipedia.org/wiki/JSON#Syntax) formatted configuration file as input.
 
