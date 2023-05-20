@@ -4,13 +4,12 @@
 // root [0] .L makePlots_trackDiffusion.cxx
 // root [1] makePlotsDiffusion("TreeDiffusion.root");
 //
-// Macro for making various plots out of tree with reconstructed track diffusion properties
+// Macro for drawing various plots out of tree with reconstructed track diffusion properties
 //
 //////////////////////////
 //////////////////////////
 
 #ifndef __ROOTLOGON__
-//R__ADD_INCLUDE_PATH(../../DataFormats/include)
 R__ADD_INCLUDE_PATH(../../Analysis/include)
 R__ADD_LIBRARY_PATH(../lib)
 #endif
@@ -28,8 +27,6 @@ R__ADD_LIBRARY_PATH(../lib)
 #include <TH2D.h>
 #include <TCanvas.h>
 #include <TStyle.h>
-//#include <TLegend.h>
-//#include <TTreeIndex.h>
 
 #include "TPCReco/TrackDiffusion_tree_dataFormat.h"
 
@@ -127,17 +124,23 @@ int makePlotsDiffusion(std::string diffusion_tree_file_name){
   TH2D *h_absPhiDET_vs_absCosThetaDET = new TH2D("h_absPhiDET_vs_absCosThetaDET", "", 20, 0.0, TMath::Pi(), 20, 0.0, 1.0);
   TH1D *h_meanAll = new TH1D("h_meanAll", "", 200, -meanRange, meanRange);
   TH1D *h_sigmaAll = new TH1D("h_sigmaAll", "", 200, 0.0, sigmaRange);
+  TH1D *h_sigmaVertUp = new TH1D("h_sigmaVertUp", "", 200, 0.0, sigmaRange);
+  TH1D *h_sigmaVertDown = new TH1D("h_sigmaVertDown", "", 200, 0.0, sigmaRange);
+  TH1D *h_sigmaVert = new TH1D("h_sigmaVert", "", 200, 0.0, sigmaRange);
   TH2D *h_meanAll_vs_sigmaAll = new TH2D("h_meanAll_vs_sigmaAll", "", 100, -meanRange, meanRange, 100, 0.0, sigmaRange);
   TH1D *h_meanSum = (TH1D*)h_meanAll->Clone("h_meanSum");
   TH1D *h_sigmaSum = (TH1D*)h_sigmaAll->Clone("h_sigmaSum");
+  TH1D *h_sigmaHorizSum = new TH1D("h_sigmaHorizSum", "", 200, 0.0, sigmaRange);
   TH1D *h_meanPerDir[3] = {NULL, NULL, NULL};
   TH1D *h_sigmaPerDir[3] = {NULL, NULL, NULL};
+  TH1D *h_sigmaHorizPerDir[3] = {NULL, NULL, NULL};
   TH2D *h_phiDET_vs_sigmaPerDir[3] = {NULL, NULL, NULL};
   TH2D *h_cosThetaDET_vs_sigmaPerDir[3] = {NULL, NULL, NULL};
   const std::string dirname[3] = {"U", "V", "W"};
   for(auto dir=0; dir<3; dir++) {
     h_meanPerDir[dir] = new TH1D(Form("h_meanPerDir%d", dir), "", 200, -meanRange, meanRange);
     h_sigmaPerDir[dir] = new TH1D(Form("h_sigmaPerDir%d", dir), "", 200, 0.0, sigmaRange);
+    h_sigmaHorizPerDir[dir] = new TH1D(Form("h_sigmaHorizPerDir%d", dir), "", 200, 0.0, sigmaRange);
     h_phiDET_vs_sigmaPerDir[dir] = new TH2D(Form("h_phiDET_vs_sigmaPerDir%d", dir), "", 50, -TMath::Pi(), TMath::Pi(), 50, 0.0, sigmaRange);
     h_cosThetaDET_vs_sigmaPerDir[dir] = new TH2D(Form("h_cosThetaDET_vs_sigmaPerDir%d", dir), "", 50, -1.0, 1.0, 50, 0.0, sigmaRange);
   }
@@ -145,6 +148,14 @@ int makePlotsDiffusion(std::string diffusion_tree_file_name){
   TCut cut2prong = "ntracks==2";
   TCut cutAll = cut2prong && "flagAll";
   TCut cut[3] = { cut2prong && "flagPerDir[0]", cut2prong && "flagPerDir[1]", cut2prong && "flagPerDir[2]" };
+  TCut cutHorizontal[3] = { cut[0] && "fabs(cosThetaDET)<cos((90-45)/180.*TMath::Pi())" &&
+			    "fabs(fmod(phiDET/TMath::Pi()*180,180))<5",      // horizontal U-direction (+/- 5 deg)
+  			    cut[1] && "fabs(cosThetaDET)<cos((90-45)/180.*TMath::Pi())" &&
+			    "fabs(fmod(phiDET/TMath::Pi()*180-60,180))<5",   // horizontal V-direction (+/- 5 deg)
+  			    cut[2] && "fabs(cosThetaDET)<cos((90-45)/180.*TMath::Pi())" &&
+			    "fabs(fmod(phiDET/TMath::Pi()*180+60,180))<5" }; // horizontal W-direction (+/- 5 deg)
+  TCut cutDown = cutAll && "cosThetaDET>cos(10/180.*TMath::Pi())";            // vertical DOWN (+/- 10 deg)
+  TCut cutUp = cutAll && "cosThetaDET<cos((180-10)/180.*TMath::Pi())";        // vertical UP (+/- 10 deg)
 
   window->Print((output_file_PDF+"[").c_str());
 
@@ -235,6 +246,49 @@ int makePlotsDiffusion(std::string diffusion_tree_file_name){
   set_hist2D_range(h_meanAll_vs_sigmaAll, meanDisplayMin, meanDisplayMax, sigmaDisplayMin, sigmaDisplayMax);
   window->Print(output_file_PDF.c_str());
   window->SetName(h_meanAll_vs_sigmaAll->GetName());
+  window->Write();
+
+  for(auto dir=0; dir<3; dir++) {
+    diffusion_tree->Draw(Form("sigmaPerDir[%d]>>h_sigmaHorizPerDir%d", dir, dir), cutHorizontal[dir], "goff");
+    set_hist_style(h_sigmaHorizPerDir[dir], "RMS of distance w.r.t. RECO axis [mm]", Form("Horizontal-%s track projections / bin", dirname[dir].c_str()), kBlack, Form("Leading track (2-prong) - %sZ projection", dirname[dir].c_str()));
+    h_sigmaHorizPerDir[dir]->Draw();
+    set_hist_range(h_sigmaHorizPerDir[dir], sigmaDisplayMin, sigmaDisplayMax);
+    window->Print(output_file_PDF.c_str());
+    window->SetName(h_sigmaHorizPerDir[dir]->GetName());
+    window->Write();
+
+    h_sigmaHorizSum->Add(h_sigmaHorizPerDir[dir]);
+  }
+
+  set_hist_style(h_sigmaHorizSum, "RMS of hit distance w.r.t. RECO axis [mm]", "Horizontal-U/V/W track projections / bin", kBlack, "Leading track (2-prong) - sum of 3 projections");
+  h_sigmaHorizSum->Draw();
+  set_hist_range(h_sigmaHorizSum, sigmaDisplayMin, sigmaDisplayMax);
+  window->Print(output_file_PDF.c_str());
+  window->SetName(h_sigmaHorizSum->GetName());
+  window->Write();
+
+  diffusion_tree->Draw("sigmaAll>>h_sigmaVertUp", cutUp, "goff");
+  set_hist_style(h_sigmaVertUp, "RMS of distance w.r.t. RECO axis [mm]", "Vertical-UP tracks / bin", kBlack, "Leading track (2-prong) - all projections");
+  h_sigmaVertUp->Draw();
+  set_hist_range(h_sigmaVertUp, sigmaDisplayMin, sigmaDisplayMax);
+  window->Print(output_file_PDF.c_str());
+  window->SetName(h_sigmaVertUp->GetName());
+  window->Write();
+
+  diffusion_tree->Draw("sigmaAll>>h_sigmaVertDown", cutDown, "goff");
+  set_hist_style(h_sigmaVertDown, "RMS of distance w.r.t. RECO axis [mm]", "Vertical-DOWN tracks / bin", kBlack, "Leading track (2-prong) - all projections");
+  h_sigmaVertDown->Draw();
+  set_hist_range(h_sigmaVertDown, sigmaDisplayMin, sigmaDisplayMax);
+  window->Print(output_file_PDF.c_str());
+  window->SetName(h_sigmaVertDown->GetName());
+  window->Write();
+
+  diffusion_tree->Draw("sigmaAll>>h_sigmaVert", cutDown || cutUp, "goff");
+  set_hist_style(h_sigmaVert, "RMS of distance w.r.t. RECO axis [mm]", "Vertical-UP/DOWN tracks / bin", kBlack, "Leading track (2-prong) - all projections");
+  h_sigmaVert->Draw();
+  set_hist_range(h_sigmaVert, sigmaDisplayMin, sigmaDisplayMax);
+  window->Print(output_file_PDF.c_str());
+  window->SetName(h_sigmaVert->GetName());
   window->Write();
 
   window->Print((output_file_PDF+"]").c_str());
