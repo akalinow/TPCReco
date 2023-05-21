@@ -4,7 +4,7 @@
 // root [0] .L makePlots_trackDiffusion.cxx
 // root [1] makePlotsDiffusion("TreeDiffusion.root");
 //
-// Macro for drawing various plots out of tree with reconstructed track diffusion properties
+// Macro for making various plots out of tree with reconstructed track diffusion properties
 //
 //////////////////////////
 //////////////////////////
@@ -54,9 +54,11 @@ void set_global_style(){
   gStyle->SetOptStat(1);
   gStyle->SetPalette(kRainBow);
   gStyle->SetPadRightMargin(0.15);
+  gStyle->SetStatX(0.85);
+  gStyle->SetStatY(0.9);
 }
 
-void set_hist_style(TH1D* &hist, std::string xaxis, std::string yaxis, Int_t color, std::string title="DUMMY", bool fill=false){
+void set_hist_style(TH1D* &hist, std::string xaxis, std::string yaxis, Int_t color, std::string title="DUMMY", bool fill=false, bool stat=true){
   hist->GetYaxis()->SetTitleOffset(1.45);
   hist->GetXaxis()->SetTitleOffset(1.25);
   hist->GetXaxis()->SetTitle(xaxis.c_str());
@@ -70,6 +72,7 @@ void set_hist_style(TH1D* &hist, std::string xaxis, std::string yaxis, Int_t col
   if(fill){
     hist->SetFillColor(kGray);
   }
+  hist->SetStats(stat);
 }
 
 void set_hist_range(TH1D* &hist, const double xmin, const double xmax){
@@ -81,7 +84,8 @@ void set_hist2D_range(TH2D* &hist, const double xmin, const double xmax, const d
   hist->GetYaxis()->SetRangeUser(ymin, ymax);
 }
 
-void set_hist2D_style(TH2D* &hist, std::string xaxis, std::string yaxis, std::string zaxis, Int_t color, std::string title="DUMMY"){
+void set_hist2D_style(TH2D* &hist, std::string xaxis, std::string yaxis, std::string zaxis, Int_t color, std::string title="DUMMY", bool stat=true){
+  hist->GetZaxis()->SetTitleOffset(1.35);
   hist->GetYaxis()->SetTitleOffset(1.45);
   hist->GetXaxis()->SetTitleOffset(1.25);
   hist->GetXaxis()->SetTitle(xaxis.c_str());
@@ -94,6 +98,7 @@ void set_hist2D_style(TH2D* &hist, std::string xaxis, std::string yaxis, std::st
     hist->SetTitle(title.c_str());
     std::cout << "New title:" << hist->GetTitle() << std::endl;
   }
+  hist->SetStats(stat);
 }
 
 int makePlotsDiffusion(std::string diffusion_tree_file_name){
@@ -118,8 +123,8 @@ int makePlotsDiffusion(std::string diffusion_tree_file_name){
   const double meanDisplayMax=2.0; // mm
   const double meanDisplayMin=-meanDisplayMax; // mm
   const double sigmaRange=5.0; // mm 
-  const double sigmaDisplayMin=0.2; // mm
-  const double sigmaDisplayMax=1.8; // mm
+  const double sigmaDisplayMin=0.5; // mm
+  const double sigmaDisplayMax=2.5; // mm
   TH2D *h_phiDET_vs_cosThetaDET = new TH2D("h_phiDET_vs_cosThetaDET", "", 20, -TMath::Pi(), TMath::Pi(), 20, -1.0, 1.0);
   TH2D *h_absPhiDET_vs_absCosThetaDET = new TH2D("h_absPhiDET_vs_absCosThetaDET", "", 20, 0.0, TMath::Pi(), 20, 0.0, 1.0);
   TH1D *h_meanAll = new TH1D("h_meanAll", "", 200, -meanRange, meanRange);
@@ -135,7 +140,11 @@ int makePlotsDiffusion(std::string diffusion_tree_file_name){
   TH1D *h_sigmaPerDir[3] = {NULL, NULL, NULL};
   TH1D *h_sigmaHorizPerDir[3] = {NULL, NULL, NULL};
   TH2D *h_phiDET_vs_sigmaPerDir[3] = {NULL, NULL, NULL};
+  TH2D *h_phiDET_vs_sigmaSum = new TH2D("h_phiDET_vs_sigmaSum", "", 50, -TMath::Pi(), TMath::Pi(), 50, 0.0, sigmaRange);
+  TH2D *h_phiDET_vs_sigmaAll = new TH2D("h_phiDET_vs_sigmaAll", "", 50, -TMath::Pi(), TMath::Pi(), 50, 0.0, sigmaRange);
   TH2D *h_cosThetaDET_vs_sigmaPerDir[3] = {NULL, NULL, NULL};
+  TH2D *h_cosThetaDET_vs_sigmaSum = new TH2D("h_cosThetaDET_vs_sigmaSum", "", 50, -1.0, 1.0, 50, 0.0, sigmaRange);
+  TH2D *h_cosThetaDET_vs_sigmaAll = new TH2D("h_cosThetaDET_vs_sigmaAll", "", 50, -1.0, 1.0, 50, 0.0, sigmaRange);
   const std::string dirname[3] = {"U", "V", "W"};
   for(auto dir=0; dir<3; dir++) {
     h_meanPerDir[dir] = new TH1D(Form("h_meanPerDir%d", dir), "", 200, -meanRange, meanRange);
@@ -154,20 +163,22 @@ int makePlotsDiffusion(std::string diffusion_tree_file_name){
 			    "fabs(fmod(phiDET/TMath::Pi()*180-60,180))<5",   // horizontal V-direction (+/- 5 deg)
   			    cut[2] && "fabs(cosThetaDET)<cos((90-45)/180.*TMath::Pi())" &&
 			    "fabs(fmod(phiDET/TMath::Pi()*180+60,180))<5" }; // horizontal W-direction (+/- 5 deg)
-  TCut cutDown = cutAll && "cosThetaDET>cos(10/180.*TMath::Pi())";            // vertical DOWN (+/- 10 deg)
-  TCut cutUp = cutAll && "cosThetaDET<cos((180-10)/180.*TMath::Pi())";        // vertical UP (+/- 10 deg)
+  TCut cutDown = cutAll && "cosThetaDET>cos(15/180.*TMath::Pi())";            // vertical DOWN (+/- 15 deg)
+  TCut cutUp = cutAll && "cosThetaDET<cos((180-15)/180.*TMath::Pi())";        // vertical UP (+/- 15 deg)
 
   window->Print((output_file_PDF+"[").c_str());
 
   diffusion_tree->Draw("cosThetaDET:phiDET>>h_phiDET_vs_cosThetaDET", cutAll, "goff");
-  set_hist2D_style(h_phiDET_vs_cosThetaDET, "#phi_{DET} [rad]", "cos(#theta_{DET})", "Tracks / bin", kBlack,  "Leading track (2-prong) - all projections");
+  set_hist2D_style(h_phiDET_vs_cosThetaDET, "#phi_{DET} [rad]", "cos(#theta_{DET})", "Tracks / bin", kBlack,  "Leading track (2-prong) - all projections", false);
+  h_phiDET_vs_cosThetaDET->Rebin2D(2,2);
   h_phiDET_vs_cosThetaDET->Draw("COLZ");
   window->Print(output_file_PDF.c_str());
   window->SetName(h_phiDET_vs_cosThetaDET->GetName());
   window->Write();
 
   diffusion_tree->Draw("fabs(cosThetaDET):fabs(phiDET)>>h_absPhiDET_vs_absCosThetaDET", cutAll, "goff");
-  set_hist2D_style(h_absPhiDET_vs_absCosThetaDET, "|#phi_{DET}| [rad]", "|cos(#theta_{DET})|", "Tracks / bin", kBlack,  "Leading track (2-prong) - all projections");
+  set_hist2D_style(h_absPhiDET_vs_absCosThetaDET, "|#phi_{DET}| [rad]", "|cos(#theta_{DET})|", "Tracks / bin", kBlack,  "Leading track (2-prong) - all projections", false);
+  h_absPhiDET_vs_absCosThetaDET->Rebin2D(2,2);
   h_absPhiDET_vs_absCosThetaDET->Draw("COLZ");
   window->Print(output_file_PDF.c_str());
   window->SetName(h_absPhiDET_vs_absCosThetaDET->GetName());
@@ -182,7 +193,7 @@ int makePlotsDiffusion(std::string diffusion_tree_file_name){
     window->SetName(h_meanPerDir[dir]->GetName());
     window->Write();
 
-    diffusion_tree->Draw(Form("sigmaPerDir[%d]>>h_sigmaPerDir%d", dir, dir), cut[dir], "goff"); 
+    diffusion_tree->Draw(Form("sigmaPerDir[%d]>>h_sigmaPerDir%d", dir, dir), cut[dir], "goff");
     set_hist_style(h_sigmaPerDir[dir], "RMS of hit distance w.r.t. RECO axis [mm]", "Tracks / bin", kBlack, Form("Leading track (2-prong) - %sZ projection", dirname[dir].c_str()));
     h_sigmaPerDir[dir]->Draw();
     set_hist_range(h_sigmaPerDir[dir], sigmaDisplayMin, sigmaDisplayMax);
@@ -192,8 +203,8 @@ int makePlotsDiffusion(std::string diffusion_tree_file_name){
 
     h_meanSum->Add(h_meanPerDir[dir]);
     h_sigmaSum->Add(h_sigmaPerDir[dir]);
-    
-    diffusion_tree->Draw(Form("sigmaPerDir[%d]:phiDET>>h_phiDET_vs_sigmaPerDir%d", dir, dir), cut[dir], "goff"); 
+
+    diffusion_tree->Draw(Form("sigmaPerDir[%d]:phiDET>>h_phiDET_vs_sigmaPerDir%d", dir, dir), cut[dir], "goff");
     set_hist2D_style(h_phiDET_vs_sigmaPerDir[dir], "#phi_{DET} [rad]", "RMS of hit distance w.r.t. RECO axis [mm]", "Tracks / bin", kBlack, Form("Leading track (2-prong) - %sZ projection", dirname[dir].c_str()));
     h_phiDET_vs_sigmaPerDir[dir]->Draw("COLZ");
     set_hist2D_range(h_phiDET_vs_sigmaPerDir[dir], -TMath::Pi(), TMath::Pi(), sigmaDisplayMin, sigmaDisplayMax);
@@ -201,15 +212,18 @@ int makePlotsDiffusion(std::string diffusion_tree_file_name){
     window->SetName(h_phiDET_vs_sigmaPerDir[dir]->GetName());
     window->Write();
 
-    diffusion_tree->Draw(Form("sigmaPerDir[%d]:cosThetaDET>>h_cosThetaDET_vs_sigmaPerDir%d", dir, dir), cut[dir], "goff"); 
-    set_hist2D_style(h_cosThetaDET_vs_sigmaPerDir[dir], "cos(#theta_{DET})", "RMS of hit distance w.r.t. RECO axis [mm]", "Tracks / bin", kBlack, Form("Leading track (2-prong) - %sZ projection", dirname[dir].c_str()));
+    diffusion_tree->Draw(Form("sigmaPerDir[%d]:cosThetaDET>>h_cosThetaDET_vs_sigmaPerDir%d", dir, dir), cut[dir], "goff");
+    set_hist2D_style(h_cosThetaDET_vs_sigmaPerDir[dir], "cos(#theta_{DET})", "RMS of hit distance w.r.t. RECO axis [mm]", "Tracks / bin", kBlack, Form("Leading track (2-prong) - %sZ projection", dirname[dir].c_str()), false);
     h_cosThetaDET_vs_sigmaPerDir[dir]->Draw("COLZ");
     set_hist2D_range(h_cosThetaDET_vs_sigmaPerDir[dir], -1.0, 1.0, sigmaDisplayMin, sigmaDisplayMax);
     window->Print(output_file_PDF.c_str());
     window->SetName(h_cosThetaDET_vs_sigmaPerDir[dir]->GetName());
-    window->Write();    
+    window->Write();
+
+    h_phiDET_vs_sigmaSum->Add(h_phiDET_vs_sigmaPerDir[dir]);
+    h_cosThetaDET_vs_sigmaSum->Add(h_cosThetaDET_vs_sigmaPerDir[dir]);
   }
-  
+
   set_hist_style(h_meanSum, "Mean hit distance w.r.t. RECO axis [mm]", "Track projections / bin", kBlack, "Leading track (2-prong) - sum of 3 projections");
   h_meanSum->Draw();
   set_hist_range(h_meanSum, meanDisplayMin, meanDisplayMax);
@@ -222,6 +236,20 @@ int makePlotsDiffusion(std::string diffusion_tree_file_name){
   set_hist_range(h_sigmaSum, sigmaDisplayMin, sigmaDisplayMax);
   window->Print(output_file_PDF.c_str());
   window->SetName(h_sigmaSum->GetName());
+  window->Write();
+
+  set_hist2D_style(h_phiDET_vs_sigmaSum, "#phi_{DET} [rad]", "RMS of hit distance w.r.t. RECO axis [mm]", "Track projections / bin", kBlack, "Leading track (2-prong) - sum of 3 projections", false);
+  h_phiDET_vs_sigmaSum->Draw("COLZ");
+  set_hist2D_range(h_phiDET_vs_sigmaSum, -TMath::Pi(), TMath::Pi(), sigmaDisplayMin, sigmaDisplayMax);
+  window->Print(output_file_PDF.c_str());
+  window->SetName(h_phiDET_vs_sigmaSum->GetName());
+  window->Write();
+
+  set_hist2D_style(h_cosThetaDET_vs_sigmaSum, "cos(#theta_{DET})", "RMS of hit distance w.r.t. RECO axis [mm]", "Track projections / bin", kBlack, "Leading track (2-prong) - sum of 3 projections", false);
+  h_cosThetaDET_vs_sigmaSum->Draw("COLZ");
+  set_hist2D_range(h_cosThetaDET_vs_sigmaSum, -1.0, 1.0, sigmaDisplayMin, sigmaDisplayMax);
+  window->Print(output_file_PDF.c_str());
+  window->SetName(h_cosThetaDET_vs_sigmaSum->GetName());
   window->Write();
   
   diffusion_tree->Draw("meanAll>>h_meanAll", cutAll, "goff");
@@ -238,6 +266,22 @@ int makePlotsDiffusion(std::string diffusion_tree_file_name){
   set_hist_range(h_sigmaAll, sigmaDisplayMin, sigmaDisplayMax);
   window->Print(output_file_PDF.c_str());
   window->SetName(h_sigmaAll->GetName());
+  window->Write();
+
+  diffusion_tree->Draw("sigmaAll:phiDET>>h_phiDET_vs_sigmaAll", cutAll, "goff");
+  set_hist2D_style(h_phiDET_vs_sigmaAll, "#phi_{DET} [rad]", "RMS of hit distance w.r.t. RECO axis [mm]", "Tracks / bin", kBlack, "Leading track (2-prong) - all projections", false);
+  h_phiDET_vs_sigmaAll->Draw("COLZ");
+  set_hist2D_range(h_phiDET_vs_sigmaAll, -TMath::Pi(), TMath::Pi(), sigmaDisplayMin, sigmaDisplayMax);
+  window->Print(output_file_PDF.c_str());
+  window->SetName(h_phiDET_vs_sigmaAll->GetName());
+  window->Write();
+
+  diffusion_tree->Draw("sigmaAll:cosThetaDET>>h_cosThetaDET_vs_sigmaAll", cutAll, "goff");
+  set_hist2D_style(h_cosThetaDET_vs_sigmaAll, "cos(#theta_{DET})", "RMS of hit distance w.r.t. RECO axis [mm]", "Tracks / bin", kBlack, "Leading track (2-prong) - all projections", false);
+  h_cosThetaDET_vs_sigmaAll->Draw("COLZ");
+  set_hist2D_range(h_cosThetaDET_vs_sigmaAll, -1.0, 1.0, sigmaDisplayMin, sigmaDisplayMax);
+  window->Print(output_file_PDF.c_str());
+  window->SetName(h_cosThetaDET_vs_sigmaAll->GetName());
   window->Write();
 
   diffusion_tree->Draw("sigmaAll:meanAll>>h_meanAll_vs_sigmaAll", cutAll, "goff");
