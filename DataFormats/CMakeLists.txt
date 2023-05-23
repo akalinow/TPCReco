@@ -11,6 +11,8 @@ set(TPCRECO_LIBRARIES_LOCAL ${TPCRECO_LIBRARIES})
 # `sources`
 #
 file(GLOB_RECURSE sources       ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/src/*.cpp)
+# Add EventSourceFactory.cpp explicitly to the sources
+list(APPEND sources ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/src/EventSourceFactory.cpp) # it needs a little encouragement
 
 ###############################################################################
 ## dependencies ###############################################################
