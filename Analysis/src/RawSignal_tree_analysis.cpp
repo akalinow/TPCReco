@@ -7,6 +7,7 @@
 
 #include <TFile.h>
 #include <TTree.h>
+#include <TBranch.h>
 
 #include "TPCReco/GeometryTPC.h"
 #include "TPCReco/EventInfo.h"
@@ -32,7 +33,9 @@ RawSignal_tree_analysis::RawSignal_tree_analysis(std::shared_ptr<GeometryTPC> aG
 ///////////////////////////////
 ///////////////////////////////
 RawSignal_tree_analysis::~RawSignal_tree_analysis(){
+  //  std::cout << __FUNCTION__ << ": TTree current TFile ptr=" << myOutputTreePtr->GetCurrentFile() << std::endl;
   finalize();
+  //  std::cout << __FUNCTION__ << ": TTree current TFile ptr=" << myOutputTreePtr->GetCurrentFile() << std::endl;
 }
 ///////////////////////////////
 ///////////////////////////////
@@ -45,17 +48,20 @@ void RawSignal_tree_analysis::initialize(){
 	     <<std::endl;
     return;
   }
-  myOutputFilePtr->cd();
   myOutputTreePtr = std::make_shared<TTree>(treeName.c_str(),"");
-  myOutputTreePtr->Branch("data", &event_rawsignal_);
+  myOutputTreePtr->SetDirectory(myOutputFilePtr.get());
+  Int_t bufsize=1024;
+  Int_t splitlevel=2;
+  myOutputTreePtr->Branch("data", &event_rawsignal_, bufsize, splitlevel);
 
   std::cout << __FUNCTION__ << ": TTree current TFile ptr=" << myOutputTreePtr->GetCurrentFile() << std::endl;
 }
 ///////////////////////////////
 ///////////////////////////////
 void RawSignal_tree_analysis::finalize(){
+
   if(!myOutputFilePtr){
-    std::cout<<KRED<<"RawSignal_tree_analysis::close: "<<RST
+    std::cout<<KRED<<"RawSignal_tree_analysis::finalize: "<<RST
 	     <<" pointer to output file not set!"
 	     <<std::endl;
     return;
@@ -63,14 +69,14 @@ void RawSignal_tree_analysis::finalize(){
 
   std::cout << __FUNCTION__ << ": TTree current TFile ptr=" << myOutputTreePtr->GetCurrentFile() << std::endl;
 
-  //  TFile *f=myOutputTreePtr->GetCurrentFile();
-  //  if(f) {
-  //    f->Write("", TObject::kOverwrite);
-  //    f->Close();
-  //  }
-  myOutputFilePtr->cd();
-  myOutputTreePtr->Write("", TObject::kOverwrite);
-  myOutputFilePtr->Close();
+  myOutputFilePtr->Write("", TObject::kOverwrite);
+  //  std::cout << __FUNCTION__ << ": TTree current TFile ptr=" << myOutputTreePtr->GetCurrentFile() << std::endl;
+  // myOutputTreePtr->Write("", TObject::kOverwrite);
+  // myOutputTreePtr->SetDirectory(myOutputFilePtr.get());
+  // myOutputTreePtr->Write("", TObject::kOverwrite);
+  // myOutputTreePtr->SetDirectory(0);
+  // myOutputTreePtr->ResetBranchAddresses();
+  // myOutputFilePtr->Close();
 }
 ///////////////////////////////
 ///////////////////////////////
@@ -112,7 +118,6 @@ void RawSignal_tree_analysis::fillTree(std::shared_ptr<EventTPC> aEventTPC, bool
   event_rawsignal_->clusterThr = myClusterConfig.clusterThreshold; // clustering threshold in ADC units for seed hits
   event_rawsignal_->clusterDeltaStrips = myClusterConfig.clusterDeltaStrips; // clustering envelope size in +/- strip units around seed hits 
   event_rawsignal_->clusterDeltaTimeCells = myClusterConfig.clusterDeltaTimeCells; // clustering size in +/- time cell units around seed hits
-
 
   filter_type filterType = filter_type::none;
   if(myClusterConfig.clusterEnable) { // CLUSTER
