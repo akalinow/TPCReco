@@ -2,6 +2,16 @@
 #ifndef EventSourceFactory_h
 #define EventSourceFactory_h
 
+//**********************************************************************************************************
+//
+//
+//
+// THIS FUNCTION WILL NOT COMPILE IF IT'S DEFINITION IS SEPARATED INTO A .cpp FILE!!!
+//
+//
+//
+//**********************************************************************************************************
+
 #include "EventSourceBase.h"
 #include <boost/property_tree/json_parser.hpp>
 #include "GUI_commons.h"
