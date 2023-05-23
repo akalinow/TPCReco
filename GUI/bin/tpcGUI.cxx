@@ -17,7 +17,8 @@
 
 int main(int argc, char** argv) {
 
-	boost::property_tree::ptree tree = getConfig(argc,argv);
+	ConfigManager cm;
+	boost::property_tree::ptree tree = cm.getConfig(argc,argv);
 
 	ROOT::EnableThreadSafety();
 	TApplication theApp("App", &argc, argv);

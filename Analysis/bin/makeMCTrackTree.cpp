@@ -69,8 +69,8 @@ int main(int argc, char **argv){
   aStopwatch.Start();
 
   std::string geometryFileName, dataFileName;
-  std::vector<std::string> requiredOptions={"geometryFile", "dataFile"}
-  boost::property_tree::ptree tree = getConfig(argc, argv, requiredOptions);
+  ConfigManager cm;
+  boost::property_tree::ptree tree = cm.getConfig(argc, argv);
 
   int nEntriesProcessed = 0;
   if(dataFileName.size() && geometryFileName.size()){

@@ -4,6 +4,7 @@ const std::string ConfigManager::masterConfigPath = "/scratch/TPCReco/Utilities/
 const std::string ConfigManager::allowedOptPath = "/scratch/TPCReco/Utilities/config/allowedOpt.json";
 
 typedef std::vector< std::tuple<std::string,std::string> > vecOfTuples;
+
 enum string_code {
     eint,
     euint,
@@ -13,8 +14,9 @@ enum string_code {
     ebool,
     //evecstr
     eunknown
-    };
-string_code hashit (std::string const& inString) {
+};
+
+ConfigManager::string_code ConfigManager::hashit (std::string const& inString) {
     if (inString == "int") return eint;
     if (inString == "unsigned int") return euint;
     if (inString == "float") return efloat;
@@ -28,7 +30,7 @@ string_code hashit (std::string const& inString) {
 ConfigManager::ConfigManager(){}
 
 //helper function
-vecOfTuples allowedOptList (std::string pathToFile = "none"){
+vecOfTuples ConfigManager::allowedOptList (std::string pathToFile = "none"){
     boost::program_options::options_description cmdLineOptDesc("Allowed options");
     boost::property_tree::ptree optionsTree;
     if(pathToFile =="none"){
@@ -60,7 +62,7 @@ vecOfTuples allowedOptList (std::string pathToFile = "none"){
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
-boost::program_options::options_description parseAllowedArgs(std::string pathToFile = "none"){
+boost::program_options::options_description ConfigManager::parseAllowedArgs(std::string pathToFile = "none"){
     boost::program_options::options_description cmdLineOptDesc("Allowed options");
     boost::property_tree::ptree optionsTree;
     if(pathToFile =="none"){
@@ -150,7 +152,7 @@ boost::program_options::options_description parseAllowedArgs(std::string pathToF
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
+boost::program_options::variables_map ConfigManager::parseCmdLineArgs(int argc, char **argv){
     
     boost::program_options::options_description cmdLineOptDesc;
     cmdLineOptDesc.add(parseAllowedArgs());
@@ -166,18 +168,11 @@ boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
     return varMap;
 }
 
-boost::property_tree::ptree getConfig(int argc, char **argv, std::vector<std::string> requiredOpt = {}){
+boost::property_tree::ptree ConfigManager::getConfig(int argc, char **argv){
 
     boost::property_tree::ptree tree;
     boost::program_options::variables_map varMap = parseCmdLineArgs(argc, argv);
-    if(!requiredOpt.empty()){
-        for(auto option : requiredOpt){
-            if (!varMap.count(option)){
-                std::cout<<"Missing required option: "<<option<<std::endl;
-                exit(1);
-            }
-        }
-    }
+
     if(argc<2){
         std::cout<<" Usage: masterConfig.json"<<std::endl;
         boost::property_tree::read_json(ConfigManager::masterConfigPath, tree);

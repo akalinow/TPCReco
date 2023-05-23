@@ -2,40 +2,31 @@
 #include <cstdlib>
 #include <string>
 #include <memory>
-
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/program_options.hpp>
-
-
 #include "GeometryTPC.h"
 #include "EventTPC.h"
 #include "PEventTPC.h"
 #include "PedestalCalculator.h"
 #include "EventSourceGRAW.h"
 #include "EventSourceMultiGRAW.h"
-#include "ConfigManager.h"
 
 #include "TFile.h"
 #include "TTree.h"
-
 #include "colorText.h"
-
 #include "utl/Logging.h"
 #include "get/GDataSample.h"
 #include "get/GDataChannel.h"
 #include "get/GDataFrame.h"
 #include "get/TGrawFile.h"
 #include "mfm/FrameDictionary.h"
-
 #ifdef DEBUG
 #include "EventSourceROOT.h" 
 #endif
-
 /////////////////////////////////////
 /////////////////////////////////////
 std::string createROOTFileName(const  std::string & grawFileName){
-
   std::string rootFileName;
   unsigned int index = grawFileName.find(",");
   if(index!=std::string::npos){
@@ -43,7 +34,6 @@ std::string createROOTFileName(const  std::string & grawFileName){
   }
   index = rootFileName.rfind("/");
   rootFileName = rootFileName.substr(index,-1);
-
   
   if(rootFileName.find("CoBo_ALL_AsAd_ALL")!=std::string::npos){
     rootFileName = rootFileName.replace(0,std::string("CoBo_ALL_AsAd_ALL").size()+1,"EventTPC");
@@ -66,14 +56,46 @@ int convertGRAWFile(const  std::string & geometryFileName,
 		    const  std::string & grawFileName);
 /////////////////////////////////////
 /////////////////////////////////////
+boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
+
+  boost::program_options::options_description cmdLineOptDesc("Allowed options");
+  cmdLineOptDesc.add_options()
+    ("help", "produce help message")
+    ("geometryFile",  boost::program_options::value<std::string>(), "string - path to the geometry file.")
+    ("dataFile",  boost::program_options::value<std::string>(), "string - path to GRAW data file.");
+
+  boost::program_options::variables_map varMap;        
+  boost::program_options::store(boost::program_options::parse_command_line(argc, argv, cmdLineOptDesc), varMap);
+  boost::program_options::notify(varMap); 
+
+  if (varMap.count("help")) {
+    std::cout<<cmdLineOptDesc<<std::endl;
+    exit(1);
+  }
+  return varMap;
+}
+/////////////////////////////////////
+/////////////////////////////////////
 int main(int argc, char *argv[]) {
 
-  boost::property_tree::ptree tree = getConfig(argc,argv);
-  std::string geometryFileName = tree.get("geometryFile","");
-  std::string dataFileName = tree.get("dataFile","");
+  std::string geometryFileName, dataFileName;
+  boost::program_options::variables_map varMap = parseCmdLineArgs(argc, argv);
+  boost::property_tree::ptree tree;
+  if(argc<3){
+    char text[] = "--help";
+    char *argvTmp[] = {text, text};
+    parseCmdLineArgs(2,argvTmp);
+    return 1;
+  }
+  if (varMap.count("geometryFile")) {
+    geometryFileName = varMap["geometryFile"].as<std::string>();
+  }
+  if (varMap.count("dataFile")) {
+    dataFileName = varMap["dataFile"].as<std::string>();
+  }
 
   if(dataFileName.size() && geometryFileName.size()){
-    convertGRAWFile(geometryFileName, dataFileName);
+    convertGRAWFile(geometryFileName, dataFileName);  
   }
   else{
     std::cout<<KRED<<"Configuration not complete: "<<RST
@@ -96,16 +118,13 @@ int convertGRAWFile(const  std::string & geometryFileName,
 	      << std::endl;
     return -1;
   }
-
   std::string rootFileName = createROOTFileName(grawFileName);
   TFile aFile(rootFileName.c_str(),"RECREATE");
-
   boost::property_tree::ptree tree;
   tree.put("minPedestalCell",5);
   tree.put("maxPedestalCell",25);
   tree.put("minSignalCell",5);
   tree.put("maxSignalCell",506);
-
   std::shared_ptr<EventSourceBase> myEventSource;
   if(grawFileName.find(",")!=std::string::npos){
     myEventSource = std::make_shared<EventSourceMultiGRAW>(geometryFileName);    
@@ -119,12 +138,10 @@ int convertGRAWFile(const  std::string & geometryFileName,
   std::cout << "File with " << myEventSource->numberOfEntries() << " frames opened." << std::endl;
   
   auto myEventPtr = myEventSource->getCurrentPEvent();
-
   #ifdef DEBUG
   std::cout << "==== GrawToEvenTPC INITIALIZATION: myPtr_EventTPC="
 	    << myEventPtr << " ====" << std::endl;
   #endif
-
   TTree aTree("TPCData","");
   auto persistent_event = myEventPtr.get();
   Int_t bufsize=128000;
@@ -132,11 +149,8 @@ int convertGRAWFile(const  std::string & geometryFileName,
   aTree.Branch("Event", &persistent_event, bufsize, splitlevel); 
   Long64_t currentEventId=-1;
   std::map<unsigned int, bool> eventIdMap;
-
   myEventSource->loadFileEntry(0);
-
   do {
-
 #ifdef DEBUG
     std::cout << "==== GrawToEventTPC X-CHECK: EventSourceGRAW EventID= "
     	      << myEventSource->currentEventNumber()
@@ -148,7 +162,6 @@ int convertGRAWFile(const  std::string & geometryFileName,
     unsigned int eventId = myEventPtr->GetEventInfo().GetEventId();    
     if(eventIdMap.find(eventId)==eventIdMap.end()){
       eventIdMap[eventId] = true;
-
 #ifdef DEBUG
       std::cout << "==== GrawToEventTPC LOOP: persistentPtr_EventTPC="
 		<< persistent_event << " ====" << std::endl;
@@ -156,16 +169,13 @@ int convertGRAWFile(const  std::string & geometryFileName,
       std::cout << *persistent_event << std::endl;
       std::cout << "---- EventTPC content end ----" << std::endl;
 #endif
-
       std::cout<< myEventPtr->GetEventInfo()<<std::endl;
       aTree.Fill();
       if(eventIdMap.size()%100==0) aTree.FlushBaskets();
     }
-
 #ifdef DEBUG
     if( eventIdMap.size()==10) break;
 #endif
-
     currentEventId=myEventSource->currentEventNumber();
     myEventSource->getNextEvent();
   }
@@ -175,7 +185,6 @@ int convertGRAWFile(const  std::string & geometryFileName,
   aTree.BuildIndex("Event.myEventInfo.eventId");
   aTree.Write("", TObject::kOverwrite); // save only the new version of the tree
   //aFile.Close();
-
   return 0;
       
   
@@ -191,7 +200,6 @@ int convertGRAWFile(const  std::string & geometryFileName,
   int delta_strips = 5;
   myEventSourceRoot->getCurrentEvent()->MakeOneCluster(chargeThreshold, delta_strips, delta_timecells);
   #endif
-
   return 0;
 }
 /////////////////////////////////////

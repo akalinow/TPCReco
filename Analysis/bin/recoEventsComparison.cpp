@@ -28,8 +28,8 @@ int compareRecoEvents(const  std::string & geometryFileName,
 /////////////////////////////////////
 int main(int argc, char **argv){
 
-  std::vector<std::string> requiredOptions = {"geometryFile","referenceDataFile","testDataFile"};
-  boost::property_tree::ptree tree = getConfig(argc,argv,requiredOptions);
+  ConfigManager cm;
+  boost::property_tree::ptree tree = cm.getConfig(argc,argv);
   auto geometryFileName = tree.get("geometryFile","");
   auto referenceDataFileName = tree.get("referenceDataFile","");
   auto testDataFileName = tree.get("testDataFile","");

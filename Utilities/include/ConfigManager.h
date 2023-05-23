@@ -16,7 +16,7 @@ class ConfigManager
 {
 public:
     ConfigManager();
-    boost::property_tree::ptree getConfig(int argc, char** argv, std::vector<std::string> requiredOpt);
+    boost::property_tree::ptree getConfig(int argc, char** argv);
 
     static const std::string masterConfigPath;
     static const std::string allowedOptPath;
@@ -31,11 +31,10 @@ private:
     ebool,
     eunknown
     };
+    string_code hashit (std::string const& );
     typedef std::vector< std::tuple<std::string,std::string> > vecOfTuples;
+
     vecOfTuples allowedOptList (std::string pathToFile);
     boost::program_options::options_description parseAllowedArgs(std::string pathToFile);
     boost::program_options::variables_map parseCmdLineArgs(int argc, char ** argv);
-    string_code hashit (std::string const& );
-
-    
 };
