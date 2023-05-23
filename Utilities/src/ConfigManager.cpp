@@ -1,52 +1,162 @@
 #include "ConfigManager.h"
 
+const std::string ConfigManager::masterConfigPath = "/scratch/TPCReco/Utilities/config/masterConfig.json";
+const std::string ConfigManager::allowedOptPath = "/scratch/TPCReco/Utilities/config/allowedOpt.json";
+
+typedef std::vector< std::tuple<std::string,std::string> > vecOfTuples;
+
+enum string_code {
+    eint,
+    euint,
+    efloat,
+    edouble,
+    estr,
+    ebool,
+    //evecstr
+    eunknown
+};
+
+ConfigManager::string_code ConfigManager::hashit (std::string const& inString) {
+    if (inString == "int") return eint;
+    if (inString == "unsigned int") return euint;
+    if (inString == "float") return efloat;
+    if (inString == "double") return edouble;
+    if (inString == "std::string") return estr;
+    if (inString == "bool") return ebool;
+    //if (inString == "std::vector<std::string>") return evecstr;
+    return eunknown;
+}
+
 ConfigManager::ConfigManager(){}
 
-boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
-    
+//helper function
+vecOfTuples ConfigManager::allowedOptList (std::string pathToFile = "none"){
     boost::program_options::options_description cmdLineOptDesc("Allowed options");
-    cmdLineOptDesc.add_options()
-        ("help", "produce help message")
-        ("beamDir", boost::program_options::value<BeamDirection>(), "string - LAB gamma beam direction [\"x\" xor \"-x\"]")
-        ("beamEnergy", boost::program_options::value<float>(), "float - LAB gamma beam energy [MeV]")
-        ("chunk", boost::program_options::value<size_t>(), "uint - file chunk")
-        ("clusterDeltaStrips", boost::program_options::value<int>(), "int - Envelope in strip units around seed hits for clustering")
-        ("clusterDeltaTimeCells", boost::program_options::value<int>(), "int - Envelope in time cell units around seed hits for clustering")
-        ("clusterEnable", boost::program_options::value<bool>(), "bool - Flag to enable clustering")
-        ("clusterThreshold", boost::program_options::value<float>(), "float - ADC threshold above pedestal used for clustering")
-        ("dataFile",  boost::program_options::value<std::string>(), "string - path to data file (OFFLINE) or directory (ONLINE). Overrides the value from the config file. In multi-GRAW mode specify several files separated by commas.")
-        ("directory,d", boost::program_options::value<std::string>(),"string - directory to browse. Mutually exclusive with \"files\"")
-        ("dry-run", "testing without modyfing files")
-        ("ext",boost::program_options::value<std::vector<std::string>>()->multitoken()->default_value(std::vector<std::string>{std::string{".graw"}},".graw"),"allowed extensions")
-        ("files,f",boost::program_options::value<std::vector<std::string>>()->multitoken(),"strings - list of files to browse. Mutually exclusive with \"directory\"")
-        ("frameLoadRange", boost::program_options::value<unsigned int>(), "int - maximal number of frames to be read by event builder in single-GRAW mode")
-        ("geometryFile",  boost::program_options::value<std::string>(), "string - path to the geometry file.")
-        ("hitThr", boost::program_options::value<unsigned int>(), "int - minimal hit charge after pedestal subtraction [ADC units]")
-        ("inplace", "overwrites the input file, mutally exclusive with 'output'")
-        ("input,i", boost::program_options::value<std::string>(),"input root file")
-        ("matchRadiusInMM", boost::program_options::value<float>(), "float - matching radius for strips and time cells from different U/V/W directions [mm]")
-        ("ms", boost::program_options::value<int>(),"int - delay in ms")
-        ("no-info", "skip printing file and tree info on every line")
-        ("no-presence", "skip printing extra and missing events")
-        ("no-segments", "skip comparing number of segments")
-        ("no-type", "skip comparing event type")
-        ("noTree", boost::program_options::bool_switch()->default_value(false), "skip creating additional TTree for 1,2,3-prongs (true = runs a bit faster)")
-        ("output,o", boost::program_options::value<std::string>(),"output root file,mutally exclusive with 'inplace'")
-        ("outputFile", boost::program_options::value<std::string>(), "string - path to the output ROOT file")
-        ("pressure", boost::program_options::value<float>(), "float - CO2 pressure [mbar]")
-        ("recoClusterDeltaStrips",  boost::program_options::value<int>(), "int - Envelope in strip units around seed hits for RECO cluster.")
-        ("recoClusterDeltaTimeCells",  boost::program_options::value<int>(), "int - Envelope in time cell units around seed hits for RECO cluster.")
-        ("recoClusterEnable",  boost::program_options::value<bool>(), "bool - Flag to enable RECO cluster.")
-        ("recoClusterThreshold",  boost::program_options::value<double>(), "double - ADC threshold above pedestal for RECO cluster.")
-        ("reference", boost::program_options::value<std::string>(),"reference root file")
-        ("referenceDataFile",  boost::program_options::value<std::string>(), "string - path to reference data file")
-        ("removePedestal",  boost::program_options::value<bool>(), "bool - Flag to control pedestal removal. Overrides the value from config file.")
-        ("separator",boost::program_options::value<std::string>()->default_value("\n"),"string - separator")
-        ("singleAsadGrawFile", boost::program_options::bool_switch()->default_value(false), "flag indicating multi-GRAW mode (default=FALSE)")
-        ("testDataFile",  boost::program_options::value<std::string>(), "string - path to test data file")
-        ("totalChargeThr", boost::program_options::value<unsigned int>(), "int - minimal event total charge after pedestal subtraction [ADC units]")
-        ("verbose,v", "prints message for every duplicate");
+    boost::property_tree::ptree optionsTree;
+    if(pathToFile =="none"){
+        boost::property_tree::read_json(ConfigManager::allowedOptPath, optionsTree);
+    }
+    else{
+        boost::property_tree::read_json(pathToFile, optionsTree);
+    }
+
+    std::tuple<std::string, std::string> optDesc;
+    vecOfTuples optList;
+
+    BOOST_FOREACH(const boost::property_tree::ptree::value_type &v, optionsTree.get_child("Options")) {
+        // v.first is the name of the child.
+        // v.second is the child tree.
+        std::string optName = v.first;
+        std::string childPath = "Options."+optName;
+        boost::property_tree::ptree childTree = v.second;
+
+        std::string typePath = childPath+".type";
+
+        std::string type= childTree.get_value<std::string>(typePath);
+
+        optDesc = make_tuple(optName,type);
+        optList.push_back(optDesc);
+    }
+    return optList;
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+
+boost::program_options::options_description ConfigManager::parseAllowedArgs(std::string pathToFile = "none"){
+    boost::program_options::options_description cmdLineOptDesc("Allowed options");
+    boost::property_tree::ptree optionsTree;
+    if(pathToFile =="none"){
+        std::cout<<"Using config file allowedOpt.json"<<std::endl;
+        boost::property_tree::read_json(ConfigManager::allowedOptPath, optionsTree);
+    }
+    else{
+        std::cout<<"Using config file "<<pathToFile<<std::endl;
+        boost::property_tree::read_json(pathToFile, optionsTree);
+    }
+
+    BOOST_FOREACH(const boost::property_tree::ptree::value_type &v, optionsTree.get_child("Options")) {
+
+        std::string optName = v.first;
+        std::string childPath = "Options."+optName;
+        boost::property_tree::ptree childTree = v.second;
+
+        std::string typePath = childPath+".type";
+        std::string defaultValuePath = childPath + ".defaultValue";
+        std::string descriptionPath = childPath + ".description";
+        std::string isRequiredPath = childPath + ".isRequired";
+
+        std::string type= childTree.get_value<std::string>(typePath);
+        std::string defaultValue= childTree.get_value<std::string>(defaultValuePath);
+        std::string description= childTree.get_value<std::string>(descriptionPath);
+        std::string isRequired= childTree.get_value<std::string>(isRequiredPath);
+
+        if(isRequired == "true"){
+            switch(hashit(type)) {
+            case eint:
+                cmdLineOptDesc.add_options()(optName.c_str(), boost::program_options::value<int>()->required(), description.c_str());
+                break;
+            case euint:
+                cmdLineOptDesc.add_options()(optName.c_str(), boost::program_options::value<unsigned int>()->required(), description.c_str());
+                break;
+            case efloat:
+                cmdLineOptDesc.add_options()(optName.c_str(), boost::program_options::value<float>()->required(), description.c_str());
+                break;
+            case edouble:
+                cmdLineOptDesc.add_options()(optName.c_str(), boost::program_options::value<double>()->required(), description.c_str());
+                break;
+            case ebool:
+                cmdLineOptDesc.add_options()(optName.c_str(), boost::program_options::value<bool>()->required(), description.c_str());
+                break;
+            case estr:
+                cmdLineOptDesc.add_options()(optName.c_str(), boost::program_options::value<std::string>()->required(), description.c_str());
+                break;
+            case eunknown:
+                std::cout<<"Unknown type of an argument "<<optName<<std::endl;
+                break;
+            // case evecstr:
+            //     cmdLineOptDesc.add_options()(optName.c_str(), boost::program_options::value<std::vector<std::string>>()->required(), description.c_str());
+            //     break;
+            }
+        }
+        else{
+            switch(hashit(type)) {
+            case eint:
+                cmdLineOptDesc.add_options()(optName.c_str(), boost::program_options::value<int>(), description.c_str());
+                break;
+            case euint:
+                cmdLineOptDesc.add_options()(optName.c_str(), boost::program_options::value<unsigned int>(), description.c_str());
+                break;
+            case efloat:
+                cmdLineOptDesc.add_options()(optName.c_str(), boost::program_options::value<float>(), description.c_str());
+                break;
+            case edouble:
+                cmdLineOptDesc.add_options()(optName.c_str(), boost::program_options::value<double>(), description.c_str());
+                break;
+            case ebool:
+                cmdLineOptDesc.add_options()(optName.c_str(), boost::program_options::value<bool>(), description.c_str());
+                break;
+            case estr:
+                cmdLineOptDesc.add_options()(optName.c_str(), boost::program_options::value<std::string>(), description.c_str());
+                break;
+            case eunknown:
+                std::cout<<"Unknown type of an argument "<<optName<<std::endl;
+                break;
+            // case evecstr:
+            //     cmdLineOptDesc.add_options()(optName.c_str(), boost::program_options::value<std::vector<std::string>>(), description.c_str());
+            //     break;
+            }
+        }
     
+    }
+    return cmdLineOptDesc;
+}
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+boost::program_options::variables_map ConfigManager::parseCmdLineArgs(int argc, char **argv){
+    
+    boost::program_options::options_description cmdLineOptDesc;
+    cmdLineOptDesc.add(parseAllowedArgs());
+
     boost::program_options::variables_map varMap;        
     boost::program_options::store(boost::program_options::parse_command_line(argc, argv, cmdLineOptDesc), varMap);
     boost::program_options::notify(varMap); 
@@ -58,157 +168,57 @@ boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
     return varMap;
 }
 
-boost::property_tree::ptree getConfig(int argc, char **argv, std::vector<std::string> requiredOpt = {}){
+boost::property_tree::ptree ConfigManager::getConfig(int argc, char **argv){
 
     boost::property_tree::ptree tree;
     boost::program_options::variables_map varMap = parseCmdLineArgs(argc, argv);
-    if(!requiredOpt.empty()){
-        for(auto option : requiredOpt){
-            if (!varMap.count(option)){
-                std::cout<<"Missing required option: "<<option<<std::endl;
-                exit(1);
-            }
-        }
-    }
+
     if(argc<2){
         std::cout<<" Usage: masterConfig.json"<<std::endl;
-        boost::property_tree::read_json("/scratch/TPCReco/Utilities/config/masterConfig.json",tree);
+        boost::property_tree::read_json(ConfigManager::masterConfigPath, tree);
         return tree;
     }
     else {
         std::cout<<"Using configFileName: "<<argv[1]<<std::endl;
         boost::property_tree::read_json(argv[1], tree);
     }
-    if (varMap.count("beamDir")) {
-        tree.put("beamDir", varMap["beamDir"].as<BeamDirection>());
-    }
-    if (varMap.count("beamEnergy")) {
-        tree.put("beamEnergy", varMap["beamEnergy"].as<float>());
-    }
-    if (varMap.count("chunk")) {
-        tree.put("chunk", varMap["chunk"].as<size_t>());
-    }
-    if (varMap.count("clusterEnable")) {
-        tree.put("clusterEnable", varMap["clusterEnable"].as<bool>());
-	        if (tree.get<bool>("clusterEnable") == false) { // skip threshold, delta-strip, delta-timecells when clustering is disabled
-			tree.put("clusterThreshold", 0.0);
-			tree.put("clusterDeltaStrips", 0);
-			tree.put("clusterDeltaTimeCells", 0);
-		}
-		else { // look for threshold, delta-strip, delta-timecells only when clustering is enabled
-			if (varMap.count("clusterThreshold")) {
-				tree.put("clusterThreshold", varMap["clusterThreshold"].as<float>());
-			}
-			if (varMap.count("clusterDeltaStrips")) {
-				tree.put("clusterDeltaStrips", varMap["clusterDeltaStrips"].as<int>());
-			}
-			if (varMap.count("clusterDeltaTimeCells")) {
-				tree.put("clusterDeltaTimeCells", varMap["clusterDeltaTimeCells"].as<int>());
-			}
-		}
-    }
-    if (varMap.count("directory")) {
-        tree.put("directory", varMap["directory"].as<std::string>());
-    }
-    if (varMap.count("dry-run")) {
-        tree.put("dry-run",true);
-    }
-    if (varMap.count("ext")) {
-        tree.put("ext", varMap["ext"].as<std::vector<std::string>>());
-    }
-    if (varMap.count("files")) {
-        tree.put("files", varMap["files"].as<std::vector<std::string>>());
-    }
-    if (varMap.count("geometryFile")) {
-        tree.put("geometryFile", varMap["geometryFile"].as<std::string>());
-    }
-    if (varMap.count("hitThr")) {
-        tree.put("hitThr", varMap["hitThr"].as<unsigned int>());
-    }
-    if (varMap.count("input")) {
-        tree.put("input", varMap["input"].as<std::string>());
-    }
-    if (varMap.count("inplace")) {
-        tree.put("output", varMap["input"].as<std::string>());
-    }
-    if (varMap.count("matchRadiusInMM")) {
-        tree.put("matchRadiusInMM", varMap["matchRadiusInMM"].as<float>());
-    }
-    if (varMap.count("ms")) {
-        tree.put("ms", varMap["ms"].as<int>());
-    }
-    if (varMap.count("no-info")) {
-        tree.put("no-info", true);
-    }
-    if (varMap.count("no-presence")) {
-        tree.put("no-presence", true);
-    }
-    if (varMap.count("no-segments")) {
-        tree.put("no-segments", true);
-    }
-    if (varMap.count("no-type")) {
-        tree.put("no-type", true);
-    }
-    if (varMap.count("noTree")) {
-        tree.put("noTree", varMap["noTree"].as<bool>());
-    }
-    if (varMap.count("output")) {
-        tree.put("output", varMap["output"].as<std::string>());
-    }
-    if (varMap.count("outputFile")) {
-        tree.put("outputFile", varMap["outputFile"].as<std::string>());
-    }
-    if (varMap.count("pressure")) {
-        tree.put("pressure", varMap["pressure"].as<float>());
-    }
-    if (varMap.count("recoClusterDeltaStrips")) {
-        tree.put("hitFilter.recoClusterDeltaStrips", varMap["recoClusterDeltaStrips"].as<int>());
-    }
-    if(varMap.count("recoClusterDeltaTimeCells")){
-        tree.put("hitFilter.recoClusterDeltaTimeCells", varMap["recoClusterDeltaTimeCells"].as<int>());
-    }
-    if (varMap.count("recoClusterEnable")) {
-        tree.put("hitFilter.recoClusterEnable", varMap["recoClusterEnable"].as<bool>());
-    }
 
-    if (varMap.count("recoClusterThreshold")) {
-        tree.put("hitFilter.recoClusterThreshold", varMap["recoClusterThreshold"].as<double>());
-    }
+    vecOfTuples optList = allowedOptList();
+    unsigned int vecSize = optList.size();
 
-    if (varMap.count("reference")) {
-        tree.put("reference", varMap["reference"].as<std::string>());
+    for(unsigned int i = 0; i < vecSize; i++)
+    {
+        std::string optName = std::get<0>(optList.at(i));
+        std::string optType = std::get<1>(optList.at(i));
+        if (varMap.count(optName.c_str())){
+            switch(hashit(optType)) {
+            case eint:
+                tree.put(optName.c_str(), varMap[optName.c_str()].as<int>());
+                break;
+            case euint:
+                tree.put(optName.c_str(), varMap[optName.c_str()].as<unsigned int>());
+                break;
+            case efloat:
+                tree.put(optName.c_str(), varMap[optName.c_str()].as<float>());
+                break;
+            case edouble:
+                tree.put(optName.c_str(), varMap[optName.c_str()].as<double>());
+                break;
+            case ebool:
+                tree.put(optName.c_str(), varMap[optName.c_str()].as<bool>());
+                break;
+            case estr:
+                tree.put(optName.c_str(), varMap[optName.c_str()].as<std::string>());
+                break;
+            case eunknown:
+                std::cout<<"Unknown type of an argument "<<optName<<std::endl;
+                break;
+            // case evecstr:
+            //     tree.put(optName.c_str(), varMap[optName.c_str()].as<std::vector<std::string> >());
+            //     break;
+            } 
+        }
     }
-
-    if (varMap.count("referenceDataFile")) {
-        tree.put("referenceDataFile", varMap["referenceDataFile"].as<std::string>());
-    }
-
-    if (varMap.count("removePedestal")) {
-        tree.put("removePedestal", varMap["removePedestal"].as<bool>());
-    }
-
-    if (varMap.count("separator")) {
-        tree.put("separator", varMap["separator"].as<std::string>());
-    }
-
-    if ((tree.find("singleAsadGrawFile") == tree.not_found() || // if not present in config JSON
-		tree.get<bool>("singleAsadGrawFile") == false) && // or single-GRAW mode is FALSE
-		varMap.count("singleAsadGrawFile")) { // then allow to override JSON settings
-	tree.put("singleAsadGrawFile", varMap["singleAsadGrawFile"].as<bool>());
-    }
-    if (tree.get<bool>("singleAsadGrawFile") == false && // if in single-GRAW mode
-		varMap.count("frameLoadRange")) { // then allow to override JSON settings
-		tree.put("frameLoadRange", varMap["frameLoadRange"].as<unsigned int>());
-    }
-    if (varMap.count("testDataFile")) {
-        tree.put("testDataFile", varMap["testDataFile"].as<std::string>());
-    }
-
-    if (varMap.count("totalChargeThr")) {
-        tree.put("totalChargeThr", varMap["totalChargeThr"].as<unsigned int>());
-    }
-
-    if (varMap.count("verbose")) {
-        tree.put("verbose", true);
-    }
+    
+    return tree;
 }

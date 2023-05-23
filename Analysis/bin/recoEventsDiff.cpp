@@ -5,25 +5,25 @@
 #include <string>
 
 int main(int argc, char **argv) {
-  std::vector<std::string> requiredOptions = {"input", "reference"};
-  boost::property_tree::ptree tree = getConfig(argc,argv,requiredOptions);
+  ConfigManager cm;
+  boost::property_tree::ptree tree = cm.getConfig(argc,argv);
   auto inputName = tree.get("input","");
   auto referenceName = tree.get("reference","");
   auto analysis = tpcreco::analysis::diff::Analysis(inputName, referenceName);
 
-  if (!tree.get("no-segments","")) {
+  if (!(tree.count("no-segments"))) {
     analysis.getDetailSink()->addCheck(
         tpcreco::analysis::diff::checks::checkSegments);
   }
-  if (!("no-type","")) {
+  if (!(tree.count("no-type"))) {
     analysis.getDetailSink()->addCheck(
         tpcreco::analysis::diff::checks::checkType);
   }
-  if (tree.get("no-info","")) {
+  if (tree.count("no-info")) {
     analysis.getDetailSink()->resetTreeInfo();
     analysis.getExtraSink()->resetTreeInfo();
   }
-  if (tree.get("no-presence","")) {
+  if (tree.count("no-presence")) {
     analysis.getExtraSink()->disable(true);
   }
 

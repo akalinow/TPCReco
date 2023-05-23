@@ -17,8 +17,8 @@ void analyzeRawEvents(const boost::property_tree::ptree& aConfig);
 ////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////
 int main(int argc, char** argv) {
-
-	boost::property_tree::ptree tree = getConfig(argc,argv);
+	ConfigManager cm;
+	boost::property_tree::ptree tree = cm.getConfig(argc,argv);
 	if (argc < 2) {
 		std::cout << _endl_
 			<< "rawSignalAnalysis config.json [options]" << _endl_ << _endl_;
@@ -29,75 +29,6 @@ int main(int argc, char** argv) {
 		boost::property_tree::read_json(argv[1], tree);
 	}
 
-	// optional overrides of the JSON config file
-	if (varMap.count("outputFile")) {
-		tree.put("outputFile", varMap["outputFile"].as<std::string>());
-	}
-	if (varMap.count("geometryFile")) {
-		tree.put("geometryFile", varMap["geometryFile"].as<std::string>());
-	}
-	if (varMap.count("dataFile")) {
-		tree.put("dataFile", varMap["dataFile"].as<std::string>());
-	}
-	if (varMap.count("removePedestal")) {
-		tree.put("removePedestal", varMap["removePedestal"].as<bool>());
-	}
-	if (varMap.count("clusterEnable")) {
-		tree.put("clusterEnable", varMap["clusterEnable"].as<bool>());
-		if (tree.get<bool>("clusterEnable") == false) { // skip threshold, delta-strip, delta-timecells when clustering is disabled
-			tree.put("clusterThreshold", 0.0);
-			tree.put("clusterDeltaStrips", 0);
-			tree.put("clusterDeltaTimeCells", 0);
-		}
-		else { // look for threshold, delta-strip, delta-timecells only when clustering is enabled
-			if (varMap.count("clusterThreshold")) {
-				tree.put("clusterThreshold", varMap["clusterThreshold"].as<float>());
-			}
-			if (varMap.count("clusterDeltaStrips")) {
-				tree.put("clusterDeltaStrips", varMap["clusterDeltaStrips"].as<int>());
-			}
-			if (varMap.count("clusterDeltaTimeCells")) {
-				tree.put("clusterDeltaTimeCells", varMap["clusterDeltaTimeCells"].as<int>());
-			}
-		}
-	}
-	if ((tree.find("singleAsadGrawFile") == tree.not_found() || // if not present in config JSON
-		tree.get<bool>("singleAsadGrawFile") == false) && // or single-GRAW mode is FALSE
-		varMap.count("singleAsadGrawFile")) { // then allow to override JSON settings
-		tree.put("singleAsadGrawFile", varMap["singleAsadGrawFile"].as<bool>());
-	}
-	if (tree.get<bool>("singleAsadGrawFile") == false && // if in single-GRAW mode
-		varMap.count("frameLoadRange")) { // then allow to override JSON settings
-		tree.put("frameLoadRange", varMap["frameLoadRange"].as<unsigned int>());
-	}
-
-	//sanity checks
-	if (tree.find("dataFile") == tree.not_found() ||
-		tree.find("geometryFile") == tree.not_found() ||
-		tree.find("outputFile") == tree.not_found() ||
-		tree.find("singleAsadGrawFile") == tree.not_found() ||
-		(tree.find("singleAsadGrawFile") != tree.not_found() &&
-			tree.find("frameLoadRange") == tree.not_found()) ||
-		tree.find("clusterEnable") == tree.not_found() ||
-		tree.find("clusterThreshold") == tree.not_found() ||
-		tree.find("clusterDeltaStrips") == tree.not_found() ||
-		tree.find("clusterDeltaTimeCells") == tree.not_found() ||
-		tree.find("removePedestal") == tree.not_found()
-		) {
-		std::cerr << _endl_
-			<< __FUNCTION__ << KRED << ": Some configuration options are missing!" << RST << _endl_ << _endl_;
-		std::cout << "dataFile: " << tree.count("dataFile") << _endl_;
-		std::cout << "geometryFile: " << tree.count("geometryFile") << _endl_;
-		std::cout << "outputFile: " << tree.count("outputFile") << _endl_;
-		std::cout << "clusterEnable: " << tree.count("clusterEnable") << _endl_;
-		std::cout << "clusterThreshold: " << tree.count("clusterThreshold") << _endl_;
-		std::cout << "clusterDeltaStrips: " << tree.count("clusterDeltaStrips") << _endl_;
-		std::cout << "clusterDeltaTimeCells: " << tree.count("clusterDeltaTimeCells") << _endl_;
-		std::cout << "singleAsadGrawFile: " << tree.count("singleAsadGrawFile") << _endl_;
-		std::cout << "frameLoadRange: " << tree.count("frameLoadRange") << _endl_;
-		std::cout << "removePedestal: " << tree.count("removePedestal") << _endl_;
-		exit(1);
-	}
 
 	// start analysis job
 	analyzeRawEvents(tree);

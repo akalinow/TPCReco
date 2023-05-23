@@ -46,15 +46,15 @@ std::istream& operator>>(std::istream& in, BeamDirection& direction){
 /////////////////////////////////////
 /////////////////////////////////////
 int main(int argc, char **argv){
-  std::vector<std::string> requiredOptions = ("geometryFile","dataFile","beamEnergy","beamDir","pressure");
-  boost::property_tree::ptree tree = getConfig(argc, argv, requiredOptions)
-  auto geometryFileName = tree.get("geometryFile","");
-  auto dataFileName =tree.get("dataFile","");
-  auto beamEnergy = tree.get("beamEnergy","");
-  auto pressure = tree.get("pressure","");
-  auto makeTreeFlag = !tree.get("noTree","");
+  ConfigManager cm;
+  boost::property_tree::ptree tree = cm.getConfig(argc, argv);
+  auto geometryFileName = tree.get<std::string>("geometryFile");
+  auto dataFileName =tree.get<std::string>("dataFile");
+  auto beamEnergy = tree.get<int>("beamEnergy");
+  auto pressure = tree.get<float>("pressure");
+  auto makeTreeFlag = !tree.get<bool>("noTree");
   TVector3 beamDir;
-  switch(tree.get("beamDir")){
+  switch(tree.get<BeamDirection>("beamDir")){
     case BeamDirection::X : 
       beamDir = TVector3(1,0,0);
       break;

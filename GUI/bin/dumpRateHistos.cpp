@@ -16,8 +16,8 @@ void analyzeRawEvents(const boost::property_tree::ptree &aConfig);
 /////////////////////////////////////
 /////////////////////////////////////
 int main(int argc, char **argv){
-  std::vector<std::string> = {"dataFile","geometryFile","outputFile","hitThr","totalChargeThr","matchRadiusInMM","singleAsadGrawFile"};
-  boost::property_tree::ptree tree = getConfig(argc,argv,requiredOptions);
+  ConfigManager cm;
+  boost::property_tree::ptree tree = cm.getConfig(argc,argv);
 
   // start analysis job
   analyzeRawEvents(tree);
