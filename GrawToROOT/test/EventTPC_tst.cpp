@@ -181,6 +181,7 @@ double epsilon = 1e-5;  // Value used to compare double values
 /////////////////////////////////////
 int main(int argc, char *argv[]) {
 
+
   std::shared_ptr<EventSourceBase> myEventSource = std::make_shared<EventSourceMultiGRAW>(geometryFileName);  // 
   myEventSource->loadDataFile(dataFileName);                                                                  // Loading Data File
   std::cout << "File with " << myEventSource->numberOfEntries() << " frames opened." << std::endl;            // 

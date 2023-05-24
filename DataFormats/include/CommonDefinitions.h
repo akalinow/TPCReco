@@ -32,6 +32,16 @@ enum  projection_type{
   DIR_TIME,
 };
 
+enum class event_type {
+	EventSourceROOT,
+	EventSourceMC,
+	EventSourceGRAW,
+	EventSourceMultiGRAW
+};
+
+std::ostream& operator<<(std::ostream& os, const event_type& et);
+std::istream& operator>>(std::istream& is, event_type& et);
+
 projection_type get2DProjectionType(int aStrip_dir);
 projection_type get2DProjectionType(projection_type aStrip_dir);
 
@@ -96,7 +106,7 @@ inline std::string filename_string(std::string path_str) {
 	return path_str.substr(path_str.rfind("/") + 1, path_str.size() - path_str.rfind("/") - 1);
 }
 
-#define _endl_ " (" << filename_string(__FILE__) << "; " << __LINE__ << ")" << std::endl<char, std::char_traits<char>>
+#define _endl_ " (" << filename_string(__FILE__) << "; " << __LINE__ << ")\n"
 #define checkpoint std::cout << "checkpoint" << _endl_
 
 class TH2D;

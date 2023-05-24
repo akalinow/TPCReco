@@ -4,7 +4,6 @@
 #include <set>
 #include <string>
 #include <vector>
-
 void conflicting_options(const boost::program_options::variables_map &vm,
                          const std::string &opt1, const std::string &opt2) {
   if (vm.count(opt1) && !vm[opt1].defaulted() && vm.count(opt2) &&
@@ -13,7 +12,6 @@ void conflicting_options(const boost::program_options::variables_map &vm,
                            "' and '" + opt2 + "'.");
   }
 }
-
 std::pair<RunIdParser::time_point, size_t>
 referencePointHelper(const std::string &input,
                      const boost::program_options::variable_value &chunk,
@@ -105,15 +103,17 @@ int main(int argc, char **argv) {
 
   std::set<std::string> extensionsSet;
   {
+    std::set<std::string> extensionsSet;
+  {
     auto extensions = varMap["ext"].as<std::vector<std::string>>();
     std::transform(std::begin(extensions), std::end(extensions),
                    std::inserter(extensionsSet, std::begin(extensionsSet)),
                    [](auto entry) {
+  
                      return !entry.empty() && entry[0] != '.' ? "." + entry
                                                               : entry;
                    });
   }
-
   std::vector<std::string> output;
   try {
     auto referencePoint =
@@ -134,7 +134,6 @@ int main(int argc, char **argv) {
       }
       auto begin = boost::filesystem::directory_iterator(dir);
       auto end = boost::filesystem::directory_iterator();
-
       InputFileHelper::discoverFiles(referencePoint.first,
                                      referencePoint.second, delay, begin, end,
                                      std::back_inserter(output));
@@ -148,4 +147,5 @@ int main(int argc, char **argv) {
     return 1;
   }
   return 0;
+}
 }

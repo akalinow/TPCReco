@@ -1,0 +1,228 @@
+{   "Options":
+    {
+        // "beamDir":
+        // {
+        //     "type" : "BeamDirection",
+        //     "defaultValue" : "PLACEHOLDER_FOR_VALUE",
+        //     "description" : "string - LAB gamma beam direction [\"x\" xor \"-x\"]",
+        //     "isRequired": false
+        // },
+        "beamEnergy":
+        {
+            "type" : "float",
+            "defaultValue" : "PLACEHOLDER_FOR_VALUE",
+            "description" : "float - LAB gamma beam energy [MeV]",
+            "isRequired": false
+        },
+        "chunk": {
+            "type": "unsigned int",
+            "defaultValue": "PLACEHOLDER_FOR_VALUE",
+            "description": "uint - file chunk",
+            "isRequired": false
+        },
+        "clusterDeltaStrips": {
+            "type": "int",
+            "defaultValue": "PLACEHOLDER_FOR_VALUE",
+            "description": "int - Envelope in strip units around seed hits for clustering",
+            "isRequired": false
+        },
+        "clusterDeltaTimeCells": {
+            "type": "int",
+            "defaultValue": "PLACEHOLDER_FOR_VALUE",
+            "description": "int - Envelope in time cell units around seed hits for clustering",
+            "isRequired": false
+        },
+        "clusterEnable": {
+            "type": "bool",
+            "defaultValue": "PLACEHOLDER_FOR_VALUE",
+            "description": "bool - Flag to enable clustering",
+            "isRequired": false
+        },
+        "clusterThreshold": {
+            "type": "float",
+            "defaultValue": "PLACEHOLDER_FOR_VALUE",
+            "description": "float - ADC threshold above pedestal used for clustering",
+            "isRequired": false
+        },
+        "dataFile": {
+            "type": "std::string",
+            "defaultValue": "PLACEHOLDER_FOR_VALUE",
+            "description": "string - path to data file (OFFLINE) or directory (ONLINE). Overrides the value from the config file. In multi-GRAW mode specify several files separated by commas.",
+            "isRequired": false
+        },
+        "directory": {
+            "type": "std::string",
+            "defaultValue": "PLACEHOLDER_FOR_VALUE",
+            "description": "string - directory to browse. Mutually exclusive with 'files'",
+            "isRequired": false
+        },
+        // "ext": {
+        //     "type": "std::vector<std::string>",
+        //     "defaultValue": "PLACEHOLDER_FOR_VALUE",
+        //     "description": "strings - allowed extensions",
+        //     "isRequired": false
+        // },
+        // "files": {
+        //     "type": "std::vector<std::string>",
+        //     "defaultValue": "PLACEHOLDER_FOR_VALUE",
+        //     "description": "strings - list of files to browse. Mutually exclusive with 'directory'",
+        //     "isRequired": false
+        // },
+        "frameLoadRange": {
+            "type": "unsigned int",
+            "defaultValue": "PLACEHOLDER_FOR_VALUE",
+            "description": "int - maximal number of frames to be read by event builder in single-GRAW mode",
+            "isRequired": false
+        },
+        "geometryFile": {
+            "type": "std::string",
+            "defaultValue": "PLACEHOLDER_FOR_VALUE",
+            "description": "string - path to the geometry file.",
+            "isRequired": false
+        },
+        "hitThr": {
+            "type": "unsigned int",
+            "defaultValue": "PLACEHOLDER_FOR_VALUE",
+            "description": "int - minimal hit charge after pedestal subtraction [ADC units]",
+            "isRequired": false
+        },
+        "input": {
+            "type": "std::string",
+            "defaultValue": "PLACEHOLDER_FOR_VALUE",
+            "description": "input root file",
+            "isRequired": false
+        },
+        "matchRadiusInMM": {
+            "type": "float",
+            "defaultValue": "PLACEHOLDER_FOR_VALUE",
+            "description": "float - matching radius for strips and time cells from different U/V/W directions [mm]",
+            "isRequired": false
+        },
+        "ms": {
+            "type": "int",
+            "defaultValue": "PLACEHOLDER_FOR_VALUE",
+            "description": "Delay in milliseconds",
+            "isRequired": false
+        },
+        "no-info": {
+            "type": "bool",
+            "defaultValue": "PLACEHOLDER_FOR_VALUE",
+            "description": "Skip printing file and tree info on every line",
+            "isRequired": false
+        },
+        "no-presence": {
+            "type": "bool",
+            "defaultValue": "PLACEHOLDER_FOR_VALUE",
+            "description": "Skip printing extra and missing events",
+            "isRequired": false
+        },
+        "no-segments": {
+            "type": "bool",
+            "defaultValue": "PLACEHOLDER_FOR_VALUE",
+            "description": "Skip comparing number of segments",
+            "isRequired": false
+        },
+        "no-type": {
+            "type": "bool",
+            "defaultValue": "PLACEHOLDER_FOR_VALUE",
+            "description": "Skip comparing event type",
+            "isRequired": false
+        },
+        "noTree": {
+            "type": "bool",
+            "defaultValue": false,
+            "description": "Skip creating additional TTree for 1,2,3-prongs (true = runs a bit faster)",
+            "isRequired": false
+        },
+        "output": {
+            "type": "std::string",
+            "defaultValue": "PLACEHOLDER_FOR_VALUE",
+            "description": "Output root file,mutally exclusive with 'inplace'",
+            "isRequired": false
+        },
+        "outputFile": {
+            "type": "std::string",
+            "defaultValue": "PLACEHOLDER_FOR_VALUE",
+            "description": "string - Path to the output ROOT file",
+            "isRequired": false
+        },
+        "pressure": {
+            "type": "float",
+            "defaultValue": "PLACEHOLDER_FOR_VALUE",
+            "description": "float - CO2 pressure [mbar]",
+            "isRequired": false
+        },
+        "recoClusterDeltaStrips": {
+            "type": "int",
+            "defaultValue": "PLACEHOLDER_FOR_VALUE",
+            "description": "int - Envelope in strip units around seed hits for RECO cluster.",
+            "isRequired": false
+        },
+        "recoClusterDeltaTimeCells": {
+            "type": "int",
+            "defaultValue": "PLACEHOLDER_FOR_VALUE",
+            "description": "int - Envelope in time cell units around seed hits for RECO cluster.",
+            "isRequired": false
+        },
+        "recoClusterEnable": {
+            "type": "bool",
+            "defaultValue": "PLACEHOLDER_FOR_VALUE",
+            "description": "bool - Flag to enable RECO cluster.",
+            "isRequired": false
+        },
+        "recoClusterThreshold": {
+            "type": "double",
+            "defaultValue": "PLACEHOLDER_FOR_VALUE",
+            "description": "double - ADC threshold above pedestal for RECO cluster.",
+            "isRequired": false
+        },
+        "reference": {
+            "type": "std::string",
+            "defaultValue": "PLACEHOLDER_FOR_VALUE",
+            "description": "string - reference root file",
+            "isRequired": false
+        },
+        "referenceDataFile": {
+            "type": "std::string",
+            "defaultValue": "PLACEHOLDER_FOR_VALUE",
+            "description": "string - path to reference data file",
+            "isRequired": false
+        },
+        "removePedestal": {
+            "type": "bool",
+            "defaultValue": "PLACEHOLDER_FOR_VALUE",
+            "description": "bool - Flag to control pedestal removal. Overrides the value from config file.",
+            "isRequired": false
+        },
+        "separator": {
+            "type": "std::string",
+            "defaultValue": "\n",
+            "description": "string - separator",
+            "isRequired": false
+        },
+        "singleAsadGrawFile": {
+            "type": "bool",
+            "defaultValue": false,
+            "description": "flag indicating multi-GRAW mode (default=FALSE)",
+            "isRequired": false
+        },
+        "testDataFile": {
+            "type": "std::string",
+            "defaultValue": "PLACEHOLDER_FOR_VALUE",
+            "description": "string - path to test data file",
+            "isRequired": false
+        },
+        "totalChargeThr": {
+            "type": "unsigned int",
+            "defaultValue": "PLACEHOLDER_FOR_VALUE",
+            "description": "uint - minimal event total charge after pedestal subtraction [ADC units]",
+            "isRequired": false
+        },
+        "verbose": {
+            "type": "bool",
+            "defaultValue": "PLACEHOLDER_FOR_VALUE",
+            "description": "prints message for every duplicate",
+            "isRequired": false
+        }
+    }
+}

@@ -9,12 +9,11 @@
 #include "TString.h"
 #include "TTreeIndex.h"
 
-#include <boost/program_options.hpp>
-
 #include "GeometryTPC.h"
 #include "Track3D.h"
 #include "HIGGS_analysis.h"
 #include "HIGS_trees_analysis.h"
+#include "ConfigManager.h"
 
 #include "colorText.h"
 
@@ -44,49 +43,18 @@ std::istream& operator>>(std::istream& in, BeamDirection& direction){
   return in;
   }
 
-boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
-
-  //  bool optionTree=true;
-  boost::program_options::options_description cmdLineOptDesc("Allowed options");
-  cmdLineOptDesc.add_options()
-    ("help", "produce help message")
-    ("geometryFile",  boost::program_options::value<std::string>()->required(), "string - path to the geometry file")
-    ("dataFile",  boost::program_options::value<std::string>()->required(), "string - path to data file")
-    ("beamEnergy", boost::program_options::value<float>()->required(), "float - LAB gamma beam energy [MeV]")
-    ("beamDir", boost::program_options::value<BeamDirection>()->required(), "string - LAB gamma beam direction [\"x\" xor \"-x\"]")
-    ("pressure", boost::program_options::value<float>()->required(), "float - CO2 pressure [mbar]")
-    ("noTree", boost::program_options::bool_switch()->default_value(false), "skip creating additional TTree for 1,2,3-prongs (true = runs a bit faster)");
-  
-  boost::program_options::variables_map varMap;  
-
-  try {     
-    boost::program_options::store(boost::program_options::parse_command_line(argc, argv, cmdLineOptDesc), varMap);
-    if (varMap.count("help")) {
-      std::cout << "recoEventAnalysis" << "\n\n";
-      std::cout << cmdLineOptDesc << std::endl;
-      exit(1);
-    }
-    boost::program_options::notify(varMap);
-  } catch (const std::exception &e) {
-    std::cerr << e.what() << '\n';
-    std::cout << cmdLineOptDesc << std::endl;
-    exit(1);
-  }
-
-  return varMap;
-}
 /////////////////////////////////////
 /////////////////////////////////////
 int main(int argc, char **argv){
-
-  auto varMap = parseCmdLineArgs(argc, argv);
-  auto geometryFileName = varMap["geometryFile"].as<std::string>();
-  auto dataFileName = varMap["dataFile"].as<std::string>();
-  auto beamEnergy = varMap["beamEnergy"].as<float>();
-  auto pressure = varMap["pressure"].as<float>();
-  auto makeTreeFlag = !varMap["noTree"].as<bool>();
+  ConfigManager cm;
+  boost::property_tree::ptree tree = cm.getConfig(argc, argv);
+  auto geometryFileName = tree.get<std::string>("geometryFile");
+  auto dataFileName =tree.get<std::string>("dataFile");
+  auto beamEnergy = tree.get<int>("beamEnergy");
+  auto pressure = tree.get<float>("pressure");
+  auto makeTreeFlag = !tree.get<bool>("noTree");
   TVector3 beamDir;
-  switch(varMap["beamDir"].as<BeamDirection>()){
+  switch(tree.get<BeamDirection>("beamDir")){
     case BeamDirection::X : 
       beamDir = TVector3(1,0,0);
       break;
