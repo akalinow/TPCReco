@@ -115,7 +115,7 @@ R__ADD_LIBRARY_PATH(../lib)
 #define DRAW_SAME_SCALE_MARGIN 0.05 // add +/- 5% margin for common dE/dx scale
 #define DRAW_AUTO_ZOOM_MARGIN 0.4 // add +/- 40% margin for histogram ranges in AUTO ZOOM mode (if possible)
 #define DRAW_PAD_FILL_COLOR kAzure-6 // matches default kBird palette
-#define DRAW_LOG_SCALE true // use LOG scale for dE/dx axis (NOTE: differential plots will still use LIN scale)
+#define DRAW_LOG_SCALE  false // use LOG scale for dE/dx axis (NOTE: differential plots will still use LIN scale)
 
 #define MISSING_PID_REPLACEMENT_ENABLE true // TODO - to be parameterized
 #define MISSING_PID_1PRONG             ALPHA // TODO - to be parameterized
@@ -1126,6 +1126,8 @@ void DrawFitResults(TCanvas *tcanvas, // input TCanvas
     h->SetStats(false);
     h->SetName(Form("ref_%s",h->GetName()));
     h->SetTitle(Form("REF %s;%s;%s;%s",h->GetTitle(),h->GetXaxis()->GetTitle(),h->GetYaxis()->GetTitle(),h->GetZaxis()->GetTitle()));
+    h->GetYaxis()->SetTitleOffset(1.4);
+    h->GetZaxis()->SetTitleOffset(1.6);
     // draw initial conditions
     if(hasInitTrack) DrawTracksOnUVWProjection((TPad*)gPad, initialTrack, idir, true); // white markers/lines
     // draw fit results
@@ -1183,6 +1185,8 @@ void DrawFitResults(TCanvas *tcanvas, // input TCanvas
       h->SetStats(false);
       h->SetName(Form("fit_%s",h->GetName()));
       h->SetTitle(Form("FIT %s;%s;%s;%s",h->GetTitle(),h->GetXaxis()->GetTitle(),h->GetYaxis()->GetTitle(),h->GetZaxis()->GetTitle()));
+      h->GetYaxis()->SetTitleOffset(1.4);
+      h->GetZaxis()->SetTitleOffset(1.6);
       if(hasFitTrack) DrawTracksOnUVWProjection((TPad*)gPad, fitTrack, idir);
       ipad++;
       idir++;
@@ -1240,6 +1244,8 @@ void DrawFitResults(TCanvas *tcanvas, // input TCanvas
       h->SetStats(false);
       h->SetName(Form("diff_%s",h->GetName()));
       h->SetTitle(Form("RESIDUAL %s;%s;%s;%s",h->GetTitle(),h->GetXaxis()->GetTitle(),h->GetYaxis()->GetTitle(),h->GetZaxis()->GetTitle()));
+      h->GetYaxis()->SetTitleOffset(1.4);
+      h->GetZaxis()->SetTitleOffset(1.6);
       if(hasFitTrack) DrawTracksOnUVWProjection((TPad*)gPad, fitTrack, idir);
       if(hasFitInfo) DrawTLatexOnUVWProjection((TPad*)gPad, 0.6, 0.2,
 					       Form("#splitline{#chi^{2} = %.5lg}{ndf = %ld}",
