@@ -15,8 +15,8 @@
 #include <TRandom3.h>
 #include <TFile.h>
 
-#define _USE_XYDET_INTERPOLATION_ true // default=false
-#define _USE_ZDET_INTERPOLATION_  true // default=false
+#define USE_XYDET_INTERPOLATION true // default=true
+#define USE_ZDET_INTERPOLATION  true // default=true
 
 StripResponseCalculator::StripResponseCalculator(std::shared_ptr<GeometryTPC> aGeometryPtr,
                                                  int delta_strips, // consider +/- neighbour strips
@@ -307,8 +307,8 @@ StripResponseCalculator::addCharge(double x, double y, double z, double charge, 
         const auto smeared_pos = myGeometryPtr->Strip2posUVW(smeared_strip_dir, smeared_strip_num, err);
         if (err) continue;
 
-#if(_USE_XYDET_INTERPOLATION_)
-        const auto smeared_fractionXY = respXY.second->Interpolate(dx, dy); // EXPERIMENTAL
+#if(USE_XYDET_INTERPOLATION)
+        const auto smeared_fractionXY = respXY.second->Interpolate(dx, dy);
 #else
 	const auto smeared_bin = respXY.second->FindBin(dx, dy);
         const auto smeared_fractionXY = respXY.second->GetBinContent(smeared_bin);
@@ -409,8 +409,8 @@ StripResponseCalculator::addCharge(double x, double y, double z, double charge, 
                     MultiKey3(smeared_strip_dir, smeared_strip_num - refStrips[smeared_strip_dir], delta_pads));
 
             if (it.previous != GeometryTPC::outside_section) {
-#if(_USE_XYDET_INTERPOLATION_)	
-	        fractionPerSectionMap[it.previous] -= smeared_fractionXY - it2->second->Interpolate(dx, dy); // EXPERIMENTAL
+#if(USE_XYDET_INTERPOLATION)
+	        fractionPerSectionMap[it.previous] -= smeared_fractionXY - it2->second->Interpolate(dx, dy);
 #else
 	        fractionPerSectionMap[it.previous] -= smeared_fractionXY - it2->second->GetBinContent(smeared_bin);
 #endif
@@ -427,7 +427,7 @@ StripResponseCalculator::addCharge(double x, double y, double z, double charge, 
                 ////// DEBUG
             }
             if (it.next != GeometryTPC::outside_section) {
-#if(_USE_XYDET_INTERPOLATION_)	
+#if(USE_XYDET_INTERPOLATION)
 	        fractionPerSectionMap[it.next] -= it2->second->Interpolate(dx, dy);
 #else
  	        fractionPerSectionMap[it.next] -= it2->second->GetBinContent(smeared_bin);
@@ -475,8 +475,8 @@ StripResponseCalculator::addCharge(double x, double y, double z, double charge, 
         ////// DEBUG
 
         for (auto &respZ: responseMapPerTimecell) {
-#if(_USE_ZDET_INTERPOLATION_)
-            const auto smeared_fractionZ = respZ.second->Interpolate(dz); // EXPERIMENTAL
+#if(USE_ZDET_INTERPOLATION)
+            const auto smeared_fractionZ = respZ.second->Interpolate(dz);
 #else
             const auto smeared_fractionZ = respZ.second->GetBinContent(respZ.second->FindBin(dz));
 #endif
