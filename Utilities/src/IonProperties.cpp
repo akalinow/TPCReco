@@ -24,6 +24,7 @@ IonProperties::IonProperties() {
     propMap[pid_type::OXYGEN_16]   = {16, 8, 15.9949146193};  // isotope Oxygen-16   (Z=8, N=8, A=16)  [2]
     propMap[pid_type::OXYGEN_17]   = {17, 8, 16.9991317560};  // isotope Oxygen-17   (Z=8, N=9, A=17)  [2]
     propMap[pid_type::OXYGEN_18]   = {18, 8, 17.9991596121};  // isotope Oxygen-18   (Z=8, N=10, A=18) [2]
+    propMap[pid_type::BERYLLIUM_8] = {8,  4, 8.00530510};     // isotope Beryllium-8 (Z=4, N=4, A=8)   [2]
 
 }
 
