@@ -2,14 +2,14 @@
 //
 // Example ROOT macros that use StripResponseCalculator to:
 // * prepare strip response matrix for a given diffusion hypothesis and TPC working point.
-// * create PEventTPC collection out of user-supplied Track3D collection (e.g. toy MC).
+// * create PEventTPC collection out of user-supplied Track3D collection (e.g. Toy MC).
 //
-// Mikolaj Cwiok (UW) - 25 May 2023
+// Mikolaj Cwiok (UW) - 27 May 2023
 //
 //
 // root
 // root [0] .L ../examples/testStripResponseCalculator.cxx
-// root [1] generateResponseAll();
+// root [1] testGenerateResponse();
 // root [2] plotStripResponse(1.0);
 // root [3] plotTimeResponse(1.0);
 // root [4] testResponse1(1.0);
@@ -43,7 +43,8 @@ R__ADD_LIBRARY_PATH(../lib)
 //////////////////////////
 //////////////////////////
 //
-// generates response histograms and saves them to a separate ROOT file
+// Generates strip response histograms and saves them to a separate ROOT file.
+// NOTE: Already existing files will be preserved.
 //
 void generateResponse(double sigmaXY=1, // [mm] - effective diffusion along XY_DET
 		      double sigmaZ=-1, // [mm] - effective diffusion along Z_DET
@@ -60,7 +61,7 @@ void generateResponse(double sigmaXY=1, // [mm] - effective diffusion along XY_D
   if (!gROOT->GetClass("GeometryTPC")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
   }
-  if (!gROOT->GetClass("IonRangeCalculator")){ // FIX
+  if (!gROOT->GetClass("IonRangeCalculator")){
     R__LOAD_LIBRARY(libTPCUtilities.so);
   }
   if (!gROOT->GetClass("StripResponseCalculator")){
@@ -91,8 +92,11 @@ void generateResponse(double sigmaXY=1, // [mm] - effective diffusion along XY_D
 
 //////////////////////////
 //////////////////////////
-void generateResponseAll() {
-  std::vector<double> sigma{0.5, 1, 2};
+//
+// This helper function creates 3 strip response matrices for testing purposes.
+//
+void testGenerateResponse() {
+  std::vector<double> sigma{0.5, 1, 2}; // mm
   for(auto & s : sigma) {
     generateResponse(s); // generates histograms and saves them to a separate ROOT file
   }
@@ -101,7 +105,7 @@ void generateResponseAll() {
 //////////////////////////
 //////////////////////////
 //
-// This function reads existing response histograms (both XY_DET and Z_DET part) that correspond to some REFERENCE time settings:
+// This helper function reads existing response histograms (both XY_DET and Z_DET part) that correspond to some REFERENCE time settings:
 // - REF peaking time input argument,
 // - REF longitudinal diffusion input argument,
 // - REF geometry file with drift velocity and sampling rate,
@@ -129,7 +133,7 @@ void replaceTimeResponse(double ref_sigmaXY=0.5,         // [mm] - same for REF 
   if (!gROOT->GetClass("GeometryTPC")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
   }
-  if (!gROOT->GetClass("IonRangeCalculator")){ // FIX
+  if (!gROOT->GetClass("IonRangeCalculator")){
     R__LOAD_LIBRARY(libTPCUtilities.so);
   }
   if (!gROOT->GetClass("StripResponseCalculator")){
@@ -170,17 +174,21 @@ void replaceTimeResponse(double ref_sigmaXY=0.5,         // [mm] - same for REF 
 
 //////////////////////////
 //////////////////////////
-void plotStripResponse(double sigmaXY=0.5,
-		       double sigmaZ=-1,
-		       double peakingTime=-1,
+//
+// This function visualizes XY_DET part of 2D signal response matrix that accounts for
+// the effective transverse diffusion (active volume, GEMs).
+//
+void plotStripResponse(double sigmaXY=0.5, // [mm] - effective diffusion along XY_DET
+		       double sigmaZ=-1, // [mm] - effective diffusion along Z_DET
+		       double peakingTime=-1, // [ns] - GET electronics peaking time
 		       const char *geometryFile="geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat",
-		       int nstrips=7,
-		       int npads=14, // nstrips*2
-		       int ncells=50) {
+		       int nstrips=7, // use: nstrips>(3*sigmaXY)/strip_pitch
+		       int npads=14, // use: (nstrips*2)
+		       int ncells=50) { // use: ncells>(3*sigmaZ)/(drift_velocity/sampling_frequency)
   if (!gROOT->GetClass("GeometryTPC")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
   }
-  if (!gROOT->GetClass("IonRangeCalculator")){ // FIX
+  if (!gROOT->GetClass("IonRangeCalculator")){
     R__LOAD_LIBRARY(libTPCUtilities.so);
   }
   if (!gROOT->GetClass("StripResponseCalculator")){
@@ -220,17 +228,22 @@ void plotStripResponse(double sigmaXY=0.5,
 
 //////////////////////////
 //////////////////////////
-void plotTimeResponse(double sigmaXY=0.5,
-		      double sigmaZ=-1,
-		      double peakingTime=-1,
+//
+// This function visualizes Z_DET part of 1D signal response matrix that accounts for:
+// - effective longitudinal diffusion (detector volume, GEMs)
+// - (optional) peaking time of the GET electronics.
+//
+void plotTimeResponse(double sigmaXY=0.5, // [mm] - effective diffusion along XY_DET
+		      double sigmaZ=-1, // [mm] - effective diffusion along Z_DET
+		      double peakingTime=-1, // [ns] - GET electronics peaking time
 		      const char *geometryFile="geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat",
-		      int nstrips=7,
-		      int npads=14, // nstrips*2
-		      int ncells=50) {
+		      int nstrips=7, // use: nstrips>(3*sigmaXY)/strip_pitch
+		      int npads=14, // use: (nstrips*2)
+		      int ncells=50) { // use: ncells>(3*sigmaZ)/(drift_velocity/sampling_frequency)
   if (!gROOT->GetClass("GeometryTPC")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
   }
-  if (!gROOT->GetClass("IonRangeCalculator")){ // FIX
+  if (!gROOT->GetClass("IonRangeCalculator")){
     R__LOAD_LIBRARY(libTPCUtilities.so);
   }
   if (!gROOT->GetClass("StripResponseCalculator")){
@@ -360,17 +373,30 @@ void addConstantToTH2D(TH2D* h, double c) {
 
 //////////////////////////
 //////////////////////////
-void testResponse1(double sigmaXY=0.5,
-		   double sigmaZ=-1,
-		   double peakingTime=-1,
+//
+// This function demonstrates how to use StripResponseCalculator to obtain signals
+// from a dummy point-like ionization cluster:
+// 1. For filling full EventTPC(or just PEventTPC) charge deposits can be
+//    added to existing PEventTPC by calling StripResponseCalculator::addCharge() with 3 arguments.
+//    After filling all the charges a new EventTPC can be created out of PEventTPC::GetChargeMap().
+//    This mode is usefull for signal digitization of Toy Monte Carlo tracks.
+// 2. For filling three 2D projections (UZ, VZ and WZ) from merged strips
+//    one has to declare histograms to be filled beforehand, and only then subsequently call
+//    StripResponseCalculator::addCharge() with just 2 arguments.
+//    This mode is useful for detailed fitting of dE/dx templates created on-the-fly for each
+//    of three 2D projections (UZ, VZ and WZ).
+//
+void testResponse1(double sigmaXY=0.5, // [mm] - effective diffusion along XY_DET
+		   double sigmaZ=-1, // [mm] - effective diffusion along Z_DET
+		   double peakingTime=-1, // [ns] - GET electronics peaking time
 		   const char *geometryFile="geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat",
-		   int nstrips=7,
-		   int npads=14, // nstrips*2
-		   int ncells=50) {
+		   int nstrips=7, // use: nstrips>(3*sigmaXY)/strip_pitch
+		   int npads=14, // use: (nstrips*2)
+		   int ncells=50) { // use: ncells>(3*sigmaZ)/(drift_velocity/sampling_frequency)
   if (!gROOT->GetClass("GeometryTPC")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
   }
-  if (!gROOT->GetClass("IonRangeCalculator")){ // FIX
+  if (!gROOT->GetClass("IonRangeCalculator")){
     R__LOAD_LIBRARY(libTPCUtilities.so);
   }
   if (!gROOT->GetClass("StripResponseCalculator")){
@@ -390,7 +416,7 @@ void testResponse1(double sigmaXY=0.5,
 					      sigmaXY, sigmaZ, peakingTime) ) );
 
   // define point-like charge
-  auto pos=TVector3(50.0, 0.0, 0.0);
+  auto pos=TVector3(50.0, 0.0, 0.0); // mm
   auto charge=1000;
 
   // create dummy event to get empty UZ/VZ/WZ projection histograms
@@ -457,15 +483,21 @@ void testResponse1(double sigmaXY=0.5,
 
 //////////////////////////
 //////////////////////////
+//
+// This function demonstrates how to use StripResponseCalculator in a loop to fill three projections
+// (UV, VZ and WZ) from the merged strips.
+// For the very last event three 2D projections (UV, VZ and WZ) are drawn as a cross-check.
+// This mode is usefull for preparing many 2D signal templates while fitting raw-data/MC EventTPC.
+//
 void testResponse2(int nevents=1,
 		   const char *geometryFile="geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat",
-		   int nstrips=7,
-		   int npads=14, // nstrips*2
-		   int ncells=50) {
+		   int nstrips=7, // use: nstrips>(3*sigmaXY)/strip_pitch
+		   int npads=14, // use: (nstrips*2)
+		   int ncells=50) { // use: ncells>(3*sigmaZ)/(drift_velocity/sampling_frequency)
   if (!gROOT->GetClass("GeometryTPC")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
   }
-  if (!gROOT->GetClass("IonRangeCalculator")){ // FIX
+  if (!gROOT->GetClass("IonRangeCalculator")){
     R__LOAD_LIBRARY(libTPCUtilities.so);
   }
   if (!gROOT->GetClass("StripResponseCalculator")){
@@ -473,7 +505,7 @@ void testResponse2(int nevents=1,
   }
   auto geo=std::make_shared<GeometryTPC>(geometryFile, false);
   geo->SetTH2PolyPartition(3*20,2*20); // higher TH2Poly granularity speeds up finding reference nodes
-  std::vector<double> sigma{0.5, 1, 2};
+  std::vector<double> sigma{0.5, 1, 2}; // mm
   std::vector<StripResponseCalculator*> calc(sigma.size());
   for(auto i=0; i<calc.size(); i++) {
     auto sigmaXY=sigma[i];
@@ -519,8 +551,7 @@ void testResponse2(int nevents=1,
       auto pos0=TVector3(50.0, 50.0, -30.0);
       auto pos=pos0+TVector3(0, -50, 0)*i;
       auto charge=10000;
-      auto length=50.0; // [mm]
-      //      auto npoints=100;
+      auto length=50.0; // mm
       auto npoints=(int)(3*length/geo->GetStripPitch());
       auto unit_vec=TVector3(1,1,1).Unit();
       for(auto ipoint=0; ipoint<npoints; ipoint++) {
@@ -567,11 +598,17 @@ void testResponse2(int nevents=1,
 
 //////////////////////////
 //////////////////////////
+//
+// This function demonstrates how to use StripResponseCalculator in a loop to fill three projections
+// (UV, VZ and WZ) from the merged strips using constant dummy tracks.
+// For the very last event three 2D projections (UV, VZ and WZ) are drawn as a cross-check.
+// This mode is usefull for preparing many 2D signal templates while fitting raw-data/MC EventTPC.
+//
 void testResponse3(int nevents=1,
 		   const char *geometryFile="geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat",
-		   int nstrips=7,
-		   int npads=14, // nstrips*2
-		   int ncells=50) {
+		   int nstrips=7, // use: nstrips>(3*sigmaXY)/strip_pitch
+		   int npads=14, // use: (nstrips*2)
+		   int ncells=50) { // use: ncells>(3*sigmaZ)/(drift_velocity/sampling_frequency)
   if (!gROOT->GetClass("GeometryTPC")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
   }
@@ -658,21 +695,27 @@ void testResponse3(int nevents=1,
 
 //////////////////////////
 //////////////////////////
-void testResponse4(const char *fname,
-		   long maxevents=0,
+//
+// This function demonstrates how to use StripResponseCalculator in a loop to create new PEventTPC ROOT tree
+// out of existing Track3D ROOT tree.
+// For the very last event three 2D projections (UV, VZ and WZ) are drawn as a cross-check.
+// This mode is usefull for signal digitization of Toy Monte Carlo tracks.
+//
+void testResponse4(const char *fname, // input ROOT file with Track3D tree
+		   long maxevents=0, // maximal number of event to process
 		   const char *geometryFile="geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat",
-		   double pressure_mbar=130.0,
-		   double temperature_K=273.15+20,
-		   double sigmaXY_mm=0.85,
-		   double sigmaZ_mm=0.86,
-		   double peakingTime=232,
-		   int nstrips=7,
-		   int npads=14, // nstrips*2
-		   int ncells=50) {
+		   double pressure_mbar=130.0, // working pressure
+		   double temperature_K=273.15+20, // working temperature
+		   double sigmaXY_mm=0.85, // [mm] - effective diffusion along XY_DET
+		   double sigmaZ_mm=0.86, // [mm] - effective diffusion along Z_DET
+		   double peakingTime=232, // [ns] - GET electronics peaking time
+		   int nstrips=7, // use: nstrips>(3*sigmaXY)/strip_pitch
+		   int npads=14, // use: (nstrips*2)
+		   int ncells=50) { // use: ncells>(3*sigmaZ)/(drift_velocity/sampling_frequency)
   if (!gROOT->GetClass("GeometryTPC")){
     R__LOAD_LIBRARY(libTPCDataFormats.so);
   }
-  if (!gROOT->GetClass("IonRangeCalculator")){ // FIX
+  if (!gROOT->GetClass("IonRangeCalculator")){
     R__LOAD_LIBRARY(libTPCUtilities.so);
   }
   if (!gROOT->GetClass("StripResponseCalculator")){
