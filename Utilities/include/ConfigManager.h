@@ -22,19 +22,20 @@ public:
     static const std::string allowedOptPath;
 
 private:
-  enum string_code {
-    eint,
-    euint,
-    efloat,
-    edouble,
-    estr,
-    ebool,
-    eunknown
+    boost::program_options::options_description parseAllowedArgs(std::string pathToFile);
+    boost::program_options::variables_map parseCmdLineArgs(int argc, char ** argv);
+
+    //helpers
+    enum string_code {
+      eint,
+      euint,
+      efloat,
+      edouble,
+      estr,
+      ebool,
+      eunknown
     };
     string_code hashit (std::string const& );
     typedef std::vector< std::tuple<std::string,std::string> > vecOfTuples;
-
-    vecOfTuples allowedOptList (std::string pathToFile);
-    boost::program_options::options_description parseAllowedArgs(std::string pathToFile);
-    boost::program_options::variables_map parseCmdLineArgs(int argc, char ** argv);
+    vecOfTuples allowedOptList (std::string pathToFile);   
 };
