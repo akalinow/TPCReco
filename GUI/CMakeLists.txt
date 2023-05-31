@@ -25,6 +25,13 @@ reco_add_executable(dumpRateHistos bin/dumpRateHistos.cpp)
 
 target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
 
+<<<<<<< HEAD
+target_link_libraries(${MODULE_NAME} ${TPCRECO_LIBRARIES_LOCAL} ${Boost_LIBRARIES} ${GRAW_TO_ROOT_LIBRARY} ${ROOT_LIBRARIES})
+target_link_libraries(tpcGUI PUBLIC ${TPCRECO_LIBRARIES} ${Boost_LIBRARIES} ${GRAW_TO_ROOT_LIBRARY} ${MODULE_NAME})
+target_link_libraries(dumpProjectionHistos PUBLIC ${TPCRECO_LIBRARIES} ${Boost_LIBRARIES} ${GRAW_TO_ROOT_LIBRARY} ${MODULE_NAME})
+target_link_libraries(dumpClusterHistos PUBLIC ${TPCRECO_LIBRARIES} ${Boost_LIBRARIES} ${GRAW_TO_ROOT_LIBRARY} ${MODULE_NAME})
+target_link_libraries(dumpRateHistos PUBLIC ${TPCRECO_LIBRARIES} ${Boost_LIBRARIES} ${GRAW_TO_ROOT_LIBRARY} ${MODULE_NAME})
+=======
 option(DIRECTORYWATCH_ONE_message_DISABLE
        "Define DIRECTORYWATCH_ONE_message_DISABLE variable" OFF)
 if(DIRECTORYWATCH_ONE_message_DISABLE)
@@ -39,6 +46,7 @@ else()
       "DirectoryWatch single message enabled (i.e. single message per all modified files)"
   )
 endif()
+>>>>>>> f354324fc0e2a0130807f8471dda39732124fe4f
 
 target_link_libraries(
   ${MODULE_NAME} PUBLIC ${ROOT_LIBRARIES} DataFormats Reconstruction Analysis

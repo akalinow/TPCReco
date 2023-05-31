@@ -9,6 +9,16 @@
 TGraph* dEdxFitter::braggGraph_alpha = nullptr;
 TGraph* dEdxFitter::braggGraph_12C = nullptr;
 
+<<<<<<< HEAD
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif // M_PI
+
+
+TGraph* dEdxFitter::braggGraph_alpha = new TGraph("dEdx_corr_alpha_10MeV_CO2_250mbar.dat", "%lg %lg");
+TGraph* dEdxFitter::braggGraph_12C = new TGraph("dEdx_corr_12C_5MeV_CO2_250mbar.dat", "%lg %lg");
+=======
+>>>>>>> f354324fc0e2a0130807f8471dda39732124fe4f
 double dEdxFitter::nominalPressure = 250.0;
 
 double dEdxFitter::currentPressure = 190.0;

@@ -16,6 +16,13 @@
 #include <TString.h>
 #include <TTreeIndex.h>
 
+<<<<<<< HEAD
+#include "GeometryTPC.h"
+#include "Track3D.h"
+#include "HIGGS_analysis.h"
+#include "HIGS_trees_analysis.h"
+#include "ConfigManager.h"
+=======
 #include <boost/program_options.hpp>
 
 #include "TPCReco/Cuts.h"
@@ -26,6 +33,7 @@
 #include "TPCReco/HIGGS_analysis.h"
 #include "TPCReco/HIGS_trees_analysis.h"
 #include "TPCReco/colorText.h"
+>>>>>>> f354324fc0e2a0130807f8471dda39732124fe4f
 
 enum class BeamDirection{
   PLUS_X,
@@ -80,6 +88,30 @@ std::ostream& operator<<(std::ostream& out, BeamDirection const &direction){
   return out;
 }
 
+<<<<<<< HEAD
+/////////////////////////////////////
+/////////////////////////////////////
+int main(int argc, char **argv){
+  ConfigManager cm;
+  boost::property_tree::ptree tree = cm.getConfig(argc, argv);
+  auto geometryFileName = tree.get<std::string>("geometryFile");
+  auto dataFileName =tree.get<std::string>("dataFile");
+  auto beamEnergy = tree.get<int>("beamEnergy");
+  auto pressure = tree.get<float>("pressure");
+  auto makeTreeFlag = !tree.get<bool>("noTree");
+  TVector3 beamDir;
+  switch(tree.get<BeamDirection>("beamDir")){
+    case BeamDirection::X : 
+      beamDir = TVector3(1,0,0);
+      break;
+    case BeamDirection::MINUS_X : 
+      beamDir = TVector3(-1,0,0);
+      break;
+    default:
+      return 1;
+  }
+  analyzeRecoEvents(geometryFileName, dataFileName, beamEnergy, beamDir, pressure, makeTreeFlag);
+=======
 boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
 
   //  bool optionTree=true;
@@ -154,6 +186,7 @@ int main(int argc, char **argv){
 		    alphaScaleCorr, alphaOffsetCorr, carbonScaleCorr, carbonOffsetCorr,
 		    alphaMinCut, alphaMaxCut, carbonMinCut, carbonMaxCut);
 
+>>>>>>> f354324fc0e2a0130807f8471dda39732124fe4f
   return 0;
 }
 /////////////////////////////

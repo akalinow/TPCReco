@@ -11,10 +11,18 @@
 
 #include <boost/program_options.hpp>
 
+<<<<<<< HEAD
+#include "IonRangeCalculator.h"
+#include "dEdxFitter.h"
+#include "TrackBuilder.h"
+#include "EventSourceROOT.h"
+#include "ConfigManager.h"
+=======
 #include "TPCReco/IonRangeCalculator.h"
 #include "TPCReco/dEdxFitter.h"
 #include "TPCReco/TrackBuilder.h"
 #include "TPCReco/EventSourceROOT.h"
+>>>>>>> f354324fc0e2a0130807f8471dda39732124fe4f
 #ifdef WITH_GET
 #include "TPCReco/EventSourceGRAW.h"
 #include "TPCReco/EventSourceMultiGRAW.h"
@@ -65,54 +73,17 @@ int makeTrackTree(const  std::string & geometryFileName,
 		  const  std::string & dataFileName);
 /////////////////////////////////////
 /////////////////////////////////////
-boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
-
-  boost::program_options::options_description cmdLineOptDesc("Allowed options");
-  cmdLineOptDesc.add_options()
-    ("help", "produce help message")
-    ("geometryFile",  boost::program_options::value<std::string>()->required(), "string - path to the geometry file.")
-    ("dataFile",  boost::program_options::value<std::string>()->required(), "string - path to data file.");
-  
-  boost::program_options::variables_map varMap;        
-try {     
-    boost::program_options::store(boost::program_options::parse_command_line(argc, argv, cmdLineOptDesc), varMap);
-    if (varMap.count("help")) {
-      std::cout << "makeTrackTree" << "\n\n";
-      std::cout << cmdLineOptDesc << std::endl;
-      exit(1);
-    }
-    boost::program_options::notify(varMap);
-  } catch (const std::exception &e) {
-    std::cerr << e.what() << '\n';
-    std::cout << cmdLineOptDesc << std::endl;
-    exit(1);
-  }
-
-  return varMap;
-}
-/////////////////////////////////////
-/////////////////////////////////////
 int main(int argc, char **argv){
 
   TStopwatch aStopwatch;
   aStopwatch.Start();
 
   std::string geometryFileName, dataFileName;
-  boost::program_options::variables_map varMap = parseCmdLineArgs(argc, argv);
-  boost::property_tree::ptree tree;
-  if(argc<3){
-    char text[] = "--help";
-    char *argvTmp[] = {text, text};
-    parseCmdLineArgs(2,argvTmp);
-    return 1;
-  }
-  if (varMap.count("geometryFile")) {
-    geometryFileName = varMap["geometryFile"].as<std::string>();
-  }
-  if (varMap.count("dataFile")) {
-    dataFileName = varMap["dataFile"].as<std::string>();
-  }
-
+  ConfigManager cm;
+  boost::property_tree::ptree tree = cm.getConfig(argc, argv);
+  geometryFileName = tree.get("geometryFileName","");
+  dataFileName = tree.get("dataFileName","");
+ 
   int nEntriesProcessed = 0;
   if(dataFileName.size() && geometryFileName.size()){
     nEntriesProcessed = makeTrackTree(geometryFileName, dataFileName);

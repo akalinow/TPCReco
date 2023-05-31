@@ -13,10 +13,18 @@
 
 #include <boost/program_options.hpp>
 
+<<<<<<< HEAD
+#include "GeometryTPC.h"
+#include "Track3D.h"
+#include "EventInfo.h"
+#include "Comp_analysis.h"
+#include "ConfigManager.h"
+=======
 #include "TPCReco/GeometryTPC.h"
 #include "TPCReco/Track3D.h"
 #include "TPCReco/EventInfo.h"
 #include "TPCReco/Comp_analysis.h"
+>>>>>>> f354324fc0e2a0130807f8471dda39732124fe4f
 
 #include "TPCReco/colorText.h"
 
@@ -28,6 +36,16 @@ int compareRecoEvents(const  std::string & geometryFileName,
 );
 /////////////////////////////////////
 /////////////////////////////////////
+<<<<<<< HEAD
+int main(int argc, char **argv){
+
+  ConfigManager cm;
+  boost::property_tree::ptree tree = cm.getConfig(argc,argv);
+  auto geometryFileName = tree.get("geometryFile","");
+  auto referenceDataFileName = tree.get("referenceDataFile","");
+  auto testDataFileName = tree.get("testDataFile","");
+  compareRecoEvents(geometryFileName, referenceDataFileName, testDataFileName);
+=======
 boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
 
   boost::program_options::options_description cmdLineOptDesc("Allowed options");
@@ -67,6 +85,7 @@ int main(int argc, char **argv){
   auto pressure = varMap["pressure"].as<float>();
   auto temperature = varMap["temperature"].as<float>();
   compareRecoEvents(geometryFileName, referenceDataFileName, testDataFileName, pressure, temperature);
+>>>>>>> f354324fc0e2a0130807f8471dda39732124fe4f
   return 0;
 }
 /////////////////////////////

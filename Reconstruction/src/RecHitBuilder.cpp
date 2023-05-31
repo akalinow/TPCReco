@@ -4,7 +4,15 @@
 #include "TPCReco/GeometryTPC.h"
 #include "TPCReco/RecHitBuilder.h"
 
+<<<<<<< HEAD
+#include "colorText.h"
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif // M_PI
+=======
 #include "TPCReco/colorText.h"
+>>>>>>> f354324fc0e2a0130807f8471dda39732124fe4f
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 RecHitBuilder::RecHitBuilder(){
