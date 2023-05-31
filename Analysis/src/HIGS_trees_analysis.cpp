@@ -3,29 +3,32 @@
 #include <iostream>
 #include <algorithm>
 
-#include "TFile.h"
-#include "TTree.h"
-#include "TVector3.h"
-#include "TH2Poly.h"
+#include <TFile.h>
+#include <TTree.h>
+#include <TVector3.h>
+#include <TH2Poly.h>
 
-#include "GeometryTPC.h"
-#include "Track3D.h"
-#include "TrackSegment3D.h"
-#include "EventInfo.h"
-#include "HIGS_trees_analysis.h"
-#include "UtilsMath.h"
+#include "TPCReco/GeometryTPC.h"
+#include "TPCReco/Track3D.h"
+#include "TPCReco/TrackSegment3D.h"
+#include "TPCReco/EventInfo.h"
+#include "TPCReco/HIGS_trees_analysis.h"
 
-#include "colorText.h"
+#include "TPCReco/colorText.h"
+
+using std::chrono::duration;
+using std::chrono::duration_cast;
 
 ///////////////////////////////
 ///////////////////////////////
 HIGS_trees_analysis::HIGS_trees_analysis(std::shared_ptr<GeometryTPC> aGeometryPtr, // definition of LAB detector coordinates
-					 float beamEnergy, // nominal gamma beam energy [MeV] in detector LAB frame
-					 TVector3 beamDir, // nominal gamma beam direction in detector LAB frame
-					 double pressure){ // CO2 pressure [mbar]
+					 float beamEnergy,   // nominal gamma beam energy [MeV] in detector LAB frame
+					 TVector3 beamDir,   // nominal gamma beam direction in detector LAB frame
+					 double pressure,    // CO2 pressure [mbar]
+					 double temperature){// CO2 temperature [K]
   setGeometry(aGeometryPtr);
   setBeamProperties(beamEnergy, beamDir);
-  setIonRangeCalculator(pressure);
+  setIonRangeCalculator(pressure, temperature);
   open();
   /*
   auto gback=(TGraph*)(xyArea.back().bin->GetPolygon());
@@ -110,10 +113,10 @@ void HIGS_trees_analysis::setBeamProperties(float beamEnergy,   // nominal gamma
 }
 //////////////////////////
 //////////////////////////
-void HIGS_trees_analysis::setIonRangeCalculator(double pressure){ // CO2 pressure [mbar]
+void HIGS_trees_analysis::setIonRangeCalculator(double pressure, double temperature){ // CO2 pressure [mbar] and temperature [K]
 
-  // set current conditions: gas=CO2, pressure=190 mbar, temperature=20C
-  myRangeCalculator.setGasConditions(/*IonRangeCalculator::*/CO2, fabs(pressure), 273.15+20);
+  // set current conditions: gas=CO2, arbitrary temperature [K] and pressure [mbar]
+  myRangeCalculator.setGasConditions(/*IonRangeCalculator::*/CO2, fabs(pressure), fabs(temperature));
 }
 ///////////////////////////////
 ///////////////////////////////
@@ -156,14 +159,24 @@ void HIGS_trees_analysis::fillTrees1prong(Track3D *aTrack, eventraw::EventInfo *
   event1prong_->runId=(aEventInfo ? aEventInfo->GetRunId() : -1);
   event1prong_->eventId=(aEventInfo ? aEventInfo->GetEventId() : -1);
   event1prong_->eventType = aEventInfo ? aEventInfo->GetEventType().to_ulong() : 0;
-  event1prong_->unixTimeSec=(aEventInfo ? Utils::getUnixTimestamp( aEventInfo->GetRunId(), aEventInfo->GetEventTimestamp() ) : -1); // absolute Unix time [s]
+  event1prong_->unixTimeSec =
+      (aEventInfo
+           ? duration_cast<duration<long double>>(
+                 tpcreco::eventAbsoluteTime(*aEventInfo).time_since_epoch())
+                 .count()
+           : -1); // absolute Unix time [s]
+  // NOTE: for irregular runs with runId=[0, 999999] (6 figures) the parser returns absolute Unix time = 0
   static double last_timestamp = 0;
   if(isFirst) {
     last_timestamp=event1prong_->unixTimeSec;
     isFirst=false;
   }
-  event1prong_->runTimeSec=(aEventInfo ? (double)(aEventInfo->GetEventTimestamp()*10.0e-9) : -1); // [s] converted from GET electronics timestamp (10ns units) to seconds
-  event1prong_->deltaTimeSec=(double)(aEventInfo ? event1prong_->unixTimeSec - last_timestamp : -1); // [s] time difference for rate measurements
+  event1prong_->runTimeSec =
+      (aEventInfo ? duration_cast<duration<long double>>(
+                        tpcreco::eventRelativeTime(*aEventInfo))
+                        .count()
+                  : -1); // [s]
+  event1prong_->deltaTimeSec= (aEventInfo ? event1prong_->unixTimeSec - last_timestamp : -1); // [s] time difference for rate measurements
   last_timestamp=event1prong_->unixTimeSec;
 
   event1prong_->vertexPos = list.front().getStart();
@@ -226,14 +239,24 @@ void HIGS_trees_analysis::fillTrees2prong(Track3D *aTrack, eventraw::EventInfo *
   event2prong_->runId=(aEventInfo ? aEventInfo->GetRunId() : -1);
   event2prong_->eventId=(aEventInfo ? aEventInfo->GetEventId() : -1);
   event2prong_->eventType = aEventInfo ? aEventInfo->GetEventType().to_ulong() : 0;
-  event2prong_->unixTimeSec=(aEventInfo ? Utils::getUnixTimestamp( aEventInfo->GetRunId(), aEventInfo->GetEventTimestamp() ) : -1); // absolute Unix time [s]
+  event2prong_->unixTimeSec =
+      (aEventInfo
+           ? duration_cast<duration<long double>>(
+                 tpcreco::eventAbsoluteTime(*aEventInfo).time_since_epoch())
+                 .count()
+           : -1); // absolute Unix time [s]
+  // NOTE: for irregular runs with runId=[0, 999999] (6 figures) the parser returns absolute Unix time = 0
   static double last_timestamp = 0;
   if(isFirst) {
     last_timestamp=event2prong_->unixTimeSec;
     isFirst=false;
   }
-  event2prong_->runTimeSec=(aEventInfo ? (double)(aEventInfo->GetEventTimestamp()*10.0e-9) : -1); // [s] converted from GET electronics timestamp (10ns units) to seconds
-  event2prong_->deltaTimeSec=(double)(aEventInfo ? event2prong_->unixTimeSec - last_timestamp : -1); // [s] time difference for rate measurements
+  event2prong_->runTimeSec =
+      (aEventInfo ? duration_cast<duration<long double>>(
+                        tpcreco::eventRelativeTime(*aEventInfo))
+                        .count()
+                  : -1); // [s]
+  event2prong_->deltaTimeSec=(aEventInfo ? event2prong_->unixTimeSec - last_timestamp : -1); // [s] time difference for rate measurements
   last_timestamp=event2prong_->unixTimeSec;
 
   event2prong_->vertexPos = list.front().getStart();
@@ -303,14 +326,24 @@ void HIGS_trees_analysis::fillTrees3prong(Track3D *aTrack, eventraw::EventInfo *
   event3prong_->runId=(aEventInfo ? aEventInfo->GetRunId() : -1);
   event3prong_->eventId=(aEventInfo ? aEventInfo->GetEventId() : -1);
   event3prong_->eventType = aEventInfo ? aEventInfo->GetEventType().to_ulong() : 0;
-  event3prong_->unixTimeSec=(aEventInfo ? Utils::getUnixTimestamp( aEventInfo->GetRunId(), aEventInfo->GetEventTimestamp() ) : -1); // absolute Unix time [s]
+  event3prong_->unixTimeSec =
+      (aEventInfo
+           ? duration_cast<duration<long double>>(
+                 tpcreco::eventAbsoluteTime(*aEventInfo).time_since_epoch())
+                 .count()
+           : -1); // absolute Unix time [s]
+  // NOTE: for irregular runs with runId=[0, 999999] (6 figures) the parser returns absolute Unix time = 0
   static double last_timestamp = 0;
   if(isFirst) {
     last_timestamp=event3prong_->unixTimeSec;
     isFirst=false;
   }
-  event3prong_->runTimeSec=(aEventInfo ? (double)(aEventInfo->GetEventTimestamp()*10.0e-9) : -1); // [s] converted from GET electronics timestamp (10ns units) to seconds
-  event3prong_->deltaTimeSec=(double)(aEventInfo ? event3prong_->unixTimeSec - last_timestamp : -1); // [s] time difference for rate measurements
+  event1prong_->runTimeSec =
+      (aEventInfo ? duration_cast<duration<long double>>(
+                        tpcreco::eventRelativeTime(*aEventInfo))
+                        .count()
+                  : -1); // [s]
+  event3prong_->deltaTimeSec=(aEventInfo ? event3prong_->unixTimeSec - last_timestamp : -1); // [s] time difference for rate measurements
   last_timestamp=event3prong_->unixTimeSec;
 
   event3prong_->vertexPos = list.front().getStart();

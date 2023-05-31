@@ -11,11 +11,11 @@
 #include <TGFontDialog.h>
 #include <TFrame.h>
 
-#include "colorText.h"
-#include "MarkersManager.h"
-#include "MainFrame.h"
-#include "HistoManager.h"
-#include "CommonDefinitions.h"
+#include "TPCReco/colorText.h"
+#include "TPCReco/MarkersManager.h"
+#include "TPCReco/MainFrame.h"
+#include "TPCReco/HistoManager.h"
+#include "TPCReco/CommonDefinitions.h"
 
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -104,8 +104,8 @@ void MarkersManager::updateSegments(int strip_dir){
   else{
     double x1 = fMarkersContainer.at(strip_dir)->GetX();
     double y1 = fMarkersContainer.at(strip_dir)->GetY();
-    double x2 = x1;
-    double y2 = y1;
+    double x2 = std::nan("0");
+    double y2 = std::nan("0");
     if(aSegmentsContainer.size()){
       x1 = aSegmentsContainer.front().GetX1();
       y1 = aSegmentsContainer.front().GetY1();
@@ -124,12 +124,15 @@ void MarkersManager::updateSegments(int strip_dir){
   if(!aPad) return;
   aPad->cd();
   for(auto &item:aSegmentsContainer){
-    item.SetBit(kCannotPick);
-    item.Draw();
     TMarker aMarker(item.GetX1(), item.GetY1(), 21);
+    aMarker.SetBit(kCannotPick);
     aMarker.SetMarkerColor(item.GetLineColor());
     aMarker.DrawMarker(item.GetX1(), item.GetY1());
-    aMarker.DrawMarker(item.GetX2(), item.GetY2());
+    if(!std::isnan(item.GetX2()) && !std::isnan(item.GetY2())){
+      aMarker.DrawMarker(item.GetX2(), item.GetY2());
+      item.SetBit(kCannotPick);
+      item.Draw();
+    }
   }
 }
 /////////////////////////////////////////////////////////
@@ -153,7 +156,7 @@ void MarkersManager::resetSegments(){
 /////////////////////////////////////////////////////////
 void MarkersManager::setPadsEditable(bool isEditable){
 
-  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+  for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
     std::string padName = "Histograms_"+std::to_string(strip_dir+1);
     TPad *aPad = (TPad*)gROOT->FindObject(padName.c_str());
     if(!aPad) continue;
@@ -173,7 +176,7 @@ void MarkersManager::resetMarkers(bool force){
   for(auto aObj : fObjClones) delete aObj;
   fObjClones.clear();
 
-  int strip_dir = DIR_U;//FIX ME
+  int strip_dir = definitions::projection_type::DIR_U;//FIX ME
   if(force || isLastSegmentComplete(strip_dir)){
     acceptPoints = false;
     if(myButtons.find("Add segment")!=myButtons.end() &&
@@ -237,13 +240,13 @@ void MarkersManager::processClickCoordinates(int strip_dir, float x, float y){
   if(strip_dir==3){
     if(!timeMarker){
       timeMarker = new TMarker(x, y, 1);
-      drawFixedTimeLines(DIR_U, x);
-      drawFixedTimeLines(DIR_W, x);
-      drawFixedTimeLines(DIR_W, x);
+      drawFixedTimeLines(definitions::projection_type::DIR_U, x);
+      drawFixedTimeLines(definitions::projection_type::DIR_W, x);
+      drawFixedTimeLines(definitions::projection_type::DIR_W, x);
     }
   }
   */
-  if(strip_dir<DIR_U || strip_dir>=(int)fMarkersContainer.size() || fMarkersContainer.at(strip_dir)) return;
+  if(strip_dir<definitions::projection_type::DIR_U || strip_dir>=(int)fMarkersContainer.size() || fMarkersContainer.at(strip_dir)) return;
   //if(timeMarker){ x = timeMarker->GetX(); }
   if(firstMarker){ x = firstMarker->GetX(); }
   
@@ -273,9 +276,9 @@ void MarkersManager::processClickCoordinates(int strip_dir, float x, float y){
     TPad *aPad = (TPad*)gROOT->FindObject(padName.c_str());
     aPad->cd();
     aMarker->Draw();
-    updateSegments(DIR_U);
-    updateSegments(DIR_V);
-    updateSegments(DIR_W);
+    updateSegments(definitions::projection_type::DIR_U);
+    updateSegments(definitions::projection_type::DIR_V);
+    updateSegments(definitions::projection_type::DIR_W);
     resetMarkers();
   }
   fLastPanelHelperLine.clear();
@@ -291,7 +294,7 @@ void MarkersManager::drawFixedTimeLines(int strip_dir, double time){
 /////////////////////////////////////////////////////////
 int MarkersManager::findMissingMarkerDir(){
 
- for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+ for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
     TMarker *item = fMarkersContainer.at(strip_dir);
     if(!item) return strip_dir;
     }
@@ -307,7 +310,7 @@ double MarkersManager::getMissingYCoordinate(unsigned int missingMarkerDir){
   int dir[2] = { -1, -1 };
   double pos[2];
   int counter=0;
-  for(unsigned int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+  for(unsigned int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
     TMarker *item = fMarkersContainer.at(strip_dir);
     if(!item || strip_dir==missingMarkerDir) continue;
     dir[counter] = strip_dir;    // UVW direction index
@@ -389,7 +392,9 @@ void MarkersManager::HandleMarkerPosition(Int_t event, Int_t x, Int_t y, TObject
 void MarkersManager::repackSegmentsData(){
 
   fSegmentsXY.clear();
-  int nSegments = fSegmentsContainer.at(DIR_U).size();
+  assert(fSegmentsContainer.at(definitions::projection_type::DIR_U).size() == fSegmentsContainer.at(definitions::projection_type::DIR_V).size());
+  assert(fSegmentsContainer.at(definitions::projection_type::DIR_U).size() == fSegmentsContainer.at(definitions::projection_type::DIR_W).size());
+  int nSegments = fSegmentsContainer.at(definitions::projection_type::DIR_U).size();
   for(int iSegment=0;iSegment<nSegments;++iSegment){
     for(auto & strip_segments: fSegmentsContainer){
       TLine &aLine = strip_segments.at(iSegment);
@@ -458,8 +463,8 @@ bool MarkersManager::isLastSegmentComplete(int strip_dir){
   std::vector<TLine> &aSegmentsContainer = fSegmentsContainer.at(strip_dir);
 
   return !aSegmentsContainer.size() ||
-    (std::abs(aSegmentsContainer.back().GetX1() - aSegmentsContainer.back().GetX2())>1E-3 &&
-     std::abs(aSegmentsContainer.back().GetY1() - aSegmentsContainer.back().GetY2())>1E-3);
+   (!std::isnan(aSegmentsContainer.back().GetX2()) &&
+    !std::isnan(aSegmentsContainer.back().GetY2()));
 }
 ////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////// Added by MC - 19 Aug 2021

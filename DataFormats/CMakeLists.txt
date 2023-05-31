@@ -1,63 +1,35 @@
 set(MODULE_NAME "DataFormats")
-MESSAGE( STATUS "Adding CMake fragment for module:         " ${MODULE_NAME} )
-set(TPCRECO_LIBRARIES ${TPCRECO_LIBRARIES} ${TPCRECO_PREFIX}${MODULE_NAME}  PARENT_SCOPE)
-set(TPCRECO_LIBRARIES_LOCAL ${TPCRECO_LIBRARIES})
-###############################################################################
-## file globbing ##############################################################
-###############################################################################
+message(STATUS "Adding CMake fragment for module:\t${MODULE_NAME}")
 
-# These instructions search the directory tree when cmake is
-# invoked and put all files that match the pattern in the variable
-# `sources`
+# ROOT 6.08 dictionary MODULE workaround
+include_directories(${PROJECT_SOURCE_DIR}/DataFormats/include/)
+include_directories(${PROJECT_SOURCE_DIR}/Utilities/include/)
+root_generate_dictionary(
+  G__${TPCRECO_PREFIX}${MODULE_NAME}
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/EventTPC.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/GeometryTPC.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/SigClusterTPC.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/Hit2D.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/Track3D.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/TrackSegment3D.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/TrackSegment2D.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/MultiKey.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/EventRaw.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/EventInfo.h
+  LINKDEF
+  LinkDef.h)
 #
-file(GLOB_RECURSE sources       ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/src/*.cpp)
 
-###############################################################################
-## dependencies ###############################################################
-###############################################################################
-include_directories(${ROOTINCDIR})
-include_directories(${Boost_INCLUDE_DIRS})
-include_directories(${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include)
-include_directories(${PROJECT_SOURCE_DIR}/Utilities/include)
-include_directories(${PROJECT_SOURCE_DIR}/GrawToROOT/include)
-include_directories(${PROJECT_SOURCE_DIR}/TrackGenerator/include)
-include_directories(${PROJECT_SOURCE_DIR}/GUI/include)
-###############################################################################
-## target definitions #########################################################
-###############################################################################
-# ROOT dictionary for persistens classes
-ROOT_GENERATE_DICTIONARY(G__${MODULE_NAME}
-  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/CommonDefinitions.h
-  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/PEventTPC.h
-  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/EventTPC.h
-  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/GeometryTPC.h
-  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/SigClusterTPC.h 
-  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/Hit2D.h
-  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/Track3D.h
-  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/TrackSegment3D.h
-  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/TrackSegment2D.h  
-  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/MultiKey.h 
-  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/EventRaw.h
-  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/EventInfo.h
-  LINKDEF ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/LinkDef.h)
+reco_add_library(${MODULE_NAME} EXTRA_SOURCES
+                 G__${TPCRECO_PREFIX}${MODULE_NAME}.cxx)
 
-# The data is just added to the executable, because in some IDEs (QtCreator) 
-# files are invisible when they are not explicitly part of the project.
-#
-add_library(${MODULE_NAME} SHARED ${sources} G__${MODULE_NAME}.cxx)
-add_library(${TPCRECO_PREFIX}${MODULE_NAME} ALIAS ${MODULE_NAME})
-set_target_properties(${MODULE_NAME} PROPERTIES PREFIX ${TPCRECO_PREFIX})
-
-target_link_libraries(${MODULE_NAME} ${ROOT_LIBRARIES})
-# Compiler flags.
-#
 target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
 
-# All install commands get the same destination. this allows us to use paths
-# relative to the executable.
-install(TARGETS ${MODULE_NAME} LIBRARY DESTINATION lib)
-install(FILES ${CMAKE_BINARY_DIR}/${MODULE_NAME}/lib${MODULE_NAME}_rdict.pcm DESTINATION lib)
-install(FILES ${CMAKE_BINARY_DIR}/${MODULE_NAME}/lib${MODULE_NAME}.rootmap DESTINATION lib)
+target_link_libraries(${MODULE_NAME} PUBLIC ${ROOT_LIBRARIES}
+                                            ${ROOT_EXE_LINKER_FLAGS} Utilities)
+target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
 
+reco_install_targets(${MODULE_NAME})
+reco_install_root_dict(${MODULE_NAME})
 
-
+reco_add_test_subdirectory(test)

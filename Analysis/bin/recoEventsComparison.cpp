@@ -3,37 +3,42 @@
 #include <vector>
 #include <algorithm>
 
-#include "TFile.h"
-#include "TTree.h"
-#include "TCanvas.h"
-#include "TLatex.h"
-#include "TString.h"
-#include "TTreeIndex.h"
+#include <TFile.h>
+#include <TTree.h>
+#include <TCanvas.h>
+#include <TLatex.h>
+#include <TString.h>
+#include <TTreeIndex.h>
 
 
 #include <boost/program_options.hpp>
 
-#include "GeometryTPC.h"
-#include "Track3D.h"
-#include "EventInfo.h"
-#include "Comp_analysis.h"
-#include "ConfigManager.h"
+#include "TPCReco/GeometryTPC.h"
+#include "TPCReco/Track3D.h"
+#include "TPCReco/EventInfo.h"
+#include "TPCReco/Comp_analysis.h"
+#include "TPCReco/ConfigManager.h"
 
-#include "colorText.h"
+#include "TPCReco/colorText.h"
 
 int compareRecoEvents(const  std::string & geometryFileName, 
 		      const  std::string & referenceDataFileName,
-		      const  std::string & testDataFileName);
+		      const  std::string & testDataFileName,
+		      const  double & pressure, // [mbar]
+		      const  double & temperature // [K]
+);
 /////////////////////////////////////
 /////////////////////////////////////
 int main(int argc, char **argv){
 
   ConfigManager cm;
   boost::property_tree::ptree tree = cm.getConfig(argc,argv);
-  auto geometryFileName = tree.get("geometryFile","");
-  auto referenceDataFileName = tree.get("referenceDataFile","");
-  auto testDataFileName = tree.get("testDataFile","");
-  compareRecoEvents(geometryFileName, referenceDataFileName, testDataFileName);
+  auto geometryFileName = tree.get<std::string>("geometryFile");
+  auto referenceDataFileName = tree.get<std::string>("referenceDataFile");
+  auto testDataFileName = tree.get<std::string>("testDataFile");
+  auto pressure = tree.get<float>("pressure");
+  auto temperature = tree.get<float>("temperature");
+  compareRecoEvents(geometryFileName, referenceDataFileName, testDataFileName,pressure,temperature);
   return 0;
 }
 /////////////////////////////
@@ -71,7 +76,9 @@ std::vector<Long64_t> setBranchAdressesAndIndex(TTree *&aTree, eventraw::EventIn
 ////////////////////////////
 int compareRecoEvents(const  std::string & geometryFileName,
 		      const  std::string & referenceDataFileName,
-		      const  std::string & testDataFileName){
+		      const  std::string & testDataFileName,
+		      const  double & pressure, // [mbar]
+		      const  double & temperature){ // [K]
 
   TFile *aRefFile = new TFile(referenceDataFileName.c_str());
   if(!aRefFile || !aRefFile->IsOpen()){
@@ -148,7 +155,7 @@ int compareRecoEvents(const  std::string & geometryFileName,
     theTree->AddFriend(aTestTree,"TestEvents");
   }
 
-  Comp_analysis myAnalysis(aGeometry); 
+  Comp_analysis myAnalysis(aGeometry, pressure, temperature);
   for(auto entryIndex: mergedTreeIndex){
 
     aRefEventInfo->reset();

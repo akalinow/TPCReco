@@ -1,4 +1,4 @@
-#include "ConfigManager.h"
+#include "TPCReco/ConfigManager.h"
 
 const std::string ConfigManager::masterConfigPath = "/scratch/TPCReco/Utilities/config/masterConfig.json";
 const std::string ConfigManager::allowedOptPath = "/scratch/TPCReco/Utilities/config/allowedOpt.json";

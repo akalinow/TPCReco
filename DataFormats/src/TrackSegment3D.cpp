@@ -1,6 +1,6 @@
-#include "TrackSegment3D.h"
-#include "GeometryTPC.h"
-#include "colorText.h"
+#include "TPCReco/TrackSegment3D.h"
+#include "TPCReco/GeometryTPC.h"
+#include "TPCReco/colorText.h"
 
 #include <iostream>
 
@@ -73,7 +73,7 @@ void TrackSegment3D::setRecHits(const std::vector<TH2D> & aRecHits){
   myRecHits.resize(3);
   
   double x=-999.0, y=-999.0, charge=-999.0;
-  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+  for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
     const TH2D & hRecHits = aRecHits[strip_dir];
     for(int iBinX=1;iBinX<=hRecHits.GetNbinsX();++iBinX){
       for(int iBinY=1;iBinY<=hRecHits.GetNbinsY();++iBinY){
@@ -176,7 +176,7 @@ TrackSegment2D TrackSegment3D::get2DProjection(int strip_dir, double lambdaStart
 double TrackSegment3D::getIntegratedCharge(double lambda) const{
   if(lambda<0) return 0;
   double charge = 0.0;
-  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+  for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
     TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, lambda);
     const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
     charge += aTrack2DProjection.getIntegratedCharge(lambda, aRecHits);
@@ -188,7 +188,7 @@ double TrackSegment3D::getIntegratedCharge(double lambda) const{
 double TrackSegment3D::getRecHitChi2(int iProjection) const{
 
   double chi2 = 0.0;
-  if(iProjection<DIR_U || iProjection>DIR_W){    
+  if(iProjection<definitions::projection_type::DIR_U || iProjection>definitions::projection_type::DIR_W){    
     std::for_each(myProjectionsChi2.begin(), myProjectionsChi2.end(), [&](auto aItem){chi2 += aItem;});
   }
   else{
@@ -200,7 +200,7 @@ double TrackSegment3D::getRecHitChi2(int iProjection) const{
 /////////////////////////////////////////////////////////
 void TrackSegment3D::calculateRecHitChi2(){
 
-  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+  for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
     TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, getLength());
     const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
     myProjectionsChi2[strip_dir] = aTrack2DProjection.getRecHitChi2(aRecHits);
@@ -245,7 +245,7 @@ TH1F TrackSegment3D::getChargeProfile() const{
 
   double radiusCut = 2;
   std::vector<TGraphErrors> projections;
-  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+  for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
     TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, getLength());
     const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
     projections.push_back(aTrack2DProjection.getChargeProfile(aRecHits, radiusCut));
@@ -259,7 +259,7 @@ TH1F TrackSegment3D::getChargeProfile() const{
   if(getLength()<1) return hChargeProfile;
 
   int maxPoints = 1;
-  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+  for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
     TGraphErrors & aGraph = projections[strip_dir];
     if(aGraph.GetN()>maxPoints) maxPoints = aGraph.GetN();
     /*  
