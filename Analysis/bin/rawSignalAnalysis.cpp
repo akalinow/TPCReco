@@ -3,13 +3,13 @@
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/program_options.hpp>
-#include "colorText.h"
-#include "TFile.h"
-#include "GeometryTPC.h"
-#include "EventSourceGRAW.h"
-#include "EventSourceMultiGRAW.h"
-#include "RawSignal_tree_analysis.h"
-#include "RunIdParser.h"
+#include "TPCReco/colorText.h"
+#include <TFile.h>
+#include "TPCReco/GeometryTPC.h"
+#include "TPCReco/EventSourceGRAW.h"
+#include "TPCReco/EventSourceMultiGRAW.h"
+#include "TPCReco/RawSignal_tree_analysis.h"
+#include "TPCReco/RunIdParser.h"
 
 void analyzeRawEvents(const boost::property_tree::ptree &aConfig);
 
@@ -24,11 +24,12 @@ boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
     ("frameLoadRange", boost::program_options::value<unsigned int>(), "int - maximal number of frames to be read by event builder in single-GRAW mode")
     ("singleAsadGrawFile", boost::program_options::bool_switch()->default_value(false), "flag indicating multi-GRAW mode (default=FALSE)")
     ("removePedestal",  boost::program_options::value<bool>(), "bool - Flag to control pedestal removal. Overrides the value from config file.")
-    ("clusterEnable",  boost::program_options::value<bool>(), "bool - Flag to enable clustering")
-    ("clusterThreshold",  boost::program_options::value<float>(), "float - ADC threshold above pedestal used for clustering")
-    ("clusterDeltaStrips",  boost::program_options::value<int>(), "int - Envelope in strip units around seed hits for clustering")
-    ("clusterDeltaTimeCells",  boost::program_options::value<int>(), "int - Envelope in time cell units around seed hits for clustering")
-    ("outputFile", boost::program_options::value<std::string>(), "string - path to the output ROOT file");
+    ("recoClusterEnable",  boost::program_options::value<bool>(), "bool - Flag to enable clustering")
+    ("recoClusterThreshold",  boost::program_options::value<float>(), "float - ADC threshold above pedestal used for clustering")
+    ("recoClusterDeltaStrips",  boost::program_options::value<int>(), "int - Envelope in strip units around seed hits for clustering")
+    ("recoClusterDeltaTimeCells",  boost::program_options::value<int>(), "int - Envelope in time cell units around seed hits for clustering")
+    ("outputFile", boost::program_options::value<std::string>(), "string - path to the output ROOT file")
+    ("maxNevents", boost::program_options::value<unsigned int>()->default_value(0), "int - number of events to process");
   
   boost::program_options::variables_map varMap;
 
@@ -75,24 +76,27 @@ int main(int argc, char **argv){
   if (varMap.count("dataFile")) {
     tree.put("dataFile", varMap["dataFile"].as<std::string>());
   }
+  if (varMap.count("maxNevents")) {
+    tree.put("maxNevents", varMap["maxNevents"].as<unsigned int>());
+  }
   if (varMap.count("removePedestal")) {
     tree.put("removePedestal", varMap["removePedestal"].as<bool>());
   }
-  if(varMap.count("clusterEnable")) {
-    tree.put("clusterEnable", varMap["clusterEnable"].as<bool>());
-    if(tree.get<bool>("clusterEnable")==false) { // skip threshold, delta-strip, delta-timecells when clustering is disabled
-      tree.put("clusterThreshold", 0.0);
-      tree.put("clusterDeltaStrips", 0);
-      tree.put("clusterDeltaTimeCells", 0);
+  if(varMap.count("recoClusterEnable")) {
+    tree.put("hitFilter.recoClusterEnable", varMap["recoClusterEnable"].as<bool>());
+    if(tree.get<bool>("hitFilter.recoClusterEnable")==false) { // skip threshold, delta-strip, delta-timecells when clustering is disabled
+      tree.put("hitFilter.recoClusterThreshold", 0.0);
+      tree.put("hitFilter.recoClusterDeltaStrips", 0);
+      tree.put("hitFilter.recoClusterDeltaTimeCells", 0);
     } else { // look for threshold, delta-strip, delta-timecells only when clustering is enabled
-      if(varMap.count("clusterThreshold")) {
-	tree.put("clusterThreshold", varMap["clusterThreshold"].as<float>());
+      if(varMap.count("recoClusterThreshold")) {
+	      tree.put("hitFilter.recoClusterThreshold", varMap["recoClusterThreshold"].as<float>());
       }
-      if(varMap.count("clusterDeltaStrips")) {
-	tree.put("clusterDeltaStrips", varMap["clusterDeltaStrips"].as<int>());
+      if(varMap.count("recoClusterDeltaStrips")) {
+	      tree.put("hitFilter.recoClusterDeltaStrips", varMap["recoClusterDeltaStrips"].as<int>());
       }
-      if(varMap.count("clusterDeltaTimeCells")) {
-	tree.put("clusterDeltaTimeCells", varMap["clusterDeltaTimeCells"].as<int>());
+      if(varMap.count("recoClusterDeltaTimeCells")) {
+	      tree.put("hitFilter.recoClusterDeltaTimeCells", varMap["recoClusterDeltaTimeCells"].as<int>());
       }
     }
   }
@@ -113,24 +117,27 @@ int main(int argc, char **argv){
      tree.find("singleAsadGrawFile")==tree.not_found() ||
      (tree.find("singleAsadGrawFile")!=tree.not_found() &&
       tree.find("frameLoadRange")==tree.not_found()) ||
-     tree.find("clusterEnable")==tree.not_found() ||
-     tree.find("clusterThreshold")==tree.not_found() ||
-     tree.find("clusterDeltaStrips")==tree.not_found() ||
-     tree.find("clusterDeltaTimeCells")==tree.not_found() ||
+     tree.get_child("hitFilter").find("recoClusterEnable")==tree.not_found() ||
+     tree.get_child("hitFilter").find("recoClusterThreshold")==tree.not_found() ||
+     tree.get_child("hitFilter").find("recoClusterDeltaStrips")==tree.not_found() ||
+     tree.get_child("hitFilter").find("recoClusterDeltaTimeCells")==tree.not_found() ||
      tree.find("removePedestal")==tree.not_found()     
+     ||
+     tree.find("maxNevents")==tree.not_found()
      ) {
     std::cerr << std::endl
 	      << __FUNCTION__ << KRED << ": Some configuration options are missing!" << RST << std::endl << std::endl;
     std::cout << "dataFile: " << tree.count("dataFile") << std::endl;
     std::cout << "geometryFile: " << tree.count("geometryFile") << std::endl;
     std::cout << "outputFile: " << tree.count("outputFile") << std::endl;
-    std::cout << "clusterEnable: " << tree.count("clusterEnable") << std::endl;
-    std::cout << "clusterThreshold: " << tree.count("clusterThreshold") << std::endl;
-    std::cout << "clusterDeltaStrips: " << tree.count("clusterDeltaStrips") << std::endl;
-    std::cout << "clusterDeltaTimeCells: " << tree.count("clusterDeltaTimeCells") << std::endl;
+    std::cout << "recoClusterEnable: " << tree.get_child("hitFilter").count("recoClusterEnable") << std::endl;
+    std::cout << "recoClusterThreshold: " << tree.get_child("hitFilter").count("recoClusterThreshold") << std::endl;
+    std::cout << "recoClusterDeltaStrips: " << tree.get_child("hitFilter").count("recoClusterDeltaStrips") << std::endl;
+    std::cout << "recoClusterDeltaTimeCells: " << tree.get_child("hitFilter").count("recoClusterDeltaTimeCells") << std::endl;
     std::cout << "singleAsadGrawFile: " << tree.count("singleAsadGrawFile") << std::endl;
     std::cout << "frameLoadRange: " << tree.count("frameLoadRange") << std::endl;
     std::cout << "removePedestal: " << tree.count("removePedestal") << std::endl;
+    std::cout << "maxNevents:" << tree.count("maxNevents") << std::endl;
     exit(1);
   }
 
@@ -144,25 +151,27 @@ void analyzeRawEvents(const boost::property_tree::ptree &aConfig){
   auto geometryFileName = aConfig.get<std::string>("geometryFile");
   auto dataFileName = aConfig.get<std::string>("dataFile");
   auto outputFileName = aConfig.get<std::string>("outputFile");
-  auto clusterEnable = aConfig.get<bool>("clusterEnable");
-  auto clusterThreshold = ( clusterEnable ? aConfig.get<float>("clusterThreshold") : 0 );
-  auto clusterDeltaStrips = ( clusterEnable ? aConfig.get<unsigned int>("clusterDeltaStrips") : 0 );
-  auto clusterDeltaTimeCells = ( clusterEnable ? aConfig.get<unsigned int>("clusterDeltaTimeCells") : 0 );
+  auto clusterEnable = aConfig.get<bool>("hitFilter.recoClusterEnable");
+  auto clusterThreshold = ( clusterEnable ? aConfig.get<float>("hitFilter.recoClusterThreshold") : 0 );
+  auto clusterDeltaStrips = ( clusterEnable ? aConfig.get<unsigned int>("hitFilter.recoClusterDeltaStrips") : 0 );
+  auto clusterDeltaTimeCells = ( clusterEnable ? aConfig.get<unsigned int>("hitFilter.recoClusterDeltaTimeCells") : 0 );
   auto singleAsadGrawFile = aConfig.get<bool>("singleAsadGrawFile"); // true = multi-GRAW mode
   auto frameLoadRange = aConfig.get<unsigned int>("frameLoadRange"); // used in single-GRAW mode only
   auto removePedestal = aConfig.get<bool>("removePedestal");
+  auto maxNevents = aConfig.get<unsigned int>("maxNevents");
 
   std::cout << std::endl << "analyzeRawEvents: Parameter settings: " << std::endl << std::endl
 	    << "Data file(s)             = " << dataFileName << std::endl
 	    << "TPC geometry file        = " << geometryFileName << std::endl
 	    << "Output file              = " << outputFileName << std::endl
-	    << "Cluster enable           = " << clusterEnable << std::endl
-	    << "Cluster threshold        = " << clusterThreshold << std::endl
-	    << "Cluster delta strips     = " << clusterDeltaStrips << std::endl
-	    << "Cluster delta time cells = " << clusterDeltaTimeCells << std::endl
+	    << "recoCluster enable           = " << clusterEnable << std::endl
+	    << "recoCluster threshold        = " << clusterThreshold << std::endl
+	    << "recoCluster delta strips     = " << clusterDeltaStrips << std::endl
+	    << "recoCluster delta time cells = " << clusterDeltaTimeCells << std::endl
 	    << "Frame load range         = " << frameLoadRange << std::endl
 	    << "Multi-GRAW mode          = " << singleAsadGrawFile << std::endl
-	    << "Pedestal removal enable  = " << removePedestal << std::endl;
+	    << "Pedestal removal enable  = " << removePedestal << std::endl
+	    << "Max. events to precess   = " << maxNevents << " (0=all)" << std::endl;
     
   if (dataFileName.find(".graw") == std::string::npos ||
       geometryFileName.find(".dat") == std::string::npos ||
@@ -233,14 +242,14 @@ void analyzeRawEvents(const boost::property_tree::ptree &aConfig){
   myClusterConfig.clusterThreshold = clusterThreshold;
   myClusterConfig.clusterDeltaStrips = clusterDeltaStrips;
   myClusterConfig.clusterDeltaTimeCells = clusterDeltaTimeCells;
-  RawSignal_tree_analysis myAnalysis(myEventSource->getGeometry(), myClusterConfig); //dynamic_cast<EventSourceGRAW*>(myEventSource.get())->getGeometry());
+  RawSignal_tree_analysis myAnalysis(myEventSource->getGeometry(), myClusterConfig, outputFileName); //dynamic_cast<EventSourceGRAW*>(myEventSource.get())->getGeometry());
 
   // loop over ALL events
   Long64_t currentEventIdx=-1;
   bool isFirst=true; // flag to indicate first event for time period / rate calculations
 
   ////// DEBUG
-  //  Long64_t counter=0;
+  Long64_t counter=0;
   ////// DEBUG
 
   do {
@@ -253,14 +262,12 @@ void analyzeRawEvents(const boost::property_tree::ptree &aConfig){
 
     // fill statistical histograms per run (before & after user-defined cuts)
     myAnalysis.fillTree(myEventSource->getCurrentEvent(), isFirst);
-    
+
+    if(maxNevents && maxNevents==++counter ) break;
+
     // load next event (if any)
     currentEventIdx=myEventSource->currentEventNumber();
     myEventSource->getNextEvent();
-
-    ////// DEBUG
-    //    if(++counter==100) break;
-    ////// DEBUG
   }
   while(currentEventIdx!=(Long64_t)myEventSource->currentEventNumber());
 
@@ -270,7 +277,7 @@ void analyzeRawEvents(const boost::property_tree::ptree &aConfig){
 
 #else
 
-#include "colorText.h"
+#include "TPCReco/colorText.h"
 #include <iostream>
 
 int main(){

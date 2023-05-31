@@ -1,133 +1,81 @@
-cmake_minimum_required(VERSION 3.0) # setting this is required
-project(TPCSoft)                   # this sets the project name
-set(CMAKE_CXX_STANDARD 14)
-###############################################################################
-## dependencies ###############################################################
-###############################################################################
+cmake_minimum_required(VERSION 3.4) # setting this is required
+project(
+  TPCReco
+  LANGUAGES CXX
+  VERSION 0.7.0)
 
-set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
-include(Tests)
-
-#ROOT 
-list(APPEND CMAKE_PREFIX_PATH $ENV{ROOTSYS})
-list(APPEND CMAKE_MODULE_PATH $ENV{ROOTSYS}/etc/cmake)
-find_package(ROOT REQUIRED COMPONENTS Physics HistPainter)
-include(${ROOT_USE_FILE})
-
-MESSAGE( STATUS "CMAKE_PREFIX_PATH:         " ${CMAKE_PREFIX_PATH} )
-MESSAGE( STATUS "CMAKE_MODULE_PATH:         " ${CMAKE_MODULE_PATH} )
-MESSAGE( STATUS "ROOTSYS:                   " $ENV{ROOTSYS} )
-MESSAGE( STATUS "ROOT_INCLUDE_DIRS:         " ${ROOT_INCLUDE_DIRS} )
-MESSAGE( STATUS "ROOT_LIBRARIES:            " ${ROOT_LIBRARIES} )
-MESSAGE( STATUS "ROOT_CFLAGS:               " ${CMAKE_ROOT_CFLAGS})
-MESSAGE( STATUS "ROOT_USE_FILE:             " ${ROOT_USE_FILE})
-
-MESSAGE( STATUS "CMAKE_CXX_FLAGS:             " ${CMAKE_CXX_FLAGS})
-
-
-#GET software presence
-set(GET_VERSION_DIR $ENV{GET_DIR}/GetSoftware_bin/$ENV{GET_RELEASE})
-if(EXISTS ${GET_VERSION_DIR})
-  set(GET_LIBRARIES ${GET_VERSION_DIR}/lib/libget-root.so ${GET_VERSION_DIR}/lib/libcobo-frame-graw2frame.so ${GET_VERSION_DIR}/lib/libMultiFrame.so)
-  set(GET_CXX_FLAGS -Wno-deprecated-declarations -DUTL_LOG_LEVEL=10)
-  add_definitions(-DWITH_GET)
-  set(GRAW_TO_ROOT_LIBRARY GrawToROOT)
-  include_directories(${GET_VERSION_DIR}/include)
-else()
-    MESSAGE(WARNING "No GET software found. GET dependent packages will not be built.")
-    set(GET_LIBRARIES "")
-    set(GET_CXX_FLAGS "")
-    set(GRAW_TO_ROOT_LIBRARY "")
+if("${CMAKE_VERSION}" VERSION_LESS "3.8")
+  set(CMAKE_CXX_STANDARD 14)
 endif()
-  
-MESSAGE( STATUS "GET_VERSION_DIR:       " ${GET_VERSION_DIR})
-MESSAGE( STATUS "GET libraries:         " ${GET_LIBRARIES} )
-MESSAGE( STATUS "GET includes:          " ${GET_VERSION_DIR}/include )
-MESSAGE( STATUS "GET compile flags:     " ${GET_CXX_FLAGS} )
-#####################################################################
-find_package(Boost 1.45.0 COMPONENTS program_options REQUIRED)
-if(Boost_FOUND)
-  MESSAGE(STATUS "Boost verion found:" ${Boost_VERSION_STRING})
-else()
-  MESSAGE(FATAL_ERROR "No Boost found.")
-endif()  
-###############################################################################
-## packaging ##################################################################
-###############################################################################
 
-if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)  # install in the current directory
+if(NOT CMAKE_MODULE_PATH)
+  set(CMAKE_MODULE_PATH)
+endif()
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+
+include(Utils)
+include(Tests)
+include(RecoMacros)
+
+find_package(Boost REQUIRED COMPONENTS program_options filesystem date_time)
+
+find_package(ROOT 6.08 REQUIRED COMPONENTS Core Physics HistPainter RIO
+                                           GenVector Gui)
+message(STATUS "ROOT version: ${ROOT_VERSION}")
+include(${ROOT_USE_FILE})
+separate_arguments(ROOT_EXE_LINKER_FLAGS)
+
+find_package(GET COMPONENTS MultiFrame cobo-frame-graw2frame)
+
+# default install in current directory
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   set(CMAKE_INSTALL_PREFIX
       "$ENV{PWD}"
       CACHE PATH "..." FORCE)
 endif()
+message(STATUS "CMAKE_INSTALL_PREFIX:\t${CMAKE_INSTALL_PREFIX}")
 
+add_library(Resources INTERFACE)
+set(TPCRECO_RESOURCE_DIR
+    "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>$<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}>/resources/"
+)
+target_compile_definitions(
+  Resources INTERFACE TPCRECO_RESOURCE_DIR=\"${TPCRECO_RESOURCE_DIR}\")
 
-MESSAGE( STATUS "CMAKE_INSTALL_PREFIX:         " ${CMAKE_INSTALL_PREFIX} )
+option(BUILD_GEANT_MODULE "Build Geant4 simulation" OFF)
 
-# This is basically a repeat of the file copy instruction that copies the
-# resources in the build directory, but here we tell cmake that we want it
-# in the package.
-#
-if(NOT IS_DIRECTORY ${CMAKE_INSTALL_PREFIX}/resources) # needs full path!
-  install(DIRECTORY resources DESTINATION ${CMAKE_INSTALL_PREFIX})
-else()
-  MESSAGE( STATUS "RESOURCES dir already exists in the installation dir" )
-endif()
-if(NOT IS_DIRECTORY ${CMAKE_INSTALL_PREFIX}/tools) # needs full path!
-  install(DIRECTORY tools DESTINATION ${CMAKE_INSTALL_PREFIX})
-else()
-  MESSAGE( STATUS "AUXILIARY TOOLS dir already exists in the installation dir" )
-endif()
-
-set(CMAKE_CXX_FLAGS "${ROOT_CXX_FLAGS} -std=c++17 -Wall -Werror -O3 -pthread -Wno-register")
-
-MESSAGE( STATUS "CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS})
-
-option(DEBUG "Define DEBUG variable" OFF)
-if(DEBUG)
-  MESSAGE( STATUS "DEBUG enabled" )
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG")
-endif()
-# Set default inotify message inplementation:
-option(DIRECTORYWATCH_ONE_MESSAGE_DISABLE "Define DIRECTORYWATCH_ONE_MESSAGE_DISABLE variable" OFF)
-if(DIRECTORYWATCH_ONE_MESSAGE_DISABLE)
-  MESSAGE( STATUS "DirectoryWatch single message disabled (i.e. one Message per modified file)" )
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDIRECTORYWATCH_ONE_MESSAGE_DISABLE")
-else()
-  MESSAGE( STATUS "DirectoryWatch single message enabled (i.e. single Message per all modified files)" )
-endif()  
-# Enable/disable searching next file with N+1 index (default=ON)
-option(EVENTSOURCEGRAW_NEXT_FILE_DISABLE "Define EVENTSOURCEGRAW_NEXT_FILE_DISABLE variable" ON)
-if(EVENTSOURCEGRAW_NEXT_FILE_DISABLE)
-  MESSAGE( STATUS "EventSourceGRAW automatic next file index disabled" )
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DEVENTSOURCEGRAW_NEXT_FILE_DISABLE")
-else()
-  MESSAGE( STATUS "EventSourceGRAW automatic next file index enabled" )
-endif()  
-  
-#Set RPATH to install dir, so user do not have to set the LD_LIBRARY_PATH
 set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
-
-#Framework packages
-set(TPCRECO_PREFIX "libTPC")
-set(TPCRECO_LIBRARIES "")
-
-add_subdirectory(DataFormats)
 add_subdirectory(Utilities)
-add_subdirectory(TrackGenerator) 
-add_subdirectory(GrawToROOT) 
+add_subdirectory(DataFormats)
+add_subdirectory(GrawToROOT)
 add_subdirectory(Reconstruction)
 add_subdirectory(Analysis)
 add_subdirectory(GUI)
-add_subdirectory(ToyMC)
+add_subdirectory(Simulation)
+add_subdirectory(MonteCarlo)
 
-MESSAGE(STATUS "TPCReco libraries:" ${TPCRECO_LIBRARIES})
+if(NOT IS_DIRECTORY ${CMAKE_INSTALL_PREFIX}/resources)
+  install(DIRECTORY resources DESTINATION ${CMAKE_INSTALL_PREFIX})
+endif()
 
-set(CPACK_PACKAGE_NAME "TPCSoft")
-set(CPACK_PACKAGE_VERSION "1.0.0")
+install(
+  EXPORT TPCRecoTargets
+  FILE TPCRecoTargets.cmake
+  NAMESPACE TPCReco::
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/TPCReco)
 
-# We don't want to split our program up into several incomplete pieces.
-set(CPACK_MONOLITHIC_INSTALL 1)
+include(CMakePackageConfigHelpers)
+configure_package_config_file(
+  cmake/TPCRecoConfig.cmake.in "${CMAKE_CURRENT_BINARY_DIR}/TPCRecoConfig.cmake"
+  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/TPCReco)
 
-# This must be last
-include(CPack)
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/TPCRecoConfigVersion.cmake"
+  VERSION "${TPCReco_VERSION_MAJOR}.${TPCReco_VERSION_MINOR}"
+  COMPATIBILITY AnyNewerVersion)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/TPCRecoConfig.cmake
+              ${CMAKE_CURRENT_BINARY_DIR}/TPCRecoConfigVersion.cmake
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/TPCReco)
+
+add_subdirectory(package)

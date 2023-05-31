@@ -1,6 +1,6 @@
-#include "TrackSegment2D.h"
-#include "GeometryTPC.h"
-#include "colorText.h"
+#include "TPCReco/TrackSegment2D.h"
+#include "TPCReco/GeometryTPC.h"
+#include "TPCReco/colorText.h"
 
 #include <iostream>
 

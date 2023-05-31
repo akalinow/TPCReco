@@ -5,10 +5,10 @@
 #include <vector>
 
 #include <TApplication.h>
-#include "MainFrame.h"
-#include "SelectionBox.h"
-#include "MarkersManager.h"
-#include "colorText.h"
+#include "TPCReco/MainFrame.h"
+#include "TPCReco/SelectionBox.h"
+#include "TPCReco/MarkersManager.h"
+#include "TPCReco/colorText.h"
 
 #include <TSystem.h>
 #include <TObjArray.h> 
@@ -25,14 +25,14 @@
 #include <TProfile.h>
 
 #ifdef WITH_GET
-#include "EventSourceGRAW.h"
-#include "EventSourceMultiGRAW.h"
+#include "TPCReco/EventSourceGRAW.h"
+#include "TPCReco/EventSourceMultiGRAW.h"
 #endif
-#include "EventSourceROOT.h"
-#include "EventSourceMC.h"
+#include "TPCReco/EventSourceROOT.h"
+#include "TPCReco/EventSourceMC.h"
 
-#include "TGButtonGroup.h"
-#include "TGButton.h"
+#include <TGButtonGroup.h>
+#include <TGButton.h>
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 MainFrame::MainFrame(const TGWindow *p, UInt_t w, UInt_t h,  const boost::property_tree::ptree &aConfig)
@@ -162,10 +162,11 @@ void MainFrame::InitializeEventSource(){
   //  }
 
   std::cout<<"dataFileVec.size(): "<<dataFileVec.size()
-	   <<" ((stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG): "<<((stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG)
-	   <<"dataFileName.find(_MC_)!=std::string::npos: "<<(dataFileName.find("_MC_")!=std::string::npos)
+	   <<", ((stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG): "<<((stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG)
+	   <<", dataFileName.find(_MC_)!=std::string::npos: "<<(dataFileName.find("_MC_")!=std::string::npos)
+	   <<", dataFileName.find(.root)!=std::string::npos: "<<(dataFileName.find(".root")!=std::string::npos)
 	   <<std::endl;
-  
+
   if( dataFileVec.size()==1 && ((stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG) && dataFileName.find(".root")!=std::string::npos){
       myWorkMode = M_OFFLINE_ROOT_MODE;
       myEventSource = std::make_shared<EventSourceROOT>(geometryFileName);
@@ -239,7 +240,8 @@ void MainFrame::InitializeEventSource(){
        if(aGrawEventSrc) aGrawEventSrc->setRemovePedestal(removePedestal);
   }
   if(myConfig.find("pedestal")!=myConfig.not_found() && myEventSource.get()){
-    dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(myConfig.find("pedestal")->second);
+    EventSourceGRAW* aGrawEventSrc = dynamic_cast<EventSourceGRAW*>(myEventSource.get());
+    if(aGrawEventSrc) aGrawEventSrc->configurePedestal(myConfig.find("pedestal")->second);
   } 
 #endif
   else if(!myEventSource){

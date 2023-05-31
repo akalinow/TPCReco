@@ -20,6 +20,11 @@ Currently `tpcGUI` takes [JSON](https://en.wikipedia.org/wiki/JSON#Syntax) forma
   - `maxPedestalCell` - an index of a last time cell used to calculate pedestals,
   - `minSignalCell` - an index of a first time cell used to calculate signals,
   - `maxSignalCell` - an index of a last time cell used to calculate signals,
+- `hitFilter` - a configuration of clustering:
+  - `recoClusterEnable` - toggles clustering,
+  - `recoClusterThreshold`,
+  - `recoClusterDeltaStrips`,
+  - `recoClusterDeltaTimeCells`
 - `eventFilter` - a configuration of filter:
   - `enabled` - toggles filtering,
   - `events` - an array of indices of eligible events,

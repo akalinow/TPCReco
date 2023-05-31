@@ -1,7 +1,7 @@
 #include <bitset>
 
-#include "EventInfo.h"
-
+#include "TPCReco/EventInfo.h"
+#include "TPCReco/RunIdParser.h"
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 void eventraw::EventInfo::reset(){
@@ -25,5 +25,14 @@ std::ostream& eventraw::operator<<(std::ostream& os, const eventraw::EventInfo& 
      <<" pedestal subtracted? "<<einfo.GetPedestalSubtracted();
   return os;
 }
+namespace tpcreco {
+cobo_time_unit eventRelativeTime(const eventraw::EventInfo &info) noexcept {
+  return cobo_time_unit(info.GetEventTimestamp());
+}
+
+cobo_time_point eventAbsoluteTime(const eventraw::EventInfo &info) {
+  return RunId{info.GetRunId()}.toTimePoint() + eventRelativeTime(info);
+}
+} // namespace tpcreco
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////

@@ -11,18 +11,18 @@
 #include <vector>
 #include <tuple>
 
-#include "TGraph.h"
-#include "TH2Poly.h"
-#include "TMath.h"
-#include "TROOT.h"
-#include "TVector2.h"
-#include "TVector3.h"
-#include "TRandom3.h"
+#include <TGraph.h>
+#include <TH2Poly.h>
+#include <TMath.h>
+#include <TROOT.h>
+#include <TVector2.h>
+#include <TVector3.h>
+#include <TRandom3.h>
 
-#include "colorText.h"
-#include "GeometryTPC.h"
-#include "MultiKey.h"
-#include "UtilsMath.h" 
+#include "TPCReco/colorText.h"
+#include "TPCReco/GeometryTPC.h"
+#include "TPCReco/MultiKey.h"
+#include "TPCReco/UtilsMath.h" 
 
 GeometryTPC::GeometryTPC(const char *fname, bool debug)
     : initOK(false), COBO_N(0), AGET_Nchips(4), AGET_Nchan(64),
@@ -53,10 +53,10 @@ GeometryTPC::GeometryTPC(const char *fname, bool debug)
 
   // Set indices and names of strip coordinates
   dir2name.clear();
-  dir2name.insert(std::pair<int, std::string>(DIR_U, "U"));
-  dir2name.insert(std::pair<int, std::string>(DIR_V, "V"));
-  dir2name.insert(std::pair<int, std::string>(DIR_W, "W"));
-  dir2name.insert(std::pair<int, std::string>(DIR_TIME, "time"));
+  dir2name.insert(std::pair<int, std::string>(definitions::projection_type::DIR_U, "U"));
+  dir2name.insert(std::pair<int, std::string>(definitions::projection_type::DIR_V, "V"));
+  dir2name.insert(std::pair<int, std::string>(definitions::projection_type::DIR_W, "W"));
+  dir2name.insert(std::pair<int, std::string>(definitions::projection_type::DIR_TIME, "time"));
   dir2name.insert(std::pair<int, std::string>(FPN_CH, "FPN"));
 
   name2dir.clear();
@@ -117,12 +117,12 @@ bool GeometryTPC::Load(const char *fname) {
             fmod(angle3, 180.) !=
                 fmod(angle1,
                      180.)) { // reject parallel / anti-parallel duplicates
-          angle[DIR_U] = angle1;
-          angle[DIR_V] = angle2;
-          angle[DIR_W] = angle3;
+          angle[definitions::projection_type::DIR_U] = angle1;
+          angle[definitions::projection_type::DIR_V] = angle2;
+          angle[definitions::projection_type::DIR_W] = angle3;
           std::cout
               << Form("Angle of U/V/W strips wrt X axis = %lf / %lf / %lf deg",
-                      angle[DIR_U], angle[DIR_V], angle[DIR_W])
+                      angle[definitions::projection_type::DIR_U], angle[definitions::projection_type::DIR_V], angle[definitions::projection_type::DIR_W])
               << std::endl;
           break;
         } else {
@@ -268,19 +268,19 @@ bool GeometryTPC::Load(const char *fname) {
 
     // set unit vectors (along strips) and strip pitch vectors (perpendicular to
     // strips)
-    strip_unit_vec[DIR_U].Set(TMath::Cos(angle[DIR_U] * TMath::DegToRad()),
-                              TMath::Sin(angle[DIR_U] * TMath::DegToRad()));
-    strip_unit_vec[DIR_V].Set(TMath::Cos(angle[DIR_V] * TMath::DegToRad()),
-                              TMath::Sin(angle[DIR_V] * TMath::DegToRad()));
-    strip_unit_vec[DIR_W].Set(TMath::Cos(angle[DIR_W] * TMath::DegToRad()),
-                              TMath::Sin(angle[DIR_W] * TMath::DegToRad()));
+    strip_unit_vec[definitions::projection_type::DIR_U].Set(TMath::Cos(angle[definitions::projection_type::DIR_U] * TMath::DegToRad()),
+                              TMath::Sin(angle[definitions::projection_type::DIR_U] * TMath::DegToRad()));
+    strip_unit_vec[definitions::projection_type::DIR_V].Set(TMath::Cos(angle[definitions::projection_type::DIR_V] * TMath::DegToRad()),
+                              TMath::Sin(angle[definitions::projection_type::DIR_V] * TMath::DegToRad()));
+    strip_unit_vec[definitions::projection_type::DIR_W].Set(TMath::Cos(angle[definitions::projection_type::DIR_W] * TMath::DegToRad()),
+                              TMath::Sin(angle[definitions::projection_type::DIR_W] * TMath::DegToRad()));
 
-    pitch_unit_vec[DIR_U] =
-        -1.0 * (strip_unit_vec[DIR_W] + strip_unit_vec[DIR_V]).Unit();
-    pitch_unit_vec[DIR_V] =
-        (strip_unit_vec[DIR_U] + strip_unit_vec[DIR_W]).Unit();
-    pitch_unit_vec[DIR_W] =
-        (strip_unit_vec[DIR_V] - strip_unit_vec[DIR_U]).Unit();
+    pitch_unit_vec[definitions::projection_type::DIR_U] =
+        -1.0 * (strip_unit_vec[definitions::projection_type::DIR_W] + strip_unit_vec[definitions::projection_type::DIR_V]).Unit();
+    pitch_unit_vec[definitions::projection_type::DIR_V] =
+        (strip_unit_vec[definitions::projection_type::DIR_U] + strip_unit_vec[definitions::projection_type::DIR_W]).Unit();
+    pitch_unit_vec[definitions::projection_type::DIR_W] =
+        (strip_unit_vec[definitions::projection_type::DIR_V] - strip_unit_vec[definitions::projection_type::DIR_U]).Unit();
 
     bool found = false;
     f.seekg(0, f.beg);
@@ -345,7 +345,7 @@ bool GeometryTPC::Load(const char *fname) {
           mapByAget_raw[MultiKey4(cobo, asad, aget, chan_num_raw)] = strip; 
 
           // update reverse map (by: strip direction, strip number)
-          if (dir == DIR_U || dir == DIR_V || dir == DIR_W) {
+          if (dir == definitions::projection_type::DIR_U || dir == definitions::projection_type::DIR_V || dir == definitions::projection_type::DIR_W) {
             mapByStrip[MultiKey3(dir, section, strip_num)] =
                 strip; // Global_normal2normal(aget, chan_num);
           }
@@ -449,12 +449,12 @@ bool GeometryTPC::Load(const char *fname) {
 
   // print statistics
   std::cout << std::endl << "Geometry config file = " << fname << std::endl;
-  std::cout << "Total number of " << this->GetDirName(DIR_U)
-            << " strips = " << this->GetDirNstrips(DIR_U) << std::endl;
-  std::cout << "Total number of " << this->GetDirName(DIR_V)
-            << " strips = " << this->GetDirNstrips(DIR_V) << std::endl;
-  std::cout << "Total number of " << this->GetDirName(DIR_W)
-            << " strips = " << this->GetDirNstrips(DIR_W) << std::endl;
+  std::cout << "Total number of " << this->GetDirName(definitions::projection_type::DIR_U)
+            << " strips = " << this->GetDirNstrips(definitions::projection_type::DIR_U) << std::endl;
+  std::cout << "Total number of " << this->GetDirName(definitions::projection_type::DIR_V)
+            << " strips = " << this->GetDirNstrips(definitions::projection_type::DIR_V) << std::endl;
+  std::cout << "Total number of " << this->GetDirName(definitions::projection_type::DIR_W)
+            << " strips = " << this->GetDirNstrips(definitions::projection_type::DIR_W) << std::endl;
   std::cout << "Number of active channels per AGET chip = "
             << this->GetAgetNchannels() << std::endl;
   std::cout << "Number of " << this->GetDirName(FPN_CH)
@@ -951,7 +951,7 @@ bool GeometryTPC::InitActiveAreaConvexHull(TGraph *g) {
 // $ bin->GetPolygon()->Draw("AL*");
 // $ cout << "Is (x=0, y=0) inside polygon: " << bin->IsInside(0,0) << endl;
 //
-TGraph GeometryTPC::GetActiveAreaConvexHull(double vetoBand){
+TGraph GeometryTPC::GetActiveAreaConvexHull(double vetoBand) const{
 
   if(vetoBand<0.0) {
     if (_debug) {
@@ -1159,9 +1159,9 @@ int GeometryTPC::GetDirNstrips(int dir) const{
   if (!IsOK())
     return -1;
   switch (dir) {
-  case DIR_U:
-  case DIR_V:
-  case DIR_W:
+  case definitions::projection_type::DIR_U:
+  case definitions::projection_type::DIR_V:
+  case definitions::projection_type::DIR_W:
     return GetDirNStripsMerged(dir);
     break;
   case FPN_CH:
@@ -1185,10 +1185,10 @@ const char *GeometryTPC::GetDirName(int dir) const{
   if (!IsOK())
     return NULL; // "ERROR";
   switch (dir) {
-  case DIR_U:
-  case DIR_V:
-  case DIR_W:
-  case DIR_TIME:
+  case definitions::projection_type::DIR_U:
+  case definitions::projection_type::DIR_V:
+  case definitions::projection_type::DIR_W:
+  case definitions::projection_type::DIR_TIME:
   case FPN_CH:
     return dir2name.at(dir).c_str(); // dir2name[dir];
   };
@@ -1237,9 +1237,9 @@ const char *GeometryTPC::GetStripName(std::shared_ptr<StripTPC> s) const{
     return NULL; // "ERROR";
   std::stringstream ss;
   switch (s->Dir()) {
-  case DIR_U:
-  case DIR_V:
-  case DIR_W:
+  case definitions::projection_type::DIR_U:
+  case definitions::projection_type::DIR_V:
+  case definitions::projection_type::DIR_W:
   case FPN_CH: {
     if (s->Num() >= 1 && s->Num() <= stripN.at(s->Dir())) {
       ss << dir2name.at(s->Dir()) << s->Num();
@@ -1633,9 +1633,9 @@ TVector2 GeometryTPC::GetStripUnitVector(int dir) const{ // XY ([mm],[mm])
   if (!IsOK())
     return empty; // ERROR
   switch (dir) {
-  case DIR_U:
-  case DIR_V:
-  case DIR_W:
+  case definitions::projection_type::DIR_U:
+  case definitions::projection_type::DIR_V:
+  case definitions::projection_type::DIR_W:
     return strip_unit_vec.at(dir);
   };
   return empty; // ERROR
@@ -1647,9 +1647,9 @@ TVector2 GeometryTPC::GetStripPitchVector(int dir) const{ // XY ([mm],[mm])
     return empty; // ERROR
   }
   switch (dir) {
-  case DIR_U:
-  case DIR_V:
-  case DIR_W:
+  case definitions::projection_type::DIR_U:
+  case definitions::projection_type::DIR_V:
+  case definitions::projection_type::DIR_W:
     return pitch_unit_vec.at(dir);
   };
   return empty; // ERROR
@@ -1674,7 +1674,7 @@ double GeometryTPC::Strip2posUVW(int dir, int num, bool &err_flag) const{ // (al
   for(unsigned int isec=0; isec<this->GetDirSectionIndexList(dir).size(); isec++) {
     x = Strip2posUVW(dir, this->GetDirSectionIndexList(dir).at(isec), num, err_flag);
     /////// DEBUG
-    //      if(dir==DIR_U) std::cout << "Strip2pos: dir=" << dir << ", strip=" << num << ", section=" << this->GetDirSectionIndexList(dir).at(isec)
+    //      if(dir==definitions::projection_type::DIR_U) std::cout << "Strip2pos: dir=" << dir << ", strip=" << num << ", section=" << this->GetDirSectionIndexList(dir).at(isec)
     //			       << ": X[mm]=" << x << ", err_flag=" << err_flag << std::endl;
     /////// DEBUG
     if(!err_flag) return x; // find first section that contains the given strip number
@@ -1693,9 +1693,9 @@ double GeometryTPC::Strip2posUVW(std::shared_ptr<StripTPC>strip, bool &err_flag)
   err_flag = true;
   if (!strip) return 0.0; // ERROR
   switch (strip->Dir()) {
-  case DIR_U:
-  case DIR_V:
-  case DIR_W:
+  case definitions::projection_type::DIR_U:
+  case definitions::projection_type::DIR_V:
+  case definitions::projection_type::DIR_W:
     err_flag = false; // valid strip
     return (reference_point + strip->Offset()) *
       pitch_unit_vec.at(strip->Dir()); // [mm]
@@ -1706,7 +1706,7 @@ double GeometryTPC::Strip2posUVW(std::shared_ptr<StripTPC>strip, bool &err_flag)
 
 bool GeometryTPC::IsStripDirReversed(int dir) const{
 
-  if(dir<projection_type::DIR_U || dir>projection_type::DIR_W) return false;
+  if(dir<definitions::projection_type::DIR_U || dir>definitions::projection_type::DIR_W) return false;
   int section = 1;
   int minStrip = GetDirMinStrip(dir, section);
   int maxStrip = GetDirMaxStrip(dir, section);
@@ -1734,9 +1734,9 @@ double GeometryTPC::Cartesian2posUVW(double x, double y, int dir,
 double GeometryTPC::Cartesian2posUVW(TVector2 pos, int dir, bool &err_flag) const{
   err_flag = true;
   switch (dir) {
-  case DIR_U:
-  case DIR_V:
-  case DIR_W:
+  case definitions::projection_type::DIR_U:
+  case definitions::projection_type::DIR_V:
+  case definitions::projection_type::DIR_W:
     err_flag = false;                 // valid DIR
     return pos * pitch_unit_vec.at(dir); // [mm]
   };
@@ -1884,12 +1884,12 @@ TH2D *GeometryTPC::GetXY_TestUV(TH2D *h) { // test (unphysical) histogram
     double ymax=-1E30;
     /*
     StripTPC* s[6] = {
-      GetStripByDir(projection_type::DIR_U, 1),
-      GetStripByDir(projection_type::DIR_U, GetDirNstrips(projection_type::DIR_U)),
-      GetStripByDir(projection_type::DIR_V, 1),
-      GetStripByDir(projection_type::DIR_V, GetDirNstrips(projection_type::DIR_V)),
-      GetStripByDir(projection_type::DIR_W, 1),
-      GetStripByDir(projection_type::DIR_W, GetDirNstrips(projection_type::DIR_W))
+      GetStripByDir(definitions::projection_type::DIR_U, 1),
+      GetStripByDir(definitions::projection_type::DIR_U, GetDirNstrips(definitions::projection_type::DIR_U)),
+      GetStripByDir(definitions::projection_type::DIR_V, 1),
+      GetStripByDir(definitions::projection_type::DIR_V, GetDirNstrips(definitions::projection_type::DIR_V)),
+      GetStripByDir(definitions::projection_type::DIR_W, 1),
+      GetStripByDir(definitions::projection_type::DIR_W, GetDirNstrips(definitions::projection_type::DIR_W))
     };
     for(int i=0; i<6; i++) {
       if(!s[i]) continue;
@@ -1920,15 +1920,15 @@ TH2D *GeometryTPC::GetXY_TestUV(TH2D *h) { // test (unphysical) histogram
   }
 
   // loop over all strip numbers and check hits strip intersection
-  for(int i0=1; i0<=GetDirNstrips(projection_type::DIR_U); i0++) {
+  for(int i0=1; i0<=GetDirNstrips(definitions::projection_type::DIR_U); i0++) {
     if(i0!=1) continue;
-    for(auto iter0=GetDirSectionIndexList(projection_type::DIR_U).begin();
-	iter0!=GetDirSectionIndexList(projection_type::DIR_U).end(); iter0++) {
-      std::shared_ptr<StripTPC> strip0 = GetStripByDir(projection_type::DIR_U, *iter0, i0);
-      for(int i1=1; i1<(int)GetDirNstrips(projection_type::DIR_V); i1++) {
-	for(auto iter1=GetDirSectionIndexList(projection_type::DIR_V).begin();
-	    iter1!=GetDirSectionIndexList(projection_type::DIR_V).end(); iter1++) {
-	  std::shared_ptr<StripTPC> strip1 = GetStripByDir(projection_type::DIR_V, *iter1, i1);
+    for(auto iter0=GetDirSectionIndexList(definitions::projection_type::DIR_U).begin();
+	iter0!=GetDirSectionIndexList(definitions::projection_type::DIR_U).end(); iter0++) {
+      std::shared_ptr<StripTPC> strip0 = GetStripByDir(definitions::projection_type::DIR_U, *iter0, i0);
+      for(int i1=1; i1<(int)GetDirNstrips(definitions::projection_type::DIR_V); i1++) {
+	for(auto iter1=GetDirSectionIndexList(definitions::projection_type::DIR_V).begin();
+	    iter1!=GetDirSectionIndexList(definitions::projection_type::DIR_V).end(); iter1++) {
+	  std::shared_ptr<StripTPC> strip1 = GetStripByDir(definitions::projection_type::DIR_V, *iter1, i1);
 	  TVector2 pos;
 	  if( GetCrossPoint( strip0, strip1, pos) ) {
 	    h->SetBinContent( h->FindBin( pos.X(), pos.Y() ), 1.*i0);
@@ -1957,12 +1957,12 @@ TH2D *GeometryTPC::GetXY_TestVW(TH2D *h) { // test (unphysical) histogram
     double ymax=-1E30;
     /*
     StripTPC* s[6] = {
-      GetStripByDir(projection_type::DIR_U, 1),
-      GetStripByDir(projection_type::DIR_U, GetDirNstrips(projection_type::DIR_U)),
-      GetStripByDir(projection_type::DIR_V, 1),
-      GetStripByDir(projection_type::DIR_V, GetDirNstrips(projection_type::DIR_V)),
-      GetStripByDir(projection_type::DIR_W, 1),
-      GetStripByDir(projection_type::DIR_W, GetDirNstrips(projection_type::DIR_W))
+      GetStripByDir(definitions::projection_type::DIR_U, 1),
+      GetStripByDir(definitions::projection_type::DIR_U, GetDirNstrips(definitions::projection_type::DIR_U)),
+      GetStripByDir(definitions::projection_type::DIR_V, 1),
+      GetStripByDir(definitions::projection_type::DIR_V, GetDirNstrips(definitions::projection_type::DIR_V)),
+      GetStripByDir(definitions::projection_type::DIR_W, 1),
+      GetStripByDir(definitions::projection_type::DIR_W, GetDirNstrips(definitions::projection_type::DIR_W))
     };
     for(int i=0; i<6; i++) {
       if(!s[i]) continue;
@@ -1994,15 +1994,15 @@ TH2D *GeometryTPC::GetXY_TestVW(TH2D *h) { // test (unphysical) histogram
   }
 
   // loop over all strip numbers and check hits strip intersection
-  for(int i0=1; i0<(int)GetDirNstrips(projection_type::DIR_V); i0++) {
+  for(int i0=1; i0<(int)GetDirNstrips(definitions::projection_type::DIR_V); i0++) {
     if(i0!=1) continue;
-    for(auto iter0=GetDirSectionIndexList(projection_type::DIR_V).begin();
-	iter0!=GetDirSectionIndexList(projection_type::DIR_V).end(); iter0++) {
-      std::shared_ptr<StripTPC> strip0 = GetStripByDir(projection_type::DIR_V, *iter0, i0);
-      for(int i1=1; i1<(int)GetDirNstrips(projection_type::DIR_W); i1++) {
-	for(auto iter1=GetDirSectionIndexList(projection_type::DIR_W).begin();
-	    iter1!=GetDirSectionIndexList(projection_type::DIR_W).end(); iter1++) {
-	  std::shared_ptr<StripTPC> strip1 = GetStripByDir(projection_type::DIR_W, *iter1, i1);
+    for(auto iter0=GetDirSectionIndexList(definitions::projection_type::DIR_V).begin();
+	iter0!=GetDirSectionIndexList(definitions::projection_type::DIR_V).end(); iter0++) {
+      std::shared_ptr<StripTPC> strip0 = GetStripByDir(definitions::projection_type::DIR_V, *iter0, i0);
+      for(int i1=1; i1<(int)GetDirNstrips(definitions::projection_type::DIR_W); i1++) {
+	for(auto iter1=GetDirSectionIndexList(definitions::projection_type::DIR_W).begin();
+	    iter1!=GetDirSectionIndexList(definitions::projection_type::DIR_W).end(); iter1++) {
+	  std::shared_ptr<StripTPC> strip1 = GetStripByDir(definitions::projection_type::DIR_W, *iter1, i1);
 	  TVector2 pos;
 	  if( GetCrossPoint( strip0, strip1, pos) ) {
 	    h->SetBinContent( h->FindBin( pos.X(), pos.Y() ), 1.*i0);
@@ -2030,12 +2030,12 @@ TH2D *GeometryTPC::GetXY_TestWU(TH2D *h) { // test (unphysical) histogram
     double ymin=1E30;
     double ymax=-1E30;
     /*    StripTPC* s[6] = {
-      GetStripByDir(projection_type::DIR_U, 1),
-      GetStripByDir(projection_type::DIR_U, GetDirNstrips(projection_type::DIR_U)),
-      GetStripByDir(projection_type::DIR_V, 1),
-      GetStripByDir(projection_type::DIR_V, GetDirNstrips(projection_type::DIR_V)),
-      GetStripByDir(projection_type::DIR_W, 1),
-      GetStripByDir(projection_type::DIR_W, GetDirNstrips(projection_type::DIR_W))
+      GetStripByDir(definitions::projection_type::DIR_U, 1),
+      GetStripByDir(definitions::projection_type::DIR_U, GetDirNstrips(definitions::projection_type::DIR_U)),
+      GetStripByDir(definitions::projection_type::DIR_V, 1),
+      GetStripByDir(definitions::projection_type::DIR_V, GetDirNstrips(definitions::projection_type::DIR_V)),
+      GetStripByDir(definitions::projection_type::DIR_W, 1),
+      GetStripByDir(definitions::projection_type::DIR_W, GetDirNstrips(definitions::projection_type::DIR_W))
     };
     for(int i=0; i<6; i++) {
       if(!s[i]) continue;
@@ -2067,15 +2067,15 @@ TH2D *GeometryTPC::GetXY_TestWU(TH2D *h) { // test (unphysical) histogram
   }
 
   // loop over all strip numbers and check hits strip intersection
-  for(int i0=1; i0<(int)GetDirNstrips(projection_type::DIR_W); i0++) {
+  for(int i0=1; i0<(int)GetDirNstrips(definitions::projection_type::DIR_W); i0++) {
     if(i0!=1) continue;
-    for(auto iter0=GetDirSectionIndexList(projection_type::DIR_W).begin();
-	iter0!=GetDirSectionIndexList(projection_type::DIR_W).end(); iter0++) {
-      std::shared_ptr<StripTPC> strip0 = GetStripByDir(projection_type::DIR_W, *iter0, i0);
-      for(int i1=1; i1<(int)GetDirNstrips(projection_type::DIR_U); i1++) {
-	for(auto iter1=GetDirSectionIndexList(projection_type::DIR_U).begin();
-	    iter1!=GetDirSectionIndexList(projection_type::DIR_U).end(); iter1++) {
-	  std::shared_ptr<StripTPC> strip1 = GetStripByDir(projection_type::DIR_U, *iter1, i1);
+    for(auto iter0=GetDirSectionIndexList(definitions::projection_type::DIR_W).begin();
+	iter0!=GetDirSectionIndexList(definitions::projection_type::DIR_W).end(); iter0++) {
+      std::shared_ptr<StripTPC> strip0 = GetStripByDir(definitions::projection_type::DIR_W, *iter0, i0);
+      for(int i1=1; i1<(int)GetDirNstrips(definitions::projection_type::DIR_U); i1++) {
+	for(auto iter1=GetDirSectionIndexList(definitions::projection_type::DIR_U).begin();
+	    iter1!=GetDirSectionIndexList(definitions::projection_type::DIR_U).end(); iter1++) {
+	  std::shared_ptr<StripTPC> strip1 = GetStripByDir(definitions::projection_type::DIR_U, *iter1, i1);
 	  TVector2 pos;
 	  if( GetCrossPoint( strip0, strip1, pos) ) {
 	    h->SetBinContent( h->FindBin( pos.X(), pos.Y() ), 1.*i0);
@@ -2104,12 +2104,12 @@ TH3D *GeometryTPC::Get3DFrame(int rebin_space, int rebin_time) const{
   double zmax=GetAgetNtimecells()-0.5; // time_cell_max;  
   /*
   StripTPC* s[6] = {
-		    GetStripByDir(projection_type::DIR_U, 1),
-		    GetStripByDir(projection_type::DIR_U, GetDirNstrips(projection_type::DIR_U)),
-		    GetStripByDir(projection_type::DIR_V, 1),
-		    GetStripByDir(projection_type::DIR_V, GetDirNstrips(projection_type::DIR_V)),
-		    GetStripByDir(projection_type::DIR_W, 1),
-		    GetStripByDir(projection_type::DIR_W, GetDirNstrips(projection_type::DIR_W))
+		    GetStripByDir(definitions::projection_type::DIR_U, 1),
+		    GetStripByDir(definitions::projection_type::DIR_U, GetDirNstrips(definitions::projection_type::DIR_U)),
+		    GetStripByDir(definitions::projection_type::DIR_V, 1),
+		    GetStripByDir(definitions::projection_type::DIR_V, GetDirNstrips(definitions::projection_type::DIR_V)),
+		    GetStripByDir(definitions::projection_type::DIR_W, 1),
+		    GetStripByDir(definitions::projection_type::DIR_W, GetDirNstrips(definitions::projection_type::DIR_W))
   };
   for(int i=0; i<6; i++) {
     if(!s[i]) continue;

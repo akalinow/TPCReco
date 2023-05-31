@@ -2,26 +2,16 @@
 #include <vector>
 #include <map>
 #include <iterator>
-/*
-#include <cstdlib>
-#include <cstdio>
-#include <string>
-#include <sstream>
-#include <fstream>
-#include <utility>
-#include <algorithm> // for find_if
-#include "TMath.h"
-*/
 
-#include "TH1D.h"
-#include "TH3F.h"
-#include "TVector2.h"
-#include "TVector3.h"
+#include <TH1D.h>
+#include <TH3F.h>
+#include <TVector2.h>
+#include <TVector3.h>
 
-#include "GeometryTPC.h"
-#include "EventTPC.h"
-#include "TrackSegmentTPC.h"
-#include "SigClusterTPC.h"
+#include "TPCReco/GeometryTPC.h"
+#include "TPCReco/EventTPC.h"
+#include "TPCReco/TrackSegmentTPC.h"
+#include "TPCReco/SigClusterTPC.h"
 
 /* ============= 3D TRACK SEGMENT CLASS ===========*/
 TrackSegment3D::TrackSegment3D(const TVector3 & p1,
@@ -109,9 +99,9 @@ bool TrackSegment3D::SetComparisonCluster(SigClusterTPC &cluster) { // cluster =
   // create UZ, VZ, WZ projections of the parent 3D track segment
   
   std::map<int, TrackSegment2D> trkMap; // 1-key map: strip_dir [0-2]
-  trkMap[DIR_U] = GetTrack2D(geo_ptr, DIR_U);
-  trkMap[DIR_V] = GetTrack2D(geo_ptr, DIR_V);
-  trkMap[DIR_W] = GetTrack2D(geo_ptr, DIR_W);
+  trkMap[definitions::projection_type::DIR_U] = GetTrack2D(geo_ptr, definitions::projection_type::DIR_U);
+  trkMap[definitions::projection_type::DIR_V] = GetTrack2D(geo_ptr, definitions::projection_type::DIR_V);
+  trkMap[definitions::projection_type::DIR_W] = GetTrack2D(geo_ptr, definitions::projection_type::DIR_W);
   
   // Loop over 2D cluster hits and update statistics
   for(auto it=trkMap.begin(); it!=trkMap.end(); it++) {
@@ -197,9 +187,9 @@ TrackSegment2D TrackSegment3D::GetTrack2D(GeometryTPC *geo_ptr, int dir) {
 
   // project START and STOP points
   switch(dir) {
-  case DIR_U:
-  case DIR_V:
-  case DIR_W:
+  case definitions::projection_type::DIR_U:
+  case definitions::projection_type::DIR_V:
+  case definitions::projection_type::DIR_W:
     bool err_flag;
     return
       TrackSegment2D( TVector2( geo_ptr->Cartesian2posUVW(start_point.X(), start_point.Y(), dir, err_flag), // U or V or W position [mm]

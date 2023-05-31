@@ -1,8 +1,8 @@
 #include <algorithm> // for std::find()
 #include <iostream>
-#include <colorText.h>
-#include "GeometryStats.h"
-#include "UtilsMath.h" // for Utils::NUMERICAL_TOLERANCE
+#include "TPCReco/colorText.h"
+#include "TPCReco/GeometryStats.h"
+#include "TPCReco/UtilsMath.h" // for Utils::NUMERICAL_TOLERANCE
 
 void GeometryStats::FillSections(int dir, int section, int num){
     auto dirStat=directionsStats.find(dir);

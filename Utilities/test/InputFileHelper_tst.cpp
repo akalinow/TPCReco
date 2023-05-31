@@ -1,4 +1,4 @@
-#include "InputFileHelper.h"
+#include "TPCReco/InputFileHelper.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include <boost/filesystem.hpp>
@@ -101,7 +101,7 @@ TEST_F(InputFileHelperTest, FileDiscoveryCSV) {
 }
 
 TEST(InputFileHelper, ExtensionsFilter) {
-  std::set<std::string> allowedExtensions = {".graw", ".root" , ".log"};
+  std::set<std::string> allowedExtensions = {".graw", ".root", ".log"};
   std::vector<std::string> files = {
       "CoBo0_AsAd0_2021-07-12T12:03:40.978_0000.graw",
       "CoBo0_AsAd0_2021-07-12T12:03:40.978_0000.root",
@@ -112,8 +112,41 @@ TEST(InputFileHelper, ExtensionsFilter) {
   auto last =
       filterExtensions(std::begin(files), std::end(files), allowedExtensions);
   files.erase(last, std::end(files));
-  EXPECT_THAT(files, ::testing::UnorderedElementsAreArray(
-                         {"CoBo0_AsAd0_2021-07-12T12:03:40.978_0000.graw",
-                          "CoBo0_AsAd0_2021-07-12T12:03:40.978_0000.root",
-                          "CoBo0_AsAd0_2021-07-12T12:03:40.978_0000.graw.log"}));
+  EXPECT_THAT(files,
+              ::testing::UnorderedElementsAreArray(
+                  {"CoBo0_AsAd0_2021-07-12T12:03:40.978_0000.graw",
+                   "CoBo0_AsAd0_2021-07-12T12:03:40.978_0000.root",
+                   "CoBo0_AsAd0_2021-07-12T12:03:40.978_0000.graw.log"}));
+}
+
+TEST_F(InputFileHelperTest, FileDiscoveryFromRunId) {
+  std::vector<std::string> files;
+  auto runId = 20210712120340l;
+  auto timePoint = RunId(runId).toTimePoint();
+  unsigned long chunk = 0;
+  auto begin =
+      boost::filesystem::directory_iterator(boost::filesystem::path(directory));
+  auto end = boost::filesystem::directory_iterator{};
+
+  discoverFiles(timePoint, chunk, std::chrono::milliseconds(1500), begin, end,
+                std::back_inserter(files));
+  EXPECT_THAT(
+      files,
+      ::testing::UnorderedElementsAreArray(
+          {directory + "CoBo0_AsAd0_2021-07-12T12:03:40.978_0000.graw",
+           directory + "CoBo0_AsAd1_2021-07-12T12:03:40.982_0000.graw",
+           directory + "CoBo0_AsAd2_2021-07-12T12:03:40.994_0000.graw",
+           directory + "CoBo0_AsAd3_2021-07-12T12:03:41.001_0000.graw"}));
+  files.clear();
+  begin =
+      boost::filesystem::directory_iterator(boost::filesystem::path(directory));
+  discoverFiles(timePoint, chunk, std::chrono::milliseconds(1000), begin, end,
+                std::back_inserter(files));
+  EXPECT_THAT(files,
+              ::testing::UnorderedElementsAreArray({
+                  directory + "CoBo0_AsAd0_2021-07-12T12:03:40.978_0000.graw",
+                  directory + "CoBo0_AsAd1_2021-07-12T12:03:40.982_0000.graw",
+                  directory + "CoBo0_AsAd2_2021-07-12T12:03:40.994_0000.graw"
+                  // last file missing becasue not in duration range
+              }));
 }
