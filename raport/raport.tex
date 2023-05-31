@@ -124,7 +124,7 @@ Projekt podizelony został na trzy części:
     \item Reorganizacja konfiguracji aplikacji,
     \item Reorganizacja klasy  EventSource,
 \end{itemize}
-Projekt wykonano przy pomocy stemu wersjonowania kodu (\textit{GIT}\cite{git}) oraz oprogramowania służącego do konteneryzacji projektu (\textit{Docker}\cite{docker})
+Projekt wykonano przy pomocy systemu wersjonowania kodu (\textit{GIT}\cite{git}) oraz oprogramowania służącego do konteneryzacji projektu (\textit{Docker}\cite{docker})
 
 \vfill
 \pagebreak
@@ -165,7 +165,7 @@ Funkcje testujące to:
     \item GetSignalRange\_Test 
     \item GetMultiplicity\_Test
 \end{itemize}
-Powyrzsze funkcje porównuje wyniki wywołanych metod klasy EventTPC z danymi porównawczymi, które znajdują się w pliku dataEventTPC.h. Dane porównawcze przechowywane są w formanie map, gdzie kuczem są wywoływane metody z argumentami, w formacie std::string.
+Powyższe funkcje porównuje wyniki wywołanych metod klasy EventTPC z danymi porównawczymi, które znajdują się w pliku dataEventTPC.h. Dane porównawcze przechowywane są w formacie map, gdzie kluczem są wywoływane metody z argumentami, w formacie std::string.
 
 \subsection{Klasa ConfigManager}
 Powstała klasa służąca do wczytywania parametrów z linii poleceń oraz plików konfiguracyjnych, a następnie konfiguracji obiektu boost::property\_tree::ptree i zwracania obiektu skonfigurowanego. Klasa zawiera następujące metody:
@@ -205,7 +205,8 @@ Sposób formatowania plików konfiguracyjnych zawierających listę dozwolonych 
 
 \subsection{Reorganizacja klasy EventSource}
 
-Wyseparowano system rozpoznawania typu danych z klasy MainFrame. Dodano namespace EventSourceFactory z funkcją EventSourceFactory::makeEventSourceObject która przyjmuje przez referencję obiekt typu boost::property\_tree::ptree z konfiguracją i zwraca std::shared\_ptr<EventSourceBase> będący wskaźnikiem na obiekt klasy pochodnej do EventSourceBase. Typ tego obiektu zależy od nazw plików z danymi zawartych w konfiguracji. W trakcie tworzenia tego obiektu konfiguracja zostaje rozszerzona o zmienną zapisującą typ obiektu ("eventType") w formacie enum event\_type (wartości odpowiadające nazwom klas EventSource[...]) oraz o flagę ("onlineFlag"), która mówi czy pliki mają być na żywo ładowane z folderu (aplikuje się tylko do plików typu GRAW). Zmieniono obsługę systemu plików z biblioteki ROOT na bibliotekę boost::filesystem. Funkcja jest w stanie rozpoznać i załadować następujące formaty plików:
+Wyseparowano system rozpoznawania typu danych z klasy MainFrame. Dodano namespace EventSourceFactory z funkcją EventSourceFactory::makeEventSourceObject która przyjmuje przez referencję obiekt typu
+boost::property\_tree::ptree z konfiguracją i zwraca std::shared\_ptr\texttt{<EventSourceBase>} będący wskaźnikiem na obiekt klasy pochodnej do EventSourceBase. Typ tego obiektu zależy od nazw plików z danymi zawartych w konfiguracji. W trakcie tworzenia tego obiektu konfiguracja zostaje rozszerzona o zmienną zapisującą typ obiektu ("eventType") w formacie enum event\_type (wartości odpowiadające nazwom klas EventSource[...]) oraz o flagę ("onlineFlag"), która mówi czy pliki mają być na żywo ładowane z folderu (aplikuje się tylko do plików typu GRAW). Zmieniono obsługę systemu plików z biblioteki ROOT na bibliotekę boost::filesystem. Funkcja jest w stanie rozpoznać i załadować następujące formaty plików:
 \begin{itemize}
     \item pliki w formacie .root wygenerowane przez bibliotekę ROOT - klasa EventSourceROOT
     \item pliki z symulacji Monte Carlo - klasa EventSourceMC
@@ -213,15 +214,23 @@ Wyseparowano system rozpoznawania typu danych z klasy MainFrame. Dodano namespac
 \end{itemize}
 W przypadku nieprawidłowej konfiguracji zostaje zwrócony pusty wskaźnik.
 \section{Podsumowanie}
-Projekt wykonano podczas semestru zimowego orza letniego roku akademickiego 2022/2023 na Wydziale Fizyki UW. W wyniku prac, dodano test kalsy EventTPC, zmienionu został sposób konfiguracji aplikacji oraz poprawione zostało rozpoznawanie obiektów EventSourceBase. Dzięki temu, uczestnicy zrealizowali ogólne założenia projektu.
+Projekt wykonano podczas semestru zimowego oraz letniego roku akademickiego 2022/2023 na Wydziale Fizyki UW. W wyniku prac, dodano test kalsy EventTPC, zmieniony został sposób konfiguracji aplikacji oraz poprawione zostało rozpoznawanie obiektów EventSourceBase. Dzięki temu, uczestnicy zrealizowali ogólne założenia projektu.
+
+\pagebreak
 
 \begin{thebibliography}{99}
     \bibitem{cern}
-        The ROOT Project, \url{https://root.cern.ch/}
+        Rene Brun and Fons Rademakers, ROOT - An Object Oriented Data Analysis Framework,
+        Proceedings AIHENP'96 Workshop, Lausanne, Sep. 1996,
+        Nucl. Inst. \& Meth. in Phys. Res. A 389 (1997) 81-86.
+        See also "ROOT" [software], Release v6.26/02, 13/04/2022,
+        (\url{https://root.cern/releases/release-61802/})
     \bibitem{git}
-        GIT - The Stupid Content Manager, \url{https://git-scm.com/}
+        GitHub is a web-based hosting service for version control using git.
+        More information about GitHub can be found at \url{https://en.wikipedia.org/wiki/GitHub}.
     \bibitem{docker}
-        Docker, \url{https://www.docker.com/}
+        Docker is a set of platform as a service products that uses OS-level virtualization to deliver software in packages called containers.
+        More informations about Docker can be found at \url{https://en.wikipedia.org/wiki/Docker_(software)}
     \bibitem{JSON}
         JSON syntax - \url{https://en.wikipedia.org/wiki/JSON\#Syntax}
 \end{thebibliography}
