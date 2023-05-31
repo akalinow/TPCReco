@@ -55,7 +55,7 @@ namespace eventraw {
     unsigned long eventType{0};
     bool pedestalSubtracted{false};
     
-    static const uint eventTypeBits = 64;
+    static const uint32_t eventTypeBits = 64;
 
   };
 

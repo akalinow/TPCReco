@@ -1,3 +1,4 @@
+#include "TPCReco/CommonDefinitions.h"
 #ifdef WITH_GET
 #include <iostream>
 #include <boost/property_tree/json_parser.hpp>
@@ -10,143 +11,30 @@
 #include "TPCReco/EventSourceMultiGRAW.h"
 #include "TPCReco/RawSignal_tree_analysis.h"
 #include "TPCReco/RunIdParser.h"
+#include "TPCReco/ConfigManager.h"
 
-void analyzeRawEvents(const boost::property_tree::ptree &aConfig);
+void analyzeRawEvents(const boost::property_tree::ptree& aConfig);
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+int main(int argc, char** argv) {
+	ConfigManager cm;
+	boost::property_tree::ptree tree = cm.getConfig(argc,argv);
+	if (argc < 2) {
+		std::cout << _endl_
+			<< "rawSignalAnalysis config.json [options]" << _endl_ << _endl_;
+		return 0;
+	}
+	else {
+		std::cout << "Using configFileName: " << argv[1] << _endl_;
+		boost::property_tree::read_json(argv[1], tree);
+	}
 
-boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
-
-  boost::program_options::options_description cmdLineOptDesc("Allowed command line options");
-
-  cmdLineOptDesc.add_options()
-    ("help", "produce help message")
-    ("geometryFile",  boost::program_options::value<std::string>(), "string - path to TPC geometry file")
-    ("dataFile",  boost::program_options::value<std::string>(), "string - path to raw data file in single-GRAW mode (or list of comma-separated raw data files in multi-GRAW mode)")
-    ("frameLoadRange", boost::program_options::value<unsigned int>(), "int - maximal number of frames to be read by event builder in single-GRAW mode")
-    ("singleAsadGrawFile", boost::program_options::bool_switch()->default_value(false), "flag indicating multi-GRAW mode (default=FALSE)")
-    ("removePedestal",  boost::program_options::value<bool>(), "bool - Flag to control pedestal removal. Overrides the value from config file.")
-    ("recoClusterEnable",  boost::program_options::value<bool>(), "bool - Flag to enable clustering")
-    ("recoClusterThreshold",  boost::program_options::value<float>(), "float - ADC threshold above pedestal used for clustering")
-    ("recoClusterDeltaStrips",  boost::program_options::value<int>(), "int - Envelope in strip units around seed hits for clustering")
-    ("recoClusterDeltaTimeCells",  boost::program_options::value<int>(), "int - Envelope in time cell units around seed hits for clustering")
-    ("outputFile", boost::program_options::value<std::string>(), "string - path to the output ROOT file")
-    ("maxNevents", boost::program_options::value<unsigned int>()->default_value(0), "int - number of events to process");
-  
-  boost::program_options::variables_map varMap;
-
-  try {
-    boost::program_options::store(boost::program_options::parse_command_line(argc, argv, cmdLineOptDesc), varMap);
-    if (varMap.count("help")) {
-      std::cout << std::endl
-		<< "rawSignalAnalysis config.json [options]" << std::endl << std::endl;
-      std::cout << cmdLineOptDesc << std::endl;
-      exit(1);
-    }
-    boost::program_options::notify(varMap);
-  } catch (const std::exception &e) {
-    std::cerr << e.what() << '\n';
-    std::cout << cmdLineOptDesc << std::endl;
-    exit(1);
-  }
-
-  return varMap;
-}
-/////////////////////////////////////
-/////////////////////////////////////
-int main(int argc, char **argv){
-
-  boost::program_options::variables_map varMap = parseCmdLineArgs(argc, argv);
-  boost::property_tree::ptree tree;
-  if(argc<2){
-    std::cout << std::endl
-	      << "rawSignalAnalysis config.json [options]" << std::endl << std::endl;
-    return 0;
-  }
-  else {
-    std::cout<<"Using configFileName: "<<argv[1]<<std::endl;
-    boost::property_tree::read_json(argv[1], tree);
-  }
-
-  // optional overrides of the JSON config file
-  if (varMap.count("outputFile")) {
-    tree.put("outputFile", varMap["outputFile"].as<std::string>());
-  }
-  if (varMap.count("geometryFile")) {
-    tree.put("geometryFile", varMap["geometryFile"].as<std::string>());
-  }
-  if (varMap.count("dataFile")) {
-    tree.put("dataFile", varMap["dataFile"].as<std::string>());
-  }
-  if (varMap.count("maxNevents")) {
-    tree.put("maxNevents", varMap["maxNevents"].as<unsigned int>());
-  }
-  if (varMap.count("removePedestal")) {
-    tree.put("removePedestal", varMap["removePedestal"].as<bool>());
-  }
-  if(varMap.count("recoClusterEnable")) {
-    tree.put("hitFilter.recoClusterEnable", varMap["recoClusterEnable"].as<bool>());
-    if(tree.get<bool>("hitFilter.recoClusterEnable")==false) { // skip threshold, delta-strip, delta-timecells when clustering is disabled
-      tree.put("hitFilter.recoClusterThreshold", 0.0);
-      tree.put("hitFilter.recoClusterDeltaStrips", 0);
-      tree.put("hitFilter.recoClusterDeltaTimeCells", 0);
-    } else { // look for threshold, delta-strip, delta-timecells only when clustering is enabled
-      if(varMap.count("recoClusterThreshold")) {
-	      tree.put("hitFilter.recoClusterThreshold", varMap["recoClusterThreshold"].as<float>());
-      }
-      if(varMap.count("recoClusterDeltaStrips")) {
-	      tree.put("hitFilter.recoClusterDeltaStrips", varMap["recoClusterDeltaStrips"].as<int>());
-      }
-      if(varMap.count("recoClusterDeltaTimeCells")) {
-	      tree.put("hitFilter.recoClusterDeltaTimeCells", varMap["recoClusterDeltaTimeCells"].as<int>());
-      }
-    }
-  }
-  if( (tree.find("singleAsadGrawFile")==tree.not_found() || // if not present in config JSON
-       tree.get<bool>("singleAsadGrawFile")==false) && // or single-GRAW mode is FALSE
-      varMap.count("singleAsadGrawFile")){ // then allow to override JSON settings
-    tree.put("singleAsadGrawFile", varMap["singleAsadGrawFile"].as<bool>());
-  }
-  if( tree.get<bool>("singleAsadGrawFile")==false && // if in single-GRAW mode
-      varMap.count("frameLoadRange")) { // then allow to override JSON settings
-    tree.put("frameLoadRange", varMap["frameLoadRange"].as<unsigned int>());
-  }
-
-  //sanity checks
-  if(tree.find("dataFile")==tree.not_found() ||
-     tree.find("geometryFile")==tree.not_found() ||
-     tree.find("outputFile")==tree.not_found() ||
-     tree.find("singleAsadGrawFile")==tree.not_found() ||
-     (tree.find("singleAsadGrawFile")!=tree.not_found() &&
-      tree.find("frameLoadRange")==tree.not_found()) ||
-     tree.get_child("hitFilter").find("recoClusterEnable")==tree.not_found() ||
-     tree.get_child("hitFilter").find("recoClusterThreshold")==tree.not_found() ||
-     tree.get_child("hitFilter").find("recoClusterDeltaStrips")==tree.not_found() ||
-     tree.get_child("hitFilter").find("recoClusterDeltaTimeCells")==tree.not_found() ||
-     tree.find("removePedestal")==tree.not_found()     
-     ||
-     tree.find("maxNevents")==tree.not_found()
-     ) {
-    std::cerr << std::endl
-	      << __FUNCTION__ << KRED << ": Some configuration options are missing!" << RST << std::endl << std::endl;
-    std::cout << "dataFile: " << tree.count("dataFile") << std::endl;
-    std::cout << "geometryFile: " << tree.count("geometryFile") << std::endl;
-    std::cout << "outputFile: " << tree.count("outputFile") << std::endl;
-    std::cout << "recoClusterEnable: " << tree.get_child("hitFilter").count("recoClusterEnable") << std::endl;
-    std::cout << "recoClusterThreshold: " << tree.get_child("hitFilter").count("recoClusterThreshold") << std::endl;
-    std::cout << "recoClusterDeltaStrips: " << tree.get_child("hitFilter").count("recoClusterDeltaStrips") << std::endl;
-    std::cout << "recoClusterDeltaTimeCells: " << tree.get_child("hitFilter").count("recoClusterDeltaTimeCells") << std::endl;
-    std::cout << "singleAsadGrawFile: " << tree.count("singleAsadGrawFile") << std::endl;
-    std::cout << "frameLoadRange: " << tree.count("frameLoadRange") << std::endl;
-    std::cout << "removePedestal: " << tree.count("removePedestal") << std::endl;
-    std::cout << "maxNevents:" << tree.count("maxNevents") << std::endl;
-    exit(1);
-  }
-
-  // start analysis job
-  analyzeRawEvents(tree);
-  return 0;
+	// start analysis job
+	analyzeRawEvents(tree);
+	return 0;
 }
 
-void analyzeRawEvents(const boost::property_tree::ptree &aConfig){
+void analyzeRawEvents(const boost::property_tree::ptree& aConfig) {
 
   auto geometryFileName = aConfig.get<std::string>("geometryFile");
   auto dataFileName = aConfig.get<std::string>("dataFile");
@@ -183,58 +71,46 @@ void analyzeRawEvents(const boost::property_tree::ptree &aConfig){
     exit(1);
   }
 
-  const char del = ','; // delimiter character
-  std::set<std::string> fileNameList; // list of unique strings
-  std::stringstream sstream(dataFileName);
-  std::string fileName;
-  while (std::getline(sstream, fileName, del)) {
-    if(fileName.size()>0) fileNameList.insert(fileName);
-  };
+	if (dataFileName.find(".graw") == std::string::npos ||
+		geometryFileName.find(".dat") == std::string::npos ||
+		outputFileName.find(".root") == std::string::npos) {
+		std::cerr << __FUNCTION__ << KRED << ": Wrong input argument(s)." << _endl_
+			<< "Check that GRAW file(s) and geometry file are correct." << _endl_
+			<< "The output ROOT file must not be present."
+			<< RST << _endl_;
+		exit(1);
+	}
 
-  // initialize EventSource  
-  std::shared_ptr<EventSourceBase> myEventSource;
-  if(singleAsadGrawFile) {
-    myEventSource = std::make_shared<EventSourceMultiGRAW>(geometryFileName);
-    unsigned int AsadNboards=dynamic_cast<EventSourceGRAW*>(myEventSource.get())->getGeometry()->GetAsadNboards();
-    if (fileNameList.size()>AsadNboards) {
-      std::cerr << __FUNCTION__ << KRED << ": Provided too many GRAW files. Expected up to " << AsadNboards << RST << std::endl;
-      exit(1);
-    }
-  } else {
-    myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
-    dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(frameLoadRange);
-    if (fileNameList.size()>1) {
-      std::cerr << __FUNCTION__ << KRED << ": Provided too many GRAW files. Expected 1." << RST << std::endl;
-      exit(1);
-    }
-  }
+	const char del = ','; // delimiter character
+	std::set<std::string> fileNameList; // list of unique strings
+	std::stringstream sstream(dataFileName);
+	std::string fileName;
+	while (std::getline(sstream, fileName, del)) {
+		if (fileName.size() > 0) fileNameList.insert(fileName);
+	};
 
-  myEventSource->loadDataFile(dataFileName);
-  std::cout << "File with " << myEventSource->numberOfEntries() << " frames loaded."
-	    << std::endl;
+	// initialize EventSource  
+	std::shared_ptr<EventSourceBase> myEventSource;
+	if (singleAsadGrawFile) {
+		myEventSource = std::make_shared<EventSourceMultiGRAW>(geometryFileName);
+		unsigned int AsadNboards = dynamic_cast<EventSourceGRAW*>(myEventSource.get())->getGeometry()->GetAsadNboards();
+		if (fileNameList.size() > AsadNboards) {
+			std::cerr << __FUNCTION__ << KRED << ": Provided too many GRAW files. Expected up to " << AsadNboards << RST << _endl_;
+			exit(1);
+		}
+	}
+	else {
+		myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
+		dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(frameLoadRange);
+		if (fileNameList.size() > 1) {
+			std::cerr << __FUNCTION__ << KRED << ": Provided too many GRAW files. Expected 1." << RST << _endl_;
+			exit(1);
+		}
+	}
 
-  // DEBUG - parsing RunId from file name
-  //  auto id = RunIdParser(*(fileNameList.begin()));
-  //  std::cout << "Parsing 1st file name from the list: " << *(fileNameList.begin())
-  //	    << ": run=" << id.runId() << ", chunk=" << id.fileId() << ", cobo=" << id.CoBoId() << ", asad=" << id.AsAdId() << std::endl;
-  auto id = RunIdParser(dataFileName);
-  std::cout << "Parsing whole file name list: " << dataFileName
-	    << ": run=" << id.runId() << ", chunk=" << id.fileId() << ", cobo=" << id.CoBoId() << ", asad=" << id.AsAdId() << std::endl;
-  // DEBUG
-  
-  // initialize pedestal removal parameters for EventSource
-  dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setRemovePedestal(removePedestal);
-  if(removePedestal) {
-    if(aConfig.find("pedestal")!=aConfig.not_found()) {
-      dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(aConfig.find("pedestal")->second);
-    }
-    else {
-    std::cerr << std::endl
-	      << __FUNCTION__ << KRED << ": Some pedestal configuration options are missing!" << RST << std::endl << std::endl;
-    
-    exit(1);
-    }
-  }
+	myEventSource->loadDataFile(dataFileName);
+	std::cout << "File with " << myEventSource->numberOfEntries() << " frames loaded."
+		<< _endl_;
 
   // initialize RawSignalAnalysis
   ClusterConfig myClusterConfig;
@@ -244,21 +120,31 @@ void analyzeRawEvents(const boost::property_tree::ptree &aConfig){
   myClusterConfig.clusterDeltaTimeCells = clusterDeltaTimeCells;
   RawSignal_tree_analysis myAnalysis(myEventSource->getGeometry(), myClusterConfig, outputFileName); //dynamic_cast<EventSourceGRAW*>(myEventSource.get())->getGeometry());
 
-  // loop over ALL events
-  Long64_t currentEventIdx=-1;
-  bool isFirst=true; // flag to indicate first event for time period / rate calculations
+	// initialize pedestal removal parameters for EventSource
+	dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setRemovePedestal(removePedestal);
+	if (removePedestal) {
+		if (aConfig.find("pedestal") != aConfig.not_found()) {
+			dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(aConfig.find("pedestal")->second);
+		}
+		else {
+			std::cerr << _endl_
+				<< __FUNCTION__ << KRED << ": Some pedestal configuration options are missing!" << RST << _endl_ << _endl_;
 
   ////// DEBUG
   Long64_t counter=0;
   ////// DEBUG
 
-  do {
-    // load first event
-    if(currentEventIdx==-1) {
-      myEventSource->loadFileEntry(0);
-    }
+	// initialize RawSignalAnalysis
+	ClusterConfig myClusterConfig;
+	myClusterConfig.clusterEnable = clusterEnable;
+	myClusterConfig.clusterThreshold = clusterThreshold;
+	myClusterConfig.clusterDeltaStrips = clusterDeltaStrips;
+	myClusterConfig.clusterDeltaTimeCells = clusterDeltaTimeCells;
+	RawSignal_tree_analysis myAnalysis(myEventSource->getGeometry(), myClusterConfig); //dynamic_cast<EventSourceGRAW*>(myEventSource.get())->getGeometry());
 
-    std::cout << "EventInfo: " << myEventSource->getCurrentEvent()->GetEventInfo()<<std::endl;
+	// loop over ALL events
+	Long64_t currentEventIdx = -1;
+	bool isFirst = true; // flag to indicate first event for time period / rate calculations
 
     // fill statistical histograms per run (before & after user-defined cuts)
     myAnalysis.fillTree(myEventSource->getCurrentEvent(), isFirst);
@@ -271,8 +157,22 @@ void analyzeRawEvents(const boost::property_tree::ptree &aConfig){
   }
   while(currentEventIdx!=(Long64_t)myEventSource->currentEventNumber());
 
-  // write histograms to ROOTFILE
-  //  myAnalysis.finalize();
+		std::cout << "EventInfo: " << myEventSource->getCurrentEvent()->GetEventInfo() << _endl_;
+
+		// fill statistical histograms per run (before & after user-defined cuts)
+		myAnalysis.fillTree(myEventSource->getCurrentEvent(), isFirst);
+
+		// load next event (if any)
+		currentEventIdx = myEventSource->currentEventNumber();
+		myEventSource->getNextEvent();
+
+		////// DEBUG
+		//    if(++counter==100) break;
+		////// DEBUG
+	} while (currentEventIdx != (Long64_t)myEventSource->currentEventNumber());
+
+	// write histograms to ROOTFILE
+	//  myAnalysis.finalize();
 }
 
 #else
@@ -280,9 +180,9 @@ void analyzeRawEvents(const boost::property_tree::ptree &aConfig){
 #include "TPCReco/colorText.h"
 #include <iostream>
 
-int main(){
-  std::cout<<KRED<<"TPCReco was compiled without GET libraries."<<RST
-	    <<" This application requires GET libraries."<<std::endl;
-  return -1;
+int main() {
+	std::cout << KRED << "TPCReco was compiled without GET libraries." << RST
+		<< " This application requires GET libraries." << _endl_;
+	return -1;
 }
 #endif
