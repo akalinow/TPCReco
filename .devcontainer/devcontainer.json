@@ -1,11 +1,12 @@
 {
     "name": "TPCReco-dev:latest",
     "build": {
-        "dockerfile": "../docker/dev.dockerfile",
+        "dockerfile": "../docker/Dockerfile",
         "context": "..",
+        "target": "dev",
         "args": {
             "GET_VERSION": "20190315_patched",
-            "ROOT_VERSION": "6.24",
+            "ROOT_VERSION": "6.08",
             "UBUNTU_VERSION": "xenial"
         }
     },
@@ -16,12 +17,16 @@
     "mounts": [
         "source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind"
     ],
-    "extensions": [
-        "ms-vscode.cpptools",
-        "ms-vscode.cmake-tools",
-        "ms-python.python",
-        "ms-python.vscode-pylance",
-        "eamodio.gitlens",
-        "mhutchie.git-graph"
-    ]
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.cpptools",
+                "ms-vscode.cmake-tools",
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "eamodio.gitlens",
+                "mhutchie.git-graph"
+            ]
+        }
+    }
 }

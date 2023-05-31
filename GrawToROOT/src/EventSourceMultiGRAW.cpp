@@ -10,15 +10,14 @@
 #include <sstream>
 
 
-#include "TCollection.h"
-#include "TClonesArray.h"
+#include <TCollection.h>
+#include <TClonesArray.h>
 
-#include "RunIdParser.h"
-#include "EventSourceMultiGRAW.h"
-//#include "EventRaw.h"
-#include "colorText.h"
+#include "TPCReco/RunIdParser.h"
+#include "TPCReco/EventSourceMultiGRAW.h"
+#include "TPCReco/colorText.h"
 
-#include "get/graw2dataframe.h"
+#include <get/graw2dataframe.h>
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 EventSourceMultiGRAW::EventSourceMultiGRAW(const std::string & geometryFileName) : EventSourceGRAW(geometryFileName) {}

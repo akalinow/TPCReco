@@ -1,5 +1,5 @@
-#include "DiffAnalysis.h"
-#include "ConfigManager.h"
+#include "TPCReco/DiffAnalysis.h"
+#include "TPCReco/ConfigManager.h"
 #include <boost/program_options.hpp>
 #include <iostream>
 #include <string>

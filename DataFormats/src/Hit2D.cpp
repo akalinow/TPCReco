@@ -1,4 +1,4 @@
-#include "Hit2D.h"
+#include "TPCReco/Hit2D.h"
 
 #include <iostream>
 /////////////////////////////////////////////////////////

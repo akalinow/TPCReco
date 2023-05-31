@@ -5,8 +5,8 @@
 #include <TGLabel.h>
 #include <TGFontDialog.h>
 
-#include <FileInfoFrame.h>
-#include <MainFrame.h>
+#include "TPCReco/FileInfoFrame.h"
+#include "TPCReco/MainFrame.h"
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 FileInfoFrame::FileInfoFrame(const TGWindow * p, MainFrame * aFrame)

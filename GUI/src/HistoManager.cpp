@@ -2,31 +2,29 @@
 #include <iostream>
 #include <tuple>
 
-#include "TCanvas.h"
-#include "TH2D.h"
-#include "TH3D.h"
-#include "TSpectrum2.h"
-#include "TVector3.h"
-#include "TPolyLine3D.h"
-#include "TView.h"
-#include "TVirtualViewer3D.h"
-#include "TF1.h"
-#include "TLegend.h"
-#include "TText.h"
-#include "TPaletteAxis.h"
-#include "TLatex.h"
-#include "TLorentzVector.h"
+#include <TCanvas.h>
+#include <TH2D.h>
+#include <TH3D.h>
+#include <TSpectrum2.h>
+#include <TVector3.h>
+#include <TPolyLine3D.h>
+#include <TView.h>
+#include <TVirtualViewer3D.h>
+#include <TF1.h>
+#include <TLegend.h>
+#include <TText.h>
+#include <TPaletteAxis.h>
+#include <TLatex.h>
+#include <TLorentzVector.h>
 
-#include "CommonDefinitions.h"
-#include "MakeUniqueName.h"
-#include "GeometryTPC.h"
-#include "EventTPC.h"
-#include "RunIdParser.h"
-#include "colorText.h"
+#include "TPCReco/CommonDefinitions.h"
+#include "TPCReco/MakeUniqueName.h"
+#include "TPCReco/GeometryTPC.h"
+#include "TPCReco/EventTPC.h"
+#include "TPCReco/RunIdParser.h"
+#include "TPCReco/colorText.h"
 
-#include "HistoManager.h"
-
-#include "CoordinateConverter.h"
+#include "TPCReco/HistoManager.h"
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 HistoManager::HistoManager() {
@@ -99,13 +97,14 @@ void HistoManager::drawRawHistos(TCanvas *aCanvas, bool isRateDisplayOn){
   int padNumberOffset = 0;
   if(std::string(aCanvas->GetName())=="fRawHistosCanvas") padNumberOffset = 100;
   
-  for(int strip_dir=projection_type::DIR_U;strip_dir<=projection_type::DIR_W;++strip_dir){
+  for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
     TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
     if(!aPad) return;
     aPad->cd();
     aCanvas->Modified();
     aCanvas->Update();
     auto projType = get2DProjectionType(strip_dir);
+    aPad->SetFrameFillColor(kAzure-6);
     get2DProjection(projType, filter_type::none, scale_type::raw)->DrawCopy("colz");
     aPad->RedrawAxis();
   }
@@ -119,7 +118,7 @@ void HistoManager::drawRawHistos(TCanvas *aCanvas, bool isRateDisplayOn){
   if(isRateDisplayOn){
     fObjClones.push_back(getEventRateGraph()->DrawClone("AP"));
   } else{
-    get1DProjection(projection_type::DIR_TIME, filter_type::none, scale_type::raw)->DrawCopy("hist");
+    get1DProjection(definitions::projection_type::DIR_TIME, filter_type::none, scale_type::raw)->DrawCopy("hist");
   }
   aCanvas->Modified();
   aCanvas->Update();
@@ -156,7 +155,7 @@ void HistoManager::drawRecoHistos(TCanvas *aCanvas){
   filter_type filterType = filter_type::threshold;
   if(!myConfig.get<bool>("recoClusterEnable")) filterType = filter_type::none;
 
-   for(int strip_dir=projection_type::DIR_U;strip_dir<=projection_type::DIR_W;++strip_dir){
+   for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
      TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
      if(!aPad) return;
      aPad->cd();
@@ -165,6 +164,8 @@ void HistoManager::drawRecoHistos(TCanvas *aCanvas){
 
      auto projType = get2DProjectionType(strip_dir);     
      auto histo2D = get2DProjection(projType, filterType, scale_type::mm);
+     aPad->SetFrameFillColor(kAzure-6);
+     /*
      if(myConfig.get<bool>("recoClusterEnable")){
        histo2D->SetMinimum(0.0);
        histo2D->DrawCopy("colz");
@@ -174,7 +175,7 @@ void HistoManager::drawRecoHistos(TCanvas *aCanvas){
        histo2D->DrawCopy("colz same");
        drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);	    
      }
-     else histo2D->DrawCopy("colz");
+     else */histo2D->DrawCopy("colz");
    }
    int strip_dir=3;
    TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
@@ -182,8 +183,8 @@ void HistoManager::drawRecoHistos(TCanvas *aCanvas){
    aPad->cd();
    aCanvas->Modified();
    aCanvas->Update();
-   if(myConfig.get<bool>("recoClusterEnable")) drawChargeAlongTrack3D(aPad);
-   else  get1DProjection(projection_type::DIR_TIME, filterType, scale_type::mm)->DrawCopy("hist");
+   /*   if(myConfig.get<bool>("recoClusterEnable")) drawChargeAlongTrack3D(aPad);
+	else  */get1DProjection(definitions::projection_type::DIR_TIME, filterType, scale_type::mm)->DrawCopy("hist");
 
    aCanvas->Modified();
    aCanvas->Update(); 
@@ -194,7 +195,7 @@ void HistoManager::drawRecoFromMarkers(TCanvas *aCanvas, std::vector<double> * s
 
   reconstructSegmentsFromMarkers(segmentsXY);
   
-  for(int strip_dir=projection_type::DIR_U;strip_dir<=projection_type::DIR_W;++strip_dir){
+  for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
     TVirtualPad *aPad = aCanvas->cd(strip_dir+1);
     aCanvas->Modified();
     aCanvas->Update();
@@ -222,7 +223,7 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
   filter_type filterType = filter_type::threshold;
   if(!myConfig.get<bool>("recoClusterEnable")) filterType = filter_type::none;
 
-   for(int strip_dir=projection_type::DIR_U;strip_dir<=projection_type::DIR_W;++strip_dir){
+   for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
      TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
      if(!aPad) return;
      aPad->cd();
@@ -249,7 +250,7 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
    aCanvas->Modified();
    aCanvas->Update();
    if(myConfig.get<bool>("recoClusterEnable")) drawChargeAlongTrack3D(aPad);
-   else  get1DProjection(projection_type::DIR_TIME, filterType, scale_type::mm)->DrawCopy("hist");
+   else  get1DProjection(definitions::projection_type::DIR_TIME, filterType, scale_type::mm)->DrawCopy("hist");
 
    aCanvas->Modified();
    aCanvas->Update();
@@ -308,8 +309,8 @@ void HistoManager::setDetLayout(){
   // - UVW STRIP projection range from all directions
   // - DRIFT projection range
   float strip_min, strip_max;
-  std::tie(strip_min, strip_max)=myGeometryPtr->rangeStripDirInMM(projection_type::DIR_U);
-  for(int idir=projection_type::DIR_V; idir<=projection_type::DIR_W; ++idir) {
+  std::tie(strip_min, strip_max)=myGeometryPtr->rangeStripDirInMM(definitions::projection_type::DIR_U);
+  for(int idir=definitions::projection_type::DIR_V; idir<=definitions::projection_type::DIR_W; ++idir) {
     float a, b;
     std::tie(a, b)=myGeometryPtr->rangeStripDirInMM(idir);
     if(a<strip_min) strip_min=a;
@@ -361,7 +362,7 @@ void HistoManager::setDetLayoutVetoBand(double distance){ // [mm]
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<TH1D> HistoManager::get1DProjection(projection_type projType,
+std::shared_ptr<TH1D> HistoManager::get1DProjection(definitions::projection_type projType,
 						    filter_type filterType,
 						    scale_type scaleType){
   
@@ -376,7 +377,7 @@ std::shared_ptr<TH1D> HistoManager::get1DProjection(projection_type projType,
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<TH2D> HistoManager::get2DProjection(projection_type projType,
+std::shared_ptr<TH2D> HistoManager::get2DProjection(definitions::projection_type projType,
 						    filter_type filterType,
 						    scale_type scaleType){
 
@@ -654,6 +655,10 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   
   TF1 dEdx = myTkBuilder.getdEdx();
   if(!dEdx.GetNpar()) return;
+  //////// HACK by MC - for prettier HistoManager::drawDevelHistos (1/04/2023)
+  const double points_per_mm = 100;
+  dEdx.SetNpx((dEdx.GetXmax()-dEdx.GetXmin())*points_per_mm);
+  //////// HACK by MC - for prettier HistoManager::drawDevelHistos (1/04/2023)
   double carbonScale = dEdx.GetParameter("carbonScale");
   
   dEdx.SetLineColor(kBlack);
@@ -668,6 +673,9 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   dEdx.SetLineStyle(2);
   dEdx.SetLineWidth(2);
   TObject *aObj1 = dEdx.DrawCopy("same");
+  //////// HACK by MC - for prettier HistoManager::drawDevelHistos (1/04/2023)
+  if((TF1*)aObj1) ((TF1*)aObj1)->SetName("alpha_model");
+  //////// HACK by MC - for prettier HistoManager::drawDevelHistos (1/04/2023)
   aLegend->AddEntry(aObj1,"#alpha","l");
   fObjClones.push_back(aObj1);
   
@@ -677,6 +685,9 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   dEdx.SetLineStyle(2);
   dEdx.SetLineWidth(2);
   TObject *aObj2  = dEdx.DrawCopy("same");
+  //////// HACK by MC - for prettier HistoManager::drawDevelHistos (1/04/2023)
+  if((TF1*)aObj2) ((TF1*)aObj2)->SetName("carbon_model");
+  //////// HACK by MC - for prettier HistoManager::drawDevelHistos (1/04/2023)
   aLegend->AddEntry(aObj2,"^{12}C","l");
   fObjClones.push_back(aObj2);
   aLegend->Draw();
@@ -707,9 +718,11 @@ void HistoManager::makeAutozoom(TH1 * aHisto){
     int lowBin = aHisto->FindFirstBinAbove(threshold, iAxis);
     int highBin = aHisto->FindLastBinAbove(threshold, iAxis);
     margin += (highBin - lowBin)*0.1;
-    if(iAxis==1) aHisto->GetXaxis()->SetRange(lowBin-margin, highBin+margin);
-    else if(iAxis==2) aHisto->GetYaxis()->SetRange(lowBin-margin, highBin+margin);
-  }  
+    /////// TEST
+    if(iAxis==1) aHisto->GetXaxis()->SetRange(std::max(lowBin-margin,1) , std::min(highBin+margin, aHisto->GetXaxis()->GetNbins()));
+    else if(iAxis==2) aHisto->GetYaxis()->SetRange(std::max(lowBin-margin,1), std::min(highBin+margin, aHisto->GetYaxis()->GetNbins()));
+    /////// TEST
+  }
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -728,7 +741,6 @@ void HistoManager::openOutputStream(const std::string & filePath){
   if(fileName.find("CoBo")==std::string::npos){
     fileName = fileName.replace(0,8,"CoBo_ALL_AsAd_ALL");
   }
-  myRunParser.reset(new RunIdParser(fileName)); 
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

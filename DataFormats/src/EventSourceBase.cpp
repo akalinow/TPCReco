@@ -2,8 +2,8 @@
 #include <iostream>
 #include <fstream>
 
-#include "colorText.h"
-#include "EventSourceBase.h"
+#include "TPCReco/colorText.h"
+#include "TPCReco/EventSourceBase.h"
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 EventSourceBase::EventSourceBase() {

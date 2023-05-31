@@ -5,14 +5,14 @@
 #include <algorithm>
 #include <numeric>
 
-#include "TH1D.h"
-#include "TH2D.h"
-#include "TH3F.h"
+#include <TH1D.h>
+#include <TH2D.h>
+#include <TH3F.h>
 
-#include "EventTPC.h"
-#include "TrackSegmentTPC.h"
+#include "TPCReco/EventTPC.h"
+#include "TPCReco/TrackSegmentTPC.h"
 
-#include "colorText.h"
+#include "TPCReco/colorText.h"
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 EventTPC::EventTPC(){
@@ -69,17 +69,28 @@ void EventTPC::filterHits(filter_type filterType){
   else histoCacheUpdated.at(filterType)=true;
 
   std::set<PEventTPC::chargeMapType::key_type> keyList;
-  const auto & config = filterConfigs.at(filter_type::threshold);
-  double chargeThreshold = config.get<double>("recoClusterThreshold");
-  
-  for(const auto & item: chargeMapWithSections){
-    auto key = item.first;
-    auto value = item.second;
-    if(value>chargeThreshold || filterType==filter_type::none){
-      keyList.insert(key);      
-      if(filterType==filter_type::threshold) addEnvelope(key, keyList);
+
+  switch(filterType){
+  case filter_type::threshold: {
+    const auto & config = filterConfigs.at(filter_type::threshold);
+    double chargeThreshold = config.get<double>("recoClusterThreshold");
+    for(const auto & item: chargeMapWithSections){
+      auto key = item.first;
+      auto value = item.second;
+      if(value>chargeThreshold){
+	keyList.insert(key);
+	addEnvelope(key, keyList);
+      }
+    }}
+    break;
+  case filter_type::none:
+    for(const auto & item: chargeMapWithSections){
+      keyList.insert(item.first);
     }
+    break;
+  default:;
   }
+
  keyLists[filterType] = keyList;
  updateHistosCache(filterType);
 }
@@ -126,9 +137,9 @@ void EventTPC::create3DHistoTemplate(){
   double maxX = nBinsX + minX;// ends at 511.5 (cells numbered from 0 to 511)
 
   int nBinsY = 0;
-  nBinsY = std::max(nBinsY, myGeometryPtr->GetDirNstrips(projection_type::DIR_U));
-  nBinsY = std::max(nBinsY, myGeometryPtr->GetDirNstrips(projection_type::DIR_V));
-  nBinsY = std::max(nBinsY, myGeometryPtr->GetDirNstrips(projection_type::DIR_W));
+  nBinsY = std::max(nBinsY, myGeometryPtr->GetDirNstrips(definitions::projection_type::DIR_U));
+  nBinsY = std::max(nBinsY, myGeometryPtr->GetDirNstrips(definitions::projection_type::DIR_V));
+  nBinsY = std::max(nBinsY, myGeometryPtr->GetDirNstrips(definitions::projection_type::DIR_W));
   double minY = 0.5;
   double maxY = nBinsY + minY;
 
@@ -325,7 +336,7 @@ std::tuple<int,int,int,int> EventTPC::GetSignalRange(int aStrip_dir, filter_type
   int minBinX = -1, minBinY = -1;
   int maxBinX = -1, maxBinY = -1;
   int strip_number=0, time_cell=0;
-  if(projType==projection_type::NONE){
+  if(projType==definitions::projection_type::NONE){
     for(const auto & key: keyLists.at(filterType)){
       strip_number  = std::get<2>(key);
       time_cell = std::get<3>(key);
@@ -350,39 +361,39 @@ std::tuple<int,int,int,int> EventTPC::GetSignalRange(int aStrip_dir, filter_type
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
-std::shared_ptr<TH1D> EventTPC::get1DProjection(projection_type projType,
+std::shared_ptr<TH1D> EventTPC::get1DProjection(definitions::projection_type projType,
 						filter_type filterType,
 						scale_type scaleType){
   filterHits(filterType);
   TH1D *h1D = 0;
   std::shared_ptr<TH3D> a3DHistoRawPtr = a3DHistoRawMap.at(filterType);
   
-  if(projType==projection_type::DIR_U ||
-     projType==projection_type::DIR_V ||
-     projType==projection_type::DIR_W){
+  if(projType==definitions::projection_type::DIR_U ||
+     projType==definitions::projection_type::DIR_V ||
+     projType==definitions::projection_type::DIR_W){
 
-    int minY = 0.5;
-    int maxY = myGeometryPtr->GetDirNstrips(projType)+minY;
+    double minY = 0.5;
+    double maxY = myGeometryPtr->GetDirNstrips(projType)+minY;
 
     h1D = a3DHistoRawPtr->ProjectionY("_py",0,-1,
 				      static_cast<int>(projType)+1, static_cast<int>(projType)+1);
     h1D->GetXaxis()->SetRangeUser(minY, maxY);
   }
-  else if(projType==projection_type::DIR_TIME_U){
+  else if(projType==definitions::projection_type::DIR_TIME_U){
     h1D = a3DHistoRawPtr->ProjectionX("_px",0,-1,
-				      static_cast<int>(projection_type::DIR_U)+1, static_cast<int>(projection_type::DIR_U)+1);
+				      static_cast<int>(definitions::projection_type::DIR_U)+1, static_cast<int>(definitions::projection_type::DIR_U)+1);
     
   }
-  else if(projType==projection_type::DIR_TIME_V){
+  else if(projType==definitions::projection_type::DIR_TIME_V){
     h1D = a3DHistoRawPtr->ProjectionX("_px",0,-1,
-				      static_cast<int>(projection_type::DIR_V)+1, static_cast<int>(projection_type::DIR_V)+1);
+				      static_cast<int>(definitions::projection_type::DIR_V)+1, static_cast<int>(definitions::projection_type::DIR_V)+1);
     
   }
-  else if(projType==projection_type::DIR_TIME_W){
+  else if(projType==definitions::projection_type::DIR_TIME_W){
     h1D = a3DHistoRawPtr->ProjectionX("_px",0,-1,
-				      static_cast<int>(projection_type::DIR_W)+1, static_cast<int>(projection_type::DIR_W)+1);    
+				      static_cast<int>(definitions::projection_type::DIR_W)+1, static_cast<int>(definitions::projection_type::DIR_W)+1);    
   }
-  else if(projType==projection_type::DIR_TIME){
+  else if(projType==definitions::projection_type::DIR_TIME){
     h1D = a3DHistoRawPtr->ProjectionX();
   }
   else{
@@ -392,11 +403,11 @@ std::shared_ptr<TH1D> EventTPC::get1DProjection(projection_type projType,
   if(scaleType==scale_type::mm) scale1DHistoToMM(h1D, projType);
   setHistoLabels(h1D, projType, filterType, scaleType);
 
-  return std::shared_ptr<TH1D>(h1D);    
+  return std::shared_ptr<TH1D>(h1D);
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
-std::shared_ptr<TH2D> EventTPC::get2DProjection(projection_type projType,
+std::shared_ptr<TH2D> EventTPC::get2DProjection(definitions::projection_type projType,
 						filter_type filterType,
 						scale_type scaleType){
   filterHits(filterType);
@@ -405,9 +416,9 @@ std::shared_ptr<TH2D> EventTPC::get2DProjection(projection_type projType,
   auto projType1D = get1DProjectionType(projType);
   a3DHistoRawPtr->GetZaxis()->SetRange(static_cast<int>(projType1D)+1,
 				       static_cast<int>(projType1D)+1);
-  int minY = 0.5;
-  int maxY = myGeometryPtr->GetDirNstrips(projType1D)+minY;
-  a3DHistoRawPtr->GetYaxis()->SetRangeUser(minY, maxY);    
+  double minY = 0.5;
+  double maxY = myGeometryPtr->GetDirNstrips(projType1D)+minY;
+  a3DHistoRawPtr->GetYaxis()->SetRangeUser(minY, maxY);
   
   TH2D *h2D = (TH2D*)a3DHistoRawPtr->Project3D("yx");
   h2D->SetDirectory(0);
@@ -417,23 +428,23 @@ std::shared_ptr<TH2D> EventTPC::get2DProjection(projection_type projType,
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
-void EventTPC::scale1DHistoToMM(TH1D *h1D, projection_type projType) const{
+void EventTPC::scale1DHistoToMM(TH1D *h1D, definitions::projection_type projType) const{
 
   int nBinsX=1;
   double minX = 0.0, maxX=0.0;
-  if(projType==projection_type::DIR_U ||
-     projType==projection_type::DIR_V ||
-     projType==projection_type::DIR_W){
+  if(projType==definitions::projection_type::DIR_U ||
+     projType==definitions::projection_type::DIR_V ||
+     projType==definitions::projection_type::DIR_W){
 
     nBinsX =  myGeometryPtr->GetDirNstrips(projType);
     std::tie(minX, maxX) = myGeometryPtr->rangeStripDirInMM(projType);
     minX-=myGeometryPtr->GetStripPitch()/2.0;
     maxX+=myGeometryPtr->GetStripPitch()/2.0;
   }
-  else if(projType==projection_type::DIR_TIME_U ||
-	  projType==projection_type::DIR_TIME_V ||
-	  projType==projection_type::DIR_TIME_W ||
-	  projType==projection_type::DIR_TIME){
+  else if(projType==definitions::projection_type::DIR_TIME_U ||
+	  projType==definitions::projection_type::DIR_TIME_V ||
+	  projType==definitions::projection_type::DIR_TIME_W ||
+	  projType==definitions::projection_type::DIR_TIME){
     bool err_flag;
     nBinsX = myGeometryPtr->GetAgetNtimecells();
     minX = -0.5;
@@ -446,7 +457,7 @@ void EventTPC::scale1DHistoToMM(TH1D *h1D, projection_type projType) const{
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
-void EventTPC::scale2DHistoToMM(TH2D *h2D, projection_type projType) const{
+void EventTPC::scale2DHistoToMM(TH2D *h2D, definitions::projection_type projType) const{
 
   bool err_flag;
   int nBinsX = myGeometryPtr->GetAgetNtimecells();
@@ -479,12 +490,12 @@ void EventTPC::scale2DHistoToMM(TH2D *h2D, projection_type projType) const{
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
-void EventTPC::setHistoLabels(TH1 *h1, projection_type projType,
+void EventTPC::setHistoLabels(TH1 *h1, definitions::projection_type projType,
 			      filter_type filterType,
 			      scale_type scaleType) const {
 
   auto event_id = myEventInfo.GetEventId();
-  projection_type strip_dir = projection_type::NONE;
+  definitions::projection_type strip_dir = definitions::projection_type::NONE;
   std::string timeName = "time";
   std::string labelX = "", labelY = "", labelZ = "";
   std::string integratedOverTime = "";
@@ -494,9 +505,9 @@ void EventTPC::setHistoLabels(TH1 *h1, projection_type projType,
   if(filterType==filter_type::threshold) filterName="Threshold";
   else if(filterType==filter_type::island) filterName="Island";
 
-  if(projType==projection_type::DIR_U ||
-     projType==projection_type::DIR_V ||
-     projType==projection_type::DIR_W){
+  if(projType==definitions::projection_type::DIR_U ||
+     projType==definitions::projection_type::DIR_V ||
+     projType==definitions::projection_type::DIR_W){
     strip_dir = projType;
     timeName = "pro";
     integratedOverTime = "integrated over time";
@@ -506,20 +517,20 @@ void EventTPC::setHistoLabels(TH1 *h1, projection_type projType,
     if(scaleType==scale_type::mm) labelX += " [mm]";
     else labelX += " [strip]";
   }
-  else if(projType==projection_type::DIR_TIME){
-    strip_dir = projection_type::DIR_TIME;
+  else if(projType==definitions::projection_type::DIR_TIME){
+    strip_dir = definitions::projection_type::DIR_TIME;
     isTimeProjection = true;
    }
-  else if(projType==projection_type::DIR_TIME_U){
-    strip_dir = projection_type::DIR_U;
+  else if(projType==definitions::projection_type::DIR_TIME_U){
+    strip_dir = definitions::projection_type::DIR_U;
     isTimeProjection = true;
   }
-  else if(projType==projection_type::DIR_TIME_V){
-    strip_dir = projection_type::DIR_V;
+  else if(projType==definitions::projection_type::DIR_TIME_V){
+    strip_dir = definitions::projection_type::DIR_V;
     isTimeProjection = true;
   }
-  else if(projType==projection_type::DIR_TIME_W){
-    strip_dir = projection_type::DIR_W;
+  else if(projType==definitions::projection_type::DIR_TIME_W){
+    strip_dir = definitions::projection_type::DIR_W;
     isTimeProjection = true;
   }
 

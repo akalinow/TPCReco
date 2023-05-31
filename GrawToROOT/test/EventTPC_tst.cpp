@@ -4,14 +4,15 @@
 #include <vector>
 #include <iomanip>
 
-#include "GeometryTPC.h"
-#include "EventTPC.h"
-#include "PEventTPC.h"
-#include "EventSourceMultiGRAW.h"
+#include "TPCReco/GeometryTPC.h"
+#include "TPCReco/EventTPC.h"
+#include "TPCReco/PEventTPC.h"
+#include "TPCReco/EventSourceMultiGRAW.h"
 
-#include "TFile.h"
+#include <TFile.h>
 
-#include "colorText.h"
+#include "TPCReco/colorText.h"
+
 
 #include "dataEventTPC.h" // File with data for tests and directory of data files
 
@@ -174,7 +175,7 @@ double epsilon = 1e-5;  // Value used to compare double values
             }
         }
     }
-  
+ 
 
 
 /////////////////////////////////////
@@ -204,7 +205,9 @@ int main(int argc, char *argv[]) {
   int check = error_list_bool.size(); 
   for (std::vector<bool>::iterator it = error_list_bool.begin(); it != error_list_bool.end(); ++it) { check -= *it; } // checking if all Tests returns correct values
 
+
   if(check>0){return -1;}
+
   return 0;
 }
 /////////////////////////////////////

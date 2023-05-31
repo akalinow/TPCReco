@@ -3,8 +3,8 @@
 //#include <vector>
 #include <map>
 #include <iostream>
-#include "EventRaw.h"
-#include "MultiKey.h"
+#include "TPCReco/EventRaw.h"
+#include "TPCReco/MultiKey.h"
 
 // overloading << operator
 std::ostream& eventraw::operator<<(std::ostream& os, const eventraw::ChannelRaw& craw) {
