@@ -34,6 +34,16 @@ enum  projection_type{
 };
 } //namespace definitions
 
+enum class event_type {
+	EventSourceROOT,
+	EventSourceMC,
+	EventSourceGRAW,
+	EventSourceMultiGRAW
+};
+
+std::ostream& operator<<(std::ostream& os, const event_type& et);
+std::istream& operator>>(std::istream& is, event_type& et);
+
 definitions::projection_type get2DProjectionType(int aStrip_dir);
 definitions::projection_type get2DProjectionType(definitions::projection_type aStrip_dir);
 
