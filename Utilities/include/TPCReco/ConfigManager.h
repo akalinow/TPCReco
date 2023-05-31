@@ -10,7 +10,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/foreach.hpp>
 
-#include "CommonDefinitions.h"
+#include "TPCReco/CommonDefinitions.h"
 
 class ConfigManager
 {

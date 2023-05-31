@@ -20,34 +20,6 @@ root_generate_dictionary(
   LinkDef.h)
 #
 
-###############################################################################
-## dependencies ###############################################################
-###############################################################################
-include_directories(${ROOTINCDIR})
-include_directories(${Boost_INCLUDE_DIRS})
-include_directories(${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include)
-include_directories(${PROJECT_SOURCE_DIR}/Utilities/include)
-include_directories(${PROJECT_SOURCE_DIR}/GrawToROOT/include)
-include_directories(${PROJECT_SOURCE_DIR}/TrackGenerator/include)
-include_directories(${PROJECT_SOURCE_DIR}/GUI/include)
-###############################################################################
-## target definitions #########################################################
-###############################################################################
-# ROOT dictionary for persistens classes
-ROOT_GENERATE_DICTIONARY(G__${MODULE_NAME}
-  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/CommonDefinitions.h
-  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/PEventTPC.h
-  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/EventTPC.h
-  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/GeometryTPC.h
-  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/SigClusterTPC.h 
-  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/Hit2D.h
-  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/Track3D.h
-  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/TrackSegment3D.h
-  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/TrackSegment2D.h  
-  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/MultiKey.h 
-  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/EventRaw.h
-  ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/EventInfo.h
-  LINKDEF ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/LinkDef.h)
 reco_add_library(${MODULE_NAME} EXTRA_SOURCES
                  G__${TPCRECO_PREFIX}${MODULE_NAME}.cxx)
 
