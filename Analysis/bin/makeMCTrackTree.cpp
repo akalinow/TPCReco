@@ -79,6 +79,8 @@ int main(int argc, char **argv){
   std::string geometryFileName, dataFileName;
   ConfigManager cm;
   boost::property_tree::ptree tree = cm.getConfig(argc, argv);
+  geometryFileName = tree.get("geometryFileName","");
+  dataFileName = tree.get(dataFileName","");
 
   int nEntriesProcessed = 0;
   if(dataFileName.size() && geometryFileName.size()){
