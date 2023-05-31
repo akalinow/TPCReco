@@ -1,16 +1,9 @@
 set(MODULE_NAME "Reconstruction")
-MESSAGE( STATUS "Adding CMake fragment for module:         " ${MODULE_NAME} )
-set(TPCRECO_LIBRARIES ${TPCRECO_LIBRARIES} ${TPCRECO_PREFIX}${MODULE_NAME} PARENT_SCOPE)
-###############################################################################
-## file globbing ##############################################################
-###############################################################################
+message(STATUS "Adding CMake fragment for module:\t${MODULE_NAME}")
 
-# These instructions search the directory tree when cmake is
-# invoked and put all files that match the pattern in the variable
-# `sources`
-#
-file(GLOB_RECURSE sources       ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/src/*.cpp)
+reco_add_library(${MODULE_NAME})
 
+<<<<<<< HEAD
 ###############################################################################
 ## dependencies ###############################################################
 ###############################################################################
@@ -35,3 +28,12 @@ target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
 # relative to the executable.
 install(TARGETS ${MODULE_NAME} LIBRARY DESTINATION lib)
 install(FILES $<1:${PROJECT_SOURCE_DIR}/${MODULE_NAME}/test/> DESTINATION test)
+=======
+target_link_libraries(
+  ${MODULE_NAME}
+  PUBLIC ${ROOT_LIBRARIES} ${ROOT_EXE_LINKER_FLAGS} DataFormats Utilities
+  PRIVATE Resources)
+
+reco_install_targets(${MODULE_NAME})
+install(DIRECTORY examples DESTINATION ${CMAKE_INSTALL_PREFIX})
+>>>>>>> f354324fc0e2a0130807f8471dda39732124fe4f

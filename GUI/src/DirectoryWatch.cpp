@@ -6,8 +6,8 @@
 #include <sys/types.h>
 #include <set>
 
-#include "colorText.h"
-#include "DirectoryWatch.h"
+#include "TPCReco/colorText.h"
+#include "TPCReco/DirectoryWatch.h"
 
 ////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

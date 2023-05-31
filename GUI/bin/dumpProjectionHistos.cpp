@@ -1,8 +1,8 @@
 
-#include "TFile.h"
+#include <TFile.h>
 
-#include "HistoManager.h"
-#include "EventSourceROOT.h"
+#include "TPCReco/HistoManager.h"
+#include "TPCReco/EventSourceROOT.h"
 
 #include <boost/property_tree/json_parser.hpp>
 
@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
       myEventSource->loadFileEntry(iEntry);
       std::cout<<"EventID: "<<myEventSource->currentEventNumber()<<std::endl;
       myHistoManager.setEvent(myEventSource->getCurrentEvent());
-      for(int strip_dir=projection_type::DIR_U;strip_dir<=projection_type::DIR_W;++strip_dir){
+      for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
 	auto projType = get2DProjectionType(strip_dir);
 	myHistoManager.get1DProjection(projType, filter_type::none, scale_type::raw)->Write();
       }

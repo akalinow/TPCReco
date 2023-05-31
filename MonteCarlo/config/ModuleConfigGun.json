@@ -1,0 +1,186 @@
+{
+  "EnableTiming": true,
+  "ModuleSequence": [
+    "Generator",
+    "GeantSim",
+    "EventFileExporter"
+  ],
+  "GeometryConfig": "@CMAKE_INSTALL_PREFIX@/resources/geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat",
+  "ModuleConfiguration": {
+    "Generator": {
+      "NumberOfEvents": 10000,
+      "EventGenerator": {
+        "Beam": {
+          "BeamGeometry": {
+            "EulerAnglesNominal": {
+              "phi": -1.5708,
+              "theta": 1.5708,
+              "psi": 0.0
+            },
+            "EulerAnglesActual": {
+              "phi": 0.0,
+              "theta": 0.0,
+              "psi": 0.0
+            },
+            "BeamPosition": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            }
+          },
+          "GammaEnergy": {
+            "distribution": "EProviderSingle",
+            "parameters": {
+              "singleE": 11
+            }
+          }
+        },
+        "Vertex": {
+          "VertexTransverse": {
+            "distribution": "XYProviderSingle",
+            "parameters": {
+              "singleX": 0,
+              "singleY": 0
+            }
+          },
+          "VertexLongitudinal": {
+            "distribution": "ZProviderSingle",
+            "parameters": {
+              "singleZ": 0
+            }
+          }
+        },
+        "Reactions": [
+          {
+            "type": "ParticleGun",
+            "branchingRatio": 1,
+            "tag": "PARTICLE_GUN",
+            "Particle": "ALPHA",
+            "Theta": {
+              "distribution": "AngleProviderSingle",
+              "parameters": {
+                "singleAngle": 3.14159265
+              }
+            },
+            "Phi": {
+              "distribution": "AngleProviderSingle",
+              "parameters": {
+                "singleAngle": 0
+              }
+            },
+            "KineticEnergy": {
+              "distribution": "EProviderSingle",
+              "parameters": {
+                "singleE": 3
+              }
+            }
+          }
+        ]
+      }
+    },
+    "EventFileExporter": {
+      "FileName": "out.root",
+      "EnabledBranches": [
+        "SimEvent",
+        "PEventTPC",
+        "Track3D"
+      ]
+    },
+    "GeantSim": {
+      "gas_mixture": {
+        "co2": 0.25,
+        "he": 0.0
+      },
+      "magnetic_field": {
+        "magnetic_field_ON": false,
+        "magnetic_field_map": "",
+        "magnetic_field_offset": 200
+      },
+      "GeometryConfig": {
+        "ModelPath": "@CMAKE_INSTALL_PREFIX@/resources/Geant_STL_model/",
+        "MaterialColors": {
+          "aluminium": {
+            "r": 132,
+            "g": 135,
+            "b": 137,
+            "alpha": 1
+          },
+          "peek": {
+            "r": 222,
+            "g": 184,
+            "b": 135,
+            "alpha": 1
+          },
+          "kapton": {
+            "r": 236,
+            "g": 206,
+            "b": 106,
+            "alpha": 1
+          },
+          "copper": {
+            "r": 184,
+            "g": 115,
+            "b": 51,
+            "alpha": 1
+          },
+          "stainless": {
+            "r": 132,
+            "g": 135,
+            "b": 137,
+            "alpha": 0.2
+          },
+          "FR4": {
+            "r": 4,
+            "g": 179,
+            "b": 109,
+            "alpha": 1
+          }
+        },
+        "Solids": {
+          "kapton": [
+            "*gem_kapton*",
+            "*ISO_KF40_window_kapton*"
+          ],
+          "stainless": [
+            "*drift_conn*",
+            "*M2*",
+            "*pcb_compression_plate*",
+            "*vessel_collar*",
+            "*vessel_barrel_wall*",
+            "*ISO_KF40_weld_flange*",
+            "*vessel_endcap1*",
+            "*vessel_endcap2*",
+            "*ISO_KF40_full_nipple_130mm*",
+            "*ISO_KF40_window_flange_35mm*",
+            "ISO_KF40_centering_ring_modified*",
+            "*PFEIFFER_170SFK040-06"
+          ],
+          "copper": [
+            "*gem_cu_layer1*",
+            "*gem_cu_layer2*",
+            "*pcb_gnd_top*",
+            "*pcb_gnd_bottom*"
+          ],
+          "aluminium": [
+            "*drift_strip1*",
+            "*drift_strip2*",
+            "*cathode_plate*",
+            "*ISO_KF40_clamp*"
+          ],
+          "peek": [
+            "*gem_frame*",
+            "*drift_rod*",
+            "*drift_screw*",
+            "*drift_spacer*",
+            "*drift_spacer2*",
+            "*drift_frame1*",
+            "*drift_frame2*"
+          ],
+          "FR4":[
+            "*pcb_readout_core*"
+          ]
+        }
+      }
+    }
+  }
+}

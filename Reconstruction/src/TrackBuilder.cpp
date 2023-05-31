@@ -2,23 +2,28 @@
 #include <iostream>
 #include <algorithm>
 
-#include "TVector3.h"
-#include "TProfile.h"
-#include "TObjArray.h"
-#include "TF1.h"
-#include "TTree.h"
-#include "TFile.h"
-#include "TFitResult.h"
-#include "Math/Functor.h"
+#include <TVector3.h>
+#include <TProfile.h>
+#include <TObjArray.h>
+#include <TF1.h>
+#include <TTree.h>
+#include <TFile.h>
+#include <TFitResult.h>
+#include <Math/Functor.h>
 
-#include "GeometryTPC.h"
+#include "TPCReco/GeometryTPC.h"
 
+<<<<<<< HEAD
 #include "TrackBuilder.h"
 #include "colorText.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif // M_PI
+=======
+#include "TPCReco/TrackBuilder.h"
+#include "TPCReco/colorText.h"
+>>>>>>> f354324fc0e2a0130807f8471dda39732124fe4f
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 TrackBuilder::TrackBuilder() {
@@ -59,9 +64,9 @@ void TrackBuilder::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
   myRecHitBuilder.setGeometry(aGeometryPtr);
   
   phiPitchDirection.resize(3);
-  phiPitchDirection[projection_type::DIR_U] = myGeometryPtr->GetStripPitchVector(projection_type::DIR_U).Phi();
-  phiPitchDirection[projection_type::DIR_V] = myGeometryPtr->GetStripPitchVector(projection_type::DIR_V).Phi();
-  phiPitchDirection[projection_type::DIR_W] = myGeometryPtr->GetStripPitchVector(projection_type::DIR_W).Phi();
+  phiPitchDirection[definitions::projection_type::DIR_U] = myGeometryPtr->GetStripPitchVector(definitions::projection_type::DIR_U).Phi();
+  phiPitchDirection[definitions::projection_type::DIR_V] = myGeometryPtr->GetStripPitchVector(definitions::projection_type::DIR_V).Phi();
+  phiPitchDirection[definitions::projection_type::DIR_W] = myGeometryPtr->GetStripPitchVector(definitions::projection_type::DIR_W).Phi();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -75,10 +80,11 @@ void TrackBuilder::setPressure(double aPressure) {
 void TrackBuilder::setEvent(std::shared_ptr<EventTPC> aEvent){
 
   myEventPtr = aEvent;
-   
+  myFittedTrack = Track3D();
+  
   std::string hName, hTitle;
   if(!myHistoInitialized){
-    for(int iDir=projection_type::DIR_U;iDir<=projection_type::DIR_W;++iDir){
+    for(int iDir=definitions::projection_type::DIR_U;iDir<=definitions::projection_type::DIR_W;++iDir){
       std::shared_ptr<TH2D> hRawHits = myEventPtr->get2DProjection(get2DProjectionType(iDir),
 								   filter_type::none,
 								   scale_type::mm);
@@ -123,7 +129,7 @@ void TrackBuilder::setEvent(std::shared_ptr<EventTPC> aEvent){
 			-M_PI, M_PI, nAccumulatorRhoBins, rhoMIN, rhoMAX);
       myAccumulators[iDir] = hAccumulator;
       myRawHits[iDir] = *hRawHits;
-      if(iDir==projection_type::DIR_U) hTimeProjection = *hRawHits->ProjectionX();
+      if(iDir==definitions::projection_type::DIR_U) hTimeProjection = *hRawHits->ProjectionX();
     }
     myHistoInitialized = true;
   } 
@@ -133,7 +139,7 @@ void TrackBuilder::setEvent(std::shared_ptr<EventTPC> aEvent){
 void TrackBuilder::reconstruct(){
 
   hTimeProjection.Reset();  
-  for(int iDir=projection_type::DIR_U;iDir<=projection_type::DIR_W;++iDir){
+  for(int iDir=definitions::projection_type::DIR_U;iDir<=definitions::projection_type::DIR_W;++iDir){
     makeRecHits(iDir);
     fillHoughAccumulator(iDir);
     my2DSeeds[iDir] = findSegment2DCollection(iDir);    
@@ -320,7 +326,7 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
   double x=0.0, y=0.0;
   int nSegments = segmentsXY.size()/3/4;
   for(int iSegment=0;iSegment<nSegments;++iSegment){
-    for(int iDir = projection_type::DIR_U; iDir<=projection_type::DIR_W;++iDir){
+    for(int iDir = definitions::projection_type::DIR_U; iDir<=definitions::projection_type::DIR_W;++iDir){
       TrackSegment2D aSegment2D(iDir, myGeometryPtr);
       x = segmentsXY.at(iDir*4 + iSegment*12);
       y = segmentsXY.at(iDir*4 + iSegment*12 + 1);
@@ -333,8 +339,8 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
       my2DSeeds[iDir].push_back(aSegment2D);
     }
     TrackSegment3D a3DSeed = buildSegment3D(iSegment);
-    double startTime = my2DSeeds.at(projection_type::DIR_U).at(iSegment).getStart().X();    
-    double endTime = my2DSeeds.at(projection_type::DIR_U).at(iSegment).getEnd().X();
+    double startTime = my2DSeeds.at(definitions::projection_type::DIR_U).at(iSegment).getStart().X();    
+    double endTime = my2DSeeds.at(definitions::projection_type::DIR_U).at(iSegment).getEnd().X();
     double lambdaStartTime = a3DSeed.getLambdaAtZ(startTime);
     double lambdaEndTime = a3DSeed.getLambdaAtZ(endTime);
     TVector3 start =  a3DSeed.getStart() + lambdaStartTime*a3DSeed.getTangent();
@@ -356,9 +362,9 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   TrackSegment3D a3DSeed;
   a3DSeed.setGeometry(myGeometryPtr);  
 	     
-  const TrackSegment2D & segmentU = my2DSeeds[projection_type::DIR_U][iTrack2DSeed];
-  const TrackSegment2D & segmentV = my2DSeeds[projection_type::DIR_V][iTrack2DSeed];
-  const TrackSegment2D & segmentW = my2DSeeds[projection_type::DIR_W][iTrack2DSeed];
+  const TrackSegment2D & segmentU = my2DSeeds[definitions::projection_type::DIR_U][iTrack2DSeed];
+  const TrackSegment2D & segmentV = my2DSeeds[definitions::projection_type::DIR_V][iTrack2DSeed];
+  const TrackSegment2D & segmentW = my2DSeeds[definitions::projection_type::DIR_W][iTrack2DSeed];
 
   int nHits_U = segmentU.getNAccumulatorHits();
   int nHits_V = segmentV.getNAccumulatorHits();
@@ -479,13 +485,13 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   a3DSeed.getTangent().Print();
   
   std::cout<<KRED<<"tagent from track, U proj.: "<<RST;
-  a3DSeed.get2DProjection(projection_type::DIR_U, 0, 1).getTangent().Print();
+  a3DSeed.get2DProjection(definitions::projection_type::DIR_U, 0, 1).getTangent().Print();
 
   std::cout<<KRED<<"tagent from track, V proj.: "<<RST;
-  a3DSeed.get2DProjection(projection_type::DIR_V, 0, 1).getTangent().Print();
+  a3DSeed.get2DProjection(definitions::projection_type::DIR_V, 0, 1).getTangent().Print();
 
   std::cout<<KRED<<"tagent from track, W proj.: "<<RST;
-  a3DSeed.get2DProjection(projection_type::DIR_W, 0, 1).getTangent().Print();
+  a3DSeed.get2DProjection(definitions::projection_type::DIR_W, 0, 1).getTangent().Print();
 
   std::cout<<KRED<<"bias from track: "<<RST;
   a3DSeed.getBias().Print();

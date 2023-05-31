@@ -5,6 +5,7 @@
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/program_options.hpp>
+<<<<<<< HEAD
 #include "GeometryTPC.h"
 #include "EventTPC.h"
 #include "PEventTPC.h"
@@ -21,8 +22,31 @@
 #include "get/GDataFrame.h"
 #include "get/TGrawFile.h"
 #include "mfm/FrameDictionary.h"
+=======
+
+
+#include "TPCReco/GeometryTPC.h"
+#include "TPCReco/EventTPC.h"
+#include "TPCReco/PEventTPC.h"
+#include "TPCReco/PedestalCalculator.h"
+#include "TPCReco/EventSourceGRAW.h"
+#include "TPCReco/EventSourceMultiGRAW.h"
+
+#include <TFile.h>
+#include <TTree.h>
+
+#include "TPCReco/colorText.h"
+
+#include <utl/Logging.h>
+#include <get/GDataSample.h>
+#include <get/GDataChannel.h>
+#include <get/GDataFrame.h>
+#include <get/TGrawFile.h>
+#include <mfm/FrameDictionary.h>
+
+>>>>>>> f354324fc0e2a0130807f8471dda39732124fe4f
 #ifdef DEBUG
-#include "EventSourceROOT.h" 
+#include "TPCReco/EventSourceROOT.h" 
 #endif
 /////////////////////////////////////
 /////////////////////////////////////

@@ -6,16 +6,15 @@
 #include <map>
 #include <cstdint>
 
-#include "TCollection.h"
-#include "TClonesArray.h"
+#include <TCollection.h>
+#include <TClonesArray.h>
 
 
-#include "EventSourceGRAW.h"
-//#include "EventRaw.h"
-#include "RunIdParser.h"
-#include "colorText.h"
+#include "TPCReco/EventSourceGRAW.h"
+#include "TPCReco/RunIdParser.h"
+#include "TPCReco/colorText.h"
 
-#include "get/graw2dataframe.h"
+#include <get/graw2dataframe.h>
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 EventSourceGRAW::EventSourceGRAW(const std::string & geometryFileName) {
@@ -336,7 +335,7 @@ void EventSourceGRAW::fillEventRawFromFrame(GET::GDataFrame & aGrawFrame){
   // no pedestal subtracion (can be done later using raw data stored in the container class
 
   myCurrentEventRaw->SetEventId((uint64_t)aGrawFrame.fHeader.fEventIdx);
-  myCurrentEventRaw->SetEventTimestamp((uint32_t)aGrawFrame.fHeader.fEventTime);
+  myCurrentEventRaw->SetEventTimestamp(aGrawFrame.fHeader.fEventTime);
   
   uint8_t COBO_idx = (uint8_t)aGrawFrame.fHeader.fCoboIdx;
   uint8_t ASAD_idx = (uint8_t)aGrawFrame.fHeader.fAsadIdx;

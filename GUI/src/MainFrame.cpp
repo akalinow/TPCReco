@@ -5,10 +5,10 @@
 #include <vector>
 
 #include <TApplication.h>
-#include "MainFrame.h"
-#include "SelectionBox.h"
-#include "MarkersManager.h"
-#include "colorText.h"
+#include "TPCReco/MainFrame.h"
+#include "TPCReco/SelectionBox.h"
+#include "TPCReco/MarkersManager.h"
+#include "TPCReco/colorText.h"
 
 #include <TSystem.h>
 #include <TObjArray.h> 
@@ -25,14 +25,14 @@
 #include <TProfile.h>
 
 #ifdef WITH_GET
-#include "EventSourceGRAW.h"
-#include "EventSourceMultiGRAW.h"
+#include "TPCReco/EventSourceGRAW.h"
+#include "TPCReco/EventSourceMultiGRAW.h"
 #endif
-#include "EventSourceROOT.h"
-#include "EventSourceMC.h"
+#include "TPCReco/EventSourceROOT.h"
+#include "TPCReco/EventSourceMC.h"
 
-#include "TGButtonGroup.h"
-#include "TGButton.h"
+#include <TGButtonGroup.h>
+#include <TGButton.h>
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 MainFrame::MainFrame(const TGWindow* p, UInt_t w, UInt_t h, const boost::property_tree::ptree& aConfig)
@@ -112,6 +112,7 @@ void MainFrame::InitializeEventSource() {
 	event_type eventType = myConfig.get<event_type>("eventType");
 	bool onlineFlag = myConfig.get<bool>("onlineFlag");
 
+<<<<<<< HEAD
 	if (onlineFlag) {
 		fileWatchThread = std::thread(&DirectoryWatch::watch, &myDirWatch, dataFileName);
 		if (myConfig.find("updateInterval") != myConfig.not_found()) {
@@ -119,8 +120,103 @@ void MainFrame::InitializeEventSource() {
 			myDirWatch.setUpdateInterval(updateInterval);
 		}
 		myDirWatch.Connect("Message(const char *)", "MainFrame", this, "ProcessMessage(const char *)");
+=======
+  if(dataFileName.empty() || geometryFileName.empty()){
+    std::cerr<<"No data or geometry file path provided."<<std::endl;
+    exit(1);
+    return;
+  }
+  FileStat_t stat;
+
+  // parse dataFile string for comma separated files
+  std::vector<std::string> dataFileVec;
+  //  vector<std::string> basenameVec;
+  //  vector<std::string> dirnameVec;
+  TString list=dataFileName;
+  TObjArray *token = list.Tokenize(",");
+  //  token->Print();
+#ifdef WITH_GET
+  bool all_graw=false;
+#endif
+  for (Int_t itoken = 0; itoken < token->GetEntries(); itoken++) {
+    //    TString list2=((TObjString *)(token->At(itoken)))->String(); // path + name of single file
+    std::string list2( ((TObjString *)(token->At(itoken)))->String().Data() );
+    if(gSystem->GetPathInfo(list2.c_str(), stat) != 0){
+      if(list2.find("_MC_")!=std::string::npos){
+	dataFileVec.push_back(list2);
+	continue;
+      }
+      std::cerr<<KRED<<"Invalid data path. No such file or directory: "<<RST<<list2<<std::endl;
+      exit(1);
+    }
+#ifdef WITH_GET
+    if( ((stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG) && list2.find(".graw")!=std::string::npos){
+      all_graw=true;
+    } else {
+      all_graw=false;
+    }
+#endif
+    dataFileVec.push_back(list2);
+    //   TObjArray *token2 = list2.Tokenize("/");
+    //    TString dirName;
+    //    for (Int_t itoken2=0; itoken2 < token2->GetEntries()-1; itoken2++) {
+    //      dirName=((TObjString *)(token2->At(itoken2)))->String()+"/"; // path
+    //    }
+    //    TString baseName;
+    //    if(token2->GetEntries()-1 > 0) baseName=((TObjString *)(token2->At(token2-GetEntries()-1)))->String(); // basename
+    //    dirnameVec.push_back(dirName);
+    //    basenameVec.push_back(baseName);
+  }
+  
+  //  if(gSystem->GetPathInfo(dataFileName.c_str(), stat) != 0){
+  //    std::cerr<<KRED<<"Invalid data path. No such file or directory: "<<RST<<dataFileName<<std::endl;
+  //   return;
+  //  }
+
+  std::cout<<"dataFileVec.size(): "<<dataFileVec.size()
+	   <<", ((stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG): "<<((stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG)
+	   <<", dataFileName.find(_MC_)!=std::string::npos: "<<(dataFileName.find("_MC_")!=std::string::npos)
+	   <<", dataFileName.find(.root)!=std::string::npos: "<<(dataFileName.find(".root")!=std::string::npos)
+	   <<std::endl;
+
+  if( dataFileVec.size()==1 && ((stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG) && dataFileName.find(".root")!=std::string::npos){
+      myWorkMode = M_OFFLINE_ROOT_MODE;
+      myEventSource = std::make_shared<EventSourceROOT>(geometryFileName);
+    }
+  else if(dataFileVec.size()==1 && dataFileName.find("_MC_")!=std::string::npos){
+    myWorkMode = M_OFFLINE_MC_MODE;
+    myEventSource = std::make_shared<EventSourceMC>(geometryFileName);
+  }
+  
+#ifdef WITH_GET
+  else if( all_graw ) { //(stat.fMode & EFileModeMask::kS_IFREG) == EFileModeMask::kS_IFREG) && dataFileName.find(".graw")!=std::string::npos){
+
+    myWorkMode = M_OFFLINE_GRAW_MODE;
+    if(myConfig.find("singleAsadGrawFile")!=myConfig.not_found()) {
+      bool singleAsadGrawFile = myConfig.get<bool>("singleAsadGrawFile");
+      if(singleAsadGrawFile) {
+	myWorkMode = M_OFFLINE_NGRAW_MODE;
+      }
+    }
+    switch(myWorkMode) {
+    case M_OFFLINE_GRAW_MODE:
+      myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
+      dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(myConfig.get("frameLoadRange",100));
+      if (dataFileVec.size()>1) {
+	std::cerr<<KRED<<"Provided too many GRAW files. Expected 1. dataFile: "<<RST<<dataFileName<<std::endl;
+	return;
+      }
+      break;
+    case M_OFFLINE_NGRAW_MODE:
+      myEventSource = std::make_shared<EventSourceMultiGRAW>(geometryFileName);
+      { unsigned int AsadNboards=dynamic_cast<EventSourceGRAW*>(myEventSource.get())->getGeometry()->GetAsadNboards();
+	if (dataFileVec.size()>AsadNboards) {
+	  std::cerr<<KRED<<"Provided too many GRAW files. Expected up to "<<AsadNboards<<".dataFile: "<<RST<<dataFileName<<std::endl;
+	  return;
+>>>>>>> f354324fc0e2a0130807f8471dda39732124fe4f
 	}
 
+<<<<<<< HEAD
 
 	if (eventType == event_type::EventSourceROOT) {
 		myWorkMode = M_OFFLINE_ROOT_MODE;
@@ -145,6 +241,64 @@ void MainFrame::InitializeEventSource() {
 
 	if (isRecoModeOn) myHistoManager.openOutputStream(dataFileName);
 	myEventSource->getEventFilter().setConditions(myConfig);
+=======
+    myWorkMode = M_ONLINE_GRAW_MODE;
+    if(myConfig.find("singleAsadGrawFile")!=myConfig.not_found()) {
+      bool singleAsadGrawFile = myConfig.get<bool>("singleAsadGrawFile");
+      if(singleAsadGrawFile) {
+	myWorkMode = M_ONLINE_NGRAW_MODE;
+      }
+    }
+    switch(myWorkMode) {
+    case M_ONLINE_GRAW_MODE:
+      myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
+      dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(myConfig.get("frameLoadRange",10));
+      break;
+    case M_ONLINE_NGRAW_MODE:
+      myEventSource = std::make_shared<EventSourceMultiGRAW>(geometryFileName);
+      break;
+    default:;
+    };
+    fileWatchThread = std::thread(&DirectoryWatch::watch, &myDirWatch, dataFileName);
+    if(myConfig.find("updateInterval")!=myConfig.not_found()){
+      int updateInterval = myConfig.get<int>("updateInterval");
+      myDirWatch.setUpdateInterval(updateInterval);
+    }
+    myDirWatch.Connect("Message(const char *)", "MainFrame", this, "ProcessMessage(const char *)");
+  }
+  if(myConfig.find("removePedestal")!=myConfig.not_found() && myEventSource.get()){
+       bool removePedestal = myConfig.get<bool>("removePedestal");
+       EventSourceGRAW* aGrawEventSrc = dynamic_cast<EventSourceGRAW*>(myEventSource.get());
+       if(aGrawEventSrc) aGrawEventSrc->setRemovePedestal(removePedestal);
+  }
+  if(myConfig.find("pedestal")!=myConfig.not_found() && myEventSource.get()){
+    EventSourceGRAW* aGrawEventSrc = dynamic_cast<EventSourceGRAW*>(myEventSource.get());
+    if(aGrawEventSrc) aGrawEventSrc->configurePedestal(myConfig.find("pedestal")->second);
+  } 
+#endif
+  else if(!myEventSource){
+    std::cerr<<KRED<<"Input source not known. DataFile: "<<RST<<dataFileName<<std::endl;
+#ifndef WITH_GET
+    std::cerr<<KRED<<"and GRAW libriaries not set."<<RST<<std::endl;
+#endif
+    exit(0);
+    return;
+  } 
+  if(myWorkMode!=M_ONLINE_GRAW_MODE && myWorkMode!=M_ONLINE_NGRAW_MODE){
+    myEventSource->loadDataFile(dataFileName);
+    myEventSource->loadFileEntry(0);
+  }
+  if(myConfig.find("hitFilter")!=myConfig.not_found()){
+    myHistoManager.setConfig(myConfig.find("hitFilter")->second);
+  }
+  int index = geometryFileName.find("mbar");
+  double pressure = stof(geometryFileName.substr(index-3, 3));
+  myHistoManager.setGeometry(myEventSource->getGeometry());
+  myHistoManager.setPressure(pressure);
+  
+  if(isRecoModeOn) myHistoManager.openOutputStream(dataFileName);
+  myEventSource->getEventFilter().setConditions(myConfig);
+>>>>>>> f354324fc0e2a0130807f8471dda39732124fe4f
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
