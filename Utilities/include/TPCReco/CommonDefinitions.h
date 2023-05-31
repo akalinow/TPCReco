@@ -102,4 +102,12 @@ namespace enumDict {
     std::string GetReactionName(reaction_type type);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+
+#define _endl_ " (" << filename_string(__FILE__) << "; " << __LINE__ << ")\n"
+#define checkpoint std::cout << "checkpoint" << _endl_
+
+
+
 #endif

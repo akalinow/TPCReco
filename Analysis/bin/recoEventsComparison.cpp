@@ -33,11 +33,11 @@ int main(int argc, char **argv){
 
   ConfigManager cm;
   boost::property_tree::ptree tree = cm.getConfig(argc,argv);
-  auto geometryFileName = tree.get("geometryFile","");
-  auto referenceDataFileName = tree.get("referenceDataFile","");
-  auto testDataFileName = tree.get("testDataFile","");
-  auto pressure = tree.get<float>("pressure","");
-  auto temperature = tree.get<float>("temperature","");
+  auto geometryFileName = tree.get<std::string>("geometryFile");
+  auto referenceDataFileName = tree.get<std::string>("referenceDataFile");
+  auto testDataFileName = tree.get<std::string>("testDataFile");
+  auto pressure = tree.get<float>("pressure");
+  auto temperature = tree.get<float>("temperature");
   compareRecoEvents(geometryFileName, referenceDataFileName, testDataFileName,pressure,temperature);
   return 0;
 }
