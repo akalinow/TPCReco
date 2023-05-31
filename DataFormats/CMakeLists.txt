@@ -20,7 +20,6 @@ root_generate_dictionary(
   LinkDef.h)
 #
 
-<<<<<<< HEAD
 ###############################################################################
 ## dependencies ###############################################################
 ###############################################################################
@@ -49,10 +48,8 @@ ROOT_GENERATE_DICTIONARY(G__${MODULE_NAME}
   ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/EventRaw.h
   ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/EventInfo.h
   LINKDEF ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include/LinkDef.h)
-=======
 reco_add_library(${MODULE_NAME} EXTRA_SOURCES
                  G__${TPCRECO_PREFIX}${MODULE_NAME}.cxx)
->>>>>>> f354324fc0e2a0130807f8471dda39732124fe4f
 
 target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
 

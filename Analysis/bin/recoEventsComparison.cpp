@@ -13,18 +13,11 @@
 
 #include <boost/program_options.hpp>
 
-<<<<<<< HEAD
-#include "GeometryTPC.h"
-#include "Track3D.h"
-#include "EventInfo.h"
-#include "Comp_analysis.h"
-#include "ConfigManager.h"
-=======
 #include "TPCReco/GeometryTPC.h"
 #include "TPCReco/Track3D.h"
 #include "TPCReco/EventInfo.h"
 #include "TPCReco/Comp_analysis.h"
->>>>>>> f354324fc0e2a0130807f8471dda39732124fe4f
+#include "TPCReco/ConfigManager.h"
 
 #include "TPCReco/colorText.h"
 
@@ -36,7 +29,6 @@ int compareRecoEvents(const  std::string & geometryFileName,
 );
 /////////////////////////////////////
 /////////////////////////////////////
-<<<<<<< HEAD
 int main(int argc, char **argv){
 
   ConfigManager cm;
@@ -44,48 +36,9 @@ int main(int argc, char **argv){
   auto geometryFileName = tree.get("geometryFile","");
   auto referenceDataFileName = tree.get("referenceDataFile","");
   auto testDataFileName = tree.get("testDataFile","");
-  compareRecoEvents(geometryFileName, referenceDataFileName, testDataFileName);
-=======
-boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
-
-  boost::program_options::options_description cmdLineOptDesc("Allowed options");
-  cmdLineOptDesc.add_options()
-    ("help", "produce help message")
-    ("geometryFile",  boost::program_options::value<std::string>()->required(), "string - path to the geometry file")
-    ("referenceDataFile",  boost::program_options::value<std::string>()->required(), "string - path to REFERENCE Reco data file")
-    ("testDataFile",  boost::program_options::value<std::string>()->required(), "string - path to TEST Reco data file")
-    ("pressure", boost::program_options::value<float>()->required(), "float - CO2 pressure [mbar]")
-    ("temperature", boost::program_options::value<float>()->default_value(273.15+20), "(option) float - CO2 temperature [K], default=293.15K (20 C)");
-  
-  boost::program_options::variables_map varMap;        
-  try {     
-    boost::program_options::store(boost::program_options::parse_command_line(argc, argv, cmdLineOptDesc), varMap);
-    if (varMap.count("help")) {
-      std::cout << "recoEventsComparison" << "\n\n";
-      std::cout << cmdLineOptDesc << std::endl;
-      exit(1);
-    }
-    boost::program_options::notify(varMap);
-  } catch (const std::exception &e) {
-    std::cerr << e.what() << '\n';
-    std::cout << cmdLineOptDesc << std::endl;
-    exit(1);
-  }
-
-  return varMap;
-}
-/////////////////////////////////////
-/////////////////////////////////////
-int main(int argc, char **argv){
-
-  auto varMap = parseCmdLineArgs(argc, argv);
-  auto geometryFileName = varMap["geometryFile"].as<std::string>();
-  auto referenceDataFileName = varMap["referenceDataFile"].as<std::string>();
-  auto testDataFileName = varMap["testDataFile"].as<std::string>();
-  auto pressure = varMap["pressure"].as<float>();
-  auto temperature = varMap["temperature"].as<float>();
-  compareRecoEvents(geometryFileName, referenceDataFileName, testDataFileName, pressure, temperature);
->>>>>>> f354324fc0e2a0130807f8471dda39732124fe4f
+  auto pressure = tree.get<float>("pressure","");
+  auto temperature = tree.get<float>("temperature","");
+  compareRecoEvents(geometryFileName, referenceDataFileName, testDataFileName,pressure,temperature);
   return 0;
 }
 /////////////////////////////

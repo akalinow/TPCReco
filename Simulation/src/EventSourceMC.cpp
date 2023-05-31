@@ -1,16 +1,8 @@
 #include <iostream>
 
-<<<<<<< HEAD:TrackGenerator/src/EventSourceMC.cpp
-#include "colorText.h"
-#include "EventSourceMC.h"
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif // M_PI
-=======
 #include "TPCReco/colorText.h"
 #include "TPCReco/EventSourceMC.h"
 
->>>>>>> f354324fc0e2a0130807f8471dda39732124fe4f:Simulation/src/EventSourceMC.cpp
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 EventSourceMC::EventSourceMC(const std::string & geometryFileName) {

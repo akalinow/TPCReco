@@ -11,18 +11,11 @@
 
 #include <boost/program_options.hpp>
 
-<<<<<<< HEAD
-#include "IonRangeCalculator.h"
-#include "dEdxFitter.h"
-#include "TrackBuilder.h"
-#include "EventSourceROOT.h"
-#include "ConfigManager.h"
-=======
 #include "TPCReco/IonRangeCalculator.h"
 #include "TPCReco/dEdxFitter.h"
 #include "TPCReco/TrackBuilder.h"
 #include "TPCReco/EventSourceROOT.h"
->>>>>>> f354324fc0e2a0130807f8471dda39732124fe4f
+#include "TPCReco/ConfigManager.h"
 #ifdef WITH_GET
 #include "TPCReco/EventSourceGRAW.h"
 #include "TPCReco/EventSourceMultiGRAW.h"

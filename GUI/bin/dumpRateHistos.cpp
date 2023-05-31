@@ -3,22 +3,13 @@
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/program_options.hpp>
-<<<<<<< HEAD
-#include "colorText.h"
-#include "TFile.h"
-#include "GeometryTPC.h"
-#include "EventSourceGRAW.h"
-#include "EventSourceMultiGRAW.h"
-#include "DotFinder.h"
-#include "ConfigManager.h"
-=======
 #include "TPCReco/colorText.h"
 #include <TFile.h>
 #include "TPCReco/GeometryTPC.h"
 #include "TPCReco/EventSourceGRAW.h"
 #include "TPCReco/EventSourceMultiGRAW.h"
 #include "TPCReco/DotFinder.h"
->>>>>>> f354324fc0e2a0130807f8471dda39732124fe4f
+#include "TPCReco/ConfigManager.h"
 
 void analyzeRawEvents(const boost::property_tree::ptree &aConfig);
 

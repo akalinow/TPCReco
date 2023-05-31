@@ -33,16 +33,10 @@
 #include "TPCReco/MarkersManager.h"
 #include "TPCReco/RunConditionsDialog.h"
 
-<<<<<<< HEAD:GUI/include/MainFrame.h
-#include "EventSourceBase.h"
-#include "HistoManager.h"
-#include "DirectoryWatch.h"
-#include "EventSourceFactory.h"
-=======
 #include "TPCReco/EventSourceBase.h"
 #include "TPCReco/HistoManager.h"
 #include "TPCReco/DirectoryWatch.h"
->>>>>>> f354324fc0e2a0130807f8471dda39732124fe4f:GUI/include/TPCReco/MainFrame.h
+#include "TPCReco/EventSourceFactory.h"
 
 #include <boost/property_tree/json_parser.hpp>
 

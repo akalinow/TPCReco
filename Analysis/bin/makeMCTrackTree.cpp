@@ -16,20 +16,12 @@
 #include "TPCReco/TrackBuilder.h"
 #include "TPCReco/EventSourceMC.h"
 
-<<<<<<< HEAD
-#include "RecoOutput.h"
-#include "RunIdParser.h"
-#include "InputFileHelper.h"
-#include "MakeUniqueName.h"
-#include "ConfigManager.h"
-#include "colorText.h"
-=======
+#include "TPCReco/ConfigManager.h"
 #include "TPCReco/RecoOutput.h"
 #include "TPCReco/RunIdParser.h"
 #include "TPCReco/InputFileHelper.h"
 #include "TPCReco/MakeUniqueName.h"
 #include "TPCReco/colorText.h"
->>>>>>> f354324fc0e2a0130807f8471dda39732124fe4f
 
 #include "TPCReco/EventTPC.h"
 /////////////////////////////////////

@@ -24,14 +24,11 @@ target_link_libraries(
   PRIVATE Resources)
 target_link_libraries(grawls PRIVATE Boost::program_options ${MODULE_NAME})
 
-<<<<<<< HEAD
 target_link_libraries(${MODULE_NAME} PUBLIC ${TPCRECO_LIBRARIES_LOCAL} ${ROOT_LIBRARIES} ${Boost_LIBRARIES} Boost::program_options Boost::filesystem)
 target_link_libraries(grawls PRIVATE ${MODULE_NAME} ${TPCRECO_LIBRARIES_LOCAL} ${Boost_LIBRARIES} Boost::program_options)
-=======
 reco_install_targets(grawls ${MODULE_NAME})
 reco_install_root_dict(${MODULE_NAME})
 install(PROGRAMS $<1:${CMAKE_CURRENT_SOURCE_DIR}/python/> DESTINATION python)
 install(DIRECTORY examples DESTINATION ${CMAKE_INSTALL_PREFIX})
->>>>>>> f354324fc0e2a0130807f8471dda39732124fe4f
 
 reco_add_test_subdirectory(test)

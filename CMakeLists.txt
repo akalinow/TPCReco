@@ -44,51 +44,6 @@ target_compile_definitions(
 
 option(BUILD_GEANT_MODULE "Build Geant4 simulation" OFF)
 
-<<<<<<< HEAD
-# This is basically a repeat of the file copy instruction that copies the
-# resources in the build directory, but here we tell cmake that we want it
-# in the package.
-#
-if(NOT IS_DIRECTORY ${CMAKE_INSTALL_PREFIX}/resources) # needs full path!
-  install(DIRECTORY resources DESTINATION ${CMAKE_INSTALL_PREFIX})
-else()
-  MESSAGE( STATUS "RESOURCES dir already exists in the installation dir" )
-endif()
-if(NOT IS_DIRECTORY ${CMAKE_INSTALL_PREFIX}/tools) # needs full path!
-  install(DIRECTORY tools DESTINATION ${CMAKE_INSTALL_PREFIX})
-else()
-  MESSAGE( STATUS "AUXILIARY TOOLS dir already exists in the installation dir" )
-endif()
-
-set(CMAKE_CXX_FLAGS "${ROOT_CXX_FLAGS} -std=c++17 -Wall -Werror -O3 -pthread -Wno-register -Wno-error=deprecated-declarations")
-
-MESSAGE( STATUS "CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS})
-
-option(DEBUG "Define DEBUG variable" OFF)
-if(DEBUG)
-  MESSAGE( STATUS "DEBUG enabled" )
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG")
-endif()
-# Set default inotify message inplementation:
-option(DIRECTORYWATCH_ONE_MESSAGE_DISABLE "Define DIRECTORYWATCH_ONE_MESSAGE_DISABLE variable" OFF)
-if(DIRECTORYWATCH_ONE_MESSAGE_DISABLE)
-  MESSAGE( STATUS "DirectoryWatch single message disabled (i.e. one Message per modified file)" )
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDIRECTORYWATCH_ONE_MESSAGE_DISABLE")
-else()
-  MESSAGE( STATUS "DirectoryWatch single message enabled (i.e. single Message per all modified files)" )
-endif()  
-# Enable/disable searching next file with N+1 index (default=ON)
-option(EVENTSOURCEGRAW_NEXT_FILE_DISABLE "Define EVENTSOURCEGRAW_NEXT_FILE_DISABLE variable" ON)
-if(EVENTSOURCEGRAW_NEXT_FILE_DISABLE)
-  MESSAGE( STATUS "EventSourceGRAW automatic next file index disabled" )
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DEVENTSOURCEGRAW_NEXT_FILE_DISABLE")
-else()
-  MESSAGE( STATUS "EventSourceGRAW automatic next file index enabled" )
-endif()  
-  
-#Set RPATH to install dir, so user do not have to set the LD_LIBRARY_PATH
-=======
->>>>>>> f354324fc0e2a0130807f8471dda39732124fe4f
 set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 add_subdirectory(Utilities)
 add_subdirectory(DataFormats)

@@ -112,7 +112,6 @@ void MainFrame::InitializeEventSource() {
 	event_type eventType = myConfig.get<event_type>("eventType");
 	bool onlineFlag = myConfig.get<bool>("onlineFlag");
 
-<<<<<<< HEAD
 	if (onlineFlag) {
 		fileWatchThread = std::thread(&DirectoryWatch::watch, &myDirWatch, dataFileName);
 		if (myConfig.find("updateInterval") != myConfig.not_found()) {
@@ -120,7 +119,6 @@ void MainFrame::InitializeEventSource() {
 			myDirWatch.setUpdateInterval(updateInterval);
 		}
 		myDirWatch.Connect("Message(const char *)", "MainFrame", this, "ProcessMessage(const char *)");
-=======
   if(dataFileName.empty() || geometryFileName.empty()){
     std::cerr<<"No data or geometry file path provided."<<std::endl;
     exit(1);
@@ -213,10 +211,8 @@ void MainFrame::InitializeEventSource() {
 	if (dataFileVec.size()>AsadNboards) {
 	  std::cerr<<KRED<<"Provided too many GRAW files. Expected up to "<<AsadNboards<<".dataFile: "<<RST<<dataFileName<<std::endl;
 	  return;
->>>>>>> f354324fc0e2a0130807f8471dda39732124fe4f
 	}
 
-<<<<<<< HEAD
 
 	if (eventType == event_type::EventSourceROOT) {
 		myWorkMode = M_OFFLINE_ROOT_MODE;
@@ -241,7 +237,6 @@ void MainFrame::InitializeEventSource() {
 
 	if (isRecoModeOn) myHistoManager.openOutputStream(dataFileName);
 	myEventSource->getEventFilter().setConditions(myConfig);
-=======
     myWorkMode = M_ONLINE_GRAW_MODE;
     if(myConfig.find("singleAsadGrawFile")!=myConfig.not_found()) {
       bool singleAsadGrawFile = myConfig.get<bool>("singleAsadGrawFile");
@@ -298,7 +293,6 @@ void MainFrame::InitializeEventSource() {
   
   if(isRecoModeOn) myHistoManager.openOutputStream(dataFileName);
   myEventSource->getEventFilter().setConditions(myConfig);
->>>>>>> f354324fc0e2a0130807f8471dda39732124fe4f
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
