@@ -93,8 +93,8 @@ void HIGGS_analysis::bookHistos(){
   const float maxDeltaMomentumMeV = 20.0; // [MeV]
   const float minBeamEnergyMeV = photonEnergyInMeV_LAB - 0.5*photonEnergyInMeV_LAB; // min histogram range
   const float maxBeamEnergyMeV = photonEnergyInMeV_LAB + 0.5*photonEnergyInMeV_LAB; // max histogram range
-  const float binSizeMeV_kineticEnergy = 0.02; // [MeV] // 20 keV 
-  const float binSizeMeV_beamEnergy = binSizeMeV_kineticEnergy; // [MeV] // 20 keV
+  const float binSizeMeV_kineticEnergy = 0.005; // [MeV] // 5 keV
+  const float binSizeMeV_beamEnergy = binSizeMeV_kineticEnergy; // [MeV] // 5 keV
   float xmin, xmax, ymin, ymax, zmin, zmax; // [mm]
   std::tie(xmin, xmax, ymin, ymax) = myGeometryPtr->rangeXY();
   std::tie(zmin, zmax) = myGeometryPtr->rangeZ();
