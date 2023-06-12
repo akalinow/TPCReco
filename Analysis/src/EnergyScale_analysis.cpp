@@ -890,7 +890,7 @@ double EnergyScale_analysis::getOptimalBinWidthInMeV(double histogramRMS, double
   auto binMin = std::max( resolution, histogramRMS/5 ); // at least 10 bins  in [-sigma, sigma] range
   auto binOpt = 4 * histogramRMS / log(1+histogramIntegral);
   auto bin=std::min( binMin, binOpt );
-  std::cout << __FUNCTION__ << ":  binmin=" << binMin << "  binOpt=" << binOpt << "  binFinal=" << bin << std::endl;
+  std::cout << __FUNCTION__ << ":  rms=" << histogramRMS << "  integral=" << histogramIntegral << "  | binmin=" << binMin << "  binOpt=" << binOpt << "  binFinal=" << bin << std::endl;
   if (bin<0.01) return resolution * (long)( bin / resolution); // rounded off to 1 keV
   if (bin<0.05) return 5 * resolution * (long)( bin / resolution / 5); // rounded off to 5 keV
   return 10 * resolution * (long)( bin / resolution / 10); // rounded off to 10 keV
@@ -1229,6 +1229,8 @@ void EnergyScale_analysis::plotQvalueFits(const std::string &filePrefix) {
   TCanvas c("c", "", 800, 600);
   c.Print((filePrefix+".pdf[").c_str());
   int isel=0;
+  std::map<std::string, double> mapFitRes;
+  // plot fitted spectra
   for(auto &it: myQvalueFitMap) {
     auto h = std::get<0>(it.second); // TH1D
     auto f = std::get<1>(it.second); // TF1
@@ -1237,6 +1239,9 @@ void EnergyScale_analysis::plotQvalueFits(const std::string &filePrefix) {
     std::cout << "htitle=" << h.GetTitle() << " Qexp=" << expected << std::endl;
 
     if(h.GetEntries()==0 || f.GetNdim()!=1) continue;
+    if(mapFitRes.find(h.GetTitle())==mapFitRes.end()) {
+      mapFitRes[h.GetTitle()] = f.GetParameter(1) - expected;
+    }
     h.SetStats(true);
     gStyle->SetOptFit(1111); // pcev
     auto list=h.GetListOfFunctions();
@@ -1248,6 +1253,8 @@ void EnergyScale_analysis::plotQvalueFits(const std::string &filePrefix) {
     auto ymax=h.GetMaximum();
     auto ypeak=f.GetParameter(0);
     f.SetNpx((f.GetXmax()-f.GetXmin())/(xmax-xmin)*1000); // 1K points in the drawing window
+    h.SetTitleOffset(1.5, "Y");
+    h.SetTitleOffset(1.2, "X");
     h.Draw();
     h.GetXaxis()->SetRangeUser(xmin, xmax);
     TLine l1(expected, ymin, expected, ymax);
@@ -1264,6 +1271,43 @@ void EnergyScale_analysis::plotQvalueFits(const std::string &filePrefix) {
     isel++;
     c.Write(Form("point_%d", isel), TObject::kOverwrite);
   }
+
+  // plot fit residuals
+  const int nx=mapFitRes.size();
+  TH1D hres("hFitResiduals",";;Q-value fit residuals [MeV]", nx, 0, nx);
+  int ibin=1;
+  for(auto &it: mapFitRes) {
+    hres.SetBinContent(ibin, it.second);
+    hres.SetBinError(ibin, 0);
+    hres.GetXaxis()->SetBinLabel(ibin, it.first.c_str());
+    ibin++;
+  }
+  gStyle->SetHistMinimumZero();
+  auto ymin=std::min(0.0, hres.GetMinimum());
+  auto ymax=std::max(0.0, hres.GetMaximum());
+  hres.GetYaxis()->SetRangeUser( ymin-0.1*(ymax-ymin), ymax+0.1*(ymax-ymin) );
+  c.SetTopMargin(0.05);
+  c.SetBottomMargin(0.25);
+  c.SetLeftMargin(0.15);
+  c.SetRightMargin(0.3);
+  c.SetGrid();
+  hres.SetStats(false);
+  hres.SetTitleOffset(1.8, "Y");
+  hres.SetLabelOffset(0.02, "X");
+  hres.SetLabelSize(0.05, "X");
+  hres.LabelsOption("");
+  hres.SetFillColor(kAzure-6);
+  hres.SetBarWidth(0.2);
+  hres.SetBarOffset((1-hres.GetBarWidth())/2);
+  hres.SetDirectory(0);
+  hres.Draw("BAR1");
+  TLine l3(0, 0.0, nx, 0.0);
+  l3.SetLineColor(kBlue);
+  l3.SetLineStyle(kDashed);
+  l3.Draw();
+   c.Print((filePrefix+".pdf").c_str());
+  c.Write("residuals", TObject::kOverwrite);
+
   c.Print((filePrefix+".pdf]").c_str());
   f.Close();
 }

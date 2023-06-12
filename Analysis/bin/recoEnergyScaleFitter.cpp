@@ -163,6 +163,7 @@ int main(int argc, char **argv){
     5e-9,         // ROOT fitter PRECISION parameter - TO BE PARAMETERIZED FROM JSON
                   // NOTE: For best 2-parameter fits based on the leading ALPHA track information only use these settings:
                   //       LENGTH      --> TOL=10, PREC=1e-6
+                  //       ZENEK       --> TOL=10, PREC=1e-6
                   //       ENERGY_CMS  --> TOL=10, PREC=5e-9
                   //       ENERGY_LAB  --> TOL=10, PREC=5e-9
     // DETECTOR RESOLUTION:
@@ -228,12 +229,12 @@ int main(int argc, char **argv){
     //
     // 2-prong / Oxygen-16 decay / no resonance: peak=8.66 MeV, sigma=0.150 MeV, multipolarity=???? / Egamma=8.66 MeV
     { "Eg=8.66 MeV O-16 (none)",
-      reaction_type::C12_ALPHA, 2, 8.66, 8.657, 0.1498, 0.0,
+      reaction_type::C12_ALPHA, 2, 8.66, 8.657, 0.150, 0.0,
       130, 273.15+20, "geometry_ELITPC_130mbar_1372Vdrift_25MHz.dat", BeamDirection::MINUS_X, -1.3, 3.0e-3, // exact tilt from MC GEN
       { "./Generated_Track3D__O16_8.66MeV.root" } },
     // 3-prong / Carbon-12 decay democratic / no resonance: peak=8.66 MeV, sigma=0.150 MeV, multipolarity=???? / Egamma=8.66 MeV
     { "Eg=8.66 MeV C-12 democratic (none)",
-      reaction_type::THREE_ALPHA_DEMOCRATIC, 3, 8.66, 8.657, 0.1491, 0.0,
+      reaction_type::THREE_ALPHA_DEMOCRATIC, 3, 8.66, 8.657, 0.150, 0.0,
       130, 273.15+20, "geometry_ELITPC_130mbar_1372Vdrift_25MHz.dat", BeamDirection::MINUS_X, -1.3, 3.0e-3, // exact tilt from MC GEN
       { "./Generated_Track3D__C12demo_8.66MeV.root" } },
     ///////////////////////
@@ -242,7 +243,7 @@ int main(int argc, char **argv){
     //
     // 2-prong / Oxygen-16 decay / no resonance: peak=9.56 MeV, sigma=0.150 MeV, multipolarity=???? / Egamma=9.56 MeV
     { "Eg=9.56 MeV O-16 (none)",
-      reaction_type::C12_ALPHA, 2, 9.56, 9.555, 0.1498, 0.0,
+      reaction_type::C12_ALPHA, 2, 9.56, 9.557, 0.150, 0.0,
       130, 273.15+20, "geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat", BeamDirection::MINUS_X, -1.3, 3.0e-3, // exact tilt from MC GEN
       { "./Generated_Track3D__O16_9.56MeV.root" } },
     ///////////////////////
@@ -251,7 +252,7 @@ int main(int argc, char **argv){
     //
     // 2-prong / Oxygen-16 decay / no resonance: peak=9.845 MeV, sigma=0.150 MeV, multipolarity=???? / Egamma=9.845 MeV
     { "Eg=9.845 MeV O-16 (none)",
-      reaction_type::C12_ALPHA, 2, 9.845, 9.839, 0.1505, 0.0,
+      reaction_type::C12_ALPHA, 2, 9.845, 9.842, 0.150, 0.0,
       130, 273.15+20, "geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat", BeamDirection::MINUS_X, -1.3, 3.0e-3, // exact tilt from MC GEN
       { "./Generated_Track3D__O16_9.845MeV.root" } },
     ///////////////////////
@@ -260,7 +261,7 @@ int main(int argc, char **argv){
     //
     // 2-prong / Oxygen-16 decay / no resonance: peak=12.3 MeV, sigma=0.150 MeV, multipolarity=???? / Egamma=12.3 MeV
     { "Eg=12.3 MeV O-16 (none)",
-      reaction_type::C12_ALPHA, 2, 12.3, 12.29, 0.1493, 0.0,
+      reaction_type::C12_ALPHA, 2, 12.3, 12.295, 0.150, 0.0,
       190, 273.15+20, "geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat", BeamDirection::MINUS_X, -1.3, 3.0e-3, // exact tilt from MC GEN
       { "./Generated_Track3D__O16_12.3MeV.root" } },
     ///////////////////////
@@ -269,7 +270,7 @@ int main(int argc, char **argv){
     //
     // 2-prong / Oxygen-16 decay / no resonance: peak=13.1 MeV, sigma=0.150 MeV, multipolarity=???? / Egamma=13.1 MeV
     { "Eg=13.1 MeV O-16 (none)",
-      reaction_type::C12_ALPHA, 2, 13.1, 13.09, 0.1484, 0.0,
+      reaction_type::C12_ALPHA, 2, 13.1, 13.094, 0.150, 0.0,
       250, 273.15+20, "geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat", BeamDirection::MINUS_X, -1.3, 3.0e-3, // exact tilt from MC GEN
       { "./Generated_Track3D__O16_13.1MeV.root" } }
 #else
