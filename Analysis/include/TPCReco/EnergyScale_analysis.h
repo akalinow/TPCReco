@@ -41,7 +41,7 @@
 // - Use only multiplicative scaling factors instead of scale + offset (i.e. fix offset=0).
 //
 //
-// Mikolaj Cwiok (UW) - 9 June 2023
+// Mikolaj Cwiok (UW) - 19 June 2023
 //
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -95,11 +95,12 @@ class EnergyScale_analysis {
   //
   // helper struct for storing events that passed cuts for a given reaction hypothesis
   struct EventCollection {
+    bool enabled{true}; // TRUE = use these data in global fit / FALSE = use these data only as a cross check
     std::string description{""}; // unique identifier
     reaction_type reaction{reaction_type::UNKNOWN}; // hypothesis type to be tested
     double photonEnergyInMeV_LAB{0}; // [MeV] - nominal energy of the gamma beam in LAB reference frame (eg. for nominal boost)
-    double expectedExcitationEnergyPeakInMeV_CMS{0}; // [MeV] - exc. energy peak position from theoretical prediction (e.g. resonance)
-    double expectedExcitationEnergySigmaInMeV_CMS{0}; // [MeV] - peak sigma (1/e) from theoretical prediction, excluding detector resolution effects
+    double expectedExcitationEnergyPeakInMeV{0}; // [MeV] - excitation energy peak position from theoretical prediction (e.g. resonance)
+    double expectedExcitationEnergySigmaInMeV{0}; // [MeV] - predicted peak width (sigma) excluding detector resolution effects
     double excitedMassDiffInMeV{0}; // [MeV/c^2] - excitation energy of the 2nd component in intermediate 2-body decay,
                                     //             eg. C-12 -> ALPHA + Be-8(*)
     std::shared_ptr<IonRangeCalculator> rangeCalc; // external IonRangeCalculator initialized for a given (p,T)
@@ -112,7 +113,8 @@ class EnergyScale_analysis {
   struct FitOptionType {
     double tolerance{10}; // ROOT::Fit::Fitter TOLERANCE parameter
     double precision{1e-6}; // ROOT::Fit::Fitter PRECISION parameter
-    double detectorQvalueResolutionInMeV_CMS{0.100}; // [MeV] - broadening of gamma energy peak due to detector resolution
+    //    double detectorQvalueResolutionInMeV_CMS{0.100}; // [MeV] - broadening of gamma energy peak due to detector resolution
+    double detectorExcitationEnergyResolutionInMeV{0.100}; // [MeV] - broadening of Ex peak due to detector resolution
     std::map<std::string, std::vector<pid_type>> tuned_pid_map; // index=(PID category name), value=(list of PIDs with same corrections)
     bool use_scale_only{false}; // TRUE = use only multiplicative correction instead of: scale + offset
     bool use_leading_track_only{true}; // TRUE = use only leading track information to compute observables in the CMS frame
@@ -121,11 +123,18 @@ class EnergyScale_analysis {
     escale_type correction_type{escale_type::NONE}; // scale track energy or length or none
     bool debug{false};
   };
-  
+  struct ResidualsType {
+    TH1D dataHist;     // data sample Ex spectrum [MeV]
+    TF1  fittedFunc;   // fitted Ex shape [MeV]
+    double expectedEx; // expected Ex peak position [MeV]
+    bool enabled;      // TRUE = sample included in the global fit / FALSE = control sample not included in the global fit
+  };
+
   EnergyScale_analysis(const FitOptionType &aOption,
 		       std::vector<EventCollection> &aSelection);
 
   size_t getNparams() const;
+  size_t getNpoints() const;
   double getParameter(size_t ipar) const;
   bool isParameterFixed(size_t ipar) const;
  private:
@@ -133,7 +142,8 @@ class EnergyScale_analysis {
  public:
   inline double getChi2() { return getChi2(false); } // do not expose internal parameter
   double operator() (const double *par);
-  void plotQvalueFits(const std::string &filePrefix="QvalueFits");
+  //  void plotQvalueFits(const std::string &filePrefix="QvalueFits");
+  void plotExcitationEnergyFits(const std::string &filePrefix="ExcitationEnergyFits");
   void setMinimizerAlgorithm(const std::string &algorithm="MIGRAD");
   
  private:
@@ -142,15 +152,15 @@ class EnergyScale_analysis {
   TVector3 getBetaVectorOfCMS_BEAM(double nucleusMassInMeV, double photonEnergyInMeV_LAB) const; // LAB reference frame, BEAM coordinate system
   double getBetaOfCMS(double nucleusMassInMeV, double photonEnergyInMeV_LAB) const; // LAB reference frame
   double getOptimalBinWidthInMeV(double histogramRMS, double histogramIntegral) const;
-  std::tuple<double, double, bool> getEventQvalue_CMS(double nominalBeamEnergyInMeV_LAB,
-						      double expectedExcitationEnergyPeakInMeV_CMS,
-						      reaction_type reaction,
-						      double excitedMassDiffInMeV,
-						      std::shared_ptr<IonRangeCalculator> rangeCalc,
-						      TrackCollection &list) const;
+  //  std::tuple<double, double, bool> getEventQvalue_CMS(double nominalBeamEnergyInMeV_LAB,
+  std::tuple<double, double, bool> getEventExcitationEnergy(double nominalBeamEnergyInMeV_LAB,
+							    double expectedExcitationEnergyPeakInMeV_CMS,
+							    reaction_type reaction,
+							    double excitedMassDiffInMeV,
+							    std::shared_ptr<IonRangeCalculator> rangeCalc,
+							    TrackCollection &list) const;
   void initializeCorrections(const size_t npar, const double *par);
-  double getCorrectionPerPID(pid_type pid, int ipar) const; // 0 --> offset
-                                                        // 1 --> scale
+  double getCorrectionPerPID(pid_type pid, int ipar) const; // par[0]=offset [MeV] or [mm], par[1]=scale for LENGTH or ENERGY
   std::tuple<double, size_t> getSelectionChi2(EventCollection &selection, bool debug_histos_flag=false);
   double applyLinearCorrectionPerPID(pid_type pid, double observable) const;
   
@@ -165,7 +175,9 @@ class EnergyScale_analysis {
   FitOptionType myOptions;
   std::vector<EventCollection> &mySelection;
   std::map<pid_type, std::tuple<double, double>> myCorrectionMap; // index = PID, value={OFFSET, SCALE} for LENGTH or ENERGY
-  std::map<std::string, std::tuple<TH1D, TF1, double>> myQvalueFitMap; // index = unique selection name, val=(data TH1, model TF1, model Qvalue)
+  //  std::map<std::string, std::tuple<TH1D, TF1, double>> myQvalueFitMap; // index = unique selection name, val=(data TH1, model TF1, model Qvalue)
+  // std::map<std::string, std::tuple<TH1D, TF1, double, bool>> myExcitationEnergyFitMap; // index = unique selection name, val=(data TH1, model TF1, model excitation energy, enabled in fit?)
+  std::map<std::string, ResidualsType> myExcitationEnergyFitMap; // index = unique selection name
   double myFactorChi2{1.0}; // additional scaling required by certain ROOT minimization algorithms
 };
 
