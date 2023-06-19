@@ -32,9 +32,10 @@
 #include "TPCReco/EnergyScale_analysis.h"
 
 ////// DEBUG
-#define USE_REAL_DATA__9_56_MEV  false
 #define TOY_MC_TEST              false
 #define TOY_MC_TEST_ALPHA_ONLY   true
+#define DEFAULT_FIT_OFFSET_ALPHA 0; // 0.15    // starting point for the global fit in [mm] or [MeV] depending on correction method
+#define DEFAULT_FIT_SCALE_ALPHA  1; // 1.019   // starting point for the global fit
 ////// DEBUG
 
 enum class BeamDirection{
@@ -98,7 +99,9 @@ boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
     ("nominalBoost", boost::program_options::bool_switch(), "(override flag) - force to use nominal beam energy for LAB<->CMS boost")
     ("leadingTrack", boost::program_options::bool_switch(), "(override flag) - force to use only leading particle information for calculating properties of 2-body decay in CMS")
     ("scaleOnly", boost::program_options::bool_switch(), "(override flag) - force to use only multiplicative corrections instead of linear scale and offset")
-    ("type", boost::program_options::value<std::string>()->required(), "string - type of correction [\"length\" xor \"energy_cms\" xor \"energy_lab\" xor \"zenek\"]");
+    ("type", boost::program_options::value<std::string>()->required(), "string - type of correction [\"length\" xor \"energy_cms\" xor \"energy_lab\" xor \"zenek\"]")
+  ("tolerance", boost::program_options::value<double>()->default_value(10), "float - ROOT minimizer TOLERANCE parameter")
+  ("precision", boost::program_options::value<double>()->default_value(1e-6), "float - ROOT minimizer PRECISION parameter");
   boost::program_options::variables_map varMap;  
 
   try {     
@@ -152,20 +155,26 @@ int main(int argc, char **argv){
   if(varMap.count("type")) {
     tree.put("type", varMap["type"].as<std::string>());
   }
+  if(varMap.count("tolerance")) {
+    tree.put("tolerance", varMap["tolerance"].as<double>());
+  }
+  if(varMap.count("precision")) {
+    tree.put("precision", varMap["precision"].as<double>());
+  }
 
   ///////////////////////
   //
   // hardcoded fit parameters - TO BE PRAMATERIZED FROM JSON
   //
   EnergyScale_analysis::FitOptionType myOptions{
-    10,           // ROOT fitter TOLERANCE parameter - TO BE PARAMETERIZED FROM JSON
-                  // NOTE: MIGRAD ends when EDM < 0.001 * TOLERANCE
-    5e-9,         // ROOT fitter PRECISION parameter - TO BE PARAMETERIZED FROM JSON
-                  // NOTE: For best 2-parameter fits based on the leading ALPHA track information only use these settings:
-                  //       LENGTH      --> TOL=10, PREC=1e-6
-                  //       ZENEK       --> TOL=10, PREC=1e-6
-                  //       ENERGY_CMS  --> TOL=10, PREC=5e-9
-                  //       ENERGY_LAB  --> TOL=10, PREC=5e-9
+    tree.get<double>("tolerance"), // ROOT fitter TOLERANCE parameter - TO BE PARAMETERIZED FROM JSON
+                                   // NOTE: MIGRAD ends when EDM < 0.001 * TOLERANCE
+    tree.get<double>("precision"), // ROOT fitter PRECISION parameter - TO BE PARAMETERIZED FROM JSON
+                                   // NOTE: For best 2-parameter fits based on the leading ALPHA track information only use these settings:
+                                   //       LENGTH      --> TOL=10, PREC=1e-6
+                                   //       ZENEK       --> TOL=10, PREC=1e-6
+                                   //       ENERGY_CMS  --> TOL=10, PREC=1e-6
+                                   //       ENERGY_LAB  --> TOL=10, PREC=1e-6
     // DETECTOR RESOLUTION:
 #if(TOY_MC_TEST)  // Monte Carlo data
     1e-3,         // perfect detector
@@ -199,6 +208,7 @@ int main(int argc, char **argv){
   // hardcoded list of RECO files for a given reaction channel - TO BE PARAMETERIZED
   //
   struct InputSourceData {
+    const bool enabled; // TRUE = use these data in global fit / FALSE = use these data only as a cross check
     const std::string description; // unique identifier of reaction channel / selection cuts
     const reaction_type reaction; // reaction type ID
     const int ntracks; // required number of tracks
@@ -228,13 +238,13 @@ int main(int argc, char **argv){
     // E_GAMMA = 8.66 MeV -- SIMULATION
     //
     // 2-prong / Oxygen-16 decay / no resonance: peak=8.66 MeV, sigma=0.150 MeV, multipolarity=???? / Egamma=8.66 MeV
-    { "Eg=8.66 MeV O-16 (none)",
-      reaction_type::C12_ALPHA, 2, 8.66, 8.657, 0.150, 0.0,
+    { true, "8.66 / O-16",
+      reaction_type::C12_ALPHA, 2, 8.66, 8.657, 0.001, 0.0,
       130, 273.15+20, "geometry_ELITPC_130mbar_1372Vdrift_25MHz.dat", BeamDirection::MINUS_X, -1.3, 3.0e-3, // exact tilt from MC GEN
       { "./Generated_Track3D__O16_8.66MeV.root" } },
     // 3-prong / Carbon-12 decay democratic / no resonance: peak=8.66 MeV, sigma=0.150 MeV, multipolarity=???? / Egamma=8.66 MeV
-    { "Eg=8.66 MeV C-12 democratic (none)",
-      reaction_type::THREE_ALPHA_DEMOCRATIC, 3, 8.66, 8.657, 0.150, 0.0,
+    { false, "8.66 / C-12 (demo)",
+      reaction_type::THREE_ALPHA_DEMOCRATIC, 3, 8.66, 8.657, 0.001, 0.0,
       130, 273.15+20, "geometry_ELITPC_130mbar_1372Vdrift_25MHz.dat", BeamDirection::MINUS_X, -1.3, 3.0e-3, // exact tilt from MC GEN
       { "./Generated_Track3D__C12demo_8.66MeV.root" } },
     ///////////////////////
@@ -242,8 +252,8 @@ int main(int argc, char **argv){
     // E_GAMMA = 9.56 MeV -- SIMULATION
     //
     // 2-prong / Oxygen-16 decay / no resonance: peak=9.56 MeV, sigma=0.150 MeV, multipolarity=???? / Egamma=9.56 MeV
-    { "Eg=9.56 MeV O-16 (none)",
-      reaction_type::C12_ALPHA, 2, 9.56, 9.557, 0.150, 0.0,
+    { false, "9.56 / O-16",
+      reaction_type::C12_ALPHA, 2, 9.56, 9.555, 0.001, 0.0,
       130, 273.15+20, "geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat", BeamDirection::MINUS_X, -1.3, 3.0e-3, // exact tilt from MC GEN
       { "./Generated_Track3D__O16_9.56MeV.root" } },
     ///////////////////////
@@ -251,8 +261,8 @@ int main(int argc, char **argv){
     // E_GAMMA = 9.845 MeV -- SIMULATION
     //
     // 2-prong / Oxygen-16 decay / no resonance: peak=9.845 MeV, sigma=0.150 MeV, multipolarity=???? / Egamma=9.845 MeV
-    { "Eg=9.845 MeV O-16 (none)",
-      reaction_type::C12_ALPHA, 2, 9.845, 9.842, 0.150, 0.0,
+    { true, "9.845 / O-16",
+      reaction_type::C12_ALPHA, 2, 9.845, 9.839, 0.001, 0.0,
       130, 273.15+20, "geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat", BeamDirection::MINUS_X, -1.3, 3.0e-3, // exact tilt from MC GEN
       { "./Generated_Track3D__O16_9.845MeV.root" } },
     ///////////////////////
@@ -260,8 +270,8 @@ int main(int argc, char **argv){
     // E_GAMMA = 12.3 MeV -- SIMULATION
     //
     // 2-prong / Oxygen-16 decay / no resonance: peak=12.3 MeV, sigma=0.150 MeV, multipolarity=???? / Egamma=12.3 MeV
-    { "Eg=12.3 MeV O-16 (none)",
-      reaction_type::C12_ALPHA, 2, 12.3, 12.295, 0.150, 0.0,
+    { true, "12.3 / O-16",
+      reaction_type::C12_ALPHA, 2, 12.3, 12.291, 0.001, 0.0,
       190, 273.15+20, "geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat", BeamDirection::MINUS_X, -1.3, 3.0e-3, // exact tilt from MC GEN
       { "./Generated_Track3D__O16_12.3MeV.root" } },
     ///////////////////////
@@ -269,8 +279,8 @@ int main(int argc, char **argv){
     // E_GAMMA = 13.1 MeV -- SIMULATION
     //
     // 2-prong / Oxygen-16 decay / no resonance: peak=13.1 MeV, sigma=0.150 MeV, multipolarity=???? / Egamma=13.1 MeV
-    { "Eg=13.1 MeV O-16 (none)",
-      reaction_type::C12_ALPHA, 2, 13.1, 13.094, 0.150, 0.0,
+    { false, "13.1 / O-16",
+      reaction_type::C12_ALPHA, 2, 13.1, 13.093, 0.001, 0.0,
       250, 273.15+20, "geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat", BeamDirection::MINUS_X, -1.3, 3.0e-3, // exact tilt from MC GEN
       { "./Generated_Track3D__O16_13.1MeV.root" } }
 #else
@@ -278,95 +288,102 @@ int main(int argc, char **argv){
     // //
     // // E_GAMMA = 8.66 MeV
     // //
-    // // 2-prong / Oxygen-18 decay / no resonance: peak=8.66 MeV, sigma=0.150 MeV, multipolarity=???? / Egamma=8.66 MeV
-    // { "Eg=8.66 MeV O-18 (none)",
-    //   reaction_type::C14_ALPHA, 2, 8.66, 8.66, 0.150, 0.0,
-    //   130, 273.15+20, "geometry_ELITPC_130mbar_1372Vdrift_25MHz.dat", BeamDirection::MINUS_X, -1.36, 2.34e-3, // run=20220901163827
-    //   { "./Reco_8.66MeV_merged.root" } },
-    // // // 3-prong / Carbon-12 decay / no resonance: peak=8.66 MeV, sigma=0.150 MeV, multipolarity=???? / Egamma=8.66 MeV
-    // // { "Eg=8.66 MeV C-12 (none)",
-    // //   reaction_type::THREE_ALPHA_BE, 3, 8.66, 8.66, 0.150, 0.0,
-    // //   130, 273.15+20, "geometry_ELITPC_130mbar_1372Vdrift_25MHz.dat", BeamDirection::MINUS_X, -1.36, 2.34e-3, // run=20220901163827 
-    // //   { "Reco_8.66MeV_merged.root" } },
-#if(USE_REAL_DATA__9_56_MEV)
+    // 2-prong / Oxygen-18 decay / no resonance: peak=8.66 MeV, sigma=0.150 MeV, multipolarity=???? / Egamma=8.66 MeV
+    // Gamma spectrum from HPGe HORST unfolding followed by bifurcated gaussian fit: peak=8.7010(7) MeV / sigma=0.177/0.154 MeV (202208231150)   
+    { false, "8.66 / O-18",
+      reaction_type::C14_ALPHA, 2, 8.701, 8.7387, 0.0007, 0.0, // Ex peak: O-18 flat S-factor + HPGe + resol / error : 0.7 keV from fit error
+      130, 273.15+20, "geometry_ELITPC_130mbar_1372Vdrift_25MHz.dat", BeamDirection::MINUS_X, -1.36, 2.34e-3, // run=20220901163827
+      { "./Reco_8.66MeV_merged.root" } },
+    // 3-prong / Carbon-12 decay / no resonance: peak=8.66 MeV, sigma=0.150 MeV, multipolarity=???? / Egamma=8.66 MeV
+    { false, "8.66 / C-12 (Be-8)",
+      reaction_type::THREE_ALPHA_BE, 3, 8.701, 8.6567, 0.0007, 0.0, // Ex peak: C-12 flat S-factor + HPGe / error : 0.7 keV from fit error
+      130, 273.15+20, "geometry_ELITPC_130mbar_1372Vdrift_25MHz.dat", BeamDirection::MINUS_X, -1.36, 2.34e-3, // run=20220901163827 
+      { "Reco_8.66MeV_merged.root" } },
     ///////////////////////
     //
     // E_GAMMA = 9.56 MeV
     //
     // 2-prong / Oxygen-16 decay / 1- resonance [1]: peak=9.585(11) MeV, gamma_width=0.420(20) MeV, multipolarity=E1 / Egamma=9.56 MeV
-    { "Eg=9.56 MeV O-16 (1- 9.585 MeV)",
-      reaction_type::C12_ALPHA, 2, 9.56, 9.585, 0.5*0.420, 0.0,
+    // Gamma spectrum from HPGe HORST unfolding followed by bifurcated gaussian fit: peak=9.6180(9) MeV / sigma=0.290/0.56 MeV (202208232043)
+    { false, "9.56 / O-16 (1- 9.585)",
+      reaction_type::C12_ALPHA, 2, 9.618, 9.5736, 0.011+0.013, 0.0, // Ex peak: scan + HPGe + resol / error: 11 keV table + 13 keV scan
       130, 273.15+20, "geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat", BeamDirection::MINUS_X, -0.92, 1.15e-3, // run=20220823091420
       { "/mnt/NAS_STORAGE_ANALYSIS/higs_2022/9_56MeV/Reco/clicked/Reco_20220823T091420_0000_ZJ.root" } },
     // // 2-prong / Oxygen-16 decay / 2+ resonance [1]: peak=9.84450(5) MeV, gamma_width=0.000625(100) MeV, multipolarity=E2 / Egamma=9.56 MeV
-    // { "Eg=9.56 MeV O-16 (2+ 9.8445 MeV)",
+    // { false, "9.56 / O-16 (2+ 9.8445)",
     //   reaction_type::C12_ALPHA, 2, 9.56, 9.8445, 0.00625, 0.0,
     //   130, 273.15+20, "geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat", BeamDirection::MINUS_X, -0.92, 1.15e-3, // run=20220823091420
     //   { "/mnt/NAS_STORAGE_ANALYSIS/higs_2022/9_56MeV/Reco/clicked/Reco_20220823T091420_0000_ZJ.root" } },
-    // // 2-prong / Oxygen-18 decay / no resonance: peak=9.56 MeV, sigma=0.150 MeV, multipolarity=???? / Egamma=9.56 MeV
-    // { "Eg=9.56 MeV O-18 (none)",
+    // //    2-prong / Oxygen-18 decay / no resonance: peak=9.56 MeV, sigma=0.150 MeV, multipolarity=???? / Egamma=9.56 MeV
+    // { false, "9.56 / O-18",
     //   reaction_type::C14_ALPHA, 2, 9.56, 9.56, 0.150, 0.0,
     //   130, 273.15+20, "geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat", BeamDirection::MINUS_X, -0.92, 1.15e-3, // run=20220823091420
     //   { "/mnt/NAS_STORAGE_ANALYSIS/higs_2022/9_56MeV/Reco/clicked/Reco_20220823T091420_0000_ZJ.root" } },
-#endif
     ///////////////////////
     //
     // E_GAMMA = 9.845 MeV
     //
     // 2-prong / Oxygen-16 decay / 2+ resonance [1]: peak=9.84450(5) MeV, gamma_width=0.000625(100) MeV, multipolarity=E2 / Egamma=9.845 MeV
-    { "Eg=9.845 MeV O-16 (2+ 9.8445 MeV)",
-      reaction_type::C12_ALPHA, 2, 9.845, 9.8445, 0.00625, 0.0,
+    // Gamma spectrum from HPGe HORST unfolding followed by bifurcated gaussian fit: peak=9.900 MeV / sigma=0.210/0.160 MeV (202208231523)
+    // Primary method:   Ex peak from table + transformation to LAB + gaussian Eg_LAB peak + HPGe + resolution => Ex=9.8381 MeV
+    // Secondary method: Eg_LAB peak from scan + HPGe + resolution => Ex=9.8423 MeV
+    { true, "9.85 / O-16 (2+ 9.8445)",
+      reaction_type::C12_ALPHA, 2, 9.900, 9.8381, 0.0005, 0.0, // Ex peak: table + gauss + HPGe + resol / error: 0.5 keV table
       130, 273.15+20, "geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat", BeamDirection::MINUS_X, -0.83, 5.51e-4, // run=20220822220311
-      { "./Reco_9.845MeV_merged.root" } },
-      // { "/mnt/NAS_STORAGE_ANALYSIS/higs_2022/9_85MeV/Reco/clicked/Reco_20220822T220311_0000_0001_0002_0003_0004_0005_0007_0008_0009.root" } },
+      //      { "./Reco_9.845MeV_merged.root" } },
+      { "/mnt/NAS_STORAGE_ANALYSIS/higs_2022/9_85MeV/Reco/clicked/Reco_20220822T220311_0000_0001_0002_0003_0004_0005_0007_0008_0009.root" } },
     // // 2-prong / Oxygen-18 decay / no resonance: peak=9.845 MeV, sigma=0.150 MeV, multipolarity=???? / Egamma=9.845 MeV
-    // { "Eg=9.845 MeV O-18 (none)",
+    // { false, "9.845 / O-18",
     //   reaction_type::C14_ALPHA, 2, 9.845, 9.845, 0.150, 0.0,
     //   130, 273.15+20, "geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat", BeamDirection::MINUS_X, -0.83, 5.51e-4, // run=20220822220311
-    //   { "./Reco_9.845MeV_merged.root" } },
-    // //      { "/mnt/NAS_STORAGE_ANALYSIS/higs_2022/9_85MeV/Reco/clicked/Reco_20220822T220311_0000_0001_0002_0003_0004_0005_0007_0008_0009.root" } },
+    //   // { "./Reco_9.845MeV_merged.root" } },
+    //   { "/mnt/NAS_STORAGE_ANALYSIS/higs_2022/9_85MeV/Reco/clicked/Reco_20220822T220311_0000_0001_0002_0003_0004_0005_0007_0008_0009.root" } },
     // // 3-prong / Carbon-12 decay / 2+ resonance [2]: peak=10.03(11) MeV, gamma_width=0.800(0.130)MeV, multipolarity=E2 / Egamma=9.845 MeV
-    // { "Eg=9.845 MeV C-12 (2+ 10.03 MeV)",
+    // { false, "9.845 / C-12 (2+ 10.03)",
     //   reaction_type::THREE_ALPHA_BE, 3, 9.845, 10.03, 0.5*0.800, 0.0,
     //   130, 273.15+20, "geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat", BeamDirection::MINUS_X, -0.83, 5.51e-4, // run=20220822220311
-    //   { "./Reco_9.845MeV_merged.root" } },
-    //   //      { "/mnt/NAS_STORAGE_ANALYSIS/higs_2022/9_85MeV/Reco/clicked/Reco_20220822T220311_0000_0001_0002_0003_0004_0005_0007_0008_0009.root" } },
+    //   // { "./Reco_9.845MeV_merged.root" } },
+    //   { "/mnt/NAS_STORAGE_ANALYSIS/higs_2022/9_85MeV/Reco/clicked/Reco_20220822T220311_0000_0001_0002_0003_0004_0005_0007_0008_0009.root" } },
     ///////////////////////
     //
     // E_GAMMA = 11.5 MeV
     //
-    // 2-prong / Oxygen-16 decay / 2+ resonance [1]: peak=11.520(4) MeV, gamma_width=0.071(3) MeV, multipolarity=E2 / Egamma=11.5 MeV
-    { "Eg=11.5 MeV O-16 (2+ 11.520 MeV)",
-      reaction_type::C12_ALPHA, 2, 11.5, 11.520, 0.5*0.071, 0.0,
+    // 2-prong / Oxygen-16 decay / 2+ resonance [1]: Ex peak=11.520(4) MeV, gamma_width=0.071(3) MeV, multipolarity=E2 / Egamma=11.5 MeV
+    // Gamma spectrum from HPGe GEANT simulation assuming gaussian: peak=11.480(1) MeV / sigma=0.190 MeV
+    { true, "11.5 / O-16 (2+ 11.52)",
+      reaction_type::C12_ALPHA, 2, 11.48, 11.5232, 0.004+0.013, 0.0, // Ex peak: scan + HPGe + resol / error: 4 keV table + 13 keV scan
       190, 273.15+20, "geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat", BeamDirection::MINUS_X, -1.20, 3.79e-3, // run=20220412064752
       { "/mnt/NAS_STORAGE_ANALYSIS/higs_2022/11_5MeV/Reco/clicked/Reco_20220412064752.root" } },
-    // ///////////////////////
-    // //
-    // // E_GAMMA = 12.3 MeV
-    // //
-    // // 2-prong / Oxygen-16 decay / no resonance: peak=12.3 MeV, sigma=0.150 MeV, multipolarity=???? / Egamma=12.3 MeV
-    // { "Eg=12.3 MeV O-16 (none)",
-    //   reaction_type::C12_ALPHA, 2, 12.3, 12.3, 0.150, 0.0,
-    //   190, 273.15+20, "geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat", BeamDirection::MINUS_X, -1.52, 3.25e-3, // run=20220412152817
-    //   { "/mnt/NAS_STORAGE_ANALYSIS/higs_2022/12_3MeV/Reco/clicked/Reco_20220412152817.root" } },
+    ///////////////////////
+    //
+    // E_GAMMA = 12.3 MeV
+    //
+    // 2-prong / Oxygen-16 decay / 1- resonance: Ex peak=12.440(2) MeV, gamma_width=0.091(6) MeV, multipolarity=E1 / Egamma=12.3 MeV
+    // Gamma spectrum from HPGe GEANT simulation assuming gaussian: peak=12.260(1) MeV / sigma=0.190 MeV
+    { false, "12.3 / O-16 (1- 12.44)",
+      reaction_type::C12_ALPHA, 2, 12.260, 12.4439, 0.006 + 0.013, 0.0, // Ex peak: scan + HPGe + resol / error: 6 keV table + 13 keV scan
+      190, 273.15+20, "geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat", BeamDirection::MINUS_X, -1.52, 3.25e-3, // run=20220412152817
+      { "/mnt/NAS_STORAGE_ANALYSIS/higs_2022/12_3MeV/Reco/clicked/Reco_20220412152817.root" } },
     ///////////////////////
     //
     // E_GAMMA = 13.1 MeV
     //
     // 2-prong / Oxygen-16 decay / 1- resonance [1]: peak=13.090(8) MeV, gamma_width=0.130(5) MeV, multipolarity=E1 / Egamma=13.1 MeV
-    { "Eg=13.1 MeV O-16 (1- 13.09 MeV)",
-      reaction_type::C12_ALPHA, 2, 13.1, 13.09, 0.5*0.130, 0.0,
+    // Gamma spectrum from HPGe GEANT simulation assuming gaussian: peak=13.060(1) MeV / sigma=0.200 MeV
+    { true, "13.1 / O-16 (1- 13.09)",
+      reaction_type::C12_ALPHA, 2, 13.06, 13.0673, 0.008 + 0.013, 0.0, // Ex peak: scan + HPGe + resol / error: 8 keV table + 13 keV scan
       250, 273.15+20, "geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat", BeamDirection::MINUS_X, -0.73, 1.36e-3, // run=20220413095040
-      { "/mnt/NAS_STORAGE_ANALYSIS/higs_2022/13_1MeV/Reco/clicked/Reco_20220413095040.root" } }// ,
-    // ///////////////////////
-    // //
-    // // E_GAMMA = 13.5 MeV
-    // //
-    // // 2-prong / Oxygen-16 decay / no resonance: peak=13.5 MeV, sigma=0.150 MeV, multipolarity=???? / Egamma=13.5 MeV
-    // { "Eg=13.5 MeV O-16 (none)",
-    //   reaction_type::C12_ALPHA, 2, 13.5, 13.5, 0.150, 0.0,
-    //   250, 273.15+20, "geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat", BeamDirection::MINUS_X, 0.99, 3.45e-3, // run=20220413142950
-    //   { "/mnt/NAS_STORAGE_ANALYSIS/higs_2022/13_5MeV/Reco/clicked/Reco_20220413142950.root" } }
+      { "/mnt/NAS_STORAGE_ANALYSIS/higs_2022/13_1MeV/Reco/clicked/Reco_20220413095040.root" } },
+    ///////////////////////
+    //
+    // E_GAMMA = 13.5 MeV
+    //
+    // 2-prong / Oxygen-16 decay / 1- resonance [1]: Ex peak=13.090(8) MeV, gamma_width=0.130(5) MeV, multipolarity=E1 / Egamma=13.5 MeV
+    // Gamma spectrum from HPGe GEANT simulation assuming gaussian: peak=13.470(1) MeV / sigma=0.200 MeV
+    { false, "13.5 / O-16 (1- 13.09)",
+      reaction_type::C12_ALPHA, 2, 13.47, 13.1130, 0.008 + 0.013, 0.0, // Ex peak: scan + HPGe + resol / error: 8 keV table + 13 keV scan
+      250, 273.15+20, "geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat", BeamDirection::MINUS_X, 0.99, 3.45e-3, // run=20220413142950
+      { "/mnt/NAS_STORAGE_ANALYSIS/higs_2022/13_5MeV/Reco/clicked/Reco_20220413142950.root" } }
 #endif
   };
   // initialize necessary GeometryTPC pointers
@@ -388,7 +405,7 @@ int main(int argc, char **argv){
   
   std::cout << "=================" << std::endl;
   std::cout << "Input parameters:" << std::endl
-	    << "* expected detector energy resolution: " << myOptions.detectorQvalueResolutionInMeV_CMS << " MeV" << std::endl
+	    << "* expected detector Ex energy resolution: " << myOptions.detectorExcitationEnergyResolutionInMeV << " MeV" << std::endl
 	    << "* list of PID categories to be tuned:";
   for(auto &category: myOptions.tuned_pid_map) {
     std::cout << std::endl
@@ -519,32 +536,31 @@ int main(int argc, char **argv){
     // //
     // // E_GAMMA = 8.66 MeV
     // //
-    // // 2-prong / Oxygen-18 decay / no resonance: peak=8.66 MeV, sigma=0.150 MeV, multipolarity=???? / Egamma=8.66 MeV
-    // {tpcreco::cuts::Cut1{},
-    //  tpcreco::cuts::Cut2{myRecoFiles[ireq].beamOffset, myRecoFiles[ireq].beamSlope, 12.5 /*beam_diameter*/},
-    //  tpcreco::cuts::Cut3{myGeometries[myRecoFiles[ireq].geometryFile].get(), 5},
-    //  tpcreco::cuts::Cut4{myGeometries[myRecoFiles[ireq].geometryFile].get(), 25, 5},
-    //  tpcreco::cuts::Cut5{myGeometries[myRecoFiles[ireq].geometryFile].get(), 12.5 /*beam_diameter*/},
-    //  tpcreco::cuts::Cut7{false,
-    // 	 pid_type::ALPHA,     44, 61,
-    // 	 pid_type::CARBON_14,  9, 16},
-    //  tpcreco::cuts::Cut8{false,
-    // 	 pid_type::ALPHA, 44 /*lengthOffsetMin*/, 61 /*lengthOffsetMax*/, 0.0 /*lengthSlope*/, // LOOSE CUT !!!!!
-    // 	 getBeamDir_DET(myRecoFiles[ireq].beamDir, myRecoFiles[ireq].beamOffset, myRecoFiles[ireq].beamSlope)},
-    //  tpcreco::cuts::Cut9{myRecoFiles[ireq++].ntracks}
-    // },
-    // // 3-prong / Carbon-12 decay / no resonance: peak=8.66 MeV, sigma=0.150 MeV, multipolarity=???? / Egamma=8.66 MeV
-    // {tpcreco::cuts::Cut1{},
-    //  tpcreco::cuts::Cut2{myRecoFiles[ireq].beamOffset, myRecoFiles[ireq].beamSlope, 12.5 /*beam_diameter*/},
-    //  tpcreco::cuts::Cut3{myGeometries[myRecoFiles[ireq].geometryFile].get(), 5},
-    //  tpcreco::cuts::Cut4{myGeometries[myRecoFiles[ireq].geometryFile].get(), 25, 5},
-    //  tpcreco::cuts::Cut5{myGeometries[myRecoFiles[ireq].geometryFile].get(), 12.5 /*beam_diameter*/},
-    //  tpcreco::cuts::Cut8{false,
-    //  	 pid_type::ALPHA, 0, 300, 0.0, // very loose cuts - TO BE REFINED
-    //  	 getBeamDir_DET(myRecoFiles[ireq].beamDir, myRecoFiles[ireq].beamOffset, myRecoFiles[ireq].beamSlope)},
-    //  tpcreco::cuts::Cut9{myRecoFiles[ireq++].ntracks}
-    // },
-#if(USE_REAL_DATA__9_56_MEV)
+    // 2-prong / Oxygen-18 decay / no resonance: peak=8.66 MeV, sigma=0.150 MeV, multipolarity=???? / Egamma=8.66 MeV
+    {tpcreco::cuts::Cut1{},
+     tpcreco::cuts::Cut2{myRecoFiles[ireq].beamOffset, myRecoFiles[ireq].beamSlope, 12.5 /*beam_diameter*/},
+     tpcreco::cuts::Cut3{myGeometries[myRecoFiles[ireq].geometryFile].get(), 5},
+     tpcreco::cuts::Cut4{myGeometries[myRecoFiles[ireq].geometryFile].get(), 25, 5},
+     tpcreco::cuts::Cut5{myGeometries[myRecoFiles[ireq].geometryFile].get(), 12.5 /*beam_diameter*/},
+     tpcreco::cuts::Cut7{false,
+    	 pid_type::ALPHA,     44, 61,
+    	 pid_type::CARBON_14,  9, 16},
+     tpcreco::cuts::Cut8{false,
+    	 pid_type::ALPHA, 44 /*lengthOffsetMin*/, 61 /*lengthOffsetMax*/, 0.0 /*lengthSlope*/, // LOOSE CUT !!!!!
+    	 getBeamDir_DET(myRecoFiles[ireq].beamDir, myRecoFiles[ireq].beamOffset, myRecoFiles[ireq].beamSlope)},
+     tpcreco::cuts::Cut9{myRecoFiles[ireq++].ntracks}
+    },
+    // 3-prong / Carbon-12 decay / no resonance: peak=8.66 MeV, sigma=0.150 MeV, multipolarity=???? / Egamma=8.66 MeV
+    {tpcreco::cuts::Cut1{},
+     tpcreco::cuts::Cut2{myRecoFiles[ireq].beamOffset, myRecoFiles[ireq].beamSlope, 12.5 /*beam_diameter*/},
+     tpcreco::cuts::Cut3{myGeometries[myRecoFiles[ireq].geometryFile].get(), 5},
+     tpcreco::cuts::Cut4{myGeometries[myRecoFiles[ireq].geometryFile].get(), 25, 5},
+     tpcreco::cuts::Cut5{myGeometries[myRecoFiles[ireq].geometryFile].get(), 12.5 /*beam_diameter*/},
+     tpcreco::cuts::Cut8{false,
+     	 pid_type::ALPHA, 0, 300, 0.0, // very loose cuts - TO BE REFINED
+     	 getBeamDir_DET(myRecoFiles[ireq].beamDir, myRecoFiles[ireq].beamOffset, myRecoFiles[ireq].beamSlope)},
+     tpcreco::cuts::Cut9{myRecoFiles[ireq++].ntracks}
+    },
     ///////////////////////
     //
     // E_GAMMA = 9.56 MeV
@@ -591,7 +607,6 @@ int main(int argc, char **argv){
     // 	 getBeamDir_DET(myRecoFiles[ireq].beamDir, myRecoFiles[ireq].beamOffset, myRecoFiles[ireq].beamSlope)},
     //  tpcreco::cuts::Cut9{myRecoFiles[ireq++].ntracks}
     // },
-#endif
     ///////////////////////
     //
     // E_GAMMA = 9.845 MeV
@@ -653,24 +668,24 @@ int main(int argc, char **argv){
 	 getBeamDir_DET(myRecoFiles[ireq].beamDir, myRecoFiles[ireq].beamOffset, myRecoFiles[ireq].beamSlope)},
      tpcreco::cuts::Cut9{myRecoFiles[ireq++].ntracks}
     },
-    // ///////////////////////
-    // //
-    // // E_GAMMA = 12.3 MeV
-    // //
-    // // 2-prong / Oxygen-16 decay / no resonance: peak=12.3 MeV, sigma=0.150 MeV, multipolarity=???? / Egamma=12.3 MeV
-    // {tpcreco::cuts::Cut1{},
-    //  tpcreco::cuts::Cut2{myRecoFiles[ireq].beamOffset, myRecoFiles[ireq].beamSlope, 12.5 /*beam_diameter*/},
-    //  tpcreco::cuts::Cut3{myGeometries[myRecoFiles[ireq].geometryFile].get(), 5},
-    //  tpcreco::cuts::Cut4{myGeometries[myRecoFiles[ireq].geometryFile].get(), 25, 5},
-    //  tpcreco::cuts::Cut5{myGeometries[myRecoFiles[ireq].geometryFile].get(), 12.5 /*beam_diameter*/},
-    //  tpcreco::cuts::Cut7{false,
-    // 	 pid_type::ALPHA,     80, 94,
-    // 	 pid_type::CARBON_12, 11, 18},
-    //  tpcreco::cuts::Cut8{false,
-    //      pid_type::ALPHA, 80 /*lengthOffsetMin*/, 94 /*lengthOffsetMax*/, 0.0 /*lengthSlope*/, // LOOSE CUT !!!!!
-    // 	 getBeamDir_DET(myRecoFiles[ireq].beamDir, myRecoFiles[ireq].beamOffset, myRecoFiles[ireq].beamSlope)},
-    //  tpcreco::cuts::Cut9{myRecoFiles[ireq++].ntracks}
-    // },
+    ///////////////////////
+    //
+    // E_GAMMA = 12.3 MeV
+    //
+    // 2-prong / Oxygen-16 decay / no resonance: peak=12.3 MeV, sigma=0.150 MeV, multipolarity=???? / Egamma=12.3 MeV
+    {tpcreco::cuts::Cut1{},
+     tpcreco::cuts::Cut2{myRecoFiles[ireq].beamOffset, myRecoFiles[ireq].beamSlope, 12.5 /*beam_diameter*/},
+     tpcreco::cuts::Cut3{myGeometries[myRecoFiles[ireq].geometryFile].get(), 5},
+     tpcreco::cuts::Cut4{myGeometries[myRecoFiles[ireq].geometryFile].get(), 25, 5},
+     tpcreco::cuts::Cut5{myGeometries[myRecoFiles[ireq].geometryFile].get(), 12.5 /*beam_diameter*/},
+     tpcreco::cuts::Cut7{false,
+    	 pid_type::ALPHA,     80, 94,
+    	 pid_type::CARBON_12, 11, 18},
+     tpcreco::cuts::Cut8{false,
+         pid_type::ALPHA, 80 /*lengthOffsetMin*/, 94 /*lengthOffsetMax*/, 0.0 /*lengthSlope*/, // LOOSE CUT !!!!!
+    	 getBeamDir_DET(myRecoFiles[ireq].beamDir, myRecoFiles[ireq].beamOffset, myRecoFiles[ireq].beamSlope)},
+     tpcreco::cuts::Cut9{myRecoFiles[ireq++].ntracks}
+    },
     ///////////////////////
     //
     // E_GAMMA = 13.1 MeV
@@ -688,25 +703,25 @@ int main(int argc, char **argv){
          pid_type::ALPHA, 70 /*lengthOffsetMin*/, 90 /*lengthOffsetMax*/, 0.0 /*lengthSlope*/, // LOOSE CUT !!!!!
 	 getBeamDir_DET(myRecoFiles[ireq].beamDir, myRecoFiles[ireq].beamOffset, myRecoFiles[ireq].beamSlope)},
      tpcreco::cuts::Cut9{myRecoFiles[ireq++].ntracks}
-    }// ,
-    // ///////////////////////
-    // //
-    // // E_GAMMA = 13.5 MeV
-    // //
-    // // 2-prong / Oxygen-16 decay / no resonance: peak=13.5 MeV, sigma=0.150 MeV, multipolarity=???? / Egamma=13.5 MeV
-    // {tpcreco::cuts::Cut1{},
-    //  tpcreco::cuts::Cut2{myRecoFiles[ireq].beamOffset, myRecoFiles[ireq].beamSlope, 12.5 /*beam_diameter*/},
-    //  tpcreco::cuts::Cut3{myGeometries[myRecoFiles[ireq].geometryFile].get(), 5},
-    //  tpcreco::cuts::Cut4{myGeometries[myRecoFiles[ireq].geometryFile].get(), 25, 5},
-    //  tpcreco::cuts::Cut5{myGeometries[myRecoFiles[ireq].geometryFile].get(), 12.5 /*beam_diameter*/},
-    //  tpcreco::cuts::Cut7{false,
-    // 	 pid_type::ALPHA,     73, 89,
-    // 	 pid_type::CARBON_12, 8,  14},
-    //  tpcreco::cuts::Cut8{false,
-    //      pid_type::ALPHA, 73 /*lengthOffsetMin*/, 89 /*lengthOffsetMax*/, 0.0 /*lengthSlope*/, // LOOSE CUT !!!!!
-    // 	 getBeamDir_DET(myRecoFiles[ireq].beamDir, myRecoFiles[ireq].beamOffset, myRecoFiles[ireq].beamSlope)},
-    //  tpcreco::cuts::Cut9{myRecoFiles[ireq++].ntracks}
-    //  }
+    },
+    ///////////////////////
+    //
+    // E_GAMMA = 13.5 MeV
+    //
+    // 2-prong / Oxygen-16 decay / no resonance: peak=13.5 MeV, sigma=0.150 MeV, multipolarity=???? / Egamma=13.5 MeV
+    {tpcreco::cuts::Cut1{},
+     tpcreco::cuts::Cut2{myRecoFiles[ireq].beamOffset, myRecoFiles[ireq].beamSlope, 12.5 /*beam_diameter*/},
+     tpcreco::cuts::Cut3{myGeometries[myRecoFiles[ireq].geometryFile].get(), 5},
+     tpcreco::cuts::Cut4{myGeometries[myRecoFiles[ireq].geometryFile].get(), 25, 5},
+     tpcreco::cuts::Cut5{myGeometries[myRecoFiles[ireq].geometryFile].get(), 12.5 /*beam_diameter*/},
+     tpcreco::cuts::Cut7{false,
+    	 pid_type::ALPHA,     73, 89,
+    	 pid_type::CARBON_12, 8,  14},
+     tpcreco::cuts::Cut8{false,
+         pid_type::ALPHA, 73 /*lengthOffsetMin*/, 89 /*lengthOffsetMax*/, 0.0 /*lengthSlope*/, // LOOSE CUT !!!!!
+    	 getBeamDir_DET(myRecoFiles[ireq].beamDir, myRecoFiles[ireq].beamOffset, myRecoFiles[ireq].beamSlope)},
+     tpcreco::cuts::Cut9{myRecoFiles[ireq++].ntracks}
+     }
 #endif
   };
 
@@ -737,7 +752,8 @@ int main(int argc, char **argv){
     }
 
     std::cout << "-----------------" << std::endl;
-    std::cout << "Data sample:     " << myRecoFiles[isel].description << std::endl; 
+    std::cout << "Data sample:     " << myRecoFiles[isel].description << std::endl;
+    std::cout << "Enabled for fit: " << (bool)myRecoFiles[isel].enabled << std::endl;    
     std::cout << "Accepted events: " << nevents << " (including " << ncorrected << " with PID corrections)" << std::endl;
 
   }
@@ -751,7 +767,7 @@ int main(int argc, char **argv){
   std::vector<EnergyScale_analysis::EventCollection> mySelections;
   size_t isel=0U;
   for(auto &it: myRecoFiles) {
-    mySelections.push_back({ it.description, it.reaction, it.gammaEnergy_LAB,
+    mySelections.push_back({ it.enabled, it.description, it.reaction, it.gammaEnergy_LAB,
 	                     it.peakEnergy_LAB, it.peakSigma_LAB, it.excitedMassDiff,
 	                     myRangeCalculators[myRecoFiles[isel].geometryFile],
 	                     myEvents[isel] });
@@ -976,7 +992,8 @@ double fitPeaks(const EnergyScale_analysis::FitOptionType &aOption,
 		std::vector<EnergyScale_analysis::EventCollection> &aSelection){ // input event collection
   
   EnergyScale_analysis myFit(aOption, aSelection); // provides chi^2
-  const int npar=myFit.getNparams();
+  const int npar=myFit.getNparams(); // number of parameters to be fitted
+  const int nfit=myFit.getNpoints(); // number of ENABLED selection samples to be fitted
   ROOT::Fit::Fitter fitter;
   ROOT::Math::Functor fcn(myFit, npar); // this line must be called after fixing all initialization parameters of chi^2 function
 
@@ -984,7 +1001,17 @@ double fitPeaks(const EnergyScale_analysis::FitOptionType &aOption,
   for(auto ipar=0U; ipar<npar; ipar++) {
     pStart[ipar] = myFit.getParameter(ipar);
   }
-  fitter.SetFCN(fcn, pStart, aSelection.size(), true);
+  
+  ////// HACK !!!!!!!!!!!!
+  ////// HACK !!!!!!!!!!!!
+  ////// HACK !!!!!!!!!!!!
+  pStart[0]=DEFAULT_FIT_OFFSET_ALPHA;
+  pStart[1]=DEFAULT_FIT_SCALE_ALPHA;
+  ////// HACK !!!!!!!!!!!!
+  ////// HACK !!!!!!!!!!!!
+  ////// HACK !!!!!!!!!!!!
+  
+  fitter.SetFCN(fcn, pStart, nfit, true);
 
   // set limits for all parameters
   for(auto ipar=0U; ipar<npar; ipar++) {
@@ -1051,7 +1078,7 @@ double fitPeaks(const EnergyScale_analysis::FitOptionType &aOption,
   std::cout << "CHI2 evaluated at starting point =" << initialChi2 << std::endl;
   std::cout << "==============================" << std::endl;
   ///////// DEBUG
-  myFit.plotQvalueFits("beforeFit");
+  myFit.plotExcitationEnergyFits("beforeFit");
   ///////// DEBUG
   
   fitter.Config().MinimizerOptions().SetMinimizerType("Minuit2");
@@ -1135,7 +1162,7 @@ double fitPeaks(const EnergyScale_analysis::FitOptionType &aOption,
   std::cout << "==============" << std::endl;
 
   ///////// DEBUG
-  myFit.plotQvalueFits("afterFit");
+  myFit.plotExcitationEnergyFits("afterFit");
   ///////// DEBUG
 
   return result.MinFcnValue();
