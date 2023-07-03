@@ -86,33 +86,32 @@ std::ostream& operator<<(std::ostream& out, BeamDirection const &direction){
 int main(int argc, char **argv){
   ConfigManager cm;
   boost::property_tree::ptree tree = cm.getConfig(argc, argv);
-  auto geometryFileName = tree.get<std::string>("geometryFile","");
-  auto dataFileName =tree.get<std::string>("dataFile","");
-  auto beamEnergy = tree.get<int>("beamEnergy","");
-  auto pressure = tree.get<float>("pressure","");
-  auto makeTreeFlag = !tree.get<bool>("noTree","");
+  auto geometryFileName = tree.get<std::string>("geometryFile");
+  auto dataFileName =tree.get<std::string>("dataFile");
+  auto beamEnergy = tree.get<int>("beamEnergy");
+  auto pressure = tree.get<float>("pressure");
+  auto makeTreeFlag = !tree.get<bool>("noTree");
   
-  auto temperature = tree.get<float>("temperature","");
-  auto nominalBoostFlag = tree.get<bool>("nominalBoost","");
-  auto beamOffset = tree.get<float>("beamOffset","");
-  auto beamSlope = tree.get<float>("beamSlope","");
-  auto beamDiameter = tree.get<float>("beamDiameter","");
-  auto beamDir = tree.get<BeamDirection>("beamDir","");
-  auto alphaMinCut = tree.get<float>("alphaMinCut","");
-  auto alphaMaxCut = tree.get<float>("alphaMaxCut","");
-  auto carbonMinCut = tree.get<float>("carbonMinCut","");
-  auto carbonMaxCut = tree.get<float>("carbonMaxCut","");
-  auto alphaScaleCorr = tree.get<float>("alphaScaleCorr","");
-  auto alphaOffsetCorr = tree.get<float>("alphaOffsetCorr","");
-  auto carbonScaleCorr = tree.get<float>("carbonScaleCorr","");
-  auto carbonOffsetCorr = tree.get<float>("carbonOffsetCorr","");
+  auto temperature = tree.get<float>("temperature");
+  auto nominalBoostFlag = tree.get<bool>("nominalBoost");
+  auto beamOffset = tree.get<float>("beamOffset");
+  auto beamSlope = tree.get<float>("beamSlope");
+  auto beamDiameter = tree.get<float>("beamDiameter");
+  auto beamDir = tree.get<BeamDirection>("beamDir");
+  auto alphaMinCut = tree.get<float>("alphaMinCut");
+  auto alphaMaxCut = tree.get<float>("alphaMaxCut");
+  auto carbonMinCut = tree.get<float>("carbonMinCut");
+  auto carbonMaxCut = tree.get<float>("carbonMaxCut");
+  auto alphaScaleCorr = tree.get<float>("alphaScaleCorr");
+  auto alphaOffsetCorr = tree.get<float>("alphaOffsetCorr");
+  auto carbonScaleCorr = tree.get<float>("carbonScaleCorr");
+  auto carbonOffsetCorr = tree.get<float>("carbonOffsetCorr");
 
   analyzeRecoEvents(geometryFileName, dataFileName, beamEnergy, beamDir, beamOffset, beamSlope, beamDiameter, pressure, temperature,
 		    makeTreeFlag, nominalBoostFlag,
 		    alphaScaleCorr, alphaOffsetCorr, carbonScaleCorr, carbonOffsetCorr,
 		    alphaMinCut, alphaMaxCut, carbonMinCut, carbonMaxCut);
 
-  analyzeRecoEvents(geometryFileName, dataFileName, beamEnergy, beamDir, pressure, makeTreeFlag);
   return 0;
 }
 /////////////////////////////

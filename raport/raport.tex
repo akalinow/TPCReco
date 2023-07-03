@@ -1,0 +1,239 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[breaklinks=true]{hyperref}
+\usepackage{breakcites}
+\usepackage[polish]{babel}
+\usepackage{mdframed}
+\usepackage{subfiles}
+\usepackage{subcaption}
+\usepackage{graphicx}
+\usepackage{wrapfig}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{polski}
+\hypersetup{
+    linktoc=all,     %set to all if you want both sections and subsections linked
+    linkcolor=blue,  %choose some color if you want links to stand out
+}
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  %\usepackage[T1]{fontenc}
+  %\usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\hypersetup{
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+\urlstyle{same} % disable monospaced font for URLs
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\newenvironment{Shaded}{}{}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{#1}}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.49,0.56,0.16}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.53,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.56,0.13,0.00}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.73,0.13,0.13}{\textit{#1}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.02,0.16,0.49}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.40,0.40,0.40}{#1}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.74,0.48,0.00}{#1}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.73,0.40,0.53}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.10,0.09,0.49}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+
+%End of Configuration
+
+
+\title{Praca nad projektem TPCReco i reorganizacja kodu}
+\author{Jakub Żak \and Wojciech Kos \and Agata Bijak \and Michał Pasiowiec}
+\date{}
+\begin{document}
+
+\maketitle
+\vfill
+\centerline{\large Opiekun: dr hab. Artur Kalinowski}
+\vfill
+
+\pagebreak
+\section{Wstęp}
+Program \textit{TPCReco} służy do analizy danych z detektora \textit{ELITPC}, który bada reakcje fotonuklearne metodą monochromatycznych promieni gamma. Został on napisany w języku \texttt{C++} i jest aktywnie rozwijany na Wydziale Fizyki UW. Czerpie w dużej mierze z genewskiej biblioteki do analizy danych \textit{ROOT}\cite{cern}.
+
+\section{Cel projektu}
+Celem Projektu jest reorganizacja istniejącego kodu do analizy danych z eksperymentu Warsaw Active target TPC (dawniej ELITPC).
+Projekt podizelony został na trzy części: 
+
+
+\begin{itemize}
+    \item Stworzenie wzoru testów funkcjonalnych klass aplikacji, 
+    \item Reorganizacja konfiguracji aplikacji,
+    \item Reorganizacja klasy  EventSource,
+\end{itemize}
+Projekt wykonano przy pomocy systemu wersjonowania kodu (\textit{GIT}\cite{git}) oraz oprogramowania służącego do konteneryzacji projektu (\textit{Docker}\cite{docker})
+
+\vfill
+\pagebreak
+
+\section{Kod projektu}
+\label{kod}
+Repozytorium projektu znajduje się pod adresem \texttt{https://github.com/Kinexity/TPCReco}. Tam wprowadzano wszelkie zmiany za pomocą programu \textit{GIT}, które na koniec włączono do głównego repozytorium aplikacji pod adresem, \texttt{https://github.com/akalinow/TPCReco}. Uczestnicy pracowali na następujących gałęziach projektu:
+\begin{enumerate}
+    \item \texttt{develJZ}
+    \item \texttt{Zmiiokmoesker}.
+\end{enumerate}
+
+\section{Wprowadzone zmiany}
+Poniżej wymieniono główne zmiany w kodzie:
+\subsection{Test funkcjonalny kalsy \texttt{EventTPC.cpp}}
+W pliku testu \texttt{EventTPC\_test.cpp} znajdują się funkcje typu void, które przyjmują następujące argumenty:
+\begin{itemize}
+    \item
+  std::shared\_ptr EventPtr =
+  myEventSource-\textgreater loadDataFile(dataFileName)-\textgreater getCurrentEvent()
+    \item
+  std::map\textless std::string, double\textgreater{} Test\_Reference -
+  zdefiniowany w dataEventTPC.h
+    \item
+  std::map\textless std::string, std::string\textgreater{}
+  Test\_Reference\_Titles - zdefiniowany w dataEventTPC.h
+    
+\end{itemize}
+Funkcje testujące to:
+\begin{itemize}
+    \item get1DProjection\_Titles\_Test 
+    \item get2DProjection\_Titles\_Test
+    \item get1DProjection\_Test 
+    \item get2DProjection\_Test 
+    \item GetTotalCharge\_Test 
+    \item GetMaxCharge\_Test 
+    \item GetMaxChargePos\_Test 
+    \item GetSignalRange\_Test 
+    \item GetMultiplicity\_Test
+\end{itemize}
+Powyższe funkcje porównuje wyniki wywołanych metod klasy EventTPC z danymi porównawczymi, które znajdują się w pliku dataEventTPC.h. Dane porównawcze przechowywane są w formacie map, gdzie kluczem są wywoływane metody z argumentami, w formacie std::string.
+
+\subsection{Klasa ConfigManager}
+Powstała klasa służąca do wczytywania parametrów z linii poleceń oraz plików konfiguracyjnych, a następnie konfiguracji obiektu boost::property\_tree::ptree i zwracania obiektu skonfigurowanego. Klasa zawiera następujące metody:
+\begin{itemize}
+    \item boost::property\_tree::ptree getConfig(int, char**) - metoda zwracająca skonfigurowane drzewo
+    \item \texttt{boost::program\_options::variables\_map parseCmdLineArgs(int,char)} - metoda do parsowania argumentów z linii poleceń
+    \item \texttt{boost::program\_options::options\_description parseAllowedArgs(std::string)} - metoda do parsowania listy dozwolonych argumentów linii poleceń z pliku konfiguracyjnego
+\end{itemize}
+Sposób formatowania plików konfiguracyjnych zawierających listę dozwolonych argumentów linii poleceń został zawarty w TPCReco/Utilities/config/README.md. Przykładowy plik wygląda następująco:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{\{}   \DataTypeTok{"Options"}\FunctionTok{:}
+    \FunctionTok{\{}
+        \DataTypeTok{"pressure"}\FunctionTok{:} \FunctionTok{\{}
+            \DataTypeTok{"type"}\FunctionTok{:} \StringTok{"float"}\FunctionTok{,}
+            \DataTypeTok{"defaultValue"}\FunctionTok{:} \DecValTok{60}\FunctionTok{,}
+            \DataTypeTok{"description"}\FunctionTok{:} \StringTok{"float {-} CO2 pressure [mbar]"}\FunctionTok{,}
+            \DataTypeTok{"isRequired"}\FunctionTok{:} \KeywordTok{true}
+        \FunctionTok{\},}
+        \DataTypeTok{"no{-}type"}\FunctionTok{:} \FunctionTok{\{}
+            \DataTypeTok{"type"}\FunctionTok{:} \StringTok{"bool"}\FunctionTok{,}
+            \DataTypeTok{"defaultValue"}\FunctionTok{:} \KeywordTok{false}\FunctionTok{,}
+            \DataTypeTok{"description"}\FunctionTok{:} \StringTok{"Skip comparing event type"}\FunctionTok{,}
+            \DataTypeTok{"isRequired"}\FunctionTok{:} \KeywordTok{false}
+        \FunctionTok{\},}
+        \DataTypeTok{"files"}\FunctionTok{:} \FunctionTok{\{}
+            \DataTypeTok{"type"}\FunctionTok{:} \StringTok{"std::vector\textless{}std::string\textgreater{}"}\FunctionTok{,}
+            \DataTypeTok{"defaultValue"}\FunctionTok{:} \StringTok{"PLACEHOLDER\_FOR\_VALUE"}\FunctionTok{,}
+            \DataTypeTok{"description"}\FunctionTok{:} \StringTok{"strings {-} list of files to browse. Mutually exclusive with \textquotesingle{}directory\textquotesingle{}"}\FunctionTok{,}
+            \DataTypeTok{"isRequired"}\FunctionTok{:} \KeywordTok{false}
+        \FunctionTok{\}}
+    \FunctionTok{\}}
+\FunctionTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{Reorganizacja klasy EventSource}
+
+Wyseparowano system rozpoznawania typu danych z klasy MainFrame. Dodano namespace EventSourceFactory z funkcją EventSourceFactory::makeEventSourceObject która przyjmuje przez referencję obiekt typu
+boost::property\_tree::ptree z konfiguracją i zwraca std::shared\_ptr\texttt{<EventSourceBase>} będący wskaźnikiem na obiekt klasy pochodnej do EventSourceBase. Typ tego obiektu zależy od nazw plików z danymi zawartych w konfiguracji. W trakcie tworzenia tego obiektu konfiguracja zostaje rozszerzona o zmienną zapisującą typ obiektu ("eventType") w formacie enum event\_type (wartości odpowiadające nazwom klas EventSource[...]) oraz o flagę ("onlineFlag"), która mówi czy pliki mają być na żywo ładowane z folderu (aplikuje się tylko do plików typu GRAW). Zmieniono obsługę systemu plików z biblioteki ROOT na bibliotekę boost::filesystem. Funkcja jest w stanie rozpoznać i załadować następujące formaty plików:
+\begin{itemize}
+    \item pliki w formacie .root wygenerowane przez bibliotekę ROOT - klasa EventSourceROOT
+    \item pliki z symulacji Monte Carlo - klasa EventSourceMC
+    \item pliki w formacie GRAW (zarówno pojedyncze, mnogie jak i z możliwość aktywnego ładowania nowo       dodanych plików) - klasy EventSourceGRAW oraz EventSourceMultiGRAW
+\end{itemize}
+W przypadku nieprawidłowej konfiguracji zostaje zwrócony pusty wskaźnik.
+\section{Podsumowanie}
+Projekt wykonano podczas semestru zimowego oraz letniego roku akademickiego 2022/2023 na Wydziale Fizyki UW. W wyniku prac, dodano test kalsy EventTPC, zmieniony został sposób konfiguracji aplikacji oraz poprawione zostało rozpoznawanie obiektów EventSourceBase. Dzięki temu, uczestnicy zrealizowali ogólne założenia projektu.
+
+\pagebreak
+
+\begin{thebibliography}{99}
+    \bibitem{cern}
+        Rene Brun and Fons Rademakers, ROOT - An Object Oriented Data Analysis Framework,
+        Proceedings AIHENP'96 Workshop, Lausanne, Sep. 1996,
+        Nucl. Inst. \& Meth. in Phys. Res. A 389 (1997) 81-86.
+        See also "ROOT" [software], Release v6.26/02, 13/04/2022,
+        (\url{https://root.cern/releases/release-61802/})
+    \bibitem{git}
+        GitHub is a web-based hosting service for version control using git.
+        More information about GitHub can be found at \url{https://en.wikipedia.org/wiki/GitHub}.
+    \bibitem{docker}
+        Docker is a set of platform as a service products that uses OS-level virtualization to deliver software in packages called containers.
+        More informations about Docker can be found at \url{https://en.wikipedia.org/wiki/Docker_(software)}
+    \bibitem{JSON}
+        JSON syntax - \url{https://en.wikipedia.org/wiki/JSON\#Syntax}
+\end{thebibliography}
+\end{document}
+
+
