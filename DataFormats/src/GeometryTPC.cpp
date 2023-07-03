@@ -434,7 +434,7 @@ bool GeometryTPC::Load(const char *fname) {
   for (int icobo = 0; icobo < COBO_N; icobo++)
     for (int iasad = 0; iasad < ASAD_N[icobo]; iasad++)
       for (int ichip = 0; ichip < AGET_Nchips; ichip++)
-        for (uint i = 0; i < FPN_chanId.size(); i++) {
+        for (uint32_t i = 0; i < FPN_chanId.size(); i++) {
           mapByAget_raw[MultiKey4(icobo, iasad, ichip, FPN_chanId[i])] =
 	    std::shared_ptr<StripTPC>(new StripTPC(FPN_CH, 0, i + 1, icobo, iasad, ichip, ERROR,
 						   FPN_chanId[i], TVector2(), TVector2(), 0, this));
@@ -1316,7 +1316,7 @@ int GeometryTPC::Aget_normal2raw(int channel_idx) const{ // valid range [0-63]
   if (/*!IsOK() || */ channel_idx < 0 || channel_idx >= AGET_Nchan)
     return ERROR;
   int raw_channel_idx = channel_idx;
-  for (uint i = 0; i < FPN_chanId.size(); ++i) {
+  for (uint32_t i = 0; i < FPN_chanId.size(); ++i) {
     if (FPN_chanId[i] < raw_channel_idx)
       ++raw_channel_idx;
     if (FPN_chanId[i] == raw_channel_idx)
@@ -1329,7 +1329,7 @@ int GeometryTPC::Aget_raw2normal(int raw_channel_idx) const{ // valid range [0-6
   if (/*!IsOK() || */ raw_channel_idx < 0 || raw_channel_idx >= AGET_Nchan_raw)
     return ERROR;
   int channel_idx = raw_channel_idx;
-  for (uint i = 0; i < FPN_chanId.size(); ++i) {
+  for (uint32_t i = 0; i < FPN_chanId.size(); ++i) {
     if (FPN_chanId[i] == raw_channel_idx)
       return ERROR;
     else if (FPN_chanId[i] < raw_channel_idx)

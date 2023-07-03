@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <boost/property_tree/ptree.hpp>
 
 #include "TPCReco/EventFilter.h"
 #include "TPCReco/EventTPC.h"
