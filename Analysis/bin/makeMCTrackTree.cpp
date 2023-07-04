@@ -14,7 +14,7 @@
 #include "TPCReco/IonRangeCalculator.h"
 #include "TPCReco/dEdxFitter.h"
 #include "TPCReco/TrackBuilder.h"
-#include "TPCReco/EventSourceMC.h"
+#include "TPCReco/EventSourceFactory.h"
 
 #include "TPCReco/ConfigManager.h"
 #include "TPCReco/RecoOutput.h"
@@ -59,8 +59,7 @@ std::string createROOTFileName(const  std::string & grawFileName){
 }
 /////////////////////////////////////
 /////////////////////////////////////
-int makeTrackTree(const  std::string & geometryFileName,
-		  const  std::string & dataFileName);
+int makeTrackTree(boost::property_tree::ptree & aConfig);
 /////////////////////////////////////
 /////////////////////////////////////
 int main(int argc, char **argv){
@@ -70,21 +69,10 @@ int main(int argc, char **argv){
 
   std::string geometryFileName, dataFileName;
   ConfigManager cm;
-  boost::property_tree::ptree tree = cm.getConfig(argc, argv);
-  geometryFileName = tree.get<std::string>("geometryFileName");
-  dataFileName = tree.get<std::string>("dataFileName");
-
-  int nEntriesProcessed = 0;
-  if(dataFileName.size() && geometryFileName.size()){
-    nEntriesProcessed = makeTrackTree(geometryFileName, dataFileName);
-  }
-  else{
-    std::cout<<KRED<<"Configuration not complete: "<<RST
-	     <<" geometryFile: "<<geometryFileName<<"\n"
-	     <<" dataFile: "<<dataFileName
-	     <<std::endl;
-  }
-
+  boost::property_tree::ptree myConfig = cm.getConfig(argc, argv);
+ 
+  int nEntriesProcessed = makeTrackTree(myConfig);
+ 
   aStopwatch.Stop();
   std::cout<<KBLU<<"Real time:       "<<RST<<aStopwatch.RealTime()<<" s"<<std::endl;
   std::cout<<KBLU<<"CPU time:        "<<RST<<aStopwatch.CpuTime()<<" s"<<std::endl;
@@ -112,13 +100,11 @@ typedef struct {Float_t eventId, frameId,
     lineFitChi2, dEdxFitChi2;
     } TrackData;
 /////////////////////////
-int makeTrackTree(const  std::string & geometryFileName,
-		  const  std::string & dataFileName) {
+int makeTrackTree(boost::property_tree::ptree & aConfig) {
+		  
+	std::shared_ptr<EventSourceMC> myEventSource = EventSourceFactory::makeEventSourceObject(aConfig);
 
-  std::shared_ptr<EventSourceMC> myEventSource;  
-  myEventSource = std::make_shared<EventSourceMC>(geometryFileName);
-
-
+  std::string dataFileName = aConfig.get("dataFileName","");
   std::string rootFileName = createROOTFileName(dataFileName);
   TFile outputROOTFile(rootFileName.c_str(),"RECREATE");
   TTree *tree = new TTree("trackTree", "Track tree");
@@ -133,10 +119,11 @@ int makeTrackTree(const  std::string & geometryFileName,
 
   int index = geometryFileName.find("mbar");
   double pressure = stof(geometryFileName.substr(index-3, 3));
+  double temperature = 293.15;
   TrackBuilder myTkBuilder;
   myTkBuilder.setGeometry(myEventSource->getGeometry());
   myTkBuilder.setPressure(pressure);
-  IonRangeCalculator myRangeCalculator(gas_mixture_type::CO2,pressure,293.15);
+  IonRangeCalculator myRangeCalculator(gas_mixture_type::CO2,pressure, temperature);
 
   RecoOutput myRecoOutput;
   std::string fileName = InputFileHelper::tokenize(dataFileName)[0];

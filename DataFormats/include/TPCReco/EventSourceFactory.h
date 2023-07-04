@@ -14,7 +14,9 @@
 
 #include "EventSourceBase.h"
 #include <boost/property_tree/json_parser.hpp>
-#include "GUI_commons.h"
+
+#include "TPCReco/GUI_commons.h"
+#include "TPCReco/colorText.h"
 
 #include <cstdlib>
 #include <iostream>
@@ -22,17 +24,14 @@
 #include <iomanip>
 #include <vector>
 
-#include "colorText.h"
-
 #include <boost/filesystem.hpp>
 
-//#define WITH_GET 1
 #ifdef WITH_GET
-#include "EventSourceGRAW.h"
-#include "EventSourceMultiGRAW.h"
+#include "TPCReco/EventSourceGRAW.h"
+#include "TPCReco/EventSourceMultiGRAW.h"
 #endif
-#include "EventSourceROOT.h"
-#include "EventSourceMC.h"
+#include "TPCReco/EventSourceROOT.h"
+#include "TPCReco/EventSourceMC.h"
 
 namespace EventSourceFactory {
 	inline std::shared_ptr<EventSourceBase> makeEventSourceObject(boost::property_tree::ptree& myConfig) {
@@ -92,6 +91,7 @@ namespace EventSourceFactory {
 			myEventSource = std::make_shared<EventSourceMC>(geometryFileName);
 			myConfig.put("eventType", event_type::EventSourceMC);
 		}
+		
 
 #ifdef WITH_GET
 		else if (all_graw) { //ROOT_file_check && dataFileName.find(".graw")!=std::string::npos){
@@ -142,7 +142,7 @@ namespace EventSourceFactory {
 		else if (!myEventSource) {
 			std::cerr << KRED << "Input source not known. DataFile: " << RST << dataFileName << _endl_;
 #ifndef WITH_GET
-			std::cerr << KRED << "and GRAW libriaries not set." << RST << _endl_;
+			std::cerr << KRED << "and GRAW libraries not set." << RST << _endl_;
 #endif
 			exit(0);
 		}

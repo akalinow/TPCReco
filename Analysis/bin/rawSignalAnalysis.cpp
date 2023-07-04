@@ -1,5 +1,5 @@
 #include "TPCReco/CommonDefinitions.h"
-#ifdef WITH_GET
+#ifdef WITH_GET_DISABLED_BY_AK
 #include <iostream>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/xml_parser.hpp>
@@ -129,38 +129,24 @@ void analyzeRawEvents(const boost::property_tree::ptree& aConfig) {
 		else {
 			std::cerr << _endl_
 				<< __FUNCTION__ << KRED << ": Some pedestal configuration options are missing!" << RST << _endl_ << _endl_;
+		}
 
   ////// DEBUG
   Long64_t counter=0;
   ////// DEBUG
 
-	// initialize RawSignalAnalysis
-	ClusterConfig myClusterConfig;
-	myClusterConfig.clusterEnable = clusterEnable;
-	myClusterConfig.clusterThreshold = clusterThreshold;
-	myClusterConfig.clusterDeltaStrips = clusterDeltaStrips;
-	myClusterConfig.clusterDeltaTimeCells = clusterDeltaTimeCells;
-	RawSignal_tree_analysis myAnalysis(myEventSource->getGeometry(), myClusterConfig); //dynamic_cast<EventSourceGRAW*>(myEventSource.get())->getGeometry());
-
 	// loop over ALL events
 	Long64_t currentEventIdx = -1;
 	bool isFirst = true; // flag to indicate first event for time period / rate calculations
-
-    // fill statistical histograms per run (before & after user-defined cuts)
-    myAnalysis.fillTree(myEventSource->getCurrentEvent(), isFirst);
-
-    if(maxNevents && maxNevents==++counter ) break;
-
-    // load next event (if any)
-    currentEventIdx=myEventSource->currentEventNumber();
-    myEventSource->getNextEvent();
-  }
+	
   while(currentEventIdx!=(Long64_t)myEventSource->currentEventNumber());
 
 		std::cout << "EventInfo: " << myEventSource->getCurrentEvent()->GetEventInfo() << _endl_;
 
 		// fill statistical histograms per run (before & after user-defined cuts)
 		myAnalysis.fillTree(myEventSource->getCurrentEvent(), isFirst);
+		
+		if(maxNevents && maxNevents==++counter ) break;
 
 		// load next event (if any)
 		currentEventIdx = myEventSource->currentEventNumber();

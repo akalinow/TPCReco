@@ -14,7 +14,7 @@
 #include "TPCReco/IonRangeCalculator.h"
 #include "TPCReco/dEdxFitter.h"
 #include "TPCReco/TrackBuilder.h"
-#include "TPCReco/EventSourceROOT.h"
+#include "TPCReco/EventSourceFactory.h"
 #include "TPCReco/ConfigManager.h"
 #ifdef WITH_GET
 #include "TPCReco/EventSourceGRAW.h"
@@ -62,8 +62,9 @@ std::string createROOTFileName(const  std::string & grawFileName){
 }
 /////////////////////////////////////
 /////////////////////////////////////
-int makeTrackTree(const  std::string & geometryFileName,
-		  const  std::string & dataFileName);
+
+int makeTrackTree(boost::property_tree::ptree & aConfig);
+
 /////////////////////////////////////
 /////////////////////////////////////
 int main(int argc, char **argv){
@@ -71,22 +72,10 @@ int main(int argc, char **argv){
   TStopwatch aStopwatch;
   aStopwatch.Start();
 
-  std::string geometryFileName, dataFileName;
   ConfigManager cm;
-  boost::property_tree::ptree tree = cm.getConfig(argc, argv);
-  geometryFileName = tree.get("geometryFileName","");
-  dataFileName = tree.get("dataFileName","");
+  boost::property_tree::ptree myConfig = cm.getConfig(argc, argv);
  
-  int nEntriesProcessed = 0;
-  if(dataFileName.size() && geometryFileName.size()){
-    nEntriesProcessed = makeTrackTree(geometryFileName, dataFileName);
-  }
-  else{
-    std::cout<<KRED<<"Configuration not complete: "<<RST
-	     <<" geometryFile: "<<geometryFileName<<"\n"
-	     <<" dataFile: "<<dataFileName
-	     <<std::endl;
-  }
+  int nEntriesProcessed = makeTrackTree(myConfig);
 
   aStopwatch.Stop();
   std::cout<<KBLU<<"Real time:       "<<RST<<aStopwatch.RealTime()<<" s"<<std::endl;
@@ -114,37 +103,11 @@ typedef struct {Float_t eventId, frameId,
     lineFitChi2, dEdxFitChi2;
     } TrackData;
 /////////////////////////
-int makeTrackTree(const  std::string & geometryFileName,
-		  const  std::string & dataFileName) {
-
-  std::shared_ptr<EventSourceBase> myEventSource;
-  if(dataFileName.find(".graw")!=std::string::npos){
-
-    boost::property_tree::ptree property_tree;
-    property_tree.put("pedestal.minPedestalCell", 5.0);
-    property_tree.put("pedestal.maxPedestalCell",25);
-    property_tree.put("pedestal.minSignalCell",5);
-    property_tree.put("pedestal.maxSignalCell",506);
-    
-    #ifdef WITH_GET
-    if(dataFileName.find(",")!=std::string::npos){
-      myEventSource = std::make_shared<EventSourceMultiGRAW>(geometryFileName);
-    }
-    else{
-      myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
-      dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(160);
-    }
-    dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(property_tree.find("pedestal")->second);    
-    #endif
-  }
-  else if(dataFileName.find(".root")!=std::string::npos){
-    myEventSource = std::make_shared<EventSourceROOT>(geometryFileName);
-  }
-  else{
-    std::cout<<KRED<<"Wrong input file: "<<RST<<dataFileName<<std::endl;
-    return -1;
-  }
-
+int makeTrackTree(boost::property_tree::ptree & aConfig) {
+		  
+  std::shared_ptr<EventSourceBase> myEventSource = EventSourceFactory::makeEventSourceObject(aConfig);
+  
+  std::string dataFileName = aConfig.get("dataFileName","");
   std::string rootFileName = createROOTFileName(dataFileName);
   TFile outputROOTFile(rootFileName.c_str(),"RECREATE");
   TTree *tree = new TTree("trackTree", "Track tree");
@@ -162,12 +125,14 @@ int makeTrackTree(const  std::string & geometryFileName,
   leafNames += "lineFitChi2:dEdxFitChi2";
   tree->Branch("track",&track_data,leafNames.c_str());
 
+  std::string geometryFileName = aConfig.get("geometryFileName","");
   int index = geometryFileName.find("mbar");
   double pressure = stof(geometryFileName.substr(index-3, 3));
+  double temperature = 293.15;
   TrackBuilder myTkBuilder;
   myTkBuilder.setGeometry(myEventSource->getGeometry());
   myTkBuilder.setPressure(pressure);
-  IonRangeCalculator myRangeCalculator(gas_mixture_type::CO2,pressure,293.15);
+  IonRangeCalculator myRangeCalculator(gas_mixture_type::CO2,pressure, temperature);
 
   RecoOutput myRecoOutput;
   std::string fileName = InputFileHelper::tokenize(dataFileName)[0];

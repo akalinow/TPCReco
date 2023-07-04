@@ -105,7 +105,7 @@ namespace enumDict {
 ////////////////////////////////////////////////////////////////////////////////
 
 
-#define _endl_ " (" << filename_string(__FILE__) << "; " << __LINE__ << ")\n"
+#define _endl_ " (" << __FILE__ << "; " << __LINE__ << ")\n"
 #define checkpoint std::cout << "checkpoint" << _endl_
 
 
