@@ -21,23 +21,26 @@ add_executable(makeMCTrackTree bin/makeMCTrackTree.cpp)
 add_executable(recoEventsAnalysis bin/recoEventsAnalysis.cpp)
 add_executable(recoEventsComparison bin/recoEventsComparison.cpp)
 add_executable(rawSignalAnalysis bin/rawSignalAnalysis.cpp)
+add_executable(rawPedestalAnalysis bin/rawPedestalAnalysis.cpp)
 add_executable(recoEventsClean bin/recoEventsClean.cpp)
 add_executable(recoEventsDiff bin/recoEventsDiff.cpp)
 
 target_link_libraries(
-  ${MODULE_NAME} PUBLIC DataFormats Reconstruction ${ROOT_LIBRARIES}
-                        ${ROOT_EXE_LINKER_FLAGS} GrawToROOT)
+  ${MODULE_NAME} PUBLIC Utilities DataFormats Reconstruction EventSources GrawToROOT ${ROOT_LIBRARIES}
+                        ${ROOT_EXE_LINKER_FLAGS})
 
 target_link_libraries(makeTrackTree PRIVATE ${MODULE_NAME}
                                             Boost::program_options)
 target_link_libraries(makeMCTrackTree PRIVATE ${MODULE_NAME}
-                                              Boost::program_options Simulation)
+                                              Boost::program_options)
 target_link_libraries(recoEventsAnalysis PRIVATE ${MODULE_NAME}
                                                  Boost::program_options)
 target_link_libraries(recoEventsComparison PRIVATE ${MODULE_NAME}
                                                    Boost::program_options)
 target_link_libraries(rawSignalAnalysis PRIVATE ${MODULE_NAME}
                                                 Boost::program_options)
+target_link_libraries(rawPedestalAnalysis PRIVATE ${MODULE_NAME}
+                                                Boost::program_options)                                           
 target_link_libraries(recoEventsClean PRIVATE ${MODULE_NAME}
                                               Boost::program_options)
 target_link_libraries(recoEventsDiff PRIVATE ${MODULE_NAME}
@@ -50,6 +53,7 @@ reco_install_targets(
   recoEventsAnalysis
   recoEventsComparison
   rawSignalAnalysis
+  rawPedestalAnalysis
   recoEventsClean
   recoEventsDiff)
 reco_install_root_dict(${MODULE_NAME})

@@ -102,7 +102,8 @@ typedef struct {Float_t eventId, frameId,
 /////////////////////////
 int makeTrackTree(boost::property_tree::ptree & aConfig) {
 		  
-	std::shared_ptr<EventSourceMC> myEventSource = EventSourceFactory::makeEventSourceObject(aConfig);
+	std::shared_ptr<EventSourceBase> eventSource = EventSourceFactory::makeEventSourceObject(aConfig);
+	auto myEventSource = std::dynamic_pointer_cast<EventSourceMC>(eventSource);
 
   std::string dataFileName = aConfig.get("dataFileName","");
   std::string rootFileName = createROOTFileName(dataFileName);
@@ -117,6 +118,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   leafNames += "lineFitChi2:dEdxFitChi2";
   tree->Branch("track",&track_data,leafNames.c_str());
 
+  std::string geometryFileName = aConfig.get("dataFileName","");
   int index = geometryFileName.find("mbar");
   double pressure = stof(geometryFileName.substr(index-3, 3));
   double temperature = 293.15;

@@ -16,6 +16,23 @@ reco_add_library(${MODULE_NAME} EXTRA_SOURCES
                  G__${TPCRECO_PREFIX}${MODULE_NAME}.cxx)
 reco_add_executable(grawls bin/grawls.cpp)
 
+option(DIRECTORYWATCH_ONE_message_DISABLE
+       "Define DIRECTORYWATCH_ONE_message_DISABLE variable" OFF)
+if(DIRECTORYWATCH_ONE_message_DISABLE)
+  message(
+    STATUS
+      "DirectoryWatch single message disabled (i.e. one message per modified file)"
+  )
+  target_compile_definitions(${MODULE_NAME} DIRECTORYWATCH_ONE_message_DISABLE)
+else()
+  message(
+    STATUS
+      "DirectoryWatch single message enabled (i.e. single message per all modified files)"
+  )
+endif()
+
+
+
 target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
 target_link_libraries(
   ${MODULE_NAME}

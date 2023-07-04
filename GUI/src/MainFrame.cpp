@@ -24,12 +24,7 @@
 #include <TLatex.h>
 #include <TProfile.h>
 
-#ifdef WITH_GET
-#include "TPCReco/EventSourceGRAW.h"
-#include "TPCReco/EventSourceMultiGRAW.h"
-#endif
-#include "TPCReco/EventSourceROOT.h"
-#include "TPCReco/EventSourceMC.h"
+#include "TPCReco/EventSourceFactory.h"
 
 #include <TGButtonGroup.h>
 #include <TGButton.h>
