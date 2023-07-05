@@ -101,7 +101,7 @@ boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
     ("scaleOnly", boost::program_options::bool_switch(), "(override flag) - force to use only multiplicative corrections instead of linear scale and offset")
     ("type", boost::program_options::value<std::string>()->required(), "string - type of correction [\"length\" xor \"energy_cms\" xor \"energy_lab\" xor \"zenek\"]")
   ("tolerance", boost::program_options::value<double>()->default_value(10), "float - ROOT minimizer TOLERANCE parameter")
-  ("precision", boost::program_options::value<double>()->default_value(1e-6), "float - ROOT minimizer PRECISION parameter");
+  ("precision", boost::program_options::value<double>()->default_value(3e-6), "float - ROOT minimizer PRECISION parameter");
   boost::program_options::variables_map varMap;  
 
   try {     
@@ -170,11 +170,18 @@ int main(int argc, char **argv){
     tree.get<double>("tolerance"), // ROOT fitter TOLERANCE parameter - TO BE PARAMETERIZED FROM JSON
                                    // NOTE: MIGRAD ends when EDM < 0.001 * TOLERANCE
     tree.get<double>("precision"), // ROOT fitter PRECISION parameter - TO BE PARAMETERIZED FROM JSON
-                                   // NOTE: For best 2-parameter fits based on the leading ALPHA track information only use these settings:
-                                   //       LENGTH      --> TOL=10, PREC=1e-6
-                                   //       ZENEK       --> TOL=10, PREC=1e-6
-                                   //       ENERGY_CMS  --> TOL=10, PREC=1e-6
-                                   //       ENERGY_LAB  --> TOL=10, PREC=1e-6
+      // NOTE: For best 2-parameter fits based on the leading ALPHA track information only use these settings:
+      // Symmetric:
+      //       ZENEK       --> TOL=10, PREC=1e-7
+      //       LENGTH      --> TOL=10, PREC=1e-6
+      //       ENERGY_LAB  --> TOL=10, PREC=5e-7
+      //       ENERGY_CMS  --> TOL=10, PREC=5e-7
+      // Asymmetric:
+      //       ZENEK       --> TOL=10, PREC=1e-6
+      //       LENGTH      --> TOL=10, PREC=5e-8
+      //       ENERGY_LAB  --> TOL=10, PREC=3e-7
+      //       ENERGY_CMS  --> TOL=10, PREC=3e-6
+      //
     // DETECTOR RESOLUTION:
 #if(TOY_MC_TEST)  // Monte Carlo data
     1e-3,         // perfect detector
@@ -284,10 +291,10 @@ int main(int argc, char **argv){
       250, 273.15+20, "geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat", BeamDirection::MINUS_X, -1.3, 3.0e-3, // exact tilt from MC GEN
       { "./Generated_Track3D__O16_13.1MeV.root" } }
 #else
-    // ///////////////////////
-    // //
-    // // E_GAMMA = 8.66 MeV
-    // //
+    ///////////////////////
+    //
+    // E_GAMMA = 8.66 MeV
+    //
     // 2-prong / Oxygen-18 decay / no resonance: peak=8.66 MeV, sigma=0.150 MeV, multipolarity=???? / Egamma=8.66 MeV
     // Gamma spectrum from HPGe HORST unfolding followed by bifurcated gaussian fit: peak=8.7010(7) MeV / sigma=0.177/0.154 MeV (202208231150)   
     { false, "8.66 / O-18",
@@ -306,7 +313,7 @@ int main(int argc, char **argv){
     // 2-prong / Oxygen-16 decay / 1- resonance [1]: peak=9.585(11) MeV, gamma_width=0.420(20) MeV, multipolarity=E1 / Egamma=9.56 MeV
     // Gamma spectrum from HPGe HORST unfolding followed by bifurcated gaussian fit: peak=9.6180(9) MeV / sigma=0.290/0.56 MeV (202208232043)
     { false, "9.56 / O-16 (1- 9.585)",
-      reaction_type::C12_ALPHA, 2, 9.618, 9.5736, 0.011+0.013, 0.0, // Ex peak: scan + HPGe + resol / error: 11 keV table + 13 keV scan
+      reaction_type::C12_ALPHA, 2, 9.618, 9.5736, sqrt(pow(0.011,2)+pow(0.013/sqrt(12),2)), 0.0, // Ex peak: scan + HPGe + resol / error: 11 keV table + 13 keV scan
       130, 273.15+20, "geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat", BeamDirection::MINUS_X, -0.92, 1.15e-3, // run=20220823091420
       { "/mnt/NAS_STORAGE_ANALYSIS/higs_2022/9_56MeV/Reco/clicked/Reco_20220823T091420_0000_ZJ.root" } },
     // // 2-prong / Oxygen-16 decay / 2+ resonance [1]: peak=9.84450(5) MeV, gamma_width=0.000625(100) MeV, multipolarity=E2 / Egamma=9.56 MeV
@@ -325,12 +332,12 @@ int main(int argc, char **argv){
     //
     // 2-prong / Oxygen-16 decay / 2+ resonance [1]: peak=9.84450(5) MeV, gamma_width=0.000625(100) MeV, multipolarity=E2 / Egamma=9.845 MeV
     // Gamma spectrum from HPGe HORST unfolding followed by bifurcated gaussian fit: peak=9.900 MeV / sigma=0.210/0.160 MeV (202208231523)
-    // Primary method:   Ex peak from table + transformation to LAB + gaussian Eg_LAB peak + HPGe + resolution => Ex=9.8381 MeV
+    // Primary method:   exact Ex peak value from table
     // Secondary method: Eg_LAB peak from scan + HPGe + resolution => Ex=9.8423 MeV
     { true, "9.85 / O-16 (2+ 9.8445)",
-      reaction_type::C12_ALPHA, 2, 9.900, 9.8381, 0.0005, 0.0, // Ex peak: table + gauss + HPGe + resol / error: 0.5 keV table
+      reaction_type::C12_ALPHA, 2, 9.900, 9.8445, 0.0005, 0.0, // Ex peak: table / error: 0.5 keV table
       130, 273.15+20, "geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat", BeamDirection::MINUS_X, -0.83, 5.51e-4, // run=20220822220311
-      //      { "./Reco_9.845MeV_merged.root" } },
+      // { "./Reco_9.845MeV_merged.root" } },
       { "/mnt/NAS_STORAGE_ANALYSIS/higs_2022/9_85MeV/Reco/clicked/Reco_20220822T220311_0000_0001_0002_0003_0004_0005_0007_0008_0009.root" } },
     // // 2-prong / Oxygen-18 decay / no resonance: peak=9.845 MeV, sigma=0.150 MeV, multipolarity=???? / Egamma=9.845 MeV
     // { false, "9.845 / O-18",
@@ -351,7 +358,7 @@ int main(int argc, char **argv){
     // 2-prong / Oxygen-16 decay / 2+ resonance [1]: Ex peak=11.520(4) MeV, gamma_width=0.071(3) MeV, multipolarity=E2 / Egamma=11.5 MeV
     // Gamma spectrum from HPGe GEANT simulation assuming gaussian: peak=11.480(1) MeV / sigma=0.190 MeV
     { true, "11.5 / O-16 (2+ 11.52)",
-      reaction_type::C12_ALPHA, 2, 11.48, 11.5232, 0.004+0.013, 0.0, // Ex peak: scan + HPGe + resol / error: 4 keV table + 13 keV scan
+      reaction_type::C12_ALPHA, 2, 11.48, 11.5232, sqrt(pow(0.004,2)+pow(0.013/sqrt(12),2)), 0.0, // Ex peak: scan + HPGe + resol / error: 4 keV table + 13 keV scan
       190, 273.15+20, "geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat", BeamDirection::MINUS_X, -1.20, 3.79e-3, // run=20220412064752
       { "/mnt/NAS_STORAGE_ANALYSIS/higs_2022/11_5MeV/Reco/clicked/Reco_20220412064752.root" } },
     ///////////////////////
@@ -361,7 +368,7 @@ int main(int argc, char **argv){
     // 2-prong / Oxygen-16 decay / 1- resonance: Ex peak=12.440(2) MeV, gamma_width=0.091(6) MeV, multipolarity=E1 / Egamma=12.3 MeV
     // Gamma spectrum from HPGe GEANT simulation assuming gaussian: peak=12.260(1) MeV / sigma=0.190 MeV
     { false, "12.3 / O-16 (1- 12.44)",
-      reaction_type::C12_ALPHA, 2, 12.260, 12.4439, 0.006 + 0.013, 0.0, // Ex peak: scan + HPGe + resol / error: 6 keV table + 13 keV scan
+      reaction_type::C12_ALPHA, 2, 12.260, 12.4439, sqrt(pow(0.006,2) + pow(0.013/sqrt(12),2)), 0.0, // Ex peak: scan + HPGe + resol / error: 6 keV table + 13 keV scan
       190, 273.15+20, "geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat", BeamDirection::MINUS_X, -1.52, 3.25e-3, // run=20220412152817
       { "/mnt/NAS_STORAGE_ANALYSIS/higs_2022/12_3MeV/Reco/clicked/Reco_20220412152817.root" } },
     ///////////////////////
@@ -371,7 +378,7 @@ int main(int argc, char **argv){
     // 2-prong / Oxygen-16 decay / 1- resonance [1]: peak=13.090(8) MeV, gamma_width=0.130(5) MeV, multipolarity=E1 / Egamma=13.1 MeV
     // Gamma spectrum from HPGe GEANT simulation assuming gaussian: peak=13.060(1) MeV / sigma=0.200 MeV
     { true, "13.1 / O-16 (1- 13.09)",
-      reaction_type::C12_ALPHA, 2, 13.06, 13.0673, 0.008 + 0.013, 0.0, // Ex peak: scan + HPGe + resol / error: 8 keV table + 13 keV scan
+      reaction_type::C12_ALPHA, 2, 13.06, 13.0673, sqrt(pow(0.008,2) + pow(0.013/sqrt(12),2)), 0.0, // Ex peak: scan + HPGe + resol / error: 8 keV table + 13 keV scan
       250, 273.15+20, "geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat", BeamDirection::MINUS_X, -0.73, 1.36e-3, // run=20220413095040
       { "/mnt/NAS_STORAGE_ANALYSIS/higs_2022/13_1MeV/Reco/clicked/Reco_20220413095040.root" } },
     ///////////////////////
@@ -381,7 +388,7 @@ int main(int argc, char **argv){
     // 2-prong / Oxygen-16 decay / 1- resonance [1]: Ex peak=13.090(8) MeV, gamma_width=0.130(5) MeV, multipolarity=E1 / Egamma=13.5 MeV
     // Gamma spectrum from HPGe GEANT simulation assuming gaussian: peak=13.470(1) MeV / sigma=0.200 MeV
     { false, "13.5 / O-16 (1- 13.09)",
-      reaction_type::C12_ALPHA, 2, 13.47, 13.1130, 0.008 + 0.013, 0.0, // Ex peak: scan + HPGe + resol / error: 8 keV table + 13 keV scan
+      reaction_type::C12_ALPHA, 2, 13.47, 13.1130, sqrt(pow(0.008,2) + pow(0.013/sqrt(12),2)), 0.0, // Ex peak: scan + HPGe + resol / error: 8 keV table + 13 keV scan
       250, 273.15+20, "geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat", BeamDirection::MINUS_X, 0.99, 3.45e-3, // run=20220413142950
       { "/mnt/NAS_STORAGE_ANALYSIS/higs_2022/13_5MeV/Reco/clicked/Reco_20220413142950.root" } }
 #endif
@@ -1084,8 +1091,8 @@ double fitPeaks(const EnergyScale_analysis::FitOptionType &aOption,
   fitter.Config().MinimizerOptions().SetMinimizerType("Minuit2");
   fitter.Config().MinimizerOptions().SetMinimizerAlgorithm("Fumili2");
   myFit.setMinimizerAlgorithm(fitter.Config().MinimizerOptions().MinimizerAlgorithm()); // sets proper CHI2 scaling factor for FUMILI2
-  fitter.Config().MinimizerOptions().SetMaxFunctionCalls(10000);
-  fitter.Config().MinimizerOptions().SetMaxIterations(1000);
+  fitter.Config().MinimizerOptions().SetMaxFunctionCalls(2000);
+  fitter.Config().MinimizerOptions().SetMaxIterations(200);
   fitter.Config().MinimizerOptions().SetStrategy(1);
   fitter.Config().MinimizerOptions().SetTolerance(aOption.tolerance);
   fitter.Config().MinimizerOptions().SetPrecision(aOption.precision);
@@ -1128,8 +1135,8 @@ double fitPeaks(const EnergyScale_analysis::FitOptionType &aOption,
   fitter.Config().MinimizerOptions().SetMinimizerType("Minuit2");
   fitter.Config().MinimizerOptions().SetMinimizerAlgorithm("Migrad2");
   myFit.setMinimizerAlgorithm(fitter.Config().MinimizerOptions().MinimizerAlgorithm()); // sets proper CHI2 scaling factor for MIGRAD2
-  fitter.Config().MinimizerOptions().SetMaxFunctionCalls(10000);
-  fitter.Config().MinimizerOptions().SetMaxIterations(1000);
+  fitter.Config().MinimizerOptions().SetMaxFunctionCalls(2000);
+  fitter.Config().MinimizerOptions().SetMaxIterations(200);
   fitter.Config().MinimizerOptions().SetStrategy(1);
   fitter.Config().MinimizerOptions().SetTolerance(aOption.tolerance);
   fitter.Config().MinimizerOptions().SetPrecision(aOption.precision);
