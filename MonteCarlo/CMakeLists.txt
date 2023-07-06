@@ -30,4 +30,4 @@ configure_file(
   ${CMAKE_CURRENT_BINARY_DIR}/config/montecarlo_ModuleConfigGun.json @ONLY)
 
 install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/config
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/config)
+        DESTINATION ${CMAKE_INSTALL_PREFIX})

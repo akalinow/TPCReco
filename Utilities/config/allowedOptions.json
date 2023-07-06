@@ -1,0 +1,116 @@
+{
+    "configJson":{
+        "group":"meta",
+        "type" : "string",
+        "defaultValue" : "",
+        "description" : "JSON file with application configuration.\nParameters values from json file are overwritten by values provided at command line.\nType: string"            
+    },
+    "configDumpJson":{
+        "group":"meta",
+        "type" : "string",
+        "defaultValue" : "configDump.json",
+        "description" : "Name of the JSON file used for configuration dump\nType: string"            
+    },
+    "dataFile":{
+        "group": "input",
+        "type": "string",
+        "defaultValue": "",
+        "description": "Comma separated list of input files.\nType: string"
+    },
+    "geometryFile":{
+        "group": "input",
+        "type": "string",
+        "defaultValue": "",
+        "description": "Geometry file location.\nType: string"
+    },
+    "resourcesPath":{
+        "group": "input",
+        "type": "string",
+        "defaultValue": "./",
+        "description" : "Global path to the resources directory.\nType: string"
+    },
+    "frameLoadRange":{
+        "group": "input",
+        "type": "int",
+        "defaultValue":100,
+        "description": "Number of GRAW frames searched for ASAD fragments for given event.\nType: int"
+    },
+    "updateInterval":{
+        "group": "online",
+        "type": "int",
+        "defaultValue": 3000,
+        "description": "GUI update interval in online mode. Units are ms.\nType: int"
+    },
+    "zLogScale":{
+        "group": "display",
+        "type": "bool",
+        "defaultValue": true,
+        "description" : "Z axis mode for 2D charge display.\nType: bool"
+    },
+    "autoZoom":{
+        "group" : "display",
+        "type": "bool",
+        "defaultValue": false,
+        "description": "Switch for automatic zoom in on charge deposit in 2D charge display.\nType: bool"
+    },
+    "recoMode":{
+        "group": "display",
+        "type" : "bool",
+        "defaultValue": false,
+        "description": "Switch for enabling algorithmic track reconstruction in GUI mode.\nType: bool"
+    },
+    "minPedestalCell":{
+        "group": "pedestal",
+        "type": "int",
+        "defaultValue": 5,
+        "description": "Pedestal time cell range - minimal value.\nType: int"
+    },
+    "maxPedestalCell":{
+        "group": "pedestal",
+        "type": "int",
+        "defaultValue": 25,
+        "description": "Pedestal time cell range - maximal value.\nType: int"
+    },
+    "minSignalCell":{
+        "group": "pedestal",
+        "type": "int",
+        "defaultValue": 5,
+        "description": "Signal time cell range - minimal value.\nType: int"
+    },
+    "maxSignalCell":{
+        "group": "pedestal",
+        "type": "int",
+        "defaultValue": 506,
+        "description": "Signal time cell range - maximal value.\nType: int"
+    },
+    "recoClusterEnable":{
+        "group": "hitFilter",
+        "type" : "bool",
+        "defaultValue": false,
+        "description": "Display reconstructed hit positions on 2D charge maps in GUI.\nType: bool"
+    },
+    "recoClusterThreshold":{
+        "group": "hitFilter",
+        "type" : "double",
+        "defaultValue": 35.0,
+        "description": "Charge threshold for hits displayed in 2D charge map in GUI.\nType: double"
+    },
+    "recoClusterDeltaStrips":{
+        "group": "hitFilter",
+        "type" : "int",
+        "defaultValue": 2,
+        "description": "Strip range of hits added to cluster around hits passing threshold value.\nType: int"
+    },
+    "recoClusterDeltaTimeCells":{
+        "group": "hitFilter",
+        "type" : "int",
+        "defaultValue": 5,
+        "description": "Time bin range of hits added to cluster around hits passing threshold value.\nType: int"
+    },   
+    "energy":{
+        "group":"beamParameters",
+        "type" : "double",
+        "defaultValue" : 0.0,
+        "description" : "LAB gamma beam energy [MeV].\nType: double"            
+    }
+}

@@ -100,43 +100,34 @@ void MainFrame::InitializeWindows() {
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MainFrame::InitializeEventSource() {
-	std::string dataFileName = myConfig.get("dataFile", "");
-	std::string geometryFileName = myConfig.get("geometryFile", "");
+	std::string dataFileName = myConfig.get<std::string>("input.dataFile");
 	myEventSource = EventSourceFactory::makeEventSourceObject(myConfig);
 
-	event_type eventType = myConfig.get<event_type>("eventType");
-	bool onlineFlag = myConfig.get<bool>("onlineFlag");
+	event_type eventSourceType = myConfig.get<event_type>("transient.eventType");
+	bool onlineFlag = myConfig.get<bool>("transient.onlineFlag");
 
 	if (onlineFlag) {
 		fileWatchThread = std::thread(&DirectoryWatch::watch, &myDirWatch, dataFileName);
-		if (myConfig.find("updateInterval") != myConfig.not_found()) {
-			int updateInterval = myConfig.get<int>("updateInterval");
-			myDirWatch.setUpdateInterval(updateInterval);
-		}
+		int updateInterval = myConfig.get<int>("online.updateInterval");
+		myDirWatch.setUpdateInterval(updateInterval);
 		myDirWatch.Connect("Message(const char *)", "MainFrame", this, "ProcessMessage(const char *)");
 	}
 
-
-	if (eventType == event_type::EventSourceROOT) {
+	if (eventSourceType == event_type::EventSourceROOT) {
 		myWorkMode = M_OFFLINE_ROOT_MODE;
 	}
-	else if (eventType == event_type::EventSourceMC) {
+	else if (eventSourceType == event_type::EventSourceMC) {
 		myWorkMode = M_OFFLINE_MC_MODE;
 }
-	else if (eventType == event_type::EventSourceGRAW) {
+	else if (eventSourceType == event_type::EventSourceGRAW) {
 		myWorkMode = (onlineFlag ? M_ONLINE_GRAW_MODE : M_OFFLINE_GRAW_MODE);
 	}
-	else if (eventType == event_type::EventSourceMultiGRAW) {
+	else if (eventSourceType == event_type::EventSourceMultiGRAW) {
 		myWorkMode = (onlineFlag ? M_ONLINE_NGRAW_MODE : M_OFFLINE_NGRAW_MODE);
 	}
-
-	if (myConfig.find("hitFilter") != myConfig.not_found()) {
-		myHistoManager.setConfig(myConfig.find("hitFilter")->second);
-	}
-	int index = geometryFileName.find("mbar");
-	double pressure = stof(geometryFileName.substr(index - 3, 3));
+	
+	myHistoManager.setConfig(myConfig);
 	myHistoManager.setGeometry(myEventSource->getGeometry());
-	myHistoManager.setPressure(pressure);
 
 	if (isRecoModeOn) myHistoManager.openOutputStream(dataFileName);
 	myEventSource->getEventFilter().setConditions(myConfig);
@@ -470,7 +461,7 @@ int MainFrame::AddRunConditionsDialog(int attach) {
 /////////////////////////////////////////////////////////
 void MainFrame::AddLogos() {
 
-	std::string filePath = myConfig.get<std::string>("resourcesPath") + "/FUW_znak.png";
+	std::string filePath = myConfig.get<std::string>("input.resourcesPath") + "/FUW_znak.png";
 	TImage* img = TImage::Open(filePath.c_str());
 	if (!img->IsValid()) return;
 
@@ -494,7 +485,7 @@ void MainFrame::AddLogos() {
 	TGTableLayoutHints* tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom);
 	fFrame->AddFrame(icon, tloh);
 
-	filePath = myConfig.get<std::string>("resourcesPath") + "/ELITEPC_znak.png";
+	filePath = myConfig.get<std::string>("input.resourcesPath") + "/ELITEPC_znak.png";
 	img = TImage::Open(filePath.c_str());
 	if (!img->IsValid()) return;
 	ratio = img->GetWidth() / img->GetHeight();
@@ -762,7 +753,7 @@ void MainFrame::HandleMenu(Int_t id) {
 	case M_TOGGLE_RECOMODE:
 	{
 		isRecoModeOn = !isRecoModeOn;
-		std::string dataFileName = myConfig.get("dataFile", "");
+		std::string dataFileName = myConfig.get("input.dataFile", "");
 		if (isRecoModeOn) myHistoManager.openOutputStream(dataFileName);
 		Update();
 	}

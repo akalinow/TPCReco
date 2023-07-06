@@ -16,17 +16,23 @@ class ConfigManager
 {
 public:
     ConfigManager();
-    boost::property_tree::ptree getConfig(int argc, char** argv);
-
-    static const std::string masterConfigPath;
-    static const std::string allowedOptPath;
-
+    
+    const boost::property_tree::ptree & getConfig(int argc, char** argv);
+    
+    void dumpConfig(const std::string & jsonName);
+    
 private:
-    boost::program_options::options_description parseAllowedArgs(std::string pathToFile);
-    boost::program_options::variables_map parseCmdLineArgs(int argc, char ** argv);
 
+    void parseAllowedArgs(const std::string & jsonFile);
+    const boost::program_options::variables_map & parseCmdLineArgs(int argc, char ** argv);
+    
+    void updateWithJsonFile(const std::string jsonName);
+    void updateWithCmdLineArgs(const boost::program_options::variables_map & varMap);
+    
+    void mergeTrees(boost::property_tree::ptree & tree, const boost::property_tree::ptree & updates);
+    
     //helpers
-    enum string_code {
+    enum class string_code {
       eint,
       euint,
       efloat,
@@ -35,7 +41,13 @@ private:
       ebool,
       eunknown
     };
-    string_code hashit (std::string const& );
-    typedef std::vector< std::tuple<std::string,std::string> > vecOfTuples;
-    vecOfTuples allowedOptList (std::string pathToFile);   
+    string_code hashit (std::string const& ) const;
+    
+    std::string masterConfigPath;
+    std::string allowedOptPath;
+    
+    boost::program_options::options_description cmdLineOptDesc;
+    boost::program_options::variables_map varMap;
+    std::map<std::string, string_code> varTypeMap;
+    boost::property_tree::ptree configTree;
 };

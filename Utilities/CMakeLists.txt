@@ -15,6 +15,7 @@ root_generate_dictionary(
 reco_add_library(${MODULE_NAME} EXTRA_SOURCES
                  G__${TPCRECO_PREFIX}${MODULE_NAME}.cxx)
 reco_add_executable(grawls bin/grawls.cpp)
+reco_add_executable(dumpConfig bin/dumpConfig.cpp)
 
 option(DIRECTORYWATCH_ONE_message_DISABLE
        "Define DIRECTORYWATCH_ONE_message_DISABLE variable" OFF)
@@ -31,8 +32,6 @@ else()
   )
 endif()
 
-
-
 target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
 target_link_libraries(
   ${MODULE_NAME}
@@ -42,10 +41,17 @@ target_link_libraries(
 target_link_libraries(grawls PRIVATE Boost::program_options ${MODULE_NAME})
 
 target_link_libraries(${MODULE_NAME} PUBLIC ${TPCRECO_LIBRARIES_LOCAL} ${ROOT_LIBRARIES} ${Boost_LIBRARIES} Boost::program_options Boost::filesystem)
+
 target_link_libraries(grawls PRIVATE ${MODULE_NAME} ${TPCRECO_LIBRARIES_LOCAL} ${Boost_LIBRARIES} Boost::program_options)
-reco_install_targets(grawls ${MODULE_NAME})
+target_link_libraries(dumpConfig PRIVATE ${MODULE_NAME} Boost::program_options)
+
+reco_install_targets(grawls dumpConfig ${MODULE_NAME})
+
 reco_install_root_dict(${MODULE_NAME})
 install(PROGRAMS $<1:${CMAKE_CURRENT_SOURCE_DIR}/python/> DESTINATION python)
 install(DIRECTORY examples DESTINATION ${CMAKE_INSTALL_PREFIX})
+
+
+install(DIRECTORY config DESTINATION $ENV{HOME}/.tpcreco)
 
 reco_add_test_subdirectory(test)

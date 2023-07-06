@@ -1,4 +1,3 @@
-{   "Options":
     {
         // "beamDir":
         // {
@@ -7,12 +6,17 @@
         //     "description" : "string - LAB gamma beam direction [\"x\" xor \"-x\"]",
         //     "isRequired": false
         // },
-        "beamEnergy":
-        {
+        "configJson":{
+            "group":"",
+            "type" : "string",
+            "defaultValue" : "masterConfig.json",
+            "description" : "JSON file with application configuration. \n Parameters values are overwritten by values provided at command line",            
+        },
+        "beamEnergy":{
+            "group":"beamParameters",
             "type" : "float",
             "defaultValue" : "PLACEHOLDER_FOR_VALUE",
-            "description" : "float - LAB gamma beam energy [MeV]",
-            "isRequired": false
+            "description" : "float - LAB gamma beam energy [MeV]",            
         },
         "chunk": {
             "type": "unsigned int",
@@ -45,13 +49,13 @@
             "isRequired": false
         },
         "dataFile": {
-            "type": "std::string",
+            "type": "string",
             "defaultValue": "PLACEHOLDER_FOR_VALUE",
             "description": "string - path to data file (OFFLINE) or directory (ONLINE). Overrides the value from the config file. In multi-GRAW mode specify several files separated by commas.",
             "isRequired": false
         },
         "directory": {
-            "type": "std::string",
+            "type": "string",
             "defaultValue": "PLACEHOLDER_FOR_VALUE",
             "description": "string - directory to browse. Mutually exclusive with 'files'",
             "isRequired": false
@@ -75,7 +79,7 @@
             "isRequired": false
         },
         "geometryFile": {
-            "type": "std::string",
+            "type": "string",
             "defaultValue": "PLACEHOLDER_FOR_VALUE",
             "description": "string - path to the geometry file.",
             "isRequired": false
@@ -87,7 +91,7 @@
             "isRequired": false
         },
         "input": {
-            "type": "std::string",
+            "type": "string",
             "defaultValue": "PLACEHOLDER_FOR_VALUE",
             "description": "input root file",
             "isRequired": false
@@ -135,13 +139,13 @@
             "isRequired": false
         },
         "output": {
-            "type": "std::string",
+            "type": "string",
             "defaultValue": "PLACEHOLDER_FOR_VALUE",
             "description": "Output root file,mutally exclusive with 'inplace'",
             "isRequired": false
         },
         "outputFile": {
-            "type": "std::string",
+            "type": "string",
             "defaultValue": "PLACEHOLDER_FOR_VALUE",
             "description": "string - Path to the output ROOT file",
             "isRequired": false
@@ -177,13 +181,13 @@
             "isRequired": false
         },
         "reference": {
-            "type": "std::string",
+            "type": "string",
             "defaultValue": "PLACEHOLDER_FOR_VALUE",
             "description": "string - reference root file",
             "isRequired": false
         },
         "referenceDataFile": {
-            "type": "std::string",
+            "type": "string",
             "defaultValue": "PLACEHOLDER_FOR_VALUE",
             "description": "string - path to reference data file",
             "isRequired": false
@@ -195,7 +199,7 @@
             "isRequired": false
         },
         "separator": {
-            "type": "std::string",
+            "type": "string",
             "defaultValue": "\n",
             "description": "string - separator",
             "isRequired": false
@@ -207,7 +211,7 @@
             "isRequired": false
         },
         "testDataFile": {
-            "type": "std::string",
+            "type": "string",
             "defaultValue": "PLACEHOLDER_FOR_VALUE",
             "description": "string - path to test data file",
             "isRequired": false
