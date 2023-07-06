@@ -15,6 +15,9 @@
 #include <TRandom3.h>
 #include <TFile.h>
 
+#define USE_XYDET_INTERPOLATION true // default=true
+#define USE_ZDET_INTERPOLATION  true // default=true
+
 StripResponseCalculator::StripResponseCalculator(std::shared_ptr<GeometryTPC> aGeometryPtr,
                                                  int delta_strips, // consider +/- neighbour strips
                                                  int delta_timecells, // consider +/- neighbour time cells
@@ -304,8 +307,12 @@ StripResponseCalculator::addCharge(double x, double y, double z, double charge, 
         const auto smeared_pos = myGeometryPtr->Strip2posUVW(smeared_strip_dir, smeared_strip_num, err);
         if (err) continue;
 
-        const auto smeared_bin = respXY.second->FindBin(dx, dy);
+#if(USE_XYDET_INTERPOLATION)
+        const auto smeared_fractionXY = respXY.second->Interpolate(dx, dy);
+#else
+	const auto smeared_bin = respXY.second->FindBin(dx, dy);
         const auto smeared_fractionXY = respXY.second->GetBinContent(smeared_bin);
+#endif
         if (smeared_fractionXY < Utils::NUMERICAL_TOLERANCE) continue; // speeds up filling
 
         // calculate map of total charge fractions per strip section for merged strip {strip_dir, strip_number}
@@ -402,8 +409,11 @@ StripResponseCalculator::addCharge(double x, double y, double z, double charge, 
                     MultiKey3(smeared_strip_dir, smeared_strip_num - refStrips[smeared_strip_dir], delta_pads));
 
             if (it.previous != GeometryTPC::outside_section) {
-                fractionPerSectionMap[it.previous] -= smeared_fractionXY - it2->second->GetBinContent(smeared_bin);
-
+#if(USE_XYDET_INTERPOLATION)
+	        fractionPerSectionMap[it.previous] -= smeared_fractionXY - it2->second->Interpolate(dx, dy);
+#else
+	        fractionPerSectionMap[it.previous] -= smeared_fractionXY - it2->second->GetBinContent(smeared_bin);
+#endif
                 ////// DEBUG
                 if (debug_flag)
                     std::cout << __FUNCTION__ << ": Unmerged strip "
@@ -417,8 +427,11 @@ StripResponseCalculator::addCharge(double x, double y, double z, double charge, 
                 ////// DEBUG
             }
             if (it.next != GeometryTPC::outside_section) {
-                fractionPerSectionMap[it.next] -= it2->second->GetBinContent(smeared_bin);
-
+#if(USE_XYDET_INTERPOLATION)
+	        fractionPerSectionMap[it.next] -= it2->second->Interpolate(dx, dy);
+#else
+ 	        fractionPerSectionMap[it.next] -= it2->second->GetBinContent(smeared_bin);
+#endif
                 ////// DEBUG
                 if (debug_flag)
                     std::cout << __FUNCTION__ << ": Unmerged strip "
@@ -462,7 +475,11 @@ StripResponseCalculator::addCharge(double x, double y, double z, double charge, 
         ////// DEBUG
 
         for (auto &respZ: responseMapPerTimecell) {
+#if(USE_ZDET_INTERPOLATION)
+            const auto smeared_fractionZ = respZ.second->Interpolate(dz);
+#else
             const auto smeared_fractionZ = respZ.second->GetBinContent(respZ.second->FindBin(dz));
+#endif
             const auto smeared_charge = charge * smeared_fractionZ * smeared_fractionXY;
             if (smeared_charge < Utils::NUMERICAL_TOLERANCE) continue; // speeds up filling
             const auto smeared_timecell = refCell + respZ.first;
@@ -734,16 +751,16 @@ void StripResponseCalculator::initializeStripResponse(unsigned long NpointsXY, i
                       ___+3         ___+3    Nstrips=1 x Npads=2 case:
                      /\      ___+2 /\
                      \/__+2 /\     \/__+2    REF strip node point is at
-                         /\     \/     /\        (relative strip index)=0, (relative pad start index)=0
+                     /\     \/     /\        (relative strip index)=0, (relative pad start index)=0
                      \/     /\     \/
                      /\     \/__0  /\
                      \/__0  /\ REF \/__0
                      /\     \/     /\         A  strip_unit_vector
                      \/     /\     \/         |
                      /\     \/__-2 /\         |
-                         \/__-2        \/__-2     |
+                     \/__-2        \/__-2     |
                                               +------->>  strip_pitch_vector
-                         odd    even   odd
+                     odd    even   odd
                      N-1    N+0    N+1
                 */
                 const auto delta_pads = (int) TMath::Ceil(
