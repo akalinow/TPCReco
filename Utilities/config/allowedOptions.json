@@ -35,6 +35,12 @@
         "defaultValue":100,
         "description": "Number of GRAW frames searched for ASAD fragments for given event.\nType: int"
     },
+    "singleAsadGrawFile":{
+        "group": "input",
+        "type": "bool",
+        "defaultValue": false,
+        "description": "Switch defining whether there are many files for single event.\nType: bool"
+    },
     "updateInterval":{
         "group": "online",
         "type": "int",
@@ -58,6 +64,12 @@
         "type" : "bool",
         "defaultValue": false,
         "description": "Switch for enabling algorithmic track reconstruction in GUI mode.\nType: bool"
+    },
+    "remove":{
+        "group": "pedestal",
+        "type": "bool",
+        "defaultValue": false,
+        "description": "Switch controling pedestal removal.\nType: bool"
     },
     "minPedestalCell":{
         "group": "pedestal",
@@ -107,6 +119,42 @@
         "defaultValue": 5,
         "description": "Time bin range of hits added to cluster around hits passing threshold value.\nType: int"
     },   
+    "enabled":{
+        "group": "eventFilter",
+        "type" : "bool",
+        "defaultValue": false,
+        "description": "Flag enabling event filtering.\nType: bool"
+    },  
+    "maxChargeUpperBound":{
+        "group": "eventFilter",
+        "type" : "double",
+        "defaultValue": 99999.0,
+        "description": "Upper charge threshold to accept an event.\nType: double"
+    }, 
+    "minChargeUpperBound":{
+        "group": "eventFilter",
+        "type" : "double",
+        "defaultValue": 0.0,
+        "description": "Lower charge threshold to accept an event.\nType: double"
+    }, 
+    "totalChargeLowerBound":{
+        "group": "eventFilter",
+        "type" : "double",
+        "defaultValue": 0.0,
+        "description": "Lower threshold on total charge sum to accept an event.\nType: double"
+    }, 
+    "totalChargeUpperBound":{
+        "group": "eventFilter",
+        "type" : "double",
+        "defaultValue": 99999.0,
+        "description": "Upper threshold on total charge sum to accept an event.\nType: double"
+    }, 
+    "events":{
+        "group": "eventFilter",
+        "type" : "int",
+        "defaultValue": 0,
+        "description": "NOT IMPLEMENTED. Event numbers list.\nType: vector<int>"
+    }, 
     "energy":{
         "group":"beamParameters",
         "type" : "double",

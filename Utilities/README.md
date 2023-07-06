@@ -40,12 +40,16 @@ ConfigManager: using config file /home/akalinow/.tpcreco/config/allowedOptions.j
  and default parameters values
 Using default config file: defaultConfig.json
 Beam energy is: 0
+
+
 Apptainer> ../bin/dumpConfig --beamParameters.energy 12.5
 ConfigManager: using config file /home/akalinow/.tpcreco/config/allowedOptions.json
  for a list of allowed command line arguments
  and default parameters values
 Updating parameters with command line arguments: 
 Beam energy is: 12.5
+
+
 Apptainer> ../bin/dumpConfig --meta.configJson test_energy.json 
 ConfigManager: using config file /home/akalinow/.tpcreco/config/allowedOptions.json
  for a list of allowed command line arguments

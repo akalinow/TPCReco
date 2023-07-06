@@ -63,10 +63,10 @@ void EventSourceROOT::configurePedestal(const boost::property_tree::ptree &confi
       (this->myPedestalCalculator.*setter)(config.get<int>(parameter));
     }
   };
-  parser("minPedestalCell", &PedestalCalculator::SetMinPedestalCell);
-  parser("maxPedestalCell", &PedestalCalculator::SetMaxPedestalCell);
-  parser("minSignalCell", &PedestalCalculator::SetMinSignalCell);
-  parser("maxSignalCell", &PedestalCalculator::SetMaxSignalCell);
+  parser("pedestal.minPedestalCell", &PedestalCalculator::SetMinPedestalCell);
+  parser("pedestal.maxPedestalCell", &PedestalCalculator::SetMaxPedestalCell);
+  parser("pedestal.minSignalCell", &PedestalCalculator::SetMinSignalCell);
+  parser("pedestal.maxSignalCell", &PedestalCalculator::SetMaxSignalCell);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

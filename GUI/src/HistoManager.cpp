@@ -56,11 +56,6 @@ void HistoManager::setConfig(const boost::property_tree::ptree &aConfig){
   
   myConfig = aConfig;
 
-  if(myConfig.find("recoClusterEnable")==myConfig.not_found()) myConfig.put("recoClusterEnable", true);
-  if(myConfig.find("recoClusterThreshold")==myConfig.not_found()) myConfig.put("recoClusterThreshold", 35.0);
-  if(myConfig.find("recoClusterDeltaStrips")==myConfig.not_found()) myConfig.put("recoClusterDeltaStrips", 2);
-  if(myConfig.find("recoClusterDeltaTimeCells")==myConfig.not_found()) myConfig.put("recoClusterDeltaTimeCells", 5);
-
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -153,7 +148,7 @@ void HistoManager::drawRecoHistos(TCanvas *aCanvas){
   
   //reco disabled for clicking campaign reconstruct();
   filter_type filterType = filter_type::threshold;
-  if(!myConfig.get<bool>("recoClusterEnable")) filterType = filter_type::none;
+  if(!myConfig.get<bool>("hitFilter.recoClusterEnable")) filterType = filter_type::none;
 
    for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
      TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
@@ -166,7 +161,7 @@ void HistoManager::drawRecoHistos(TCanvas *aCanvas){
      auto histo2D = get2DProjection(projType, filterType, scale_type::mm);
      aPad->SetFrameFillColor(kAzure-6);
      /*
-     if(myConfig.get<bool>("recoClusterEnable")){
+     if(myConfig.get<bool>("hitFilter.recoClusterEnable")){
        histo2D->SetMinimum(0.0);
        histo2D->DrawCopy("colz");
        if(aPad->GetLogz()) histo2D->SetMinimum(1.0);
@@ -183,7 +178,7 @@ void HistoManager::drawRecoHistos(TCanvas *aCanvas){
    aPad->cd();
    aCanvas->Modified();
    aCanvas->Update();
-   /*   if(myConfig.get<bool>("recoClusterEnable")) drawChargeAlongTrack3D(aPad);
+   /*   if(myConfig.get<bool>("hitFilter.recoClusterEnable")) drawChargeAlongTrack3D(aPad);
 	else  */get1DProjection(definitions::projection_type::DIR_TIME, filterType, scale_type::mm)->DrawCopy("hist");
 
    aCanvas->Modified();
@@ -221,7 +216,7 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
   
   reconstruct();
   filter_type filterType = filter_type::threshold;
-  if(!myConfig.get<bool>("recoClusterEnable")) filterType = filter_type::none;
+  if(!myConfig.get<bool>("hitFilter.recoClusterEnable")) filterType = filter_type::none;
 
    for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
      TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
@@ -232,7 +227,7 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
 
      auto projType = get2DProjectionType(strip_dir);     
      auto histo2D = get2DProjection(projType, filterType, scale_type::mm);
-     if(myConfig.get<bool>("recoClusterEnable")){
+     if(myConfig.get<bool>("hitFilter.recoClusterEnable")){
        histo2D->SetMinimum(0.0);
        histo2D->DrawCopy("colz");
        if(aPad->GetLogz()) histo2D->SetMinimum(1.0);
@@ -249,7 +244,7 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
    aPad->cd();
    aCanvas->Modified();
    aCanvas->Update();
-   if(myConfig.get<bool>("recoClusterEnable")) drawChargeAlongTrack3D(aPad);
+   if(myConfig.get<bool>("hitFilter.recoClusterEnable")) drawChargeAlongTrack3D(aPad);
    else  get1DProjection(definitions::projection_type::DIR_TIME, filterType, scale_type::mm)->DrawCopy("hist");
 
    aCanvas->Modified();

@@ -35,8 +35,8 @@
 
 namespace EventSourceFactory {
 	inline std::shared_ptr<EventSourceBase> makeEventSourceObject(boost::property_tree::ptree& myConfig) {
-		std::string dataFileName = myConfig.get("dataFile", "");
-		std::string geometryFileName = myConfig.get("geometryFile", "");
+		std::string dataFileName = myConfig.get<std::string>("input.dataFile");
+		std::string geometryFileName = myConfig.get<std::string>("input.geometryFile");
 
 		std::shared_ptr<EventSourceBase> myEventSource;
 
@@ -85,21 +85,21 @@ namespace EventSourceFactory {
 
 		if (dataFileVec.size() == 1 && boost::filesystem::is_regular_file(dataFileVec[0]) && dataFileName.find(".root") != std::string::npos) {
 			myEventSource = std::make_shared<EventSourceROOT>(geometryFileName);
-			myConfig.put("eventType", event_type::EventSourceROOT);
+			myConfig.put("transient.eventType", event_type::EventSourceROOT);
 		}
 		else if (dataFileVec.size() == 1 && dataFileName.find("_MC_") != std::string::npos) {
 			myEventSource = std::make_shared<EventSourceMC>(geometryFileName);
-			myConfig.put("eventType", event_type::EventSourceMC);
+			myConfig.put("transient.eventType", event_type::EventSourceMC);
 		}
 		
 
 #ifdef WITH_GET
 		else if (all_graw) { //ROOT_file_check && dataFileName.find(".graw")!=std::string::npos){
 
-			myConfig.put("onlineFlag", false);
-			if (myConfig.find("singleAsadGrawFile") != myConfig.not_found() && myConfig.get<bool>("singleAsadGrawFile")) {
+			myConfig.put("transient.onlineFlag", false);
+			if (myConfig.find("input.singleAsadGrawFile") != myConfig.not_found() && myConfig.get<bool>("input.singleAsadGrawFile")) {
 				myEventSource = std::make_shared<EventSourceMultiGRAW>(geometryFileName);
-				myConfig.put("eventType", event_type::EventSourceMultiGRAW);
+				myConfig.put("transient.eventType", event_type::EventSourceMultiGRAW);
 				{
 					unsigned int AsadNboards = dynamic_cast<EventSourceGRAW*>(myEventSource.get())->getGeometry()->GetAsadNboards();
 					if (dataFileVec.size() > AsadNboards) {
@@ -110,8 +110,8 @@ namespace EventSourceFactory {
 			}
 			else {
 				myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
-				myConfig.put("eventType", event_type::EventSourceGRAW);
-				dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(myConfig.get("frameLoadRange", 100));
+				myConfig.put("transient.eventType", event_type::EventSourceGRAW);
+				dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(myConfig.get<int>("input.frameLoadRange"));
 				if (dataFileVec.size() > 1) {
 					std::cerr << KRED << "Provided too many GRAW files. Expected 1. dataFile: " << RST << dataFileName << _endl_;
 					return decltype(myEventSource)();
@@ -119,19 +119,19 @@ namespace EventSourceFactory {
 			}
 		}
 		else if (dataFileVec.size() == 1 && boost::filesystem::is_directory(dataFileVec[0])) {
-			myConfig.put("onlineFlag", true);
-			if (myConfig.find("singleAsadGrawFile") != myConfig.not_found() && myConfig.get<bool>("singleAsadGrawFile")) {
+			myConfig.put("transient.onlineFlag", true);
+			if (myConfig.find("input.singleAsadGrawFile") != myConfig.not_found() && myConfig.get<bool>("input.singleAsadGrawFile")) {
 				myEventSource = std::make_shared<EventSourceMultiGRAW>(geometryFileName);
-				myConfig.put("eventType", event_type::EventSourceMultiGRAW);
+				myConfig.put("transient.eventType", event_type::EventSourceMultiGRAW);
 			}
 			else {
 				myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
-				myConfig.put("eventType", event_type::EventSourceGRAW);
-				dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(myConfig.get("frameLoadRange", 10));
+				myConfig.put("transient.eventType", event_type::EventSourceGRAW);
+				dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(myConfig.get<int>("input.frameLoadRange"));
 			}
 		}
-		if (myConfig.find("removePedestal") != myConfig.not_found() && myEventSource.get()) {
-			bool removePedestal = myConfig.get<bool>("removePedestal");
+		if (myConfig.find("pedestal") != myConfig.not_found() && myEventSource.get()) {
+			bool removePedestal = myConfig.get<bool>("pedestal.remove");
 			EventSourceGRAW* aGrawEventSrc = dynamic_cast<EventSourceGRAW*>(myEventSource.get());
 			if (aGrawEventSrc) aGrawEventSrc->setRemovePedestal(removePedestal);
 		}
@@ -147,7 +147,7 @@ namespace EventSourceFactory {
 			exit(0);
 		}
 
-		if (myConfig.find("onlineFlag") != myConfig.not_found() || !myConfig.get<bool>("onlineFlag")) {
+		if (myConfig.find("transient.onlineFlag") != myConfig.not_found() || !myConfig.get<bool>("transient.onlineFlag")) {
 			myEventSource->loadDataFile(dataFileName);
 			myEventSource->loadFileEntry(0);
 		}
