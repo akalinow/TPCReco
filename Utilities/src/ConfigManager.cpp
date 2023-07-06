@@ -28,8 +28,8 @@ void ConfigManager::parseAllowedArgs(const std::string & jsonFile){
     cmdLineOptDesc.add_options()("help", "produce help message");
         
     std::cout<<KBLU<<"ConfigManager: using config file "<<RST<<jsonFile<<std::endl
-             <<KBLU<<" for a list of allowed command line arguments"<<std::endl
-             <<" and default parameters values"
+             <<KBLU<<"for a list of allowed command line arguments "
+             <<"and default parameters values"
              <<RST<<std::endl;                           
     
     boost::property_tree::ptree paramsDescTree;
@@ -122,6 +122,7 @@ void ConfigManager::updateWithCmdLineArgs(const boost::program_options::variable
     
     for(const auto& item: varMap){        
         string_code type = varTypeMap.at(item.first);
+        std::cout<<item.first<<std::endl;
         switch(type) {
             case string_code::eint:                
                 configTree.put(item.first, item.second.as<int>());   
