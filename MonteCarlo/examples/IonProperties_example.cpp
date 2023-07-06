@@ -1,5 +1,5 @@
 #include <iostream>
-#include "IonProperties.h"
+#include "TPCReco/IonProperties.h"
 
 //Example showing usage of the IonProperties class
 

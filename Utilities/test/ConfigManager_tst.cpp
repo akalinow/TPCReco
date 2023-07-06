@@ -8,7 +8,7 @@
 TEST(ConfigManagerTest, emptyCmdLine) {
 
   int argc = 1;
-  char *argv[] = {"ConfigManager_tst"};
+  char *argv[] = {(char*)"ConfigManager_tst"};
   ConfigManager cm;
   boost::property_tree::ptree myConfig = cm.getConfig(argc, argv);
 
@@ -18,7 +18,8 @@ TEST(ConfigManagerTest, emptyCmdLine) {
 TEST(ConfigManagerTest, unknownCmdLineParam) {
 
   int argc = 3;
-  char *argv[] = {"ConfigManager_tst", "--AAAA","12.1"};
+  char *argv[] = {(char*)"ConfigManager_tst", 
+                  (char*)"--AAAA", (char*)"12.1"};
   ConfigManager cm;
   
    EXPECT_THROW({
@@ -40,7 +41,7 @@ TEST(ConfigManagerTest, unknownCmdLineParam) {
 TEST(ConfigManagerTest, defaultParam) {
 
   int argc = 1;
-  char *argv[] = {"ConfigManager_tst"};
+  char *argv[] = {(char*)"ConfigManager_tst"};
   ConfigManager cm;
   boost::property_tree::ptree myConfig = cm.getConfig(argc, argv);
   double beamEnergy = myConfig.get<double>("beamParameters.energy");
@@ -52,7 +53,8 @@ TEST(ConfigManagerTest, defaultParam) {
 TEST(ConfigManagerTest, paramFromCmdLine) {
 
   int argc = 3;
-  char *argv[] = {"ConfigManager_tst", "--beamParameters.energy","12.1"};
+  char *argv[] = {(char*)"ConfigManager_tst", 
+                  (char*)"--beamParameters.energy",(char*)"12.1"};
   ConfigManager cm;
   boost::property_tree::ptree myConfig = cm.getConfig(argc, argv);
   double beamEnergy = myConfig.get<double>("beamParameters.energy");
@@ -64,7 +66,8 @@ TEST(ConfigManagerTest, paramFromCmdLine) {
 TEST(ConfigManagerTest, paramFromJSON) {
 
   int argc = 3;
-  char *argv[] = {"ConfigManager_tst", "--meta.configJson","/home/akalinow/.tpcreco/config/test.json"};
+  char *argv[] = {(char*)"ConfigManager_tst", 
+                  (char*)"--meta.configJson",(char*)"/home/akalinow/.tpcreco/config/test.json"};
   ConfigManager cm;
   boost::property_tree::ptree myConfig = cm.getConfig(argc, argv);
   double beamEnergy = myConfig.get<double>("beamParameters.energy");
@@ -76,7 +79,7 @@ TEST(ConfigManagerTest, paramFromJSON) {
 TEST(ConfigManagerTest, helpCmdLine) {
 
   int argc = 2;
-  char *argv[] = {"ConfigManager_tst", "--help"};
+  char *argv[] = {(char*)"ConfigManager_tst", (char*)"--help"};
   ConfigManager cm;
   boost::property_tree::ptree myConfig = cm.getConfig(argc, argv);
 

@@ -1,4 +1,4 @@
-#include "IonProperties.h"
+#include "TPCReco/IonProperties.h"
 #include "gtest/gtest.h"
 
 TEST(IonProperties, GetZ) {

@@ -108,6 +108,7 @@ namespace enumDict {
                 (pid_type::OXYGEN_16,                   "OXYGEN_16")
                 (pid_type::OXYGEN_17,                   "OXYGEN_17")
                 (pid_type::OXYGEN_18,                   "OXYGEN_18")
+                (pid_type::BERYLLIUM_8,                 "BERYLLIUM_8")
                 (pid_type::THREE_ALPHA,                 "THREE_ALPHA")
                 ;
         const ReactionDictionary gReactions =
