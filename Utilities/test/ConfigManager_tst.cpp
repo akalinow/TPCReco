@@ -66,8 +66,10 @@ TEST(ConfigManagerTest, paramFromCmdLine) {
 TEST(ConfigManagerTest, paramFromJSON) {
 
   int argc = 3;
+  
+  std::string testJSON = std::string(std::getenv("HOME"))+".tpcreco/config/test.json";
   char *argv[] = {(char*)"ConfigManager_tst", 
-                  (char*)"--meta.configJson",(char*)"/home/akalinow/.tpcreco/config/test.json"};
+                  (char*)"--meta.configJson",const_cast<char *>(testJSON.data())};
   ConfigManager cm;
   boost::property_tree::ptree myConfig = cm.getConfig(argc, argv);
   double beamEnergy = myConfig.get<double>("beamParameters.energy");

@@ -23,8 +23,6 @@ public:
   
   ~EventSourceGRAW();
 
-  void setRemovePedestal(bool aFlag);
-
   void configurePedestal(const boost::property_tree::ptree &config);
 
   std::shared_ptr<TProfile> getPedestalProfilePerAsad(int coboId, int asadId) { return myPedestalCalculator.GetPedestalProfilePerAsad(coboId, asadId); }

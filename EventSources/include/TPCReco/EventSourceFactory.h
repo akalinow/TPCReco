@@ -57,10 +57,11 @@ namespace EventSourceFactory {
 			dataFilePaths.push_back(token);
 			dataFileName.erase(0, pos + 1);
 		}
+		
+		#ifdef WITH_GET
+        bool all_graw=false;
+		#endif
 
-#ifdef WITH_GET
-		bool all_graw = false;
-#endif
 		for (auto filePath : dataFilePaths) {
 			if (boost::filesystem::exists(filePath)) {
 				if (filePath.string().find("_MC_") != std::string::npos) {
@@ -79,7 +80,7 @@ namespace EventSourceFactory {
 
 		std::cout << "dataFileVec.size(): " << dataFileVec.size()
 			<< " (boost::filesystem::is_regular_file(dataFileVec[0])): " << boost::filesystem::is_regular_file(dataFileVec[0])
-			<< "dataFileName.find(_MC_)!=std::string::npos: " << (dataFileName.find("_MC_") != std::string::npos)
+			<< " dataFileName.find(_MC_)!=std::string::npos: " << (dataFileName.find("_MC_") != std::string::npos)
 			<< _endl_;
 
 
@@ -90,21 +91,18 @@ namespace EventSourceFactory {
 		else if (dataFileVec.size() == 1 && dataFileName.find("_MC_") != std::string::npos) {
 			myEventSource = std::make_shared<EventSourceMC>(geometryFileName);
 			myConfig.put("transient.eventType", event_type::EventSourceMC);
-		}
-		
-
+		}		
 #ifdef WITH_GET
-		else if (all_graw) { //ROOT_file_check && dataFileName.find(".graw")!=std::string::npos){
-
+		else if (all_graw) {
 			myConfig.put("transient.onlineFlag", false);
-			if (myConfig.find("input.singleAsadGrawFile") != myConfig.not_found() && myConfig.get<bool>("input.singleAsadGrawFile")) {
+			if (myConfig.get<bool>("input.singleAsadGrawFile")) {
 				myEventSource = std::make_shared<EventSourceMultiGRAW>(geometryFileName);
 				myConfig.put("transient.eventType", event_type::EventSourceMultiGRAW);
 				{
 					unsigned int AsadNboards = dynamic_cast<EventSourceGRAW*>(myEventSource.get())->getGeometry()->GetAsadNboards();
 					if (dataFileVec.size() > AsadNboards) {
 						std::cerr << KRED << "Provided too many GRAW files. Expected up to " << AsadNboards << ".dataFile: " << RST << dataFileName << _endl_;
-						return decltype(myEventSource)();
+						exit(0);
 					}
 				}
 			}
@@ -114,13 +112,13 @@ namespace EventSourceFactory {
 				dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(myConfig.get<int>("input.frameLoadRange"));
 				if (dataFileVec.size() > 1) {
 					std::cerr << KRED << "Provided too many GRAW files. Expected 1. dataFile: " << RST << dataFileName << _endl_;
-					return decltype(myEventSource)();
+					exit(0);
 				}
 			}
 		}
 		else if (dataFileVec.size() == 1 && boost::filesystem::is_directory(dataFileVec[0])) {
 			myConfig.put("transient.onlineFlag", true);
-			if (myConfig.find("input.singleAsadGrawFile") != myConfig.not_found() && myConfig.get<bool>("input.singleAsadGrawFile")) {
+			if (myConfig.get<bool>("input.singleAsadGrawFile")) {
 				myEventSource = std::make_shared<EventSourceMultiGRAW>(geometryFileName);
 				myConfig.put("transient.eventType", event_type::EventSourceMultiGRAW);
 			}
@@ -130,16 +128,10 @@ namespace EventSourceFactory {
 				dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(myConfig.get<int>("input.frameLoadRange"));
 			}
 		}
-		if (myConfig.find("pedestal") != myConfig.not_found() && myEventSource.get()) {
-			bool removePedestal = myConfig.get<bool>("pedestal.remove");
-			EventSourceGRAW* aGrawEventSrc = dynamic_cast<EventSourceGRAW*>(myEventSource.get());
-			if (aGrawEventSrc) aGrawEventSrc->setRemovePedestal(removePedestal);
-		}
-		if (myConfig.find("pedestal") != myConfig.not_found() && myEventSource.get()) {
-			dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(myConfig.find("pedestal")->second);
-		}
+		EventSourceGRAW* aGrawEventSrc = dynamic_cast<EventSourceGRAW*>(myEventSource.get());
+		aGrawEventSrc->configurePedestal(myConfig.find("pedestal")->second);
 #endif
-		else if (!myEventSource) {
+	 if(!myEventSource) {
 			std::cerr << KRED << "Input source not known. DataFile: " << RST << dataFileName << _endl_;
 #ifndef WITH_GET
 			std::cerr << KRED << "and GRAW libraries not set." << RST << _endl_;
@@ -147,7 +139,7 @@ namespace EventSourceFactory {
 			exit(0);
 		}
 
-		if (myConfig.find("transient.onlineFlag") != myConfig.not_found() || !myConfig.get<bool>("transient.onlineFlag")) {
+		if (!myConfig.get<bool>("transient.onlineFlag")) {
 			myEventSource->loadDataFile(dataFileName);
 			myEventSource->loadFileEntry(0);
 		}

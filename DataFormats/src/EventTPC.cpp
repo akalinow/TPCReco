@@ -18,12 +18,13 @@
 EventTPC::EventTPC(){
 
   Clear();
-
+  
   boost::property_tree::ptree tree;
-  tree.put("recoClusterThreshold", 35.0);
-  tree.put("recoClusterDeltaStrips",2);
-  tree.put("recoClusterDeltaTimeCells",5);
+  tree.put("hitFilter.recoClusterThreshold", 35.0);
+  tree.put("hitFilter.recoClusterDeltaStrips",2);
+  tree.put("hitFilter.recoClusterDeltaTimeCells",5);
   filterConfigs[filter_type::threshold] = tree;
+
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
@@ -73,7 +74,7 @@ void EventTPC::filterHits(filter_type filterType){
   switch(filterType){
   case filter_type::threshold: {
     const auto & config = filterConfigs.at(filter_type::threshold);
-    double chargeThreshold = config.get<double>("recoClusterThreshold");
+    double chargeThreshold = config.get<double>("hitFilter.recoClusterThreshold");
     for(const auto & item: chargeMapWithSections){
       auto key = item.first;
       auto value = item.second;

@@ -43,9 +43,6 @@ private:
     };
     string_code hashit (std::string const& ) const;
     
-    std::string masterConfigPath;
-    std::string allowedOptPath;
-    
     boost::program_options::options_description cmdLineOptDesc;
     boost::program_options::variables_map varMap;
     std::map<std::string, string_code> varTypeMap;

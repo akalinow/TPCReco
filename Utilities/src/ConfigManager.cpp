@@ -16,9 +16,7 @@ ConfigManager::string_code ConfigManager::hashit (std::string const& inString) c
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 ConfigManager::ConfigManager(){
 
-masterConfigPath = std::string(std::getenv("HOME"))+".tpcreco/config/masterConfig.json";
-allowedOptPath = std::string(std::getenv("HOME"))+".tpcreco/config/allowedOptions.json";
-
+std::string allowedOptPath = std::string(std::getenv("HOME"))+".tpcreco/config/allowedOptions.json";
 parseAllowedArgs(allowedOptPath);
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////
