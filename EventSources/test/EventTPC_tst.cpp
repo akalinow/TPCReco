@@ -16,57 +16,70 @@
 
 std::vector<bool> error_list_bool;  // Vector storing test results
 double epsilon = 1e-5;  // Value used to compare double values
+
+class EventTPCTest : public ::testing::Test {
+public:
+  static std::shared_ptr<EventTPC> myEventPtr;
+
+  static void SetUpTestSuite() {
   
-  // get1DProjection Titles Test
-    void get1DProjection_Titles_Test(std::shared_ptr<EventTPC> aEventPtr, std::map<std::string, std::string> Test_Reference_Titles) {
-        for (auto projections : Projections1D) {
+    std::string testJSON = std::string(std::getenv("HOME"))+".tpcreco/config/test.json";
+    int argc = 3;
+    char *argv[] = {(char*)"ConfigManager_tst", 
+                  (char*)"--meta.configJson",const_cast<char *>(testJSON.data())};
+    ConfigManager cm;
+    boost::property_tree::ptree myConfig = cm.getConfig(argc, argv);
+    std::shared_ptr<EventSourceBase> myEventSource = EventSourceFactory::makeEventSourceObject(myConfig);
+  
+    myEventPtr = myEventSource->getCurrentEvent(); 
+    myEventSource->loadFileEntry(9); 
+  }
+  static void TearDownTestSuite() {}
+};
+
+std::shared_ptr<EventTPC> EventTPCTest::myEventPtr(0);
+
+
+TEST_F(EventTPCTest, get1DProjection_Titles) {
+ for (auto projections : Projections1D) {
             for (auto filter : FilterTypes) {
-                std::shared_ptr<TH1D> Test = aEventPtr->get1DProjection(projections.first, filter.first, scale_type::raw);
+                std::shared_ptr<TH1D> Test = myEventPtr->get1DProjection(projections.first, filter.first, scale_type::raw);
                 std::string Test_String = "get1DProjection(" + projections.second + ", " + filter.second + ", scale_type::raw)";
-                if (bool(std::string(Test->GetTitle()) == Test_Reference_Titles[Test_String + "->GetTitle()"])) { error_list_bool.push_back(true); }
-                else { std::cout << KRED << Test_String + "->GetTitle()" << RST << std::endl; error_list_bool.push_back(false); }
-                if (bool(std::string(Test->GetXaxis()->GetTitle()) == Test_Reference_Titles[Test_String + "->GetXaxis()->GetTitle()"])) { error_list_bool.push_back(true); }
-                else { std::cout << KRED << Test_String + "->GetXaxis()->GetTitle()" << RST << std::endl; error_list_bool.push_back(false); }
-                if (bool(std::string(Test->GetYaxis()->GetTitle()) == Test_Reference_Titles[Test_String + "->GetYaxis()->GetTitle()"])) { error_list_bool.push_back(true); }
-                else { std::cout << KRED << Test_String + "->GetYaxis()->GetTitle()" << RST << std::endl; error_list_bool.push_back(false); }
+                EXPECT_EQ(std::string(Test->GetTitle()), Test_Reference_Titles.at(Test_String + "->GetTitle()"));
+                EXPECT_EQ(std::string(Test->GetXaxis()->GetTitle()), Test_Reference_Titles.at(Test_String + "->GetXaxis()->GetTitle()"));
+                EXPECT_EQ(std::string(Test->GetYaxis()->GetTitle()), Test_Reference_Titles.at(Test_String + "->GetYaxis()->GetTitle()"));
             }
         }
-    }
+}
 
-  // get2DProjection Titles Test
-    void get2DProjection_Titles_Test(std::shared_ptr<EventTPC> aEventPtr, std::map<std::string, std::string> Test_Reference_Titles) {
+  
+TEST_F(EventTPCTest, get2DProjection_Titles) {
         for (auto scale : ScaleTypes) {
             for (auto filter : FilterTypes) {
-                std::shared_ptr<TH2D> Test = aEventPtr->get2DProjection(projection_type::DIR_TIME_V, filter.first, scale.first);
+                std::shared_ptr<TH2D> Test = myEventPtr->get2DProjection(projection_type::DIR_TIME_V, filter.first, scale.first);
                 std::string Test_String = "get2DProjection(projection_type::DIR_TIME_V, " + filter.second + ", " + scale.second + ")";
-                if (bool(std::string(Test->GetTitle()) == Test_Reference_Titles[Test_String + "->GetTitle()"])) { error_list_bool.push_back(true); }
-                else { std::cout << KRED << Test_String + "->GetTitle()" << RST << std::endl; error_list_bool.push_back(false); }
-                if (bool(std::string(Test->GetXaxis()->GetTitle()) == Test_Reference_Titles[Test_String + "->GetXaxis()->GetTitle()"])) { error_list_bool.push_back(true); }
-                else { std::cout << KRED << Test_String + "->GetXaxis()->GetTitle()" << RST << std::endl; error_list_bool.push_back(false); }
-                if (bool(std::string(Test->GetYaxis()->GetTitle()) == Test_Reference_Titles[Test_String + "->GetYaxis()->GetTitle()"])) { error_list_bool.push_back(true); }
-                else { std::cout << KRED << Test_String + "->GetYaxis()->GetTitle()" << RST << std::endl; error_list_bool.push_back(false); }
+                EXPECT_EQ(std::string(Test->GetTitle()), Test_Reference_Titles.at(Test_String + "->GetTitle()"));
+                EXPECT_EQ(std::string(Test->GetXaxis()->GetTitle()), Test_Reference_Titles.at(Test_String + "->GetXaxis()->GetTitle()"));
+                EXPECT_EQ(std::string(Test->GetYaxis()->GetTitle()), Test_Reference_Titles.at(Test_String + "->GetYaxis()->GetTitle()"));
             }
         }
-    }
-
-  // get1DProjection Test
-    void get1DProjection_Test(std::shared_ptr<EventTPC> aEventPtr, std::map<std::string, double> Test_Reference, std::map<std::string, std::string> Test_Reference_Titles) {
+}
+    
+TEST_F(EventTPCTest, get1DProjection) {    
         for (auto projection : ProjectionTypes1D) {
             for (auto filter : FilterTypes) {
                 for (auto scale : ScaleTypes) {
-                    std::shared_ptr<TH1D> Test = aEventPtr->get1DProjection(std::get<0>(projection), std::get<0>(filter), std::get<0>(scale));
+                    std::shared_ptr<TH1D> Test = myEventPtr->get1DProjection(std::get<0>(projection), std::get<0>(filter), std::get<0>(scale));
                     std::string Test_String = "get1DProjection(" + std::get<1>(projection) + ", " + std::get<1>(filter) + ", " + std::get<1>(scale) + ")";
-                    if (std::string(Test->GetName()) == Test_Reference_Titles[Test_String + "->GetName()"] &&
-                        int(Test->GetEntries()) == Test_Reference[Test_String + "->GetEntries()"] &&
-                        abs(double(Test->GetSumOfWeights())) - Test_Reference[Test_String + "->GetSumOfWeights()"] < epsilon) {
-                        error_list_bool.push_back(true);
+                    EXPECT_EQ(std::string(Test->GetName()), Test_Reference_Titles.at(Test_String + "->GetName()"));
+                    EXPECT_DOUBLE_EQ(Test->GetEntries(), Test_Reference.at(Test_String + "->GetEntries()"));
+                    EXPECT_DOUBLE_EQ(Test->GetSumOfWeights(), Test_Reference.at(Test_String + "->GetSumOfWeights()"));
                     }
-                    else { std::cout << KRED << Test_String << RST << std::endl; error_list_bool.push_back(false); }
                 }
             }
-        }
-    }
+        }  
   
+  /*
   // get2DProjection Test
     void get2DProjection_Test(std::shared_ptr<EventTPC> aEventPtr, std::map<std::string, double> Test_Reference, std::map<std::string, std::string> Test_Reference_Titles) {
         for (auto projection : ProjectionTypes2D) {
@@ -100,36 +113,28 @@ double epsilon = 1e-5;  // Value used to compare double values
         }
         else { std::cout << KRED << Test_Channel_raw_String << RST << std::endl; error_list_bool.push_back(false); }
     }
-    
+*/    
         
-
-  
-  // GetTotalCharge Test
-    void GetTotalCharge_Test(std::shared_ptr<EventTPC> aEventPtr, std::map<std::string, double> Test_Reference) {
+TEST_F(EventTPCTest, GetTotalCharge) { 
         for (auto charge : Test_GetTotalCharge) {
             for (auto filter : FilterTypes) {
-                std::string Test_String = "GetTotalCharge" + charge.second + ", " + filter.second + ")";
-                double Test = aEventPtr->GetTotalCharge(std::get<0>(charge.first), std::get<1>(charge.first), std::get<2>(charge.first), std::get<3>(charge.first), filter.first);
-                std::cout<<"testValue: "<<Test<<" referenceValue:"<<Test_Reference[Test_String]<<std::endl;
-                if (bool((Test - Test_Reference[Test_String]) < epsilon)) { error_list_bool.push_back(true); }
-                else { std::cout << KRED << Test_String << RST << std::endl; error_list_bool.push_back(false); }
+                std::string Test_String = "GetTotalCharge" + charge.second + ", " + filter.second + ")";                
+                double Test = myEventPtr->GetTotalCharge(std::get<0>(charge.first), std::get<1>(charge.first), std::get<2>(charge.first), std::get<3>(charge.first), filter.first);                                
+                EXPECT_DOUBLE_EQ(Test, Test_Reference[Test_String]);                
             }
         }
-    }
+}
 
-  
-  // GetMaxCharge Test
-    void GetMaxCharge_Test(std::shared_ptr<EventTPC> aEventPtr, std::map<std::string, double> Test_Reference) {
+TEST_F(EventTPCTest, GetMaxCharge) { 
         for (auto MaxCharge : Test_GetMaxCharge) {
             for (auto filter : FilterTypes) {
                 std::string Test_String = "GetMaxCharge" + MaxCharge.second + ", " + filter.second + ")";
-                double Test = aEventPtr->GetMaxCharge(std::get<0>(MaxCharge.first), std::get<1>(MaxCharge.first), std::get<2>(MaxCharge.first), filter.first);
-                if (bool((Test - Test_Reference[Test_String]) < epsilon)) { error_list_bool.push_back(true); }
-                else { std::cout << KRED << Test_String << RST << std::endl; error_list_bool.push_back(false); }
+                double Test = myEventPtr->GetMaxCharge(std::get<0>(MaxCharge.first), std::get<1>(MaxCharge.first), std::get<2>(MaxCharge.first), filter.first);  
+                EXPECT_DOUBLE_EQ(Test, Test_Reference.at(Test_String));
             }
         }
-    }
-
+}
+/*
   // GetMaxChargePos Test
     void GetMaxChargePos_Test(std::shared_ptr<EventTPC> aEventPtr, std::map<std::string, double> Test_Reference) {
         for (auto MaxChargePos : Test_GetMaxChargePos) {
@@ -185,13 +190,10 @@ TEST(EventTPCTest, fullTest){
   boost::property_tree::ptree myConfig = cm.getConfig(argc, argv);
   std::shared_ptr<EventSourceBase> myEventSource = EventSourceFactory::makeEventSourceObject(myConfig);
   
-  auto myEventPtr = myEventSource->getCurrentEvent();
-  for(int i=89;i<90;++i){  // Testing a specific event
-    myEventSource->loadFileEntry(i);
+    auto myEventPtr = myEventSource->getCurrentEvent(); 
+    myEventSource->loadFileEntry(9);
   
     std::cout<<myEventPtr->GetEventInfo()<<std::endl;
-    GetTotalCharge_Test(myEventPtr, Test_Reference);
-    return;
     
     get1DProjection_Titles_Test(myEventPtr, Test_Reference_Titles);
     get2DProjection_Titles_Test(myEventPtr, Test_Reference_Titles);
@@ -202,7 +204,7 @@ TEST(EventTPCTest, fullTest){
     GetMaxChargePos_Test(myEventPtr, Test_Reference);
     GetSignalRange_Test(myEventPtr, Test_Reference);
     GetMultiplicity_Test(myEventPtr, Test_Reference);
-  }
+ 
   int check = error_list_bool.size(); 
   for (std::vector<bool>::iterator it = error_list_bool.begin(); it != error_list_bool.end(); ++it) { check -= *it; } 
   
@@ -210,3 +212,4 @@ TEST(EventTPCTest, fullTest){
 }
 /////////////////////////////////////
 /////////////////////////////////////
+*/

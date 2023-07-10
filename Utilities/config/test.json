@@ -9,6 +9,12 @@
     "pressure": 250,
     "driftV": 0.405
 },
+"pedestal":{
+    "minPedestalCell" : 10,
+    "maxPedestalCell" : 50,
+    "minSignalCell": 2,
+    "maxSignalCell": 500
+},
     "beamParameters":{
         "energy" : 99.9
     }

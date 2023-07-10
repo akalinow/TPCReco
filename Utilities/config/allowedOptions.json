@@ -50,7 +50,7 @@
     "zLogScale":{
         "group": "display",
         "type": "bool",
-        "defaultValue": true,
+        "defaultValue": false,
         "description" : "Z axis mode for 2D charge display.\nType: bool"
     },
     "autoZoom":{
