@@ -447,7 +447,7 @@ void EventSourceGRAW::configurePedestal(const boost::property_tree::ptree &confi
   };
   
   removePedestal = config.get<bool>("remove");
-
+  
   parser("minPedestalCell", &PedestalCalculator::SetMinPedestalCell);
   parser("maxPedestalCell", &PedestalCalculator::SetMaxPedestalCell);
   parser("minSignalCell", &PedestalCalculator::SetMinSignalCell);

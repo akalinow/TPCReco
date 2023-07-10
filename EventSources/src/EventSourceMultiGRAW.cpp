@@ -9,7 +9,6 @@
 #include <vector>
 #include <sstream>
 
-
 #include <TCollection.h>
 #include <TClonesArray.h>
 
@@ -82,8 +81,17 @@ void EventSourceMultiGRAW::loadDataFile(const std::string & commaSeparatedFileNa
   std::stringstream sstream(commaSeparatedFileNames);
   std::string fileName;
   while (std::getline(sstream, fileName, del)) {
-    if(fileName.size()>0 && fileNameList.size()<GRAW_EVENT_FRAGMENTS) fileNameList.insert(fileName);
+    if(fileName.size()) fileNameList.insert(fileName);
   };
+  	
+	if (fileNameList.size() != GRAW_EVENT_FRAGMENTS) {
+	  std::cerr << KRED << "Provided wrong number of GRAW files. Expected  "<<RST 
+	            << GRAW_EVENT_FRAGMENTS 
+	            << KRED<< " The file list is: "<<RST<<std::endl 
+	            << commaSeparatedFileNames << _endl_;
+		    exit(0);
+	}
+  
   if(fileNameList.size()) {
     loadDataFileList(fileNameList);
   }
@@ -92,7 +100,6 @@ void EventSourceMultiGRAW::loadDataFile(const std::string & commaSeparatedFileNa
 /////////////////////////////////////////////////////////
 void EventSourceMultiGRAW::loadDataFileList(const std::set<std::string> & fileNameList){
 
-  //  myDataFrameList.clear(); // HOTFIX!!!!!
   myFileList.clear();
   myFilePathList.clear();
   myNextFilePathList.clear();
@@ -149,7 +156,7 @@ bool EventSourceMultiGRAW::loadGrawFrame(unsigned int iEntry, bool readFullEvent
 	   <<KBLU<<" with option readFull="<<RST<<readFullEvent<<std::endl;
   #endif
 
-  if(streamIndex>=myFilePathList.size() || streamIndex>=myNextFilePathList.size()) { // HOTFIX!!! // || streamIndex>=myDataFrameList.size()) {
+  if(streamIndex>=myFilePathList.size() || streamIndex>=myNextFilePathList.size()) { 
     std::cerr<<KRED<<__FUNCTION__
 	     <<": ERROR: wrong GRAW stream id: " <<RST<<streamIndex<<KRED<<" for file entry: "<<RST<<iEntry
 	     <<std::endl;

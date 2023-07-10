@@ -37,7 +37,7 @@ namespace EventSourceFactory {
 	inline std::shared_ptr<EventSourceBase> makeEventSourceObject(boost::property_tree::ptree& myConfig) {
 		std::string dataFileName = myConfig.get<std::string>("input.dataFile");
 		std::string geometryFileName = myConfig.get<std::string>("input.geometryFile");
-
+		
 		std::shared_ptr<EventSourceBase> myEventSource;
 
 		if (dataFileName.empty() || geometryFileName.empty()) {
@@ -46,16 +46,15 @@ namespace EventSourceFactory {
 		}
 
 		// parse dataFile string for comma separated files
-		std::vector<boost::filesystem::path>
-			dataFileVec,
-			dataFilePaths;
+		std::vector<boost::filesystem::path> dataFileVec, dataFilePaths;
 
 		size_t pos = 0;
 		std::string token;
-		while ((pos = dataFileName.find(",")) != std::string::npos) { //split paths from a string with "," delimiter
-			token = dataFileName.substr(0, pos);
+		std::string tmp_dataFileName = dataFileName;
+		while ((pos = tmp_dataFileName.find(",")) != std::string::npos) {
+			token = tmp_dataFileName.substr(0, pos);
 			dataFilePaths.push_back(token);
-			dataFileName.erase(0, pos + 1);
+			tmp_dataFileName.erase(0, pos + 1);
 		}
 		
 		#ifdef WITH_GET
@@ -97,14 +96,7 @@ namespace EventSourceFactory {
 			myConfig.put("transient.onlineFlag", false);
 			if (myConfig.get<bool>("input.singleAsadGrawFile")) {
 				myEventSource = std::make_shared<EventSourceMultiGRAW>(geometryFileName);
-				myConfig.put("transient.eventType", event_type::EventSourceMultiGRAW);
-				{
-					unsigned int AsadNboards = dynamic_cast<EventSourceGRAW*>(myEventSource.get())->getGeometry()->GetAsadNboards();
-					if (dataFileVec.size() > AsadNboards) {
-						std::cerr << KRED << "Provided too many GRAW files. Expected up to " << AsadNboards << ".dataFile: " << RST << dataFileName << _endl_;
-						exit(0);
-					}
-				}
+				myConfig.put("transient.eventType", event_type::EventSourceMultiGRAW);				
 			}
 			else {
 				myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);

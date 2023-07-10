@@ -1,6 +1,10 @@
 #ifndef _dataEventTPC_H_
 #define _dataEventTPC_H_
 
+
+#include "TPCReco/CommonDefinitions.h"
+using namespace definitions; 
+
 #include <string>
 #include <vector>
 

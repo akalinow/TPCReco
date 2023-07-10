@@ -95,11 +95,6 @@ const boost::program_options::variables_map & ConfigManager::parseCmdLineArgs(in
 
     boost::program_options::store(boost::program_options::parse_command_line(argc, argv, cmdLineOptDesc), varMap);
     boost::program_options::notify(varMap); 
-
-    if (varMap.count("help")) {
-        std::cout<<cmdLineOptDesc<<std::endl;
-        exit(0);
-    }
     return varMap;
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -116,11 +111,11 @@ void ConfigManager::updateWithJsonFile(const std::string jsonName){
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void ConfigManager::updateWithCmdLineArgs(const boost::program_options::variables_map & varMap){
 
-    std::cout<<KBLU<<"Updating parameters with command line arguments."<<RST<<std::endl;
+    std::cout<<KBLU<<"Updating parameters with command line arguments: "<<RST<<std::endl;
     
     for(const auto& item: varMap){        
-        string_code type = varTypeMap.at(item.first);
         std::cout<<item.first<<std::endl;
+        string_code type = varTypeMap.at(item.first);
         switch(type) {
             case string_code::eint:                
                 configTree.put(item.first, item.second.as<int>());   
@@ -156,13 +151,15 @@ const boost::property_tree::ptree & ConfigManager::getConfig(int argc, char **ar
         std::cout<<KBLU<<"Using default config file: defaultConfig.json"<<RST<<std::endl;
         return configTree;
     }
-    else if(varMap.count("meta.configJson")){        
+    else if (varMap.count("help")) {
+        std::cout<<cmdLineOptDesc<<std::endl;
+        return configTree;
+    }
+    else if(varMap.count("meta.configJson")){  
         std::string jsonName = varMap["meta.configJson"].as<std::string>();
         if(jsonName.size()) updateWithJsonFile(jsonName);
     }
-
     updateWithCmdLineArgs(varMap);
-
     return configTree;
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////

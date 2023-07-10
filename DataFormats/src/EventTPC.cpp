@@ -106,8 +106,8 @@ void EventTPC::addEnvelope(PEventTPC::chargeMapType::key_type key,
   int time_cell = std::get<3>(key);
     
   const auto & config = filterConfigs.at(filter_type::threshold);
-  int delta_timecells = config.get<int>("recoClusterDeltaTimeCells");
-  int delta_strips = config.get<int>("recoClusterDeltaStrips");
+  int delta_timecells = config.get<int>("hitFilter.recoClusterDeltaTimeCells");
+  int delta_strips = config.get<int>("hitFilter.recoClusterDeltaStrips");
 
   for(int iCell=time_cell-delta_timecells;
       iCell<=time_cell+delta_timecells;++iCell){
@@ -643,8 +643,5 @@ std::ostream& operator<<(std::ostream& os, const EventTPC& e) {
   os << "EventTPC: " << e.GetEventInfo();
   return os;
 }
-/////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////
-
 /////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////

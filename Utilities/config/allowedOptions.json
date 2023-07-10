@@ -161,11 +161,23 @@
         "defaultValue": 190.0,
         "description": "Gas pressure in chamber [mb]. \nType: double"
     }, 
+    "samplingRate":{
+        "group": "conditions",
+        "type" : "double",
+        "defaultValue": 25.0,
+        "description": "Signa sampling rate [MHz]. \nType: double"
+    }, 
     "temperature":{
         "group": "conditions",
         "type" : "double",
         "defaultValue": 293.15,
         "description": "Gas temperature in chamber [K].\nType: double"
+    }, 
+    "driftV":{
+        "group": "conditions",
+        "type" : "double",
+        "defaultValue": 0.646,
+        "description": "Drift velocity [cm/us].\nType: double"
     }, 
     "energy":{
         "group":"beamParameters",

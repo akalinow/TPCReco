@@ -14,3 +14,5 @@ target_link_libraries(grawToEventTPC PRIVATE Boost::program_options ${MODULE_NAM
 reco_install_targets(${MODULE_NAME} grawToEventTPC)
 
 install(PROGRAMS $<1:${CMAKE_CURRENT_SOURCE_DIR}/python/> DESTINATION python)
+
+reco_add_test_subdirectory(test)

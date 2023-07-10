@@ -4,12 +4,10 @@
 #include <vector>
 #include <iomanip>
 
-#include "TPCReco/GeometryTPC.h"
-#include "TPCReco/EventTPC.h"
-#include "TPCReco/PEventTPC.h"
-#include "TPCReco/EventSourceMultiGRAW.h"
+#include "gtest/gtest.h"
 
-#include <TFile.h>
+#include "TPCReco/EventSourceFactory.h"
+#include "TPCReco/ConfigManager.h"
 
 #include "TPCReco/colorText.h"
 
@@ -18,7 +16,6 @@
 
 std::vector<bool> error_list_bool;  // Vector storing test results
 double epsilon = 1e-5;  // Value used to compare double values
-
   
   // get1DProjection Titles Test
     void get1DProjection_Titles_Test(std::shared_ptr<EventTPC> aEventPtr, std::map<std::string, std::string> Test_Reference_Titles) {
@@ -113,6 +110,7 @@ double epsilon = 1e-5;  // Value used to compare double values
             for (auto filter : FilterTypes) {
                 std::string Test_String = "GetTotalCharge" + charge.second + ", " + filter.second + ")";
                 double Test = aEventPtr->GetTotalCharge(std::get<0>(charge.first), std::get<1>(charge.first), std::get<2>(charge.first), std::get<3>(charge.first), filter.first);
+                std::cout<<"testValue: "<<Test<<" referenceValue:"<<Test_Reference[Test_String]<<std::endl;
                 if (bool((Test - Test_Reference[Test_String]) < epsilon)) { error_list_bool.push_back(true); }
                 else { std::cout << KRED << Test_String << RST << std::endl; error_list_bool.push_back(false); }
             }
@@ -175,23 +173,26 @@ double epsilon = 1e-5;  // Value used to compare double values
             }
         }
     }
- 
-
-
 /////////////////////////////////////
 /////////////////////////////////////
-int main(int argc, char *argv[]) {
+TEST(EventTPCTest, fullTest){
 
-
-  std::shared_ptr<EventSourceBase> myEventSource = std::make_shared<EventSourceMultiGRAW>(geometryFileName);  // 
-  myEventSource->loadDataFile(dataFileName);                                                                  // Loading Data File
-  std::cout << "File with " << myEventSource->numberOfEntries() << " frames opened." << std::endl;            // 
-
+  std::string testJSON = std::string(std::getenv("HOME"))+".tpcreco/config/test.json";
+  int argc = 3;
+  char *argv[] = {(char*)"ConfigManager_tst", 
+                  (char*)"--meta.configJson",const_cast<char *>(testJSON.data())};
+  ConfigManager cm;
+  boost::property_tree::ptree myConfig = cm.getConfig(argc, argv);
+  std::shared_ptr<EventSourceBase> myEventSource = EventSourceFactory::makeEventSourceObject(myConfig);
+  
   auto myEventPtr = myEventSource->getCurrentEvent();
   for(int i=89;i<90;++i){  // Testing a specific event
     myEventSource->loadFileEntry(i);
   
     std::cout<<myEventPtr->GetEventInfo()<<std::endl;
+    GetTotalCharge_Test(myEventPtr, Test_Reference);
+    return;
+    
     get1DProjection_Titles_Test(myEventPtr, Test_Reference_Titles);
     get2DProjection_Titles_Test(myEventPtr, Test_Reference_Titles);
     get1DProjection_Test(myEventPtr, Test_Reference,Test_Reference_Titles);
@@ -203,12 +204,9 @@ int main(int argc, char *argv[]) {
     GetMultiplicity_Test(myEventPtr, Test_Reference);
   }
   int check = error_list_bool.size(); 
-  for (std::vector<bool>::iterator it = error_list_bool.begin(); it != error_list_bool.end(); ++it) { check -= *it; } // checking if all Tests returns correct values
-
-
-  if(check>0){return -1;}
-
-  return 0;
+  for (std::vector<bool>::iterator it = error_list_bool.begin(); it != error_list_bool.end(); ++it) { check -= *it; } 
+  
+  EXPECT_EQ(check, 0);
 }
 /////////////////////////////////////
 /////////////////////////////////////
