@@ -31,7 +31,7 @@ target_link_libraries(
                         ${ROOT_EXE_LINKER_FLAGS} GrawToROOT)
 
 target_link_libraries(makeTrackTree PRIVATE ${MODULE_NAME}
-                                            Boost::program_options)
+                                            Boost::program_options GUI)
 target_link_libraries(makeMCTrackTree PRIVATE ${MODULE_NAME}
                                               Boost::program_options Simulation)
 target_link_libraries(recoEventsAnalysis PRIVATE ${MODULE_NAME}

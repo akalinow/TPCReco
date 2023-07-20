@@ -8,6 +8,7 @@
 #include <TLatex.h>
 #include <TString.h>
 #include <TStopwatch.h>
+#include <TStyle.h>
 
 #include <boost/program_options.hpp>
 
@@ -24,6 +25,7 @@
 #include "TPCReco/InputFileHelper.h"
 #include "TPCReco/MakeUniqueName.h"
 #include "TPCReco/colorText.h"
+#include "TPCReco/HistoManager.h"
 
 #include "TPCReco/EventTPC.h"
 /////////////////////////////////////
@@ -62,7 +64,9 @@ std::string createROOTFileName(const  std::string & grawFileName){
 /////////////////////////////////////
 /////////////////////////////////////
 int makeTrackTree(const  std::string & geometryFileName,
-		  const  std::string & dataFileName);
+		  const  std::string & dataFileName,
+		  unsigned int maxNevents,
+		  bool debugMode);
 /////////////////////////////////////
 /////////////////////////////////////
 boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
@@ -71,7 +75,9 @@ boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
   cmdLineOptDesc.add_options()
     ("help", "produce help message")
     ("geometryFile",  boost::program_options::value<std::string>()->required(), "string - path to the geometry file.")
-    ("dataFile",  boost::program_options::value<std::string>()->required(), "string - path to data file.");
+    ("dataFile",  boost::program_options::value<std::string>()->required(), "string - path to data file.")
+    ("maxNevents", boost::program_options::value<unsigned int>()->default_value(0), "int - number of events to process")
+    ("debugMode", boost::program_options::bool_switch()->default_value(false), "bool - flag to enable debug plots (default=FALSE)");
   
   boost::program_options::variables_map varMap;        
 try {     
@@ -98,6 +104,8 @@ int main(int argc, char **argv){
   aStopwatch.Start();
 
   std::string geometryFileName, dataFileName;
+  bool debugMode{false};
+  unsigned int maxNevents{0U};
   boost::program_options::variables_map varMap = parseCmdLineArgs(argc, argv);
   boost::property_tree::ptree tree;
   if(argc<3){
@@ -112,15 +120,23 @@ int main(int argc, char **argv){
   if (varMap.count("dataFile")) {
     dataFileName = varMap["dataFile"].as<std::string>();
   }
+  if (varMap.count("maxNevents")) {
+    maxNevents = varMap["maxNevents"].as<unsigned int>();
+  }
+  if (varMap.count("debugMode")) {
+    debugMode = varMap["debugMode"].as<bool>();
+  }
 
   int nEntriesProcessed = 0;
   if(dataFileName.size() && geometryFileName.size()){
-    nEntriesProcessed = makeTrackTree(geometryFileName, dataFileName);
+    nEntriesProcessed = makeTrackTree(geometryFileName, dataFileName, maxNevents, debugMode);
   }
   else{
     std::cout<<KRED<<"Configuration not complete: "<<RST
 	     <<" geometryFile: "<<geometryFileName<<"\n"
-	     <<" dataFile: "<<dataFileName
+	     <<" dataFile: "<<dataFileName<<"\n"
+	     <<" maxNevents: "<<maxNevents<<"\n"
+	     <<" debugMode: "<<debug
 	     <<std::endl;
   }
 
@@ -151,7 +167,9 @@ typedef struct {Float_t eventId, frameId,
     } TrackData;
 /////////////////////////
 int makeTrackTree(const  std::string & geometryFileName,
-		  const  std::string & dataFileName) {
+		  const  std::string & dataFileName,
+		  unsigned int maxNevents,
+		  bool debugMode) {
 
   std::shared_ptr<EventSourceBase> myEventSource;
   if(dataFileName.find(".graw")!=std::string::npos){
@@ -205,6 +223,38 @@ int makeTrackTree(const  std::string & geometryFileName,
   myTkBuilder.setPressure(pressure);
   IonRangeCalculator myRangeCalculator(gas_mixture_type::CO2,pressure,293.15);
 
+  ////////////////////////////////////////////
+  //
+  // extra initialization for fit DEBUG plots
+  HistoManager myHistoManager;
+  const std::string rootFileNameCanvas = "makeTrackTree_debug_histos.root";
+  TFile *outputCanvasROOTFile = nullptr;
+  TCanvas *outputCanvas = nullptr;
+  if(debugMode) {
+    outputCanvasROOTFile=new TFile(rootFileNameCanvas.c_str(), "RECREATE");
+    if(!outputCanvasROOTFile) {
+      std::cout<<KRED<<"Cannot create output ROOT file with debug plots!"<<RST<<std::endl;
+      return -1;
+    }
+    outputCanvasROOTFile->cd();
+    const int nx=2, ny=2;
+    assert((nx+ny)==4);
+    outputCanvas=new TCanvas("c_result", "c_result", 1.1*400*nx, 400*ny);
+    if(!outputCanvas) {
+      std::cout<<KRED<<"Cannot create TCanvas with debug plots!"<<RST<<std::endl;
+      return -1;
+    }
+    outputCanvas->Divide(nx,ny);
+    myHistoManager.clearCanvas(outputCanvas, false);
+    myHistoManager.setGeometry(myEventSource->getGeometry());
+    myHistoManager.setPressure(pressure);
+    const boost::property_tree::ptree aConfig; // dummy config tree
+    myHistoManager.setConfig(aConfig); // apply default hit clustering parameters
+    myHistoManager.toggleAutozoom(); // start auto zoom feature
+  }
+  //
+  ////////////////////////////////////////////
+
   RecoOutput myRecoOutput;
   std::string fileName = InputFileHelper::tokenize(dataFileName)[0];
   std::size_t last_dot_position = fileName.find_last_of(".");
@@ -219,6 +269,7 @@ int makeTrackTree(const  std::string & geometryFileName,
 
   //Event loop
   unsigned int nEntries = myEventSource->numberOfEntries();
+  if(maxNevents>0) nEntries = std::min( (unsigned int)nEntries, (unsigned int)maxNevents );
   //nEntries = 5; //TEST
   for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
     if(nEntries>10 && iEntry%(nEntries/10)==0){
@@ -228,6 +279,35 @@ int makeTrackTree(const  std::string & geometryFileName,
     *myEventInfo = myEventSource->getCurrentEvent()->GetEventInfo();    
     myTkBuilder.setEvent(myEventSource->getCurrentEvent());
     myTkBuilder.reconstruct();
+
+    ////////////////////////////////////////////
+    //
+    // make fit DEBUG plots
+    if(debugMode) {
+      myHistoManager.setEvent(myEventSource->getCurrentEvent());
+      gStyle->SetOptStat(0);
+      myHistoManager.drawDevelHistos(outputCanvas);
+      outputCanvas->SetName(Form("c_run%ld_evt%ld", (unsigned long)myEventInfo->GetRunId(), (unsigned long)myEventInfo->GetEventId()));
+      outputCanvas->SetTitle(outputCanvas->GetName());
+      const std::vector<std::pair<double, double> > marginsLeftRight{ {0.1, 0.15}, {0.1, 0.15}, {0.1, 0.15}, {0.15, 0.15} };
+      int ipad=0;
+      for(auto &it : marginsLeftRight) {
+	ipad++;
+	TVirtualPad *aPad=outputCanvas->cd(ipad);
+	if(aPad) {
+	  aPad->SetLeftMargin(it.first);
+	  aPad->SetRightMargin(it.second);
+	  aPad->Modified();
+	  aPad->Update();
+	}
+      }
+      outputCanvas->Modified();
+      outputCanvas->Update();
+      outputCanvasROOTFile->cd();
+      outputCanvas->Write();
+    }
+    //
+    ////////////////////////////////////////////
 
     const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
 
@@ -307,6 +387,18 @@ int makeTrackTree(const  std::string & geometryFileName,
     tree->Fill();    
   }
   outputROOTFile.Write();
+
+  ////////////////////////////////////////////
+  //
+  // close file with fit DEBUG plots
+  if(debugMode) {
+    outputCanvasROOTFile->Close();
+    delete outputCanvasROOTFile;
+    delete outputCanvas;
+  }
+  //
+  ////////////////////////////////////////////
+
   return nEntries;
 }
 /////////////////////////////
