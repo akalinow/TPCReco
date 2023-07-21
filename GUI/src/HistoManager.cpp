@@ -232,6 +232,8 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
 
      auto projType = get2DProjectionType(strip_dir);     
      auto histo2D = get2DProjection(projType, filterType, scale_type::mm);
+     aPad->SetFrameFillColor(kAzure-6);
+     /*
      if(myConfig.get<bool>("recoClusterEnable")){
        histo2D->SetMinimum(0.0);
        histo2D->DrawCopy("colz");
@@ -239,9 +241,12 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
        hPlotBackground->Draw("col same");
        aPad->RedrawAxis();
        histo2D->DrawCopy("colz same");
-       drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);	    
+       drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
      }
      else histo2D->DrawCopy("colz");
+     */
+     histo2D->DrawCopy("colz");
+     drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
    }
    int strip_dir=3;
    TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);

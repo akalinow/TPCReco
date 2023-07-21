@@ -237,8 +237,8 @@ int makeTrackTree(const  std::string & geometryFileName,
       return -1;
     }
     outputCanvasROOTFile->cd();
-    const int nx=2, ny=2;
-    assert((nx+ny)==4);
+    const int nx=4, ny=3;
+    assert((nx*ny)>=3+1+3+3); // 3 for UVW rawdata, , 1 for dE/dx fit, 3 for UVW RecHits, 3 for UVW Hough accumulators
     outputCanvas=new TCanvas("c_result", "c_result", 1.1*400*nx, 400*ny);
     if(!outputCanvas) {
       std::cout<<KRED<<"Cannot create TCanvas with debug plots!"<<RST<<std::endl;
@@ -286,11 +286,36 @@ int makeTrackTree(const  std::string & geometryFileName,
     if(debugMode) {
       myHistoManager.setEvent(myEventSource->getCurrentEvent());
       gStyle->SetOptStat(0);
-      myHistoManager.drawDevelHistos(outputCanvas);
+
+      // plot clustered data and dE/dx fit
+      myHistoManager.drawDevelHistos(outputCanvas); // pads 1-4
+
+      // plot RecHits per UVW direction
+      int ipad=5;
+      for(int iDir=definitions::projection_type::DIR_U;iDir<=definitions::projection_type::DIR_W;++iDir){
+	TVirtualPad *aPad=outputCanvas->cd(ipad+iDir); // pads 5-7
+	if(aPad) {
+	  aPad->SetFrameFillColor(kAzure-6);
+	  myHistoManager.getRecHitStripVsTime(iDir)->DrawCopy("colz");
+	}
+      }
+
+      // plot Hough accumulators per UVW direction
+      ipad=9;
+      for(int iDir=definitions::projection_type::DIR_U;iDir<=definitions::projection_type::DIR_W;++iDir){
+	TVirtualPad *aPad=outputCanvas->cd(ipad+iDir); // pads 9-11
+	if(aPad) {
+	  aPad->SetFrameFillColor(kAzure-6);
+	  myHistoManager.getHoughAccumulator(iDir,0).DrawCopy("colz");
+	}
+      }
+
       outputCanvas->SetName(Form("c_run%ld_evt%ld", (unsigned long)myEventInfo->GetRunId(), (unsigned long)myEventInfo->GetEventId()));
       outputCanvas->SetTitle(outputCanvas->GetName());
-      const std::vector<std::pair<double, double> > marginsLeftRight{ {0.1, 0.15}, {0.1, 0.15}, {0.1, 0.15}, {0.15, 0.15} };
-      int ipad=0;
+      const std::vector<std::pair<double, double> > marginsLeftRight{ {0.1, 0.15}, {0.1, 0.15}, {0.1, 0.15}, {0.15, 0.15},
+								      {0.1, 0.15}, {0.1, 0.15}, {0.1, 0.15}, {0.5, 0.5},
+								      {0.1, 0.15}, {0.1, 0.15}, {0.1, 0.15} };
+      ipad=0;
       for(auto &it : marginsLeftRight) {
 	ipad++;
 	TVirtualPad *aPad=outputCanvas->cd(ipad);
@@ -314,7 +339,7 @@ int makeTrackTree(const  std::string & geometryFileName,
     myRecoOutput.setRecTrack(aTrack3D);
     myRecoOutput.setEventInfo(myEventInfo);				   
     myRecoOutput.update(); 
-    
+
     double length = aTrack3D.getLength();
     double charge = aTrack3D.getIntegratedCharge(length);
     double chi2 = aTrack3D.getChi2();

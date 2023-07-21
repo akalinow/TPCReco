@@ -129,6 +129,14 @@ void TrackBuilder::setEvent(std::shared_ptr<EventTPC> aEvent){
 /////////////////////////////////////////////////////////
 void TrackBuilder::reconstruct(){
 
+  ///// DEBUG
+  //
+  std::cout<<KBLU<<__FUNCTION__<<RST
+	   <<":  run:"<<myEventPtr->GetEventInfo().GetRunId()
+	   <<" evt:"<<myEventPtr->GetEventInfo().GetEventId()<<std::endl;
+  //
+  ///// DEBUG
+
   hTimeProjection.Reset();  
   for(int iDir=definitions::projection_type::DIR_U;iDir<=definitions::projection_type::DIR_W;++iDir){
     makeRecHits(iDir);
@@ -366,7 +374,7 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   double bias_time = (segmentU.getMinBias().X()*(nHits_U>0) +
 		      segmentV.getMinBias().X()*(nHits_V>0) +
 		      segmentW.getMinBias().X()*(nHits_W>0))/((nHits_U>0) + (nHits_V>0) + (nHits_W>0));
-  bias_time =  segmentV.getMinBias().X();
+  //  bias_time =  segmentV.getMinBias().X();
   TVector3 bias_U = segmentU.getBiasAtT(bias_time);
   TVector3 bias_V = segmentV.getBiasAtT(bias_time);
   TVector3 bias_W = segmentW.getBiasAtT(bias_time);
@@ -402,12 +410,36 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   TVector3 tangent_U = segmentU.getNormalisedTangent();
   TVector3 tangent_V = segmentV.getNormalisedTangent();
   TVector3 tangent_W = segmentW.getNormalisedTangent();
+
+  ///// DEBUG
+  //
+  TVector3 tangent_U_orig = tangent_U;
+  TVector3 tangent_V_orig = tangent_V;
+  TVector3 tangent_W_orig = tangent_W;
   
-  if(std::abs(tangent_U.Y())>1E-3 && 
-     tangent_U.Y()*tangent_V.Y()>0 &&
-     tangent_U.Y()*tangent_W.Y()>0){
-    tangent_U.SetY(-tangent_U.Y());
-    }
+  if(std::abs(tangent_U_orig.Y())>1E-3 &&
+     tangent_U_orig.Y()*tangent_V_orig.Y()>0 &&
+     tangent_U_orig.Y()*tangent_W_orig.Y()>0){
+    tangent_U.SetY(-tangent_U_orig.Y());
+  }
+  if(std::abs(tangent_V_orig.Y())>1E-3 &&
+     tangent_V_orig.Y()*tangent_U_orig.Y()>0 &&
+     tangent_V_orig.Y()*tangent_W_orig.Y()>0){
+    tangent_V.SetY(-tangent_V_orig.Y());
+  }
+  if(std::abs(tangent_W_orig.Y())>1E-3 &&
+     tangent_W_orig.Y()*tangent_U_orig.Y()>0 &&
+     tangent_W_orig.Y()*tangent_V_orig.Y()>0){
+    tangent_W.SetY(-tangent_W_orig.Y());
+  }
+  //
+  ///// DEBUG
+
+  // if(std::abs(tangent_U.Y())>1E-3 &&
+  //    tangent_U.Y()*tangent_V.Y()>0 &&
+  //    tangent_U.Y()*tangent_W.Y()>0){
+  //   tangent_U.SetY(-tangent_U.Y());
+  //   }
   
   TVector2 tangentXY_fromUV;
   bool res4=myGeometryPtr->GetUVWCrossPointInMM(segmentU.getStripDir(), tangent_U.Y(),
@@ -434,8 +466,9 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   double tangentZ = (tangentZ_fromU*nHits_U + tangentZ_fromV*nHits_V + tangentZ_fromW*nHits_W)/(nHits_U+nHits_V+nHits_W);
   TVector3 aTangent(tangentXY.X(), tangentXY.Y(), tangentZ);
 
-   // TEST
-  /*
+  ////// DEBUG
+  //
+  // TEST
   std::cout<<KRED<<__FUNCTION__<<RST
 	   <<" nHits_fromU: "<<nHits_U
     	   <<" nHits_fromV: "<<nHits_V
@@ -467,11 +500,14 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   ////////
   //aTangent.SetMagThetaPhi(1, 1.52218, 1.34371);
   //aTangent.SetXYZ(0.318140,-0.948024,0.006087);
-  */
+  //
+  ////// DEBUG
 
   a3DSeed.setBiasTangent(aBias, aTangent);
   a3DSeed.setRecHits(myRecHits);
-  /*
+
+  ////// DEBUG
+  //
   std::cout<<KRED<<"tagent from track: "<<RST;
   a3DSeed.getTangent().Print();
   
@@ -486,8 +522,9 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
 
   std::cout<<KRED<<"bias from track: "<<RST;
   a3DSeed.getBias().Print();
-  */
-  
+  //
+  ////// DEBUG
+
   return a3DSeed;
 }
 /////////////////////////////////////////////////////////
