@@ -93,7 +93,8 @@ private:
   bool myHistoInitialized;
   int nAccumulatorRhoBins, nAccumulatorPhiBins;
 
-  TVector3 aHoughOffest;
+  //  TVector3 aHoughOffest;
+  std::vector<TVector3> myHoughOffset;
   std::vector<TH2D> myAccumulators;
   std::vector<TH2D> myRecHits, myRawHits;
   TH1D hTimeProjection;
