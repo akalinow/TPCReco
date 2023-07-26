@@ -277,6 +277,8 @@ int makeTrackTree(const  std::string & geometryFileName,
     }
     myEventSource->loadFileEntry(iEntry);    
     *myEventInfo = myEventSource->getCurrentEvent()->GetEventInfo();    
+    myTkBuilder.setGeometry(myEventSource->getGeometry());
+    myTkBuilder.setPressure(pressure); ////// HACK - workaround for static variable dEdxFitter::currentPressure
     myTkBuilder.setEvent(myEventSource->getCurrentEvent());
     myTkBuilder.reconstruct();
 
