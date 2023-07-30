@@ -42,7 +42,7 @@ const TH2D & RecHitBuilder::makeRecHits(const TH2D & hProjection){
   double clusterSum = hProjection.Integral();
   double ratio = recHitsSum/clusterSum;
   if(ratio<0.2) makeStripProjectionRecHits(hProjection);
-  cleanRecHits();
+  // cleanRecHits();
   return hRecHits;
 }
 /////////////////////////////////////////////////////////
@@ -54,7 +54,8 @@ const TH2D & RecHitBuilder::makeTimeProjectionRecHits(const TH2D & hProjection){
   double hitTimePos = -999.0;
   double hitTimePosError = -999.0;
   double hitCharge = -999.0;
-  double initialSigma = 2*myGeometryPtr->GetTimeBinWidth();//1* for 12.5MHz, 2* for 25.0 MHz
+  //  double initialSigma = 2*myGeometryPtr->GetTimeBinWidth();//1* for 12.5MHz, 2* for 25.0 MHz
+  double initialSigma = 1*myGeometryPtr->GetTimeBinWidth();//1* for 12.5MHz, 2* for 25.0 MHz
   for(int iBinY=1;iBinY<=hProjection.GetNbinsY();++iBinY){
     h1DProj = hProjection.ProjectionX("h1DProjX",iBinY, iBinY);
     const TF1 &fittedShape = fit1DProjection(h1DProj, initialSigma);
