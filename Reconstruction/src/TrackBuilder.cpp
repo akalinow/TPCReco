@@ -19,9 +19,11 @@
 /////////////////////////////////////////////////////////
 TrackBuilder::TrackBuilder() {
 
-  nAccumulatorRhoBins = 50;//FIX ME move to configuarable
-  nAccumulatorPhiBins = 2.0*M_PI/0.025;//FIX ME move to configuarable
-  nAccumulatorPhiBins = 2.0*M_PI/0.1;//FIX ME move to configuarable
+  //  nAccumulatorRhoBins = 50;//FIX ME move to configuarable
+  //  nAccumulatorPhiBins = 2.0*M_PI/0.025;//FIX ME move to configuarable
+  //  nAccumulatorPhiBins = 2.0*M_PI/0.1;//FIX ME move to configuarable
+  nAccumulatorRhoBins = 200; //FIX ME large enough to keep RHO bin size below 0.5*STRIP_PITCH
+  nAccumulatorPhiBins = 400; //FIX ME move to configuarable
 
   myHistoInitialized = false;
   myAccumulators.resize(3);
@@ -127,16 +129,16 @@ void TrackBuilder::setEvent(std::shared_ptr<EventTPC> aEvent){
 	rhoMIN=0.0; // case 4
 	rho_case=4;
       } else if(minX<0.0 && maxX<0.0 && minY<=0.0 && maxY>=0.0) {
-	rhoMIN=fabs(maxX); // case 5
+	rhoMIN=std::min(std::min(fabs(minY), fabs(maxY)), fabs(maxX)); // case 5
 	rho_case=5;
       } else if(minX>0.0 && maxX>0.0 && minY<=0.0 && maxY>=0.0) {
-	rhoMIN=fabs(minX); // case 3
+	rhoMIN=std::min(std::min(fabs(minY), fabs(maxY)), fabs(minX)); // case 3
 	rho_case=3;
       } else if(minX<=0.0 && maxX>=0.0 && minY<0.0 && maxY<0.0) {
-	rhoMIN=fabs(maxY); // case 6
+	rhoMIN=std::min(std::min(fabs(minX), fabs(maxX)), fabs(maxY)); // case 2
 	rho_case=6;
       } else if(minX<=0.0 && maxX>=0.0 && minY>0.0 && maxY>0.0) {
-	rhoMIN=fabs(minY); // case 2
+	rhoMIN=std::min(std::min(fabs(minX), fabs(maxX)), fabs(minY)); // case 6
 	rho_case=2;
       }
 
@@ -174,11 +176,11 @@ void TrackBuilder::setEvent(std::shared_ptr<EventTPC> aEvent){
       ///// DEBUG
 
       hName = "hAccumulator_"+std::to_string(iDir);
-      hTitle = "Hough accumulator for direction: "+std::to_string(iDir)+";#theta;#rho";
+      hTitle = "Hough accumulator for direction: "+std::to_string(iDir)+";#theta [rad];#rho [mm]";
+      const auto phiBinWidth=2*M_PI/nAccumulatorPhiBins;
       TH2D hAccumulator(hName.c_str(), hTitle.c_str(), nAccumulatorPhiBins,
-			-M_PI, M_PI, nAccumulatorRhoBins, -rhoMAX, rhoMAX); // theta range [-pi,pi] for signed rho convention
-      // TH2D hAccumulator(hName.c_str(), hTitle.c_str(), nAccumulatorPhiBins,
-      // 			-M_PI, M_PI, nAccumulatorRhoBins, rhoMIN, rhoMAX);
+			-M_PI-0.5*phiBinWidth, M_PI+0.5*phiBinWidth,
+			nAccumulatorRhoBins, rhoMIN, rhoMAX);
       myAccumulators[iDir] = hAccumulator;
       myRawHits[iDir] = *hRawHits;
       if(iDir==definitions::projection_type::DIR_U) hTimeProjection = *hRawHits->ProjectionX();
