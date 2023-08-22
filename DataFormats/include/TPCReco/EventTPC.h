@@ -88,8 +88,10 @@ class EventTPC {
   void filterHits(filter_type filterType);
 
   void addEnvelope(PEventTPC::chargeMapType::key_type key,
-		   std::set<PEventTPC::chargeMapType::key_type> & keyList);
-    
+		   std::set<PEventTPC::chargeMapType::key_type> & keyList,
+		   int delta_strips,
+		   int delta_timecells);
+
   void create3DHistoTemplate();
   
   void updateHistosCache(filter_type filterType);
@@ -105,7 +107,8 @@ class EventTPC {
 
   std::map<filter_type, bool> histoCacheUpdated = {{filter_type::none, false},
 						   {filter_type::threshold, false},
-						   {filter_type::island, false}};
+						   {filter_type::island, false},
+						   {filter_type::fraction, false}};
   
   std::map<filter_type, std::shared_ptr<TH3D> > a3DHistoRawMap;
   std::shared_ptr<TH3D> a3DHistoRawPtr;
