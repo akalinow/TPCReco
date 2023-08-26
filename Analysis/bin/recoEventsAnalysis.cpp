@@ -338,7 +338,8 @@ int analyzeRecoEvents(const  std::string & geometryFileName,
       continue;
     }
 
-    myAnalysis.fillHistos(aTrack);
+    static bool isFirst=false;
+    myAnalysis.fillHistos(aTrack, aEventInfo, isFirst);
     if(makeTreeFlag) myTreesAnalysis->fillTrees(aTrack, aEventInfo);
   }
 
