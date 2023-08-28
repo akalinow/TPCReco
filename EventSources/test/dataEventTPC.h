@@ -38,20 +38,20 @@ std::map<projection_type, std::string> ProjectionTypes2D = {
  };
 
 std::map<std::tuple<double, double, double, double>, std::string> Test_GetTotalCharge = {
-      {std::make_tuple(-1, -1, -1, -1)    , "(-1, -1, -1, -1"},
-      {std::make_tuple(DIR_U, -1, -1, -1) , "(DIR_U, -1, -1, -1"},
-      {std::make_tuple(DIR_U, -1, 1, -1)  , "(DIR_U, -1, 1, -1"},
-      {std::make_tuple(DIR_U, 1, 58, -1)  , "(DIR_U, 1, 58, -1"},
-      {std::make_tuple(-1, -1, -1, 128)   , "(-1, -1, -1, 128"},
-      {std::make_tuple(DIR_U, -1, -1, 128), "(DIR_U, -1, -1, 128"},
-      {std::make_tuple(DIR_U, 1, -1, 128) , "(DIR_U, 1, -1, 128"}
+      {std::make_tuple(-1, -1, -1, -1)    , "-1, -1, -1, -1"},
+      {std::make_tuple(DIR_U, -1, -1, -1) , "DIR_U, -1, -1, -1"},
+      {std::make_tuple(DIR_U, -1, 1, -1)  , "DIR_U, -1, 1, -1"},
+      {std::make_tuple(DIR_U, 1, 58, -1)  , "DIR_U, 1, 58, -1"},
+      {std::make_tuple(-1, -1, -1, 128)   , "-1, -1, -1, 128"},
+      {std::make_tuple(DIR_U, -1, -1, 128), "DIR_U, -1, -1, 128"},
+      {std::make_tuple(DIR_U, 1, -1, 128) , "DIR_U, 1, -1, 128"}
 };
 
 std::map<std::tuple<double, double, double>, std::string> Test_GetMaxCharge = {
-      {std::make_tuple(-1, -1, -1)    , "(-1, -1, -1"},
-      {std::make_tuple(DIR_U, -1, -1) , "(DIR_U, -1, -1"},
-      {std::make_tuple(DIR_U, -1, 1)  , "(DIR_U, -1, 1"},
-      {std::make_tuple(DIR_U, 1, 58)  , "(DIR_U, 1, 58"}
+      {std::make_tuple(-1, -1, -1)    , "-1, -1, -1"},
+      {std::make_tuple(DIR_U, -1, -1) , "DIR_U, -1, -1"},
+      {std::make_tuple(DIR_U, -1, 1)  , "DIR_U, -1, 1"},
+      {std::make_tuple(DIR_U, 1, 58)  , "DIR_U, 1, 58"}
 };
 
 std::map<double, std::string> Test_GetMaxChargePos = { {-1,"-1"}, {DIR_U,"DIR_U"}};

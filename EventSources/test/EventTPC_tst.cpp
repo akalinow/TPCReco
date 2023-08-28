@@ -118,98 +118,55 @@ TEST_F(EventTPCTest, get1DProjection) {
 TEST_F(EventTPCTest, GetTotalCharge) { 
         for (auto charge : Test_GetTotalCharge) {
             for (auto filter : FilterTypes) {
-                std::string Test_String = "GetTotalCharge" + charge.second + ", " + filter.second + ")";                
+                std::string Test_String = "GetTotalCharge(" + charge.second + ", " + filter.second+")";                 
                 double Test = myEventPtr->GetTotalCharge(std::get<0>(charge.first), std::get<1>(charge.first), std::get<2>(charge.first), std::get<3>(charge.first), filter.first);                                
-                EXPECT_DOUBLE_EQ(Test, Test_Reference[Test_String]);                
+                EXPECT_DOUBLE_EQ(Test, Test_Reference.at(Test_String));                
             }
         }
 }
 
 TEST_F(EventTPCTest, GetMaxCharge) { 
-        for (auto MaxCharge : Test_GetMaxCharge) {
+        for (auto maxCharge : Test_GetMaxCharge) {
             for (auto filter : FilterTypes) {
-                std::string Test_String = "GetMaxCharge" + MaxCharge.second + ", " + filter.second + ")";
-                double Test = myEventPtr->GetMaxCharge(std::get<0>(MaxCharge.first), std::get<1>(MaxCharge.first), std::get<2>(MaxCharge.first), filter.first);  
+                std::string Test_String = "GetMaxCharge(" + maxCharge.second + ", " + filter.second+")"; 
+                double Test = myEventPtr->GetMaxCharge(std::get<0>(maxCharge.first), std::get<1>(maxCharge.first), std::get<2>(maxCharge.first), filter.first);  
                 EXPECT_DOUBLE_EQ(Test, Test_Reference.at(Test_String));
             }
         }
 }
-/*
-  // GetMaxChargePos Test
-    void GetMaxChargePos_Test(std::shared_ptr<EventTPC> aEventPtr, std::map<std::string, double> Test_Reference) {
+
+TEST_F(EventTPCTest, GetMaxChargePos) { 
         for (auto MaxChargePos : Test_GetMaxChargePos) {
             for (auto filter : FilterTypes) {
                 std::string Test_String = "GetMaxChargePos(" + MaxChargePos.second + ", " + filter.second + ")";
-                std::tie(maxTime, maxStrip) = aEventPtr->GetMaxChargePos(MaxChargePos.first, filter.first);
-                if (bool(maxTime - Test_Reference[Test_String + "->maxTime"] == 0)) { error_list_bool.push_back(true); }
-                else { std::cout << KRED << Test_String + "->maxTime" << RST << std::endl; error_list_bool.push_back(false); }
-                if (bool(maxStrip - Test_Reference[Test_String + "->maxStrip"] == 0)) { error_list_bool.push_back(true); }
-                else { std::cout << KRED << Test_Reference[Test_String + "->maxStrip"] << RST << std::endl; error_list_bool.push_back(false); }
+                std::tie(maxTime, maxStrip) = myEventPtr->GetMaxChargePos(MaxChargePos.first, filter.first);  
+                EXPECT_EQ(maxTime, Test_Reference.at(Test_String+"->maxTime"));
+                EXPECT_EQ(maxStrip, Test_Reference.at(Test_String+"->maxStrip"));
             }
         }
-    }
-
-  // GetSignalRange Test
-    void GetSignalRange_Test(std::shared_ptr<EventTPC> aEventPtr, std::map<std::string, double> Test_Reference) {
-        for (auto MaxChargePos : Test_GetMaxChargePos) {
-            for (auto filter : FilterTypes) {
-                std::string Test_String = "GetSignalRange(" + MaxChargePos.second + ", " + filter.second + ")";
-                std::tie(minTime, maxTime, minStrip, maxStrip) = aEventPtr->GetSignalRange(MaxChargePos.first, filter.first);
-                if (bool(minTime - Test_Reference[Test_String + "->minTime"] == 0)) { error_list_bool.push_back(true); }
-                else { std::cout << KRED << Test_String + "->minTime" << RST << std::endl; error_list_bool.push_back(false); }
-                if (bool(maxTime - Test_Reference[Test_String + "->maxTime"] == 0)) { error_list_bool.push_back(true); }
-                else { std::cout << KRED << Test_String + "->maxTime" << RST << std::endl; error_list_bool.push_back(false); }
-                if (bool(minStrip - Test_Reference[Test_String + "->minStrip"] == 0)) { error_list_bool.push_back(true); }
-                else { std::cout << KRED << Test_String + "->minStrip" << RST << std::endl; error_list_bool.push_back(false); }
-                if (bool(maxStrip - Test_Reference[Test_String + "->maxStrip"] == 0)) { error_list_bool.push_back(true); }
-                else { std::cout << KRED << Test_String + "->maxStrip" << RST << std::endl; error_list_bool.push_back(false); }
-            }
-        }
-    }
-
-  // GetMultiplicity Test
-    void GetMultiplicity_Test(std::shared_ptr<EventTPC> aEventPtr, std::map<std::string, double> Test_Reference) {
-        for (auto multiplicity : Test_GetMultiplicity) {
-            for (auto filter : FilterTypes) {
-                std::string Test_String = "GetMultiplicity" + multiplicity.second + ", " + filter.second + ")";
-                double Test = aEventPtr->GetMultiplicity(std::get<0>(multiplicity.first), std::get<1>(multiplicity.first), std::get<2>(multiplicity.first), std::get<3>(multiplicity.first), filter.first);
-                if (bool(Test - Test_Reference[Test_String] == 0)) { error_list_bool.push_back(true); }
-                else { std::cout << KRED << Test_String << RST << std::endl; error_list_bool.push_back(false); }
-            }
-        }
-    }
-/////////////////////////////////////
-/////////////////////////////////////
-TEST(EventTPCTest, fullTest){
-
-  std::string testJSON = std::string(std::getenv("HOME"))+".tpcreco/config/test.json";
-  int argc = 3;
-  char *argv[] = {(char*)"ConfigManager_tst", 
-                  (char*)"--meta.configJson",const_cast<char *>(testJSON.data())};
-  ConfigManager cm;
-  boost::property_tree::ptree myConfig = cm.getConfig(argc, argv);
-  std::shared_ptr<EventSourceBase> myEventSource = EventSourceFactory::makeEventSourceObject(myConfig);
-  
-    auto myEventPtr = myEventSource->getCurrentEvent(); 
-    myEventSource->loadFileEntry(9);
-  
-    std::cout<<myEventPtr->GetEventInfo()<<std::endl;
-    
-    get1DProjection_Titles_Test(myEventPtr, Test_Reference_Titles);
-    get2DProjection_Titles_Test(myEventPtr, Test_Reference_Titles);
-    get1DProjection_Test(myEventPtr, Test_Reference,Test_Reference_Titles);
-    get2DProjection_Test(myEventPtr, Test_Reference,Test_Reference_Titles);
-    GetTotalCharge_Test(myEventPtr, Test_Reference);
-    GetMaxCharge_Test(myEventPtr, Test_Reference);
-    GetMaxChargePos_Test(myEventPtr, Test_Reference);
-    GetSignalRange_Test(myEventPtr, Test_Reference);
-    GetMultiplicity_Test(myEventPtr, Test_Reference);
- 
-  int check = error_list_bool.size(); 
-  for (std::vector<bool>::iterator it = error_list_bool.begin(); it != error_list_bool.end(); ++it) { check -= *it; } 
-  
-  EXPECT_EQ(check, 0);
 }
-/////////////////////////////////////
-/////////////////////////////////////
-*/
+
+TEST_F(EventTPCTest, GetSignalRange) { 
+        for (auto maxChargePos : Test_GetMaxChargePos) {
+            for (auto filter : FilterTypes) {                
+                std::string Test_String = "GetSignalRange(" + maxChargePos.second + ", " + filter.second + ")";                
+                std::tie(minTime, maxTime, minStrip, maxStrip) = myEventPtr->GetSignalRange(maxChargePos.first, filter.first);
+                EXPECT_EQ(minTime, Test_Reference.at(Test_String+"->minTime"));
+                EXPECT_EQ(maxTime, Test_Reference.at(Test_String+"->maxTime"));
+                EXPECT_EQ(minStrip, Test_Reference.at(Test_String+"->minStrip"));
+                EXPECT_EQ(maxStrip, Test_Reference.at(Test_String+"->maxStrip"));
+            }
+        }
+}
+
+TEST_F(EventTPCTest, GetMultiplicity) { 
+        for (auto multiplicity : Test_GetMultiplicity) {
+            for (auto filter : FilterTypes) {                                
+                std::string Test_String = "GetMultiplicity" + multiplicity.second + ", " + filter.second + ")";
+                int Test = myEventPtr->GetMultiplicity(std::get<0>(multiplicity.first), std::get<1>(multiplicity.first), 
+                                                       std::get<2>(multiplicity.first), std::get<3>(multiplicity.first), 
+                                                       filter.first);
+                EXPECT_EQ(Test, Test_Reference.at(Test_String));               
+            }
+        }
+}
