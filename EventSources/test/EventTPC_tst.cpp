@@ -78,24 +78,42 @@ TEST_F(EventTPCTest, get1DProjection) {
                 }
             }
         }  
+        
+TEST_F(EventTPCTest, get2DProjection) {  
+    for (auto projection : ProjectionTypes2D) {
+            for (auto filter : FilterTypes) {
+                for (auto scale : ScaleTypes) {
+                    std::shared_ptr<TH2D> Test = myEventPtr->get2DProjection(std::get<0>(projection), std::get<0>(filter), std::get<0>(scale));
+                    std::string Test_String = "get2DProjection(" + std::get<1>(projection) + ", " + std::get<1>(filter) + ", " + std::get<1>(scale) + ")";
+                    EXPECT_EQ(std::string(Test->GetName()), Test_Reference_Titles.at(Test_String + "->GetName()"));
+                    EXPECT_DOUBLE_EQ(Test->GetEntries(), Test_Reference.at(Test_String + "->GetEntries()"));
+                    EXPECT_DOUBLE_EQ(Test->GetSumOfWeights(), Test_Reference.at(Test_String + "->GetSumOfWeights()"));
+            }   
+        }
+    }
+}
+
+TEST_F(EventTPCTest, getChannels) { 
+    std::string Test_String = "GetChannels(0,0)"; 
+    std::shared_ptr<TH2D> Test = myEventPtr->GetChannels(0, 0);
+    EXPECT_EQ(std::string(Test->GetName()), Test_Reference_Titles.at(Test_String + "->GetName()"));
+    EXPECT_EQ(Test->GetEntries(), Test_Reference.at(Test_String + "->GetEntries()"));
+    EXPECT_DOUBLE_EQ(Test->GetSumOfWeights(), Test_Reference.at(Test_String + "->GetSumOfWeights()"));
+}
+
+TEST_F(EventTPCTest, getChannels_raw) { 
+    std::string Test_String = "GetChannels_raw(0,0)"; 
+    std::shared_ptr<TH2D> Test = myEventPtr->GetChannels_raw(0, 0);
+    EXPECT_EQ(std::string(Test->GetName()), Test_Reference_Titles.at(Test_String + "->GetName()"));
+    EXPECT_EQ(Test->GetEntries(), Test_Reference.at(Test_String + "->GetEntries()"));
+    EXPECT_DOUBLE_EQ(Test->GetSumOfWeights(), Test_Reference.at(Test_String + "->GetSumOfWeights()"));
+}
+  
   
   /*
   // get2DProjection Test
     void get2DProjection_Test(std::shared_ptr<EventTPC> aEventPtr, std::map<std::string, double> Test_Reference, std::map<std::string, std::string> Test_Reference_Titles) {
-        for (auto projection : ProjectionTypes2D) {
-            for (auto filter : FilterTypes) {
-                for (auto scale : ScaleTypes) {
-                    std::shared_ptr<TH2D> Test = aEventPtr->get2DProjection(std::get<0>(projection), std::get<0>(filter), std::get<0>(scale));
-                    std::string Test_String = "get2DProjection(" + std::get<1>(projection) + ", " + std::get<1>(filter) + ", " + std::get<1>(scale) + ")";
-                    if (std::string(Test->GetName()) == Test_Reference_Titles[Test_String + "->GetName()"] &&
-                        int(Test->GetEntries()) == Test_Reference[Test_String + "->GetEntries()"] &&
-                        abs(double(Test->GetSumOfWeights())) - Test_Reference[Test_String + "->GetSumOfWeights()"] < epsilon) {
-                        error_list_bool.push_back(true);
-                    }
-                    else { std::cout << KRED << Test_String << RST << std::endl; error_list_bool.push_back(false); }
-                }
-            }
-        }
+
         std::string Test_Channel_String = "GetChannels(0,0)"; std::string Test_Channel_raw_String = "GetChannels_raw(0,0)";
         std::shared_ptr<TH2D> Test_Channel = aEventPtr->GetChannels(0, 0); std::shared_ptr<TH2D> Test_Channel_raw = aEventPtr->GetChannels_raw(0, 0);
         // GetChannels(0,0) Test
@@ -113,7 +131,7 @@ TEST_F(EventTPCTest, get1DProjection) {
         }
         else { std::cout << KRED << Test_Channel_raw_String << RST << std::endl; error_list_bool.push_back(false); }
     }
-*/    
+  */
         
 TEST_F(EventTPCTest, GetTotalCharge) { 
         for (auto charge : Test_GetTotalCharge) {
