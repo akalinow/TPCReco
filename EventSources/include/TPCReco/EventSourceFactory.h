@@ -56,6 +56,7 @@ namespace EventSourceFactory {
 			dataFilePaths.push_back(token);
 			tmp_dataFileName.erase(0, pos + 1);
 		}
+		if(tmp_dataFileName.size()) dataFilePaths.push_back(tmp_dataFileName);
 		
 		#ifdef WITH_GET
         bool all_graw=false;
@@ -76,12 +77,6 @@ namespace EventSourceFactory {
 #endif
 			dataFileVec.push_back(filePath);
 		}
-
-		std::cout << "dataFileVec.size(): " << dataFileVec.size()
-			<< " (boost::filesystem::is_regular_file(dataFileVec[0])): " << boost::filesystem::is_regular_file(dataFileVec[0])
-			<< " dataFileName.find(_MC_)!=std::string::npos: " << (dataFileName.find("_MC_") != std::string::npos)
-			<< _endl_;
-
 
 		if (dataFileVec.size() == 1 && boost::filesystem::is_regular_file(dataFileVec[0]) && dataFileName.find(".root") != std::string::npos) {
 			myEventSource = std::make_shared<EventSourceROOT>(geometryFileName);

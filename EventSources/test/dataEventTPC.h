@@ -70,12 +70,9 @@ std::map<std::tuple<bool, double, double, double>,  std::string> Test_GetMultipl
       {std::make_tuple(false, DIR_W, 0, -1) , "(false, DIR_W, 0, -1"},  {std::make_tuple(true, DIR_U, -1, 70), "(true, DIR_U, -1, 70"}  
 };
 
-std::string geometryFileName = "geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat";
-
-std::string dataFileName = "/scratch/ELITPC/data/HIgS_2022/20220412_extTrg_CO2_190mbar_DT1470ET/11.5MeV/GRAW/CoBo0_AsAd0_2022-04-12T08:03:44.531_0000.graw,/scratch/ELITPC/data/HIgS_2022/20220412_extTrg_CO2_190mbar_DT1470ET/11.5MeV/GRAW/CoBo0_AsAd1_2022-04-12T08:03:44.533_0000.graw,/scratch/ELITPC/data/HIgS_2022/20220412_extTrg_CO2_190mbar_DT1470ET/11.5MeV/GRAW/CoBo0_AsAd2_2022-04-12T08:03:44.536_0000.graw,/scratch/ELITPC/data/HIgS_2022/20220412_extTrg_CO2_190mbar_DT1470ET/11.5MeV/GRAW/CoBo0_AsAd3_2022-04-12T08:03:44.540_0000.graw";
-
-std::string referenceDataFileName = "";
-
+  ///
+ /// reference data from run: 2022-04-12T08_03_44.531, event: 89 
+ /// 
  std::map<std::string, std::string> Test_Reference_Titles = {
       {"get1DProjection(projection_type::DIR_V, filter_type::none, scale_type::raw)->GetTitle()"                  , "Event-89 selected by raw from V integrated over time"       },
       {"get1DProjection(projection_type::DIR_V, filter_type::threshold, scale_type::raw)->GetTitle()"             , "Event-89 selected by Threshold from V integrated over time" },

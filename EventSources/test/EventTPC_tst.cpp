@@ -3,19 +3,14 @@
 #include <memory>
 #include <vector>
 #include <iomanip>
-
+#include <unistd.h>
 #include "gtest/gtest.h"
 
 #include "TPCReco/EventSourceFactory.h"
 #include "TPCReco/ConfigManager.h"
-
 #include "TPCReco/colorText.h"
 
-
-#include "dataEventTPC.h" // File with data for tests and directory of data files
-
-std::vector<bool> error_list_bool;  // Vector storing test results
-double epsilon = 1e-5;  // Value used to compare double values
+#include "dataEventTPC.h" 
 
 class EventTPCTest : public ::testing::Test {
 public:
@@ -27,8 +22,10 @@ public:
     int argc = 3;
     char *argv[] = {(char*)"ConfigManager_tst", 
                   (char*)"--meta.configJson",const_cast<char *>(testJSON.data())};
+                
     ConfigManager cm;
     boost::property_tree::ptree myConfig = cm.getConfig(argc, argv);
+    int status = chdir("../../resources");     
     std::shared_ptr<EventSourceBase> myEventSource = EventSourceFactory::makeEventSourceObject(myConfig);
   
     myEventPtr = myEventSource->getCurrentEvent(); 
@@ -40,6 +37,8 @@ public:
 std::shared_ptr<EventTPC> EventTPCTest::myEventPtr(0);
 
 
+///////////////////////////////////////  
+///////////////////////////////////////  
 TEST_F(EventTPCTest, get1DProjection_Titles) {
  for (auto projections : Projections1D) {
             for (auto filter : FilterTypes) {
@@ -51,8 +50,8 @@ TEST_F(EventTPCTest, get1DProjection_Titles) {
             }
         }
 }
-
-  
+///////////////////////////////////////  
+///////////////////////////////////////  
 TEST_F(EventTPCTest, get2DProjection_Titles) {
         for (auto scale : ScaleTypes) {
             for (auto filter : FilterTypes) {
@@ -64,7 +63,8 @@ TEST_F(EventTPCTest, get2DProjection_Titles) {
             }
         }
 }
-    
+///////////////////////////////////////  
+///////////////////////////////////////      
 TEST_F(EventTPCTest, get1DProjection) {    
         for (auto projection : ProjectionTypes1D) {
             for (auto filter : FilterTypes) {
@@ -78,7 +78,8 @@ TEST_F(EventTPCTest, get1DProjection) {
                 }
             }
         }  
-        
+///////////////////////////////////////  
+///////////////////////////////////////          
 TEST_F(EventTPCTest, get2DProjection) {  
     for (auto projection : ProjectionTypes2D) {
             for (auto filter : FilterTypes) {
@@ -92,7 +93,8 @@ TEST_F(EventTPCTest, get2DProjection) {
         }
     }
 }
-
+///////////////////////////////////////  
+///////////////////////////////////////  
 TEST_F(EventTPCTest, getChannels) { 
     std::string Test_String = "GetChannels(0,0)"; 
     std::shared_ptr<TH2D> Test = myEventPtr->GetChannels(0, 0);
@@ -100,7 +102,8 @@ TEST_F(EventTPCTest, getChannels) {
     EXPECT_EQ(Test->GetEntries(), Test_Reference.at(Test_String + "->GetEntries()"));
     EXPECT_DOUBLE_EQ(Test->GetSumOfWeights(), Test_Reference.at(Test_String + "->GetSumOfWeights()"));
 }
-
+///////////////////////////////////////  
+///////////////////////////////////////  
 TEST_F(EventTPCTest, getChannels_raw) { 
     std::string Test_String = "GetChannels_raw(0,0)"; 
     std::shared_ptr<TH2D> Test = myEventPtr->GetChannels_raw(0, 0);
@@ -108,31 +111,8 @@ TEST_F(EventTPCTest, getChannels_raw) {
     EXPECT_EQ(Test->GetEntries(), Test_Reference.at(Test_String + "->GetEntries()"));
     EXPECT_DOUBLE_EQ(Test->GetSumOfWeights(), Test_Reference.at(Test_String + "->GetSumOfWeights()"));
 }
-  
-  
-  /*
-  // get2DProjection Test
-    void get2DProjection_Test(std::shared_ptr<EventTPC> aEventPtr, std::map<std::string, double> Test_Reference, std::map<std::string, std::string> Test_Reference_Titles) {
-
-        std::string Test_Channel_String = "GetChannels(0,0)"; std::string Test_Channel_raw_String = "GetChannels_raw(0,0)";
-        std::shared_ptr<TH2D> Test_Channel = aEventPtr->GetChannels(0, 0); std::shared_ptr<TH2D> Test_Channel_raw = aEventPtr->GetChannels_raw(0, 0);
-        // GetChannels(0,0) Test
-        if (std::string(Test_Channel->GetName()) == Test_Reference_Titles[Test_Channel_String + "->GetName()"] &&
-            int(Test_Channel->GetEntries()) == Test_Reference[Test_Channel_String + "->GetEntries()"] &&
-            abs(double(Test_Channel->GetSumOfWeights()) - Test_Reference[Test_Channel_String + "->GetSumOfWeights()"]) < epsilon) {
-            error_list_bool.push_back(true);
-        }
-        else { std::cout << KRED << Test_Channel_String << RST << std::endl; error_list_bool.push_back(false); }
-        // GetChannels_raw(0,0) Test
-        if (std::string(Test_Channel_raw->GetName()) == Test_Reference_Titles[Test_Channel_raw_String + "->GetName()"] &&
-            int(Test_Channel_raw->GetEntries()) == Test_Reference[Test_Channel_raw_String + "->GetEntries()"] &&
-            abs(double(Test_Channel_raw->GetSumOfWeights()) - Test_Reference[Test_Channel_raw_String + "->GetSumOfWeights()"]) < epsilon) {
-            error_list_bool.push_back(true);
-        }
-        else { std::cout << KRED << Test_Channel_raw_String << RST << std::endl; error_list_bool.push_back(false); }
-    }
-  */
-        
+///////////////////////////////////////  
+///////////////////////////////////////            
 TEST_F(EventTPCTest, GetTotalCharge) { 
         for (auto charge : Test_GetTotalCharge) {
             for (auto filter : FilterTypes) {
@@ -142,7 +122,8 @@ TEST_F(EventTPCTest, GetTotalCharge) {
             }
         }
 }
-
+///////////////////////////////////////  
+///////////////////////////////////////  
 TEST_F(EventTPCTest, GetMaxCharge) { 
         for (auto maxCharge : Test_GetMaxCharge) {
             for (auto filter : FilterTypes) {
@@ -152,7 +133,8 @@ TEST_F(EventTPCTest, GetMaxCharge) {
             }
         }
 }
-
+///////////////////////////////////////  
+///////////////////////////////////////  
 TEST_F(EventTPCTest, GetMaxChargePos) { 
         for (auto MaxChargePos : Test_GetMaxChargePos) {
             for (auto filter : FilterTypes) {
@@ -163,7 +145,8 @@ TEST_F(EventTPCTest, GetMaxChargePos) {
             }
         }
 }
-
+///////////////////////////////////////  
+///////////////////////////////////////  
 TEST_F(EventTPCTest, GetSignalRange) { 
         for (auto maxChargePos : Test_GetMaxChargePos) {
             for (auto filter : FilterTypes) {                
@@ -176,7 +159,8 @@ TEST_F(EventTPCTest, GetSignalRange) {
             }
         }
 }
-
+///////////////////////////////////////  
+///////////////////////////////////////  
 TEST_F(EventTPCTest, GetMultiplicity) { 
         for (auto multiplicity : Test_GetMultiplicity) {
             for (auto filter : FilterTypes) {                                
@@ -188,3 +172,5 @@ TEST_F(EventTPCTest, GetMultiplicity) {
             }
         }
 }
+///////////////////////////////////////  
+///////////////////////////////////////  
