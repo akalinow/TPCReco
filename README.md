@@ -78,5 +78,5 @@ List of all parameters is provided by
 ../bin/tpcGUI --help
 ```
 
-Check config file [structure and examples](GUI/config/README.md). 
+Check config file [structure and examples](Utilities/README.md). 
 
