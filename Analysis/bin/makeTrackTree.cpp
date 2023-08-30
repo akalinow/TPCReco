@@ -124,11 +124,13 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   leafNames += "total_mom_x:total_mom_y:total_mom_z:";
   leafNames += "lineFitChi2:dEdxFitChi2";
   tree->Branch("track",&track_data,leafNames.c_str());
-
+  
   std::string geometryFileName = aConfig.get("geometryFileName","");
   int index = geometryFileName.find("mbar");
   double pressure = stof(geometryFileName.substr(index-3, 3));
-  double temperature = 293.15;
+  //double pressure = aConfig.get<bool>("conditions.pressure"); this needs python scripts reorganisation
+  double temperature = aConfig.get<bool>("conditions.temperature");
+    
   TrackBuilder myTkBuilder;
   myTkBuilder.setGeometry(myEventSource->getGeometry());
   myTkBuilder.setPressure(pressure);
