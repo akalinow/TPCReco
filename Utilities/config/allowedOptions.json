@@ -63,7 +63,19 @@
         "group": "display",
         "type" : "bool",
         "defaultValue": false,
-        "description": "Switch for enabling algorithmic track reconstruction in GUI mode.\nType: bool"
+        "description": "Switch for enabling manual track reconstruction in GUI mode.\n Reconstructed tracks are saved into a file.\nType: bool"
+    },
+    "develMode":{
+        "group": "display",
+        "type" : "bool",
+        "defaultValue": false,
+        "description": "Plot developer set of histograms in GUI mode.\nType: bool"
+    },
+    "technicalMode":{
+        "group": "display",
+        "type" : "bool",
+        "defaultValue": false,
+        "description": "Plot detectro specific technical set of histograms in GUI mode.\nType: bool"
     },
     "remove":{
         "group": "pedestal",

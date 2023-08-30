@@ -258,10 +258,10 @@ int MainFrame::AddButtons(int attach) {
 		++attach_bottom;
 	}
 
-	std::vector<std::string> checkbox_names = { "Set Z logscale", "Set auto zoom", "Set reco mode", "Display rate" };
+	std::vector<std::string> checkbox_names = { "Set Z logscale", "Set auto zoom", "Set manual reco", "Display rate" };
 	std::vector<std::string> checkbox_tooltips = { "Enables the logscale on Z axis",
 						  "Enables automatic zoom in on region with deposits",
-						  "Converts data to SI units and enables segment creation and fit", "Display rate plot" };
+						  "Enables manual track reconstruction mode", "Display event rate plot" };
 	std::vector<std::string> checkbox_config = { "zLogScale", "autoZoom", "recoMode", "rate" };
 	std::vector<unsigned int> checkbox_id = { M_TOGGLE_LOGSCALE, M_TOGGLE_AUTOZOOM, M_TOGGLE_RECOMODE, M_TOGGLE_RATE };
 
@@ -527,23 +527,18 @@ void MainFrame::Update() {
 	}
 	fFileInfoFrame->updateFileName(myEventSource->getCurrentPath());
 	fFileInfoFrame->updateEventNumbers(myEventSource->numberOfEvents(),
-		myEventSource->currentEventNumber(),
-		myEventSource->currentEntryNumber());
+									   myEventSource->currentEventNumber(),
+									   myEventSource->currentEntryNumber());
 	myHistoManager.setEvent(myEventSource->getCurrentEvent());
 	fMarkersManager->reset();
 	fMarkersManager->setEnabled(isRecoModeOn);
 	ClearCanvases();
-	//myHistoManager.drawRawHistos(fRawHistosCanvas, isRateDisplayOn);
-	//myHistoManager.drawTechnicalHistos(fTechHistosCanvas, myEventSource->getGeometry()->GetAgetNchips());
-	if (!isRecoModeOn) {
-		myHistoManager.drawRawHistos(fMainCanvas, isRateDisplayOn);
-	}
-	else {
-		//myHistoManager.drawDevelHistos(fMainCanvas);
-		myHistoManager.drawRecoHistos(fMainCanvas);
-	}
+	
+	if (isRecoModeOn) myHistoManager.drawRecoHistos(fMainCanvas);
+	else if(myConfig.get<bool>("display.develMode")) myHistoManager.drawDevelHistos(fMainCanvas);
+	else if(myConfig.get<bool>("display.technicalMode")) myHistoManager.drawTechnicalHistos(fMainCanvas, myEventSource->getGeometry()->GetAgetNchips());
+	else myHistoManager.drawRawHistos(fMainCanvas, isRateDisplayOn);
 }
-
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MainFrame::processSegmentData(std::vector<double>* segmentsXY) {

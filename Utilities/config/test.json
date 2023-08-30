@@ -10,6 +10,7 @@
     "driftV": 0.405
 },
 "pedestal":{
+    "remove" : true,
     "minPedestalCell" : 10,
     "maxPedestalCell" : 50,
     "minSignalCell": 2,

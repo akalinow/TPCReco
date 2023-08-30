@@ -226,7 +226,8 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
      aCanvas->Update();
 
      auto projType = get2DProjectionType(strip_dir);     
-     auto histo2D = get2DProjection(projType, filterType, scale_type::mm);
+     auto histo2D = get2DProjection(projType, filterType, scale_type::mm);     
+     
      if(myConfig.get<bool>("hitFilter.recoClusterEnable")){
        histo2D->SetMinimum(0.0);
        histo2D->DrawCopy("colz");
@@ -234,9 +235,10 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
        hPlotBackground->Draw("col same");
        aPad->RedrawAxis();
        histo2D->DrawCopy("colz same");
-       drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);	    
+       getRecHitStripVsTime(strip_dir)->DrawCopy("same box");
      }
-     else histo2D->DrawCopy("colz");
+     else histo2D->DrawCopy("colz");     
+     drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);	    
    }
    int strip_dir=3;
    TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
@@ -244,8 +246,7 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
    aPad->cd();
    aCanvas->Modified();
    aCanvas->Update();
-   if(myConfig.get<bool>("hitFilter.recoClusterEnable")) drawChargeAlongTrack3D(aPad);
-   else  get1DProjection(definitions::projection_type::DIR_TIME, filterType, scale_type::mm)->DrawCopy("hist");
+   drawChargeAlongTrack3D(aPad);
 
    aCanvas->Modified();
    aCanvas->Update();
@@ -406,9 +407,9 @@ std::shared_ptr<TH2D> HistoManager::getRecHitStripVsTime(int strip_dir){
   if(aHisto) {
     if(doAutozoom) makeAutozoom(aHisto.get());
     aHisto->SetMarkerStyle(24);
-    aHisto->SetMarkerColorAlpha(kRed, 0.1);
-    aHisto->SetFillColorAlpha(kRed, 0.1);
-    aHisto->SetLineColorAlpha(kRed, 0.1);
+    aHisto->SetMarkerColorAlpha(kBlack, 0.1);
+    aHisto->SetFillColorAlpha(kBlack, 0.1);
+    aHisto->SetLineColorAlpha(kBlack, 0.1);
     aHisto->GetYaxis()->SetTitleOffset(1.8);
     aHisto->GetZaxis()->SetTitleOffset(1.5);
   }
