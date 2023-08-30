@@ -71,7 +71,7 @@ cd resources
 ../bin/tpcGUI --meta.configJson ~/.tpcreco/config/test.json
 ```
 
-Any application parameter can be set using the JSON file, or a command line argument. Command line arguments **overwrite** settings from JSON file.
+Any application parameter can be set using the JSON file, or a command line argument. Command line arguments **overwrite** settings from the JSON file.
 List of all parameters is provided by
 
 ```Shell

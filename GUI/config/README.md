@@ -33,3 +33,14 @@ Known tags are defined in the [allowedOptions.json](Utilities/config/allowedOpti
     }
 }
 ```
+Example of with command line arguments:
+
+```Shell
+../bin/tpcGUI --meta.configJson ~/.tpcreco/config/test.json --hitFilter.recoClusterEnable true --display.devel true
+```
+
+All parameters of the application can be saved to a new JSON file for further use:
+
+```Shell
+../bin/dumpConfig --meta.configJson ~/.tpcreco/config/test.json --hitFilter.recoClusterEnable true --display.devel true --meta.configDumpJson ./configDump.json
+```
