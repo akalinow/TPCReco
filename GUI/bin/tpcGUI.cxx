@@ -23,7 +23,9 @@ int main(int argc, char** argv) {
 
 	ROOT::EnableThreadSafety();
 	TApplication theApp("App", &argc, argv);
+
 	MainFrame mainWindow(gClient->GetRoot(), 0, 0, tree);
+	
 	theApp.Run();
 
 	return 0;

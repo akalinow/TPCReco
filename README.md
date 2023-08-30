@@ -16,8 +16,14 @@ git clone git@github.com:WarsawTPC/TPCReco.git
 cd TPCReco
 git submodule update --init --recursive
 mkdir build; cd build
-cmake ../
+cmake -DBUILD_TEST=ON ../
 make install -j 4
+```
+
+Run tests to check if everything is fine:
+
+```Shell
+ctest
 ```
 
 ## Update instructions
@@ -62,14 +68,14 @@ Run the GUI from the resources directory:
 
 ```Shell 
 cd resources
-../bin/tpcGUI ../config/config_GUI.json
+../bin/tpcGUI --meta.configJson ~/.tpcreco/config/test.json
 ```
 
-If you want to override the "dataFile" and/or "removePedestal" setting from the config file, 
-please use a command line option:
+Any application parameter can be set using the JSON file, or a command line argument. Command line arguments **overwrite** settings from JSON file.
+List of all parameters is provided by
 
-```
-../bin/tpcGUI ../config/config_GUI.json --dataFile path --removePedestal true
+```Shell
+../bin/tpcGUI --help
 ```
 
 Check config file [structure and examples](GUI/config/README.md). 
