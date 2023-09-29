@@ -18,7 +18,7 @@ public:
 
   static void SetUpTestSuite() {
   
-    std::string testJSON = std::string(std::getenv("HOME"))+".tpcreco/config/test.json";
+    std::string testJSON = std::string(std::getenv("HOME"))+"/.tpcreco/config/test.json";
     int argc = 3;
     char *argv[] = {(char*)"ConfigManager_tst", 
                   (char*)"--meta.configJson",const_cast<char *>(testJSON.data())};
