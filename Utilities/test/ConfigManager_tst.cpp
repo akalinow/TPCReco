@@ -67,7 +67,7 @@ TEST(ConfigManagerTest, paramFromJSON) {
 
   int argc = 3;
   
-  std::string testJSON = std::string(std::getenv("HOME"))+".tpcreco/config/test.json";
+  std::string testJSON = std::string(std::getenv("HOME"))+"/.tpcreco/config/test.json";
   char *argv[] = {(char*)"ConfigManager_tst", 
                   (char*)"--meta.configJson",const_cast<char *>(testJSON.data())};
   ConfigManager cm;
