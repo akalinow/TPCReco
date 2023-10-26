@@ -107,7 +107,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
 		  
   std::shared_ptr<EventSourceBase> myEventSource = EventSourceFactory::makeEventSourceObject(aConfig);
   
-  std::string dataFileName = aConfig.get("dataFileName","");
+  std::string dataFileName = aConfig.get("input.dataFile","");
   std::string rootFileName = createROOTFileName(dataFileName);
   TFile outputROOTFile(rootFileName.c_str(),"RECREATE");
   TTree *tree = new TTree("trackTree", "Track tree");
@@ -125,11 +125,9 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   leafNames += "lineFitChi2:dEdxFitChi2";
   tree->Branch("track",&track_data,leafNames.c_str());
   
-  std::string geometryFileName = aConfig.get("geometryFileName","");
-  int index = geometryFileName.find("mbar");
-  double pressure = stof(geometryFileName.substr(index-3, 3));
-  //double pressure = aConfig.get<bool>("conditions.pressure"); this needs python scripts reorganisation
-  double temperature = aConfig.get<bool>("conditions.temperature");
+  std::string geometryFileName = aConfig.get("input.geometryFile","");
+  double pressure = aConfig.get<double>("conditions.pressure"); 
+  double temperature = aConfig.get<double>("conditions.temperature");
     
   TrackBuilder myTkBuilder;
   myTkBuilder.setGeometry(myEventSource->getGeometry());

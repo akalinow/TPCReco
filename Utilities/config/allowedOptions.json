@@ -177,7 +177,7 @@
         "group": "conditions",
         "type" : "double",
         "defaultValue": 25.0,
-        "description": "Signa sampling rate [MHz]. \nType: double"
+        "description": "Signal sampling rate [MHz]. \nType: double"
     }, 
     "temperature":{
         "group": "conditions",
