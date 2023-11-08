@@ -23,6 +23,7 @@ make install -j 4
 Run tests to check if everything is fine:
 
 ```Shell
+export LC_ALL=$LANG
 ctest
 ```
 
