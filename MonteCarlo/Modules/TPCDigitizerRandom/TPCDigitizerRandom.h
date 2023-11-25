@@ -20,6 +20,10 @@ private:
     double MeVToChargeScale{1};
     double diffSigmaXY{};
     double diffSigmaZ{};
+    double diffSigmaXYmin{};
+    double diffSigmaXYmax{};
+    double diffSigmaZmin{};
+    double diffSigmaZmax{};
     unsigned int nSamplesPerHit{};
 
     REGISTER_MODULE(TPCDigitizerRandom)
