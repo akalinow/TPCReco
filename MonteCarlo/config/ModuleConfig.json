@@ -9,7 +9,7 @@
     "TPCDigitizerSRC",
     "EventFileExporter"
   ],
-  "GeometryConfig": "@CMAKE_INSTALL_PREFIX@/resources/geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat",
+  "GeometryConfig": "@CMAKE_INSTALL_PREFIX@/resources/geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat",
   "ModuleConfiguration": {
     "Generator": {
       "NumberOfEvents": 10000,
@@ -35,7 +35,7 @@
           "GammaEnergy": {
             "distribution": "EProviderSingle",
             "parameters": {
-              "singleE": 8.66
+              "singleE": 11
             }
           }
         },
@@ -197,15 +197,17 @@
       }
     },
     "TPCDigitizerRandom": {
-      "sigmaXY": 0.68,
-      "sigmaZ": 0.68,
+      "sigmaXYmin": 1,
+      "sigmaXYmax": 2,
+      "sigmaZmin": 1,
+      "sigmaZmax": 2,
       "NSamplesPerHit": 100,
       "MeVToChargeScale": 100000
     },
     "TPCDigitizerSRC": {
-      "StripResponsePath": "/scratch/TPCReco/build/resources",
-      "sigmaXY": 2.5,
-      "sigmaZ": 2.5,
+      "StripResponsePath": "@CMAKE_INSTALL_PREFIX@/resources",
+      "sigmaXY": 1.5,
+      "sigmaZ": 1.5,
       "MeVToChargeScale": 100000,
       "th2PolyPartitionX": 60,
       "th2PolyPartitionY": 40,
