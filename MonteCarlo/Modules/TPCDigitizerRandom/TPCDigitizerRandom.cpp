@@ -6,8 +6,10 @@ fwk::VModule::EResultFlag TPCDigitizerRandom::Init(boost::property_tree::ptree c
     aEventInfo->SetPedestalSubtracted(true);
     aEventInfo->SetRunId(100);
     MeVToChargeScale = config.get<double>("MeVToChargeScale");
-    diffSigmaXY = config.get<double>("sigmaXY");
-    diffSigmaZ = config.get<double>("sigmaZ");
+    diffSigmaXYmin = config.get<double>("sigmaXYmin");
+    diffSigmaXYmax = config.get<double>("sigmaXYmax");
+    diffSigmaZmin = config.get<double>("sigmaZmin");
+    diffSigmaZmax = config.get<double>("sigmaZmax");
     nSamplesPerHit = config.get<unsigned int>("NSamplesPerHit");
     return fwk::VModule::eSuccess;
 }
@@ -19,6 +21,9 @@ fwk::VModule::EResultFlag TPCDigitizerRandom::Process(ModuleExchangeSpace &event
     currentPEventTPC.Clear();
     bool err_flag = false;
     //loop over tracks
+    // diffsigmaXY = rand->Gaus(0, diffSigmaXY);
+    diffSigmaXY = gRandom->Uniform(diffSigmaXYmin, diffSigmaXYmax);
+    diffSigmaZ = gRandom->Uniform(diffSigmaZmin, diffSigmaZmax);
     for (auto &t: currentSimEvent.GetTracks()) {
         //loop over hits
         for (auto &h: t.GetHits()) {
