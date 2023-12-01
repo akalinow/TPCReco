@@ -62,8 +62,7 @@ std::string createROOTFileName(const  std::string & grawFileName){
 }
 /////////////////////////////////////
 /////////////////////////////////////
-int convertGRAWFile(const  std::string & geometryFileName,
-		    const  std::string & grawFileName);
+int convertGRAWFile(boost::property_tree::ptree & aConfig);
 /////////////////////////////////////
 /////////////////////////////////////
 boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
@@ -87,32 +86,22 @@ boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
 /////////////////////////////////////
 /////////////////////////////////////
 int main(int argc, char *argv[]) {
-  std::string geometryFileName, dataFileName;
 
   ConfigManager cm;
   boost::property_tree::ptree myConfig = cm.getConfig(argc, argv);
 
-  dataFileName = myConfig.get("input.dataFile","");
-  geometryFileName = myConfig.get("input.geometryFile","");
-
-  std::cout << geometryFileName << std::endl << dataFileName << std::endl;
-
-  if(dataFileName.size() && geometryFileName.size()){
-    convertGRAWFile(geometryFileName, dataFileName);
-  }
-  else{
-    std::cout<<KRED<<"Configuration not complete: "<<RST
-	     <<" geometryFile: "<<geometryFileName<<"\n"
-	     <<" dataFile: "<<dataFileName
-	     <<std::endl;
-  }
+  convertGRAWFile(myConfig);
   return 0;
 }
 /////////////////////////////////////
 /////////////////////////////////////
-int convertGRAWFile(const  std::string & geometryFileName,
-		    const  std::string & grawFileName){
+int convertGRAWFile(boost::property_tree::ptree & aConfig){
   
+  std::string geometryFileName, grawFileName;
+
+  geometryFileName = aConfig.get("input.geometryFile","");
+  grawFileName = aConfig.get("input.dataFile","");
+
   if(grawFileName.find(".graw") == std::string::npos ||
      geometryFileName.find(".dat") == std::string::npos){
     std::cout <<KRED<<"One or more of the input arguments is/are wrong. "<<RST<<std::endl
@@ -126,10 +115,11 @@ int convertGRAWFile(const  std::string & geometryFileName,
   TFile aFile(rootFileName.c_str(),"RECREATE");
 
   boost::property_tree::ptree tree;
-  tree.put("minPedestalCell",5);
-  tree.put("maxPedestalCell",25);
-  tree.put("minSignalCell",5);
-  tree.put("maxSignalCell",506);
+  tree.put("minPedestalCell",aConfig.get<int>("pedestal.minPedestalCell"));
+  tree.put("maxPedestalCell",aConfig.get<int>("pedestal.maxPedestalCell"));
+  tree.put("minSignalCell",aConfig.get<int>("pedestal.minSignalCell"));
+  tree.put("maxSignalCell",aConfig.get<int>("pedestal.maxSignalCell"));
+  tree.put("remove",aConfig.get<bool>("pedestal.remove"));
 
   std::shared_ptr<EventSourceBase> myEventSource;
   if(grawFileName.find(",")!=std::string::npos){
@@ -139,7 +129,7 @@ int convertGRAWFile(const  std::string & geometryFileName,
     myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
     dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(160);
   }
-  dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(tree); //some problem here
+  dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(tree);
   myEventSource->loadDataFile(grawFileName);
   std::cout << "File with " << myEventSource->numberOfEntries() << " frames opened." << std::endl;
   
