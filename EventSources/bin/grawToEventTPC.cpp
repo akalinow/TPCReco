@@ -14,6 +14,7 @@
 #include "TPCReco/PedestalCalculator.h"
 #include "TPCReco/EventSourceGRAW.h"
 #include "TPCReco/EventSourceMultiGRAW.h"
+#include "TPCReco/EventSourceFactory.h"
 #include "TPCReco/ConfigManager.h"
 
 #include <TFile.h>
@@ -65,26 +66,6 @@ std::string createROOTFileName(const  std::string & grawFileName){
 int convertGRAWFile(boost::property_tree::ptree & aConfig);
 /////////////////////////////////////
 /////////////////////////////////////
-boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
-
-  boost::program_options::options_description cmdLineOptDesc("Allowed options");
-  cmdLineOptDesc.add_options()
-    ("help", "produce help message")
-    ("geometryFile",  boost::program_options::value<std::string>(), "string - path to the geometry file.")
-    ("dataFile",  boost::program_options::value<std::string>(), "string - path to GRAW data file.");
-  
-  boost::program_options::variables_map varMap;        
-  boost::program_options::store(boost::program_options::parse_command_line(argc, argv, cmdLineOptDesc), varMap);
-  boost::program_options::notify(varMap); 
-
-  if (varMap.count("help")) {
-    std::cout<<cmdLineOptDesc<<std::endl;
-    exit(1);
-  }
-  return varMap;
-}
-/////////////////////////////////////
-/////////////////////////////////////
 int main(int argc, char *argv[]) {
 
   ConfigManager cm;
@@ -97,40 +78,15 @@ int main(int argc, char *argv[]) {
 /////////////////////////////////////
 int convertGRAWFile(boost::property_tree::ptree & aConfig){
   
-  std::string geometryFileName, grawFileName;
+  std::shared_ptr<EventSourceBase> myEventSource = EventSourceFactory::makeEventSourceObject(aConfig);
 
-  geometryFileName = aConfig.get("input.geometryFile","");
+  std::string grawFileName;
+
   grawFileName = aConfig.get("input.dataFile","");
-
-  if(grawFileName.find(".graw") == std::string::npos ||
-     geometryFileName.find(".dat") == std::string::npos){
-    std::cout <<KRED<<"One or more of the input arguments is/are wrong. "<<RST<<std::endl
-	      << "Check that GRAW and geometry files are correct. " << std::endl
-	      << std::endl
-	      << std::endl;
-    return -1;
-  }
 
   std::string rootFileName = createROOTFileName(grawFileName);
   TFile aFile(rootFileName.c_str(),"RECREATE");
 
-  boost::property_tree::ptree tree;
-  tree.put("minPedestalCell",aConfig.get<int>("pedestal.minPedestalCell"));
-  tree.put("maxPedestalCell",aConfig.get<int>("pedestal.maxPedestalCell"));
-  tree.put("minSignalCell",aConfig.get<int>("pedestal.minSignalCell"));
-  tree.put("maxSignalCell",aConfig.get<int>("pedestal.maxSignalCell"));
-  tree.put("remove",aConfig.get<bool>("pedestal.remove"));
-
-  std::shared_ptr<EventSourceBase> myEventSource;
-  if(grawFileName.find(",")!=std::string::npos){
-    myEventSource = std::make_shared<EventSourceMultiGRAW>(geometryFileName);    
-  }
-  else{
-    myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
-    dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(160);
-  }
-  dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(tree);
-  myEventSource->loadDataFile(grawFileName);
   std::cout << "File with " << myEventSource->numberOfEntries() << " frames opened." << std::endl;
   
   auto myEventPtr = myEventSource->getCurrentPEvent();
@@ -148,7 +104,6 @@ int convertGRAWFile(boost::property_tree::ptree & aConfig){
   Long64_t currentEventId=-1;
   std::map<unsigned int, bool> eventIdMap;
 
-  myEventSource->loadFileEntry(0);
 
   do {
 
