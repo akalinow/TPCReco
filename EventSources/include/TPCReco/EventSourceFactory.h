@@ -79,8 +79,11 @@ namespace EventSourceFactory {
 		}
 
 		if (dataFileVec.size() == 1 && boost::filesystem::is_regular_file(dataFileVec[0]) && dataFileName.find(".root") != std::string::npos) {
+			myConfig.put("transient.onlineFlag", false);
 			myEventSource = std::make_shared<EventSourceROOT>(geometryFileName);
 			myConfig.put("transient.eventType", event_type::EventSourceROOT);
+			EventSourceROOT* aRootEventSrc = dynamic_cast<EventSourceROOT*>(myEventSource.get());
+			aRootEventSrc->configurePedestal(myConfig.find("pedestal")->second);
 		}
 		else if (dataFileVec.size() == 1 && dataFileName.find("_MC_") != std::string::npos) {
 			myEventSource = std::make_shared<EventSourceMC>(geometryFileName);
@@ -102,6 +105,8 @@ namespace EventSourceFactory {
 					exit(0);
 				}
 			}
+			EventSourceGRAW* aGrawEventSrc = dynamic_cast<EventSourceGRAW*>(myEventSource.get());
+			aGrawEventSrc->configurePedestal(myConfig.find("pedestal")->second);
 		}
 		else if (dataFileVec.size() == 1 && boost::filesystem::is_directory(dataFileVec[0])) {
 			myConfig.put("transient.onlineFlag", true);
@@ -114,9 +119,10 @@ namespace EventSourceFactory {
 				myConfig.put("transient.eventType", event_type::EventSourceGRAW);
 				dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setFrameLoadRange(myConfig.get<int>("input.frameLoadRange"));
 			}
+			EventSourceGRAW* aGrawEventSrc = dynamic_cast<EventSourceGRAW*>(myEventSource.get());
+			aGrawEventSrc->configurePedestal(myConfig.find("pedestal")->second);
 		}
-		EventSourceGRAW* aGrawEventSrc = dynamic_cast<EventSourceGRAW*>(myEventSource.get());
-		aGrawEventSrc->configurePedestal(myConfig.find("pedestal")->second);
+
 #endif
 	 if(!myEventSource) {
 			std::cerr << KRED << "Input source not known. DataFile: " << RST << dataFileName << _endl_;
