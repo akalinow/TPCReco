@@ -89,7 +89,7 @@ int convertGRAWFile(boost::property_tree::ptree & aConfig){
   
   auto myEventPtr = myEventSource->getCurrentPEvent();
 
-  TTree aTree("TPCData","");
+  TTree aTree(aConfig.get<std::string>("input.treeName").c_str(),"");
   auto persistent_event = myEventPtr.get();
   Int_t bufsize=128000;
   int splitlevel=2;
