@@ -96,6 +96,7 @@ int convertGRAWFile(boost::property_tree::ptree & aConfig){
   aTree.Branch("Event", &persistent_event, bufsize, splitlevel); 
   Long64_t currentEventId=-1;
   std::map<unsigned int, bool> eventIdMap;
+
   myEventSource->loadFileEntry(0);
 
   do {
