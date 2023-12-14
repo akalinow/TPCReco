@@ -115,7 +115,7 @@ int convertGRAWFile(boost::property_tree::ptree & aConfig){
   while(currentEventId!=(Long64_t)myEventSource->currentEventNumber());  
   aTree.Print();
   // build index based on: majorname=EventId, minorname=NONE
-  aTree.BuildIndex("Event.myEventInfo.eventId");
+  //aTree.BuildIndex("Event.myEventInfo.eventId");
   aTree.Write("", TObject::kOverwrite); // save only the new version of the tree
   aFile.Close();
 
