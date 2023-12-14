@@ -8,6 +8,8 @@
 #include "TPCReco/EventSourceROOT.h"
 #include "TPCReco/PedestalCalculator.h"
 
+#include "TPCReco/ConfigManager.h"
+
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 EventSourceROOT::EventSourceROOT(const std::string & geometryFileName) {
@@ -17,36 +19,14 @@ EventSourceROOT::EventSourceROOT(const std::string & geometryFileName) {
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void EventSourceROOT::setTreePointers(const std::string & fileName) {
+void EventSourceROOT::setTreePointers() {
 
-  readEventType = EventType::raw;
-  if(fileName.find("EventTPC")!=std::string::npos) readEventType = EventType::tpc;
-
-  switch(readEventType) {
-  case EventType::raw: 
-    treeName = "TPCDataRaw";
-    aPtrEventInfo = (eventraw::EventInfo*)(myCurrentEventRaw.get());
-    aPtrEventData = (eventraw::EventData*)(myCurrentEventRaw.get());
-    aPtr=NULL;
-    break;
-  case EventType::tpc: 
-  default:
-    treeName = "TPCData";
-    aPtr = myCurrentPEvent.get();
-    aPtrEventInfo=NULL;
-    aPtrEventData=NULL;
-    break;
-  };
-
-#ifdef DEBUG
-  ///// DEBUG
-  std::cout << __FUNCTION__
-	    << " aPtr=" << aPtr
-	    << ", aPtrEventInfo=" << aPtrEventInfo
-	    << ", aPtrEventData=" << aPtrEventData << std::endl;
-  ///// DEBUG
-#endif
+  treeName = ConfigManager::getConfig().get<std::string>("input.treeName");
+  aPtr = myCurrentPEvent.get();
+  aPtrEventInfo=NULL;
+  aPtrEventData=NULL;
 }
+
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 EventSourceROOT::~EventSourceROOT() { }
@@ -80,7 +60,7 @@ void EventSourceROOT::loadDataFile(const std::string & fileName){
     exit(1);
   }
 
-  setTreePointers(fileName);
+  setTreePointers();
   myTree.reset((TTree*)myFile->Get(treeName.c_str()));
   if(!myTree){
     std::cout<<KRED<<"ERROR "<<RST<<"TTree with name: "<<treeName
@@ -90,30 +70,10 @@ void EventSourceROOT::loadDataFile(const std::string & fileName){
     exit(0);
   }
 
-  switch(readEventType) {
-  case EventType::raw:
-    myTree->SetBranchAddress("EventInfo", &aPtrEventInfo);
-    myTree->SetBranchAddress("EventData", &aPtrEventData);
-    break;
-
-  case EventType::tpc:
-  default:
     myTree->SetBranchAddress("Event", &aPtr);
     myTree->BuildIndex("myEventInfo.runId", "myEventInfo.eventId");
-    break;
-  };
-  
-  nEntries = myTree->GetEntries();
 
-#ifdef DEBUG
-  ///// DEBUG
-  std::cout << __FUNCTION__
-	    << ": aPtr=" << aPtr
-	    << ", aPtrEventInfo=" << aPtrEventInfo
-	    << ", aPtrEventData=" << aPtrEventData
-	    << ", entries=" << nEntries << std::endl;
-  ///// DEBUG
-#endif
+  nEntries = myTree->GetEntries();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -126,8 +86,7 @@ void EventSourceROOT::loadFileEntry(unsigned long int iEntry){
   if((long int)iEntry>=myTree->GetEntries()) iEntry = myTree->GetEntries() - 1;
 
   myTree->GetEntry(iEntry);
-  if(readEventType==EventType::raw) fillEventFromEventRaw();
-  if(readEventType==EventType::tpc) fillEventTPC();
+  fillEventTPC();
 			      
   myCurrentEntry = iEntry;
 }
@@ -177,104 +136,3 @@ void EventSourceROOT::loadGeometry(const std::string & fileName){
   EventSourceBase::loadGeometry(fileName);
   myPedestalCalculator.SetGeometryAndInitialize(myGeometryPtr);
 }
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void EventSourceROOT::fillEventFromEventRaw(){
-
-  // sanity checks
-  if(readEventType!=EventType::raw) {
-    std::cout << KRED << __FUNCTION__
-	      << ": Read flag mismatch! "
-	      << "Expected EventRaw instead of EventTPC. Entry skipped." << RST << std::endl;
-    return;
-  }
-  if(aPtrEventInfo==NULL || aPtrEventData==NULL) {
-    std::cout << KRED << __FUNCTION__
-	      << ": Undefined TBranch pointers! Entry skipped." << RST << std::endl;
-    return;
-  }
-
-  // calculate pedestals
-  if(removePedestal) myPedestalCalculator.CalculateEventPedestals(myCurrentEventRaw);
-  // update event header
-  myCurrentEvent->Clear();
-
-#ifdef DEBUG
-  std::cout << __FUNCTION__
-	    << myCurrentEventRaw << std::endl;
-#endif
-
-  myCurrentEventRaw.get()->SetPedestalSubtracted(removePedestal);
-  myCurrentEvent->SetEventInfo(*myCurrentEventRaw.get());
-  myCurrentEvent->SetGeoPtr(myGeometryPtr);
-  
-  // loop over AGET chips
-  for(auto it=myCurrentEventRaw->data.begin(); it!=myCurrentEventRaw->data.end(); it++) {
-
-    const unsigned int COBO_idx = std::get<0>(it->first);
-    const unsigned int ASAD_idx = std::get<0>(it->first);
-    const unsigned int AGET_idx = std::get<0>(it->first);
-
-    // sanity checks
-    if(ASAD_idx >= (unsigned int)myGeometryPtr->GetAsadNboards()){
-      std::cout << KRED << __FUNCTION__
-		<<": Data format mismatch! ASAD="<<ASAD_idx
-		<<", number of ASAD boards in geometry="<<myGeometryPtr->GetAsadNboards()
-		<<". Entry skipped."
-		<< RST << std::endl;
-      return;
-    }
-
-
-    // loop over AGET channels
-    const eventraw::AgetRaw araw=it->second;
-    unsigned int CHANNEL_idx = 0; // channel NUMBER
-    unsigned int idx=0; // channelData vector index
-
-    for(auto it2=araw.channelMask.begin(); it2!=araw.channelMask.end(); it2++) {
-
-      const unsigned char bitmask=*it2;
-      for(auto bit=0; bit<8; bit++) {
-
-	if ( (bitmask>>bit)&1 ) { // raw channel CHANNEL_idx is present
-
-	  // loop over TIME CELLS of a given channel
-	  const eventraw::ChannelRaw craw=araw.channelData[idx];
-	  unsigned int TIMECELL_idx = 0; // time cell NUMBER
-	  unsigned int idx2=0; // cellData vector index 
-	  
-	  for(auto it3=craw.cellMask.begin(); it3!=craw.cellMask.end(); it3++) {
-
-	    const unsigned char bitmask=*it3;
-	    for(auto bit=0; bit<8; bit++) {
-	      if ( (bitmask>>bit)&1 ) { // cell TIMECELL_idx is present
-
-		if(TIMECELL_idx<2 || TIMECELL_idx>509 ||
-		   TIMECELL_idx<(unsigned int)myPedestalCalculator.GetMinSignalCell() ||
-		   TIMECELL_idx>(unsigned int)myPedestalCalculator.GetMaxSignalCell()) continue;
-		// get stored value
-		Double_t corrVal = craw.cellData[idx2];
-
-		// subtract pedestal
-		if(removePedestal){
-		  corrVal -= myPedestalCalculator.GetPedestalCorrection(COBO_idx, ASAD_idx, AGET_idx, CHANNEL_idx, TIMECELL_idx);
-		}
-
-		// add new hit to PEventTPC
-		std::shared_ptr<StripTPC> aStrip(myGeometryPtr->GetStripByAget(COBO_idx, ASAD_idx,  AGET_idx,  CHANNEL_idx));
-		if(aStrip) myCurrentPEvent->AddValByStrip(aStrip, TIMECELL_idx, corrVal);
-		
-		idx2++; // set next cellData index
-	      } // if ((bitmask...
-	      TIMECELL_idx++; // set next time cell NUMBER
-	    } // scan of CELL mask bits
-	  } // scan of CELL mask bytes
-	  idx++; // set next channelData index
-	} // if ((bitmask...
-	CHANNEL_idx++; // set next channel NUMBER
-      } // scan of CHANNEL mask bits
-    } // scan of CHANNEL mask bytes   
-  } // loop over AGET chips
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////

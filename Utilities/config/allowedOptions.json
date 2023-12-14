@@ -17,6 +17,12 @@
         "defaultValue": "",
         "description": "Comma separated list of input files.\nType: string"
     },
+    "treeName":{
+        "group": "input",
+        "type": "string",
+        "defaultValue": "TPCData",
+        "description": "Name of a TTree containing event data, read by EventSourceROOT"
+    },
     "geometryFile":{
         "group": "input",
         "type": "string",
