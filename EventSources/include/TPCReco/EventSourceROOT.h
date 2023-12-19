@@ -50,11 +50,9 @@ public:
   std::shared_ptr<TFile> myFile;
   std::shared_ptr<TTree> myTree;
   bool removePedestal{true};
-  EventType readEventType{EventType::raw};
 
   PedestalCalculator myPedestalCalculator;  
-  void setTreePointers(const std::string & fileName);
-  void fillEventFromEventRaw();
+  void setTreePointers();
 
 };
 #endif
