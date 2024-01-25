@@ -21,7 +21,13 @@
         "group": "input",
         "type": "string",
         "defaultValue": "TPCData",
-        "description": "Name of a TTree containing event data, read by EventSourceROOT"
+        "description": "Name of a TTree containing event data, read by EventSourceROOT. \nType: string"
+    },
+    "readNEvents":{
+        "group": "input",
+        "type": "int",
+        "defaultValue": -1,
+        "description": "Number of events to read from input file; -1 means all events. \nType: int"
     },
     "geometryFile":{
         "group": "input",

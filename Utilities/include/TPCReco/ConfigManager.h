@@ -1,3 +1,6 @@
+#ifndef CONFIGMANAGER_H
+#define CONFIGMANAGER_H
+
 #include <map>
 #include <iostream>
 #include <string>
@@ -49,3 +52,5 @@ private:
     std::map<std::string, string_code> varTypeMap;
     static boost::property_tree::ptree configTree;
 };
+
+#endif
