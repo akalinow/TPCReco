@@ -1,239 +1,212 @@
 \documentclass{article}
-\usepackage[utf8]{inputenc}
-\usepackage[breaklinks=true]{hyperref}
-\usepackage{breakcites}
-\usepackage[polish]{babel}
-\usepackage{mdframed}
-\usepackage{subfiles}
-\usepackage{subcaption}
 \usepackage{graphicx}
-\usepackage{wrapfig}
-\usepackage{amsmath}
-\usepackage{amsfonts}
-\usepackage{polski}
+\usepackage{float}
+\usepackage{subcaption}
+\usepackage{hyperref}
 \hypersetup{
-    linktoc=all,     %set to all if you want both sections and subsections linked
-    linkcolor=blue,  %choose some color if you want links to stand out
+	colorlinks=true,
+	linkcolor=blue,
+	citecolor=blue,
+	filecolor=magenta,
+	urlcolor=black        
 }
-% Options for packages loaded elsewhere
-\PassOptionsToPackage{unicode}{hyperref}
-\PassOptionsToPackage{hyphens}{url}
-%
-\usepackage{lmodern}
-\usepackage{amssymb,amsmath}
-\usepackage{ifxetex,ifluatex}
-\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
-  %\usepackage[T1]{fontenc}
-  %\usepackage{textcomp} % provide euro and other symbols
-\else % if luatex or xetex
-  \usepackage{unicode-math}
-  \defaultfontfeatures{Scale=MatchLowercase}
-  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
-\fi
-% Use upquote if available, for straight quotes in verbatim environments
-\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
-\IfFileExists{microtype.sty}{% use microtype if available
-  \usepackage[]{microtype}
-  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
-}{}
-\makeatletter
-\@ifundefined{KOMAClassName}{% if non-KOMA class
-  \IfFileExists{parskip.sty}{%
-    \usepackage{parskip}
-  }{% else
-    \setlength{\parindent}{0pt}
-    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
-}{% if KOMA class
-  \KOMAoptions{parskip=half}}
-\makeatother
-\usepackage{xcolor}
-\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
-\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
-\hypersetup{
-  hidelinks,
-  pdfcreator={LaTeX via pandoc}}
-\urlstyle{same} % disable monospaced font for URLs
-\usepackage{color}
-\usepackage{fancyvrb}
-\newcommand{\VerbBar}{|}
-\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
-
-\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
-% Add ',fontsize=\small' for more characters per line
-\newenvironment{Shaded}{}{}
-\newcommand{\AlertTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{#1}}}
-\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
-\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.49,0.56,0.16}{#1}}
-\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
-\newcommand{\BuiltInTok}[1]{#1}
-\newcommand{\CharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
-\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textit{#1}}}
-\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
-\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.53,0.00,0.00}{#1}}
-\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{#1}}}
-\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.56,0.13,0.00}{#1}}
-\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
-\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.73,0.13,0.13}{\textit{#1}}}
-\newcommand{\ErrorTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{#1}}}
-\newcommand{\ExtensionTok}[1]{#1}
-\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
-\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.02,0.16,0.49}{#1}}
-\newcommand{\ImportTok}[1]{#1}
-\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
-\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{#1}}}
-\newcommand{\NormalTok}[1]{#1}
-\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.40,0.40,0.40}{#1}}
-\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{#1}}
-\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.74,0.48,0.00}{#1}}
-\newcommand{\RegionMarkerTok}[1]{#1}
-\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
-\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.73,0.40,0.53}{#1}}
-\newcommand{\StringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
-\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.10,0.09,0.49}{#1}}
-\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
-\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
-\setlength{\emergencystretch}{3em} % prevent overfull lines
-\providecommand{\tightlist}{%
-  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\usepackage[a4paper,top=2cm,bottom=2cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[polish]{babel}
+\usepackage{csquotes}
+\usepackage[sorting=none, language=polish]{biblatex}
 
 
-%End of Configuration
+\addbibresource{bibliography.bib}
 
+\title{Rozwój aplikacji do analizy danych w eksperymencie WarsawTPC -- raport}
+\author{Maciej Bajor \\ Przemysław Szyc \\ Szymon Sławiński \\\\ Opiekun: dr hab. Artur Kalinowski}
 
-\title{Praca nad projektem TPCReco i reorganizacja kodu}
-\author{Jakub Żak \and Wojciech Kos \and Agata Bijak \and Michał Pasiowiec}
-\date{}
 \begin{document}
 
 \maketitle
-\vfill
-\centerline{\large Opiekun: dr hab. Artur Kalinowski}
-\vfill
 
-\pagebreak
 \section{Wstęp}
-Program \textit{TPCReco} służy do analizy danych z detektora \textit{ELITPC}, który bada reakcje fotonuklearne metodą monochromatycznych promieni gamma. Został on napisany w języku \texttt{C++} i jest aktywnie rozwijany na Wydziale Fizyki UW. Czerpie w dużej mierze z genewskiej biblioteki do analizy danych \textit{ROOT}\cite{cern}.
+% MB
+Analiza danych w eksperymencie WarsawTPC~\cite{WAWTPC}, zajmującym się badaniem zjawiska\linebreak fotodezintegracji atomów tlenu i węgla, odbywała się do tej pory przy pomocy programów z repozytorium TPCReco~\cite{TPCReco}, napisanych w języku C++. Istotnym elementem tego oprogramowania, kluczowym przy dostrajaniu narzędzi do analizy, są symulacje zdarzeń metodą Monte Carlo.
 
-\section{Cel projektu}
-Celem Projektu jest reorganizacja istniejącego kodu do analizy danych z eksperymentu Warsaw Active target TPC (dawniej ELITPC).
-Projekt podizelony został na trzy części: 
+W celu poprawy jakości automatycznej analizy danych z eksperymentu stworzono w 2023 roku zestaw programów napisanych w języku Python, umożliwiających rekonstrukcję i analizę zdarzeń z wykorzystaniem uczenia maszynowego.
+% /MB
 
+\section{Cel projektu zespołowego}
+% MB
+Założenia projektu skupiały się na poprawie działania rekonstrukcji torów z użyciem uczenia maszynowego. Do tego celu potrzebne było przygotowanie odpowiednich danych wejściowych z symulacji, które odpowiadałyby danym z eksperymentu - stąd zaszła konieczność wykonania porównań, a także poprawek w kodzie do symulacji, aby uzyskać jak najlepszą zgodność z danymi doświadczalnymi.
 
-\begin{itemize}
-    \item Stworzenie wzoru testów funkcjonalnych klass aplikacji, 
-    \item Reorganizacja konfiguracji aplikacji,
-    \item Reorganizacja klasy  EventSource,
-\end{itemize}
-Projekt wykonano przy pomocy systemu wersjonowania kodu (\textit{GIT}\cite{git}) oraz oprogramowania służącego do konteneryzacji projektu (\textit{Docker}\cite{docker})
+Zadania w obszarze uczenia maszynowego obejmowały optymalizację formatu danych wejściowych z punktu widzenia przepustowości, a więc przyspieszenie odczytywania danych z plików w formacie \texttt{.ROOT}~\cite{root}, trening modelu rozpoznającego punkty krańcowe torów, test wydajności modelu i porównanie z obecnym algorytmem na danych symulowanych i rzeczywistych. W dalszej przyszłości powinna nastąpić integracja modelu ze środowiskiem TPCReco z użyciem API do C++  z pakietu TensorFlow~\cite{TensorFlow}.
+% /MB
+\section{Repozytoria i obszary robocze projektu}
+% MB
+Zmiany w kodzie wprowadzane były w dwóch repozytoriach w serwisie GitHub~\cite{GitHub} - odgałęzieniu głównego repozytorium TPCReco~\cite{TPCRecofork}, oraz w plikach repozytorium MachineLearning~\cite{WAWTPCfork}, odpowiedzialnych za trening i sprawdzanie dokładności modeli uczenia maszynowego. Zaakceptowane zmiany w kodzie trafiały do gałęzi poprzedzonych przedrostkiem ZPS.
 
-\vfill
-\pagebreak
+Oprócz powyższych, zespół korzystał z przestrzeni w Notion~\cite{Notion} na potrzeby związane z tworzeniem i podziałem zadań, przekazywaniem raportów cząstkowych opiekunowi projektu, oraz spisywaniem instrukcji do niektórych czynności. 
 
-\section{Kod projektu}
-\label{kod}
-Repozytorium projektu znajduje się pod adresem \texttt{https://github.com/Kinexity/TPCReco}. Tam wprowadzano wszelkie zmiany za pomocą programu \textit{GIT}, które na koniec włączono do głównego repozytorium aplikacji pod adresem, \texttt{https://github.com/akalinow/TPCReco}. Uczestnicy pracowali na następujących gałęziach projektu:
+Komunikacja w zespole odbywała się na czacie w Google Workspace oraz na spotkaniach z opiekunem, organizowanych co dwa tygodnie. Wymiana plików miała miejsce za pomocą folderu współdzielonego na Dysku Google.
+
+Zadania wymagające mocy obliczeniowej wykonywano początkowo w Google Colab~\cite{Colab} i lokalnie, następnie na komputerze wydziałowym bez koprocesora graficznego, a pod koniec uzyskano dostęp do maszyn HPC ICM~\cite{ICM}.
+% /MB
+
+\section{Symulacje Monte Carlo}
+% MB
+Działania w zakresie symulacji zdarzeń skupiały się na zapewnieniu potrzebnych zbiorów treningowych i walidacyjnych do uczenia maszynowego, a także na porównaniu zgodności przebiegu torów z rzeczywistymi danymi.
+\ 
+Wprowadzono do kodu \texttt{TPCDigitizerRandom} prostą poprawkę, pozwalającą na ustalanie rozmycia torów w rozkładzie płaskim efektywnej dyfuzji; minimalne i maksymalne wartości sigm można podać w pliku konfiguracyjnym Monte Carlo w następujący sposób:
+
+\begin{verbatim}
+"TPCDigitizerRandom": {
+      "sigmaXYmin": 0.75,
+      "sigmaXYmax": 1.5,
+      "sigmaZmin": 0.75,
+      "sigmaZmax": 1.5,
+      "NSamplesPerHit": 100,
+      "MeVToChargeScale": 100000
+    }
+\end{verbatim}
+ 
+Wykonano także porównania symulacji z danymi rzeczywistymi, z wykorzystaniem dopasowań z GUI. Przy ustalonym wierzchołku generowano tory zgodnie z parametrami dopasowań i energią wiązki. Wykonane porównania wskazują na rozbieżności w szczególnych przypadkach, głównie gdy produkty reakcji poruszały się wzdłuż którejś z osi detektora (przykładowe zdarzenie znajduje się na Rysunku~\ref{fig:porownanie}). Na potrzeby wykonania porównań również wprowadzono poprawki w kodzie, między innymi zaimplementowano możliwość ustalania granic osi w funkcji \textit{plf.plotEvent} z repozytorium MachineLearning~\cite{WAWTPCfork}, a także przygotowano do wprowadzenia zmiany w modułach symulacji \texttt{ReactionTwoProng} i \texttt{EventGenerator} z repozytorium TPCReco~\cite{TPCRecofork}, które wymagają jeszcze konsultacji z autorem oryginalnego kodu.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+         \includegraphics[width=\textwidth, trim={0cm 0cm 0cm 0cm},clip]{img/event1014_real.png}
+         \caption{Zdarzenie nr 1014 z porcji danych eksperymentalnych.}
+         \label{fig:real}
+    \end{subfigure}
+    \begin{subfigure}[b]{\textwidth}
+         \centering
+         \includegraphics[width=\textwidth, trim={0cm 0cm 0cm 0cm},clip]{img/event1014_sim_1_5.png}
+         \caption{Zdarzenie symulowane z wykorzystaniem \texttt{TPCDigitizerRandom} z wprowadzoną poprawką (efektywna dyfuzja 1,5 mm).}
+         \label{fig:sim1}
+    \end{subfigure}
+    \begin{subfigure}[b]{\textwidth}
+         \centering
+         \includegraphics[width=\textwidth, trim={0cm 0cm 0cm 0cm},clip]{img/event1014_simSRC.png}
+         \caption{Zdarzenie symulowane z użyciem \texttt{TPCDigitizerSRC} (efektywna dyfuzja 1,5 mm).}
+         \label{fig:sim2}
+    \end{subfigure}
+    \caption{Porównanie zdarzenia odczytanego z danych eksperymentalnych dla energii wiązki $E=11,5$ MeV ze zdarzeniami symulowanymi na bazie dopasowania z GUI (czerwone punkty to położenia wierzchołka i końców torów wyznaczone na bazie dopasowania).}
+    \label{fig:porownanie}
+\end{figure}
+ 
+W odniesieniu do generowania danych, korzystania z GUI i rekonstrukcji zdarzeń, stworzono instrukcje w Notion~\cite{NotionDocs} w ramach ulepszania dokumentacji, aby łatwiej było zaznajomić się z narzędziami pakietu TPCReco.
+% /MB
+
+\section{Uczenie Maszynowe}
+% By Przemysław Szyc - wersja 1.0
+Rekonstrukcji położenia torów cząstek można dokonywać w formacie docelowym, czyli we współrzędnych XYZ,
+oraz dla każdej projekcji oddzielnie, w układzie odniesienia UVWT~\cite{UVWT}.
+
+W przypadku formatu docelowego XYZ model, którego danymi wejściowymi są tablice o wymiarach (256, 512, 3) - (numer paska, numer przedzialu czasowego, numer rzutu) - reprezentujące odczyty z detektorów, dokonuje rekonstrukcji położeń trzech punktów w kartezjańskim układzie współrzędnych, tzn. przestrzeń wyjść składa się z trzech wektorów 3-wymiarowych.
+
+Rekonstrukcja w formacie UVWT polega na tym, że dla każdej podprzestrzeni (UT, WT, VT) rekonstrukcja wykonywana jest niezależnie. Wektorem wejściowym są tablice (256, 512, 1), a wyjściem współrzędne rzutów punktów na daną podprzestrzeń (dwa wektory 3-elementowe). Rekonstrukcja ta wymaga też użycia funkcji mapującej wektory z przestrzeni UT, VT, WT do przestrzeni XYZ po dokonaniu rekonstrukcji.\\\\
+Podczas projektu oba te podejścia były rozwijane:
+\subsection{Rekonstrukcja we współrzędnych XYZ}
+W kontekście tej metody wykonano następujące zadania:
 \begin{enumerate}
-    \item \texttt{develJZ}
-    \item \texttt{Zmiiokmoesker}.
+    \item Umożliwiono konwersję danych z formatu .root do formatu .tfrecord;
+    \item Stworzono notatnik~\cite{ColabML}, w którym możliwym jest trenowanie modelu w środowisku Google Colab.
+\end{enumerate}
+Konwersja danych odbywa się w notatniku \href{https://github.com/mwbaj/MachineLearning/blob/ZPS_2023_winter/WAWTPC/ROOT_to_TFRecord.ipynb}{\texttt{ROOT\_to\_TFRecord.ipynb}}, za konwersję odpowiedzialna jest funkcja \textit{process\_and\_save}.
+Format danych wyjściowch (target w zmiennych XYZ czy UVWT) wybierany jest poprzez podanie odopwiedniego argumentu do funkcji \textit{process\_and\_save}.
+
+Praca w środowiku Google Colab została umożliwiona poprzez dodanie gałęzi \href{https://github.com/mwbaj/MachineLearning/tree/ZPS_colab-friendly}{\textit{ZPS\_colab-friendly}} i stworzenie wersji notatników zintegrowanych z tym środowiskiem oraz Dyskiem Google. 
+\subsection{Rekonstrukcja w współrzędnych UVWT}
+Wykonane zadania w celu rozwijania tej metody:
+\begin{enumerate}
+    \item Do algorytmu zmiany formatu danych z .root do .tfrecord dodano możliwość konwersji zmiennej target do współrzędnych UVWT;
+    \item Przygotowano modele ResNet-50~\cite{ResNet} oraz początkowy model konwolucyjny (schemat na Rysunku~\ref{fig:schemat}) do treningu w tym formacie;
+    \item Zintegrowano funkcje do wizualizacji danych z działaniem tych modeli.
+\end{enumerate}
+W notatniku \href{https://github.com/mwbaj/MachineLearning/blob/ZPS_2023_winter/WAWTPC/uvwt_model.ipynb}{\texttt{model\_uvwt.ipynb}} zawarty jest przykład użytkowania funkcji do wizualizacji danych (z modułu \href{https://github.com/mwbaj/MachineLearning/blob/ZPS_2023_winter/WAWTPC/plotting_functions.py}{\texttt{plotting\_functions.py}}) z modelem rekonstrukcji po projekcjach, wraz z rezultatami treningu.
+
+\begin{figure}[H]
+        \centering \includegraphics[width= 0.4\textwidth]{img/model_uvwt.png}
+        \caption{
+                \label{fig:schemat}
+                Schemat użytego modelu konwolucyjnego.
+        }
+\end{figure}
+\begin{figure}[H]
+        \centering \includegraphics[width= \textwidth]{img/model_uvwt_example.png}
+        \caption{
+                \label{fig:schemat2}
+                Rekonstrukcja położeń punktów uzyskanych w symulacjach (kolor czerwony) przez model (kolor niebieski) dla przykładowego zdarzenia ze zbioru testowego.
+        }
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \subfloat[\centering ]{{\includegraphics[width=7cm]{img/resultions_1.png} }}
+    \qquad
+    \subfloat[]{{\includegraphics[width=7cm]{img/resolution_2.png} }}
+    \qquad
+    \subfloat[]{{\includegraphics[width=7cm]{img/resolution_3.png} }}
+    \caption{Wykresy rozdzielczości współrzędnych punktów w dokonywanej przez model konwolucyjny rekonstrukcji dla przykładów ze zbioru testowego.}
+    \label{rys2}
+\end{figure}
+
+
+W \href{https://github.com/mwbaj/MachineLearning/blob/ZPS_2023_winter/WAWTPC/resnet50.ipynb}{\texttt{resnet50.ipynb}} 
+znajduje się implementacja modelu ResNet-50, który jednak nie został wytrenowany z racji ograniczeń sprzętowych.\\
+
+% begin{Szymon}
+\subsection{Konwersja plików \texttt{.root} na \texttt{.tfrecord}}
+W celu przyśpieszenia wczytywania danych przez model napisano program konwertujący pliki \texttt{.root} na \texttt{.tfrecord}.
+
+Program wczytuje mapy ładunku z pliku \texttt{.root}. Następnie, wykorzystując moduł\linebreak \texttt{multiprocessing}, kilka map jednocześnie jest konwertowanych na dane binarne i zapisywanych do oddzielnych plików \texttt{.tfrecord}. Zastosowanie multiprocessingu pozwala znacznie przyśpieszyć proces konwersji. Dodatkową zaletą jest to, że wczytywanie danych w formacie \texttt{.tfrecord} z kilku plików jest szybsze niż z jednego \cite{tfrecord}.
+
+W ramach prostego testu porównano czas wczytania 20 000 zdarzeń z pliku \texttt{.root} i \texttt{.tfrecord}. Wczytywanie danych z pliku \texttt{.root} zajęło 10 min 7 s, a z plików \texttt{.tfrecord} 1 min 9 s, co daje prawie 9-krotne przyśpieszenie. Konwersja z \texttt{.root} na \texttt{.tfrecord} zajęła 8 min 27 s.
+
+Kod oraz demonstracja użycia konwersji \texttt{.root} na \texttt{.tfrecord} dostępny jest w notatniku\linebreak \href{https://github.com/mwbaj/MachineLearning/blob/ZPS_2023_winter/WAWTPC/ROOT_to_TFRecord.ipynb}{\texttt{ROOT\_to\_TFRecord.ipynb}}. Istnieje możliwość zapisania wyjść we współrzędnych XYZ lub UVWT. W notatniku zademonstrowane jest też wczytywanie danych z pliku \texttt{.tfrecord}.
+% end{Szymon}
+
+% By Przemysław Szyc - wersja 1.0
+\subsection{Dalsze działania}
+Sugerowane kolejne działania dotyczące uczenia maszynowego to np:
+\begin{enumerate}
+    \item Wytrenowanie modelu ResNet-50 w obu formatach danych i porównanie działania modeli;
+    \item Poprawa wydajności dotychczasowych modeli poprzez zmianę architektury oraz użycie innego zbioru danych, w szczególności dla rekonstrukcji we współrzędnych UVWT;
+    \item Badanie generalizacji modelu do różnych rodzajów danych, w szczególności danych pochodzących z eksperymentu.
 \end{enumerate}
 
-\section{Wprowadzone zmiany}
-Poniżej wymieniono główne zmiany w kodzie:
-\subsection{Test funkcjonalny kalsy \texttt{EventTPC.cpp}}
-W pliku testu \texttt{EventTPC\_test.cpp} znajdują się funkcje typu void, które przyjmują następujące argumenty:
-\begin{itemize}
-    \item
-  std::shared\_ptr EventPtr =
-  myEventSource-\textgreater loadDataFile(dataFileName)-\textgreater getCurrentEvent()
-    \item
-  std::map\textless std::string, double\textgreater{} Test\_Reference -
-  zdefiniowany w dataEventTPC.h
-    \item
-  std::map\textless std::string, std::string\textgreater{}
-  Test\_Reference\_Titles - zdefiniowany w dataEventTPC.h
-    
-\end{itemize}
-Funkcje testujące to:
-\begin{itemize}
-    \item get1DProjection\_Titles\_Test 
-    \item get2DProjection\_Titles\_Test
-    \item get1DProjection\_Test 
-    \item get2DProjection\_Test 
-    \item GetTotalCharge\_Test 
-    \item GetMaxCharge\_Test 
-    \item GetMaxChargePos\_Test 
-    \item GetSignalRange\_Test 
-    \item GetMultiplicity\_Test
-\end{itemize}
-Powyższe funkcje porównuje wyniki wywołanych metod klasy EventTPC z danymi porównawczymi, które znajdują się w pliku dataEventTPC.h. Dane porównawcze przechowywane są w formacie map, gdzie kluczem są wywoływane metody z argumentami, w formacie std::string.
+% Przemysław Szyc - end
 
-\subsection{Klasa ConfigManager}
-Powstała klasa służąca do wczytywania parametrów z linii poleceń oraz plików konfiguracyjnych, a następnie konfiguracji obiektu boost::property\_tree::ptree i zwracania obiektu skonfigurowanego. Klasa zawiera następujące metody:
-\begin{itemize}
-    \item boost::property\_tree::ptree getConfig(int, char**) - metoda zwracająca skonfigurowane drzewo
-    \item \texttt{boost::program\_options::variables\_map parseCmdLineArgs(int,char)} - metoda do parsowania argumentów z linii poleceń
-    \item \texttt{boost::program\_options::options\_description parseAllowedArgs(std::string)} - metoda do parsowania listy dozwolonych argumentów linii poleceń z pliku konfiguracyjnego
-\end{itemize}
-Sposób formatowania plików konfiguracyjnych zawierających listę dozwolonych argumentów linii poleceń został zawarty w TPCReco/Utilities/config/README.md. Przykładowy plik wygląda następująco:
+% begin{Szymon}
+\section{Konwersja plików \texttt{.graw} na \texttt{.root}}
+W ramach prac konserwacyjnych nad repozytorium TPCReco przywrócono do działania program konwertujący pliki \texttt{.graw} na \texttt{EventTPC.root}. Program przystosowano do działania z systemem konfiguracji używającym plików \texttt{.json}, który stosowany jest przez resztę programów w repozytorium.
+\subsection{Test \texttt{grawToEventTPC}}
+Dodano test \texttt{grawToEventTPC} który:
+\begin{enumerate}
+    \item testuje poprawność funkcji tworzącej nazwę pliku \texttt{.root}
+    \item konwertuje 1 zdarzenie z testowego pliku \texttt{.graw} na \texttt{.root}
+    \item sprawdza czy plik \texttt{.root} się otwiera
+    \item sprawdza czy ilość zdarzeń jest poprawna
+    \item porównuje mapy ładunków załadowane z pliku \texttt{.graw} i \texttt{.root}
+    \item sprawdza czy plik \texttt{.root} się zamyka
+    \item usuwa plik \texttt{.root}
+\end{enumerate}
+\subsection{Dalsze kroki}
+Kolejnym zadaniem do wykonania w celu usprawnienia rozwijania aplikacji TPCReco może być zastosowanie GitHub Actions~\cite{Actions}. GitHub Actions pozwala na automatyczne wykonanie pewnych czynności w reakcji na zdarzenia dziejące się z repozytorium. Można na przykład automatycznie kompilować aplikację i uruchamiać testy w odpowiedzi na nowy pull request.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{img/tests.png}
+    \caption{Rezultat komendy \texttt{ctest} -- wszystkie testy z wynikiem pozytywnym.}
+\end{figure}
+% end{Szymon}
 
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{\{}   \DataTypeTok{"Options"}\FunctionTok{:}
-    \FunctionTok{\{}
-        \DataTypeTok{"pressure"}\FunctionTok{:} \FunctionTok{\{}
-            \DataTypeTok{"type"}\FunctionTok{:} \StringTok{"float"}\FunctionTok{,}
-            \DataTypeTok{"defaultValue"}\FunctionTok{:} \DecValTok{60}\FunctionTok{,}
-            \DataTypeTok{"description"}\FunctionTok{:} \StringTok{"float {-} CO2 pressure [mbar]"}\FunctionTok{,}
-            \DataTypeTok{"isRequired"}\FunctionTok{:} \KeywordTok{true}
-        \FunctionTok{\},}
-        \DataTypeTok{"no{-}type"}\FunctionTok{:} \FunctionTok{\{}
-            \DataTypeTok{"type"}\FunctionTok{:} \StringTok{"bool"}\FunctionTok{,}
-            \DataTypeTok{"defaultValue"}\FunctionTok{:} \KeywordTok{false}\FunctionTok{,}
-            \DataTypeTok{"description"}\FunctionTok{:} \StringTok{"Skip comparing event type"}\FunctionTok{,}
-            \DataTypeTok{"isRequired"}\FunctionTok{:} \KeywordTok{false}
-        \FunctionTok{\},}
-        \DataTypeTok{"files"}\FunctionTok{:} \FunctionTok{\{}
-            \DataTypeTok{"type"}\FunctionTok{:} \StringTok{"std::vector\textless{}std::string\textgreater{}"}\FunctionTok{,}
-            \DataTypeTok{"defaultValue"}\FunctionTok{:} \StringTok{"PLACEHOLDER\_FOR\_VALUE"}\FunctionTok{,}
-            \DataTypeTok{"description"}\FunctionTok{:} \StringTok{"strings {-} list of files to browse. Mutually exclusive with \textquotesingle{}directory\textquotesingle{}"}\FunctionTok{,}
-            \DataTypeTok{"isRequired"}\FunctionTok{:} \KeywordTok{false}
-        \FunctionTok{\}}
-    \FunctionTok{\}}
-\FunctionTok{\}}
-\end{Highlighting}
-\end{Shaded}
-
-\subsection{Reorganizacja klasy EventSource}
-
-Wyseparowano system rozpoznawania typu danych z klasy MainFrame. Dodano namespace EventSourceFactory z funkcją EventSourceFactory::makeEventSourceObject która przyjmuje przez referencję obiekt typu
-boost::property\_tree::ptree z konfiguracją i zwraca std::shared\_ptr\texttt{<EventSourceBase>} będący wskaźnikiem na obiekt klasy pochodnej do EventSourceBase. Typ tego obiektu zależy od nazw plików z danymi zawartych w konfiguracji. W trakcie tworzenia tego obiektu konfiguracja zostaje rozszerzona o zmienną zapisującą typ obiektu ("eventType") w formacie enum event\_type (wartości odpowiadające nazwom klas EventSource[...]) oraz o flagę ("onlineFlag"), która mówi czy pliki mają być na żywo ładowane z folderu (aplikuje się tylko do plików typu GRAW). Zmieniono obsługę systemu plików z biblioteki ROOT na bibliotekę boost::filesystem. Funkcja jest w stanie rozpoznać i załadować następujące formaty plików:
-\begin{itemize}
-    \item pliki w formacie .root wygenerowane przez bibliotekę ROOT - klasa EventSourceROOT
-    \item pliki z symulacji Monte Carlo - klasa EventSourceMC
-    \item pliki w formacie GRAW (zarówno pojedyncze, mnogie jak i z możliwość aktywnego ładowania nowo       dodanych plików) - klasy EventSourceGRAW oraz EventSourceMultiGRAW
-\end{itemize}
-W przypadku nieprawidłowej konfiguracji zostaje zwrócony pusty wskaźnik.
 \section{Podsumowanie}
-Projekt wykonano podczas semestru zimowego oraz letniego roku akademickiego 2022/2023 na Wydziale Fizyki UW. W wyniku prac, dodano test kalsy EventTPC, zmieniony został sposób konfiguracji aplikacji oraz poprawione zostało rozpoznawanie obiektów EventSourceBase. Dzięki temu, uczestnicy zrealizowali ogólne założenia projektu.
+% MB
+Projekt zespołowy realizowany był w semestrze zimowym roku akademickiego 2023/24 na Wydziale Fizyki Uniwersytetu Warszawskiego. W zakresie celów uzgodnionych z opiekunem projektu, mając na uwadze liczebność zespołu, udało się rozwinąć aplikacje do analizy danych z eksperymentu WarsawTPC zarówno w obszarze przygotowania danych symulowanych i rzeczywistych, jak również usprawnień procesu rekonstrukcji z wykorzystaniem uczenia maszynowego. Zbudowano także bazę wiedzy, która pozwoli na sprawniejsze wprowadzenie nowych uczestników do projektu. 
+% /MB
 
-\pagebreak
+\setcounter{biburllcpenalty}{7}
+\setcounter{biburlucpenalty}{8}
 
-\begin{thebibliography}{99}
-    \bibitem{cern}
-        Rene Brun and Fons Rademakers, ROOT - An Object Oriented Data Analysis Framework,
-        Proceedings AIHENP'96 Workshop, Lausanne, Sep. 1996,
-        Nucl. Inst. \& Meth. in Phys. Res. A 389 (1997) 81-86.
-        See also "ROOT" [software], Release v6.26/02, 13/04/2022,
-        (\url{https://root.cern/releases/release-61802/})
-    \bibitem{git}
-        GitHub is a web-based hosting service for version control using git.
-        More information about GitHub can be found at \url{https://en.wikipedia.org/wiki/GitHub}.
-    \bibitem{docker}
-        Docker is a set of platform as a service products that uses OS-level virtualization to deliver software in packages called containers.
-        More informations about Docker can be found at \url{https://en.wikipedia.org/wiki/Docker_(software)}
-    \bibitem{JSON}
-        JSON syntax - \url{https://en.wikipedia.org/wiki/JSON\#Syntax}
-\end{thebibliography}
+\printbibliography[title=Bibliografia]
+
 \end{document}
-
-
