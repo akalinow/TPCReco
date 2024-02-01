@@ -2,7 +2,8 @@
 "input":{
     "dataFile": "../testData/CoBo0_AsAd0_2022-04-12T08_03_44.531_0000.graw,../testData/CoBo0_AsAd1_2022-04-12T08_03_44.533_0000.graw,../testData/CoBo0_AsAd2_2022-04-12T08_03_44.536_0000.graw,../testData/CoBo0_AsAd3_2022-04-12T08_03_44.540_0000.graw",
     "geometryFile": "geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat",    
-    "resourcesPath":"./"
+    "resourcesPath":"./",
+    "readNEvents": 1
 },
 "conditions":{
     "samplingRate": 25.0,

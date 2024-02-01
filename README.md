@@ -64,6 +64,10 @@ When reading GRAW files setup the GET environment. At the daqula2 node use a fol
 ```Shell
 source /opt/soft/GetSoftware_bin/env_settings.sh
 ```
+When running from a container, enter the following command inside the container:
+```Shell
+export LC_ALL=$LANG
+```
 
 Run the GUI from the resources directory:
 
