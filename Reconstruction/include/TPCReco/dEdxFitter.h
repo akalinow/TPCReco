@@ -44,6 +44,8 @@ public:
   double getAlphaRange() const;
 
   double getCarbonRange() const;
+
+  double getSigmaSmearing() const;
     
   pid_type getBestFitEventType() const { return bestFitEventType;}
   

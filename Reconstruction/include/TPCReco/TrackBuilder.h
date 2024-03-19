@@ -60,6 +60,8 @@ public:
 
   TF1 getdEdx() const {return mydEdxFitter.getFittedModel();};
 
+  double getdEdxFitSigmaSmearing() const {return mydEdxFitter.getSigmaSmearing();};
+
 private:
 
   void makeRecHits(int iDir);

@@ -163,7 +163,7 @@ typedef struct {Float_t eventId, frameId,
     xAlphaEnd, yAlphaEnd, zAlphaEnd,
     xCarbonEnd, yCarbonEnd, zCarbonEnd,
     total_mom_x,  total_mom_y,  total_mom_z,
-    lineFitChi2, dEdxFitChi2;
+    lineFitChi2, dEdxFitChi2, dEdxFitSigma;
     } TrackData;
 /////////////////////////
 int makeTrackTree(const  std::string & geometryFileName,
@@ -213,7 +213,7 @@ int makeTrackTree(const  std::string & geometryFileName,
   leafNames += "xAlphaEnd:yAlphaEnd:zAlphaEnd:";
   leafNames += "xCarbonEnd:yCarbonEnd:zCarbonEnd:";
   leafNames += "total_mom_x:total_mom_y:total_mom_z:";
-  leafNames += "lineFitChi2:dEdxFitChi2";
+  leafNames += "lineFitChi2:dEdxFitChi2:dEdxFitSigma";
   tree->Branch("track",&track_data,leafNames.c_str());
 
   int index = geometryFileName.find("mbar");
@@ -410,6 +410,7 @@ int makeTrackTree(const  std::string & geometryFileName,
 
     track_data.lineFitChi2 = aTrack3D.getChi2();
     track_data.dEdxFitChi2 = aTrack3D.getHypothesisFitChi2();
+    track_data.dEdxFitSigma = myTkBuilder.getdEdxFitSigmaSmearing();
     
     tree->Fill();    
   }
