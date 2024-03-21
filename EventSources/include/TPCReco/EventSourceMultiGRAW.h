@@ -1,6 +1,8 @@
 #ifndef _EventSourceMultiGRAW_H_
 #define _EventSourceMultiGRAW_H_
 
+#ifdef WITH_GET
+
 #include <map>
 #include <set>
 
@@ -57,5 +59,6 @@ private:
   unsigned int frameLoadRange{1}; // OVERLOADED
 
 };
+#endif
 #endif
 

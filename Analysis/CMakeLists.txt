@@ -26,9 +26,19 @@ add_executable(rawTrackDiffusionAnalysis bin/rawTrackDiffusionAnalysis.cpp)
 add_executable(recoEventsClean bin/recoEventsClean.cpp)
 add_executable(recoEventsDiff bin/recoEventsDiff.cpp)
 
-target_link_libraries(
+if(NOT ${GET_FOUND})
+  message(WARNING "GET not found, disabling rawSignalAnalysis rawTrackDiffusionAnalysis")
+  set_target_properties(rawSignalAnalysis PROPERTIES EXCLUDE_FROM_ALL TRUE)
+  set_target_properties(rawTrackDiffusionAnalysis PROPERTIES EXCLUDE_FROM_ALL TRUE)
+
+  target_link_libraries(
+  ${MODULE_NAME} PUBLIC Utilities DataFormats Reconstruction EventSources ${ROOT_LIBRARIES}
+                        ${ROOT_EXE_LINKER_FLAGS})
+else()
+  target_link_libraries(
   ${MODULE_NAME} PUBLIC Utilities DataFormats Reconstruction EventSources GrawToROOT ${ROOT_LIBRARIES}
                         ${ROOT_EXE_LINKER_FLAGS})
+endif()
 
 target_link_libraries(makeTrackTree PRIVATE ${MODULE_NAME}
                                             Boost::program_options)
@@ -62,3 +72,4 @@ install(PROGRAMS $<1:${CMAKE_CURRENT_SOURCE_DIR}/python/> DESTINATION python)
 install(DIRECTORY examples DESTINATION ${CMAKE_INSTALL_PREFIX})
 
 reco_add_test_subdirectory(test)
+

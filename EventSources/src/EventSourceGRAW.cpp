@@ -1,3 +1,5 @@
+#ifdef WITH_GET
+
 #include <cstdlib>
 #include <iostream>
 #include <ostream>
@@ -478,3 +480,4 @@ std::string EventSourceGRAW::getNextFilePath(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+#endif

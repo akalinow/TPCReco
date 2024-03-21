@@ -1,3 +1,5 @@
+#ifdef WITH_GET
+
 #include <vector>
 #include <map>
 #include <string>
@@ -166,3 +168,4 @@ void Pedestal_analysis::fillHistos(){
     }
   }
 }
+#endif

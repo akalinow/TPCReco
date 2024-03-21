@@ -1,3 +1,5 @@
+#ifdef WITH_GET
+
 #include <cstdlib>
 #include <iostream>
 #include <ostream>
@@ -500,3 +502,4 @@ std::string EventSourceMultiGRAW::getNextFilePath(unsigned int streamIndex){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+#endif

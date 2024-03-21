@@ -1,6 +1,8 @@
 #ifndef _EventSourceGRAW_H_
 #define _EventSourceGRAW_H_
 
+#ifdef WITH_GET
+
 #include <map>
 #include <set>
 
@@ -93,5 +95,6 @@ protected: // needed for EventSourceMultiGRAW
   EventType fillEventType{EventType::tpc};
 
 };
+#endif
 #endif
 
