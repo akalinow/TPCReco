@@ -233,7 +233,7 @@ int makeTrackTree(const  std::string & geometryFileName,
 
     myRecoOutput.setRecTrack(aTrack3D);
     myRecoOutput.setEventInfo(myEventInfo);				   
-    myRecoOutput.update(); 
+    //myRecoOutput.update(); 
     
     double length = aTrack3D.getLength();
     double charge = aTrack3D.getIntegratedCharge(length);
