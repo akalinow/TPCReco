@@ -63,12 +63,8 @@ namespace EventSourceFactory {
 		#endif
 
 		for (auto filePath : dataFilePaths) {
-			if (boost::filesystem::exists(filePath)) {
-				if (filePath.string().find("_MC_") != std::string::npos) {
-					dataFileVec.push_back(filePath);
-				}
-			}
-			else {
+			if (!boost::filesystem::exists(filePath) && 
+				  filePath.string().find("_MC_") == std::string::npos) {
 				std::cerr << KRED << "Invalid data path. No such file or directory: " << RST << filePath << _endl_;
 				exit(1);
 			}
@@ -87,6 +83,7 @@ namespace EventSourceFactory {
 		}
 		else if (dataFileVec.size() == 1 && dataFileName.find("_MC_") != std::string::npos) {
 			myEventSource = std::make_shared<EventSourceMC>(geometryFileName);
+			myConfig.put("transient.onlineFlag", false);
 			myConfig.put("transient.eventType", event_type::EventSourceMC);
 		}		
 #ifdef WITH_GET
