@@ -46,6 +46,9 @@ std::string createROOTFileName(const  std::string & grawFileName){
   else if(rootFileName.find("EventTPC")!=std::string::npos){
     rootFileName = rootFileName.replace(0,std::string("EventTPC").size(),"TrackTree");
   }
+  else if(rootFileName.find("MC")!=std::string::npos){
+    rootFileName = "TrackTree_"+rootFileName;
+  }
   else{
     std::cout<<KRED<<"File format unknown: "<<RST<<rootFileName<<std::endl;
     exit(1);
@@ -67,7 +70,6 @@ int main(int argc, char **argv){
   TStopwatch aStopwatch;
   aStopwatch.Start();
 
-  std::string geometryFileName, dataFileName;
   ConfigManager cm;
   boost::property_tree::ptree myConfig = cm.getConfig(argc, argv);
  
@@ -104,8 +106,12 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
 		  
 	std::shared_ptr<EventSourceBase> eventSource = EventSourceFactory::makeEventSourceObject(aConfig);
 	auto myEventSource = std::dynamic_pointer_cast<EventSourceMC>(eventSource);
+  if(!myEventSource){
+    std::cout<<KRED<<"Wrong event source type!"<<RST<<std::endl;
+    exit(1);
+  }
 
-  std::string dataFileName = aConfig.get("dataFileName","");
+  std::string dataFileName = aConfig.get("input.dataFile","");
   std::string rootFileName = createROOTFileName(dataFileName);
   TFile outputROOTFile(rootFileName.c_str(),"RECREATE");
   TTree *tree = new TTree("trackTree", "Track tree");
@@ -118,12 +124,9 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   leafNames += "lineFitChi2:dEdxFitChi2";
   tree->Branch("track",&track_data,leafNames.c_str());
   
-  std::string geometryFileName = aConfig.get("geometryFileName","");
-  int index = geometryFileName.find("mbar");
-  double pressure = stof(geometryFileName.substr(index-3, 3));
-  //double pressure = aConfig.get<bool>("conditions.pressure"); this needs python scripts reorganisation
-  double temperature = aConfig.get<bool>("conditions.temperature");
-  
+  std::string geometryFileName = aConfig.get("input.geometryFile","");
+  double pressure = aConfig.get<double>("conditions.pressure"); 
+  double temperature = aConfig.get<double>("conditions.temperature");
   
   TrackBuilder myTkBuilder;
   myTkBuilder.setGeometry(myEventSource->getGeometry());
@@ -144,7 +147,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
 
   //Event loop
   unsigned int nEntries = myEventSource->numberOfEntries();
-  nEntries = 10000; //TEST
+  nEntries = 10; 
   for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
     if(nEntries>10 && iEntry%(nEntries/10)==0){
       std::cout<<KBLU<<"Processed: "<<int(100*(double)iEntry/nEntries)<<" % events"<<RST<<std::endl;
