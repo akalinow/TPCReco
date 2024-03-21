@@ -63,13 +63,16 @@ reco_install_targets(
   makeMCTrackTree
   recoEventsAnalysis
   recoEventsComparison
-  rawSignalAnalysis
-  rawTrackDiffusionAnalysis
   recoEventsClean
   recoEventsDiff)
 reco_install_root_dict(${MODULE_NAME})
 install(PROGRAMS $<1:${CMAKE_CURRENT_SOURCE_DIR}/python/> DESTINATION python)
 install(DIRECTORY examples DESTINATION ${CMAKE_INSTALL_PREFIX})
+
+if(${GET_FOUND})
+  reco_install_targets(rawSignalAnalysis rawTrackDiffusionAnalysis)
+endif()
+
 
 reco_add_test_subdirectory(test)
 
