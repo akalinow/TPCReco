@@ -473,7 +473,7 @@ void IonRangeCalculator::resetEffectiveLengthCorrection(pid_type ion){
 ////////////////////////////////////////////////
 void IonRangeCalculator::resetEffectiveLengthCorrections(){
 
-  effectiveLengthCorrectionMap.empty();
+  effectiveLengthCorrectionMap.clear();
 
   // DEBUG
   if(_debug) {
