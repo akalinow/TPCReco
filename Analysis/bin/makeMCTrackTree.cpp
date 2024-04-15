@@ -97,7 +97,7 @@ typedef struct {Float_t eventId, frameId,
     carbonEnergyReco,
     chargeReco,
     cosThetaReco, phiReco,
-    lineFitChi2, dEdxFitChi2;
+    lineFitChi2, dEdxFitChi2, dEdxFitSigma;
     } TrackData;
 /////////////////////////
 int makeTrackTree(boost::property_tree::ptree & aConfig) {
@@ -115,7 +115,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   leafNames += "eventTypeGen:alphaRangeGen:alphaEnergyGen:chargeGen:cosThetaGen:phiGen:";  
   leafNames += "eventTypeReco:alphaRangeReco:alphaEnergyReco:carbonRangeReco:carbonEnergyReco:";
   leafNames += "chargeReco:cosThetaReco:phiReco:";
-  leafNames += "lineFitChi2:dEdxFitChi2";
+  leafNames += "lineFitChi2:dEdxFitChi2:dEdxFitSigma";
   tree->Branch("track",&track_data,leafNames.c_str());
   
   std::string geometryFileName = aConfig.get("geometryFileName","");
@@ -183,6 +183,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     track_data.phiReco = atan2(-tangentReco.Z(), tangentReco.Y());
     track_data.lineFitChi2 = aTrack3DReco.getChi2();
     track_data.dEdxFitChi2 = aTrack3DReco.getHypothesisFitChi2();
+    track_data.dEdxFitSigma = myTkBuilder.getdEdxFitSigmaSmearing();
     
     tree->Fill();    
   }
