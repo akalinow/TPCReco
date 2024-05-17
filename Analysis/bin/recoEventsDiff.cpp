@@ -1,29 +1,36 @@
 #include "TPCReco/DiffAnalysis.h"
 #include "TPCReco/ConfigManager.h"
-#include <boost/program_options.hpp>
-#include <iostream>
+#include <boost/property_tree/ptree.hpp>
 #include <string>
 
-int main(int argc, char **argv) {
-  ConfigManager cm;
-  boost::property_tree::ptree tree = cm.getConfig(argc,argv);
-  auto inputName = tree.get("input","");
-  auto referenceName = tree.get("reference","");
-  auto analysis = tpcreco::analysis::diff::Analysis(inputName, referenceName);
+#include <TROOT.h>
+#include <TApplication.h>
 
-  if (!(tree.count("no-segments"))) {
+int main(int argc, char **argv) {
+
+  // use only a subset of all allowed parameters
+  ConfigManager cm( {"recoDiff.input","recoDiff.reference",
+	"recoDiff.no-segments","recoDiff.no-type","recoDiff.no-presence","recoDiff.no-info"} );
+  boost::property_tree::ptree tree = cm.getConfig(argc,argv);
+  if(cm.isHelpMode()) return 0; // nothing more to do, exit
+
+  auto recoInputName = tree.get<std::string>("recoDiff.input");
+  auto recoReferenceName = tree.get<std::string>("recoDiff.reference");
+  auto analysis = tpcreco::analysis::diff::Analysis(recoInputName, recoReferenceName);
+
+  if (!(tree.get<bool>("recoDiff.no-segments"))) {
     analysis.getDetailSink()->addCheck(
         tpcreco::analysis::diff::checks::checkSegments);
   }
-  if (!(tree.count("no-type"))) {
+  if (!(tree.get<bool>("recoDiff.no-type"))) {
     analysis.getDetailSink()->addCheck(
         tpcreco::analysis::diff::checks::checkType);
   }
-  if (tree.count("no-info")) {
+  if (tree.get<bool>("recoDiff.no-info")) {
     analysis.getDetailSink()->resetTreeInfo();
     analysis.getExtraSink()->resetTreeInfo();
   }
-  if (tree.count("no-presence")) {
+  if (tree.get<bool>("recoDiff.no-presence")) {
     analysis.getExtraSink()->disable(true);
   }
 
