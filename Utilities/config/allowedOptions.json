@@ -1,15 +1,15 @@
 {
     "configJson":{
         "group":"meta",
-        "type" : "string",
+        "type" : "vector<string>",
         "defaultValue" : "",
-        "description" : "JSON file with application configuration.\nParameters values from json file are overwritten by values provided at command line.\nType: string"            
+        "description" : "JSON file(s) with application configuration.\nParameters values from json file are overwritten by values provided at command line.\nType: vector<string>"
     },
     "configDumpJson":{
         "group":"meta",
         "type" : "string",
         "defaultValue" : "configDump.json",
-        "description" : "Name of the JSON file used for configuration dump\nType: string"            
+        "description" : "Name of the JSON file used for configuration dump\nType: string"
     },
     "dataFile":{
         "group": "input",
@@ -32,7 +32,7 @@
     "frameLoadRange":{
         "group": "input",
         "type": "int",
-        "defaultValue":100,
+        "defaultValue": 100,
         "description": "Number of GRAW frames searched for ASAD fragments for given event.\nType: int"
     },
     "singleAsadGrawFile":{
@@ -45,7 +45,7 @@
         "group": "online",
         "type": "int",
         "defaultValue": 3000,
-        "description": "GUI update interval in online mode. Units are ms.\nType: int"
+        "description": "GUI update interval in online mode. Units are [milliseconds].\nType: int"
     },
     "zLogScale":{
         "group": "display",
@@ -75,7 +75,7 @@
         "group": "display",
         "type" : "bool",
         "defaultValue": false,
-        "description": "Plot detectro specific technical set of histograms in GUI mode.\nType: bool"
+        "description": "Plot detector specific technical set of histograms in GUI mode.\nType: bool"
     },
     "remove":{
         "group": "pedestal",
@@ -115,9 +115,9 @@
     },
     "recoClusterThreshold":{
         "group": "hitFilter",
-        "type" : "double",
+        "type" : "float",
         "defaultValue": 35.0,
-        "description": "Charge threshold for hits displayed in 2D charge map in GUI.\nType: double"
+        "description": "Charge threshold for hits displayed in 2D charge map in GUI.\nType: float"
     },
     "recoClusterDeltaStrips":{
         "group": "hitFilter",
@@ -139,62 +139,98 @@
     },  
     "maxChargeUpperBound":{
         "group": "eventFilter",
-        "type" : "double",
+        "type" : "float",
         "defaultValue": 99999.0,
-        "description": "Upper charge threshold to accept an event.\nType: double"
+        "description": "Upper charge threshold to accept an event.\nType: float"
     }, 
     "minChargeUpperBound":{
         "group": "eventFilter",
-        "type" : "double",
+        "type" : "float",
         "defaultValue": 0.0,
-        "description": "Lower charge threshold to accept an event.\nType: double"
+        "description": "Lower charge threshold to accept an event.\nType: float"
     }, 
     "totalChargeLowerBound":{
         "group": "eventFilter",
-        "type" : "double",
+        "type" : "float",
         "defaultValue": 0.0,
-        "description": "Lower threshold on total charge sum to accept an event.\nType: double"
+        "description": "Lower threshold on total charge sum to accept an event.\nType: float"
     }, 
     "totalChargeUpperBound":{
         "group": "eventFilter",
-        "type" : "double",
+        "type" : "float",
         "defaultValue": 99999.0,
-        "description": "Upper threshold on total charge sum to accept an event.\nType: double"
+        "description": "Upper threshold on total charge sum to accept an event.\nType: float"
     }, 
     "events":{
         "group": "eventFilter",
-        "type" : "int",
-        "defaultValue": 0,
-        "description": "NOT IMPLEMENTED. Event numbers list.\nType: vector<int>"
+        "type" : "vector<unsigned int>",
+        "defaultValue": [ ],
+        "description": "NOT IMPLEMENTED. Event numbers list.\nType: vector<unsigned int>"
     }, 
     "pressure":{
         "group": "conditions",
-        "type" : "double",
+        "type" : "float",
         "defaultValue": 190.0,
-        "description": "Gas pressure in chamber [mb]. \nType: double"
+        "description": "Gas pressure in chamber [mbar]=[hPa]. \nType: float"
     }, 
     "samplingRate":{
         "group": "conditions",
-        "type" : "double",
+        "type" : "float",
         "defaultValue": 25.0,
-        "description": "Signal sampling rate [MHz]. \nType: double"
+        "description": "Signal sampling rate [MHz]. \nType: float"
     }, 
     "temperature":{
         "group": "conditions",
-        "type" : "double",
+        "type" : "float",
         "defaultValue": 293.15,
-        "description": "Gas temperature in chamber [K].\nType: double"
+        "description": "Gas temperature in chamber [K].\nType: float"
     }, 
     "driftV":{
         "group": "conditions",
-        "type" : "double",
+        "type" : "float",
         "defaultValue": 0.646,
-        "description": "Drift velocity [cm/us].\nType: double"
+        "description": "Drift velocity [cm/us].\nType: float"
     }, 
     "energy":{
         "group":"beamParameters",
-        "type" : "double",
+        "type" : "float",
         "defaultValue" : 0.0,
-        "description" : "LAB gamma beam energy [MeV].\nType: double"            
+        "description" : "LAB gamma beam energy [MeV].\nType: float"
+    },
+    "input":{
+        "group":"recoDiff",
+        "type" : "string",
+        "defaultValue" : "",
+        "description" : "Input ROOT file with TPCRecoData tree for recoEventsDiff analysis.\nType: string"
+    },
+    "reference":{
+        "group":"recoDiff",
+        "type" : "string",
+        "defaultValue" : "",
+        "description" : "Reference ROOT file with TPCRecoData tree for recoEventsDiff analysis.\nType: string"
+    },
+    "no-type":{
+        "group":"recoDiff",
+        "type" : "bool",
+        "defaultValue" : false,
+        "description" : "Flag to skip comparing event type in TPCRecoData trees used for recoEventsDiff analysis.\nType: bool"
+    },
+    "no-segments":{
+        "group":"recoDiff",
+        "type" : "bool",
+        "defaultValue" : false,
+        "description" : "Flag to skip comparing number of segments in TPCRecoData trees used for recoEventsDiff analysis.\nType: bool"
+    },
+    "no-presence":{
+        "group":"recoDiff",
+        "type" : "bool",
+        "defaultValue" : false,
+        "description" : "Flag to skip printing extra- and missing events in TPCRecoData trees used for recoEventsDiff analysis.\nType: bool"
+    },
+    "no-info":{
+        "group":"recoDiff",
+        "type" : "bool",
+        "defaultValue" : false,
+        "description" : "Flag to skip printing file- and tree info on every line in recoEventsDiff analysis.\nType: bool"
     }
 }
