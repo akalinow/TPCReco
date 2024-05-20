@@ -265,19 +265,20 @@ void ConfigManager::parseAllowedArgs(const std::string & jsonName){
         const std::string defaultValuePath{"defaultValue"};
         const std::string descriptionPath{"description"};
 
-	std::string group = v.second.get<std::string>(groupPath);
-	std::string optName = group+"."+v.first;
+	std::string groupName = v.second.get<std::string>(groupPath);
+	std::string optName = groupName+"."+v.first;
 	if(!checkNodeNameSyntax(optName)) continue;
 	
-        std::string type = v.second.get<std::string>(typePath);
+        std::string typeName = v.second.get<std::string>(typePath);
 	std::string description = v.second.get<std::string>(descriptionPath);
-        varTypeMap[optName] = getTypeCode(type);
+	string_code type = getTypeCode(typeName);
+        varTypeMap[optName] = type;
 
 	//////// DEBUG
 	// std::cout << __FUNCTION__ << ": added option: " << optName << ", type: " << type << ", default: " << v.second.get(defaultValuePath, "### ERROR ###") << std::endl;
 	//////// DEBUG
 	
-            switch(getTypeCode(type)) {
+            switch(type) {
             case string_code::eint:                
                 cmdLineOptDesc.add_options()(optName.c_str(),
 					     boost::program_options::value<ConfigManager::myValue<int>>()->multitoken()->zero_tokens(), // force exactly ONE argument
@@ -384,7 +385,7 @@ void ConfigManager::parseAllowedArgs(const std::string & jsonName){
 	        // cmdLineOptDesc.add_options()(optName.c_str(),
 		// 			     boost::program_options::value<std::vector<double>>()->multitoken()->composing()->implicit_value({}),
 		// 			     description.c_str());
-		//	        insertArray(optName, v.second.get_child(defaultValuePath));
+		// insertArray(optName, v.second.get_child(defaultValuePath));
 	        cmdLineOptDesc.add_options()(optName.c_str(),
 					     boost::program_options::value<ConfigManager::myVector<double>>()->multitoken()->composing()->implicit_value({}),
 					     description.c_str());
@@ -401,19 +402,6 @@ void ConfigManager::parseAllowedArgs(const std::string & jsonName){
 		  ss << "]";
 		  insertArray(optName, ss.str()); // JSON format
 		}
-		// {
-		//   auto str_values = getArray<std::vector<std::string>>(optName.c_str());
-		//   auto num_values = getArray<std::vector<double>>(optName.c_str());
-		//   auto num_values2 = getArray<ConfigManager::myVector<double>>(optName.c_str());
-		//   auto counter = 0U;
-		//   BOOST_FOREACH(auto item, str_values) {
-		//     std::cout << KRED << "###### default vector<double> item, expression=" << std::quoted(item)
-		//   	      << ", numerical vector<double> val=" << num_values.at(counter)
-		//   	      << ", numerical myVector<double> val=" << num_values2.at(counter)
-		//   	      << RST << std::endl;
-		//     counter++;
-		//   }
-		// }
                 break;
             case string_code::evector_str:
 	        // cmdLineOptDesc.add_options()(optName.c_str(),
@@ -423,7 +411,19 @@ void ConfigManager::parseAllowedArgs(const std::string & jsonName){
 	        cmdLineOptDesc.add_options()(optName.c_str(),
 					     boost::program_options::value<ConfigManager::myVector<std::string>>()->multitoken()->composing()->implicit_value({}),
 					     description.c_str());
-	        insertArray(optName, v.second.get_child(defaultValuePath));
+		{
+		  // construct array of quoted strings in JSON format
+		  std::stringstream ss;
+		  bool isFirst = true;
+		  ss << "[ ";
+		  BOOST_FOREACH(auto &i, v.second.get_child(defaultValuePath)) {
+		    if(isFirst) isFirst=false;
+		    else ss << ", ";
+		    ss << "\"" << boost::lexical_cast<ConfigManager::myValue<std::string>>(i.second.data()) << "\" "; // quoted string, may contain blank spaces
+		  }
+		  ss << "]";
+		  insertArray(optName, ss.str()); // JSON format
+		}
                 break;
             case string_code::evector_bool:
 	        // cmdLineOptDesc.add_options()(optName.c_str(),
@@ -449,8 +449,8 @@ void ConfigManager::parseAllowedArgs(const std::string & jsonName){
                 break;
             case string_code::eunknown:
 	        std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
-			 <<"): ERROR: unsupported type \""<< type <<"\" of node \""<< optName <<"\"!"<<RST<< std::endl;
-		throw;
+			 <<"): ERROR: unsupported type \""<< typeName <<"\" of node \""<< optName <<"\"!"<<RST<< std::endl;
+		throw std::logic_error("wrong type");
             }
         }
     //////// DEBUG
@@ -511,8 +511,88 @@ void ConfigManager::updateWithJsonFile(const std::string & jsonName){
     std::cout<<KBLU<<"ConfigManager: updating parameters with configuration file: "<<RST<<jsonName<<std::endl;
     boost::property_tree::ptree configTreeUpdate;
     boost::property_tree::read_json(jsonName, configTreeUpdate);
-    mergeTrees(configTree, configTreeUpdate);
 
+    // parse text math expressions (if any)
+    boost::property_tree::ptree configTreeUpdateFiltered;
+    auto keys_updates = ConfigManager::listTree(configTreeUpdate);
+    BOOST_FOREACH(auto& key, keys_updates) {
+      std::string nodePath(key);
+      if(nodePath.back()=='.') nodePath.erase(nodePath.size()-1);
+      string_code type = (varTypeMap.find(nodePath)==varTypeMap.end() ? string_code::eunknown : varTypeMap.at(nodePath) );
+      switch(type) {
+      case string_code::eint:
+	configTreeUpdateFiltered.put(nodePath, configTreeUpdate.get<ConfigManager::myValue<int>>(nodePath));
+	break;
+      case string_code::euint:
+	configTreeUpdateFiltered.put(nodePath, configTreeUpdate.get<ConfigManager::myValue<unsigned int>>(nodePath));
+	break;
+      case string_code::efloat:
+	configTreeUpdateFiltered.put(nodePath, configTreeUpdate.get<ConfigManager::myValue<float>>(nodePath));
+	break;
+      case string_code::edouble:
+	configTreeUpdateFiltered.put(nodePath, configTreeUpdate.get<ConfigManager::myValue<double>>(nodePath));
+	break;
+      case string_code::ebool:
+	configTreeUpdateFiltered.put(nodePath, configTreeUpdate.get<ConfigManager::myValue<bool>>(nodePath));
+	break;
+      case string_code::estr:
+	configTreeUpdateFiltered.put(nodePath, configTreeUpdate.get<ConfigManager::myValue<std::string>>(nodePath));
+	break;
+      case string_code::evector_int:
+	{
+	  auto& array = configTreeUpdateFiltered.add_child(nodePath, boost::property_tree::ptree()); // new array to be populated
+	  BOOST_FOREACH(auto& item, configTreeUpdate.get_child(nodePath)) {
+	    array.push_back(std::make_pair( "", boost::property_tree::ptree(boost::lexical_cast<std::string>(boost::lexical_cast<ConfigManager::myValue<int>>(item.second.data()))))); // NOTE: this method works in both Release and Debug CMAKE modes
+	  }
+	}
+	break;
+      case string_code::evector_uint:
+	{
+	  auto& array = configTreeUpdateFiltered.add_child(nodePath, boost::property_tree::ptree()); // new array to be populated
+	  BOOST_FOREACH(auto& item, configTreeUpdate.get_child(nodePath)) {
+	    array.push_back(std::make_pair( "", boost::property_tree::ptree(boost::lexical_cast<std::string>(boost::lexical_cast<ConfigManager::myValue<unsigned int>>(item.second.data()))))); // NOTE: this method works in both Release and Debug CMAKE modes
+	  }
+	}
+	break;
+      case string_code::evector_float:
+	{
+	  auto& array = configTreeUpdateFiltered.add_child(nodePath, boost::property_tree::ptree()); // new array to be populated
+	  BOOST_FOREACH(auto& item, configTreeUpdate.get_child(nodePath)) {
+	    array.push_back(std::make_pair( "", boost::property_tree::ptree(boost::lexical_cast<std::string>(boost::lexical_cast<ConfigManager::myValue<float>>(item.second.data()))))); // NOTE: this method works in both Release and Debug CMAKE modes
+	  }
+	}
+	break;
+      case string_code::evector_double:
+	{
+	  auto& array = configTreeUpdateFiltered.add_child(nodePath, boost::property_tree::ptree()); // new array to be populated
+	  BOOST_FOREACH(auto& item, configTreeUpdate.get_child(nodePath)) {
+	    array.push_back(std::make_pair( "", boost::property_tree::ptree(boost::lexical_cast<std::string>(boost::lexical_cast<ConfigManager::myValue<double>>(item.second.data()))))); // NOTE: this method works in both Release and Debug CMAKE modes
+	  }
+	}
+	break;
+      case string_code::evector_str:
+	{
+	  auto& array = configTreeUpdateFiltered.add_child(nodePath, boost::property_tree::ptree()); // new array to be populated
+	  std::cout << KGRN << __FUNCTION__ << "<vector<string>>: node=" << nodePath << ", size=" << configTreeUpdate.get_child(nodePath).size() << RST << std::endl;
+	  BOOST_FOREACH(auto& item, configTreeUpdate.get_child(nodePath)) {
+	    array.push_back(std::make_pair( "", boost::property_tree::ptree(boost::lexical_cast<std::string>(boost::lexical_cast<ConfigManager::myValue<std::string>>(item.second.data()))))); // NOTE: this method works in both Release and Debug CMAKE modes
+	  }
+	}
+	break;
+      case string_code::evector_bool:
+	{
+	  auto& array = configTreeUpdateFiltered.add_child(nodePath, boost::property_tree::ptree()); // new array to be populated
+	  BOOST_FOREACH(auto& item, configTreeUpdate.get_child(nodePath)) {
+	    array.push_back(std::make_pair( "", boost::property_tree::ptree(boost::lexical_cast<std::string>(boost::lexical_cast<ConfigManager::myValue<bool>>(item.second.data()))))); // NOTE: this method works in both Release and Debug CMAKE modes
+	  }
+	}
+	break;
+      case string_code::eunknown:
+	std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__<<"): ERROR: unknown type of parameter: "<<RST<<nodePath<<std::endl;
+	throw std::logic_error("wrong type");
+      }
+    }
+    mergeTrees(configTree, configTreeUpdateFiltered);
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -522,9 +602,10 @@ void ConfigManager::updateWithCmdLineArgs(const boost::program_options::variable
       std::cout<<KBLU<<"ConfigManager: updating parameters with command line arguments:"<<RST<<std::endl;
     }
     
+    // parse cmd line arguments including text math expressions (if any)
     for(const auto& item: varMap){        
         std::cout<<item.first<<std::endl;
-        string_code type = varTypeMap.at(item.first);
+	string_code type = (varTypeMap.find(item.first)==varTypeMap.end() ? string_code::eunknown : varTypeMap.at(item.first) );
         switch(type) {
             case string_code::eint:                
 	        configTree.put(item.first, item.second.as<ConfigManager::myValue<int>>());   
@@ -564,7 +645,7 @@ void ConfigManager::updateWithCmdLineArgs(const boost::program_options::variable
                 break;
             case string_code::eunknown:
 	      std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__<<"): ERROR: unknown type of parameter: "<<RST<<item.first<<std::endl;
-              throw;
+	      throw std::logic_error("wrong type");
 	}
     }
     
@@ -586,7 +667,8 @@ const boost::property_tree::ptree & ConfigManager::getConfig(int argc, char **ar
     else if (varMap.count("help")) { // display help info and set HELP mode
       helpMode=true;
       std::cout<<"\nUsage: "<<argv[0]<<" [--scalarOption <VAL>] [--vectorOption <VAL1> <VAL2> ... ] [--switchFlag]"
-	       <<"\n\nAvailable options:\n\n"<<cmdLineOptDesc<<std::endl;
+	       <<"\n\nAvailable options:\n\n"<<cmdLineOptDesc
+	       <<"\nExample: "<<argv[0]<<" --meta.configJson config_A.json config_B.json\n\n";
       return configTree; // nothing more to do, exit
     }
     else if(varMap.count("meta.configJson")) { // apply changes from JSON file(s)
@@ -657,8 +739,9 @@ void ConfigManager::mergeTrees(boost::property_tree::ptree & pt, const boost::pr
     }
     std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
 	     <<"): ERROR: node \""<< key <<"\" is missing in target tree!"<<RST<< std::endl;
-    throw;
+    throw std::logic_error("missing node in target ptree");
   }
+
   
   // ///////// DEBUG
   // {
@@ -683,8 +766,8 @@ void ConfigManager::mergeTrees(boost::property_tree::ptree & pt, const boost::pr
       BOOST_FOREACH(auto& item, updates.get_child(nodePath)) {
 	array.push_back(std::make_pair( "", item.second )); // NOTE: this method works in both Release and Debug CMAKE modes
       }
-    } else { // single value case
-      pt.put(key, updates.get_child(key).data()); // alternatively use: pt.get_child(key)=updates.get_child(key);
+    } else { // single value or empty vector case
+      pt.get_child(key)=updates.get_child(key); // alternatively use: { pruneTree(pt, key); pt.put(key, updates.get_child(key).data()); }
     }
   }
 }
@@ -702,14 +785,15 @@ void ConfigManager::mergeTrees(boost::property_tree::ptree & pt, const boost::pr
 // Helper method to write all configuration data into single JSON file.
 // 
 void ConfigManager::dumpConfig(const std::string & jsonName){
-    if(!jsonName.size() || // cannot be empty
-       jsonName.find("--")==0 || // cannot start with '--' sequence
-       jsonName.find_first_of("\"!@#$%^&*+=[]{}()',<>?\\|~`\t\n\r")!=std::string::npos) { // cannot contain forbidden characters
-      std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
-	       <<"): ERROR: output JSON file name \""<< jsonName <<"\" is not allowed!"<<RST<<std::endl;
-      throw;
-    }
-    boost::property_tree::write_json(jsonName, configTree);
+  // check JSON name syntax
+  if(!jsonName.size() || // cannot be empty
+     jsonName.find(".")==0 || jsonName.find("--")==0 || // cannot start with '--' or '.' sequence
+     !std::regex_match(jsonName, std::regex("^[A-Za-z0-9.-_/]+$"))) { // allowed are: alphanumeric, dot, dash, underscore, slash
+    std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
+	     <<"): ERROR: output JSON file name \""<< jsonName <<"\" is not allowed!"<<RST<<std::endl;
+    throw std::logic_error("wrong JSON name");
+  }
+  boost::property_tree::write_json(jsonName, configTree);
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -910,11 +994,13 @@ void ConfigManager::setAllowedArgs(const std::vector<std::string> nodeList) {
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 bool ConfigManager::checkNodeNameSyntax(const std::string & nodePath) {
 
-  // check against forbidden characters inside node name
-  if(nodePath.find_first_of(" ,;:[](){}<>+=~`'&^#@*!|?%$\"\t\r\n\\/")!=std::string::npos) { // critical error
+  // check node name syntax
+  if(!nodePath.size() || // cannot be empty
+     nodePath.find("--")==0 || nodePath.find(".")==0 || // cannot start with '--' or '.' sequence
+     !std::regex_match(nodePath, std::regex("^[A-Za-z0-9.-]+$"))) { // allowed are: alphanumeric, dot, dash
     std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
 	     <<"): ERROR: node name \""<< nodePath <<"\" is not allowed!"<<RST<<std::endl;
-    throw;
+    throw std::logic_error("wrong ptree node name");
   }
   
   // check against exclusive (non-empty) list of allowed options
@@ -967,7 +1053,7 @@ std::vector<std::string> ConfigManager::filterMathExpressions(const std::vector<
     strType="std::string";      
   } else {
     std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__<<"): ERROR: unsupported value type!"<<RST<<std::endl;
-    throw;
+    throw std::logic_error("wrong type");
   } 
 
   if(!inter) return filteredValues; // ROOT's gInterpreter not present, leave input as-is
@@ -981,9 +1067,9 @@ std::vector<std::string> ConfigManager::filterMathExpressions(const std::vector<
   std::stringstream ss;
   for(auto &item: filteredValues) { // convert math expression to a numeric value using TInterprter
     ss.str("");
-    if(std::is_same<T, bool>::value) {
+    if(std::is_same<T, bool>::value) { // special case
       ss << "((" << strType << ")(" << item << ")?\"true\":\"false\");";
-    } else if(std::is_same<T, std::string>::value) {
+    } else if(std::is_same<T, std::string>::value) { // special case, may contain blank spaces
       item = std::regex_replace(item, std::regex("(?:\")"), "\\\""); // preserve quotes (if any)
   /////// DEBUG
   // BOOST_FOREACH(auto &item, val) {
@@ -991,13 +1077,13 @@ std::vector<std::string> ConfigManager::filterMathExpressions(const std::vector<
   // }
   /////// DEBUG
       ss << "(" << strType << ")(\"" << item << "\");";
-    } else {
+    } else { // all other formats
       ss << "TString::Format(\"" << strFormat << "\",(" << strType << ")(" << item << ")).Data();";
     }
     auto result = inter->ProcessLine(("aString_="+ss.str()).c_str());
     if(!result) {
       std::cout<<KRED<<__FUNCTION__<<"<"<< strType <<">("<<__LINE__<<"): expression "<< std::quoted(item) <<" cannot be evaluated by TInterpreter!"<<RST<<std::endl;
-      throw;
+      throw std::logic_error("wrong math expression");
     }
     item = funcPtr();
     
@@ -1030,7 +1116,7 @@ std::vector<std::string> ConfigManager::filterSquareBrackets(const std::vector<s
   } else if(!(!hasFrontBracket && !hasRearBracket)) {
     std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
 	     <<"): ERROR: missing one of square brackets in command line arguments!"<<RST<<std::endl;
-    throw;
+    throw std::logic_error("missing brackets");
   }
   return filteredValues;
 }

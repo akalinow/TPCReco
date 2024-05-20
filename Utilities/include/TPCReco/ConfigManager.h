@@ -3,7 +3,7 @@
 #include <string>
 #include <tuple>
 #include <vector>
-#include <regex> // for std::regex_replace
+#include <regex> // for std::regex_replace, std::regex_match
 #include <unordered_set> // for std::unordered_set
 #include <iomanip> // for std::quoted
 #include <type_traits> // for std::is_same
@@ -106,7 +106,7 @@ public:
       if(!checkNodeNameSyntax(nodePath)) {
 	std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
 		 <<"): ERROR: node \""<< nodePath <<"\" does not exist! Check your configuration file: "<< allowedOptPath <<" and/or ConfigManager initialization."<<RST<<std::endl;
-	throw;
+	throw std::logic_error("wrong ptree node name");
       }
       if(std::is_same<T, int>::value ||
 	 std::is_same<T, unsigned int>::value ||
@@ -117,7 +117,7 @@ public:
 	return configTree.get<T>(nodePath);
       }
       std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__<<"): ERROR: node \""<< nodePath <<"\" has unsupported value type!"<<RST<< std::endl;
-      throw;
+      throw std::logic_error("wrong type");
     }
     
     // getter method for accessing entire vector stored in a given configuration path
@@ -126,7 +126,7 @@ public:
       if(!checkNodeNameSyntax(nodePath)) {
 	std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
 		 << "): ERROR: node \""<< nodePath <<"\" does not exist! Check your configuration file: "<< allowedOptPath <<" and/or ConfigManager initialization."<<RST<<std::endl;
-	throw;
+	throw std::logic_error("wrong ptree node name");
       }
       if(std::is_same<T, std::vector<int>>::value || std::is_same<T, ConfigManager::myVector<int>>::value ||
 	 std::is_same<T, std::vector<unsigned int>>::value || std::is_same<T, ConfigManager::myVector<unsigned int>>::value ||
@@ -141,7 +141,7 @@ public:
       }
       std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
 	       <<"): ERROR: node \""<< nodePath <<"\" has unsupported vector type!"<<RST<< std::endl;
-      throw;
+      throw std::logic_error("wrong type");
     }
 };
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -170,7 +170,7 @@ public:
     if(std::is_same<T, bool>::value) { // special case
       if(v.value==true) os << "true";
       else              os << "false";
-    } else if(std::is_same<T, std::string>::value) { // special case
+    } else if(std::is_same<T, std::string>::value) { // special case, may contain blank spaces
       os << boost::lexical_cast<T>(v.value);
     } else {
       static std::string strFormat;
@@ -182,11 +182,9 @@ public:
 	strFormat="%.6g";
       } else if(std::is_same<T, double>::value) {
 	strFormat="%.16lg";
-      } else if(std::is_same<T, std::string>::value) {
-	strFormat="%s";
       } else {
 	std::cout<<KRED<<__FUNCTION__<<"(ConfigManager::myValue)("<<__LINE__<<"): ERROR: unsupported value type!"<<RST<<std::endl;
-	throw;
+	throw std::logic_error("wrong type");
       }
       os << Form(strFormat.c_str(), v.value);
     }
@@ -195,45 +193,16 @@ public:
     ///////// DEBUG
     return os;
   }
-  
   friend std::istream& operator>>(std::istream & is, ConfigManager::myValue<T> & v) {
-    std::string str;
-    is >> str;
+    std::stringstream str;
+    str << is.rdbuf(); // NOTE: also valid for std::string with blank spaces
 
     ///////// DEBUG
-    //    std::cout << KRED << __FUNCTION__ << "(ConfigManager::myValue): ################################ input TEXT stream: " << str << RST << std::endl;
+    //    std::cout << KRED << __FUNCTION__ << "(ConfigManager::myValue): ################################ input TEXT stream: " << str.str() << RST << std::endl;
     ///////// DEBUG
 
-    // Evaluate math expression (if any)
-    auto filteredValue = boost::program_options::validators::get_single_string(ConfigManager::filterMathExpressions<T>({str.c_str()}, gInterpreter));
-    /* auto filteredValues = ConfigManager::filterMathExpressions<T>({str.c_str()}, gInterpreter); */
-    /* ///////// DEBUG */
-    /* std::cout << KRED << __FUNCTION__ << "(ConfigManager::myValue): ################################ filtered input stream size: " << filteredValues.size() << RST << std::endl; */
-    /* std::cout << KRED << __FUNCTION__ << "(ConfigManager::myValue): ################################ filtered input stream front().empty(): " << filteredValues.front().empty() << RST << std::endl; */
-    /* ///////// DEBUG */
-    /* auto filteredValue = filteredValues.front(); */
-
-
-    /* ///////// DEBUG */
-    /* std::cout << KRED << __FUNCTION__ << "(ConfigManager::myValue): ################################ BEFORE ASSERT" << RST << std::endl; */
-    /* auto check = boost::any(ConfigManager::myValue<T>()); */
-    /* ConfigManager::myValue<T> *checkPtr = boost::any_cast<ConfigManager::myValue<T> >(&check); */
-    /* BOOST_ASSERT(checkPtr); */
-    /* std::cout << KRED << __FUNCTION__ << "(ConfigManager::myValue): ################################ AFTER ASSERT" << RST << std::endl; */
-    /* ///////// DEBUG */
-
-    /* if(filteredValue.empty() && std::is_same<T, std::string>::value) { */
-    /*   v.value = boost::lexical_cast<T>("\"\""); */
-    /*   ///////// DEBUG */
-    /*   std::cout << KRED << __FUNCTION__ << "(ConfigManager::myValue): ################################ empty filtered string --> setting VAL: " << v.value << RST << std::endl; */
-    /*   ///////// DEBUG */
-    /*   return is; */
-    /* } */
-
-    /* ///////// DEBUG */
-    /* std::cout << KRED << __FUNCTION__ << "(ConfigManager::myValue): ################################ non-empty filtered string --> continue" << RST << std::endl; */
-    /* ///////// DEBUG */
-
+    // evaluate math expression (if any)
+    auto filteredValue = boost::program_options::validators::get_single_string(ConfigManager::filterMathExpressions<T>({str.str().c_str()}, gInterpreter));
     if(std::is_same<T, bool>::value) { // special case
      filteredValue = std::regex_replace(filteredValue, std::regex("(?:true)"), "1");
      filteredValue = std::regex_replace(filteredValue, std::regex("(?:false)"), "0");
@@ -241,6 +210,11 @@ public:
      //     std::cout << KRED << __FUNCTION__ << "(ConfigManager::myValue<bool>): ################################ processed VAL: " << std::quoted(filteredValue) << RST << std::endl;
      ///////// DEBUG
     }
+    ///////// DEBUG
+    //    if(std::is_same<T, std::string>::value) { // special case
+    //      std::cout << KRED << __FUNCTION__ << "(ConfigManager::myValue<string>): ################################ processed VAL: " << std::quoted(filteredValue) << RST << std::endl;
+    //    }
+    ///////// DEBUG
 
     v.value = boost::lexical_cast<T>(filteredValue);
 
@@ -387,13 +361,24 @@ namespace boost {
 	typedef std::string internal_type;
 	typedef ConfigManager::myValue<T> external_type;
 	boost::optional<external_type> get_value(const internal_type& str) {
+	  ////// DEBUG
+	  //	  if(std::is_same<T, std::string>::value) {
+	  //	    std::cout << KGRN << __FUNCTION__ << "<string>: internal=\"" << str << "\"" << RST << std::endl;
+	  //	  }
+	  ////// DEBUG
+
+	  if(std::is_same<T, std::string>::value) return external_type(boost::lexical_cast<T>(str)); // special case, may contain blank spaces
 	  external_type ee;
 	  std::stringstream ss(str);
 	  ss >> ee;
 	  return ee;
 	}
 	boost::optional<internal_type> put_value(const external_type& obj) {
-	  internal_type ii;
+	  ////// DEBUG
+	  //	  if(std::is_same<T, std::string>::value) {
+	  //	    std::cout << KGRN << __FUNCTION__ << "<string>: external=\"" << obj << "\"" << RST << std::endl;
+	  //	  }
+	  ////// DEBUG
 	  std::stringstream ss;
 	  ss << obj;
 	  return ss.str();
