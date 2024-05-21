@@ -319,7 +319,7 @@ void ConfigManager::parseAllowedArgs(const std::string & jsonName){
 	        // cmdLineOptDesc.add_options()(optName.c_str(),
 		// 			     boost::program_options::value<std::vector<int>>()->multitoken()->composing()->implicit_value({}),
 		// 			     description.c_str());
-	        // insertArray(optName, v.second.get_child(defaultValuePath));
+	        // insertVector(optName, v.second.get_child(defaultValuePath));
 	        cmdLineOptDesc.add_options()(optName.c_str(),
 					     boost::program_options::value<ConfigManager::myVector<int>>()->multitoken()->composing()->implicit_value({}),
 					     description.c_str());
@@ -334,14 +334,14 @@ void ConfigManager::parseAllowedArgs(const std::string & jsonName){
 		    ss << boost::lexical_cast<ConfigManager::myValue<int>>(i.second.data()) << " ";
 		  }
 		  ss << "]";
-		  insertArray(optName, ss.str()); // JSON format
+		  insertVector(optName, ss.str()); // JSON format
 		}
                 break;
             case string_code::evector_uint:
 	        // cmdLineOptDesc.add_options()(optName.c_str(),
 		// 			     boost::program_options::value<std::vector<unsigned int>>()->multitoken()->composing()->implicit_value({}),
 		// 			     description.c_str());
-		// insertArray(optName, v.second.get_child(defaultValuePath));
+		// insertVector(optName, v.second.get_child(defaultValuePath));
 	        cmdLineOptDesc.add_options()(optName.c_str(),
 					     boost::program_options::value<ConfigManager::myVector<unsigned int>>()->multitoken()->composing()->implicit_value({}),
 					     description.c_str());
@@ -356,14 +356,14 @@ void ConfigManager::parseAllowedArgs(const std::string & jsonName){
 		    ss << boost::lexical_cast<ConfigManager::myValue<unsigned int>>(i.second.data()) << " ";
 		  }
 		  ss << "]";
-		  insertArray(optName, ss.str()); // JSON format
+		  insertVector(optName, ss.str()); // JSON format
 		}
                 break;
             case string_code::evector_float:
 	        // cmdLineOptDesc.add_options()(optName.c_str(),
 		// 			     boost::program_options::value<std::vector<float>>()->multitoken()->composing()->implicit_value({}),
 		// 			     description.c_str());
-	        // insertArray(optName, v.second.get_child(defaultValuePath));
+	        // insertVector(optName, v.second.get_child(defaultValuePath));
 	        cmdLineOptDesc.add_options()(optName.c_str(),
 					     boost::program_options::value<ConfigManager::myVector<float>>()->multitoken()->composing()->implicit_value({}),
 					     description.c_str());
@@ -378,14 +378,14 @@ void ConfigManager::parseAllowedArgs(const std::string & jsonName){
 		    ss << boost::lexical_cast<ConfigManager::myValue<float>>(i.second.data()) << " ";
 		  }
 		  ss << "]";
-		  insertArray(optName, ss.str()); // JSON format
+		  insertVector(optName, ss.str()); // JSON format
 		}
                 break;
             case string_code::evector_double:
 	        // cmdLineOptDesc.add_options()(optName.c_str(),
 		// 			     boost::program_options::value<std::vector<double>>()->multitoken()->composing()->implicit_value({}),
 		// 			     description.c_str());
-		// insertArray(optName, v.second.get_child(defaultValuePath));
+		// insertVector(optName, v.second.get_child(defaultValuePath));
 	        cmdLineOptDesc.add_options()(optName.c_str(),
 					     boost::program_options::value<ConfigManager::myVector<double>>()->multitoken()->composing()->implicit_value({}),
 					     description.c_str());
@@ -400,14 +400,14 @@ void ConfigManager::parseAllowedArgs(const std::string & jsonName){
 		    ss << boost::lexical_cast<ConfigManager::myValue<double>>(i.second.data()) << " ";
 		  }
 		  ss << "]";
-		  insertArray(optName, ss.str()); // JSON format
+		  insertVector(optName, ss.str()); // JSON format
 		}
                 break;
             case string_code::evector_str:
 	        // cmdLineOptDesc.add_options()(optName.c_str(),
 		// 			     boost::program_options::value<std::vector<std::string>>()->multitoken()->composing()->implicit_value({}),
 		// 			     description.c_str());
-	        // insertArray(optName, v.second.get_child(defaultValuePath));
+	        // insertVector(optName, v.second.get_child(defaultValuePath));
 	        cmdLineOptDesc.add_options()(optName.c_str(),
 					     boost::program_options::value<ConfigManager::myVector<std::string>>()->multitoken()->composing()->implicit_value({}),
 					     description.c_str());
@@ -422,14 +422,14 @@ void ConfigManager::parseAllowedArgs(const std::string & jsonName){
 		    ss << "\"" << boost::lexical_cast<ConfigManager::myValue<std::string>>(i.second.data()) << "\" "; // quoted string, may contain blank spaces
 		  }
 		  ss << "]";
-		  insertArray(optName, ss.str()); // JSON format
+		  insertVector(optName, ss.str()); // JSON format
 		}
                 break;
             case string_code::evector_bool:
 	        // cmdLineOptDesc.add_options()(optName.c_str(),
 		// 			     boost::program_options::value<std::vector<bool>>()->multitoken()->composing()->implicit_value({}),
 		// 			     description.c_str());
-	        // insertArray(optName, v.second.get_child(defaultValuePath));
+	        // insertVector(optName, v.second.get_child(defaultValuePath));
 	        cmdLineOptDesc.add_options()(optName.c_str(),
 					     boost::program_options::value<ConfigManager::myVector<bool>>()->multitoken()->composing()->implicit_value({}),
 					     description.c_str());
@@ -444,7 +444,7 @@ void ConfigManager::parseAllowedArgs(const std::string & jsonName){
 		    ss << boost::lexical_cast<ConfigManager::myValue<bool>>(i.second.data()) << " ";
 		  }
 		  ss << "]";
-		  insertArray(optName, ss.str()); // JSON format
+		  insertVector(optName, ss.str()); // JSON format
 		}
                 break;
             case string_code::eunknown:
@@ -626,22 +626,22 @@ void ConfigManager::updateWithCmdLineArgs(const boost::program_options::variable
 	        configTree.put(item.first, item.second.as<ConfigManager::myValue<std::string>>());   
                 break;
 	    case string_code::evector_int:
-	        insertArray(item.first, item.second.as<ConfigManager::myVector<int>>());
+	        insertVector(item.first, item.second.as<ConfigManager::myVector<int>>());
                 break;
 	    case string_code::evector_uint:
-	        insertArray(item.first, item.second.as<ConfigManager::myVector<unsigned int>>());
+	        insertVector(item.first, item.second.as<ConfigManager::myVector<unsigned int>>());
                 break;
 	    case string_code::evector_float:
-	        insertArray(item.first, item.second.as<ConfigManager::myVector<float>>());
+	        insertVector(item.first, item.second.as<ConfigManager::myVector<float>>());
                 break;
 	    case string_code::evector_double:
-	        insertArray(item.first, item.second.as<ConfigManager::myVector<double>>());
+	        insertVector(item.first, item.second.as<ConfigManager::myVector<double>>());
                 break;
 	    case string_code::evector_str:
-		insertArray(item.first, item.second.as<ConfigManager::myVector<std::string>>());
+		insertVector(item.first, item.second.as<ConfigManager::myVector<std::string>>());
                 break;
 	    case string_code::evector_bool:
-	        insertArray(item.first, item.second.as<ConfigManager::myVector<bool>>());
+	        insertVector(item.first, item.second.as<ConfigManager::myVector<bool>>());
                 break;
             case string_code::eunknown:
 	      std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__<<"): ERROR: unknown type of parameter: "<<RST<<item.first<<std::endl;
@@ -808,8 +808,8 @@ void ConfigManager::pruneTree(boost::property_tree::ptree & pt, const std::strin
 {
   ////// DEBUG
   // // check if nodePath refers to an element of array
-  // bool isArray = (nodePath.back()=='.');
-  // std::cout << __FUNCTION__ << ": removing nodePath=" << nodePath << ", isArray=" << isArray << std::endl;
+  // bool isVector = (nodePath.back()=='.');
+  // std::cout << __FUNCTION__ << ": removing nodePath=" << nodePath << ", isVector=" << isVector << std::endl;
   ////// DEBUG
 
   // split up the path into each sub part
@@ -909,11 +909,11 @@ void ConfigManager::printTree(const boost::property_tree::ptree & pt, const std:
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void ConfigManager::insertArray(const std::string & nodePath, const boost::property_tree::ptree & ptreeArray) {
+void ConfigManager::insertVector(const std::string & nodePath, const boost::property_tree::ptree & ptreeVector) {
 
   pruneTree(configTree, nodePath);
   auto& array = configTree.add_child(nodePath, boost::property_tree::ptree());
-  BOOST_FOREACH(auto& i, ptreeArray) {
+  BOOST_FOREACH(auto& i, ptreeVector) {
     array.push_back(std::make_pair( "", i.second ));
     //////// DEBUG
     // std::cout<<__FUNCTION__<<"(A): adding element of vector: " << nodePath << " equal to: " << array.back().second.data() << std::endl;
@@ -925,7 +925,7 @@ void ConfigManager::insertArray(const std::string & nodePath, const boost::prope
   // -----
   // pruneTree(configTree, nodePath); // discard all previous values
   // configTree.put(nodePath, ""); // create empty node to support empty vectors
-  // BOOST_FOREACH(auto& i, ptreeArray.get_child(defaultValuePath)) {
+  // BOOST_FOREACH(auto& i, ptreeVector.get_child(defaultValuePath)) {
   //	 configTree.add(nodePath+'.', i.second.data());
   // }
   // -----
@@ -933,19 +933,19 @@ void ConfigManager::insertArray(const std::string & nodePath, const boost::prope
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename T>
-void ConfigManager::insertArray(const std::string & nodePath, const T & vec) {
+void ConfigManager::insertVector(const std::string & nodePath, const T & vec) {
 
   //////// DEBUG
   // std::cout<<__FUNCTION__<<"(E): updating node: " << nodePath << ", vector lexical cast: " << boost::lexical_cast<std::string>(vec) << std::endl;
   //////// DEBUG
 
-  insertArray(nodePath, boost::lexical_cast<std::string>(vec)); // vector converted to JSON format using custom T::operator<<()
+  insertVector(nodePath, boost::lexical_cast<std::string>(vec)); // vector converted to JSON format using custom T::operator<<()
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*
 template <typename T>
-void ConfigManager::insertArray(const std::string & nodePath, const T & vec) {
+void ConfigManager::insertVector(const std::string & nodePath, const T & vec) {
 
   //////// DEBUG
   std::cout<<__FUNCTION__<<"(C): updating node: " << nodePath << ", vector lexical cast: " << boost::lexical_cast<std::string>(vec) << std::endl;
@@ -963,7 +963,7 @@ void ConfigManager::insertArray(const std::string & nodePath, const T & vec) {
 */
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void ConfigManager::insertArray(const std::string & nodePath, const std::string & vectorInJsonFormat) {
+void ConfigManager::insertVector(const std::string & nodePath, const std::string & vectorInJsonFormat) {
 
   //////// DEBUG
   // std::cout<<__FUNCTION__<<"(D): updating node: " << nodePath << ", vector lexical cast: " << vectorInJsonFormat << std::endl;
@@ -973,7 +973,7 @@ void ConfigManager::insertArray(const std::string & nodePath, const std::string 
   ss << "{ " << std::quoted("dummy") << " : " << vectorInJsonFormat << " }";
   boost::property_tree::ptree pt;
   boost::property_tree::read_json(ss, pt);
-  insertArray(nodePath, pt.get_child("dummy"));
+  insertVector(nodePath, pt.get_child("dummy"));
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////

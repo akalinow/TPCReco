@@ -276,12 +276,12 @@ TEST_F(ConfigManagerTest, defaultGenericVectorParam) {
   ConfigManager cm({}, optionsJSON);
   boost::property_tree::ptree myConfig = cm.getConfig(argc, argv);
 
-  EXPECT_EQ( cm.getArray<std::vector<int>>("group1.vectorI") , std::vector<int>( {-1, -1*2, -1*3} ));
-  EXPECT_EQ( cm.getArray<std::vector<unsigned int>>("group1.vectorU") , std::vector<unsigned int>( {1, 1+1, 1+1+1} ));
-  EXPECT_EQ( cm.getArray<std::vector<float>>("group2.vectorF") , std::vector<float>( {1.1, 1.1+1.1, 3*1.1} ));
-  EXPECT_EQ( cm.getArray<std::vector<double>>("group2.vectorD") , std::vector<double>( {1.1e-11, 2.2e-12, 3.3e-13} ));
-  EXPECT_EQ( cm.getArray<std::vector<bool>>("group3.vectorB") , std::vector<bool>( {true, false, true||false} ));
-  EXPECT_EQ( cm.getArray<std::vector<std::string>>("group4.vectorS") , std::vector<std::string>( {"A A", "BB BB", "CCC CCC"} ));
+  EXPECT_EQ( cm.getVector<std::vector<int>>("group1.vectorI") , std::vector<int>( {-1, -1*2, -1*3} ));
+  EXPECT_EQ( cm.getVector<std::vector<unsigned int>>("group1.vectorU") , std::vector<unsigned int>( {1, 1+1, 1+1+1} ));
+  EXPECT_EQ( cm.getVector<std::vector<float>>("group2.vectorF") , std::vector<float>( {1.1, 1.1+1.1, 3*1.1} ));
+  EXPECT_EQ( cm.getVector<std::vector<double>>("group2.vectorD") , std::vector<double>( {1.1e-11, 2.2e-12, 3.3e-13} ));
+  EXPECT_EQ( cm.getVector<std::vector<bool>>("group3.vectorB") , std::vector<bool>( {true, false, true||false} ));
+  EXPECT_EQ( cm.getVector<std::vector<std::string>>("group4.vectorS") , std::vector<std::string>( {"A A", "BB BB", "CCC CCC"} ));
 }
 //////////////////////////
 //////////////////////////
@@ -295,11 +295,11 @@ TEST_F(ConfigManagerTest, paramFromGenericJSON) {
 		  (char*)"--meta.configJson", const_cast<char *>(testJSON.data())};
   boost::property_tree::ptree myConfig = cm.getConfig(argc, argv);
 
-  EXPECT_EQ( cm.getArray<std::vector<bool>>("group3.vectorB").size(), 3 ); // default
-  EXPECT_EQ( cm.getArray<std::vector<std::string>>("group4.vectorS").size() , 3 ); // default
-  EXPECT_EQ( cm.getArray<std::vector<int>>("group1.vectorI").size() , 0 ); // 1st JSON
-  EXPECT_EQ( cm.getArray<std::vector<double>>("group2.vectorD").size() , 2 ); // 1st JSON
-  EXPECT_DOUBLE_EQ( cm.getArray<std::vector<double>>("group2.vectorD").at(1) , sin(M_PI/2) ); // 1st JSON
+  EXPECT_EQ( cm.getVector<std::vector<bool>>("group3.vectorB").size(), 3 ); // default
+  EXPECT_EQ( cm.getVector<std::vector<std::string>>("group4.vectorS").size() , 3 ); // default
+  EXPECT_EQ( cm.getVector<std::vector<int>>("group1.vectorI").size() , 0 ); // 1st JSON
+  EXPECT_EQ( cm.getVector<std::vector<double>>("group2.vectorD").size() , 2 ); // 1st JSON
+  EXPECT_DOUBLE_EQ( cm.getVector<std::vector<double>>("group2.vectorD").at(1) , sin(M_PI/2) ); // 1st JSON
 }
 //////////////////////////
 //////////////////////////
@@ -314,11 +314,11 @@ TEST_F(ConfigManagerTest, paramFromTwoGenericJSONs) {
 		  (char*)"--meta.configJson", const_cast<char *>(testJSON1.data()), const_cast<char *>(testJSON2.data())};
   boost::property_tree::ptree myConfig = cm.getConfig(argc, argv);
 
-  EXPECT_EQ( cm.getArray<std::vector<bool>>("group3.vectorB").size(), 3 ); // default
-  EXPECT_EQ( cm.getArray<std::vector<double>>("group2.vectorD").size() , 2 ); // 1st JSON
-  EXPECT_EQ( cm.getArray<std::vector<int>>("group1.vectorI").size() , 4 ); // 2nd JSON
-  EXPECT_EQ( cm.getArray<std::vector<std::string>>("group4.vectorS").size() , 4 ); // 2nd JSON
-  EXPECT_EQ( cm.getArray<std::vector<std::string>>("group4.vectorS").at(3) , "5555 5555" ); // 2nd JSON
+  EXPECT_EQ( cm.getVector<std::vector<bool>>("group3.vectorB").size(), 3 ); // default
+  EXPECT_EQ( cm.getVector<std::vector<double>>("group2.vectorD").size() , 2 ); // 1st JSON
+  EXPECT_EQ( cm.getVector<std::vector<int>>("group1.vectorI").size() , 4 ); // 2nd JSON
+  EXPECT_EQ( cm.getVector<std::vector<std::string>>("group4.vectorS").size() , 4 ); // 2nd JSON
+  EXPECT_EQ( cm.getVector<std::vector<std::string>>("group4.vectorS").at(3) , "5555 5555" ); // 2nd JSON
 }
 //////////////////////////
 //////////////////////////
@@ -361,4 +361,70 @@ TEST_F(ConfigManagerTest, invalidDefaultGenericAllowedParam) {
 	  throw;
         }
     }, std::exception );
+}
+//////////////////////////
+//////////////////////////
+TEST_F(ConfigManagerTest, expressionMyValue) {
+
+  std::stringstream ss;
+  auto mval = ConfigManager::myValue<double>();
+
+  // good case - math expression, type DOUBLE
+  ss.str("1./sin(M_PI/6.)");
+  ss >> mval;
+  EXPECT_DOUBLE_EQ( boost::lexical_cast<double>(mval), 2.0 );
+
+  // wrong case - math expression, type DOUBLE
+  EXPECT_THROW({
+      try {
+	ss.clear();
+	ss.str("WRONG_EXPRESSION");
+	ss >> mval;
+      }
+      catch( const std::exception& e )
+        {
+	  EXPECT_STREQ( "wrong math expression", e.what() );
+	  throw;
+        }
+    }, std::exception );
+}
+//////////////////////////
+//////////////////////////
+TEST_F(ConfigManagerTest, expressionMyVector) {
+
+  std::stringstream ss;
+  auto mvecI = ConfigManager::myVector<int>();
+  auto mvecF = ConfigManager::myVector<float>();
+
+  // good case - vector of math expressions, type INTEGER
+  ss.str(R"####(
+1+0
+10/5
+sqrt(25)
+)####");
+  ss >> mvecI;
+  EXPECT_EQ( boost::lexical_cast<std::string>(mvecI), "[ \"1\", \"2\", \"5\" ]" );
+
+  // good case - vector of math expressions, type FLOAT
+  ss.clear();
+  ss.str(R"####(
+exp(0)
+(int)M_PI
+M_PI/atan(1.0)
+)####");
+  ss >> mvecF;
+  EXPECT_EQ( boost::lexical_cast<std::string>(mvecF), "[ \"1\", \"3\", \"4\" ]" );
+}
+//////////////////////////
+//////////////////////////
+TEST_F(ConfigManagerTest, boostPtreeGetters) {
+
+  int argc = 1;
+  char *argv[] = {(char*)"ConfigManager_tst"};
+  std::string optionsJSON = ConfigManagerTest::directory + ConfigManagerTest::dummyAllowedOptionsJson;
+  ConfigManager cm({}, optionsJSON);
+  boost::property_tree::ptree myConfig = cm.getConfig(argc, argv);
+
+  EXPECT_DOUBLE_EQ( cm.getScalar<double>("someAnalysis.paramTwoPi"), ConfigManager::getScalar<double>(myConfig, "someAnalysis.paramTwoPi") );
+  EXPECT_EQ( cm.getVector<std::vector<int>>("group1.vectorI"), ConfigManager::getVector<std::vector<int>>(myConfig, "group1.vectorI") );
 }

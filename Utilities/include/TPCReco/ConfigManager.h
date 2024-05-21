@@ -59,9 +59,9 @@ public:
     bool checkNodeNameSyntax(const std::string & nodePath); 
     void updateWithJsonFile(const std::string & jsonName);
     void updateWithCmdLineArgs(const boost::program_options::variables_map & varMap);
-    void insertArray(const std::string & nodePath, const std::string & vectorInJsonFormat);
-    void insertArray(const std::string & nodePath, const boost::property_tree::ptree & ptreeArray);
-    template <typename T> void insertArray(const std::string & nodePath, const T & vec);
+    void insertVector(const std::string & nodePath, const std::string & vectorInJsonFormat);
+    void insertVector(const std::string & nodePath, const boost::property_tree::ptree & ptreeVector);
+    template <typename T> void insertVector(const std::string & nodePath, const T & vec);
 
  private:
     
@@ -100,9 +100,24 @@ public:
     static std::vector<std::string> filterSquareBrackets(const std::vector<std::string> & val);
     template<typename T=double> static std::vector<std::string> filterMathExpressions(const std::vector<std::string> & val, TInterpreter *inter=NULL);
 
+    // convenience static getter method to get single value from BOOST ptree node
+    template <typename T> static T getScalar(const boost::property_tree::ptree &pt, const std::string & nodePath) {
+      BOOST_STATIC_ASSERT(std::is_arithmetic<T>::value);
+      return pt.get<T>(nodePath);
+    }
+
+    // convenience static getter method to get vector of values from BOOST ptree node
+    template <typename T> static std::vector<typename T::value_type> getVector(const boost::property_tree::ptree &pt, const std::string & nodePath) {
+      T result;
+      for (auto item : pt.get_child(nodePath)) {
+	result.push_back(item.second.get_value<typename T::value_type>());
+      }
+      return result;
+    }
+
     // getter method for accessing single stored value in a given configuration path
     // NOTE: this specialized function has to stay inside header file
-    template <typename T> T getValue(const std::string & nodePath) {
+    template <typename T> T getScalar(const std::string & nodePath) {
       if(!checkNodeNameSyntax(nodePath)) {
 	std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
 		 <<"): ERROR: node \""<< nodePath <<"\" does not exist! Check your configuration file: "<< allowedOptPath <<" and/or ConfigManager initialization."<<RST<<std::endl;
@@ -114,7 +129,7 @@ public:
 	 std::is_same<T, double>::value ||
 	 std::is_same<T, bool>::value ||
 	 std::is_same<T, std::string>::value) {
-	return configTree.get<T>(nodePath);
+	return ConfigManager::getScalar<T>(configTree, nodePath);
       }
       std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__<<"): ERROR: node \""<< nodePath <<"\" has unsupported value type!"<<RST<< std::endl;
       throw std::logic_error("wrong type");
@@ -122,7 +137,7 @@ public:
     
     // getter method for accessing entire vector stored in a given configuration path
     // NOTE: this specialized function has to stay inside header file
-    template <typename T> std::vector<typename T::value_type> getArray(const std::string & nodePath) {
+    template <typename T> std::vector<typename T::value_type> getVector(const std::string & nodePath) {
       if(!checkNodeNameSyntax(nodePath)) {
 	std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
 		 << "): ERROR: node \""<< nodePath <<"\" does not exist! Check your configuration file: "<< allowedOptPath <<" and/or ConfigManager initialization."<<RST<<std::endl;
@@ -134,10 +149,7 @@ public:
 	 std::is_same<T, std::vector<double>>::value || std::is_same<T, ConfigManager::myVector<double>>::value ||
 	 std::is_same<T, std::vector<bool>>::value || std::is_same<T, ConfigManager::myVector<bool>>::value ||
 	 std::is_same<T, std::vector<std::string>>::value || std::is_same<T, ConfigManager::myVector<std::string>>::value) {
-	std::vector<typename T::value_type> vec;
-	for (auto item : configTree.get_child(nodePath))
-	  vec.push_back(item.second.get_value<typename T::value_type>());
-	return vec;
+	return ConfigManager::getVector<T>(configTree, nodePath);
       }
       std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
 	       <<"): ERROR: node \""<< nodePath <<"\" has unsupported vector type!"<<RST<< std::endl;
