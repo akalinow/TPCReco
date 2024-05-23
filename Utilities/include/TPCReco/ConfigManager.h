@@ -29,7 +29,7 @@ class ConfigManager
 public:
 
   // constructor with optional exclusive list of allowed nodes and/or optional alternative file with definition of nodes
-  ConfigManager(const std::vector<std::string> nodeList={}, const std::string alternativeAllowedOptPath="");
+  ConfigManager(const std::vector<std::string> allowedNodeList={}, const std::string alternativeAllowedOptPath="");
     
     const boost::property_tree::ptree & getConfig(int argc, char** argv);
     

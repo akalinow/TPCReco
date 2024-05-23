@@ -231,11 +231,11 @@ ConfigManager::string_code ConfigManager::getTypeCode (std::string const & inStr
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////
-ConfigManager::ConfigManager(const std::vector<std::string> nodeList, const std::string alternativeAllowedOptPath) {
+ConfigManager::ConfigManager(const std::vector<std::string> allowedNodeList, const std::string alternativeAllowedOptPath) {
     allowedOptPath = (alternativeAllowedOptPath=="" ?
 		      std::string(std::getenv("HOME"))+"/.tpcreco/config/allowedOptions.json" :
 		      alternativeAllowedOptPath);
-    setAllowedArgs(nodeList);
+    setAllowedArgs(allowedNodeList);
     parseAllowedArgs(allowedOptPath);
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -573,7 +573,6 @@ void ConfigManager::updateWithJsonFile(const std::string & jsonName){
       case string_code::evector_str:
 	{
 	  auto& array = configTreeUpdateFiltered.add_child(nodePath, boost::property_tree::ptree()); // new array to be populated
-	  std::cout << KGRN << __FUNCTION__ << "<vector<string>>: node=" << nodePath << ", size=" << configTreeUpdate.get_child(nodePath).size() << RST << std::endl;
 	  BOOST_FOREACH(auto& item, configTreeUpdate.get_child(nodePath)) {
 	    array.push_back(std::make_pair( "", boost::property_tree::ptree(boost::lexical_cast<std::string>(boost::lexical_cast<ConfigManager::myValue<std::string>>(item.second.data()))))); // NOTE: this method works in both Release and Debug CMAKE modes
 	  }

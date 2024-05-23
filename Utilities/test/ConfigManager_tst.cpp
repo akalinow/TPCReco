@@ -259,7 +259,7 @@ TEST_F(ConfigManagerTest, defaultGenericScalarParam) {
   int argc = 1;
   char *argv[] = {(char*)"ConfigManager_tst"};
   std::string optionsJSON = ConfigManagerTest::directory + ConfigManagerTest::dummyAllowedOptionsJson;
-  ConfigManager cm({}, optionsJSON);
+  ConfigManager cm( {}, optionsJSON );
   boost::property_tree::ptree myConfig = cm.getConfig(argc, argv);
 
   EXPECT_EQ( myConfig.get<int>("someAnalysis.param1000") , 1000 );
@@ -268,12 +268,44 @@ TEST_F(ConfigManagerTest, defaultGenericScalarParam) {
 }
 //////////////////////////
 //////////////////////////
+TEST_F(ConfigManagerTest, restrictOptions) {
+
+  int argc = 1;
+  char *argv[] = {(char*)"ConfigManager_tst"};
+
+  EXPECT_NO_THROW({
+      ConfigManager cm;
+      boost::property_tree::ptree myConfig = cm.getConfig(argc, argv);
+      auto energy = myConfig.get<float>("beamParameters.energy"); // allowed
+      auto file = myConfig.get<std::string>("meta.configDumpJson"); // allowed
+    });
+  EXPECT_NO_THROW({
+      ConfigManager cm( {"beamParameters.energy"} );
+      boost::property_tree::ptree myConfig = cm.getConfig(argc, argv);
+      auto energy = myConfig.get<float>("beamParameters.energy"); // allowed
+    });
+  EXPECT_THROW({
+      try
+	{
+	  ConfigManager cm( {"beamParameters.energy"} );
+	  boost::property_tree::ptree myConfig = cm.getConfig(argc, argv);
+	  auto file = myConfig.get<std::string>("meta.configDumpJson"); // not-allowed
+	}
+      catch ( const std::exception& e )
+	{
+	  EXPECT_STREQ( "No such node (meta.configDumpJson)", e.what() );
+	  throw;
+	}
+    }, std::exception );
+}
+//////////////////////////
+//////////////////////////
 TEST_F(ConfigManagerTest, defaultGenericVectorParam) {
 
   int argc = 1;
   char *argv[] = {(char*)"ConfigManager_tst"};
   std::string optionsJSON = ConfigManagerTest::directory + ConfigManagerTest::dummyAllowedOptionsJson;
-  ConfigManager cm({}, optionsJSON);
+  ConfigManager cm( {}, optionsJSON );
   boost::property_tree::ptree myConfig = cm.getConfig(argc, argv);
 
   EXPECT_EQ( cm.getVector<std::vector<int>>("group1.vectorI") , std::vector<int>( {-1, -1*2, -1*3} ));
@@ -290,7 +322,7 @@ TEST_F(ConfigManagerTest, paramFromGenericJSON) {
   int argc = 3;
   std::string optionsJSON = ConfigManagerTest::directory + ConfigManagerTest::dummyAllowedOptionsJson;
   std::string testJSON = ConfigManagerTest::directory + ConfigManagerTest::dummyValidJson1;
-  ConfigManager cm({}, optionsJSON);
+  ConfigManager cm( {}, optionsJSON );
   char *argv[] = {(char*)"ConfigManager_tst",
 		  (char*)"--meta.configJson", const_cast<char *>(testJSON.data())};
   boost::property_tree::ptree myConfig = cm.getConfig(argc, argv);
@@ -309,7 +341,7 @@ TEST_F(ConfigManagerTest, paramFromTwoGenericJSONs) {
   std::string optionsJSON = ConfigManagerTest::directory + ConfigManagerTest::dummyAllowedOptionsJson;
   std::string testJSON1 = ConfigManagerTest::directory + ConfigManagerTest::dummyValidJson1;
   std::string testJSON2 = ConfigManagerTest::directory + ConfigManagerTest::dummyValidJson2;
-  ConfigManager cm({}, optionsJSON);
+  ConfigManager cm( {}, optionsJSON );
   char *argv[] = {(char*)"ConfigManager_tst",
 		  (char*)"--meta.configJson", const_cast<char *>(testJSON1.data()), const_cast<char *>(testJSON2.data())};
   boost::property_tree::ptree myConfig = cm.getConfig(argc, argv);
@@ -327,7 +359,7 @@ TEST_F(ConfigManagerTest, invalidParamFromGenericJSON) {
   int argc = 3;
   std::string optionsJSON = ConfigManagerTest::directory + ConfigManagerTest::dummyAllowedOptionsJson;
   std::string testJSON = ConfigManagerTest::directory + ConfigManagerTest::dummyInvalidJson;
-  ConfigManager cm({}, optionsJSON);
+  ConfigManager cm( {}, optionsJSON );
   char *argv[] = {(char*)"ConfigManager_tst",
 		  (char*)"--meta.configJson", const_cast<char *>(testJSON.data())};
   EXPECT_THROW({
@@ -351,7 +383,7 @@ TEST_F(ConfigManagerTest, invalidDefaultGenericAllowedParam) {
   EXPECT_THROW({
       try
         {
-	  ConfigManager cm({}, optionsJSON);
+	  ConfigManager cm( {}, optionsJSON );
 	  char *argv[] = {(char*)"ConfigManager_tst"};
 	  boost::property_tree::ptree myConfig = cm.getConfig(argc, argv);
         }
@@ -422,7 +454,7 @@ TEST_F(ConfigManagerTest, boostPtreeGetters) {
   int argc = 1;
   char *argv[] = {(char*)"ConfigManager_tst"};
   std::string optionsJSON = ConfigManagerTest::directory + ConfigManagerTest::dummyAllowedOptionsJson;
-  ConfigManager cm({}, optionsJSON);
+  ConfigManager cm( {}, optionsJSON );
   boost::property_tree::ptree myConfig = cm.getConfig(argc, argv);
 
   EXPECT_DOUBLE_EQ( cm.getScalar<double>("someAnalysis.paramTwoPi"), ConfigManager::getScalar<double>(myConfig, "someAnalysis.paramTwoPi") );
