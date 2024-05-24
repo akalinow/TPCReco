@@ -120,7 +120,7 @@ public:
     template <typename T> T getScalar(const std::string & nodePath) {
       if(!checkNodeNameSyntax(nodePath)) {
 	std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
-		 <<"): ERROR: node \""<< nodePath <<"\" does not exist! Check your configuration file: "<< allowedOptPath <<" and/or ConfigManager initialization."<<RST<<std::endl;
+		 <<"): ERROR: node '"<< nodePath <<"' does not exist! Check config file '"<< allowedOptPath <<"' and/or ConfigManager initialization."<<RST<<std::endl;
 	throw std::logic_error("wrong ptree node name");
       }
       if(std::is_same<T, int>::value ||
@@ -131,7 +131,7 @@ public:
 	 std::is_same<T, std::string>::value) {
 	return ConfigManager::getScalar<T>(configTree, nodePath);
       }
-      std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__<<"): ERROR: node \""<< nodePath <<"\" has unsupported value type!"<<RST<< std::endl;
+      std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__<<"): ERROR: node '"<< nodePath <<"' has unknown type!"<<RST<< std::endl;
       throw std::logic_error("wrong type");
     }
     
@@ -140,7 +140,7 @@ public:
     template <typename T> std::vector<typename T::value_type> getVector(const std::string & nodePath) {
       if(!checkNodeNameSyntax(nodePath)) {
 	std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
-		 << "): ERROR: node \""<< nodePath <<"\" does not exist! Check your configuration file: "<< allowedOptPath <<" and/or ConfigManager initialization."<<RST<<std::endl;
+		 << "): ERROR: node '"<< nodePath <<"' does not exist! Check your configuration file '"<< allowedOptPath <<"' and/or ConfigManager initialization."<<RST<<std::endl;
 	throw std::logic_error("wrong ptree node name");
       }
       if(std::is_same<T, std::vector<int>>::value || std::is_same<T, ConfigManager::myVector<int>>::value ||
@@ -152,7 +152,7 @@ public:
 	return ConfigManager::getVector<T>(configTree, nodePath);
       }
       std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
-	       <<"): ERROR: node \""<< nodePath <<"\" has unsupported vector type!"<<RST<< std::endl;
+	       <<"): ERROR: node '"<< nodePath <<"' has unknown vector type!"<<RST<< std::endl;
       throw std::logic_error("wrong type");
     }
 };
@@ -195,7 +195,7 @@ public:
       } else if(std::is_same<T, double>::value) {
 	strFormat="%.16lg";
       } else {
-	std::cout<<KRED<<__FUNCTION__<<"(ConfigManager::myValue)("<<__LINE__<<"): ERROR: unsupported value type!"<<RST<<std::endl;
+	std::cout<<KRED<<__FUNCTION__<<"(ConfigManager::myValue)("<<__LINE__<<"): ERROR: unknown value type!"<<RST<<std::endl;
 	throw std::logic_error("wrong type");
       }
       os << Form(strFormat.c_str(), v.value);

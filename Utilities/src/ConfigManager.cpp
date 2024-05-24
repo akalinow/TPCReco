@@ -267,12 +267,27 @@ void ConfigManager::parseAllowedArgs(const std::string & jsonName){
 
 	std::string groupName = v.second.get<std::string>(groupPath);
 	std::string optName = groupName+"."+v.first;
-	if(!checkNodeNameSyntax(optName)) continue;
-	
         std::string typeName = v.second.get<std::string>(typePath);
 	std::string description = v.second.get<std::string>(descriptionPath);
 	string_code type = getTypeCode(typeName);
-        varTypeMap[optName] = type;
+
+	// protection against dots (.) inside end-point child node names
+	if(v.first.find_first_of(".")!=std::string::npos) {
+	  std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
+		   <<"): ERROR: child node name '"<< v.first <<"' is not allowed!"<<RST<<std::endl;
+	  throw std::logic_error("wrong ptree node name");
+	}
+
+	// protection against forbidden characters and restricted node names
+	if(!checkNodeNameSyntax(optName)) continue;
+
+	// protection against duplicated absolute node names
+        if(varTypeMap.find(optName)!=varTypeMap.end()) {
+	  std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
+		   <<"): ERROR: absolute node name '"<< optName <<"' is duplicated!"<<RST<<std::endl;
+	  throw std::logic_error("duplicated ptree node name");
+	}
+	varTypeMap[optName] = type;
 
 	//////// DEBUG
 	// std::cout << __FUNCTION__ << ": added option: " << optName << ", type: " << type << ", default: " << v.second.get(defaultValuePath, "### ERROR ###") << std::endl;
@@ -449,7 +464,7 @@ void ConfigManager::parseAllowedArgs(const std::string & jsonName){
                 break;
             case string_code::eunknown:
 	        std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
-			 <<"): ERROR: unsupported type \""<< typeName <<"\" of node \""<< optName <<"\"!"<<RST<< std::endl;
+			 <<"): ERROR: node '"<<optName<<"' has unknown type '"<<typeName<<"' declaration!"<<RST<< std::endl;
 		throw std::logic_error("wrong type");
             }
         }
@@ -467,41 +482,56 @@ const boost::program_options::variables_map & ConfigManager::parseCmdLineArgs(in
     // std::cout << __FUNCTION__ << ": STARTED" << std::flush << std::endl;
     //////// DEBUG
 
-    // apply additional protection against duplicated cmd line options (due to BOOST cmd line parsing with enabled multitoken/composing)
-    // std::stringstream ss;
-    // std::copy(argv, argv + argc, std::ostream_iterator<char *>(ss, "\n"));
-    // auto storedOptions = listTree(configTree);
-    // std::string item;
-    // std::set<std::string> cmdOptionsSet;
-    // while(ss >> item) {
-    //   if(item.find("--")==0) item.erase(0,2); // remove leading dash characters "-"
-    //   if(item.size()) {
-    // 	for(auto &it: storedOptions) {
-    // 	  if(item==it || item+'.'==it) {
-    // 	    if(cmdOptionsSet.find(item)==cmdOptionsSet.end()) {
-    // 	      cmdOptionsSet.insert(item);
-    // 	    } else { // duplicated cmd line options are not allowed
-    // 	      std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
-    // 		       <<"): ERROR: command line option \"--"<< item <<"\" appears more than once!"<<RST<< std::endl;
-    // 	      throw;
-    // 	    }
-    // 	  }
-    // 	}
-    //   }
-    // }
-
     // allow only "--longOption" cmd line style to enable parsing negative numbers
-    boost::program_options::store
-      (boost::program_options::parse_command_line(argc, argv, cmdLineOptDesc,
-						  boost::program_options::command_line_style::default_style
-						  ^ boost::program_options::command_line_style::allow_short
-						  ^ boost::program_options::command_line_style::long_allow_adjacent), varMap);
-    boost::program_options::notify(varMap);
+    // boost::program_options::store
+    //   (boost::program_options::parse_command_line(argc, argv, cmdLineOptDesc,
+    // 						  boost::program_options::command_line_style::default_style
+    // 						  ^ boost::program_options::command_line_style::allow_short
+    // 						  ^ boost::program_options::command_line_style::long_allow_adjacent), varMap);
+    try {
+      auto parsedOptions = boost::program_options::command_line_parser(argc, argv)
+	.options(cmdLineOptDesc)
+	.style(boost::program_options::command_line_style::default_style
+	       ^ boost::program_options::command_line_style::allow_short // disable '-option' style
+	       ^ boost::program_options::command_line_style::long_allow_adjacent) // disable '--option=VAL" style
+	.positional({}) // any unregistered option should trigger "too many positional options" exception
+	.run();
+      boost::program_options::store(parsedOptions, varMap);
+      boost::program_options::notify(varMap);
+    } catch (boost::program_options::too_many_positional_options_error &e) { // unregistered option(s) detected
+      std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
+	       <<"): ERROR: unknown command line option!"<<RST<< std::endl;
+      throw std::logic_error("wrong command line syntax");
+    }
+
+    // protection against duplicated cmd line options
+    // (needed due to BOOST cmd line parsing with enabled multitoken/composing for some parameters)
+    std::stringstream ss;
+    std::copy(argv, argv + argc, std::ostream_iterator<char *>(ss, "\n"));
+    auto storedOptions = listTree(configTree);
+    std::string item;
+    std::set<std::string> cmdOptionsSet;
+    while(ss >> item) {
+      if(item.find("--")==0) item.erase(0,2); // this removes leading dash characters "-"
+      if(item.size()) {
+	for(auto &it: storedOptions) {
+	  if(item==it || item+'.'==it) {
+	    if(cmdOptionsSet.find(item)==cmdOptionsSet.end()) {
+	      cmdOptionsSet.insert(item);
+	    } else { // duplicated cmd line options are not allowed
+	      std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
+		       <<"): ERROR: command line option '--"<< item <<"' is duplicated!"<<RST<< std::endl;
+	      throw std::logic_error("wrong command line sytax");
+	    }
+	  }
+	}
+      }
+    }
 
     //////// DEBUG
     //    std::cout << __FUNCTION__ << ": ENDED" << std::flush << std::endl;
     //////// DEBUG
-    
+
     return varMap;
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -587,7 +617,7 @@ void ConfigManager::updateWithJsonFile(const std::string & jsonName){
 	}
 	break;
       case string_code::eunknown:
-	std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__<<"): ERROR: unknown type of parameter: "<<RST<<nodePath<<std::endl;
+	std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__<<"): ERROR: node '"<<nodePath<<"' has unknown type!"<<RST<<std::endl;
 	throw std::logic_error("wrong type");
       }
     }
@@ -643,7 +673,7 @@ void ConfigManager::updateWithCmdLineArgs(const boost::program_options::variable
 	        insertVector(item.first, item.second.as<ConfigManager::myVector<bool>>());
                 break;
             case string_code::eunknown:
-	      std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__<<"): ERROR: unknown type of parameter: "<<RST<<item.first<<std::endl;
+	      std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__<<"): ERROR: node '"<<item.first<<"' has unknown type!"<<RST<<std::endl;
 	      throw std::logic_error("wrong type");
 	}
     }
@@ -789,7 +819,7 @@ void ConfigManager::dumpConfig(const std::string & jsonName){
      jsonName.find(".")==0 || jsonName.find("--")==0 || // cannot start with '--' or '.' sequence
      !std::regex_match(jsonName, std::regex("^[A-Za-z0-9.-_/]+$"))) { // allowed are: alphanumeric, dot, dash, underscore, slash
     std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
-	     <<"): ERROR: output JSON file name \""<< jsonName <<"\" is not allowed!"<<RST<<std::endl;
+	     <<"): ERROR: output JSON file name '"<< jsonName <<"' is not allowed!"<<RST<<std::endl;
     throw std::logic_error("wrong JSON name");
   }
   boost::property_tree::write_json(jsonName, configTree);
@@ -998,7 +1028,7 @@ bool ConfigManager::checkNodeNameSyntax(const std::string & nodePath) {
      nodePath.find("--")==0 || nodePath.find(".")==0 || // cannot start with '--' or '.' sequence
      !std::regex_match(nodePath, std::regex("^[A-Za-z0-9.-]+$"))) { // allowed are: alphanumeric, dot, dash
     std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
-	     <<"): ERROR: node name \""<< nodePath <<"\" is not allowed!"<<RST<<std::endl;
+	     <<"): ERROR: absolute node name '"<< nodePath <<"' is not allowed!"<<RST<<std::endl;
     throw std::logic_error("wrong ptree node name");
   }
   
@@ -1051,7 +1081,7 @@ std::vector<std::string> ConfigManager::filterMathExpressions(const std::vector<
   } else if(std::is_same<T, std::string>::value) { // special case
     strType="std::string";      
   } else {
-    std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__<<"): ERROR: unsupported value type!"<<RST<<std::endl;
+    std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__<<"): ERROR: unsupported type in math expression!"<<RST<<std::endl;
     throw std::logic_error("wrong type");
   } 
 
@@ -1081,7 +1111,7 @@ std::vector<std::string> ConfigManager::filterMathExpressions(const std::vector<
     }
     auto result = inter->ProcessLine(("aString_="+ss.str()).c_str());
     if(!result) {
-      std::cout<<KRED<<__FUNCTION__<<"<"<< strType <<">("<<__LINE__<<"): expression "<< std::quoted(item) <<" cannot be evaluated by TInterpreter!"<<RST<<std::endl;
+      std::cout<<KRED<<__FUNCTION__<<"<"<< strType <<">("<<__LINE__<<"): evaluaton of math expression "<< std::quoted(item) <<" failed!"<<RST<<std::endl;
       throw std::logic_error("wrong math expression");
     }
     item = funcPtr();
