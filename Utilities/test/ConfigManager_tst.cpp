@@ -622,6 +622,21 @@ TEST_F(ConfigManagerTest, paramVectorPtreeFromCmdLine) {
     if(index==1) EXPECT_EQ( item.second.count("paramAA"), 1 );
     index++;
   }
+  EXPECT_NO_THROW({
+      BOOST_FOREACH(auto item, pt) { // 1st level
+	std::cout << "1st-level child: key: " << item.first << ", size: " << item.second.size() << ", value: " << item.second.get_value<std::string>() << std::endl;
+	if(item.second.size()) {
+	  BOOST_FOREACH(auto item2, item.second) {
+	    std::cout << "2nd-level child: key: " << item2.first << ", size: " << item2.second.size() << ", value: " << item2.second.get_value<std::string>() << std::endl;
+	    if(item2.second.size()) {
+	      BOOST_FOREACH(auto item3, item2.second) {
+		std::cout << "3rd-level child: key: " << item3.first << ", size: " << item3.second.size() << ", value: " << item3.second.get_value<std::string>() << std::endl;
+	      }
+	    }
+	  }
+	}
+      }
+    });
 }
 //////////////////////////
 //////////////////////////
