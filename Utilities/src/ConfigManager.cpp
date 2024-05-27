@@ -14,10 +14,6 @@
 namespace std {
   template<typename T> void validate(boost::any & v, const std::vector<std::string> & val,
 				     ConfigManager::myValue<T>*, int) {
-    ///////// DEBUG
-    // std::cout << KRED << __FUNCTION__ << "(ConfigManager::myValue): ################################ input vector size=" << val.size() << RST << std::endl;
-    ///////// DEBUG
-    
     if (v.empty())
       v = boost::any(ConfigManager::myValue<T>());
     ConfigManager::myValue<T> *p = boost::any_cast<ConfigManager::myValue<T> >(&v);
@@ -32,49 +28,11 @@ namespace std {
     if(std::is_same<T, bool>::value) { // special case
       filteredValue = std::regex_replace(filteredValue, std::regex("(?:true)"), "1");
       filteredValue = std::regex_replace(filteredValue, std::regex("(?:false)"), "0");
-      ///////// DEBUG
-      //      std::cout << KRED << __FUNCTION__ << "(ConfigManager::myValue<bool>): ################################ processed VAL: " << std::quoted(filteredValue) << RST << std::endl;
-      ///////// DEBUG
     }
     
     *p = boost::lexical_cast<T>(filteredValue);
   }
 }
-/*
-//////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-// Overloaded std::operator<<() to convert std::vector<T> into a text stream,
-// where T denotes: std::string, int, usigned int, float, double or bool.
-// The output is enclosed in square brackets and quoted values are separated by spaces and commas
-// to resemble array in JSON format, e.g. [ "value1", "value2", "value3" ].
-// In case of T=bool the resulting text representation will be "true" or "false".
-//
-namespace std {
-  template<typename T> static std::ostream& operator<<(std::ostream & os,
-						       const std::vector<T> & vec) {
-    os << "[ ";
-    bool isFirst = true;
-    for(auto item : vec) { // NOTE: do not use here the reference operator (&) to enable support for std::vector<bool> 
-      std::stringstream ss;
-      ss << item;
-      if(std::is_same<T,bool>::value) {
-      	auto b = (ss.str()=="1");
-      	ss.str("");
-      	ss << (b ? "true" : "false"); 
-      }
-      if(isFirst) {
-	isFirst = false;
-      } else {
-	os << ", ";
-      }
-      os << std::quoted(ss.str());
-    }
-    os << " ]";
-    return os;
-  }
-}
-*/
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -107,107 +65,10 @@ namespace std {
       	t = std::regex_replace(t, std::regex("(?:true)"), "1");
       	t = std::regex_replace(t, std::regex("(?:false)"), "0");
       }
-
-      ///////// DEBUG
-      //      std::cout << __FUNCTION__ << ": loop -------- inserting as: " << std::quoted(t) << std::endl;
-      ///////// DEBUG
-
       p->push_back(boost::lexical_cast<T>(t));
     }
   }
 }
-//////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-// Overloaded std::operator<<() to convert myVector<T> into a text stream,
-// where T denotes: std::string, int, usigned int, float, double or bool.
-// The output is enclosed in square brackets and quoted values are separated by spaces and commas
-// to resemble array in JSON format, e.g. [ "value1", "value2", "value3" ].
-// In case of T=bool the resulting text representation will be "true" or "false".
-//
-/*
-namespace std {
-  template<typename T> static std::ostream& operator<<(std::ostream & os,
-						       const ConfigManager::myVector<T> & vec) {
-    os << "[ ";
-    bool isFirst = true;
-    for(auto item : vec.vec) { // NOTE: do not use here the reference operator (&) to enable support for std::vector<bool> 
-      std::stringstream ss;
-      ss << item;
-      if(std::is_same<T,bool>::value) {
-      	auto b = (ss.str()=="1");
-      	ss.str("");
-      	ss << (b ? "true" : "false"); 
-      }
-      if(isFirst) {
-	isFirst = false;
-      } else {
-	os << ", ";
-      }
-      os << std::quoted(ss.str());
-    }
-    os << " ]";
-    return os;
-  }
-}
-//////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-// Custom std::validator method to read std::vector<T> from cmd line arguments needed by BOOST program options,
-// where T denotes: std::string, int, usigned int, float, double or bool.
-// Values have to be separated by spaces and, optionally, can be enclosed in square brackets.
-// In case of T=bool the following input representations are acceptable:
-// 0, 1, true, false, True, False, TRUE, FALSE.
-// 
-namespace std {
-  template<typename T>
-  void validate(boost::any & v, const std::vector<std::string> & val,
-		std::vector<T>*, int)
-  {
-    if (v.empty())
-      v = boost::any(std::vector<T>());
-    std::vector<T> *p = boost::any_cast<std::vector<T>>(&v);
-    BOOST_ASSERT(p);
-
-    // remove existing square brackets pair if present
-    auto filteredValues = ConfigManager::filterSquareBrackets(val);
-    
-    // convert symbolic math expressions (if any) to numerical values
-    auto filteredValues2 = ConfigManager::filterMathExpressions<T>(filteredValues, gInterpreter);
-
-    // fill array with filtered values
-    BOOST_FOREACH(auto& t, filteredValues2) {
-
-      if(std::is_same<T, bool>::value) { // bool case
-
-	// translate plain text to integer values (if any)
-	t = std::regex_replace(t, std::regex("(?:true)"), "1");
-	t = std::regex_replace(t, std::regex("(?:false)"), "0");
-	p->push_back(boost::lexical_cast<T>(t));
-
-	///////// DEBUG
-	std::cout << __FUNCTION__ << ": loop -------- inserting as-is: " << boost::lexical_cast<bool>(t) << std::endl;
-	///////// DEBUG
-	
-      } else if(std::is_same<T, std::string>::value ||
-		std::is_same<T, float>::value ||
-		std::is_same<T, double>::value ||
-		std::is_same<T, unsigned int>::value ||
-		std::is_same<T, int>::value) {
-
-	p->push_back(boost::lexical_cast<T>(t));
-	///////// DEBUG
-	std::cout << __FUNCTION__ << ": loop -------- inserting as-is: " << boost::lexical_cast<T>(t) << std::endl;
-	///////// DEBUG
-	
-      } else {
-	std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__<<"): unsupported vector type!"<<RST<<std::endl;
-	throw;
-      }
-    }
-  }
-}
-*/
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 ConfigManager::string_code ConfigManager::getTypeCode (std::string const & inString) const {
@@ -215,18 +76,21 @@ ConfigManager::string_code ConfigManager::getTypeCode (std::string const & inStr
     data = std::regex_replace(data, std::regex("(?:std::vector|vector)"), "vec"); // support short form of "vector"
     data = std::regex_replace(data, std::regex("(?:std::string|string)"), "str"); // support short form of "string"
     data = std::regex_replace(data, std::regex("(?:unsigned int)"), "uint"); // support short form of "unsigned int"
+    data = std::regex_replace(data, std::regex("(?:boost::property_tree::ptree)"), "ptree"); // support short form of BOOST property tree
     if (data == "int") return string_code::eint;
     if (data == "uint") return string_code::euint;
     if (data == "float") return string_code::efloat;
     if (data == "double") return string_code::edouble;
     if (data == "str") return string_code::estr;
     if (data == "bool") return string_code::ebool;
+    if (data == "ptree") return string_code::eptree;
     if (data == "vec<int>") return string_code::evector_int;
     if (data == "vec<uint>") return string_code::evector_uint;
     if (data == "vec<float>") return string_code::evector_float;
     if (data == "vec<double>") return string_code::evector_double;
     if (data == "vec<str>") return string_code::evector_str;
     if (data == "vec<bool>") return string_code::evector_bool;
+    if (data == "vec<ptree>") return string_code::evector_ptree;
     return string_code::eunknown;
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -271,10 +135,19 @@ void ConfigManager::parseAllowedArgs(const std::string & jsonName){
 	std::string description = v.second.get<std::string>(descriptionPath);
 	string_code type = getTypeCode(typeName);
 
-	// protection against dots (.) inside end-point child node names
+	// protection against dots (.) inside very last child node names
+	// this prevents ambiguity between parameter and group names
 	if(v.first.find_first_of(".")!=std::string::npos) {
 	  std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
-		   <<"): ERROR: child node name '"<< v.first <<"' is not allowed!"<<RST<<std::endl;
+		   <<"): ERROR: child node name '"<< v.first <<"' with dot-separator is not allowed!"<<RST<<std::endl;
+	  throw std::logic_error("wrong ptree node name");
+	}
+
+	// protection against double-dots (..) inside absolute node names
+	// this prevents silent defintions of vector<ptree>
+	if(optName.find("..")!=std::string::npos) {
+	  std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
+		   <<"): ERROR: absolute node name '"<< optName <<"' with double-dot separator is not allowed!"<<RST<<std::endl;
 	  throw std::logic_error("wrong ptree node name");
 	}
 
@@ -286,6 +159,26 @@ void ConfigManager::parseAllowedArgs(const std::string & jsonName){
 	  std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
 		   <<"): ERROR: absolute node name '"<< optName <<"' is duplicated!"<<RST<<std::endl;
 	  throw std::logic_error("duplicated ptree node name");
+	}
+
+	// protection against conflicts between ptree/vector<ptree> and ordinary types T/vector<T>
+	BOOST_FOREACH(auto &it, varTypeMap) {
+	  if((type==string_code::eptree || type==string_code::evector_ptree) &&
+	     it.first.find(optName)==0 && // begin of string matches
+	     (it.first.size()==optName.size() || // found exact string match
+	      (it.first.size()>optName.size() && it.first.at(optName.size())=='.'))) { // found partial match up to the nearest delimeter dot (.)
+	    std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
+		     <<"): ERROR: ptree node name '"<< optName <<"' conflicts with non-ptree '"<<it.first<<"' one!"<<RST<<std::endl;
+	    throw std::logic_error("duplicated ptree node name");
+	  }
+	  if(!(type==string_code::eptree || type==string_code::evector_ptree) &&
+	     optName.find(it.first)==0 && // begin of string matches
+	     (optName.size()==it.first.size() || // found exact string match
+	      (optName.size()>it.first.size() && optName.at(it.first.size())=='.'))) { // found partial match up to the nearest delimeter dot (.)
+	    std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
+		     <<"): ERROR: ptree node name '"<<it.first<<"' conflicts with non-ptree '"<<optName<<"' one!"<<RST<<std::endl;
+	    throw std::logic_error("duplicated ptree node name");
+	  }
 	}
 	varTypeMap[optName] = type;
 
@@ -330,11 +223,13 @@ void ConfigManager::parseAllowedArgs(const std::string & jsonName){
                                              description.c_str());
 		configTree.put(optName, v.second.get<ConfigManager::myValue<std::string>>(defaultValuePath));
                 break;
+            case string_code::eptree:
+                cmdLineOptDesc.add_options()(optName.c_str(),
+					     boost::program_options::value<std::string>()->multitoken()->zero_tokens(), // force exactly ONE argument
+                                             description.c_str());
+		configTree.put_child(optName, v.second.get_child(defaultValuePath));
+                break;
             case string_code::evector_int:
-	        // cmdLineOptDesc.add_options()(optName.c_str(),
-		// 			     boost::program_options::value<std::vector<int>>()->multitoken()->composing()->implicit_value({}),
-		// 			     description.c_str());
-	        // insertVector(optName, v.second.get_child(defaultValuePath));
 	        cmdLineOptDesc.add_options()(optName.c_str(),
 					     boost::program_options::value<ConfigManager::myVector<int>>()->multitoken()->composing()->implicit_value({}),
 					     description.c_str());
@@ -353,10 +248,6 @@ void ConfigManager::parseAllowedArgs(const std::string & jsonName){
 		}
                 break;
             case string_code::evector_uint:
-	        // cmdLineOptDesc.add_options()(optName.c_str(),
-		// 			     boost::program_options::value<std::vector<unsigned int>>()->multitoken()->composing()->implicit_value({}),
-		// 			     description.c_str());
-		// insertVector(optName, v.second.get_child(defaultValuePath));
 	        cmdLineOptDesc.add_options()(optName.c_str(),
 					     boost::program_options::value<ConfigManager::myVector<unsigned int>>()->multitoken()->composing()->implicit_value({}),
 					     description.c_str());
@@ -375,10 +266,6 @@ void ConfigManager::parseAllowedArgs(const std::string & jsonName){
 		}
                 break;
             case string_code::evector_float:
-	        // cmdLineOptDesc.add_options()(optName.c_str(),
-		// 			     boost::program_options::value<std::vector<float>>()->multitoken()->composing()->implicit_value({}),
-		// 			     description.c_str());
-	        // insertVector(optName, v.second.get_child(defaultValuePath));
 	        cmdLineOptDesc.add_options()(optName.c_str(),
 					     boost::program_options::value<ConfigManager::myVector<float>>()->multitoken()->composing()->implicit_value({}),
 					     description.c_str());
@@ -397,10 +284,6 @@ void ConfigManager::parseAllowedArgs(const std::string & jsonName){
 		}
                 break;
             case string_code::evector_double:
-	        // cmdLineOptDesc.add_options()(optName.c_str(),
-		// 			     boost::program_options::value<std::vector<double>>()->multitoken()->composing()->implicit_value({}),
-		// 			     description.c_str());
-		// insertVector(optName, v.second.get_child(defaultValuePath));
 	        cmdLineOptDesc.add_options()(optName.c_str(),
 					     boost::program_options::value<ConfigManager::myVector<double>>()->multitoken()->composing()->implicit_value({}),
 					     description.c_str());
@@ -419,10 +302,6 @@ void ConfigManager::parseAllowedArgs(const std::string & jsonName){
 		}
                 break;
             case string_code::evector_str:
-	        // cmdLineOptDesc.add_options()(optName.c_str(),
-		// 			     boost::program_options::value<std::vector<std::string>>()->multitoken()->composing()->implicit_value({}),
-		// 			     description.c_str());
-	        // insertVector(optName, v.second.get_child(defaultValuePath));
 	        cmdLineOptDesc.add_options()(optName.c_str(),
 					     boost::program_options::value<ConfigManager::myVector<std::string>>()->multitoken()->composing()->implicit_value({}),
 					     description.c_str());
@@ -441,10 +320,6 @@ void ConfigManager::parseAllowedArgs(const std::string & jsonName){
 		}
                 break;
             case string_code::evector_bool:
-	        // cmdLineOptDesc.add_options()(optName.c_str(),
-		// 			     boost::program_options::value<std::vector<bool>>()->multitoken()->composing()->implicit_value({}),
-		// 			     description.c_str());
-	        // insertVector(optName, v.second.get_child(defaultValuePath));
 	        cmdLineOptDesc.add_options()(optName.c_str(),
 					     boost::program_options::value<ConfigManager::myVector<bool>>()->multitoken()->composing()->implicit_value({}),
 					     description.c_str());
@@ -462,12 +337,18 @@ void ConfigManager::parseAllowedArgs(const std::string & jsonName){
 		  insertVector(optName, ss.str()); // JSON format
 		}
                 break;
+            case string_code::evector_ptree:
+	        cmdLineOptDesc.add_options()(optName.c_str(),
+					     boost::program_options::value<ConfigManager::myVector<std::string>>()->multitoken()->composing()->implicit_value({}),
+					     description.c_str());
+		insertVector(optName, v.second.get_child(defaultValuePath));
+                break;
             case string_code::eunknown:
 	        std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
 			 <<"): ERROR: node '"<<optName<<"' has unknown type '"<<typeName<<"' declaration!"<<RST<< std::endl;
 		throw std::logic_error("wrong type");
             }
-        }
+    }
     //////// DEBUG
     // std::cout << __FUNCTION__ << ": ######### CONFIG_TREE values after JSON read - START #######" << std::endl;
     // ConfigManager::printTree(configTree);
@@ -482,12 +363,35 @@ const boost::program_options::variables_map & ConfigManager::parseCmdLineArgs(in
     // std::cout << __FUNCTION__ << ": STARTED" << std::flush << std::endl;
     //////// DEBUG
 
+    // additonal protection against duplicated cmd line options
+    // (since BOOST cmd line parsing with has enabled multitoken/composing for some parameters)
+    std::stringstream ss;
+    std::copy(argv, argv + argc, std::ostream_iterator<char *>(ss, "\n"));
+    auto storedOptions = listTree(configTree);
+    std::string item;
+    std::set<std::string> cmdOptionsSet;
+    while(ss >> item) {
+      if(item.find("--")==0) item.erase(0,2); // remove leading double-dash sequence (--)
+      else continue;
+      if(!item.size()) continue;
+      for(auto &it: storedOptions) {
+	if(it.find(item)==0 && // begin of string matches
+	   (it.size()==item.size() || // found exact string match
+	    (it.size()>item.size() && it.at(item.size())=='.'))) { // found partial match up to the nearest delimeter dot (.)
+	  if(cmdOptionsSet.find(item)==cmdOptionsSet.end()) { // check if cmd line option was already processed
+	    cmdOptionsSet.insert(item);
+	    break;
+	  } else { // duplicated cmd line options are not allowed
+	    std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
+		     <<"): ERROR: command line option '--"<< item <<"' is duplicated!"<<RST<< std::endl;
+	    throw std::logic_error("wrong command line sytax");
+	  }
+	}
+      }
+    }
+
     // allow only "--longOption" cmd line style to enable parsing negative numbers
-    // boost::program_options::store
-    //   (boost::program_options::parse_command_line(argc, argv, cmdLineOptDesc,
-    // 						  boost::program_options::command_line_style::default_style
-    // 						  ^ boost::program_options::command_line_style::allow_short
-    // 						  ^ boost::program_options::command_line_style::long_allow_adjacent), varMap);
+    // allow only registered list of cmd line options
     try {
       auto parsedOptions = boost::program_options::command_line_parser(argc, argv)
 	.options(cmdLineOptDesc)
@@ -502,30 +406,6 @@ const boost::program_options::variables_map & ConfigManager::parseCmdLineArgs(in
       std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
 	       <<"): ERROR: unknown command line option!"<<RST<< std::endl;
       throw std::logic_error("wrong command line syntax");
-    }
-
-    // protection against duplicated cmd line options
-    // (needed due to BOOST cmd line parsing with enabled multitoken/composing for some parameters)
-    std::stringstream ss;
-    std::copy(argv, argv + argc, std::ostream_iterator<char *>(ss, "\n"));
-    auto storedOptions = listTree(configTree);
-    std::string item;
-    std::set<std::string> cmdOptionsSet;
-    while(ss >> item) {
-      if(item.find("--")==0) item.erase(0,2); // this removes leading dash characters "-"
-      if(item.size()) {
-	for(auto &it: storedOptions) {
-	  if(item==it || item+'.'==it) {
-	    if(cmdOptionsSet.find(item)==cmdOptionsSet.end()) {
-	      cmdOptionsSet.insert(item);
-	    } else { // duplicated cmd line options are not allowed
-	      std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
-		       <<"): ERROR: command line option '--"<< item <<"' is duplicated!"<<RST<< std::endl;
-	      throw std::logic_error("wrong command line sytax");
-	    }
-	  }
-	}
-      }
     }
 
     //////// DEBUG
@@ -545,10 +425,65 @@ void ConfigManager::updateWithJsonFile(const std::string & jsonName){
     // parse text math expressions (if any)
     boost::property_tree::ptree configTreeUpdateFiltered;
     auto keys_updates = ConfigManager::listTree(configTreeUpdate);
+
+    ///////// DEBUG
+    // {
+    //   auto keys_orig = ConfigManager::listTree(configTree);
+    //   std::cout << KGRN << __FUNCTION__ << ": ####### List of unique keys ORIGINAL - START (" << keys_orig.size() << " keys) #######" << RST << std::endl;
+    //   BOOST_FOREACH(auto& key, keys_orig) {
+    // 	std::cout << key << std::endl;
+    //   }
+    //   std::cout << KGRN << __FUNCTION__ << ": ####### List of unique keys ORIGINAL - END (" << keys_orig.size() << " keys) #######" << RST << std::endl;
+    //   std::cout << KGRN << __FUNCTION__ << ": ####### List of unique unfilltered keys to be UPDATED - START (" << keys_updates.size() << " keys) #######" << RST << std::endl;
+    //   BOOST_FOREACH(auto& key, keys_updates) {
+    // 	  std::cout << key << std::endl;
+    //   }
+    //   std::cout << KGRN << __FUNCTION__ << ": ####### List of unique unfiltered keys to be UPDATED - END (" << keys_updates.size() << " keys) #######" << RST << std::endl;
+    //   std::cout << KGRN << __FUNCTION__ << ": ######### CONFIG_TREE unfiltered values to be UPDATED - START #######" << RST << std::endl;
+    //   ConfigManager::printTree(configTreeUpdate);
+    //   std::cout << KGRN << __FUNCTION__ << ": ######### CONFIG_TREE unfiltered values to be UPDATED - END #######" << RST << std::endl;
+    // }
+    ///////// DEBUG
+
+    // filter list of update keys to keep only "parent.child" depth level
+    // (this is relevant for ptree and vector<ptree> parameter types)
+    // check if every key of the update tree is valid:
+    // - scalar type T:  has to match exactly "groupName.parName"
+    // - type vector<T>: has to match one of: "groupName.parName" (empty vector) or "groupName.parName." (non-empty vector)
+    // - ptree:          partial match to registered parent path "groupName.ptreeName"
+    // - vector<ptree>:  partial match to registered parent path "groupName.ptreeName" (empty vector) or "groupName.ptreeName.." (non-empty vector)
+    std::unordered_set<std::string> keys_updates_filtered;
     BOOST_FOREACH(auto& key, keys_updates) {
-      std::string nodePath(key);
-      if(nodePath.back()=='.') nodePath.erase(nodePath.size()-1);
+      auto found = false;
+      BOOST_FOREACH(auto &item, varTypeMap) {
+	if(key.find(item.first)==0 && // begin of string matches
+	   (key.size()==item.first.size() || // found exact string match
+	    (key.size()>item.first.size() && key.at(item.first.size())=='.'))) { // found partial match up to the nearest delimeter dot (.)
+	  keys_updates_filtered.insert(item.first);
+	  found = true;
+	  break;
+	}
+      }
+      if(!found) {
+	std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
+		 <<"): ERROR: Input JSON file '"<<jsonName<<"' contains node '"<<key<<"' of unknown type!"<<RST<<std::endl;
+	throw std::logic_error("wrong JSON file");
+      }
+    }
+
+    ///////// DEBUG
+    // {
+    //   std::cout << KGRN << __FUNCTION__ << ": ####### List of unique filtered keys to be UPDATED - START (" << keys_updates_filtered.size() << " keys)  #######" << RST << std::endl;
+    //   BOOST_FOREACH(auto& key, keys_updates_filtered) {
+    // 	std::cout << key << std::endl;
+    //   }
+    //   std::cout << KGRN << __FUNCTION__ << ": ####### List of unique filtered keys to be UPDATED - END (" << keys_updates_filtered.size() << " keys) #######" << RST << std::endl;
+    // }
+    ///////// DEBUG
+
+    BOOST_FOREACH(auto& nodePath, keys_updates_filtered) {
       string_code type = (varTypeMap.find(nodePath)==varTypeMap.end() ? string_code::eunknown : varTypeMap.at(nodePath) );
+
       switch(type) {
       case string_code::eint:
 	configTreeUpdateFiltered.put(nodePath, configTreeUpdate.get<ConfigManager::myValue<int>>(nodePath));
@@ -566,7 +501,21 @@ void ConfigManager::updateWithJsonFile(const std::string & jsonName){
 	configTreeUpdateFiltered.put(nodePath, configTreeUpdate.get<ConfigManager::myValue<bool>>(nodePath));
 	break;
       case string_code::estr:
-	configTreeUpdateFiltered.put(nodePath, configTreeUpdate.get<ConfigManager::myValue<std::string>>(nodePath));
+	configTreeUpdateFiltered.put(nodePath, configTreeUpdate.get<std::string>(nodePath));
+	break;
+      case string_code::eptree:
+	{
+	  // protection against silent assignment of vector<ptree> value to parameter declared as non-vector ptree
+	  if(configTreeUpdate.get_child(nodePath).size() &&
+	     configTreeUpdate.get_child(nodePath).front().first=="" &&
+	     configTreeUpdate.get_child(nodePath).back().first=="") {
+	    std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
+		     <<"): ERROR: Input JSON file '"<<jsonName<<"' assigns vector<ptree> value to node '"<<nodePath<<"' declared as non-vector ptree!"<<RST<<std::endl;
+	    throw std::logic_error("wrong JSON file");
+	  }
+	  pruneTree(configTreeUpdateFiltered, nodePath);
+	  configTreeUpdateFiltered.put_child(nodePath, configTreeUpdate.get_child(nodePath));
+	}
 	break;
       case string_code::evector_int:
 	{
@@ -616,12 +565,41 @@ void ConfigManager::updateWithJsonFile(const std::string & jsonName){
 	  }
 	}
 	break;
+      case string_code::evector_ptree:
+	{
+	  // protection against silent assignment of non-vector ptree value to parameter declared as vector<ptree>
+	  if(configTreeUpdate.get_child(nodePath).size() &&
+	     !(configTreeUpdate.get_child(nodePath).front().first=="" &&
+	       configTreeUpdate.get_child(nodePath).back().first=="")) {
+	    std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
+		     <<"): ERROR: Input JSON file '"<<jsonName<<"' assigns non-vector ptree value to node '"<<nodePath<<"' declared as vector<ptree>!"<<RST<<std::endl;
+	    throw std::logic_error("wrong JSON file");
+	  }
+	  pruneTree(configTreeUpdateFiltered, nodePath);
+	  auto& array = configTreeUpdateFiltered.add_child(nodePath, boost::property_tree::ptree());
+	  BOOST_FOREACH(auto& i,  configTreeUpdate.get_child(nodePath)) {
+	    array.push_back(std::make_pair( "", i.second ));
+	  }
+	}
+	break;
       case string_code::eunknown:
 	std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__<<"): ERROR: node '"<<nodePath<<"' has unknown type!"<<RST<<std::endl;
 	throw std::logic_error("wrong type");
       }
     }
-    mergeTrees(configTree, configTreeUpdateFiltered);
+
+    ///////// DEBUG
+    // {
+    //   std::cout << KGRN << __FUNCTION__ << ": ######### CONFIG_TREE filtered values to be UPDATED - START #######" << RST << std::endl;
+    //    ConfigManager::printTree(configTreeUpdateFiltered);
+    //   std::cout << KGRN << __FUNCTION__ << ": ######### CONFIG_TREE filtered values to be UPDATED - END #######" << RST << std::endl;
+    // }
+    ///////// DEBUG
+
+    BOOST_FOREACH(auto& key, keys_updates_filtered) {
+      configTree.get_child(key)=configTreeUpdateFiltered.get_child(key);
+      // alternatively use: { pruneTree(pt, key); pt.put(key, updates.get_child(key).data()); }
+    }
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -654,6 +632,22 @@ void ConfigManager::updateWithCmdLineArgs(const boost::program_options::variable
             case string_code::estr:
 	        configTree.put(item.first, item.second.as<ConfigManager::myValue<std::string>>());   
                 break;
+            case string_code::eptree: {
+		boost::property_tree::ptree pt;
+		std::stringstream ss(item.second.as<std::string>());
+		boost::property_tree::read_json(ss, pt);
+
+	        // protection against silent assignment of vector<ptree> value to parameter declared as non-vector ptree
+	        if(pt.size() &&
+		   pt.front().first=="" &&
+		   pt.back().first=="") {
+		  std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
+			   <<"): ERROR: Command line arguments assign vector<ptree> value to node '"<<item.first<<"' declared as non-vector ptree!"<<RST<<std::endl;
+		  throw std::logic_error("wrong command line syntax");
+		}
+		configTree.put_child(item.first, pt);
+	        }
+                break;
 	    case string_code::evector_int:
 	        insertVector(item.first, item.second.as<ConfigManager::myVector<int>>());
                 break;
@@ -672,6 +666,28 @@ void ConfigManager::updateWithCmdLineArgs(const boost::program_options::variable
 	    case string_code::evector_bool:
 	        insertVector(item.first, item.second.as<ConfigManager::myVector<bool>>());
                 break;
+	    case string_code::evector_ptree:
+	      {
+		boost::property_tree::ptree update;
+		auto& array = update.add_child("dummy", boost::property_tree::ptree()); // new array to be populated
+		BOOST_FOREACH(auto it, item.second.as<ConfigManager::myVector<std::string>>()) {
+		  std::stringstream ss(it);
+		  boost::property_tree::ptree pt;
+		  boost::property_tree::read_json(ss, pt);
+		  array.push_back(std::make_pair("", pt));
+		}
+
+	        // protection against silent assignment of non-vector ptree value to parameter declared as vector<ptree>
+	        if(update.get_child("dummy").size() &&
+		   !(update.get_child("dummy").front().first=="" &&
+		     update.get_child("dummy").back().first=="")) {
+		  std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
+			   <<"): ERROR: Command line arguments assign non-vector ptree value to node '"<<item.first<<"' declared as vector<ptree>!"<<RST<<std::endl;
+		  throw std::logic_error("wrong command line syntax");
+		}
+		insertVector(item.first, update.get_child("dummy")); // this will also prune previously existing node
+	      }
+	      break;
             case string_code::eunknown:
 	      std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__<<"): ERROR: node '"<<item.first<<"' has unknown type!"<<RST<<std::endl;
 	      throw std::logic_error("wrong type");
@@ -715,91 +731,91 @@ const boost::property_tree::ptree & ConfigManager::getConfig(int argc, char **ar
 
     return configTree;
 }
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-// Helper static method to replace some parts of the existing BOOST proprerty tree (target tree called 'pt').
-// For self-consistency, the tree with updates (source tree called 'updates')
-// must not introduce any new root nodes not present in the BOOST tree to be updated.
-// 
-void ConfigManager::mergeTrees(boost::property_tree::ptree & pt, const boost::property_tree::ptree & updates){
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// //
+// // Helper static method to replace some parts of the existing BOOST proprerty tree (target tree called 'pt').
+// // For self-consistency, the tree with updates (source tree called 'updates')
+// // must not introduce any new root nodes not present in the BOOST tree to be updated.
+// //
+// void ConfigManager::mergeTrees(boost::property_tree::ptree & pt, const boost::property_tree::ptree & updates){
 
-  auto keys_orig = ConfigManager::listTree(pt);
-  auto keys_updates = ConfigManager::listTree(updates);
+//   auto keys_orig = ConfigManager::listTree(pt);
+//   auto keys_updates = ConfigManager::listTree(updates);
 
-  ///////// DEBUG
-  // {
-  //   std::cout << __FUNCTION__ << ": ####### List of unique keys ORIGINAL - START (" << keys_orig.size() << " keys) #######" << std::endl;
-  //   BOOST_FOREACH(auto& key, keys_orig) {
-  //     std::cout << key << std::endl;
-  //   }
-  //   std::cout << __FUNCTION__ << ": ####### List of unique keys ORIGINAL - END (" << keys_orig.size() << " keys) #######" << std::endl;
-  //   std::cout << __FUNCTION__ << ": ####### List of unique keys to be UPDATED - START (" << keys_updates.size() << " keys)  #######" << std::endl;
-  //   BOOST_FOREACH(auto& key, keys_updates) {
-  //     std::cout << key << std::endl;
-  //   }
-  //   std::cout << __FUNCTION__ << ": ####### List of unique keys to be UPDATED - END (" << keys_updates.size() << " keys) #######" << std::endl;
-  //   std::cout << __FUNCTION__ << ": ######### CONFIG_TREE values to be UPDATED - START #######" << std::endl;
-  //   ConfigManager::printTree(updates);
-  //   boost::property_tree::write_json("to_be_updated.json", updates);
-  //   std::cout << __FUNCTION__ << ": ######### CONFIG_TREE values to be UPDATED - END #######" << std::endl;
-  // }
-  ///////// DEBUG
+//   ///////// DEBUG
+//   {
+//     std::cout << KGRN << __FUNCTION__ << ": ####### List of unique keys ORIGINAL - START (" << keys_orig.size() << " keys) #######" << RST << std::endl;
+//     BOOST_FOREACH(auto& key, keys_orig) {
+//       std::cout << key << std::endl;
+//     }
+//     std::cout << KGRN << __FUNCTION__ << ": ####### List of unique keys ORIGINAL - END (" << keys_orig.size() << " keys) #######" << RST << std::endl;
+//     std::cout << KGRN << __FUNCTION__ << ": ####### List of unique keys to be UPDATED - START (" << keys_updates.size() << " keys)  #######" << RST << std::endl;
+//     BOOST_FOREACH(auto& key, keys_updates) {
+//       std::cout << key << std::endl;
+//     }
+//     std::cout << KGRN << __FUNCTION__ << ": ####### List of unique keys to be UPDATED - END (" << keys_updates.size() << " keys) #######" << RST << std::endl;
+//     std::cout << KGRN << __FUNCTION__ << ": ######### CONFIG_TREE values to be UPDATED - START #######" << RST << std::endl;
+//     ConfigManager::printTree(updates);
+//     boost::property_tree::write_json("to_be_updated.json", updates);
+//     std::cout << KGRN << __FUNCTION__ << ": ######### CONFIG_TREE values to be UPDATED - END #######" << RST << std::endl;
+//   }
+//   ///////// DEBUG
 
-  // verify that all path names in 'update' tree are valid
-  BOOST_FOREACH(auto& key, keys_updates) {
-    auto it = keys_orig.end();
+//   // verify that all path names in 'update' tree are valid
+//   BOOST_FOREACH(auto& key, keys_updates) {
+//     auto it = keys_orig.end();
 
-    ////// DEBUG
-    // if(key.find("input.sss")!=std::string::npos) {
-    //   it=keys_orig.find(key);
-    //   std::cout << "input.sss:  after exact match:       ok=" << (bool)(it!=keys_orig.end()) << std::endl;
-    //   it=keys_orig.find(key.substr(0, key.size()-1));
-    //   std::cout << "input.sss:  after updates dot match: ok=" << (bool)(it!=keys_orig.end()) << std::endl;
-    //   it=keys_orig.find(key+".");
-    //   std::cout << "input.sss:  after orig dot match:    ok=" << (bool)(it!=keys_orig.end()) << std::endl;
-    // }
-    ////// DEBUG
+//     ////// DEBUG
+//     // if(key.find("input.sss")!=std::string::npos) {
+//     //   it=keys_orig.find(key);
+//     //   std::cout << "input.sss:  after exact match:       ok=" << (bool)(it!=keys_orig.end()) << std::endl;
+//     //   it=keys_orig.find(key.substr(0, key.size()-1));
+//     //   std::cout << "input.sss:  after updates dot match: ok=" << (bool)(it!=keys_orig.end()) << std::endl;
+//     //   it=keys_orig.find(key+".");
+//     //   std::cout << "input.sss:  after orig dot match:    ok=" << (bool)(it!=keys_orig.end()) << std::endl;
+//     // }
+//     ////// DEBUG
     
-    if((it=keys_orig.find(key))!=keys_orig.end() || // exact match
-       (key.back()=='.' && (it=keys_orig.find(key.substr(0, key.size()-1)))!=keys_orig.end()) || // partial match, update key ends with dot "."
-       (key.back()!='.' && (it=keys_orig.find(key+"."))!=keys_orig.end())) { // partial match, original key ends with dot "."
-      continue;
-    }
-    std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
-	     <<"): ERROR: node \""<< key <<"\" is missing in target tree!"<<RST<< std::endl;
-    throw std::logic_error("missing node in target ptree");
-  }
+//     if((it=keys_orig.find(key))!=keys_orig.end() || // exact match
+//        (key.back()=='.' && (it=keys_orig.find(key.substr(0, key.size()-1)))!=keys_orig.end()) || // partial match, update key ends with dot "."
+//        (key.back()!='.' && (it=keys_orig.find(key+"."))!=keys_orig.end())) { // partial match, original key ends with dot "."
+//       continue;
+//     }
+//     std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
+// 	     <<"): ERROR: node \""<< key <<"\" is missing in target tree!"<<RST<< std::endl;
+//     throw std::logic_error("missing node in target ptree");
+//   }
 
   
-  // ///////// DEBUG
-  // {
-  //   auto keys_pruned = ConfigManager::listTree(pt);
-  //   std::cout << __FUNCTION__ << ": ####### List of unique keys AFTER PRUNE - START (" << keys_pruned.size() << " keys) #######" << std::endl;
-  //   BOOST_FOREACH(auto& key, keys_pruned) {
-  //     std::cout << key << std::endl;
-  //   }
-  //   std::cout << __FUNCTION__ << ": ####### List of unique keys AFTER PRUNE - END (" << keys_pruned.size() << " keys) #######" << std::endl;
-  //   // std::cout << __FUNCTION__ << ": ######### CONFIG_TREE values AFTER PRUNE - START #######" << std::endl;
-  //   // ConfigManager::printTree(pt);
-  //   // boost::property_tree::write_json("after_prune.json", pt);
-  //   // std::cout << __FUNCTION__ << ": ######### CONFIG_TREE values AFTER PRUNE - END #######" << std::endl;
-  // }
-  // ///////// DEBUG
+//   // ///////// DEBUG
+//   // {
+//   //   auto keys_pruned = ConfigManager::listTree(pt);
+//   //   std::cout << __FUNCTION__ << ": ####### List of unique keys AFTER PRUNE - START (" << keys_pruned.size() << " keys) #######" << std::endl;
+//   //   BOOST_FOREACH(auto& key, keys_pruned) {
+//   //     std::cout << key << std::endl;
+//   //   }
+//   //   std::cout << __FUNCTION__ << ": ####### List of unique keys AFTER PRUNE - END (" << keys_pruned.size() << " keys) #######" << std::endl;
+//   //   // std::cout << __FUNCTION__ << ": ######### CONFIG_TREE values AFTER PRUNE - START #######" << std::endl;
+//   //   // ConfigManager::printTree(pt);
+//   //   // boost::property_tree::write_json("after_prune.json", pt);
+//   //   // std::cout << __FUNCTION__ << ": ######### CONFIG_TREE values AFTER PRUNE - END #######" << std::endl;
+//   // }
+//   // ///////// DEBUG
 
-  BOOST_FOREACH(auto& key, keys_updates) {
-    if(key.back()=='.') { // array case
-      auto nodePath = key.substr(0, key.size()-1); // remove trailing dot "."
-      pruneTree(pt, nodePath); // remove old data
-      auto& array = pt.add_child(nodePath, boost::property_tree::ptree()); // new array to be populated
-      BOOST_FOREACH(auto& item, updates.get_child(nodePath)) {
-	array.push_back(std::make_pair( "", item.second )); // NOTE: this method works in both Release and Debug CMAKE modes
-      }
-    } else { // single value or empty vector case
-      pt.get_child(key)=updates.get_child(key); // alternatively use: { pruneTree(pt, key); pt.put(key, updates.get_child(key).data()); }
-    }
-  }
-}
+//   BOOST_FOREACH(auto& key, keys_updates) {
+//     if(key.back()=='.') { // array case
+//       auto nodePath = key.substr(0, key.size()-1); // remove trailing dot "."
+//       pruneTree(pt, nodePath); // remove old data
+//       auto& array = pt.add_child(nodePath, boost::property_tree::ptree()); // new array to be populated
+//       BOOST_FOREACH(auto& item, updates.get_child(nodePath)) {
+// 	array.push_back(std::make_pair( "", item.second )); // NOTE: this method works in both Release and Debug CMAKE modes
+//       }
+//     } else { // single value or empty vector case
+//       pt.get_child(key)=updates.get_child(key); // alternatively use: { pruneTree(pt, key); pt.put(key, updates.get_child(key).data()); }
+//     }
+//   }
+// }
 // void ConfigManager::mergeTrees(boost::property_tree::ptree& pt, const boost::property_tree::ptree& updates){
 //   BOOST_FOREACH( auto& update_lvl1, updates ){
 //     BOOST_FOREACH( auto& update_lvl2, updates.get_child(update_lvl1.first)){
@@ -820,7 +836,7 @@ void ConfigManager::dumpConfig(const std::string & jsonName){
      !std::regex_match(jsonName, std::regex("^[A-Za-z0-9.-_/]+$"))) { // allowed are: alphanumeric, dot, dash, underscore, slash
     std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
 	     <<"): ERROR: output JSON file name '"<< jsonName <<"' is not allowed!"<<RST<<std::endl;
-    throw std::logic_error("wrong JSON name");
+    throw std::logic_error("wrong JSON file");
   }
   boost::property_tree::write_json(jsonName, configTree);
 }
@@ -835,12 +851,6 @@ void ConfigManager::dumpConfig(const std::string & jsonName){
 //
 void ConfigManager::pruneTree(boost::property_tree::ptree & pt, const std::string & nodePath)
 {
-  ////// DEBUG
-  // // check if nodePath refers to an element of array
-  // bool isVector = (nodePath.back()=='.');
-  // std::cout << __FUNCTION__ << ": removing nodePath=" << nodePath << ", isVector=" << isVector << std::endl;
-  ////// DEBUG
-
   // split up the path into each sub part
   std::vector<std::string> pathParts;
   boost::split(pathParts, nodePath, boost::is_any_of("."));
@@ -852,30 +862,15 @@ void ConfigManager::pruneTree(boost::property_tree::ptree & pt, const std::strin
     
     // exit if such path does not exist
     auto found = root->find(part);
-
-    ////// DEBUG
-    // std::cout << __FUNCTION__ << ": removing nodePath=" << nodePath << ", checking part=" << part << ", found=" << (root->find(part)!=root->not_found()) << std::endl;
-    ////// DEBUG
-    
     if (found == root->not_found()) {
-
-      ////// DEBUG
-      // std::cout << __FUNCTION__ << ": removing nodePath=" << nodePath << " --> not found" << std::endl;
-      ////// DEBUG
-
-      //      return;
       break;
     }
+
     // erase all instances having same paths (e.g. in case of arrays)
     while( (found=root->find(part))!=root->not_found() ) {
       
       // if this was the last one to look for remove it
       if (&part == &pathParts.back()) {
-
-	////// DEBUG
-	// std::cout << __FUNCTION__ << ": removing nodePath=" << nodePath << ", part=" << part << std::endl;
-	////// DEBUG
-
 	root->erase(root->to_iterator(found));
 	counter++;
       } // next sub child
@@ -884,10 +879,6 @@ void ConfigManager::pruneTree(boost::property_tree::ptree & pt, const std::strin
       }
     }
   }
-  // found at least one instance
-  ////// DEBUG
-  // std::cout << __FUNCTION__ << ": removing nodePath=" << nodePath << " --> removed " << counter << " instance(s)" << std::endl;
-  ////// DEBUG
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -944,11 +935,8 @@ void ConfigManager::insertVector(const std::string & nodePath, const boost::prop
   auto& array = configTree.add_child(nodePath, boost::property_tree::ptree());
   BOOST_FOREACH(auto& i, ptreeVector) {
     array.push_back(std::make_pair( "", i.second ));
-    //////// DEBUG
-    // std::cout<<__FUNCTION__<<"(A): adding element of vector: " << nodePath << " equal to: " << array.back().second.data() << std::endl;
-    //////// DEBUG
   }
-
+  //
   // NOTE: below standard piece of code crashes in CMAKE_BUILD_TYPE=Debug mode due to underlying BOOST assert conditions,
   //       while the code above works in both Debug and Release modes...
   // -----
@@ -964,11 +952,9 @@ void ConfigManager::insertVector(const std::string & nodePath, const boost::prop
 template <typename T>
 void ConfigManager::insertVector(const std::string & nodePath, const T & vec) {
 
-  //////// DEBUG
-  // std::cout<<__FUNCTION__<<"(E): updating node: " << nodePath << ", vector lexical cast: " << boost::lexical_cast<std::string>(vec) << std::endl;
-  //////// DEBUG
-
-  insertVector(nodePath, boost::lexical_cast<std::string>(vec)); // vector converted to JSON format using custom T::operator<<()
+  // convert input vector into JSON text format representation using custom T::operator<<() provided
+  // by T=ConfigManager::myVector<T2> class, where type T2 = int, unsigned int, float, double, bool or std::string
+  insertVector(nodePath, boost::lexical_cast<std::string>(vec));
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -976,17 +962,10 @@ void ConfigManager::insertVector(const std::string & nodePath, const T & vec) {
 template <typename T>
 void ConfigManager::insertVector(const std::string & nodePath, const T & vec) {
 
-  //////// DEBUG
-  std::cout<<__FUNCTION__<<"(C): updating node: " << nodePath << ", vector lexical cast: " << boost::lexical_cast<std::string>(vec) << std::endl;
-  //////// DEBUG
-  
   pruneTree(configTree, nodePath);
   auto &array = configTree.put_child(nodePath, boost::property_tree::ptree());
    BOOST_FOREACH(auto i, vec) {    
     array.push_back(std::make_pair( "", boost::property_tree::ptree(boost::lexical_cast<std::string>(i))));
-    //////// DEBUG
-    std::cout<<__FUNCTION__<<"(C): adding element of vector: " << nodePath << " equal to: " << array.back().second.data() << std::endl;
-    //////// DEBUG
   }
 }
 */
@@ -994,10 +973,7 @@ void ConfigManager::insertVector(const std::string & nodePath, const T & vec) {
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void ConfigManager::insertVector(const std::string & nodePath, const std::string & vectorInJsonFormat) {
 
-  //////// DEBUG
-  // std::cout<<__FUNCTION__<<"(D): updating node: " << nodePath << ", vector lexical cast: " << vectorInJsonFormat << std::endl;
-  //////// DEBUG
-
+  // convert vector JSON text format representation into BOOST property tree
   std::stringstream ss;
   ss << "{ " << std::quoted("dummy") << " : " << vectorInJsonFormat << " }";
   boost::property_tree::ptree pt;

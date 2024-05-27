@@ -45,8 +45,8 @@ public:
     static std::unordered_set<std::string> listTree(const boost::property_tree::ptree & pt);
     static void prepareListTree(const boost::property_tree::ptree & pt, std::unordered_set<std::string> & nodeList, const std::string & parentNode="");    
 
-    // general purpose static method to selectively update content of BOOST ptree
-    static void mergeTrees(boost::property_tree::ptree & pt, const boost::property_tree::ptree & updates);
+    // general purpose static method to selectively update content of BOOST ptree // TEMPORARY DISABLED
+    //    static void mergeTrees(boost::property_tree::ptree & pt, const boost::property_tree::ptree & updates); // TEMPORARY DISABLED
 
     // general purpose static method to remove all sub nodes starting from a given path of BOOST ptree
     static void pruneTree(boost::property_tree::ptree & pt, const std::string & nodePath);
@@ -73,12 +73,14 @@ public:
       edouble,
       estr,
       ebool,
+      eptree,
       evector_int,
       evector_uint,
       evector_float,
       evector_double,
       evector_str,
       evector_bool,
+      evector_ptree,
       eunknown
     };
     string_code getTypeCode (const std::string & inString) const;
