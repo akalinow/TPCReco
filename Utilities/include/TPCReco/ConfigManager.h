@@ -83,8 +83,11 @@ public:
       evector_ptree,
       eunknown
     };
+    const std::string hiddenFilesOpt{"meta.configJson"}; // assign unregistered cmd line arguments to hidden --meta.configJson parameter
     string_code getTypeCode (const std::string & inString) const;
-    boost::program_options::options_description cmdLineOptDesc;
+    boost::program_options::options_description visibleCmdLineOptDesc{"Available options"}; // visible to user (help, CLI)
+    boost::program_options::options_description hiddenCmdLineOptDesc; // hidden from user (excluded from help, CLI)
+    boost::program_options::options_description allCmdLineOptDesc; // hidden + visible
     boost::program_options::variables_map varMap;
     std::map<std::string, string_code> varTypeMap;
     boost::property_tree::ptree configTree;

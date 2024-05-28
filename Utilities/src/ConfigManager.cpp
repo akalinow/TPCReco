@@ -106,7 +106,7 @@ ConfigManager::ConfigManager(const std::vector<std::string> allowedNodeList, con
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 void ConfigManager::parseAllowedArgs(const std::string & jsonName){
 
-    cmdLineOptDesc.add_options()("help", "produce help message");
+    visibleCmdLineOptDesc.add_options()("help", "produce help message");
         
     std::cout<<KBLU<<"ConfigManager: using config file "<<RST<<jsonName<<std::endl
              <<KBLU<<"for a list of allowed command line arguments "
@@ -188,49 +188,49 @@ void ConfigManager::parseAllowedArgs(const std::string & jsonName){
 	
             switch(type) {
             case string_code::eint:                
-                cmdLineOptDesc.add_options()(optName.c_str(),
+                visibleCmdLineOptDesc.add_options()(optName.c_str(),
 					     boost::program_options::value<ConfigManager::myValue<int>>()->multitoken()->zero_tokens(), // force exactly ONE argument
 					     description.c_str());
 		configTree.put(optName, v.second.get<ConfigManager::myValue<int>>(defaultValuePath));
                 break;
             case string_code::euint:
-                cmdLineOptDesc.add_options()(optName.c_str(),
+                visibleCmdLineOptDesc.add_options()(optName.c_str(),
 					     boost::program_options::value<ConfigManager::myValue<unsigned int>>()->multitoken()->zero_tokens(), // force exactly ONE argument
                                             description.c_str());
                 configTree.put(optName, v.second.get<ConfigManager::myValue<unsigned int>>(defaultValuePath));
                 break;
             case string_code::efloat:
-                cmdLineOptDesc.add_options()(optName.c_str(),
+                visibleCmdLineOptDesc.add_options()(optName.c_str(),
 					     boost::program_options::value<ConfigManager::myValue<float>>()->multitoken()->zero_tokens(), // force exactly ONE argument
 					     description.c_str());
                 configTree.put(optName, v.second.get<ConfigManager::myValue<float>>(defaultValuePath));
                 break;
             case string_code::edouble:
-                cmdLineOptDesc.add_options()(optName.c_str(),
+                visibleCmdLineOptDesc.add_options()(optName.c_str(),
 					     boost::program_options::value<ConfigManager::myValue<double>>()->multitoken()->zero_tokens(), // force exactly ONE argument
 					     description.c_str());
                 configTree.put(optName, v.second.get<ConfigManager::myValue<double>>(defaultValuePath));
                 break;
             case string_code::ebool:
-                cmdLineOptDesc.add_options()(optName.c_str(),
+                visibleCmdLineOptDesc.add_options()(optName.c_str(),
 					     boost::program_options::value<ConfigManager::myValue<bool>>()->implicit_value(true)->multitoken()->zero_tokens(), // missing value is acting as "enable flag", otherwise expects exactly ONE argument
 					     description.c_str());
 		configTree.put(optName, v.second.get<ConfigManager::myValue<bool>>(defaultValuePath));
                 break;
             case string_code::estr:
-                cmdLineOptDesc.add_options()(optName.c_str(),
+                visibleCmdLineOptDesc.add_options()(optName.c_str(),
 					     boost::program_options::value<ConfigManager::myValue<std::string>>()->multitoken()->zero_tokens(), // force exactly ONE argument
                                              description.c_str());
 		configTree.put(optName, v.second.get<ConfigManager::myValue<std::string>>(defaultValuePath));
                 break;
             case string_code::eptree:
-                cmdLineOptDesc.add_options()(optName.c_str(),
+                visibleCmdLineOptDesc.add_options()(optName.c_str(),
 					     boost::program_options::value<std::string>()->multitoken()->zero_tokens(), // force exactly ONE argument
                                              description.c_str());
 		configTree.put_child(optName, v.second.get_child(defaultValuePath));
                 break;
             case string_code::evector_int:
-	        cmdLineOptDesc.add_options()(optName.c_str(),
+	        visibleCmdLineOptDesc.add_options()(optName.c_str(),
 					     boost::program_options::value<ConfigManager::myVector<int>>()->multitoken()->composing()->implicit_value({}),
 					     description.c_str());
 		{
@@ -248,7 +248,7 @@ void ConfigManager::parseAllowedArgs(const std::string & jsonName){
 		}
                 break;
             case string_code::evector_uint:
-	        cmdLineOptDesc.add_options()(optName.c_str(),
+	        visibleCmdLineOptDesc.add_options()(optName.c_str(),
 					     boost::program_options::value<ConfigManager::myVector<unsigned int>>()->multitoken()->composing()->implicit_value({}),
 					     description.c_str());
 		{
@@ -266,7 +266,7 @@ void ConfigManager::parseAllowedArgs(const std::string & jsonName){
 		}
                 break;
             case string_code::evector_float:
-	        cmdLineOptDesc.add_options()(optName.c_str(),
+	        visibleCmdLineOptDesc.add_options()(optName.c_str(),
 					     boost::program_options::value<ConfigManager::myVector<float>>()->multitoken()->composing()->implicit_value({}),
 					     description.c_str());
 		{
@@ -284,7 +284,7 @@ void ConfigManager::parseAllowedArgs(const std::string & jsonName){
 		}
                 break;
             case string_code::evector_double:
-	        cmdLineOptDesc.add_options()(optName.c_str(),
+	        visibleCmdLineOptDesc.add_options()(optName.c_str(),
 					     boost::program_options::value<ConfigManager::myVector<double>>()->multitoken()->composing()->implicit_value({}),
 					     description.c_str());
 		{
@@ -302,9 +302,17 @@ void ConfigManager::parseAllowedArgs(const std::string & jsonName){
 		}
                 break;
             case string_code::evector_str:
-	        cmdLineOptDesc.add_options()(optName.c_str(),
-					     boost::program_options::value<ConfigManager::myVector<std::string>>()->multitoken()->composing()->implicit_value({}),
-					     description.c_str());
+
+	        // special case for hidden option to store list of input config files
+	        if(optName==hiddenFilesOpt) {
+	          hiddenCmdLineOptDesc.add_options()(optName.c_str(),
+					      boost::program_options::value<ConfigManager::myVector<std::string>>()->multitoken()->composing()->implicit_value({}),
+					      description.c_str());
+	        } else {
+	          visibleCmdLineOptDesc.add_options()(optName.c_str(),
+					       boost::program_options::value<ConfigManager::myVector<std::string>>()->multitoken()->composing()->implicit_value({}),
+					       description.c_str());
+		}
 		{
 		  // construct array of quoted strings in JSON format
 		  std::stringstream ss;
@@ -320,7 +328,7 @@ void ConfigManager::parseAllowedArgs(const std::string & jsonName){
 		}
                 break;
             case string_code::evector_bool:
-	        cmdLineOptDesc.add_options()(optName.c_str(),
+	        visibleCmdLineOptDesc.add_options()(optName.c_str(),
 					     boost::program_options::value<ConfigManager::myVector<bool>>()->multitoken()->composing()->implicit_value({}),
 					     description.c_str());
 		{
@@ -338,7 +346,7 @@ void ConfigManager::parseAllowedArgs(const std::string & jsonName){
 		}
                 break;
             case string_code::evector_ptree:
-	        cmdLineOptDesc.add_options()(optName.c_str(),
+	        visibleCmdLineOptDesc.add_options()(optName.c_str(),
 					     boost::program_options::value<ConfigManager::myVector<std::string>>()->multitoken()->composing()->implicit_value({}),
 					     description.c_str());
 		insertVector(optName, v.second.get_child(defaultValuePath));
@@ -354,6 +362,9 @@ void ConfigManager::parseAllowedArgs(const std::string & jsonName){
     // ConfigManager::printTree(configTree);
     // std::cout << __FUNCTION__ << ": ######### CONFIG_TREE values after JSON read - END #######" << std::endl;
     //////// DEBUG
+
+    // complete list of options to be parsed from the cmd line
+    allCmdLineOptDesc.add(visibleCmdLineOptDesc).add(hiddenCmdLineOptDesc);
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -391,22 +402,44 @@ const boost::program_options::variables_map & ConfigManager::parseCmdLineArgs(in
     }
 
     // allow only "--longOption" cmd line style to enable parsing negative numbers
-    // allow only registered list of cmd line options
+    // positional options at the beginning will be assigned to --meta.configJson
     try {
+      boost::program_options::positional_options_description positional;
+      positional.add(hiddenFilesOpt.c_str(), -1); // allow unlimited number of input JSON files at the begin of cmd line arguments
       auto parsedOptions = boost::program_options::command_line_parser(argc, argv)
-	.options(cmdLineOptDesc)
+	.options(allCmdLineOptDesc)
 	.style(boost::program_options::command_line_style::default_style
 	       ^ boost::program_options::command_line_style::allow_short // disable '-option' style
 	       ^ boost::program_options::command_line_style::long_allow_adjacent) // disable '--option=VAL" style
-	.positional({}) // any unregistered option should trigger "too many positional options" exception
+	.positional(positional) // NOTE: use .positional({}) to disable any unregistered arguments
+	                        //       and then catch(boost::program_options::too_many_positional_options_error &e)
 	.run();
+
+      // check if hidden option --meta.configJson is present along with some unregistered cmd line options
+      auto found_unregistered{false};
+      auto found_hidden{false};
+      BOOST_FOREACH(auto const& opt, parsedOptions.options) {
+	if(opt.position_key==-1 && opt.string_key==hiddenFilesOpt) found_hidden=true; // registered options have positon of -1
+	if(opt.position_key!=-1) found_unregistered=true; // unregistered options have positions 0...N
+      }
+      if(found_hidden && found_unregistered) {
+	std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
+		 <<"): ERROR: mixing unregistered command line arguments with '--"<<hiddenFilesOpt<<"' option is not allowed!"<<RST<< std::endl;
+	throw std::logic_error("wrong command line syntax");
+      }
+
       boost::program_options::store(parsedOptions, varMap);
       boost::program_options::notify(varMap);
-    } catch (boost::program_options::too_many_positional_options_error &e) { // unregistered option(s) detected
+    } catch (boost::program_options::unknown_option &e) {
       std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
 	       <<"): ERROR: unknown command line option!"<<RST<< std::endl;
-      throw std::logic_error("wrong command line syntax");
+      throw std::logic_error(e.what());
     }
+    // } catch (boost::program_options::too_many_positional_options_error &e) { // unregistered option(s) detected
+    //   std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
+    // 	       <<"): ERROR: unknown command line option!"<<RST<< std::endl;
+    //   throw std::logic_error("wrong command line syntax");
+    // }
 
     //////// DEBUG
     //    std::cout << __FUNCTION__ << ": ENDED" << std::flush << std::endl;
@@ -642,7 +675,7 @@ void ConfigManager::updateWithCmdLineArgs(const boost::program_options::variable
 		   pt.front().first=="" &&
 		   pt.back().first=="") {
 		  std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
-			   <<"): ERROR: Command line arguments assign vector<ptree> value to node '"<<item.first<<"' declared as non-vector ptree!"<<RST<<std::endl;
+			   <<"): ERROR: Command line option '--"<<item.first<<"' assigns vector<ptree> value to node declared as non-vector ptree!"<<RST<<std::endl;
 		  throw std::logic_error("wrong command line syntax");
 		}
 		configTree.put_child(item.first, pt);
@@ -682,7 +715,7 @@ void ConfigManager::updateWithCmdLineArgs(const boost::program_options::variable
 		   !(update.get_child("dummy").front().first=="" &&
 		     update.get_child("dummy").back().first=="")) {
 		  std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
-			   <<"): ERROR: Command line arguments assign non-vector ptree value to node '"<<item.first<<"' declared as vector<ptree>!"<<RST<<std::endl;
+			   <<"): ERROR: Command line option '--"<<item.first<<"' assigns non-vector ptree value to node declared as vector<ptree>!"<<RST<<std::endl;
 		  throw std::logic_error("wrong command line syntax");
 		}
 		insertVector(item.first, update.get_child("dummy")); // this will also prune previously existing node
@@ -711,13 +744,16 @@ const boost::property_tree::ptree & ConfigManager::getConfig(int argc, char **ar
     }
     else if (varMap.count("help")) { // display help info and set HELP mode
       helpMode=true;
-      std::cout<<"\nUsage: "<<argv[0]<<" [--scalarOption <VAL>] [--vectorOption <VAL1> <VAL2> ... ] [--switchFlag]"
-	       <<"\n\nAvailable options:\n\n"<<cmdLineOptDesc
-	       <<"\nExample: "<<argv[0]<<" --meta.configJson config_A.json config_B.json\n\n";
+      // std::cout<<"\nUsage: "<<argv[0]<<" [--scalarOption <VAL>] [--vectorOption <VAL1> <VAL2> ... ] [--switchFlag]"
+      // 	       <<"\n\nAvailable options:\n\n"<<visibleCmdLineOptDesc
+      // 	       <<"\nExample: "<<argv[0]<<" --meta.configJson config_A.json config_B.json\n\n";
+      std::cout<<"\nUsage: "<<argv[0]<<" File1.json ... FileN.json [--scalarOption <VAL>] [--vectorOption <VAL1> <VAL2> ... ] [--switchFlag]\n\n"
+	       <<visibleCmdLineOptDesc
+	       <<"\n\nExample: "<<argv[0]<<" config.json --beamParameters.energy 10.\n\n";
       return configTree; // nothing more to do, exit
     }
-    else if(varMap.count("meta.configJson")) { // apply changes from JSON file(s)
-      auto jsonNameVec = varMap["meta.configJson"].as<ConfigManager::myVector<std::string>>();
+    else if(varMap.count(hiddenFilesOpt.c_str())) { // apply changes from JSON file(s)
+      auto jsonNameVec = varMap[hiddenFilesOpt.c_str()].as<ConfigManager::myVector<std::string>>();
       for(auto &jsonName: jsonNameVec) {
 	updateWithJsonFile(jsonName);
       }

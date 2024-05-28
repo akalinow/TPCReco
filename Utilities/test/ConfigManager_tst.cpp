@@ -684,3 +684,81 @@ TEST_F(ConfigManagerTest, invalidVectorPtreeFromGenericJSON) {
 }
 //////////////////////////
 //////////////////////////
+TEST_F(ConfigManagerTest, wrongCmdLineParamOrder) {
+
+  int argc = 11;
+  std::string testJSON1 = ConfigManagerTest::directory + ConfigManagerTest::dummyValidJson1;
+  std::string testJSON2 = ConfigManagerTest::directory + ConfigManagerTest::dummyValidJson2;
+  std::string optionsJSON = ConfigManagerTest::directory + ConfigManagerTest::dummyAllowedOptionsJson;
+
+  // good case - with --meta.configJson + 2 JSON files (any position is valid)
+  EXPECT_NO_THROW(({
+      char *argv[] = {(char*)"ConfigManager_tst",
+		      (char*)"--group1.vectorI", (char*)"[", (char*)"11", (char*)"22", (char*)"]",
+		      (char*)"--group.scalar", (char*)"\"A B C\"",
+		      (char*)"--meta.configJson", const_cast<char *>(testJSON1.data()), const_cast<char *>(testJSON2.data())};
+      ConfigManager cm( {}, optionsJSON );
+      boost::property_tree::ptree myConfig = cm.getConfig(argc, argv);
+      })); // double-brackets are important to allow argv[] inside
+
+  // good case - with --meta.configJson + 2 JSON files (any position is valid)
+  EXPECT_NO_THROW(({
+      char *argv[] = {(char*)"ConfigManager_tst",
+		      (char*)"--meta.configJson", const_cast<char *>(testJSON1.data()), const_cast<char *>(testJSON2.data()),
+		      (char*)"--group1.vectorI", (char*)"[", (char*)"11", (char*)"22", (char*)"]",
+		      (char*)"--group.scalar", (char*)"\"A B C\""};
+      ConfigManager cm( {}, optionsJSON );
+      boost::property_tree::ptree myConfig = cm.getConfig(argc, argv);
+      })); // double-brackets are important to allow argv[] inside
+
+  // good case - w/o --meta.configJson, 2 JSON files at the beginning
+  EXPECT_NO_THROW(({
+	  int argc = 10;
+	  char *argv[] = {(char*)"ConfigManager_tst",
+			  const_cast<char *>(testJSON1.data()), const_cast<char *>(testJSON2.data()),
+			  (char*)"--group1.vectorI", (char*)"[", (char*)"11", (char*)"22", (char*)"]",
+			  (char*)"--group.scalar", (char*)"\"A B C\""};
+	  ConfigManager cm( {}, optionsJSON );
+	  boost::property_tree::ptree myConfig = cm.getConfig(argc, argv);
+      })); // double-brackets are important to allow argv[] inside
+
+  // wrong case - 1 JSON file at the beginning mixed with --meta.configJson + 1 JSON files
+  EXPECT_THROW(({
+	try
+	  {
+	    char *argv[] = {(char*)"ConfigManager_tst",
+			    const_cast<char *>(testJSON1.data()),
+			    (char*)"--group1.vectorI", (char*)"[", (char*)"11", (char*)"22", (char*)"]",
+			    (char*)"--meta.configJson", const_cast<char *>(testJSON2.data()),
+			    (char*)"--group.scalar", (char*)"\"A B C\""};
+	    ConfigManager cm( {}, optionsJSON );
+	    boost::property_tree::ptree myConfig = cm.getConfig(argc, argv);
+	  }
+	catch( const std::exception& e )
+	  {
+	    EXPECT_STREQ( "wrong command line syntax", e.what() );
+	    throw;
+	  }
+      }), std::exception ); // double-brackets are important to allow argv[] inside
+
+  // wrong case - w/o --meta.configJson, 2 JSON files at the end
+  EXPECT_THROW(({
+	try
+	  {
+	    int argc = 10;
+	    char *argv[] = {(char*)"ConfigManager_tst",
+			    (char*)"--group1.vectorI", (char*)"[", (char*)"11", (char*)"22", (char*)"]",
+			    (char*)"--group.scalar", (char*)"\"A B C\"",
+			    const_cast<char *>(testJSON1.data()), const_cast<char *>(testJSON2.data())};
+	    ConfigManager cm( {}, optionsJSON );
+	    boost::property_tree::ptree myConfig = cm.getConfig(argc, argv);
+	  }
+	catch( const std::exception& e )
+	  {
+	    EXPECT_STREQ( "option '--group.scalar' only takes a single argument", e.what() );
+	    throw;
+	  }
+      }), std::exception ); // double-brackets are important to allow argv[] inside
+}
+//////////////////////////
+//////////////////////////

@@ -3,7 +3,7 @@
  The application is configured using one or more JSON files, in which parameters are organised in blocks (groups).
  Nested sub-blocks are also possible.
 
-## Parameters definition
+## Definition of parameters
  All valid parameter names and their default values have to be registered in a special JSON file [allowedOptions.json](config/allowedOptions.json).
  This file is installed in the user's `$HOME/.tpcreco/config/` directory upon successful `make install` command. Here is an example definition of `"meta.configJson"` parameter inside such JSON file:
 ```json
@@ -28,27 +28,31 @@ where **T** denotes one of 6 implemented types: `int`, `unsigned int`, `float`, 
 
 ### Important syntax notes for JSON files:
   * the last value in each block must not end with comma (compare `"defaultValue"` and `"description"` lines in the example above)
-  * the curly bracket ending the very last block in the JSON file must not end with comma
+  * the curly bracket ending the very last block in the JSON file must not end with comma (`,`)
   * allowed parameter and group names are restricted to ASCII alphanumeric plus dash (`-`) characters
   * JSON file names are restricted to ASCII alphanumeric plus: dot (`.`), dash (`-`), underline (`_`) and slash (`/`) characters
   * values of vector parameters have to be enclosed in square brackets and separated by commas with optional blank spaces (e.g. `[ elem1, elem2 ]`)
   * empty vectors can be specified either as an empty quote `""` or as a pair of square brackets `[ ]`
-  * short forms such as `vector`, `string` and `uint` are also recognized.
+  * short forms such as `vector`, `string` and `uint` are also recognized
+  * parameter `meta.configJson` is transient and setting it inside JSON file will not affect the actual list of input JSON files specified in the command line.
 
 
-## Parameters modification
+## Modification of parameters
 
- The default values of available parameters can be modified by providing input JSON file(s) and/or command line arguments.
+ The default values of available parameters can be modified by providing optional input JSON file(s) and/or optional command line arguments.
 
+ First N consequtive command line arguments are treated as input JSON files <!--# internally assigned to 'meta.configJson' option #-->
+ which are followd by regular options (`--groupName.parameterName`) and their respective values.
  When multiple JSON files are provided to the application then the next JSON file(s) override(s) changes made by the preceding one(s).
- On top of that the command line arguments always override values provided in JSON files.
- Below is an example that combines 2 input JSON files and 7 command line options:
+ On top of that the command line arguments always override values provided by JSON files.
+
+ Below is an example that combines 2 input JSON files and 9 command line options:
 ```bash
 cd TPCReco/build/resources
 
-../bin/exampleApp --meta.configJson        myConfig1.json myConfig2.json                                                  \
-                  --someGroup.someTextVar  "Text A B C"                                                                   \
-                  --someGroup.someVar      VAL                                                                            \
+../bin/exampleApp myConfig1.json myConfig2.json                                                                           \
+                  --someGroup.someTextVar          "Text A B C"                                                           \
+                  --someGroup.someVar              VAL                                                                    \
                   --someGroup.someBoolVar          true                                                                   \
                   --someGroup.someEnableFlag                                                                              \
                   --someGroup.someVec1             [ VAL1 VAL2 VAL3 ]                                                     \
@@ -79,20 +83,21 @@ cd TPCReco/build/resources
 ...
 }
 ```
- In case of regular types (i.e. not **ptree**) in both JSON file and command line methods one can represent:
-   * non-string values as simple mathematical expressions using standard **C** and **ROOT::TMath** functions, which will be converted to  numerical values at run-time (see `"someDoubleVar"`, `"someFloatVec"` and `"someBoolVec"` in the example above)
-   * bool values as `0`/`1` or case-insensitive `true` / `false` (see `"someBoolVec"` in the example above)
+ In case of regular types (i.e. not **ptree**) in, both, JSON file- and command line methods one can represent:
+   * numeric values as simple mathematical expressions using standard **C** and **ROOT::TMath** functions, which will be converted to  numerical values at run-time (see `"someDoubleVar"`, `"someFloatVec"` and `"someBoolVec"` in the example above)
+   * boolean values as `0`/`1` or case-insensitive `true` / `false` (see `"someBoolVec"` in the example above)
 
  ### Important syntax notes for command line options:
   * only long dash convention `--groupName.paramName` of command line options is supported <!-- to allow parsing of negative numbers -->
-  * same option cannot be specified more than once
   * whenever option `--help` is present the application exits after displaying relevant HELP message
+  * specifying input JSON files by means of `--meta.configJson` option is also allowed <!-- but cannot be mixed with positional cmd line options -->
+  * same option cannot be specified more than once
   * values of vector parameters have to be separated by blank spaces and can be optionally enclosed within square brackets (e.g. `[ val1 val2 ]`)
   * vector parameter without any values implies an empty vector (alternatively one can use a pair of square brackets `[ ]`)
-  * bool parameter without any value acts as a switching flag that implies `true` value.
+  * boolean parameter without any value acts as a switching flag that implies `true` value.
 
 
-## Saving the current JSON
+## Saving current parameters to JSON file
 
 The final configuration settings resulting from multiple JSON files and/or multiple command line arguments
 can be saved to a new JSON file using [dumpConfig](bin/dumpConfig.cpp) application.
@@ -130,7 +135,7 @@ Configuration tree saved to: configDump.json
 
 In order to produce a JSON file of specific name that contains entire configuration after merging values from one JSON file and one parameter overwritten in the command line:
 ```bash
-../bin/dumpConfig --meta.configDumpJson currentConfig.json --meta.configJson myConfig.json --beamParameters.energy 10.99
+../bin/dumpConfig myConfig.json  --beamParameters.energy 10.99 --meta.configDumpJson currentConfig.json
 ```
 ```
 ConfigManager: using config file $HOME/.tpcreco/config/allowedOptions.json
@@ -150,11 +155,11 @@ Configuration tree saved to: currentConfig.json
 ```
 
 
-## Accessing parameters within application
+## Accessing parameters inside application
 
- Configuration parameters inside the application can be accessed by their `"groupName.parameterName"` labels.
+ In general configuration parameters inside the application can be accessed by their `"groupName.parameterName"` labels.
 
- Nested parameters of non-vector type can be accessed via respective `"group1.group2.parameterName"` labels.
+ Nested parameter values of non-vector type can be easily accessed via their respective `"group1.group2.parameterName"` labels.
 
  Below are four examples how to access configuration parameters using either native BOOST or ConfigManager methods:
 ```c++
@@ -173,7 +178,7 @@ Configuration tree saved to: currentConfig.json
 
   // Method #2
   // via looping over all nested children of BOOST property tree of unknown type,
-  // for details see: ConfigManager::printTree() and ConfigManager::listTree() methods
+  // for details see: ConfigManager::printTree() and ConfigManager::listTree() methods using recurrent approach
   BOOST_FOREACH(auto item, myConfig.get_child("groupName.paramPtree") { // scan 1st level
     std::cout << "1st-level child:  key: '" << item.first << "',  size: " << item.second.size()
               << ",  value: " << item.second.get_value<std::string>() << std::endl;
