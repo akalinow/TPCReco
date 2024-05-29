@@ -45,8 +45,8 @@ public:
     static std::unordered_set<std::string> listTree(const boost::property_tree::ptree & pt);
     static void prepareListTree(const boost::property_tree::ptree & pt, std::unordered_set<std::string> & nodeList, const std::string & parentNode="");    
 
-    // general purpose static method to selectively update content of BOOST ptree
-    static void mergeTrees(boost::property_tree::ptree & pt, const boost::property_tree::ptree & updates);
+    // general purpose static method to selectively update content of BOOST ptree // TEMPORARY DISABLED
+    //    static void mergeTrees(boost::property_tree::ptree & pt, const boost::property_tree::ptree & updates); // TEMPORARY DISABLED
 
     // general purpose static method to remove all sub nodes starting from a given path of BOOST ptree
     static void pruneTree(boost::property_tree::ptree & pt, const std::string & nodePath);
@@ -73,16 +73,21 @@ public:
       edouble,
       estr,
       ebool,
+      eptree,
       evector_int,
       evector_uint,
       evector_float,
       evector_double,
       evector_str,
       evector_bool,
+      evector_ptree,
       eunknown
     };
+    const std::string hiddenFilesOpt{"meta.configJson"}; // assign unregistered cmd line arguments to hidden --meta.configJson parameter
     string_code getTypeCode (const std::string & inString) const;
-    boost::program_options::options_description cmdLineOptDesc;
+    boost::program_options::options_description visibleCmdLineOptDesc{"Available options"}; // visible to user (help, CLI)
+    boost::program_options::options_description hiddenCmdLineOptDesc; // hidden from user (excluded from help, CLI)
+    boost::program_options::options_description allCmdLineOptDesc; // hidden + visible
     boost::program_options::variables_map varMap;
     std::map<std::string, string_code> varTypeMap;
     boost::property_tree::ptree configTree;
@@ -120,7 +125,7 @@ public:
     template <typename T> T getScalar(const std::string & nodePath) {
       if(!checkNodeNameSyntax(nodePath)) {
 	std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
-		 <<"): ERROR: node \""<< nodePath <<"\" does not exist! Check your configuration file: "<< allowedOptPath <<" and/or ConfigManager initialization."<<RST<<std::endl;
+		 <<"): ERROR: node '"<< nodePath <<"' does not exist! Check config file '"<< allowedOptPath <<"' and/or ConfigManager initialization."<<RST<<std::endl;
 	throw std::logic_error("wrong ptree node name");
       }
       if(std::is_same<T, int>::value ||
@@ -131,7 +136,7 @@ public:
 	 std::is_same<T, std::string>::value) {
 	return ConfigManager::getScalar<T>(configTree, nodePath);
       }
-      std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__<<"): ERROR: node \""<< nodePath <<"\" has unsupported value type!"<<RST<< std::endl;
+      std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__<<"): ERROR: node '"<< nodePath <<"' has unknown type!"<<RST<< std::endl;
       throw std::logic_error("wrong type");
     }
     
@@ -140,7 +145,7 @@ public:
     template <typename T> std::vector<typename T::value_type> getVector(const std::string & nodePath) {
       if(!checkNodeNameSyntax(nodePath)) {
 	std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
-		 << "): ERROR: node \""<< nodePath <<"\" does not exist! Check your configuration file: "<< allowedOptPath <<" and/or ConfigManager initialization."<<RST<<std::endl;
+		 << "): ERROR: node '"<< nodePath <<"' does not exist! Check your configuration file '"<< allowedOptPath <<"' and/or ConfigManager initialization."<<RST<<std::endl;
 	throw std::logic_error("wrong ptree node name");
       }
       if(std::is_same<T, std::vector<int>>::value || std::is_same<T, ConfigManager::myVector<int>>::value ||
@@ -152,7 +157,7 @@ public:
 	return ConfigManager::getVector<T>(configTree, nodePath);
       }
       std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
-	       <<"): ERROR: node \""<< nodePath <<"\" has unsupported vector type!"<<RST<< std::endl;
+	       <<"): ERROR: node '"<< nodePath <<"' has unknown vector type!"<<RST<< std::endl;
       throw std::logic_error("wrong type");
     }
 };
@@ -195,7 +200,7 @@ public:
       } else if(std::is_same<T, double>::value) {
 	strFormat="%.16lg";
       } else {
-	std::cout<<KRED<<__FUNCTION__<<"(ConfigManager::myValue)("<<__LINE__<<"): ERROR: unsupported value type!"<<RST<<std::endl;
+	std::cout<<KRED<<__FUNCTION__<<"(ConfigManager::myValue)("<<__LINE__<<"): ERROR: unknown value type!"<<RST<<std::endl;
 	throw std::logic_error("wrong type");
       }
       os << Form(strFormat.c_str(), v.value);
