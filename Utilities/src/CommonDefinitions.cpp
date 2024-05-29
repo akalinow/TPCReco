@@ -103,7 +103,7 @@ namespace enumDict {
                 (pid_type::CARBON_14,                   "CARBON_14")
                 (pid_type::C12_ALPHA,                   "C12_ALPHA")
                 (pid_type::PROTON,                      "PROTON")
-                (pid_type::CARBON_13,                   "CARBON_14")
+                (pid_type::CARBON_13,                   "CARBON_13")
                 (pid_type::NITROGEN_15,                 "NITROGEN_15")
                 (pid_type::OXYGEN_16,                   "OXYGEN_16")
                 (pid_type::OXYGEN_17,                   "OXYGEN_17")

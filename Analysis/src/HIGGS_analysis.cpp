@@ -100,12 +100,12 @@ void HIGGS_analysis::bookHistos(){
   const float binSizeMeV_kineticEnergy = 0.005; // [MeV] // 5 keV
   const float binSizeMeV_beamEnergy = binSizeMeV_kineticEnergy; // [MeV] // 5 keV
 
-  ///// DEBUG - special histograms with rate evelution
+  ///// DEBUG - special histograms with rate evolution
   const float binSizeSec = 30; // 30 sec resolution
   const float binSizeDeltaSec = 0.1; // 0.1 sec resolution
-  const float maxRunTimeSec = 1*3600; // 1h time-span
-  const float maxDeltaTimeSec = 2*60; // 2min time-span
-  ///// DEBUG - special histograms with rate evelution
+  const float maxRunTimeSec = 1*3600; // 1 h time-span
+  const float maxDeltaTimeSec = 2*60; // 2 min time-span
+  ///// DEBUG - special histograms with rate evolution
 
   float xmin, xmax, ymin, ymax, zmin, zmax; // [mm]
   std::tie(xmin, xmax, ymin, ymax) = myGeometryPtr->rangeXY();
