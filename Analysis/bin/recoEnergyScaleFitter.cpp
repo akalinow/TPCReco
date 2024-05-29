@@ -368,7 +368,7 @@ int main(int argc, char **argv){
     // 2-prong / Oxygen-16 decay / 1- resonance: Ex peak=12.440(2) MeV, gamma_width=0.091(6) MeV, multipolarity=E1 / Egamma=12.3 MeV
     // Gamma spectrum from HPGe GEANT simulation assuming gaussian: peak=12.260(1) MeV / sigma=0.190 MeV
     { false, "12.3 / O-16 (1- 12.44)",
-      reaction_type::C12_ALPHA, 2, 12.260, 12.4439, sqrt(pow(0.006,2) + pow(0.013/sqrt(12),2)), 0.0, // Ex peak: scan + HPGe + resol / error: 6 keV table + 13 keV scan
+      reaction_type::C12_ALPHA, 2, 12.260, 12.4439, sqrt(pow(0.002,2) + pow(0.013/sqrt(12),2)), 0.0, // Ex peak: scan + HPGe + resol / error: 2 keV table + 13 keV scan
       190, 273.15+20, "geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat", BeamDirection::MINUS_X, -1.52, 3.25e-3, // run=20220412152817
       { "/mnt/NAS_STORAGE_ANALYSIS/higs_2022/12_3MeV/Reco/clicked/Reco_20220412152817.root" } },
     ///////////////////////
