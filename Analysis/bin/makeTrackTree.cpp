@@ -8,6 +8,7 @@
 #include <TLatex.h>
 #include <TString.h>
 #include <TStopwatch.h>
+#include <TStyle.h>
 
 #include <boost/program_options.hpp>
 
@@ -25,6 +26,7 @@
 #include "TPCReco/InputFileHelper.h"
 #include "TPCReco/MakeUniqueName.h"
 #include "TPCReco/colorText.h"
+#include "TPCReco/HistoManager.h"
 
 #include "TPCReco/EventTPC.h"
 /////////////////////////////////////
@@ -128,11 +130,45 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   std::string geometryFileName = aConfig.get("input.geometryFile","");
   double pressure = aConfig.get<double>("conditions.pressure"); 
   double temperature = aConfig.get<double>("conditions.temperature");
+  boost::property_tree::ptree hitConfig;
+  hitConfig.put_child("hitFilter", aConfig.get_child("hitFilter"));
     
   TrackBuilder myTkBuilder;
   myTkBuilder.setGeometry(myEventSource->getGeometry());
   myTkBuilder.setPressure(pressure);
   IonRangeCalculator myRangeCalculator(gas_mixture_type::CO2,pressure, temperature);
+
+  ////////////////////////////////////////////
+  //
+  // extra initialization for fit DEBUG plots
+  const auto develMode = aConfig.get<bool>("display.develMode");
+  HistoManager myHistoManager;
+  const std::string rootFileNameCanvas = "makeTrackTree_debug_histos.root";
+  TFile *outputCanvasROOTFile = nullptr;
+  TCanvas *outputCanvas = nullptr;
+  if(develMode) {
+    outputCanvasROOTFile=new TFile(rootFileNameCanvas.c_str(), "RECREATE");
+    if(!outputCanvasROOTFile) {
+      std::cout<<KRED<<"Cannot create output ROOT file with debug plots!"<<RST<<std::endl;
+      return -1;
+    }
+    outputCanvasROOTFile->cd();
+    const int nx=4, ny=3;
+    assert((nx*ny)>=3+1+3+3); // 3 for UVW rawdata, , 1 for dE/dx fit, 3 for UVW RecHits, 3 for UVW Hough accumulators
+    outputCanvas=new TCanvas("c_result", "c_result", 1.1*400*nx, 400*ny);
+    if(!outputCanvas) {
+      std::cout<<KRED<<"Cannot create TCanvas with debug plots!"<<RST<<std::endl;
+      return -1;
+    }
+    outputCanvas->Divide(nx,ny);
+    myHistoManager.clearCanvas(outputCanvas, false);
+    myHistoManager.setGeometry(myEventSource->getGeometry());
+    myHistoManager.setPressure(pressure);
+    myHistoManager.setConfig(hitConfig); // this will pass configuration to current event pointer
+    myHistoManager.toggleAutozoom(); // start auto zoom feature
+  }
+  //
+  ////////////////////////////////////////////
 
   RecoOutput myRecoOutput;
   std::string fileName = InputFileHelper::tokenize(dataFileName)[0];
@@ -148,15 +184,76 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
 
   //Event loop
   unsigned int nEntries = myEventSource->numberOfEntries();
+  //if(maxNevents>0) nEntries = std::min( (unsigned int)nEntries, (unsigned int)maxNevents );
   //nEntries = 5; //TEST
   for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
     if(nEntries>10 && iEntry%(nEntries/10)==0){
       std::cout<<KBLU<<"Processed: "<<int(100*(double)iEntry/nEntries)<<" % events"<<RST<<std::endl;
     }
-    myEventSource->loadFileEntry(iEntry);    
-    *myEventInfo = myEventSource->getCurrentEvent()->GetEventInfo();    
+    myEventSource->loadFileEntry(iEntry);
+    *myEventInfo = myEventSource->getCurrentEvent()->GetEventInfo();
+    if(!iEntry || develMode) { // initialize only once per session in non-debug mode and every time in debug mode
+      myEventSource->getCurrentEvent()->setHitFilterConfig(filter_type::threshold, hitConfig);
+      myEventSource->getCurrentEvent()->setHitFilterConfig(filter_type::fraction, hitConfig);
+    }
+    myTkBuilder.setGeometry(myEventSource->getGeometry());
+    myTkBuilder.setPressure(pressure); ////// HACK - workaround for static variable dEdxFitter::currentPressure
     myTkBuilder.setEvent(myEventSource->getCurrentEvent());
     myTkBuilder.reconstruct();
+
+    ////////////////////////////////////////////
+    //
+    // make fit DEBUG plots
+    if(develMode) {
+      myHistoManager.setEvent(myEventSource->getCurrentEvent());
+      gStyle->SetOptStat(0);
+
+      // plot clustered data and dE/dx fit
+      myHistoManager.drawDevelHistos(outputCanvas); // pads 1-4
+
+      // plot RecHits per UVW direction
+      int ipad=5;
+      for(int iDir=definitions::projection_type::DIR_U;iDir<=definitions::projection_type::DIR_W;++iDir){
+	TVirtualPad *aPad=outputCanvas->cd(ipad+iDir); // pads 5-7
+	if(aPad) {
+	  aPad->SetFrameFillColor(kAzure-6);
+	  myHistoManager.getRecHitStripVsTime(iDir)->DrawCopy("colz");
+	}
+      }
+
+      // plot Hough accumulators per UVW direction
+      ipad=9;
+      for(int iDir=definitions::projection_type::DIR_U;iDir<=definitions::projection_type::DIR_W;++iDir){
+	TVirtualPad *aPad=outputCanvas->cd(ipad+iDir); // pads 9-11
+	if(aPad) {
+	  aPad->SetFrameFillColor(kAzure-6);
+	  myHistoManager.getHoughAccumulator(iDir,0).DrawCopy("colz");
+	}
+      }
+
+      outputCanvas->SetName(Form("c_run%ld_evt%ld", (unsigned long)myEventInfo->GetRunId(), (unsigned long)myEventInfo->GetEventId()));
+      outputCanvas->SetTitle(outputCanvas->GetName());
+      const std::vector<std::pair<double, double> > marginsLeftRight{ {0.1, 0.15}, {0.1, 0.15}, {0.1, 0.15}, {0.15, 0.15},
+								      {0.1, 0.15}, {0.1, 0.15}, {0.1, 0.15}, {0.5, 0.5},
+								      {0.1, 0.15}, {0.1, 0.15}, {0.1, 0.15} };
+      ipad=0;
+      for(auto &it : marginsLeftRight) {
+	ipad++;
+	TVirtualPad *aPad=outputCanvas->cd(ipad);
+	if(aPad) {
+	  aPad->SetLeftMargin(it.first);
+	  aPad->SetRightMargin(it.second);
+	  aPad->Modified();
+	  aPad->Update();
+	}
+      }
+      outputCanvas->Modified();
+      outputCanvas->Update();
+      outputCanvasROOTFile->cd();
+      outputCanvas->Write();
+    }
+    //
+    ////////////////////////////////////////////
 
     const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
 
@@ -237,6 +334,18 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     tree->Fill();    
   }
   outputROOTFile.Write();
+
+  ////////////////////////////////////////////
+  //
+  // close file with fit DEBUG plots
+  if(develMode) {
+    outputCanvasROOTFile->Close();
+    delete outputCanvasROOTFile;
+    delete outputCanvas;
+  }
+  //
+  ////////////////////////////////////////////
+
   return nEntries;
 }
 /////////////////////////////

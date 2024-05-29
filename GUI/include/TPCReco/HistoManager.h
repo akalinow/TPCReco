@@ -92,9 +92,10 @@ public:
 
   std::shared_ptr<TH2D> getChannels(int cobo_id, int asad_id);
 
-  private:
-
+  //  private:
   const TH2D & getHoughAccumulator(int strip_dir, int iPeak=0);
+
+private:
 
   void drawTrack2DSeed(int strip_dir, TVirtualPad *aPad);
 

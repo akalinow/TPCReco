@@ -1586,7 +1586,7 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
 //////////////////////////////////
 void makeCombinedPlots_report(std::string fileNameHistosAuto, std::string fileNameHistosManual, float energyMeV, const char *commentHistosAuto="Automatic", const char *commentHistosManual="Manual"){
 
-  const auto rebin=5;
+  const auto rebin=2; //5;
   const auto width=2;
 
   TFile *f1 = new TFile(fileNameHistosAuto.c_str(), "OLD"); // AUTOMATIC RECO

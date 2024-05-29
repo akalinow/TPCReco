@@ -69,13 +69,13 @@
         "group": "display",
         "type" : "bool",
         "defaultValue": false,
-        "description": "Plot developer set of histograms in GUI mode.\nType: bool"
+        "description": "Switch for enabling developer set of histograms in GUI / makeTrackTree reconstruction mode.\nType: bool"
     },
     "technicalMode":{
         "group": "display",
         "type" : "bool",
         "defaultValue": false,
-        "description": "Plot detector specific technical set of histograms in GUI mode.\nType: bool"
+        "description": "Switch for enabling detector-specific technical set of histograms in GUI mode.\nType: bool"
     },
     "remove":{
         "group": "pedestal",
@@ -111,25 +111,31 @@
         "group": "hitFilter",
         "type" : "bool",
         "defaultValue": false,
-        "description": "Display reconstructed hit positions on 2D charge maps in GUI.\nType: bool"
+        "description": "Switch for enabling hit clustering in 2D charge maps in GUI / makeTrackTree reconstruction mode.\nType: bool"
     },
     "recoClusterThreshold":{
         "group": "hitFilter",
         "type" : "float",
         "defaultValue": 35.0,
-        "description": "Charge threshold for hits displayed in 2D charge map in GUI.\nType: float"
+        "description": "Charge threshold above pedestal for reco 2D cluster seed hits.\nType: float"
+    },
+    "recoClusterConstantFractionThreshold":{
+        "group": "hitFilter",
+        "type" : "float",
+        "defaultValue": 0.1,
+        "description": "Charge threshold above pedestal as fraction of maximal signal for reco 2D cluster seed hits.\nType: float"
     },
     "recoClusterDeltaStrips":{
         "group": "hitFilter",
         "type" : "int",
         "defaultValue": 2,
-        "description": "Strip range of hits added to cluster around hits passing threshold value.\nType: int"
+        "description": "Strip range of hits added to cluster around seed hits passing threshold value.\nType: int"
     },
     "recoClusterDeltaTimeCells":{
         "group": "hitFilter",
         "type" : "int",
         "defaultValue": 5,
-        "description": "Time bin range of hits added to cluster around hits passing threshold value.\nType: int"
+        "description": "Time bin range of hits added to cluster around seed hits passing threshold value.\nType: int"
     },   
     "enabled":{
         "group": "eventFilter",
