@@ -224,10 +224,11 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
      aPad->cd();
      aCanvas->Modified();
      aCanvas->Update();
-
-     auto projType = get2DProjectionType(strip_dir);     
-     auto histo2D = get2DProjection(projType, filterType, scale_type::mm);     
      
+     auto projType = get2DProjectionType(strip_dir);     
+     auto histo2D = get2DProjection(projType, filterType, scale_type::mm);  
+     //auto histo2D_raw = get2DProjection(projType, filter_type::none, scale_type::raw);
+    
      if(myConfig.get<bool>("hitFilter.recoClusterEnable")){
        histo2D->SetMinimum(0.0);
        histo2D->DrawCopy("colz");
