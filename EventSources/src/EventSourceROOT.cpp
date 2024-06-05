@@ -21,7 +21,8 @@ EventSourceROOT::EventSourceROOT(const std::string & geometryFileName) {
 /////////////////////////////////////////////////////////
 void EventSourceROOT::setTreePointers() {
 
-  treeName = ConfigManager::getConfig().get<std::string>("input.treeName");
+  //treeName = ConfigManager::getConfig().get<std::string>("input.treeName");
+  treeName = "TPCData";
   aPtr = myCurrentPEvent.get();
   aPtrEventInfo=NULL;
   aPtrEventData=NULL;
