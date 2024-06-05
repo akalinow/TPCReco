@@ -7,6 +7,7 @@
 #pragma link C++ class EulerAngles+;
 #pragma link C++ class CoordinateConverter+;
 #pragma link C++ class IonRangeCalculator+;
+#pragma link C++ class DirectoryWatch+;
 #pragma link C++ enum pid_type;
 #pragma link C++ enum gas_mixture_type;
 #endif

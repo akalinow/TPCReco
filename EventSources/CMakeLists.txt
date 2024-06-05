@@ -4,6 +4,17 @@ message(STATUS "Adding CMake fragment for module:\t${MODULE_NAME}")
 reco_add_library(${MODULE_NAME})
 reco_add_executable(grawToEventTPC bin/grawToEventTPC.cpp)
 
+# Disable/enable searching next file with N+1 index (default=DISABLED)
+option(EVENTSOURCEGRAW_NEXT_FILE_DISABLE
+       "Define EVENTSOURCEGRAW_NEXT_FILE_DISABLE variable" ON)
+if(EVENTSOURCEGRAW_NEXT_FILE_DISABLE)
+  message(STATUS "EventSourceGRAW/EventSourceMultiGRAW automatic next file index disabled")
+  target_compile_definitions(${MODULE_NAME}
+                             PRIVATE EVENTSOURCEGRAW_NEXT_FILE_DISABLE)
+else()
+  message(STATUS "EventSourceGRAW/EventSourceMultiGRAW automatic next file index enabled")
+endif()
+
 target_link_libraries(
   ${MODULE_NAME} PUBLIC ${ROOT_LIBRARIES} ${ROOT_EXE_LINKER_FLAGS} 
             DataFormats Utilities 

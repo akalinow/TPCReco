@@ -8,6 +8,7 @@ root_generate_dictionary(
   ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/CoordinateConverter.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/IonRangeCalculator.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/CommonDefinitions.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/DirectoryWatch.h
   LINKDEF
   LinkDef.h)
 #
@@ -24,7 +25,7 @@ if(DIRECTORYWATCH_ONE_message_DISABLE)
     STATUS
       "DirectoryWatch single message disabled (i.e. one message per modified file)"
   )
-  target_compile_definitions(${MODULE_NAME} DIRECTORYWATCH_ONE_message_DISABLE)
+  target_compile_definitions(${MODULE_NAME} PRIVATE DIRECTORYWATCH_ONE_MESSAGE_DISABLE)
 else()
   message(
     STATUS

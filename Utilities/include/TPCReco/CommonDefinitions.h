@@ -14,7 +14,8 @@ enum class scale_type{
 enum class filter_type{
 		 none,
 		 threshold,
-		 island
+		 island,
+		 fraction
 };
 
 namespace definitions {

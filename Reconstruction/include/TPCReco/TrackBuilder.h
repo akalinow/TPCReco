@@ -60,6 +60,8 @@ public:
 
   TF1 getdEdx() const {return mydEdxFitter.getFittedModel();};
 
+  double getdEdxFitSigmaSmearing() const {return mydEdxFitter.getSigmaSmearing();};
+
 private:
 
   void makeRecHits(int iDir);
@@ -93,7 +95,8 @@ private:
   bool myHistoInitialized;
   int nAccumulatorRhoBins, nAccumulatorPhiBins;
 
-  TVector3 aHoughOffest;
+  //  TVector3 aHoughOffest;
+  std::vector<TVector3> myHoughOffset;
   std::vector<TH2D> myAccumulators;
   std::vector<TH2D> myRecHits, myRawHits;
   TH1D hTimeProjection;

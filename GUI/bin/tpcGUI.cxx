@@ -20,6 +20,7 @@ int main(int argc, char** argv) {
 
 	ConfigManager cm;
 	boost::property_tree::ptree tree = cm.getConfig(argc,argv);
+	if(cm.isHelpMode()) return 0; // nothing more to do, exit
 
 	ROOT::EnableThreadSafety();
 	TApplication theApp("App", &argc, argv);

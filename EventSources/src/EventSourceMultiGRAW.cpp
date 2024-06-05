@@ -85,15 +85,16 @@ void EventSourceMultiGRAW::loadDataFile(const std::string & commaSeparatedFileNa
   while (std::getline(sstream, fileName, del)) {
     if(fileName.size()) fileNameList.insert(fileName);
   };
-  	
-	if (fileNameList.size() != GRAW_EVENT_FRAGMENTS) {
-	  std::cerr << KRED << "Provided wrong number of GRAW files. Expected  "<<RST 
-	            << GRAW_EVENT_FRAGMENTS 
-	            << KRED<< " The file list is: "<<RST<<std::endl 
-	            << commaSeparatedFileNames << _endl_;
-		    exit(0);
-	}
-  
+
+  // display warning for incomplete lists, but allow to proceed (this is important for ONLINE mode!)
+  if (fileNameList.size() != GRAW_EVENT_FRAGMENTS) {
+    std::cerr << KRED << __FUNCTION__
+	      << ": WARNING: Provided wrong number of GRAW files. Expected  " << RST
+	      << GRAW_EVENT_FRAGMENTS
+	      << KRED << ". The file list is:" << RST << std::endl
+	      << commaSeparatedFileNames << std::endl;
+  }
+
   if(fileNameList.size()) {
     loadDataFileList(fileNameList);
   }

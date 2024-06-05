@@ -1,7 +1,7 @@
 set(MODULE_NAME "UtilsMC")
 message(STATUS "Adding CMake fragment for module:\t${MODULE_NAME}")
 
-include_directories(${PROJECT_SOURCE_DIR}/Utilities/include/)
+include_directories(${PROJECT_SOURCE_DIR}/Utilities/include/ ${PROJECT_SOURCE_DIR}/MonteCarlo/UtilsMC)
 
 root_generate_dictionary(G__${TPCRECO_PREFIX}${MODULE_NAME}
     ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/SimEvent.h LINKDEF LinkDef.h)

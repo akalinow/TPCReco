@@ -16,6 +16,7 @@
 #include "TPCReco/IonRangeCalculator.h"
 #include "TPCReco/RequirementsCollection.h"
 #include "TPCReco/Track3D.h"
+#include "TPCReco/EventInfo.h"
 #include "TPCReco/CoordinateConverter.h"
 
 class TH1F;
@@ -34,7 +35,7 @@ class HIGGS_analysis{
 
   ~HIGGS_analysis();
 
-  void fillHistos(Track3D *aTrack);
+  void fillHistos(Track3D *aTrack, eventraw::EventInfo *aEventInfo, bool & isFirst);
   
  private:
 
