@@ -623,7 +623,7 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
   if(aTrack3D.getLength()<1) return;
   
-  TH1F hFrame("hFrame",";d [mm];charge [arb. units]",2,-20, 20+aTrack3D.getLength());
+  TH1F hFrame("hFrame",";d [mm];charge/bin [arb. units]",2,-20, 20+aTrack3D.getLength());
   hFrame.GetYaxis()->SetTitleOffset(2.0);
   hFrame.SetMinimum(0.0);
 

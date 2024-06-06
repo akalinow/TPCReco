@@ -277,7 +277,6 @@ TH1F TrackSegment3D::getChargeProfile() const{
     ++rebinFactor;
   }
   hChargeProfile.Rebin(rebinFactor);
-  //  hChargeProfile.Rebin(8);
   double scale = 1.0/hChargeProfile.GetBinWidth(1);
   hChargeProfile.Scale(scale); 
   return hChargeProfile;
