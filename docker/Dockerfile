@@ -50,7 +50,7 @@ RUN rm /tmp/requirements_*.txt
 FROM common_base AS dev
 RUN apt-get update -qq \
     && apt-get -y install \
-    gdb valgrind git \
+    gdb valgrind git ccache \
     binutils linux-tools-generic \
     && rm -rf /var/lib/apt/lists/*
 RUN useradd -ms /bin/bash woodpecker

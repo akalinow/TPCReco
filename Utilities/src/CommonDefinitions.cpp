@@ -40,6 +40,50 @@ definitions::projection_type get1DProjectionType(definitions::projection_type aS
   }
   return projType;
 }
+/////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+std::ostream& operator<<(std::ostream& os, const event_type& et) {
+    switch (et) {
+    case event_type::EventSourceROOT:
+        os << "EventSourceROOT";
+        break;
+    case event_type::EventSourceMC:
+        os << "EventSourceMC";
+        break;
+    case event_type::EventSourceGRAW:
+        os << "EventSourceGRAW";
+        break;
+    case event_type::EventSourceMultiGRAW:
+        os << "EventSourceMultiGRAW";
+        break;
+    default:
+        os.setstate(std::ios_base::failbit);
+    }
+    return os;
+}
+
+std::istream& operator>>(std::istream& is, event_type& et) {
+    std::string input;
+    is >> input;
+
+    if (input == "EventSourceROOT") {
+        et = event_type::EventSourceROOT;
+    }
+    else if (input == "EventSourceMC") {
+        et = event_type::EventSourceMC;
+    }
+    else if (input == "EventSourceGRAW") {
+        et = event_type::EventSourceGRAW;
+    }
+    else if (input == "EventSourceMultiGRAW") {
+        et = event_type::EventSourceMultiGRAW;
+    }
+    else {
+        is.setstate(std::ios_base::failbit);
+    }
+
+    return is;
+}
 
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
@@ -59,11 +103,12 @@ namespace enumDict {
                 (pid_type::CARBON_14,                   "CARBON_14")
                 (pid_type::C12_ALPHA,                   "C12_ALPHA")
                 (pid_type::PROTON,                      "PROTON")
-                (pid_type::CARBON_13,                   "CARBON_14")
+                (pid_type::CARBON_13,                   "CARBON_13")
                 (pid_type::NITROGEN_15,                 "NITROGEN_15")
                 (pid_type::OXYGEN_16,                   "OXYGEN_16")
                 (pid_type::OXYGEN_17,                   "OXYGEN_17")
                 (pid_type::OXYGEN_18,                   "OXYGEN_18")
+                (pid_type::BERYLLIUM_8,                 "BERYLLIUM_8")
                 (pid_type::THREE_ALPHA,                 "THREE_ALPHA")
                 ;
         const ReactionDictionary gReactions =

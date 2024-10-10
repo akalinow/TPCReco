@@ -1,7 +1,12 @@
 //////////////////////////
 //
+// Example ROOT macros for generating toy Monte Carlo events (Track3D collection) using IonRangeCalculator.
+// Different features can be turned on/off by #define lines.
+//
+// Mikolaj Cwiok (UW) - 25 May 2023
+//
 // root
-// root [0] .L generateFakeRecoEvents.cxx
+// root [0] .L ../examples/generateFakeRecoEvents.cxx
 // root [1] generateFakeReactions("geometry.dat", 250.0, 293.15, 1000, 11.5, 1, 0, 0);
 // root [1] generateFake1prongs("geometry.dat", 250.0, 293.15, 1000, ALPHA, 2.5);
 //
@@ -23,8 +28,14 @@
 //#define SIMUL_BEAM_E_RESOL     0.00863   // [0-1] 0.863% energy sigma, fwhm=200 keV @ 9.845MeV
 //#define SIMUL_BEAM_E_RESOL     0.0107    // [0-1] 1.107% energy sigma, fwhm=300 keV @ 11.5MeV
 //#define SIMUL_BEAM_E_RESOL     0.0148    // [0-1] 1.480% energy sigma, fwhm=400 keV @ 11.5MeV
+//#define SIMUL_BEAM_E_RESOL     0.01732   // [0-1] 1.732% energy sigma=150keV, fwhm=353keV @ 8.66 MeV
+//#define SIMUL_BEAM_E_RESOL     0.01569   // [0-1] 1.569% energy sigma=150keV, fwhm=353keV @ 9.56 MeV
+//#define SIMUL_BEAM_E_RESOL     0.01524   // [0-1] 1.524% energy sigma=150keV, fwhm=353keV @ 9.845 MeV
+//#define SIMUL_BEAM_E_RESOL     0.01220   // [0-1] 1.122% energy sigma=150keV, fwhm=353keV @ 12.3 MeV
+//#define SIMUL_BEAM_E_RESOL     0.01145   // [0-1] 1.145% energy sigma=150keV, fwhm=353keV @ 13.1 MeV
 //#define SIMUL_BEAM_E_RESOL     0.01440   // [0-1] 1.440% energy sigma, fwhm=300 keV @ 8.86MeV
-#define SIMUL_FIXED_VERTEX_FLAG  false     // false=vertex smeared along beam, true=point-like vertex
+//#define SIMUL_BEAM_E_RESOL     0.01137   // [0-1] 1.137% energy sigma, fwhm=350 keV @ 13.1MeV
+#define SIMUL_FIXED_VERTEX_FLAG  false     // false=vertex smeared along the beam axis, true=point-like vertex
 #define SIMUL_FIXED_VERTEX_XDET  -0.433035 // [mm] true X_DET position in case of non-smeared vertex
 #define SIMUL_FIXED_VERTEX_YDET  -0.750000 // [mm] true Y_DET position in case of non-smeared vertex
 #define SIMUL_FIXED_VERTEX_ZDET  0.0       // [mm] true Z_DET position in case of non-smeared vertex
@@ -54,7 +65,7 @@
 //#define SIMUL_OXYGEN_E1E2_PHI12  54./180.*TMath::Pi() // [rad] E1/E2 mixing phase
 #define SIMUL_POLARISATION_FLAG  true      // use unpolarised or partially polarized beam?
 #define SIMUL_POLARISATION_FRAC  0.33      // [0-1] degree of linear polarization of gamma beam
-#define SIMUL_POLARISATION_ANGLE -45./180.*TMath::Pi()  // [rad] polarization plane (CKW wrt horizontal axis)
+#define SIMUL_POLARISATION_ANGLE (90.+45.)/180.*TMath::Pi()  // [rad] polarization plane (CKW wrt horizontal axis)
 #define SIMUL_EXTENSION_FLAG     false     // allow verticies created outside of active volume?
 #define SIMUL_EXTENSION_ZONE     100.0     // [mm] extension zone for the verticies
 #define SIMUL_PLOT3D_FLAG        false     // create 3D debug plot with all tracks?

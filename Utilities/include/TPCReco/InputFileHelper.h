@@ -43,7 +43,7 @@ void discoverFiles(RunIdParser::time_point timePoint, unsigned long fileId,
     }
     try {
       auto id = RunIdParser(path.string());
-      if (id.isClose(timePoint, delay) && id.AsAdId() >= 0 &&
+      if (id.isClose(timePoint, delay) && /*id.AsAdId() >= 0 &&*/ // accept syntax: CoBo_ALL_AsAd_ALL_YYYY-MM-DD[...] and CoBo_YYYY-MM-DD[...]
           id.fileId() == fileId) {
         (*output) = path.string();
         ++output;

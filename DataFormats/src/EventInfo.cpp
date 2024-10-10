@@ -17,12 +17,11 @@ void eventraw::EventInfo::reset(){
 ////////////////////////////////////////////////
 std::ostream& eventraw::operator<<(std::ostream& os, const eventraw::EventInfo& einfo) {
   os << "EventInfo: "
-     <<" event id=" << einfo.GetEventId()
-     <<"timestamps"
-     <<" run: "<<einfo.GetRunId()
-     <<" event:" << einfo.GetEventTimestamp()
-     <<" type: "<<einfo.GetEventType().to_string()
-     <<" pedestal subtracted? "<<einfo.GetPedestalSubtracted();
+     <<" event_id=" << einfo.GetEventId()
+     <<" run_id=" << einfo.GetRunId()
+     <<" timestamp=" << einfo.GetEventTimestamp()
+     <<" type_bits=" << einfo.GetEventType().to_string()
+     <<" pedestal_subtracted=" << einfo.GetPedestalSubtracted();
   return os;
 }
 namespace tpcreco {

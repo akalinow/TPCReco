@@ -14,7 +14,8 @@ enum class scale_type{
 enum class filter_type{
 		 none,
 		 threshold,
-		 island
+		 island,
+		 fraction
 };
 
 namespace definitions {
@@ -34,6 +35,16 @@ enum  projection_type{
 };
 } //namespace definitions
 
+enum class event_type {
+	EventSourceROOT,
+	EventSourceMC,
+	EventSourceGRAW,
+	EventSourceMultiGRAW
+};
+
+std::ostream& operator<<(std::ostream& os, const event_type& et);
+std::istream& operator>>(std::istream& is, event_type& et);
+
 definitions::projection_type get2DProjectionType(int aStrip_dir);
 definitions::projection_type get2DProjectionType(definitions::projection_type aStrip_dir);
 
@@ -41,28 +52,30 @@ definitions::projection_type get1DProjectionType(int aStrip_dir);
 definitions::projection_type get1DProjectionType(definitions::projection_type aStrip_dir);
 
 enum pid_type{
-  UNKNOWN=0,        //           <-- for backward compatibilty with data analyzed before 20 May 2022
-  ALPHA=1,          // Helium-4  <-- for backward compatibilty with data analyzed before 20 May 2022
-  CARBON_12=2,      // Carbon-12 <-- for backward compatibilty with data analyzed before 20 May 2022
-  CARBON_14=3,      // Carbon-14 <-- for backward compatibilty with data analyzed before 20 May 2022
-  C12_ALPHA=4,      //           <-- for backward compatibilty with data analyzed before 20 May 2022
-  PROTON,           // Hydrogen
-  CARBON_13,        // Carbon-13
-  NITROGEN_15,      // Nitrogen-15
-  OXYGEN_16,        // Oxygen-16
-  OXYGEN_17,        // Oxygen-17
-  OXYGEN_18,        // Oxygen-18
-  HELIUM_4=ALPHA,   // alias
-  C_12=CARBON_12,   // alias
-  C_13=CARBON_13,   // alias
-  C_14=CARBON_14,   // alias
-  N_15=NITROGEN_15, // alias
-  O_16=OXYGEN_16,   // alias
-  O_17=OXYGEN_17,   // alias
-  O_18=OXYGEN_18,   // alias
-  THREE_ALPHA,      //
-  PID_MIN=ALPHA,    // alias
-  PID_MAX=OXYGEN_18 // alias
+  UNKNOWN=0,          //           <-- for backward compatibilty with data analyzed before 20 May 2022
+  ALPHA=1,            // Helium-4  <-- for backward compatibilty with data analyzed before 20 May 2022
+  CARBON_12=2,        // Carbon-12 <-- for backward compatibilty with data analyzed before 20 May 2022
+  CARBON_14=3,        // Carbon-14 <-- for backward compatibilty with data analyzed before 20 May 2022
+  C12_ALPHA=4,        //           <-- for backward compatibilty with data analyzed before 20 May 2022
+  PROTON,             // Hydrogen
+  CARBON_13,          // Carbon-13
+  NITROGEN_15,        // Nitrogen-15
+  OXYGEN_16,          // Oxygen-16
+  OXYGEN_17,          // Oxygen-17
+  OXYGEN_18,          // Oxygen-18
+  BERYLLIUM_8,        // Beryllium-8
+  HELIUM_4=ALPHA,     // alias
+  C_12=CARBON_12,     // alias
+  C_13=CARBON_13,     // alias
+  C_14=CARBON_14,     // alias
+  N_15=NITROGEN_15,   // alias
+  O_16=OXYGEN_16,     // alias
+  O_17=OXYGEN_17,     // alias
+  O_18=OXYGEN_18,     // alias
+  BE_8=BERYLLIUM_8,   // alias
+  THREE_ALPHA,        //
+  PID_MIN=ALPHA,      // alias
+  PID_MAX=BERYLLIUM_8 // alias
 };
 
 enum gas_mixture_type{
@@ -91,5 +104,13 @@ namespace enumDict {
     reaction_type GetReactionType(const std::string &reactionName);
     std::string GetReactionName(reaction_type type);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+#define _endl_ " (" << __FILE__ << "; " << __LINE__ << ")\n"
+#define checkpoint std::cout << "checkpoint" << _endl_
+
+
 
 #endif

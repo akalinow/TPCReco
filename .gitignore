@@ -52,3 +52,5 @@ Makefile
 # Data
 ###################
 *.graw
+/.vs
+/CMakeSettings.json

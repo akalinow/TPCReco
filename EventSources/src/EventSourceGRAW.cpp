@@ -1,3 +1,5 @@
+#ifdef WITH_GET
+
 #include <cstdlib>
 #include <iostream>
 #include <ostream>
@@ -29,11 +31,6 @@ EventSourceGRAW::EventSourceGRAW(const std::string & geometryFileName) {
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 EventSourceGRAW::~EventSourceGRAW() {}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void EventSourceGRAW::setRemovePedestal(bool aFlag){
-  removePedestal = aFlag;
-}
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::shared_ptr<EventTPC> EventSourceGRAW::getNextEvent(){
@@ -450,6 +447,9 @@ void EventSourceGRAW::configurePedestal(const boost::property_tree::ptree &confi
       (this->myPedestalCalculator.*setter)(config.get<int>(parameter));
     }
   };
+  
+  removePedestal = config.get<bool>("remove");
+  
   parser("minPedestalCell", &PedestalCalculator::SetMinPedestalCell);
   parser("maxPedestalCell", &PedestalCalculator::SetMaxPedestalCell);
   parser("minSignalCell", &PedestalCalculator::SetMinSignalCell);
@@ -480,3 +480,4 @@ std::string EventSourceGRAW::getNextFilePath(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+#endif

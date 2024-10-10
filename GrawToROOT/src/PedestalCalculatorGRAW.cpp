@@ -108,7 +108,7 @@ void PedestalCalculatorGRAW::ProcessDataFrame(const GET::GDataFrame &dataFrame, 
   //  std::cout << __FUNCTION__ << " - START, calculateMean=" << calculateMean
   //	    << std::endl << std::flush;
   /////// DEBUG
-
+  
   double rawVal = 0, corrVal = 0;
   int  COBO_idx = dataFrame.fHeader.fCoboIdx;
   int  ASAD_idx = dataFrame.fHeader.fAsadIdx;

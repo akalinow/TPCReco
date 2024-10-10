@@ -33,7 +33,6 @@ def analyzeDataInDirectory(dataPath, geometryFile, procName):
     procCount = 1
 
     runDataList = getCSVinputList(dataPath)
-
     for runId, fileCSV in runDataList.items():
         waintUnitilProcCount(procName, procCount)
         analyzeSingleBatch(runId, fileCSV, geometryFile, command)

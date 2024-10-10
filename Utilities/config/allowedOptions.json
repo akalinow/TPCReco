@@ -1,0 +1,254 @@
+{
+    "configJson":{
+        "group":"meta",
+        "type" : "vector<string>",
+        "defaultValue" : "",
+        "description" : "JSON file(s) with application configuration.\nParameters values from json file are overwritten by values provided at command line.\nType: vector<string>"
+    },
+    "configDumpJson":{
+        "group":"meta",
+        "type" : "string",
+        "defaultValue" : "configDump.json",
+        "description" : "Name of the JSON file used for configuration dump\nType: string"
+    },
+    "dataFile":{
+        "group": "input",
+        "type": "string",
+        "defaultValue": "",
+        "description": "Comma separated list of input files.\nType: string"
+    },
+    "treeName":{
+        "group": "input",
+        "type": "string",
+        "defaultValue": "TPCData",
+        "description": "Name of a TTree containing event data, read by EventSourceROOT. \nType: string"
+    },
+    "readNEvents":{
+        "group": "input",
+        "type": "int",
+        "defaultValue": -1,
+        "description": "Number of events to read from input file; -1 means all events. \nType: int"
+    },
+    "geometryFile":{
+        "group": "input",
+        "type": "string",
+        "defaultValue": "",
+        "description": "Geometry file location.\nType: string"
+    },
+    "resourcesPath":{
+        "group": "input",
+        "type": "string",
+        "defaultValue": "./",
+        "description" : "Global path to the resources directory.\nType: string"
+    },
+    "frameLoadRange":{
+        "group": "input",
+        "type": "int",
+        "defaultValue": 100,
+        "description": "Number of GRAW frames searched for ASAD fragments for given event.\nType: int"
+    },
+    "singleAsadGrawFile":{
+        "group": "input",
+        "type": "bool",
+        "defaultValue": true,
+        "description": "Switch defining whether there is a single input file per ASAD.\nType: bool"
+    },
+    "updateInterval":{
+        "group": "online",
+        "type": "int",
+        "defaultValue": 3000,
+        "description": "GUI update interval in online mode. Units are [milliseconds].\nType: int"
+    },
+    "zLogScale":{
+        "group": "display",
+        "type": "bool",
+        "defaultValue": false,
+        "description" : "Z axis mode for 2D charge display.\nType: bool"
+    },
+    "autoZoom":{
+        "group" : "display",
+        "type": "bool",
+        "defaultValue": false,
+        "description": "Switch for automatic zoom in on charge deposit in 2D charge display.\nType: bool"
+    },
+    "recoMode":{
+        "group": "display",
+        "type" : "bool",
+        "defaultValue": false,
+        "description": "Switch for enabling manual track reconstruction in GUI mode.\n Reconstructed tracks are saved into a file.\nType: bool"
+    },
+    "develMode":{
+        "group": "display",
+        "type" : "bool",
+        "defaultValue": false,
+        "description": "Switch for enabling developer set of histograms in GUI / makeTrackTree reconstruction mode.\nType: bool"
+    },
+    "technicalMode":{
+        "group": "display",
+        "type" : "bool",
+        "defaultValue": false,
+        "description": "Switch for enabling detector-specific technical set of histograms in GUI mode.\nType: bool"
+    },
+    "remove":{
+        "group": "pedestal",
+        "type": "bool",
+        "defaultValue": true,
+        "description": "Switch controlling pedestal removal.\nType: bool"
+    },
+    "minPedestalCell":{
+        "group": "pedestal",
+        "type": "int",
+        "defaultValue": 5,
+        "description": "Pedestal time cell range - minimal value.\nType: int"
+    },
+    "maxPedestalCell":{
+        "group": "pedestal",
+        "type": "int",
+        "defaultValue": 25,
+        "description": "Pedestal time cell range - maximal value.\nType: int"
+    },
+    "minSignalCell":{
+        "group": "pedestal",
+        "type": "int",
+        "defaultValue": 5,
+        "description": "Signal time cell range - minimal value.\nType: int"
+    },
+    "maxSignalCell":{
+        "group": "pedestal",
+        "type": "int",
+        "defaultValue": 506,
+        "description": "Signal time cell range - maximal value.\nType: int"
+    },
+    "recoClusterEnable":{
+        "group": "hitFilter",
+        "type" : "bool",
+        "defaultValue": false,
+        "description": "Switch for enabling hit clustering in 2D charge maps in GUI / makeTrackTree reconstruction mode.\nType: bool"
+    },
+    "recoClusterThreshold":{
+        "group": "hitFilter",
+        "type" : "float",
+        "defaultValue": 35.0,
+        "description": "Charge threshold above pedestal for reco 2D cluster seed hits.\nType: float"
+    },
+    "recoClusterConstantFractionThreshold":{
+        "group": "hitFilter",
+        "type" : "float",
+        "defaultValue": 0.1,
+        "description": "Charge threshold above pedestal as fraction of maximal signal for reco 2D cluster seed hits.\nType: float"
+    },
+    "recoClusterDeltaStrips":{
+        "group": "hitFilter",
+        "type" : "int",
+        "defaultValue": 2,
+        "description": "Strip range of hits added to cluster around seed hits passing threshold value.\nType: int"
+    },
+    "recoClusterDeltaTimeCells":{
+        "group": "hitFilter",
+        "type" : "int",
+        "defaultValue": 5,
+        "description": "Time bin range of hits added to cluster around seed hits passing threshold value.\nType: int"
+    },   
+    "enabled":{
+        "group": "eventFilter",
+        "type" : "bool",
+        "defaultValue": false,
+        "description": "Flag enabling event filtering.\nType: bool"
+    },  
+    "maxChargeUpperBound":{
+        "group": "eventFilter",
+        "type" : "float",
+        "defaultValue": 99999.0,
+        "description": "Upper charge threshold to accept an event.\nType: float"
+    }, 
+    "minChargeUpperBound":{
+        "group": "eventFilter",
+        "type" : "float",
+        "defaultValue": 0.0,
+        "description": "Lower charge threshold to accept an event.\nType: float"
+    }, 
+    "totalChargeLowerBound":{
+        "group": "eventFilter",
+        "type" : "float",
+        "defaultValue": 0.0,
+        "description": "Lower threshold on total charge sum to accept an event.\nType: float"
+    }, 
+    "totalChargeUpperBound":{
+        "group": "eventFilter",
+        "type" : "float",
+        "defaultValue": 99999.0,
+        "description": "Upper threshold on total charge sum to accept an event.\nType: float"
+    }, 
+    "events":{
+        "group": "eventFilter",
+        "type" : "vector<unsigned int>",
+        "defaultValue": [ ],
+        "description": "NOT IMPLEMENTED. Event numbers list.\nType: vector<unsigned int>"
+    }, 
+    "pressure":{
+        "group": "conditions",
+        "type" : "float",
+        "defaultValue": 190.0,
+        "description": "Gas pressure in chamber [mbar]=[hPa]. \nType: float"
+    }, 
+    "samplingRate":{
+        "group": "conditions",
+        "type" : "float",
+        "defaultValue": 25.0,
+        "description": "Signal sampling rate [MHz]. \nType: float"
+    }, 
+    "temperature":{
+        "group": "conditions",
+        "type" : "float",
+        "defaultValue": 293.15,
+        "description": "Gas temperature in chamber [K].\nType: float"
+    }, 
+    "driftV":{
+        "group": "conditions",
+        "type" : "float",
+        "defaultValue": 0.646,
+        "description": "Drift velocity [cm/us].\nType: float"
+    }, 
+    "energy":{
+        "group":"beamParameters",
+        "type" : "float",
+        "defaultValue" : 0.0,
+        "description" : "LAB gamma beam energy [MeV].\nType: float"
+    },
+    "input":{
+        "group":"recoDiff",
+        "type" : "string",
+        "defaultValue" : "",
+        "description" : "Input ROOT file with TPCRecoData tree for recoEventsDiff analysis.\nType: string"
+    },
+    "reference":{
+        "group":"recoDiff",
+        "type" : "string",
+        "defaultValue" : "",
+        "description" : "Reference ROOT file with TPCRecoData tree for recoEventsDiff analysis.\nType: string"
+    },
+    "no-type":{
+        "group":"recoDiff",
+        "type" : "bool",
+        "defaultValue" : false,
+        "description" : "Flag to skip comparing event type in TPCRecoData trees used for recoEventsDiff analysis.\nType: bool"
+    },
+    "no-segments":{
+        "group":"recoDiff",
+        "type" : "bool",
+        "defaultValue" : false,
+        "description" : "Flag to skip comparing number of segments in TPCRecoData trees used for recoEventsDiff analysis.\nType: bool"
+    },
+    "no-presence":{
+        "group":"recoDiff",
+        "type" : "bool",
+        "defaultValue" : false,
+        "description" : "Flag to skip printing extra- and missing events in TPCRecoData trees used for recoEventsDiff analysis.\nType: bool"
+    },
+    "no-info":{
+        "group":"recoDiff",
+        "type" : "bool",
+        "defaultValue" : false,
+        "description" : "Flag to skip printing file- and tree info on every line in recoEventsDiff analysis.\nType: bool"
+    }
+}

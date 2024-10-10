@@ -1,6 +1,8 @@
 #ifndef _EventSourceGRAW_H_
 #define _EventSourceGRAW_H_
 
+#ifdef WITH_GET
+
 #include <map>
 #include <set>
 
@@ -22,8 +24,6 @@ public:
   EventSourceGRAW(const std::string & geometryFileName);
   
   ~EventSourceGRAW();
-
-  void setRemovePedestal(bool aFlag);
 
   void configurePedestal(const boost::property_tree::ptree &config);
 
@@ -95,5 +95,6 @@ protected: // needed for EventSourceMultiGRAW
   EventType fillEventType{EventType::tpc};
 
 };
+#endif
 #endif
 

@@ -117,6 +117,31 @@ double IonRangeCalculator::getGasTemperature() { return myGasTemperature; } // t
 std::tuple<gas_mixture_type, double, double> IonRangeCalculator::getGasConditions(){ // output: GAS index, pressure [mbar], temperature [K]
   return std::tuple<gas_mixture_type, double, double>(myGasMixture, myGasPressure, myGasTemperature);
 }
+
+////////////////////////////////////////////////
+////////////////////////////////////////////////
+double IonRangeCalculator::getGasRangeReferencePressure(pid_type ion) { // get reference pressure used to calculate Range(E_kin) curve for a given ion and the current gas mixture
+  // sanity checks
+  auto it=refGasRangeCurveMap.find(std::make_tuple(myGasMixture, ion));
+  if(it==refGasRangeCurveMap.end()) {
+    std::cerr<<__FUNCTION__<<": ERROR: Reference range/energy curve is missing for: gas index="<<myGasMixture<<", ion="<<ion<<"!"<<std::endl;
+    exit(-1);
+  }
+  return refGasRangePressureMap[it->first];
+}
+
+////////////////////////////////////////////////
+////////////////////////////////////////////////
+double IonRangeCalculator::getGasRangeReferenceTemperature(pid_type ion) { // get reference temperature used to calculate Range(E_kin) curve for a given ion and the current gas mixture
+  // sanity checks
+  auto it=refGasRangeCurveMap.find(std::make_tuple(myGasMixture, ion));
+  if(it==refGasRangeCurveMap.end()) {
+    std::cerr<<__FUNCTION__<<": ERROR: Reference range/energy curve is missing for: gas index="<<myGasMixture<<", ion="<<ion<<"!"<<std::endl;
+    exit(-1);
+  }
+  return refGasRangeTemperatureMap[it->first];
+}
+
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 double IonRangeCalculator::getIonRangeMM(pid_type ion, double E_MeV){ // interpolated result in [mm] for current {gas, p, T}
@@ -473,7 +498,7 @@ void IonRangeCalculator::resetEffectiveLengthCorrection(pid_type ion){
 ////////////////////////////////////////////////
 void IonRangeCalculator::resetEffectiveLengthCorrections(){
 
-  effectiveLengthCorrectionMap.empty();
+  effectiveLengthCorrectionMap.clear();
 
   // DEBUG
   if(_debug) {

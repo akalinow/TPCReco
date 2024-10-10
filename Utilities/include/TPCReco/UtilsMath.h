@@ -51,6 +51,9 @@ namespace Utils {
 			     TVector3 basepoint, TVector3 span1, TVector3 span2,
 			     TVector3 &point, double &t1, double &t2);
 
+  // calculates signed distance of 2D point from 2D infinite line
+  double signedDistancePointLine(TVector2 offset, TVector2 tangent, TVector2 point);
+
   // calculates distance of 2D point from 2D infinite line
   double distancePointLine(TVector2 offset, TVector2 tangent, TVector2 point);
 

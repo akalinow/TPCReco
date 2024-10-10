@@ -25,6 +25,7 @@
 #include "TPCReco/Track3D.h"
 #include "TPCReco/HIGGS_analysis.h"
 #include "TPCReco/HIGS_trees_analysis.h"
+#include "TPCReco/ConfigManager.h"
 #include "TPCReco/colorText.h"
 
 enum class BeamDirection{
@@ -80,74 +81,31 @@ std::ostream& operator<<(std::ostream& out, BeamDirection const &direction){
   return out;
 }
 
-boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
-
-  //  bool optionTree=true;
-  boost::program_options::options_description cmdLineOptDesc("Allowed options");
-  cmdLineOptDesc.add_options()
-    ("help", "produce help message")
-    ("geometryFile",  boost::program_options::value<std::string>()->required(), "string - path to the geometry file")
-    ("dataFile",  boost::program_options::value<std::string>()->required(), "string - path to the RECO data file")
-    ("pressure", boost::program_options::value<float>()->required(), "float - CO2 pressure [mbar]")
-    ("temperature", boost::program_options::value<float>()->default_value(273.15+20), "(option) float - CO2 temperature [K], default=293.15K (20 C)")
-    ("beamEnergy", boost::program_options::value<float>()->required(), "float - LAB gamma beam energy [MeV]")
-    ("beamDir", boost::program_options::value<BeamDirection>()->required(), "string - LAB gamma beam direction [\"x\" xor \"-x\"]")
-    ("beamOffset", boost::program_options::value<float>()->default_value(0.0), "(option) float - LAB offset in Y_DET [mm] of actual beam line: Y_DET=slope*X_DET+offset, default=0 mm")
-    ("beamSlope", boost::program_options::value<float>()->default_value(0.0), "(option) float - LAB slope (dY/dX)_DET of actual beam line: Y_DET=slope*X_DET+offset, default=0")
-    ("beamDiameter", boost::program_options::value<float>()->default_value(12.0), "(option) float - LAB beam spot diameter [mm] used by event quality cuts, default=12 mm")
-    ("alphaMinCut", boost::program_options::value<float>()->default_value(0.0), "(option) float - minimal allowed ALPHA track length [mm] for selecting O-16 candidates, default=0 mm")
-    ("alphaMaxCut", boost::program_options::value<float>()->default_value(300.0), "(option) float - maximal allowed ALPHA track length [mm] for selecting O-16 candidates, default=300 mm")
-    ("carbonMinCut", boost::program_options::value<float>()->default_value(0.0), "(option) float - minimal allowed C-12 track length [mm] for selecting O-16 candidates, default=0 mm")
-    ("carbonMaxCut", boost::program_options::value<float>()->default_value(300.0), "(option) float - maximal allowed C-12 track length [mm] for selecting O-16 candidates, default=300 mm")
-    ("alphaScaleCorr", boost::program_options::value<float>()->default_value(1.0), "(option) float - scaling factor for effective correction of ALPHA track length, default=1")
-    ("alphaOffsetCorr", boost::program_options::value<float>()->default_value(0.0), "(option) float - offset [mm] for effective correction of ALPHA track length, default=0 mm")
-    ("carbonScaleCorr", boost::program_options::value<float>()->default_value(1.0), "(option) float - scaling factor for effective correction of C-12 track length, default=1")
-    ("carbonOffsetCorr", boost::program_options::value<float>()->default_value(0.0), "(option) float - offset [mm] for effective correction of C-12 track lenght, default=0 mm")
-    ("noTree", boost::program_options::bool_switch()->default_value(false), "(option) bool - flag to skip creating additional TTree for 1,2,3-prongs, default=false ")
-    ("nominalBoost", boost::program_options::bool_switch()->default_value(false), "(option) bool - flag to use nominal beam energy for LAB<->CMS boost, default=false ");
-  
-  boost::program_options::variables_map varMap;  
-
-  try {     
-    boost::program_options::store(boost::program_options::parse_command_line(argc, argv, cmdLineOptDesc), varMap);
-    if (varMap.count("help")) {
-      std::cout << "recoEventAnalysis" << "\n\n";
-      std::cout << cmdLineOptDesc << std::endl;
-      exit(1);
-    }
-    boost::program_options::notify(varMap);
-  } catch (const std::exception &e) {
-    std::cerr << e.what() << '\n';
-    std::cout << cmdLineOptDesc << std::endl;
-    exit(1);
-  }
-
-  return varMap;
-}
 /////////////////////////////////////
 /////////////////////////////////////
 int main(int argc, char **argv){
-
-  auto varMap = parseCmdLineArgs(argc, argv);
-  auto geometryFileName = varMap["geometryFile"].as<std::string>();
-  auto dataFileName = varMap["dataFile"].as<std::string>();
-  auto beamEnergy = varMap["beamEnergy"].as<float>();
-  auto pressure = varMap["pressure"].as<float>();
-  auto temperature = varMap["temperature"].as<float>();
-  auto makeTreeFlag = !varMap["noTree"].as<bool>();
-  auto nominalBoostFlag = varMap["nominalBoost"].as<bool>();
-  auto beamOffset = varMap["beamOffset"].as<float>();
-  auto beamSlope = varMap["beamSlope"].as<float>();
-  auto beamDiameter = varMap["beamDiameter"].as<float>();
-  auto beamDir = varMap["beamDir"].as<BeamDirection>();
-  auto alphaMinCut = varMap["alphaMinCut"].as<float>();
-  auto alphaMaxCut = varMap["alphaMaxCut"].as<float>();
-  auto carbonMinCut = varMap["carbonMinCut"].as<float>();
-  auto carbonMaxCut = varMap["carbonMaxCut"].as<float>();
-  auto alphaScaleCorr = varMap["alphaScaleCorr"].as<float>();
-  auto alphaOffsetCorr = varMap["alphaOffsetCorr"].as<float>();
-  auto carbonScaleCorr = varMap["carbonScaleCorr"].as<float>();
-  auto carbonOffsetCorr = varMap["carbonOffsetCorr"].as<float>();
+  ConfigManager cm;
+  boost::property_tree::ptree tree = cm.getConfig(argc, argv);
+  auto geometryFileName = tree.get<std::string>("geometryFile");
+  auto dataFileName =tree.get<std::string>("dataFile");
+  auto beamEnergy = tree.get<int>("beamEnergy");
+  auto pressure = tree.get<float>("pressure");
+  auto makeTreeFlag = !tree.get<bool>("noTree");
+  
+  auto temperature = tree.get<float>("temperature");
+  auto nominalBoostFlag = tree.get<bool>("nominalBoost");
+  auto beamOffset = tree.get<float>("beamOffset");
+  auto beamSlope = tree.get<float>("beamSlope");
+  auto beamDiameter = tree.get<float>("beamDiameter");
+  auto beamDir = tree.get<BeamDirection>("beamDir");
+  auto alphaMinCut = tree.get<float>("alphaMinCut");
+  auto alphaMaxCut = tree.get<float>("alphaMaxCut");
+  auto carbonMinCut = tree.get<float>("carbonMinCut");
+  auto carbonMaxCut = tree.get<float>("carbonMaxCut");
+  auto alphaScaleCorr = tree.get<float>("alphaScaleCorr");
+  auto alphaOffsetCorr = tree.get<float>("alphaOffsetCorr");
+  auto carbonScaleCorr = tree.get<float>("carbonScaleCorr");
+  auto carbonOffsetCorr = tree.get<float>("carbonOffsetCorr");
 
   analyzeRecoEvents(geometryFileName, dataFileName, beamEnergy, beamDir, beamOffset, beamSlope, beamDiameter, pressure, temperature,
 		    makeTreeFlag, nominalBoostFlag,
@@ -338,7 +296,8 @@ int analyzeRecoEvents(const  std::string & geometryFileName,
       continue;
     }
 
-    myAnalysis.fillHistos(aTrack);
+    static bool isFirst=false;
+    myAnalysis.fillHistos(aTrack, aEventInfo, isFirst);
     if(makeTreeFlag) myTreesAnalysis->fillTrees(aTrack, aEventInfo);
   }
 

@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <map>
 #include <memory>
+#include <cassert>
 /////// DEBUG
 #include <iostream> // for DEBUG std::cout
 /////// DEBUG
@@ -22,20 +23,27 @@ struct NonEmpty {
 using Cut1 = NonEmpty;
 
 // cut: XY plane : vertex position per event, corrected for beam tilt
-struct VertexPosition {
-  const double beamOffset = 0.;
-  const double beamSlope = 0.;
-  const double beamDiameter = 0.;
+// NOTE: Initialization via constructor is necessary for ROOT macros
+class VertexPosition {
+public:
+  VertexPosition(double beamOffset=0., double beamSlope=0., double beamDiameter=0.)
+    : beamOffset(beamOffset), beamSlope(beamSlope), beamDiameter(beamDiameter) { }
   template <class Track> bool operator()(Track *track) {
     auto vertexPos = track->getSegments().front().getStart();
     return std::abs(vertexPos.Y() - (beamOffset + beamSlope * vertexPos.X())) <=
            0.5 * beamDiameter;
   }
+
+private:
+  double beamOffset = 0.; // mm
+  double beamSlope = 0.;
+  double beamDiameter = 0.; // mm
 };
 using Cut2 = VertexPosition;
 
 // cut: XY plane : minimal distance to the border of UVW active area
 // - less strict than simple XY rectangular cut, allows to gain some statistics
+// NOTE: Initialization via constructor is necessary for ROOT macros
 class DistanceToBorder {
 public:
   template <class Geometry>
@@ -45,8 +53,13 @@ public:
   }
   template <class Track> bool operator()(Track *track) {
     const auto &segments = track->getSegments();
+#ifdef __CINT__
     return std::all_of(std::cbegin(segments), std::cend(segments),
                        [this](const auto &segment) {
+#else
+    return std::all_of(segments.cbegin(), segments.cend(),                   // FIX for ROOT macros
+                       [this](const decltype(*segments.cbegin()) &segment) { // FIX for ROOT macros
+#endif
                          return this->isInside(segment.getStart()) &&
                                 this->isInside(segment.getEnd());
                        });
@@ -59,15 +72,20 @@ private:
 using Cut3 = DistanceToBorder;
 
 // cut: XY plane : rectangular cut per track
-struct RectangularCut {
-  const double minX;
-  const double maxX;
-  const double minY;
-  const double maxY;
+// NOTE: Initialization via constructor is necessary for ROOT macros
+class RectangularCut {
+public:
+  RectangularCut(double minX, double maxX, double minY, double maxY)
+      : minX(minX), maxX(maxX), minY(minY), maxY(maxY) { }
   template <class Track> bool operator()(Track *track) {
     const auto &segments = track->getSegments();
+#ifdef __CINT__
     return std::all_of(std::cbegin(segments), std::cend(segments),
                        [this](const auto &segment) {
+#else
+    return std::all_of(segments.cbegin(), segments.cend(),                   // FIX for ROOT macros
+                       [this](const decltype(*segments.cbegin()) &segment) { // FIX for ROOT macros
+#endif
                          auto start = segment.getStart();
                          auto stop = segment.getEnd();
                          return start.X() < maxX && start.X() > minX &&
@@ -76,6 +94,12 @@ struct RectangularCut {
                                 stop.Y() < maxY && stop.Y() > minY;
                        });
   }
+
+private:
+  double minX; // mm
+  double maxX; // mm
+  double minY; // mm
+  double maxY; // mm
 };
 using Cut3a = RectangularCut;
 
@@ -84,6 +108,7 @@ using Cut3a = RectangularCut;
 // - tracks do not overlap with pedestal exclusion zone, begin of history
 // buffer
 // - tracks not too close to end of history buffer
+// NOTE: Initialization via constructor is necessary for ROOT macros
 class GlobalZSpan {
 public:
   template <class Geometry>
@@ -129,9 +154,9 @@ private:
   bool isInsideMargins(double z) const noexcept {
     return z > lowerMargin && z < upperMargin;
   }
-  double lowerMargin;
-  double upperMargin;
-  double lengthLimit;
+  double lowerMargin; // mm
+  double upperMargin; // mm
+  double lengthLimit; // mm
 };
 using Cut4 = GlobalZSpan;
 
@@ -141,6 +166,7 @@ using Cut4 = GlobalZSpan;
 // - ensures that 2,3-prong events hit neither the GEM plane nor the cathode
 // plane NOTE: does not protect against 1-prong events (eg. background)
 // originating from the GEM plane or the cathode plane
+// NOTE: Initialization via constructor is necessary for ROOT macros
 class VertexZSpan {
 public:
   template <class Geometry>
@@ -152,16 +178,21 @@ public:
   template <class Track> bool operator()(Track *track) {
     auto &segments = track->getSegments();
     auto vertexZ = segments.front().getStart().Z();
+#ifdef __CINT__
     return std::all_of(std::cbegin(segments), std::cend(segments),
                        [this, vertexZ](const auto &segment) {
+#else
+    return std::all_of(segments.cbegin(), segments.cend(),                            // FIX for ROOT macros
+                       [this, vertexZ](const decltype(*segments.cbegin()) &segment) { // FIX for ROOT macros
+#endif
                          return std::abs(segment.getEnd().Z() - vertexZ) <=
                                 0.5 * (driftCageLength - beamDiameter);
                        });
   }
 
 private:
-  double driftCageLength;
-  double beamDiameter;
+  double driftCageLength; // mm
+  double beamDiameter; // mm
 };
 using Cut5 = VertexZSpan;
 
@@ -178,20 +209,24 @@ using Cut5 = VertexZSpan;
 // to use results from automatic reconstruction for demonstration of cross
 // section measurement then those cuts must be taken into account as well
 // while correcting the rates!
-struct ReconstructionQuality2Prong {
-  const pid_type firstPID;
-  const pid_type secondPID;
-  const double chi2;
-  const double hypothesisChi2;
-  const double length;
-  const double charge;
+// NOTE: Initialization via constructor is necessary for ROOT macros
+class ReconstructionQuality2Prong {
+public:
+  ReconstructionQuality2Prong(pid_type firstPID, pid_type secondPID, double chi2,
+			      double hypothesisChi2, double length, double charge)
+      : firstPID(firstPID), secondPID(secondPID), chi2(chi2),
+        hypothesisChi2(hypothesisChi2), length(length), charge(charge) { }
   template <class Track> bool operator()(Track *track) {
     if (track->getSegments().size() != 2) {
       return true;
     }
     auto segments = track->getSegments();
     std::sort(segments.begin(), segments.end(),
+#ifdef __CINT__
               [](const auto &a, const auto &b) {
+#else
+	      [](const decltype(*std::begin(segments)) &a, const decltype(*std::begin(segments)) &b) { // FIX for ROOT macros
+#endif
                 return a.getLength() > b.getLength();
               });
     /////// DEBUG
@@ -211,6 +246,14 @@ struct ReconstructionQuality2Prong {
       //           track->getIntegratedCharge(track->getLength()) >= charge;
       ///// DEBUG
   }
+
+private:
+  pid_type firstPID;
+  pid_type secondPID;
+  double chi2;
+  double hypothesisChi2;
+  double length; // mm
+  double charge; // ADC units, after pedestal subtraction
 };
 using Cut6 = ReconstructionQuality2Prong;
 
@@ -218,22 +261,31 @@ using Cut6 = ReconstructionQuality2Prong;
 // - tracks are sorted by length (longest first)
 // - uncorrected length [mm] of the longest track must be within certain [min, max] range
 // - uncorrected length [mm] of the shortest track must be within certain [min, max] range
-// - optionally PIDs of the shortest and the longest track can be verifiesd as well (e.g. for automatic reconstruction)
-struct ReconstructionLengthCorrelation2Prong {
-  const bool enablePIDcheck;
-  const pid_type firstPID; // not used unless enablePIDcheck=true
-  const double firstLengthMin; // mm
-  const double firstLengthMax; // mm
-  const pid_type secondPID; // not used unless enablePIDcheck=true
-  const double secondLengthMin; // mm
-  const double secondLengthMax; // mm
+// - optionally PIDs of the shortest and the longest track can be verified as well (e.g. for automatic reconstruction)
+// NOTE: Initialization via constructor is necessary for ROOT macros
+class ReconstructionLengthCorrelation2Prong {
+public:
+  ReconstructionLengthCorrelation2Prong(bool enablePIDcheck, pid_type firstPID,
+					double firstLengthMin, double firstLengthMax,
+					pid_type secondPID, double secondLengthMin,
+					double secondLengthMax)
+      : enablePIDcheck(enablePIDcheck), firstPID(firstPID),
+        firstLengthMin(firstLengthMin), firstLengthMax(firstLengthMax),
+        secondPID(secondPID), secondLengthMin(secondLengthMin),
+        secondLengthMax(secondLengthMax) {
+    assert(firstLengthMin<firstLengthMax && secondLengthMin<secondLengthMax);
+  }
   template <class Track> bool operator()(Track *track) {
     if (track->getSegments().size() != 2) {
       return true;
     }
     auto segments = track->getSegments();
     std::sort(segments.begin(), segments.end(),
+#ifdef __CINT__
               [](const auto &a, const auto &b) {
+#else
+	      [](const decltype(*std::begin(segments)) &a, const decltype(*std::begin(segments)) &b) { // FIX for ROOT macros
+#endif
                 return a.getLength() > b.getLength();
               });
     return (!enablePIDcheck ||
@@ -245,9 +297,99 @@ struct ReconstructionLengthCorrelation2Prong {
       segments.back().getLength()>secondLengthMin &&
       segments.back().getLength()<secondLengthMax;
   }
+
+private:
+  bool enablePIDcheck;
+  pid_type firstPID; // not used unless enablePIDcheck=true
+  double firstLengthMin; // mm
+  double firstLengthMax; // mm
+  pid_type secondPID; // not used unless enablePIDcheck=true
+  double secondLengthMin; // mm
+  double secondLengthMax; // mm
 };
 
 using Cut7 = ReconstructionLengthCorrelation2Prong;
+
+// cut #8 : Additional selection cuts to identify multiploarity (e.g. E1,E2 polar angle distributions) of the leading particle track
+// in the LAB reference frame:
+// - tracks are sorted by length (longest first)
+// - for the leading track {X0,Y0} pair is calculated, where: X0=cos(theta_BEAM), Y0=uncorrected length [mm]
+// - such {X0,Y0} point must fulfill the condition:
+//     Y_MIN(X0) <= Y0 <= Y_MAX(X0)
+//   where the lower and upper limits of the inclined 2D band are defined, respectively, as:
+//     Y_MIN(X) = SLOPE[mm] * X + OFFSET_MIN[mm]
+//     Y_MAX(X) = SLOPE[mm] * X + OFFSET_MAX[mm]
+// - optionally PID of the longest track can be verified as well (e.g. for automatic reconstruction).
+// NOTE: Since cos(theta_BEAM) is unitless and has the range of [-1, 1] the leftmost and rightmost limits of accepted particle lengths
+//       are [OFFSET_MIN-SLOPE, OFFSET_MAX-SLOPE] and [OFFSET_MIN+SLOPE, OFFSET_MAX+SLOPE], respectively.
+// NOTE: Initialization via constructor is necessary for ROOT macros
+//
+class ReconstructionMultipolarityOfLeadingTrack {
+public:
+  ReconstructionMultipolarityOfLeadingTrack(bool enablePIDcheck, pid_type PID,
+					    double bandOffsetMin, double bandOffsetMax, double bandSlope,
+					    TVector3 beamDir_DET)
+    : enablePIDcheck(enablePIDcheck), PID(PID),
+      bandOffsetMin(bandOffsetMin), bandOffsetMax(bandOffsetMax), bandSlope(bandSlope),
+      beamDir_DET(beamDir_DET.Unit()) {
+    assert(bandOffsetMin<bandOffsetMax);
+  }
+  template <class Track> bool operator()(Track *track) {
+    if (!track->getSegments().size()) {
+      return false;
+    }
+    auto segments = track->getSegments();
+    std::sort(segments.begin(), segments.end(),
+#ifdef __CINT__
+              [](const auto &a, const auto &b) {
+#else
+	      [](const decltype(*std::begin(segments)) &a, const decltype(*std::begin(segments)) &b) { // FIX for ROOT macros
+#endif
+                return a.getLength() > b.getLength();
+              });
+    auto cosTheta_BEAM = segments.front().getTangent() * beamDir_DET; // cos of polar angle wrt beam axis
+    auto length = segments.front().getLength();
+    return (!enablePIDcheck ||
+	    (enablePIDcheck &&
+	     segments.front().getPID() == PID )) &&
+	    length >= bandSlope * cosTheta_BEAM + bandOffsetMin &&
+	    length <= bandSlope * cosTheta_BEAM + bandOffsetMax;
+  }
+
+private:
+  bool enablePIDcheck;
+  pid_type PID; // not used unless enablePIDcheck=true
+  double bandOffsetMin; // mm - offset of the allowed lower band (length at cos(theta_BEAM)=0)
+  double bandOffsetMax; // mm - offset of the allowed upper band (length at cos(theta_BEAM)=0)
+  double bandSlope; // mm / unit of cos(theta_BEAM) - slope of the allowed band
+  TVector3 beamDir_DET; // actual beam unit vector in DET coordinates (i.e. direction of photons)
+};
+
+using Cut8 = ReconstructionMultipolarityOfLeadingTrack;
+
+// ReconstructionNumberOfTracks:
+// Cut that accepts only events with exact number of tracks (constructor with 1 argument)
+// or events with number of tracks within specific [MIN, MAX] range (constructor with 2 arguments).
+//
+class ReconstructionNumberOfTracks {
+public:
+  ReconstructionNumberOfTracks(int minTrackNumber, int maxTrackNumber)
+    : minTrackNumber(minTrackNumber), maxTrackNumber(maxTrackNumber) {
+    assert(minTrackNumber<=maxTrackNumber);
+  }
+  ReconstructionNumberOfTracks(int exactTrackNumber)
+    : minTrackNumber(exactTrackNumber), maxTrackNumber(exactTrackNumber) { }
+  template <class Track> bool operator()(Track *track) {
+    return track->getSegments().size() >= minTrackNumber &&
+           track->getSegments().size() <= maxTrackNumber;
+  }
+
+private:
+  int minTrackNumber;
+  int maxTrackNumber;
+};
+
+using Cut9 = ReconstructionNumberOfTracks;
 
 } // namespace cuts
 } // namespace tpcreco

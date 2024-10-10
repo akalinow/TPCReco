@@ -9,7 +9,7 @@
 #include <TH1D.h>
 #include <TGraph.h>
 #include "TPCReco/CommonDefinitions.h"
-#include "IonProperties.h"
+#include "TPCReco/IonProperties.h"
 
 class IonRangeCalculator{
 
@@ -38,6 +38,10 @@ class IonRangeCalculator{
   double getGasPressure(); // get current gas pressure [mbar]
 
   double getGasTemperature(); // get current gas temperature [K]
+
+  double getGasRangeReferencePressure(pid_type ion); // get reference pressure used to calculate Range(E_kin) curve for a given ion and the current gas mixture
+
+  double getGasRangeReferenceTemperature(pid_type ion); // get reference temperature used to calculate Range(E_kin) curve for a given ion and the current gas mixture
 
   std::tuple<gas_mixture_type, double, double> getGasConditions(); // get current set of: GAS index, pressure [mbar], temperature [K]
 

@@ -40,8 +40,9 @@ void DirectoryWatch::watch(const std::string & dirName){
   int BUF_LEN =    ( MAX_EVENTS * ( EVENT_SIZE + LEN_NAME )); /*buffer to store the data of events*/  
   //#ifdef DEBUG
   //  uint32_t inotifyEventMask = IN_MODIFY | IN_ATTRIB; // MC : for test purpose ONLY with "touch" command line !!!!
+  uint32_t inotifyEventMask = IN_MODIFY | IN_CREATE | IN_ATTRIB; // MC : for test purpose ONLY with "touch" command line !!!!
   //#else
-  uint32_t inotifyEventMask = IN_MODIFY;
+  //  uint32_t inotifyEventMask = IN_MODIFY;
   //#endif
   
   int fileDescriptor = inotify_init();
