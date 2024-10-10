@@ -1,0 +1,9 @@
+@PACKAGE_INIT@
+
+include("${CMAKE_CURRENT_LIST_DIR}/TPCRecoTargets.cmake")
+include(CMakeFindDependencyMacro)
+check_required_components(TPCReco)
+find_package(Boost REQUIRED COMPONENTS filesystem date_time)
+find_package(ROOT 6.08 REQUIRED COMPONENTS Core Physics HistPainter RIO
+                                           GenVector Gui)
+include(${ROOT_USE_FILE})

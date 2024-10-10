@@ -3,27 +3,26 @@
 #include <string>
 #include <memory>
 
-#include "GeometryTPC.h"
-#include "EventRaw.h"
-#include "PedestalCalculator.h"
-#include "EventSourceGRAW.h"
-#include "SigClusterTPC.h"
+#include "TPCReco/GeometryTPC.h"
+#include "TPCReco/EventRaw.h"
+#include "TPCReco/PedestalCalculator.h"
+#include "TPCReco/EventSourceGRAW.h"
 
-#include "TFile.h"
-#include "TTree.h"
+#include <TFile.h>
+#include <TTree.h>
 
-#include "utl/Logging.h"
-#include "get/GDataSample.h"
-#include "get/GDataChannel.h"
-#include "get/GDataFrame.h"
-#include "get/TGrawFile.h"
-#include "mfm/FrameDictionary.h"
+#include <utl/Logging.h>
+#include <get/GDataSample.h>
+#include <get/GDataChannel.h>
+#include <get/GDataFrame.h>
+#include <get/TGrawFile.h>
+#include <mfm/FrameDictionary.h>
 
-#include "colorText.h"
+#include "TPCReco/colorText.h"
 
 #ifdef DEBUG
-#include "EventSourceROOT.h" // DEBUG - read back test
-#include "EventTPC.h" // DEBUG - read back test
+#include "TPCReco/EventSourceROOT.h" // DEBUG - read back test
+#include "TPCReco/EventTPC.h" // DEBUG - read back test
 #endif
 
 int main(int argc, char *argv[]) {
@@ -73,7 +72,7 @@ int main(int argc, char *argv[]) {
 
   auto myEventSource = std::make_shared<EventSourceGRAW>(geometryFileName);
   myEventSource->setFrameLoadRange(160);
-  myEventSource->setFillEventType(EventSourceBase::raw);
+  myEventSource->setFillEventType(EventType::raw);
   myEventSource->loadDataFile(dataFileName);
   std::cout << "File with " << myEventSource->numberOfEntries() << " frames opened." << std::endl;
   
@@ -108,7 +107,7 @@ int main(int argc, char *argv[]) {
     std::cout << "==== GrawToEventRaw X-CHECK: EventSourceGRAW EventID="
     	      << myEventSource->currentEventNumber()
     	      << ", EventRaw EventID="
-    	      << myEventRawPtr->eventId
+    	      << *myEventRawPtr
     	      << " ====" << std::endl;
     ////// DEBUG
 #endif

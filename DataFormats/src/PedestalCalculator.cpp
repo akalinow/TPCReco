@@ -4,7 +4,7 @@
 
 #include <iostream>
 
-#include "PedestalCalculator.h"
+#include "TPCReco/PedestalCalculator.h"
 
 PedestalCalculator::PedestalCalculator(){
 }
@@ -44,9 +44,9 @@ void PedestalCalculator::InitializeTables(){
   FPN_entries_pedestal.assign(myGeometryPtr->GetAgetNchips(), std::vector<uint>(512));
   FPN_ave_pedestal.assign(myGeometryPtr->GetAgetNchips(), std::vector<double>(512));
   */
-  std::vector< std::vector<uint> >
+  std::vector< std::vector<uint32_t> >
     v2_entries(myGeometryPtr->GetAgetNchips(),
-	       std::vector<uint>(myGeometryPtr->GetAgetNtimecells(),0));
+	       std::vector<uint32_t>(myGeometryPtr->GetAgetNtimecells(),0));
   std::vector< std::vector<double> >
     v2_average(myGeometryPtr->GetAgetNchips(),
 	       std::vector<double>(myGeometryPtr->GetAgetNtimecells(),0.0));
@@ -61,7 +61,7 @@ void PedestalCalculator::InitializeTables(){
     //	      << myGeometryPtr->GetAsadNboards(coboId)
     //	      << std::endl << std::flush;
     /////// DEBUG
-    std::vector< std::vector< std::vector<uint> > >
+    std::vector< std::vector< std::vector<uint32_t> > >
       v_entries(myGeometryPtr->GetAsadNboards(coboId));
     std::vector< std::vector< std::vector<double> > >
       v_average(myGeometryPtr->GetAsadNboards(coboId));
@@ -409,14 +409,19 @@ std::shared_ptr<TProfile> PedestalCalculator::GetPedestalProfilePerAsad(int cobo
   auto it=prof_pedestal_map.find(mkey);
   if(it==prof_pedestal_map.end()) return std::shared_ptr<TProfile>();
   std::shared_ptr<TProfile> result( (TProfile*)((it->second)->Clone()) );
-
-  ////// DEBUG
-  std::cout << __FUNCTION__
-	    << " iteratorPtr=" << it->second
-	    << " result=" << result
-    	    << " result.get()=" << result.get()
-	    << std::endl << std::flush;
-  ////// DEBUG
+  return result;
+}
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+std::shared_ptr<TH1D> PedestalCalculator::GetFpnProfilePerAget(int coboId, int asadId, int agetId){
+  MultiKey2 mkey(coboId, asadId);
+  if(prof_pedestal_map.find(mkey)==prof_pedestal_map.end() || agetId<0 || agetId>=myGeometryPtr->GetAgetNchips()) return std::shared_ptr<TH1D>();
+  auto result = std::make_shared<TH1D>(Form("h_average_FPN_cobo%d_asad%d_aget%d",
+					    coboId, asadId, agetId), "Average FPN shape per AGET;Time cell;ADC counts",
+				       myGeometryPtr->GetAgetNtimecells(), 0.0, 1.*myGeometryPtr->GetAgetNtimecells());
+  for(int cellId=minPedestalCell; cellId<=maxPedestalCell; ++cellId) {
+    result->Fill(1.*cellId, FPN_ave_signal[coboId][asadId][agetId][cellId]);
+  }
   return result;
 }
 

@@ -1,57 +1,82 @@
 set(MODULE_NAME "Analysis")
-MESSAGE( STATUS "Adding CMake fragment for module:         " ${MODULE_NAME} )
+message(STATUS "Adding CMake fragment for module:\t${MODULE_NAME}")
 
-###############################################################################
-## file globbing ##############################################################
-###############################################################################
-
-# These instructions search the directory tree when cmake is
-# invoked and put all files that match the pattern in the variable
-# `sources`
+# ROOT 6.08 dictionary MODULE workaround
+include_directories(${PROJECT_SOURCE_DIR}/Analysis/include/)
+root_generate_dictionary(
+  G__${TPCRECO_PREFIX}${MODULE_NAME}
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/HIGS_trees_dataFormat.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/RawSignal_tree_dataFormat.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/TrackDiffusion_tree_dataFormat.h
+  LINKDEF
+  LinkDef.h)
 #
-file(GLOB_RECURSE sources       ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/src/*.cpp)
 
-###############################################################################
-## dependencies ###############################################################
-###############################################################################
-include_directories(${ROOTINCDIR})
-include_directories(${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include)
-include_directories(${PROJECT_SOURCE_DIR}/DataFormats/include)
-include_directories(${PROJECT_SOURCE_DIR}/GrawToROOT/include)
-include_directories(${PROJECT_SOURCE_DIR}/GUI/include)
-include_directories(${PROJECT_SOURCE_DIR}/Reconstruction/include)
-include_directories(${PROJECT_SOURCE_DIR}/Utilities/include)
-###############################################################################
-## target definitions #########################################################
-###############################################################################
-add_library(${MODULE_NAME} SHARED ${sources})
+reco_add_library(${MODULE_NAME} EXTRA_SOURCES
+                 G__${TPCRECO_PREFIX}${MODULE_NAME}.cxx)
 
-add_executable(analysis_IFJ_VdG  bin/analysis_IFJ_VdG.cpp)
-add_executable(makeTrackTree  bin/makeTrackTree.cpp)
-add_executable(recoEventsAnalysis  bin/recoEventsAnalysis.cpp)
-add_executable(recoEventsComparison  bin/recoEventsComparison.cpp)
-
-# Compiler flags.
-#
 target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
-target_compile_options(analysis_IFJ_VdG PUBLIC ${CMAKE_ROOT_CFLAGS})
-target_compile_options(makeTrackTree PUBLIC ${CMAKE_ROOT_CFLAGS})
-target_compile_options(recoEventsAnalysis PUBLIC ${CMAKE_ROOT_CFLAGS})
-target_compile_options(recoEventsComparison PUBLIC ${CMAKE_ROOT_CFLAGS})
 
-target_link_libraries(${MODULE_NAME} DataFormats Reconstruction ${GRAW_TO_ROOT_LIBRARY} ${ROOT_LIBRARIES})
-target_link_libraries(analysis_IFJ_VdG PUBLIC DataFormats Utilities Reconstruction GUI ${Boost_LIBRARIES} ${MODULE_NAME})
-target_link_libraries(makeTrackTree PUBLIC DataFormats ${GRAW_TO_ROOT_LIBRARY} Utilities Reconstruction GUI ${Boost_LIBRARIES} ${MODULE_NAME})
-target_link_libraries(recoEventsAnalysis PUBLIC DataFormats ${GRAW_TO_ROOT_LIBRARY} Utilities Reconstruction GUI ${Boost_LIBRARIES} ${MODULE_NAME})
-target_link_libraries(recoEventsComparison PUBLIC DataFormats ${GRAW_TO_ROOT_LIBRARY} Utilities Reconstruction GUI ${Boost_LIBRARIES} ${MODULE_NAME})
+add_executable(makeTrackTree bin/makeTrackTree.cpp)
+add_executable(makeMCTrackTree bin/makeMCTrackTree.cpp)
+add_executable(recoEventsAnalysis bin/recoEventsAnalysis.cpp)
+add_executable(recoEventsComparison bin/recoEventsComparison.cpp)
+add_executable(rawSignalAnalysis bin/rawSignalAnalysis.cpp)
+add_executable(rawTrackDiffusionAnalysis bin/rawTrackDiffusionAnalysis.cpp)
+add_executable(recoEventsClean bin/recoEventsClean.cpp)
+add_executable(recoEventsDiff bin/recoEventsDiff.cpp)
+add_executable(recoEnergyScaleFitter bin/recoEnergyScaleFitter.cpp)
 
-# All install commands get the same destination. this allows us to use paths
-# relative to the executable.
-install(TARGETS ${MODULE_NAME} LIBRARY DESTINATION lib)
-install(TARGETS analysis_IFJ_VdG RUNTIME DESTINATION bin)
-install(TARGETS makeTrackTree RUNTIME DESTINATION bin)
-install(TARGETS recoEventsAnalysis RUNTIME DESTINATION bin)
-install(TARGETS recoEventsComparison RUNTIME DESTINATION bin)
+if(NOT ${GET_FOUND})
+  message(WARNING "GET not found, disabling rawSignalAnalysis rawTrackDiffusionAnalysis")
+  set_target_properties(rawSignalAnalysis PROPERTIES EXCLUDE_FROM_ALL TRUE)
+  set_target_properties(rawTrackDiffusionAnalysis PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
-install(PROGRAMS $<1:${PROJECT_SOURCE_DIR}/${MODULE_NAME}/python/> DESTINATION python)
-install(FILES $<1:${PROJECT_SOURCE_DIR}/${MODULE_NAME}/test/> DESTINATION test)
+  target_link_libraries(
+  ${MODULE_NAME} PUBLIC Utilities DataFormats Reconstruction EventSources ${ROOT_LIBRARIES}
+                        ${ROOT_EXE_LINKER_FLAGS})
+else()
+  target_link_libraries(
+  ${MODULE_NAME} PUBLIC Utilities DataFormats Reconstruction EventSources GrawToROOT ${ROOT_LIBRARIES}
+                        ${ROOT_EXE_LINKER_FLAGS})
+endif()
+
+target_link_libraries(makeTrackTree PRIVATE ${MODULE_NAME}
+                                            Boost::program_options GUI)
+target_link_libraries(makeMCTrackTree PRIVATE ${MODULE_NAME}
+                                              Boost::program_options)
+target_link_libraries(recoEventsAnalysis PRIVATE ${MODULE_NAME}
+                                                 Boost::program_options)
+target_link_libraries(recoEventsComparison PRIVATE ${MODULE_NAME}
+                                                   Boost::program_options)
+target_link_libraries(rawSignalAnalysis PRIVATE ${MODULE_NAME}
+                                                Boost::program_options)
+target_link_libraries(rawTrackDiffusionAnalysis PRIVATE ${MODULE_NAME}
+                                                Boost::program_options)
+target_link_libraries(recoEventsClean PRIVATE ${MODULE_NAME}
+                                              Boost::program_options)
+target_link_libraries(recoEventsDiff PRIVATE ${MODULE_NAME}
+                                             Boost::program_options)
+target_link_libraries(recoEnergyScaleFitter PRIVATE ${MODULE_NAME}
+					            Boost::program_options)
+
+reco_install_targets(
+  ${MODULE_NAME}
+  makeTrackTree
+  makeMCTrackTree
+  recoEventsAnalysis
+  recoEventsComparison
+  recoEventsClean
+  recoEventsDiff
+  recoEnergyScaleFitter)
+reco_install_root_dict(${MODULE_NAME})
+install(PROGRAMS $<1:${CMAKE_CURRENT_SOURCE_DIR}/python/> DESTINATION python)
+install(DIRECTORY examples DESTINATION ${CMAKE_INSTALL_PREFIX})
+
+if(${GET_FOUND})
+  reco_install_targets(rawSignalAnalysis rawTrackDiffusionAnalysis)
+endif()
+
+
+reco_add_test_subdirectory(test)
+

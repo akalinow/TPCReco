@@ -1,23 +1,7 @@
 #include <bitset>
 
-#include "EventInfo.h"
-#include "EventTPC.h"
-
-////////////////////////////////////////////////
-////////////////////////////////////////////////
-eventraw::EventInfo::EventInfo(std::shared_ptr<EventTPC> aEventTPC){
-
-  set(aEventTPC);
-  
-}
-////////////////////////////////////////////////
-////////////////////////////////////////////////
-void eventraw::EventInfo::set(std::shared_ptr<EventTPC> aEventTPC){
-
-  SetEventId(aEventTPC->GetEventId());
-  SetEventTimestamp(aEventTPC->GetEventTime());
-  
-}
+#include "TPCReco/EventInfo.h"
+#include "TPCReco/RunIdParser.h"
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 void eventraw::EventInfo::reset(){
@@ -26,16 +10,28 @@ void eventraw::EventInfo::reset(){
   eventId = 0;   // 4-bytes
   timestamp = 0; // 6-bytes in 10ns CLK units (100 MHz)
   eventType = 0;
+  pedestalSubtracted = false;
 
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 std::ostream& eventraw::operator<<(std::ostream& os, const eventraw::EventInfo& einfo) {
   os << "EventInfo: "
-     <<" run timestamp: "<<einfo.GetRunId()
-     <<" event id=" << einfo.GetEventId() << ", timestamp=" << einfo.GetEventTimestamp()
-     <<" type: "<<einfo.GetEventType().to_string();
+     <<" event_id=" << einfo.GetEventId()
+     <<" run_id=" << einfo.GetRunId()
+     <<" timestamp=" << einfo.GetEventTimestamp()
+     <<" type_bits=" << einfo.GetEventType().to_string()
+     <<" pedestal_subtracted=" << einfo.GetPedestalSubtracted();
   return os;
 }
+namespace tpcreco {
+cobo_time_unit eventRelativeTime(const eventraw::EventInfo &info) noexcept {
+  return cobo_time_unit(info.GetEventTimestamp());
+}
+
+cobo_time_point eventAbsoluteTime(const eventraw::EventInfo &info) {
+  return RunId{info.GetRunId()}.toTimePoint() + eventRelativeTime(info);
+}
+} // namespace tpcreco
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////

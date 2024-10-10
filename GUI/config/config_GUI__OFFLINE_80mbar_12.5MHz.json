@@ -15,5 +15,11 @@
         "maxPedestalCell": 50,
         "minSignalCell": 2,
         "maxSignalCell": 500
+    },
+    "hitFilter": {
+        "recoClusterEnable": false,
+        "recoClusterThreshold": 35,
+        "recoClusterDeltaStrips": 2,
+        "recoClusterDeltaTimeCells": 5
     }
 }

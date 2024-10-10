@@ -1,6 +1,6 @@
-#include "TrackSegment2D.h"
-#include "GeometryTPC.h"
-#include "colorText.h"
+#include "TPCReco/TrackSegment2D.h"
+#include "TPCReco/GeometryTPC.h"
+#include "TPCReco/colorText.h"
 
 #include <iostream>
 
@@ -93,12 +93,9 @@ TGraphErrors TrackSegment2D::getChargeProfile(const Hit2DCollection & aRecHits, 
   TVector3 cellDiagonal(myGeometryPtr->GetTimeBinWidth(), myGeometryPtr->GetStripPitch(), 0);
   TVector3 cellDiagonal1(myGeometryPtr->GetTimeBinWidth(), -myGeometryPtr->GetStripPitch(), 0);
   double cellProjectionOnSegment2D = std::max(cellDiagonal.Dot(getTangent().Unit()),
-					      cellDiagonal1.Dot(getTangent().Unit()));
-  
+					      cellDiagonal1.Dot(getTangent().Unit()));  
   double binWidth = std::abs(cellProjectionOnSegment2D)/getLength();
-  binWidth = 1.0/getLength();
   TGraphErrors grChargeProfile2D(0);
-
 
   for(const auto aHit:aRecHits){
     x = aHit.getPosTime();
@@ -192,6 +189,7 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
     std::tie(lambda,distance) = getPointLambdaAndDistance(aPoint);
     totalChargeSum += charge;
     if(distance>10) continue;
+    if(lambda<0 || lambda>getLength()) continue;//TEST
     ++pointCount;
     chi2 += std::pow(distance, 2)*charge;
     chargeSum +=charge;
@@ -202,8 +200,15 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
   chi2 /= chargeSum;
   biasDistance /= chargeSum;
   chargeSum /= totalChargeSum;
-  if(!pointCount) return -100.0;
+
+  ///TEST
+  if(!pointCount) return 0.0;
+  return chi2;
+  /////
+
+  if(!pointCount) return -100.0;  
   return chi2 + biasDistance - chargeSum;
+
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

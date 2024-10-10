@@ -1,13 +1,12 @@
 #include <cstdlib>
 #include <iostream>
 
-#include "TFile.h"
-#include "TTree.h"
+#include <TFile.h>
+#include <TTree.h>
 
-
-#include "Track3D.h"
-#include "RecoOutput.h"
-#include "colorText.h"
+#include "TPCReco/Track3D.h"
+#include "TPCReco/RecoOutput.h"
+#include "TPCReco/colorText.h"
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 RecoOutput::RecoOutput() {
@@ -50,6 +49,7 @@ void RecoOutput::open(const std::string & fileName){
   std::string treeName = "TPCRecoData";
   myOutputFilePtr = std::make_shared<TFile>(fileName.c_str(),"RECREATE");
   myOutputTreePtr = std::make_shared<TTree>(treeName.c_str(),"");
+  myOutputTreePtr->SetDirectory(myOutputFilePtr.get());
   
   myOutputTreePtr->Branch("RecoEvent", myTrackPtr.get());
   myOutputTreePtr->Branch("EventInfo", myEventInfoPtr.get());
@@ -64,6 +64,8 @@ void RecoOutput::close(){
 	     <<std::endl;
      return;
   }
+  myOutputFilePtr->cd();
+  myOutputTreePtr->Write("", TObject::kOverwrite);
   myOutputFilePtr->Close();
 }
 /////////////////////////////////////////////////////////
@@ -77,6 +79,7 @@ void RecoOutput::update(){
      return;
   }
   myOutputTreePtr->Fill();
+  myOutputFilePtr->cd();
   myOutputTreePtr->Write("", TObject::kOverwrite);
 }
 /////////////////////////////////////////////////////////

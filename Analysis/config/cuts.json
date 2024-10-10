@@ -1,0 +1,36 @@
+{
+    "cuts": [
+        {
+            "type": "NonEmpty"
+        },
+        {
+            "type": "VertexPosition",
+            "beam_offset_mm": -1.3,
+            "beam_slope_rad": 3.0E-3,
+            "beam_diameter_mm": 12.0
+        },
+        {
+            "type": "DistanceToBorder",
+            "margin_mm": 5
+        },
+        {
+            "type": "GlobalZSpan",
+            "lower_margin_timecells": 25,
+            "upper_margin_timecells": 5
+        },
+        {
+            "type": "VertexZSpan",
+            "beam_diameter_mm": 12.0
+        },
+        {
+            "enabled": false,
+            "type": "ReconstructionQuality2Prong",
+            "firstPID": "alpha",
+            "secondPID": "carbon_12",
+            "chi2": 10,
+            "hypothesis_chi2": 5,
+            "length": 30,
+            "integrated_charge": 1000
+        }
+    ]
+}

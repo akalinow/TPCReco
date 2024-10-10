@@ -3,16 +3,16 @@
 #include <string>
 #include <memory>
 
-#include "UtilsTPC.h"
-#include "GeometryTPC.h"
-#include "UVWprojector.h"
-#include "EventTPC.h"
+#include "TPCReco/UtilsTPC.h"
+#include "TPCReco/GeometryTPC.h"
+#include "TPCReco/UVWprojector.h"
+#include "TPCReco/EventTPC.h"
 
-#include "TFile.h"
-#include "TTree.h"
-#include "TChain.h"
-#include "TCanvas.h"
-#include "TH1D.h"
+#include <TFile.h"
+#include <TTree.h"
+#include <TChain.h"
+#include <TCanvas.h"
+#include <TH1D.h"
 
 int main(int argc, char *argv[]) {
 

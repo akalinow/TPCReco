@@ -1,0 +1,12 @@
+.git
+build/
+
+# Containers
+#############
+*.sif
+*.tar
+*.tar.gz
+
+# data
+#############
+*.graw

@@ -1,10 +1,9 @@
 #ifdef WITH_GET
 
-#include "TFile.h"
+#include <TFile.h>
 
-#include "HistoManager.h"
-//#include "EventSourceROOT.h"
-#include "EventSourceGRAW.h"
+#include "TPCReco/HistoManager.h"
+#include "TPCReco/EventSourceGRAW.h"
 
 #include <boost/property_tree/json_parser.hpp>
 
@@ -57,89 +56,35 @@ int main(int argc, char *argv[]) {
     myHistoManager.setEvent(myEventSource->getCurrentEvent());
     myHistoManager.reconstruct(); // triggers raw data clustering
 
-    // Raw STRIP VS TIME plots per STRIP direction:
-    for (int strip_dir = 0; strip_dir < 3; ++strip_dir) {
-      auto h = myHistoManager.getRawStripVsTime(strip_dir);
-      if (h)
-        h->Write();
-    }
 
-    // Raw STRIP VS TIME plots in milimiters per STRIP direction:
     for (int strip_dir = 0; strip_dir < 3; ++strip_dir) {
-      auto h = myHistoManager.getRawStripVsTimeInMM(strip_dir);
-      if (h)
-        h->Write();
-    }
-
-    // Clustered STRIP VS TIME plots per STRIP direction:
-    for (int strip_dir = 0; strip_dir < 3; ++strip_dir) {
-      auto h = myHistoManager.getClusterStripVsTime(strip_dir);
-      if (h)
-        h->Write();
-    }
-
-    // Clustered STRIP VS TIME plots in milimiters per STRIP direction:
-    for (int strip_dir = 0; strip_dir < 3; ++strip_dir) {
-      auto h = myHistoManager.getClusterStripVsTimeInMM(strip_dir);
-      if (h)
-        h->Write();
+      auto projType = get2DProjectionType(strip_dir);
+      // Raw STRIP VS TIME plots per STRIP direction:
+      myHistoManager.get2DProjection(projType, filter_type::none, scale_type::raw)->Write();
+      // Raw STRIP VS TIME plots in milimiters per STRIP direction:
+      myHistoManager.get2DProjection(projType, filter_type::none, scale_type::mm)->Write();
+      // Clustered STRIP VS TIME plots per STRIP direction:
+      myHistoManager.get2DProjection(projType, filter_type::threshold, scale_type::raw)->Write();
+      // Clustered STRIP VS TIME plots in milimiters per STRIP direction:
+      myHistoManager.get2DProjection(projType, filter_type::threshold, scale_type::mm)->Write();
+      // Raw STRIP projection per STRIP direction
+      myHistoManager.get1DProjection(static_cast<definitions::projection_type>(strip_dir), filter_type::none, scale_type::raw)->Write();
+      // Raw STRIP projection in millimiters per STRIP direction
+      myHistoManager.get1DProjection(static_cast<definitions::projection_type>(strip_dir), filter_type::none, scale_type::mm)->Write();
+      // Clustered STRIP projection in per STRIP direction
+      myHistoManager.get1DProjection(static_cast<definitions::projection_type>(strip_dir), filter_type::threshold, scale_type::raw)->Write();
+      // Clustered STRIP projection in millimiters per STRIP direction
+      myHistoManager.get1DProjection(static_cast<definitions::projection_type>(strip_dir), filter_type::threshold, scale_type::mm)->Write();
     }
 
     // Raw TIME projection
-    {
-      auto h = myHistoManager.getRawTimeProjection();
-      if (h)
-        h->Write();
-    }
-
+    myHistoManager.get1DProjection(definitions::projection_type::DIR_TIME, filter_type::none, scale_type::raw)->Write();
     // Raw TIME projection in millimiters
-    {
-      auto h = myHistoManager.getRawTimeProjectionInMM();
-      if (h)
-        h->Write();
-    }
-
-    // Raw STRIP projection per STRIP direction
-    for (int strip_dir = 0; strip_dir < 3; ++strip_dir) {
-      auto h = myHistoManager.getRawStripProjection(strip_dir);
-      if (h)
-        h->Write();
-    }
-
-    // Raw STRIP projection in millimiters per STRIP direction
-    for (int strip_dir = 0; strip_dir < 3; ++strip_dir) {
-      auto h = myHistoManager.getRawStripProjectionInMM(strip_dir);
-      if (h)
-        h->Write();
-    }
-
+    myHistoManager.get1DProjection(definitions::projection_type::DIR_TIME, filter_type::none, scale_type::mm)->Write();
     // Clustered TIME projection
-    {
-      auto h = myHistoManager.getClusterTimeProjection();
-      if (h)
-        h->Write();
-    }
-
+    myHistoManager.get1DProjection(definitions::projection_type::DIR_TIME, filter_type::threshold, scale_type::raw)->Write();
     // Clustered TIME projection in millimiters
-    {
-      auto h = myHistoManager.getClusterTimeProjectionInMM();
-      if (h)
-        h->Write();
-    }
-
-    // Clustered STRIP projection per STRIP direction
-    for (int strip_dir = 0; strip_dir < 3; ++strip_dir) {
-      auto h = myHistoManager.getClusterStripProjection(strip_dir);
-      if (h)
-        h->Write();
-    }
-
-    // Clustered STRIP projection in millimiters per STRIP direction
-    for (int strip_dir = 0; strip_dir < 3; ++strip_dir) {
-      auto h = myHistoManager.getClusterStripProjectionInMM(strip_dir);
-      if (h)
-        h->Write();
-    }
+    myHistoManager.get1DProjection(definitions::projection_type::DIR_TIME, filter_type::threshold, scale_type::mm)->Write();
 
     // debug plots per ASAD for cobo_id=0
     for (int cobo_id = 0;
@@ -168,7 +113,7 @@ int main(int argc, char *argv[]) {
 }
 #else
 
-#include "colorText.h"
+#include "TPCReco/colorText.h"
 #include <iostream>
 
 int main(){

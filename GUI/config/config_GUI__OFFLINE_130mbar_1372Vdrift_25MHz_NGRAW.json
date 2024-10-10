@@ -1,0 +1,26 @@
+{
+    "dataFile": "PLACEHOLDER_FOR_COMMA_SEPARATED_DATAFILE_LIST",
+    "geometryFile": "./geometry_ELITPC_130mbar_1372Vdrift_25MHz.dat",
+    "resourcesPath": ".",
+    "updateInterval": 3000,
+    "removePedestal": true,
+    "frameLoadRange": 10,
+    "singleAsadGrawFile": true,
+    "display": {
+        "zLogScale": true,
+        "autoZoom": false,
+        "recoMode": false
+    },
+    "pedestal": {
+        "minPedestalCell": 5,
+        "maxPedestalCell": 25,
+        "minSignalCell": 5,
+        "maxSignalCell": 506
+    },
+    "hitFilter": {
+        "recoClusterEnable": false,
+        "recoClusterThreshold": 35,
+        "recoClusterDeltaStrips": 2,
+        "recoClusterDeltaTimeCells": 5
+    }
+}

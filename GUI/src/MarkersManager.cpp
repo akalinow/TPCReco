@@ -11,17 +11,17 @@
 #include <TGFontDialog.h>
 #include <TFrame.h>
 
-#include "colorText.h"
-#include "MarkersManager.h"
-#include "MainFrame.h"
-#include "HistoManager.h"
-#include "CommonDefinitions.h"
+#include "TPCReco/colorText.h"
+#include "TPCReco/MarkersManager.h"
+#include "TPCReco/MainFrame.h"
+#include "TPCReco/HistoManager.h"
+#include "TPCReco/CommonDefinitions.h"
 
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 MarkersManager::MarkersManager(const TGWindow * p, MainFrame * aFrame)
  : TGCompositeFrame(p, 10, 10, kVerticalFrame), fParentFrame(aFrame){
-
+   fMarkersContainer.fill(nullptr);
    SetCleanup(kDeepCleanup);
 
    int nRows = 2;
@@ -30,8 +30,15 @@ MarkersManager::MarkersManager(const TGWindow * p, MainFrame * aFrame)
    TGTableLayout* tlo = new TGTableLayout(fHeaderFrame, nRows, nColumns, 1);
    fHeaderFrame->SetLayoutManager(tlo);
    AddFrame(fHeaderFrame, new TGLayoutHints(kLHintsExpandX, 2, 2, 1, 1));
-   addButtons();   
-   initialize();
+   addButtons();  
+   //assign helper lines to pads 
+   for(size_t i =0 ; i<fHelperLinesContainer.size(); ++i){
+    std::string padName = "Histograms_"+std::to_string(i+1);
+    auto *pad = static_cast<TPad*>(gROOT->FindObject(padName.c_str()));
+    fHelperLinesContainer[i].setPad((static_cast<TPad*>(pad)));
+   }
+    auto *pad = static_cast<TPad*>(gROOT->FindObject("Histograms_4"));
+    fLastPanelHelperLine.setPad((static_cast<TPad*>(pad)));
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -58,8 +65,7 @@ void MarkersManager::addButtons(){
 
     fHeaderFrame->AddFrame(aButton,tloh);
     aButton->Connect("Clicked()","MarkersManager",this,"DoButton()");
-    if(button_names[iButton]!="Add segment") aButton->SetState(kButtonDisabled);
-    if(button_names[iButton]=="Clear track") aButton->SetState(kButtonUp);
+    aButton->SetState(kButtonDisabled);
     aButton->ChangeBackground(aColor);
     aButton->SetToolTipText(button_tooltips[iButton].c_str());
     myButtons[button_names[iButton]] = aButton;
@@ -73,21 +79,7 @@ MarkersManager::~MarkersManager(){
 
   delete fMarkerGCanvas;
 }
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void MarkersManager::initialize(){
 
-  fMarkersContainer.resize(3);
-  fHelperLinesContainer.resize(3);
-  fSegmentsContainer.resize(3);
-
-  firstMarker = 0;
-  timeMarker = 0;
-  acceptPoints = false;
-  setEnabled(false);
-  fGeometryTPC = NULL;
-
-}
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MarkersManager::setEnabled(bool enable){
@@ -112,8 +104,8 @@ void MarkersManager::updateSegments(int strip_dir){
   else{
     double x1 = fMarkersContainer.at(strip_dir)->GetX();
     double y1 = fMarkersContainer.at(strip_dir)->GetY();
-    double x2 = x1;
-    double y2 = y1;
+    double x2 = std::nan("0");
+    double y2 = std::nan("0");
     if(aSegmentsContainer.size()){
       x1 = aSegmentsContainer.front().GetX1();
       y1 = aSegmentsContainer.front().GetY1();
@@ -132,19 +124,25 @@ void MarkersManager::updateSegments(int strip_dir){
   if(!aPad) return;
   aPad->cd();
   for(auto &item:aSegmentsContainer){
-    item.Draw();
     TMarker aMarker(item.GetX1(), item.GetY1(), 21);
+    aMarker.SetBit(kCannotPick);
     aMarker.SetMarkerColor(item.GetLineColor());
     aMarker.DrawMarker(item.GetX1(), item.GetY1());
-    aMarker.DrawMarker(item.GetX2(), item.GetY2());
+    if(!std::isnan(item.GetX2()) && !std::isnan(item.GetY2())){
+      aMarker.DrawMarker(item.GetX2(), item.GetY2());
+      item.SetBit(kCannotPick);
+      item.Draw();
+    }
   }
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MarkersManager::reset(){
-
+  pLines.clear();
+  fLastPanelHelperLine.getPrototype().SetLineColor(1);
   resetMarkers(true);
   resetSegments();
+
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -158,7 +156,7 @@ void MarkersManager::resetSegments(){
 /////////////////////////////////////////////////////////
 void MarkersManager::setPadsEditable(bool isEditable){
 
-  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+  for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
     std::string padName = "Histograms_"+std::to_string(strip_dir+1);
     TPad *aPad = (TPad*)gROOT->FindObject(padName.c_str());
     if(!aPad) continue;
@@ -178,7 +176,7 @@ void MarkersManager::resetMarkers(bool force){
   for(auto aObj : fObjClones) delete aObj;
   fObjClones.clear();
 
-  int strip_dir = DIR_U;//FIX ME
+  int strip_dir = definitions::projection_type::DIR_U;//FIX ME
   if(force || isLastSegmentComplete(strip_dir)){
     acceptPoints = false;
     if(myButtons.find("Add segment")!=myButtons.end() &&
@@ -194,9 +192,10 @@ void MarkersManager::resetMarkers(bool force){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MarkersManager::clearHelperLines(){
-
-std::for_each(fHelperLinesContainer.begin(), fHelperLinesContainer.end(),
-		[](TLine *&item){if(item){delete item; item = 0;}});  
+  for (auto &item: fHelperLinesContainer){
+    item.clear();
+  } 
+  fLastPanelHelperLine.clear();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -241,13 +240,13 @@ void MarkersManager::processClickCoordinates(int strip_dir, float x, float y){
   if(strip_dir==3){
     if(!timeMarker){
       timeMarker = new TMarker(x, y, 1);
-      drawFixedTimeLines(DIR_U, x);
-      drawFixedTimeLines(DIR_W, x);
-      drawFixedTimeLines(DIR_W, x);
+      drawFixedTimeLines(definitions::projection_type::DIR_U, x);
+      drawFixedTimeLines(definitions::projection_type::DIR_W, x);
+      drawFixedTimeLines(definitions::projection_type::DIR_W, x);
     }
   }
   */
-  if(strip_dir<DIR_U || strip_dir>=(int)fMarkersContainer.size() || fMarkersContainer.at(strip_dir)) return;
+  if(strip_dir<definitions::projection_type::DIR_U || strip_dir>=(int)fMarkersContainer.size() || fMarkersContainer.at(strip_dir)) return;
   //if(timeMarker){ x = timeMarker->GetX(); }
   if(firstMarker){ x = firstMarker->GetX(); }
   
@@ -258,6 +257,7 @@ void MarkersManager::processClickCoordinates(int strip_dir, float x, float y){
   TMarker *aMarker = new TMarker(x, y, iMarkerStyle);
   aMarker->SetMarkerColor(iMarkerColor);
   aMarker->SetMarkerSize(iMarkerSize);
+  aMarker->SetBit(kCannotPick);
   aMarker->Draw();
   fMarkersContainer.at(strip_dir) = aMarker;
   if(!firstMarker){
@@ -270,44 +270,31 @@ void MarkersManager::processClickCoordinates(int strip_dir, float x, float y){
     aMarker = new TMarker(x, y, iMarkerStyle);
     aMarker->SetMarkerColor(iMarkerColor);
     aMarker->SetMarkerSize(iMarkerSize);
+    aMarker->SetBit(kCannotPick);
     fMarkersContainer.at(missingMarkerDir) = aMarker;    
     std::string padName = "Histograms_"+std::to_string(missingMarkerDir+1);
     TPad *aPad = (TPad*)gROOT->FindObject(padName.c_str());
     aPad->cd();
     aMarker->Draw();
-    updateSegments(DIR_U);
-    updateSegments(DIR_V);
-    updateSegments(DIR_W);
+    updateSegments(definitions::projection_type::DIR_U);
+    updateSegments(definitions::projection_type::DIR_V);
+    updateSegments(definitions::projection_type::DIR_W);
     resetMarkers();
   }
+  fLastPanelHelperLine.clear();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MarkersManager::drawFixedTimeLines(int strip_dir, double time){
-
-  clearHelperLines();
-  int aColor = 1;
-  TLine aLine(time, 0, time, 0);
-  aLine.SetLineColor(aColor);
-  aLine.SetLineWidth(2);
-  
-  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
-    std::string padName = "Histograms_"+std::to_string(strip_dir+1);
-    TPad *aPad = (TPad*)gROOT->FindObject(padName.c_str());
-    if(!aPad) continue;
-    aPad->cd();
-    TFrame *hFrame = (TFrame*)aPad->GetListOfPrimitives()->At(0);
-    if(!hFrame) continue;
-    double minY = hFrame->GetY1();
-    double maxY = hFrame->GetY2();
-    fHelperLinesContainer[strip_dir] = aLine.DrawLine(time, minY, time, maxY);
-  }  
+  for(auto & line : fHelperLinesContainer){
+    line.drawVertical(time);
+  }
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 int MarkersManager::findMissingMarkerDir(){
 
- for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+ for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
     TMarker *item = fMarkersContainer.at(strip_dir);
     if(!item) return strip_dir;
     }
@@ -318,13 +305,12 @@ int MarkersManager::findMissingMarkerDir(){
 double MarkersManager::getMissingYCoordinate(unsigned int missingMarkerDir){
 
   bool err_flag=false;
-  assert(fGeometryTPC); // DEBUG - TPC geometry should be defined at this point
+  assert(fGeometryTPC);
 
-  // find crossing point of 2 lines defined by 2 UVW coordinates (from 2 TMarkers)
   int dir[2] = { -1, -1 };
   double pos[2];
   int counter=0;
-  for(unsigned int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+  for(unsigned int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
     TMarker *item = fMarkersContainer.at(strip_dir);
     if(!item || strip_dir==missingMarkerDir) continue;
     dir[counter] = strip_dir;    // UVW direction index
@@ -376,22 +362,39 @@ void MarkersManager::HandleMarkerPosition(Int_t event, Int_t x, Int_t y, TObject
   TVirtualPad *aCurrentPad = gPad->GetSelectedPad();
   if(!aCurrentPad) return;
   std::string padName = std::string(aCurrentPad->GetName());
-  if(event == kButton1 && padName.find("Histograms_")!=std::string::npos){
+  if(event == kButton1 && padName != "Histograms_4" && padName.find("Histograms_")!=std::string::npos){
     aCurrentPad->cd();
     int strip_dir = stoi(padName.substr(11,1))-1;
     float localX = aCurrentPad->AbsPixeltoX(x);
     float localY = aCurrentPad->AbsPixeltoY(y);    
+    if(!firstMarker && !fMarkersContainer.at(strip_dir)){
+      pLines.emplace_back(fLastPanelHelperLine.getPad());
+      pLines.back().getPrototype().SetLineColor(pLines.size());
+      pLines.back().drawVertical(localX);
+      fLastPanelHelperLine.getPrototype().SetLineColor(1+pLines.size());
+    }
+    aCurrentPad->cd();
     processClickCoordinates(strip_dir, localX, localY);
     aCurrentPad->Update();
   }
-  return;
+  else if (event == kMouseMotion && padName.find("Histograms_")!=std::string::npos){
+    aCurrentPad->cd();
+    aCurrentPad->SetCursor(kCross) ;
+    if(!firstMarker){
+      float localX = aCurrentPad->AbsPixeltoX(x);
+      fLastPanelHelperLine.drawVertical(localX);
+      }
+    aCurrentPad->Update();
+  }
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MarkersManager::repackSegmentsData(){
 
   fSegmentsXY.clear();
-  int nSegments = fSegmentsContainer.at(DIR_U).size();
+  assert(fSegmentsContainer.at(definitions::projection_type::DIR_U).size() == fSegmentsContainer.at(definitions::projection_type::DIR_V).size());
+  assert(fSegmentsContainer.at(definitions::projection_type::DIR_U).size() == fSegmentsContainer.at(definitions::projection_type::DIR_W).size());
+  int nSegments = fSegmentsContainer.at(definitions::projection_type::DIR_U).size();
   for(int iSegment=0;iSegment<nSegments;++iSegment){
     for(auto & strip_segments: fSegmentsContainer){
       TLine &aLine = strip_segments.at(iSegment);
@@ -460,8 +463,8 @@ bool MarkersManager::isLastSegmentComplete(int strip_dir){
   std::vector<TLine> &aSegmentsContainer = fSegmentsContainer.at(strip_dir);
 
   return !aSegmentsContainer.size() ||
-    (std::abs(aSegmentsContainer.back().GetX1() - aSegmentsContainer.back().GetX2())>1E-3 &&
-     std::abs(aSegmentsContainer.back().GetY1() - aSegmentsContainer.back().GetY2())>1E-3);
+   (!std::isnan(aSegmentsContainer.back().GetX2()) &&
+    !std::isnan(aSegmentsContainer.back().GetY2()));
 }
 ////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////// Added by MC - 19 Aug 2021

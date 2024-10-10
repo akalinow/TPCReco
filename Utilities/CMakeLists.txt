@@ -1,37 +1,58 @@
 set(MODULE_NAME "Utilities")
-MESSAGE( STATUS "Adding CMake fragment for module:         " ${MODULE_NAME} )
+message(STATUS "Adding CMake fragment for module:\t${MODULE_NAME}")
 
-###############################################################################
-## file globbing ##############################################################
-###############################################################################
+# ROOT 6.08 dictionary MODULE workaround
+include_directories(${PROJECT_SOURCE_DIR}/Utilities/include)
+root_generate_dictionary(
+  G__${TPCRECO_PREFIX}${MODULE_NAME}
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/CoordinateConverter.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/IonRangeCalculator.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/CommonDefinitions.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/DirectoryWatch.h
+  LINKDEF
+  LinkDef.h)
+#
 
-# These instructions search the directory tree when cmake is
-# invoked and put all files that match the pattern in the variable
-# `sources`
-#
-find_package(Boost COMPONENTS filesystem REQUIRED)
-file(GLOB_RECURSE sources       ${PROJECT_SOURCE_DIR}/${MODULE_NAME}/src/*.cpp)
+reco_add_library(${MODULE_NAME} EXTRA_SOURCES
+                 G__${TPCRECO_PREFIX}${MODULE_NAME}.cxx)
+reco_add_executable(grawls bin/grawls.cpp)
+reco_add_executable(dumpConfig bin/dumpConfig.cpp)
 
-###############################################################################
-## dependencies ###############################################################
-###############################################################################
-include_directories(${ROOTINCDIR})
-include_directories(${PROJECT_SOURCE_DIR}/${MODULE_NAME}/include)
-include_directories(${PROJECT_SOURCE_DIR}/DataFormats/include)
-###############################################################################
-## target definitions #########################################################
-###############################################################################
-# The data is just added to the executable, because in some IDEs (QtCreator) 
-# files are invisible when they are not explicitly part of the project.
-#
-add_library(${MODULE_NAME} SHARED ${sources})
-target_link_libraries(${MODULE_NAME} PUBLIC ${ROOT_LIBRARIES} DataFormats Boost::filesystem)
-# Compiler flags.
-#
+option(DIRECTORYWATCH_ONE_message_DISABLE
+       "Define DIRECTORYWATCH_ONE_message_DISABLE variable" OFF)
+if(DIRECTORYWATCH_ONE_message_DISABLE)
+  message(
+    STATUS
+      "DirectoryWatch single message disabled (i.e. one message per modified file)"
+  )
+  target_compile_definitions(${MODULE_NAME} PRIVATE DIRECTORYWATCH_ONE_MESSAGE_DISABLE)
+else()
+  message(
+    STATUS
+      "DirectoryWatch single message enabled (i.e. single message per all modified files)"
+  )
+endif()
+
 target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
+target_link_libraries(
+  ${MODULE_NAME}
+  PUBLIC ${ROOT_LIBRARIES} ${ROOT_EXE_LINKER_FLAGS} Boost::filesystem
+         Boost::date_time
+  PRIVATE Resources)
+target_link_libraries(grawls PRIVATE Boost::program_options ${MODULE_NAME})
 
-# All install commands get the same destination. this allows us to use paths
-# relative to the executable.
-install(TARGETS ${MODULE_NAME} LIBRARY DESTINATION lib)
+target_link_libraries(${MODULE_NAME} PUBLIC ${TPCRECO_LIBRARIES_LOCAL} ${ROOT_LIBRARIES} ${Boost_LIBRARIES} Boost::program_options Boost::filesystem)
 
-reco_add_test_subdirector(test)
+target_link_libraries(grawls PRIVATE ${MODULE_NAME} ${TPCRECO_LIBRARIES_LOCAL} ${Boost_LIBRARIES} Boost::program_options)
+target_link_libraries(dumpConfig PRIVATE ${MODULE_NAME} Boost::program_options)
+
+reco_install_targets(grawls dumpConfig ${MODULE_NAME})
+
+reco_install_root_dict(${MODULE_NAME})
+install(PROGRAMS $<1:${CMAKE_CURRENT_SOURCE_DIR}/python/> DESTINATION python)
+install(DIRECTORY examples DESTINATION ${CMAKE_INSTALL_PREFIX})
+
+
+install(DIRECTORY config DESTINATION $ENV{HOME}/.tpcreco)
+
+reco_add_test_subdirectory(test)

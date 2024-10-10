@@ -21,7 +21,7 @@ This image uses `elitpc/get` as its base. Make sure that image is already presen
 ```
 git clone ssh://git@dracula.hep.fuw.edu.pl:8822/akalinowski/TPCReco.git
 cd TPCReco
-docker build --no-cache --rm -t elitpc/tpcreco:latest -f docker/Dockerfile . 
+docker build --no-cache --rm --target user -t elitpc/tpcreco:latest -f docker/Dockerfile . 
 ```
 ## Getting started with Singularity
 
@@ -62,7 +62,7 @@ Options `-v $HOME:/scratch --workdir /scratch` will bind your home directory fro
 ### Start singularity container
 
 ```
-singularity run --bind /data elitpc_tpcreco_latest.sif
+singularity shell --bind /data elitpc_tpcreco_latest.sif
 ```
 
 Singularity will automatically include your `$HOME` from host inside the container. If you wish to include other directories from host, you can do so using `--bind` option. `--bind /data` will bind `/data` directory on host to `/data` directory inside the container.

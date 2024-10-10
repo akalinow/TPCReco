@@ -1,29 +1,33 @@
 #include <cstdlib>
 #include <iostream>
+#include <algorithm>
 
-#include "TVector3.h"
-#include "TProfile.h"
-#include "TObjArray.h"
-#include "TF1.h"
-#include "TTree.h"
-#include "TFile.h"
-#include "TFitResult.h"
-#include "Math/Functor.h"
+#include <TVector3.h>
+#include <TProfile.h>
+#include <TObjArray.h>
+#include <TF1.h>
+#include <TTree.h>
+#include <TFile.h>
+#include <TFitResult.h>
+#include <Math/Functor.h>
 
-#include "GeometryTPC.h"
-#include "SigClusterTPC.h"
+#include "TPCReco/GeometryTPC.h"
 
-#include "TrackBuilder.h"
-#include "colorText.h"
+#include "TPCReco/TrackBuilder.h"
+#include "TPCReco/colorText.h"
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif // M_PI
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 TrackBuilder::TrackBuilder() {
 
-  myEvent = 0;
-
-  nAccumulatorRhoBins = 50;//FIX ME move to configuarable
-  nAccumulatorPhiBins = 2.0*M_PI/0.025;//FIX ME move to configuarable
-  nAccumulatorPhiBins = 2.0*M_PI/0.1;//FIX ME move to configuarable
+  //  nAccumulatorRhoBins = 50;//FIX ME move to configuarable
+  //  nAccumulatorPhiBins = 2.0*M_PI/0.025;//FIX ME move to configuarable
+  //  nAccumulatorPhiBins = 2.0*M_PI/0.1;//FIX ME move to configuarable
+  nAccumulatorRhoBins = 200; //FIX ME large enough to keep RHO bin size below 0.5*STRIP_PITCH
+  nAccumulatorPhiBins = 400; //FIX ME move to configuarable
 
   myHistoInitialized = false;
   myAccumulators.resize(3);
@@ -32,16 +36,21 @@ TrackBuilder::TrackBuilder() {
   myRawHits.resize(3);
 
   fitter.Config().MinimizerOptions().SetMinimizerType("Minuit2");
-  fitter.Config().MinimizerOptions().SetMaxFunctionCalls(1000);
+  fitter.Config().MinimizerOptions().SetMaxFunctionCalls(2000);
   fitter.Config().MinimizerOptions().Print(std::cout);
   fitter.Config().MinimizerOptions().SetPrintLevel(0);
+  
   ///An offset used for filling the Hough transformation.
   ///to avoid having very small rho parameters, as
-  ///orignally many tracks traverse close to X=0, Time=0
+  ///orignally many tracks traverse close to STRIP_POS[mm]=0, TIME_POS[mm]=0
   ///point.
-  aHoughOffest.SetX(50.0);
-  aHoughOffest.SetY(50.0);
-  aHoughOffest.SetZ(0.0);
+  // aHoughOffest.SetX(50.0);
+  // aHoughOffest.SetY(50.0);
+  // aHoughOffest.SetZ(0.0);
+  myHoughOffset.resize(3);
+  for(auto &offset: myHoughOffset) offset.SetXYZ(0,0,0);
+
+  setPressure(myPressure);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -54,72 +63,131 @@ void TrackBuilder::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
   myRecHitBuilder.setGeometry(aGeometryPtr);
   
   phiPitchDirection.resize(3);
-  phiPitchDirection[DIR_U] = myGeometryPtr->GetStripPitchVector(DIR_U).Phi();
-  phiPitchDirection[DIR_V] = myGeometryPtr->GetStripPitchVector(DIR_V).Phi();
-  phiPitchDirection[DIR_W] = myGeometryPtr->GetStripPitchVector(DIR_W).Phi();
+  phiPitchDirection[definitions::projection_type::DIR_U] = myGeometryPtr->GetStripPitchVector(definitions::projection_type::DIR_U).Phi();
+  phiPitchDirection[definitions::projection_type::DIR_V] = myGeometryPtr->GetStripPitchVector(definitions::projection_type::DIR_V).Phi();
+  phiPitchDirection[definitions::projection_type::DIR_W] = myGeometryPtr->GetStripPitchVector(definitions::projection_type::DIR_W).Phi();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void TrackBuilder::setPressure(double aPressure) {
+
+  myPressure = aPressure;
+  mydEdxFitter.setPressure(myPressure);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void TrackBuilder::setEvent(std::shared_ptr<EventTPC> aEvent){
-  setEvent(aEvent.get());
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void TrackBuilder::setEvent(EventTPC* aEvent){
 
-  myEvent = aEvent;
-
-  double chargeThreshold = std::max(35.0, 0.1*aEvent->GetMaxCharge());
-  int delta_timecells = 5;
-  int delta_strips = 2;
-  myEvent->MakeOneCluster(chargeThreshold, delta_strips, delta_timecells);
+  myEventPtr = aEvent;
+  myFittedTrack = Track3D();
   
   std::string hName, hTitle;
-  if(!myHistoInitialized){     
-    for(int iDir=DIR_U;iDir<=DIR_W;++iDir){
-      std::shared_ptr<TH2D> hRawHits = myEvent->GetStripVsTimeInMM(getCluster(), iDir);     
-      double minX = hRawHits->GetXaxis()->GetXmin();
-      double minY = hRawHits->GetYaxis()->GetXmin();
-      double maxX = hRawHits->GetXaxis()->GetXmax();
-      double maxY = hRawHits->GetYaxis()->GetXmax();
+  if(!myHistoInitialized){
+    for(int iDir=definitions::projection_type::DIR_U;iDir<=definitions::projection_type::DIR_W;++iDir){
+      std::shared_ptr<TH2D> hRawHits = myEventPtr->get2DProjection(get2DProjectionType(iDir),
+							   filter_type::none,
+//								   filter_type::threshold,
+//							           filter_type::fraction,
+								   scale_type::mm);
+      ///// DEBUG
+      //
+      myHoughOffset[iDir].SetX(0.0);
+      myHoughOffset[iDir].SetY(0.0);
+      double rhoMIN=0.0;
+      double rhoMAX=0.0;
+      for(auto iter=0; iter<2; iter++) {
+      // double minX = hRawHits->GetXaxis()->GetXmin();
+      // double minY = hRawHits->GetYaxis()->GetXmin();
+      // double maxX = hRawHits->GetXaxis()->GetXmax();
+      // double maxY = hRawHits->GetYaxis()->GetXmax();
+      double minX = hRawHits->GetXaxis()->GetXmin() + myHoughOffset[iDir].X();
+      double minY = hRawHits->GetYaxis()->GetXmin() + myHoughOffset[iDir].Y();
+      double maxX = hRawHits->GetXaxis()->GetXmax() + myHoughOffset[iDir].X();
+      double maxY = hRawHits->GetYaxis()->GetXmax() + myHoughOffset[iDir].Y();
       double rho1 = sqrt( maxX*maxX + maxY*maxY);
       double rho2 = sqrt( minX*minX + maxY*maxY);
       double rho3 = sqrt( maxX*maxX + minY*minY);
       double rho4 = sqrt( minX*minX + minY*minY);
-      double rhoMAX=rho1;
-      double rhoMIN=rho1;
+      // double rhoMAX=rho1;
+      // double rhoMIN=rho1;
+      // std::cout<<__FUNCTION__<<": BEFORE dir="<<iDir<<" iter="<<iter<<" rho1="<<rho1<<" rho2="<<rho2<<" rho3="<<rho3<<" rho4="<<rho4<<std::endl;
+      rhoMAX=0.0;
       if(rho1>rhoMAX) rhoMAX=rho1;
       if(rho2>rhoMAX) rhoMAX=rho2;
       if(rho3>rhoMAX) rhoMAX=rho3;
       if(rho4>rhoMAX) rhoMAX=rho4;
+      rhoMIN=rhoMAX;
       if(rho1<rhoMIN) rhoMIN=rho1;
       if(rho2<rhoMIN) rhoMIN=rho2;
-      if(rho3>rhoMIN) rhoMIN=rho3;
-      if(rho4>rhoMIN) rhoMIN=rho4;
+      if(rho3<rhoMIN) rhoMIN=rho3;
+      if(rho4<rhoMIN) rhoMIN=rho4;
+      // std::cout<<__FUNCTION__<<": AFTER dir="<<iDir<<" iter="<<iter<<" rhoMIN="<<rhoMIN<<" rhoMAX="<<rhoMAX<<std::endl;
       // for rhoMIN: check if (0,0) is inside the rectangle [minX, maxX] x [minY, maxY]
       //  1 | 2 | 1
       // ---+---+---                   +-----+
       //  3 | 4 | 5                    |     |
       // ---+---+---       (0,0)+      +-----+
-      //  1 | 6 | 1       
+      //  1 | 6 | 1
+      int rho_case=1;
       if(minX<=0.0 && maxX>=0.0 && minY<=0.0 && maxY>=0.0) {
 	rhoMIN=0.0; // case 4
+	rho_case=4;
       } else if(minX<0.0 && maxX<0.0 && minY<=0.0 && maxY>=0.0) {
-	rhoMIN=fabs(maxX); // case 5
+	rhoMIN=std::min(std::min(fabs(minY), fabs(maxY)), fabs(maxX)); // case 5
+	rho_case=5;
       } else if(minX>0.0 && maxX>0.0 && minY<=0.0 && maxY>=0.0) {
-	rhoMIN=fabs(minX); // case 3
+	rhoMIN=std::min(std::min(fabs(minY), fabs(maxY)), fabs(minX)); // case 3
+	rho_case=3;
       } else if(minX<=0.0 && maxX>=0.0 && minY<0.0 && maxY<0.0) {
-	rhoMIN=fabs(maxY); // case 6
+	rhoMIN=std::min(std::min(fabs(minX), fabs(maxX)), fabs(maxY)); // case 2
+	rho_case=6;
       } else if(minX<=0.0 && maxX>=0.0 && minY>0.0 && maxY>0.0) {
-	rhoMIN=fabs(minY); // case 2
-      }     
+	rhoMIN=std::min(std::min(fabs(minX), fabs(maxX)), fabs(minY)); // case 6
+	rho_case=2;
+      }
+
+      const double limit = 0.1*rhoMAX;
+      if(iter==0 && rhoMIN<limit) { // adjust offset to avoid rho=0 region
+	switch(rho_case) {
+	case 1:
+	  if(minX<=0.0)      myHoughOffset[iDir].SetX(-limit);
+	  else if(maxX>=0.0) myHoughOffset[iDir].SetX(limit);
+	  if(minY<=0.0)      myHoughOffset[iDir].SetY(-limit);
+	  else if(maxY>=0.0) myHoughOffset[iDir].SetY(limit);
+	  break;
+	case 2:
+	  myHoughOffset[iDir].SetY(limit);
+	  break;
+	case 3:
+	  myHoughOffset[iDir].SetX(-limit);
+	  break;
+	case 4:
+	  myHoughOffset[iDir].SetX(-limit-fabs(minX));
+	  myHoughOffset[iDir].SetY(-limit-fabs(minY));
+	  break;
+	case 5:
+	  myHoughOffset[iDir].SetX(limit);
+	  break;
+	case 6:
+	  myHoughOffset[iDir].SetY(-limit);
+	  break;
+	default:;
+	};
+      }
+      std::cout<< __FUNCTION__<<": dir="<<iDir<<" iter="<<iter<<" rho_case="<<rho_case<<" rhoMIN="<<rhoMIN<<" rhoMAX="<<rhoMAX<<std::endl;
+      }
+      //
+      ///// DEBUG
+
       hName = "hAccumulator_"+std::to_string(iDir);
-      hTitle = "Hough accumulator for direction: "+std::to_string(iDir)+";#theta;#rho";
+      hTitle = "Hough accumulator for direction: "+std::to_string(iDir)+";#theta [rad];#rho [mm]";
+      const auto phiBinWidth=2*M_PI/nAccumulatorPhiBins;
       TH2D hAccumulator(hName.c_str(), hTitle.c_str(), nAccumulatorPhiBins,
-			-M_PI, M_PI, nAccumulatorRhoBins, rhoMIN, rhoMAX);
+			-M_PI-0.5*phiBinWidth, M_PI+0.5*phiBinWidth,
+			nAccumulatorRhoBins, rhoMIN, rhoMAX);
       myAccumulators[iDir] = hAccumulator;
       myRawHits[iDir] = *hRawHits;
-      if(iDir==DIR_U) hTimeProjection = *hRawHits->ProjectionX();
+      if(iDir==definitions::projection_type::DIR_U) hTimeProjection = *hRawHits->ProjectionX();
     }
     myHistoInitialized = true;
   } 
@@ -128,30 +196,48 @@ void TrackBuilder::setEvent(EventTPC* aEvent){
 /////////////////////////////////////////////////////////
 void TrackBuilder::reconstruct(){
 
+  ///// DEBUG
+  //
+  std::cout<<KBLU<<__FUNCTION__<<RST
+	   <<":  run:"<<myEventPtr->GetEventInfo().GetRunId()
+	   <<" evt:"<<myEventPtr->GetEventInfo().GetEventId()<<" pressure:"<<myPressure<<std::endl;
+  //
+  ///// DEBUG
+
   hTimeProjection.Reset();  
-  for(int iDir=DIR_U;iDir<=DIR_W;++iDir){
+  for(int iDir=definitions::projection_type::DIR_U;iDir<=definitions::projection_type::DIR_W;++iDir){
     makeRecHits(iDir);
     fillHoughAccumulator(iDir);
     my2DSeeds[iDir] = findSegment2DCollection(iDir);    
   }
   myZRange = getTimeProjectionEdges();
   myTrack3DSeed = buildSegment3D();
+  if(myTrack3DSeed.getLength()<1) return;
+  
   Track3D aTrackCandidate;
   aTrackCandidate.addSegment(myTrack3DSeed);
 
   auto xyRange = myGeometryPtr->rangeXY();
   aTrackCandidate.extendToChamberRange(xyRange, myZRange);
 
-  fitTrack3D(aTrackCandidate);
+  aTrackCandidate = fitTrack3D(aTrackCandidate);
+  ///// DEBUG
+  std::cout<<"TrackBuilder::"<<__FUNCTION__<<": FIT EVENT HYPOTHESIS: pressure="<<myPressure<<std::endl;
+  ///// DEBUG
+  aTrackCandidate = fitEventHypothesis(aTrackCandidate);
+  myFittedTrack = aTrackCandidate;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void TrackBuilder::makeRecHits(int iDir){
 
-  std::shared_ptr<TH2D> hProj = myEvent->GetStripVsTimeInMM(getCluster(), iDir);
+  std::shared_ptr<TH2D> hProj = myEventPtr->get2DProjection(get2DProjectionType(iDir),
+							    filter_type::threshold,
+//							    filter_type::fraction,
+							    scale_type::mm);
   myRecHits[iDir] = myRecHitBuilder.makeRecHits(*hProj);
   myRawHits[iDir] = myRecHitBuilder.makeCleanCluster(*hProj);
-  hTimeProjection.Add(myRecHits[iDir].ProjectionX());
+  hTimeProjection.Add(myRecHits[iDir].ProjectionX("hTimeProjection"));
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -232,8 +318,10 @@ void TrackBuilder::fillHoughAccumulator(int iDir){
   int charge = 0;
   for(int iBinX=1;iBinX<hRecHits.GetNbinsX();++iBinX){
     for(int iBinY=1;iBinY<hRecHits.GetNbinsY();++iBinY){
-      x = hRecHits.GetXaxis()->GetBinCenter(iBinX) + aHoughOffest.X();
-      y = hRecHits.GetYaxis()->GetBinCenter(iBinY) + aHoughOffest.Y();
+      // x = hRecHits.GetXaxis()->GetBinCenter(iBinX) + aHoughOffest.X();
+      // y = hRecHits.GetYaxis()->GetBinCenter(iBinY) + aHoughOffest.Y();
+      x = hRecHits.GetXaxis()->GetBinCenter(iBinX) + myHoughOffset[iDir].X();
+      y = hRecHits.GetYaxis()->GetBinCenter(iBinY) + myHoughOffset[iDir].Y();
       charge = hRecHits.GetBinContent(iBinX, iBinY);
       if(charge<0.05*maxCharge) continue;
       for(int iBinTheta=1;iBinTheta<myAccumulators[iDir].GetNbinsX();++iBinTheta){
@@ -270,6 +358,18 @@ TrackSegment2D TrackBuilder::findSegment2D(int iDir, int iPeak) const{
     for(int iDeltaX=-margin;iDeltaX<=margin;++iDeltaX){
       for(int iDeltaY=-margin;iDeltaY<=margin;++iDeltaY){
 	hAccumulator_Clone->SetBinContent(iBinX+iDeltaX, iBinY+iDeltaY, 0,0);
+
+	///// DEBUG
+	// take into account theta periodicity modulo 2*pi and overflow bins
+	int binx=iBinX+iDeltaX;
+	if(binx>myAccumulators[iDir].GetNbinsX()) binx=binx%myAccumulators[iDir].GetNbinsX();
+	else if(binx<1) binx=myAccumulators[iDir].GetNbinsX()+binx%myAccumulators[iDir].GetNbinsX();
+	int biny=iBinY+iDeltaY;
+	if(biny>myAccumulators[iDir].GetNbinsY()) biny=biny%myAccumulators[iDir].GetNbinsY();
+	else if(biny<1) biny=myAccumulators[iDir].GetNbinsY()+biny%myAccumulators[iDir].GetNbinsY();
+	hAccumulator_Clone->SetBinContent(binx, biny, 0.0);
+	//
+	///// DEBUG
       }
     }    
     hAccumulator_Clone->GetMaximumBin(iBinX, iBinY, iBinZ);
@@ -283,7 +383,8 @@ TrackSegment2D TrackBuilder::findSegment2D(int iDir, int iPeak) const{
   double aX = rho*cos(theta);
   double aY = rho*sin(theta);
   aBias.SetXYZ(aX, aY, 0.0);
-  aBias -= aHoughOffest.Dot(aBias.Unit())*aBias.Unit();
+  //  aBias -= aHoughOffest.Dot(aBias.Unit())*aBias.Unit();
+  aBias -= myHoughOffset[iDir].Dot(aBias.Unit())*aBias.Unit();
   
   aX = -rho*sin(theta);
   aY = rho*cos(theta);
@@ -310,7 +411,7 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
   double x=0.0, y=0.0;
   int nSegments = segmentsXY.size()/3/4;
   for(int iSegment=0;iSegment<nSegments;++iSegment){
-    for(int iDir = DIR_U; iDir<=DIR_W;++iDir){
+    for(int iDir = definitions::projection_type::DIR_U; iDir<=definitions::projection_type::DIR_W;++iDir){
       TrackSegment2D aSegment2D(iDir, myGeometryPtr);
       x = segmentsXY.at(iDir*4 + iSegment*12);
       y = segmentsXY.at(iDir*4 + iSegment*12 + 1);
@@ -323,38 +424,43 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
       my2DSeeds[iDir].push_back(aSegment2D);
     }
     TrackSegment3D a3DSeed = buildSegment3D(iSegment);
-    double startTime = my2DSeeds.at(DIR_U).at(iSegment).getStart().X();    
-    double endTime = my2DSeeds.at(DIR_U).at(iSegment).getEnd().X();
+    double startTime = my2DSeeds.at(definitions::projection_type::DIR_U).at(iSegment).getStart().X();    
+    double endTime = my2DSeeds.at(definitions::projection_type::DIR_U).at(iSegment).getEnd().X();
     double lambdaStartTime = a3DSeed.getLambdaAtZ(startTime);
     double lambdaEndTime = a3DSeed.getLambdaAtZ(endTime);
     TVector3 start =  a3DSeed.getStart() + lambdaStartTime*a3DSeed.getTangent();
     TVector3 end =  a3DSeed.getStart() + lambdaEndTime*a3DSeed.getTangent();
     a3DSeed.setStartEnd(start, end);
+    a3DSeed.setRecHits(myRawHits);
     aTrackCandidate.addSegment(a3DSeed);
   }
-  //auto xyRange = myGeometryPtr->rangeXY();
-  //aTrackCandidate.extendToChamberRange(xyRange, myZRange);
-  //fitTrack3D(aTrackCandidate);
-  myFittedTrack = aTrackCandidate;
   std::cout<<KBLU<<"Hand cliked track: "<<RST<<std::endl;
-  std::cout<<myFittedTrack<<std::endl;
+  std::cout<<aTrackCandidate<<std::endl;
+  
+  myFittedTrack = aTrackCandidate;
+  myFittedTrack.setHypothesisFitChi2(0);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
+
+  TrackSegment3D a3DSeed;
+  a3DSeed.setGeometry(myGeometryPtr);  
 	     
-  const TrackSegment2D & segmentU = my2DSeeds[DIR_U][iTrack2DSeed];
-  const TrackSegment2D & segmentV = my2DSeeds[DIR_V][iTrack2DSeed];
-  const TrackSegment2D & segmentW = my2DSeeds[DIR_W][iTrack2DSeed];
+  const TrackSegment2D & segmentU = my2DSeeds[definitions::projection_type::DIR_U][iTrack2DSeed];
+  const TrackSegment2D & segmentV = my2DSeeds[definitions::projection_type::DIR_V][iTrack2DSeed];
+  const TrackSegment2D & segmentW = my2DSeeds[definitions::projection_type::DIR_W][iTrack2DSeed];
 
   int nHits_U = segmentU.getNAccumulatorHits();
   int nHits_V = segmentV.getNAccumulatorHits();
   int nHits_W = segmentW.getNAccumulatorHits();
 
+  if(nHits_U*nHits_V*nHits_W==0) return a3DSeed;
+
   double bias_time = (segmentU.getMinBias().X()*(nHits_U>0) +
 		      segmentV.getMinBias().X()*(nHits_V>0) +
 		      segmentW.getMinBias().X()*(nHits_W>0))/((nHits_U>0) + (nHits_V>0) + (nHits_W>0));
-  bias_time =  segmentV.getMinBias().X();
+  //  bias_time =  segmentV.getMinBias().X();
   TVector3 bias_U = segmentU.getBiasAtT(bias_time);
   TVector3 bias_V = segmentV.getBiasAtT(bias_time);
   TVector3 bias_W = segmentW.getBiasAtT(bias_time);
@@ -390,12 +496,36 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   TVector3 tangent_U = segmentU.getNormalisedTangent();
   TVector3 tangent_V = segmentV.getNormalisedTangent();
   TVector3 tangent_W = segmentW.getNormalisedTangent();
+
+  ///// DEBUG
+  //
+  TVector3 tangent_U_orig = tangent_U;
+  TVector3 tangent_V_orig = tangent_V;
+  TVector3 tangent_W_orig = tangent_W;
   
-  if(std::abs(tangent_U.Y())>1E-3 && 
-     tangent_U.Y()*tangent_V.Y()>0 &&
-     tangent_U.Y()*tangent_W.Y()>0){
-    tangent_U.SetY(-tangent_U.Y());
-    }
+  if(std::abs(tangent_U_orig.Y())>1E-3 &&
+     tangent_U_orig.Y()*tangent_V_orig.Y()>0 &&
+     tangent_U_orig.Y()*tangent_W_orig.Y()>0){
+    tangent_U.SetY(-tangent_U_orig.Y());
+  }
+  if(std::abs(tangent_V_orig.Y())>1E-3 &&
+     tangent_V_orig.Y()*tangent_U_orig.Y()>0 &&
+     tangent_V_orig.Y()*tangent_W_orig.Y()>0){
+    tangent_V.SetY(-tangent_V_orig.Y());
+  }
+  if(std::abs(tangent_W_orig.Y())>1E-3 &&
+     tangent_W_orig.Y()*tangent_U_orig.Y()>0 &&
+     tangent_W_orig.Y()*tangent_V_orig.Y()>0){
+    tangent_W.SetY(-tangent_W_orig.Y());
+  }
+  //
+  ///// DEBUG
+
+  // if(std::abs(tangent_U.Y())>1E-3 &&
+  //    tangent_U.Y()*tangent_V.Y()>0 &&
+  //    tangent_U.Y()*tangent_W.Y()>0){
+  //   tangent_U.SetY(-tangent_U.Y());
+  //   }
   
   TVector2 tangentXY_fromUV;
   bool res4=myGeometryPtr->GetUVWCrossPointInMM(segmentU.getStripDir(), tangent_U.Y(),
@@ -422,8 +552,9 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   double tangentZ = (tangentZ_fromU*nHits_U + tangentZ_fromV*nHits_V + tangentZ_fromW*nHits_W)/(nHits_U+nHits_V+nHits_W);
   TVector3 aTangent(tangentXY.X(), tangentXY.Y(), tangentZ);
 
-   // TEST
-  /*
+  ////// DEBUG
+  //
+  // TEST
   std::cout<<KRED<<__FUNCTION__<<RST
 	   <<" nHits_fromU: "<<nHits_U
     	   <<" nHits_fromV: "<<nHits_V
@@ -455,38 +586,40 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   ////////
   //aTangent.SetMagThetaPhi(1, 1.52218, 1.34371);
   //aTangent.SetXYZ(0.318140,-0.948024,0.006087);
-  */
+  //
+  ////// DEBUG
 
-  TrackSegment3D a3DSeed;
-  a3DSeed.setGeometry(myGeometryPtr);  
   a3DSeed.setBiasTangent(aBias, aTangent);
   a3DSeed.setRecHits(myRecHits);
-  /*
+
+  ////// DEBUG
+  //
   std::cout<<KRED<<"tagent from track: "<<RST;
   a3DSeed.getTangent().Print();
   
   std::cout<<KRED<<"tagent from track, U proj.: "<<RST;
-  a3DSeed.get2DProjection(DIR_U, 0, 1).getTangent().Print();
+  a3DSeed.get2DProjection(definitions::projection_type::DIR_U, 0, 1).getTangent().Print();
 
   std::cout<<KRED<<"tagent from track, V proj.: "<<RST;
-  a3DSeed.get2DProjection(DIR_V, 0, 1).getTangent().Print();
+  a3DSeed.get2DProjection(definitions::projection_type::DIR_V, 0, 1).getTangent().Print();
 
   std::cout<<KRED<<"tagent from track, W proj.: "<<RST;
-  a3DSeed.get2DProjection(DIR_W, 0, 1).getTangent().Print();
+  a3DSeed.get2DProjection(definitions::projection_type::DIR_W, 0, 1).getTangent().Print();
 
   std::cout<<KRED<<"bias from track: "<<RST;
   a3DSeed.getBias().Print();
-  */
-  
+  //
+  ////// DEBUG
+
   return a3DSeed;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
+Track3D TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
 
-  myFittedTrack = aTrackCandidate;
+  Track3D aFittedTrack = aTrackCandidate;  
   std::cout<<KBLU<<"Pre-fit: "<<RST<<std::endl; 
-  std::cout<<myFittedTrack<<std::endl;
+  std::cout<<aFittedTrack<<std::endl;
   
   int nOffsets = 3;
   double offset = 0.0;
@@ -502,17 +635,19 @@ void TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
     }
   }
   if(bestFitResult.IsValid() && bestFitResult.MinFcnValue()<candidateChi2){
-    myFittedTrack.setFitMode(Track3D::FIT_BIAS_TANGENT);
-    myFittedTrack.chi2FromNodesList(bestFitResult.GetParams());
+    aFittedTrack.setFitMode(Track3D::FIT_BIAS_TANGENT);
+    aFittedTrack.chi2FromNodesList(bestFitResult.GetParams());
   }
-  myFittedTrack.getSegments().front().setRecHits(myRawHits);
+  aFittedTrack.getSegments().front().setRecHits(myRawHits);
 
-  auto xyRange = myGeometryPtr->rangeXY();
-  myFittedTrack.extendToChamberRange(xyRange, myZRange);
-  myFittedTrack.shrinkToHits();
+  //auto xyRange = myGeometryPtr->rangeXY(); TH2Poly axis ranges returns too small values
+  auto xyRange = std::make_tuple(-99, 99, -165, 165);
+  aFittedTrack.extendToChamberRange(xyRange, myZRange);
+  aFittedTrack.shrinkToHits();
   
   std::cout<<KBLU<<"Post-fit: "<<RST<<std::endl;
-  std::cout<<myFittedTrack<<std::endl;
+  std::cout<<aFittedTrack<<std::endl;
+  return aFittedTrack;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -585,23 +720,96 @@ Track3D TrackBuilder::fitTrackNodesStartEnd(const Track3D & aTrack) const{
   ROOT::Math::Functor fcn(&aTrackCandidate, &Track3D::chi2FromNodesList, nParams);
   fitter.SetFCN(fcn, params.data());
   
-  double paramWindowWidth = 100.0;
+  //double paramWindowWidth = 10.0;
   for (int iPar = 0; iPar < nParams; ++iPar){
+    fitter.Config().ParSettings(iPar).Release();
     fitter.Config().ParSettings(iPar).SetValue(params[iPar]);
-    fitter.Config().ParSettings(iPar).SetStepSize(1);
-    fitter.Config().ParSettings(iPar).SetLimits(params[iPar]-paramWindowWidth,
-						params[iPar]+paramWindowWidth);
+    //fitter.Config().ParSettings(iPar).SetLimits(params[iPar]-paramWindowWidth,
+    //						params[iPar]+paramWindowWidth);
   }      
   bool fitStatus = fitter.FitFCN();
   if (!fitStatus) {
     Error(__FUNCTION__, "Track3D Fit failed");
-    std::cout<<KRED<<"Track3D Fit failed"<<RST<<std::endl;
-    //fitter.Result().Print(std::cout);
-    return aTrack;
+    std::cout<<KRED<<"Track3D nodes fit failed"<<RST<<std::endl;
+    fitter.Result().Print(std::cout);
+    //return aTrack;
   }
   const ROOT::Fit::FitResult & result = fitter.Result();
   aTrackCandidate.chi2FromNodesList(result.GetParams());
+
+  std::cout<<KBLU<<"Post-refit: "<<RST<<std::endl;
+  std::cout<<aTrackCandidate<<std::endl;
+  
   return aTrackCandidate;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
+
+  /*
+  return aTrackCandidate;
+  ////TEST
+  TVector3 a(0,0,0); 
+  //TVector3 b(0, 0 , 60); //theta = 0
+  //TVector3 b(60, 0, 3.67394e-15); //theta = M_PI/2, phi = 0
+  TVector3 b(42.4264, 42.4264, 3.67394e-15); //theta = M_PI/4, phi = M_PI/4
+
+  Track3D aCandidate1;
+  TrackSegment3D aSegment1;
+  aSegment1.setGeometry(myGeometryPtr);  
+  aSegment1.setStartEnd(a, b);
+  aSegment1.setRecHits(myRawHits);
+  aSegment1.setPID(pid_type::ALPHA);
+  aCandidate1.addSegment(aSegment1);
+  return aCandidate1;
+  ////////
+  */
+  if(aTrackCandidate.getLength()<1) return aTrackCandidate;
+
+  const TrackSegment3D & aSegment = aTrackCandidate.getSegments().front(); 
+  TH1F hChargeProfile = aSegment.getChargeProfile(); 
+  mydEdxFitter.fitHisto(hChargeProfile);
+
+  pid_type eventType = mydEdxFitter.getBestFitEventType();
+  bool isReflected = mydEdxFitter.getIsReflected();
+  double vertexOffset = mydEdxFitter.getVertexOffset();
+  double alphaRange = mydEdxFitter.getAlphaRange();
+  double carbonRange = mydEdxFitter.getCarbonRange();
+
+  TVector3 tangent =  aSegment.getTangent();
+  TVector3 start =  aSegment.getStart();
+  
+  if(isReflected){
+    tangent *=-1;
+    start = aSegment.getEnd();
+  }
+
+  TVector3 vertexPos =  start + vertexOffset*tangent;
+  TVector3 alphaEnd =  vertexPos + alphaRange*tangent;
+  TVector3 carbonEnd =  vertexPos - carbonRange*tangent;
+
+  Track3D aSplitTrackCandidate;
+  aSplitTrackCandidate.setChargeProfile(mydEdxFitter.getFittedHisto());
+  aSplitTrackCandidate.setHypothesisFitChi2(mydEdxFitter.getChi2());
+  TrackSegment3D alphaSegment;
+  alphaSegment.setGeometry(myGeometryPtr);  
+  alphaSegment.setStartEnd(vertexPos, alphaEnd);
+  alphaSegment.setRecHits(myRawHits);
+  alphaSegment.setPID(pid_type::ALPHA);
+  aSplitTrackCandidate.addSegment(alphaSegment);
+  
+  if(eventType==C12_ALPHA){   
+    TrackSegment3D carbonSegment;
+    carbonSegment.setGeometry(myGeometryPtr);  
+    carbonSegment.setStartEnd(vertexPos, carbonEnd);
+    carbonSegment.setRecHits(myRawHits);
+    carbonSegment.setPID(pid_type::CARBON_12);
+    aSplitTrackCandidate.addSegment(carbonSegment);
+  }
+
+  std::cout<<KBLU<<"Post-split: "<<RST<<std::endl;
+  std::cout<<aSplitTrackCandidate<<std::endl;
+  return aSplitTrackCandidate;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

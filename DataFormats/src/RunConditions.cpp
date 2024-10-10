@@ -1,5 +1,5 @@
-#include "RunConditions.h"
-#include "colorText.h"
+#include "TPCReco/RunConditions.h"
+#include "TPCReco/colorText.h"
 
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -12,13 +12,13 @@ void RunConditions::setSamplingRate(double r) { sampling_rate = r;}
 void RunConditions::setTriggerDelay(double d) { trigger_delay = d;}
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-double RunConditions::getDriftVelocity() const { return vdrift;}
+double RunConditions::getDriftVelocity() const noexcept { return vdrift;}
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-double RunConditions::getSamplingRate() const { return sampling_rate;}
+double RunConditions::getSamplingRate() const noexcept { return sampling_rate;}
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-double RunConditions::getTriggerDelay() const { return trigger_delay;}
+double RunConditions::getTriggerDelay() const noexcept { return trigger_delay;}
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::ostream & operator << (std::ostream &out, const RunConditions &aConditions){

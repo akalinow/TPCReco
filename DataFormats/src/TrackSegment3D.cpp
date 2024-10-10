@@ -1,6 +1,6 @@
-#include "TrackSegment3D.h"
-#include "GeometryTPC.h"
-#include "colorText.h"
+#include "TPCReco/TrackSegment3D.h"
+#include "TPCReco/GeometryTPC.h"
+#include "TPCReco/colorText.h"
 
 #include <iostream>
 
@@ -32,8 +32,8 @@ void TrackSegment3D::setBiasTangent(const TVector3 & aBias, const TVector3 & aTa
   myTangent = aTangent.Unit();
 
   double lambda = 200;
-  myStart = myBias-lambda*myTangent;   
-  myEnd = myBias+lambda*myTangent;  
+  myStart = myBias-lambda*myTangent;
+  myEnd = myBias+lambda*myTangent;
   initialize();
 }
 /////////////////////////////////////////////////////////
@@ -58,10 +58,10 @@ void TrackSegment3D::setStartEnd(const double *par){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void TrackSegment3D::setBiasTangent(const double *par){
-  
+
   TVector3 bias(par[0], par[1], par[2]);
   TVector3 tangent;
-  tangent.SetMagThetaPhi(1.0, par[3], par[4]);  
+  tangent.SetMagThetaPhi(1.0, par[3], par[4]);
 
   setBiasTangent(bias, tangent);
 }
@@ -73,7 +73,7 @@ void TrackSegment3D::setRecHits(const std::vector<TH2D> & aRecHits){
   myRecHits.resize(3);
   
   double x=-999.0, y=-999.0, charge=-999.0;
-  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+  for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
     const TH2D & hRecHits = aRecHits[strip_dir];
     for(int iBinX=1;iBinX<=hRecHits.GetNbinsX();++iBinX){
       for(int iBinY=1;iBinY<=hRecHits.GetNbinsY();++iBinY){
@@ -82,7 +82,7 @@ void TrackSegment3D::setRecHits(const std::vector<TH2D> & aRecHits){
 	y = hRecHits.GetYaxis()->GetBinCenter(iBinY);
 	if(charge>0.0) myRecHits.at(strip_dir).push_back(Hit2D(x, y, charge));
       }
-    }  
+    }
   }
   calculateRecHitChi2();
 }
@@ -176,71 +176,19 @@ TrackSegment2D TrackSegment3D::get2DProjection(int strip_dir, double lambdaStart
 double TrackSegment3D::getIntegratedCharge(double lambda) const{
   if(lambda<0) return 0;
   double charge = 0.0;
-  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+  for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
     TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, lambda);
     const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
     charge += aTrack2DProjection.getIntegratedCharge(lambda, aRecHits);
-  } 
+  }
   return charge;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-TH2F TrackSegment3D::getChargeProfile1() const{
-
-  double radiusCut = 5;
-  double timeProjection = getTangent().Unit().Z();
-  
-  std::vector<TGraphErrors> projections;
-  std::vector<double> cosPhiProjectionAngles;
-  
-  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
-    TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, getLength());
-    const TVector3 & stripPitchDirection = myGeometryPtr->GetStripPitchVector3D(strip_dir);
-    double dirProjection = std::abs(stripPitchDirection.Unit().Dot(getTangent().Unit()));
-    double cosPhiProjectionAngle = sqrt(dirProjection*dirProjection +
-					timeProjection*timeProjection);    
-    const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
-    projections.push_back(aTrack2DProjection.getChargeProfile(aRecHits, radiusCut));
-    cosPhiProjectionAngles.push_back(cosPhiProjectionAngle);
-  }
-
-  double binWidth = 0.5;  
-  int nBins = 1.2*getLength()/binWidth;
-  if(nBins>200){
-    nBins = 200;
-    binWidth = 1.2*getLength()/nBins;
-  }
-  
-  double minX = -0.1*getLength();
-  double maxX = 1.1*getLength();
-  TH2F hChargeProfile("hChargeProfile",";d [mm];charge/mm",nBins, minX, maxX, 3, -0.5, 2.5);
-
-  double xCenter;
-  double charge = 0.0;
-  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
-    TGraphErrors & aGraph = projections[strip_dir];
-    std::string name = "density_graph_"+std::to_string(strip_dir);
-    aGraph.SetName(name.c_str());
-    name +=".root";
-    aGraph.SaveAs(name.c_str());
-    //double graphInt = aGraph.Integral();
-    //std::cout<<"graphInt: "<<graphInt<<std::endl;
-    //std::cout<<"cosPhiProjectionAngle: "<<cosPhiProjectionAngle<<std::endl;
-    for(int iBin=1;iBin<=hChargeProfile.GetNbinsX();++iBin){
-      xCenter = hChargeProfile.GetXaxis()->GetBinCenter(iBin)/getLength();
-      charge = aGraph.Eval(xCenter);
-      if(charge<1E-3) continue;
-      hChargeProfile.SetBinContent(iBin, strip_dir+1, charge);
-    }
-  }
-  return hChargeProfile;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 double TrackSegment3D::getRecHitChi2(int iProjection) const{
 
   double chi2 = 0.0;
-  if(iProjection<DIR_U || iProjection>DIR_W){   
+  if(iProjection<definitions::projection_type::DIR_U || iProjection>definitions::projection_type::DIR_W){    
     std::for_each(myProjectionsChi2.begin(), myProjectionsChi2.end(), [&](auto aItem){chi2 += aItem;});
   }
   else{
@@ -252,20 +200,86 @@ double TrackSegment3D::getRecHitChi2(int iProjection) const{
 /////////////////////////////////////////////////////////
 void TrackSegment3D::calculateRecHitChi2(){
 
-  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
+  for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
     TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, getLength());
     const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
     myProjectionsChi2[strip_dir] = aTrack2DProjection.getRecHitChi2(aRecHits);
-  }  
+  }
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 double TrackSegment3D::operator() (const double *par) {
 
   TVector3 start(par[0], par[1], par[2]);
-  TVector3 end(par[3], par[4], par[5]);  
+  TVector3 end(par[3], par[4], par[5]);
   setStartEnd(start, end);
   return getRecHitChi2();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void TrackSegment3D::addProjection(TH1F &histo, TGraphErrors &graph) const{
+
+  double x, y, ex;
+  double value=0, binCoverage=0.0;
+  int binLow, binHigh;
+  double binWidth = histo.GetBinWidth(1);
+  for(int iPoint=0;iPoint<graph.GetN();++iPoint){
+    graph.GetPoint(iPoint, x,y);
+    ex = graph.GetErrorX(iPoint);
+    binLow = histo.FindBin((x-ex)*getLength());
+    binHigh = histo.FindBin((x+ex)*getLength());
+    y *= binWidth/getLength();
+    for(int iBin=binLow;iBin<=binHigh;++iBin){
+      if(iBin==binLow) binCoverage = histo.GetXaxis()->GetBinUpEdge(iBin) - (x-ex)*getLength();
+      else if(iBin==binHigh) binCoverage = (x+ex)*getLength() - histo.GetXaxis()->GetBinLowEdge(iBin);
+      else binCoverage = histo.GetBinWidth(iBin);
+      binCoverage /=histo.GetBinWidth(iBin);
+      value = histo.GetBinContent(iBin);
+      histo.SetBinContent(iBin, value+y*binCoverage);
+    }
+  }
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+TH1F TrackSegment3D::getChargeProfile() const{
+
+  double radiusCut = 2;
+  std::vector<TGraphErrors> projections;
+  for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
+    TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, getLength());
+    const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
+    projections.push_back(aTrack2DProjection.getChargeProfile(aRecHits, radiusCut));
+  }
+
+  int nBins = 1024;
+  double minX = -0.2*getLength();
+  double maxX = 1.2*getLength();
+  TH1F hChargeProfile("hChargeProfile",";d [mm];charge",nBins, minX, maxX);
+  hChargeProfile.SetDirectory(0);
+  if(getLength()<1) return hChargeProfile;
+
+  int maxPoints = 1;
+  for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
+    TGraphErrors & aGraph = projections[strip_dir];
+    if(aGraph.GetN()>maxPoints) maxPoints = aGraph.GetN();
+    /*  
+    std::string name = "density_graph_"+std::to_string(strip_dir);
+    aGraph.SetName(name.c_str());
+    name +=".root";
+    aGraph.SaveAs(name.c_str());    
+    */
+    addProjection(hChargeProfile, aGraph);
+  }
+
+  int numberOfBins = std::min(maxPoints,256);
+  int rebinFactor = hChargeProfile.GetNbinsX()/numberOfBins;
+  while(nBins%rebinFactor && rebinFactor<nBins){
+    ++rebinFactor;
+  }
+  hChargeProfile.Rebin(rebinFactor);
+  double scale = 1.0/hChargeProfile.GetBinWidth(1);
+  hChargeProfile.Scale(scale); 
+  return hChargeProfile;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -276,79 +290,23 @@ std::ostream & operator << (std::ostream &out, const TrackSegment3D &aSegment){
 
   const TVector3 & bias = aSegment.getBias();
   const TVector3 & tangent = aSegment.getTangent();
-  
-  out<<"("<<start.X()<<", "<<start.Y()<<", "<<start.Z()<<")"
-       <<" -> "
+
+  out<<"Segment:"<<std::endl
+     <<"\t\t START -> END: ("<<start.X()<<", "<<start.Y()<<", "<<start.Z()<<")"
+     <<" -> "
      <<"("<<end.X()<<", "<<end.Y()<<", "<<end.Z()<<") "
      <<std::endl
      <<"\t\t chi2: "<<aSegment.getRecHitChi2()<<""
      <<" charge [arb. u.]: "<<aSegment.getIntegratedCharge(aSegment.getLength())
      <<" length [mm]: "<<aSegment.getLength()
      <<std::endl
-     <<"\t bias (X,Y,Z): "
+     <<"\t\t bias (X,Y,Z): "
      <<"("<<bias.X()<<", "<<bias.Y()<<", "<<bias.Z()<<")"
-     <<"\t tangent (R, Theta, Phi): "
+     <<std::endl
+     <<"\t\t tangent (R, Theta, Phi): "
      <<"("<<tangent.Mag()<<", "<<tangent.Theta()<<", "<<tangent.Phi()<<")";
-    
+
   return out;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void TrackSegment3D::addProjection(TH1F &histo, TGraphErrors &graph) const{
-  
-  double x, y, ex;
-  double value=0;
-  int binLow, binHigh;
-  double binWidth = histo.GetBinWidth(1);
-  for(int iPoint=0;iPoint<graph.GetN();++iPoint){
-    graph.GetPoint(iPoint, x,y);
-    ex = graph.GetErrorX(iPoint);
-    binLow = histo.FindBin((x-ex)*getLength());
-    binHigh = histo.FindBin((x+ex)*getLength());
-    y *= binWidth*graph.GetN();
-    for(int iBin=binLow;iBin<=binHigh;++iBin){
-      value = histo.GetBinContent(iBin);
-      histo.SetBinContent(iBin, value+y);
-    }
-  }
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-TH1F TrackSegment3D::getChargeProfile() const{
-
-  double radiusCut = 2;  
-  std::vector<TGraphErrors> projections;
-  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
-    TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, getLength());
-    const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
-    projections.push_back(aTrack2DProjection.getChargeProfile(aRecHits, radiusCut));
-  }
-
-  int nBins = 1200;
-  double minX = -0.2*getLength();
-  double maxX = 1.2*getLength();
-  TH1F hChargeProfile("hChargeProfile",";d [mm];charge",nBins, minX, maxX);
-  if(getLength()<1) return hChargeProfile;
-
-  int maxPoints = 0;
-  for(int strip_dir=DIR_U;strip_dir<=DIR_W;++strip_dir){
-    TGraphErrors & aGraph = projections[strip_dir];
-    if(aGraph.GetN()>maxPoints) maxPoints = aGraph.GetN();
-    std::string name = "density_graph_"+std::to_string(strip_dir);
-    aGraph.SetName(name.c_str());
-    name +=".root";
-    //aGraph.SaveAs(name.c_str());
-    addProjection(hChargeProfile, aGraph);
-  }
-    
-  int rebinFactor = 20.0*sqrt(1000.0/maxPoints);
-  int tmp = hChargeProfile.GetNbinsX()/rebinFactor;
-  rebinFactor = hChargeProfile.GetNbinsX()/tmp;
-  
-  hChargeProfile.Rebin(rebinFactor);
-  hChargeProfile.Scale(getIntegratedCharge(getLength())/hChargeProfile.Integral());
-  //hChargeProfile.SaveAs("density_histo.root");
-  return hChargeProfile;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

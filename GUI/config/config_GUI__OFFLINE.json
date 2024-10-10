@@ -1,5 +1,5 @@
 {
-    "dataFile": "/data/edaq/2021/20210428_extTrg_CO2_80mbar/CoBo_2021-04-28T19:36:51.498_0000.graw",
+    "dataFile": "PLACEHOLDER_FOR_DATAFILE",
     "geometryFile": "./geometry_ELITPC.dat",
     "resourcesPath": ".",
     "updateInterval": 3000,
@@ -11,9 +11,15 @@
         "recoMode": false
     },
     "pedestal": {
-        "minPedestalCell": 10,
-        "maxPedestalCell": 50,
-        "minSignalCell": 2,
-        "maxSignalCell": 500
+        "minPedestalCell": 5,
+        "maxPedestalCell": 25,
+        "minSignalCell": 5,
+        "maxSignalCell": 506
+    },
+    "hitFilter": {
+        "recoClusterEnable": false,
+        "recoClusterThreshold": 35,
+        "recoClusterDeltaStrips": 2,
+        "recoClusterDeltaTimeCells": 5
     }
 }
