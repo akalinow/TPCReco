@@ -14,8 +14,9 @@
 #include "TPCReco/IonRangeCalculator.h"
 #include "TPCReco/dEdxFitter.h"
 #include "TPCReco/TrackBuilder.h"
-#include "TPCReco/EventSourceMC.h"
+#include "TPCReco/EventSourceFactory.h"
 
+#include "TPCReco/ConfigManager.h"
 #include "TPCReco/RecoOutput.h"
 #include "TPCReco/RunIdParser.h"
 #include "TPCReco/InputFileHelper.h"
@@ -45,6 +46,9 @@ std::string createROOTFileName(const  std::string & grawFileName){
   else if(rootFileName.find("EventTPC")!=std::string::npos){
     rootFileName = rootFileName.replace(0,std::string("EventTPC").size(),"TrackTree");
   }
+  else if(rootFileName.find("MC")!=std::string::npos){
+    rootFileName = "TrackTree_"+rootFileName;
+  }
   else{
     std::cout<<KRED<<"File format unknown: "<<RST<<rootFileName<<std::endl;
     exit(1);
@@ -58,35 +62,7 @@ std::string createROOTFileName(const  std::string & grawFileName){
 }
 /////////////////////////////////////
 /////////////////////////////////////
-int makeTrackTree(const  std::string & geometryFileName,
-		  const  std::string & dataFileName);
-/////////////////////////////////////
-/////////////////////////////////////
-boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
-
-  boost::program_options::options_description cmdLineOptDesc("Allowed options");
-  cmdLineOptDesc.add_options()
-    ("help", "produce help message")
-    ("geometryFile",  boost::program_options::value<std::string>()->required(), "string - path to the geometry file.")
-    ("dataFile",  boost::program_options::value<std::string>()->required(), "string - path to data file.");
-  
-  boost::program_options::variables_map varMap;        
-try {     
-    boost::program_options::store(boost::program_options::parse_command_line(argc, argv, cmdLineOptDesc), varMap);
-    if (varMap.count("help")) {
-      std::cout << "makeTrackTree" << "\n\n";
-      std::cout << cmdLineOptDesc << std::endl;
-      exit(1);
-    }
-    boost::program_options::notify(varMap);
-  } catch (const std::exception &e) {
-    std::cerr << e.what() << '\n';
-    std::cout << cmdLineOptDesc << std::endl;
-    exit(1);
-  }
-
-  return varMap;
-}
+int makeTrackTree(boost::property_tree::ptree & aConfig);
 /////////////////////////////////////
 /////////////////////////////////////
 int main(int argc, char **argv){
@@ -94,33 +70,11 @@ int main(int argc, char **argv){
   TStopwatch aStopwatch;
   aStopwatch.Start();
 
-  std::string geometryFileName, dataFileName;
-  boost::program_options::variables_map varMap = parseCmdLineArgs(argc, argv);
-  boost::property_tree::ptree tree;
-  if(argc<3){
-    char text[] = "--help";
-    char *argvTmp[] = {text, text};
-    parseCmdLineArgs(2,argvTmp);
-    return 1;
-  }
-  if (varMap.count("geometryFile")) {
-    geometryFileName = varMap["geometryFile"].as<std::string>();
-  }
-  if (varMap.count("dataFile")) {
-    dataFileName = varMap["dataFile"].as<std::string>();
-  }
-
-  int nEntriesProcessed = 0;
-  if(dataFileName.size() && geometryFileName.size()){
-    nEntriesProcessed = makeTrackTree(geometryFileName, dataFileName);
-  }
-  else{
-    std::cout<<KRED<<"Configuration not complete: "<<RST
-	     <<" geometryFile: "<<geometryFileName<<"\n"
-	     <<" dataFile: "<<dataFileName
-	     <<std::endl;
-  }
-
+  ConfigManager cm;
+  boost::property_tree::ptree myConfig = cm.getConfig(argc, argv);
+ 
+  int nEntriesProcessed = makeTrackTree(myConfig);
+ 
   aStopwatch.Stop();
   std::cout<<KBLU<<"Real time:       "<<RST<<aStopwatch.RealTime()<<" s"<<std::endl;
   std::cout<<KBLU<<"CPU time:        "<<RST<<aStopwatch.CpuTime()<<" s"<<std::endl;
@@ -145,16 +99,19 @@ typedef struct {Float_t eventId, frameId,
     carbonEnergyReco,
     chargeReco,
     cosThetaReco, phiReco,
-    lineFitChi2, dEdxFitChi2;
+    lineFitChi2, dEdxFitChi2, dEdxFitSigma;
     } TrackData;
 /////////////////////////
-int makeTrackTree(const  std::string & geometryFileName,
-		  const  std::string & dataFileName) {
+int makeTrackTree(boost::property_tree::ptree & aConfig) {
+		  
+	std::shared_ptr<EventSourceBase> eventSource = EventSourceFactory::makeEventSourceObject(aConfig);
+	auto myEventSource = std::dynamic_pointer_cast<EventSourceMC>(eventSource);
+  if(!myEventSource){
+    std::cout<<KRED<<"Wrong event source type!"<<RST<<std::endl;
+    exit(1);
+  }
 
-  std::shared_ptr<EventSourceMC> myEventSource;  
-  myEventSource = std::make_shared<EventSourceMC>(geometryFileName);
-
-
+  std::string dataFileName = aConfig.get("input.dataFile","");
   std::string rootFileName = createROOTFileName(dataFileName);
   TFile outputROOTFile(rootFileName.c_str(),"RECREATE");
   TTree *tree = new TTree("trackTree", "Track tree");
@@ -164,15 +121,17 @@ int makeTrackTree(const  std::string & geometryFileName,
   leafNames += "eventTypeGen:alphaRangeGen:alphaEnergyGen:chargeGen:cosThetaGen:phiGen:";  
   leafNames += "eventTypeReco:alphaRangeReco:alphaEnergyReco:carbonRangeReco:carbonEnergyReco:";
   leafNames += "chargeReco:cosThetaReco:phiReco:";
-  leafNames += "lineFitChi2:dEdxFitChi2";
+  leafNames += "lineFitChi2:dEdxFitChi2:dEdxFitSigma";
   tree->Branch("track",&track_data,leafNames.c_str());
-
-  int index = geometryFileName.find("mbar");
-  double pressure = stof(geometryFileName.substr(index-3, 3));
+  
+  std::string geometryFileName = aConfig.get("input.geometryFile","");
+  double pressure = aConfig.get<double>("conditions.pressure"); 
+  double temperature = aConfig.get<double>("conditions.temperature");
+  
   TrackBuilder myTkBuilder;
   myTkBuilder.setGeometry(myEventSource->getGeometry());
   myTkBuilder.setPressure(pressure);
-  IonRangeCalculator myRangeCalculator(gas_mixture_type::CO2,pressure,293.15);
+  IonRangeCalculator myRangeCalculator(gas_mixture_type::CO2,pressure, temperature);
 
   RecoOutput myRecoOutput;
   std::string fileName = InputFileHelper::tokenize(dataFileName)[0];
@@ -188,7 +147,7 @@ int makeTrackTree(const  std::string & geometryFileName,
 
   //Event loop
   unsigned int nEntries = myEventSource->numberOfEntries();
-  nEntries = 10000; //TEST
+  nEntries = 10; 
   for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
     if(nEntries>10 && iEntry%(nEntries/10)==0){
       std::cout<<KBLU<<"Processed: "<<int(100*(double)iEntry/nEntries)<<" % events"<<RST<<std::endl;
@@ -227,6 +186,7 @@ int makeTrackTree(const  std::string & geometryFileName,
     track_data.phiReco = atan2(-tangentReco.Z(), tangentReco.Y());
     track_data.lineFitChi2 = aTrack3DReco.getChi2();
     track_data.dEdxFitChi2 = aTrack3DReco.getHypothesisFitChi2();
+    track_data.dEdxFitSigma = myTkBuilder.getdEdxFitSigmaSmearing();
     
     tree->Fill();    
   }

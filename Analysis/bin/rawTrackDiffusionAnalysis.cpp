@@ -359,18 +359,8 @@ int analyzeTrackDiffusion(const boost::property_tree::ptree aConfig){
 	      << ": run=" << id.runId() << ", chunk=" << id.fileId() << ", cobo=" << id.CoBoId() << ", asad=" << id.AsAdId() << std::endl;
     
     // initialize pedestal removal parameters for EventSource
-    dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setRemovePedestal(removePedestal);
-    if(removePedestal) {
-      if(aConfig.find("pedestal")!=aConfig.not_found()) {
-	dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(aConfig.find("pedestal")->second);
-      }
-      else {
-	std::cerr << std::endl
-		  << __FUNCTION__ << KRED << ": Some pedestal configuration options are missing!" << RST << std::endl << std::endl;
-	exit(1);
-      }
+	  dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(aConfig.find("pedestal")->second);
     }
-  }
 #endif
 
   // initialize TrackDiffusion_tree_analysis

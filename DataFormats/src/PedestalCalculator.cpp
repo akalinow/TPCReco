@@ -44,9 +44,9 @@ void PedestalCalculator::InitializeTables(){
   FPN_entries_pedestal.assign(myGeometryPtr->GetAgetNchips(), std::vector<uint>(512));
   FPN_ave_pedestal.assign(myGeometryPtr->GetAgetNchips(), std::vector<double>(512));
   */
-  std::vector< std::vector<uint> >
+  std::vector< std::vector<uint32_t> >
     v2_entries(myGeometryPtr->GetAgetNchips(),
-	       std::vector<uint>(myGeometryPtr->GetAgetNtimecells(),0));
+	       std::vector<uint32_t>(myGeometryPtr->GetAgetNtimecells(),0));
   std::vector< std::vector<double> >
     v2_average(myGeometryPtr->GetAgetNchips(),
 	       std::vector<double>(myGeometryPtr->GetAgetNtimecells(),0.0));
@@ -61,7 +61,7 @@ void PedestalCalculator::InitializeTables(){
     //	      << myGeometryPtr->GetAsadNboards(coboId)
     //	      << std::endl << std::flush;
     /////// DEBUG
-    std::vector< std::vector< std::vector<uint> > >
+    std::vector< std::vector< std::vector<uint32_t> > >
       v_entries(myGeometryPtr->GetAsadNboards(coboId));
     std::vector< std::vector< std::vector<double> > >
       v_average(myGeometryPtr->GetAsadNboards(coboId));

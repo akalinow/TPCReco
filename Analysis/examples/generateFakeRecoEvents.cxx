@@ -28,6 +28,11 @@
 //#define SIMUL_BEAM_E_RESOL     0.00863   // [0-1] 0.863% energy sigma, fwhm=200 keV @ 9.845MeV
 //#define SIMUL_BEAM_E_RESOL     0.0107    // [0-1] 1.107% energy sigma, fwhm=300 keV @ 11.5MeV
 //#define SIMUL_BEAM_E_RESOL     0.0148    // [0-1] 1.480% energy sigma, fwhm=400 keV @ 11.5MeV
+//#define SIMUL_BEAM_E_RESOL     0.01732   // [0-1] 1.732% energy sigma=150keV, fwhm=353keV @ 8.66 MeV
+//#define SIMUL_BEAM_E_RESOL     0.01569   // [0-1] 1.569% energy sigma=150keV, fwhm=353keV @ 9.56 MeV
+//#define SIMUL_BEAM_E_RESOL     0.01524   // [0-1] 1.524% energy sigma=150keV, fwhm=353keV @ 9.845 MeV
+//#define SIMUL_BEAM_E_RESOL     0.01220   // [0-1] 1.122% energy sigma=150keV, fwhm=353keV @ 12.3 MeV
+//#define SIMUL_BEAM_E_RESOL     0.01145   // [0-1] 1.145% energy sigma=150keV, fwhm=353keV @ 13.1 MeV
 //#define SIMUL_BEAM_E_RESOL     0.01440   // [0-1] 1.440% energy sigma, fwhm=300 keV @ 8.86MeV
 //#define SIMUL_BEAM_E_RESOL     0.01137   // [0-1] 1.137% energy sigma, fwhm=350 keV @ 13.1MeV
 #define SIMUL_FIXED_VERTEX_FLAG  false     // false=vertex smeared along the beam axis, true=point-like vertex

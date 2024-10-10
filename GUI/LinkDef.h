@@ -5,7 +5,6 @@
 #pragma link off all functions;
 
 #pragma link C++ class MainFrame+;
-#pragma link C++ class DirectoryWatch+;
 #pragma link C++ class SelectionBox+;
 
 #endif

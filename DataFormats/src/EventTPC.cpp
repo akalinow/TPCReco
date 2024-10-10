@@ -13,17 +13,20 @@
 #include "TPCReco/TrackSegmentTPC.h"
 
 #include "TPCReco/colorText.h"
+
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 EventTPC::EventTPC(){
 
   Clear();
-
-  boost::property_tree::ptree tree;
-  tree.put("recoClusterThreshold", 35.0);
-  tree.put("recoClusterDeltaStrips",2);
-  tree.put("recoClusterDeltaTimeCells",5);
-  filterConfigs[filter_type::threshold] = tree;
+  
+  boost::property_tree::ptree hitConfig_default;
+  hitConfig_default.put("hitFilter.recoClusterThreshold", 35.0);
+  hitConfig_default.put("hitFilter.recoClusterConstantFractionThreshold", 0.1); // 10%
+  hitConfig_default.put("hitFilter.recoClusterDeltaStrips",2);
+  hitConfig_default.put("hitFilter.recoClusterDeltaTimeCells",5);
+  filterConfigs[filter_type::threshold] = hitConfig_default;
+  filterConfigs[filter_type::fraction] = hitConfig_default;
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
@@ -73,13 +76,15 @@ void EventTPC::filterHits(filter_type filterType){
   switch(filterType){
   case filter_type::threshold: {
     const auto & config = filterConfigs.at(filter_type::threshold);
-    double chargeThreshold = config.get<double>("recoClusterThreshold");
+    double chargeThreshold = config.get<double>("hitFilter.recoClusterThreshold");
+    int delta_strips = config.get<int>("hitFilter.recoClusterDeltaStrips");
+    int delta_timecells = config.get<int>("hitFilter.recoClusterDeltaTimeCells");
     for(const auto & item: chargeMapWithSections){
       auto key = item.first;
       auto value = item.second;
       if(value>chargeThreshold){
 	keyList.insert(key);
-	addEnvelope(key, keyList);
+	addEnvelope(key, keyList, delta_strips, delta_timecells);
       }
     }}
     break;
@@ -87,6 +92,30 @@ void EventTPC::filterHits(filter_type filterType){
     for(const auto & item: chargeMapWithSections){
       keyList.insert(item.first);
     }
+    break;
+  case filter_type::fraction: {
+    const auto & config = filterConfigs.at(filter_type::fraction);
+    double chargeFractionThreshold = config.get<double>("hitFilter.recoClusterConstantFractionThreshold");
+    int delta_strips = config.get<int>("hitFilter.recoClusterDeltaStrips");
+    int delta_timecells = config.get<int>("hitFilter.recoClusterDeltaTimeCells");
+    // 1st PASS
+    std::vector<double> maxChargePerDir(3, 0.0);
+    for(const auto & item: chargeMapWithSections){
+      auto strip_dir = std::get<0>(item.first);
+      auto value = item.second;
+      maxChargePerDir[strip_dir]=std::max(value, maxChargePerDir[strip_dir]);
+    }
+    //for(auto strip_dir=0; strip_dir<3; strip_dir++)std::cout<<__FUNCTION__<<": maxCharge["<<strip_dir<<"]="<<maxChargePerDir[strip_dir]<<std::endl;
+    // 2nd PASS
+    for(const auto & item: chargeMapWithSections){
+      auto key = item.first;
+      auto strip_dir = std::get<0>(key);
+      auto value = item.second;
+      if(value>chargeFractionThreshold*maxChargePerDir[strip_dir]) {
+	keyList.insert(key);
+	addEnvelope(key, keyList, delta_strips, delta_timecells);
+      }
+    }}
     break;
   default:;
   }
@@ -97,16 +126,14 @@ void EventTPC::filterHits(filter_type filterType){
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 void EventTPC::addEnvelope(PEventTPC::chargeMapType::key_type key,
-			   std::set<PEventTPC::chargeMapType::key_type> & keyList){
+			   std::set<PEventTPC::chargeMapType::key_type> & keyList,
+			   int delta_strips,
+			   int delta_timecells){
 
   int strip_dir = std::get<0>(key);
   int strip_section  = std::get<1>(key);
   int strip_number  = std::get<2>(key);
   int time_cell = std::get<3>(key);
-    
-  const auto & config = filterConfigs.at(filter_type::threshold);
-  int delta_timecells = config.get<int>("recoClusterDeltaTimeCells");
-  int delta_strips = config.get<int>("recoClusterDeltaStrips");
 
   for(int iCell=time_cell-delta_timecells;
       iCell<=time_cell+delta_timecells;++iCell){
@@ -642,8 +669,5 @@ std::ostream& operator<<(std::ostream& os, const EventTPC& e) {
   os << "EventTPC: " << e.GetEventInfo();
   return os;
 }
-/////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////
-
 /////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////

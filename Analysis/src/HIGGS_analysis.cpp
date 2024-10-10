@@ -12,10 +12,14 @@
 #include "TPCReco/GeometryTPC.h"
 #include "TPCReco/Track3D.h"
 #include "TPCReco/CommonDefinitions.h"
+#include "TPCReco/EventInfo.h"
 #include "TPCReco/HIGGS_analysis.h"
 #include "TPCReco/colorText.h"
 #include "TPCReco/Cuts.h"
 #include "TPCReco/UtilsMath.h"
+
+using std::chrono::duration;
+using std::chrono::duration_cast;
 
 ///////////////////////////////
 ///////////////////////////////
@@ -93,8 +97,16 @@ void HIGGS_analysis::bookHistos(){
   const float maxDeltaMomentumMeV = 20.0; // [MeV]
   const float minBeamEnergyMeV = photonEnergyInMeV_LAB - 0.5*photonEnergyInMeV_LAB; // min histogram range
   const float maxBeamEnergyMeV = photonEnergyInMeV_LAB + 0.5*photonEnergyInMeV_LAB; // max histogram range
-  const float binSizeMeV_kineticEnergy = 0.02; // [MeV] // 20 keV 
-  const float binSizeMeV_beamEnergy = binSizeMeV_kineticEnergy; // [MeV] // 20 keV
+  const float binSizeMeV_kineticEnergy = 0.005; // [MeV] // 5 keV
+  const float binSizeMeV_beamEnergy = binSizeMeV_kineticEnergy; // [MeV] // 5 keV
+
+  ///// DEBUG - special histograms with rate evolution
+  const float binSizeSec = 30; // 30 sec resolution
+  const float binSizeDeltaSec = 0.1; // 0.1 sec resolution
+  const float maxRunTimeSec = 1*3600; // 1 h time-span
+  const float maxDeltaTimeSec = 2*60; // 2 min time-span
+  ///// DEBUG - special histograms with rate evolution
+
   float xmin, xmax, ymin, ymax, zmin, zmax; // [mm]
   std::tie(xmin, xmax, ymin, ymax) = myGeometryPtr->rangeXY();
   std::tie(zmin, zmax) = myGeometryPtr->rangeZ();
@@ -227,18 +239,58 @@ void HIGGS_analysis::bookHistos(){
 	new TH1F((prefix+"_total_E_CMS").c_str(),
 		 Form("%s;Total energy in CMS [MeV];%s", info, perEventTitle),
 		 (int)(maxTotalEnergyMeV-minTotalEnergyMeV), minTotalEnergyMeV, maxTotalEnergyMeV);
-      histos1D[(prefix+"_excitation_E_CMS").c_str()]=
-	new TH1F((prefix+"_excitation_E_CMS").c_str(),
-		 Form("%s;Excitation energy above g.s. in CMS [MeV];%s", info, perEventTitle),
-		 maxKineticEnergyMeV*3/binSizeMeV_kineticEnergy, 0, maxKineticEnergyMeV*3); // 300, 0, maxKineticEnergyMeV*3);
       histos1D[(prefix+"_Qvalue_CMS").c_str()]=
 	new TH1F((prefix+"_Qvalue_CMS").c_str(),
 		 Form("%s;Q value in CMS [MeV];%s", info, perEventTitle),
 		 maxKineticEnergyMeV/binSizeMeV_kineticEnergy, 0, maxKineticEnergyMeV); // 200, 0, maxKineticEnergyMeV);
+      histos1D[(prefix+"_excitation_E_CMS").c_str()]=
+	new TH1F((prefix+"_excitation_E_CMS").c_str(),
+		 Form("%s;Excitation energy above g.s. in CMS [MeV];%s", info, perEventTitle),
+		 maxKineticEnergyMeV*3/binSizeMeV_kineticEnergy, 0, maxKineticEnergyMeV*3); // 300, 0, maxKineticEnergyMeV*3);
       histos1D[(prefix+"_gamma_E_LAB").c_str()]=
 	new TH1F((prefix+"_gamma_E_LAB").c_str(),
 		 Form("%s;Gamma beam energy in LAB [MeV];%s", info, perEventTitle),
 		 (maxBeamEnergyMeV-minBeamEnergyMeV)/binSizeMeV_beamEnergy, minBeamEnergyMeV, maxBeamEnergyMeV); // 100, minBeamEnergyMeV, maxBeamEnergyMeV);
+
+      ///////////// DEBUG - valid for 2-prong only
+      //
+      if(categoryPID[c].size()==2) {
+	histos1D[(prefix+"_excitation_E_CMS_fromAlpha").c_str()]=
+	  new TH1F((prefix+"_excitation_E_CMS_fromAlpha").c_str(),
+		   Form("%s (from #alpha E_{KIN}^{LAB});Excitation energy above g.s. in CMS [MeV];%s", info, perEventTitle),
+		   maxKineticEnergyMeV*3/binSizeMeV_kineticEnergy, 0, maxKineticEnergyMeV*3); // 300, 0, maxKineticEnergyMeV*3);
+	histos1D[(prefix+"_gamma_E_LAB_fromAlpha").c_str()]=
+	  new TH1F((prefix+"_gamma_E_LAB_fromAlpha").c_str(),
+		   Form("%s (from #alpha E_{KIN}^{LAB});Gamma beam energy in LAB [MeV];%s", info, perEventTitle),
+		   (maxBeamEnergyMeV-minBeamEnergyMeV)/binSizeMeV_beamEnergy, minBeamEnergyMeV, maxBeamEnergyMeV); // 100, minBeamEnergyMeV, maxBeamEnergyMeV);
+	histos1D[(prefix+"_excitation_E_CMS_fromAlpha_CutO16").c_str()]=
+	  new TH1F((prefix+"_excitation_E_CMS_fromAlpha_CutO16").c_str(),
+		   Form("%s (from #alpha E_{KIN}^{CMS} with #alpha,C E_{KIN}^{CMS} cut);Excitation energy above g.s. in CMS [MeV];%s", info, perEventTitle),
+		   maxKineticEnergyMeV*3/binSizeMeV_kineticEnergy, 0, maxKineticEnergyMeV*3); // 300, 0, maxKineticEnergyMeV*3);
+	histos1D[(prefix+"_gamma_E_LAB_fromAlpha_CutO16").c_str()]=
+	  new TH1F((prefix+"_gamma_E_LAB_fromAlpha_CutO16").c_str(),
+		   Form("%s (from #alpha E_{KIN}^{LAB} with #alpha,C E_{KIN}^{CMS} cut);Gamma beam energy in LAB [MeV];%s", info, perEventTitle),
+		   (maxBeamEnergyMeV-minBeamEnergyMeV)/binSizeMeV_beamEnergy, minBeamEnergyMeV, maxBeamEnergyMeV); // 100, minBeamEnergyMeV, maxBeamEnergyMeV);
+	histos1D[(prefix+"_runTime").c_str()]=
+	  new TH1F((prefix+"_runTime").c_str(),
+		   Form("%s;Run time [s];%s", info, perEventTitle),
+		   maxRunTimeSec/binSizeSec, 0, maxRunTimeSec);
+	histos1D[(prefix+"_runTime_CutO16").c_str()]=
+	  new TH1F((prefix+"_runTime_CutO16").c_str(),
+		   Form("%s (with #alpha,C E_{KIN}^{CMS} cut);Run time [s];%s", info, perEventTitle),
+		   maxRunTimeSec/binSizeSec, 0, maxRunTimeSec);
+	histos1D[(prefix+"_deltaTime").c_str()]=
+	  new TH1F((prefix+"_deltaTime").c_str(),
+		   Form("%s;Time difference [s];%s", info, perEventTitle),
+		   maxDeltaTimeSec/binSizeDeltaSec, 0, maxDeltaTimeSec);
+	histos1D[(prefix+"_deltaTime_CutO16").c_str()]=
+	  new TH1F((prefix+"_deltaTime_CutO16").c_str(),
+		   Form("%s (with #alpha,C E_{KIN}^{CMS} cut);Time difference [s];%s", info, perEventTitle),
+		   maxDeltaTimeSec/binSizeDeltaSec, 0, maxDeltaTimeSec);
+      }
+      //
+      ///////////// DEBUG - valid for 2-prong only
+
       histos1D[(prefix+"_E_CMS").c_str()]=
 	new TH1F((prefix+"_E_CMS").c_str(),
 		 Form("%s;Kinetic energy sum in CMS [MeV];%s", info, perEventTitle),
@@ -447,6 +499,40 @@ void HIGGS_analysis::bookHistos(){
 		       Form("%s;%s track cos(#theta_{BEAM}) in CMS;Average %s kinetic energy in CMS [MeV];%s", info, pidLatex, pidLatex, perTrackTitle),
 		       100, -1, 1,
 		       0, maxKineticEnergyMeV);
+
+	///////////// DEBUG - valid for 2-prong only, after additional ID cuts
+	//
+	if(categoryPID[c].size()==2) {
+	  histos1D[(prefix+pid+"_E_CMS_CutO16").c_str()]=
+	    new TH1F((prefix+pid+"_E_CMS_CutO16").c_str(),
+		     Form("%s (with #alpha,C E_{KIN}^{CMS} cut);%s kinetic energy in CMS [MeV];%s", info, pidLatex, perTrackTitle),
+		     maxKineticEnergyMeV/binSizeMeV_kineticEnergy, 0, maxKineticEnergyMeV); // 200, 0, maxKineticEnergyMeV);
+	  histos1D[(prefix+pid+"_phiBEAM_CMS_CutO16").c_str()]=
+	    new TH1F((prefix+pid+"_phiBEAM_CMS_CutO16").c_str(),
+		     Form("%s (with #alpha,C E_{KIN}^{CMS} cut);%s track #phi_{BEAM} in CMS [rad];%s", info, pidLatex, perTrackTitle),
+		     100, -TMath::Pi(), TMath::Pi());
+	  histos1D[(prefix+pid+"_thetaBEAM_CMS_CutO16").c_str()]=
+	    new TH1F((prefix+pid+"_thetaBEAM_CMS_CutO16").c_str(),
+		     Form("%s (with #alpha,C E_{KIN}^{CMS} cut);%s track #theta_{BEAM} in CMS [rad];%s", info, pidLatex, perTrackTitle),
+		     100, 0, TMath::Pi());
+	  histos1D[(prefix+pid+"_cosThetaBEAM_CMS_CutO16").c_str()]=
+	    new TH1F((prefix+pid+"_cosThetaBEAM_CMS_CutO16").c_str(),
+		     Form("%s (with #alpha,C E_{KIN}^{CMS} cut);%s track cos(#theta_{BEAM}) in CMS;%s", info, pidLatex, perTrackTitle),
+		     100, -1, 1);
+	  histos2D[(prefix+pid+"_cosThetaBEAM_E_CMS_CutO16").c_str()]=
+	    new TH2F((prefix+pid+"_cosThetaBEAM_E_CMS_CutO16").c_str(),
+		     Form("%s (with #alpha,C E_{KIN}^{CMS} cut);%s track cos(#theta_{BEAM}) in CMS;%s kinetic energy in CMS [MeV];%s", info, pidLatex, pidLatex, perTrackTitle),
+		     100, -1, 1,
+		     maxKineticEnergyMeV/binSizeMeV_kineticEnergy, 0, maxKineticEnergyMeV); // 200, 0, maxKineticEnergyMeV);
+	  histos2D[(prefix+pid+"_deltaYZ_CutO16").c_str()]=
+	    new TH2F((prefix+pid+"_deltaYZ_CutO16").c_str(),
+		     Form("%s (with #alpha,C E_{KIN}^{CMS} cut);%s track #DeltaY_{DET} [mm];%s track #DeltaZ_{DET} [mm];%s", info, pidLatex, pidLatex, perTrackTitle),
+		     maxLengthMM/binSizeMM_2dYZ, -0.5*maxLengthMM, 0.5*maxLengthMM,
+		     maxLengthMM/binSizeMM_2dYZ, -0.5*maxLengthMM, 0.5*maxLengthMM);
+	}
+	//
+	///////////// DEBUG - valid for 2-prong only, after additional ID cuts
+
 	// SPECIAL PLOTS: check dependence of gamma beam energy on vertex position position (Y_DET) horizontal & perpendicular to the gamma beam axis
 	histos2D[(prefix+"_vertexY"+pid+"_len").c_str()]=
 	  new TH2F((prefix+"_vertexY"+pid+"_len").c_str(),
@@ -571,6 +657,18 @@ void HIGGS_analysis::bookHistos(){
 		   maxKineticEnergyMeV/binSizeMeV_kineticEnergy, 0, maxKineticEnergyMeV, // 200, 0, maxKineticEnergyMeV,
 		   maxKineticEnergyMeV/binSizeMeV_kineticEnergy, 0, maxKineticEnergyMeV); // 200, 0, maxKineticEnergyMeV);
 
+	///////////// DEBUG - valid for 2-prong only, after additional ID cuts
+	//
+	if(categoryPID[c].size()==2) {
+	  histos2D[(prefix+pid+"_E"+pid2+"_E_CMS_CutO16").c_str()]=
+	    new TH2F((prefix+pid+"_E"+pid2+"_E_CMS_CutO16").c_str(),
+		     Form("%s (with #alpha,C E_{KIN}^{CMS} cut);%s kinetic energy in CMS [MeV];%s kinetic energy in CMS [MeV];%s", info, pidLatex,  pidLatex2, perTrackTitle),
+		     maxKineticEnergyMeV/binSizeMeV_kineticEnergy, 0, maxKineticEnergyMeV, // 200, 0, maxKineticEnergyMeV,
+		     maxKineticEnergyMeV/binSizeMeV_kineticEnergy, 0, maxKineticEnergyMeV); // 200, 0, maxKineticEnergyMeV);
+	}
+	//
+	///////////// DEBUG - valid for 2-prong only, after additional ID cuts
+
 	// TRACK-TRACK DELTA(i,j) IN CMS FRAME : per category / per track pair, only for 2,3-prong
 	if(categoryPIDhname[c].size()>1) {
 	  histos1D[(prefix+pid+pid2+"_delta_CMS").c_str()]=
@@ -618,14 +716,28 @@ void HIGGS_analysis::bookHistos(){
 }
 ///////////////////////////////
 ///////////////////////////////
-void HIGGS_analysis::fillHistos(Track3D *aTrack){
+void HIGGS_analysis::fillHistos(Track3D *aTrack, eventraw::EventInfo *aEventInfo, bool & isFirst){
   
   // The following assumptions are made:
   // - event is a collection of straight 3D segments
   // - 3D segments share common vertex (STARTING POINT of each segment)
   // - for 2-prong events: longer track is ALPHA, shorter is CARBON
   // - for 3-prong events: all tracks are ALPHAS, descending order by their energy/length
-  
+
+  ///// DEBUG - elapsed run time
+  long double unixTimeSec =
+    (aEventInfo ? duration_cast<duration<long double>>(tpcreco::eventAbsoluteTime(*aEventInfo).time_since_epoch()).count() : -1); // absolute Unix time [s]
+  long double runTimeSec =
+    (aEventInfo ? duration_cast<duration<long double>>(tpcreco::eventRelativeTime(*aEventInfo)).count() : -1); // [s]
+  static double last_timestamp = 0;
+  if(isFirst) {
+    last_timestamp=unixTimeSec;
+    isFirst=false;
+  }
+  long double deltaTimeSec= (aEventInfo ? unixTimeSec - last_timestamp : -1); // [s] time difference for rate measurements
+  last_timestamp=unixTimeSec;
+  ///// DEBUG - elapsed run time
+
   const int ntracks = aTrack->getSegments().size();
   histos1D["h_ntracks"]->Fill(ntracks);
   if (ntracks==0) return;
@@ -854,6 +966,49 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     histos1D["h_2prong_E_CMS"]->Fill(alpha_T_CMS+carbon_T_CMS);
     histos1D["h_2prong_E_LAB"]->Fill(alpha_T_LAB+carbon_T_LAB);
 
+    ///////////// DEBUG
+    //
+    // for automatic RECO:
+    const double cut_center_alpha_T_CMS = 1.85; // MeV // TODO - TO BE PARAMETERIZED
+    const double cut_center_carbon_T_CMS = 0.53; // MeV // TODO - TO BE PARAMETERIZED
+    const double cut_ellipse_alpha_T_CMS = 0.15; // MeV // TODO - TO BE PARAMETERIZED
+    const double cut_ellipse_carbon_T_CMS = 0.15; // MeV // TODO - TO BE PARAMETERIZED
+    // for clicked RECO:
+    // const double cut_center_alpha_T_CMS = 1.82; // MeV // TODO - TO BE PARAMETERIZED
+    // const double cut_center_carbon_T_CMS = 0.50; // MeV // TODO - TO BE PARAMETERIZED
+    // const double cut_ellipse_alpha_T_CMS = 0.15; // MeV // TODO - TO BE PARAMETERIZED
+    // const double cut_ellipse_carbon_T_CMS = 0.15; // MeV // TODO - TO BE PARAMETERIZED
+    const bool passed_O16_idCut=(pow((alpha_T_CMS-cut_center_alpha_T_CMS)/cut_ellipse_alpha_T_CMS, 2)+
+                                 pow((carbon_T_CMS-cut_center_carbon_T_CMS)/cut_ellipse_carbon_T_CMS, 2) < 1); // elliptical cut
+    TLorentzVector carbonP4_BEAM_CMS_fromAlpha;
+    carbonP4_BEAM_CMS_fromAlpha.SetVectM(-alphaP4_BEAM_CMS.Vect(), carbonMass); // corrected P4 in CMS
+    double oxygenMassExcited_fromAlpha=(alphaP4_BEAM_CMS+carbonP4_BEAM_CMS_fromAlpha).E(); // MeV
+    double oxygenExcitationEnergy_fromAlpha=oxygenMassExcited_fromAlpha-oxygenMassGroundState; // MeV
+    double oxygenExcitationEnergy_fromAlpha_XCHECK=alpha_T_CMS*(1+sqrt(1+2*alphaMass/alpha_T_CMS+pow(carbonMass/alpha_T_CMS,2))-carbonMass/alpha_T_CMS)-(oxygenMassGroundState-alphaMass-carbonMass); // MeV
+    double photon_E_CMS_fromAlpha=oxygenExcitationEnergy_fromAlpha*(1-0.5*oxygenExcitationEnergy_fromAlpha/(oxygenMassGroundState+oxygenExcitationEnergy_fromAlpha)); // MeV
+    double photon_E_LAB_fromAlpha=photon_E_CMS_fromAlpha*(photon_E_CMS_fromAlpha/oxygenMassGroundState+sqrt(pow(photon_E_CMS_fromAlpha/oxygenMassGroundState, 2)+1)); // MeV
+    double photon_E_LAB_fromAlpha_XCHECK=0.5*(pow(oxygenMassGroundState+oxygenExcitationEnergy_fromAlpha, 2)/oxygenMassGroundState-oxygenMassGroundState); // MeV
+
+    std::cout << __FUNCTION__ << ": 2-prong X-CHECK: Ex(method #1)=" << oxygenExcitationEnergy_fromAlpha
+	     << " Ex(method #2)=" << oxygenExcitationEnergy_fromAlpha_XCHECK
+	     << " diff=" << oxygenExcitationEnergy_fromAlpha-oxygenExcitationEnergy_fromAlpha_XCHECK << std::endl;
+    std::cout << __FUNCTION__ << ": 2-prong X-CHECK: Eg_LAB(method #1)=" << photon_E_LAB_fromAlpha
+	     << " Eg_LAB(method #2)=" << photon_E_LAB_fromAlpha_XCHECK
+	     << " diff=" << photon_E_LAB_fromAlpha-photon_E_LAB_fromAlpha_XCHECK << std::endl;
+    histos1D["h_2prong_excitation_E_CMS_fromAlpha"]->Fill(oxygenExcitationEnergy_fromAlpha);
+    histos1D["h_2prong_gamma_E_LAB_fromAlpha"]->Fill(photon_E_LAB_fromAlpha);
+    histos1D["h_2prong_runTime"]->Fill(runTimeSec);
+      histos1D["h_2prong_deltaTime"]->Fill(deltaTimeSec);
+    // DEBUG - after additional ID cuts
+    if(passed_O16_idCut) {
+      histos1D["h_2prong_excitation_E_CMS_fromAlpha_CutO16"]->Fill(oxygenExcitationEnergy_fromAlpha);
+      histos1D["h_2prong_gamma_E_LAB_fromAlpha_CutO16"]->Fill(photon_E_LAB_fromAlpha);
+      histos1D["h_2prong_runTime_CutO16"]->Fill(runTimeSec);
+      histos1D["h_2prong_deltaTime_CutO16"]->Fill(deltaTimeSec);
+    }
+    //
+    ///////////// DEBUG
+
     // calculate angles in CMS reference frame in BEAM coordinate system
     double delta_CMS=alphaP4_BEAM_CMS.Angle(carbonP4_BEAM_CMS.Vect()); // [rad]
     double alpha_phi_BEAM_CMS=alphaP4_BEAM_CMS.Phi(); // [rad], azimuthal angle from X axis
@@ -882,6 +1037,29 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack){
     histos1D["h_2prong_alpha_carbon_cosDelta_CMS"]->Fill(cos(delta_CMS));
     histos2D["h_2prong_alpha_E_carbon_E_CMS"]->Fill(alpha_T_CMS, carbon_T_CMS);
     histos2D["h_2prong_alpha_E_carbon_E_LAB"]->Fill(alpha_T_LAB, carbon_T_LAB);
+
+    ///////////// DEBUG - after additional ID cuts
+    //
+    if(passed_O16_idCut) {
+      // alpha particle - after additional ID cuts
+      histos1D["h_2prong_alpha_E_CMS_CutO16"]->Fill(alpha_T_CMS);
+      histos1D["h_2prong_alpha_phiBEAM_CMS_CutO16"]->Fill(alpha_phi_BEAM_CMS);
+      histos1D["h_2prong_alpha_thetaBEAM_CMS_CutO16"]->Fill(acos(alpha_cosTheta_BEAM_CMS));
+      histos1D["h_2prong_alpha_cosThetaBEAM_CMS_CutO16"]->Fill(alpha_cosTheta_BEAM_CMS);
+      histos2D["h_2prong_alpha_cosThetaBEAM_E_CMS_CutO16"]->Fill(alpha_cosTheta_BEAM_CMS, alpha_T_CMS);
+      histos2D["h_2prong_alpha_deltaYZ_CutO16"]->Fill(alpha_len*list.front().getTangent().Y(), alpha_len*list.front().getTangent().Z());
+      // carbon recoil - after additional ID cuts
+      histos1D["h_2prong_carbon_E_CMS_CutO16"]->Fill(carbon_T_CMS);
+      histos1D["h_2prong_carbon_phiBEAM_CMS_CutO16"]->Fill(carbon_phi_BEAM_CMS);
+      histos1D["h_2prong_carbon_thetaBEAM_CMS_CutO16"]->Fill(acos(carbon_cosTheta_BEAM_CMS));
+      histos1D["h_2prong_carbon_cosThetaBEAM_CMS_CutO16"]->Fill(carbon_cosTheta_BEAM_CMS);
+      histos2D["h_2prong_carbon_cosThetaBEAM_E_CMS_CutO16"]->Fill(carbon_cosTheta_BEAM_CMS, carbon_T_CMS);
+      histos2D["h_2prong_carbon_deltaYZ_CutO16"]->Fill(carbon_len*list.back().getTangent().Y(), carbon_len*list.back().getTangent().Z());
+      // alpha-carbon correlations - after additional ID cuts
+      histos2D["h_2prong_alpha_E_carbon_E_CMS_CutO16"]->Fill(alpha_T_CMS, carbon_T_CMS);
+    }
+    //
+    ///////////// DEBUG - after additional ID cuts
 
     // SPECIAL PLOTS: check dependence of gamma beam energy on vertex position (Y_DET) horizontal & perpendicular to the gamma beam axis
     histos2D["h_2prong_vertexX_lenSum"]->Fill(vertexPos.X(), alpha_len+carbon_len);

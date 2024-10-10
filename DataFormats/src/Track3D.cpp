@@ -417,8 +417,13 @@ std::ostream & operator << (std::ostream &out, const Track3D &aTrack){
     out<<KBLU<<"-----------------------------------"<<RST<<std::endl;
   }
 
-  out<<"\t Total track length: "<<aTrack.getLength()<<std::endl;
-  out<<"\t Total track fit loss func.: "<<aTrack.getChi2()<<std::endl;
+  auto length = aTrack.getLength();
+  out<<"\t Total track length [mm]: "<<length<<std::endl;
+  out<<"\t Total track charge [arb. units]: "<<aTrack.getIntegratedCharge(length)<<std::endl;
+  out<<"\t Total track charge  "<<std::endl;
+  out<<"\t from 3D profile [arb. units]: "<<aTrack.getChargeProfile().Integral("width")<<std::endl;
+  out<<"\t Hit fit loss func.: "<<aTrack.getChi2()<<std::endl;
+  out<<"\t dE/dx fit loss func.: "<<aTrack.getHypothesisFitChi2()<<std::endl;
   out<<KBLU<<"-----------------------------------"<<RST<<std::endl;
   return out;
 }

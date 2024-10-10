@@ -14,7 +14,8 @@ enum class scale_type{
 enum class filter_type{
 		 none,
 		 threshold,
-		 island
+		 island,
+		 fraction
 };
 
 namespace definitions {
@@ -33,6 +34,16 @@ enum  projection_type{
   DIR_TIME,
 };
 } //namespace definitions
+
+enum class event_type {
+	EventSourceROOT,
+	EventSourceMC,
+	EventSourceGRAW,
+	EventSourceMultiGRAW
+};
+
+std::ostream& operator<<(std::ostream& os, const event_type& et);
+std::istream& operator>>(std::istream& is, event_type& et);
 
 definitions::projection_type get2DProjectionType(int aStrip_dir);
 definitions::projection_type get2DProjectionType(definitions::projection_type aStrip_dir);
@@ -93,5 +104,13 @@ namespace enumDict {
     reaction_type GetReactionType(const std::string &reactionName);
     std::string GetReactionName(reaction_type type);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+#define _endl_ " (" << __FILE__ << "; " << __LINE__ << ")\n"
+#define checkpoint std::cout << "checkpoint" << _endl_
+
+
 
 #endif
