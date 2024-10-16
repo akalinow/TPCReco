@@ -1,5 +1,6 @@
 #include <TH2D.h>
 #include <TF1.h>
+#include <TFile.h>
 
 #include "TPCReco/GeometryTPC.h"
 #include "TPCReco/RecHitBuilder.h"
@@ -33,6 +34,7 @@ const TH2D & RecHitBuilder::makeRecHits(const TH2D & hProjection){
   hRecHits = hProjection;
   hRecHits.Reset();
   hRecHits.SetTitle(adaptHistoTitle(hProjection.GetTitle()).c_str());
+  hRecHits.SetName((std::string(hProjection.GetName()) + "_RecHits").c_str());
 
   if(!myGeometryPtr){
     std::cerr<<__FUNCTION__<<KRED<<" NULL myGeometryPtr"<<RST<<std::endl; 
@@ -41,6 +43,7 @@ const TH2D & RecHitBuilder::makeRecHits(const TH2D & hProjection){
 
   TH2D hCleanClusters = makeCleanCluster(hProjection);
   makeTimeProjectionRecHits(hCleanClusters);
+
   double recHitsSum = hRecHits.Integral();
   double clusterSum = hProjection.Integral();
   double ratio = recHitsSum/clusterSum;
@@ -57,8 +60,8 @@ const TH2D & RecHitBuilder::makeTimeProjectionRecHits(const TH2D & hProjection){
   double hitTimePos = -999.0;
   double hitTimePosError = -999.0;
   double hitCharge = -999.0;
-  //  double initialSigma = 2*myGeometryPtr->GetTimeBinWidth();//1* for 12.5MHz, 2* for 25.0 MHz
-  double initialSigma = 1*myGeometryPtr->GetTimeBinWidth();//1* for 12.5MHz, 2* for 25.0 MHz
+
+  double initialSigma = myGeometryPtr->GetTimeBinWidth();
   for(int iBinY=1;iBinY<=hProjection.GetNbinsY();++iBinY){
     h1DProj = hProjection.ProjectionX("h1DProjX",iBinY, iBinY);
     const TF1 &fittedShape = fit1DProjection(h1DProj, initialSigma);
@@ -164,7 +167,7 @@ const TF1 & RecHitBuilder::fitSingleHit(TH1D* hProj,
 
   signalShape.SetParLimits(0, 0.5*initialMax, initialMax*1.5);
   signalShape.SetParLimits(1, minMeanX, maxMeanX);   
-  signalShape.SetParLimits(2, initialSigma, 2.0*initialSigma);
+  signalShape.SetParLimits(2, 0.5*initialSigma, 4.0*initialSigma);
   
   TFitResultPtr fitResult = hProj->Fit(&signalShape, "QBRSWN");
   return signalShape;
