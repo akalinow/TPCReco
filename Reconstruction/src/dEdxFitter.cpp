@@ -246,9 +246,6 @@ TFitResult dEdxFitter::fitHypothesis(TF1 *fModel, TH1F & aHisto){
 	   <<" min/maxCarbonOffset="<<minCarbonOffset<<"/"<<maxCarbonOffset<<std::endl;
   /////// DEBUG
   
-
-  aHisto.Print("all");
-
   TFitResult theResult;
   if(!aHisto.GetEntries()) return theResult;
 
@@ -258,13 +255,19 @@ TFitResult dEdxFitter::fitHypothesis(TF1 *fModel, TH1F & aHisto){
   minCarbonOffset = std::max(0.0, maxCarbonOffset - tkLength);
 
   int fitCounter = 0;
-  TFitResultPtr theResultPtr;
+  auto chargeFromHisto = aHisto.Integral("width");
+  double ratio = 1.0;
+  TFitResultPtr theResultPtr = aHisto.Fit(fModel,"BRWWS");
   do{
     reset();
     theResultPtr = aHisto.Fit(fModel,"BRWWS");
     if(!theResultPtr.Get()) break;
+    ratio = theResultPtr->MinFcnValue()/std::pow(chargeFromHisto,2);
     ++fitCounter;
-  }while(!theResultPtr->IsValid() && fitCounter<2);
+  }while((!theResultPtr->IsValid() || ratio>5E-4) && fitCounter<10);
+
+  std::cout<<"dEdxFitter::"<<__FUNCTION__<<": fitCounter="<<fitCounter
+     <<" ratio="<<ratio<<std::endl;
   
   if(theResultPtr.Get()) theResult = *theResultPtr.Get();
   else{
@@ -350,11 +353,10 @@ double dEdxFitter::getCarbonRange() const{
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
-double dEdxFitter::getSigmaSmearing() const{
+double dEdxFitter::getDiffusion() const{
 
   if(bestFitEventType==pid_type::UNKNOWN) return 0.0;
-    
-  return theFittedModel->GetParameter("sigma"); //[mm]
+  return theFittedModel->GetParameter("sigma"); 
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////

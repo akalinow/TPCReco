@@ -792,6 +792,7 @@ Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
   alphaSegment.setGeometry(myGeometryPtr);  
   alphaSegment.setStartEnd(vertexPos, alphaEnd);
   alphaSegment.setRecHits(myRawHits);
+  alphaSegment.setDiffusion(mydEdxFitter.getDiffusion());
   alphaSegment.setPID(pid_type::ALPHA);
   aSplitTrackCandidate.addSegment(alphaSegment);
   
@@ -800,6 +801,7 @@ Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
     carbonSegment.setGeometry(myGeometryPtr);  
     carbonSegment.setStartEnd(vertexPos, carbonEnd);
     carbonSegment.setRecHits(myRawHits);
+    carbonSegment.setDiffusion(mydEdxFitter.getDiffusion());
     carbonSegment.setPID(pid_type::CARBON_12);
     aSplitTrackCandidate.addSegment(carbonSegment);
   }
