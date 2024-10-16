@@ -318,8 +318,6 @@ void TrackBuilder::fillHoughAccumulator(int iDir){
   int charge = 0;
   for(int iBinX=1;iBinX<hRecHits.GetNbinsX();++iBinX){
     for(int iBinY=1;iBinY<hRecHits.GetNbinsY();++iBinY){
-      // x = hRecHits.GetXaxis()->GetBinCenter(iBinX) + aHoughOffest.X();
-      // y = hRecHits.GetYaxis()->GetBinCenter(iBinY) + aHoughOffest.Y();
       x = hRecHits.GetXaxis()->GetBinCenter(iBinX) + myHoughOffset[iDir].X();
       y = hRecHits.GetYaxis()->GetBinCenter(iBinY) + myHoughOffset[iDir].Y();
       charge = hRecHits.GetBinContent(iBinX, iBinY);
@@ -383,7 +381,6 @@ TrackSegment2D TrackBuilder::findSegment2D(int iDir, int iPeak) const{
   double aX = rho*cos(theta);
   double aY = rho*sin(theta);
   aBias.SetXYZ(aX, aY, 0.0);
-  //  aBias -= aHoughOffest.Dot(aBias.Unit())*aBias.Unit();
   aBias -= myHoughOffset[iDir].Dot(aBias.Unit())*aBias.Unit();
   
   aX = -rho*sin(theta);
