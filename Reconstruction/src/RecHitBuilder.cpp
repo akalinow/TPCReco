@@ -47,7 +47,7 @@ const TH2D & RecHitBuilder::makeRecHits(const TH2D & hProjection){
   double clusterSum = hProjection.Integral();
   double ratio = recHitsSum/clusterSum;
   if(ratio<0.2) makeStripProjectionRecHits(hProjection);
-  // cleanRecHits();
+  cleanRecHits();
   return hRecHits;
 }
 /////////////////////////////////////////////////////////
