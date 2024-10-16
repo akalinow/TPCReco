@@ -1,6 +1,5 @@
 #include <TH2D.h>
 #include <TF1.h>
-#include <TFile.h>
 
 #include "TPCReco/GeometryTPC.h"
 #include "TPCReco/RecHitBuilder.h"
