@@ -42,24 +42,6 @@ void TrackSegment2D::initialize(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TVector3 TrackSegment2D::getNormalisedTangent() const{
-  
-  TVector3 normalizedTangent = myTangent.Unit();
-  double phi = myGeometryPtr->GetStripPitchVector(myStripDir).Phi();
-  double cosPhi = cos(phi);
-  
-  if(std::abs(normalizedTangent.X())>1E-3){
-    normalizedTangent *= 1.0/normalizedTangent.X();
-  }
-  else if(std::abs(normalizedTangent.Y())>1E-2){
-    normalizedTangent.SetX(0.0);
-    normalizedTangent *= cosPhi/normalizedTangent.Y();
-  }
-  
-  return normalizedTangent;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
 TVector3 TrackSegment2D::getMinBias() const{
 
   double lambda = myBias.Dot(myTangent);
@@ -126,7 +108,7 @@ double TrackSegment2D::getIntegratedCharge(double lambdaCut, const Hit2DCollecti
 
   double x = 0.0, y = 0.0;
   double totalCharge = 0.0;
-  double radiusCut = 4.0;//FIXME put into configuration. Value 4.0 abtained by  looking at the plots.
+  double radiusCut = 4.0;//FIXME put into configuration. Value 4.0 got by looking at the plots.
   double distance = 0.0;
   double lambda = 0.0;
   TVector3 aPoint;
@@ -148,7 +130,7 @@ std::tuple<double,double> TrackSegment2D::getPointLambdaAndDistance(const TVecto
   const TVector3 & start = getStart();
 
   TVector3 delta = aPoint - start;
-  double lambda = delta*tangent/tangent.Mag();
+  double lambda = delta*tangent.Unit();
   TVector3 transverseComponent = delta - lambda*tangent;
   return std::make_tuple(lambda, transverseComponent.Mag());
 }
@@ -157,7 +139,7 @@ std::tuple<double,double> TrackSegment2D::getPointLambdaAndDistance(const TVecto
 double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
 
   if(!aRecHits.size()) return 0.0;
-  double dummyChi2 = 3.0;//1E9;
+  double dummyChi2 = 999.0;
 
   if(getTangent().Mag()<1E-3){
     std::cout<<__FUNCTION__<<KRED<< " TrackSegment2D has null tangent "<<RST
@@ -171,7 +153,6 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
 
   TVector3 aPoint;
   double chi2 = 0.0;
-  double biasDistance = 0.0;
   double chargeSum = 0.0;
   double totalChargeSum = 0.0;
   double distance = 0.0;
@@ -180,6 +161,7 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
   
   double x = 0.0, y = 0.0;
   double charge = 0.0;
+  double maxDistance = 10.0;
 
   for(const auto aHit:aRecHits){
     x = aHit.getPosTime();
@@ -188,27 +170,18 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
     aPoint.SetXYZ(x, y, 0.0);
     std::tie(lambda,distance) = getPointLambdaAndDistance(aPoint);
     totalChargeSum += charge;
-    if(distance>10) continue;
-    if(lambda<0 || lambda>getLength()) continue;//TEST
+    if(distance>maxDistance) continue;
     ++pointCount;
     chi2 += std::pow(distance, 2)*charge;
     chargeSum +=charge;
-    biasDistance += (aPoint - getBias()).Mag();
   }
   if(!pointCount) return dummyChi2;
 
   chi2 /= chargeSum;
-  biasDistance /= chargeSum;
   chargeSum /= totalChargeSum;
 
-  ///TEST
   if(!pointCount) return 0.0;
-  return chi2;
-  /////
-
-  if(!pointCount) return -100.0;  
-  return chi2 + biasDistance - chargeSum;
-
+  return chi2 - 3*chargeSum;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

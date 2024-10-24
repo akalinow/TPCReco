@@ -23,7 +23,6 @@ EventSourceMC::EventSourceMC(const std::string & geometryFileName) {
   
   myRangeCalculator.setGasPressure(nominalPressure);
 
-
   my3DChargeCloud = TH3D("h3DChargeCloud", "charge cloud [arb. units];X [mm];Y [mm];Z [mm]",
 			 NbinsX, xmin, xmax,
 			 NbinsY, ymin, ymax,
@@ -66,7 +65,7 @@ std::shared_ptr<EventTPC> EventSourceMC::getPreviousEvent(){
 /////////////////////////////////////////////////////////
 void EventSourceMC::loadEventId(unsigned long int iEvent){
 
-  myCurrentEntry = iEvent - 1;
+  myCurrentEntry = iEvent;
   generateEvent();
  
 }
@@ -88,52 +87,45 @@ TVector3 EventSourceMC::createVertex() const{
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TrackSegment3D EventSourceMC::createSegment(const TVector3 vertexPos, pid_type ion_id) const{
-
-  double length = 60;
+TrackSegment3D EventSourceMC::createSegment(const TVector3 vertexPos, pid_type ion_id, double energy) const{
+  
   double theta = 0, phi = 0.0;
   double minCosTheta = -1, maxCosTheta = 1;
   double minPhi = 0, maxPhi = 2*M_PI;
-  double minLength = 20, maxLength = 60;
+  double length = myRangeCalculator.getIonRangeMM(ion_id, energy);
 
-  if(ion_id==pid_type::ALPHA){
-    minLength = 20;
-    maxLength = 60;    
-  }
-  else if(ion_id==pid_type::C_12 && myTracks3D.size()==1){
-    minLength = 10;
-    maxLength = 15;
-    const TVector3 &aTangent = -myTracks3D.front().getSegments().front().getTangent();
-    minPhi = aTangent.Phi()-0.1;
-    maxPhi = aTangent.Phi()+0.1;
-    minCosTheta = cos(aTangent.Theta())-0.1;
-    maxCosTheta = cos(aTangent.Theta())+0.1;
-    if(minCosTheta<-1) minCosTheta = -1.0;
-    if(maxCosTheta>1) maxCosTheta = 1.0;
-  }
-  else if(ion_id==pid_type::THREE_ALPHA){
-    minLength = 5;
-    maxLength = 20;
-  }
- 
-  if(false && myCurrentEntry==0){
-    theta = 0.0;
+  /// fixed test configurations for first 3 events 
+  if(myCurrentEntry==0){ 
+    theta = 1.7;
     phi = 0.0;
   }
-  else if(false && myCurrentEntry==1){
+  else if(myCurrentEntry==1){ 
+    theta = 0.0;
+    phi = M_PI/2.0;
+  }
+  else if(myCurrentEntry==2){
     theta = M_PI/2.0;
     phi = M_PI/4.0;
   }
-  else if(false && myCurrentEntry==2){
-    theta = M_PI/4.0;
+  else if(myCurrentEntry==3){
+    theta = M_PI/2.0;
     phi = M_PI/4.0;
   }
   else{
     theta = TMath::ACos(myRndm.Uniform(minCosTheta, maxCosTheta));
     phi = myRndm.Uniform(minPhi, maxPhi);
-    length = myRndm.Uniform(minLength, maxLength);
+  }
+ 
+ //two prong event - take care of momentum conservation in CM
+ if (ion_id==pid_type::CARBON_12){
+    const TVector3 &aTangent = -myTracks3D.front().getSegments().front().getTangent();
+    phi = aTangent.Phi();
+    theta = aTangent.Theta();
   }
 
+  std::cout<<KBLU<<"Phi: "<<RST<<phi<<" deg: "<<phi*180/M_PI<<std::endl;
+  std::cout<<KBLU<<"Theta: "<<RST<<theta<<" deg: "<<theta*180/M_PI<<std::endl;
+ 
   TVector3 tangent;
   tangent.SetMagThetaPhi(1.0, theta, phi);
 
@@ -181,10 +173,10 @@ TH1F EventSourceMC::createChargeProfile(double ion_range, pid_type ion_id) const
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-Track3D EventSourceMC::createTrack(const TVector3 & aVtx, pid_type ion_id) const{
+Track3D EventSourceMC::createTrack(const TVector3 & aVtx, pid_type ion_id, double energy) const{
 
   Track3D aTrack;
-  TrackSegment3D aSegment = createSegment(aVtx, ion_id);
+  TrackSegment3D aSegment = createSegment(aVtx, ion_id, energy);
   TH1F hChargeProfile = createChargeProfile(aSegment.getLength(), ion_id);
   aTrack.addSegment(aSegment);
   aTrack.setChargeProfile(hChargeProfile);
@@ -220,11 +212,6 @@ void EventSourceMC::fill3DChargeCloud(const Track3D & aTrack){
 /////////////////////////////////////////////////////////
 void EventSourceMC::fillPEventTPC(const TH3D & h3DChargeCloud, const Track3D & aTrack){
 
-  /*
-  myProjectorPtr->SetEvent3D(my3DChargeCloud);
-  myProjectorPtr->fillPEventTPC(myCurrentPEvent);
-  */
-
   int iPolyBin = 0;
   double value = 0.0, totalCharge = 0.0;
   bool err_flag = false;  
@@ -249,9 +236,9 @@ void EventSourceMC::fillPEventTPC(const TH3D & h3DChargeCloud, const Track3D & a
       iPolyBin = myGeometryPtr->GetTH2Poly()->FindBin(smearedPosition.X(), smearedPosition.Y());
       iCell = myGeometryPtr->Pos2timecell(smearedPosition.Z(), err_flag);
       std::shared_ptr<StripTPC> aStrip = myGeometryPtr->GetTH2PolyStrip(iPolyBin);
-      if(aStrip){
-	  myCurrentPEvent->AddValByStrip(aStrip, iCell, value/nTries*keVToChargeScale);
-	  totalCharge+=value/nTries*keVToChargeScale;
+      if(aStrip && !err_flag){
+        myCurrentPEvent->AddValByStrip(aStrip, iCell, value/nTries*keVToChargeScale);
+        totalCharge+=value/nTries*keVToChargeScale;
       }
     }
   }
@@ -263,8 +250,14 @@ void EventSourceMC::generateSingleProng(pid_type ion_id){
 
   myGenEventType = ion_id;
 
+  ///Assume energy conservation in CM frame for two prong events
+  ///alpha takes 3/4 energy, C12 takes 1/4 energy
+  ///assume energy in CMS from 1 to 7 MeV
+  double min_E_CM = 1, max_E_CM = 7.0;
+  double energy_CM = myRndm.Uniform(min_E_CM, max_E_CM);
+
   TVector3 aVtx = createVertex();
-  myTracks3D.push_back(createTrack(aVtx, ion_id));
+  myTracks3D.push_back(createTrack(aVtx, ion_id, energy_CM));
   std::cout<<KBLU<<"Generated track: "<<RST<<std::endl;
   std::cout<<myTracks3D.back()<<std::endl;
 }
@@ -272,17 +265,23 @@ void EventSourceMC::generateSingleProng(pid_type ion_id){
 /////////////////////////////////////////////////////////
 void EventSourceMC::generateTwoProng(){
 
-  myGenEventType = CARBON_12;
+  ///Assume energy conservation in CM frame for two prong events
+  ///alpha takes 3/4 energy, C12 takes 1/4 energy
+  ///assume energy in CMS from 1 to 7 MeV
+  double min_E_CM = 5, max_E_CM = 7.0;
+  double energy_CM = myRndm.Uniform(min_E_CM, max_E_CM);
 
-  pid_type ion_id_first = pid_type::ALPHA;
-  pid_type ion_id_second = pid_type::CARBON_12;
   TVector3 aVtx = createVertex();
 
-  myTracks3D.push_back(createTrack(aVtx, ion_id_first));
+  double energy_first = energy_CM*3/4.0;
+  pid_type ion_id_first = pid_type::ALPHA;
+  myTracks3D.push_back(createTrack(aVtx, ion_id_first, energy_first));
   std::cout<<KBLU<<"First generated track: "<<RST<<std::endl;
   std::cout<<myTracks3D.back()<<std::endl;
 
-  myTracks3D.push_back(createTrack(aVtx, ion_id_second));
+  double energy_second = energy_CM*1/4.0;
+  pid_type ion_id_second = pid_type::CARBON_12;
+  myTracks3D.push_back(createTrack(aVtx, ion_id_second, energy_second));
   std::cout<<KBLU<<"Second generated track: "<<RST<<std::endl;
   std::cout<<myTracks3D.back()<<std::endl;
 }
@@ -295,9 +294,17 @@ void EventSourceMC::generateThreeProng(){
   pid_type ion_id = pid_type::ALPHA;
   TVector3 aVtx = createVertex();
 
+  double min_E_CM = 1, max_E_CM = 7.0;
+  double energy_CM = myRndm.Uniform(min_E_CM, max_E_CM);
+
+  double fractions[3];
+  fractions[0] = myRndm.Uniform(0,1);
+  fractions[1] = myRndm.Uniform(0,1-fractions[0]);
+  fractions[2] = 1-fractions[0]-fractions[1];
+
   int nParts = 3;
   for(int iPart=0;iPart<nParts;++iPart){
-    myTracks3D.push_back(createTrack(aVtx, ion_id));
+    myTracks3D.push_back(createTrack(aVtx, ion_id, energy_CM*fractions[iPart]));
     std::cout<<KBLU<<"Generated track number: "<<std::to_string(iPart)<<RST<<std::endl;
     std::cout<<myTracks3D.back()<<std::endl;
   }
@@ -316,10 +323,13 @@ void EventSourceMC::generateEvent(){
 
   myTracks3D.clear();
   
+  /*
   double aRndm = myRndm.Uniform(0,1);
   if(aRndm<0.33) generateSingleProng();
   else if (aRndm<2*0.33) generateTwoProng();
   else generateThreeProng();
+  */
+  generateTwoProng();
   
   for(const auto & aTrack: myTracks3D) fillPEventTPC(my3DChargeCloud, aTrack);
   fillEventTPC();

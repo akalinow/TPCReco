@@ -369,11 +369,12 @@ void Track3D::removeEmptySegments(){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 double Track3D::chi2FromNodesList(const double *par){
-
-  double segmentParameters[6];
   
   for(unsigned int iSegment=0;iSegment<mySegments.size();++iSegment){
     if(myFitMode==FIT_START_STOP){
+
+      double segmentParameters[6];
+
       segmentParameters[0]  = par[0];
       segmentParameters[1]  = par[1];
       segmentParameters[2]  = par[2];
@@ -385,7 +386,7 @@ double Track3D::chi2FromNodesList(const double *par){
       mySegments.at(iSegment).setStartEnd(segmentParameters);
     }
     if(myFitMode==FIT_BIAS_TANGENT){
-      const double *segmentParameters = par+2*iSegment;
+      const double *segmentParameters = par+3*iSegment;
       mySegments.at(iSegment).setBiasTangent(segmentParameters);
     }
   }

@@ -329,7 +329,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
 
     track_data.lineFitChi2 = aTrack3D.getChi2();
     track_data.dEdxFitChi2 = aTrack3D.getHypothesisFitChi2();
-    track_data.dEdxFitSigma = myTkBuilder.getdEdxFitSigmaSmearing();
+    track_data.dEdxFitSigma = aTrack3D.getSegments().front().getDiffusion();
     
     tree->Fill();    
   }

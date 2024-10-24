@@ -30,6 +30,7 @@ void TrackSegment3D::setBiasTangent(const TVector3 & aBias, const TVector3 & aTa
 
   myBias = aBias;
   myTangent = aTangent.Unit();
+  myBias = myBias - myBias.Dot(myTangent)*myTangent;
 
   double lambda = 200;
   myStart = myBias-lambda*myTangent;
@@ -45,6 +46,7 @@ void TrackSegment3D::setStartEnd(const TVector3 & aStart, const TVector3 & aEnd)
 
   myTangent = (myEnd - myStart).Unit();
   myBias = (myStart + myEnd)*0.5;
+  myBias -= myBias.Dot(myTangent)*myTangent;
   initialize();
 }
 /////////////////////////////////////////////////////////
@@ -59,10 +61,9 @@ void TrackSegment3D::setStartEnd(const double *par){
 /////////////////////////////////////////////////////////
 void TrackSegment3D::setBiasTangent(const double *par){
 
-  TVector3 bias(par[0], par[1], par[2]);
-  TVector3 tangent;
-  tangent.SetMagThetaPhi(1.0, par[3], par[4]);
-
+  TVector3 bias, tangent;
+  bias.SetMagThetaPhi(par[0], myBias.Theta(), myBias.Phi());
+  tangent.SetMagThetaPhi(1.0, par[1], par[2]);
   setBiasTangent(bias, tangent);
 }
 /////////////////////////////////////////////////////////
@@ -119,12 +120,11 @@ std::vector<double> TrackSegment3D::getStartEndXYZ() const{
 /////////////////////////////////////////////////////////
 std::vector<double> TrackSegment3D::getBiasTangentCoords() const{
 
-  std::vector<double> coordinates(5);
+  std::vector<double> coordinates(3);
   double *data = coordinates.data();
-
-  getBias().GetXYZ(data);
-  data[3] = getTangent().Theta();
-  data[4] = getTangent().Phi();
+  data[0] = 1.0;
+  data[1] = getTangent().Theta();
+  data[2] = getTangent().Phi();
 
   return coordinates;
 }

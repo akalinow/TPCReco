@@ -16,6 +16,7 @@
 #include <TPaletteAxis.h>
 #include <TLatex.h>
 #include <TLorentzVector.h>
+#include <TMarker.h>
 
 #include "TPCReco/CommonDefinitions.h"
 #include "TPCReco/MakeUniqueName.h"
@@ -227,8 +228,10 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
      
      auto projType = get2DProjectionType(strip_dir);     
      auto histo2D = get2DProjection(projType, filterType, scale_type::mm);
+    
+
      aPad->SetFrameFillColor(kAzure-6);
-     /*
+     
      if(myConfig.get<bool>("hitFilter.recoClusterEnable")){
        histo2D->SetMinimum(0.0);
        histo2D->DrawCopy("colz");
@@ -236,11 +239,11 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
        hPlotBackground->Draw("col same");
        aPad->RedrawAxis();
        histo2D->DrawCopy("colz same");
-       drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
      }
-     else histo2D->DrawCopy("colz");
-     */
-     histo2D->DrawCopy("colz");
+     else{
+        histo2D->DrawCopy("colz");
+     }
+     
      drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
    }
    int strip_dir=3;
@@ -577,6 +580,16 @@ void HistoManager::drawTrack3DProjectionTimeStrip(int strip_dir, TVirtualPad *aP
     const TVector3 & start = aSegment2DProjection.getStart();
     const TVector3 & end = aSegment2DProjection.getEnd();
 
+    TMarker aMarker(start.X(), start.Y(), 20);
+    aMarker.SetMarkerColor(1);
+    aMarker.SetMarkerSize(1.0);
+    aMarker.SetMarkerStyle(20);
+
+    aMarker.SetMarkerColor(1);
+    aMarker.DrawMarker(start.X(), start.Y());
+    aMarker.SetMarkerColor(4);
+    aMarker.DrawMarker(end.X(), end.Y());
+
     aSegment2DLine.SetLineColor(2+iSegment);
     fTrackLines.push_back(aSegment2DLine.DrawLine(start.X(), start.Y(),  end.X(),  end.Y()));
     fTrackLines.back()->ResetBit(kCanDelete);
@@ -628,7 +641,6 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   hFrame.SetMinimum(0.0);
 
   TH1F hChargeProfile = aTrack3D.getChargeProfile();
-  //hChargeProfile = aTrack3D.getSegments().front().getChargeProfile();//TEST
   hChargeProfile.SetLineWidth(2);
   hChargeProfile.SetLineColor(2);
   hChargeProfile.SetMarkerColor(2);
@@ -638,26 +650,14 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   hFrame.SetMaximum(1.2*hChargeProfile.GetMaximum());  
   hFrame.DrawCopy();
   hChargeProfile.DrawCopy("same HIST P");
-  /*
-  TH1F hChargeProfile1 = aTrack3D.getSegments().back().getChargeProfile();
-  hChargeProfile1.Scale(scale);
-  hChargeProfile1.SetLineWidth(2);
-  hChargeProfile1.SetLineColor(3);
-  hChargeProfile1.SetMarkerColor(3);
-  hChargeProfile1.SetMarkerSize(1.0);
-  hChargeProfile1.SetMarkerStyle(20);
-  hChargeProfile1.DrawCopy("same HIST P");
-  return;
-  */
+
   TLegend *aLegend = new TLegend(0.7, 0.75, 0.95,0.95);
   fObjClones.push_back(aLegend);
   
   TF1 dEdx = myTkBuilder.getdEdx();
   if(!dEdx.GetNpar()) return;
-  //////// HACK by MC - for prettier HistoManager::drawDevelHistos (1/04/2023)
   const double points_per_mm = 100;
   dEdx.SetNpx((dEdx.GetXmax()-dEdx.GetXmin())*points_per_mm);
-  //////// HACK by MC - for prettier HistoManager::drawDevelHistos (1/04/2023)
   double carbonScale = dEdx.GetParameter("carbonScale");
   
   dEdx.SetLineColor(kBlack);
@@ -672,9 +672,7 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   dEdx.SetLineStyle(2);
   dEdx.SetLineWidth(2);
   TObject *aObj1 = dEdx.DrawCopy("same");
-  //////// HACK by MC - for prettier HistoManager::drawDevelHistos (1/04/2023)
   if((TF1*)aObj1) ((TF1*)aObj1)->SetName("alpha_model");
-  //////// HACK by MC - for prettier HistoManager::drawDevelHistos (1/04/2023)
   aLegend->AddEntry(aObj1,"#alpha","l");
   fObjClones.push_back(aObj1);
   
@@ -684,9 +682,7 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   dEdx.SetLineStyle(2);
   dEdx.SetLineWidth(2);
   TObject *aObj2  = dEdx.DrawCopy("same");
-  //////// HACK by MC - for prettier HistoManager::drawDevelHistos (1/04/2023)
   if((TF1*)aObj2) ((TF1*)aObj2)->SetName("carbon_model");
-  //////// HACK by MC - for prettier HistoManager::drawDevelHistos (1/04/2023)
   aLegend->AddEntry(aObj2,"^{12}C","l");
   fObjClones.push_back(aObj2);
   aLegend->Draw();

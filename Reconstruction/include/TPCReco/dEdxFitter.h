@@ -45,7 +45,7 @@ public:
 
   double getCarbonRange() const;
 
-  double getSigmaSmearing() const;
+  double getDiffusion() const;
     
   pid_type getBestFitEventType() const { return bestFitEventType;}
   

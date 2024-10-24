@@ -53,10 +53,6 @@ public:
   ///Bias vector with fixed T.
   TVector3 getBiasAtT(double time) const;
 
-  ///Tangent vector normalised to unit value along time it time component non zero
-  ///other wise assume time component is zero, and normalise to 1 along X.
-  TVector3 getNormalisedTangent() const;
-
   double getLength() const { return myLenght;}
 
   TGraphErrors getChargeProfile(const Hit2DCollection & aRecHits, double radiusCut=4.0);

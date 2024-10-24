@@ -40,6 +40,8 @@ class TrackSegment3D{
 
   void setPID(pid_type aPID){ pid = aPID;}
 
+  void setDiffusion(double aDiffusion){ myDiffusion = aDiffusion;}
+
   ///Unit tangential vector along segment.
   const TVector3 & getTangent() const { return myTangent;}
 
@@ -83,6 +85,9 @@ class TrackSegment3D{
   ///Return the full lenght of the segment.
   double getLength() const { return myLenght;}
 
+  ///Return the diffusion fitted in dE/dx.
+  double getDiffusion() const { return myDiffusion;}
+
   ///Return the particle identification.
   pid_type getPID() const { return pid;}
 
@@ -115,7 +120,7 @@ class TrackSegment3D{
   TVector3 myTangent, myBias;
   TVector3 myBiasAtX0, myBiasAtY0, myBiasAtZ0;
   TVector3 myStart, myEnd;
-  double myLenght{0};
+  double myLenght{0}, myDiffusion{0};
   pid_type pid{pid_type::UNKNOWN};
 
   std::vector<Hit2DCollection> myRecHits; //! transient data member
