@@ -463,10 +463,6 @@ double TrackBuilder::getXYTangentPhiFromProjsTangents(definitions::projection_ty
                   l1*myGeometryPtr->GetStripPitchVector(dir2).X())/determinant;                
   
   double phi = atan2(sinPhi, cosPhi);
-  
-  std::cout<<"dir 1,2: "<<dir1<<","<<dir2;
-  std::cout<<" cosPhi: "<<cosPhi<<" sinPhi: "<<sinPhi;
-  std::cout<<" phi [rad]: "<<phi<<" [deg]: "<<phi*180.0/M_PI<<std::endl;
   return phi;
 }
 /////////////////////////////////////////////////////////
@@ -484,13 +480,9 @@ double TrackBuilder::getSignedLengthProjection(definitions::projection_type iPro
   }
   else hProj = getRecHits2D(iProj).ProjectionY("hProj");
 
-  //int iBinMax = hProj->GetMaximumBin();
-  //double maxPos = hProj->GetBinCenter(iBinMax);
-
   /// Have to get maximum bin from full 2D histogram
   /// to avoid bias in the maximum position from the projection
   int iMaxBinX{0}, iMaxBinY{0}, iMaxBinZ{0};
-
   getRecHits2D(iProjTmp).GetMaximumBin(iMaxBinX, iMaxBinY, iMaxBinZ);
   int iMaxBin = iMaxBinY;
   if(iProj==definitions::projection_type::DIR_TIME) iMaxBin = iMaxBinX;
@@ -576,9 +568,7 @@ TVector3 TrackBuilder::getTangent(int iTrack2DSeed) const{
   int nHits_V = segmentV.getNAccumulatorHits();
   int nHits_W = segmentW.getNAccumulatorHits();
 
-  int weight_fromUV = (nHits_U + nHits_V)*(nHits_U>0)*(nHits_W>0);
-  int weight_fromVW = (nHits_V + nHits_W)*(nHits_V>0)*(nHits_W>0);
-  int weight_fromWU = (nHits_W + nHits_U)*(nHits_W>0)*(nHits_U>0);
+  if(nHits_U*nHits_V*nHits_W==0) return TVector3(0,0,0);
 
   TVector3 tangent_U = segmentU.getTangent();
   TVector3 tangent_V = segmentV.getTangent();
@@ -597,9 +587,9 @@ TVector3 TrackBuilder::getTangent(int iTrack2DSeed) const{
   else if(l_W>l_U) auxProj = definitions::projection_type::DIR_W;
   double l_T = getSignedLengthProjection(definitions::projection_type::DIR_TIME, auxProj);
 
-  weight_fromUV = std::abs(l_U*l_V);
-  weight_fromVW = std::abs(l_V*l_W);
-  weight_fromWU = std::abs(l_W*l_U);
+  double weight_fromUV = std::abs(l_U*l_V);
+  double weight_fromVW = std::abs(l_V*l_W);
+  double weight_fromWU = std::abs(l_W*l_U);
 
   /// Lengths of projection on XY plane calculated fro pairs of projections
   double lXY_UV = getXYLength(definitions::projection_type::DIR_U, definitions::projection_type::DIR_V, l_U, l_V);
@@ -607,9 +597,7 @@ TVector3 TrackBuilder::getTangent(int iTrack2DSeed) const{
   double lXY_WU = getXYLength(definitions::projection_type::DIR_W, definitions::projection_type::DIR_U, l_W, l_U);
   double l_XY = (lXY_UV*weight_fromUV + lXY_VW*weight_fromVW + lXY_WU*weight_fromWU)/(weight_fromUV+ weight_fromVW+weight_fromWU);
 
-  std::cout<<"lXY_UV: "<<lXY_UV<<" lXY_VW: "<<lXY_VW<<" lXY_WU: "<<lXY_WU<<" l_XY: "<<l_XY<<std::endl;
-
-  std::cout<<"nHits_U: "<<nHits_U<<" nHits_V: "<<nHits_V<<" nHits_W: "<<nHits_W<<std::endl;
+  double theta = M_PI/2.0 - atan2(l_T, l_XY);
 
   /*
   TVector2 pos(1,1);
@@ -623,8 +611,11 @@ TVector3 TrackBuilder::getTangent(int iTrack2DSeed) const{
   lXY_VW = getXYLength(definitions::projection_type::DIR_V, definitions::projection_type::DIR_W, l_V, l_W);
   lXY_WU = getXYLength(definitions::projection_type::DIR_W, definitions::projection_type::DIR_U, l_W, l_U);
   l_XY = (lXY_UV*weight_fromUV + lXY_VW*weight_fromVW + lXY_WU*weight_fromWU)/(weight_fromUV+ weight_fromVW+weight_fromWU);
-  */
+
+  std::cout<<"lXY_UV: "<<lXY_UV<<" lXY_VW: "<<lXY_VW<<" lXY_WU: "<<lXY_WU<<" l_XY: "<<l_XY<<std::endl;
+  std::cout<<"nHits_U: "<<nHits_U<<" nHits_V: "<<nHits_V<<" nHits_W: "<<nHits_W<<std::endl;
   std::cout<<"l_U: "<<l_U<<" l_V: "<<l_V<<" l_W: "<<l_W<<" l_T: "<<l_T<<" l_XY: "<<l_XY<<std::endl;
+  */
 
   double phiUV = getXYTangentPhiFromProjsTangents(definitions::projection_type::DIR_U, definitions::projection_type::DIR_V, l_U, l_V);
   double phiVW = getXYTangentPhiFromProjsTangents(definitions::projection_type::DIR_V, definitions::projection_type::DIR_W, l_V, l_W);
@@ -633,11 +624,6 @@ TVector3 TrackBuilder::getTangent(int iTrack2DSeed) const{
   if(phi<0) phi += 2*M_PI;
   else if(phi>2*M_PI) phi -= 2*M_PI;
   phi /= (weight_fromUV+ weight_fromVW+weight_fromWU);
-  
-  double theta = M_PI/2.0 - atan2(l_T, l_XY);
-
-  std::cout<<"phi weighted: "<<phi<<" deg: "<<phi*180.0/M_PI<<std::endl;
-  std::cout<<"theta: "<<theta<<" deg: "<<theta*180.0/M_PI<<std::endl;
 
   TVector3 aTangent;
   aTangent.SetMagThetaPhi(1.0, theta, phi);
@@ -654,7 +640,6 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   a3DSeed.setGeometry(myGeometryPtr); 
   a3DSeed.setBiasTangent(aBias, aTangent);
   a3DSeed.setRecHits(myRecHits);
-  //exit(0);
   return a3DSeed;
 }
 /////////////////////////////////////////////////////////
@@ -662,6 +647,7 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
 Track3D TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
 
   Track3D aFittedTrack = aTrackCandidate; 
+  aFittedTrack.setFitMode(Track3D::FIT_BIAS_TANGENT);
   aFittedTrack.getSegments().front().setRecHits(myRawHits);
 
   //auto xyRange = myGeometryPtr->rangeXY(); TH2Poly axis ranges returns too small values
@@ -671,14 +657,14 @@ Track3D TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
   std::cout<<KBLU<<"Pre-fit: "<<RST<<std::endl; 
   std::cout<<aFittedTrack<<std::endl;
 
+  /*
   aFittedTrack.setFitMode(Track3D::FIT_BIAS_TANGENT);
+  
   double theta = aFittedTrack.getSegments().front().getTangent().Theta();
   double phi = aFittedTrack.getSegments().front().getTangent().Phi();
   double biasMag = aFittedTrack.getSegments().front().getBias().Mag();
-  std::cout<<"tangent: theta: "<<theta<<" phi: "<<phi<<std::endl;
-  std::cout<<"biasMag: "<<biasMag<<std::endl;
  
- /*
+ 
   double params[3] = {biasMag, theta, phi};
   aFittedTrack.chi2FromNodesList(params);
 
@@ -689,12 +675,12 @@ Track3D TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
   }
   */
 
-  /*
-  auto fitResult = fitTrackNodesBiasTangent(aTrackCandidate);
+  
+  auto fitResult = fitTrackNodesBiasTangent(aFittedTrack);
   aFittedTrack.chi2FromNodesList(fitResult.GetParams());  
   aFittedTrack.extendToChamberRange(xyRange, myZRange);
   aFittedTrack.shrinkToHits();
-  */
+  
   std::cout<<KBLU<<"Post-fit: "<<RST<<std::endl;
   std::cout<<aFittedTrack<<std::endl;
   //exit(0);
@@ -729,7 +715,7 @@ ROOT::Fit::FitResult TrackBuilder::fitTrackNodesBiasTangent(const Track3D & aTra
   }
   for(int iIter=0;iIter<1;++iIter){
     if(iIter%2==0){
-      fitter.Config().ParSettings(0).Fix();
+      fitter.Config().ParSettings(0).Release();
       fitter.Config().ParSettings(1).Release();
       fitter.Config().ParSettings(2).Release();
     }
@@ -749,8 +735,6 @@ ROOT::Fit::FitResult TrackBuilder::fitTrackNodesBiasTangent(const Track3D & aTra
       return fitter.Result();
     }
   }
-
-  fitter.Result().Print(std::cout);
   return fitter.Result();
 }
 /////////////////////////////////////////////////////////

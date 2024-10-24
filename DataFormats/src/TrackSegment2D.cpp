@@ -181,7 +181,7 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
   chargeSum /= totalChargeSum;
 
   if(!pointCount) return 0.0;
-  return chi2 - 3*chargeSum;
+  return chi2;// - 3*chargeSum;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

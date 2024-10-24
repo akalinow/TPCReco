@@ -89,8 +89,6 @@ double Track3D::getChi2() const{
 
   double chi2 = 0.0;
   chi2 += getSegmentsChi2();
-  chi2 += getNodesChi2();
-
   return chi2;
 }
 /////////////////////////////////////////////////////////
@@ -100,62 +98,6 @@ double Track3D::getSegmentsChi2() const{
   double chi2 = 0.0;
   std::for_each(segmentChi2.begin(), segmentChi2.end(), [&](auto aItem){chi2 += aItem;});
   return chi2;
-
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-double Track3D::getNodesChi2() const{
-
-  double chi2 = 0.0;
-  std::for_each(nodeHitsChi2.begin(), nodeHitsChi2.end(), [&](auto aItem){chi2 += aItem;});
-  std::for_each(nodeAngleChi2.begin(), nodeAngleChi2.end(), [&](auto aItem){chi2 += aItem;});
-  return chi2;
-
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void Track3D::updateNodesChi2(int strip_dir){
-
-  if(!mySegments.size()) return;
-
-  TVector3 aPoint;
-  double charge = 0.0;
-  double sum = 0.0;
-  double nodeChi2 = 0.0;
-  unsigned int iNode = 0;
-
-  for(auto aSegment = mySegments.begin(); aSegment!=(mySegments.end()-1);++aSegment){
-
-    sum = 0.0;
-    nodeChi2 = 0.0;
-
-    TVector3 node3D = aSegment->getEnd();
-    TVector3 formerTangent3D = aSegment->getTangent();
-    TVector3 latterTangent3D = (aSegment+1)->getTangent();
-    TVector3 stripPitchDirection = aSegment->getGeometry()->GetStripPitchVector3D(strip_dir);
-
-    TVector3 node2D(node3D.Z(), node3D*stripPitchDirection, 0.0);
-    TVector3 formerTransverse2D(-formerTangent3D*stripPitchDirection, formerTangent3D.Z(), 0.0);
-    TVector3 latterTransverse2D(-latterTangent3D*stripPitchDirection, latterTangent3D.Z(), 0.0);
-    double deltaPhi = ROOT::Math::VectorUtil::DeltaPhi(formerTransverse2D, latterTransverse2D);
-    nodeAngleChi2[iNode] = 0.1*(std::pow(deltaPhi,2));//FIX me optimize the coefficient value
-    if(ROOT::Math::VectorUtil::DeltaPhi(formerTransverse2D, latterTransverse2D)<0) std::swap(formerTransverse2D, latterTransverse2D);
-
-    for(const auto aHit:mySegments.front().getRecHits().at(strip_dir)){
-      charge = aHit.getCharge();
-      aPoint.SetXYZ(aHit.getPosTime(), aHit.getPosStrip(), 0.0);
-      aPoint -= node2D;
-      double deltaHit = ROOT::Math::VectorUtil::Angle(formerTransverse2D, aPoint);
-      double nodeOpeningAngle = ROOT::Math::VectorUtil::DeltaPhi(formerTransverse2D, latterTransverse2D);
-      bool belongsToNode = deltaHit < nodeOpeningAngle && deltaHit>0.0;
-      if(belongsToNode){
-	nodeChi2 += aPoint.Mag2()*charge;
-	sum += charge;
-      }
-    }
-    if(sum>0.0) nodeHitsChi2[iNode] += nodeChi2/sum;
-    ++iNode;
-  }
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -165,63 +107,6 @@ void Track3D::updateChi2(){
   for(auto aItem: mySegments){
     segmentChi2.push_back(aItem.getRecHitChi2(iProjectionForChi2));
   }
-
-  /* Nodes not active yet
-  nodeHitsChi2.clear();
-  if(mySegments.size()) nodeHitsChi2.resize(mySegments.size()-1);
-
-  nodeAngleChi2.clear();
-  if(mySegments.size()) nodeAngleChi2.resize(mySegments.size()-1);
-
-  for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
-    updateNodesChi2(strip_dir);
-  }
-  */
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-double Track3D::getNodeHitsChi2(unsigned int iNode) const{
-
-  if(iNode>=nodeHitsChi2.size()) return 0.0;
-  else return nodeHitsChi2.at(iNode);
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-double Track3D::getNodeAngleChi2(unsigned int iNode) const{
-
-  if(iNode>=nodeAngleChi2.size()) return 0.0;
-  else return nodeAngleChi2.at(iNode);
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void Track3D::splitWorseChi2Segment(double lenghtFraction){
-
-  update();
-  if(!segmentChi2.size()) return;
-  if(lenghtFraction<0 || lenghtFraction>1.0) lenghtFraction = 0.5;
-
-  double maxChi2 = 0.0;
-  unsigned int worseChi2Segment = 0;
-  for(unsigned int iSegment=0;iSegment<mySegments.size();++iSegment){
-    if(segmentChi2[iSegment]>maxChi2){
-      maxChi2 = segmentChi2[iSegment];
-      worseChi2Segment = iSegment;
-    }
-  }
-  splitSegment(worseChi2Segment, lenghtFraction);
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void Track3D::splitSegment(unsigned int iSegment, double lenghtFraction){
-
-  TrackSegment3D & aSegment = mySegments.at(iSegment);
-  TVector3 aStep = aSegment.getLength()*aSegment.getTangent();
-  aSegment.setStartEnd(aSegment.getStart(), aSegment.getStart() + lenghtFraction*aStep);
-
-  TrackSegment3D aNewSegment = mySegments.at(iSegment);
-  aNewSegment.setStartEnd(aSegment.getEnd(), aSegment.getEnd() + (1.0-lenghtFraction)*aStep);
-  mySegments.insert(mySegments.begin()+iSegment+1, aNewSegment);
-  update();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -372,7 +257,6 @@ double Track3D::chi2FromNodesList(const double *par){
   
   for(unsigned int iSegment=0;iSegment<mySegments.size();++iSegment){
     if(myFitMode==FIT_START_STOP){
-
       double segmentParameters[6];
 
       segmentParameters[0]  = par[0];
@@ -396,16 +280,6 @@ double Track3D::chi2FromNodesList(const double *par){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-double Track3D::chi2FromSplitPoint(const double *par){
-
-  double splitPoint = 0.5;
-  if(par[0]>0.0 && par[0]<1.0) splitPoint = par[0];
-  Track3D aTestTrack = *this;
-  aTestTrack.splitWorseChi2Segment(splitPoint);
-  return aTestTrack.getChi2();
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
 std::ostream & operator << (std::ostream &out, const Track3D &aTrack){
 
   out << "Number of segments: "<<aTrack.getSegments().size()<<std::endl;
@@ -426,7 +300,7 @@ std::ostream & operator << (std::ostream &out, const Track3D &aTrack){
   out<<"\t Total track charge  "<<std::endl;
   out<<"\t from 3D profile [arb. units]: "<<aTrack.getChargeProfile().Integral("width")<<std::endl;
   out<<"\t Hit fit loss func.: "<<aTrack.getChi2()<<std::endl;
-  out<<"\t dE/dx fit loss func./charge^2: "<<aTrack.getHypothesisFitChi2()/std::pow(chargeFromProfile,2)<<std::endl;
+  out<<"\t dE/dx fit loss func./charge^2: "<<aTrack.getHypothesisFitChi2()/std::pow(chargeFromProfile+0.01,2)<<std::endl;
   out<<"\t       fitted diffusion [mm]: "<<aTrack.getSegments().front().getDiffusion()<<std::endl;
   out<<KBLU<<"-----------------------------------"<<RST<<std::endl;
   return out;

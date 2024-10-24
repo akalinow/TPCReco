@@ -580,19 +580,19 @@ void HistoManager::drawTrack3DProjectionTimeStrip(int strip_dir, TVirtualPad *aP
     const TVector3 & start = aSegment2DProjection.getStart();
     const TVector3 & end = aSegment2DProjection.getEnd();
 
-    TMarker aMarker(start.X(), start.Y(), 20);
-    aMarker.SetMarkerColor(1);
-    aMarker.SetMarkerSize(1.0);
-    aMarker.SetMarkerStyle(20);
-
-    aMarker.SetMarkerColor(1);
-    aMarker.DrawMarker(start.X(), start.Y());
-    aMarker.SetMarkerColor(4);
-    aMarker.DrawMarker(end.X(), end.Y());
-
     aSegment2DLine.SetLineColor(2+iSegment);
     fTrackLines.push_back(aSegment2DLine.DrawLine(start.X(), start.Y(),  end.X(),  end.Y()));
     fTrackLines.back()->ResetBit(kCanDelete);
+
+    TMarker aMarker(start.X(), start.Y(), 20);
+    aMarker.SetMarkerSize(1.0);
+    aMarker.SetMarkerStyle(20);
+
+    aMarker.SetMarkerColor(kWhite);
+    aMarker.DrawMarker(start.X(), start.Y());
+    aMarker.SetMarkerColor(kBlack);
+    aMarker.DrawMarker(end.X(), end.Y());
+
     ++iSegment;
 
     tmp = std::min(start.Y(), end.Y());
