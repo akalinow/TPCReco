@@ -13,9 +13,10 @@ double dEdxFitter::nominalPressure = 250.0;
 double dEdxFitter::currentPressure = 190.0;
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
-dEdxFitter::dEdxFitter(double aPressure): dEdxFitter(TPCRECO_RESOURCE_DIR, aPressure)
-{}
+dEdxFitter::dEdxFitter(double aPressure): dEdxFitter(TPCRECO_RESOURCE_DIR, aPressure){}
 
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
 dEdxFitter::dEdxFitter(std::string resources, double aPressure){
   //initialize bragg graphs if they are null:
   if(!braggGraph_alpha){
@@ -29,6 +30,7 @@ dEdxFitter::dEdxFitter(std::string resources, double aPressure){
   braggGraph_alpha->SetBit(TGraph::kIsSortedX);
   braggGraph_12C->SetBit(TGraph::kIsSortedX);
 
+  TF1::DefaultAddToGlobalList(kFALSE);
   alpha_ionisation = new TF1("alpha_ionisation", bragg_alpha, 0, 600.0);
   carbon_ionisation = new TF1("carbon_ionisation",bragg_12C, 0,  200.0);
 
@@ -224,16 +226,6 @@ TH1F dEdxFitter::reflectHisto(const TH1F &aHisto) const{
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 TFitResult dEdxFitter::fitHypothesis(TF1 *fModel, TH1F & aHisto){
-
-  /////// DEBUG
-  /*
-  std::cout<<"dEdxFitter::"<<__FUNCTION__<<": START VALUES: fModel="<<fModel->GetName()
-	   <<" currentPressure="<<currentPressure
-	   <<" min/maxVtxOffset="<<minVtxOffset<<"/"<<maxVtxOffset
-	   <<" min/maxAlphaOffset="<<minAlphaOffset<<"/"<<maxAlphaOffset
-	   <<" min/maxCarbonOffset="<<minCarbonOffset<<"/"<<maxCarbonOffset<<std::endl;
-  */   
-  /////// DEBUG
   
   TFitResult theResult;
   if(!aHisto.GetEntries()) return theResult;
@@ -242,13 +234,13 @@ TFitResult dEdxFitter::fitHypothesis(TF1 *fModel, TH1F & aHisto){
   maxVtxOffset = maxCarbonOffset;
   minAlphaOffset = std::max(0.0, maxAlphaOffset - tkLength);
   minCarbonOffset = std::max(0.0, maxCarbonOffset - tkLength);
-
   int fitCounter = 0;
   auto chargeFromHisto = aHisto.Integral("width");
   double ratio = 1.0;
-
   reset();
-  TFitResultPtr theResultPtr = aHisto.Fit(fModel,"BRWWS");
+
+
+  TFitResultPtr theResultPtr = aHisto.Fit(fModel,"BRWWSQ");
   do{
     reset();
     theResultPtr = aHisto.Fit(fModel,"BRWWSQ");
