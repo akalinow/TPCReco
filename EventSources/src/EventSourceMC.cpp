@@ -80,8 +80,16 @@ void EventSourceMC::loadGeometry(const std::string & fileName){
 /////////////////////////////////////////////////////////
 TVector3 EventSourceMC::createVertex() const{
 
-  double x = 0.0, y = 0.0, z = 0.0;
+  double minX = -150, minY = -10, minZ = -10;
+  double maxX = 150, maxY = 10, maxZ = 10;
+  double x = myRndm.Uniform(minX, maxX);
+  double y = myRndm.Uniform(minY, maxY);
+  double z = myRndm.Uniform(minZ, maxZ);
 
+  x = 0.0;
+  y = 0.0;
+  z = 0.0;
+  
   TVector3 aVertex(x,y,z);
   return aVertex;
 }
@@ -95,17 +103,17 @@ TrackSegment3D EventSourceMC::createSegment(const TVector3 vertexPos, pid_type i
   double length = myRangeCalculator.getIonRangeMM(ion_id, energy);
 
   /// fixed test configurations for first 3 events 
-  if(myCurrentEntry==0){ 
-    theta = 1.7;
+  if(myCurrentEntry==10){ 
+    theta = 0.0;
     phi = 0.0;
   }
-  else if(myCurrentEntry==1){ 
+  else if(myCurrentEntry==10){ 
     theta = 0.0;
     phi = M_PI/2.0;
   }
-  else if(myCurrentEntry==2){
+  else if(myCurrentEntry==0){
     theta = M_PI/2.0;
-    phi = M_PI/4.0;
+    phi = M_PI/2.0;
   }
   else if(myCurrentEntry==3){
     theta = M_PI/2.0;
@@ -123,8 +131,8 @@ TrackSegment3D EventSourceMC::createSegment(const TVector3 vertexPos, pid_type i
     theta = aTangent.Theta();
   }
 
-  std::cout<<KBLU<<"Phi: "<<RST<<phi<<" deg: "<<phi*180/M_PI<<std::endl;
-  std::cout<<KBLU<<"Theta: "<<RST<<theta<<" deg: "<<theta*180/M_PI<<std::endl;
+  //std::cout<<KBLU<<"Phi: "<<RST<<phi<<" deg: "<<phi*180/M_PI<<std::endl;
+  //std::cout<<KBLU<<"Theta: "<<RST<<theta<<" deg: "<<theta*180/M_PI<<std::endl;
  
   TVector3 tangent;
   tangent.SetMagThetaPhi(1.0, theta, phi);
@@ -192,6 +200,7 @@ void EventSourceMC::fill3DChargeCloud(const Track3D & aTrack){
   double lambda = 0.0, value = 0.0;
   double sigma = 2.0;
   int nTries = 100;
+  nTries = 50;
   
   for(int iBin=0;iBin<hChargeProfile.GetNbinsX();++iBin){
     value = hChargeProfile.GetBinContent(iBin);
@@ -267,8 +276,7 @@ void EventSourceMC::generateTwoProng(){
 
   ///Assume energy conservation in CM frame for two prong events
   ///alpha takes 3/4 energy, C12 takes 1/4 energy
-  ///assume energy in CMS from 1 to 7 MeV
-  double min_E_CM = 5, max_E_CM = 7.0;
+  double min_E_CM = 5.0, max_E_CM = 7.0;
   double energy_CM = myRndm.Uniform(min_E_CM, max_E_CM);
 
   TVector3 aVtx = createVertex();

@@ -110,82 +110,47 @@ void Track3D::updateChi2(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void Track3D::extendToChamberRange(const std::tuple<double, double, double, double> & xyRange,
-				   const std::tuple<double, double> & zRange){
+std::tuple<double, double> Track3D::getLambdaOnSphere(const TrackSegment3D & aSegment, double r) const{
 
-  if(getLength()<1) return;
-  bool extended = extendToZRange(std::get<0>(zRange),std::get<1>(zRange));
+   double phi = aSegment.getTangent().Phi();
+   double theta = aSegment.getTangent().Theta();
+   double r0Square = aSegment.getStart().Mag2();
+   double x0 = aSegment.getStart().X();
+   double y0 = aSegment.getStart().Y();
+   double z0 = aSegment.getStart().Z();
 
-  if(!extended){
-    extendToXYRange(std::get<0>(xyRange), std::get<1>(xyRange),
-		    std::get<2>(xyRange), std::get<3>(xyRange));
-  }
+   double a = 1;
+   double b = 2*(x0*cos(phi)*sin(theta) + y0*sin(phi)*sin(theta) + z0*cos(theta));
+   double c = r0Square - r*r;
+   double delta = b*b - 4*a*c;
+   double lambda1 = (-b - sqrt(delta))/(2*a);
+   double lambda2 = (-b + sqrt(delta))/(2*a);
+   return std::make_tuple(lambda1, lambda2);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-bool Track3D::extendToZRange(double zMin, double zMax){
-
-  if(!mySegments.size()) return false;
-
-  TrackSegment3D & aFirstSegment = mySegments.front();
-  TrackSegment3D & aLastSegment = mySegments.back();
-
-  if(std::abs(aFirstSegment.getTangent().Z())<1E-3 ||
-     std::abs(aLastSegment.getTangent().Z())<1E-3) return false;
-
-  double lambda =  aFirstSegment.getLambdaAtZ(zMin);
-  TVector3 aStart = aFirstSegment.getStart() + lambda*aFirstSegment.getTangent();
-  TVector3 aEnd = aFirstSegment.getEnd();
-  aFirstSegment.setStartEnd(aStart, aEnd);
-
-  lambda =  aLastSegment.getLambdaAtZ(zMax);
-  aStart = aLastSegment.getStart();
-  aEnd = aStart + lambda*aLastSegment.getTangent();
-  aLastSegment.setStartEnd(aStart, aEnd);
-  update();
-  return true;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void Track3D::extendToXYRange(double xMin, double xMax,
-			      double yMin, double yMax){
+void Track3D::extendToChamberRange(double r){
 
   if(!mySegments.size()) return;
-  double lambda =  0;
+  double lambda1{0.0}, lambda2{0.0};  
+
   TrackSegment3D & aFirstSegment = mySegments.front();
-  TrackSegment3D & aLastSegment = mySegments.back();
+  std::tie(lambda1, lambda2) = getLambdaOnSphere(aFirstSegment, r);
+   std::cout<<"lambda1: "<<lambda1<<" lambda2: "<<lambda2<<std::endl;
 
-  TVector3 aStart = aFirstSegment.getStart();
-  TVector3 aEnd = aLastSegment.getEnd();
-  double delta = 0.0;
+   TVector3 aStart = aFirstSegment.getStart() + lambda2*aFirstSegment.getTangent();
+   TVector3 aEnd = aFirstSegment.getEnd();
+   aFirstSegment.setStartEnd(aStart, aEnd);
+   /////       
+   TrackSegment3D & aLastSegment = mySegments.back();
+   double segmentLength = aLastSegment.getLength();
+   std::tie(lambda1, lambda2) = getLambdaOnSphere(aLastSegment, r);
+    std::cout<<"lambda1: "<<lambda1<<" lambda2: "<<lambda2<<std::endl;
 
-  aStart = aFirstSegment.getStart();
-  aEnd = aLastSegment.getEnd();
-  delta = std::abs(aStart.X() - xMin);
-  if(std::abs(aEnd.X() - xMin)<delta){
-    lambda = aLastSegment.getLambdaAtX(xMin);
-    aEnd =  aLastSegment.getStart() + lambda*aLastSegment.getTangent();
-    aLastSegment.setStartEnd(aLastSegment.getStart(), aEnd);
-  }
-  else{
-    lambda = aFirstSegment.getLambdaAtX(xMin);
-    aStart =  aFirstSegment.getStart() + lambda*aFirstSegment.getTangent();
-    aFirstSegment.setStartEnd(aStart, aFirstSegment.getEnd());
-  }
-  aStart = aFirstSegment.getStart();
-  aEnd = aLastSegment.getEnd();
-  delta = std::abs(aStart.X() - xMax);
-  if(std::abs(aEnd.X() - xMax)<delta){
-    lambda = aLastSegment.getLambdaAtX(xMax);
-    aEnd =  aLastSegment.getStart() + lambda*aLastSegment.getTangent();
-    aLastSegment.setStartEnd(aLastSegment.getStart(), aEnd);
-  }
-  else{
-    lambda = aFirstSegment.getLambdaAtX(xMax);
-    aStart =  aFirstSegment.getStart() + lambda*aFirstSegment.getTangent();
-    aFirstSegment.setStartEnd(aStart, aFirstSegment.getEnd());
-  }
-  update();
+   aStart = aLastSegment.getStart();
+   aEnd = aStart + (lambda1 - segmentLength)*aLastSegment.getTangent();
+   aLastSegment.setStartEnd(aStart, aEnd);
+   update();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -205,6 +170,7 @@ void Track3D::shrinkToHits(){
   int binTmp = 0;
   chargeCut = 0.05*hChargeProfileStart.GetMaximum();
   binTmp = hChargeProfileStart.FindFirstBinAbove(chargeCut);
+
   if(binTmp>startBin) startBin = binTmp;
     ///
   chargeCut = 0.05*hChargeProfileEnd.GetMaximum();

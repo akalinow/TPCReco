@@ -91,12 +91,9 @@ void dEdxFitter::reset(){
 
   carbon_alpha_model->SetRange(-20, maxAlphaOffset+maxCarbonOffset);
   carbon_alpha_model->SetParLimits(1, 0.0, maxVtxOffset);
-  
+
   double minCarbonRange = 5.0; //mm
   carbon_alpha_model->SetParLimits(2, minAlphaOffset, maxAlphaOffset-minCarbonRange);
-
-  //carbon_alpha_model->SetParLimits(2, 320, 350);//TEST
-
   carbon_alpha_model->SetParLimits(3, minCarbonOffset, maxCarbonOffset-minCarbonRange);
   carbon_alpha_model->SetParameters(1.0,
 				    (minVtxOffset+maxVtxOffset)/2.0,
@@ -239,11 +236,10 @@ TFitResult dEdxFitter::fitHypothesis(TF1 *fModel, TH1F & aHisto){
   double ratio = 1.0;
   reset();
 
-
-  TFitResultPtr theResultPtr = aHisto.Fit(fModel,"BRWWSQ");
+  TFitResultPtr theResultPtr = aHisto.Fit(fModel,"BRWWS");
   do{
     reset();
-    theResultPtr = aHisto.Fit(fModel,"BRWWSQ");
+    theResultPtr = aHisto.Fit(fModel,"BRWWS");
     if(!theResultPtr.Get()) break;
     ratio = theResultPtr->MinFcnValue()/std::pow(chargeFromHisto,2);
     ++fitCounter;
@@ -268,6 +264,16 @@ TFitResult dEdxFitter::fitHisto(const TH1F & aHisto){
     reflection_for_C12_alpha = true;
   }
   TFitResult carbon_alphaResult = fitHypothesis(carbon_alpha_model, fittedHisto_for_C12_alpha);
+
+  /////TEST
+  theFitResult = carbon_alphaResult;
+  theFittedModel = carbon_alpha_model;
+  theFittedHisto = fittedHisto_for_C12_alpha;
+  isReflected = reflection_for_C12_alpha;
+  bestFitEventType = pid_type::C12_ALPHA;
+  theFittedModel->SetParameters(theFitResult.Parameters().data());
+  return theFitResult;
+  ////////
 
   /// alpha hypothesis
   bool reflection_for_alpha = false;

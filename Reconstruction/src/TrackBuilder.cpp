@@ -560,6 +560,10 @@ double TrackBuilder::getXYLength(definitions::projection_type dir1,
 /////////////////////////////////////////////////////////
 TVector3 TrackBuilder::getTangent(int iTrack2DSeed) const{
 
+    double minStripProjLength = 20;
+    double minTimeProjLength = 13;
+    double epsilon = 1E-2;
+
   const TrackSegment2D & segmentU = my2DSeeds[definitions::projection_type::DIR_U][iTrack2DSeed];
   const TrackSegment2D & segmentV = my2DSeeds[definitions::projection_type::DIR_V][iTrack2DSeed];
   const TrackSegment2D & segmentW = my2DSeeds[definitions::projection_type::DIR_W][iTrack2DSeed];
@@ -578,6 +582,15 @@ TVector3 TrackBuilder::getTangent(int iTrack2DSeed) const{
   normaliseTangents(tangent_U, tangent_V, tangent_W);
     
   /// Lengths of projection on strip directions
+  /*
+  TVector2 pos(1,1);
+  pos.SetMagPhi(36, 3.0);
+  bool err_flag = 0;
+  //l_U = myGeometryPtr->Cartesian2posUVW(pos, definitions::projection_type::DIR_U, err_flag);
+  //l_V = myGeometryPtr->Cartesian2posUVW(pos, definitions::projection_type::DIR_V, err_flag);
+  //l_W = myGeometryPtr->Cartesian2posUVW(pos, definitions::projection_type::DIR_W, err_flag);
+  */
+
   double l_U = getSignedLengthProjection(definitions::projection_type::DIR_U);
   double l_V = getSignedLengthProjection(definitions::projection_type::DIR_V);
   double l_W = getSignedLengthProjection(definitions::projection_type::DIR_W);
@@ -586,36 +599,21 @@ TVector3 TrackBuilder::getTangent(int iTrack2DSeed) const{
   if(l_V>l_U) auxProj = definitions::projection_type::DIR_V;
   else if(l_W>l_U) auxProj = definitions::projection_type::DIR_W;
   double l_T = getSignedLengthProjection(definitions::projection_type::DIR_TIME, auxProj);
+  l_T *= std::abs(l_T)>minTimeProjLength;
 
-  double weight_fromUV = std::abs(l_U*l_V);
-  double weight_fromVW = std::abs(l_V*l_W);
-  double weight_fromWU = std::abs(l_W*l_U);
+  double weight_fromUV = std::abs(l_U*l_V)*(std::abs(l_U)>minStripProjLength)*(std::abs(l_V)>minStripProjLength);
+  double weight_fromVW = std::abs(l_V*l_W)*(std::abs(l_V)>minStripProjLength)*(std::abs(l_W)>minStripProjLength);
+  double weight_fromWU = std::abs(l_W*l_U)*(std::abs(l_W)>minStripProjLength)*(std::abs(l_U)>minStripProjLength);
+  double weightSum = weight_fromUV + weight_fromVW + weight_fromWU;
+  if(weightSum<epsilon) weightSum = 1;
 
   /// Lengths of projection on XY plane calculated fro pairs of projections
   double lXY_UV = getXYLength(definitions::projection_type::DIR_U, definitions::projection_type::DIR_V, l_U, l_V);
   double lXY_VW = getXYLength(definitions::projection_type::DIR_V, definitions::projection_type::DIR_W, l_V, l_W);
   double lXY_WU = getXYLength(definitions::projection_type::DIR_W, definitions::projection_type::DIR_U, l_W, l_U);
-  double l_XY = (lXY_UV*weight_fromUV + lXY_VW*weight_fromVW + lXY_WU*weight_fromWU)/(weight_fromUV+ weight_fromVW+weight_fromWU);
+  double l_XY = (lXY_UV*weight_fromUV + lXY_VW*weight_fromVW + lXY_WU*weight_fromWU)/weightSum;
 
   double theta = M_PI/2.0 - atan2(l_T, l_XY);
-
-  /*
-  TVector2 pos(1,1);
-  pos.SetMagPhi(36, 3.0);
-  bool err_flag = 0;
-  l_U = myGeometryPtr->Cartesian2posUVW(pos, definitions::projection_type::DIR_U, err_flag);
-  l_V = myGeometryPtr->Cartesian2posUVW(pos, definitions::projection_type::DIR_V, err_flag);
-  l_W = myGeometryPtr->Cartesian2posUVW(pos, definitions::projection_type::DIR_W, err_flag);
-
-  lXY_UV = getXYLength(definitions::projection_type::DIR_U, definitions::projection_type::DIR_V, l_U, l_V);
-  lXY_VW = getXYLength(definitions::projection_type::DIR_V, definitions::projection_type::DIR_W, l_V, l_W);
-  lXY_WU = getXYLength(definitions::projection_type::DIR_W, definitions::projection_type::DIR_U, l_W, l_U);
-  l_XY = (lXY_UV*weight_fromUV + lXY_VW*weight_fromVW + lXY_WU*weight_fromWU)/(weight_fromUV+ weight_fromVW+weight_fromWU);
-
-  std::cout<<"lXY_UV: "<<lXY_UV<<" lXY_VW: "<<lXY_VW<<" lXY_WU: "<<lXY_WU<<" l_XY: "<<l_XY<<std::endl;
-  std::cout<<"nHits_U: "<<nHits_U<<" nHits_V: "<<nHits_V<<" nHits_W: "<<nHits_W<<std::endl;
-  std::cout<<"l_U: "<<l_U<<" l_V: "<<l_V<<" l_W: "<<l_W<<" l_T: "<<l_T<<" l_XY: "<<l_XY<<std::endl;
-  */
 
   double phiUV = getXYTangentPhiFromProjsTangents(definitions::projection_type::DIR_U, definitions::projection_type::DIR_V, l_U, l_V);
   double phiVW = getXYTangentPhiFromProjsTangents(definitions::projection_type::DIR_V, definitions::projection_type::DIR_W, l_V, l_W);
@@ -623,7 +621,14 @@ TVector3 TrackBuilder::getTangent(int iTrack2DSeed) const{
   double phi = (phiUV*weight_fromUV + phiVW*weight_fromVW + phiWU*weight_fromWU);
   if(phi<0) phi += 2*M_PI;
   else if(phi>2*M_PI) phi -= 2*M_PI;
-  phi /= (weight_fromUV+ weight_fromVW+weight_fromWU);
+  phi /= weightSum;
+
+  std::cout<<"lXY_UV: "<<lXY_UV<<" lXY_VW: "<<lXY_VW<<" lXY_WU: "<<lXY_WU<<" l_XY: "<<l_XY<<std::endl;
+  std::cout<<"nHits_U: "<<nHits_U<<" nHits_V: "<<nHits_V<<" nHits_W: "<<nHits_W<<std::endl;
+  std::cout<<"l_U: "<<l_U<<" l_V: "<<l_V<<" l_W: "<<l_W<<" l_T: "<<l_T<<" l_XY: "<<l_XY<<std::endl;
+  std::cout<<"weight_fromUV: "<<weight_fromUV<<" weight_fromVW: "<<weight_fromVW<<" weight_fromWU: "<<weight_fromWU<<std::endl;
+  std::cout<<"phiUV: "<<phiUV<<" phiVW: "<<phiVW<<" phiWU: "<<phiWU<<" phi: "<<phi<<std::endl;
+  std::cout<<"theta: "<<theta<<" phi: "<<phi<<" deg: "<<phi/M_PI*180<<std::endl;
 
   TVector3 aTangent;
   aTangent.SetMagThetaPhi(1.0, theta, phi);
@@ -640,6 +645,7 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   a3DSeed.setGeometry(myGeometryPtr); 
   a3DSeed.setBiasTangent(aBias, aTangent);
   a3DSeed.setRecHits(myRecHits);
+  //exit(0);
   return a3DSeed;
 }
 /////////////////////////////////////////////////////////
@@ -649,36 +655,19 @@ Track3D TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
   Track3D aFittedTrack = aTrackCandidate; 
   aFittedTrack.setFitMode(Track3D::FIT_BIAS_TANGENT);
   aFittedTrack.getSegments().front().setRecHits(myRawHits);
-
-  //auto xyRange = myGeometryPtr->rangeXY(); TH2Poly axis ranges returns too small values
-  auto xyRange = std::make_tuple(-99, 99, -165, 165);
-  aFittedTrack.extendToChamberRange(xyRange, myZRange);
+  double chamberRadius = 150; //mm
+  aFittedTrack.extendToChamberRange(chamberRadius);
 
   std::cout<<KBLU<<"Pre-fit: "<<RST<<std::endl; 
   std::cout<<aFittedTrack<<std::endl;
-
-  /*
-  aFittedTrack.setFitMode(Track3D::FIT_BIAS_TANGENT);
-  
-  double theta = aFittedTrack.getSegments().front().getTangent().Theta();
-  double phi = aFittedTrack.getSegments().front().getTangent().Phi();
-  double biasMag = aFittedTrack.getSegments().front().getBias().Mag();
- 
- 
-  double params[3] = {biasMag, theta, phi};
-  aFittedTrack.chi2FromNodesList(params);
-
-  for(int iParam=0;iParam<10;iParam++){
-    params[0] = (10*iParam + 0.01)*biasMag;
-    std::cout<<"scale: "<<params[0]<<" aFittedTrack.chi2FromNodesList(): "<<aFittedTrack.chi2FromNodesList(params)<<std::endl;
-    //std::cout<<aFittedTrack<<std::endl;
-  }
-  */
-
+  double initialChi2 = aFittedTrack.getChi2();
   
   auto fitResult = fitTrackNodesBiasTangent(aFittedTrack);
-  aFittedTrack.chi2FromNodesList(fitResult.GetParams());  
-  aFittedTrack.extendToChamberRange(xyRange, myZRange);
+  double finalChi2 = fitResult.MinFcnValue();
+  if(initialChi2> 1.01*finalChi2){
+    aFittedTrack.chi2FromNodesList(fitResult.GetParams());
+  }  
+  aFittedTrack.extendToChamberRange(chamberRadius);
   aFittedTrack.shrinkToHits();
   
   std::cout<<KBLU<<"Post-fit: "<<RST<<std::endl;
@@ -706,14 +695,14 @@ ROOT::Fit::FitResult TrackBuilder::fitTrackNodesBiasTangent(const Track3D & aTra
     }
     if(iPar==1){ //tangent polar angle
       fitter.Config().ParSettings(iPar).SetStepSize(0.01);
-      fitter.Config().ParSettings(iPar).SetLimits(params[1]-0.2, params[1]+0.2);
+      fitter.Config().ParSettings(iPar).SetLimits(params[1]-0.1, params[1]+0.1);
     }
     if(iPar==2){ //tangent azimuthal angle 
       fitter.Config().ParSettings(iPar).SetStepSize(0.05);
-      fitter.Config().ParSettings(iPar).SetLimits(params[2]-0.2, params[2]+0.2);
+      fitter.Config().ParSettings(iPar).SetLimits(params[2]-0.1, params[2]+0.1);
     }
   }
-  for(int iIter=0;iIter<1;++iIter){
+  for(int iIter=0;iIter<3;++iIter){
     if(iIter%2==0){
       fitter.Config().ParSettings(0).Release();
       fitter.Config().ParSettings(1).Release();
@@ -721,6 +710,16 @@ ROOT::Fit::FitResult TrackBuilder::fitTrackNodesBiasTangent(const Track3D & aTra
     }
     else if(iIter%2==1){
       fitter.Config().ParSettings(0).Fix();
+      fitter.Config().ParSettings(1).Release();
+      fitter.Config().ParSettings(2).Release();
+    }
+    else if(iIter%2==2){
+      fitter.Config().ParSettings(0).Release();
+      fitter.Config().ParSettings(1).Fix();
+      fitter.Config().ParSettings(2).Fix();
+    }
+    else if(iIter%2==3){
+      fitter.Config().ParSettings(0).Release();
       fitter.Config().ParSettings(1).Release();
       fitter.Config().ParSettings(2).Release();
     }
@@ -732,8 +731,8 @@ ROOT::Fit::FitResult TrackBuilder::fitTrackNodesBiasTangent(const Track3D & aTra
 	       <<" iteration "<<iIter
 	       <<RST<<std::endl;
       fitter.Result().Print(std::cout);
-      return fitter.Result();
     }
+    else if(iIter==0){ break;}
   }
   return fitter.Result();
 }

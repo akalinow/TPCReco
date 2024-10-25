@@ -271,11 +271,9 @@ TH1F TrackSegment3D::getChargeProfile() const{
     addProjection(hChargeProfile, aGraph);
   }
 
-  int numberOfBins = std::min(maxPoints,256);
-  int rebinFactor = hChargeProfile.GetNbinsX()/numberOfBins;
-  while(nBins%rebinFactor && rebinFactor<nBins){
-    ++rebinFactor;
-  }
+
+  int rebinFactor = log(4.0*nBins/(maxX - minX))/log(2); //bin width is around 2 mm
+  rebinFactor = std::pow(2, rebinFactor);
   hChargeProfile.Rebin(rebinFactor);
   double scale = 1.0/hChargeProfile.GetBinWidth(1);
   hChargeProfile.Scale(scale); 

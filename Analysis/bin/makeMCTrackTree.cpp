@@ -90,11 +90,13 @@ typedef struct {Float_t eventId, frameId,
     alphaRangeGen, alphaEnergyGen,
     carbonRangeGen, carbonEnergyGen,
     chargeGen, cosThetaGen, phiGen,
+    vtxGenX, vtxGenY, vtxGenZ,
     ///
     eventTypeReco,
     alphaRangeReco,alphaEnergyReco,
     carbonRangeReco, carbonEnergyReco,
     chargeReco, cosThetaReco, phiReco,
+    vtxRecoX, vtxRecoY, vtxRecoZ,
     lineFitChi2, dEdxFitChi2, dEdxFitSigma;
     } TrackData;
 /////////////////////////
@@ -118,10 +120,12 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   leafNames += "alphaRangeGen:alphaEnergyGen:";
   leafNames += "carbonRangeGen:carbonEnergyGen:";
   leafNames += "chargeGen:cosThetaGen:phiGen:";
+  leafNames += "vtxGenX:vtxGenY:vtxGenZ:";
   leafNames += "eventTypeReco:";
   leafNames += "alphaRangeReco:alphaEnergyReco:";
   leafNames += "carbonRangeReco:carbonEnergyReco:";
   leafNames += "chargeReco:cosThetaReco:phiReco:";
+  leafNames += "vtxRecoX:vtxRecoY:vtxRecoZ:";
   leafNames += "lineFitChi2:dEdxFitChi2:dEdxFitSigma";
   tree->Branch("track",&track_data,leafNames.c_str());
   
@@ -148,7 +152,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
 
   //Event loop
   unsigned int nEntries = myEventSource->numberOfEntries();
-  nEntries = 1; 
+  nEntries = 100; 
   for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
     if(nEntries>10 && iEntry%(nEntries/10)==0){
       std::cout<<KBLU<<"Processed: "<<int(100*(double)iEntry/nEntries)<<" % events"<<RST<<std::endl;
@@ -159,24 +163,32 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     myTkBuilder.reconstruct();
 
     int eventId = myEventSource->getCurrentEvent()->GetEventInfo().GetEventId();
-    const Track3D & aTrack3DGen = myEventSource->getGeneratedTrack();
+    const Track3D & aTrack3DGenAlpha = myEventSource->getGeneratedTrack(0);
+    const Track3D & aTrack3DGenCarbon = myEventSource->getGeneratedTrack(1);
     const Track3D & aTrack3DReco = myTkBuilder.getTrack3D(0);
 
     track_data.frameId = iEntry;
     track_data.eventId = eventId;
 
     track_data.eventTypeGen = myEventSource->getGeneratedEventType(); 
-    track_data.alphaRangeGen =  aTrack3DGen.getSegments().front().getLength();    
+    track_data.alphaRangeGen =  aTrack3DGenAlpha.getSegments().front().getLength();    
     track_data.alphaEnergyGen = track_data.alphaRangeGen>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA, track_data.alphaRangeGen):0.0;
 
-    track_data.carbonRangeGen =  aTrack3DGen.getSegments().size()==2 ? aTrack3DGen.getSegments().back().getLength(): 0.0;
+    track_data.carbonRangeGen =  aTrack3DGenCarbon.getSegments().front().getLength();
     track_data.carbonEnergyGen = track_data.carbonRangeGen>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::CARBON_12, track_data.carbonRangeGen):0.0;
 
-    track_data.chargeGen = track_data.alphaEnergyGen;//aTrack3DGen.getIntegratedCharge(track_data.alphaRangeGen);
-    const TVector3 & tangentGen = aTrack3DGen.getSegments().front().getTangent();
+    track_data.chargeGen = (track_data.alphaEnergyGen + track_data.carbonEnergyGen)*1E5;
+    const TVector3 & tangentGen = aTrack3DGenAlpha.getSegments().front().getTangent();
     track_data.cosThetaGen = -tangentGen.X();
     track_data.phiGen = atan2(-tangentGen.Z(), tangentGen.Y());
-    tangentGen.Print(); //TEST
+
+    track_data.cosThetaGen = tangentGen.Z();//TEST
+    track_data.phiGen = tangentGen.Phi();//TEST
+
+    const TVector3 & vtxGen = aTrack3DGenAlpha.getSegments().front().getStart();
+    track_data.vtxGenX = vtxGen.X();
+    track_data.vtxGenY = vtxGen.Y();
+    track_data.vtxGenZ = vtxGen.Z();
 
     track_data.eventTypeReco = aTrack3DReco.getSegments().front().getPID() + aTrack3DReco.getSegments().back().getPID();    
     track_data.alphaRangeReco =  aTrack3DReco.getSegments().front().getLength();    
@@ -186,10 +198,20 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     track_data.carbonEnergyReco = track_data.carbonRangeReco>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::CARBON_12, track_data.carbonRangeReco):0.0;
 
     track_data.chargeReco = aTrack3DReco.getIntegratedCharge(aTrack3DReco.getLength());
+
+    const TVector3 & vtxReco = aTrack3DReco.getSegments().front().getStart();
+    track_data.vtxRecoX = vtxReco.X();
+    track_data.vtxRecoY = vtxReco.Y();
+    track_data.vtxRecoZ = vtxReco.Z();
     
     const TVector3 & tangentReco = aTrack3DReco.getSegments().front().getTangent();
     track_data.cosThetaReco = -tangentReco.X();
     track_data.phiReco = atan2(-tangentReco.Z(), tangentReco.Y());
+
+    track_data.cosThetaReco = cos(tangentReco.Theta());//TEST
+    track_data.phiReco = tangentReco.Phi();//TEST
+
+
     track_data.lineFitChi2 = aTrack3DReco.getChi2();
     track_data.dEdxFitChi2 = aTrack3DReco.getHypothesisFitChi2();
     track_data.dEdxFitSigma = aTrack3DReco.getSegments().front().getDiffusion();
