@@ -45,7 +45,7 @@ dEdxFitter::dEdxFitter(std::string resources, double aPressure){
   carbon_alpha_model->SetParName(6, "commonScale");
 
   carbon_alpha_model->SetParLimits(0, 1.0, 4.0);
-  carbon_alpha_model->SetParLimits(6, 50, 100);
+  carbon_alpha_model->SetParLimits(6, 10, 100);
   
   carbon_alpha_model->FixParameter(4, 1.0);
   carbon_alpha_model->FixParameter(5, 1.0);  
@@ -236,10 +236,10 @@ TFitResult dEdxFitter::fitHypothesis(TF1 *fModel, TH1F & aHisto){
   double ratio = 1.0;
   reset();
 
-  TFitResultPtr theResultPtr = aHisto.Fit(fModel,"BRWWS");
+  TFitResultPtr theResultPtr = aHisto.Fit(fModel,"BRWWSQ");
   do{
     reset();
-    theResultPtr = aHisto.Fit(fModel,"BRWWS");
+    theResultPtr = aHisto.Fit(fModel,"BRWWSQ");
     if(!theResultPtr.Get()) break;
     ratio = theResultPtr->MinFcnValue()/std::pow(chargeFromHisto,2);
     ++fitCounter;
@@ -265,7 +265,8 @@ TFitResult dEdxFitter::fitHisto(const TH1F & aHisto){
   }
   TFitResult carbon_alphaResult = fitHypothesis(carbon_alpha_model, fittedHisto_for_C12_alpha);
 
-  /////TEST
+  ///TEST
+  /*
   theFitResult = carbon_alphaResult;
   theFittedModel = carbon_alpha_model;
   theFittedHisto = fittedHisto_for_C12_alpha;
@@ -273,7 +274,8 @@ TFitResult dEdxFitter::fitHisto(const TH1F & aHisto){
   bestFitEventType = pid_type::C12_ALPHA;
   theFittedModel->SetParameters(theFitResult.Parameters().data());
   return theFitResult;
-  ////////
+  */
+  ///
 
   /// alpha hypothesis
   bool reflection_for_alpha = false;

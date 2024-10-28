@@ -601,6 +601,8 @@ TVector3 TrackBuilder::getTangent(int iTrack2DSeed) const{
   double l_T = getSignedLengthProjection(definitions::projection_type::DIR_TIME, auxProj);
   l_T *= std::abs(l_T)>minTimeProjLength;
 
+  if(std::abs(l_T)<minTimeProjLength) minStripProjLength = 25;;
+
   double weight_fromUV = std::abs(l_U*l_V)*(std::abs(l_U)>minStripProjLength)*(std::abs(l_V)>minStripProjLength);
   double weight_fromVW = std::abs(l_V*l_W)*(std::abs(l_V)>minStripProjLength)*(std::abs(l_W)>minStripProjLength);
   double weight_fromWU = std::abs(l_W*l_U)*(std::abs(l_W)>minStripProjLength)*(std::abs(l_U)>minStripProjLength);
@@ -672,7 +674,6 @@ Track3D TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
   
   std::cout<<KBLU<<"Post-fit: "<<RST<<std::endl;
   std::cout<<aFittedTrack<<std::endl;
-  //exit(0);
   return aFittedTrack;
 }
 /////////////////////////////////////////////////////////
@@ -698,7 +699,7 @@ ROOT::Fit::FitResult TrackBuilder::fitTrackNodesBiasTangent(const Track3D & aTra
       fitter.Config().ParSettings(iPar).SetLimits(params[1]-0.1, params[1]+0.1);
     }
     if(iPar==2){ //tangent azimuthal angle 
-      fitter.Config().ParSettings(iPar).SetStepSize(0.05);
+      fitter.Config().ParSettings(iPar).SetStepSize(0.01);
       fitter.Config().ParSettings(iPar).SetLimits(params[2]-0.1, params[2]+0.1);
     }
   }
@@ -771,24 +772,6 @@ Track3D TrackBuilder::fitTrackNodesStartEnd(const Track3D & aTrack) const{
 /////////////////////////////////////////////////////////
 Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
 
-  /*
-  return aTrackCandidate;
-  ////TEST
-  TVector3 a(0,0,0); 
-  //TVector3 b(0, 0 , 60); //theta = 0
-  //TVector3 b(60, 0, 3.67394e-15); //theta = M_PI/2, phi = 0
-  TVector3 b(42.4264, 42.4264, 3.67394e-15); //theta = M_PI/4, phi = M_PI/4
-
-  Track3D aCandidate1;
-  TrackSegment3D aSegment1;
-  aSegment1.setGeometry(myGeometryPtr);  
-  aSegment1.setStartEnd(a, b);
-  aSegment1.setRecHits(myRawHits);
-  aSegment1.setPID(pid_type::ALPHA);
-  aCandidate1.addSegment(aSegment1);
-  return aCandidate1;
-  ////////
-  */
   if(aTrackCandidate.getLength()<1) return aTrackCandidate;
 
   const TrackSegment3D & aSegment = aTrackCandidate.getSegments().front(); 

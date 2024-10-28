@@ -243,13 +243,11 @@ void TrackSegment3D::addProjection(TH1F &histo, TGraphErrors &graph) const{
 /////////////////////////////////////////////////////////
 TH1F TrackSegment3D::getChargeProfile() const{
 
-  double radiusCut = 2;
-  std::vector<TGraphErrors> projections;
-  for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
-    TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, getLength());
-    const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
-    projections.push_back(aTrack2DProjection.getChargeProfile(aRecHits, radiusCut));
-  }
+  // Maximum hit distance from 2D projection
+  double radiusCut = 2; 
+  
+  // Minimal length of projection to be considered. Short  projection introduce noisy floor to a charge profile
+  double minProjLength = 30;
 
   int nBins = 1024;
   double minX = -0.2*getLength();
@@ -258,19 +256,15 @@ TH1F TrackSegment3D::getChargeProfile() const{
   hChargeProfile.SetDirectory(0);
   if(getLength()<1) return hChargeProfile;
 
-  int maxPoints = 1;
   for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
-    TGraphErrors & aGraph = projections[strip_dir];
-    if(aGraph.GetN()>maxPoints) maxPoints = aGraph.GetN();
-    /*  
-    std::string name = "density_graph_"+std::to_string(strip_dir);
-    aGraph.SetName(name.c_str());
-    name +=".root";
-    aGraph.SaveAs(name.c_str());    
-    */
+    TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, getLength()); 
+    const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
+    TGraphErrors aGraph = aTrack2DProjection.getChargeProfile(aRecHits, radiusCut);
+    double projLength = aTrack2DProjection.getLength();
+    double graphLength = aGraph.GetXaxis()->GetXmax() - aGraph.GetXaxis()->GetXmin();
+    if(graphLength*projLength<minProjLength) continue;
     addProjection(hChargeProfile, aGraph);
   }
-
 
   int rebinFactor = log(4.0*nBins/(maxX - minX))/log(2); //bin width is around 2 mm
   rebinFactor = std::pow(2, rebinFactor);

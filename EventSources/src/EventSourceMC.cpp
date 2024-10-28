@@ -111,11 +111,11 @@ TrackSegment3D EventSourceMC::createSegment(const TVector3 vertexPos, pid_type i
     theta = 0.0;
     phi = M_PI/2.0;
   }
-  else if(myCurrentEntry==0){
+  else if(myCurrentEntry==20){
     theta = M_PI/2.0;
     phi = M_PI/2.0;
   }
-  else if(myCurrentEntry==3){
+  else if(myCurrentEntry==30){
     theta = M_PI/2.0;
     phi = M_PI/4.0;
   }
@@ -199,8 +199,7 @@ void EventSourceMC::fill3DChargeCloud(const Track3D & aTrack){
   TH1F hChargeProfile = aTrack.getChargeProfile();
   double lambda = 0.0, value = 0.0;
   double sigma = 2.0;
-  int nTries = 100;
-  nTries = 50;
+  int nTries = 50;
   
   for(int iBin=0;iBin<hChargeProfile.GetNbinsX();++iBin){
     value = hChargeProfile.GetBinContent(iBin);
@@ -225,7 +224,7 @@ void EventSourceMC::fillPEventTPC(const TH3D & h3DChargeCloud, const Track3D & a
   double value = 0.0, totalCharge = 0.0;
   bool err_flag = false;  
   double sigma = 2.0;
-  int nTries = 100;
+  int nTries = 50;
   
   double lambda = 0.0;
 
@@ -276,7 +275,7 @@ void EventSourceMC::generateTwoProng(){
 
   ///Assume energy conservation in CM frame for two prong events
   ///alpha takes 3/4 energy, C12 takes 1/4 energy
-  double min_E_CM = 5.0, max_E_CM = 7.0;
+  double min_E_CM = 4.0, max_E_CM = 7.0;
   double energy_CM = myRndm.Uniform(min_E_CM, max_E_CM);
 
   TVector3 aVtx = createVertex();
