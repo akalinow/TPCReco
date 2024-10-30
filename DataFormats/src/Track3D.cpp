@@ -135,17 +135,20 @@ void Track3D::extendToChamberRange(double r){
   double lambda1{0.0}, lambda2{0.0};  
 
   TrackSegment3D & aFirstSegment = mySegments.front();
+  TVector3 aTangent = aFirstSegment.getTangent();
   std::tie(lambda1, lambda2) = getLambdaOnSphere(aFirstSegment, r);
-   TVector3 aStart = aFirstSegment.getStart() + lambda2*aFirstSegment.getTangent();
+   TVector3 aStart = aFirstSegment.getStart() + lambda1*aFirstSegment.getTangent();
    TVector3 aEnd = aFirstSegment.getEnd();
    aFirstSegment.setStartEnd(aStart, aEnd);
    /////       
    TrackSegment3D & aLastSegment = mySegments.back();
-   double segmentLength = aLastSegment.getLength();
    std::tie(lambda1, lambda2) = getLambdaOnSphere(aLastSegment, r);
    aStart = aLastSegment.getStart();
-   aEnd = aStart + (lambda1 - segmentLength)*aLastSegment.getTangent();
+   aEnd = aStart + lambda2*aLastSegment.getTangent();
    aLastSegment.setStartEnd(aStart, aEnd);
+
+  
+
    update();
 }
 /////////////////////////////////////////////////////////
