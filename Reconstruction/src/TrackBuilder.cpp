@@ -423,7 +423,7 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
   std::cout<<aTrackCandidate<<std::endl;
   
   myFittedTrack = aTrackCandidate;
-  myFittedTrack.setHypothesisFitChi2(0);
+  myFittedTrack.setHypothesisFitLoss(0);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -646,20 +646,25 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
 Track3D TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
 
   Track3D aFittedTrack = aTrackCandidate; 
-  aFittedTrack.setFitMode(Track3D::FIT_BIAS_TANGENT);
+  aFittedTrack.setFitMode(definitions::fit_type::TANGENT_BIAS);
   aFittedTrack.getSegments().front().setRecHits(myRawHits);
   double chamberRadius = 150; //mm
   aFittedTrack.extendToChamberRange(chamberRadius);
 
   std::cout<<KBLU<<"Pre-fit: "<<RST<<std::endl; 
   std::cout<<aFittedTrack<<std::endl;
-  double initialChi2 = aFittedTrack.getChi2();
-  //exit(0);
+  double initialLoss = aFittedTrack.getLoss();
   
-  auto fitResult = fitTrackNodesBiasTangent(aFittedTrack);
-  double finalChi2 = fitResult.MinFcnValue();
-  if(initialChi2>finalChi2){
-    aFittedTrack.chi2FromNodesList(fitResult.GetParams());
+  auto fitResult = fitTrackNodesBiasTangent(aFittedTrack, definitions::fit_type::BIAS);
+  aFittedTrack.updateAndGetLoss(fitResult.GetParams());
+
+  fitResult = fitTrackNodesBiasTangent(aFittedTrack, definitions::fit_type::TANGENT);
+  aFittedTrack.updateAndGetLoss(fitResult.GetParams());
+
+  fitResult = fitTrackNodesBiasTangent(aFittedTrack, definitions::fit_type::TANGENT_BIAS);
+  double finalLoss = fitResult.MinFcnValue();
+  if(initialLoss>finalLoss){
+    aFittedTrack.updateAndGetLoss(fitResult.GetParams());
   }  
   aFittedTrack.extendToChamberRange(chamberRadius);
   aFittedTrack.shrinkToHits();
@@ -670,14 +675,15 @@ Track3D TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-ROOT::Fit::FitResult TrackBuilder::fitTrackNodesBiasTangent(const Track3D & aTrack) const{
+ROOT::Fit::FitResult TrackBuilder::fitTrackNodesBiasTangent(const Track3D & aTrack, 
+                    definitions::fit_type fitType) const{
 
   Track3D aTrackCandidate = aTrack;
-  aTrackCandidate.setFitMode(Track3D::FIT_BIAS_TANGENT);
+  aTrackCandidate.setFitMode(fitType);
   std::vector<double> params = aTrackCandidate.getSegmentsBiasTangentCoords();
   int nParams = params.size();
 
-  ROOT::Math::Functor fcn(&aTrackCandidate, &Track3D::chi2FromNodesList, nParams);
+  ROOT::Math::Functor fcn(&aTrackCandidate, &Track3D::updateAndGetLoss, nParams);
   fitter.SetFCN(fcn, params.data());
 
   for (int iPar = 0; iPar < nParams; ++iPar){
@@ -731,37 +737,6 @@ ROOT::Fit::FitResult TrackBuilder::fitTrackNodesBiasTangent(const Track3D & aTra
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-Track3D TrackBuilder::fitTrackNodesStartEnd(const Track3D & aTrack) const{
-
-  Track3D aTrackCandidate = aTrack;
-  aTrackCandidate.setFitMode(Track3D::FIT_START_STOP);
-  std::vector<double> params = aTrackCandidate.getSegmentsStartEndXYZ();
-  int nParams = params.size();
-  
-  ROOT::Math::Functor fcn(&aTrackCandidate, &Track3D::chi2FromNodesList, nParams);
-  fitter.SetFCN(fcn, params.data());
-  
-  for (int iPar = 0; iPar < nParams; ++iPar){
-    fitter.Config().ParSettings(iPar).Release();
-    fitter.Config().ParSettings(iPar).SetValue(params[iPar]);
-  }      
-  bool fitStatus = fitter.FitFCN();
-  if (!fitStatus) {
-    Error(__FUNCTION__, "Track3D Fit failed");
-    std::cout<<KRED<<"Track3D nodes fit failed"<<RST<<std::endl;
-    fitter.Result().Print(std::cout);
-    //return aTrack;
-  }
-  const ROOT::Fit::FitResult & result = fitter.Result();
-  aTrackCandidate.chi2FromNodesList(result.GetParams());
-
-  std::cout<<KBLU<<"Post-refit: "<<RST<<std::endl;
-  std::cout<<aTrackCandidate<<std::endl;
-  
-  return aTrackCandidate;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
 Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
 
   if(aTrackCandidate.getLength()<1) return aTrackCandidate;
@@ -790,7 +765,7 @@ Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
 
   Track3D aSplitTrackCandidate;
   aSplitTrackCandidate.setChargeProfile(mydEdxFitter.getFittedHisto());
-  aSplitTrackCandidate.setHypothesisFitChi2(mydEdxFitter.getChi2());
+  aSplitTrackCandidate.setHypothesisFitLoss(mydEdxFitter.getLoss());
   TrackSegment3D alphaSegment;
   alphaSegment.setGeometry(myGeometryPtr);  
   alphaSegment.setStartEnd(vertexPos, alphaEnd);

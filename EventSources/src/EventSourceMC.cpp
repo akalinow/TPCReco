@@ -86,9 +86,10 @@ TVector3 EventSourceMC::createVertex() const{
   double y = myRndm.Uniform(minY, maxY);
   double z = myRndm.Uniform(minZ, maxZ);
 
-  x = 0.0;
-  y = 0.0;
+  x = -0.433035;
+  y = -0.75;
   z = 0.0;
+  
   
   TVector3 aVertex(x,y,z);
   return aVertex;
@@ -107,21 +108,24 @@ TrackSegment3D EventSourceMC::createSegment(const TVector3 vertexPos, pid_type i
     theta = 0.0;
     phi = 0.0;
   }
-  else if(myCurrentEntry==10){ 
+  else if(myCurrentEntry==11){ 
     theta = 0.0;
     phi = M_PI/2.0;
   }
-  else if(myCurrentEntry==20){
+  else if(myCurrentEntry==12){
     theta = M_PI/2.0;
     phi = M_PI/2.0;
   }
-  else if(myCurrentEntry==30){
+  else if(myCurrentEntry==13){
     theta = M_PI/2.0;
     phi = M_PI/4.0;
   }
   else{
     theta = TMath::ACos(myRndm.Uniform(minCosTheta, maxCosTheta));
     phi = myRndm.Uniform(minPhi, maxPhi);
+
+    //theta = acos(-0.2);
+    //phi = -2.1;
   }
  
  //two prong event - take care of momentum conservation in CM
@@ -131,8 +135,8 @@ TrackSegment3D EventSourceMC::createSegment(const TVector3 vertexPos, pid_type i
     theta = aTangent.Theta();
   }
 
-  //std::cout<<KBLU<<"Phi: "<<RST<<phi<<" deg: "<<phi*180/M_PI<<std::endl;
-  //std::cout<<KBLU<<"Theta: "<<RST<<theta<<" deg: "<<theta*180/M_PI<<std::endl;
+  std::cout<<KBLU<<"Phi: "<<RST<<phi<<" deg: "<<phi*180/M_PI<<std::endl;
+   std::cout<<KBLU<<"Theta: "<<RST<<theta<<" deg: "<<theta*180/M_PI<<std::endl;
  
   TVector3 tangent;
   tangent.SetMagThetaPhi(1.0, theta, phi);
@@ -261,7 +265,7 @@ void EventSourceMC::generateSingleProng(pid_type ion_id){
   ///Assume energy conservation in CM frame for two prong events
   ///alpha takes 3/4 energy, C12 takes 1/4 energy
   ///assume energy in CMS from 1 to 7 MeV
-  double min_E_CM = 1, max_E_CM = 7.0;
+  double min_E_CM = 4*3/4.0, max_E_CM = 7.0*3/4.0;
   double energy_CM = myRndm.Uniform(min_E_CM, max_E_CM);
 
   TVector3 aVtx = createVertex();
@@ -336,6 +340,7 @@ void EventSourceMC::generateEvent(){
   else if (aRndm<2*0.33) generateTwoProng();
   else generateThreeProng();
   */
+  //generateSingleProng();
   generateTwoProng();
   
   for(const auto & aTrack: myTracks3D) fillPEventTPC(my3DChargeCloud, aTrack);

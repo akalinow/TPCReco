@@ -106,9 +106,10 @@ TGraphErrors TrackSegment2D::getChargeProfile(const Hit2DCollection & aRecHits, 
 /////////////////////////////////////////////////////////
 double TrackSegment2D::getIntegratedCharge(double lambdaCut, const Hit2DCollection & aRecHits) const{
 
+  double radiusCut = 4.0;//parameter to be put into configuration
+
   double x = 0.0, y = 0.0;
   double totalCharge = 0.0;
-  double radiusCut = 4.0;//FIXME put into configuration. Value 4.0 got by looking at the plots.
   double distance = 0.0;
   double lambda = 0.0;
   TVector3 aPoint;
@@ -136,10 +137,47 @@ std::tuple<double,double> TrackSegment2D::getPointLambdaAndDistance(const TVecto
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
+double TrackSegment2D::getParallelLineLoss(const Hit2DCollection & aRecHits) const{
+
+  double maxDistance = 10.0; //parameter to be put into configuration
 
   if(!aRecHits.size()) return 0.0;
-  double dummyChi2 = 999.0;
+  double dummyLoss = 999.0;
+
+  TVector3 aPoint;
+  double chargeSum = 0.0;
+  double distance = 0.0, lambda = 0.0;
+  
+  double x = 0.0, y = 0.0;
+  double charge = 0.0;
+  double mean=0, mean2=0;
+
+  for(const auto aHit:aRecHits){
+    x = aHit.getPosTime();
+    y = aHit.getPosStrip();
+    charge = abs(aHit.getCharge());
+    aPoint.SetXYZ(x, y, 0.0);
+    std::tie(lambda,distance) = getPointLambdaAndDistance(aPoint);
+    if(distance>maxDistance) continue;
+    mean += distance*charge;
+    mean2 += std::pow(distance,2)*charge;
+    chargeSum +=charge;
+  }
+  if(chargeSum<1) return dummyLoss;
+
+  mean /= chargeSum;
+  mean2 /= chargeSum;
+  double stdDev = std::sqrt(mean2 - mean*mean);
+  return stdDev;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+double TrackSegment2D::getHitDistanceLoss(const Hit2DCollection & aRecHits) const {
+
+  double maxDistance = 10.0; //parameter to be put into configuration
+
+  if(!aRecHits.size()) return 0.0;
+  double dummyLoss = 999.0;
 
   if(getTangent().Mag()<1E-3){
     std::cout<<__FUNCTION__<<KRED<< " TrackSegment2D has null tangent "<<RST
@@ -148,40 +186,34 @@ double TrackSegment2D::getRecHitChi2(const Hit2DCollection & aRecHits) const {
     getStart().Print();
     std::cout<<KGRN<<"End point: "<<RST;
     getEnd().Print();
-    return dummyChi2;
+    return dummyLoss;
   }
 
   TVector3 aPoint;
-  double chi2 = 0.0;
-  double chargeSum = 0.0;
+  double loss = 0.0;
+  double segmentChargeSum = 0.0;
   double totalChargeSum = 0.0;
-  double distance = 0.0;
-  double lambda = 0.0;
-  int pointCount = 0;
+  double distance = 0.0, lambda = 0.0;
   
   double x = 0.0, y = 0.0;
   double charge = 0.0;
-  double maxDistance = 10.0;
 
   for(const auto aHit:aRecHits){
     x = aHit.getPosTime();
     y = aHit.getPosStrip();
-    charge = aHit.getCharge();
+    charge = abs(aHit.getCharge());
     aPoint.SetXYZ(x, y, 0.0);
     std::tie(lambda,distance) = getPointLambdaAndDistance(aPoint);
     totalChargeSum += charge;
     if(distance>maxDistance) continue;
-    ++pointCount;
-    chi2 += std::pow(distance, 2)*charge;
-    chargeSum +=charge;
+    loss += std::pow(distance, 2)*charge;
+    segmentChargeSum +=charge;
   }
-  if(!pointCount) return dummyChi2;
+  if(segmentChargeSum<1) return dummyLoss;
 
-  chi2 /= chargeSum;
-  chargeSum /= totalChargeSum;
-
-  if(!pointCount) return 0.0;
-  return chi2 - 3*chargeSum;
+  loss /= segmentChargeSum;
+  segmentChargeSum /= totalChargeSum;
+  return loss - 3*segmentChargeSum;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

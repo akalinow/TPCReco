@@ -28,7 +28,7 @@ void Track3D::update(){
   for(auto &aSegment: mySegments){
     myLenght += aSegment.getLength();
   }
-  updateChi2();
+  updateLoss();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -78,34 +78,34 @@ double Track3D::getIntegratedCharge(double lambda) const{
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void Track3D::enableProjectionForChi2(int iProjection){
+void Track3D::enableProjectionForLoss(int iProjection){
 
-  iProjectionForChi2 = iProjection;
-  updateChi2();
+  iProjectionForLoss = iProjection;
+  updateLoss();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-double Track3D::getChi2() const{
+double Track3D::getLoss() const{
 
-  double chi2 = 0.0;
-  chi2 += getSegmentsChi2();
-  return chi2;
+  double loss = 0.0;
+  loss += getSegmentsLoss();
+  return loss;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-double Track3D::getSegmentsChi2() const{
+double Track3D::getSegmentsLoss() const{
 
-  double chi2 = 0.0;
-  std::for_each(segmentChi2.begin(), segmentChi2.end(), [&](auto aItem){chi2 += aItem;});
-  return chi2;
+  double loss = 0.0;
+  std::for_each(segmentLoss.begin(), segmentLoss.end(), [&](auto aItem){loss += aItem;});
+  return loss;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void Track3D::updateChi2(){
+void Track3D::updateLoss(){
 
-  segmentChi2.clear();
+  segmentLoss.clear();
   for(auto aItem: mySegments){
-    segmentChi2.push_back(aItem.getRecHitChi2(iProjectionForChi2));
+    segmentLoss.push_back(aItem.getLoss(iProjectionForLoss));
   }
 }
 /////////////////////////////////////////////////////////
@@ -146,9 +146,6 @@ void Track3D::extendToChamberRange(double r){
    aStart = aLastSegment.getStart();
    aEnd = aStart + lambda2*aLastSegment.getTangent();
    aLastSegment.setStartEnd(aStart, aEnd);
-
-  
-
    update();
 }
 /////////////////////////////////////////////////////////
@@ -208,8 +205,8 @@ void Track3D::removeEmptySegments(){
 
   auto modifiedEnd = std::remove_if(mySegments.begin(), mySegments.end(), [](auto aItem){
       std::vector<double> segmentParameters = aItem.getStartEndXYZ();
-      double segmentChi2 = aItem(segmentParameters.data());
-      return segmentChi2<1E-5 || segmentChi2>999;
+      double segmentLoss = aItem(segmentParameters.data());
+      return segmentLoss<1E-5 || segmentLoss>999;
     });
 
   unsigned int newSize = modifiedEnd - mySegments.begin();
@@ -218,10 +215,10 @@ void Track3D::removeEmptySegments(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-double Track3D::chi2FromNodesList(const double *par){
+double Track3D::updateAndGetLoss(const double *par){
   
   for(unsigned int iSegment=0;iSegment<mySegments.size();++iSegment){
-    if(myFitMode==FIT_START_STOP){
+    if(myFitType==definitions::fit_type::START_STOP){
       double segmentParameters[6];
 
       segmentParameters[0]  = par[0];
@@ -234,14 +231,16 @@ double Track3D::chi2FromNodesList(const double *par){
       
       mySegments.at(iSegment).setStartEnd(segmentParameters);
     }
-    if(myFitMode==FIT_BIAS_TANGENT){
+    if(myFitType==definitions::fit_type::BIAS || 
+       myFitType==definitions::fit_type::TANGENT || 
+       myFitType==definitions::fit_type::TANGENT_BIAS){
       const double *segmentParameters = par+3*iSegment;
       mySegments.at(iSegment).setBiasTangent(segmentParameters);
     }
   }
 
   update();
-  return getChi2();
+  return getLoss();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -264,8 +263,8 @@ std::ostream & operator << (std::ostream &out, const Track3D &aTrack){
   out<<"\t Total track charge [arb. units]: "<<charge<<std::endl;
   out<<"\t Total track charge  "<<std::endl;
   out<<"\t from 3D profile [arb. units]: "<<aTrack.getChargeProfile().Integral("width")<<std::endl;
-  out<<"\t Hit fit loss func.: "<<aTrack.getChi2()<<std::endl;
-  out<<"\t dE/dx fit loss func./charge^2: "<<aTrack.getHypothesisFitChi2()/std::pow(chargeFromProfile+0.01,2)<<std::endl;
+  out<<"\t Hit fit loss func.: "<<aTrack.getLoss()<<std::endl;
+  out<<"\t dE/dx fit loss func./charge^2: "<<aTrack.getHypothesisFitLoss()/std::pow(chargeFromProfile+0.01,2)<<std::endl;
   out<<"\t       fitted diffusion [mm]: "<<aTrack.getSegments().front().getDiffusion()<<std::endl;
   out<<KBLU<<"-----------------------------------"<<RST<<std::endl;
   return out;

@@ -97,12 +97,12 @@ typedef struct {Float_t eventId, frameId,
     alphaRange, carbonRange,
     cosPhiSegments,
     charge, cosTheta, phi, chi2,
-    hypothesisChi2,
+    hypothesisLoss,
     xVtx, yVtx, zVtx,
     xAlphaEnd, yAlphaEnd, zAlphaEnd,
     xCarbonEnd, yCarbonEnd, zCarbonEnd,
     total_mom_x,  total_mom_y,  total_mom_z,
-    lineFitChi2, dEdxFitChi2, dEdxFitSigma;
+    lineFitLoss, dEdxFitLoss, dEdxFitSigma;
     } TrackData;
 /////////////////////////
 int makeTrackTree(boost::property_tree::ptree & aConfig) {
@@ -119,12 +119,12 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   leafNames += "length:horizontalLostLength:verticalLostLength:";
   leafNames += "alphaEnergy:carbonEnergy:alphaRange:carbonRange:";
   leafNames += "cosPhiSegments:";
-  leafNames += "charge:cosTheta:phi:chi2:hypothesisChi2:";
+  leafNames += "charge:cosTheta:phi:chi2:hypothesisLoss:";
   leafNames += "xVtx:yVtx:zVtx:";
   leafNames += "xAlphaEnd:yAlphaEnd:zAlphaEnd:";
   leafNames += "xCarbonEnd:yCarbonEnd:zCarbonEnd:";
   leafNames += "total_mom_x:total_mom_y:total_mom_z:";
-  leafNames += "lineFitChi2:dEdxFitChi2:dEdxFitSigma";
+  leafNames += "lineFitLoss:dEdxFitLoss:dEdxFitSigma";
   tree->Branch("track",&track_data,leafNames.c_str());
   
   std::string geometryFileName = aConfig.get("input.geometryFile","");
@@ -263,8 +263,8 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     
     double length = aTrack3D.getLength();
     double charge = aTrack3D.getIntegratedCharge(length);
-    double chi2 = aTrack3D.getChi2();
-    double hypothesisChi2 = aTrack3D.getHypothesisFitChi2();
+    double chi2 = aTrack3D.getLoss();
+    double hypothesisLoss = aTrack3D.getHypothesisFitLoss();
     const TVector3 & vertex = aTrack3D.getSegments().front().getStart();
     const TVector3 & alphaEnd = aTrack3D.getSegments().front().getEnd();
     const TVector3 & carbonEnd = aTrack3D.getSegments().back().getEnd();
@@ -303,7 +303,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     track_data.cosTheta = cosTheta;
     track_data.phi = phi;
     track_data.chi2 = chi2;
-    track_data.hypothesisChi2 = hypothesisChi2;
+    track_data.hypothesisLoss = hypothesisLoss;
     
     track_data.xVtx = vertex.X();
     track_data.yVtx = vertex.Y();
@@ -327,8 +327,8 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     track_data.total_mom_y = total_p.y();
     track_data.total_mom_z = total_p.z();
 
-    track_data.lineFitChi2 = aTrack3D.getChi2();
-    track_data.dEdxFitChi2 = aTrack3D.getHypothesisFitChi2();
+    track_data.lineFitLoss = aTrack3D.getLoss();
+    track_data.dEdxFitLoss = aTrack3D.getHypothesisFitLoss();
     track_data.dEdxFitSigma = aTrack3D.getSegments().front().getDiffusion();
     
     tree->Fill();    

@@ -25,7 +25,7 @@ public:
 
   const TH1F & getFittedHisto() const { return theFittedHisto;};
 
-  double getChi2() const { return theFitResult.MinFcnValue();};
+  double getLoss() const { return theFitResult.MinFcnValue();};
 
   const TF1 & getFittedModel() const { return *theFittedModel;};
 

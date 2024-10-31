@@ -11,7 +11,7 @@ TrackSegment3D::TrackSegment3D(){
   myRecHits.clear();
   myRecHits.resize(3);
 
-  myProjectionsChi2.resize(3);
+  myProjectionsLoss.resize(3);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -85,7 +85,7 @@ void TrackSegment3D::setRecHits(const std::vector<TH2D> & aRecHits){
       }
     }
   }
-  calculateRecHitChi2();
+  calculateLoss();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -102,7 +102,7 @@ void TrackSegment3D::initialize(){
 
   myLenght = (myEnd - myStart).Mag();
 
-  calculateRecHitChi2();
+  calculateLoss();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -185,25 +185,25 @@ double TrackSegment3D::getIntegratedCharge(double lambda) const{
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-double TrackSegment3D::getRecHitChi2(int iProjection) const{
+double TrackSegment3D::getLoss(int iProjection) const{
 
-  double chi2 = 0.0;
+  double loss = 0.0;
   if(iProjection<definitions::projection_type::DIR_U || iProjection>definitions::projection_type::DIR_W){    
-    std::for_each(myProjectionsChi2.begin(), myProjectionsChi2.end(), [&](auto aItem){chi2 += aItem;});
+    std::for_each(myProjectionsLoss.begin(), myProjectionsLoss.end(), [&](auto aItem){loss += aItem;});
   }
   else{
-    chi2 += myProjectionsChi2[iProjection];
+    loss += myProjectionsLoss[iProjection];
   }
-  return chi2;
+  return loss;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void TrackSegment3D::calculateRecHitChi2(){
+void TrackSegment3D::calculateLoss(){
 
   for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
     TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, getLength());
     const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
-    myProjectionsChi2[strip_dir] = aTrack2DProjection.getRecHitChi2(aRecHits);
+    myProjectionsLoss[strip_dir] = aTrack2DProjection.getParallelLineLoss(aRecHits);///TEST
   }
 }
 /////////////////////////////////////////////////////////
@@ -213,7 +213,7 @@ double TrackSegment3D::operator() (const double *par) {
   TVector3 start(par[0], par[1], par[2]);
   TVector3 end(par[3], par[4], par[5]);
   setStartEnd(start, end);
-  return getRecHitChi2();
+  return getLoss();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -244,10 +244,10 @@ void TrackSegment3D::addProjection(TH1F &histo, TGraphErrors &graph) const{
 TH1F TrackSegment3D::getChargeProfile() const{
 
   // Maximum hit distance from 2D projection
-  double radiusCut = 2; 
+  double radiusCut = 2; //parameter to be put into configuration
   
   // Minimal length of projection to be considered. Short  projection introduce noisy floor to a charge profile
-  double minProjLength = 30;
+  double minProjLength = 30;//parameter to be put into configuration
 
   int nBins = 1024;
   double minX = -0.2*getLength();
@@ -288,7 +288,7 @@ std::ostream & operator << (std::ostream &out, const TrackSegment3D &aSegment){
      <<" -> "
      <<"("<<end.X()<<", "<<end.Y()<<", "<<end.Z()<<") "
      <<std::endl
-     <<"\t\t chi2: "<<aSegment.getRecHitChi2()<<""
+     <<"\t\t loss: "<<aSegment.getLoss()<<""
      <<" charge [arb. u.]: "<<aSegment.getIntegratedCharge(aSegment.getLength())
      <<" length [mm]: "<<aSegment.getLength()
      <<std::endl

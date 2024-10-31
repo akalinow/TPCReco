@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <vector>
+#include <ctime>
 
 #include <TFile.h>
 #include <TTree.h>
@@ -57,6 +58,14 @@ std::string createROOTFileName(const  std::string & grawFileName){
   if(index!=std::string::npos){
     rootFileName = rootFileName.replace(index,-1,"root");
   }
+
+  std::time_t t = std::time(nullptr);
+  std::tm tm = *std::localtime(&t);
+  std::stringstream ss;
+  ss<<std::put_time(&tm, "%d_%m_%Y_%H_%M");
+  std::string timestamp = ss.str();
+
+  rootFileName = rootFileName.replace(rootFileName.find(".root"),-1,"_"+timestamp+".root");
   
   return rootFileName;
 }
@@ -97,7 +106,7 @@ typedef struct {Float_t eventId, frameId,
     carbonRangeReco, carbonEnergyReco,
     chargeReco, cosThetaReco, phiReco,
     vtxRecoX, vtxRecoY, vtxRecoZ,
-    lineFitChi2, dEdxFitChi2, dEdxFitSigma;
+    lineFitLoss, dEdxFitLoss, dEdxFitSigma;
     } TrackData;
 /////////////////////////
 int makeTrackTree(boost::property_tree::ptree & aConfig) {
@@ -126,7 +135,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   leafNames += "carbonRangeReco:carbonEnergyReco:";
   leafNames += "chargeReco:cosThetaReco:phiReco:";
   leafNames += "vtxRecoX:vtxRecoY:vtxRecoZ:";
-  leafNames += "lineFitChi2:dEdxFitChi2:dEdxFitSigma";
+  leafNames += "lineFitLoss:dEdxFitLoss:dEdxFitSigma";
   tree->Branch("track",&track_data,leafNames.c_str());
   
   std::string geometryFileName = aConfig.get("input.geometryFile","");
@@ -152,7 +161,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
 
   //Event loop
   unsigned int nEntries = myEventSource->numberOfEntries();
-  nEntries = 50000; 
+  nEntries = 1000; 
   for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
     if(nEntries>10 && iEntry%(nEntries/10)==0){
       std::cout<<KBLU<<"Processed: "<<int(100*(double)iEntry/nEntries)<<" % events"<<RST<<std::endl;
@@ -164,7 +173,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
 
     int eventId = myEventSource->getCurrentEvent()->GetEventInfo().GetEventId();
     const Track3D & aTrack3DGenAlpha = myEventSource->getGeneratedTrack(0);
-    const Track3D & aTrack3DGenCarbon = myEventSource->getGeneratedTrack(1);
+    const Track3D & aTrack3DGenCarbon = myEventSource->getGeneratedTrack(0);
     const Track3D & aTrack3DReco = myTkBuilder.getTrack3D(0);
 
     track_data.frameId = iEntry;
@@ -212,8 +221,8 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     track_data.phiReco = tangentReco.Phi();//TEST
 
 
-    track_data.lineFitChi2 = aTrack3DReco.getChi2();
-    track_data.dEdxFitChi2 = aTrack3DReco.getHypothesisFitChi2();
+    track_data.lineFitLoss = aTrack3DReco.getLoss();
+    track_data.dEdxFitLoss = aTrack3DReco.getHypothesisFitLoss();
     track_data.dEdxFitSigma = aTrack3DReco.getSegments().front().getDiffusion();
     
     tree->Fill();    
