@@ -86,11 +86,15 @@ TVector3 EventSourceMC::createVertex() const{
   double y = myRndm.Uniform(minY, maxY);
   double z = myRndm.Uniform(minZ, maxZ);
 
+/*
   x = -0.433035;
   y = -0.75;
-  z = 0.0;
-  
-  
+  z =  0.0;
+
+  x = 10.0;
+  y = 10.0;
+  z = 10.0;
+  */
   TVector3 aVertex(x,y,z);
   return aVertex;
 }
@@ -104,19 +108,19 @@ TrackSegment3D EventSourceMC::createSegment(const TVector3 vertexPos, pid_type i
   double length = myRangeCalculator.getIonRangeMM(ion_id, energy);
 
   /// fixed test configurations for first 3 events 
-  if(myCurrentEntry==10){ 
+  if(myCurrentEntry==0){ 
     theta = 0.0;
     phi = 0.0;
   }
-  else if(myCurrentEntry==11){ 
+  else if(myCurrentEntry==1){ 
     theta = 0.0;
     phi = M_PI/2.0;
   }
-  else if(myCurrentEntry==12){
+  else if(myCurrentEntry==2){
     theta = M_PI/2.0;
     phi = M_PI/2.0;
   }
-  else if(myCurrentEntry==13){
+  else if(myCurrentEntry==3){
     theta = M_PI/2.0;
     phi = M_PI/4.0;
   }
@@ -124,8 +128,8 @@ TrackSegment3D EventSourceMC::createSegment(const TVector3 vertexPos, pid_type i
     theta = TMath::ACos(myRndm.Uniform(minCosTheta, maxCosTheta));
     phi = myRndm.Uniform(minPhi, maxPhi);
 
-    //theta = acos(-0.2);
-    //phi = -2.1;
+    //theta = acos(0.0);
+    //theta = M_PI/4.0;
   }
  
  //two prong event - take care of momentum conservation in CM

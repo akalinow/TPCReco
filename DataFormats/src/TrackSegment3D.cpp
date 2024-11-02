@@ -122,7 +122,7 @@ std::vector<double> TrackSegment3D::getBiasTangentCoords() const{
 
   std::vector<double> coordinates(3);
   double *data = coordinates.data();
-  data[0] = 1.0;
+  data[0] = getBias().Mag();
   data[1] = getTangent().Theta();
   data[2] = getTangent().Phi();
 
@@ -203,7 +203,7 @@ void TrackSegment3D::calculateLoss(){
   for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
     TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, getLength());
     const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
-    myProjectionsLoss[strip_dir] = aTrack2DProjection.getParallelLineLoss(aRecHits);///TEST
+    myProjectionsLoss[strip_dir] = aTrack2DProjection.getLoss(aRecHits, myLossType);
   }
 }
 /////////////////////////////////////////////////////////

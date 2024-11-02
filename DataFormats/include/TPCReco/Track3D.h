@@ -12,10 +12,6 @@ class Track3D{
 
  public:
 
-  enum fit_modes{FIT_START_STOP,
-		  FIT_BIAS_TANGENT
-  };
-
   Track3D();
 
   virtual ~Track3D(){};
@@ -23,7 +19,7 @@ class Track3D{
   void addSegment(const TrackSegment3D & aSegment3D);
 
   const TrackSegment3DCollection & getSegments() const { return mySegments;}
-  TrackSegment3DCollection & getSegments() { return mySegments;}//TEST
+  TrackSegment3DCollection & getSegments() { return mySegments;}
 
   std::vector<double> getSegmentsBiasTangentCoords() const;
 
@@ -39,67 +35,49 @@ class Track3D{
 
   TH1F getChargeProfile() const { return myChargeProfile;}
 
-  double getChi2() const;
+  double getLoss() const;
 
-  void splitWorseChi2Segment(double lenghtFraction);
+  /// Chamber is modelled as a sphere of radius r.
+  void extendToChamberRange(double r);
 
-  void extendToChamberRange(const std::tuple<double, double, double, double> & xyRange,
-			    const std::tuple<double, double> & zRange);
-
-    ///Shrink track to actual hits range.
+  /// Shrink track to actual hits range.
   void shrinkToHits();
 
   void removeEmptySegments();
 
-  void enableProjectionForChi2(int iProjection);
+  void enableProjectionForLoss(int iProjection);
 
-  void setFitMode(fit_modes aMode){myFitMode = aMode;}
+  void setFitMode(definitions::fit_type fitType);
 
-  void setHypothesisFitChi2(double chi2){ hypothesisFitChi2 = chi2;};
+  void setHypothesisFitLoss(double Loss){ hypothesisFitLoss = Loss;};
 
-  double getHypothesisFitChi2() const {return hypothesisFitChi2;}
+  double getHypothesisFitLoss() const {return hypothesisFitLoss;}
 
   double hitDistanceFromBias(const double *par);
 
-  double chi2FromNodesList(const double *par);
-
-  double chi2FromSplitPoint(const double *par);
-
-  double getNodeHitsChi2(unsigned int iNode) const;
-
-  double getNodeAngleChi2(unsigned int iNode) const;
-
-  void splitSegment(unsigned int iSegment,  double lengthFraction);
+  double updateAndGetLoss(const double *par);
 
   void update();
 
  private:
 
-  void updateChi2();
+  void updateLoss();
 
-  void updateNodesChi2(int strip_dir);
+  double getSegmentsLoss() const;
 
-  double getSegmentsChi2() const;
+  ///  Find the lambda of the track that will end on the sphere of radius r.
+  std::tuple<double, double> getLambdaOnSphere(const TrackSegment3D & aSegment, double r) const;
 
-  double getNodesChi2() const;
-
-  bool extendToZRange(double zMin, double zMax);
-
-  void extendToXYRange(double xMin, double xMax,
-		       double yMin, double yMax);
-
-  fit_modes myFitMode{FIT_START_STOP};
-  int iProjectionForChi2{-1};
-  double myLenght, myChi2;
+  definitions::fit_type myFitType{definitions::fit_type::TANGENT};
+  int iProjectionForLoss{-1};
+  double myLenght{0}, myLoss{0};
   double stepLengthAlongTrack{0.5}; //[mm]
 
-  std::vector<double> segmentChi2;
-  std::vector<double> nodeHitsChi2;
-  std::vector<double> nodeAngleChi2;
+  std::vector<double> segmentLoss;
 
   TrackSegment3DCollection mySegments;
   TH1F myChargeProfile;
-  double hypothesisFitChi2{99};
+  double hypothesisFitLoss{0};
 };
 
 typedef std::vector<Track3D> Track3DCollection;

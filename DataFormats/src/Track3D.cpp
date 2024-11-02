@@ -14,6 +14,13 @@
 Track3D::Track3D(){ };
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+void Track3D::setFitMode(definitions::fit_type fitType){
+  myFitType = fitType; 
+  for(auto &aSegment: mySegments) aSegment.setLossType(myFitType);
+  updateLoss();
+};
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 void Track3D::addSegment(const TrackSegment3D & aSegment3D){
 
   mySegments.push_back(aSegment3D);
@@ -105,6 +112,7 @@ void Track3D::updateLoss(){
 
   segmentLoss.clear();
   for(auto aItem: mySegments){
+    aItem.setLossType(myFitType);
     segmentLoss.push_back(aItem.getLoss(iProjectionForLoss));
   }
 }
@@ -231,16 +239,38 @@ double Track3D::updateAndGetLoss(const double *par){
       
       mySegments.at(iSegment).setStartEnd(segmentParameters);
     }
-    if(myFitType==definitions::fit_type::BIAS || 
-       myFitType==definitions::fit_type::TANGENT || 
-       myFitType==definitions::fit_type::TANGENT_BIAS){
+    else if(myFitType==definitions::fit_type::TANGENT){
       const double *segmentParameters = par+3*iSegment;
-      mySegments.at(iSegment).setBiasTangent(segmentParameters);
+      const TVector3 & aBias = mySegments.at(iSegment).getBias();
+      TVector3 aTangent;
+      aTangent.SetMagThetaPhi(1.0, segmentParameters[1], segmentParameters[2]);
+      mySegments.at(iSegment).setBiasTangent(aBias, aTangent);
     }
+    else if(myFitType==definitions::fit_type::BIAS_Z){
+      const double *segmentParameters = par+3*iSegment;
+      TVector3 aBias = mySegments.at(iSegment).getBias();
+      aBias.SetZ(segmentParameters[0]*aBias.CosTheta());
+      const TVector3 & aTangent = mySegments.at(iSegment).getTangent();
+      mySegments.at(iSegment).setBiasTangent(aBias, aTangent);
+    }
+    else if(myFitType==definitions::fit_type::BIAS_XY){
+      const double *segmentParameters = par+3*iSegment;
+      TVector3 aBias = mySegments.at(iSegment).getBias();
+      const TVector3 & aTangent = mySegments.at(iSegment).getTangent();
+      TVector3 initialBias = aBias.Unit();
+      double sinTheta = sqrt(1-initialBias.CosTheta()*initialBias.CosTheta());
+      aBias.SetX(segmentParameters[0]*cos(initialBias.Phi())*sinTheta);
+      aBias.SetY(segmentParameters[0]*sin(initialBias.Phi())*sinTheta);
+      mySegments.at(iSegment).setBiasTangent(aBias, aTangent);
+    }
+    mySegments.at(iSegment).setLossType(myFitType);
   }
-
   update();
-  return getLoss();
+  double loss = getLoss();
+
+
+
+  return loss;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

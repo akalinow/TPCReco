@@ -137,9 +137,17 @@ std::tuple<double,double> TrackSegment2D::getPointLambdaAndDistance(const TVecto
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+double TrackSegment2D::getLoss(const Hit2DCollection & aRecHits, definitions::fit_type lossType)const{
+  
+  //getHitDistanceLoss(aRecHits);
+  if(lossType==definitions::fit_type::TANGENT) return getParallelLineLoss(aRecHits);
+  else return getHitDistanceLoss(aRecHits); 
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 double TrackSegment2D::getParallelLineLoss(const Hit2DCollection & aRecHits) const{
 
-  double maxDistance = 10.0; //parameter to be put into configuration
+  double maxDistance = 20.0; //parameter to be put into configuration
 
   if(!aRecHits.size()) return 0.0;
   double dummyLoss = 999.0;
@@ -167,6 +175,7 @@ double TrackSegment2D::getParallelLineLoss(const Hit2DCollection & aRecHits) con
 
   mean /= chargeSum;
   mean2 /= chargeSum;
+
   double stdDev = std::sqrt(mean2 - mean*mean);
   return stdDev;
 }
@@ -213,7 +222,7 @@ double TrackSegment2D::getHitDistanceLoss(const Hit2DCollection & aRecHits) cons
 
   loss /= segmentChargeSum;
   segmentChargeSum /= totalChargeSum;
-  return loss - 3*segmentChargeSum;
+  return loss;// - 3*segmentChargeSum;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
