@@ -62,16 +62,26 @@ public:
   ///Rec hits assigned to this projection.
   const Hit2DCollection & getRecHits() const {return myRecHits;}
 
-  ///Return rec hits chi2.
-  double getRecHitChi2(const Hit2DCollection & aRecHits) const;
-
-  ///Calculate transverse distance from point to the segment, and doistance along the segment
-  std::tuple<double,double> getPointLambdaAndDistance(const TVector3 & aPoint) const;
+  ///Return loss function for the segment.
+  /// lossType== TANGENT returns variance of hit distances from the segment.
+  /// lossType== BIAS returns sum of hit distances from the segment.
+  /// lossType== TANGENT_BIAS returns sum of hit distances from the segment.
+  double getLoss(const Hit2DCollection & aRecHits, definitions::fit_type lossType) const;
 
 private:
 
-  ///Calculate vector for different parametrisations.
+  ///Calculate vector for different parametrization.
   void initialize();
+
+   ///Return loss function for finding a line parallel to the segment.
+  ///The loss function is a variance of hit distances from the segment. 
+  double getParallelLineLoss(const Hit2DCollection & aRecHits) const;
+
+  ///Return loss calculated as a sum of distance**2 from the segment.
+  double getHitDistanceLoss(const Hit2DCollection & aRecHits) const;
+
+  ///Calculate transverse distance from point to the segment, and doistance along the segment
+  std::tuple<double,double> getPointLambdaAndDistance(const TVector3 & aPoint) const;
 
   std::shared_ptr<GeometryTPC> myGeometryPtr; //! transient data member
 

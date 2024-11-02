@@ -60,8 +60,6 @@ public:
 
   TF1 getdEdx() const {return mydEdxFitter.getFittedModel();};
 
-  double getdEdxFitSigmaSmearing() const {return mydEdxFitter.getSigmaSmearing();};
-
 private:
 
   void makeRecHits(int iDir);
@@ -71,18 +69,55 @@ private:
   TrackSegment2DCollection findSegment2DCollection(int iDir);
   
   TrackSegment2D findSegment2D(int iDir, int iPeak) const;
+
+  /// Calculate track segment tangent in 3D
+  TVector3 getTangent(int iTrack2DSeed) const;
+
+  /// Calculate track segment bias in 2D. Bias is defined as 
+  /// position of the maximum charge in time-strip projection.
+  TVector2 get2DBias(definitions::projection_type iProj) const;
+
+  /// Calculate track segment bias in 3D
+  TVector3 getBias(int iTrack2DSeed) const;
+
+  /// Calculate length in XY plane from two projections using formula for length 
+  /// in covariant coordinates: l = sqrt(g_ij * dx^i * dx^j)
+  double getXYLength(definitions::projection_type dir1, 
+                     definitions::projection_type dir2,
+                     double l1, double l2) const;
+
+  //Normalise tangents along the common axis - the time axis
+  void normaliseTangents(TVector3 & tangent_U, TVector3 & tangent_V, TVector3 & tangent_W) const;
+
+  /// Calculate length of track projection on strip direction.
+  /// Sign of the length is determined by the position of maximum:
+  /// -1 -> maximum closer to the beginning
+  /// +1 -> maximum closer  the end
+  /// this sets tangent along the alpha track from C+alpha events
+  /// Maximum is found from give 2D projection - auxProj
+  /// the auxProj should be a projection with longest track
+  double getSignedLengthProjection(definitions::projection_type iProj,
+                                   definitions::projection_type auxProj=definitions::projection_type::DIR_U) const;
+
+  /// Solve equation for cos(phi) and sin(phi) for given two projection tangents
+  double getXYTangentPhiFromProjsTangents(definitions::projection_type dir1, definitions::projection_type dir2,
+                                          double l1, double l2) const;
   
   TrackSegment3D buildSegment3D(int iTrackSeed=0) const;
+
+  /// Fit track restricted parameter set
+  /// TANGENT - only tangent is fitted
+  /// BIAS - only bias is fitted
+  /// BIAS_TANGENT - both bias and tangent are fitted
+  void fitTrack3D(Track3D & aTrackCandidate, definitions::fit_type fitType);
 
   Track3D fitTrack3D(const Track3D & aTrackCandidate);
 
   Track3D fitEventHypothesis(const Track3D & aTrackCandidate);
   
-  Track3D fitTrackNodesStartEnd(const Track3D & aTrack) const;
+  ROOT::Fit::FitResult fitTrackNodesBiasTangent(const Track3D & aTrack, definitions::fit_type fitType) const;
 
-  ROOT::Fit::FitResult fitTrackNodesBiasTangent(const Track3D & aTrack, double offset=0) const;
-
-  std::tuple<double, double> getTimeProjectionEdges() const;
+  std::tuple<double, double> getProjectionEdges(const TH1D &hProj, int binMargin=10) const;
 
   std::shared_ptr<EventTPC> myEventPtr;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
