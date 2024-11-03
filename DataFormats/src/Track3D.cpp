@@ -267,9 +267,6 @@ double Track3D::updateAndGetLoss(const double *par){
   }
   update();
   double loss = getLoss();
-
-
-
   return loss;
 }
 /////////////////////////////////////////////////////////

@@ -161,7 +161,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
 
   //Event loop
   unsigned int nEntries = myEventSource->numberOfEntries();
-  nEntries = 1000; 
+  nEntries = 40000; 
   for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
     if(nEntries>10 && iEntry%(nEntries/10)==0){
       std::cout<<KBLU<<"Processed: "<<int(100*(double)iEntry/nEntries)<<" % events"<<RST<<std::endl;
@@ -173,7 +173,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
 
     int eventId = myEventSource->getCurrentEvent()->GetEventInfo().GetEventId();
     const Track3D & aTrack3DGenAlpha = myEventSource->getGeneratedTrack(0);
-    const Track3D & aTrack3DGenCarbon = myEventSource->getGeneratedTrack(0);
+    const Track3D & aTrack3DGenCarbon = myEventSource->getGeneratedTrack(1);
     const Track3D & aTrack3DReco = myTkBuilder.getTrack3D(0);
 
     track_data.frameId = iEntry;

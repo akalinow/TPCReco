@@ -10,6 +10,7 @@
 #include <TFile.h>
 #include <TFitResult.h>
 #include <Math/Functor.h>
+#include <Math/VectorUtil.h>
 
 #include "TPCReco/GeometryTPC.h"
 
@@ -230,16 +231,16 @@ void TrackBuilder::makeRecHits(int iDir){
 /////////////////////////////////////////////////////////
 std::tuple<double, double> TrackBuilder::getProjectionEdges(const TH1D & hProj, int binMargin) const{
   
-  int iBinStart = -1;
-  int iBinEnd = -1;
+  int iBinStart = 0;
+  int iBinEnd = hProj.GetNbinsX();
   double histoSum = hProj.Integral();
   double sum = 0.0;
   double threshold = 0.01;
 
   for(auto iBin=0;iBin<hProj.GetNbinsX();++iBin){
     sum += hProj.GetBinContent(iBin); 
-    if(sum/histoSum>threshold && iBinStart<0) iBinStart = iBin;
-    else if(sum/histoSum>1.0-threshold && iBinEnd<0) {
+    if(sum/histoSum>threshold && iBinStart==0) iBinStart = iBin;
+    else if(sum/histoSum>1.0-threshold && iBinEnd==hProj.GetNbinsX()){ 
       iBinEnd = iBin;
       break;
     }
@@ -471,26 +472,33 @@ double TrackBuilder::getXYTangentPhiFromProjsTangents(definitions::projection_ty
 double TrackBuilder::getSignedLengthProjection(definitions::projection_type iProj,
                                                definitions::projection_type auxProj) const{
 
-   const TH1D* hProj;
-   double diffusionMargin = 2.0; //parameter to be moved to configuration
-   definitions::projection_type iProjTmp = iProj;
-  if(iProj==definitions::projection_type::DIR_TIME){
-    hProj = &hTimeProjection;
-    diffusionMargin = 4.0; //parameter to be moved to configuration
-    iProjTmp = auxProj;
-  }
-  else hProj = getRecHits2D(iProj).ProjectionY("hProj");
+   const TH1D* hProj = &hTimeProjection;
+   double stripDiffusionMargin = 2.0; //parameter to be moved to configuration
+   double timeDiffusionMargin = 4.0; //parameter to be moved to configuration
+   double minTimeProjLength =  40;  //parameter to be moved to configuration
+   double minStripProjLength = 30;  //parameter to be moved to configuration
 
-  /// Have to get maximum bin from full 2D histogram
+   definitions::projection_type iProjTmp = iProj;
+   if(iProj==definitions::projection_type::DIR_TIME) iProjTmp = auxProj;
+   else hProj = getRecHits2D(iProj).ProjectionY("hProj");
+
+  double minStrip=0, maxStrip=0;
+  std::tie(minStrip, maxStrip) = getProjectionEdges(*hProj, stripDiffusionMargin);
+  double minTimeBin=0, maxTimeBin=0;
+  std::tie(minTimeBin, maxTimeBin) = getProjectionEdges(hTimeProjection, timeDiffusionMargin);
+
+   /// Have to get maximum bin from full 2D histogram
   /// to avoid bias in the maximum position from the projection
   int iMaxBinX{0}, iMaxBinY{0}, iMaxBinZ{0};
   getRecHits2D(iProjTmp).GetMaximumBin(iMaxBinX, iMaxBinY, iMaxBinZ);
   int iMaxBin = iMaxBinY;
   if(iProj==definitions::projection_type::DIR_TIME) iMaxBin = iMaxBinX;
+  //If track is horizontal use a projection on strip direction to avoid bias in maximum position
+  else if(std::abs(maxTimeBin-minTimeBin)<minTimeProjLength &&
+          std::abs(maxStrip-minStrip)<minStripProjLength) iMaxBin = hProj->GetMaximumBin();
+
   double maxPos = hProj->GetBinCenter(iMaxBin);
 
-  double minStrip=0, maxStrip=0;
-  std::tie(minStrip, maxStrip) = getProjectionEdges(*hProj, diffusionMargin);
   int direction = std::abs(maxPos - minStrip)<std::abs(maxPos - maxStrip) ? 1 : -1;
   double l = (maxStrip - minStrip)*direction;
 
@@ -501,11 +509,18 @@ double TrackBuilder::getSignedLengthProjection(definitions::projection_type iPro
 /////////////////////////////////////////////////////////
 TVector2 TrackBuilder::get2DBias(definitions::projection_type iProj) const{
 
+  //double minTimeProjLength =  40;  //parameter to be moved to configuration
+  double timeDiffusionMargin = 4.0; //parameter to be moved to configuration
+  double minTimeBin=0, maxTimeBin=0;
+  std::tie(minTimeBin, maxTimeBin) = getProjectionEdges(hTimeProjection, timeDiffusionMargin);
+
   int iMaxBinX{0}, iMaxBinY{0}, iMaxBinZ{0};
   getRecHits2D(iProj).GetMaximumBin(iMaxBinX, iMaxBinY, iMaxBinZ);
   double maxTimePos = getRecHits2D(iProj).GetXaxis()->GetBinCenter(iMaxBinX);
+  //If track is horizontal use a projection on strip direction to avoid bias in maximum position
+  //if(std::abs(maxTimeBin-minTimeBin)<minTimeProjLength) iMaxBinY = getRecHits2D(iProj).ProjectionY()->GetMaximumBin();
   double maxStripPos = getRecHits2D(iProj).GetYaxis()->GetBinCenter(iMaxBinY);
-  
+
   return TVector2(maxTimePos, maxStripPos);
 }
 /////////////////////////////////////////////////////////
@@ -544,12 +559,12 @@ TVector3 TrackBuilder::getBias(int iTrack2DSeed) const{
   if(std::abs(l_V)>std::abs(l_U)) auxProj = definitions::projection_type::DIR_V;
   else if(std::abs(l_W)>std::abs(l_U)) auxProj = definitions::projection_type::DIR_W;
   double l_T = getSignedLengthProjection(definitions::projection_type::DIR_TIME, auxProj);
-  //Vertical track. Track maximum should well defined, event if the strip projection is short.
+  //Vertical track. Track maximum should be well defined, event if the strip projection is short.
   if(std::abs(l_T)>minTimeProjLength){
     l_U = 2*minStripProjLength;
     l_V = 2*minStripProjLength;
     l_W = 2*minStripProjLength;
-  }
+  } 
 
 	double weight_fromUV = res_UV*std::abs(l_U*l_V)*(std::abs(l_U)>minStripProjLength)*(std::abs(l_V)>minStripProjLength);
   double weight_fromVW = res_VW*std::abs(l_V*l_W)*(std::abs(l_V)>minStripProjLength)*(std::abs(l_W)>minStripProjLength);
@@ -560,6 +575,7 @@ TVector3 TrackBuilder::getBias(int iTrack2DSeed) const{
   TVector2 biasXY = (weight_fromUV*biasXY_fromUV + weight_fromVW*biasXY_fromVW + weight_fromWU*biasXY_fromWU)/weightSum;
   double biasZ = (maxPos_U.X()*weight_fromUV + maxPos_V.X()*weight_fromVW + maxPos_W.X()*weight_fromWU)/weightSum;
   TVector3 aBias(biasXY.X(), biasXY.Y(), biasZ);
+  
   /*
   std::cout<<KGRN<<"TrackBuilder::getBias: "<<RST<<std::endl;
   std::cout<<"l_U: "<<l_U<<" l_V: "<<l_V<<" l_W: "<<l_W<<" l_T: "<<l_T<<std::endl;
@@ -571,7 +587,7 @@ TVector3 TrackBuilder::getBias(int iTrack2DSeed) const{
   std::cout<<"biasXY: "<<biasXY.X()<<" "<<biasXY.Y()<<std::endl;
   std::cout<<"biasZ: "<<biasZ<<std::endl;
   */
-
+  
   return aBias;
 }
 /////////////////////////////////////////////////////////
@@ -668,6 +684,7 @@ void TrackBuilder::fitTrack3D(Track3D & aFittedTrack, definitions::fit_type fitT
   auto fitResult = fitTrackNodesBiasTangent(aFittedTrack, fitType);
   double afterFitLoss = fitResult.MinFcnValue();
    if(initialLoss>1.01*afterFitLoss){
+    std::cout<<KGRN<<"Fit successfull: "<<RST<<std::endl;
     aFittedTrack.updateAndGetLoss(fitResult.GetParams());
   }  
  std::cout<<KBLU<<"Post-fit: "<<RST<<std::endl;

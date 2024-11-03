@@ -147,7 +147,7 @@ double TrackSegment2D::getLoss(const Hit2DCollection & aRecHits, definitions::fi
 /////////////////////////////////////////////////////////
 double TrackSegment2D::getParallelLineLoss(const Hit2DCollection & aRecHits) const{
 
-  double maxDistance = 20.0; //parameter to be put into configuration
+  double maxDistance = 100.0; //parameter to be put into configuration
 
   if(!aRecHits.size()) return 0.0;
   double dummyLoss = 999.0;
