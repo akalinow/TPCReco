@@ -84,6 +84,7 @@ TGraphErrors TrackSegment2D::getChargeProfile(const Hit2DCollection & aRecHits, 
     y = aHit.getPosStrip();
     aPoint.SetXYZ(x, y, 0.0);
     std::tie(lambda, distance) = getPointLambdaAndDistance(aPoint);
+    distance = std::abs(distance);
     lambda /= getLength();
     if(distance<radiusCut){
       grChargeProfile2D.SetPoint(grChargeProfile2D.GetN(),lambda, aHit.getCharge()/binWidth);
@@ -119,6 +120,7 @@ double TrackSegment2D::getIntegratedCharge(double lambdaCut, const Hit2DCollecti
     y = aHit.getPosStrip();
     aPoint.SetXYZ(x, y, 0.0);    
     std::tie(lambda, distance) = getPointLambdaAndDistance(aPoint);
+    distance = std::abs(distance);  
     if(lambda>0 && lambda<getLength() && distance>0 && distance<radiusCut) totalCharge += aHit.getCharge();
   }
   return totalCharge;
@@ -133,13 +135,13 @@ std::tuple<double,double> TrackSegment2D::getPointLambdaAndDistance(const TVecto
   TVector3 delta = aPoint - start;
   double lambda = delta*tangent.Unit();
   TVector3 transverseComponent = delta - lambda*tangent;
-  return std::make_tuple(lambda, transverseComponent.Mag());
+  int sign = transverseComponent.Unit().Cross(tangent.Unit()).Z()>0 ? 1 : -1;
+  return std::make_tuple(lambda, sign*transverseComponent.Mag());
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 double TrackSegment2D::getLoss(const Hit2DCollection & aRecHits, definitions::fit_type lossType)const{
   
-  //getHitDistanceLoss(aRecHits);
   if(lossType==definitions::fit_type::TANGENT) return getParallelLineLoss(aRecHits);
   else return getHitDistanceLoss(aRecHits); 
 }
@@ -147,7 +149,7 @@ double TrackSegment2D::getLoss(const Hit2DCollection & aRecHits, definitions::fi
 /////////////////////////////////////////////////////////
 double TrackSegment2D::getParallelLineLoss(const Hit2DCollection & aRecHits) const{
 
-  double maxDistance = 100.0; //parameter to be put into configuration
+  double maxDistance = 20.0; //parameter to be put into configuration
 
   if(!aRecHits.size()) return 0.0;
   double dummyLoss = 999.0;
@@ -166,7 +168,7 @@ double TrackSegment2D::getParallelLineLoss(const Hit2DCollection & aRecHits) con
     charge = abs(aHit.getCharge());
     aPoint.SetXYZ(x, y, 0.0);
     std::tie(lambda,distance) = getPointLambdaAndDistance(aPoint);
-    if(distance>maxDistance) continue;
+    if(std::abs(distance)>maxDistance) continue;
     mean += distance*charge;
     mean2 += std::pow(distance,2)*charge;
     chargeSum +=charge;
@@ -213,6 +215,7 @@ double TrackSegment2D::getHitDistanceLoss(const Hit2DCollection & aRecHits) cons
     charge = abs(aHit.getCharge());
     aPoint.SetXYZ(x, y, 0.0);
     std::tie(lambda,distance) = getPointLambdaAndDistance(aPoint);
+    distance = std::abs(distance);
     totalChargeSum += charge;
     if(distance>maxDistance) continue;
     loss += std::pow(distance, 2)*charge;
