@@ -761,9 +761,6 @@ ROOT::Fit::FitResult TrackBuilder::fitTrackNodesBiasTangent(const Track3D & aTra
     std::cout<<KRED<<"Track3D Fit failed."<<RST<<std::endl;
       fitter.Result().Print(std::cout);
     }
-
-   fitter.Result().Print(std::cout); 
-
   return fitter.Result();
 }
 /////////////////////////////////////////////////////////
