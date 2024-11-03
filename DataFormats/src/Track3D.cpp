@@ -249,7 +249,10 @@ double Track3D::updateAndGetLoss(const double *par){
     else if(myFitType==definitions::fit_type::BIAS_Z){
       const double *segmentParameters = par+3*iSegment;
       TVector3 aBias = mySegments.at(iSegment).getBias();
-      aBias.SetZ(segmentParameters[0]*aBias.CosTheta());
+      aBias.SetZ(segmentParameters[0]);
+
+      std::cout<<"Bias.Z(): "<<aBias.Z()<<std::endl;
+
       const TVector3 & aTangent = mySegments.at(iSegment).getTangent();
       mySegments.at(iSegment).setBiasTangent(aBias, aTangent);
     }

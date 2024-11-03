@@ -11,6 +11,7 @@
 #include <TFitResult.h>
 #include <Math/Functor.h>
 #include <Math/VectorUtil.h>
+#include <Minuit2/Minuit2Minimizer.h>
 
 #include "TPCReco/GeometryTPC.h"
 
@@ -575,8 +576,8 @@ TVector3 TrackBuilder::getBias(int iTrack2DSeed) const{
   TVector2 biasXY = (weight_fromUV*biasXY_fromUV + weight_fromVW*biasXY_fromVW + weight_fromWU*biasXY_fromWU)/weightSum;
   double biasZ = (maxPos_U.X()*weight_fromUV + maxPos_V.X()*weight_fromVW + maxPos_W.X()*weight_fromWU)/weightSum;
   TVector3 aBias(biasXY.X(), biasXY.Y(), biasZ);
-  
-  /*
+
+/*
   std::cout<<KGRN<<"TrackBuilder::getBias: "<<RST<<std::endl;
   std::cout<<"l_U: "<<l_U<<" l_V: "<<l_V<<" l_W: "<<l_W<<" l_T: "<<l_T<<std::endl;
   std::cout<<"res_UV: "<<res_UV<<" res_VW: "<<res_VW<<" res_WU: "<<res_WU<<std::endl;
@@ -587,7 +588,6 @@ TVector3 TrackBuilder::getBias(int iTrack2DSeed) const{
   std::cout<<"biasXY: "<<biasXY.X()<<" "<<biasXY.Y()<<std::endl;
   std::cout<<"biasZ: "<<biasZ<<std::endl;
   */
-  
   return aBias;
 }
 /////////////////////////////////////////////////////////
@@ -632,7 +632,6 @@ TVector3 TrackBuilder::getTangent(int iTrack2DSeed) const{
   double lXY_VW = getXYLength(definitions::projection_type::DIR_V, definitions::projection_type::DIR_W, l_V, l_W);
   double lXY_WU = getXYLength(definitions::projection_type::DIR_W, definitions::projection_type::DIR_U, l_W, l_U);
   double l_XY = (lXY_UV*weight_fromUV + lXY_VW*weight_fromVW + lXY_WU*weight_fromWU)/weightSum;
-
   double theta = M_PI/2.0 - atan2(l_T, l_XY);
 
   double phiUV = getXYTangentPhiFromProjsTangents(definitions::projection_type::DIR_U, definitions::projection_type::DIR_V, l_U, l_V);
@@ -643,14 +642,14 @@ TVector3 TrackBuilder::getTangent(int iTrack2DSeed) const{
   else if(phi>2*M_PI) phi -= 2*M_PI;
   phi /= weightSum;
 
-  /*
+/*
   std::cout<<KGRN<<"TrackBuilder::getTangent: "<<RST<<std::endl;
   std::cout<<"lXY_UV: "<<lXY_UV<<" lXY_VW: "<<lXY_VW<<" lXY_WU: "<<lXY_WU<<" l_XY: "<<l_XY<<std::endl;
   std::cout<<"l_U: "<<l_U<<" l_V: "<<l_V<<" l_W: "<<l_W<<" l_T: "<<l_T<<" l_XY: "<<l_XY<<std::endl;
   std::cout<<"weight_fromUV: "<<weight_fromUV<<" weight_fromVW: "<<weight_fromVW<<" weight_fromWU: "<<weight_fromWU<<std::endl;
   std::cout<<"phiUV: "<<phiUV<<" phiVW: "<<phiVW<<" phiWU: "<<phiWU<<" phi: "<<phi<<std::endl;
   std::cout<<"theta: "<<theta<<" phi: "<<phi<<" deg: "<<phi/M_PI*180<<std::endl;
-  */
+*/
   
   TVector3 aTangent;
   aTangent.SetMagThetaPhi(1.0, theta, phi);
@@ -684,7 +683,6 @@ void TrackBuilder::fitTrack3D(Track3D & aFittedTrack, definitions::fit_type fitT
   auto fitResult = fitTrackNodesBiasTangent(aFittedTrack, fitType);
   double afterFitLoss = fitResult.MinFcnValue();
    if(initialLoss>1.01*afterFitLoss){
-    std::cout<<KGRN<<"Fit successfull: "<<RST<<std::endl;
     aFittedTrack.updateAndGetLoss(fitResult.GetParams());
   }  
  std::cout<<KBLU<<"Post-fit: "<<RST<<std::endl;
@@ -708,19 +706,13 @@ Track3D TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
 ROOT::Fit::FitResult TrackBuilder::fitTrackNodesBiasTangent(const Track3D & aTrack, 
                     definitions::fit_type fitType) const{
 
-  double zRange = 40; //parameter to be moved to configuration
-  double xyRange = 40; //parameter to be moved to configuration
+  double zRange = 20; //parameter to be moved to configuration
+  double xyRange = 20; //parameter to be moved to configuration
   double thetaRange = 0.4; //parameter to be moved to configuration
   double phiRange = 0.4; //parameter to be moved to configuration                    
 
   Track3D aTrackCandidate = aTrack;
   aTrackCandidate.setFitMode(fitType);
-  double biasCosTheta = aTrackCandidate.getSegments().front().getBias().CosTheta();
-  double biasSinTheta = sqrt(1-biasCosTheta*biasCosTheta);
-
-  zRange /= biasCosTheta;
-  xyRange /= biasSinTheta;
-
   std::vector<double> params = aTrackCandidate.getSegmentsBiasTangentCoords();
   int nParams = params.size();
 
@@ -728,24 +720,29 @@ ROOT::Fit::FitResult TrackBuilder::fitTrackNodesBiasTangent(const Track3D & aTra
   fitter.SetFCN(fcn, params.data());
 
   for (int iPar = 0; iPar < nParams; ++iPar){
-    fitter.Config().ParSettings(iPar).SetValue(params[iPar]);
     fitter.Config().ParSettings(iPar).Release();
     if(iPar==0){//bias coordinates
       if(fitType==definitions::fit_type::BIAS_Z){
-         fitter.Config().ParSettings(iPar).SetStepSize(1);
-         fitter.Config().ParSettings(iPar).SetLimits(params[iPar]-zRange/2, params[iPar]+zRange/2);
+         double biasZ = aTrackCandidate.getSegments().front().getBias().Z();
+         fitter.Config().ParSettings(iPar).SetValue(biasZ);
+         fitter.Config().ParSettings(iPar).SetLimits(biasZ-zRange/2, biasZ+zRange/2);
+         fitter.Config().ParSettings(iPar).SetStepSize(zRange/2);
       } 
      else if(fitType==definitions::fit_type::BIAS_XY){
-        fitter.Config().ParSettings(iPar).SetStepSize(1);
-        fitter.Config().ParSettings(iPar).SetLimits(params[iPar]-xyRange/2, params[iPar]+xyRange/2);
+        double biasPerp = aTrackCandidate.getSegments().front().getBias().Perp();
+        fitter.Config().ParSettings(iPar).SetValue(biasPerp);
+        fitter.Config().ParSettings(iPar).SetLimits(biasPerp-xyRange/2, biasPerp+xyRange/2);
+        fitter.Config().ParSettings(iPar).SetStepSize(xyRange/2);
       } 
     }
     if(iPar==1){ //tangent polar angle
-      fitter.Config().ParSettings(iPar).SetStepSize(0.1);
+      fitter.Config().ParSettings(iPar).SetValue(params[iPar]);
+      fitter.Config().ParSettings(iPar).SetStepSize(thetaRange/2);
       fitter.Config().ParSettings(iPar).SetLimits(params[iPar]-thetaRange/2, params[iPar]+thetaRange/2);
     }
     if(iPar==2){ //tangent azimuthal angle 
-      fitter.Config().ParSettings(iPar).SetStepSize(0.1);
+      fitter.Config().ParSettings(iPar).SetValue(params[iPar]);
+      fitter.Config().ParSettings(iPar).SetStepSize(phiRange/2);
       fitter.Config().ParSettings(iPar).SetLimits(params[iPar]-phiRange/2, params[iPar]+phiRange/2);
     }
   }
@@ -764,6 +761,9 @@ ROOT::Fit::FitResult TrackBuilder::fitTrackNodesBiasTangent(const Track3D & aTra
     std::cout<<KRED<<"Track3D Fit failed."<<RST<<std::endl;
       fitter.Result().Print(std::cout);
     }
+
+   fitter.Result().Print(std::cout); 
+
   return fitter.Result();
 }
 /////////////////////////////////////////////////////////
