@@ -90,11 +90,12 @@ TVector3 EventSourceMC::createVertex() const{
   x = -0.433035;
   y = -0.75;
   z =  0.0;
-
+  */
+/*
   x = 10.0;
   y = 10.0;
   z = 10.0;
-  */
+  */  
   TVector3 aVertex(x,y,z);
   return aVertex;
 }
@@ -125,14 +126,8 @@ TrackSegment3D EventSourceMC::createSegment(const TVector3 vertexPos, pid_type i
     phi = M_PI/4.0;
   }
   else{
-    //minCosTheta = -1;
-    //maxCosTheta = -0.2;
-
     theta = TMath::ACos(myRndm.Uniform(minCosTheta, maxCosTheta));
     phi = myRndm.Uniform(minPhi, maxPhi);
-
-    //theta = acos(0.0);
-    //phi = 0.8;
   }
  
  //two prong event - take care of momentum conservation in CM
@@ -250,8 +245,8 @@ void EventSourceMC::fillPEventTPC(const TH3D & h3DChargeCloud, const Track3D & a
     depositPosition = aTrack.getSegments().front().getStart() + lambda*aTrack.getSegments().front().getTangent();
     for(int iTry=0;iTry<nTries;++iTry){
       smearedPosition = TVector3(myRndm.Gaus(depositPosition.X(), sigma),
-				 myRndm.Gaus(depositPosition.Y(), sigma),
-				 myRndm.Gaus(depositPosition.Z(), sigma));
+				                         myRndm.Gaus(depositPosition.Y(), sigma),
+				                         myRndm.Gaus(depositPosition.Z(), sigma));
       iPolyBin = myGeometryPtr->GetTH2Poly()->FindBin(smearedPosition.X(), smearedPosition.Y());
       iCell = myGeometryPtr->Pos2timecell(smearedPosition.Z(), err_flag);
       std::shared_ptr<StripTPC> aStrip = myGeometryPtr->GetTH2PolyStrip(iPolyBin);

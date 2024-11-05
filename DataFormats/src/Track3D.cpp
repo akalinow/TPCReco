@@ -243,7 +243,7 @@ double Track3D::updateAndGetLoss(const double *par){
       const double *segmentParameters = par+3*iSegment;
       const TVector3 & aBias = mySegments.at(iSegment).getBias();
       TVector3 aTangent;
-      aTangent.SetMagThetaPhi(1.0, segmentParameters[1], segmentParameters[2]);
+      aTangent.SetMagThetaPhi(1.0, segmentParameters[0], segmentParameters[1]);
       mySegments.at(iSegment).setBiasTangent(aBias, aTangent);
     }
     else if(myFitType==definitions::fit_type::BIAS_Z){
@@ -256,11 +256,9 @@ double Track3D::updateAndGetLoss(const double *par){
     else if(myFitType==definitions::fit_type::BIAS_XY){
       const double *segmentParameters = par+3*iSegment;
       TVector3 aBias = mySegments.at(iSegment).getBias();
+      aBias.SetX(segmentParameters[0]);
+      aBias.SetY(segmentParameters[1]);
       const TVector3 & aTangent = mySegments.at(iSegment).getTangent();
-      TVector3 initialBias = aBias.Unit();
-      double sinTheta = sqrt(1-initialBias.CosTheta()*initialBias.CosTheta());
-      aBias.SetX(segmentParameters[0]*cos(initialBias.Phi())*sinTheta);
-      aBias.SetY(segmentParameters[0]*sin(initialBias.Phi())*sinTheta);
       mySegments.at(iSegment).setBiasTangent(aBias, aTangent);
     }
     mySegments.at(iSegment).setLossType(myFitType);
@@ -291,7 +289,7 @@ std::ostream & operator << (std::ostream &out, const Track3D &aTrack){
   out<<"\t Total track charge  "<<std::endl;
   out<<"\t from 3D profile [arb. units]: "<<aTrack.getChargeProfile().Integral("width")<<std::endl;
   out<<"\t Hit fit loss func.: "<<aTrack.getLoss()<<std::endl;
-  out<<"\t dE/dx fit loss func./charge^2: "<<aTrack.getHypothesisFitLoss()/std::pow(chargeFromProfile+0.01,2)<<std::endl;
+  out<<"\t dE/dx fit loss func./charge: "<<aTrack.getHypothesisFitLoss()/chargeFromProfile+0.01<<std::endl;
   out<<"\t       fitted diffusion [mm]: "<<aTrack.getSegments().front().getDiffusion()<<std::endl;
   out<<KBLU<<"-----------------------------------"<<RST<<std::endl;
   return out;

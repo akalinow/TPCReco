@@ -30,7 +30,7 @@ void TrackSegment3D::setBiasTangent(const TVector3 & aBias, const TVector3 & aTa
 
   myBias = aBias;
   myTangent = aTangent.Unit();
-  myBias = myBias - myBias.Dot(myTangent)*myTangent;
+  //TEST myBias = myBias - myBias.Dot(myTangent)*myTangent;
 
   double lambda = 200;
   myStart = myBias-lambda*myTangent;
@@ -46,7 +46,7 @@ void TrackSegment3D::setStartEnd(const TVector3 & aStart, const TVector3 & aEnd)
 
   myTangent = (myEnd - myStart).Unit();
   myBias = (myStart + myEnd)*0.5;
-  myBias -= myBias.Dot(myTangent)*myTangent;
+  //TEST myBias -= myBias.Dot(myTangent)*myTangent;
   initialize();
 }
 /////////////////////////////////////////////////////////
@@ -252,7 +252,7 @@ TH1F TrackSegment3D::getChargeProfile() const{
   int nBins = 1024;
   double minX = -0.2*getLength();
   double maxX = 1.2*getLength();
-  TH1F hChargeProfile("hChargeProfile",";d [mm];charge",nBins, minX, maxX);
+  TH1F hChargeProfile("hChargeProfile",";d [mm];charge/mm",nBins, minX, maxX);
   hChargeProfile.SetDirectory(0);
   if(getLength()<1) return hChargeProfile;
 
@@ -271,6 +271,8 @@ TH1F TrackSegment3D::getChargeProfile() const{
   hChargeProfile.Rebin(rebinFactor);
   double scale = 1.0/hChargeProfile.GetBinWidth(1);
   hChargeProfile.Scale(scale); 
+  double max = hChargeProfile.GetMaximum();
+  hChargeProfile.Scale(1.0/max); 
   return hChargeProfile;
 }
 /////////////////////////////////////////////////////////

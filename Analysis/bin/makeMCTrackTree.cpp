@@ -160,9 +160,10 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   std::cout<<KBLU<<"File with "<<RST<<myEventSource->numberOfEntries()<<" frames loaded."<<std::endl;
 
   //Event loop
-  unsigned int nEntries = myEventSource->numberOfEntries();
-  nEntries = 40000; 
-  for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
+  int nEntries = aConfig.get<int>("input.readNEvents");
+  if(nEntries<0 ) nEntries = 0;
+ 
+  for(int iEntry=0;iEntry<nEntries;++iEntry){
     if(nEntries>10 && iEntry%(nEntries/10)==0){
       std::cout<<KBLU<<"Processed: "<<int(100*(double)iEntry/nEntries)<<" % events"<<RST<<std::endl;
     }

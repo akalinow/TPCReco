@@ -216,8 +216,8 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
   if(std::string(aCanvas->GetName())=="Histograms") padNumberOffset = 0;
   
   reconstruct();
-  filter_type filterType = filter_type::threshold;
-  if(!myConfig.get<bool>("hitFilter.recoClusterEnable")) filterType = filter_type::none;
+  //TEST filter_type filterType = filter_type::threshold;
+  //TEST if(!myConfig.get<bool>("hitFilter.recoClusterEnable")) filterType = filter_type::none;
 
    for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
      TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
@@ -226,9 +226,11 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
      aCanvas->Modified();
      aCanvas->Update();
      
-     auto projType = get2DProjectionType(strip_dir);     
-     auto histo2D = get2DProjection(projType, filterType, scale_type::mm);
-    
+
+     //TEST auto projType = get2DProjectionType(strip_dir);     
+     //TEST auto histo2D = get2DProjection(projType, filterType, scale_type::mm);
+     auto histo2D = (TH2D*)(&myTkBuilder.getRecHits2D(strip_dir));
+     if(doAutozoom) makeAutozoom(histo2D);
 
      aPad->SetFrameFillColor(kAzure-6);
      
@@ -252,7 +254,11 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
    aPad->cd();
    aCanvas->Modified();
    aCanvas->Update();
-   drawChargeAlongTrack3D(aPad);
+
+   std::cout<<KGRN<<" myTkBuilder.getTrack3D(0).getSegments().front().getPID(): "<<myTkBuilder.getTrack3D(0).getSegments().front().getPID()<<RST<<std::endl;
+
+   if(myTkBuilder.getTrack3D(0).getSegments().front().getPID()==pid_type::DOT) drawTrack3DProjectionXY(aPad);
+   else drawChargeAlongTrack3D(aPad);
 
    aCanvas->Modified();
    aCanvas->Update();
@@ -636,7 +642,7 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
   if(aTrack3D.getLength()<1) return;
   
-  TH1F hFrame("hFrame",";d [mm];charge/bin [arb. units]",2,-20, 20+aTrack3D.getLength());
+  TH1F hFrame("hFrame",";d [mm];charge/mm [arb. units]",2,-20, 20+aTrack3D.getLength());
   hFrame.GetYaxis()->SetTitleOffset(2.0);
   hFrame.SetMinimum(0.0);
 
@@ -713,10 +719,8 @@ void HistoManager::makeAutozoom(TH1 * aHisto){
     int lowBin = aHisto->FindFirstBinAbove(threshold, iAxis);
     int highBin = aHisto->FindLastBinAbove(threshold, iAxis);
     margin += (highBin - lowBin)*0.1;
-    /////// TEST
     if(iAxis==1) aHisto->GetXaxis()->SetRange(std::max(lowBin-margin,1) , std::min(highBin+margin, aHisto->GetXaxis()->GetNbins()));
     else if(iAxis==2) aHisto->GetYaxis()->SetRange(std::max(lowBin-margin,1), std::min(highBin+margin, aHisto->GetYaxis()->GetNbins()));
-    /////// TEST
   }
 }
 /////////////////////////////////////////////////////////

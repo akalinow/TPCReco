@@ -126,17 +126,18 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   leafNames += "total_mom_x:total_mom_y:total_mom_z:";
   leafNames += "lineFitLoss:dEdxFitLoss:dEdxFitSigma";
   tree->Branch("track",&track_data,leafNames.c_str());
-  
+
   std::string geometryFileName = aConfig.get("input.geometryFile","");
   double pressure = aConfig.get<double>("conditions.pressure"); 
   double temperature = aConfig.get<double>("conditions.temperature");
+  double samplingRate = aConfig.get<double>("conditions.samplingRate");
   boost::property_tree::ptree hitConfig;
   hitConfig.put_child("hitFilter", aConfig.get_child("hitFilter"));
     
   TrackBuilder myTkBuilder;
   myTkBuilder.setGeometry(myEventSource->getGeometry());
   myTkBuilder.setPressure(pressure);
-  IonRangeCalculator myRangeCalculator(gas_mixture_type::CO2,pressure, temperature);
+  IonRangeCalculator myRangeCalculator(gas_mixture_type::CO2,pressure,temperature);
 
   ////////////////////////////////////////////
   //
@@ -183,10 +184,10 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   std::cout<<KBLU<<"File with "<<RST<<myEventSource->numberOfEntries()<<" frames loaded."<<std::endl;
 
   //Event loop
-  unsigned int nEntries = myEventSource->numberOfEntries();
-  //if(maxNevents>0) nEntries = std::min( (unsigned int)nEntries, (unsigned int)maxNevents );
-  //nEntries = 5; //TEST
-  for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
+  int nEntries = aConfig.get<int>("input.readNEvents");
+  if(nEntries<0 || nEntries>myEventSource->numberOfEntries() ) nEntries = myEventSource->numberOfEntries();
+
+  for(int iEntry=0;iEntry<nEntries;++iEntry){
     if(nEntries>10 && iEntry%(nEntries/10)==0){
       std::cout<<KBLU<<"Processed: "<<int(100*(double)iEntry/nEntries)<<" % events"<<RST<<std::endl;
     }
@@ -196,9 +197,8 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
       myEventSource->getCurrentEvent()->setHitFilterConfig(filter_type::threshold, hitConfig);
       myEventSource->getCurrentEvent()->setHitFilterConfig(filter_type::fraction, hitConfig);
     }
-    myTkBuilder.setGeometry(myEventSource->getGeometry());
-    myTkBuilder.setPressure(pressure); ////// HACK - workaround for static variable dEdxFitter::currentPressure
     myTkBuilder.setEvent(myEventSource->getCurrentEvent());
+    myTkBuilder.setPressure(pressure);
     myTkBuilder.reconstruct();
 
     ////////////////////////////////////////////

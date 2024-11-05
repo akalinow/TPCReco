@@ -85,6 +85,7 @@ enum pid_type{
   O_18=OXYGEN_18,     // alias
   BE_8=BERYLLIUM_8,   // alias
   THREE_ALPHA,        //
+  DOT,                // a dot like track
   PID_MIN=ALPHA,      // alias
   PID_MAX=BERYLLIUM_8 // alias
 };

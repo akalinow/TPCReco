@@ -14,14 +14,22 @@ def analyzeSingleBatch(runId, fileCSV, geometryFile, command):
     if not os.path.isdir(runId):
         os.mkdir(runId)
 
-    arguments = " --geometryFile " + geometryFile + " --dataFile " + fileCSV + " > "+outputName+" 2>&1 &"
+    pressure = geometryFile.split("_")[3].rstrip("mbar")
+    samplingRate = geometryFile.split("_")[5].rstrip("MHz.dat")
+
+    arguments = ""
+    arguments += " --input.geometryFile " + geometryFile 
+    arguments += " --input.dataFile " + fileCSV 
+    arguments += " --conditions.pressure " + pressure 
+    arguments += " --conditions.samplingRate "+ samplingRate
+    arguments += " > "+outputName+" 2>&1 &"
     print("Running job id:",runId,"\nfor file(s):\n\t"+ fileCSV.replace(",","\n\t"))
     
     os.chdir(runId)
     os.system("ln -s ../*Formats* ./")
     os.system("ln -s ../*.dat ./")
     print(command+arguments)
-    #exit(0) #TEST
+    exit(0) #TEST
     os.system(command+arguments)
     time.sleep(2)
     os.chdir("../")

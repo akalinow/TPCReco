@@ -44,11 +44,11 @@ dEdxFitter::dEdxFitter(std::string resources, double aPressure){
   carbon_alpha_model->SetParName(5, "carbonScale");
   carbon_alpha_model->SetParName(6, "commonScale");
 
-  carbon_alpha_model->SetParLimits(0, 1.0, 4.0);
-  carbon_alpha_model->SetParLimits(6, 10, 100);
+  carbon_alpha_model->SetParLimits(0, 0.1, 5.0);
+  carbon_alpha_model->SetParLimits(6, 1E-4, 1E-2);
   
-  carbon_alpha_model->FixParameter(4, 1.0);
-  carbon_alpha_model->FixParameter(5, 1.0);  
+  carbon_alpha_model->FixParameter(4, 1);
+  carbon_alpha_model->FixParameter(5, 1);  
  
   alpha_model = new TF1(*carbon_alpha_model);
   alpha_model->SetName("alpha_model");
@@ -101,7 +101,7 @@ void dEdxFitter::reset(){
             (minCarbonOffset+maxCarbonOffset)/2.0,
 				    //maxAlphaOffset-85,  // [mm] --> HACK valid for 13.1 MeV
 				    //maxCarbonOffset-11,  // [mm] --> HACK valid for 13.1 MeV
-				    1.0, 1.0, 50);
+				    1, 1, 5E-3);
 
   alpha_model->SetRange(-20, maxAlphaOffset);
   alpha_model->SetParLimits(1, minVtxOffset, maxVtxOffset);
@@ -110,7 +110,7 @@ void dEdxFitter::reset(){
 			     (minVtxOffset+maxVtxOffset)/2.0,
 			     (minAlphaOffset+maxAlphaOffset)/2.0,
 			     0.0,
-			     1.0, 0.0, 50);
+			     1.0, 0.0, 5E-3);
   
   theFitResult = TFitResult();
   theFittedModel = alpha_model;
@@ -236,7 +236,7 @@ TFitResult dEdxFitter::fitHypothesis(TF1 *fModel, TH1F & aHisto){
   double ratio = 1.0;
   reset();
 
-  TFitResultPtr theResultPtr = aHisto.Fit(fModel,"BRWWSQ");
+  TFitResultPtr theResultPtr;
   do{
     reset();
     theResultPtr = aHisto.Fit(fModel,"BRWWSQ");
@@ -264,19 +264,7 @@ TFitResult dEdxFitter::fitHisto(const TH1F & aHisto){
     reflection_for_C12_alpha = true;
   }
   TFitResult carbon_alphaResult = fitHypothesis(carbon_alpha_model, fittedHisto_for_C12_alpha);
-
-  ///TEST
-  /*
-  theFitResult = carbon_alphaResult;
-  theFittedModel = carbon_alpha_model;
-  theFittedHisto = fittedHisto_for_C12_alpha;
-  isReflected = reflection_for_C12_alpha;
-  bestFitEventType = pid_type::C12_ALPHA;
-  theFittedModel->SetParameters(theFitResult.Parameters().data());
-  return theFitResult;
-  */
-  ///
-
+ 
   /// alpha hypothesis
   bool reflection_for_alpha = false;
   TH1F fittedHisto_for_alpha = aHisto;
