@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import subprocess
 import os
 import functools
 from fileLoop import *
@@ -19,24 +20,37 @@ def finalize(topDirName, samples):
         if not os.path.isdir(item):
             continue
 
+        # Merge ROOT files
+        path = topDirName+"/"+item
         command = "cp -r "+item+" "+topDirName
         print(command)
         os.system(command)
         command = "mkdir -p "+topDirName+"/plots/"+item
         print(command)
         os.system(command)
-        command = "hadd -f "+topDirName+"/"+item+".root "+topDirName+"/"+item+"/*.root"
+        command = "hadd -f "+path+".root "+path+"/*0003.root"
         print(command)
         os.system(command)
-        command = "root -b -q \"../test/makePlots.cpp(\\\""+topDirName+"/"+item+".root\\\")\" "
+  
+        ## Run HIGS analysis on the reco files
+        command = "../bin/recoEventsAnalysis "+path+"/configDump.json --input.dataFile "+path+".root"
         print(command)
         os.system(command)
-        command = "mv Plots*.png "+topDirName+"/plots/"+item
-        print(command)        
+
+        ## Make the plots
+        energy = subprocess.check_output(["grep", "energy", path+"/configDump.json"])
+        energy = subprocess.check_output(["cut","-f4","-d\""], input=energy)
+        energy = energy.decode("utf-8").rstrip("\n")
+        command = "root -b -q \"../examples/makePlots_HIGS.cpp(\\\"Histos.root\\\", "+energy+")\" "
+        print(command)
         os.system(command)
+        
+        ## Move plots to the plots directory
+        command = "mv *.pdf Trees.root Histos.root "+topDirName+"/plots/"+item
+        os.system(command)
+
+        ## Save the git version
         command = "git log -1 > "+topDirName+"/git_version.dat"
-        os.system(command)
-        command = "cp ../test/makePlots.cpp "+topDirName
         os.system(command)
 ################################################################
 ################################################################

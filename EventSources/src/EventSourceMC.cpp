@@ -133,8 +133,6 @@ TrackSegment3D EventSourceMC::createSegment(const TVector3 vertexPos, pid_type i
   else{
     theta = TMath::ACos(myRndm.Uniform(minCosTheta, maxCosTheta));
     phi = myRndm.Uniform(minPhi, maxPhi);
-
-    phi = M_PI;
   }
  
  //two prong event - take care of momentum conservation in CM

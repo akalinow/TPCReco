@@ -8,9 +8,9 @@ root [1] makePlots_HIGS("Histos.root", 8.66);
 */
 //#undef __ROOTLOGON__
 //#ifndef __ROOTLOGON__
-R__ADD_INCLUDE_PATH(../../../DataFormats/include)
-R__ADD_INCLUDE_PATH(../../../Utilities/include)
-R__ADD_LIBRARY_PATH(../../lib)
+R__ADD_INCLUDE_PATH(../../DataFormats/include)
+R__ADD_INCLUDE_PATH(../../Utilities/include)
+R__ADD_LIBRARY_PATH(../lib)
 //#endif
 
 #include <tuple>

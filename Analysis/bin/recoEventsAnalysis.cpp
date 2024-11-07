@@ -292,8 +292,6 @@ int analyzeRecoEvents(const  std::string & geometryFileName,
 
     for (auto & aSegment: aTrack->getSegments())  aSegment.setGeometry(aGeometry); // need TPC geometry for track projections
     
-    std::cout<<" accepted: "<<cuts(aTrack)<<std::endl;
-
     if(!cuts(aTrack)){
       continue;
     }

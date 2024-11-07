@@ -602,7 +602,7 @@ double TrackBuilder::getXYLength(definitions::projection_type dir1,
 /////////////////////////////////////////////////////////
 TVector3 TrackBuilder::getTangent(int iTrack2DSeed) const{
 
-    double minStripProjLength = 15; //parameter to be moved to configuration
+    double minStripProjLength = 20; //parameter to be moved to configuration
     double minStripProjLengthForVertTracks = 40; //parameter to be moved to configuration
     double minTimeProjLength = 20;  //parameter to be moved to configuration
     double epsilon = 1E-2;          //parameter to be moved to configuration
@@ -666,7 +666,7 @@ TVector3 TrackBuilder::getTangent(int iTrack2DSeed) const{
   else if(phi>2*M_PI) phi -= 2*M_PI;
   phi /= weightSum;
 
-/*
+ /*
   std::cout<<KGRN<<"TrackBuilder::getTangent: "<<RST<<std::endl;
   std::cout<<"lXY_UV: "<<lXY_UV<<" lXY_VW: "<<lXY_VW<<" lXY_WU: "<<lXY_WU<<" l_XY: "<<l_XY<<std::endl;
   std::cout<<"l_U: "<<l_U<<" l_V: "<<l_V<<" l_W: "<<l_W<<" l_T: "<<l_T<<" l_XY: "<<l_XY<<std::endl;
