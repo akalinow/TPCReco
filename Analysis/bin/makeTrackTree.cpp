@@ -97,7 +97,6 @@ typedef struct {Float_t eventId, frameId,
     alphaRange, carbonRange,
     cosPhiSegments,
     charge, cosTheta, phi, chi2,
-    hypothesisLoss,
     xVtx, yVtx, zVtx,
     xAlphaEnd, yAlphaEnd, zAlphaEnd,
     xCarbonEnd, yCarbonEnd, zCarbonEnd,
@@ -119,7 +118,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   leafNames += "length:horizontalLostLength:verticalLostLength:";
   leafNames += "alphaEnergy:carbonEnergy:alphaRange:carbonRange:";
   leafNames += "cosPhiSegments:";
-  leafNames += "charge:cosTheta:phi:chi2:hypothesisLoss:";
+  leafNames += "charge:cosTheta:phi:chi2:";
   leafNames += "xVtx:yVtx:zVtx:";
   leafNames += "xAlphaEnd:yAlphaEnd:zAlphaEnd:";
   leafNames += "xCarbonEnd:yCarbonEnd:zCarbonEnd:";
@@ -259,7 +258,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
 
     myRecoOutput.setRecTrack(aTrack3D);
     myRecoOutput.setEventInfo(myEventInfo);				   
-    //myRecoOutput.update(); 
+    myRecoOutput.update(); 
     
     double length = aTrack3D.getLength();
     double charge = aTrack3D.getIntegratedCharge(length);
@@ -303,7 +302,6 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     track_data.cosTheta = cosTheta;
     track_data.phi = phi;
     track_data.chi2 = chi2;
-    track_data.hypothesisLoss = hypothesisLoss;
     
     track_data.xVtx = vertex.X();
     track_data.yVtx = vertex.Y();

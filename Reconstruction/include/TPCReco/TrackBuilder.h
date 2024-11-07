@@ -71,6 +71,8 @@ private:
   TrackSegment2D findSegment2D(int iDir, int iPeak) const;
 
   /// Calculate track segment tangent in 3D
+  /// There are requirements for minimal length of 2D projection to 
+  /// provide reliable estimate of the bias
   TVector3 getTangent(int iTrack2DSeed) const;
 
   /// Calculate track segment bias in 2D. Bias is defined as 
@@ -78,7 +80,10 @@ private:
   TVector2 get2DBias(definitions::projection_type iProj) const;
 
   /// Calculate track segment bias in 3D
-  TVector3 getBias(int iTrack2DSeed) const;
+  /// if acceptDot==true, then bias is calculated even for very short tracks, i.e dots
+  /// otherwise there are requirements for minimal length of 2D projection to 
+  /// provide reliable estimate of the bias
+  TVector3 getBias(int iTrack2DSeed,  bool acceptDot=false) const;
 
   /// Calculate length in XY plane from two projections using formula for length 
   /// in covariant coordinates: l = sqrt(g_ij * dx^i * dx^j)
@@ -104,6 +109,11 @@ private:
                                           double l1, double l2) const;
   
   TrackSegment3D buildSegment3D(int iTrackSeed=0) const;
+
+
+  /// Fit a dot - a very short cluster, 
+  /// failing minimal length requirements for bias and tangent estimation
+  Track3D fitDot(Track3D & aFittedTrack) const;
 
   /// Fit track restricted parameter set
   /// TANGENT - only tangent is fitted

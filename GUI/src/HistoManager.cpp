@@ -255,8 +255,6 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
    aCanvas->Modified();
    aCanvas->Update();
 
-   std::cout<<KGRN<<" myTkBuilder.getTrack3D(0).getSegments().front().getPID(): "<<myTkBuilder.getTrack3D(0).getSegments().front().getPID()<<RST<<std::endl;
-
    if(myTkBuilder.getTrack3D(0).getSegments().front().getPID()==pid_type::DOT) drawTrack3DProjectionXY(aPad);
    else drawChargeAlongTrack3D(aPad);
 
@@ -549,6 +547,16 @@ void HistoManager::drawTrack3DProjectionXY(TVirtualPad *aPad){
     aSegment2DLine.SetLineWidth(3);
     fTrackLines.push_back(aSegment2DLine.DrawLine(start.X(), start.Y(),  end.X(),  end.Y()));
     fTrackLines.back()->ResetBit(kCanDelete);
+
+    TMarker aMarker(start.X(), start.Y(), 20);
+    aMarker.SetMarkerSize(1.0);
+    aMarker.SetMarkerStyle(20);
+
+    aMarker.SetMarkerColor(kWhite);
+    aMarker.DrawMarker(start.X(), start.Y());
+    aMarker.SetMarkerColor(kBlack);
+    aMarker.DrawMarker(end.X(), end.Y());
+    
     ++iSegment;
   }
 }

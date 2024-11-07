@@ -86,26 +86,26 @@ std::ostream& operator<<(std::ostream& out, BeamDirection const &direction){
 int main(int argc, char **argv){
   ConfigManager cm;
   boost::property_tree::ptree tree = cm.getConfig(argc, argv);
-  auto geometryFileName = tree.get<std::string>("geometryFile");
-  auto dataFileName =tree.get<std::string>("dataFile");
-  auto beamEnergy = tree.get<int>("beamEnergy");
-  auto pressure = tree.get<float>("pressure");
-  auto makeTreeFlag = !tree.get<bool>("noTree");
-  
-  auto temperature = tree.get<float>("temperature");
-  auto nominalBoostFlag = tree.get<bool>("nominalBoost");
-  auto beamOffset = tree.get<float>("beamOffset");
-  auto beamSlope = tree.get<float>("beamSlope");
-  auto beamDiameter = tree.get<float>("beamDiameter");
-  auto beamDir = tree.get<BeamDirection>("beamDir");
-  auto alphaMinCut = tree.get<float>("alphaMinCut");
-  auto alphaMaxCut = tree.get<float>("alphaMaxCut");
-  auto carbonMinCut = tree.get<float>("carbonMinCut");
-  auto carbonMaxCut = tree.get<float>("carbonMaxCut");
-  auto alphaScaleCorr = tree.get<float>("alphaScaleCorr");
-  auto alphaOffsetCorr = tree.get<float>("alphaOffsetCorr");
-  auto carbonScaleCorr = tree.get<float>("carbonScaleCorr");
-  auto carbonOffsetCorr = tree.get<float>("carbonOffsetCorr");
+  auto geometryFileName = tree.get<std::string>("input.geometryFile");
+  auto dataFileName =tree.get<std::string>("input.dataFile");
+  auto beamEnergy = tree.get<float>("beamParameters.energy");
+  auto pressure = tree.get<float>("conditions.pressure");
+  auto makeTreeFlag = true; //!tree.get<bool>("noTree");
+
+  auto temperature = tree.get<float>("conditions.temperature");
+  auto nominalBoostFlag = true;//tree.get<bool>("nominalBoost");
+  auto beamOffset = 0.0; //tree.get<float>("beamOffset");
+  auto beamSlope = 0.0; //tree.get<float>("beamSlope");
+  auto beamDiameter = 10.0;//tree.get<float>("beamDiameter");
+  auto beamDir = BeamDirection::MINUS_X; //tree.get<BeamDirection>("beamDir");
+  auto alphaMinCut = 20.0;//tree.get<float>("alphaMinCut");
+  auto alphaMaxCut = 150.0;//tree.get<float>("alphaMaxCut");
+  auto carbonMinCut = 6;//tree.get<float>("carbonMinCut");
+  auto carbonMaxCut = 30;//tree.get<float>("carbonMaxCut");
+  auto alphaScaleCorr = 1.0;//tree.get<float>("alphaScaleCorr");
+  auto alphaOffsetCorr = 0.0;//tree.get<float>("alphaOffsetCorr");
+  auto carbonScaleCorr = 1.0;//tree.get<float>("carbonScaleCorr");
+  auto carbonOffsetCorr = 0.0;//tree.get<float>("carbonOffsetCorr");
 
   analyzeRecoEvents(geometryFileName, dataFileName, beamEnergy, beamDir, beamOffset, beamSlope, beamDiameter, pressure, temperature,
 		    makeTreeFlag, nominalBoostFlag,
@@ -193,7 +193,7 @@ int analyzeRecoEvents(const  std::string & geometryFileName,
   // NOTE: Cut #6 is disabled by default.
   //       It should be DISABLED for manually reconstructed events and ENABLED for automatically reconstructed ones.
   //
-  // cuts.push_back(tpcreco::cuts::Cut6{pid_type::ALPHA, pid_type::CARBON_12, 10.0, 5.0, 30.0, 1000.0}); // affects 2-prong only
+  cuts.push_back(tpcreco::cuts::Cut6{pid_type::ALPHA, pid_type::CARBON_12, 15.0, 0.5, 0.3, 1000.0}); // affects 2-prong only
   //
   cuts.push_back(tpcreco::cuts::Cut7{false, // affects 2-prong only
 	pid_type::ALPHA, std::min(alphaMinCut, alphaMaxCut), std::max(alphaMinCut, alphaMaxCut),
@@ -292,6 +292,8 @@ int analyzeRecoEvents(const  std::string & geometryFileName,
 
     for (auto & aSegment: aTrack->getSegments())  aSegment.setGeometry(aGeometry); // need TPC geometry for track projections
     
+    std::cout<<" accepted: "<<cuts(aTrack)<<std::endl;
+
     if(!cuts(aTrack)){
       continue;
     }

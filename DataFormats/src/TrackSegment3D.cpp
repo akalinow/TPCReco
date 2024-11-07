@@ -26,11 +26,18 @@ std::shared_ptr<GeometryTPC> TrackSegment3D::getGeometry() const{
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+void TrackSegment3D::setBias(const TVector3 & aBias){
+
+   myBias = aBias;
+   initialize();
+
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 void TrackSegment3D::setBiasTangent(const TVector3 & aBias, const TVector3 & aTangent){
 
   myBias = aBias;
   myTangent = aTangent.Unit();
-  //TEST myBias = myBias - myBias.Dot(myTangent)*myTangent;
 
   double lambda = 200;
   myStart = myBias-lambda*myTangent;
@@ -46,7 +53,6 @@ void TrackSegment3D::setStartEnd(const TVector3 & aStart, const TVector3 & aEnd)
 
   myTangent = (myEnd - myStart).Unit();
   myBias = (myStart + myEnd)*0.5;
-  //TEST myBias -= myBias.Dot(myTangent)*myTangent;
   initialize();
 }
 /////////////////////////////////////////////////////////

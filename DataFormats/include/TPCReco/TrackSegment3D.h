@@ -26,6 +26,8 @@ class TrackSegment3D{
 
   std::shared_ptr<GeometryTPC> getGeometry() const;
 
+  void setBias(const TVector3 & aBias);
+
   void setBiasTangent(const TVector3 & aBias, const TVector3 & aTangent);
 
   void setBiasTangent(const double *par);

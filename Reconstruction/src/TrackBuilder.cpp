@@ -447,8 +447,6 @@ void TrackBuilder::normaliseTangents(TVector3 & tangent_U, TVector3 & tangent_V,
 /////////////////////////////////////////////////////////
 double TrackBuilder::getXYTangentPhiFromProjsTangents(definitions::projection_type dir1, definitions::projection_type dir2,
                                                       double l1, double l2) const{
-
-
    //Solve equations for cos(phi) and sin(phi):
    /// l_dir1 = e_dir1*cos(phi) + e_dir1*sin(phi)
    /// l_dir2 = e_dir2*cos(phi) + e_dir2*sin(phi)
@@ -576,8 +574,7 @@ TVector3 TrackBuilder::getBias(int iTrack2DSeed, bool acceptDot) const{
   TVector2 biasXY = (weight_fromUV*biasXY_fromUV + weight_fromVW*biasXY_fromVW + weight_fromWU*biasXY_fromWU)/weightSum;
   double biasZ = (maxPos_U.X()*weight_fromUV + maxPos_V.X()*weight_fromVW + maxPos_W.X()*weight_fromWU)/weightSum;
   TVector3 aBias(biasXY.X(), biasXY.Y(), biasZ);
-
-
+/*
   std::cout<<KGRN<<"TrackBuilder::getBias: "<<RST<<std::endl;
   std::cout<<"l_U: "<<l_U<<" l_V: "<<l_V<<" l_W: "<<l_W<<" l_T: "<<l_T<<std::endl;
   std::cout<<"res_UV: "<<res_UV<<" res_VW: "<<res_VW<<" res_WU: "<<res_WU<<std::endl;
@@ -587,7 +584,7 @@ TVector3 TrackBuilder::getBias(int iTrack2DSeed, bool acceptDot) const{
   std::cout<<"biasXY_fromWU: "<<biasXY_fromWU.X()<<" "<<biasXY_fromWU.Y()<<std::endl;
   std::cout<<"biasXY: "<<biasXY.X()<<" "<<biasXY.Y()<<std::endl;
   std::cout<<"biasZ: "<<biasZ<<std::endl;
-  
+  */
   return aBias;
 }
 /////////////////////////////////////////////////////////
@@ -607,7 +604,7 @@ TVector3 TrackBuilder::getTangent(int iTrack2DSeed) const{
 
     double minStripProjLength = 15; //parameter to be moved to configuration
     double minStripProjLengthForVertTracks = 40; //parameter to be moved to configuration
-    double minTimeProjLength = 15;  //parameter to be moved to configuration
+    double minTimeProjLength = 20;  //parameter to be moved to configuration
     double epsilon = 1E-2;          //parameter to be moved to configuration
     
   /// Lengths of projection on strip directions
@@ -615,42 +612,68 @@ TVector3 TrackBuilder::getTangent(int iTrack2DSeed) const{
   double l_V = getSignedLengthProjection(definitions::projection_type::DIR_V);
   double l_W = getSignedLengthProjection(definitions::projection_type::DIR_W);
   
-  definitions::projection_type auxProj = definitions::projection_type::DIR_U;
-  if(std::abs(l_V)>std::abs(l_U)) auxProj = definitions::projection_type::DIR_V;
-  else if(std::abs(l_W)>std::abs(l_U)) auxProj = definitions::projection_type::DIR_W;
-  double l_T = getSignedLengthProjection(definitions::projection_type::DIR_TIME, auxProj);
+  definitions::projection_type long_proj_type = definitions::projection_type::DIR_U;
+  if(std::abs(l_V)>std::abs(l_U)) long_proj_type = definitions::projection_type::DIR_V;
+  else if(std::abs(l_W)>std::abs(l_U)) long_proj_type = definitions::projection_type::DIR_W;
+  double l_T = getSignedLengthProjection(definitions::projection_type::DIR_TIME, long_proj_type);
   l_T *= std::abs(l_T)>minTimeProjLength;
   if(std::abs(l_T)<minTimeProjLength) minStripProjLength = minStripProjLengthForVertTracks;
+  
+  /// Lengths of projection on XY plane calculated fro pairs of projections
+  double lXY_UV = getXYLength(definitions::projection_type::DIR_U, definitions::projection_type::DIR_V, l_U, l_V);
+  double lXY_VW = getXYLength(definitions::projection_type::DIR_V, definitions::projection_type::DIR_W, l_V, l_W);
+  double lXY_WU = getXYLength(definitions::projection_type::DIR_W, definitions::projection_type::DIR_U, l_W, l_U);
+ 
+  double phiUV = getXYTangentPhiFromProjsTangents(definitions::projection_type::DIR_U, definitions::projection_type::DIR_V, l_U, l_V);
+  double phiVW = getXYTangentPhiFromProjsTangents(definitions::projection_type::DIR_V, definitions::projection_type::DIR_W, l_V, l_W);
+  double phiWU = getXYTangentPhiFromProjsTangents(definitions::projection_type::DIR_W, definitions::projection_type::DIR_U, l_W, l_U);
 
+  /// two lengths small, one long - track along one of strip pitch
+  double longProj = std::max(std::max(std::abs(l_U), std::abs(l_V)), std::abs(l_W));
+  if(longProj>minStripProjLength &&  //one long projection
+     std::abs(l_U*l_V*l_W)/longProj<pow(minStripProjLength,2)){ //two short projections
+    //definitions::projection_type short1 = definitions::projection_type::DIR_U==long_proj_type ? definitions::projection_type::DIR_V : definitions::projection_type::DIR_U;
+    //definitions::projection_type short2 = definitions::projection_type::DIR_W==long_proj_type? definitions::projection_type::DIR_V : definitions::projection_type::DIR_W;
+    if(long_proj_type==definitions::projection_type::DIR_U &&
+      std::abs(l_V)<minStripProjLength && std::abs(l_W)<minStripProjLength){
+      l_U = longProj;
+      l_V = std::abs(l_V)< minStripProjLength? -1.01*minStripProjLength: l_V;
+      l_W = std::abs(l_W)< minStripProjLength? -1.01*minStripProjLength: l_W;
+    } else if(long_proj_type==definitions::projection_type::DIR_V &&
+              std::abs(l_U)<minStripProjLength && std::abs(l_W)<minStripProjLength){
+      l_V = longProj;
+      l_U = std::abs(l_U)< minStripProjLength? -1.01*minStripProjLength: l_U;
+      l_W = std::abs(l_W)< minStripProjLength? -1.01*minStripProjLength: l_W;
+    } else if(long_proj_type==definitions::projection_type::DIR_W &&
+              std::abs(l_U)<minStripProjLength && std::abs(l_V)<minStripProjLength){
+      l_W = longProj;
+      l_U = std::abs(l_U)< minStripProjLength? -1.01*minStripProjLength: l_U;
+      l_V = std::abs(l_V)< minStripProjLength? -1.01*minStripProjLength: l_V;
+    }
+  }
+  ////
   double weight_fromUV = std::abs(l_U*l_V)*(std::abs(l_U)>minStripProjLength)*(std::abs(l_V)>minStripProjLength);
   double weight_fromVW = std::abs(l_V*l_W)*(std::abs(l_V)>minStripProjLength)*(std::abs(l_W)>minStripProjLength);
   double weight_fromWU = std::abs(l_W*l_U)*(std::abs(l_W)>minStripProjLength)*(std::abs(l_U)>minStripProjLength);
   double weightSum = weight_fromUV + weight_fromVW + weight_fromWU;
   if(weightSum<epsilon) weightSum = 1;
 
-  /// Lengths of projection on XY plane calculated fro pairs of projections
-  double lXY_UV = getXYLength(definitions::projection_type::DIR_U, definitions::projection_type::DIR_V, l_U, l_V);
-  double lXY_VW = getXYLength(definitions::projection_type::DIR_V, definitions::projection_type::DIR_W, l_V, l_W);
-  double lXY_WU = getXYLength(definitions::projection_type::DIR_W, definitions::projection_type::DIR_U, l_W, l_U);
   double l_XY = (lXY_UV*weight_fromUV + lXY_VW*weight_fromVW + lXY_WU*weight_fromWU)/weightSum;
+  
   double theta = M_PI/2.0 - atan2(l_T, l_XY);
-
-  double phiUV = getXYTangentPhiFromProjsTangents(definitions::projection_type::DIR_U, definitions::projection_type::DIR_V, l_U, l_V);
-  double phiVW = getXYTangentPhiFromProjsTangents(definitions::projection_type::DIR_V, definitions::projection_type::DIR_W, l_V, l_W);
-  double phiWU = getXYTangentPhiFromProjsTangents(definitions::projection_type::DIR_W, definitions::projection_type::DIR_U, l_W, l_U);
   double phi = (phiUV*weight_fromUV + phiVW*weight_fromVW + phiWU*weight_fromWU);
   if(phi<0) phi += 2*M_PI;
   else if(phi>2*M_PI) phi -= 2*M_PI;
   phi /= weightSum;
 
-
+/*
   std::cout<<KGRN<<"TrackBuilder::getTangent: "<<RST<<std::endl;
   std::cout<<"lXY_UV: "<<lXY_UV<<" lXY_VW: "<<lXY_VW<<" lXY_WU: "<<lXY_WU<<" l_XY: "<<l_XY<<std::endl;
   std::cout<<"l_U: "<<l_U<<" l_V: "<<l_V<<" l_W: "<<l_W<<" l_T: "<<l_T<<" l_XY: "<<l_XY<<std::endl;
   std::cout<<"weight_fromUV: "<<weight_fromUV<<" weight_fromVW: "<<weight_fromVW<<" weight_fromWU: "<<weight_fromWU<<std::endl;
   std::cout<<"phiUV: "<<phiUV<<" phiVW: "<<phiVW<<" phiWU: "<<phiWU<<" phi: "<<phi<<std::endl;
   std::cout<<"theta: "<<theta<<" phi: "<<phi<<" deg: "<<phi/M_PI*180<<std::endl;
-  
+  */
   TVector3 aTangent;
   aTangent.SetMagThetaPhi(1, theta, phi);
   return aTangent;
@@ -679,6 +702,7 @@ Track3D TrackBuilder::fitDot(Track3D & aFittedTrack) const {
   aFittedTrack.getSegments().front().setRecHits(myRawHits);
   aFittedTrack.getSegments().front().setDiffusion(0);
   aFittedTrack.getSegments().front().setPID(pid_type::DOT);
+  aFittedTrack.update();
   return aFittedTrack;
 }
 /////////////////////////////////////////////////////////
@@ -689,8 +713,8 @@ void TrackBuilder::fitTrack3D(Track3D & aFittedTrack, definitions::fit_type fitT
 
   aFittedTrack.setFitMode(fitType);
   aFittedTrack.extendToChamberRange(chamberRadius);
-  std::cout<<KBLU<<"Fit type: "<<int(fitType)<<" Pre-fit: "<<RST<<std::endl; 
-  std::cout<<aFittedTrack<<std::endl;
+  //std::cout<<KBLU<<"Fit type: "<<int(fitType)<<" Pre-fit: "<<RST<<std::endl; 
+  //std::cout<<aFittedTrack<<std::endl;
 
   double initialLoss = aFittedTrack.getLoss();
   auto fitResult = fitTrackNodesBiasTangent(aFittedTrack, fitType);
@@ -699,8 +723,8 @@ void TrackBuilder::fitTrack3D(Track3D & aFittedTrack, definitions::fit_type fitT
     aFittedTrack.updateAndGetLoss(fitResult.GetParams());
   }  
  aFittedTrack.extendToChamberRange(chamberRadius);
- std::cout<<KBLU<<"Post-fit: "<<RST<<std::endl;
- std::cout<<aFittedTrack<<std::endl;
+ //std::cout<<KBLU<<"Post-fit: "<<RST<<std::endl;
+ //std::cout<<aFittedTrack<<std::endl;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -723,8 +747,8 @@ Track3D TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
 ROOT::Fit::FitResult TrackBuilder::fitTrackNodesBiasTangent(const Track3D & aTrack, 
                     definitions::fit_type fitType) const{
 
-  double zRange = 10; //parameter to be moved to configuration
-  double xyRange = 10; //parameter to be moved to configuration
+  double zRange = 20; //parameter to be moved to configuration
+  double xyRange = 20; //parameter to be moved to configuration
   double thetaRange = 0.4; //parameter to be moved to configuration
   double phiRange = 0.4; //parameter to be moved to configuration                    
 
@@ -830,8 +854,8 @@ Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
     aSplitTrackCandidate.addSegment(carbonSegment);
   }
 
-  std::cout<<KBLU<<"Post-split: "<<RST<<std::endl;
-  std::cout<<aSplitTrackCandidate<<std::endl;
+  //std::cout<<KBLU<<"Post-split: "<<RST<<std::endl;
+  //std::cout<<aSplitTrackCandidate<<std::endl;
   return aSplitTrackCandidate;
 }
 /////////////////////////////////////////////////////////

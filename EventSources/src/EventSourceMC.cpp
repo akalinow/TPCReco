@@ -96,6 +96,7 @@ TVector3 EventSourceMC::createVertex() const{
   y = 10.0;
   z = 10.0;
   */  
+
   TVector3 aVertex(x,y,z);
   return aVertex;
 }
@@ -108,26 +109,32 @@ TrackSegment3D EventSourceMC::createSegment(const TVector3 vertexPos, pid_type i
   double minPhi = 0, maxPhi = 2*M_PI;
   double length = myRangeCalculator.getIonRangeMM(ion_id, energy);
 
-  /// fixed test configurations for first 3 events 
-  if(myCurrentEntry==10){ 
+  /// fixed test configurations for first few events 
+  if(myCurrentEntry==0){ 
     theta = 0.0;
     phi = 0.0;
   }
-  else if(myCurrentEntry==11){ 
-    theta = 0.0;
-    phi = M_PI/2.0;
-  }
-  else if(myCurrentEntry==12){
+  else if(myCurrentEntry==1){ 
     theta = M_PI/2.0;
     phi = M_PI/2.0;
   }
-  else if(myCurrentEntry==13){
+  else if(myCurrentEntry==2){
+    theta = M_PI/2.0;
+    phi = M_PI/2.0 - M_PI/6.0;
+  }
+  else if(myCurrentEntry==3){
+    theta = M_PI/2.0;
+    phi = M_PI/2.0 - M_PI/3.0;
+  }
+  else if(myCurrentEntry==4){
     theta = M_PI/2.0;
     phi = M_PI/4.0;
   }
   else{
     theta = TMath::ACos(myRndm.Uniform(minCosTheta, maxCosTheta));
     phi = myRndm.Uniform(minPhi, maxPhi);
+
+    phi = M_PI;
   }
  
  //two prong event - take care of momentum conservation in CM
@@ -136,9 +143,6 @@ TrackSegment3D EventSourceMC::createSegment(const TVector3 vertexPos, pid_type i
     phi = aTangent.Phi();
     theta = aTangent.Theta();
   }
-
-  std::cout<<KBLU<<"Phi: "<<RST<<phi<<" deg: "<<phi*180/M_PI<<std::endl;
-   std::cout<<KBLU<<"Theta: "<<RST<<theta<<" deg: "<<theta*180/M_PI<<std::endl;
  
   TVector3 tangent;
   tangent.SetMagThetaPhi(1.0, theta, phi);

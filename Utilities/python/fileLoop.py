@@ -29,7 +29,6 @@ def analyzeSingleBatch(runId, fileCSV, geometryFile, command):
     os.system("ln -s ../*Formats* ./")
     os.system("ln -s ../*.dat ./")
     print(command+arguments)
-    exit(0) #TEST
     os.system(command+arguments)
     time.sleep(2)
     os.chdir("../")
@@ -38,7 +37,7 @@ def analyzeSingleBatch(runId, fileCSV, geometryFile, command):
 def analyzeDataInDirectory(dataPath, geometryFile, procName):
     
     command = "../../bin/"+procName
-    procCount = 1
+    procCount = 3
 
     runDataList = getCSVinputList(dataPath)
     for runId, fileCSV in runDataList.items():
