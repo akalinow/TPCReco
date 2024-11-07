@@ -103,7 +103,7 @@ int main(int argc, char **argv){
   auto carbonMinCut = 6;//tree.get<float>("carbonMinCut");
   auto carbonMaxCut = 30;//tree.get<float>("carbonMaxCut");
   auto alphaScaleCorr = 1.0;//tree.get<float>("alphaScaleCorr");
-  auto alphaOffsetCorr = 0.0;//tree.get<float>("alphaOffsetCorr");
+  auto alphaOffsetCorr = 5.5;//tree.get<float>("alphaOffsetCorr");
   auto carbonScaleCorr = 1.0;//tree.get<float>("carbonScaleCorr");
   auto carbonOffsetCorr = 0.0;//tree.get<float>("carbonOffsetCorr");
 
