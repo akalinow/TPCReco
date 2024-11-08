@@ -115,7 +115,8 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   TrackData track_data;
   std::string leafNames = "";
   leafNames += "eventId:frameId:eventType:";
-  leafNames += "length:horizontalLostLength:verticalLostLength:";
+  leafNames += "length:";
+  leafNames += "horizontalLostLength:verticalLostLength:";
   leafNames += "alphaEnergy:carbonEnergy:alphaRange:carbonRange:";
   leafNames += "cosPhiSegments:";
   leafNames += "charge:cosTheta:phi:chi2:";
@@ -138,6 +139,11 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   myTkBuilder.setPressure(pressure);
   IonRangeCalculator myRangeCalculator(gas_mixture_type::CO2,pressure,temperature);
 
+  std::cout<<"pressure: "<<pressure<<std::endl;
+  double x = myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA,108);
+  std::cout<<"energy: "<<x<<std::endl;
+  x = myRangeCalculator.getIonRangeMM(pid_type::ALPHA, 5.275);
+  std::cout<<"range: "<<x<<std::endl;
   ////////////////////////////////////////////
   //
   // extra initialization for fit DEBUG plots
@@ -283,7 +289,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     int eventType = aTrack3D.getSegments().front().getPID()+aTrack3D.getSegments().back().getPID();
     double alphaRange =  aTrack3D.getSegments().front().getLength();
     double carbonRange =  aTrack3D.getSegments().back().getPID()== pid_type::CARBON_12 ? aTrack3D.getSegments().back().getLength(): 0.0;
-    double alphaEnergy = alphaRange>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA,alphaRange):0.0;
+    double alphaEnergy = alphaRange>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA,1.08*alphaRange+verticalTrackLostPart):0.0;
     double carbonEnergy = carbonRange>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::CARBON_12, carbonRange):0.0;
     double m_Alpha = myRangeCalculator.getIonMassMeV(pid_type::ALPHA);
     double m_12C = myRangeCalculator.getIonMassMeV(pid_type::CARBON_12);
@@ -327,8 +333,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
 
     track_data.lineFitLoss = aTrack3D.getLoss();
     track_data.dEdxFitLoss = aTrack3D.getHypothesisFitLoss();
-    track_data.dEdxFitSigma = aTrack3D.getSegments().front().getDiffusion();
-    
+    track_data.dEdxFitSigma = aTrack3D.getSegments().front().getDiffusion();    
     tree->Fill();    
   }
   outputROOTFile.Write();

@@ -16,6 +16,7 @@ def finalize(topDirName, samples):
     os.system(command)
 
     for item in samples:
+
         item = item.replace(":","-")
         if not os.path.isdir(item):
             continue
@@ -28,7 +29,7 @@ def finalize(topDirName, samples):
         command = "mkdir -p "+topDirName+"/plots/"+item
         print(command)
         os.system(command)
-        command = "hadd -f "+path+".root "+path+"/*0003.root"
+        command = "hadd -f "+path+".root "+path+"/*.root"
         print(command)
         os.system(command)
   

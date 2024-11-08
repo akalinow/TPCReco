@@ -255,8 +255,10 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
    aCanvas->Modified();
    aCanvas->Update();
 
-   if(myTkBuilder.getTrack3D(0).getSegments().front().getPID()==pid_type::DOT) drawTrack3DProjectionXY(aPad);
-   else drawChargeAlongTrack3D(aPad);
+   drawTrack3DProjectionXY(aPad);
+
+   //if(myTkBuilder.getTrack3D(0).getSegments().front().getPID()==pid_type::DOT) drawTrack3DProjectionXY(aPad);
+   //else drawChargeAlongTrack3D(aPad);
 
    aCanvas->Modified();
    aCanvas->Update();
@@ -556,7 +558,7 @@ void HistoManager::drawTrack3DProjectionXY(TVirtualPad *aPad){
     aMarker.DrawMarker(start.X(), start.Y());
     aMarker.SetMarkerColor(kBlack);
     aMarker.DrawMarker(end.X(), end.Y());
-    
+
     ++iSegment;
   }
 }

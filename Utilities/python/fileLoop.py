@@ -25,16 +25,18 @@ def analyzeSingleBatch(runId, fileCSV, geometryFile, command):
     arguments += " --conditions.samplingRate "+ samplingRate
     arguments += " --beamParameters.energy " + str(beamEnergy)
   
-    arguments += " > "+outputName+" 2>&1 &"
     print("Running job id:",runId,"\nfor file(s):\n\t"+ fileCSV.replace(",","\n\t"))
     
     os.chdir(runId)
     os.system("ln -s ../*Formats* ./")
     os.system("ln -s ../*.dat ./")
+
     configDumpCommand = "../../bin/dumpConfig"+arguments
     print(configDumpCommand)
     os.system(configDumpCommand)
+    os.chdir("../")
     return
+    arguments += " > "+outputName+" 2>&1 &"
     print(command+arguments)
     os.system(command+arguments)
     time.sleep(2)
@@ -44,7 +46,7 @@ def analyzeSingleBatch(runId, fileCSV, geometryFile, command):
 def analyzeDataInDirectory(dataPath, geometryFile, procName):
     
     command = "../../bin/"+procName
-    procCount = 30
+    procCount = 3
 
     runDataList = getCSVinputList(dataPath)
     for runId, fileCSV in runDataList.items():
@@ -53,9 +55,6 @@ def analyzeDataInDirectory(dataPath, geometryFile, procName):
 ################################################
 ################################################
 def runLoop(runs, procName, finalizeFunc):
-
-    finalizeFunc()
-    return
 
     for dataPath, geometryFile in runs:
         analyzeDataInDirectory(dataPath, geometryFile, procName)
