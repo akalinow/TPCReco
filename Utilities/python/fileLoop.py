@@ -35,7 +35,7 @@ def analyzeSingleBatch(runId, fileCSV, geometryFile, command):
     print(configDumpCommand)
     os.system(configDumpCommand)
     os.chdir("../")
-    return
+
     arguments += " > "+outputName+" 2>&1 &"
     print(command+arguments)
     os.system(command+arguments)
