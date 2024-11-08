@@ -34,8 +34,6 @@ def analyzeSingleBatch(runId, fileCSV, geometryFile, command):
     configDumpCommand = "../../bin/dumpConfig"+arguments
     print(configDumpCommand)
     os.system(configDumpCommand)
-    os.chdir("../")
-
     arguments += " > "+outputName+" 2>&1 &"
     print(command+arguments)
     os.system(command+arguments)
