@@ -62,7 +62,8 @@ Use one of pre-defined configuration files (`config/config_GUI__OFFLINE[*].json`
   * single GRAW file (offline mode),
   * list of comma-separated GRAW files for the same run (offline mode),
   * directory name to be minitored for new GRAW files (online mode).
-When reading GRAW files setup GET- and ROOT- software environments beforehand. At **daqula2** node use the following commands:
+
+When reading GRAW files setup GET and ROOT software environments beforehand. At **daqula2** node use the following commands:
 ```Shell
 source /opt/soft/root_v6.08.06/bin/thisroot.sh
 source /opt/soft/GetSoftware_bin/env_settings.sh
@@ -83,7 +84,7 @@ cd resources
 ```
 
 Multiple JSON files can be specified at the same time.
-For example, to add event filter for event browsing use this syntax on **daqula2** node:
+For example, to add event filter for event browsing use this syntax at **daqula2** node:
 
 ```Shell
 cd resources
