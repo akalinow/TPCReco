@@ -57,31 +57,47 @@ akalinow@daqula2:~/1/TPCReco$ git branch
 
 ## Run instructions:
 
-Update the  config/config_GUI.json with correct values for input date file (ROOT or GRAW), corresponding geometry file, and location of the resources directory.  
-When reading a GRAW file one has to run the application from the resources directory, as GET software requires a lots of additional files.  
-When reading GRAW files setup the GET environment. At the daqula2 node use a following command:
-
+Use one of pre-defined configuration files (`config/config_GUI__OFFLINE[*].json`) corresponding to the known TPC working conditions with appropriate command line modificators (`--input.dataFile`) pointing to the correct location of the input data file(s). Data file argument should refer to:
+  * single ROOT file (offline mode),
+  * single GRAW file (offline mode),
+  * list of comma-separated GRAW files for the same run (offline mode),
+  * directory name to be minitored for new GRAW files (online mode).
+When reading GRAW files setup GET- and ROOT- software environments beforehand. At **daqula2** node use the following commands:
 ```Shell
+source /opt/soft/root_v6.08.06/bin/thisroot.sh
 source /opt/soft/GetSoftware_bin/env_settings.sh
 ```
+Also when reading GRAW files run the application from the **resources** directory since GET software requires some additional XCFG files located therein. Alternatively modify `input.resourcePath` accordingly.
+
 When running from a container, enter the following command inside the container:
 ```Shell
 export LC_ALL=$LANG
 ```
 
-Run the GUI from the resources directory:
+After successful compilation try to run the GUI from the **resources** directory:
 
 ```Shell 
 cd resources
 ../bin/tpcGUI --meta.configJson ~/.tpcreco/config/test.json
+../bin/tpcGUI ~/.tpcreco/config/test.json
 ```
 
-Any application parameter can be set using the JSON file, or a command line argument. Command line arguments **overwrite** settings from the JSON file.
+Multiple JSON files can be specified at the same time.
+For example, to add event filter for event browsing use this syntax on **daqula2** node:
+
+```Shell
+cd resources
+../bin/tpcGUI \
+../config/config_GUI__OFFLINE_130mbar_1372Vdrift_25MHz_NGRAW.json \
+../config/config_GUI_filter.json \
+--input.dataFile $( ../bin/grawls --input 20220828111932 --chunk 0 --separator "," --directory /data/edaq/2022/HIgS_2022/20220828_extTrg_CO2_130mbar --ms 1000 )
+```
+Any application parameter can be set using a JSON file or a command line argument. Command line arguments **overwrite** settings from the JSON file(s).
 List of all parameters is provided by
 
 ```Shell
 ../bin/tpcGUI --help
 ```
 
-Check config file [structure and examples](Utilities/README.md). 
+Check config file [structure and examples](Utilities/README.md) for more details.
 
