@@ -5,9 +5,15 @@
         "resourcesPath":"./",
         "readNEvents": 1
     },
+    "conditions": {
+	"pressure": 190.0,
+	"temperature": 293.15,
+	"driftV": 0.646,
+	"samplingRate": 25.0,
+	"comment": "Udrift=3332V, E=170V/cm, p=190mbar, T=293K, CO2 gas, drift velocity from MAGBOLTZ v=0.646cm/us"
+    },
     "display":{
         "develMode": true,
         "autoZoom": true
     }
 }
-

@@ -1,16 +1,25 @@
 {
-    "dataFile": "/data/edaq/2018/CoBo_2018-06-20T13:12:47.629_0000.graw",
-    "geometryFile": "./new_geometry_mini_eTPC.dat",
-    "resourcesPath": ".",
-    "updateInterval": 3000,
-    "removePedestal": true,
-    "frameLoadRange": 2,
+    "input": {
+	"dataFile": "/data/edaq/2018/CoBo_2018-06-20T13:12:47.629_0000.graw",
+	"geometryFile": "./geometry_mini_eTPC.dat",
+	"resourcesPath": ".",
+	"frameLoadRange": 1,
+	"singleAsadGrawFile": false
+    },
+    "conditions": {
+	"pressure": 100.0,
+	"temperature": 293.15,
+	"driftV": 0.724,
+	"samplingRate": 25.0,
+	"comment": "Udrift=2000V, E=100V/cm, p=100mbar, T=293K, CO2 gas, drift velocity from MAGBOLTZ v=0.724cm/us"
+    },
     "display": {
         "zLogScale": true,
         "autoZoom": false,
         "recoMode": false
     },
     "pedestal": {
+        "remove": true,
         "minPedestalCell": 10,
         "maxPedestalCell": 50,
         "minSignalCell": 2,
