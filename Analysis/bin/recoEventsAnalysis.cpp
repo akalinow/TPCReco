@@ -258,7 +258,10 @@ int analyzeRecoEvents(const  std::string & geometryFileName,
 
   auto myAnalysis = HIGGS_analysis(aGeometry, beamEnergy, beamDir_DET, ionRangeCalculator, coordinateConverter, nominalBoostFlag);
   auto myTreesAnalysis= std::unique_ptr<HIGS_trees_analysis>(nullptr);
-  if(makeTreeFlag) myTreesAnalysis=std::make_unique<HIGS_trees_analysis>(aGeometry, beamEnergy, beamDir_DET, pressure, temperature);
+  if(makeTreeFlag) {
+      myTreesAnalysis=std::make_unique<HIGS_trees_analysis>(aGeometry, beamEnergy, beamDir_DET);
+      myTreesAnalysis->setIonRangeCalculator(ionRangeCalculator);
+  }
 
   TTree *aTree = (TTree*)aFile->Get("TPCRecoData");
   if(!aTree) {

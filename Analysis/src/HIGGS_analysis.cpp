@@ -43,7 +43,6 @@ HIGGS_analysis::~HIGGS_analysis(){
   finalize();
   delete outputFile;
 }
-
 ///////////////////////////////
 ///////////////////////////////
 void HIGGS_analysis::bookHistos(){
