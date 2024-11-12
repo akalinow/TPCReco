@@ -1,17 +1,25 @@
 {
-    "dataFile": "PLACEHOLDER_FOR_COMMA_SEPARATED_DATAFILE_LIST",
-    "geometryFile": "./geometry_ELITPC_190mbar_3626Vdrift_25MHz.dat",
-    "resourcesPath": ".",
-    "updateInterval": 3000,
-    "removePedestal": true,
-    "frameLoadRange": 100,
-    "singleAsadGrawFile": true,
+    "input": {
+	"dataFile": "PLACEHOLDER_FOR_COMMA_SEPARATED_DATAFILE_LIST",
+	"geometryFile": "./geometry_ELITPC_190mbar_3626Vdrift_25MHz.dat",
+	"resourcesPath": ".",
+	"frameLoadRange": 1,
+	"singleAsadGrawFile": true
+    },
+    "conditions": {
+	"pressure": 190.0,
+	"temperature": 293.15,
+	"driftV": 0.704,
+	"samplingRate": 25.0,
+	"comment": "Udrift=3626V, E=185V/cm, p=190mbar, T=293K, CO2 gas, drift velocity from MAGBOLTZ v=0.704cm/us"
+    },
     "display": {
         "zLogScale": true,
         "autoZoom": false,
         "recoMode": false
     },
     "pedestal": {
+        "remove": true,
         "minPedestalCell": 5,
         "maxPedestalCell": 25,
         "minSignalCell": 5,
