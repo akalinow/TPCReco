@@ -1,0 +1,11 @@
+{
+    "display": {
+        "zLogScale": true,
+        "autoZoom": false,
+        "recoMode": true
+    },
+    "eventFilter": {
+	"enabled": true,
+        "maxChargeLowerBound": 1000
+    }
+}
