@@ -28,7 +28,7 @@ class EventTPC {
   void Clear();
 
   void SetChargeMap(const PEventTPC::chargeMapType & aChargeMap);
-  void SetEventInfo(const eventraw::EventInfo & aEvInfo) {myEventInfo = aEvInfo; };
+  void SetEventInfo(const eventraw::EventInfo & aEvInfo);
   void SetGeoPtr(std::shared_ptr<GeometryTPC> aPtr);
 
   void setHitFilterConfig(filter_type filterType, const boost::property_tree::ptree &config);
