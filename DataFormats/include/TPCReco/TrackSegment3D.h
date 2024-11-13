@@ -100,6 +100,8 @@ class TrackSegment3D{
 
   double getIntegratedCharge(double lambda) const;
 
+  double getMaxCharge() const;
+
   const std::vector<Hit2DCollection> & getRecHits() const { return myRecHits;}
 
   double getLoss(int iProjection=-1) const;

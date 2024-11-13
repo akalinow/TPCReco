@@ -33,6 +33,8 @@ class Track3D{
 
   double getIntegratedCharge(double lambda) const;
 
+  double getMaxCharge() const;
+
   TH1F getChargeProfile() const { return myChargeProfile;}
 
   double getLoss() const;

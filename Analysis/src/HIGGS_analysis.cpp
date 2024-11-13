@@ -116,6 +116,7 @@ void HIGGS_analysis::bookHistos(){
   histos1D["h_ntracks"]=
     new TH1F("h_ntracks","Number of tracks;Tracks per event;Event count", 5, 0, 5);
 
+
   // HISTOGRAMS PER CATEGORY
   //
   for(auto c=0U; c<4; ++c) {
@@ -123,6 +124,10 @@ void HIGGS_analysis::bookHistos(){
     auto info=categoryInfo[c].c_str();
     auto perEventTitle="Event count / bin";
     auto perTrackTitle=(c==0 ? "Track count / bin" : perEventTitle );
+
+    histos2D[prefix+"_max_vs_total_charge"] = new TH2F((prefix+"_max_vs_total_charge").c_str(),
+     Form("%s;Integrated charge [ADC units];Maximal charge [ADC units];%s", info, perEventTitle),
+      100, -1E6,4E6, 100, 0, 6000);
 
     // VERTEX : per category
     histos1D[(prefix+"_vertexX").c_str()]=
@@ -791,6 +796,9 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack, eventraw::EventInfo *aEventInfo
 
   // 1-prong (alpha)
   if(ntracks==1) {
+
+    histos2D["h_1prong_max_vs_total_charge"]->Fill(aTrack->getIntegratedCharge(aTrack->getLength()), aTrack->getMaxCharge());
+
     histos1D["h_1prong_vertexX"]->Fill(vertexPos.X());
     histos1D["h_1prong_vertexY"]->Fill(vertexPos.Y());
     histos1D["h_1prong_vertexZ"]->Fill(vertexPos.Z());
@@ -839,6 +847,8 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack, eventraw::EventInfo *aEventInfo
 
   // 2-prong (alpha+carbon)
   if(ntracks==2) {
+    histos2D["h_2prong_max_vs_total_charge"]->Fill(aTrack->getIntegratedCharge(aTrack->getLength()), aTrack->getMaxCharge());
+
     histos1D["h_2prong_vertexX"]->Fill(vertexPos.X());
     histos1D["h_2prong_vertexY"]->Fill(vertexPos.Y());
     histos1D["h_2prong_vertexZ"]->Fill(vertexPos.Z());
@@ -1107,6 +1117,8 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack, eventraw::EventInfo *aEventInfo
   }
   // 3-prong (triple alpha)
   if(ntracks==3) {
+    histos2D["h_3prong_max_vs_total_charge"]->Fill(aTrack->getIntegratedCharge(aTrack->getLength()), aTrack->getMaxCharge());
+
     histos1D["h_3prong_vertexX"]->Fill(vertexPos.X());
     histos1D["h_3prong_vertexY"]->Fill(vertexPos.Y());
     histos1D["h_3prong_vertexZ"]->Fill(vertexPos.Z());
