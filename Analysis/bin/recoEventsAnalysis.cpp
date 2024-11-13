@@ -90,22 +90,21 @@ int main(int argc, char **argv){
   auto dataFileName =tree.get<std::string>("input.dataFile");
   auto beamEnergy = tree.get<float>("beamParameters.energy");
   auto pressure = tree.get<float>("conditions.pressure");
-  auto makeTreeFlag = true; //!tree.get<bool>("noTree");
-
+  auto makeTreeFlag = !tree.get<bool>("recoAnalysis.noTree");
   auto temperature = tree.get<float>("conditions.temperature");
-  auto nominalBoostFlag = true;//tree.get<bool>("nominalBoost");
-  auto beamOffset = 0.0; //tree.get<float>("beamOffset");
-  auto beamSlope = 0.0; //tree.get<float>("beamSlope");
-  auto beamDiameter = 10.0;//tree.get<float>("beamDiameter");
-  auto beamDir = BeamDirection::MINUS_X; //tree.get<BeamDirection>("beamDir");
-  auto alphaMinCut = 20.0;//tree.get<float>("alphaMinCut");
-  auto alphaMaxCut = 150.0;//tree.get<float>("alphaMaxCut");
-  auto carbonMinCut = 6;//tree.get<float>("carbonMinCut");
-  auto carbonMaxCut = 30;//tree.get<float>("carbonMaxCut");
-  auto alphaScaleCorr = 1.0;//tree.get<float>("alphaScaleCorr");
-  auto alphaOffsetCorr = 5.5;//tree.get<float>("alphaOffsetCorr");
-  auto carbonScaleCorr = 1.0;//tree.get<float>("carbonScaleCorr");
-  auto carbonOffsetCorr = 0.0;//tree.get<float>("carbonOffsetCorr");
+  auto nominalBoostFlag = tree.get<bool>("recoAnalysis.nominalBoost");
+  auto beamOffset = tree.get<float>("recoAnalysis.beamOffset");
+  auto beamSlope = tree.get<float>("recoAnalysis.beamSlope");
+  auto beamDiameter = tree.get<float>("recoAnalysis.beamDiameter");
+  auto beamDir = tree.get<int>("recoAnalysis.beamDir")>0? BeamDirection::PLUS_X : BeamDirection::MINUS_X;
+  auto alphaMinCut = tree.get<float>("recoAnalysis.alphaMinCut");
+  auto alphaMaxCut = tree.get<float>("recoAnalysis.alphaMaxCut");
+  auto carbonMinCut = tree.get<float>("recoAnalysis.carbonMinCut");
+  auto carbonMaxCut = tree.get<float>("recoAnalysis.carbonMaxCut");
+  auto alphaScaleCorr = tree.get<float>("recoAnalysis.alphaScaleCorr");
+  auto alphaOffsetCorr = tree.get<float>("recoAnalysis.alphaOffsetCorr");
+  auto carbonScaleCorr = tree.get<float>("recoAnalysis.carbonScaleCorr");
+  auto carbonOffsetCorr = tree.get<float>("recoAnalysis.carbonOffsetCorr");
 
   analyzeRecoEvents(geometryFileName, dataFileName, beamEnergy, beamDir, beamOffset, beamSlope, beamDiameter, pressure, temperature,
 		    makeTreeFlag, nominalBoostFlag,
