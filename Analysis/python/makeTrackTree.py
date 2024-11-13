@@ -120,6 +120,9 @@ HIgS_runs = [
     ("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220414_extTrg_CO2_130mbar/9.85MeV/GRAW/",
     "/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat"),
 
+    ("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/0220822_extTrg_CO2_130mbar/9.85MeV/GRAW/",
+    "/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat"),
+
     ("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220412_extTrg_CO2_190mbar_DT1470ET/11.1MeV/GRAW/",
     "/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat"),
 
@@ -140,11 +143,21 @@ HIgS_runs = [
 ]
 
 HIgS_runs = [
-     ("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220415_extTrg_CO2_130mbar/8.86MeV/GRAW/",
-    "/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_130mbar_1372Vdrift_25MHz.dat"),
+    #("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220415_extTrg_CO2_130mbar/8.86MeV/GRAW/",
+    #"/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_130mbar_1372Vdrift_25MHz.dat"),
 
     ("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220414_extTrg_CO2_130mbar/9.85MeV/GRAW/",
     "/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat"),
+
+    ("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/0220822_extTrg_CO2_130mbar/9.85MeV/GRAW/",
+    "/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat"),
+
+    ("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/0220823_extTrg_CO2_130mbar/9.36MeV/GRAW/",
+    "/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat"),
+
+    ("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/0220823_extTrg_CO2_130mbar/9.56MeV/GRAW/",
+    "/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat"),
+
 ]
 
 ###
@@ -152,7 +165,7 @@ HIgS_runs = [
 procName = "makeTrackTree"
 ################################################
 ################################################
-#runLoop(HIgS_runs, procName, finalizeHIgS())
+runLoop(HIgS_runs, procName, finalizeHIgS())
 finalizeHIgS()()
 ################################################
 ################################################
