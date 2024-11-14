@@ -13,6 +13,7 @@
 #pragma link C++ class eventraw::EventData+;
 #pragma link C++ class eventraw::AgetRaw+;
 #pragma link C++ class eventraw::ChannelRaw+;
+#pragma link C++ class eventraw::EventInfo::global_properties+;
 
 #pragma link C++ class Hit2D+;
 #pragma link C++ class TrackSegment2D+;

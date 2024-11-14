@@ -11,14 +11,15 @@ class EventTPC;
 
 namespace eventraw {
 
-  struct global_properties {
+  class EventInfo {
+  public:
+
+    struct global_properties {
     int max_charge{0};
     int integrated_charge{0};
     int n_hits{0};
-  };
+    };
 
-  class EventInfo {
-  public:
     EventInfo(){};
 
     ~EventInfo(){};
