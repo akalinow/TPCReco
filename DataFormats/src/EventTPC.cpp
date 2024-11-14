@@ -45,7 +45,7 @@ void EventTPC::Clear(){
 
   myEventInfo = aEvInfo;  
 
-  filter_type filterType = filter_type::threshold;
+  filter_type filterType = filter_type::none;
   int nHits = GetMultiplicity(true, -1, -1, -1, filterType);
   int totalCharge = GetTotalCharge(-1, -1, -1, -1, filterType);
   int maxCharge = GetMaxCharge(-1, -1, -1, filterType); 
