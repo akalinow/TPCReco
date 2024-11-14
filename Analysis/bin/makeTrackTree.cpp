@@ -31,39 +31,6 @@
 #include "TPCReco/EventTPC.h"
 /////////////////////////////////////
 /////////////////////////////////////
-std::string createROOTFileName(const  std::string & grawFileName){
-
-  std::string rootFileName = grawFileName;
-  std::string::size_type index = rootFileName.find(",");
-  if(index!=std::string::npos){
-    rootFileName = grawFileName.substr(0,index);
-  }
-  index = rootFileName.rfind("/");
-  if(index!=std::string::npos){
-    rootFileName = rootFileName.substr(index+1,-1);
-  }
-  if(rootFileName.find("CoBo_ALL_AsAd_ALL")!=std::string::npos){
-    rootFileName = rootFileName.replace(0,std::string("CoBo_ALL_AsAd_ALL").size(),"TrackTree");
-  }
-  else if(rootFileName.find("CoBo0_AsAd")!=std::string::npos){
-    rootFileName = rootFileName.replace(0,std::string("CoBo0_AsAd").size()+1,"TrackTree");
-  }
-  else if(rootFileName.find("EventTPC")!=std::string::npos){
-    rootFileName = rootFileName.replace(0,std::string("EventTPC").size(),"TrackTree");
-  }
-  else{
-    std::cout<<KRED<<"File format unknown: "<<RST<<rootFileName<<std::endl;
-    exit(1);
-  }
-  index = rootFileName.rfind("graw");
-  if(index!=std::string::npos){
-    rootFileName = rootFileName.replace(index,-1,"root");
-  }
-  
-  return rootFileName;
-}
-/////////////////////////////////////
-/////////////////////////////////////
 
 int makeTrackTree(boost::property_tree::ptree & aConfig);
 
@@ -109,7 +76,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   std::shared_ptr<EventSourceBase> myEventSource = EventSourceFactory::makeEventSourceObject(aConfig);
   
   std::string dataFileName = aConfig.get("input.dataFile","");
-  std::string rootFileName = createROOTFileName(dataFileName);
+  std::string rootFileName = InputFileHelper::makeOutputFileName(dataFileName,"TrackTree");
   TFile outputROOTFile(rootFileName.c_str(),"RECREATE");
   TTree *tree = new TTree("trackTree", "Track tree");
   TrackData track_data;
@@ -138,12 +105,6 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   myTkBuilder.setGeometry(myEventSource->getGeometry());
   myTkBuilder.setPressure(pressure);
   IonRangeCalculator myRangeCalculator(gas_mixture_type::CO2,pressure,temperature);
-
-  std::cout<<"pressure: "<<pressure<<std::endl;
-  double x = myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA,108);
-  std::cout<<"energy: "<<x<<std::endl;
-  x = myRangeCalculator.getIonRangeMM(pid_type::ALPHA, 5.275);
-  std::cout<<"range: "<<x<<std::endl;
   ////////////////////////////////////////////
   //
   // extra initialization for fit DEBUG plots
@@ -177,11 +138,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   ////////////////////////////////////////////
 
   RecoOutput myRecoOutput;
-  std::string fileName = InputFileHelper::tokenize(dataFileName)[0];
-  std::size_t last_dot_position = fileName.find_last_of(".");
-  std::size_t last_slash_position = fileName.find_last_of("//");
-  std::string recoFileName = MakeUniqueName("Reco_"+fileName.substr(last_slash_position+1,
-						     last_dot_position-last_slash_position-1)+".root");
+  std::string recoFileName = InputFileHelper::makeOutputFileName(dataFileName,"Reco");
   std::shared_ptr<eventraw::EventInfo> myEventInfo = std::make_shared<eventraw::EventInfo>();
   myRecoOutput.open(recoFileName);
  
