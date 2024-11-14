@@ -21,21 +21,21 @@ boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
 
   cmdLineOptDesc.add_options()
     ("help", "produce help message")
-    ("geometryFile",  boost::program_options::value<std::string>(), "string - path to TPC geometry file")
+    ("input.geometryFile",  boost::program_options::value<std::string>(), "string - path to TPC geometry file")
 #ifdef WITH_GET
-    ("dataFile",  boost::program_options::value<std::string>(), "string - path to a raw data file in ROOT/GRAW format (or list of comma-separated files in multi-GRAW mode) ")
-    ("frameLoadRange", boost::program_options::value<unsigned int>(), "int - maximal number of frames to be read by event builder in single-GRAW mode")
-    ("singleAsadGrawFile", boost::program_options::bool_switch()->default_value(false), "bool - flag indicating multi-GRAW mode (default=FALSE)")
-    ("removePedestal",  boost::program_options::value<bool>(), "bool - flag to control pedestal removal. Overrides the value from config file.")
+    ("input.dataFile",  boost::program_options::value<std::string>(), "string - path to a raw data file in ROOT/GRAW format (or list of comma-separated files in multi-GRAW mode) ")
+    ("input.frameLoadRange", boost::program_options::value<unsigned int>(), "int - maximal number of frames to be read by event builder in single-GRAW mode")
+    ("input.singleAsadGrawFile", boost::program_options::value<bool>(), "bool - flag indicating multi-GRAW mode. Overrides the value from config file.")
+    ("pedestal.remove",  boost::program_options::value<bool>(), "bool - flag to control pedestal removal. Overrides the value from config file.")
 #else
-    ("dataFile",  boost::program_options::value<std::string>(), "string - path to a raw data file in ROOT format")
+    ("input.dataFile",  boost::program_options::value<std::string>(), "string - path to a raw data file in ROOT format")
 #endif
-    ("recoClusterEnable",  boost::program_options::value<bool>(), "bool - flag to enable clustering")
-    ("recoClusterThreshold",  boost::program_options::value<float>(), "float - ADC threshold above pedestal used for clustering")
-    ("recoClusterDeltaStrips",  boost::program_options::value<int>(), "int - envelope in strip units around seed hits for clustering")
-    ("recoClusterDeltaTimeCells",  boost::program_options::value<int>(), "int - envelope in time cell units around seed hits for clustering")
+    ("hitFilter.recoClusterEnable",  boost::program_options::value<bool>(), "bool - flag to enable clustering")
+    ("hitFilter.recoClusterThreshold",  boost::program_options::value<float>(), "float - ADC threshold above pedestal used for clustering")
+    ("hitFilter.recoClusterDeltaStrips",  boost::program_options::value<int>(), "int - envelope in strip units around seed hits for clustering")
+    ("hitFilter.recoClusterDeltaTimeCells",  boost::program_options::value<int>(), "int - envelope in time cell units around seed hits for clustering")
     ("outputFile", boost::program_options::value<std::string>(), "string - path to the output ROOT file")
-    ("maxNevents", boost::program_options::value<unsigned int>()->default_value(0), "int - number of events to process");
+    ("input.readNEvents", boost::program_options::value<unsigned int>()->default_value(0), "int - number of events to process");
 
   boost::program_options::variables_map varMap;
 
@@ -76,79 +76,76 @@ int main(int argc, char **argv){
   if (varMap.count("outputFile")) {
     tree.put("outputFile", varMap["outputFile"].as<std::string>());
   }
-  if (varMap.count("geometryFile")) {
-    tree.put("geometryFile", varMap["geometryFile"].as<std::string>());
+  if (varMap.count("input.geometryFile")) {
+    tree.put("input.geometryFile", varMap["input.geometryFile"].as<std::string>());
   }
-  if (varMap.count("dataFile")) {
-    tree.put("dataFile", varMap["dataFile"].as<std::string>());
+  if (varMap.count("input.dataFile")) {
+    tree.put("input.dataFile", varMap["input.dataFile"].as<std::string>());
   }
-  if (varMap.count("maxNevents")) {
-    tree.put("maxNevents", varMap["maxNevents"].as<unsigned int>());
+  if (varMap.count("input.readNEvents")) {
+    tree.put("input.readNEvents", varMap["input.readNEvents"].as<unsigned int>());
   }
-  if(varMap.count("recoClusterEnable")) {
-    tree.put("hitFilter.recoClusterEnable", varMap["recoClusterEnable"].as<bool>());
+  if(varMap.count("hitFilter.recoClusterEnable")) {
+    tree.put("hitFilter.recoClusterEnable", varMap["hitFilter.recoClusterEnable"].as<bool>());
     if(tree.get<bool>("hitFilter.recoClusterEnable")==false) { // skip threshold, delta-strip, delta-timecells when clustering is disabled
       tree.put("hitFilter.recoClusterThreshold", 0.0);
       tree.put("hitFilter.recoClusterDeltaStrips", 0);
       tree.put("hitFilter.recoClusterDeltaTimeCells", 0);
     } else { // look for threshold, delta-strip, delta-timecells only when clustering is enabled
-      if(varMap.count("recoClusterThreshold")) {
-	      tree.put("hitFilter.recoClusterThreshold", varMap["recoClusterThreshold"].as<float>());
+      if(varMap.count("hitFilter.recoClusterThreshold")) {
+	      tree.put("hitFilter.recoClusterThreshold", varMap["hitFilter.recoClusterThreshold"].as<float>());
       }
-      if(varMap.count("recoClusterDeltaStrips")) {
-	      tree.put("hitFilter.recoClusterDeltaStrips", varMap["recoClusterDeltaStrips"].as<int>());
+      if(varMap.count("hitFilter.recoClusterDeltaStrips")) {
+	      tree.put("hitFilter.recoClusterDeltaStrips", varMap["hitFilter.recoClusterDeltaStrips"].as<int>());
       }
-      if(varMap.count("recoClusterDeltaTimeCells")) {
-	      tree.put("hitFilter.recoClusterDeltaTimeCells", varMap["recoClusterDeltaTimeCells"].as<int>());
+      if(varMap.count("hitFilter.recoClusterDeltaTimeCells")) {
+	      tree.put("hitFilter.recoClusterDeltaTimeCells", varMap["hitFilter.recoClusterDeltaTimeCells"].as<int>());
       }
     }
   }
 #ifdef WITH_GET
-  if (varMap.count("removePedestal")) {
-    tree.put("removePedestal", varMap["removePedestal"].as<bool>());
+  if (varMap.count("pedestal.remove")) {
+    tree.put("pedestal.remove", varMap["pedestal.remove"].as<bool>());
   }
-  if( (tree.find("singleAsadGrawFile")==tree.not_found() || // if not present in config JSON
-       tree.get<bool>("singleAsadGrawFile")==false) && // or single-GRAW mode is FALSE
-      varMap.count("singleAsadGrawFile")){ // then allow to override JSON settings
-    tree.put("singleAsadGrawFile", varMap["singleAsadGrawFile"].as<bool>());
+  if (varMap.count("input.singleAsadGrawFile")) {
+    tree.put("input.singleAsadGrawFile", varMap["input.singleAsadGrawFile"].as<bool>());
+    std::cout << "OVERRIDE --> NEW singleAsadGrawFile=" << tree.get<bool>("input.singleAsadGrawFile") << std::endl;
   }
-  if( tree.get<bool>("singleAsadGrawFile")==false && // if in single-GRAW mode
-      varMap.count("frameLoadRange")) { // then allow to override JSON settings
-    tree.put("frameLoadRange", varMap["frameLoadRange"].as<unsigned int>());
+  if( tree.get<bool>("input.singleAsadGrawFile")==false && // if in single-GRAW mode
+      varMap.count("input.frameLoadRange")) { // then allow to override JSON settings
+    tree.put("input.frameLoadRange", varMap["input.frameLoadRange"].as<unsigned int>());
   }
 #endif
 
   //sanity checks
-  if(tree.find("dataFile")==tree.not_found() ||
-     tree.find("geometryFile")==tree.not_found() ||
+  if(tree.get_child("input").find("dataFile")==tree.not_found() ||
+     tree.get_child("input").find("geometryFile")==tree.not_found() ||
      tree.find("outputFile")==tree.not_found() ||
 #ifdef WITH_GET
-     tree.find("singleAsadGrawFile")==tree.not_found() ||
-     (tree.find("singleAsadGrawFile")!=tree.not_found() &&
-      tree.find("frameLoadRange")==tree.not_found()) ||
-     tree.find("removePedestal")==tree.not_found() ||
+     (tree.get_child("input").find("singleAsadGrawFile")==tree.not_found() && tree.get_child("input").find("frameLoadRange")==tree.not_found()) ||
+     tree.get_child("pedestal").find("remove")==tree.not_found() ||
 #endif
      tree.get_child("hitFilter").find("recoClusterEnable")==tree.not_found() ||
      tree.get_child("hitFilter").find("recoClusterThreshold")==tree.not_found() ||
      tree.get_child("hitFilter").find("recoClusterDeltaStrips")==tree.not_found() ||
      tree.get_child("hitFilter").find("recoClusterDeltaTimeCells")==tree.not_found() ||
-     tree.find("maxNevents")==tree.not_found()
+     tree.get_child("input").find("readNEvents")==tree.not_found()
      ) {
     std::cerr << std::endl
-	      << __FUNCTION__ << KRED << ": Some configuration options are missing!" << RST << std::endl << std::endl;
-    std::cout << "dataFile: " << tree.count("dataFile") << std::endl;
-    std::cout << "geometryFile: " << tree.count("geometryFile") << std::endl;
+	      << __FUNCTION__ << KRED << ": Some configuration options are missing or mutually exclusive!" << RST << std::endl << std::endl;
+    std::cout << "dataFile: " << tree.get_child("input").count("dataFile") << std::endl;
+    std::cout << "geometryFile: " << tree.get_child("input").count("geometryFile") << std::endl;
     std::cout << "outputFile: " << tree.count("outputFile") << std::endl;
     std::cout << "recoClusterEnable: " << tree.get_child("hitFilter").count("recoClusterEnable") << std::endl;
     std::cout << "recoClusterThreshold: " << tree.get_child("hitFilter").count("recoClusterThreshold") << std::endl;
     std::cout << "recoClusterDeltaStrips: " << tree.get_child("hitFilter").count("recoClusterDeltaStrips") << std::endl;
     std::cout << "recoClusterDeltaTimeCells: " << tree.get_child("hitFilter").count("recoClusterDeltaTimeCells") << std::endl;
 #ifdef WITH_GET
-    std::cout << "singleAsadGrawFile: " << tree.count("singleAsadGrawFile") << std::endl;
-    std::cout << "frameLoadRange: " << tree.count("frameLoadRange") << std::endl;
-    std::cout << "removePedestal: " << tree.count("removePedestal") << std::endl;
+    std::cout << "singleAsadGrawFile: " << tree.get_child("input").count("singleAsadGrawFile") << std::endl;
+    std::cout << "frameLoadRange: " << tree.get_child("input").count("frameLoadRange") << std::endl;
+    std::cout << "removePedestal: " << tree.get_child("pedestal").count("remove") << std::endl;
 #endif
-    std::cout << "maxNevents:" << tree.count("maxNevents") << std::endl;
+    std::cout << "maxNevents:" << tree.get_child("input").count("readNEvents") << std::endl;
     exit(1);
   }
 
@@ -159,19 +156,19 @@ int main(int argc, char **argv){
 
 int analyzeRawEvents(const boost::property_tree::ptree aConfig){
 
-  auto geometryFileName = aConfig.get<std::string>("geometryFile");
-  auto dataFileName = aConfig.get<std::string>("dataFile");
+  auto geometryFileName = aConfig.get<std::string>("input.geometryFile");
+  auto dataFileName = aConfig.get<std::string>("input.dataFile");
   auto outputFileName = aConfig.get<std::string>("outputFile");
   auto clusterEnable = aConfig.get<bool>("hitFilter.recoClusterEnable");
   auto clusterThreshold = ( clusterEnable ? aConfig.get<float>("hitFilter.recoClusterThreshold") : 0 );
   auto clusterDeltaStrips = ( clusterEnable ? aConfig.get<unsigned int>("hitFilter.recoClusterDeltaStrips") : 0 );
   auto clusterDeltaTimeCells = ( clusterEnable ? aConfig.get<unsigned int>("hitFilter.recoClusterDeltaTimeCells") : 0 );
 #ifdef WITH_GET
-  auto singleAsadGrawFile = aConfig.get<bool>("singleAsadGrawFile"); // true = multi-GRAW mode
-  auto frameLoadRange = aConfig.get<unsigned int>("frameLoadRange"); // used in single-GRAW mode only
-  auto removePedestal = aConfig.get<bool>("removePedestal");
+  auto singleAsadGrawFile = aConfig.get<bool>("input.singleAsadGrawFile"); // true = multi-GRAW mode
+  auto frameLoadRange = aConfig.get<unsigned int>("input.frameLoadRange"); // used in single-GRAW mode only
+  auto removePedestal = aConfig.get<bool>("pedestal.remove");
 #endif
-  auto maxNevents = aConfig.get<unsigned int>("maxNevents");
+  auto maxNevents = aConfig.get<unsigned int>("input.readNEvents");
 
   std::cout << std::endl << "analyzeRawEvents: Parameter settings: " << std::endl << std::endl
 	    << "Data file(s)             = " << dataFileName << std::endl
