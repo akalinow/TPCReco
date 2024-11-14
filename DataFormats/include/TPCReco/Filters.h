@@ -38,7 +38,7 @@ public:
   IndexInSet() = default;
   IndexInSet(std::initializer_list<size_t> indices) : indices(indices) {}
   template <class Event> bool operator()(Event &event) {
-    return indices.find(event.GetEventInfo().GetEventId()) != indices.end();
+    return indices.size()==0 || (indices.size() && indices.find(event.GetEventInfo().GetEventId()) != indices.end());
   }
   void insert(size_t index) { indices.insert(index); }
 

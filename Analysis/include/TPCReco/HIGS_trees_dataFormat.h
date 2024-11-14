@@ -41,6 +41,8 @@ struct Event_2prong{ // hypothesis: gamma + O-16 -> alpha + C-12
   TVector3 vertexPos; // [mm]
   TVector3 alpha_endPos; // [mm]
   float alpha_length; // [mm]
+  float alpha_energy; // [MeV], alpha track hypothesis, kinetic energy from range, LAB frame
+  float alpha_energyCMS; // [MeV], alpha track hypothesis, kinetic energy from range, CMS frame
   float alpha_phiDET; // [rad]
   float alpha_cosThetaDET;
   float alpha_phiBEAM; // [rad], LAB frame (invariant), BEAM coords
@@ -49,13 +51,13 @@ struct Event_2prong{ // hypothesis: gamma + O-16 -> alpha + C-12
   /*
   float alpha_phiBEAMcms; // [rad], CMS frame (invariant), BEAM coords
   float alpha_cosThetaBEAMcms; // CMS frame, BEAM coords
-  float alpha_E; // [MeV], alpha track hypothesis, kinetic energy from range, LAB frame
-  float alpha_Ecms; // [MeV], alpha track hypothesis, kinetic energy from range, CMS frame
   TLorentzVector alpha_p4BEAM; // [MeV], LAB frame, BEAM coords
   TLorentzVector alpha_p4BEAMcms; // [MeV], CMS frame, BEAM coords
   */
   TVector3 carbon_endPos; // [mm]
   float carbon_length; // [mm]
+  float carbon_energy; // [MeV], C-12 track hypothesis, kinetic energy from range, LAB frame
+  float carbon_energyCMS; // [MeV], C-12 track hypothesis, kinetic energy from range, CMS frame
   float carbon_phiDET; // [rad]
   float carbon_cosThetaDET;
   float carbon_phiBEAM; // [mm]
@@ -64,8 +66,6 @@ struct Event_2prong{ // hypothesis: gamma + O-16 -> alpha + C-12
   /*
   float carbon_phiBEAMcms; // [rad], CMS frame (invariant), BEAM coords
   float carbon_cosThetaBEAMcms; // CMS frame, BEAM coords
-  float carbon_E; // [MeV], C-12 track hypothesis, kinetic energy from range, LAB frame
-  float carbon_Ecms; // [MeV], C-12 track hypothesis, kinetic energy from range, CMS frame
   TLorentzVector carbon_p4BEAM; // [MeV], C-12 track hypothesis, LAB frame, BEAM coords
   TLorentzVector carbon_p4BEAMcms; // [MeV], C-12 track hypothesis, CMS frame, BEAM coords
   */

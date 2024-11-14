@@ -45,13 +45,13 @@
         "group": "input",
         "type": "int",
         "defaultValue": 100,
-        "description": "Number of GRAW frames searched for ASAD fragments for given event.\nType: int"
+        "description": "Number of GRAW frames searched for ASAD fragments for given event. Only relevant when storing multiple ASAD boards per GRAW file. Keep it low in online GUI mode.\nType: int"
     },
     "singleAsadGrawFile":{
         "group": "input",
         "type": "bool",
         "defaultValue": true,
-        "description": "Switch defining whether there is a single input file per ASAD.\nType: bool"
+        "description": "Switch defining whether there is a single GRAW input file per ASAD board.\nType: bool"
     },
     "updateInterval":{
         "group": "online",
@@ -76,6 +76,12 @@
         "type" : "bool",
         "defaultValue": false,
         "description": "Switch for enabling manual track reconstruction in GUI mode.\n Reconstructed tracks are saved into a file.\nType: bool"
+    },
+    "rate":{
+        "group": "display",
+        "type" : "bool",
+        "defaultValue": false,
+        "description": "Switch for enabling in online GUI mode rate vs time plot instead of charge projected onto time axis plot.\nType: bool"
     },
     "develMode":{
         "group": "display",
@@ -148,67 +154,73 @@
         "type" : "int",
         "defaultValue": 5,
         "description": "Time bin range of hits added to cluster around seed hits passing threshold value.\nType: int"
-    },   
+    },
     "enabled":{
         "group": "eventFilter",
         "type" : "bool",
         "defaultValue": false,
-        "description": "Flag enabling event filtering.\nType: bool"
-    },  
+        "description": "Flag enabling event filtering before reconstruction.\nType: bool"
+    },
     "maxChargeUpperBound":{
         "group": "eventFilter",
         "type" : "float",
-        "defaultValue": 99999.0,
-        "description": "Upper charge threshold to accept an event.\nType: float"
-    }, 
-    "minChargeUpperBound":{
+        "defaultValue": 1e9,
+        "description": "Upper peak charge threshold to accept an event [ADC units].\nType: float"
+    },
+    "maxChargeLowerBound":{
         "group": "eventFilter",
         "type" : "float",
-        "defaultValue": 0.0,
-        "description": "Lower charge threshold to accept an event.\nType: float"
-    }, 
+        "defaultValue": -1e9,
+        "description": "Lower peak charge threshold to accept an event [ADC units].\nType: float"
+    },
     "totalChargeLowerBound":{
         "group": "eventFilter",
         "type" : "float",
-        "defaultValue": 0.0,
-        "description": "Lower threshold on total charge sum to accept an event.\nType: float"
-    }, 
+        "defaultValue": -1e9,
+        "description": "Lower threshold on total charge sum to accept an event [ADC units].\nType: float"
+    },
     "totalChargeUpperBound":{
         "group": "eventFilter",
         "type" : "float",
-        "defaultValue": 99999.0,
-        "description": "Upper threshold on total charge sum to accept an event.\nType: float"
-    }, 
+        "defaultValue": 1e9,
+        "description": "Upper threshold on total charge sum to accept an event [ADC units].\nType: float"
+    },
     "events":{
         "group": "eventFilter",
         "type" : "vector<unsigned int>",
         "defaultValue": [ ],
-        "description": "NOT IMPLEMENTED. Event numbers list.\nType: vector<unsigned int>"
-    }, 
+        "description": "List of event IDs to be accepted from the input file(s). Empty vector has no effect (default).\nType: vector<unsigned int>"
+    },
     "pressure":{
         "group": "conditions",
         "type" : "float",
         "defaultValue": 190.0,
         "description": "Gas pressure in chamber [mbar]=[hPa]. \nType: float"
-    }, 
+    },
     "samplingRate":{
         "group": "conditions",
         "type" : "float",
         "defaultValue": 25.0,
         "description": "Signal sampling rate [MHz]. \nType: float"
-    }, 
+    },
     "temperature":{
         "group": "conditions",
         "type" : "float",
         "defaultValue": 293.15,
         "description": "Gas temperature in chamber [K].\nType: float"
-    }, 
+    },
     "driftV":{
         "group": "conditions",
         "type" : "float",
         "defaultValue": 0.646,
         "description": "Drift velocity [cm/us].\nType: float"
-    }, 
+    },
+    "comment":{
+        "group": "conditions",
+        "type" : "string",
+        "defaultValue": "",
+        "description": "Optional description of TPC working conditions, such as: E-field, HVs.\nType: string"
+    },
     "energy":{
         "group":"beamParameters",
         "type" : "float",
@@ -250,5 +262,89 @@
         "type" : "bool",
         "defaultValue" : false,
         "description" : "Flag to skip printing file- and tree info on every line in recoEventsDiff analysis.\nType: bool"
+    },
+    "noTree":{
+        "group":"recoAnalysis",
+        "type" : "bool",
+        "defaultValue" : false,
+        "description" : "Flag to enable saving a TTree with some track properties. \nType: bool"
+    },
+    "nominalBoost":{
+        "group":"recoAnalysis",
+        "type" : "bool",
+        "defaultValue" : true,
+        "description" : "Flag to enable nominal beam energy when calculating boost to CM.\nType: bool"
+    },
+    "beamOffset":{
+        "group":"recoAnalysis",
+        "type" : "float",
+        "defaultValue" : 0.0,
+        "description" : "Beam offset in X direction [mm].\nType: float"
+    },
+    "beamSlope":{
+        "group":"recoAnalysis",
+        "type" : "float",
+        "defaultValue" : 0.0,
+        "description" : "Beam slope in X direction.\nType: float"
+    },
+    "beamDiameter":{
+        "group":"recoAnalysis",
+        "type" : "float",
+        "defaultValue" : 10.0,
+        "description" : "Beam diameter [mm].\nType: float"
+    },
+    "beamDir":{
+        "group":"recoAnalysis",
+        "type" : "int",
+        "defaultValue" : 1.0,
+        "description" : "Beam direction. Positive values means beam along +X, negative -X.\nType: int"
+    },
+    "alphaMinCut":{
+        "group":"recoAnalysis",
+        "type" : "float",
+        "defaultValue" : 20.0,
+        "description" : "Minimal alpha track length. [mm]\nType: float"
+    },
+    "alphaMaxCut":{
+        "group":"recoAnalysis",
+        "type" : "float",
+        "defaultValue" : 150.0,
+        "description" : "Maximal alpha track length. [mm]\nType: float"
+    },
+    "carbonMinCut":{
+        "group":"recoAnalysis",
+        "type" : "float",
+        "defaultValue" : 6.0,
+        "description" : "Minimal carbon track length. [mm]\nType: float"
+    },
+    "carbonMaxCut":{
+        "group":"recoAnalysis",
+        "type" : "float",
+        "defaultValue" : 30.0,
+        "description" : "Maximal carbon track length. [mm]\nType: float"
+    },
+    "alphaScaleCorr":{
+        "group":"recoAnalysis",
+        "type" : "float",
+        "defaultValue" : 1.0,
+        "description" : "Multiplicative alpha track length correction.\nType: float"
+    },
+    "alphaOffsetCorr":{
+        "group":"recoAnalysis",
+        "type" : "float",
+        "defaultValue" : 5.5,
+        "description" : "Additive alpha track length correction. [mm]\nType: float"
+    },
+    "carbonScaleCorr":{
+        "group":"recoAnalysis",
+        "type" : "float",
+        "defaultValue" : 1.0,
+        "description" : "Multiplicative carbon track length correction.\nType: float"
+    },
+    "carbonOffsetCorr":{
+        "group":"recoAnalysis",
+        "type" : "float",
+        "defaultValue" : 0.0,
+        "description" : "Additive carbon track length correction. [mm]\nType: float"
     }
 }

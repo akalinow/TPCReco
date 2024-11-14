@@ -33,6 +33,15 @@ enum  projection_type{
   DIR_TIME_W,
   DIR_TIME,
 };
+
+enum class fit_type{
+  TANGENT,    // Fit only track segment tangent
+  BIAS_Z,       // Fit only track segment bias. Move along time direction. 
+  BIAS_XY,       // Fit only track segment bias. Move in the strip plane.
+  TANGENT_BIAS, // Fit both track segment bias and tangent
+  START_STOP // Fit both track segment start and stop
+};
+
 } //namespace definitions
 
 enum class event_type {
@@ -41,6 +50,8 @@ enum class event_type {
 	EventSourceGRAW,
 	EventSourceMultiGRAW
 };
+
+
 
 std::ostream& operator<<(std::ostream& os, const event_type& et);
 std::istream& operator>>(std::istream& is, event_type& et);
@@ -74,6 +85,7 @@ enum pid_type{
   O_18=OXYGEN_18,     // alias
   BE_8=BERYLLIUM_8,   // alias
   THREE_ALPHA,        //
+  DOT,                // a dot like track
   PID_MIN=ALPHA,      // alias
   PID_MAX=BERYLLIUM_8 // alias
 };

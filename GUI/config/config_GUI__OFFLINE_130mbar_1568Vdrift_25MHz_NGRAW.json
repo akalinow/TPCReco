@@ -1,21 +1,34 @@
 {
-    "dataFile": "PLACEHOLDER_FOR_COMMA_SEPARATED_DATAFILE_LIST",
-    "geometryFile": "./geometry_ELITPC_130mbar_1568Vdrift_25MHz.dat",
-    "resourcesPath": ".",
-    "updateInterval": 3000,
-    "removePedestal": true,
-    "recoClusterEnable": false,
-    "frameLoadRange": 10,
-    "singleAsadGrawFile": true,
+    "input": {
+	"dataFile": "PLACEHOLDER_FOR_COMMA_SEPARATED_DATAFILE_LIST",
+	"geometryFile": "./geometry_ELITPC_130mbar_1568Vdrift_25MHz.dat",
+	"resourcesPath": ".",
+	"frameLoadRange": 1,
+	"singleAsadGrawFile": true
+    },
+    "conditions": {
+	"pressure": 130.0,
+	"temperature": 293.15,
+	"driftV": 0.445,
+	"samplingRate": 25.0,
+	"comment": "Udrift=1568V, E=80V/cm, p=130mbar, T=293K, CO2 gas, drift velocity from MAGBOLTZ v=0.445cm/us"
+    },
     "display": {
         "zLogScale": true,
         "autoZoom": false,
         "recoMode": false
     },
     "pedestal": {
+        "remove": true,
         "minPedestalCell": 5,
         "maxPedestalCell": 25,
         "minSignalCell": 5,
         "maxSignalCell": 506
+    },
+    "hitFilter": {
+        "recoClusterEnable": false,
+        "recoClusterThreshold": 35,
+        "recoClusterDeltaStrips": 2,
+        "recoClusterDeltaTimeCells": 5
     }
 }

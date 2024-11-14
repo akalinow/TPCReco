@@ -1,5 +1,6 @@
 #include <TH2D.h>
 #include <TF1.h>
+#include <TFile.h>
 
 #include "TPCReco/GeometryTPC.h"
 #include "TPCReco/RecHitBuilder.h"
@@ -33,6 +34,7 @@ const TH2D & RecHitBuilder::makeRecHits(const TH2D & hProjection){
   hRecHits = hProjection;
   hRecHits.Reset();
   hRecHits.SetTitle(adaptHistoTitle(hProjection.GetTitle()).c_str());
+  hRecHits.SetName((std::string(hProjection.GetName()) + "_RecHits").c_str());
 
   if(!myGeometryPtr){
     std::cerr<<__FUNCTION__<<KRED<<" NULL myGeometryPtr"<<RST<<std::endl; 
@@ -41,11 +43,13 @@ const TH2D & RecHitBuilder::makeRecHits(const TH2D & hProjection){
 
   TH2D hCleanClusters = makeCleanCluster(hProjection);
   makeTimeProjectionRecHits(hCleanClusters);
+
   double recHitsSum = hRecHits.Integral();
-  double clusterSum = hProjection.Integral();
+  double clusterSum = hCleanClusters.Integral();
   double ratio = recHitsSum/clusterSum;
+
   if(ratio<0.2) makeStripProjectionRecHits(hProjection);
-  // cleanRecHits();
+  //cleanRecHits();
   return hRecHits;
 }
 /////////////////////////////////////////////////////////
@@ -57,10 +61,10 @@ const TH2D & RecHitBuilder::makeTimeProjectionRecHits(const TH2D & hProjection){
   double hitTimePos = -999.0;
   double hitTimePosError = -999.0;
   double hitCharge = -999.0;
-  //  double initialSigma = 2*myGeometryPtr->GetTimeBinWidth();//1* for 12.5MHz, 2* for 25.0 MHz
-  double initialSigma = 1*myGeometryPtr->GetTimeBinWidth();//1* for 12.5MHz, 2* for 25.0 MHz
+
   for(int iBinY=1;iBinY<=hProjection.GetNbinsY();++iBinY){
     h1DProj = hProjection.ProjectionX("h1DProjX",iBinY, iBinY);
+    double initialSigma = h1DProj->GetRMS();
     const TF1 &fittedShape = fit1DProjection(h1DProj, initialSigma);
     if(fittedShape.GetNpar()<3){
       delete h1DProj;
@@ -71,7 +75,7 @@ const TH2D & RecHitBuilder::makeTimeProjectionRecHits(const TH2D & hProjection){
     hitTimePosError = fittedShape.GetParameter(2);
     hitStripPos = hProjection.GetYaxis()->GetBinCenter(iBinY);    
     hitCharge *= sqrt(2.0)*M_PI*hitTimePosError;
-    hRecHits.Fill(hitTimePos, hitStripPos, hitCharge);    
+    hRecHits.Fill(hitTimePos, hitStripPos, hitCharge);
     delete h1DProj;
   }
   return hRecHits;
@@ -126,15 +130,13 @@ const TF1 & RecHitBuilder::fit1DProjection(TH1D* hProj, double initialSigma){
 
   hProj->GetXaxis()->SetRange(lowBin, highBin);
   hProj->SetMaximum(1.1*maxValue);
-
   if(maxValue<maxValueThr || windowIntegral<windowIntegralThr) return emptyShape;
   
   const TF1 & noiseFit = fitNoise(hProj, minX, maxX);
   const TF1 & singleHitFit = fitSingleHit(hProj, minX, maxX, maxValue, initialSigma);
 
   double noiseMSE = getMSE(*hProj, noiseFit);
-  double singleHitMSE = getMSE(*hProj, singleHitFit);
- 
+  double singleHitMSE = getMSE(*hProj, singleHitFit); 
   if(singleHitMSE/noiseMSE<0.9) return singleHitFit;
   return noiseFit;
 }
@@ -164,7 +166,7 @@ const TF1 & RecHitBuilder::fitSingleHit(TH1D* hProj,
 
   signalShape.SetParLimits(0, 0.5*initialMax, initialMax*1.5);
   signalShape.SetParLimits(1, minMeanX, maxMeanX);   
-  signalShape.SetParLimits(2, initialSigma, 2.0*initialSigma);
+  signalShape.SetParLimits(2, 0.5*initialSigma, 4.0*initialSigma);
   
   TFitResultPtr fitResult = hProj->Fit(&signalShape, "QBRSWN");
   return signalShape;
@@ -257,6 +259,8 @@ double RecHitBuilder::getKernelSum(const std::vector<int> & kernelBins, const TH
 /////////////////////////////////////////////////////////
 TH2D RecHitBuilder::makeCleanCluster(const TH2D & aHisto){
 
+  kernelSumThreshold = 300;//parameter to moved to configuration
+
   TH2D aClusterHisto(aHisto);
   aClusterHisto.Reset();
 
@@ -279,7 +283,6 @@ TH2D RecHitBuilder::makeCleanCluster(const TH2D & aHisto){
     bounduaryBins = newBounduaryBins;
     newBounduaryBins.clear();
   }
- 
   return aClusterHisto;
 }
 /////////////////////////////////////////////////////////

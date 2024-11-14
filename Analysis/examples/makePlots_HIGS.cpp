@@ -25,7 +25,7 @@ R__ADD_LIBRARY_PATH(../lib)
 void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cutInfo="") {
 
   bool plot_2prong=true;
-  bool plot_3prong=true;
+  bool plot_3prong=false;
   bool plot_fill=true; // false;
   int plot_fill_style=3345;  // 45 deg
   int plot_fill_color=kAzure+2; // kGray+2;
@@ -590,7 +590,7 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     h1->SetFillColor(plot_fill_color);
     h1->SetFillStyle(plot_fill_style);
     //   h1->GetXaxis()->SetRangeUser(0.5, 3.0); // valid for 9.845 MeV
-    h1->GetXaxis()->SetRangeUser(0.5, 2.5); // valid for 9.845 MeV after 16O selection
+    //    h1->GetXaxis()->SetRangeUser(0.5, 2.5); // valid for 9.845 MeV after 16O selection
     //    h1->GetXaxis()->SetRangeUser(2.0, 4.0); // valid for 11.5 MeV after 16O selection
     //    h1->GetXaxis()->SetRangeUser(2.5, 4.5); // valid for 11.9 MeV after 16O selection
     //    h1->GetXaxis()->SetRangeUser(2.5, 5.0); // valid for 11.9 MeV
@@ -621,7 +621,7 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     h1->SetLineWidth(2);
     h1->SetFillColor(plot_fill_color);
     h1->SetFillStyle(plot_fill_style);
-    h1->GetXaxis()->SetRangeUser(0.0, 1.5); // valid for 9.845 MeV after 16O selection
+    //    h1->GetXaxis()->SetRangeUser(0.0, 1.5); // valid for 9.845 MeV after 16O selection
     //    h1->GetXaxis()->SetRangeUser(0.0, 2.5); // valid for 11.5 MeV after 16O selection
     //    h1->GetXaxis()->SetRangeUser(0.0, 4.0); // valid for 11.9 MeV
     //    h1->GetXaxis()->SetRangeUser(0.0, 3.0); // valid for 11.9 MeV after 16O selection
@@ -662,8 +662,8 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     //    h2->GetYaxis()->SetRangeUser(4, 18); // valid for 8.66 MeV
     //    h2->GetXaxis()->SetRangeUser(35, 95); // valid for 9.845 MeV
     //    h2->GetYaxis()->SetRangeUser(5, 30); // valid for 9.845 MeV
-    h2->GetXaxis()->SetRangeUser(35, 65); // valid for 9.845 MeV after 16O selection
-    h2->GetYaxis()->SetRangeUser(6, 18); // valid for 9.845 MeV after 16O selection
+    //    h2->GetXaxis()->SetRangeUser(35, 65); // valid for 9.845 MeV after 16O selection
+    //    h2->GetYaxis()->SetRangeUser(6, 18); // valid for 9.845 MeV after 16O selection
     //    h2->GetXaxis()->SetRangeUser(45, 100); // valid for 11.5 MeV
     //    h2->GetYaxis()->SetRangeUser(4, 20); // valid for 11.5 MeV
     //    h2->GetXaxis()->SetRangeUser(50, 120); // valid for 11.9 MeV
@@ -700,7 +700,7 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     h2->SetTitleOffset(1.4, "Y");
     h2->SetTitleOffset(1.2, "Z");
     //    h2->GetYaxis()->SetRangeUser(1.0, 3.0); // valid for 9.845 MeV
-    h2->GetYaxis()->SetRangeUser(1.5, 2.5); // valid for 9.845 MeV after O16 selection
+    //    h2->GetYaxis()->SetRangeUser(1.5, 2.5); // valid for 9.845 MeV after O16 selection
     //    h2->GetYaxis()->SetRangeUser(2.0, 4.0); // valid for 11.5 MeV 
     //    h2->GetYaxis()->SetRangeUser(2.0, 5.0); // valid for 11.9 MeV 
     //    h2->GetYaxis()->SetRangeUser(2.5, 4.5); // valid for 11.9 MeV after O16 selection
@@ -732,7 +732,7 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     h2->SetTitleOffset(1.4, "Y");
     h2->SetTitleOffset(1.2, "Z");
     //    h2->GetYaxis()->SetRangeUser(1.0, 3.0); // valid for 9.845 MeV
-    h2->GetYaxis()->SetRangeUser(1.5, 2.5); // valid for 9.845 MeV after O16 selection
+    //    h2->GetYaxis()->SetRangeUser(1.5, 2.5); // valid for 9.845 MeV after O16 selection
     //    h2->GetYaxis()->SetRangeUser(2.0, 4.0); // valid for 11.5 MeV 
     //    h2->GetYaxis()->SetRangeUser(2.0, 5.0); // valid for 11.9 MeV 
     //    h2->GetYaxis()->SetRangeUser(2.5, 4.5); // valid for 11.9 MeV after O16 selection cuts
@@ -793,7 +793,7 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     h2->SetTitleOffset(1.2, "Z");
     h2->GetXaxis()->SetRangeUser(-8.0, 8.0); // mm
     //    h2->GetYaxis()->SetRangeUser(1.0, 3.0); // MeV, valid for 9.845 MeV
-    h2->GetYaxis()->SetRangeUser(1.5, 2.5); // MeV, valid for 9.845 MeV after O16 selection
+    //    h2->GetYaxis()->SetRangeUser(1.5, 2.5); // MeV, valid for 9.845 MeV after O16 selection
     //    h2->GetYaxis()->SetRangeUser(2.0, 4.5); // MeV, valid for 11.5 MeV
     //    h2->GetYaxis()->SetRangeUser(2.0, 5.0); // MeV, valid for 11.9 MeV
     //    h2->GetYaxis()->SetRangeUser(2.5, 4.5); // MeV, valid for 11.9 MeV after O16 selection 
@@ -826,7 +826,7 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     h2->SetTitleOffset(1.2, "Z");
     h2->GetXaxis()->SetRangeUser(-8.0, 8.0); // mm
     //    h2->GetYaxis()->SetRangeUser(8.5, 11.0); // MeV, valid for 9.845 MeV
-    h2->GetYaxis()->SetRangeUser(9.0, 10.5); // MeV, valid for 9.845 MeV after O16 selection
+    //    h2->GetYaxis()->SetRangeUser(9.0, 10.5); // MeV, valid for 9.845 MeV after O16 selection
     //    h2->GetYaxis()->SetRangeUser(9.5, 13.0); // MeV, valid for 11.5 MeV
     //    h2->GetYaxis()->SetRangeUser(10.0, 14.0); // MeV, valid for 11.9 MeV
     //    h2->GetYaxis()->SetRangeUser(10.5, 14.0); // MeV, valid for 11.9 MeV after O16 selection
@@ -868,7 +868,7 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     h2->SetTitleOffset(1.6, "X");
     h2->SetTitleOffset(1.4, "Y");
     h2->SetTitleOffset(1.2, "Z");
-    h2->GetYaxis()->SetRangeUser(0, 80); // valid for 8.66 MeV
+    //    h2->GetYaxis()->SetRangeUser(0, 80); // valid for 8.66 MeV
     //    h2->GetYaxis()->SetRangeUser(30, 110); // valid for 11.5 MeV
     //    h2->GetYaxis()->SetRangeUser(30, 120); // valid for 11.9 MeV
     gPad->Update();
@@ -907,7 +907,7 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     //    h2->GetYaxis()->SetRangeUser(60, 100); // valid for 11.9 MeV
     //    h2->GetYaxis()->SetRangeUser(50, 90); // valid for 11.5 MeV
     //    h2->GetYaxis()->SetRangeUser(70, 110); // valid for 12.3 MeV
-    h2->GetYaxis()->SetRangeUser(30, 70); // valid for 9.845 MeV
+    //    h2->GetYaxis()->SetRangeUser(30, 70); // valid for 9.845 MeV
     //    h2->GetYaxis()->SetRangeUser(15, 40); // valid for 8.66 MeV
     gPad->Update();
     //  st = (TPaveStats *)c->GetPrimitive("stats");

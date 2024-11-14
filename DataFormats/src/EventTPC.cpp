@@ -41,6 +41,20 @@ void EventTPC::Clear(){
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
+ void EventTPC::SetEventInfo(const eventraw::EventInfo & aEvInfo){
+
+  myEventInfo = aEvInfo;  
+
+  filter_type filterType = filter_type::threshold;
+  int nHits = GetMultiplicity(true, -1, -1, -1, filterType);
+  int totalCharge = GetTotalCharge(-1, -1, -1, -1, filterType);
+  int maxCharge = GetMaxCharge(-1, -1, -1, filterType); 
+
+  myEventInfo.SetProperties({maxCharge, totalCharge, nHits});
+
+  };
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
 void EventTPC::SetGeoPtr(std::shared_ptr<GeometryTPC> aPtr) {
   myGeometryPtr = aPtr;
   

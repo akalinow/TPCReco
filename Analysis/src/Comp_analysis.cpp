@@ -61,13 +61,13 @@ void Comp_analysis::bookHistos(){
   const auto maxLen_diff=20.0; // mm
   const auto maxMomentum_diff=20.0; // MeV/c
   const auto maxEnergy_diff=20.0; // MeV
-  const auto maxChi2=10.0; // unitless
+  const auto maxLoss=10.0; // unitless
   const auto binLen=0.5; // mm
   const auto binCosTheta=2.0/50; // unitless
   const auto binPhi=TMath::TwoPi()/50; // rad
   const auto binMomentum=maxMomentum_diff/50; // MeV/c
   const auto binEnergy=maxEnergy_diff/50; // MeV
-  const auto binChi2=maxChi2/50; // unitless
+  const auto binLoss=maxLoss/50; // unitless
   float xmin, xmax, ymin, ymax, zmin, zmax; // [mm]
   std::tie(xmin, xmax, ymin, ymax) = myGeometryPtr->rangeXY();
   std::tie(zmin, zmax) = myGeometryPtr->rangeZ();
@@ -85,18 +85,18 @@ void Comp_analysis::bookHistos(){
   h2->SetOption("BOX TEXT");
 
   // CHI2 : All event categories
-  histos1D["h_all_chi2_diff"]=
-    new TH1F("h_all_chi2_diff","Difference TEST-REF of total #chi^{2} fit;#Delta#(){Total #chi^{2}};Event count",
-	     (2*maxChi2+binChi2)/binChi2, -maxChi2-binChi2/2, maxChi2+binChi2/2);
-  histos1D["h_all_TESTchi2"]=
-    new TH1F("h_all_TESTchi2","Distribution of total #chi^{2} of TEST fit;Total #chi^{2} of TEST fit;Event count",
-	     maxChi2/binChi2, 0.0, maxChi2);
-  histos1D["h_TEST1prong_TESTchi2"]=
-    new TH1F("h_TEST1prong_TESTchi2","TEST 1-prong: Total #chi^{2} of TEST fit;Total #chi^{2} of TEST fit;TEST 1-prong event count",
-	     maxChi2/binChi2, 0.0, maxChi2);
-  histos1D["h_TEST2prong_TESTchi2"]=
-    new TH1F("h_TEST2prong_TESTchi2","TEST 2-prong: Total #chi^{2} of TEST fit;Total #chi^{2} of TEST fit;TEST 2-prong event count",
-	     maxChi2/binChi2, 0.0, maxChi2);
+  histos1D["h_all_loss_diff"]=
+    new TH1F("h_all_loss_diff","Difference TEST-REF of total #chi^{2} fit;#Delta#(){Total #chi^{2}};Event count",
+	     (2*maxLoss+binLoss)/binLoss, -maxLoss-binLoss/2, maxLoss+binLoss/2);
+  histos1D["h_all_TESTloss"]=
+    new TH1F("h_all_TESTloss","Distribution of total #chi^{2} of TEST fit;Total #chi^{2} of TEST fit;Event count",
+	     maxLoss/binLoss, 0.0, maxLoss);
+  histos1D["h_TEST1prong_TESTloss"]=
+    new TH1F("h_TEST1prong_TESTloss","TEST 1-prong: Total #chi^{2} of TEST fit;Total #chi^{2} of TEST fit;TEST 1-prong event count",
+	     maxLoss/binLoss, 0.0, maxLoss);
+  histos1D["h_TEST2prong_TESTloss"]=
+    new TH1F("h_TEST2prong_TESTloss","TEST 2-prong: Total #chi^{2} of TEST fit;Total #chi^{2} of TEST fit;TEST 2-prong event count",
+	     maxLoss/binLoss, 0.0, maxLoss);
 
   // VERTEX : All event categories
   histos1D["h_all_vertexX_diff"]=
@@ -177,17 +177,17 @@ void Comp_analysis::bookHistos(){
     new TH1F("h_TEST2prong_REFleadingCosThetaDET",
 	     "TEST 2-prong: Distribution of REF leading track cos#it{#theta}_{DET};REF leading track cos#it{#theta}_{DET};TEST 2-prong event count",
 	     2.0/binCosTheta, -1.0, 1.0);
-  h2=(histos2D["h_all_REFleadingPhiDET_vs_TESTchi2"]=
-      new TH2F("h_all_REFleadingPhiDET_vs_TESTchi2",
+  h2=(histos2D["h_all_REFleadingPhiDET_vs_TESTloss"]=
+      new TH2F("h_all_REFleadingPhiDET_vs_TESTloss",
 	       "Total #chi^{2} of TEST fit vs REF leading track #it{#varphi}_{DET};REF leading track #it{#varphi}_{DET} [rad];Total #chi^{2} of TEST fit;Event count",
 	       TMath::TwoPi()/binPhi, -TMath::Pi(), TMath::Pi(),
-	       (2*maxChi2+binChi2)/binChi2, -maxChi2-binChi2/2, maxChi2+binChi2/2));
+	       (2*maxLoss+binLoss)/binLoss, -maxLoss-binLoss/2, maxLoss+binLoss/2));
   h2->SetOption("COLZ");
-  h2=(histos2D["h_all_REFleadingCosThetaDET_vs_TESTchi2"]=
-      new TH2F("h_all_REFleadingCosThetaDET_vs_TESTchi2",
+  h2=(histos2D["h_all_REFleadingCosThetaDET_vs_TESTloss"]=
+      new TH2F("h_all_REFleadingCosThetaDET_vs_TESTloss",
 	       "Total #chi^{2} of TEST fit vs REF leading track cos#it{#theta}_{DET};REF leading track cos#it{#theta}_{DET} [rad];Total #chi^{2} of TEST fit;Event count",
 	       2.0/binCosTheta, -1.0, 1.0,
-	       (2*maxChi2+binChi2)/binChi2, -maxChi2-binChi2/2, maxChi2+binChi2/2));
+	       (2*maxLoss+binLoss)/binLoss, -maxLoss-binLoss/2, maxLoss+binLoss/2));
   h2->SetOption("COLZ");
   auto p2=(profiles2D["h_all_REFleadingPhiDET_vs_REFleadingCosThetaDET_vs_nTracks_diff_prof"]=
       new TProfile2D("h_all_REFleadingPhiDET_vs_REFleadingCosThetaDET_vs_nTracks_diff_prof",
@@ -212,12 +212,12 @@ void Comp_analysis::bookHistos(){
   p2->SetOption("COLZ");
 
   // both classified as 1-prong
-  histos1D["h_1prong_TESTchi2"]=
-    new TH1F("h_1prong_TESTchi2","1-prong: Total #chi^{2} of TEST fit;Total #chi^{2} of TEST fit;Event count",
-	     maxChi2/binChi2, 0.0, maxChi2);
-  histos1D["h_1prong_chi2_diff"]=
-    new TH1F("h_1prong_chi2_diff","1-prong: Difference TEST-REF of total #chi^{2} fit;#Delta#(){Total #chi^{2}};Event count",
-	     (2*maxChi2+binChi2)/binChi2, -maxChi2-binChi2/2, maxChi2+binChi2/2);
+  histos1D["h_1prong_TESTloss"]=
+    new TH1F("h_1prong_TESTloss","1-prong: Total #chi^{2} of TEST fit;Total #chi^{2} of TEST fit;Event count",
+	     maxLoss/binLoss, 0.0, maxLoss);
+  histos1D["h_1prong_loss_diff"]=
+    new TH1F("h_1prong_loss_diff","1-prong: Difference TEST-REF of total #chi^{2} fit;#Delta#(){Total #chi^{2}};Event count",
+	     (2*maxLoss+binLoss)/binLoss, -maxLoss-binLoss/2, maxLoss+binLoss/2);
   histos1D["h_1prong_total_PxBEAM_LAB_diff"]=
     new TH1F("h_1prong_total_PxBEAM_LAB_diff","1-prong: Difference TEST-REF of total momentum X_{BEAM} in LAB;#Delta#(){Total momentum X_{BEAM} in LAB} [MeV/c];Event count",
 	     (2*maxMomentum_diff+binMomentum)/binMomentum, -maxMomentum_diff-binMomentum/2, maxMomentum_diff+binMomentum/2);
@@ -276,26 +276,26 @@ void Comp_analysis::bookHistos(){
     new TProfile("h_1prong_TESTcarbonLen_vs_REFcarbonLen_prof","1-prong: TEST vs REF of ^{12}C length;TEST ^{12}C length [mm];REF ^{12}C length [mm];Event count",
 		 (maxLen_carbon+binLen)/binLen, -binLen/2, maxLen_carbon+binLen/2,
 		 -binLen/2, maxLen_carbon+binLen/2);
-  p2=(profiles2D["h_1prong_REFalphaPhiDET_vs_REFalphaCosThetaDET_vs_TESTchi2_prof"]=
-	   new TProfile2D("h_1prong_REFalphaPhiDET_vs_REFalphaCosThetaDET_vs_TESTchi2_prof","1-prong: Total #chi^{2} of TEST fit vs REF #it{#varphi}_{DET} x cos(#theta_{DET};#it{#varphi}_{DET} of REF #alpha track [rad];cos#it{#theta}_{DET} of REF #alpha track;Total #chi^{2} of TEST fit",
+  p2=(profiles2D["h_1prong_REFalphaPhiDET_vs_REFalphaCosThetaDET_vs_TESTloss_prof"]=
+	   new TProfile2D("h_1prong_REFalphaPhiDET_vs_REFalphaCosThetaDET_vs_TESTloss_prof","1-prong: Total #chi^{2} of TEST fit vs REF #it{#varphi}_{DET} x cos(#theta_{DET};#it{#varphi}_{DET} of REF #alpha track [rad];cos#it{#theta}_{DET} of REF #alpha track;Total #chi^{2} of TEST fit",
 			  TMath::TwoPi()/binPhi, -TMath::Pi(), TMath::Pi(),
 			  2.0/binCosTheta, -1.0, 1.0,
 			  0.0, 100.0));
   p2->SetOption("COLZ");
-  p2=(profiles2D["h_1prong_REFcarbonPhiDET_vs_REFcarbonCosThetaDET_vs_TESTchi2_prof"]=
-      new TProfile2D("h_1prong_REFcarbonPhiDET_vs_REFcarbonCosThetaDET_vs_TESTchi2_prof","1-prong: Total #chi^{2} of TEST fit vs REF #it{#varphi}_{DET} x cos#it{#theta}_{DET};#it{#varphi}_{DET} of REF ^{12}C track [rad];cos#it{#theta}_{DET} of REF ^{12}C track;Total #chi^{2} of TEST fit",
+  p2=(profiles2D["h_1prong_REFcarbonPhiDET_vs_REFcarbonCosThetaDET_vs_TESTloss_prof"]=
+      new TProfile2D("h_1prong_REFcarbonPhiDET_vs_REFcarbonCosThetaDET_vs_TESTloss_prof","1-prong: Total #chi^{2} of TEST fit vs REF #it{#varphi}_{DET} x cos#it{#theta}_{DET};#it{#varphi}_{DET} of REF ^{12}C track [rad];cos#it{#theta}_{DET} of REF ^{12}C track;Total #chi^{2} of TEST fit",
 		     TMath::TwoPi()/binPhi, -TMath::Pi(), TMath::Pi(),
 		     2.0/binCosTheta, -1.0, 1.0,
 		     0.0, 100.0));
   p2->SetOption("COLZ");
   
   // both classified as 2-prong
-  histos1D["h_2prong_TESTchi2"]=
-    new TH1F("h_2prong_TESTchi2","2-prong: Total #chi^{2} of TEST fit;Total #chi^{2} of TEST fit;Event count",
-	     maxChi2/binChi2, 0.0, maxChi2);
-  histos1D["h_2prong_chi2_diff"]=
-    new TH1F("h_2prong_chi2_diff","2-prong: Difference TEST-REF of total #chi^{2} fit;#Delta#(){Total #chi^{2}};Event count",
-	     (2*maxChi2+binChi2)/binChi2, -maxChi2-binChi2/2, maxChi2+binChi2/2);
+  histos1D["h_2prong_TESTloss"]=
+    new TH1F("h_2prong_TESTloss","2-prong: Total #chi^{2} of TEST fit;Total #chi^{2} of TEST fit;Event count",
+	     maxLoss/binLoss, 0.0, maxLoss);
+  histos1D["h_2prong_loss_diff"]=
+    new TH1F("h_2prong_loss_diff","2-prong: Difference TEST-REF of total #chi^{2} fit;#Delta#(){Total #chi^{2}};Event count",
+	     (2*maxLoss+binLoss)/binLoss, -maxLoss-binLoss/2, maxLoss+binLoss/2);
   histos1D["h_2prong_Egamma_LAB_diff"]=
     new TH1F("h_2prong_Egamma_LAB_diff","2-prong: Difference TEST-REF of measured E_{#gamma} in LAB;#Delta#(){E_{#gamma} in LAB} [MeV];Event count",
 	     (2*maxEnergy_diff+binEnergy)/binEnergy, -maxEnergy_diff-binEnergy/2, maxEnergy_diff+binEnergy/2);
@@ -366,8 +366,8 @@ void Comp_analysis::bookHistos(){
     new TProfile("h_2prong_TESTcarbonLen_vs_REFcarbonLen_prof","2-prong: TEST vs REF of ^{12}C length;TEST ^{12}C length [mm];REF ^{12}C length [mm];Event count",
 		 (maxLen_carbon+binLen)/binLen, -binLen/2, maxLen_carbon+binLen/2,
 		 -binLen/2, maxLen_carbon+binLen/2);
-  p2=(profiles2D["h_2prong_REFalphaPhiDET_vs_REFalphaCosThetaDET_vs_TESTchi2_prof"]=
-      new TProfile2D("h_2prong_REFalphaPhiDET_vs_REFalphaCosThetaDET_vs_TESTchi2_prof","2-prong: Total #chi^{2} of TEST fit vs REF #it{#varphi}_{DET} x cos#it{#theta}_{DET};#it{#varphi}_{DET} of REF #alpha track [rad];cos#it{#theta}_{DET} of REF #alpha track;Total #chi^{2} of TEST fit",
+  p2=(profiles2D["h_2prong_REFalphaPhiDET_vs_REFalphaCosThetaDET_vs_TESTloss_prof"]=
+      new TProfile2D("h_2prong_REFalphaPhiDET_vs_REFalphaCosThetaDET_vs_TESTloss_prof","2-prong: Total #chi^{2} of TEST fit vs REF #it{#varphi}_{DET} x cos#it{#theta}_{DET};#it{#varphi}_{DET} of REF #alpha track [rad];cos#it{#theta}_{DET} of REF #alpha track;Total #chi^{2} of TEST fit",
 		     TMath::TwoPi()/binPhi, -TMath::Pi(), TMath::Pi(),
 		     2.0/binCosTheta, -1.0, 1.0,
 		     0.0, 100.0));
@@ -410,8 +410,8 @@ void Comp_analysis::bookHistos(){
 		     2.0/binCosTheta, -1.0, 1.0,
 		     0.0, TMath::Pi()));
   p2->SetOption("COLZ");
-  p2=(profiles2D["h_2prong_REFcarbonPhiDET_vs_REFcarbonCosThetaDET_vs_TESTchi2_prof"]=
-      new TProfile2D("h_2prong_REFcarbonPhiDET_vs_REFcarbonCosThetaDET_vs_TESTchi2_prof","2-prong: Total #chi^{2} of TEST fit vs REF #it{#varphi}_{DET} x cos#it{#theta}_{DET};#it{#varphi}_{DET} of REF ^{12}C track [rad];cos#it{#theta}_{DET} of REF ^{12}C track;Total #chi^{2} of TEST fit",
+  p2=(profiles2D["h_2prong_REFcarbonPhiDET_vs_REFcarbonCosThetaDET_vs_TESTloss_prof"]=
+      new TProfile2D("h_2prong_REFcarbonPhiDET_vs_REFcarbonCosThetaDET_vs_TESTloss_prof","2-prong: Total #chi^{2} of TEST fit vs REF #it{#varphi}_{DET} x cos#it{#theta}_{DET};#it{#varphi}_{DET} of REF ^{12}C track [rad];cos#it{#theta}_{DET} of REF ^{12}C track;Total #chi^{2} of TEST fit",
 		     TMath::TwoPi()/binPhi, -TMath::Pi(), TMath::Pi(),
 		     2.0/binCosTheta, -1.0, 1.0,
 		     0.0, 100.0));
@@ -490,10 +490,10 @@ void Comp_analysis::fillHistos(Track3D *aRefTrack, eventraw::EventInfo *aRefEven
   histos2D["h_TESTnTracks_vs_REFnTracks"]->Fill(nTracksTest, nTracksRef);
 
   // global fit quality
-  double fit_chi2[2]={aRefTrack->getChi2(), aTestTrack->getChi2()}; // REF, TEST
+  double fit_loss[2]={aRefTrack->getLoss(), aTestTrack->getLoss()}; // REF, TEST
 
-  histos1D["h_all_chi2_diff"]->Fill(fit_chi2[1]-fit_chi2[0]);
-  histos1D["h_all_TESTchi2"]->Fill(fit_chi2[1]);
+  histos1D["h_all_Loss_diff"]->Fill(fit_loss[1]-fit_loss[0]);
+  histos1D["h_all_TESTloss"]->Fill(fit_loss[1]);
 
   // leading REF track must be present
   if(nTracksRef>0) {
@@ -513,8 +513,8 @@ void Comp_analysis::fillHistos(Track3D *aRefTrack, eventraw::EventInfo *aRefEven
   if(nTracksRef>0 && nTracksTest>0) {
     auto aRefSeg=collRef.front();
     auto aTestSeg=collTest.front();
-    histos2D["h_all_REFleadingPhiDET_vs_TESTchi2"]->Fill(aRefSeg.getTangent().Phi(), fit_chi2[1]);
-    histos2D["h_all_REFleadingCosThetaDET_vs_TESTchi2"]->Fill(aRefSeg.getTangent().CosTheta(), fit_chi2[1]);
+    histos2D["h_all_REFleadingPhiDET_vs_TESTloss"]->Fill(aRefSeg.getTangent().Phi(), fit_loss[1]);
+    histos2D["h_all_REFleadingCosThetaDET_vs_TESTloss"]->Fill(aRefSeg.getTangent().CosTheta(), fit_loss[1]);
     profiles2D["h_all_REFleadingPhiDET_vs_REFleadingCosThetaDET_vs_leadingLen_diff_prof"]->Fill(aRefSeg.getTangent().Phi(), aRefSeg.getTangent().CosTheta(), aTestSeg.getLength()-aRefSeg.getLength());
     profiles2D["h_all_REFleadingPhiDET_vs_REFleadingCosThetaDET_vs_leadingAngle_diff_prof"]->Fill(aRefSeg.getTangent().Phi(), aRefSeg.getTangent().CosTheta(), aTestSeg.getTangent().Angle(aRefSeg.getTangent()));
     histos1D["h_all_vertexX_diff"]->Fill(aTestSeg.getStart().X()-aRefSeg.getStart().X());
@@ -528,7 +528,7 @@ void Comp_analysis::fillHistos(Track3D *aRefTrack, eventraw::EventInfo *aRefEven
     histos1D["h_TEST1prong_REFleadingPhiDET"]->Fill(aRefSeg.getTangent().Phi());
     histos1D["h_TEST1prong_REFleadingCosThetaDET"]->Fill(aRefSeg.getTangent().CosTheta());
     histos2D["h_TEST1prong_REFleadingPhiDET_vs_REFleadingCosThetaDET"]->Fill(aRefSeg.getTangent().Phi(), aRefSeg.getTangent().CosTheta());
-    histos1D["h_TEST1prong_TESTchi2"]->Fill(fit_chi2[1]);
+    histos1D["h_TEST1prong_TESTloss"]->Fill(fit_loss[1]);
   }
 
   // leading REF track present and TEST classified as 2-prong
@@ -537,14 +537,14 @@ void Comp_analysis::fillHistos(Track3D *aRefTrack, eventraw::EventInfo *aRefEven
     histos1D["h_TEST2prong_REFleadingPhiDET"]->Fill(aRefSeg.getTangent().Phi());
     histos1D["h_TEST2prong_REFleadingCosThetaDET"]->Fill(aRefSeg.getTangent().CosTheta());
     histos2D["h_TEST2prong_REFleadingPhiDET_vs_REFleadingCosThetaDET"]->Fill(aRefSeg.getTangent().Phi(), aRefSeg.getTangent().CosTheta());
-    histos1D["h_TEST2prong_TESTchi2"]->Fill(fit_chi2[1]);
+    histos1D["h_TEST2prong_TESTloss"]->Fill(fit_loss[1]);
   }
 
   // both classified as 1-prong
   if(nTracksRef==1 && nTracksTest==nTracksRef) {
 
-    histos1D["h_1prong_chi2_diff"]->Fill(fit_chi2[1]-fit_chi2[0]);
-    histos1D["h_1prong_TESTchi2"]->Fill(fit_chi2[1]);
+    histos1D["h_1prong_loss_diff"]->Fill(fit_loss[1]-fit_loss[0]);
+    histos1D["h_1prong_TESTloss"]->Fill(fit_loss[1]);
 
     for(auto &aRefSeg: collRef) if(aRefSeg.getPID()==ALPHA) {
 	auto found=false;
@@ -580,7 +580,7 @@ void Comp_analysis::fillHistos(Track3D *aRefTrack, eventraw::EventInfo *aRefEven
 	    histos2D["h_1prong_alphaLen_diff_vs_REFalphaLen"]->Fill(alpha_len[1]-alpha_len[0], alpha_len[0]);
 	    histos2D["h_1prong_TESTalphaLen_vs_REFalphaLen"]->Fill(alpha_len[1], alpha_len[0]);
 	    profiles1D["h_1prong_TESTalphaLen_vs_REFalphaLen_prof"]->Fill(alpha_len[1], alpha_len[0]);
-	    profiles2D["h_1prong_REFalphaPhiDET_vs_REFalphaCosThetaDET_vs_TESTchi2_prof"]->Fill(aRefSeg.getTangent().Phi(), aRefSeg.getTangent().CosTheta(), fit_chi2[1]);
+	    profiles2D["h_1prong_REFalphaPhiDET_vs_REFalphaCosThetaDET_vs_TESTloss_prof"]->Fill(aRefSeg.getTangent().Phi(), aRefSeg.getTangent().CosTheta(), fit_loss[1]);
 	    histos1D["h_1prong_total_PxBEAM_LAB_diff"]->Fill(alphaP4_BEAM_LAB[1].Vect().Px()-alphaP4_BEAM_LAB[0].Vect().Px());
 	    histos1D["h_1prong_total_PyBEAM_LAB_diff"]->Fill(alphaP4_BEAM_LAB[1].Vect().Py()-alphaP4_BEAM_LAB[0].Vect().Py());
 	    histos1D["h_1prong_total_PzBEAM_LAB_diff"]->Fill(alphaP4_BEAM_LAB[1].Vect().Pz()-alphaP4_BEAM_LAB[0].Vect().Pz());
@@ -626,7 +626,7 @@ void Comp_analysis::fillHistos(Track3D *aRefTrack, eventraw::EventInfo *aRefEven
 	    histos2D["h_1prong_carbonLen_diff_vs_REFcarbonLen"]->Fill(carbon_len[1]-carbon_len[0], carbon_len[0]);
 	    histos2D["h_1prong_TESTcarbonLen_vs_REFcarbonLen"]->Fill(carbon_len[1], carbon_len[0]);
 	    profiles1D["h_1prong_TESTcarbonLen_vs_REFcarbonLen_prof"]->Fill(carbon_len[1], carbon_len[0]);
-	    profiles2D["h_1prong_REFcarbonPhiDET_vs_REFcarbonCosThetaDET_vs_TESTchi2_prof"]->Fill(aRefSeg.getTangent().Phi(), aRefSeg.getTangent().CosTheta(), fit_chi2[1]);
+	    profiles2D["h_1prong_REFcarbonPhiDET_vs_REFcarbonCosThetaDET_vs_TESTloss_prof"]->Fill(aRefSeg.getTangent().Phi(), aRefSeg.getTangent().CosTheta(), fit_loss[1]);
 	    histos1D["h_1prong_total_PxBEAM_LAB_diff"]->Fill(carbonP4_BEAM_LAB[1].Vect().Px()-carbonP4_BEAM_LAB[0].Vect().Px());
 	    histos1D["h_1prong_total_PyBEAM_LAB_diff"]->Fill(carbonP4_BEAM_LAB[1].Vect().Py()-carbonP4_BEAM_LAB[0].Vect().Py());
 	    histos1D["h_1prong_total_PzBEAM_LAB_diff"]->Fill(carbonP4_BEAM_LAB[1].Vect().Pz()-carbonP4_BEAM_LAB[0].Vect().Pz());
@@ -643,8 +643,8 @@ void Comp_analysis::fillHistos(Track3D *aRefTrack, eventraw::EventInfo *aRefEven
   // both classified as 2-prong
   if(nTracksRef==2 && nTracksTest==nTracksRef) {
 
-    histos1D["h_2prong_chi2_diff"]->Fill(fit_chi2[1]-fit_chi2[0]);
-    histos1D["h_2prong_TESTchi2"]->Fill(fit_chi2[1]);
+    histos1D["h_2prong_loss_diff"]->Fill(fit_loss[1]-fit_loss[0]);
+    histos1D["h_2prong_TESTloss"]->Fill(fit_loss[1]);
 
     // calculate properties for 2-prong category: O-16 disintegration hypothesis
     const double alphaMass=myRangeCalculator.getIonMassMeV(ALPHA);
@@ -700,7 +700,7 @@ void Comp_analysis::fillHistos(Track3D *aRefTrack, eventraw::EventInfo *aRefEven
       histos2D["h_2prong_alphaLen_diff_vs_REFalphaLen"]->Fill(alpha_len[1]-alpha_len[0], alpha_len[0]);
       histos2D["h_2prong_TESTalphaLen_vs_REFalphaLen"]->Fill(alpha_len[1], alpha_len[0]);
       profiles1D["h_2prong_TESTalphaLen_vs_REFalphaLen_prof"]->Fill(alpha_len[1], alpha_len[0]);
-      profiles2D["h_2prong_REFalphaPhiDET_vs_REFalphaCosThetaDET_vs_TESTchi2_prof"]->Fill(alphaP4_DET_LAB[0].Vect().Phi(), alphaP4_DET_LAB[0].Vect().CosTheta(), fit_chi2[1]);
+      profiles2D["h_2prong_REFalphaPhiDET_vs_REFalphaCosThetaDET_vs_TESTloss_prof"]->Fill(alphaP4_DET_LAB[0].Vect().Phi(), alphaP4_DET_LAB[0].Vect().CosTheta(), fit_loss[1]);
     }
     // fill TEST-REF difference histograms per CARBON_12
     if(found_carbon[0] && found_carbon[1]) {
@@ -709,7 +709,7 @@ void Comp_analysis::fillHistos(Track3D *aRefTrack, eventraw::EventInfo *aRefEven
       histos2D["h_2prong_carbonLen_diff_vs_REFcarbonLen"]->Fill(carbon_len[1]-carbon_len[0], carbon_len[0]);
       histos2D["h_2prong_TESTcarbonLen_vs_REFcarbonLen"]->Fill(carbon_len[1], carbon_len[0]);
       profiles1D["h_2prong_TESTcarbonLen_vs_REFcarbonLen_prof"]->Fill(carbon_len[1], carbon_len[0]);
-      profiles2D["h_2prong_REFcarbonPhiDET_vs_REFcarbonCosThetaDET_vs_TESTchi2_prof"]->Fill(carbonP4_DET_LAB[0].Vect().Phi(), carbonP4_DET_LAB[0].Vect().CosTheta(), fit_chi2[1]);
+      profiles2D["h_2prong_REFcarbonPhiDET_vs_REFcarbonCosThetaDET_vs_TESTloss_prof"]->Fill(carbonP4_DET_LAB[0].Vect().Phi(), carbonP4_DET_LAB[0].Vect().CosTheta(), fit_loss[1]);
     }
     // fill TEST-REF difference histograms per event
     if(found_alpha[0] && found_alpha[1] && found_carbon[0] && found_carbon[1]) {

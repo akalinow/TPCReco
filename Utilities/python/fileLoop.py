@@ -14,14 +14,28 @@ def analyzeSingleBatch(runId, fileCSV, geometryFile, command):
     if not os.path.isdir(runId):
         os.mkdir(runId)
 
-    arguments = " --geometryFile " + geometryFile + " --dataFile " + fileCSV + " > "+outputName+" 2>&1 &"
+    pressure = geometryFile.split("_")[3].rstrip("mbar")
+    samplingRate = geometryFile.split("_")[5].rstrip("MHz.dat")
+    beamEnergy = fileCSV.split("MeV")[0].split("/")[-1]
+
+    arguments = ""
+    arguments += " --input.geometryFile " + geometryFile 
+    arguments += " --input.dataFile " + fileCSV 
+    arguments += " --conditions.pressure " + pressure 
+    arguments += " --conditions.samplingRate "+ samplingRate
+    arguments += " --beamParameters.energy " + str(beamEnergy)
+  
     print("Running job id:",runId,"\nfor file(s):\n\t"+ fileCSV.replace(",","\n\t"))
     
     os.chdir(runId)
     os.system("ln -s ../*Formats* ./")
     os.system("ln -s ../*.dat ./")
+
+    configDumpCommand = "../../bin/dumpConfig"+arguments
+    print(configDumpCommand)
+    os.system(configDumpCommand)
+    arguments += " > "+outputName+" 2>&1 &"
     print(command+arguments)
-    #exit(0) #TEST
     os.system(command+arguments)
     time.sleep(2)
     os.chdir("../")
@@ -30,7 +44,7 @@ def analyzeSingleBatch(runId, fileCSV, geometryFile, command):
 def analyzeDataInDirectory(dataPath, geometryFile, procName):
     
     command = "../../bin/"+procName
-    procCount = 1
+    procCount = 3
 
     runDataList = getCSVinputList(dataPath)
     for runId, fileCSV in runDataList.items():
@@ -48,6 +62,7 @@ def runLoop(runs, procName, finalizeFunc):
     
     finalizeFunc()
 ################################################
-################################################      
+################################################    
+   
               
 

@@ -63,9 +63,11 @@ TEST(Filters, IndexInSetInitalizer_list) {
 TEST(Filters, IndexInSetInsertion) {
   IndexInSet filter;
   EventMock event;
+  EXPECT_CALL(event.eventInfo, GetEventId()).Times(::testing::AtMost(1)).WillRepeatedly(Return(1));
+  EXPECT_TRUE(filter(event)); // set is empty => event ID filter has no effect
+  filter.insert(2);
+  EXPECT_CALL(event.eventInfo, GetEventId()).Times(1).WillRepeatedly(Return(2));
+  EXPECT_TRUE(filter(event)); // set is non-empty => event ID filter is active
   EXPECT_CALL(event.eventInfo, GetEventId()).Times(1).WillRepeatedly(Return(1));
-  EXPECT_FALSE(filter(event));
-  filter.insert(1);
-  EXPECT_CALL(event.eventInfo, GetEventId()).Times(1).WillRepeatedly(Return(1));
-  EXPECT_TRUE(filter(event));
+  EXPECT_FALSE(filter(event)); // set is non-empty => event ID filter is active
 }

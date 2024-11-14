@@ -56,9 +56,9 @@ public:
   pid_type myGenEventType;
 
   TVector3 createVertex() const;
-  TrackSegment3D createSegment(const TVector3 vertexPos, pid_type ion_id) const;  
+  TrackSegment3D createSegment(const TVector3 vertexPos, pid_type ion_id, double energy) const;  
   TH1F createChargeProfile(double ion_range, pid_type ion_id) const;  
-  Track3D createTrack(const TVector3 & aVtx, pid_type ion_id) const;
+  Track3D createTrack(const TVector3 & aVtx, pid_type ion_id, double energy) const;
 
   void generateSingleProng(pid_type ion_id=pid_type::ALPHA);
   void generateTwoProng();
