@@ -55,6 +55,7 @@
 #ifndef __ROOTLOGON__
 R__ADD_INCLUDE_PATH(../../DataFormats/include)
 R__ADD_INCLUDE_PATH(../../GrawToROOT/include)
+R__ADD_INCLUDE_PATH(../../EventSources/include)
 R__ADD_INCLUDE_PATH($GET_DIR/GetSoftware_bin/$GET_RELEASE/include)
 R__ADD_INCLUDE_PATH(../../Reconstruction/include)
 R__ADD_INCLUDE_PATH(../../Utilities/include)
@@ -1940,6 +1941,7 @@ int loop_Graw_Track3D(const char *recoInputFile, // Track3D collection with init
   hitFilterConfig.put("recoClusterThreshold", 35.0); // [ADC units] - seed hits
   hitFilterConfig.put("recoClusterDeltaStrips", 2); // band around seed hit in strip units
   hitFilterConfig.put("recoClusterDeltaTimeCells", 5); // band around seed hit in time cells
+  pedestalConfig.put("remove", flag_subtract_pedestals);
   pedestalConfig.put("minPedestalCell", 5);
   pedestalConfig.put("maxPedestalCell", 25);
   pedestalConfig.put("minSignalCell", 5);
@@ -2095,7 +2097,6 @@ int loop_Graw_Track3D(const char *recoInputFile, // Track3D collection with init
     //   std::cerr << __FUNCTION__ << KRED << ": Some pedestal configuration options are missing!" << RST << std::endl << std::flush;
     //   return 1;
     // }
-    dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setRemovePedestal(flag_subtract_pedestals);
     dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(pedestalConfig);
 #else
     std::cerr << __FUNCTION__ << KRED << ": Program compiled without GET libraries!" << RST << std::endl << std::flush;
@@ -2552,6 +2553,7 @@ int loop_Graw_Track3D_Display(const char *recoInputFile, // Track3D collection w
   hitFilterConfig.put("recoClusterThreshold", 35.0); // [ADC units] - seed hits
   hitFilterConfig.put("recoClusterDeltaStrips", 2); // band around seed hit in strip units
   hitFilterConfig.put("recoClusterDeltaTimeCells", 5); // band around seed hit in time cells
+  pedestalConfig.put("remove", flag_subtract_pedestals);
   pedestalConfig.put("minPedestalCell", 5);
   pedestalConfig.put("maxPedestalCell", 25);
   pedestalConfig.put("minSignalCell", 5);
@@ -2734,7 +2736,6 @@ int loop_Graw_Track3D_Display(const char *recoInputFile, // Track3D collection w
     //   std::cerr << __FUNCTION__ << KRED << ": Some pedestal configuration options are missing!" << RST << std::endl << std::flush;
     //   return 1;
     // }
-    dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setRemovePedestal(flag_subtract_pedestals);
     dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(pedestalConfig);
 #else
     std::cerr << __FUNCTION__ << KRED << ": Program compiled without GET libraries!" << RST << std::endl << std::flush;

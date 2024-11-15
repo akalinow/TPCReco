@@ -26,11 +26,13 @@ add_executable(rawTrackDiffusionAnalysis bin/rawTrackDiffusionAnalysis.cpp)
 add_executable(recoEventsClean bin/recoEventsClean.cpp)
 add_executable(recoEventsDiff bin/recoEventsDiff.cpp)
 add_executable(recoEnergyScaleFitter bin/recoEnergyScaleFitter.cpp)
+add_executable(rawPedestalAnalysis bin/rawPedestalAnalysis.cpp)
 
 if(NOT ${GET_FOUND})
-  message(WARNING "GET not found, disabling rawSignalAnalysis rawTrackDiffusionAnalysis")
+  message(WARNING "GET not found, disabling rawSignalAnalysis rawTrackDiffusionAnalysis, rawPedestalAnalysis")
   set_target_properties(rawSignalAnalysis PROPERTIES EXCLUDE_FROM_ALL TRUE)
   set_target_properties(rawTrackDiffusionAnalysis PROPERTIES EXCLUDE_FROM_ALL TRUE)
+  set_target_properties(rawPedestalAnalysis PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
   target_link_libraries(
   ${MODULE_NAME} PUBLIC Utilities DataFormats Reconstruction EventSources ${ROOT_LIBRARIES}
@@ -59,7 +61,8 @@ target_link_libraries(recoEventsDiff PRIVATE ${MODULE_NAME}
                                              Boost::program_options)
 target_link_libraries(recoEnergyScaleFitter PRIVATE ${MODULE_NAME}
 					            Boost::program_options)
-
+target_link_libraries(rawPedestalAnalysis PRIVATE ${MODULE_NAME}
+						    Boost::program_options)						  
 reco_install_targets(
   ${MODULE_NAME}
   makeTrackTree
@@ -72,9 +75,10 @@ reco_install_targets(
 reco_install_root_dict(${MODULE_NAME})
 install(PROGRAMS $<1:${CMAKE_CURRENT_SOURCE_DIR}/python/> DESTINATION python)
 install(DIRECTORY examples DESTINATION ${CMAKE_INSTALL_PREFIX})
+install(DIRECTORY config DESTINATION ${CMAKE_INSTALL_PREFIX})
 
 if(${GET_FOUND})
-  reco_install_targets(rawSignalAnalysis rawTrackDiffusionAnalysis)
+  reco_install_targets(rawSignalAnalysis rawTrackDiffusionAnalysis rawPedestalAnalysis)
 endif()
 
 
