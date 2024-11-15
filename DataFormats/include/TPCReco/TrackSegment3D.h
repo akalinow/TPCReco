@@ -100,6 +100,8 @@ class TrackSegment3D{
 
   double getIntegratedCharge(double lambda) const;
 
+  double getMaxCharge() const;
+
   const std::vector<Hit2DCollection> & getRecHits() const { return myRecHits;}
 
   double getLoss(int iProjection=-1) const;
@@ -126,9 +128,9 @@ class TrackSegment3D{
   TVector3 myStart, myEnd;
   double myLenght{0}, myDiffusion{0};
   pid_type pid{pid_type::UNKNOWN};
-  definitions::fit_type myLossType{definitions::fit_type::TANGENT};
+  definitions::fit_type myLossType{definitions::fit_type::TANGENT_BIAS};
 
-  std::vector<Hit2DCollection> myRecHits; //! transient data member
+  std::vector<Hit2DCollection> myRecHits;
   std::vector<double> myProjectionsLoss;
 };
 

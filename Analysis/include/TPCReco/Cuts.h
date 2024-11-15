@@ -239,11 +239,6 @@ public:
     //	     << ", track.charge=" << track->getIntegratedCharge(track->getLength())
     //	     << std::endl;
     /////// DEBUG
-    std::cout<<" loss: "<<track->getLoss()
-              <<" hypothesisLoss: "<<track->getHypothesisFitLoss()
-              <<" charge: "<<track->getIntegratedCharge(track->getLength())
-              << std::endl;
-
     return segments.front().getPID() == firstPID &&
            segments.back().getPID() == secondPID && track->getLoss() <= chi2 &&
            track->getHypothesisFitLoss() <= hypothesisChi2 &&

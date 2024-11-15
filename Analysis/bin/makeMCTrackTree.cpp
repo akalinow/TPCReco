@@ -25,50 +25,7 @@
 #include "TPCReco/colorText.h"
 
 #include "TPCReco/EventTPC.h"
-/////////////////////////////////////
-/////////////////////////////////////
-std::string createROOTFileName(const  std::string & grawFileName){
 
-  std::string rootFileName = grawFileName;
-  std::string::size_type index = rootFileName.find(",");
-  if(index!=std::string::npos){
-    rootFileName = grawFileName.substr(0,index);
-  }
-  index = rootFileName.rfind("/");
-  if(index!=std::string::npos){
-    rootFileName = rootFileName.substr(index+1,-1);
-  }
-  if(rootFileName.find("CoBo_ALL_AsAd_ALL")!=std::string::npos){
-    rootFileName = rootFileName.replace(0,std::string("CoBo_ALL_AsAd_ALL").size(),"TrackTree");
-  }
-  else if(rootFileName.find("CoBo0_AsAd")!=std::string::npos){
-    rootFileName = rootFileName.replace(0,std::string("CoBo0_AsAd").size()+1,"TrackTree");
-  }
-  else if(rootFileName.find("EventTPC")!=std::string::npos){
-    rootFileName = rootFileName.replace(0,std::string("EventTPC").size(),"TrackTree");
-  }
-  else if(rootFileName.find("MC")!=std::string::npos){
-    rootFileName = "TrackTree_"+rootFileName;
-  }
-  else{
-    std::cout<<KRED<<"File format unknown: "<<RST<<rootFileName<<std::endl;
-    exit(1);
-  }
-  index = rootFileName.rfind("graw");
-  if(index!=std::string::npos){
-    rootFileName = rootFileName.replace(index,-1,"root");
-  }
-
-  std::time_t t = std::time(nullptr);
-  std::tm tm = *std::localtime(&t);
-  std::stringstream ss;
-  ss<<std::put_time(&tm, "%d_%m_%Y_%H_%M");
-  std::string timestamp = ss.str();
-
-  rootFileName = rootFileName.replace(rootFileName.find(".root"),-1,"_"+timestamp+".root");
-  
-  return rootFileName;
-}
 /////////////////////////////////////
 /////////////////////////////////////
 int makeTrackTree(boost::property_tree::ptree & aConfig);
@@ -119,7 +76,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   }
 
   std::string dataFileName = aConfig.get("input.dataFile","");
-  std::string rootFileName = createROOTFileName(dataFileName);
+  std::string rootFileName = InputFileHelper::makeOutputFileName(dataFileName,"MCTrackTree");
   TFile outputROOTFile(rootFileName.c_str(),"RECREATE");
   TTree *tree = new TTree("trackTree", "Track tree");
   TrackData track_data;

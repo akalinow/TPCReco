@@ -191,6 +191,19 @@ double TrackSegment3D::getIntegratedCharge(double lambda) const{
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+double TrackSegment3D::getMaxCharge() const {
+
+  double maxCharge = 0.0;
+  for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
+    const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
+    for(const auto & aHit:aRecHits){
+      if(aHit.getCharge()>maxCharge) maxCharge = aHit.getCharge();
+    }
+  }
+  return maxCharge;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 double TrackSegment3D::getLoss(int iProjection) const{
 
   double loss = 0.0;

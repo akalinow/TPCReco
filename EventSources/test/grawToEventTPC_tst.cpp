@@ -11,7 +11,7 @@
 #include "TPCReco/EventSourceFactory.h"
 #include "TPCReco/ConfigManager.h"
 #include "TPCReco/colorText.h"
-
+#include "TPCReco/InputFileHelper.h"
 #include "TPCReco/grawToEventTPC.h"
 
 
@@ -46,16 +46,15 @@ public:
 
     // load the root file
     std::string grawFileName = myConfig.get<std::string>("input.dataFile","");
-    rootFileName = createROOTFileName(grawFileName);
+    rootFileName = InputFileHelper::makeOutputFileName(grawFileName,"EventTPC");
     rootfile = new TFile(rootFileName.c_str());
     tree = (TTree*)rootfile->Get(myConfig.get<std::string>("input.treeName","").c_str());
     tree->SetBranchAddress("Event", &rootEventPtr);
     tree->GetEntry(0);
   }
-
   static void TearDownTestSuite() {
-    std::remove("EventTPC_2022-04-12T08_03_44.531_0000.root");
-  }
+    std::remove("EventTPC_2022-04-12T08-03-44_0000.root");
+  }  
 
 
 };
@@ -70,13 +69,13 @@ TTree* grawToEventTPCTest::tree;
 
 TEST(ROOTFileNameTest, createROOTFileName)
 {
-  std::string grawFileName = "../testData/CoBo0_AsAd0_2022-04-12T08_03_44.531_0000.graw,"
-                             "../testData/CoBo0_AsAd1_2022-04-12T08_03_44.533_0000.graw,"
-                             "../testData/CoBo0_AsAd2_2022-04-12T08_03_44.536_0000.graw,"
-                             "../testData/CoBo0_AsAd3_2022-04-12T08_03_44.540_0000.graw";
-  std::string rootFileName = createROOTFileName(grawFileName);
-  EXPECT_EQ(rootFileName, "EventTPC_2022-04-12T08_03_44.531_0000.root");
-}
+  std::string grawFileName = "../testData/CoBo0_AsAd0_2022-04-12T08-03-44.531_0000.graw,"
+                             "../testData/CoBo0_AsAd1_2022-04-12T08-03-44.533_0000.graw,"
+                             "../testData/CoBo0_AsAd2_2022-04-12T08-03-44.536_0000.graw,"
+                             "../testData/CoBo0_AsAd3_2022-04-12T08-03-44.540_0000.graw";
+  std::string rootFileName = InputFileHelper::makeOutputFileName(grawFileName,"EventTPC");
+  EXPECT_EQ(rootFileName, "EventTPC_2022-04-12T08-03-44_0000.root");
+}                        
 
 
 TEST_F(grawToEventTPCTest, convertGRAWFile)

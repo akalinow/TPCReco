@@ -262,5 +262,89 @@
         "type" : "bool",
         "defaultValue" : false,
         "description" : "Flag to skip printing file- and tree info on every line in recoEventsDiff analysis.\nType: bool"
+    },
+    "noTree":{
+        "group":"recoAnalysis",
+        "type" : "bool",
+        "defaultValue" : false,
+        "description" : "Flag to enable saving a TTree with some track properties. \nType: bool"
+    },
+    "nominalBoost":{
+        "group":"recoAnalysis",
+        "type" : "bool",
+        "defaultValue" : true,
+        "description" : "Flag to enable nominal beam energy when calculating boost to CM.\nType: bool"
+    },
+    "beamOffset":{
+        "group":"recoAnalysis",
+        "type" : "float",
+        "defaultValue" : 0.0,
+        "description" : "Beam offset in X direction [mm].\nType: float"
+    },
+    "beamSlope":{
+        "group":"recoAnalysis",
+        "type" : "float",
+        "defaultValue" : 0.0,
+        "description" : "Beam slope in X direction.\nType: float"
+    },
+    "beamDiameter":{
+        "group":"recoAnalysis",
+        "type" : "float",
+        "defaultValue" : 10.0,
+        "description" : "Beam diameter [mm].\nType: float"
+    },
+    "beamDir":{
+        "group":"recoAnalysis",
+        "type" : "int",
+        "defaultValue" : 1.0,
+        "description" : "Beam direction. Positive values means beam along +X, negative -X.\nType: int"
+    },
+    "alphaMinCut":{
+        "group":"recoAnalysis",
+        "type" : "float",
+        "defaultValue" : 20.0,
+        "description" : "Minimal alpha track length. [mm]\nType: float"
+    },
+    "alphaMaxCut":{
+        "group":"recoAnalysis",
+        "type" : "float",
+        "defaultValue" : 150.0,
+        "description" : "Maximal alpha track length. [mm]\nType: float"
+    },
+    "carbonMinCut":{
+        "group":"recoAnalysis",
+        "type" : "float",
+        "defaultValue" : 6.0,
+        "description" : "Minimal carbon track length. [mm]\nType: float"
+    },
+    "carbonMaxCut":{
+        "group":"recoAnalysis",
+        "type" : "float",
+        "defaultValue" : 30.0,
+        "description" : "Maximal carbon track length. [mm]\nType: float"
+    },
+    "alphaScaleCorr":{
+        "group":"recoAnalysis",
+        "type" : "float",
+        "defaultValue" : 1.0,
+        "description" : "Multiplicative alpha track length correction.\nType: float"
+    },
+    "alphaOffsetCorr":{
+        "group":"recoAnalysis",
+        "type" : "float",
+        "defaultValue" : 5.5,
+        "description" : "Additive alpha track length correction. [mm]\nType: float"
+    },
+    "carbonScaleCorr":{
+        "group":"recoAnalysis",
+        "type" : "float",
+        "defaultValue" : 1.0,
+        "description" : "Multiplicative carbon track length correction.\nType: float"
+    },
+    "carbonOffsetCorr":{
+        "group":"recoAnalysis",
+        "type" : "float",
+        "defaultValue" : 0.0,
+        "description" : "Additive carbon track length correction. [mm]\nType: float"
     }
 }

@@ -85,6 +85,17 @@ double Track3D::getIntegratedCharge(double lambda) const{
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+double Track3D::getMaxCharge() const{
+
+  double maxCharge = 0.0;
+  for(const auto & aSegment: mySegments){
+    double charge = aSegment.getMaxCharge();
+    if(charge>maxCharge) maxCharge = charge;
+  }
+  return maxCharge;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 void Track3D::enableProjectionForLoss(int iProjection){
 
   iProjectionForLoss = iProjection;
