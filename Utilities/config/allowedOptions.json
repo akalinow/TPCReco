@@ -11,6 +11,12 @@
         "defaultValue" : "configDump.json",
         "description" : "Name of the JSON file used for configuration dump\nType: string"
     },
+    "generatorConfig":{
+        "group":"input",
+        "type" : "string",
+        "defaultValue" : "",
+        "description" : "Name of the JSON file with generator configuration.\nType: string"
+    },
     "dataFile":{
         "group": "input",
         "type": "string",

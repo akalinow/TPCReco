@@ -17,7 +17,7 @@ endif()
 
 target_link_libraries(
   ${MODULE_NAME} PUBLIC ${ROOT_LIBRARIES} ${ROOT_EXE_LINKER_FLAGS} 
-            DataFormats Utilities 
+            DataFormats Utilities EventGenerator
             $<$<BOOL:${GET_FOUND}>:GrawToROOT>)
             
 target_link_libraries(grawToEventTPC PRIVATE Boost::program_options ${MODULE_NAME})

@@ -1,6 +1,7 @@
 {
     "input":{
         "dataFile": "SingleAlpha_MC_CoBo0_AsAdAll_2022-09-08T09:00:00.000_0000.root",
+        "generatorConfig": "../config/montecarlo_EventGenerator.json",
         "geometryFile": "geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat",    
         "resourcesPath":"./",
         "readNEvents": 1

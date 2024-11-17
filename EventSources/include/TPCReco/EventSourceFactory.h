@@ -32,6 +32,8 @@
 #endif
 #include "TPCReco/EventSourceROOT.h"
 #include "TPCReco/EventSourceMC.h"
+#include "TPCReco/EventSourceGeant4.h"
+#include "TPCReco/EventGenerator.h"
 
 namespace EventSourceFactory {
 	inline std::shared_ptr<EventSourceBase> makeEventSourceObject(boost::property_tree::ptree& myConfig) {
@@ -82,9 +84,11 @@ namespace EventSourceFactory {
 			aRootEventSrc->configurePedestal(myConfig.find("pedestal")->second);
 		}
 		else if (dataFileVec.size() == 1 && dataFileName.find("_MC_") != std::string::npos) {
-			myEventSource = std::make_shared<EventSourceMC>(geometryFileName);
+			std::string generatorConfig = myConfig.get<std::string>("input.generatorConfig");
+			auto generator = std::make_shared<EventGenerator>(generatorConfig);
+			myEventSource = std::make_shared<EventSourceGeant4>(geometryFileName, generator);
 			myConfig.put("transient.onlineFlag", false);
-			myConfig.put("transient.eventType", event_type::EventSourceMC);
+			myConfig.put("transient.eventType", event_type::EventSourceGeant4);
 		}		
 #ifdef WITH_GET
 		else if (all_graw) {
