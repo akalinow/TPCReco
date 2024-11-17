@@ -83,6 +83,20 @@ void HIGGS_analysis::bookHistos(){
   std::string outputFileName = "Histos.root";
   outputFile = new TFile(outputFileName.c_str(),"RECREATE");
 
+  ///////// DEBUG - special Reco file with selected events only
+  //
+  std::string outputFileName2 = "Track3D_CutO16_pass.root"; // secondary output file
+  myDumpRecoFile = new TFile(outputFileName2.c_str(),"RECREATE"); // secondary output file
+  myDumpRecoFile->cd(); // switch to secondary output file
+  myDumpTree = new TTree("TPCRecoData","");
+  myDumpTrack = new Track3D();
+  myDumpTree->Branch("RecoEvent", myDumpTrack);
+  myDumpEventInfo = new eventraw::EventInfo();
+  myDumpTree->Branch("EventInfo", myDumpEventInfo);
+  outputFile->cd(); // switch back to primary output file
+  //
+  ///////// DEBUG - special Reco file with selected events only
+
   const float binSizeMM = 0.5; // [mm]
   //  const float binSizeMM_2d = 3.0; // [mm]
   const float binSizeMM_2dXZ = binSizeMM;
@@ -995,11 +1009,21 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack, eventraw::EventInfo *aEventInfo
 
     ///////////// DEBUG
     //
-    // for automatic RECO:
-    const double cut_center_alpha_T_CMS = 0.85; // 1.85; // MeV // TODO - TO BE PARAMETERIZED
-    const double cut_center_carbon_T_CMS = 0.48; // 0.53; // MeV // TODO - TO BE PARAMETERIZED
-    const double cut_ellipse_alpha_T_CMS = 0.25; // 0.15; // MeV // TODO - TO BE PARAMETERIZED
-    const double cut_ellipse_carbon_T_CMS = 0.15; // MeV // TODO - TO BE PARAMETERIZED
+    // for automatic RECO - 8.66 MeV (ID cut Oxygen-16 -- ver 2)
+    const double cut_center_alpha_T_CMS = 1.150; // MeV // TODO - TO BE PARAMETERIZED
+    const double cut_center_carbon_T_CMS = 0.400; // MeV // TODO - TO BE PARAMETERIZED
+    const double cut_ellipse_alpha_T_CMS = 0.150; // MeV // TODO - TO BE PARAMETERIZED
+    const double cut_ellipse_carbon_T_CMS = 0.150; // MeV // TODO - TO BE PARAMETERIZED
+    // for automatic RECO - 8.66 MeV (ID cut Oxygen-16 -- ver 1)
+    //    const double cut_center_alpha_T_CMS = 0.85; // MeV // TODO - TO BE PARAMETERIZED
+    //    const double cut_center_carbon_T_CMS = 0.48; // MeV // TODO - TO BE PARAMETERIZED
+    //    const double cut_ellipse_alpha_T_CMS = 0.25; // MeV // TODO - TO BE PARAMETERIZED
+    //    const double cut_ellipse_carbon_T_CMS = 0.15; // MeV // TODO - TO BE PARAMETERIZED
+    // for automatic RECO - 9.85 MeV
+    //    const double cut_center_alpha_T_CMS = 1.85; // MeV // TODO - TO BE PARAMETERIZED
+    //    const double cut_center_carbon_T_CMS = 0.53; // MeV // TODO - TO BE PARAMETERIZED
+    //    const double cut_ellipse_alpha_T_CMS = 0.15; // MeV // TODO - TO BE PARAMETERIZED
+    //    const double cut_ellipse_carbon_T_CMS = 0.15; // MeV // TODO - TO BE PARAMETERIZED
     // for clicked RECO:
     // const double cut_center_alpha_T_CMS = 1.82; // MeV // TODO - TO BE PARAMETERIZED
     // const double cut_center_carbon_T_CMS = 0.50; // MeV // TODO - TO BE PARAMETERIZED
@@ -1138,6 +1162,18 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack, eventraw::EventInfo *aEventInfo
     profiles1D["h_2prong_vertexXBEAM_carbon_E_CMS_prof"]->Fill(vertexPos_BEAM_LAB.X(), carbon_T_CMS);
     profiles1D["h_2prong_vertexXBEAM_gamma_E_LAB_prof"]->Fill(vertexPos_BEAM_LAB.X(), photon_E_LAB);
     profiles1D["h_2prong_vertexXBEAM_Qvalue_CMS_prof"]->Fill(vertexPos_BEAM_LAB.X(), Qvalue_CMS);
+
+    ///////// DEBUG - special Reco file with selected events only
+    //
+    if(passed_O16_idCut) {
+      //      myDumpRecoFile->cd();
+      *myDumpTrack=*aTrack;
+      *myDumpEventInfo=*aEventInfo;
+      myDumpTree->Fill();
+      //      outputFile->cd();
+    }
+    //
+    ///////// DEBUG - special Reco file with selected events only
   }
   // 3-prong (triple alpha)
   if(ntracks==3) {
@@ -1376,6 +1412,7 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack, eventraw::EventInfo *aEventInfo
 ///////////////////////////////
 void HIGGS_analysis::finalize(){
 
+  outputFile->cd();
   for (auto &h : histos1D) {
     h.second->SetTitleOffset(1.3, "X");
     h.second->SetTitleOffset(1.4, "Y");
@@ -1391,6 +1428,13 @@ void HIGGS_analysis::finalize(){
     p.second->SetTitleOffset(1.4, "Y");
   }
   outputFile->Write();
+
+  ///////// DEBUG - special Reco file with selected events only
+  //
+  myDumpRecoFile->cd();
+  myDumpTree->Write();
+  //
+  ///////// DEBUG - special Reco file with selected events only
 }
 ///////////////////////////////
 ///////////////////////////////
