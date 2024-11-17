@@ -623,6 +623,47 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     c->Write();
   }
 
+  //// 2-prong, Alpha track length (X) vs Carbon track length (Y), after Alpha vs Carbon E_CMS 2D-cut, zoomed X=[0, 2.5MeV] x Y=[0, 2MeV] @ 8.66 MeV
+  if(plot_2prong) {
+    c->Clear();
+    h2=(TH2D*)f->Get("h_2prong_alpha_len_carbon_len_CutO16")->Clone(); // copy for modifications of the same histogram
+    c->SetName(Form("c_%s",h2->GetName()));
+    h2->SetTitle((energyInfo+h2->GetTitle()).c_str());
+    gStyle->SetOptStat(10); // KISOURMEN : show entries only
+    h2->Rebin2D(1,1);
+    h2->UseCurrentStyle();
+    h2->SetStats(true);
+    h2->Draw("COLZ");
+    gPad->SetLeftMargin(0.1);
+    gPad->SetRightMargin(0.14);
+    h2->SetTitleOffset(1.6, "X");
+    h2->SetTitleOffset(1.4, "Y");
+    h2->SetTitleOffset(1.2, "Z");
+    h2->GetXaxis()->SetRangeUser(10, 80); // valid for 8.66 MeV
+    h2->GetYaxis()->SetRangeUser(4, 18); // valid for 8.66 MeV
+    //    h2->GetXaxis()->SetRangeUser(35, 95); // valid for 9.845 MeV
+    //    h2->GetYaxis()->SetRangeUser(5, 30); // valid for 9.845 MeV
+    //    h2->GetXaxis()->SetRangeUser(35, 65); // valid for 9.845 MeV after 16O selection
+    //    h2->GetYaxis()->SetRangeUser(6, 18); // valid for 9.845 MeV after 16O selection
+    //    h2->GetXaxis()->SetRangeUser(45, 100); // valid for 11.5 MeV
+    //    h2->GetYaxis()->SetRangeUser(4, 20); // valid for 11.5 MeV
+    //    h2->GetXaxis()->SetRangeUser(50, 120); // valid for 11.9 MeV
+    //    h2->GetYaxis()->SetRangeUser(4, 25); // valid for 11.9 MeV
+    //    h2->GetXaxis()->SetRangeUser(55, 100); // valid for 11.9 MeV after 16O selection
+    //    h2->GetYaxis()->SetRangeUser(5, 20); // valid for 11.9 MeV after 16 selection
+    //    h2->GetXaxis()->SetRangeUser(20, 120); // valid for 12.3 MeV
+    //    h2->GetYaxis()->SetRangeUser(4, 18); // valid for 12.3 MeV
+    gPad->Update();
+    st = (TPaveStats *)c->GetPrimitive("stats");
+    if(st) {
+      st->SetX1NDC(statX3); st->SetX2NDC(statX3+lineW); st->SetY1NDC(statY3); st->SetY2NDC(statY3+lineH);
+    }
+    c->Update();
+    c->Modified();
+    c->Print(((string)(prefix)+".pdf").c_str());
+    c->Write();
+  }
+
   //// 16O : 2-prong, Alpha kinetic energy in CMS
   if(plot_2prong) {
     c->Clear();

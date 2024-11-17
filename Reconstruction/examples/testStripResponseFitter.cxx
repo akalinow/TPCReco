@@ -115,6 +115,7 @@ R__ADD_LIBRARY_PATH(../lib)
 #define DRAW_SAME_SCALE false // plot UVW projection using the same scale of dE/dx for all strip directions
 #define DRAW_SAME_SCALE_MARGIN 0.05 // add +/- 5% margin for common dE/dx scale
 #define DRAW_AUTO_ZOOM_MARGIN 0.4 // add +/- 40% margin for histogram ranges in AUTO ZOOM mode (if possible)
+#define DRAW_AUTO_ZOOM_MIN_RANGE_MM 60.0 // minimal zoom size [mm] along Z_DET/U/V/W projections
 #define DRAW_PAD_FILL_COLOR kAzure-6 // matches default kBird palette
 #define DRAW_LOG_SCALE  false // use LOG scale for dE/dx axis (NOTE: differential plots will still use LIN scale)
 
@@ -1049,6 +1050,11 @@ void DrawFitResults(TCanvas *tcanvas, // input TCanvas
     for(auto &aSeg: initialTrack->getSegments()) {
       zDET_min=std::min(zDET_min, std::min(aSeg.getStart().Z(), aSeg.getEnd().Z()));
       zDET_max=std::max(zDET_max, std::max(aSeg.getStart().Z(), aSeg.getEnd().Z()));
+      if(fabs(zDET_max-zDET_min) < DRAW_AUTO_ZOOM_MIN_RANGE_MM) {
+	auto center=0.5*(zDET_max+zDET_min);
+	zDET_min=center-0.5*DRAW_AUTO_ZOOM_MIN_RANGE_MM; // [mm]
+	zDET_max=center+0.5*DRAW_AUTO_ZOOM_MIN_RANGE_MM; // [mm]
+      }
       auto err=false;
       const auto vtx=aSeg.getStart();
       const auto endpoint=aSeg.getEnd();
@@ -1059,6 +1065,11 @@ void DrawFitResults(TCanvas *tcanvas, // input TCanvas
 	double send_pos=geo->Cartesian2posUVW(endpoint.X(), endpoint.Y(), idir, err); // strip position [mm] for a given XY_DET position
 	posUVW_min[idir]=std::min(posUVW_min[idir], std::min(sstart_pos, send_pos));
 	posUVW_max[idir]=std::max(posUVW_max[idir], std::max(sstart_pos, send_pos));
+	if(fabs(posUVW_max[idir]-posUVW_min[idir]) < DRAW_AUTO_ZOOM_MIN_RANGE_MM) { // [mm]
+	  auto center=0.5*(posUVW_min[idir]+posUVW_max[idir]);
+	  posUVW_min[idir]=center-0.5*DRAW_AUTO_ZOOM_MIN_RANGE_MM; // [mm]
+	  posUVW_max[idir]=center+0.5*DRAW_AUTO_ZOOM_MIN_RANGE_MM; // [mm]
+	}
       }
     }
   }
@@ -1066,6 +1077,11 @@ void DrawFitResults(TCanvas *tcanvas, // input TCanvas
     for(auto &aSeg: fitTrack->getSegments()) {
       zDET_min=std::min(zDET_min, std::min(aSeg.getStart().Z(), aSeg.getEnd().Z()));
       zDET_max=std::max(zDET_max, std::max(aSeg.getStart().Z(), aSeg.getEnd().Z()));
+      if(fabs(zDET_max-zDET_min) < DRAW_AUTO_ZOOM_MIN_RANGE_MM) {
+	auto center=0.5*(zDET_max+zDET_min);
+	zDET_min=center-0.5*DRAW_AUTO_ZOOM_MIN_RANGE_MM; // [mm]
+	zDET_max=center+0.5*DRAW_AUTO_ZOOM_MIN_RANGE_MM; // [mm]
+      }
       auto err=false;
       const auto vtx=aSeg.getStart();
       const auto endpoint=aSeg.getEnd();
@@ -1076,6 +1092,11 @@ void DrawFitResults(TCanvas *tcanvas, // input TCanvas
 	double send_pos=geo->Cartesian2posUVW(endpoint.X(), endpoint.Y(), idir, err); // strip position [mm] for a given XY_DET position
 	posUVW_min[idir]=std::min(posUVW_min[idir], std::min(sstart_pos, send_pos));
 	posUVW_max[idir]=std::max(posUVW_max[idir], std::max(sstart_pos, send_pos));
+	if(fabs(posUVW_max[idir]-posUVW_min[idir]) < DRAW_AUTO_ZOOM_MIN_RANGE_MM) { // [mm]
+	  auto center=0.5*(posUVW_min[idir]+posUVW_max[idir]);
+	  posUVW_min[idir]=center-0.5*DRAW_AUTO_ZOOM_MIN_RANGE_MM; // [mm]
+	  posUVW_max[idir]=center+0.5*DRAW_AUTO_ZOOM_MIN_RANGE_MM; // [mm]
+	}
       }
     }
   }
@@ -2058,7 +2079,7 @@ int loop_Graw_Track3D(const char *recoInputFile, // Track3D collection with init
   if(aBranchInfo) {
     aTree->BuildIndex("runId", "eventId");
     I=(TTreeIndex*)aTree->GetTreeIndex(); // get the tree index
-    index=I->GetIndex();
+    if(I) index=I->GetIndex();
   }
 
   ////////// initialize EventSource
@@ -2689,14 +2710,14 @@ int loop_Graw_Track3D_Display(const char *recoInputFile, // Track3D collection w
   if(aBranchInfo) {
     aTree->BuildIndex("runId", "eventId");
     I=(TTreeIndex*)aTree->GetTreeIndex(); // get the tree index
-    index=I->GetIndex();
+    if(I) index=I->GetIndex();
   }
   Long64_t* refIndex=NULL;
   if(refTree && refBranchInfo) {
     TTreeIndex *I=NULL;
     refTree->BuildIndex("runId", "eventId");
     I=(TTreeIndex*)refTree->GetTreeIndex(); // get the tree index
-    refIndex=I->GetIndex();
+    if(I) refIndex=I->GetIndex();
   }
 
 
