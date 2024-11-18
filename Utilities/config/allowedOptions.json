@@ -296,7 +296,7 @@
     "beamDir":{
         "group":"recoAnalysis",
         "type" : "int",
-        "defaultValue" : 1.0,
+        "defaultValue" : -1.0,
         "description" : "Beam direction. Positive values means beam along +X, negative -X.\nType: int"
     },
     "alphaMinCut":{
