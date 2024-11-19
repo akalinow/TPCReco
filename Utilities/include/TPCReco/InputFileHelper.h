@@ -118,6 +118,9 @@ std::string makeOutputFileName(const std::string &dataFileNames, const std::stri
   if(aFileName.find("CoBo_ALL_AsAd_ALL")!=std::string::npos){
     outputFileName = aFileName.replace(0,std::string("CoBo_ALL_AsAd_ALL").size(), namePrefix);
   }
+  else if(aFileName.find("CoBo_ALL_AsAdALL")!=std::string::npos){
+    outputFileName = aFileName.replace(0,std::string("CoBo_ALL_AsAdALL").size(), namePrefix);
+  }
   else if(aFileName.find("CoBo0_AsAd")!=std::string::npos){
     outputFileName = aFileName.replace(0,std::string("CoBo0_AsAd").size()+1,namePrefix);
   }
