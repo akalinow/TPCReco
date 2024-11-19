@@ -112,7 +112,7 @@ void HistoManager::drawRawHistos(TCanvas *aCanvas, bool isRateDisplayOn){
   aCanvas->Modified();
   aCanvas->Update();
   if(isRateDisplayOn){
-    fObjClones.push_back(getEventRateGraph()->DrawClone("AP"));
+    getEventRateGraph()->DrawClone("AP");
   } else{
     get1DProjection(definitions::projection_type::DIR_TIME, filter_type::none, scale_type::raw)->DrawCopy("hist");
   }
@@ -226,7 +226,6 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
      aCanvas->Modified();
      aCanvas->Update();
      
-
      //TEST auto projType = get2DProjectionType(strip_dir);     
      //TEST auto histo2D = get2DProjection(projType, filterType, scale_type::mm);
      auto histo2D = (TH2D*)(&myTkBuilder.getRecHits2D(strip_dir));
@@ -255,10 +254,8 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
    aCanvas->Modified();
    aCanvas->Update();
 
-   drawTrack3DProjectionXY(aPad);
-
-   //if(myTkBuilder.getTrack3D(0).getSegments().front().getPID()==pid_type::DOT) drawTrack3DProjectionXY(aPad);
-   //else drawChargeAlongTrack3D(aPad);
+   if(myTkBuilder.getTrack3D(0).getSegments().front().getPID()==pid_type::DOT) drawTrack3DProjectionXY(aPad);
+   else drawChargeAlongTrack3D(aPad);
 
    aCanvas->Modified();
    aCanvas->Update();
@@ -275,7 +272,7 @@ void HistoManager::clearCanvas(TCanvas *aCanvas, bool isLogScaleOn){
     if(!aPad) continue;
     aPad->Clear();
     aPad->cd();
-    fObjClones.push_back(aMessage.DrawTextNDC(0.3, 0.5,"Waiting for data."));
+    aMessage.DrawTextNDC(0.3, 0.5,"Waiting for data.");
     aPad->SetLogz(isLogScaleOn);
   }
   aCanvas->Modified();  
@@ -289,6 +286,15 @@ void HistoManager::clearTracks(){
     if(aObj) aObj->Delete();
   }
   fTrackLines.clear();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void HistoManager::clearObjects(){
+  
+  for(auto aObj : fObjClones){
+    if(aObj) aObj->Delete();
+  }
+  fObjClones.clear();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -444,19 +450,51 @@ const TH2D & HistoManager::getHoughAccumulator(int strip_dir, int iPeak){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+void HistoManager::createWirePlotDriftCage3D(std::unique_ptr<TPad> &aPad) {
+
+    if(!aPad) return;
+    aPad->cd();
+
+    // make wire plot of drift cage in 3D
+    TView *view=TView::CreateView(1);
+    double xmin, xmax, ymin, ymax, zmin, zmax;
+    std::tie(xmin, xmax, ymin, ymax, zmin, zmax)=myGeometryPtr->rangeXYZ();
+
+    auto view_span=0.8*std::max(std::max(xmax-xmin, ymax-ymin), zmax-zmin);
+    view->SetRange(0.5*(xmax+xmin)-0.5*view_span, 0.5*(ymax+ymin)-0.5*view_span, 0.5*(zmax+zmin)-0.5*view_span,
+                   0.5*(xmax+xmin)+0.5*view_span, 0.5*(ymax+ymin)+0.5*view_span, 0.5*(zmax+zmin)+0.5*view_span);
+    view->ShowAxis(); 
+    // plot active volume's faces
+    TGraph gr=myGeometryPtr->GetActiveAreaConvexHull();
+    TPolyLine3D l(5*(gr.GetN()-1));
+    for(auto iedge=0; iedge<gr.GetN()-1; iedge++) {
+        l.SetPoint(iedge*5+0, gr.GetX()[iedge], gr.GetY()[iedge], zmin);
+        l.SetPoint(iedge*5+1, gr.GetX()[iedge+1], gr.GetY()[iedge+1], zmin);
+        l.SetPoint(iedge*5+2, gr.GetX()[iedge+1], gr.GetY()[iedge+1], zmax);
+        l.SetPoint(iedge*5+3, gr.GetX()[iedge], gr.GetY()[iedge], zmax);
+        l.SetPoint(iedge*5+4, gr.GetX()[iedge], gr.GetY()[iedge], zmin);
+    }
+    l.SetLineColor(kBlack);
+    l.SetLineWidth(3);
+    l.DrawClone();
+   
+    /// beam line
+    TPolyLine3D l_beam(2);
+    l_beam.SetPoint(0, xmin-20, 0.0, 0.5*(zmin+zmax));
+    l_beam.SetPoint(1, xmax+20, 0.0, 0.5*(zmin+zmax));
+    l_beam.SetLineColor(kGreen+2);
+    l_beam.SetLineWidth(2);
+    l_beam.SetLineStyle(3);
+    l_beam.DrawClone();
+
+    aPad->Update();
+    aPad->Modified();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 void HistoManager::drawTrack3D(TVirtualPad *aPad){
 
   aPad->cd();
-  int rebin_space=EVENTTPC_DEFAULT_STRIP_REBIN;
-  int rebin_time=EVENTTPC_DEFAULT_TIME_REBIN; 
-  TH3D *h3DFrame = myGeometryPtr->Get3DFrame(rebin_space, rebin_time);
-  h3DFrame->GetXaxis()->SetTitleOffset(2.0);
-  h3DFrame->GetYaxis()->SetTitleOffset(2.0);
-  h3DFrame->GetZaxis()->SetTitleOffset(2.0);
-  h3DFrame->Draw("box");
-
-  TVirtualViewer3D * view3D = aPad->GetViewer3D("pad");
-  view3D->BeginScene();
   
   const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
   const TrackSegment3DCollection & trackSegments = aTrack3D.getSegments();
@@ -490,44 +528,9 @@ void HistoManager::drawTrack3D(TVirtualPad *aPad){
      yVec.push_back(aSegment.getEnd().Y());
      zVec.push_back(aSegment.getStart().Z());
      zVec.push_back(aSegment.getEnd().Z());
-     /*
-   TList outlineList;
-   std::vector<double> minCoords, maxCoords;
-   double min = *std::min_element(xVec.begin(), xVec.end());
-   double max = *std::max_element(xVec.begin(), xVec.end());
-   minCoords.push_back(min);
-   maxCoords.push_back(max);
-
-   min = *std::min_element(yVec.begin(), yVec.end());
-   max = *std::max_element(yVec.begin(), yVec.end());
-   minCoords.push_back(min);
-   maxCoords.push_back(max);
-
-   
-   min = *std::min_element(zVec.begin(), zVec.end());
-   max = *std::max_element(zVec.begin(), zVec.end());
-   minCoords.push_back(min);
-   maxCoords.push_back(max);
-   
-   aPolyLine.DrawOutlineCube(&outlineList, minCoords.data(), maxCoords.data());
-   aPolyLine.DrawCopy();
-   view3D->EndScene();
-   return;
-     */
    }
-
-     
-   double min = *std::min_element(xVec.begin(), xVec.end());
-   double max = *std::max_element(xVec.begin(), xVec.end());
-   h3DFrame->GetXaxis()->SetRangeUser(min, max);
-   min = *std::min_element(yVec.begin(), yVec.end());
-   max = *std::max_element(yVec.begin(), yVec.end());
-   h3DFrame->GetYaxis()->SetRangeUser(min, max);
-   min = *std::min_element(zVec.begin(), zVec.end());
-   max = *std::max_element(zVec.begin(), zVec.end());
-   h3DFrame->GetZaxis()->SetRangeUser(min, max);
-
-   view3D->EndScene();
+    aPad->Update();
+    aPad->Modified();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -668,7 +671,6 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   hChargeProfile.DrawCopy("same HIST P");
 
   TLegend *aLegend = new TLegend(0.7, 0.75, 0.95,0.95);
-  fObjClones.push_back(aLegend);
   
   TF1 dEdx = myTkBuilder.getdEdx();
   if(!dEdx.GetNpar()) return;
@@ -681,7 +683,6 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   dEdx.SetLineWidth(3);
   TObject *aObj = dEdx.DrawCopy("same");
   aLegend->AddEntry(aObj,"^{12}C + #alpha","l");
-  fObjClones.push_back(aObj);
 
   dEdx.SetParameter("carbonScale",0.0);
   dEdx.SetLineColor(kRed);
@@ -690,7 +691,6 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   TObject *aObj1 = dEdx.DrawCopy("same");
   if((TF1*)aObj1) ((TF1*)aObj1)->SetName("alpha_model");
   aLegend->AddEntry(aObj1,"#alpha","l");
-  fObjClones.push_back(aObj1);
   
   dEdx.SetParameter("alphaScale",0.0);
   dEdx.SetParameter("carbonScale",carbonScale);
@@ -700,7 +700,6 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   TObject *aObj2  = dEdx.DrawCopy("same");
   if((TF1*)aObj2) ((TF1*)aObj2)->SetName("carbon_model");
   aLegend->AddEntry(aObj2,"^{12}C","l");
-  fObjClones.push_back(aObj2);
   aLegend->Draw();
 
   double alphaRange = aTrack3D.getSegments().front().getLength();
