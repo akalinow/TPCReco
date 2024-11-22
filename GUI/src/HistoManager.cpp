@@ -501,14 +501,10 @@ void HistoManager::drawTrack3D(TVirtualPad *aPad){
   if(!trackSegments.size()) return;
   
   int iColor = 2;
-  std::vector<double> xVec, yVec, zVec;
+
    for(auto aSegment: trackSegments){
-     
-     std::cout<<KBLU<<"segment properties  START -> STOP [chi2], [charge]: "<<RST<<std::endl;
-     std::cout<<"\t"<<aSegment<<std::endl;
-     
      TPolyLine3D aPolyLine;
-     aPolyLine.SetLineWidth(2);
+     aPolyLine.SetLineWidth(3);
      aPolyLine.SetLineColor(iColor++);
 
      aPolyLine.SetPoint(0,
@@ -521,13 +517,6 @@ void HistoManager::drawTrack3D(TVirtualPad *aPad){
 			aSegment.getEnd().Z());    
 
      fObjClones.push_back(aPolyLine.DrawClone());
-
-     xVec.push_back(aSegment.getStart().X());
-     xVec.push_back(aSegment.getEnd().X());
-     yVec.push_back(aSegment.getStart().Y());
-     yVec.push_back(aSegment.getEnd().Y());
-     zVec.push_back(aSegment.getStart().Z());
-     zVec.push_back(aSegment.getEnd().Z());
    }
     aPad->Update();
     aPad->Modified();

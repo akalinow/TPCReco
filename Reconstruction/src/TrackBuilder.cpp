@@ -10,6 +10,8 @@
 #include <TFile.h>
 #include <TFitResult.h>
 #include <Math/Functor.h>
+#include <Math/Polar2D.h>
+#include <Math/DisplacementVector2D.h>
 #include <Math/VectorUtil.h>
 #include <Minuit2/Minuit2Minimizer.h>
 
@@ -19,7 +21,7 @@
 #include "TPCReco/colorText.h"
 
 #ifndef M_PI
-#define M_PI 3.14159265358979323846
+#define M_PI std::atan(1.0)*4;
 #endif // M_PI
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -253,28 +255,16 @@ std::tuple<double, double> TrackBuilder::getProjectionEdges(const TH1D & hProj, 
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-const TH2D & TrackBuilder::getCluster2D(int iDir) const{
-
-  return myRawHits[iDir];  
-}
+const TH2D & TrackBuilder::getCluster2D(int iDir) const{return myRawHits[iDir];}
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-const TH2D & TrackBuilder::getRecHits2D(int iDir) const{
-
-  return myRecHits[iDir];  
-}
+const TH2D & TrackBuilder::getRecHits2D(int iDir) const{return myRecHits[iDir];}
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-const TH1D & TrackBuilder::getRecHitsTimeProjection() const{
-
-  return hTimeProjection;
-}
+const TH1D & TrackBuilder::getRecHitsTimeProjection() const{return hTimeProjection;}
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-const TH2D & TrackBuilder::getHoughtTransform(int iDir) const{
-
-  return myAccumulators[iDir];  
-}
+const TH2D & TrackBuilder::getHoughtTransform(int iDir) const{return myAccumulators[iDir];  }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 const TrackSegment2D & TrackBuilder::getSegment2D(int iDir, unsigned int iTrack) const{
@@ -284,16 +274,10 @@ const TrackSegment2D & TrackBuilder::getSegment2D(int iDir, unsigned int iTrack)
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-const TrackSegment3D & TrackBuilder::getSegment3DSeed() const{
-
-  return myTrack3DSeed; 
-}
+const TrackSegment3D & TrackBuilder::getSegment3DSeed() const{return myTrack3DSeed; }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-const Track3D & TrackBuilder::getTrack3D(unsigned int iSegment) const{
-
-  return myFittedTrack;
-}
+const Track3D & TrackBuilder::getTrack3D(unsigned int iSegment) const{return myFittedTrack;}
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void TrackBuilder::fillHoughAccumulator(int iDir){
@@ -410,6 +394,7 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
       aSegment2D.setNAccumulatorHits(1);
       my2DSeeds[iDir].push_back(aSegment2D);
     }
+
     TrackSegment3D a3DSeed = buildSegment3D(iSegment);
     double startTime = my2DSeeds.at(definitions::projection_type::DIR_U).at(iSegment).getStart().X();    
     double endTime = my2DSeeds.at(definitions::projection_type::DIR_U).at(iSegment).getEnd().X();
@@ -418,7 +403,6 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
     TVector3 start =  a3DSeed.getStart() + lambdaStartTime*a3DSeed.getTangent();
     TVector3 end =  a3DSeed.getStart() + lambdaEndTime*a3DSeed.getTangent();
     a3DSeed.setStartEnd(start, end);
-    a3DSeed.setRecHits(myRawHits);
     aTrackCandidate.addSegment(a3DSeed);
   }
   std::cout<<KBLU<<"Hand clicked track: "<<RST<<std::endl;
@@ -429,23 +413,278 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void TrackBuilder::normaliseTangents(TVector3 & tangent_U, TVector3 & tangent_V, TVector3 & tangent_W) const{
+double TrackBuilder::getLengthProjectionFromProfile(definitions::projection_type iProj, 
+                                                    definitions::projection_type auxProj) const{
 
-  //Normalise tangents along the common axis - the time axis
-  double epsilon = 1E-2;
-  bool hasTimeComponent = (std::abs(tangent_U.Unit().X()*tangent_V.Unit().X())>epsilon) + 
-                          (std::abs(tangent_U.Unit().X()*tangent_W.Unit().X())>epsilon) +
-                          (std::abs(tangent_V.Unit().X()*tangent_W.Unit().X())>epsilon);
+   definitions::projection_type iProjTmp = iProj;
+   if(iProj==definitions::projection_type::DIR_TIME) iProjTmp = auxProj;                                                 
 
-  if(hasTimeComponent){
-    tangent_U *= 1.0/tangent_U.X();
-    tangent_V *= 1.0/tangent_V.X();
-    tangent_W *= 1.0/tangent_W.X();
-  }
+   TH1D *hProfile = nullptr; 
+   if(iProj==definitions::projection_type::DIR_TIME) hProfile = getRecHits2D(iProjTmp).ProfileY();
+   else hProfile = getRecHits2D(iProjTmp).ProfileX();
+   int firstBin = -1;
+   int lastBin = -1;
+   double value = 0.0;
+  
+   for(int iBin=-1;iBin<=hProfile->GetNbinsX()+1;++iBin){
+     hProfile->SetBinError(iBin, 1.0);
+     value = hProfile->GetBinContent(iBin);
+     if(std::abs(value)>0.0 && firstBin==-1) firstBin = iBin;
+     else if(std::abs(value)>0.0) lastBin = iBin;
+   }
+   double minPos = hProfile->GetBinCenter(firstBin);
+   double maxPos = hProfile->GetBinCenter(lastBin);
+
+   auto aPol = new TF1("aFit", "[0]+[1]*x", minPos, maxPos);
+   aPol->SetParameter(0, (minPos+maxPos)/2.0);
+   aPol->SetParameter(1, 0.0);
+   TFitResultPtr aFitResult = hProfile->Fit(aPol,"BRWWSQ");
+   double slope = aFitResult->GetParams()[1];
+   double length = (maxPos - minPos)*slope;
+   delete aPol;
+   delete hProfile;
+   return std::abs(length);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-double TrackBuilder::getXYTangentPhiFromProjsTangents(definitions::projection_type dir1, definitions::projection_type dir2,
+double TrackBuilder::getSignedLengthProjection(definitions::projection_type iProj,
+                                               definitions::projection_type auxProj,
+                                               int iTrack2DSeed) const{
+
+   if(iTrack2DSeed>=0 and iTrack2DSeed<int(my2DSeeds[auxProj].size())){
+     if(iProj==definitions::projection_type::DIR_TIME){
+       double value = std::abs(my2DSeeds[auxProj].at(iTrack2DSeed).getEnd().X() - my2DSeeds[auxProj].at(iTrack2DSeed).getStart().X());
+       int sign = my2DSeeds[auxProj].at(iTrack2DSeed).getEnd().X()>my2DSeeds[auxProj].at(iTrack2DSeed).getStart().X()? 1:-1;   
+      return sign*value;
+     }
+     else {
+      double value = std::abs(my2DSeeds[auxProj].at(iTrack2DSeed).getEnd().Y() - my2DSeeds[auxProj].at(iTrack2DSeed).getStart().Y());
+      int sign = my2DSeeds[auxProj].at(iTrack2DSeed).getEnd().Y()>my2DSeeds[auxProj].at(iTrack2DSeed).getStart().Y()? 1:-1;
+      return sign*value;
+     }
+  }
+  else if(iTrack2DSeed>=0) return 0.0;
+
+   const TH1D* hProj = &hTimeProjection;
+
+   definitions::projection_type iProjTmp = iProj;
+   if(iProj==definitions::projection_type::DIR_TIME) iProjTmp = auxProj;
+   else hProj = getRecHits2D(iProj).ProjectionY("hProj");                                       
+
+  double minStrip=0, maxStrip=0;
+  std::tie(minStrip, maxStrip) = getProjectionEdges(*hProj, stripDiffusionMargin);
+  double minTimeBin=0, maxTimeBin=0;
+  std::tie(minTimeBin, maxTimeBin) = getProjectionEdges(hTimeProjection, timeDiffusionMargin);
+
+   /// Have to get maximum bin from full 2D histogram
+  /// to avoid bias in the maximum position from the projection
+  int iMaxBinX{0}, iMaxBinY{0}, iMaxBinZ{0};
+  getRecHits2D(iProjTmp).GetMaximumBin(iMaxBinX, iMaxBinY, iMaxBinZ);
+  ///Rebin 2D histogram in time bins to avoid cases when a single bin
+  ///on the far end of track is dominating the maximum position
+  if(std::abs(maxTimeBin-minTimeBin)<minTimeProjLength && iProj!=definitions::projection_type::DIR_TIME){
+    TH2D *hTmp = (TH2D*)getRecHits2D(iProjTmp).Clone("hTmp");
+    hTmp->Rebin2D(8,1)->GetMaximumBin(iMaxBinX, iMaxBinY, iMaxBinZ);
+  }
+
+  int iMaxBin = iMaxBinY;
+  if(iProj==definitions::projection_type::DIR_TIME) iMaxBin = iMaxBinX;
+  //If track is horizontal use a projection on strip direction to avoid bias in maximum position
+  else if(std::abs(maxTimeBin-minTimeBin)<minTimeProjLength &&
+          std::abs(maxStrip-minStrip)<minStripProjLength) iMaxBin = hProj->GetMaximumBin();
+
+  double maxPos = hProj->GetBinCenter(iMaxBin);
+
+  int direction = std::abs(maxPos - minStrip)<std::abs(maxPos - maxStrip) ? 1 : -1;
+
+  double length = std::abs(maxStrip - minStrip);
+  if(length<minStripProjLength){
+    length = getLengthProjectionFromProfile(iProj, auxProj);
+  }
+
+  double signedLength = length*direction;
+
+  if(iProj!=definitions::projection_type::DIR_TIME) delete hProj;//FIXME - unify types
+  return signedLength;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+TVector2 TrackBuilder::get2DBias(definitions::projection_type iProj, int iTrack2DSeed) const{
+
+  if(iTrack2DSeed>=0 and iTrack2DSeed<int(my2DSeeds[iProj].size())){
+   return TVector2(my2DSeeds[iProj].at(iTrack2DSeed).getStart().X(),
+                   my2DSeeds[iProj].at(iTrack2DSeed).getStart().Y());
+  }
+
+  double minTimeBin=0, maxTimeBin=0;
+  std::tie(minTimeBin, maxTimeBin) = getProjectionEdges(hTimeProjection, timeDiffusionMargin);
+
+  int iMaxBinX{0}, iMaxBinY{0}, iMaxBinZ{0};
+  getRecHits2D(iProj).GetMaximumBin(iMaxBinX, iMaxBinY, iMaxBinZ);
+  double maxTimePos = getRecHits2D(iProj).GetXaxis()->GetBinCenter(iMaxBinX);
+  //If track is horizontal use a projection on strip direction to avoid bias in maximum position
+  if(std::abs(maxTimeBin-minTimeBin)<minTimeProjLength) iMaxBinY = getRecHits2D(iProj).ProjectionY()->GetMaximumBin();
+  double maxStripPos = getRecHits2D(iProj).GetYaxis()->GetBinCenter(iMaxBinY);
+
+  return TVector2(maxTimePos, maxStripPos);
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void TrackBuilder::getSignedLengthsAndMaxPos(int iTrack2DSeed) {
+
+ /// Lengths of projection on strip directions
+  double longProj = 0.0;
+  for(auto iDir : getProjectionsList()){
+    lengths[iDir] = getSignedLengthProjection(iDir, iDir, iTrack2DSeed);
+    biases2D[iDir] = get2DBias(iDir, iTrack2DSeed);
+    if(std::abs(lengths[iDir])>longProj){
+      longProj = std::abs(lengths[iDir]);
+      long_proj_type = iDir;
+    }
+  }
+  /// Length of time projection
+  lengths[definitions::projection_type::DIR_TIME] = getSignedLengthProjection(definitions::projection_type::DIR_TIME, long_proj_type, iTrack2DSeed);
+}
+/////////////////////////////////////////////////////////
+TVector3 TrackBuilder::getBias(int iTrack2DSeed, bool acceptDot){
+
+  TVector2 bias2D, bias2D_mean;
+  double biasZ = 0.0;
+  bool result{false};
+  double weight{0.0}, weightSum{0.0};
+
+  for(auto iDir_1: getProjectionsList()){
+    for(auto iDir_2: getProjectionsList()){
+      if(iDir_1==iDir_2) continue;
+     
+        result = myGeometryPtr->GetUVWCrossPointInMM(iDir_1, biases2D[iDir_1].Y(),
+                                                      iDir_2, biases2D[iDir_2].Y(),
+                                                      bias2D);
+
+        weight = std::abs(lengths[iDir_1]*lengths[iDir_2])*result;
+        weightSum += weight;    
+
+        bias2D_mean += bias2D*weight;                     
+        biasZ += biases2D[iDir_1].X()*weight;        
+
+    }
+   }
+   bias2D_mean = bias2D_mean/weightSum;
+   biasZ /= weightSum;
+  
+  TVector3 aBias(bias2D_mean.X(), bias2D_mean.Y(), biasZ);
+  return aBias;
+  
+/*
+  TVector2 maxPos_U = TrackBuilder::get2DBias(definitions::projection_type::DIR_U, iTrack2DSeed);
+  TVector2 maxPos_V = TrackBuilder::get2DBias(definitions::projection_type::DIR_V, iTrack2DSeed);
+  TVector2 maxPos_W = TrackBuilder::get2DBias(definitions::projection_type::DIR_W, iTrack2DSeed);
+
+  TVector2 biasXY_fromUV;
+  bool res_UV=myGeometryPtr->GetUVWCrossPointInMM(definitions::projection_type::DIR_U, maxPos_U.Y(),
+                                                  definitions::projection_type::DIR_V, maxPos_V.Y(), 
+                                                  biasXY_fromUV);  
+  
+  TVector2 biasXY_fromVW;
+  bool res_VW=myGeometryPtr->GetUVWCrossPointInMM(definitions::projection_type::DIR_V, maxPos_V.Y(), 
+                                                  definitions::projection_type::DIR_W, maxPos_W.Y(), 
+                                                  biasXY_fromVW);
+
+  TVector2 biasXY_fromWU;
+  bool res_WU=myGeometryPtr->GetUVWCrossPointInMM(definitions::projection_type::DIR_W, maxPos_W.Y(), 
+                                                  definitions::projection_type::DIR_U, maxPos_U.Y(),
+                                                  biasXY_fromWU);
+
+  /// Lengths of projection on strip directions
+  double l_U = getSignedLengthProjection(definitions::projection_type::DIR_U, definitions::projection_type::DIR_U, iTrack2DSeed);
+  double l_V = getSignedLengthProjection(definitions::projection_type::DIR_V, definitions::projection_type::DIR_V, iTrack2DSeed);
+  double l_W = getSignedLengthProjection(definitions::projection_type::DIR_W, definitions::projection_type::DIR_W, iTrack2DSeed);
+
+  definitions::projection_type auxProj = definitions::projection_type::DIR_U;
+  if(std::abs(l_V)>std::abs(l_U)) auxProj = definitions::projection_type::DIR_V;
+  else if(std::abs(l_W)>std::abs(l_U)) auxProj = definitions::projection_type::DIR_W;
+  double l_T = getSignedLengthProjection(definitions::projection_type::DIR_TIME, auxProj, iTrack2DSeed);
+  //Long track maximum should be well defined, event if the strip projection is short.
+  if(std::abs(l_T)>minTimeProjLength || acceptDot){
+    l_U = 2*minStripProjLength;
+    l_V = 2*minStripProjLength;
+    l_W = 2*minStripProjLength;
+  }
+  //Track along a strip direction. The maximum is well defined, as the track is simply a dot.
+  if( std::abs(l_U)<minStripProjLength || std::abs(l_V)<minStripProjLength || std::abs(l_W)<minStripProjLength){
+    l_U = 2*minStripProjLength;
+    l_V = 2*minStripProjLength;
+    l_W = 2*minStripProjLength;
+  }
+
+	double weight_fromUV = res_UV*std::abs(l_U*l_V)*(std::abs(l_U)>minStripProjLength)*(std::abs(l_V)>minStripProjLength);
+  double weight_fromVW = res_VW*std::abs(l_V*l_W)*(std::abs(l_V)>minStripProjLength)*(std::abs(l_W)>minStripProjLength);
+  double weight_fromWU = res_WU*std::abs(l_W*l_U)*(std::abs(l_W)>minStripProjLength)*(std::abs(l_U)>minStripProjLength);
+  double weightSum = weight_fromUV + weight_fromVW + weight_fromWU;
+  if(weightSum<epsilon) weightSum = 1;		
+
+  TVector2 biasXY = (weight_fromUV*biasXY_fromUV + weight_fromVW*biasXY_fromVW + weight_fromWU*biasXY_fromWU)/weightSum;
+  double biasZ = (maxPos_U.X()*weight_fromUV + maxPos_V.X()*weight_fromVW + maxPos_W.X()*weight_fromWU)/weightSum;
+
+  TVector3 aBias(biasXY.X(), biasXY.Y(), biasZ);
+  return aBias;
+  */
+  
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+double TrackBuilder::getXYLength(definitions::projection_type dir1, 
+                                 definitions::projection_type dir2,
+                                 double l1, double l2) const{
+
+  double cosDir1Dir2 = myGeometryPtr->GetStripPitchVector(dir1)*myGeometryPtr->GetStripPitchVector(dir2);
+  double g = 1 - std::pow(cosDir1Dir2,2);
+  double lXY = sqrt((std::pow(l1,2) + std::pow(l2,2) - 2*l1*l2*cosDir1Dir2)/g);
+  return lXY;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+double TrackBuilder::getTangentPhiFromUnsignedLengths(double l_U, double l_V, double l_W) const{
+  
+  definitions::projection_type long_proj_type = definitions::projection_type::DIR_U;
+  if(std::abs(l_V)>std::abs(l_U)) long_proj_type = definitions::projection_type::DIR_V;
+  else if(std::abs(l_W)>std::abs(l_U)) long_proj_type = definitions::projection_type::DIR_W;
+  double longProjLength = std::max(std::max(std::abs(l_U), std::abs(l_V)), std::abs(l_W));
+  
+  double phi_U = myGeometryPtr->GetStripPitchVector(definitions::projection_type::DIR_U).Phi();
+  double phi_V = myGeometryPtr->GetStripPitchVector(definitions::projection_type::DIR_V).Phi();
+  double phi_W = myGeometryPtr->GetStripPitchVector(definitions::projection_type::DIR_W).Phi();
+  double phi_longProj = myGeometryPtr->GetStripPitchVector(long_proj_type).Phi();
+
+  if(phi_U<0) phi_U += 2*M_PI;
+  if(phi_V<0) phi_V += 2*M_PI;
+  if(phi_W<0) phi_W += 2*M_PI;
+  if(phi_longProj<0) phi_longProj += 2*M_PI;
+
+  double phi{0}, bestPhi{0};
+  double loss{0}, bestLoss{1E6};
+  double longProjCos{0};
+  double ratio_diff_U{0}, ratio_diff_V{0}, ratio_diff_W{0};
+
+  /// FIXME: use minimization instead of stupid loop
+  for (int iPhi=0;iPhi<180;++iPhi){
+    phi = iPhi*M_PI/180.0;
+
+    longProjCos = std::abs(cos(phi_longProj - phi));
+    ratio_diff_U = std::abs(l_U)/longProjLength - std::abs(cos(phi_U-phi))/longProjCos;
+    ratio_diff_V = std::abs(l_V)/longProjLength - std::abs(cos(phi_V-phi))/longProjCos;
+    ratio_diff_W = std::abs(l_W)/longProjLength - std::abs(cos(phi_W-phi))/longProjCos;
+    loss = std::abs(ratio_diff_U) + std::abs(ratio_diff_V) + std::abs(ratio_diff_W);
+    if(loss<bestLoss){
+      bestLoss = loss;
+      bestPhi = phi;
+    }
+  }
+  return bestPhi;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+double TrackBuilder::getTangentPhiFromSignedLengths(definitions::projection_type dir1, definitions::projection_type dir2,
                                                       double l1, double l2) const{
    //Solve equations for cos(phi) and sin(phi):
    /// l_dir1 = e_dir1*cos(phi) + e_dir1*sin(phi)
@@ -468,168 +707,76 @@ double TrackBuilder::getXYTangentPhiFromProjsTangents(definitions::projection_ty
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-double TrackBuilder::getSignedLengthProjection(definitions::projection_type iProj,
-                                               definitions::projection_type auxProj) const{
-
-   const TH1D* hProj = &hTimeProjection;
-   double stripDiffusionMargin = 2.0; //parameter to be moved to configuration
-   double timeDiffusionMargin = 4.0; //parameter to be moved to configuration
-   double minTimeProjLength =  40;  //parameter to be moved to configuration
-   double minStripProjLength = 30;  //parameter to be moved to configuration
-
-   definitions::projection_type iProjTmp = iProj;
-   if(iProj==definitions::projection_type::DIR_TIME) iProjTmp = auxProj;
-   else hProj = getRecHits2D(iProj).ProjectionY("hProj");
-
-  double minStrip=0, maxStrip=0;
-  std::tie(minStrip, maxStrip) = getProjectionEdges(*hProj, stripDiffusionMargin);
-  double minTimeBin=0, maxTimeBin=0;
-  std::tie(minTimeBin, maxTimeBin) = getProjectionEdges(hTimeProjection, timeDiffusionMargin);
-
-   /// Have to get maximum bin from full 2D histogram
-  /// to avoid bias in the maximum position from the projection
-  int iMaxBinX{0}, iMaxBinY{0}, iMaxBinZ{0};
-  getRecHits2D(iProjTmp).GetMaximumBin(iMaxBinX, iMaxBinY, iMaxBinZ);
-  int iMaxBin = iMaxBinY;
-  if(iProj==definitions::projection_type::DIR_TIME) iMaxBin = iMaxBinX;
-  //If track is horizontal use a projection on strip direction to avoid bias in maximum position
-  else if(std::abs(maxTimeBin-minTimeBin)<minTimeProjLength &&
-          std::abs(maxStrip-minStrip)<minStripProjLength) iMaxBin = hProj->GetMaximumBin();
-
-  double maxPos = hProj->GetBinCenter(iMaxBin);
-
-  int direction = std::abs(maxPos - minStrip)<std::abs(maxPos - maxStrip) ? 1 : -1;
-  double l = (maxStrip - minStrip)*direction;
-
-  if(iProj!=definitions::projection_type::DIR_TIME) delete hProj;//FIXME - unify types
-  return l;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-TVector2 TrackBuilder::get2DBias(definitions::projection_type iProj) const{
-
-  //double minTimeProjLength =  40;  //parameter to be moved to configuration
-  double timeDiffusionMargin = 4.0; //parameter to be moved to configuration
-  double minTimeBin=0, maxTimeBin=0;
-  std::tie(minTimeBin, maxTimeBin) = getProjectionEdges(hTimeProjection, timeDiffusionMargin);
-
-  int iMaxBinX{0}, iMaxBinY{0}, iMaxBinZ{0};
-  getRecHits2D(iProj).GetMaximumBin(iMaxBinX, iMaxBinY, iMaxBinZ);
-  double maxTimePos = getRecHits2D(iProj).GetXaxis()->GetBinCenter(iMaxBinX);
-  //If track is horizontal use a projection on strip direction to avoid bias in maximum position
-  //if(std::abs(maxTimeBin-minTimeBin)<minTimeProjLength) iMaxBinY = getRecHits2D(iProj).ProjectionY()->GetMaximumBin();
-  double maxStripPos = getRecHits2D(iProj).GetYaxis()->GetBinCenter(iMaxBinY);
-
-  return TVector2(maxTimePos, maxStripPos);
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-TVector3 TrackBuilder::getBias(int iTrack2DSeed, bool acceptDot) const{
-
-  double minStripProjLength = 30; //parameter to be moved to configuration
-  double minTimeProjLength =  40;  //parameter to be moved to configuration
-  double epsilon = 1E-2;          //parameter to be moved to configuration
-
-  TVector2 maxPos_U = TrackBuilder::get2DBias(definitions::projection_type::DIR_U);
-  TVector2 maxPos_V = TrackBuilder::get2DBias(definitions::projection_type::DIR_V);
-  TVector2 maxPos_W = TrackBuilder::get2DBias(definitions::projection_type::DIR_W);
-
-  TVector2 biasXY_fromUV;
-  bool res_UV=myGeometryPtr->GetUVWCrossPointInMM(definitions::projection_type::DIR_U, maxPos_U.Y(),
-                                                  definitions::projection_type::DIR_V, maxPos_V.Y(), 
-                                                  biasXY_fromUV);  
-  
-  TVector2 biasXY_fromVW;
-  bool res_VW=myGeometryPtr->GetUVWCrossPointInMM(definitions::projection_type::DIR_V, maxPos_V.Y(), 
-                                                  definitions::projection_type::DIR_W, maxPos_W.Y(), 
-                                                  biasXY_fromVW);
-
-  TVector2 biasXY_fromWU;
-  bool res_WU=myGeometryPtr->GetUVWCrossPointInMM(definitions::projection_type::DIR_W, maxPos_W.Y(), 
-                                                  definitions::projection_type::DIR_U, maxPos_U.Y(),
-                                                  biasXY_fromWU);
-
-  /// Lengths of projection on strip directions
-  double l_U = getSignedLengthProjection(definitions::projection_type::DIR_U);
-  double l_V = getSignedLengthProjection(definitions::projection_type::DIR_V);
-  double l_W = getSignedLengthProjection(definitions::projection_type::DIR_W);
-
-  definitions::projection_type auxProj = definitions::projection_type::DIR_U;
-  if(std::abs(l_V)>std::abs(l_U)) auxProj = definitions::projection_type::DIR_V;
-  else if(std::abs(l_W)>std::abs(l_U)) auxProj = definitions::projection_type::DIR_W;
-  double l_T = getSignedLengthProjection(definitions::projection_type::DIR_TIME, auxProj);
-  //Vertical track. Track maximum should be well defined, event if the strip projection is short.
-  if(std::abs(l_T)>minTimeProjLength || acceptDot){
-    l_U = 2*minStripProjLength;
-    l_V = 2*minStripProjLength;
-    l_W = 2*minStripProjLength;
-  } 
-
-	double weight_fromUV = res_UV*std::abs(l_U*l_V)*(std::abs(l_U)>minStripProjLength)*(std::abs(l_V)>minStripProjLength);
-  double weight_fromVW = res_VW*std::abs(l_V*l_W)*(std::abs(l_V)>minStripProjLength)*(std::abs(l_W)>minStripProjLength);
-  double weight_fromWU = res_WU*std::abs(l_W*l_U)*(std::abs(l_W)>minStripProjLength)*(std::abs(l_U)>minStripProjLength);
-  double weightSum = weight_fromUV + weight_fromVW + weight_fromWU;
-  if(weightSum<epsilon) weightSum = 1;		
-
-  TVector2 biasXY = (weight_fromUV*biasXY_fromUV + weight_fromVW*biasXY_fromVW + weight_fromWU*biasXY_fromWU)/weightSum;
-  double biasZ = (maxPos_U.X()*weight_fromUV + maxPos_V.X()*weight_fromVW + maxPos_W.X()*weight_fromWU)/weightSum;
-  TVector3 aBias(biasXY.X(), biasXY.Y(), biasZ);
-/*
-  std::cout<<KGRN<<"TrackBuilder::getBias: "<<RST<<std::endl;
-  std::cout<<"l_U: "<<l_U<<" l_V: "<<l_V<<" l_W: "<<l_W<<" l_T: "<<l_T<<std::endl;
-  std::cout<<"res_UV: "<<res_UV<<" res_VW: "<<res_VW<<" res_WU: "<<res_WU<<std::endl;
-  std::cout<<"weight_fromUV: "<<weight_fromUV<<" weight_fromVW: "<<weight_fromVW<<" weight_fromWU: "<<weight_fromWU<<std::endl;
-  std::cout<<"biasXY_fromUV: "<<biasXY_fromUV.X()<<" "<<biasXY_fromUV.Y()<<std::endl;
-  std::cout<<"biasXY_fromVW: "<<biasXY_fromVW.X()<<" "<<biasXY_fromVW.Y()<<std::endl;
-  std::cout<<"biasXY_fromWU: "<<biasXY_fromWU.X()<<" "<<biasXY_fromWU.Y()<<std::endl;
-  std::cout<<"biasXY: "<<biasXY.X()<<" "<<biasXY.Y()<<std::endl;
-  std::cout<<"biasZ: "<<biasZ<<std::endl;
-  */
-  return aBias;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-double TrackBuilder::getXYLength(definitions::projection_type dir1, 
-                                 definitions::projection_type dir2,
-                                 double l1, double l2) const{
-
-  double cosDir1Dir2 = myGeometryPtr->GetStripPitchVector(dir1)*myGeometryPtr->GetStripPitchVector(dir2);
-  double g = 1 - std::pow(cosDir1Dir2,2);
-  double lXY = sqrt((std::pow(l1,2) + std::pow(l2,2) - 2*l1*l2*cosDir1Dir2)/g);
-  return lXY;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-TVector3 TrackBuilder::getTangent(int iTrack2DSeed) const{
-
-    double minStripProjLength = 20; //parameter to be moved to configuration
-    double minStripProjLengthForVertTracks = 40; //parameter to be moved to configuration
-    double minTimeProjLength = 20;  //parameter to be moved to configuration
-    double epsilon = 1E-2;          //parameter to be moved to configuration
+TVector3 TrackBuilder::getTangent(int iTrack2DSeed){
     
-  /// Lengths of projection on strip directions
-  double l_U = getSignedLengthProjection(definitions::projection_type::DIR_U);
-  double l_V = getSignedLengthProjection(definitions::projection_type::DIR_V);
-  double l_W = getSignedLengthProjection(definitions::projection_type::DIR_W);
+  ///Mean values of XY lengths and tangent angles
+  double weight{0}, weightSum{1};
+  double l_XY{0}, l_XY_mean{0};
+  double phi{0};
+  ROOT::Math::DisplacementVector2D<ROOT::Math::Polar2D<double> > aTmpVector;
+
+   for(auto iDir_1: getProjectionsList()){
+    for(auto iDir_2: getProjectionsList()){
+      if(iDir_1==iDir_2) continue;
+
+       weight = std::abs(lengths[iDir_1]*lengths[iDir_2]);
+       weightSum += weight;
+
+       l_XY = getXYLength(iDir_1, iDir_2, lengths[iDir_1], lengths[iDir_2]);
+       l_XY_mean  += l_XY*weight;
+
+       phi = getTangentPhiFromSignedLengths(iDir_1, iDir_2, lengths[iDir_1], lengths[iDir_2]);
+       aTmpVector += ROOT::Math::DisplacementVector2D<ROOT::Math::Polar2D<double> >(weight, phi);  
+    }
+   }
+    l_XY_mean /= weightSum;
+
+    double theta = M_PI/2.0 - atan2(lengths[definitions::projection_type::DIR_TIME], l_XY_mean);
+    phi = getTangentPhiFromUnsignedLengths(lengths[definitions::projection_type::DIR_U],
+                                            lengths[definitions::projection_type::DIR_V],
+                                            lengths[definitions::projection_type::DIR_W]);
+
+    //Horizontal tracks have forward-backward ambiguity, that can not be resolved
+    //with 2D hit distance loss. We have to use sign of longest projection.
+    if(fabs(theta-M_PI/2.0)<0.1){
+      phi = aTmpVector.Phi();
+      /*
+      int sign = lengths[long_proj_type]>0 ? 1 : -1;
+      TVector2 aPitchDir = sign*myGeometryPtr->GetStripPitchVector(long_proj_type);
+      TVector2 aTangent;
+      aTangent.SetMagPhi(1.0, phi);
+      if(aPitchDir*aTangent<0) phi += M_PI;
+      */
+    }  
+         
+  TVector3 aTangent;
+  aTangent.SetMagThetaPhi(1, theta, phi);
+  return aTangent;                               
+
+/*
+  double l_U = getSignedLengthProjection(definitions::projection_type::DIR_U, definitions::projection_type::DIR_U, iTrack2DSeed);
+  double l_V = getSignedLengthProjection(definitions::projection_type::DIR_V, definitions::projection_type::DIR_V, iTrack2DSeed);
+  double l_W = getSignedLengthProjection(definitions::projection_type::DIR_W, definitions::projection_type::DIR_W, iTrack2DSeed);
   
+  /// Find a longest length and corresponding projection type
+  double longProj = std::max(std::max(std::abs(l_U), std::abs(l_V)), std::abs(l_W));
   definitions::projection_type long_proj_type = definitions::projection_type::DIR_U;
   if(std::abs(l_V)>std::abs(l_U)) long_proj_type = definitions::projection_type::DIR_V;
   else if(std::abs(l_W)>std::abs(l_U)) long_proj_type = definitions::projection_type::DIR_W;
-  double l_T = getSignedLengthProjection(definitions::projection_type::DIR_TIME, long_proj_type);
+  double l_T = getSignedLengthProjection(definitions::projection_type::DIR_TIME, long_proj_type, iTrack2DSeed);
   l_T *= std::abs(l_T)>minTimeProjLength;
-  if(std::abs(l_T)<minTimeProjLength) minStripProjLength = minStripProjLengthForVertTracks;
-  
+
   /// Lengths of projection on XY plane calculated fro pairs of projections
   double lXY_UV = getXYLength(definitions::projection_type::DIR_U, definitions::projection_type::DIR_V, l_U, l_V);
   double lXY_VW = getXYLength(definitions::projection_type::DIR_V, definitions::projection_type::DIR_W, l_V, l_W);
   double lXY_WU = getXYLength(definitions::projection_type::DIR_W, definitions::projection_type::DIR_U, l_W, l_U);
  
-  double phiUV = getXYTangentPhiFromProjsTangents(definitions::projection_type::DIR_U, definitions::projection_type::DIR_V, l_U, l_V);
-  double phiVW = getXYTangentPhiFromProjsTangents(definitions::projection_type::DIR_V, definitions::projection_type::DIR_W, l_V, l_W);
-  double phiWU = getXYTangentPhiFromProjsTangents(definitions::projection_type::DIR_W, definitions::projection_type::DIR_U, l_W, l_U);
+  /// Tangent angles from pairs of projections
+  double phiUV = getTangentPhiFromSignedLengths(definitions::projection_type::DIR_U, definitions::projection_type::DIR_U, l_U, l_V);
+  double phiVW = getTangentPhiFromSignedLengths(definitions::projection_type::DIR_V, definitions::projection_type::DIR_V, l_V, l_W);
+  double phiWU = getTangentPhiFromSignedLengths(definitions::projection_type::DIR_W, definitions::projection_type::DIR_W, l_W, l_U);
 
   /// two lengths small, one long - track along one of strip pitch
-  double longProj = std::max(std::max(std::abs(l_U), std::abs(l_V)), std::abs(l_W));
   if(longProj>minStripProjLength &&  //one long projection
      std::abs(l_U*l_V*l_W)/longProj<pow(minStripProjLength,2)){ //two short projections
     //definitions::projection_type short1 = definitions::projection_type::DIR_U==long_proj_type ? definitions::projection_type::DIR_V : definitions::projection_type::DIR_U;
@@ -662,25 +809,27 @@ TVector3 TrackBuilder::getTangent(int iTrack2DSeed) const{
   
   double theta = M_PI/2.0 - atan2(l_T, l_XY);
   double phi = (phiUV*weight_fromUV + phiVW*weight_fromVW + phiWU*weight_fromWU);
+
   if(phi<0) phi += 2*M_PI;
   else if(phi>2*M_PI) phi -= 2*M_PI;
   phi /= weightSum;
 
- /*
-  std::cout<<KGRN<<"TrackBuilder::getTangent: "<<RST<<std::endl;
-  std::cout<<"lXY_UV: "<<lXY_UV<<" lXY_VW: "<<lXY_VW<<" lXY_WU: "<<lXY_WU<<" l_XY: "<<l_XY<<std::endl;
-  std::cout<<"l_U: "<<l_U<<" l_V: "<<l_V<<" l_W: "<<l_W<<" l_T: "<<l_T<<" l_XY: "<<l_XY<<std::endl;
-  std::cout<<"weight_fromUV: "<<weight_fromUV<<" weight_fromVW: "<<weight_fromVW<<" weight_fromWU: "<<weight_fromWU<<std::endl;
-  std::cout<<"phiUV: "<<phiUV<<" phiVW: "<<phiVW<<" phiWU: "<<phiWU<<" phi: "<<phi<<std::endl;
-  std::cout<<"theta: "<<theta<<" phi: "<<phi<<" deg: "<<phi/M_PI*180<<std::endl;
-  */
+  phi = (ROOT::Math::DisplacementVector2D<ROOT::Math::Polar2D<double> >(weight_fromUV, phiUV) +
+         ROOT::Math::DisplacementVector2D<ROOT::Math::Polar2D<double> >(weight_fromVW, phiVW) +
+         ROOT::Math::DisplacementVector2D<ROOT::Math::Polar2D<double> >(weight_fromWU, phiWU)).Phi();
+
+  phi = getTangentPhiFromUnsignedLengths(l_U, l_V, l_W); //TEST
+
   TVector3 aTangent;
   aTangent.SetMagThetaPhi(1, theta, phi);
   return aTangent;
+  */
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
+TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed){
+
+  getSignedLengthsAndMaxPos(iTrack2DSeed);
 
   TVector3 aBias = getBias(iTrack2DSeed);
   TVector3 aTangent = getTangent(iTrack2DSeed);
@@ -689,11 +838,25 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed) const{
   a3DSeed.setGeometry(myGeometryPtr); 
   a3DSeed.setBiasTangent(aBias, aTangent);
   a3DSeed.setRecHits(myRecHits);
+
+  ///FIX ME Stupid work around for track direction ambiguity
+  double totalCharge = a3DSeed.getIntegratedCharge(a3DSeed.getLength());
+
+  TVector3 aTangent_flipped = aTangent;
+  aTangent_flipped.SetTheta(-aTangent_flipped.Theta());
+  a3DSeed.setBiasTangent(a3DSeed.getBias(), aTangent_flipped);
+  double totalCharge_flipped = a3DSeed.getIntegratedCharge(a3DSeed.getLength());
+
+  if(totalCharge_flipped<totalCharge){
+    a3DSeed.setBiasTangent(a3DSeed.getBias(), aTangent);
+  }
+  ///////////////////////////////////////////////////////////
+
   return a3DSeed;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-Track3D TrackBuilder::fitDot(Track3D & aFittedTrack) const {
+Track3D TrackBuilder::fitDot(Track3D & aFittedTrack){
 
   bool acceptDot = true;
   TVector3 aStart = getBias(0, acceptDot);
@@ -707,14 +870,12 @@ Track3D TrackBuilder::fitDot(Track3D & aFittedTrack) const {
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void TrackBuilder::fitTrack3D(Track3D & aFittedTrack, definitions::fit_type fitType){
+void TrackBuilder::fitTrack3DInSelectedDir(Track3D & aFittedTrack, definitions::fit_type fitType){
 
   double chamberRadius = 300; //mm parameter to be moved to configuration
 
   aFittedTrack.setFitMode(fitType);
   aFittedTrack.extendToChamberRange(chamberRadius);
-  //std::cout<<KBLU<<"Fit type: "<<int(fitType)<<" Pre-fit: "<<RST<<std::endl; 
-  //std::cout<<aFittedTrack<<std::endl;
 
   double initialLoss = aFittedTrack.getLoss();
   auto fitResult = fitTrackNodesBiasTangent(aFittedTrack, fitType);
@@ -723,8 +884,6 @@ void TrackBuilder::fitTrack3D(Track3D & aFittedTrack, definitions::fit_type fitT
     aFittedTrack.updateAndGetLoss(fitResult.GetParams());
   }  
  aFittedTrack.extendToChamberRange(chamberRadius);
- //std::cout<<KBLU<<"Post-fit: "<<RST<<std::endl;
- //std::cout<<aFittedTrack<<std::endl;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -736,9 +895,9 @@ Track3D TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
     return aFittedTrack;
   }
 
-  fitTrack3D(aFittedTrack, definitions::fit_type::TANGENT);
-  fitTrack3D(aFittedTrack, definitions::fit_type::BIAS_XY);
-  fitTrack3D(aFittedTrack, definitions::fit_type::BIAS_Z);
+  fitTrack3DInSelectedDir(aFittedTrack, definitions::fit_type::TANGENT);
+  fitTrack3DInSelectedDir(aFittedTrack, definitions::fit_type::BIAS_XY);
+  fitTrack3DInSelectedDir(aFittedTrack, definitions::fit_type::BIAS_Z);
   aFittedTrack.shrinkToHits();
   return aFittedTrack;
 }
@@ -853,9 +1012,6 @@ Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
     carbonSegment.setPID(pid_type::CARBON_12);
     aSplitTrackCandidate.addSegment(carbonSegment);
   }
-
-  //std::cout<<KBLU<<"Post-split: "<<RST<<std::endl;
-  //std::cout<<aSplitTrackCandidate<<std::endl;
   return aSplitTrackCandidate;
 }
 /////////////////////////////////////////////////////////
