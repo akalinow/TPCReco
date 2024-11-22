@@ -70,6 +70,8 @@ public:
 
   void clearTracks();
 
+  void clearObjects();
+
   void reconstruct();
 
   void reconstructSegmentsFromMarkers(std::vector<double> * segmentsXY);
@@ -92,14 +94,16 @@ public:
 
   std::shared_ptr<TH2D> getChannels(int cobo_id, int asad_id);
 
-  //  private:
   const TH2D & getHoughAccumulator(int strip_dir, int iPeak=0);
+
+   /// Move to private
+   void createWirePlotDriftCage3D(std::unique_ptr<TPad> &aPad);
+
+   void drawTrack3D(TVirtualPad *aPad);
 
 private:
 
   void drawTrack2DSeed(int strip_dir, TVirtualPad *aPad);
-
-  void drawTrack3D(TVirtualPad *aPad);
 
   void drawTrack3DProjectionTimeStrip(int strip_dir, TVirtualPad *aPad,  bool zoomIn = true);
 

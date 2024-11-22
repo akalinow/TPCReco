@@ -70,20 +70,25 @@ private:
   
   TrackSegment2D findSegment2D(int iDir, int iPeak) const;
 
+  /// Calculate lengths of 1D projections and store them in the map
+  /// Calculate positions of maximum charge in strip-time projections and store them in the map
+  void getSignedLengthsAndMaxPos(int iTrack2DSeed=-1);
+
   /// Calculate track segment tangent in 3D
   /// There are requirements for minimal length of 2D projection to 
   /// provide reliable estimate of the bias
-  TVector3 getTangent(int iTrack2DSeed) const;
+  TVector3 getTangent(int iTrack2DSeed=-1);
 
   /// Calculate track segment bias in 2D. Bias is defined as 
   /// position of the maximum charge in time-strip projection.
-  TVector2 get2DBias(definitions::projection_type iProj) const;
+  /// if iTrack2DSeed is given, then the bias is taken from the seed
+  TVector2 get2DBias(definitions::projection_type iProj, int iTrack2DSeed = -1) const;
 
   /// Calculate track segment bias in 3D
   /// if acceptDot==true, then bias is calculated even for very short tracks, i.e dots
   /// otherwise there are requirements for minimal length of 2D projection to 
   /// provide reliable estimate of the bias
-  TVector3 getBias(int iTrack2DSeed,  bool acceptDot=false) const;
+  TVector3 getBias(int iTrack2DSeed=-1,  bool acceptDot=false);
 
   /// Calculate length in XY plane from two projections using formula for length 
   /// in covariant coordinates: l = sqrt(g_ij * dx^i * dx^j)
@@ -91,8 +96,16 @@ private:
                      definitions::projection_type dir2,
                      double l1, double l2) const;
 
-  //Normalise tangents along the common axis - the time axis
-  void normaliseTangents(TVector3 & tangent_U, TVector3 & tangent_V, TVector3 & tangent_W) const;
+  /// Calculate the 3D track azimuthal angle using ratios
+  /// of the unsigned lengths of projections on strip directions
+  double getTangentPhiFromUnsignedLengths(double l_U, double l_V, double l_W) const;
+
+  /// Solve equation for cos(phi) and sin(phi) for given two projection tangents
+  /// use signed lengths.
+  double getTangentPhiFromSignedLengths(definitions::projection_type dir1, 
+                                        definitions::projection_type dir2,
+                                        double l1, double l2) const;
+  
 
   /// Calculate length of track projection on strip direction.
   /// Sign of the length is determined by the position of maximum:
@@ -101,25 +114,28 @@ private:
   /// this sets tangent along the alpha track from C+alpha events
   /// Maximum is found from give 2D projection - auxProj
   /// the auxProj should be a projection with longest track
+  /// if iTrack2DSeed is given, then the length is taken from the seed
   double getSignedLengthProjection(definitions::projection_type iProj,
-                                   definitions::projection_type auxProj=definitions::projection_type::DIR_U) const;
+                                   definitions::projection_type auxProj=definitions::projection_type::DIR_U,
+                                   int iTrack2DSeed = -1) const;
 
-  /// Solve equation for cos(phi) and sin(phi) for given two projection tangents
-  double getXYTangentPhiFromProjsTangents(definitions::projection_type dir1, definitions::projection_type dir2,
-                                          double l1, double l2) const;
-  
-  TrackSegment3D buildSegment3D(int iTrackSeed=0) const;
+  /// Calculate length of track projection on strip direction.
+  /// use TProfile. This works only for nearly horizontal or vertical tracks
+  double getLengthProjectionFromProfile(definitions::projection_type iProj, 
+                                        definitions::projection_type auxProj) const;                             
 
+
+  TrackSegment3D buildSegment3D(int iTrackSeed=-1);
 
   /// Fit a dot - a very short cluster, 
   /// failing minimal length requirements for bias and tangent estimation
-  Track3D fitDot(Track3D & aFittedTrack) const;
+  Track3D fitDot(Track3D & aFittedTrack);
 
   /// Fit track restricted parameter set
   /// TANGENT - only tangent is fitted
   /// BIAS - only bias is fitted
   /// BIAS_TANGENT - both bias and tangent are fitted
-  void fitTrack3D(Track3D & aTrackCandidate, definitions::fit_type fitType);
+  void fitTrack3DInSelectedDir(Track3D & aTrackCandidate, definitions::fit_type fitType);
 
   Track3D fitTrack3D(const Track3D & aTrackCandidate);
 
@@ -153,7 +169,18 @@ private:
   Track3D myTmpTrack, myFittedTrack;
   
   mutable ROOT::Fit::Fitter fitter;
-  
+
+  std::map<definitions::projection_type, double> lengths;
+  std::map<definitions::projection_type, TVector2> biases2D;
+  definitions::projection_type long_proj_type{definitions::projection_type::DIR_U};
+
+  double minStripProjLength{20}; //parameter to be moved to configuration
+  double minStripProjLengthForVertTracks{20}; //parameter to be moved to configuration
+  double minTimeProjLength{20};  //parameter to be moved to configuration 
+  double epsilon{1E-2};          //parameter to be moved to configuration
+  double stripDiffusionMargin{2.0}; //parameter to be moved to configuration
+  double timeDiffusionMargin{4.0}; //parameter to be moved to configuration
+
 };
 #endif
 

@@ -115,28 +115,28 @@ std::string makeOutputFileName(const std::string &dataFileNames, const std::stri
   aFileName = tokenize(aFileName, "/").back();
   auto outputFileName = aFileName;
 
-  if(aFileName.find("CoBo_ALL_AsAd_ALL")!=std::string::npos){
-    outputFileName = aFileName.replace(0,std::string("CoBo_ALL_AsAd_ALL").size(), namePrefix);
+  std::vector<std::string> prefixes = {"CoBo_ALL_AsAd_ALL", "CoBo0_AsAdALL", "CoBo0_AsAdAll", "CoBo0_AsAd", "EventTPC"};
+  int margin = 0;
+  for(const auto & prefix: prefixes){
+    if(aFileName.find(prefix)!=std::string::npos){
+      if(prefix=="CoBo0_AsAd") margin = 1;
+      auto loc = aFileName.find(prefix);
+      outputFileName = aFileName.replace(loc, prefix.size()+margin, namePrefix);
+      break;
+    }
   }
-  else if(aFileName.find("CoBo0_AsAd")!=std::string::npos){
-    outputFileName = aFileName.replace(0,std::string("CoBo0_AsAd").size()+1,namePrefix);
-  }
-  else if(aFileName.find("EventTPC")!=std::string::npos){
-    outputFileName = aFileName.replace(0,std::string("EventTPC").size(),namePrefix);
-  }
-  else if(aFileName.find("MC")!=std::string::npos){
-    outputFileName = aFileName.replace(0,std::string("MC").size(),namePrefix);
+
+  /// add timestamp of MC file creation
+  if(aFileName.find("MC")!=std::string::npos){
     std::time_t t = std::time(nullptr);
     std::tm tm = *std::localtime(&t);
     std::stringstream ss;
-    ss<<std::put_time(&tm, "%d_%m_%Y_%H_%M");
+    ss<<std::put_time(&tm, "%Y-%M-%dT%H-%M");
     std::string timestamp = ss.str();
-    outputFileName = outputFileName.replace(outputFileName.find(".root"),-1,"_"+timestamp+".root");
+    auto index = outputFileName.rfind(".");
+    outputFileName = outputFileName.replace(index,1,"_"+timestamp+".");
   }
-  else{
-    std::cout<<KRED<<"File format unknown: "<<RST<<aFileName<<std::endl;
-    exit(1);
-  }
+
   ///remove miliseconds from timestamp
   auto index = outputFileName.find(".");
   if(index!=std::string::npos){
@@ -154,7 +154,6 @@ std::string makeOutputFileName(const std::string &dataFileNames, const std::stri
     outputFileName = outputFileName.replace(index,1,"-");
     index = outputFileName.find(":");
   }
-  
   return outputFileName;
 }
 } // namespace InputFileHelper

@@ -265,8 +265,9 @@ TH1F TrackSegment3D::getChargeProfile() const{
   // Maximum hit distance from 2D projection
   double radiusCut = 2; //parameter to be put into configuration
   
-  // Minimal length of projection to be considered. Short  projection introduce noisy floor to a charge profile
-  double minProjLength = 30;//parameter to be put into configuration
+  // Minimal length of projection to be considered. Short projections introduce noisy floor to the charge profile,
+  // which affects dE/dx fit.
+  double minProjLength = 35;//parameter to be put into configuration
 
   int nBins = 1024;
   double minX = -0.2*getLength();
@@ -281,7 +282,11 @@ TH1F TrackSegment3D::getChargeProfile() const{
     TGraphErrors aGraph = aTrack2DProjection.getChargeProfile(aRecHits, radiusCut);
     double projLength = aTrack2DProjection.getLength();
     double graphLength = aGraph.GetXaxis()->GetXmax() - aGraph.GetXaxis()->GetXmin();
-    if(graphLength*projLength<minProjLength) continue;
+
+    double segmentAlongStrip = getTangent().Dot(myGeometryPtr->GetStripPitchVector3D(strip_dir).Unit());
+    if(graphLength*projLength<minProjLength && std::abs(segmentAlongStrip)<0.2) {
+      continue;
+    }
     addProjection(hChargeProfile, aGraph);
   }
 
