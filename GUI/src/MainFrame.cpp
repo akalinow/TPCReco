@@ -83,9 +83,11 @@ void MainFrame::InitializeWindows() {
 	//Left column
 	AddHistoCanvas();
 
-    ///TEST
-	fWirePlotCanvas.reset(new TCanvas("fWirePlotCanvas", "3D detector", 400, 400));
-	myHistoManager.createWirePlotDriftCage3D(fWirePlotCanvas);
+    // Additional Canvas with 3D scene
+	if(myConfig.get<bool>("display.develMode")) {
+		fWirePlotCanvas.reset(new TCanvas("fWirePlotCanvas", "3D detector", 400, 400));
+		myHistoManager.createWirePlotDriftCage3D(fWirePlotCanvas);
+	}
 	///Middle column
 	int attach = 0;
 	attach = AddButtons(attach);

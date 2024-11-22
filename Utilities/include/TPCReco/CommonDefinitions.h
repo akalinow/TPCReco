@@ -5,6 +5,7 @@
 #include <iostream>
 #include <functional>
 #include <memory>
+#include <vector>
 
 enum class scale_type{
 		 raw,
@@ -62,6 +63,8 @@ definitions::projection_type get2DProjectionType(definitions::projection_type aS
 
 definitions::projection_type get1DProjectionType(int aStrip_dir);
 definitions::projection_type get1DProjectionType(definitions::projection_type aStrip_dir);
+
+std::vector<definitions::projection_type> getProjectionsList(); 
 
 enum pid_type{
   UNKNOWN=0,          //           <-- for backward compatibilty with data analyzed before 20 May 2022

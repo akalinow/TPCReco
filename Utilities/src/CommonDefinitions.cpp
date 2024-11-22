@@ -42,6 +42,11 @@ definitions::projection_type get1DProjectionType(definitions::projection_type aS
 }
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
+std::vector<definitions::projection_type> getProjectionsList(){
+  return {definitions::projection_type::DIR_U, definitions::projection_type::DIR_V, definitions::projection_type::DIR_W};
+}
+/////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
 std::ostream& operator<<(std::ostream& os, const event_type& et) {
     switch (et) {
     case event_type::EventSourceROOT:
