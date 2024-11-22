@@ -369,6 +369,13 @@ TrackSegment2D TrackBuilder::findSegment2D(int iDir, int iPeak) const{
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & segmentsXY){
+
+  ///FIXME code duplication
+  hTimeProjection.Reset();  
+  for(int iDir=definitions::projection_type::DIR_U;iDir<=definitions::projection_type::DIR_W;++iDir){
+    makeRecHits(iDir);   
+  }
+  /////////////////
   
   if(segmentsXY.size()%3 || (segmentsXY.size()/3)%4){
     std::cout<<KRED<<__FUNCTION__<<RST<<"Wrong number on segment endpoints: "
@@ -846,6 +853,9 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed){
   aTangent_flipped.SetTheta(-aTangent_flipped.Theta());
   a3DSeed.setBiasTangent(a3DSeed.getBias(), aTangent_flipped);
   double totalCharge_flipped = a3DSeed.getIntegratedCharge(a3DSeed.getLength());
+
+  std::cout<<"totalCharge: "<<totalCharge<<" totalCharge_flipped: "<<totalCharge_flipped<<std::endl;
+
 
   if(totalCharge_flipped<totalCharge){
     a3DSeed.setBiasTangent(a3DSeed.getBias(), aTangent);
