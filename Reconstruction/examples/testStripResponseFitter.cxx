@@ -2608,7 +2608,7 @@ int loop_Graw_Track3D_Display(const char *recoInputFile, // Track3D collection w
 
   const double beam_slope=0.0; // no beam tilt, use loose cuts
   const double beam_offset=0.0; // no beam offset, use loose cuts
-  const double beam_diameter=15.0; // [mm], use loose cuts
+  const double beam_diameter=20.0; // [mm], use loose cuts
   const double alphaMinCut=0.0; // [mm], no ID cuts
   const double alphaMaxCut=330.0; // [mm], no ID cuts
   const double carbonMinCut=0.0; // [mm], no ID cuts
@@ -2922,13 +2922,23 @@ int loop_Graw_Track3D_Display(const char *recoInputFile, // Track3D collection w
 #endif
     }
 
-    //////// apply fiducial cuts on initial input tracks similar to HIGS_analysis
+    //////// apply fiducial cuts on input tracks as in HIGS_analysis (important for CLICKED tracks used as reference)
     //
-    if(!cuts(aTrack)){
-      std::cout << __FUNCTION__ << KRED << ": Skipping event that failed HIGS_analysis quality cuts: run=" << runId << ", event=" << eventId
-		<< RST << std::endl << std::flush;
-      continue;
-    }
+    // if(!cuts(aTrack)){
+    //   std::cout << __FUNCTION__ << KRED << ": Skipping event that failed loose HIGS_analysis quality cuts: run=" << runId << ", event=" << eventId
+    // 		<< RST << std::endl << std::flush;
+    //   continue;
+    // }
+    /////// optionally SKIP Oxygen-18 or Oxygen-17 candidates (cuts tuned for 8.66 MeV)
+    //
+    // if(flag_2prong) {
+    //   if(nTracks==2 && !(coll.front().getLength()<45.0 && coll.front().getLength()>5 &&
+    // 			 coll.back().getLength()<45.0 && coll.back().getLength()>5)) {
+    // 	continue; // skip events  with too long alpha track
+    //   } else {
+    // 	std::cout << __FUNCTION__ << KRED << ": Accepted 2-prong event:  track1_len=" << coll.front().getLength() << " mm,   track2_len=" << coll.back().getLength() << " mm" << std::endl;
+    //   }
+    // }
 
     // load EventTPC to be displayed from the RAW file
     myEventSource->loadEventId(eventId);
