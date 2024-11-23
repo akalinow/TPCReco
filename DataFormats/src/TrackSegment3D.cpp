@@ -284,7 +284,9 @@ TH1F TrackSegment3D::getChargeProfile() const{
     double graphLength = aGraph.GetXaxis()->GetXmax() - aGraph.GetXaxis()->GetXmin();
 
     double segmentAlongStrip = getTangent().Dot(myGeometryPtr->GetStripPitchVector3D(strip_dir).Unit());
-    if(graphLength*projLength<minProjLength && std::abs(segmentAlongStrip)<0.2) {
+    ///do not consider short projections unless the track is very long
+    ///very long track is a track seed before shrinking to hits range
+    if(graphLength*projLength<minProjLength && std::abs(segmentAlongStrip)<0.2 && getLength()<200) {
       continue;
     }
     addProjection(hChargeProfile, aGraph);
@@ -296,6 +298,7 @@ TH1F TrackSegment3D::getChargeProfile() const{
   double scale = 1.0/hChargeProfile.GetBinWidth(1);
   hChargeProfile.Scale(scale); 
   double max = hChargeProfile.GetMaximum();
+  if(max<1) max = 1.0;
   hChargeProfile.Scale(1.0/max); 
   return hChargeProfile;
 }

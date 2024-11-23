@@ -209,12 +209,11 @@ void TrackBuilder::reconstruct(){
   }
   myZRange = getProjectionEdges(hTimeProjection);
   myTrack3DSeed = buildSegment3D();
-  if(myTrack3DSeed.getLength()<1) return;
   
   Track3D aTrackCandidate;
   aTrackCandidate.addSegment(myTrack3DSeed);
   aTrackCandidate = fitTrack3D(aTrackCandidate);
-  aTrackCandidate = fitEventHypothesis(aTrackCandidate);
+  if(aTrackCandidate.getLength()>20) aTrackCandidate = fitEventHypothesis(aTrackCandidate);
   myFittedTrack = aTrackCandidate;
 }
 /////////////////////////////////////////////////////////
@@ -441,6 +440,7 @@ double TrackBuilder::getLengthProjectionFromProfile(definitions::projection_type
    }
    double minPos = hProfile->GetBinCenter(firstBin);
    double maxPos = hProfile->GetBinCenter(lastBin);
+   if(std::abs(lastBin-firstBin)<1) return 0.0;
 
    auto aPol = new TF1("aFit", "[0]+[1]*x", minPos, maxPos);
    aPol->SetParameter(0, (minPos+maxPos)/2.0);
@@ -754,8 +754,7 @@ TVector3 TrackBuilder::getTangent(int iTrack2DSeed){
       aTangent.SetMagPhi(1.0, phi);
       if(aPitchDir*aTangent<0) phi += M_PI;
       */
-    }  
-         
+    }           
   TVector3 aTangent;
   aTangent.SetMagThetaPhi(1, theta, phi);
   return aTangent;                               
@@ -854,9 +853,6 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed){
   a3DSeed.setBiasTangent(a3DSeed.getBias(), aTangent_flipped);
   double totalCharge_flipped = a3DSeed.getIntegratedCharge(a3DSeed.getLength());
 
-  std::cout<<"totalCharge: "<<totalCharge<<" totalCharge_flipped: "<<totalCharge_flipped<<std::endl;
-
-
   if(totalCharge_flipped<totalCharge){
     a3DSeed.setBiasTangent(a3DSeed.getBias(), aTangent);
   }
@@ -909,6 +905,7 @@ Track3D TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
   fitTrack3DInSelectedDir(aFittedTrack, definitions::fit_type::BIAS_XY);
   fitTrack3DInSelectedDir(aFittedTrack, definitions::fit_type::BIAS_Z);
   aFittedTrack.shrinkToHits();
+
   return aFittedTrack;
 }
 /////////////////////////////////////////////////////////
