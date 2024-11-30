@@ -5,6 +5,7 @@
 #include "TPCReco/RunController.h"
 #include "TPCReco/ModuleExchangeSpace.h"
 #include "TPCReco/EventSourceGeant4.h"
+#include "../../MonteCarlo/Modules/DummyModule/DummyModule.h"
 
 EventSourceGeant4::EventSourceGeant4(const std::string & geometryFileName, std::shared_ptr<fwk::RunController> runController, unsigned long int nEvents):
       EventSourceBase(),
