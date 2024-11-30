@@ -11,11 +11,11 @@
         "defaultValue" : "configDump.json",
         "description" : "Name of the JSON file used for configuration dump\nType: string"
     },
-    "generatorConfig":{
+    "controllerConfigPath":{
         "group":"input",
         "type" : "string",
         "defaultValue" : "",
-        "description" : "Name of the JSON file with generator configuration.\nType: string"
+        "description" : "Path of the JSON file with runController configuration.\nType: string"
     },
     "dataFile":{
         "group": "input",
