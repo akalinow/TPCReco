@@ -5,6 +5,7 @@
 #include "TPCReco/RunController.h"
 #include "TPCReco/ModuleExchangeSpace.h"
 #include "TPCReco/EventSourceGeant4.h"
+// Workaround for runControler | Without module Factory does not see any module
 #include "../../MonteCarlo/Modules/DummyModule/DummyModule.h"
 
 EventSourceGeant4::EventSourceGeant4(const std::string & geometryFileName, std::shared_ptr<fwk::RunController> runController, unsigned long int nEvents):
@@ -12,7 +13,7 @@ EventSourceGeant4::EventSourceGeant4(const std::string & geometryFileName, std::
       myRunController(runController),
       nEvents(nEvents)
 {
-  loadGeometry(geometryFileName);
+  //loadGeometry(geometryFileName);
   events.reserve(nEvents);
   fillEventsArray();
 }
@@ -57,20 +58,23 @@ void EventSourceGeant4::loadGeometry(const std::string & fileName){
 }
 
 unsigned long int EventSourceGeant4::numberOfEvents() const {
-    // TODO: Implement the logic to return the number of events
     return nEvents;
 }
 
-void EventSourceGeant4::fillEvent(ModuleExchangeSpace &event){
-  myRunController -> RunSingle();
-  ModuleExchangeSpace currentEvent = myRunController -> GetCurrentEvent();
-  event = currentEvent;
-}
+//void EventSourceGeant4::fillEvent(ModuleExchangeSpace &event){
+//  myRunController -> GetCurrentEvent();
+//}
 void EventSourceGeant4::fillEventsArray() {
   for (unsigned long int i = 0; i < nEvents; ++i) {
-    ModuleExchangeSpace event;
-    fillEvent(event);
-    events[i] = event;
+    myRunController -> RunSingle();
+    ModuleExchangeSpace *currentEvent = myRunController -> GetCurrentEvent();
+    
+    auto simEvt = currentEvent -> simEvt;
+    auto eventInfo = currentEvent -> eventInfo;
+    auto track3D = currentEvent -> track3D;
+    //auto tpcPEvt = currentEvent -> tpcPEvt;
+    std::cout << "EventSourceGeant4::fillEventsArray()" << std::endl;
+    std::exit(0);
   }
 }
 

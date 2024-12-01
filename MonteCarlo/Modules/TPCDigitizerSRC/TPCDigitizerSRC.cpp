@@ -42,23 +42,24 @@ fwk::VModule::EResultFlag TPCDigitizerSRC::Init(boost::property_tree::ptree conf
 fwk::VModule::EResultFlag TPCDigitizerSRC::Process(ModuleExchangeSpace &event) {
     aEventInfo->SetEventId(eventID++);
     auto &currentSimEvent = event.simEvt;
-    //hacky way to provide shared_ptr<PEventTPC> to calculator
     currentPEventTPC = std::shared_ptr<PEventTPC>(&event.tpcPEvt,boost::null_deleter());
     currentPEventTPC->Clear();
-    //loop over tracks
+    // Loop over tracks
     for (auto &t: currentSimEvent.GetTracks()) {
-        //loop over hits
+        // Loop over hits
         for (auto &h: t.GetHits()) {
             auto pos = h.GetPosition();
             auto edep = h.GetEnergy();
             auto isIn = geometry->IsInsideActiveVolume(pos);
             h.SetInside(isIn);
-            if(isIn)
+            if (isIn)
                 calculator->addCharge(pos, edep * MeVToChargeScale, currentPEventTPC);
         }
     }
     currentPEventTPC->SetEventInfo(*aEventInfo);
     event.eventInfo = *aEventInfo;
+    event.tpcPEvt = *currentPEventTPC;
+    std::cout << "Event ID: " << aEventInfo->GetEventId() << std::endl;
     return fwk::VModule::eSuccess;
 }
 

@@ -46,6 +46,7 @@ namespace fwk {
     RunController::RunSingle() {
         fwk::VModule::EResultFlag res;
         for (const auto &m: fModuleSequence) {
+            std::cout << "Processing module: " << m << std::endl;
             if (!fTiming)
                 res = fModules[m]->Process(*fCurrentEvent);
             else
