@@ -93,18 +93,16 @@ private:
   /// Calculate length in XY plane from two projections using formula for length 
   /// in covariant coordinates: l = sqrt(g_ij * dx^i * dx^j)
   double getXYLength(definitions::projection_type dir1, 
-                     definitions::projection_type dir2,
-                     double l1, double l2) const;
+                     definitions::projection_type dir2) const;
 
   /// Calculate the 3D track azimuthal angle using ratios
   /// of the unsigned lengths of projections on strip directions
-  double getTangentPhiFromUnsignedLengths(double l_U, double l_V, double l_W) const;
+  double getTangentPhiFromUnsignedLengths() const;
 
   /// Solve equation for cos(phi) and sin(phi) for given two projection tangents
   /// use signed lengths.
   double getTangentPhiFromSignedLengths(definitions::projection_type dir1, 
-                                        definitions::projection_type dir2,
-                                        double l1, double l2) const;
+                                        definitions::projection_type dir2) const;
   
 
   /// Calculate length of track projection on strip direction.
@@ -178,8 +176,9 @@ private:
   double minStripProjLengthForVertTracks{20}; //parameter to be moved to configuration
   double minTimeProjLength{20};  //parameter to be moved to configuration 
   double epsilon{1E-2};          //parameter to be moved to configuration
-  double stripDiffusionMargin{2.0}; //parameter to be moved to configuration
-  double timeDiffusionMargin{4.0}; //parameter to be moved to configuration
+  double stripDiffusionMargin{-1.0}; //parameter to be moved to configuration
+  double timeDiffusionMargin{-1.0}; //parameter to be moved to configuration
+  double minTkLenghtWithHypothesis{30}; //parameter to be moved to configuration
 
 };
 #endif

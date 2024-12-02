@@ -44,7 +44,7 @@ dEdxFitter::dEdxFitter(std::string resources, double aPressure){
   carbon_alpha_model->SetParName(5, "carbonScale");
   carbon_alpha_model->SetParName(6, "commonScale");
 
-  carbon_alpha_model->SetParLimits(0, 1, 5.0);
+  carbon_alpha_model->SetParLimits(0, 1, 4.0);
   carbon_alpha_model->SetParLimits(6, 1E-4, 2E-2);
   
   carbon_alpha_model->FixParameter(4, 1);
@@ -229,6 +229,7 @@ TFitResult dEdxFitter::fitHypothesis(TF1 *fModel, TH1F & aHisto){
 
   double tkLength = aHisto.GetXaxis()->GetXmax()/1.2;
   maxVtxOffset = maxCarbonOffset;
+  //maxVtxOffset = 100;//TEST
   minAlphaOffset = std::max(0.0, maxAlphaOffset - tkLength);
   minCarbonOffset = std::max(0.0, maxCarbonOffset - tkLength);
   int fitCounter = 0;

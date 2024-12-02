@@ -9,7 +9,7 @@
 #include <TVector3.h>
 #include <TPolyLine3D.h>
 #include <TView.h>
-#include <TVirtualViewer3D.h>
+#include <TMarker3DBox.h>
 #include <TF1.h>
 #include <TLegend.h>
 #include <TText.h>
@@ -517,6 +517,14 @@ void HistoManager::drawTrack3D(TVirtualPad *aPad){
 			aSegment.getEnd().Z());    
 
      fObjClones.push_back(aPolyLine.DrawClone());
+
+     TMarker3DBox aTrackBox(aSegment.getStart().X(),
+                            aSegment.getStart().Y(),
+                            aSegment.getStart().Z(),
+                            4, 4, aSegment.getLength(),
+                            aSegment.getTangent().Theta()*180.0/M_PI,
+                            aSegment.getTangent().Phi()*180.0/M_PI);
+    aTrackBox.SetLineColor(iColor++);               
    }
     aPad->Update();
     aPad->Modified();
@@ -645,10 +653,12 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   if(aTrack3D.getLength()<1) return;
   
   TH1F hFrame("hFrame",";d [mm];charge/mm [arb. units]",2,-20, 20+aTrack3D.getLength());
+ 
   hFrame.GetYaxis()->SetTitleOffset(2.0);
   hFrame.SetMinimum(0.0);
 
   TH1F hChargeProfile = aTrack3D.getChargeProfile();
+  if(aTrack3D.getSegments().front().getPID()==pid_type::UNKNOWN)   hChargeProfile = aTrack3D.getSegments().front().getChargeProfile();
   hChargeProfile.SetLineWidth(2);
   hChargeProfile.SetLineColor(2);
   hChargeProfile.SetMarkerColor(2);
@@ -658,6 +668,16 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   hFrame.SetMaximum(1.2*hChargeProfile.GetMaximum());  
   hFrame.DrawCopy();
   hChargeProfile.DrawCopy("same HIST P");
+
+  if(aTrack3D.getSegments().front().getPID()==pid_type::UNKNOWN){
+    TLatex aLatex;
+    double x = 0.1;
+    double y = 0.91;
+    aLatex.DrawLatexNDC(x,y,TString::Format("Total length [mm]: %3.0f",aTrack3D.getLength()));
+    y = 0.95;
+    aLatex.DrawLatexNDC(x,y,TString::Format("Particle PID: UNKNOWN"));
+    return;
+  }
 
   TLegend *aLegend = new TLegend(0.7, 0.75, 0.95,0.95);
   
