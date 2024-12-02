@@ -86,7 +86,6 @@ TVector3 EventSourceMC::createVertex() const{
   double y = myRndm.Uniform(minY, maxY);
   double z = myRndm.Uniform(minZ, maxZ);
 
-
   TVector3 aVertex(x,y,z);
   return aVertex;
 }
@@ -100,29 +99,35 @@ TrackSegment3D EventSourceMC::createSegment(const TVector3 vertexPos, pid_type i
   double length = myRangeCalculator.getIonRangeMM(ion_id, energy);
 
   /// fixed test configurations for first few events 
-  if(myCurrentEntry==10){ 
+  if(myCurrentEntry==100){ 
     theta = 0.0;
     phi = 0.0;
   }
-  else if(myCurrentEntry==1){ 
+  else if(myCurrentEntry==100){ 
     theta = M_PI/2.0;
     phi = M_PI/2.0;
   }
-  else if(myCurrentEntry==2){
+  else if(myCurrentEntry==200){
     theta = M_PI/2.0;
     phi = M_PI/2.0 - M_PI/6.0;
   }
-  else if(myCurrentEntry==3){
+  else if(myCurrentEntry==300){
     theta = M_PI/2.0;
     phi = M_PI/2.0 - M_PI/3.0;
   }
-  else if(myCurrentEntry==4){
+  else if(myCurrentEntry==400){
     theta = M_PI/2.0;
     phi = M_PI/4.0;
   }
   else{
+    //minCosTheta = -0.02;
+    //maxCosTheta = 0.02;
     theta = TMath::ACos(myRndm.Uniform(minCosTheta, maxCosTheta));
     phi = myRndm.Uniform(minPhi, maxPhi);
+
+    //phi = 0.0;
+    //theta = M_PI/2.0;
+    //phi = 0.05;
   }
  
  //two prong event - take care of momentum conservation in CM
@@ -259,7 +264,7 @@ void EventSourceMC::generateSingleProng(pid_type ion_id){
   ///Assume energy conservation in CM frame for two prong events
   ///alpha takes 3/4 energy, C12 takes 1/4 energy
   ///assume energy in CMS from 1 to 7 MeV
-  double min_E_CM = 4*3/4.0, max_E_CM = 7.0*3/4.0;
+  double min_E_CM = 4*3/4.0, max_E_CM = 7*3/4.0;
   double energy_CM = myRndm.Uniform(min_E_CM, max_E_CM);
 
   TVector3 aVtx = createVertex();

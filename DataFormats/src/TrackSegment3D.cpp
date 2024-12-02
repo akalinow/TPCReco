@@ -267,7 +267,7 @@ TH1F TrackSegment3D::getChargeProfile() const{
   
   // Minimal length of projection to be considered. Short projections introduce noisy floor to the charge profile,
   // which affects dE/dx fit.
-  double minProjLength = 35;//parameter to be put into configuration
+  double minProjLength = 30;//parameter to be put into configuration
 
   int nBins = 1024;
   double minX = -0.2*getLength();
@@ -281,14 +281,28 @@ TH1F TrackSegment3D::getChargeProfile() const{
     const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
     TGraphErrors aGraph = aTrack2DProjection.getChargeProfile(aRecHits, radiusCut);
     double projLength = aTrack2DProjection.getLength();
-    double graphLength = aGraph.GetXaxis()->GetXmax() - aGraph.GetXaxis()->GetXmin();
+    //double graphLength = aGraph.GetXaxis()->GetXmax() - aGraph.GetXaxis()->GetXmin();
 
-    double segmentAlongStrip = getTangent().Dot(myGeometryPtr->GetStripPitchVector3D(strip_dir).Unit());
+    double segmentAlongStrip = getTangent().Dot(myGeometryPtr->GetStripPitchVector3D(strip_dir).Unit())/sin(getTangent().Theta());
     ///do not consider short projections unless the track is very long
     ///very long track is a track seed before shrinking to hits range
-    if(graphLength*projLength<minProjLength && std::abs(segmentAlongStrip)<0.2 && getLength()<200) {
+    /*
+    std::cout<<KGRN<<"strip_dir: "<<strip_dir<<" along strip: "<<segmentAlongStrip
+            <<" projLength: "<<projLength
+            <<" graphLength: "<<graphLength
+            <<"projLength*graphLength: "<<projLength*graphLength
+            <<RST<<std::endl;
+     */
+    if(projLength<minProjLength ||   //short projection 
+    (getLength()>200 && std::abs(cos(getTangent().Theta()))<0.95 && std::abs(segmentAlongStrip)<0.2)) { //initial track with "infinite" length. Horizontal track do not have well defined phi
       continue;
     }
+    
+    /*
+    if(graphLength*projLength<minProjLength && std::abs(segmentAlongStrip)<0.2 && getLength()<200) {
+      continue;
+    }*/
+    
     addProjection(hChargeProfile, aGraph);
   }
 

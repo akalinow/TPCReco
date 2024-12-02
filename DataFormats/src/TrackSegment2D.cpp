@@ -108,7 +108,7 @@ TGraphErrors TrackSegment2D::getChargeProfile(const Hit2DCollection & aRecHits, 
 double TrackSegment2D::getIntegratedCharge(double lambdaCut, const Hit2DCollection & aRecHits) const{
 
   double radiusCut = 4.0;//parameter to be put into configuration
-
+  
   double x = 0.0, y = 0.0;
   double totalCharge = 0.0;
   double distance = 0.0;
