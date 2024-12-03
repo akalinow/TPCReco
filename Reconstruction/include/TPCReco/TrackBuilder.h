@@ -77,7 +77,9 @@ private:
   /// Calculate track segment tangent in 3D
   /// There are requirements for minimal length of 2D projection to 
   /// provide reliable estimate of the bias
-  TVector3 getTangent(int iTrack2DSeed=-1);
+  /// if guiMode is true, then the tangent is calculated from signed lengths
+  /// as length from clicking have reliable orientation
+  TVector3 getTangent(int iTrack2DSeed=-1, bool guiMode=false);
 
   /// Calculate track segment bias in 2D. Bias is defined as 
   /// position of the maximum charge in time-strip projection.
@@ -123,7 +125,7 @@ private:
                                         definitions::projection_type auxProj) const;                             
 
 
-  TrackSegment3D buildSegment3D(int iTrackSeed=-1);
+  TrackSegment3D buildSegment3D(int iTrackSeed=-1, bool guiMode=false);
 
   /// Fit a dot - a very short cluster, 
   /// failing minimal length requirements for bias and tangent estimation

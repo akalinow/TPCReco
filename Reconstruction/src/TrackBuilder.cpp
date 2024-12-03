@@ -215,7 +215,6 @@ void TrackBuilder::reconstruct(){
   aTrackCandidate = fitTrack3D(aTrackCandidate);
   if(aTrackCandidate.getLength()>minTkLenghtWithHypothesis) aTrackCandidate = fitEventHypothesis(aTrackCandidate);
   myFittedTrack = aTrackCandidate;
-  //std::cout<<myFittedTrack<<std::endl;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -401,8 +400,7 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
       aSegment2D.setNAccumulatorHits(1);
       my2DSeeds[iDir].push_back(aSegment2D);
     }
-
-    TrackSegment3D a3DSeed = buildSegment3D(iSegment);
+    TrackSegment3D a3DSeed = buildSegment3D(iSegment, true);
     double startTime = my2DSeeds.at(definitions::projection_type::DIR_U).at(iSegment).getStart().X();    
     double endTime = my2DSeeds.at(definitions::projection_type::DIR_U).at(iSegment).getEnd().X();
     double lambdaStartTime = a3DSeed.getLambdaAtZ(startTime);
@@ -461,14 +459,12 @@ double TrackBuilder::getSignedLengthProjection(definitions::projection_type iPro
 
    if(iTrack2DSeed>=0 and iTrack2DSeed<int(my2DSeeds[auxProj].size())){
      if(iProj==definitions::projection_type::DIR_TIME){
-       double value = std::abs(my2DSeeds[auxProj].at(iTrack2DSeed).getEnd().X() - my2DSeeds[auxProj].at(iTrack2DSeed).getStart().X());
-       int sign = my2DSeeds[auxProj].at(iTrack2DSeed).getEnd().X()>my2DSeeds[auxProj].at(iTrack2DSeed).getStart().X()? 1:-1;   
-      return sign*value;
+       double value = my2DSeeds[auxProj].at(iTrack2DSeed).getEnd().X() - my2DSeeds[auxProj].at(iTrack2DSeed).getStart().X();
+      return value;
      }
      else {
-      double value = std::abs(my2DSeeds[auxProj].at(iTrack2DSeed).getEnd().Y() - my2DSeeds[auxProj].at(iTrack2DSeed).getStart().Y());
-      int sign = my2DSeeds[auxProj].at(iTrack2DSeed).getEnd().Y()>my2DSeeds[auxProj].at(iTrack2DSeed).getStart().Y()? 1:-1;
-      return sign*value;
+      double value = my2DSeeds[auxProj].at(iTrack2DSeed).getEnd().Y() - my2DSeeds[auxProj].at(iTrack2DSeed).getStart().Y();
+      return value;
      }
   }
   else if(iTrack2DSeed>=0) return 0.0;
@@ -705,7 +701,7 @@ double TrackBuilder::getTangentPhiFromSignedLengths(definitions::projection_type
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TVector3 TrackBuilder::getTangent(int iTrack2DSeed){
+TVector3 TrackBuilder::getTangent(int iTrack2DSeed, bool guiMode){
     
   ///Mean values of XY lengths and tangent angles
   double weight{0}, weightSum{1};
@@ -730,7 +726,8 @@ TVector3 TrackBuilder::getTangent(int iTrack2DSeed){
     l_XY_mean /= weightSum;
 
     double theta = M_PI/2.0 - atan2(lengths[definitions::projection_type::DIR_TIME], l_XY_mean);
-    phi = getTangentPhiFromUnsignedLengths();
+    if(guiMode) phi = aTmpVector.Phi();
+    else phi = getTangentPhiFromUnsignedLengths();
                                       
   TVector3 aTangent;
   aTangent.SetMagThetaPhi(1, theta, phi);
@@ -738,28 +735,30 @@ TVector3 TrackBuilder::getTangent(int iTrack2DSeed){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed){
+TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed, bool guiMode){
 
   getSignedLengthsAndMaxPos(iTrack2DSeed);
 
   TVector3 aBias = getBias(iTrack2DSeed);
-  TVector3 aTangent = getTangent(iTrack2DSeed);
+  TVector3 aTangent = getTangent(iTrack2DSeed, guiMode);
 
   TrackSegment3D a3DSeed;
   a3DSeed.setGeometry(myGeometryPtr); 
   a3DSeed.setBiasTangent(aBias, aTangent);
   a3DSeed.setRecHits(myRecHits);
 
+  if(guiMode) return a3DSeed;
+
   ///FIX ME Stupid work around for track direction ambiguity
   double totalCharge = a3DSeed.getIntegratedCharge(a3DSeed.getLength());
 
   TVector3 aTangent_flipped = aTangent;
   aTangent_flipped.SetTheta(-aTangent_flipped.Theta());
-  a3DSeed.setBiasTangent(a3DSeed.getBias(), aTangent_flipped);
+  a3DSeed.setBiasTangent(aBias, aTangent_flipped);
   double totalCharge_flipped = a3DSeed.getIntegratedCharge(a3DSeed.getLength());
 
   if(totalCharge_flipped<totalCharge){
-    a3DSeed.setBiasTangent(a3DSeed.getBias(), aTangent);
+    a3DSeed.setBiasTangent(aBias, aTangent);
   }
   ///////////////////////////////////////////////////////////
 
