@@ -229,7 +229,6 @@ TFitResult dEdxFitter::fitHypothesis(TF1 *fModel, TH1F & aHisto){
 
   double tkLength = aHisto.GetXaxis()->GetXmax()/1.2;
   maxVtxOffset = maxCarbonOffset;
-  //maxVtxOffset = 100;//TEST
   minAlphaOffset = std::max(0.0, maxAlphaOffset - tkLength);
   minCarbonOffset = std::max(0.0, maxCarbonOffset - tkLength);
   int fitCounter = 0;
