@@ -11,6 +11,7 @@
 #include <TH2Poly.h>
 #include <TGraph.h>
 #include <TVector2.h>
+#include <TTree.h>
 
 #include "TPCReco/GeometryTPC.h"
 #include "TPCReco/IonRangeCalculator.h"
@@ -22,6 +23,7 @@
 class TH1F;
 class TH2F;
 class Track3D;
+class TTree;
 
 class HIGGS_analysis{
 
@@ -59,5 +61,14 @@ class HIGGS_analysis{
   TVector3 photonUnitVec_DET_LAB; // dimensionless, LAB reference frame, detector coordinate system
   float photonEnergyInMeV_LAB{0};  // MeV
   bool useNominalPhotonEnergyForBoost{false}; // true=(use nominal photon energy for LAB->CMS boost) / false=(use reconstructed event-by-event photon energy for LAB->CMS boost)
+
+  ///////// DEBUG - special Reco file with selected events only
+  //
+  TFile *myDumpRecoFile{NULL};
+  TTree *myDumpTree{NULL};
+  Track3D *myDumpTrack{NULL};
+  eventraw::EventInfo *myDumpEventInfo{NULL};
+  //
+  ///////// DEBUG - special Reco file with selected events only
 };
 #endif

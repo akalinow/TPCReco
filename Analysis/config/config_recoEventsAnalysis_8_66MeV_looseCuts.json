@@ -1,0 +1,29 @@
+{
+    "input": {
+        "dataFile":         "",
+        "geometryFile":     "./geometry_ELITPC_130mbar_1372Vdrift_25MHz.dat"
+    },
+    "conditions": {
+        "pressure":         130.0,
+        "temperature":      293.15
+    },
+    "beamParameters": {
+        "energy":           8.66
+    },
+    "recoAnalysis": {
+        "noTree":           false,
+        "nominalBoost":     true,
+        "beamOffset":       0,
+        "beamSlope":        0,
+        "beamDiameter":     20,
+        "beamDir":          -1,
+        "alphaMinCut":      0.0,
+        "alphaMaxCut":      300.0,
+        "carbonMinCut":     0.0,
+        "carbonMaxCut":     300.0,
+        "alphaScaleCorr":   1,
+        "alphaOffsetCorr":  0,
+        "carbonScaleCorr":  1,
+        "carbonOffsetCorr": 0
+    }
+}

@@ -21,13 +21,13 @@
         "group": "input",
         "type": "string",
         "defaultValue": "TPCData",
-        "description": "Name of a TTree containing event data, read by EventSourceROOT. \nType: string"
+        "description": "Name of a TTree containing event data, read by EventSourceROOT.\nType: string"
     },
     "readNEvents":{
         "group": "input",
         "type": "int",
         "defaultValue": -1,
-        "description": "Number of events to read from input file; -1 means all events. \nType: int"
+        "description": "Number of events to read from input file; -1 means all events.\nType: int"
     },
     "geometryFile":{
         "group": "input",
@@ -195,13 +195,13 @@
         "group": "conditions",
         "type" : "float",
         "defaultValue": 190.0,
-        "description": "Gas pressure in chamber [mbar]=[hPa]. \nType: float"
+        "description": "Gas pressure in chamber [mbar]=[hPa].\nType: float"
     },
     "samplingRate":{
         "group": "conditions",
         "type" : "float",
         "defaultValue": 25.0,
-        "description": "Signal sampling rate [MHz]. \nType: float"
+        "description": "Signal sampling rate [MHz].\nType: float"
     },
     "temperature":{
         "group": "conditions",
@@ -267,25 +267,25 @@
         "group":"recoAnalysis",
         "type" : "bool",
         "defaultValue" : false,
-        "description" : "Flag to enable saving a TTree with some track properties. \nType: bool"
+        "description" : "Flag to enable saving a TTree with some track properties.\nType: bool"
     },
     "nominalBoost":{
         "group":"recoAnalysis",
         "type" : "bool",
         "defaultValue" : true,
-        "description" : "Flag to enable nominal beam energy when calculating boost to CM.\nType: bool"
+        "description" : "Flag to enable nominal beam energy when calculating boost to CMS.\nType: bool"
     },
     "beamOffset":{
         "group":"recoAnalysis",
         "type" : "float",
         "defaultValue" : 0.0,
-        "description" : "Beam offset in X direction [mm].\nType: float"
+        "description" : "Beam offset [mm] in Y_DET direction at X_DET=0, where beam axis: Y_DET = beam_slope*X_DET + beam_offset.\nType: float"
     },
     "beamSlope":{
         "group":"recoAnalysis",
         "type" : "float",
         "defaultValue" : 0.0,
-        "description" : "Beam slope in X direction.\nType: float"
+        "description" : "Beam slope (=dY_DET/dX_DET), where beam axis: Y_DET = beam_slope*X_DET + beam_offset.\nType: float"
     },
     "beamDiameter":{
         "group":"recoAnalysis",
@@ -297,31 +297,31 @@
         "group":"recoAnalysis",
         "type" : "int",
         "defaultValue" : -1.0,
-        "description" : "Beam direction. Positive values means beam along +X, negative -X.\nType: int"
+        "description" : "Incoming beam direction. Positive values denote beam along +X_DET, negative -X_DET.\nType: int"
     },
     "alphaMinCut":{
         "group":"recoAnalysis",
         "type" : "float",
         "defaultValue" : 20.0,
-        "description" : "Minimal alpha track length. [mm]\nType: float"
+        "description" : "Minimal alpha track length [mm].\nType: float"
     },
     "alphaMaxCut":{
         "group":"recoAnalysis",
         "type" : "float",
         "defaultValue" : 150.0,
-        "description" : "Maximal alpha track length. [mm]\nType: float"
+        "description" : "Maximal alpha track length [mm].\nType: float"
     },
     "carbonMinCut":{
         "group":"recoAnalysis",
         "type" : "float",
         "defaultValue" : 6.0,
-        "description" : "Minimal carbon track length. [mm]\nType: float"
+        "description" : "Minimal carbon track length [mm].\nType: float"
     },
     "carbonMaxCut":{
         "group":"recoAnalysis",
         "type" : "float",
         "defaultValue" : 30.0,
-        "description" : "Maximal carbon track length. [mm]\nType: float"
+        "description" : "Maximal carbon track length [mm].\nType: float"
     },
     "alphaScaleCorr":{
         "group":"recoAnalysis",
@@ -333,7 +333,7 @@
         "group":"recoAnalysis",
         "type" : "float",
         "defaultValue" : 5.5,
-        "description" : "Additive alpha track length correction. [mm]\nType: float"
+        "description" : "Additive alpha track length correction [mm].\nType: float"
     },
     "carbonScaleCorr":{
         "group":"recoAnalysis",
@@ -345,6 +345,17 @@
         "group":"recoAnalysis",
         "type" : "float",
         "defaultValue" : 0.0,
-        "description" : "Additive carbon track length correction. [mm]\nType: float"
+        "description" : "Additive carbon track length correction [mm].\nType: float"
+    },
+    "cutO16":{
+        "group":"recoAnalysis",
+        "type" : "ptree",
+        "defaultValue" : {
+	    "enable": true,
+	    "no-dump": true,
+            "ellipseCenterEkinCMS": [ 0.85, 0.48 ],
+	    "ellipseRadiusEkinCMS": [ 0.25, 0.15 ]
+	},
+        "description" : "NOT IMPLEMENTED YET! Ptree to enable special plots, Track3D dumping for events passing 2-prong Oxygen-16 elliptic cut in Ekin_CMS(Alpha) x Ekin_CMS(Carbon) phase space.\nType: ptree"
     }
 }

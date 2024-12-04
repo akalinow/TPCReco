@@ -74,7 +74,8 @@ typedef struct {Float_t eventId, frameId,
 int makeTrackTree(boost::property_tree::ptree & aConfig) {
 		  
   std::shared_ptr<EventSourceBase> myEventSource = EventSourceFactory::makeEventSourceObject(aConfig);
-  
+  myEventSource->getEventFilter().setConditions(aConfig); // initialize RAW event pre-filtering
+
   std::string dataFileName = aConfig.get("input.dataFile","");
   std::string rootFileName = InputFileHelper::makeOutputFileName(dataFileName,"TrackTree");
   TFile outputROOTFile(rootFileName.c_str(),"RECREATE");
@@ -154,6 +155,11 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
       std::cout<<KBLU<<"Processed: "<<int(100*(double)iEntry/nEntries)<<" % events"<<RST<<std::endl;
     }
     myEventSource->loadFileEntry(iEntry);
+
+    // pre-filtering
+    if(myEventSource->getEventFilter().isEnabled() &&
+       !myEventSource->getEventFilter().pass(*myEventSource->getCurrentEvent())) continue; // skip this event
+
     *myEventInfo = myEventSource->getCurrentEvent()->GetEventInfo();
     if(!iEntry || develMode) { // initialize only once per session in non-debug mode and every time in debug mode
       myEventSource->getCurrentEvent()->setHitFilterConfig(filter_type::threshold, hitConfig);

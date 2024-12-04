@@ -1,0 +1,9 @@
+{
+    "pedestal": {
+        "remove": true,
+        "minPedestalCell": 0,
+        "maxPedestalCell": 511,
+        "minSignalCell": 0,
+        "maxSignalCell": 511
+    }
+}
