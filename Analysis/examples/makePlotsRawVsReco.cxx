@@ -113,6 +113,7 @@ int makePlotsRawVsReco(std::string reco_tree_file_name, std::string raw_tree_fil
   raw_tree_file->cd();
   raw_signal_tree->BuildIndex("runId", "eventId");
 
+  TFile *file = new TFile("Example_correlation.root", "RECREATE");
   TCanvas *window = new TCanvas("window", "", 800, 600);
   set_global_style();
   TH1D *totalCharge_all = new TH1D("totalCharge_all", "Integrated charge (RAW all);Integrated charge [ADC units]", 100,-10e5, 4e6);
@@ -396,6 +397,7 @@ int makePlotsRawVsReco(std::string reco_tree_file_name, std::string raw_tree_fil
   legend->AddEntry(totalCharge_3prong, "Reco 3-prong", "l");
   legend->Draw("same");
   window->Print("Example_correlation.pdf");
+  file->cd(); window->Write();
 
   raw_signal_tree->Draw("maxCharge>>maxCharge_all");
   set_hist_style(maxCharge_all, "Maximal charge [ADC units]", "Events/bin", 0, "Maximal charge distribution", 1);
@@ -416,6 +418,7 @@ int makePlotsRawVsReco(std::string reco_tree_file_name, std::string raw_tree_fil
   legend->AddEntry(maxCharge_3prong, "Reco 3-prong", "l");
   legend->Draw("same");
   window->Print("Example_correlation.pdf");
+  file->cd(); window->Write();
 
   set_hist2D_style(totalCharge_vs_maxCharge_1prong, "Integrated charge [ADC units]", "Maximal charge [ADC units]", "Events/bin", color_1prong, "Maximal charge vs integrated charge");
   totalCharge_vs_maxCharge_1prong->Draw("box"); // "box"
@@ -430,21 +433,25 @@ int makePlotsRawVsReco(std::string reco_tree_file_name, std::string raw_tree_fil
   legend->AddEntry(totalCharge_3prong, "Reco 3-prong", "l");
   legend->Draw("same");
   window->Print("Example_correlation.pdf");
+  file->cd(); window->Write();
 
   set_hist2D_style(totalCharge_vs_length_1prong, "Track length [mm]", "Integrated charge [ADC units]", "Events/bin", color_1prong, "Integrated charge vs track length (Reco 1-prong)");
   totalCharge_vs_length_1prong->Draw("colz");
   gPad->SetRightMargin(0.15);
   window->Print("Example_correlation.pdf");
+  file->cd(); window->Write();
 
   set_hist2D_style(totalCharge_vs_length_2prong, "#alpha+C length [mm]", "Integrated charge [ADC units]", "Events/bin", color_2prong, "Integrated charge vs #alpha+C length (Reco 2-prong)");
   totalCharge_vs_length_2prong->Draw("colz");
   gPad->SetRightMargin(0.15);
   window->Print("Example_correlation.pdf");
+  file->cd(); window->Write();
 
   set_hist2D_style(totalCharge_vs_length_3prong, "#alpha_{1}+#alpha_{2}+#alpha_{3} length [mm]", "Integrated charge [ADC units]", "Events/bin", color_2prong, "Integrated charge vs #alpha_{1}+#alpha_{2}+#alpha_{3} length (Reco 3-prong)");
   totalCharge_vs_length_3prong->Draw("colz");
   gPad->SetRightMargin(0.15);
   window->Print("Example_correlation.pdf");
+  file->cd(); window->Write();
 
   set_hist2D_style(totalCharge_vs_length_1prong, "Track length sum [mm]", "Integrated charge [ADC units]", "Events/bin", color_1prong, "Integrated charge vs track length sum");
   totalCharge_vs_length_1prong->Draw("box"); // "box"
@@ -459,6 +466,7 @@ int makePlotsRawVsReco(std::string reco_tree_file_name, std::string raw_tree_fil
   legend->AddEntry(totalCharge_vs_length_3prong, "Reco 3-prong", "l");
   legend->Draw("same");
   window->Print("Example_correlation.pdf");
+  file->cd(); window->Write();
 
   raw_signal_tree->Draw("nHits>>nHits_all");
   set_hist_style(nHits_all, "Number of hits", "Events/bin", 0, "Number of hits distribution", 1);
@@ -479,6 +487,7 @@ int makePlotsRawVsReco(std::string reco_tree_file_name, std::string raw_tree_fil
   legend->AddEntry(nHits_3prong, "Reco 3-prong", "l");
   legend->Draw("same");
   window->Print("Example_correlation.pdf");
+  file->cd(); window->Write();
 
   raw_signal_tree->Draw("(sqrt(pow(horizontalWidthPerDir[0],2)+pow(verticalWidthPerDir[0],2))+"
 			"sqrt(pow(horizontalWidthPerDir[1],2)+pow(verticalWidthPerDir[1],2))+"
@@ -501,6 +510,7 @@ int makePlotsRawVsReco(std::string reco_tree_file_name, std::string raw_tree_fil
   legend->AddEntry(pseudoLength_3prong, "Reco 3-prong", "l");
   legend->Draw("same");
   window->Print("Example_correlation.pdf");
+  file->cd(); window->Write();
 
   raw_signal_tree->Draw("(totalChargePerDir[0]/sqrt(pow(horizontalWidthPerDir[0],2)+pow(verticalWidthPerDir[0],2))+"
 			"totalChargePerDir[1]/sqrt(pow(horizontalWidthPerDir[1],2)+pow(verticalWidthPerDir[1],2))+"
@@ -523,6 +533,7 @@ int makePlotsRawVsReco(std::string reco_tree_file_name, std::string raw_tree_fil
   legend->AddEntry(pseudoDensity_3prong, "Reco 3-prong", "l");
   legend->Draw("same");
   window->Print("Example_correlation.pdf");
+  file->cd(); window->Write();
 
   raw_signal_tree->Draw("totalCharge/maxCharge>>chargeRatio_all");
   set_hist_style(chargeRatio_all, "Ratio totalCharge/maxCharge", "Events/bin", 0, "Ratio totalCharge/maxCharge distribution", 1);
@@ -543,6 +554,7 @@ int makePlotsRawVsReco(std::string reco_tree_file_name, std::string raw_tree_fil
   legend->AddEntry(chargeRatio_3prong, "Reco 3-prong", "l");
   legend->Draw("same");
   window->Print("Example_correlation.pdf");
+  file->cd(); window->Write();
 
   raw_signal_tree->Draw("maxCharge/nHits>>reducedMaxCharge_all");
   set_hist_style(reducedMaxCharge_all, "Ratio maxCharge/nHits", "Events/bin", 0, "Ratio maxCharge/nHits distribution", 1);
@@ -563,6 +575,7 @@ int makePlotsRawVsReco(std::string reco_tree_file_name, std::string raw_tree_fil
   legend->AddEntry(reducedMaxCharge_3prong, "Reco 3-prong", "l");
   legend->Draw("same");
   window->Print("Example_correlation.pdf");
+  file->cd(); window->Write();
 
   raw_signal_tree->Draw("totalCharge/nHits>>reducedTotalCharge_all");
   set_hist_style(reducedTotalCharge_all, "Ratio totalCharge/nHits", "Events/bin", 0, "Ratio totalCharge/nHits distribution", 1);
@@ -583,6 +596,7 @@ int makePlotsRawVsReco(std::string reco_tree_file_name, std::string raw_tree_fil
   legend->AddEntry(reducedTotalCharge_3prong, "Reco 3-prong", "l");
   legend->Draw("same");
   window->Print("Example_correlation.pdf");
+  file->cd(); window->Write();
 
   for(auto ihalf=0; ihalf<1; ihalf++) {
     raw_signal_tree->Draw(Form("(horizontalChargePerDirHalf[0][%d]+horizontalChargePerDirHalf[1][%d]+horizontalChargePerDirHalf[2][%d])/"
@@ -609,6 +623,7 @@ int makePlotsRawVsReco(std::string reco_tree_file_name, std::string raw_tree_fil
   legend->AddEntry(horizontalChargeAsymmetry_3prong, "Reco 3-prong", "l");
   legend->Draw("same");
   window->Print("Example_correlation.pdf");
+  file->cd(); window->Write();
 
   for(auto ihalf=0; ihalf<1; ihalf++) {
     raw_signal_tree->Draw(Form("(verticalChargePerDirHalf[0][%d]+verticalChargePerDirHalf[1][%d]+verticalChargePerDirHalf[2][%d])/"
@@ -635,6 +650,7 @@ int makePlotsRawVsReco(std::string reco_tree_file_name, std::string raw_tree_fil
   legend->AddEntry(verticalChargeAsymmetry_3prong, "Reco 3-prong", "l");
   legend->Draw("same");
   window->Print("Example_correlation.pdf");
+  file->cd(); window->Write();
 
   set_hist2D_style(horizontalChargeAsymmetry_vs_verticalChargeAsymmetry_1prong, "Vertical Q^{MAX}_{HALF} / pseudo-length [ADC units / mm]", "Horizontal Q^{MAX}_{HALF} / pseudo-length [ADC units / mm]", "Events/bin", color_1prong, "Horizontal vs Vertical charge asymmetry");
   horizontalChargeAsymmetry_vs_verticalChargeAsymmetry_1prong->Draw("box"); // "box"
@@ -649,6 +665,7 @@ int makePlotsRawVsReco(std::string reco_tree_file_name, std::string raw_tree_fil
   legend->AddEntry(horizontalChargeAsymmetry_vs_verticalChargeAsymmetry_3prong, "Reco 3-prong", "l");
   legend->Draw("same");
   window->Print("Example_correlation.pdf");
+  file->cd(); window->Write();
 
   set_hist2D_style(maxCharge_vs_nHits_1prong, "Maximal charge [ADC units]", "Number of hits", "Events/bin", color_1prong, "Number of hits vs maximal charge");
   maxCharge_vs_nHits_1prong->Draw("box"); // "box"
@@ -663,6 +680,7 @@ int makePlotsRawVsReco(std::string reco_tree_file_name, std::string raw_tree_fil
   legend->AddEntry(maxCharge_vs_nHits_3prong, "Reco 3-prong", "l");
   legend->Draw("same");
   window->Print("Example_correlation.pdf");
+  file->cd(); window->Write();
 
   set_hist2D_style(pseudoDensity_vs_nHits_1prong, "Pseudo charge density [ADC units / mm]", "Number of hits", "Events/bin", color_1prong, "Number of hits vs pseudo charge density");
   pseudoDensity_vs_nHits_1prong->Draw("box"); // "box"
@@ -677,6 +695,7 @@ int makePlotsRawVsReco(std::string reco_tree_file_name, std::string raw_tree_fil
   legend->AddEntry(pseudoDensity_vs_nHits_3prong, "Reco 3-prong", "l");
   legend->Draw("same");
   window->Print("Example_correlation.pdf");
+  file->cd(); window->Write();
 
   set_hist2D_style(pseudoDensity_vs_chargeRatio_1prong, "Pseudo charge density [ADC units / mm]", "Ratio totalCharge/maxCharge", "Events/bin", color_1prong, "Number of hits vs pseudo charge density");
   pseudoDensity_vs_chargeRatio_1prong->Draw("box"); // "box"
@@ -691,7 +710,9 @@ int makePlotsRawVsReco(std::string reco_tree_file_name, std::string raw_tree_fil
   legend->AddEntry(pseudoDensity_vs_chargeRatio_3prong, "Reco 3-prong", "l");
   legend->Draw("same");
   window->Print("Example_correlation.pdf");
+  file->cd(); window->Write();
 
   window->Print("Example_correlation.pdf]");
+  file->Close();
   return 0;
 }

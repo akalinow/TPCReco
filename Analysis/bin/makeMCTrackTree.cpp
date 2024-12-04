@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <vector>
+#include <ctime>
 
 #include <TFile.h>
 #include <TTree.h>
@@ -24,42 +25,7 @@
 #include "TPCReco/colorText.h"
 
 #include "TPCReco/EventTPC.h"
-/////////////////////////////////////
-/////////////////////////////////////
-std::string createROOTFileName(const  std::string & grawFileName){
 
-  std::string rootFileName = grawFileName;
-  std::string::size_type index = rootFileName.find(",");
-  if(index!=std::string::npos){
-    rootFileName = grawFileName.substr(0,index);
-  }
-  index = rootFileName.rfind("/");
-  if(index!=std::string::npos){
-    rootFileName = rootFileName.substr(index+1,-1);
-  }
-  if(rootFileName.find("CoBo_ALL_AsAd_ALL")!=std::string::npos){
-    rootFileName = rootFileName.replace(0,std::string("CoBo_ALL_AsAd_ALL").size(),"TrackTree");
-  }
-  else if(rootFileName.find("CoBo0_AsAd")!=std::string::npos){
-    rootFileName = rootFileName.replace(0,std::string("CoBo0_AsAd").size()+1,"TrackTree");
-  }
-  else if(rootFileName.find("EventTPC")!=std::string::npos){
-    rootFileName = rootFileName.replace(0,std::string("EventTPC").size(),"TrackTree");
-  }
-  else if(rootFileName.find("MC")!=std::string::npos){
-    rootFileName = "TrackTree_"+rootFileName;
-  }
-  else{
-    std::cout<<KRED<<"File format unknown: "<<RST<<rootFileName<<std::endl;
-    exit(1);
-  }
-  index = rootFileName.rfind("graw");
-  if(index!=std::string::npos){
-    rootFileName = rootFileName.replace(index,-1,"root");
-  }
-  
-  return rootFileName;
-}
 /////////////////////////////////////
 /////////////////////////////////////
 int makeTrackTree(boost::property_tree::ptree & aConfig);
@@ -87,19 +53,17 @@ int main(int argc, char **argv){
 // Define some simple structures
 typedef struct {Float_t eventId, frameId,
     eventTypeGen,
-    alphaRangeGen,
-    alphaEnergyGen,
-    chargeGen,
-    cosThetaGen, phiGen,
+    alphaRangeGen, alphaEnergyGen,
+    carbonRangeGen, carbonEnergyGen,
+    chargeGen, cosThetaGen, phiGen,
+    vtxGenX, vtxGenY, vtxGenZ,
     ///
     eventTypeReco,
-    alphaRangeReco,
-    alphaEnergyReco,
-    carbonRangeReco,
-    carbonEnergyReco,
-    chargeReco,
-    cosThetaReco, phiReco,
-    lineFitChi2, dEdxFitChi2, dEdxFitSigma;
+    alphaRangeReco,alphaEnergyReco,
+    carbonRangeReco, carbonEnergyReco,
+    chargeReco, cosThetaReco, phiReco,
+    vtxRecoX, vtxRecoY, vtxRecoZ,
+    lineFitLoss, dEdxFitLoss, dEdxFitSigma;
     } TrackData;
 /////////////////////////
 int makeTrackTree(boost::property_tree::ptree & aConfig) {
@@ -112,16 +76,23 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   }
 
   std::string dataFileName = aConfig.get("input.dataFile","");
-  std::string rootFileName = createROOTFileName(dataFileName);
+  std::string rootFileName = InputFileHelper::makeOutputFileName(dataFileName,"MCTrackTree");
   TFile outputROOTFile(rootFileName.c_str(),"RECREATE");
   TTree *tree = new TTree("trackTree", "Track tree");
   TrackData track_data;
   std::string leafNames = "";
   leafNames += "eventId:frameId:";
-  leafNames += "eventTypeGen:alphaRangeGen:alphaEnergyGen:chargeGen:cosThetaGen:phiGen:";  
-  leafNames += "eventTypeReco:alphaRangeReco:alphaEnergyReco:carbonRangeReco:carbonEnergyReco:";
+  leafNames += "eventTypeGen:";
+  leafNames += "alphaRangeGen:alphaEnergyGen:";
+  leafNames += "carbonRangeGen:carbonEnergyGen:";
+  leafNames += "chargeGen:cosThetaGen:phiGen:";
+  leafNames += "vtxGenX:vtxGenY:vtxGenZ:";
+  leafNames += "eventTypeReco:";
+  leafNames += "alphaRangeReco:alphaEnergyReco:";
+  leafNames += "carbonRangeReco:carbonEnergyReco:";
   leafNames += "chargeReco:cosThetaReco:phiReco:";
-  leafNames += "lineFitChi2:dEdxFitChi2:dEdxFitSigma";
+  leafNames += "vtxRecoX:vtxRecoY:vtxRecoZ:";
+  leafNames += "lineFitLoss:dEdxFitLoss:dEdxFitSigma";
   tree->Branch("track",&track_data,leafNames.c_str());
   
   std::string geometryFileName = aConfig.get("input.geometryFile","");
@@ -146,9 +117,10 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   std::cout<<KBLU<<"File with "<<RST<<myEventSource->numberOfEntries()<<" frames loaded."<<std::endl;
 
   //Event loop
-  unsigned int nEntries = myEventSource->numberOfEntries();
-  nEntries = 10; 
-  for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
+  int nEntries = aConfig.get<int>("input.readNEvents");
+  if(nEntries<0 ) nEntries = 0;
+ 
+  for(int iEntry=0;iEntry<nEntries;++iEntry){
     if(nEntries>10 && iEntry%(nEntries/10)==0){
       std::cout<<KBLU<<"Processed: "<<int(100*(double)iEntry/nEntries)<<" % events"<<RST<<std::endl;
     }
@@ -158,19 +130,32 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     myTkBuilder.reconstruct();
 
     int eventId = myEventSource->getCurrentEvent()->GetEventInfo().GetEventId();
-    const Track3D & aTrack3DGen = myEventSource->getGeneratedTrack();
+    const Track3D & aTrack3DGenAlpha = myEventSource->getGeneratedTrack(0);
+    const Track3D & aTrack3DGenCarbon = myEventSource->getGeneratedTrack(1);
     const Track3D & aTrack3DReco = myTkBuilder.getTrack3D(0);
 
     track_data.frameId = iEntry;
     track_data.eventId = eventId;
 
     track_data.eventTypeGen = myEventSource->getGeneratedEventType(); 
-    track_data.alphaRangeGen =  aTrack3DGen.getSegments().front().getLength();    
+    track_data.alphaRangeGen =  aTrack3DGenAlpha.getSegments().front().getLength();    
     track_data.alphaEnergyGen = track_data.alphaRangeGen>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA, track_data.alphaRangeGen):0.0;
-    track_data.chargeGen = track_data.alphaEnergyGen;//aTrack3DGen.getIntegratedCharge(track_data.alphaRangeGen);
-    const TVector3 & tangentGen = aTrack3DGen.getSegments().front().getTangent();
+
+    track_data.carbonRangeGen =  aTrack3DGenCarbon.getSegments().front().getLength();
+    track_data.carbonEnergyGen = track_data.carbonRangeGen>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::CARBON_12, track_data.carbonRangeGen):0.0;
+
+    track_data.chargeGen = (track_data.alphaEnergyGen + track_data.carbonEnergyGen)*1E5;
+    const TVector3 & tangentGen = aTrack3DGenAlpha.getSegments().front().getTangent();
     track_data.cosThetaGen = -tangentGen.X();
     track_data.phiGen = atan2(-tangentGen.Z(), tangentGen.Y());
+
+    track_data.cosThetaGen = tangentGen.Z();//TEST
+    track_data.phiGen = tangentGen.Phi();//TEST
+
+    const TVector3 & vtxGen = aTrack3DGenAlpha.getSegments().front().getStart();
+    track_data.vtxGenX = vtxGen.X();
+    track_data.vtxGenY = vtxGen.Y();
+    track_data.vtxGenZ = vtxGen.Z();
 
     track_data.eventTypeReco = aTrack3DReco.getSegments().front().getPID() + aTrack3DReco.getSegments().back().getPID();    
     track_data.alphaRangeReco =  aTrack3DReco.getSegments().front().getLength();    
@@ -180,13 +165,23 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     track_data.carbonEnergyReco = track_data.carbonRangeReco>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::CARBON_12, track_data.carbonRangeReco):0.0;
 
     track_data.chargeReco = aTrack3DReco.getIntegratedCharge(aTrack3DReco.getLength());
+
+    const TVector3 & vtxReco = aTrack3DReco.getSegments().front().getStart();
+    track_data.vtxRecoX = vtxReco.X();
+    track_data.vtxRecoY = vtxReco.Y();
+    track_data.vtxRecoZ = vtxReco.Z();
     
     const TVector3 & tangentReco = aTrack3DReco.getSegments().front().getTangent();
     track_data.cosThetaReco = -tangentReco.X();
     track_data.phiReco = atan2(-tangentReco.Z(), tangentReco.Y());
-    track_data.lineFitChi2 = aTrack3DReco.getChi2();
-    track_data.dEdxFitChi2 = aTrack3DReco.getHypothesisFitChi2();
-    track_data.dEdxFitSigma = myTkBuilder.getdEdxFitSigmaSmearing();
+
+    track_data.cosThetaReco = cos(tangentReco.Theta());//TEST
+    track_data.phiReco = tangentReco.Phi();//TEST
+
+
+    track_data.lineFitLoss = aTrack3DReco.getLoss();
+    track_data.dEdxFitLoss = aTrack3DReco.getHypothesisFitLoss();
+    track_data.dEdxFitSigma = aTrack3DReco.getSegments().front().getDiffusion();
     
     tree->Fill();    
   }

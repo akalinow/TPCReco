@@ -309,13 +309,17 @@ bool GeometryTPC::Load(const char *fname) {
 
         if (!found) {
           found = true;
+          if (_debug) {
           std::cout << "DIR  SECTION   STRIP   COBO    ASAD    AGET    AGET_CH "
                        "OFF_PAD OFF_STR LENGTH\n";
+          }
         }
+        if (_debug) {
         std::cout << Form("%-8s%-8d%-8d%-8d%-8d%-8d%-8d%-8.1lf%-8.1lf%-8.1lf",
                           name, section, strip_num, cobo, asad, aget, chan_num,
                           offset_in_pads, offset_in_strips, length_in_pads)
                   << std::endl;
+        }
 
         int dir = it->second; // strip direction index
         // DEBUG
@@ -448,6 +452,7 @@ bool GeometryTPC::Load(const char *fname) {
   initOK = true;
 
   // print statistics
+  if(_debug){
   std::cout << std::endl << "Geometry config file = " << fname << std::endl;
   std::cout << "Total number of " << this->GetDirName(definitions::projection_type::DIR_U)
             << " strips = " << this->GetDirNstrips(definitions::projection_type::DIR_U) << std::endl;
@@ -468,6 +473,7 @@ bool GeometryTPC::Load(const char *fname) {
             << std::endl;
   std::cout << "Number of COBO boards = " << this->GetCoboNboards()
             << std::endl;
+  }
 
   geometryStats.print();
 

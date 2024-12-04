@@ -79,6 +79,12 @@ void MainFrame::InitializeWindows() {
 
 	//Left column
 	AddHistoCanvas();
+
+    // Additional Canvas with 3D scene
+	if(myConfig.get<bool>("display.develMode")) {
+		fWirePlotCanvas.reset(new TCanvas("fWirePlotCanvas", "3D detector", 400, 400));
+		myHistoManager.createWirePlotDriftCage3D(fWirePlotCanvas);
+	}
 	///Middle column
 	int attach = 0;
 	attach = AddButtons(attach);
@@ -515,6 +521,7 @@ void MainFrame::ClearCanvases() {
 	myHistoManager.clearCanvas(fMainCanvas, isLogScaleOn);
 	myHistoManager.clearCanvas(fRawHistosCanvas, isLogScaleOn);
 	myHistoManager.clearCanvas(fTechHistosCanvas, isLogScaleOn);
+	myHistoManager.clearObjects();
 
 }
 /////////////////////////////////////////////////////////
@@ -535,9 +542,14 @@ void MainFrame::Update() {
 	ClearCanvases();
 	
 	if (isRecoModeOn) myHistoManager.drawRecoHistos(fMainCanvas);
-	else if(myConfig.get<bool>("display.develMode")) myHistoManager.drawDevelHistos(fMainCanvas);
+	else if(myConfig.get<bool>("display.develMode")) {
+		myHistoManager.drawDevelHistos(fMainCanvas);
+		myHistoManager.drawTrack3D(fWirePlotCanvas.get());
+
+	}
 	else if(myConfig.get<bool>("display.technicalMode")) myHistoManager.drawTechnicalHistos(fMainCanvas, myEventSource->getGeometry()->GetAgetNchips());
 	else myHistoManager.drawRawHistos(fMainCanvas, isRateDisplayOn);
+
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

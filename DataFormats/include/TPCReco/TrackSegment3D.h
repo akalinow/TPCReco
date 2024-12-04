@@ -26,6 +26,8 @@ class TrackSegment3D{
 
   std::shared_ptr<GeometryTPC> getGeometry() const;
 
+  void setBias(const TVector3 & aBias);
+
   void setBiasTangent(const TVector3 & aBias, const TVector3 & aTangent);
 
   void setBiasTangent(const double *par);
@@ -39,6 +41,10 @@ class TrackSegment3D{
   void setRecHits(const std::vector<Hit2DCollection> & aRecHits) {myRecHits = aRecHits;}
 
   void setPID(pid_type aPID){ pid = aPID;}
+
+  void setDiffusion(double aDiffusion){ myDiffusion = aDiffusion;}
+
+  void setLossType(definitions::fit_type lossType){ myLossType = lossType; calculateLoss();}
 
   ///Unit tangential vector along segment.
   const TVector3 & getTangent() const { return myTangent;}
@@ -83,6 +89,9 @@ class TrackSegment3D{
   ///Return the full lenght of the segment.
   double getLength() const { return myLenght;}
 
+  ///Return the diffusion fitted in dE/dx.
+  double getDiffusion() const { return myDiffusion;}
+
   ///Return the particle identification.
   pid_type getPID() const { return pid;}
 
@@ -91,9 +100,11 @@ class TrackSegment3D{
 
   double getIntegratedCharge(double lambda) const;
 
+  double getMaxCharge() const;
+
   const std::vector<Hit2DCollection> & getRecHits() const { return myRecHits;}
 
-  double getRecHitChi2(int iProjection=-1) const;
+  double getLoss(int iProjection=-1) const;
   
   ///Operator needed for fitting.
   double operator() (const double *par);
@@ -103,11 +114,11 @@ class TrackSegment3D{
   ///Return point on 2D projection for stripPitchDirection corresponding to given lambda.
   TVector3 getPointOn2DProjection(double lambda, const TVector3 & stripPitchDirection) const;
 
-  ///Calculate vector for different parametrisations.
+  ///Calculate vector for different parametrization.
   void initialize();
 
-  ///Calculate and store chi2 for all projections.
-  void calculateRecHitChi2();
+  ///Calculate and store loss for all projections.
+  void calculateLoss();
 
   void addProjection(TH1F &histo, TGraphErrors &graph) const;
 
@@ -115,11 +126,12 @@ class TrackSegment3D{
   TVector3 myTangent, myBias;
   TVector3 myBiasAtX0, myBiasAtY0, myBiasAtZ0;
   TVector3 myStart, myEnd;
-  double myLenght{0};
+  double myLenght{0}, myDiffusion{0};
   pid_type pid{pid_type::UNKNOWN};
+  definitions::fit_type myLossType{definitions::fit_type::TANGENT_BIAS};
 
-  std::vector<Hit2DCollection> myRecHits; //! transient data member
-  std::vector<double> myProjectionsChi2;
+  std::vector<Hit2DCollection> myRecHits;
+  std::vector<double> myProjectionsLoss;
 };
 
 std::ostream & operator << (std::ostream &out, const TrackSegment3D &aSegment);

@@ -1,16 +1,25 @@
 {
-    "dataFile": "PLACEHOLDER_FOR_DATAFILE",
-    "geometryFile": "./geometry_ELITPC_80mbar_12.5MHz.dat",
-    "resourcesPath": ".",
-    "updateInterval": 3000,
-    "removePedestal": true,
-    "frameLoadRange": 100,
+    "input": {
+	"dataFile": "PLACEHOLDER_FOR_COMMA_SEPARATED_DATAFILE_LIST",
+	"geometryFile": "./geometry_ELITPC_80mbar_12.5MHz.dat",
+	"resourcesPath": ".",
+	"frameLoadRange": 100,
+	"singleAsadGrawFile": false
+    },
+    "conditions": {
+	"pressure": 80.0,
+	"temperature": 293.15,
+	"driftV": 0.9147,
+	"samplingRate": 25.0,
+	"comment": "Udrift=1960V, E=100V/cm, p=80mbar, T=293K, CO2 gas, drift velocity from MAGBOLTZ v=0.9147cm/us"
+    },
     "display": {
         "zLogScale": true,
         "autoZoom": false,
         "recoMode": false
     },
     "pedestal": {
+        "remove": true,
         "minPedestalCell": 10,
         "maxPedestalCell": 50,
         "minSignalCell": 2,

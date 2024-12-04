@@ -7,9 +7,6 @@
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/program_options.hpp>
 
-
-std::string createROOTFileName(const  std::string & grawFileName);
-
 int convertGRAWFile(boost::property_tree::ptree & aConfig);
 
 #endif

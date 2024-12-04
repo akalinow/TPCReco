@@ -173,7 +173,6 @@ void analyzeRawEvents(const boost::property_tree::ptree &aConfig){
   // DEBUG
   
   // initialize pedestal removal parameters for EventSource
-  dynamic_cast<EventSourceGRAW*>(myEventSource.get())->setRemovePedestal(true);
   if(aConfig.find("pedestal")!=aConfig.not_found()) {
     dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(aConfig.find("pedestal")->second);
   }
@@ -202,11 +201,12 @@ void analyzeRawEvents(const boost::property_tree::ptree &aConfig){
     // fill statistics per event and per run
     myAnalysis.fillHistos();
     
+    std::cout << maxNevents << " " << counter << std::endl;
+    if(maxNevents && maxNevents==++counter) break;
+
     // load next event (if any)
     currentEventIdx=myEventSource->currentEventNumber();
     myEventSource->getNextEvent();
-
-    if(maxNevents && (maxNevents-1)==++counter ) break;
   }
   while(currentEventIdx!=(Long64_t)myEventSource->currentEventNumber());
 

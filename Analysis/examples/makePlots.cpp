@@ -67,7 +67,7 @@ void makePlots(std::string fileName){
   hCosTheta->SetStats(kFALSE);
   TH1D *hCosThetaCut1 = (TH1D*)hCosTheta->Clone("hCosThetaCut1");
   
-  std::string qualityCut = "chi2<10 && charge>1000 && length>10 && carbonRange>1 && eventType==3 && hypothesisChi2<1";
+  std::string qualityCut = "lineFitLoss<14 && dEdxFitLoss/chargeReco*1E8<10 && charge>1000 && length>10 && carbonRange>1 && eventType==3";
   std::string fiducialXYCut = "abs(xAlphaEnd)<160 && abs(yAlphaEnd)<80 && abs(xCarbonEnd)<160 && abs(yCarbonEnd)<80";
 
   std::string fiducialZCut = "abs(zCarbonEnd - zAlphaEnd)<180";

@@ -106,6 +106,7 @@ private:
 	TCanvas* fMainCanvas{ 0 };
 	TCanvas* fRawHistosCanvas{ 0 };
 	TCanvas* fTechHistosCanvas{ 0 };
+	std::unique_ptr<TPad> fWirePlotCanvas;
 	TGMenuBar* fMenuBar{ 0 };
 	TGPopupMenu* fMenuFile{ 0 }, * fMenuHelp{ 0 };
 

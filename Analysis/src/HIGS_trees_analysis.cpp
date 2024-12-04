@@ -23,12 +23,10 @@ using std::chrono::duration_cast;
 ///////////////////////////////
 HIGS_trees_analysis::HIGS_trees_analysis(std::shared_ptr<GeometryTPC> aGeometryPtr, // definition of LAB detector coordinates
 					 float beamEnergy,   // nominal gamma beam energy [MeV] in detector LAB frame
-					 TVector3 beamDir,   // nominal gamma beam direction in detector LAB frame
-					 double pressure,    // CO2 pressure [mbar]
-					 double temperature){// CO2 temperature [K]
+					 TVector3 beamDir){   // nominal gamma beam direction in detector LAB frame
+
   setGeometry(aGeometryPtr);
   setBeamProperties(beamEnergy, beamDir);
-  setIonRangeCalculator(pressure, temperature);
   open();
   /*
   auto gback=(TGraph*)(xyArea.back().bin->GetPolygon());
@@ -113,10 +111,9 @@ void HIGS_trees_analysis::setBeamProperties(float beamEnergy,   // nominal gamma
 }
 //////////////////////////
 //////////////////////////
-void HIGS_trees_analysis::setIonRangeCalculator(double pressure, double temperature){ // CO2 pressure [mbar] and temperature [K]
+void HIGS_trees_analysis::setIonRangeCalculator(const IonRangeCalculator & aIonRangeCalculator){ 
 
-  // set current conditions: gas=CO2, arbitrary temperature [K] and pressure [mbar]
-  myRangeCalculator.setGasConditions(/*IonRangeCalculator::*/CO2, fabs(pressure), fabs(temperature));
+  myIonRangeCalculator = aIonRangeCalculator;
 }
 ///////////////////////////////
 ///////////////////////////////
@@ -262,6 +259,7 @@ void HIGS_trees_analysis::fillTrees2prong(Track3D *aTrack, eventraw::EventInfo *
   event2prong_->vertexPos = list.front().getStart();
   event2prong_->alpha_endPos = list.front().getEnd();
   event2prong_->alpha_length = list.front().getLength(); // longest = alpha
+  event2prong_->alpha_energy = myIonRangeCalculator.getIonEnergyMeV(pid_type::ALPHA, list.front().getLength()); // [MeV]
   event2prong_->alpha_phiDET = list.front().getTangent().Phi();
   event2prong_->alpha_cosThetaDET = cos(list.front().getTangent().Theta());
   event2prong_->alpha_phiBEAM = atan2(-list.front().getTangent().Z(), list.front().getTangent().Y()); // [rad], azimuthal angle from horizontal axis;
@@ -270,6 +268,7 @@ void HIGS_trees_analysis::fillTrees2prong(Track3D *aTrack, eventraw::EventInfo *
 
   event2prong_->carbon_endPos = list.back().getEnd();
   event2prong_->carbon_length = list.back().getLength(); // shortest = carbon
+  event2prong_->carbon_energy = myIonRangeCalculator.getIonEnergyMeV(pid_type::CARBON_12, list.back().getLength()); // [MeV]
   event2prong_->carbon_phiDET = list.back().getTangent().Phi();
   event2prong_->carbon_cosThetaDET = cos(list.back().getTangent().Theta());
   event2prong_->carbon_phiBEAM = atan2(-list.back().getTangent().Z(), list.back().getTangent().Y()); // [rad], azimuthal angle from horizontal axis
@@ -404,3 +403,5 @@ void HIGS_trees_analysis::fillTrees3prong(Track3D *aTrack, eventraw::EventInfo *
 
   Output3prongTreePtr->Fill();
 }
+///////////////////////////////
+///////////////////////////////
