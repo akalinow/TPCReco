@@ -10,13 +10,13 @@ TGraph* dEdxFitter::braggGraph_alpha = nullptr;
 TGraph* dEdxFitter::braggGraph_12C = nullptr;
 
 double dEdxFitter::nominalPressure = 250.0;
-
 double dEdxFitter::currentPressure = 190.0;
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
-dEdxFitter::dEdxFitter(double aPressure): dEdxFitter(TPCRECO_RESOURCE_DIR, aPressure)
-{}
+dEdxFitter::dEdxFitter(double aPressure): dEdxFitter(TPCRECO_RESOURCE_DIR, aPressure){}
 
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
 dEdxFitter::dEdxFitter(std::string resources, double aPressure){
   //initialize bragg graphs if they are null:
   if(!braggGraph_alpha){
@@ -30,6 +30,7 @@ dEdxFitter::dEdxFitter(std::string resources, double aPressure){
   braggGraph_alpha->SetBit(TGraph::kIsSortedX);
   braggGraph_12C->SetBit(TGraph::kIsSortedX);
 
+  TF1::DefaultAddToGlobalList(kFALSE);
   alpha_ionisation = new TF1("alpha_ionisation", bragg_alpha, 0, 600.0);
   carbon_ionisation = new TF1("carbon_ionisation",bragg_12C, 0,  200.0);
 
@@ -43,11 +44,11 @@ dEdxFitter::dEdxFitter(std::string resources, double aPressure){
   carbon_alpha_model->SetParName(5, "carbonScale");
   carbon_alpha_model->SetParName(6, "commonScale");
 
-  carbon_alpha_model->SetParLimits(0, 0.1, 3.0);
-  carbon_alpha_model->SetParLimits(6, 10, 1000);
+  carbon_alpha_model->SetParLimits(0, 1, 4.0);
+  carbon_alpha_model->SetParLimits(6, 1E-4, 2E-2);
   
-  carbon_alpha_model->FixParameter(4, 1.0);
-  carbon_alpha_model->FixParameter(5, 1.0);  
+  carbon_alpha_model->FixParameter(4, 1);
+  carbon_alpha_model->FixParameter(5, 1);  
  
   alpha_model = new TF1(*carbon_alpha_model);
   alpha_model->SetName("alpha_model");
@@ -65,8 +66,8 @@ void dEdxFitter::setPressure(double aPressure) {
   currentPressure = aPressure;
 
   minVtxOffset = -5;
-  minAlphaOffset = 0;
-  minCarbonOffset = 0;
+  minAlphaOffset = 0; 
+  minCarbonOffset = 5;
 
   //190 mbar, 10 MeV alpha, 2.5 MeV C
   if(std::abs(nominalPressure-190)<1E-3){
@@ -80,44 +81,27 @@ void dEdxFitter::setPressure(double aPressure) {
   }
   else{
     std::cout<<KRED<<"dEdxFitter: nominal pressure: "<<RST<<nominalPressure
-	     <<" does not corresond to any dEdx data files."<<std::endl;
+	     <<" does not correspond to any dEdx data files."<<std::endl;
     exit(0);
   }
-  /////// DEBUG
-  std::cout<<"dEdxFitter::"<<__FUNCTION__<<": FINAL VALUES: currentPressure="<<currentPressure
-	   <<" min/maxVtxOffset="<<minVtxOffset<<"/"<<maxVtxOffset
-	   <<" min/maxAlphaOffset="<<minAlphaOffset<<"/"<<maxAlphaOffset
-	   <<" min/maxCarbonOffset="<<minCarbonOffset<<"/"<<maxCarbonOffset<<std::endl;
-  /////// DEBUG
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 void dEdxFitter::reset(){
 
-  ///// DEBUG - check if max/min offsets are unchanged
-  //
-  std::cout<<"dEdxFitter::"<<__FUNCTION__<<": pressure: "<<currentPressure
-	   <<" min/maxVtxOffset="<<minVtxOffset<<"/"<<minVtxOffset
-	   <<" min/maxAlphaOffset="<<minAlphaOffset<<"/"<<minAlphaOffset
-	   <<" min/maxCarbonOffset="<<minCarbonOffset<<"/"<<minCarbonOffset<<std::endl;
-  //
-  ///// DEBUG
-
   carbon_alpha_model->SetRange(-20, maxAlphaOffset+maxCarbonOffset);
   carbon_alpha_model->SetParLimits(1, 0.0, maxVtxOffset);
-  
-  carbon_alpha_model->SetParLimits(2, minAlphaOffset, maxAlphaOffset);
-  carbon_alpha_model->SetParLimits(3, minCarbonOffset, maxCarbonOffset);
-  // carbon_alpha_model->SetParameters(1.0,
-  // 				    (minVtxOffset+maxVtxOffset)/2.0,
-  // 				    (minAlphaOffset+maxAlphaOffset)/2.0,
-  // 				    (minCarbonOffset+maxCarbonOffset)/2.0,
-  // 				    1.0, 1.0, 0.006);
+
+  double minCarbonRange = 5.0; //mm
+  carbon_alpha_model->SetParLimits(2, minAlphaOffset, maxAlphaOffset-minCarbonRange);
+  carbon_alpha_model->SetParLimits(3, minCarbonOffset, maxCarbonOffset-minCarbonRange);
   carbon_alpha_model->SetParameters(1.0,
 				    (minVtxOffset+maxVtxOffset)/2.0,
-				    maxAlphaOffset-85,  // [mm] --> HACK valid for 13.1 MeV
-				    maxCarbonOffset-11,  // [mm] --> HACK valid for 13.1 MeV
-				    1.0, 1.0, 0.006);
+            (minAlphaOffset+maxAlphaOffset)/2.0,
+            (minCarbonOffset+maxCarbonOffset)/2.0,
+				    //maxAlphaOffset-85,  // [mm] --> HACK valid for 13.1 MeV
+				    //maxCarbonOffset-11,  // [mm] --> HACK valid for 13.1 MeV
+				    1, 1, 5E-3);
 
   alpha_model->SetRange(-20, maxAlphaOffset);
   alpha_model->SetParLimits(1, minVtxOffset, maxVtxOffset);
@@ -126,7 +110,7 @@ void dEdxFitter::reset(){
 			     (minVtxOffset+maxVtxOffset)/2.0,
 			     (minAlphaOffset+maxAlphaOffset)/2.0,
 			     0.0,
-			     1.0, 0.0, 0.006);
+			     1.0, 0.0, 5E-3);
   
   theFitResult = TFitResult();
   theFittedModel = alpha_model;
@@ -229,9 +213,9 @@ TH1F dEdxFitter::reflectHisto(const TH1F &aHisto) const{
   double value=0.0;
   for(int iBin=0;iBin<=aHisto.GetNbinsX()+1;++iBin){
     value = aHisto.GetBinContent(iBin);
-    hReflected.SetBinContent(aHisto.GetNbinsX()-iBin, value);
+    hReflected.SetBinContent(aHisto.GetNbinsX()+1-iBin, value);
     value = aHisto.GetBinError(iBin);
-    hReflected.SetBinError(aHisto.GetNbinsX()-iBin, value);
+    hReflected.SetBinError(aHisto.GetNbinsX()+1-iBin, value);
     
   }
   return hReflected;
@@ -239,31 +223,27 @@ TH1F dEdxFitter::reflectHisto(const TH1F &aHisto) const{
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 TFitResult dEdxFitter::fitHypothesis(TF1 *fModel, TH1F & aHisto){
-
-  /////// DEBUG
-  std::cout<<"dEdxFitter::"<<__FUNCTION__<<": START VALUES: fModel="<<fModel->GetName()
-	   <<" currentPressure="<<currentPressure
-	   <<" min/maxVtxOffset="<<minVtxOffset<<"/"<<maxVtxOffset
-	   <<" min/maxAlphaOffset="<<minAlphaOffset<<"/"<<maxAlphaOffset
-	   <<" min/maxCarbonOffset="<<minCarbonOffset<<"/"<<maxCarbonOffset<<std::endl;
-  /////// DEBUG
-
+  
   TFitResult theResult;
   if(!aHisto.GetEntries()) return theResult;
 
-  double tkLength = aHisto.GetXaxis()->GetXmax();
+  double tkLength = aHisto.GetXaxis()->GetXmax()/1.2;
   maxVtxOffset = maxCarbonOffset;
   minAlphaOffset = std::max(0.0, maxAlphaOffset - tkLength);
   minCarbonOffset = std::max(0.0, maxCarbonOffset - tkLength);
-
   int fitCounter = 0;
+  auto chargeFromHisto = aHisto.Integral("width");
+  double ratio = 1.0;
+  reset();
+
   TFitResultPtr theResultPtr;
   do{
     reset();
-    theResultPtr = aHisto.Fit(fModel,"BRWWS");
+    theResultPtr = aHisto.Fit(fModel,"BRWWSQ");
     if(!theResultPtr.Get()) break;
+    ratio = theResultPtr->MinFcnValue()/std::pow(chargeFromHisto,2);
     ++fitCounter;
-  }while(!theResultPtr->IsValid() && fitCounter<3);
+  }while((!theResultPtr->IsValid() || ratio>5E-4) && fitCounter<10);
   
   if(theResultPtr.Get()) theResult = *theResultPtr.Get();
   else{
@@ -275,15 +255,7 @@ TFitResult dEdxFitter::fitHypothesis(TF1 *fModel, TH1F & aHisto){
 ////////////////////////////////////////////////
 TFitResult dEdxFitter::fitHisto(const TH1F & aHisto){
 
-  /////// DEBUG
-  std::cout<<"dEdxFitter::"<<__FUNCTION__
-	   <<": START VALUES: currentPressure="<<currentPressure
-	   <<" min/maxVtxOffset="<<minVtxOffset<<"/"<<maxVtxOffset
-	   <<" min/maxAlphaOffset="<<minAlphaOffset<<"/"<<maxAlphaOffset
-	   <<" min/maxCarbonOffset="<<minCarbonOffset<<"/"<<maxCarbonOffset<<std::endl;
-  /////// DEBUG
-
-  ////////////C12+alpha hypothesis
+  /// C12+alpha hypothesis
   TH1F fittedHisto_for_C12_alpha = aHisto;
   bool reflection_for_C12_alpha = false;
   int maxBin = aHisto.GetMaximumBin();
@@ -292,8 +264,8 @@ TFitResult dEdxFitter::fitHisto(const TH1F & aHisto){
     reflection_for_C12_alpha = true;
   }
   TFitResult carbon_alphaResult = fitHypothesis(carbon_alpha_model, fittedHisto_for_C12_alpha);
-
-  ////////////alpha hypothesis
+ 
+  /// alpha hypothesis
   bool reflection_for_alpha = false;
   TH1F fittedHisto_for_alpha = aHisto;
   maxBin = aHisto.GetMaximumBin();
@@ -303,6 +275,7 @@ TFitResult dEdxFitter::fitHisto(const TH1F & aHisto){
   }
   TFitResult alphaResult = fitHypothesis(alpha_model, fittedHisto_for_alpha);
 
+  /// select best hypothesis
   if(alphaResult.MinFcnValue()<carbon_alphaResult.MinFcnValue()){
     theFitResult = alphaResult;
     theFittedModel = alpha_model;
@@ -348,12 +321,10 @@ double dEdxFitter::getCarbonRange() const{
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
-double dEdxFitter::getSigmaSmearing() const{
+double dEdxFitter::getDiffusion() const{
 
   if(bestFitEventType==pid_type::UNKNOWN) return 0.0;
-    
-  double sigmaMM = theFittedModel->GetParameter("sigma");
-  return sigmaMM;
+  return theFittedModel->GetParameter("sigma"); 
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import subprocess
 import os
 import functools
 from fileLoop import *
@@ -15,28 +16,42 @@ def finalize(topDirName, samples):
     os.system(command)
 
     for item in samples:
+
         item = item.replace(":","-")
         if not os.path.isdir(item):
             continue
 
+        # Merge ROOT files
+        path = topDirName+"/"+item
         command = "cp -r "+item+" "+topDirName
         print(command)
         os.system(command)
         command = "mkdir -p "+topDirName+"/plots/"+item
         print(command)
         os.system(command)
-        command = "hadd -f "+topDirName+"/"+item+".root "+topDirName+"/"+item+"/*.root"
+        command = "hadd -f "+path+".root "+path+"/*.root"
         print(command)
         os.system(command)
-        command = "root -b -q \"../test/makePlots.cpp(\\\""+topDirName+"/"+item+".root\\\")\" "
+  
+        ## Run HIGS analysis on the reco files
+        command = "../bin/recoEventsAnalysis "+path+"/configDump.json --input.dataFile "+path+".root"
         print(command)
         os.system(command)
-        command = "mv Plots*.png "+topDirName+"/plots/"+item
-        print(command)        
+
+        ## Make the plots
+        energy = subprocess.check_output(["grep", "energy", path+"/configDump.json"])
+        energy = subprocess.check_output(["cut","-f4","-d\""], input=energy)
+        energy = energy.decode("utf-8").rstrip("\n")
+        command = "root -b -q \"../examples/makePlots_HIGS.cpp(\\\"Histos.root\\\", "+energy+")\" "
+        print(command)
         os.system(command)
+        
+        ## Move plots to the plots directory
+        command = "mv *.pdf Trees.root Histos.root "+topDirName+"/plots/"+item
+        os.system(command)
+
+        ## Save the git version
         command = "git log -1 > "+topDirName+"/git_version.dat"
-        os.system(command)
-        command = "cp ../test/makePlots.cpp "+topDirName
         os.system(command)
 ################################################################
 ################################################################
@@ -65,6 +80,7 @@ def finalizeHIgS():
         "2022-04-13T17-23-27",
         "2022-04-14T08-51-39",
         "2022-04-14T08-51-39",
+        "2022-04-14T18-33-08",
         "2022-04-15T11-12-52",
         "2022-04-15T18-40-41",        
     ]
@@ -104,6 +120,9 @@ HIgS_runs = [
     ("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220414_extTrg_CO2_130mbar/9.85MeV/GRAW/",
     "/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat"),
 
+    ("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/0220822_extTrg_CO2_130mbar/9.85MeV/GRAW/",
+    "/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat"),
+
     ("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220412_extTrg_CO2_190mbar_DT1470ET/11.1MeV/GRAW/",
     "/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat"),
 
@@ -124,14 +143,21 @@ HIgS_runs = [
 ]
 
 HIgS_runs = [
-    ("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220412_extTrg_CO2_190mbar_DT1470ET/11.1MeV/GRAW_1/",
-    "/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat"),
+    #("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220415_extTrg_CO2_130mbar/8.86MeV/GRAW/",
+    #"/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_130mbar_1372Vdrift_25MHz.dat"),
 
-    ("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220412_extTrg_CO2_190mbar_DT1470ET/11.9MeV/GRAW_1/",
-    "/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat"),
+    ("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220414_extTrg_CO2_130mbar/9.85MeV/GRAW/",
+    "/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat"),
 
-    #("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220413_extTrg_CO2_250mbar_DT1470ET/13.1MeV/GRAW/",
-    #"/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat"),    
+    ("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/0220822_extTrg_CO2_130mbar/9.85MeV/GRAW/",
+    "/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat"),
+
+    ("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/0220823_extTrg_CO2_130mbar/9.36MeV/GRAW/",
+    "/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat"),
+
+    ("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/0220823_extTrg_CO2_130mbar/9.56MeV/GRAW/",
+    "/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat"),
+
 ]
 
 ###
@@ -140,6 +166,7 @@ procName = "makeTrackTree"
 ################################################
 ################################################
 runLoop(HIgS_runs, procName, finalizeHIgS())
+finalizeHIgS()()
 ################################################
 ################################################
 

@@ -68,8 +68,8 @@ protected:
 
   std::string currentFilePath;
   
-  unsigned long int nEntries;
-  unsigned long int myCurrentEntry;
+  unsigned long int nEntries{0};
+  unsigned long int myCurrentEntry{0};
   EventFilterType eventFilter;
 
   std::shared_ptr<GeometryTPC> myGeometryPtr;

@@ -39,7 +39,7 @@ private:
   int projection1DHalfSize{10};
   
   double emptyBinThreshold{1.0};
-  double kernelSumThreshold{3*35};
+  double kernelSumThreshold{150};//parameter to moved to configuration
 
   const TH2D & makeTimeProjectionRecHits(const TH2D & hProjection);
 

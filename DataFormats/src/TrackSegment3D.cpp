@@ -11,7 +11,7 @@ TrackSegment3D::TrackSegment3D(){
   myRecHits.clear();
   myRecHits.resize(3);
 
-  myProjectionsChi2.resize(3);
+  myProjectionsLoss.resize(3);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -23,6 +23,14 @@ void TrackSegment3D::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
 /////////////////////////////////////////////////////////
 std::shared_ptr<GeometryTPC> TrackSegment3D::getGeometry() const{
   return myGeometryPtr;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void TrackSegment3D::setBias(const TVector3 & aBias){
+
+   myBias = aBias;
+   initialize();
+
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -59,10 +67,9 @@ void TrackSegment3D::setStartEnd(const double *par){
 /////////////////////////////////////////////////////////
 void TrackSegment3D::setBiasTangent(const double *par){
 
-  TVector3 bias(par[0], par[1], par[2]);
-  TVector3 tangent;
-  tangent.SetMagThetaPhi(1.0, par[3], par[4]);
-
+  TVector3 bias, tangent;
+  bias.SetMagThetaPhi(par[0], myBias.Theta(), myBias.Phi());
+  tangent.SetMagThetaPhi(1.0, par[1], par[2]);
   setBiasTangent(bias, tangent);
 }
 /////////////////////////////////////////////////////////
@@ -84,7 +91,7 @@ void TrackSegment3D::setRecHits(const std::vector<TH2D> & aRecHits){
       }
     }
   }
-  calculateRecHitChi2();
+  calculateLoss();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -101,7 +108,7 @@ void TrackSegment3D::initialize(){
 
   myLenght = (myEnd - myStart).Mag();
 
-  calculateRecHitChi2();
+  calculateLoss();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -119,12 +126,11 @@ std::vector<double> TrackSegment3D::getStartEndXYZ() const{
 /////////////////////////////////////////////////////////
 std::vector<double> TrackSegment3D::getBiasTangentCoords() const{
 
-  std::vector<double> coordinates(5);
+  std::vector<double> coordinates(3);
   double *data = coordinates.data();
-
-  getBias().GetXYZ(data);
-  data[3] = getTangent().Theta();
-  data[4] = getTangent().Phi();
+  data[0] = getBias().Mag();
+  data[1] = getTangent().Theta();
+  data[2] = getTangent().Phi();
 
   return coordinates;
 }
@@ -185,25 +191,38 @@ double TrackSegment3D::getIntegratedCharge(double lambda) const{
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-double TrackSegment3D::getRecHitChi2(int iProjection) const{
+double TrackSegment3D::getMaxCharge() const {
 
-  double chi2 = 0.0;
-  if(iProjection<definitions::projection_type::DIR_U || iProjection>definitions::projection_type::DIR_W){    
-    std::for_each(myProjectionsChi2.begin(), myProjectionsChi2.end(), [&](auto aItem){chi2 += aItem;});
+  double maxCharge = 0.0;
+  for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
+    const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
+    for(const auto & aHit:aRecHits){
+      if(aHit.getCharge()>maxCharge) maxCharge = aHit.getCharge();
+    }
   }
-  else{
-    chi2 += myProjectionsChi2[iProjection];
-  }
-  return chi2;
+  return maxCharge;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void TrackSegment3D::calculateRecHitChi2(){
+double TrackSegment3D::getLoss(int iProjection) const{
+
+  double loss = 0.0;
+  if(iProjection<definitions::projection_type::DIR_U || iProjection>definitions::projection_type::DIR_W){    
+    std::for_each(myProjectionsLoss.begin(), myProjectionsLoss.end(), [&](auto aItem){loss += aItem;});
+  }
+  else{
+    loss += myProjectionsLoss[iProjection];
+  }
+  return loss;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void TrackSegment3D::calculateLoss(){
 
   for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
     TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, getLength());
     const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
-    myProjectionsChi2[strip_dir] = aTrack2DProjection.getRecHitChi2(aRecHits);
+    myProjectionsLoss[strip_dir] = aTrack2DProjection.getLoss(aRecHits, myLossType);
   }
 }
 /////////////////////////////////////////////////////////
@@ -213,7 +232,7 @@ double TrackSegment3D::operator() (const double *par) {
   TVector3 start(par[0], par[1], par[2]);
   TVector3 end(par[3], par[4], par[5]);
   setStartEnd(start, end);
-  return getRecHitChi2();
+  return getLoss();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -243,42 +262,58 @@ void TrackSegment3D::addProjection(TH1F &histo, TGraphErrors &graph) const{
 /////////////////////////////////////////////////////////
 TH1F TrackSegment3D::getChargeProfile() const{
 
-  double radiusCut = 2;
-  std::vector<TGraphErrors> projections;
-  for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
-    TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, getLength());
-    const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
-    projections.push_back(aTrack2DProjection.getChargeProfile(aRecHits, radiusCut));
-  }
+  // Maximum hit distance from 2D projection
+  double radiusCut = 2; //parameter to be put into configuration
+  
+  // Minimal length of projection to be considered. Short projections introduce noisy floor to the charge profile,
+  // which affects dE/dx fit.
+  double minProjLength = 30;//parameter to be put into configuration
 
   int nBins = 1024;
   double minX = -0.2*getLength();
   double maxX = 1.2*getLength();
-  TH1F hChargeProfile("hChargeProfile",";d [mm];charge",nBins, minX, maxX);
+  TH1F hChargeProfile("hChargeProfile",";d [mm];charge/mm",nBins, minX, maxX);
   hChargeProfile.SetDirectory(0);
   if(getLength()<1) return hChargeProfile;
 
-  int maxPoints = 1;
   for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
-    TGraphErrors & aGraph = projections[strip_dir];
-    if(aGraph.GetN()>maxPoints) maxPoints = aGraph.GetN();
-    /*  
-    std::string name = "density_graph_"+std::to_string(strip_dir);
-    aGraph.SetName(name.c_str());
-    name +=".root";
-    aGraph.SaveAs(name.c_str());    
-    */
+    TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, getLength()); 
+    const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
+    TGraphErrors aGraph = aTrack2DProjection.getChargeProfile(aRecHits, radiusCut);
+    double projLength = aTrack2DProjection.getLength();
+    //double graphLength = aGraph.GetXaxis()->GetXmax() - aGraph.GetXaxis()->GetXmin();
+
+    double segmentAlongStrip = getTangent().Dot(myGeometryPtr->GetStripPitchVector3D(strip_dir).Unit())/sin(getTangent().Theta());
+    ///do not consider short projections unless the track is very long
+    ///very long track is a track seed before shrinking to hits range
+    /*
+    std::cout<<KGRN<<"strip_dir: "<<strip_dir<<" along strip: "<<segmentAlongStrip
+            <<" projLength: "<<projLength
+            <<" graphLength: "<<graphLength
+            <<"projLength*graphLength: "<<projLength*graphLength
+            <<RST<<std::endl;
+     */
+    if(projLength<minProjLength ||   //short projection 
+    (getLength()>200 && std::abs(cos(getTangent().Theta()))<0.95 && std::abs(segmentAlongStrip)<0.2)) { //initial track with "infinite" length. Horizontal track do not have well defined phi
+      continue;
+    }
+    
+    /*
+    if(graphLength*projLength<minProjLength && std::abs(segmentAlongStrip)<0.2 && getLength()<200) {
+      continue;
+    }*/
+    
     addProjection(hChargeProfile, aGraph);
   }
 
-  int numberOfBins = std::min(maxPoints,256);
-  int rebinFactor = hChargeProfile.GetNbinsX()/numberOfBins;
-  while(nBins%rebinFactor && rebinFactor<nBins){
-    ++rebinFactor;
-  }
+  int rebinFactor = log(4.0*nBins/(maxX - minX))/log(2); //bin width is around 2 mm
+  rebinFactor = std::pow(2, rebinFactor);
   hChargeProfile.Rebin(rebinFactor);
   double scale = 1.0/hChargeProfile.GetBinWidth(1);
   hChargeProfile.Scale(scale); 
+  double max = hChargeProfile.GetMaximum();
+  if(max<1) max = 1.0;
+  hChargeProfile.Scale(1.0/max); 
   return hChargeProfile;
 }
 /////////////////////////////////////////////////////////
@@ -296,7 +331,7 @@ std::ostream & operator << (std::ostream &out, const TrackSegment3D &aSegment){
      <<" -> "
      <<"("<<end.X()<<", "<<end.Y()<<", "<<end.Z()<<") "
      <<std::endl
-     <<"\t\t chi2: "<<aSegment.getRecHitChi2()<<""
+     <<"\t\t loss: "<<aSegment.getLoss()<<""
      <<" charge [arb. u.]: "<<aSegment.getIntegratedCharge(aSegment.getLength())
      <<" length [mm]: "<<aSegment.getLength()
      <<std::endl

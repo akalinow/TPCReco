@@ -13,6 +13,13 @@ namespace eventraw {
 
   class EventInfo {
   public:
+
+    struct global_properties {
+    int max_charge{0};
+    int integrated_charge{0};
+    int n_hits{0};
+    };
+
     EventInfo(){};
 
     ~EventInfo(){};
@@ -29,6 +36,8 @@ namespace eventraw {
 
     bool GetPedestalSubtracted() const {return pedestalSubtracted;}
 
+    global_properties GetProperties() const {return properties;}
+
     void SetRunId(long aRunId) {runId = aRunId;}
 
     void SetEventId(uint32_t aEventId) {eventId = aEventId;}
@@ -39,12 +48,15 @@ namespace eventraw {
 
     void SetPedestalSubtracted(bool isSubtracted) {pedestalSubtracted = isSubtracted;}
 
+    void SetProperties(const global_properties &props) {properties = props;}
+
     inline EventInfo(std::shared_ptr<EventInfo> &einfo) {
       runId = einfo->GetRunId();
       eventId = einfo->GetEventId();
       timestamp = einfo->GetEventTimestamp();
       eventType = einfo->GetEventType().to_ulong();
       pedestalSubtracted = einfo->GetPedestalSubtracted();
+      properties = einfo->properties;
     }
 
   private:
@@ -54,6 +66,7 @@ namespace eventraw {
     ULong_t timestamp{0}; // 6-bytes in 10ns CLK units (100 MHz)
     unsigned long eventType{0};
     bool pedestalSubtracted{false};
+    global_properties properties;
     
     static const uint32_t eventTypeBits = 64;
 

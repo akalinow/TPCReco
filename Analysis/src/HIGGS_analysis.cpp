@@ -43,7 +43,6 @@ HIGGS_analysis::~HIGGS_analysis(){
   finalize();
   delete outputFile;
 }
-
 ///////////////////////////////
 ///////////////////////////////
 void HIGGS_analysis::bookHistos(){
@@ -84,6 +83,20 @@ void HIGGS_analysis::bookHistos(){
   std::string outputFileName = "Histos.root";
   outputFile = new TFile(outputFileName.c_str(),"RECREATE");
 
+  ///////// DEBUG - special Reco file with selected events only
+  //
+  std::string outputFileName2 = "Track3D_CutO16_pass.root"; // secondary output file
+  myDumpRecoFile = new TFile(outputFileName2.c_str(),"RECREATE"); // secondary output file
+  myDumpRecoFile->cd(); // switch to secondary output file
+  myDumpTree = new TTree("TPCRecoData","");
+  myDumpTrack = new Track3D();
+  myDumpTree->Branch("RecoEvent", myDumpTrack);
+  myDumpEventInfo = new eventraw::EventInfo();
+  myDumpTree->Branch("EventInfo", myDumpEventInfo);
+  outputFile->cd(); // switch back to primary output file
+  //
+  ///////// DEBUG - special Reco file with selected events only
+
   const float binSizeMM = 0.5; // [mm]
   //  const float binSizeMM_2d = 3.0; // [mm]
   const float binSizeMM_2dXZ = binSizeMM;
@@ -117,6 +130,7 @@ void HIGGS_analysis::bookHistos(){
   histos1D["h_ntracks"]=
     new TH1F("h_ntracks","Number of tracks;Tracks per event;Event count", 5, 0, 5);
 
+
   // HISTOGRAMS PER CATEGORY
   //
   for(auto c=0U; c<4; ++c) {
@@ -124,6 +138,10 @@ void HIGGS_analysis::bookHistos(){
     auto info=categoryInfo[c].c_str();
     auto perEventTitle="Event count / bin";
     auto perTrackTitle=(c==0 ? "Track count / bin" : perEventTitle );
+
+    histos2D[prefix+"_max_vs_total_charge"] = new TH2F((prefix+"_max_vs_total_charge").c_str(),
+     Form("%s;Integrated charge [ADC units];Maximal charge [ADC units];%s", info, perEventTitle),
+      100, -1E6,4E6, 100, 0, 6000);
 
     // VERTEX : per category
     histos1D[(prefix+"_vertexX").c_str()]=
@@ -503,6 +521,14 @@ void HIGGS_analysis::bookHistos(){
 	///////////// DEBUG - valid for 2-prong only, after additional ID cuts
 	//
 	if(categoryPID[c].size()==2) {
+	  histos1D[(prefix+pid+"_len_CutO16").c_str()]=
+	    new TH1F((prefix+pid+"_len_CutO16").c_str(),
+		     Form("%s (with #alpha,C E_{KIN}^{CMS} cut);%s track length [mm];%s", info, pidLatex, perTrackTitle),
+		     maxLengthMM/binSizeMM, 0, maxLengthMM);
+	  histos1D[(prefix+pid+"_E_LAB_CutO16").c_str()]=
+	    new TH1F((prefix+pid+"_E_LAB_CutO16").c_str(),
+		     Form("%s (with #alpha,C E_{KIN}^{CMS} cut);%s kinetic energy in LAB [MeV];%s", info, pidLatex, perTrackTitle),
+		     maxKineticEnergyMeV/binSizeMeV_kineticEnergy, 0, maxKineticEnergyMeV); // 200, 0, maxKineticEnergyMeV);
 	  histos1D[(prefix+pid+"_E_CMS_CutO16").c_str()]=
 	    new TH1F((prefix+pid+"_E_CMS_CutO16").c_str(),
 		     Form("%s (with #alpha,C E_{KIN}^{CMS} cut);%s kinetic energy in CMS [MeV];%s", info, pidLatex, perTrackTitle),
@@ -660,6 +686,16 @@ void HIGGS_analysis::bookHistos(){
 	///////////// DEBUG - valid for 2-prong only, after additional ID cuts
 	//
 	if(categoryPID[c].size()==2) {
+	  histos2D[(prefix+pid+"_len"+pid2+"_len_CutO16").c_str()]=
+	    new TH2F((prefix+pid+"_len"+pid2+"_len_CutO16").c_str(),
+		     Form("%s (with #alpha,C E_{KIN}^{CMS} cut);%s track length [mm];%s track length [mm];%s", info, pidLatex,  pidLatex2, perTrackTitle),
+		     maxLengthMM/binSizeMM, 0, maxLengthMM,
+		     maxLengthMM/binSizeMM, 0, maxLengthMM);
+	  histos2D[(prefix+pid+"_E"+pid2+"_E_LAB_CutO16").c_str()]=
+	    new TH2F((prefix+pid+"_E"+pid2+"_E_LAB_CutO16").c_str(),
+		     Form("%s (with #alpha,C E_{KIN}^{CMS} cut);%s kinetic energy in LAB [MeV];%s kinetic energy in LAB [MeV];%s", info, pidLatex,  pidLatex2, perTrackTitle),
+		     maxKineticEnergyMeV/binSizeMeV_kineticEnergy, 0, maxKineticEnergyMeV, // 200, 0, maxKineticEnergyMeV,
+		     maxKineticEnergyMeV/binSizeMeV_kineticEnergy, 0, maxKineticEnergyMeV); // 200, 0, maxKineticEnergyMeV);
 	  histos2D[(prefix+pid+"_E"+pid2+"_E_CMS_CutO16").c_str()]=
 	    new TH2F((prefix+pid+"_E"+pid2+"_E_CMS_CutO16").c_str(),
 		     Form("%s (with #alpha,C E_{KIN}^{CMS} cut);%s kinetic energy in CMS [MeV];%s kinetic energy in CMS [MeV];%s", info, pidLatex,  pidLatex2, perTrackTitle),
@@ -792,6 +828,9 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack, eventraw::EventInfo *aEventInfo
 
   // 1-prong (alpha)
   if(ntracks==1) {
+
+    histos2D["h_1prong_max_vs_total_charge"]->Fill(aTrack->getIntegratedCharge(aTrack->getLength()), aTrack->getMaxCharge());
+
     histos1D["h_1prong_vertexX"]->Fill(vertexPos.X());
     histos1D["h_1prong_vertexY"]->Fill(vertexPos.Y());
     histos1D["h_1prong_vertexZ"]->Fill(vertexPos.Z());
@@ -840,6 +879,8 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack, eventraw::EventInfo *aEventInfo
 
   // 2-prong (alpha+carbon)
   if(ntracks==2) {
+    histos2D["h_2prong_max_vs_total_charge"]->Fill(aTrack->getIntegratedCharge(aTrack->getLength()), aTrack->getMaxCharge());
+
     histos1D["h_2prong_vertexX"]->Fill(vertexPos.X());
     histos1D["h_2prong_vertexY"]->Fill(vertexPos.Y());
     histos1D["h_2prong_vertexZ"]->Fill(vertexPos.Z());
@@ -968,11 +1009,21 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack, eventraw::EventInfo *aEventInfo
 
     ///////////// DEBUG
     //
-    // for automatic RECO:
-    const double cut_center_alpha_T_CMS = 1.85; // MeV // TODO - TO BE PARAMETERIZED
-    const double cut_center_carbon_T_CMS = 0.53; // MeV // TODO - TO BE PARAMETERIZED
-    const double cut_ellipse_alpha_T_CMS = 0.15; // MeV // TODO - TO BE PARAMETERIZED
-    const double cut_ellipse_carbon_T_CMS = 0.15; // MeV // TODO - TO BE PARAMETERIZED
+    // for automatic RECO - 8.66 MeV (ID cut Oxygen-16 -- ver 2)
+    const double cut_center_alpha_T_CMS = 1.150; // MeV // TODO - TO BE PARAMETERIZED
+    const double cut_center_carbon_T_CMS = 0.400; // MeV // TODO - TO BE PARAMETERIZED
+    const double cut_ellipse_alpha_T_CMS = 0.150; // MeV // TODO - TO BE PARAMETERIZED
+    const double cut_ellipse_carbon_T_CMS = 0.150; // MeV // TODO - TO BE PARAMETERIZED
+    // for automatic RECO - 8.66 MeV (ID cut Oxygen-16 -- ver 1)
+    //    const double cut_center_alpha_T_CMS = 0.85; // MeV // TODO - TO BE PARAMETERIZED
+    //    const double cut_center_carbon_T_CMS = 0.48; // MeV // TODO - TO BE PARAMETERIZED
+    //    const double cut_ellipse_alpha_T_CMS = 0.25; // MeV // TODO - TO BE PARAMETERIZED
+    //    const double cut_ellipse_carbon_T_CMS = 0.15; // MeV // TODO - TO BE PARAMETERIZED
+    // for automatic RECO - 9.85 MeV
+    //    const double cut_center_alpha_T_CMS = 1.85; // MeV // TODO - TO BE PARAMETERIZED
+    //    const double cut_center_carbon_T_CMS = 0.53; // MeV // TODO - TO BE PARAMETERIZED
+    //    const double cut_ellipse_alpha_T_CMS = 0.15; // MeV // TODO - TO BE PARAMETERIZED
+    //    const double cut_ellipse_carbon_T_CMS = 0.15; // MeV // TODO - TO BE PARAMETERIZED
     // for clicked RECO:
     // const double cut_center_alpha_T_CMS = 1.82; // MeV // TODO - TO BE PARAMETERIZED
     // const double cut_center_carbon_T_CMS = 0.50; // MeV // TODO - TO BE PARAMETERIZED
@@ -1042,6 +1093,8 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack, eventraw::EventInfo *aEventInfo
     //
     if(passed_O16_idCut) {
       // alpha particle - after additional ID cuts
+      histos1D["h_2prong_alpha_len_CutO16"]->Fill(alpha_len);
+      histos1D["h_2prong_alpha_E_LAB_CutO16"]->Fill(alpha_T_LAB);
       histos1D["h_2prong_alpha_E_CMS_CutO16"]->Fill(alpha_T_CMS);
       histos1D["h_2prong_alpha_phiBEAM_CMS_CutO16"]->Fill(alpha_phi_BEAM_CMS);
       histos1D["h_2prong_alpha_thetaBEAM_CMS_CutO16"]->Fill(acos(alpha_cosTheta_BEAM_CMS));
@@ -1049,6 +1102,8 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack, eventraw::EventInfo *aEventInfo
       histos2D["h_2prong_alpha_cosThetaBEAM_E_CMS_CutO16"]->Fill(alpha_cosTheta_BEAM_CMS, alpha_T_CMS);
       histos2D["h_2prong_alpha_deltaYZ_CutO16"]->Fill(alpha_len*list.front().getTangent().Y(), alpha_len*list.front().getTangent().Z());
       // carbon recoil - after additional ID cuts
+      histos1D["h_2prong_carbon_len_CutO16"]->Fill(carbon_len);
+      histos1D["h_2prong_carbon_E_LAB_CutO16"]->Fill(carbon_T_LAB);
       histos1D["h_2prong_carbon_E_CMS_CutO16"]->Fill(carbon_T_CMS);
       histos1D["h_2prong_carbon_phiBEAM_CMS_CutO16"]->Fill(carbon_phi_BEAM_CMS);
       histos1D["h_2prong_carbon_thetaBEAM_CMS_CutO16"]->Fill(acos(carbon_cosTheta_BEAM_CMS));
@@ -1056,7 +1111,9 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack, eventraw::EventInfo *aEventInfo
       histos2D["h_2prong_carbon_cosThetaBEAM_E_CMS_CutO16"]->Fill(carbon_cosTheta_BEAM_CMS, carbon_T_CMS);
       histos2D["h_2prong_carbon_deltaYZ_CutO16"]->Fill(carbon_len*list.back().getTangent().Y(), carbon_len*list.back().getTangent().Z());
       // alpha-carbon correlations - after additional ID cuts
+      histos2D["h_2prong_alpha_E_carbon_E_LAB_CutO16"]->Fill(alpha_T_LAB, carbon_T_LAB);
       histos2D["h_2prong_alpha_E_carbon_E_CMS_CutO16"]->Fill(alpha_T_CMS, carbon_T_CMS);
+      histos2D["h_2prong_alpha_len_carbon_len_CutO16"]->Fill(alpha_len, carbon_len);
     }
     //
     ///////////// DEBUG - after additional ID cuts
@@ -1105,9 +1162,23 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack, eventraw::EventInfo *aEventInfo
     profiles1D["h_2prong_vertexXBEAM_carbon_E_CMS_prof"]->Fill(vertexPos_BEAM_LAB.X(), carbon_T_CMS);
     profiles1D["h_2prong_vertexXBEAM_gamma_E_LAB_prof"]->Fill(vertexPos_BEAM_LAB.X(), photon_E_LAB);
     profiles1D["h_2prong_vertexXBEAM_Qvalue_CMS_prof"]->Fill(vertexPos_BEAM_LAB.X(), Qvalue_CMS);
+
+    ///////// DEBUG - special Reco file with selected events only
+    //
+    if(passed_O16_idCut) {
+      //      myDumpRecoFile->cd();
+      *myDumpTrack=*aTrack;
+      *myDumpEventInfo=*aEventInfo;
+      myDumpTree->Fill();
+      //      outputFile->cd();
+    }
+    //
+    ///////// DEBUG - special Reco file with selected events only
   }
   // 3-prong (triple alpha)
   if(ntracks==3) {
+    histos2D["h_3prong_max_vs_total_charge"]->Fill(aTrack->getIntegratedCharge(aTrack->getLength()), aTrack->getMaxCharge());
+
     histos1D["h_3prong_vertexX"]->Fill(vertexPos.X());
     histos1D["h_3prong_vertexY"]->Fill(vertexPos.Y());
     histos1D["h_3prong_vertexZ"]->Fill(vertexPos.Z());
@@ -1341,6 +1412,7 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack, eventraw::EventInfo *aEventInfo
 ///////////////////////////////
 void HIGGS_analysis::finalize(){
 
+  outputFile->cd();
   for (auto &h : histos1D) {
     h.second->SetTitleOffset(1.3, "X");
     h.second->SetTitleOffset(1.4, "Y");
@@ -1356,6 +1428,13 @@ void HIGGS_analysis::finalize(){
     p.second->SetTitleOffset(1.4, "Y");
   }
   outputFile->Write();
+
+  ///////// DEBUG - special Reco file with selected events only
+  //
+  myDumpRecoFile->cd();
+  myDumpTree->Write();
+  //
+  ///////// DEBUG - special Reco file with selected events only
 }
 ///////////////////////////////
 ///////////////////////////////

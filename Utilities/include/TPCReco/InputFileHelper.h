@@ -1,6 +1,8 @@
 #ifndef UTILITIES_INPUT_FILE_HELPER_H_
 #define UTILITIES_INPUT_FILE_HELPER_H_
 #include "TPCReco/RunIdParser.h"
+#include "TPCReco/colorText.h"
+
 #include <algorithm>
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
@@ -8,10 +10,11 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <ctime>
 
 namespace InputFileHelper {
-std::vector<std::string> tokenize(const std::string &text) {
-  boost::char_separator<char> sep(",");
+std::vector<std::string> tokenize(const std::string &text, const std::string &separator = ",") {
+  boost::char_separator<char> sep(separator.c_str());
   boost::tokenizer<boost::char_separator<char>> tokenizer(text, sep);
   return std::vector<std::string>(tokenizer.begin(), tokenizer.end());
 }
@@ -102,6 +105,56 @@ FilesIterator filterExtensions(FilesIterator first, FilesIterator last,
     auto extension = boost::filesystem::path(entry).extension().string();
     return extensions.count(extension) == 0;
   });
+}
+
+
+std::string makeOutputFileName(const std::string &dataFileNames, const std::string &namePrefix) {
+
+  auto files = tokenize(dataFileNames);
+  auto aFileName = files.back();
+  aFileName = tokenize(aFileName, "/").back();
+  auto outputFileName = aFileName;
+
+  std::vector<std::string> prefixes = {"CoBo_ALL_AsAd_ALL", "CoBo0_AsAdALL", "CoBo0_AsAdAll", "CoBo0_AsAd", "EventTPC"};
+  int margin = 0;
+  for(const auto & prefix: prefixes){
+    if(aFileName.find(prefix)!=std::string::npos){
+      if(prefix=="CoBo0_AsAd") margin = 1;
+      auto loc = aFileName.find(prefix);
+      outputFileName = aFileName.replace(loc, prefix.size()+margin, namePrefix);
+      break;
+    }
+  }
+
+  /// add timestamp of MC file creation
+  if(aFileName.find("MC")!=std::string::npos){
+    std::time_t t = std::time(nullptr);
+    std::tm tm = *std::localtime(&t);
+    std::stringstream ss;
+    ss<<std::put_time(&tm, "%Y-%M-%dT%H-%M");
+    std::string timestamp = ss.str();
+    auto index = outputFileName.rfind(".");
+    outputFileName = outputFileName.replace(index,1,"_"+timestamp+".");
+  }
+
+  ///remove miliseconds from timestamp
+  auto index = outputFileName.find(".");
+  if(index!=std::string::npos){
+    outputFileName = outputFileName.replace(index,4,"");
+  }
+
+  /// replace "graw" with "root"
+  index = outputFileName.rfind("graw");
+  if(index!=std::string::npos){
+    outputFileName = outputFileName.replace(index,-1,"root");
+  }
+  //replace ":" with "-"
+  index = outputFileName.find(":");
+  while(index!=std::string::npos){
+    outputFileName = outputFileName.replace(index,1,"-");
+    index = outputFileName.find(":");
+  }
+  return outputFileName;
 }
 } // namespace InputFileHelper
 

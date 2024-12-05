@@ -1,14 +1,25 @@
 {
-  "dataFile": "/data/edaq/2022/HIgS_2022/pulser",
-  "geometryFile": "./geometry_ELITPC.dat",
-  "resourcesPath": ".",
-  "updateInterval": 3000,
-  "frameLoadRange": 10,
-  "removePedestal": false,
-  "display": {
-    "zLogScale": false,
-    "autoZoom": false,
-    "recoMode": false,
-    "rate": true
-  }
+    "input": {
+	"dataFile": "/data/edaq/GetSoftware_config/pulser",
+	"geometryFile": "./geometry_ELITPC.dat",
+	"resourcesPath": ".",
+	"frameLoadRange": 10,
+	"singleAsadGrawFile": false
+    },
+    "online": {
+	"updateInterval": 3000
+    },
+    "display": {
+        "zLogScale": false,
+        "autoZoom": false,
+        "recoMode": false,
+        "rate": true
+    },
+    "pedestal": {
+        "remove": false,
+        "minPedestalCell": 5,
+        "maxPedestalCell": 25,
+        "minSignalCell": 5,
+        "maxSignalCell": 506
+    }
 }

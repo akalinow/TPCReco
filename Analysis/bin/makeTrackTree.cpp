@@ -31,39 +31,6 @@
 #include "TPCReco/EventTPC.h"
 /////////////////////////////////////
 /////////////////////////////////////
-std::string createROOTFileName(const  std::string & grawFileName){
-
-  std::string rootFileName = grawFileName;
-  std::string::size_type index = rootFileName.find(",");
-  if(index!=std::string::npos){
-    rootFileName = grawFileName.substr(0,index);
-  }
-  index = rootFileName.rfind("/");
-  if(index!=std::string::npos){
-    rootFileName = rootFileName.substr(index+1,-1);
-  }
-  if(rootFileName.find("CoBo_ALL_AsAd_ALL")!=std::string::npos){
-    rootFileName = rootFileName.replace(0,std::string("CoBo_ALL_AsAd_ALL").size(),"TrackTree");
-  }
-  else if(rootFileName.find("CoBo0_AsAd")!=std::string::npos){
-    rootFileName = rootFileName.replace(0,std::string("CoBo0_AsAd").size()+1,"TrackTree");
-  }
-  else if(rootFileName.find("EventTPC")!=std::string::npos){
-    rootFileName = rootFileName.replace(0,std::string("EventTPC").size(),"TrackTree");
-  }
-  else{
-    std::cout<<KRED<<"File format unknown: "<<RST<<rootFileName<<std::endl;
-    exit(1);
-  }
-  index = rootFileName.rfind("graw");
-  if(index!=std::string::npos){
-    rootFileName = rootFileName.replace(index,-1,"root");
-  }
-  
-  return rootFileName;
-}
-/////////////////////////////////////
-/////////////////////////////////////
 
 int makeTrackTree(boost::property_tree::ptree & aConfig);
 
@@ -97,47 +64,48 @@ typedef struct {Float_t eventId, frameId,
     alphaRange, carbonRange,
     cosPhiSegments,
     charge, cosTheta, phi, chi2,
-    hypothesisChi2,
     xVtx, yVtx, zVtx,
     xAlphaEnd, yAlphaEnd, zAlphaEnd,
     xCarbonEnd, yCarbonEnd, zCarbonEnd,
     total_mom_x,  total_mom_y,  total_mom_z,
-    lineFitChi2, dEdxFitChi2, dEdxFitSigma;
+    lineFitLoss, dEdxFitLoss, dEdxFitSigma;
     } TrackData;
 /////////////////////////
 int makeTrackTree(boost::property_tree::ptree & aConfig) {
 		  
   std::shared_ptr<EventSourceBase> myEventSource = EventSourceFactory::makeEventSourceObject(aConfig);
-  
+  myEventSource->getEventFilter().setConditions(aConfig); // initialize RAW event pre-filtering
+
   std::string dataFileName = aConfig.get("input.dataFile","");
-  std::string rootFileName = createROOTFileName(dataFileName);
+  std::string rootFileName = InputFileHelper::makeOutputFileName(dataFileName,"TrackTree");
   TFile outputROOTFile(rootFileName.c_str(),"RECREATE");
   TTree *tree = new TTree("trackTree", "Track tree");
   TrackData track_data;
   std::string leafNames = "";
   leafNames += "eventId:frameId:eventType:";
-  leafNames += "length:horizontalLostLength:verticalLostLength:";
+  leafNames += "length:";
+  leafNames += "horizontalLostLength:verticalLostLength:";
   leafNames += "alphaEnergy:carbonEnergy:alphaRange:carbonRange:";
   leafNames += "cosPhiSegments:";
-  leafNames += "charge:cosTheta:phi:chi2:hypothesisChi2:";
+  leafNames += "charge:cosTheta:phi:chi2:";
   leafNames += "xVtx:yVtx:zVtx:";
   leafNames += "xAlphaEnd:yAlphaEnd:zAlphaEnd:";
   leafNames += "xCarbonEnd:yCarbonEnd:zCarbonEnd:";
   leafNames += "total_mom_x:total_mom_y:total_mom_z:";
-  leafNames += "lineFitChi2:dEdxFitChi2:dEdxFitSigma";
+  leafNames += "lineFitLoss:dEdxFitLoss:dEdxFitSigma";
   tree->Branch("track",&track_data,leafNames.c_str());
-  
+
   std::string geometryFileName = aConfig.get("input.geometryFile","");
   double pressure = aConfig.get<double>("conditions.pressure"); 
   double temperature = aConfig.get<double>("conditions.temperature");
+  double samplingRate = aConfig.get<double>("conditions.samplingRate");
   boost::property_tree::ptree hitConfig;
   hitConfig.put_child("hitFilter", aConfig.get_child("hitFilter"));
     
   TrackBuilder myTkBuilder;
   myTkBuilder.setGeometry(myEventSource->getGeometry());
   myTkBuilder.setPressure(pressure);
-  IonRangeCalculator myRangeCalculator(gas_mixture_type::CO2,pressure, temperature);
-
+  IonRangeCalculator myRangeCalculator(gas_mixture_type::CO2,pressure,temperature);
   ////////////////////////////////////////////
   //
   // extra initialization for fit DEBUG plots
@@ -171,11 +139,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   ////////////////////////////////////////////
 
   RecoOutput myRecoOutput;
-  std::string fileName = InputFileHelper::tokenize(dataFileName)[0];
-  std::size_t last_dot_position = fileName.find_last_of(".");
-  std::size_t last_slash_position = fileName.find_last_of("//");
-  std::string recoFileName = MakeUniqueName("Reco_"+fileName.substr(last_slash_position+1,
-						     last_dot_position-last_slash_position-1)+".root");
+  std::string recoFileName = InputFileHelper::makeOutputFileName(dataFileName,"Reco");
   std::shared_ptr<eventraw::EventInfo> myEventInfo = std::make_shared<eventraw::EventInfo>();
   myRecoOutput.open(recoFileName);
  
@@ -183,22 +147,26 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   std::cout<<KBLU<<"File with "<<RST<<myEventSource->numberOfEntries()<<" frames loaded."<<std::endl;
 
   //Event loop
-  unsigned int nEntries = myEventSource->numberOfEntries();
-  //if(maxNevents>0) nEntries = std::min( (unsigned int)nEntries, (unsigned int)maxNevents );
-  //nEntries = 5; //TEST
-  for(unsigned int iEntry=0;iEntry<nEntries;++iEntry){
+  int nEntries = aConfig.get<int>("input.readNEvents");
+  if(nEntries<0 || nEntries>myEventSource->numberOfEntries() ) nEntries = myEventSource->numberOfEntries();
+
+  for(int iEntry=0;iEntry<nEntries;++iEntry){
     if(nEntries>10 && iEntry%(nEntries/10)==0){
       std::cout<<KBLU<<"Processed: "<<int(100*(double)iEntry/nEntries)<<" % events"<<RST<<std::endl;
     }
     myEventSource->loadFileEntry(iEntry);
+
+    // pre-filtering
+    if(myEventSource->getEventFilter().isEnabled() &&
+       !myEventSource->getEventFilter().pass(*myEventSource->getCurrentEvent())) continue; // skip this event
+
     *myEventInfo = myEventSource->getCurrentEvent()->GetEventInfo();
     if(!iEntry || develMode) { // initialize only once per session in non-debug mode and every time in debug mode
       myEventSource->getCurrentEvent()->setHitFilterConfig(filter_type::threshold, hitConfig);
       myEventSource->getCurrentEvent()->setHitFilterConfig(filter_type::fraction, hitConfig);
     }
-    myTkBuilder.setGeometry(myEventSource->getGeometry());
-    myTkBuilder.setPressure(pressure); ////// HACK - workaround for static variable dEdxFitter::currentPressure
     myTkBuilder.setEvent(myEventSource->getCurrentEvent());
+    myTkBuilder.setPressure(pressure);
     myTkBuilder.reconstruct();
 
     ////////////////////////////////////////////
@@ -259,12 +227,12 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
 
     myRecoOutput.setRecTrack(aTrack3D);
     myRecoOutput.setEventInfo(myEventInfo);				   
-    //myRecoOutput.update(); 
+    myRecoOutput.update(); 
     
     double length = aTrack3D.getLength();
     double charge = aTrack3D.getIntegratedCharge(length);
-    double chi2 = aTrack3D.getChi2();
-    double hypothesisChi2 = aTrack3D.getHypothesisFitChi2();
+    double chi2 = aTrack3D.getLoss();
+    double hypothesisLoss = aTrack3D.getHypothesisFitLoss();
     const TVector3 & vertex = aTrack3D.getSegments().front().getStart();
     const TVector3 & alphaEnd = aTrack3D.getSegments().front().getEnd();
     const TVector3 & carbonEnd = aTrack3D.getSegments().back().getEnd();
@@ -284,7 +252,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     int eventType = aTrack3D.getSegments().front().getPID()+aTrack3D.getSegments().back().getPID();
     double alphaRange =  aTrack3D.getSegments().front().getLength();
     double carbonRange =  aTrack3D.getSegments().back().getPID()== pid_type::CARBON_12 ? aTrack3D.getSegments().back().getLength(): 0.0;
-    double alphaEnergy = alphaRange>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA,alphaRange):0.0;
+    double alphaEnergy = alphaRange>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA,1.08*alphaRange+verticalTrackLostPart):0.0;
     double carbonEnergy = carbonRange>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::CARBON_12, carbonRange):0.0;
     double m_Alpha = myRangeCalculator.getIonMassMeV(pid_type::ALPHA);
     double m_12C = myRangeCalculator.getIonMassMeV(pid_type::CARBON_12);
@@ -303,7 +271,6 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     track_data.cosTheta = cosTheta;
     track_data.phi = phi;
     track_data.chi2 = chi2;
-    track_data.hypothesisChi2 = hypothesisChi2;
     
     track_data.xVtx = vertex.X();
     track_data.yVtx = vertex.Y();
@@ -327,10 +294,9 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     track_data.total_mom_y = total_p.y();
     track_data.total_mom_z = total_p.z();
 
-    track_data.lineFitChi2 = aTrack3D.getChi2();
-    track_data.dEdxFitChi2 = aTrack3D.getHypothesisFitChi2();
-    track_data.dEdxFitSigma = myTkBuilder.getdEdxFitSigmaSmearing();
-    
+    track_data.lineFitLoss = aTrack3D.getLoss();
+    track_data.dEdxFitLoss = aTrack3D.getHypothesisFitLoss();
+    track_data.dEdxFitSigma = aTrack3D.getSegments().front().getDiffusion();    
     tree->Fill();    
   }
   outputROOTFile.Write();

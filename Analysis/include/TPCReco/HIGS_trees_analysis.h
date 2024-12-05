@@ -26,11 +26,11 @@ public:
 
   HIGS_trees_analysis(std::shared_ptr<GeometryTPC> aGeometryPtr, // definition of LAB detector coordinates
 		      float beamEnergy,   // nominal gamma beam energy [keV] in detector LAB frame
-		      TVector3 beamDir,   // nominal gamma beam direction in detector LAB frame
-		      double pressure,    // CO2 pressure [mbar]
-		      double temperature);// CO2 temperature [K]
-  
+		      TVector3 beamDir);   // nominal gamma beam direction in detector LAB frame
+		     
   ~HIGS_trees_analysis();
+
+  void setIonRangeCalculator(const IonRangeCalculator & aIonRangeCalculator);
   
   void open();
   
@@ -55,12 +55,11 @@ public:
   void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);  // definition of LAB detector coordinates
   void setBeamProperties(float beamEnergy, // nominal gamma beam energy [MeV] in detector LAB frame
 			 TVector3 beamDir); // nominal gamma beam direction in detector LAB frame
-  void setIonRangeCalculator(double pressure, double temperature); // CO2 pressure [mbar] and temperature [K]
 
   std::shared_ptr<GeometryTPC> myGeometryPtr; //! transient data member
   TVector3 gammaUnitVec; // dimensionless, Cartesian detector LAB frame
   float gammaEnergy;  // MeV
-  IonRangeCalculator myRangeCalculator;
+  IonRangeCalculator myIonRangeCalculator;
 
   // set of checks to measure how well event is contained within TPC active volume
   /*
