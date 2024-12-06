@@ -42,13 +42,10 @@ public:
  private:
 
   std::shared_ptr<fwk::RunController> myRunController;
-  PEventTPC myCurrentPEvent;
   unsigned long int nEvents;
-  unsigned long int currentEntry;
-  std::vector<ModuleExchangeSpace> events;
-  void fillEventsArray();
   void fillEvent(ModuleExchangeSpace &event);
   std::shared_ptr<ModuleExchangeSpace> current_event;
+  void generateNextEvent();
 };
 #endif
 

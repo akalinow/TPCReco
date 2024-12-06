@@ -13,9 +13,7 @@ EventSourceGeant4::EventSourceGeant4(const std::string & geometryFileName, std::
       myRunController(runController),
       nEvents(nEvents)
 {
-  //loadGeometry(geometryFileName);
-  events.reserve(nEvents);
-  fillEventsArray();
+  loadGeometry(geometryFileName);
 }
 
 
@@ -27,29 +25,24 @@ void EventSourceGeant4::loadDataFile(const std::string & fileName){ }
 
 void EventSourceGeant4::loadFileEntry(unsigned long int iEntry){
 
-  myCurrentPEvent = events[iEntry].tpcPEvt;
-  currentEntry = iEntry;
-  fillEventTPC();
+  generateNextEvent();
 }
 
 
 std::shared_ptr<EventTPC> EventSourceGeant4::getNextEvent(){
-  currentEntry = (currentEntry + 1) % nEvents;
-  loadFileEntry(currentEntry);
+  generateNextEvent();
   return myCurrentEvent;
 }
 
 
 std::shared_ptr<EventTPC> EventSourceGeant4::getPreviousEvent(){
-  currentEntry = (currentEntry - 1 + nEvents) % nEvents;
-  loadFileEntry(currentEntry);
+  generateNextEvent();
   return myCurrentEvent;
 }
 
 
 void EventSourceGeant4::loadEventId(unsigned long int iEvent){
-  currentEntry = iEvent;
-  loadFileEntry(iEvent);
+  generateNextEvent();
 }
 
 
@@ -61,20 +54,13 @@ unsigned long int EventSourceGeant4::numberOfEvents() const {
     return nEvents;
 }
 
-//void EventSourceGeant4::fillEvent(ModuleExchangeSpace &event){
-//  myRunController -> GetCurrentEvent();
-//}
-void EventSourceGeant4::fillEventsArray() {
-  for (unsigned long int i = 0; i < nEvents; ++i) {
+
+void EventSourceGeant4::generateNextEvent(){
     myRunController -> RunSingle();
-    ModuleExchangeSpace *currentEvent = myRunController -> GetCurrentEvent();
-    
-    auto simEvt = currentEvent -> simEvt;
-    auto eventInfo = currentEvent -> eventInfo;
-    auto track3D = currentEvent -> track3D;
-    //auto tpcPEvt = currentEvent -> tpcPEvt;
-    std::cout << "EventSourceGeant4::fillEventsArray()" << std::endl;
+    PEventTPC myTpcPEvt =  myRunController -> getCurrentPEventTPC();
+    eventraw::EventInfo myEventInfo = myTpcPEvt.GetEventInfo();
+    std::cout << "Event ID: " << myEventInfo.GetEventId() << std::endl;
+    std::cout << "EventSourceGeant4::generateNextEvent()" << std::endl;
     std::exit(0);
-  }
 }
 

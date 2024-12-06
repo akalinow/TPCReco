@@ -42,7 +42,8 @@ fwk::VModule::EResultFlag TPCDigitizerSRC::Init(boost::property_tree::ptree conf
 fwk::VModule::EResultFlag TPCDigitizerSRC::Process(ModuleExchangeSpace &event) {
     aEventInfo->SetEventId(eventID++);
     auto &currentSimEvent = event.simEvt;
-    currentPEventTPC = std::shared_ptr<PEventTPC>(&event.tpcPEvt,boost::null_deleter());
+    auto null_deleter = [](PEventTPC*) {};
+    currentPEventTPC = std::shared_ptr<PEventTPC>(&event.tpcPEvt, null_deleter);
     currentPEventTPC->Clear();
     // Loop over tracks
     for (auto &t: currentSimEvent.GetTracks()) {
@@ -58,8 +59,6 @@ fwk::VModule::EResultFlag TPCDigitizerSRC::Process(ModuleExchangeSpace &event) {
     }
     currentPEventTPC->SetEventInfo(*aEventInfo);
     event.eventInfo = *aEventInfo;
-    event.tpcPEvt = *currentPEventTPC;
-    std::cout << "Event ID: " << aEventInfo->GetEventId() << std::endl;
     return fwk::VModule::eSuccess;
 }
 

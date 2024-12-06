@@ -35,6 +35,10 @@ namespace fwk {
 
         ModuleExchangeSpace *GetCurrentEvent() { return fCurrentEvent; }
 
+        PEventTPC getCurrentPEventTPC() {
+            return fCurrentEvent->tpcPEvt;
+        }
+
         /// Is timing enabled?
         bool IsTiming() const { return fTiming; }
 
