@@ -43,8 +43,6 @@ public:
 
   std::shared_ptr<fwk::RunController> myRunController;
   unsigned long int nEvents;
-  void fillEvent(ModuleExchangeSpace &event);
-  std::shared_ptr<ModuleExchangeSpace> current_event;
   void generateNextEvent();
 };
 #endif
