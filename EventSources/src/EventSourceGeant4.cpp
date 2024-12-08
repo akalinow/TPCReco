@@ -25,6 +25,7 @@ void EventSourceGeant4::loadDataFile(const std::string & fileName){ }
 
 void EventSourceGeant4::loadFileEntry(unsigned long int iEntry){
   generateNextEvent();
+  myCurrentEntry = iEntry;
 }
 
 
