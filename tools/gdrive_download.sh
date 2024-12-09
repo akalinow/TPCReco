@@ -1,6 +1,6 @@
 #!/bin/bash
 
-FILE_ID=${GDRIVE_FILE_ID}
+FILE_ID="1DEJppsVrUMvAB8KD3LdiNVBGSvFXBOAK"
 DESTINATION="Geant_STL_model/elitpc_STL_model_20180302.tar.gz"
 
 if [ -f ${DESTINATION} ]; then

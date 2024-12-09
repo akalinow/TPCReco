@@ -22,7 +22,7 @@ if(BUILD_GEANT_MODULE)
   include(ExternalProject)
   ExternalProject_Add(
     geant_model
-    DOWNLOAD_COMMAND ${CMAKE_SOURCE_DIR}/gdrive_download.sh
+    DOWNLOAD_COMMAND ${CMAKE_SOURCE_DIR}/tools/gdrive_download.sh
     SOURCE_DIR Geant_STL_model
     DOWNLOAD_DIR Geant_STL_model
     URL_HASH MD5=0c2999ee658f0dec54f729ed889eff01

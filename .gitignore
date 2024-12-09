@@ -54,6 +54,3 @@ Makefile
 *.graw
 /.vs
 /CMakeSettings.json
-
-# env
-.env
