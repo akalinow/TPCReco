@@ -49,7 +49,7 @@ void EventSourceGeant4::loadEventId(unsigned long int iEvent){
 
 void EventSourceGeant4::loadGeometry(const std::string & fileName){
   EventSourceBase::loadGeometry(fileName);
-  myProjectorPtr.reset(new UVWprojector(myGeometryPtr));
+  // myProjectorPtr.reset(new UVWprojector(myGeometryPtr));
 }
 
 unsigned long int EventSourceGeant4::numberOfEvents() const {
@@ -60,6 +60,7 @@ unsigned long int EventSourceGeant4::numberOfEvents() const {
 void EventSourceGeant4::generateNextEvent(){
     myRunController -> RunSingle();
     myCurrentPEvent = std::make_shared<PEventTPC>(myRunController -> getCurrentPEventTPC());
+    //std::cout << "EventId: " << myCurrentPEvent->GetEventInfo().GetEventId() << std::endl;
     fillEventTPC();
 }
 
