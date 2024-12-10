@@ -22,7 +22,7 @@ if(BUILD_GEANT_MODULE)
   include(ExternalProject)
   ExternalProject_Add(
     geant_model
-    URL https://cernbox.cern.ch/remote.php/dav/public-files/DWjBUbnsCuwE15M/elitpc_STL_model_20180302.tar.gz
+    DOWNLOAD_COMMAND ${CMAKE_SOURCE_DIR}/tools/gdrive_download.sh
     SOURCE_DIR Geant_STL_model
     DOWNLOAD_DIR Geant_STL_model
     URL_HASH MD5=0c2999ee658f0dec54f729ed889eff01
@@ -61,4 +61,12 @@ endif()
 
 target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
 
-install(TARGETS ${MODULE_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+install(
+    TARGETS ${MODULE_NAME}
+    EXPORT TPCRecoTargets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    INCLUDES
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)

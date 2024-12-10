@@ -50,7 +50,8 @@ enum Modes {
 	    M_OFFLINE_GRAW_MODE,
 	    M_OFFLINE_NGRAW_MODE,
 	    M_OFFLINE_ROOT_MODE,
-	    M_OFFLINE_MC_MODE,	       
+	    M_OFFLINE_MC_MODE,	 
+       M_OFFLINE_GEANT4_MODE      
 };
 
 #endif

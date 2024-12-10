@@ -32,6 +32,8 @@
 #endif
 #include "TPCReco/EventSourceROOT.h"
 #include "TPCReco/EventSourceMC.h"
+#include "TPCReco/EventSourceGeant4.h"
+#include "TPCReco/RunController.h"
 
 namespace EventSourceFactory {
 	inline std::shared_ptr<EventSourceBase> makeEventSourceObject(boost::property_tree::ptree& myConfig) {
@@ -82,9 +84,15 @@ namespace EventSourceFactory {
 			aRootEventSrc->configurePedestal(myConfig.find("pedestal")->second);
 		}
 		else if (dataFileVec.size() == 1 && dataFileName.find("_MC_") != std::string::npos) {
-			myEventSource = std::make_shared<EventSourceMC>(geometryFileName);
+			std::string controllerConfigPath = myConfig.get<std::string>("input.controllerConfigPath");
+			unsigned long int nEvents = myConfig.get<unsigned long int>("input.readNEvents");
+			boost::property_tree::ptree controllerConfig;
+			boost::property_tree::read_json(controllerConfigPath, controllerConfig);
+			auto runController = std::make_shared<fwk::RunController>();
+			runController -> Init(controllerConfig);
+			myEventSource = std::make_shared<EventSourceGeant4>(geometryFileName, runController, nEvents);
 			myConfig.put("transient.onlineFlag", false);
-			myConfig.put("transient.eventType", event_type::EventSourceMC);
+			myConfig.put("transient.eventType", event_type::EventSourceGeant4);
 		}		
 #ifdef WITH_GET
 		else if (all_graw) {

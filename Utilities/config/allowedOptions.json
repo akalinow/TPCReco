@@ -11,6 +11,12 @@
         "defaultValue" : "configDump.json",
         "description" : "Name of the JSON file used for configuration dump\nType: string"
     },
+    "controllerConfigPath":{
+        "group":"input",
+        "type" : "string",
+        "defaultValue" : "",
+        "description" : "Path of the JSON file with runController configuration.\nType: string"
+    },
     "dataFile":{
         "group": "input",
         "type": "string",

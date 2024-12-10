@@ -52,6 +52,9 @@ MainFrame::MainFrame(const TGWindow* p, UInt_t w, UInt_t h, const boost::propert
 	else if (myWorkMode == M_OFFLINE_GRAW_MODE || myWorkMode == M_OFFLINE_NGRAW_MODE) {
 		modeLabel = "OFFLINE from GRAW";
 	}
+	else if (myWorkMode == M_OFFLINE_GEANT4_MODE) {
+		modeLabel = "OFFLINE from Geant4";
+	}
 	fFileInfoFrame->updateModeLabel(modeLabel);
 	Update();
 }
@@ -130,6 +133,13 @@ void MainFrame::InitializeEventSource() {
 	}
 	else if (eventSourceType == event_type::EventSourceMultiGRAW) {
 		myWorkMode = (onlineFlag ? M_ONLINE_NGRAW_MODE : M_OFFLINE_NGRAW_MODE);
+	}
+	else if (eventSourceType == event_type::EventSourceGeant4) {
+		myWorkMode = M_OFFLINE_GEANT4_MODE;
+	}
+	else {
+		std::cerr << "Unknown event source type: " << eventSourceType << std::endl;
+		exit(1);
 	}
 	
 	myHistoManager.setConfig(myConfig);

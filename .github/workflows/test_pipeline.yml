@@ -1,0 +1,59 @@
+name: CodeTesting
+
+on:
+  pull_request:
+    branches:
+      - ZPS_2024_winter
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: eWaterCycle/setup-apptainer@v2
+      with:
+        apptainer-version: 1.3.4
+
+    # python for google drive download
+    - uses: actions/setup-python@v2
+      with:
+        python-version: '3.12'
+
+    - name: Google drive container registry XD
+      run: |
+        pip install gdown
+        gdown ${{ secrets.CONTAINER_URL }}
+    
+    - name: Build and Test
+      run: |
+          singularity exec elitpc_tpcreco-sim-dev.sif bash -c '
+            mkdir build && cd build
+            cmake -DBUILD_TEST=ON ../
+            make install -j 4
+            ctest
+          '
+
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - uses: snyk/actions/setup@master
+      - uses: actions/setup-go@v1
+        with:
+          go-version: '1.13'
+      - name: Snyk monitor
+        run: snyk code test --severity-threshold=high
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}

@@ -61,6 +61,9 @@ std::ostream& operator<<(std::ostream& os, const event_type& et) {
     case event_type::EventSourceMultiGRAW:
         os << "EventSourceMultiGRAW";
         break;
+    case event_type::EventSourceGeant4:
+        os << "EventSourceGeant4";
+        break;
     default:
         os.setstate(std::ios_base::failbit);
     }
@@ -82,6 +85,9 @@ std::istream& operator>>(std::istream& is, event_type& et) {
     }
     else if (input == "EventSourceMultiGRAW") {
         et = event_type::EventSourceMultiGRAW;
+    }
+    else if (input == "EventSourceGeant4") {
+        et = event_type::EventSourceGeant4;
     }
     else {
         is.setstate(std::ios_base::failbit);
