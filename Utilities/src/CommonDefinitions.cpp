@@ -52,9 +52,6 @@ std::ostream& operator<<(std::ostream& os, const event_type& et) {
     case event_type::EventSourceROOT:
         os << "EventSourceROOT";
         break;
-    case event_type::EventSourceMC:
-        os << "EventSourceMC";
-        break;
     case event_type::EventSourceGRAW:
         os << "EventSourceGRAW";
         break;
@@ -76,9 +73,6 @@ std::istream& operator>>(std::istream& is, event_type& et) {
 
     if (input == "EventSourceROOT") {
         et = event_type::EventSourceROOT;
-    }
-    else if (input == "EventSourceMC") {
-        et = event_type::EventSourceMC;
     }
     else if (input == "EventSourceGRAW") {
         et = event_type::EventSourceGRAW;

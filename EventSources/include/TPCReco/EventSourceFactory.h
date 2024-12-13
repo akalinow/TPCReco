@@ -31,7 +31,6 @@
 #include "TPCReco/EventSourceMultiGRAW.h"
 #endif
 #include "TPCReco/EventSourceROOT.h"
-#include "TPCReco/EventSourceMC.h"
 #include "TPCReco/EventSourceGeant4.h"
 #include "TPCReco/RunController.h"
 

@@ -125,9 +125,6 @@ void MainFrame::InitializeEventSource() {
 	if (eventSourceType == event_type::EventSourceROOT) {
 		myWorkMode = M_OFFLINE_ROOT_MODE;
 	}
-	else if (eventSourceType == event_type::EventSourceMC) {
-		myWorkMode = M_OFFLINE_MC_MODE;
-}
 	else if (eventSourceType == event_type::EventSourceGRAW) {
 		myWorkMode = (onlineFlag ? M_ONLINE_GRAW_MODE : M_OFFLINE_GRAW_MODE);
 	}

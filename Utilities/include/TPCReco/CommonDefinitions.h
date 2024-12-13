@@ -47,7 +47,6 @@ enum class fit_type{
 
 enum class event_type {
 	EventSourceROOT,
-	EventSourceMC,
 	EventSourceGRAW,
 	EventSourceMultiGRAW,
   EventSourceGeant4
