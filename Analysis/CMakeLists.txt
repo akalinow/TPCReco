@@ -18,7 +18,6 @@ reco_add_library(${MODULE_NAME} EXTRA_SOURCES
 target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
 
 add_executable(makeTrackTree bin/makeTrackTree.cpp)
-add_executable(makeMCTrackTree bin/makeMCTrackTree.cpp)
 add_executable(recoEventsAnalysis bin/recoEventsAnalysis.cpp)
 add_executable(recoEventsComparison bin/recoEventsComparison.cpp)
 add_executable(rawSignalAnalysis bin/rawSignalAnalysis.cpp)
@@ -43,8 +42,6 @@ endif()
 
 target_link_libraries(makeTrackTree PRIVATE ${MODULE_NAME}
                                             Boost::program_options GUI)
-target_link_libraries(makeMCTrackTree PRIVATE ${MODULE_NAME}
-                                              Boost::program_options)
 target_link_libraries(recoEventsAnalysis PRIVATE ${MODULE_NAME}
                                                  Boost::program_options)
 target_link_libraries(recoEventsComparison PRIVATE ${MODULE_NAME}
@@ -63,7 +60,6 @@ target_link_libraries(recoEnergyScaleFitter PRIVATE ${MODULE_NAME}
 reco_install_targets(
   ${MODULE_NAME}
   makeTrackTree
-  makeMCTrackTree
   recoEventsAnalysis
   recoEventsComparison
   recoEventsClean

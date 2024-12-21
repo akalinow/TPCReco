@@ -33,7 +33,7 @@ namespace fwk {
         /// Get a list of the names of all modules accessed thus far in the run
         std::list<std::string> GetUsedModuleNames() const { return fUsedModuleNames; }
 
-        ModuleExchangeSpace *GetCurrentEvent() { return fCurrentEvent; }
+        ModuleExchangeSpace & GetCurrentEvent() { return *fCurrentEvent; }
 
         PEventTPC getCurrentPEventTPC() {
             return fCurrentEvent->tpcPEvt;
