@@ -1,20 +1,11 @@
 #include "TPCReco/PEventTPC.h"
-
+#include <cstring>
 
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////  
 void PEventTPC::Clear() {
-    myChargeMap.clear();
-    for (int iDir = 0; iDir < 3; ++iDir) {
-        for (int iSection = 0; iSection < 3; ++iSection) {
-            for (int iStrip = 0; iStrip < 256; ++iStrip) {
-                for (int iCell = 0; iCell < 512; ++iCell) {
-                    myChargeArray[iDir][iSection][iStrip][iCell] = 0;
-                }
-            }
-        }
-    }
-
+  myChargeMap.clear(); // empties C++ map
+  std::memset(myChargeArray, 0, sizeof(myChargeArray)); // zeroes C array
 }
 
 ///////////////////////////////////////////////////////////////////////

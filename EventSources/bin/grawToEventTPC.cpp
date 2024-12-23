@@ -1,4 +1,4 @@
-#include "TPCReco/grawToEventTPC.h"
+#include "TPCReco/ConvertGrawFile.h"
 
 #include "TPCReco/ConfigManager.h"
 
