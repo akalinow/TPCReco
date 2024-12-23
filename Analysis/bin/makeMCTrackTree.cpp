@@ -68,8 +68,8 @@ typedef struct {Float_t eventId, frameId,
 /////////////////////////
 int makeTrackTree(boost::property_tree::ptree & aConfig) {
 		  
-	std::shared_ptr<EventSourceBase> eventSource = EventSourceFactory::makeEventSourceObject(aConfig);
-	auto myEventSource = std::dynamic_pointer_cast<EventSourceMC>(eventSource);
+  std::shared_ptr<EventSourceBase> eventSource = EventSourceFactory::makeEventSourceObject(aConfig);
+  auto myEventSource = std::dynamic_pointer_cast<EventSourceMC>(eventSource);
   if(!myEventSource){
     std::cout<<KRED<<"Wrong event source type!"<<RST<<std::endl;
     exit(1);

@@ -142,10 +142,8 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   std::string recoFileName = InputFileHelper::makeOutputFileName(dataFileName,"Reco");
   std::shared_ptr<eventraw::EventInfo> myEventInfo = std::make_shared<eventraw::EventInfo>();
   myRecoOutput.open(recoFileName);
- 
-  myEventSource->loadDataFile(dataFileName);
-  std::cout<<KBLU<<"File with "<<RST<<myEventSource->numberOfEntries()<<" frames loaded."<<std::endl;
 
+  /*
   //Event loop
   int nEntries = aConfig.get<int>("input.readNEvents");
   if(nEntries<0 || nEntries>myEventSource->numberOfEntries() ) nEntries = myEventSource->numberOfEntries();
@@ -159,12 +157,45 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     // pre-filtering
     if(myEventSource->getEventFilter().isEnabled() &&
        !myEventSource->getEventFilter().pass(*myEventSource->getCurrentEvent())) continue; // skip this event
+  */
+  // loop over ALL events
+  Long64_t nEntries = myEventSource->numberOfEntries();
+  std::cout<<KBLU<<"File with "<<RST<<nEntries<<" frames loaded."<<std::endl;
+  Long64_t maxNevents = aConfig.get<int>("input.readNEvents");
+  Long64_t previousEventIdx=-1;
+  Long64_t counter=0;
+  bool readNext=false;
 
-    *myEventInfo = myEventSource->getCurrentEvent()->GetEventInfo();
-    if(!iEntry || develMode) { // initialize only once per session in non-debug mode and every time in debug mode
+  //Event loop
+  do {
+    if(maxNevents>=0 && maxNevents==counter) break; // event limit
+    // initialize hit filters
+    if(previousEventIdx==-1 || develMode) { // initialize only once per session in non-debug mode and every time in debug mode
       myEventSource->getCurrentEvent()->setHitFilterConfig(filter_type::threshold, hitConfig);
       myEventSource->getCurrentEvent()->setHitFilterConfig(filter_type::fraction, hitConfig);
     }
+    // load very first event
+    if(previousEventIdx==-1) {
+      myEventSource->loadFileEntry(0);
+      if(myEventSource->getEventFilter().isEnabled() &&
+	 !myEventSource->getEventFilter().pass(*myEventSource->getCurrentEvent())) {
+	readNext = true;
+      }
+    }
+    int iEntry = myEventSource->currentEntryNumber();
+    previousEventIdx = myEventSource->currentEventNumber();
+    // load next good event
+    if(readNext){
+      myEventSource->getNextEventLoop();
+      if(previousEventIdx==myEventSource->currentEventNumber()) break; // no more good events
+    }
+    readNext = true;
+    if(nEntries>10 && iEntry%(nEntries/10)==0){
+      std::cout<<KBLU<<"Processed: "<<int(100*(double)iEntry/nEntries)<<" % events"<<RST<<std::endl;
+    }
+
+    // find tracks
+    *myEventInfo = myEventSource->getCurrentEvent()->GetEventInfo();
     myTkBuilder.setEvent(myEventSource->getCurrentEvent());
     myTkBuilder.setPressure(pressure);
     myTkBuilder.reconstruct();
@@ -261,6 +292,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     double p_12C = sqrt(2*m_12C*carbonEnergy);
     TVector3 total_p = p_alpha*(alphaEnd-vertex).Unit() + p_12C*(carbonEnd-vertex).Unit();
     
+    //    track_data.frameId = iEntry;
     track_data.frameId = iEntry;
     track_data.eventId = myEventInfo->GetEventId();
     track_data.eventType = eventType;
@@ -297,8 +329,13 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     track_data.lineFitLoss = aTrack3D.getLoss();
     track_data.dEdxFitLoss = aTrack3D.getHypothesisFitLoss();
     track_data.dEdxFitSigma = aTrack3D.getSegments().front().getDiffusion();    
-    tree->Fill();    
+    tree->Fill();
+  /*
+  } // end of event loop
+  */
+    counter++;
   }
+  while(1);
   outputROOTFile.Write();
 
   ////////////////////////////////////////////
@@ -312,7 +349,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   //
   ////////////////////////////////////////////
 
-  return nEntries;
+  return counter;
 }
 /////////////////////////////
 ////////////////////////////
