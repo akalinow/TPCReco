@@ -134,9 +134,6 @@ void MainFrame::InitializeEventSource() {
 	else if (eventSourceType == event_type::EventSourceMultiGRAW) {
 		myWorkMode = (onlineFlag ? M_ONLINE_NGRAW_MODE : M_OFFLINE_NGRAW_MODE);
 	}
-	else if (eventSourceType == event_type::EventSourceGeant4) {
-		myWorkMode = M_OFFLINE_GEANT4_MODE;
-	}
 	else {
 		std::cerr << "Unknown event source type: " << eventSourceType << std::endl;
 		exit(1);

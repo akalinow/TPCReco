@@ -49,8 +49,7 @@ enum class event_type {
 	EventSourceROOT,
 	EventSourceMC,
 	EventSourceGRAW,
-	EventSourceMultiGRAW,
-  EventSourceGeant4
+	EventSourceMultiGRAW
 };
 
 

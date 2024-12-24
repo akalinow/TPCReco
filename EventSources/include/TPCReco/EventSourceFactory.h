@@ -32,7 +32,6 @@
 #endif
 #include "TPCReco/EventSourceROOT.h"
 #include "TPCReco/EventSourceMC.h"
-#include "TPCReco/EventSourceGeant4.h"
 #include "TPCReco/RunController.h"
 
 namespace EventSourceFactory {
@@ -103,9 +102,9 @@ namespace EventSourceFactory {
 			}
 			auto runController = std::make_shared<fwk::RunController>();
 			runController -> Init(controllerConfig);
-			myEventSource = std::make_shared<EventSourceGeant4>(geometryFileName, runController, nEvents);
+			myEventSource = std::make_shared<EventSourceMC>(geometryFileName, runController, nEvents);
 			myConfig.put("transient.onlineFlag", false);
-			myConfig.put("transient.eventType", event_type::EventSourceGeant4);
+			myConfig.put("transient.eventType", event_type::EventSourceMC);
 		}		
 #ifdef WITH_GET
 		else if (all_graw) {

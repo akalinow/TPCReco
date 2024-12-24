@@ -11,6 +11,7 @@
 #include "TPCReco/UVWprojector.h"
 #include "TPCReco/Track3D.h"
 #include "TPCReco/IonRangeCalculator.h"
+#include "TPCReco/RunController.h"
 
 class EventSourceMC: public EventSourceBase {
   
@@ -18,7 +19,7 @@ public:
 
   EventSourceMC(){};
 
-  EventSourceMC(const std::string & geometryFileName);
+  EventSourceMC(const std::string & geometryFileName, std::shared_ptr<fwk::RunController> runController, unsigned long int nEvents);
 
   ~EventSourceMC();
 
@@ -34,44 +35,15 @@ public:
 
   std::shared_ptr<EventTPC> getLastEvent();
 
-  const Track3D & getGeneratedTrack(unsigned int index=0) const {return myTracks3D.at(index);}
-
-  pid_type getGeneratedEventType() const {return myGenEventType;}
-
   unsigned long int numberOfEvents() const;
 
   void loadGeometry(const std::string & fileName);
   
  private:
 
-  TGraph* braggGraph_alpha, *braggGraph_12C;
-  double braggGraph_alpha_energy, braggGraph_12C_energy;
-  double keVToChargeScale{1.0};
-
-  mutable TRandom3 myRndm{0};
-  std::shared_ptr<UVWprojector> myProjectorPtr;
-  mutable IonRangeCalculator myRangeCalculator;
-  TH3D my3DChargeCloud;
-  std::vector<Track3D> myTracks3D;
-  pid_type myGenEventType;
-
-  TVector3 createVertex() const;
-  TrackSegment3D createSegment(const TVector3 vertexPos, pid_type ion_id, double energy) const;  
-  TH1F createChargeProfile(double ion_range, pid_type ion_id) const;  
-  Track3D createTrack(const TVector3 & aVtx, pid_type ion_id, double energy) const;
-
-  void generateSingleProng(pid_type ion_id=pid_type::ALPHA);
-  void generateTwoProng();
-  void generateThreeProng();
-
-  void fill3DChargeCloud(const Track3D & aTrack);
-  void fillPEventTPC(const TH3D & h3DChargeCloud, const Track3D & aTrack);
-  void generateEvent();
-
-  
-  
-  
-  
+  std::shared_ptr<fwk::RunController> myRunController;
+  unsigned long int nEvents;
+  void generateNextEvent();
 };
 #endif
 
