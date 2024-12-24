@@ -39,6 +39,14 @@ namespace fwk {
             return fCurrentEvent->tpcPEvt;
         }
 
+        SimEvent getCurrentSimEvent() {
+            return fCurrentEvent->simEvt;
+        }
+
+        Track3D getCurrentTrack3D() {
+            return fCurrentEvent->track3D;
+        }
+
         /// Is timing enabled?
         bool IsTiming() const { return fTiming; }
 

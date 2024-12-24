@@ -56,11 +56,20 @@ unsigned long int EventSourceMC::numberOfEvents() const {
     return nEvents;
 }
 
+reaction_type EventSourceMC::GetGeneratedReactiontType(){
+    return  myCurrentSimEvent -> GetReactionType();
+}
+
+Track3D EventSourceMC::getGeneratedTrack(){
+    return myRunController -> getCurrentTrack3D();
+}
+
+
 
 void EventSourceMC::generateNextEvent(){
     myRunController -> RunSingle();
     myCurrentPEvent = std::make_shared<PEventTPC>(myRunController -> getCurrentPEventTPC());
-    //std::cout << "EventId: " << myCurrentPEvent->GetEventInfo().GetEventId() << std::endl;
+    myCurrentSimEvent = std::make_shared<SimEvent>(myRunController -> getCurrentSimEvent());
     fillEventTPC();
 }
 

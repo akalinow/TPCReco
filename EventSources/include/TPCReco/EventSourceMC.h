@@ -33,6 +33,10 @@ public:
 
   std::shared_ptr<EventTPC> getPreviousEvent();
 
+  reaction_type GetGeneratedReactiontType();
+
+  Track3D getGeneratedTrack();
+
   std::shared_ptr<EventTPC> getLastEvent();
 
   unsigned long int numberOfEvents() const;
@@ -42,6 +46,7 @@ public:
  private:
 
   std::shared_ptr<fwk::RunController> myRunController;
+  std::shared_ptr<SimEvent> myCurrentSimEvent;
   unsigned long int nEvents;
   void generateNextEvent();
 };

@@ -130,63 +130,66 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     myTkBuilder.reconstruct();
 
     int eventId = myEventSource->getCurrentEvent()->GetEventInfo().GetEventId();
-    const Track3D & aTrack3DGenAlpha = myEventSource->getGeneratedTrack(0);
-    const Track3D & aTrack3DGenCarbon = myEventSource->getGeneratedTrack(1);
-    const Track3D & aTrack3DReco = myTkBuilder.getTrack3D(0);
+    reaction_type eventReactionType = myEventSource->GetGeneratedReactiontType();
+    const Track3D & track3D = myEventSource->getGeneratedTrack();
 
-    track_data.frameId = iEntry;
-    track_data.eventId = eventId;
-
-    track_data.eventTypeGen = myEventSource->getGeneratedEventType(); 
-    track_data.alphaRangeGen =  aTrack3DGenAlpha.getSegments().front().getLength();    
-    track_data.alphaEnergyGen = track_data.alphaRangeGen>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA, track_data.alphaRangeGen):0.0;
-
-    track_data.carbonRangeGen =  aTrack3DGenCarbon.getSegments().front().getLength();
-    track_data.carbonEnergyGen = track_data.carbonRangeGen>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::CARBON_12, track_data.carbonRangeGen):0.0;
-
-    track_data.chargeGen = (track_data.alphaEnergyGen + track_data.carbonEnergyGen)*1E5;
-    const TVector3 & tangentGen = aTrack3DGenAlpha.getSegments().front().getTangent();
-    track_data.cosThetaGen = -tangentGen.X();
-    track_data.phiGen = atan2(-tangentGen.Z(), tangentGen.Y());
-
-    track_data.cosThetaGen = tangentGen.Z();//TEST
-    track_data.phiGen = tangentGen.Phi();//TEST
-
-    const TVector3 & vtxGen = aTrack3DGenAlpha.getSegments().front().getStart();
-    track_data.vtxGenX = vtxGen.X();
-    track_data.vtxGenY = vtxGen.Y();
-    track_data.vtxGenZ = vtxGen.Z();
-
-    track_data.eventTypeReco = aTrack3DReco.getSegments().front().getPID() + aTrack3DReco.getSegments().back().getPID();    
-    track_data.alphaRangeReco =  aTrack3DReco.getSegments().front().getLength();    
-    track_data.alphaEnergyReco = track_data.alphaRangeReco>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA, track_data.alphaRangeReco):0.0;
-
-    track_data.carbonRangeReco =  aTrack3DReco.getSegments().size()==2 ? aTrack3DReco.getSegments().back().getLength(): 0.0;    
-    track_data.carbonEnergyReco = track_data.carbonRangeReco>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::CARBON_12, track_data.carbonRangeReco):0.0;
-
-    track_data.chargeReco = aTrack3DReco.getIntegratedCharge(aTrack3DReco.getLength());
-
-    const TVector3 & vtxReco = aTrack3DReco.getSegments().front().getStart();
-    track_data.vtxRecoX = vtxReco.X();
-    track_data.vtxRecoY = vtxReco.Y();
-    track_data.vtxRecoZ = vtxReco.Z();
-    
-    const TVector3 & tangentReco = aTrack3DReco.getSegments().front().getTangent();
-    track_data.cosThetaReco = -tangentReco.X();
-    track_data.phiReco = atan2(-tangentReco.Z(), tangentReco.Y());
-
-    track_data.cosThetaReco = cos(tangentReco.Theta());//TEST
-    track_data.phiReco = tangentReco.Phi();//TEST
-
-
-    track_data.lineFitLoss = aTrack3DReco.getLoss();
-    track_data.dEdxFitLoss = aTrack3DReco.getHypothesisFitLoss();
-    track_data.dEdxFitSigma = aTrack3DReco.getSegments().front().getDiffusion();
-    
-    tree->Fill();    
-  }
-  outputROOTFile.Write();
-  return nEntries;
+    //const Track3D & aTrack3DGenAlpha = myEventSource->getGeneratedTrack(0);
+    //const Track3D & aTrack3DGenCarbon = myEventSource->getGeneratedTrack(1);
+    //const Track3D & aTrack3DReco = myTkBuilder.getTrack3D(0);
+//
+    //track_data.frameId = iEntry;
+    //track_data.eventId = eventId;
+//
+    //track_data.eventTypeGen = myEventSource->getGeneratedEventType(); 
+    //track_data.alphaRangeGen =  aTrack3DGenAlpha.getSegments().front().getLength();    
+    //track_data.alphaEnergyGen = track_data.alphaRangeGen>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA, track_data.alphaRangeGen):0.0;
+//
+    //track_data.carbonRangeGen =  aTrack3DGenCarbon.getSegments().front().getLength();
+    //track_data.carbonEnergyGen = track_data.carbonRangeGen>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::CARBON_12, track_data.carbonRangeGen):0.0;
+//
+    //track_data.chargeGen = (track_data.alphaEnergyGen + track_data.carbonEnergyGen)*1E5;
+    //const TVector3 & tangentGen = aTrack3DGenAlpha.getSegments().front().getTangent();
+    //track_data.cosThetaGen = -tangentGen.X();
+    //track_data.phiGen = atan2(-tangentGen.Z(), tangentGen.Y());
+//
+    //track_data.cosThetaGen = tangentGen.Z();//TEST
+    //track_data.phiGen = tangentGen.Phi();//TEST
+//
+    //const TVector3 & vtxGen = aTrack3DGenAlpha.getSegments().front().getStart();
+    //track_data.vtxGenX = vtxGen.X();
+    //track_data.vtxGenY = vtxGen.Y();
+    //track_data.vtxGenZ = vtxGen.Z();
+//
+    //track_data.eventTypeReco = aTrack3DReco.getSegments().front().getPID() + aTrack3DReco.getSegments().back().getPID();    
+    //track_data.alphaRangeReco =  aTrack3DReco.getSegments().front().getLength();    
+    //track_data.alphaEnergyReco = track_data.alphaRangeReco>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA, track_data.alphaRangeReco):0.0;
+//
+    //track_data.carbonRangeReco =  aTrack3DReco.getSegments().size()==2 ? aTrack3DReco.getSegments().back().getLength(): 0.0;    
+    //track_data.carbonEnergyReco = track_data.carbonRangeReco>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::CARBON_12, track_data.carbonRangeReco):0.0;
+//
+    //track_data.chargeReco = aTrack3DReco.getIntegratedCharge(aTrack3DReco.getLength());
+//
+    //const TVector3 & vtxReco = aTrack3DReco.getSegments().front().getStart();
+    //track_data.vtxRecoX = vtxReco.X();
+    //track_data.vtxRecoY = vtxReco.Y();
+    //track_data.vtxRecoZ = vtxReco.Z();
+    //
+    //const TVector3 & tangentReco = aTrack3DReco.getSegments().front().getTangent();
+    //track_data.cosThetaReco = -tangentReco.X();
+    //track_data.phiReco = atan2(-tangentReco.Z(), tangentReco.Y());
+//
+    //track_data.cosThetaReco = cos(tangentReco.Theta());//TEST
+    //track_data.phiReco = tangentReco.Phi();//TEST
+//
+//
+    //track_data.lineFitLoss = aTrack3DReco.getLoss();
+    //track_data.dEdxFitLoss = aTrack3DReco.getHypothesisFitLoss();
+    //track_data.dEdxFitSigma = aTrack3DReco.getSegments().front().getDiffusion();
+    //
+    //tree->Fill();    
+  }//
+  //outputROOTFile.Write();
+  //return nEntries;
 }
 /////////////////////////////
 ////////////////////////////
