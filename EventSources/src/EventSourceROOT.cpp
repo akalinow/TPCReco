@@ -30,7 +30,7 @@ void EventSourceROOT::setTreePointers() {
 
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-EventSourceROOT::~EventSourceROOT() { }
+EventSourceROOT::~EventSourceROOT() {}
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void EventSourceROOT::setRemovePedestal(bool aFlag){
@@ -71,8 +71,8 @@ void EventSourceROOT::loadDataFile(const std::string & fileName){
     exit(0);
   }
 
-    myTree->SetBranchAddress("Event", &aPtr);
-    myTree->BuildIndex("myEventInfo.runId", "myEventInfo.eventId");
+  myTree->SetBranchAddress("Event", &aPtr);
+  myTree->BuildIndex("myEventInfo.runId", "myEventInfo.eventId");
 
   nEntries = myTree->GetEntries();
 }

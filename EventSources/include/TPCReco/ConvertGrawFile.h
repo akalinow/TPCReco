@@ -1,5 +1,5 @@
-#ifndef _grawToEventTPC_H_
-#define _grawToEventTPC_H_
+#ifndef _ConvertGrawFile_h_
+#define _ConvertGrawFile_h_
 
 #include <string>
 

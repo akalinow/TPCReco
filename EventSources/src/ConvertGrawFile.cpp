@@ -1,4 +1,4 @@
-#include "TPCReco/grawToEventTPC.h"
+#include "TPCReco/ConvertGrawFile.h"
 
 #include <iostream>
 #include <cstdlib>
@@ -21,11 +21,11 @@ int convertGRAWFile(boost::property_tree::ptree & aConfig){
   std::shared_ptr<EventSourceBase> myEventSource = EventSourceFactory::makeEventSourceObject(aConfig);
 
   std::string grawFileName = aConfig.get("input.dataFile","");
-  std::string rootFileName = InputFileHelper::makeOutputFileName(grawFileName,"EventTPC");
+  std::string rootFileName = InputFileHelper::makeOutputFileName(grawFileName, aConfig.get("grawToRoot.filePrefix","PEventTPC"));
   TFile aFile(rootFileName.c_str(),"RECREATE");
 
   int nEntries = myEventSource->numberOfEntries();
-  int readNEvents = aConfig.get<int>("input.readNEvents",-1);
+  int readNEvents = aConfig.get<int>("input.readNEvents", -1);
   if(readNEvents < 0 || readNEvents > nEntries) readNEvents = nEntries;
 
   std::cout <<KGRN<< "File with " <<RST<< nEntries <<KGRN<< " frames opened." <<RST<< std::endl;
@@ -33,13 +33,34 @@ int convertGRAWFile(boost::property_tree::ptree & aConfig){
   std::cout <<KGRN<< "Output file: " <<RST<< rootFileName << std::endl;
   
   auto myEventPtr = myEventSource->getCurrentPEvent();
-
-  TTree aTree(aConfig.get<std::string>("input.treeName").c_str(),"");
+  auto treeName = aConfig.get<std::string>("grawToRoot.treeName", "TPCData");
+  TTree aTree(treeName.c_str(), "");
   auto persistent_event = myEventPtr.get();
   Int_t bufsize=128000;
   int splitlevel=2;
   aTree.Branch("Event", &persistent_event, bufsize, splitlevel); 
   std::map<unsigned int, bool> eventIdMap;
+
+  // Optionally disable some branches of PEventTPC to save disk space.
+  // For example, adding "myChargeArray*" string to the list will avoid
+  // filling myChargeArray[][][][] to the output ROOT file (gaining factor of 1.5 in resulting file size).
+  auto disabledBranches = aConfig.get_child_optional("grawToRoot.disabledBranches");
+  if(disabledBranches) {
+    for (const auto &br: *disabledBranches) {
+      auto branchName = std::string(br.second.data());
+      auto offTreeName = branchName.substr(0, branchName.find('.'));
+      auto offBranchName = branchName.substr(branchName.find('.')+1);
+      if( offTreeName == treeName ) {
+	UInt_t found=0;
+	aTree.SetBranchStatus(offBranchName.c_str(),false, &found);
+	if(found>0) {
+	  std::cout <<KGRN<< "Disabled PEventTPC branch: " <<RST<< branchName << std::endl;
+	} else {
+	  throw std::logic_error("unknown PEventTPC branch!");
+	}
+      }
+    }
+  }
 
   for(int iEntry=0; iEntry<readNEvents; iEntry++) 
   {
@@ -58,7 +79,7 @@ int convertGRAWFile(boost::property_tree::ptree & aConfig){
   aTree.Print();
   // build index based on: majorname=EventId, minorname=NONE
   //aTree.BuildIndex("Event.myEventInfo.eventId");
-  aTree.Write("", TObject::kOverwrite); // save only the new version of the tree
+  aTree.Write("", TObject::kOverwrite); // save the most recent version of the tree
   aFile.Close();
 
   return 0;

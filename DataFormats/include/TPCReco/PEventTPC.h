@@ -19,6 +19,10 @@ private:
 public:
 
   typedef std::map<std::tuple<int, int, int, int>, double> chargeMapType;
+  static const unsigned int max_strip_dirs{3};
+  static const unsigned int max_strip_sections{3};
+  static const unsigned int max_strip_numbers{256};
+  static const unsigned int max_strip_time_cells{512};
 
   PEventTPC() = default;
 
@@ -40,7 +44,7 @@ public:
 
   chargeMapType myChargeMap;
 
-  float myChargeArray[3][3][256][512];
+  float myChargeArray[max_strip_dirs][max_strip_sections][max_strip_numbers][max_strip_time_cells];
 };
 
 

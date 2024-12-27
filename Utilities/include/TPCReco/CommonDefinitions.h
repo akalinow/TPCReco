@@ -8,15 +8,15 @@
 #include <vector>
 
 enum class scale_type{
-		 raw,
-		 mm
+  raw,
+  mm
 };
 
 enum class filter_type{
-		 none,
-		 threshold,
-		 island,
-		 fraction
+  none,
+  threshold,
+  island,
+  fraction
 };
 
 namespace definitions {
@@ -36,20 +36,20 @@ enum  projection_type{
 };
 
 enum class fit_type{
-  TANGENT,    // Fit only track segment tangent
+  TANGENT,      // Fit only track segment tangent
   BIAS_Z,       // Fit only track segment bias. Move along time direction. 
-  BIAS_XY,       // Fit only track segment bias. Move in the strip plane.
+  BIAS_XY,      // Fit only track segment bias. Move in the strip plane.
   TANGENT_BIAS, // Fit both track segment bias and tangent
-  START_STOP // Fit both track segment start and stop
+  START_STOP    // Fit both track segment start and stop
 };
 
 } //namespace definitions
 
 enum class event_type {
-	EventSourceROOT,
-	EventSourceMC,
-	EventSourceGRAW,
-	EventSourceMultiGRAW,
+  EventSourceROOT,
+  EventSourceMC,
+  EventSourceGRAW,
+  EventSourceMultiGRAW,
   EventSourceGeant4
 };
 

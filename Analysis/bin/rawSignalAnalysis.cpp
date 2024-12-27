@@ -10,10 +10,11 @@
 #include "TPCReco/EventSourceMultiGRAW.h"
 #endif
 #include "TPCReco/EventSourceROOT.h"
+#include "TPCReco/EventSourceFactory.h"
 #include "TPCReco/RawSignal_tree_analysis.h"
 #include "TPCReco/RunIdParser.h"
 
-int analyzeRawEvents(const boost::property_tree::ptree aConfig);
+int analyzeRawEvents(boost::property_tree::ptree & aConfig);
 
 boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
 
@@ -30,7 +31,7 @@ boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
 #else
     ("input.dataFile",  boost::program_options::value<std::string>(), "string - path to a raw data file in ROOT format")
 #endif
-    ("hitFilter.recoClusterEnable",  boost::program_options::value<bool>(), "bool - flag to enable clustering")
+    ("hitFilter.recoClusterEnable",  boost::program_options::value<bool>()->default_value(false), "bool - flag to enable clustering (default=false)")
     ("hitFilter.recoClusterThreshold",  boost::program_options::value<float>(), "float - ADC threshold above pedestal used for clustering")
     ("hitFilter.recoClusterDeltaStrips",  boost::program_options::value<int>(), "int - envelope in strip units around seed hits for clustering")
     ("hitFilter.recoClusterDeltaTimeCells",  boost::program_options::value<int>(), "int - envelope in time cell units around seed hits for clustering")
@@ -154,7 +155,7 @@ int main(int argc, char **argv){
   return 0;
 }
 
-int analyzeRawEvents(const boost::property_tree::ptree aConfig){
+int analyzeRawEvents(boost::property_tree::ptree & aConfig){
 
   auto geometryFileName = aConfig.get<std::string>("input.geometryFile");
   auto dataFileName = aConfig.get<std::string>("input.dataFile");
@@ -184,7 +185,7 @@ int analyzeRawEvents(const boost::property_tree::ptree aConfig){
 	    << "Pedestal removal enable  = " << removePedestal << std::endl
 #endif
 	    << "Max. events to precess   = " << maxNevents << " (0=all)" << std::endl;
-
+  /*
 #ifdef WITH_GET
   if ((dataFileName.find(".graw") == std::string::npos && dataFileName.find(".root") == std::string::npos) ||
 #else
@@ -257,6 +258,9 @@ int analyzeRawEvents(const boost::property_tree::ptree aConfig){
 	dynamic_cast<EventSourceGRAW*>(myEventSource.get())->configurePedestal(aConfig.find("pedestal")->second);
   }
 #endif
+  */
+  // initialize EventSource
+  std::shared_ptr<EventSourceBase> myEventSource = EventSourceFactory::makeEventSourceObject(aConfig);
 
   // initialize RawSignalAnalysis
   ClusterConfig myClusterConfig;

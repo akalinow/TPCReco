@@ -70,7 +70,6 @@ void RawSignal_tree_analysis::finalize(){
   std::cout << __FUNCTION__ << ": TTree current TFile ptr=" << myOutputTreePtr->GetCurrentFile() << std::endl;
 
   myOutputFilePtr->Write("", TObject::kOverwrite);
-  //  std::cout << __FUNCTION__ << ": TTree current TFile ptr=" << myOutputTreePtr->GetCurrentFile() << std::endl;
   // myOutputTreePtr->Write("", TObject::kOverwrite);
   // myOutputTreePtr->SetDirectory(myOutputFilePtr.get());
   // myOutputTreePtr->Write("", TObject::kOverwrite);
