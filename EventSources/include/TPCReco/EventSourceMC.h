@@ -37,6 +37,8 @@ public:
 
   Track3D getGeneratedTrack();
 
+  std::vector<Track3D> getGeneratedTracks();
+
   std::shared_ptr<EventTPC> getLastEvent();
 
   unsigned long int numberOfEvents() const;

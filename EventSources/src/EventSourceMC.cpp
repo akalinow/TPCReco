@@ -5,6 +5,7 @@
 #include "TPCReco/RunController.h"
 #include "TPCReco/ModuleExchangeSpace.h"
 #include "TPCReco/EventSourceMC.h"
+#include "TPCReco/GeometryTPC.h"
 // Workaround for runControler | Without this module Factory does not see any of MC modules
 #include "../../MonteCarlo/Modules/DummyModule/DummyModule.h"
 
@@ -60,11 +61,24 @@ reaction_type EventSourceMC::GetGeneratedReactiontType(){
     return  myCurrentSimEvent -> GetReactionType();
 }
 
-Track3D EventSourceMC::getGeneratedTrack(){
-    return myRunController -> getCurrentTrack3D();
+
+std::vector<Track3D> EventSourceMC::getGeneratedTracks(){
+    std::vector<Track3D> tracks;
+    std::shared_ptr<GeometryTPC> geometry = myRunController -> getGeometry();
+    for (const auto &t: myCurrentSimEvent -> GetTracks()) {
+        TrackSegment3D aSegment;
+        Track3D aTrack;
+        //do not add segments when track is fully out of active volume
+        if(t.IsOutOfActiveVolume())
+            continue;
+        aSegment.setGeometry(geometry);
+        aSegment.setStartEnd(t.GetTruncatedStart(), t.GetTruncatedStop());
+        aSegment.setPID(t.GetPrimaryParticle().GetID());
+        aTrack.addSegment(aSegment);
+        tracks.push_back(aTrack);
+    }
+    return tracks;
 }
-
-
 
 void EventSourceMC::generateNextEvent(){
     myRunController -> RunSingle();
