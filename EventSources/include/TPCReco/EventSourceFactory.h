@@ -32,7 +32,6 @@
 #endif
 #include "TPCReco/EventSourceROOT.h"
 #include "TPCReco/EventSourceMC.h"
-#include "TPCReco/EventSourceGeant4.h"
 #include "TPCReco/RunController.h"
 
 namespace EventSourceFactory {
@@ -84,15 +83,28 @@ namespace EventSourceFactory {
 			aRootEventSrc->configurePedestal(myConfig.find("pedestal")->second);
 		}
 		else if (dataFileVec.size() == 1 && dataFileName.find("_MC_") != std::string::npos) {
-			std::string controllerConfigPath = myConfig.get<std::string>("input.controllerConfigPath");
-			unsigned long int nEvents = myConfig.get<unsigned long int>("input.readNEvents");
+			std::string controllerConfigPath;
+			unsigned long int nEvents;
+			std::cout << "MC file detected." << std::endl;
+
+			controllerConfigPath = myConfig.get<std::string>("input.controllerConfigPath");
+
+			
+			nEvents = myConfig.get<unsigned long int>("input.readNEvents");
+
 			boost::property_tree::ptree controllerConfig;
-			boost::property_tree::read_json(controllerConfigPath, controllerConfig);
+			try {
+				boost::property_tree::read_json(controllerConfigPath, controllerConfig);
+			} catch (const std::exception& e) {
+				std::cerr << KRED << "Error reading controller config file: " << RST << controllerConfigPath << std::endl;
+				std::cerr << e.what() << std::endl;
+				exit(1);
+			}
 			auto runController = std::make_shared<fwk::RunController>();
 			runController -> Init(controllerConfig);
-			myEventSource = std::make_shared<EventSourceGeant4>(geometryFileName, runController, nEvents);
+			myEventSource = std::make_shared<EventSourceMC>(geometryFileName, runController, nEvents);
 			myConfig.put("transient.onlineFlag", false);
-			myConfig.put("transient.eventType", event_type::EventSourceGeant4);
+			myConfig.put("transient.eventType", event_type::EventSourceMC);
 		}		
 #ifdef WITH_GET
 		else if (all_graw) {

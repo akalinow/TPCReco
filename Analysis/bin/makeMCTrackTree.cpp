@@ -25,7 +25,11 @@
 #include "TPCReco/colorText.h"
 
 #include "TPCReco/EventTPC.h"
+#include "TPCReco/CommonDefinitions.h"
 
+float reactionTypeToFloat(reaction_type type) {
+    return static_cast<float>(static_cast<std::underlying_type<reaction_type>::type>(type));
+}
 /////////////////////////////////////
 /////////////////////////////////////
 int makeTrackTree(boost::property_tree::ptree & aConfig);
@@ -52,7 +56,7 @@ int main(int argc, char **argv){
 ////////////////////////////
 // Define some simple structures
 typedef struct {Float_t eventId, frameId,
-    eventTypeGen,
+    eventReactionType,
     alphaRangeGen, alphaEnergyGen,
     carbonRangeGen, carbonEnergyGen,
     chargeGen, cosThetaGen, phiGen,
@@ -82,7 +86,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   TrackData track_data;
   std::string leafNames = "";
   leafNames += "eventId:frameId:";
-  leafNames += "eventTypeGen:";
+  leafNames += "eventReactionType:";
   leafNames += "alphaRangeGen:alphaEnergyGen:";
   leafNames += "carbonRangeGen:carbonEnergyGen:";
   leafNames += "chargeGen:cosThetaGen:phiGen:";
@@ -130,14 +134,24 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     myTkBuilder.reconstruct();
 
     int eventId = myEventSource->getCurrentEvent()->GetEventInfo().GetEventId();
-    const Track3D & aTrack3DGenAlpha = myEventSource->getGeneratedTrack(0);
-    const Track3D & aTrack3DGenCarbon = myEventSource->getGeneratedTrack(1);
+    std::vector<Track3D> tracks = myEventSource->getGeneratedTracks();
+    if(tracks.size()!=2){
+      std::cout<<KRED<<"Wrong number of tracks!"<<RST<<std::endl;
+      exit(1);
+    }
+    const Track3D & aTrack3DGenAlpha = tracks[0];
+    const Track3D & aTrack3DGenCarbon = tracks[1];
+
+    // const Track3D & aTrack3DGenAlpha = myEventSource->getGeneratedTrack(0);
+    // const Track3D & aTrack3DGenCarbon = myEventSource->getGeneratedTrack(1);
     const Track3D & aTrack3DReco = myTkBuilder.getTrack3D(0);
 
     track_data.frameId = iEntry;
     track_data.eventId = eventId;
 
-    track_data.eventTypeGen = myEventSource->getGeneratedEventType(); 
+    //track_data.eventTypeGen = myEventSource->getGeneratedEventType(); 
+    track_data.eventReactionType = reactionTypeToFloat(myEventSource->GetGeneratedReactiontType());
+
     track_data.alphaRangeGen =  aTrack3DGenAlpha.getSegments().front().getLength();    
     track_data.alphaEnergyGen = track_data.alphaRangeGen>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA, track_data.alphaRangeGen):0.0;
 
@@ -170,7 +184,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     track_data.vtxRecoX = vtxReco.X();
     track_data.vtxRecoY = vtxReco.Y();
     track_data.vtxRecoZ = vtxReco.Z();
-    
+
     const TVector3 & tangentReco = aTrack3DReco.getSegments().front().getTangent();
     track_data.cosThetaReco = -tangentReco.X();
     track_data.phiReco = atan2(-tangentReco.Z(), tangentReco.Y());

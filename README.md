@@ -16,7 +16,7 @@ git clone git@github.com:WarsawTPC/TPCReco.git
 cd TPCReco
 git submodule update --init --recursive
 mkdir build; cd build
-cmake -DBUILD_TEST=ON ../
+cmake -DBUILD_TEST=ON -DBUILD_GEANT_MODULE=ON ../
 make install -j 4
 ```
 
