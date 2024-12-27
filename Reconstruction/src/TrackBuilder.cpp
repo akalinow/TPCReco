@@ -215,6 +215,10 @@ void TrackBuilder::reconstruct(){
   aTrackCandidate = fitTrack3D(aTrackCandidate);
   if(aTrackCandidate.getLength()>minTkLenghtWithHypothesis) aTrackCandidate = fitEventHypothesis(aTrackCandidate);
   myFittedTrack = aTrackCandidate;
+
+  std::cout<<KBLU<<"Reconstructed track: "<<RST<<std::endl;
+  std::cout<<myEventPtr->GetEventInfo()<<std::endl;
+  std::cout<<aTrackCandidate<<std::endl;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

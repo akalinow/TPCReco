@@ -24,6 +24,8 @@ def analyzeSingleBatch(runId, fileCSV, geometryFile, command):
     arguments += " --conditions.pressure " + pressure 
     arguments += " --conditions.samplingRate "+ samplingRate
     arguments += " --beamParameters.energy " + str(beamEnergy)
+    arguments += " --eventFilter.enabled true"
+    arguments += " --eventFilter.totalChargeLowerBound 1000"
   
     print("Running job id:",runId,"\nfor file(s):\n\t"+ fileCSV.replace(",","\n\t"))
     

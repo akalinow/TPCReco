@@ -259,7 +259,8 @@ double RecHitBuilder::getKernelSum(const std::vector<int> & kernelBins, const TH
 /////////////////////////////////////////////////////////
 TH2D RecHitBuilder::makeCleanCluster(const TH2D & aHisto){
 
-  kernelSumThreshold = 300;//parameter to moved to configuration
+  //kernelSumThreshold = 1000;//parameter to moved to configuration
+  kernelSumThreshold = aHisto.GetMaximum()*0.8; //TEST
 
   TH2D aClusterHisto(aHisto);
   aClusterHisto.Reset();
