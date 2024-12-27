@@ -33,10 +33,22 @@ namespace fwk {
         /// Get a list of the names of all modules accessed thus far in the run
         std::list<std::string> GetUsedModuleNames() const { return fUsedModuleNames; }
 
-        ModuleExchangeSpace *GetCurrentEvent() { return fCurrentEvent; }
+        ModuleExchangeSpace & GetCurrentEvent() { return *fCurrentEvent; }
 
         PEventTPC getCurrentPEventTPC() {
             return fCurrentEvent->tpcPEvt;
+        }
+
+        SimEvent getCurrentSimEvent() {
+            return fCurrentEvent->simEvt;
+        }
+
+        Track3D getCurrentTrack3D() {
+            return fCurrentEvent->track3D;
+        }
+
+        std::shared_ptr<GeometryTPC> getGeometry(){
+            return geometry;
         }
 
         /// Is timing enabled?
@@ -50,7 +62,8 @@ namespace fwk {
 
     private:
         void BuildModules(const boost::property_tree::ptree &moduleConfig);
-        void InitModules(const boost::property_tree::ptree &moduleConfig, const std::shared_ptr<GeometryTPC>& geom);
+        void InitModules(const boost::property_tree::ptree &moduleConfig);
+        std::shared_ptr<GeometryTPC> geometry;
         mutable std::list<std::string> fUsedModuleNames;
         std::map<std::string, std::unique_ptr<VModule>> fModules;
         std::vector<std::string> fModuleSequence;
