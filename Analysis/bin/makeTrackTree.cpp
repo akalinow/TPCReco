@@ -143,21 +143,6 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   std::shared_ptr<eventraw::EventInfo> myEventInfo = std::make_shared<eventraw::EventInfo>();
   myRecoOutput.open(recoFileName);
 
-  /*
-  //Event loop
-  int nEntries = aConfig.get<int>("input.readNEvents");
-  if(nEntries<0 || nEntries>myEventSource->numberOfEntries() ) nEntries = myEventSource->numberOfEntries();
-
-  for(int iEntry=0;iEntry<nEntries;++iEntry){
-    if(nEntries>10 && iEntry%(nEntries/10)==0){
-      std::cout<<KBLU<<"Processed: "<<int(100*(double)iEntry/nEntries)<<" % events"<<RST<<std::endl;
-    }
-    myEventSource->loadFileEntry(iEntry);
-
-    // pre-filtering
-    if(myEventSource->getEventFilter().isEnabled() &&
-       !myEventSource->getEventFilter().pass(*myEventSource->getCurrentEvent())) continue; // skip this event
-  */
   // loop over ALL events
   Long64_t nEntries = myEventSource->numberOfEntries();
   std::cout<<KBLU<<"File with "<<RST<<nEntries<<" frames loaded."<<std::endl;
@@ -283,7 +268,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     int eventType = aTrack3D.getSegments().front().getPID()+aTrack3D.getSegments().back().getPID();
     double alphaRange =  aTrack3D.getSegments().front().getLength();
     double carbonRange =  aTrack3D.getSegments().back().getPID()== pid_type::CARBON_12 ? aTrack3D.getSegments().back().getLength(): 0.0;
-    double alphaEnergy = alphaRange>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA,1.08*alphaRange+verticalTrackLostPart):0.0;
+    double alphaEnergy = alphaRange>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA,alphaRange):0.0;
     double carbonEnergy = carbonRange>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::CARBON_12, carbonRange):0.0;
     double m_Alpha = myRangeCalculator.getIonMassMeV(pid_type::ALPHA);
     double m_12C = myRangeCalculator.getIonMassMeV(pid_type::CARBON_12);

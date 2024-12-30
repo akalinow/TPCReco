@@ -149,8 +149,8 @@ HIgS_runs = [
     #("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220414_extTrg_CO2_130mbar/9.85MeV/GRAW/",
     #"/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat"),
 
-    ("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/20220822_extTrg_CO2_130mbar/9.85MeV/GRAW/",
-    "/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat"),
+    ("/scratch_ssd/akalinow/ELITPC/data/HIgS_2022/20220822_extTrg_CO2_130mbar/9.85MeV/GRAW/",
+    "/scratch_hdd/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat"),
 
     #("/scratch_cmsse/akalinow/ELITPC/data/HIgS_2022/0220823_extTrg_CO2_130mbar/9.36MeV/GRAW/",
     #"/scratch_cmsse/akalinow/ELITPC/TPCReco/resources/geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat"),

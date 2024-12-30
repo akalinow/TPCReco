@@ -296,13 +296,13 @@ std::ostream & operator << (std::ostream &out, const Track3D &aTrack){
     out<<KBLU<<"-----------------------------------"<<RST<<std::endl;
   }
 
+  double chargeToMeV = 2.47/1E6;
   auto length = aTrack.getLength();
-  auto charge = aTrack.getIntegratedCharge(length);
+  auto charge = aTrack.getIntegratedCharge(length)*chargeToMeV;
   auto chargeFromProfile = aTrack.getChargeProfile().Integral("width");
   out<<"\t Total track length [mm]: "<<length<<std::endl;
-  out<<"\t Total track charge [arb. units]: "<<charge<<std::endl;
-  out<<"\t Total track charge  "<<std::endl;
-  out<<"\t from 3D profile [arb. units]: "<<aTrack.getChargeProfile().Integral("width")<<std::endl;
+  out<<"\t Total track charge [MeV]: "<<charge<<std::endl;
+  out<<"\t Total track charge from 3D profile [arb. units]: "<<aTrack.getChargeProfile().Integral("width")<<std::endl;
   out<<"\t Hit fit loss func.: "<<aTrack.getLoss()<<std::endl;
   out<<"\t dE/dx fit loss func./charge: "<<aTrack.getHypothesisFitLoss()/chargeFromProfile+0.01<<std::endl;
   out<<"\t       fitted diffusion [mm]: "<<aTrack.getSegments().front().getDiffusion()<<std::endl;
