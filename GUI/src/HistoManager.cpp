@@ -46,16 +46,18 @@ void HistoManager::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void HistoManager::setPressure(double aPressure){
-  
-  myTkBuilder.setPressure(aPressure);
-  myRangeCalculator.setGasPressure(aPressure);
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
 void HistoManager::setConfig(const boost::property_tree::ptree &aConfig){
   
   myConfig = aConfig;
+
+  double pressure = aConfig.get<double>("conditions.pressure"); 
+  double temperature = aConfig.get<double>("conditions.temperature");
+
+  myTkBuilder.setPressure(pressure);
+
+  myRangeCalculator.setGasMixture(gas_mixture_type::CO2);
+  myRangeCalculator.setGasPressure(pressure);
+  myRangeCalculator.setGasTemperature(temperature);
 
 }
 /////////////////////////////////////////////////////////

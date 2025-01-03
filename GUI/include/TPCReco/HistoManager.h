@@ -46,8 +46,6 @@ public:
 
   void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);
 
-  void setPressure(double aPressure);
-
   void openOutputStream(const std::string & filePath);
 
   void writeRecoData(unsigned long  eventType);

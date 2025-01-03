@@ -296,9 +296,8 @@ std::ostream & operator << (std::ostream &out, const Track3D &aTrack){
     out<<KBLU<<"-----------------------------------"<<RST<<std::endl;
   }
 
-  double chargeToMeV = 2.47/1E6;
   auto length = aTrack.getLength();
-  auto charge = aTrack.getIntegratedCharge(length)*chargeToMeV;
+  auto charge = -0.6684 + aTrack.getIntegratedCharge(length)*2.911/1E6;
   auto chargeFromProfile = aTrack.getChargeProfile().Integral("width");
   out<<"\t Total track length [mm]: "<<length<<std::endl;
   out<<"\t Total track charge [MeV]: "<<charge<<std::endl;

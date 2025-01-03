@@ -82,7 +82,9 @@ def finalizeHIgS():
         "2022-04-14T08-51-39",
         "2022-04-14T18-33-08",
         "2022-04-15T11-12-52",
-        "2022-04-15T18-40-41",        
+        "2022-04-15T18-40-41",
+        ####
+        "2022-08-22T22-03-11"   
     ]
 
     return functools.partial(finalize, topDirName, samples)
