@@ -64,11 +64,13 @@ typedef struct {Float_t eventId, frameId,
     alphaRange, carbonRange,
     cosPhiSegments,
     charge, cosTheta, phi, chi2,
+    cosThetaDET, phiDET,
     xVtx, yVtx, zVtx,
     xAlphaEnd, yAlphaEnd, zAlphaEnd,
     xCarbonEnd, yCarbonEnd, zCarbonEnd,
     total_mom_x,  total_mom_y,  total_mom_z,
-    lineFitLoss, dEdxFitLoss, dEdxFitSigma;
+    lineFitLoss, dEdxFitLoss, dEdxFitSigma,
+    maxProjWidth;
     } TrackData;
 /////////////////////////
 int makeTrackTree(boost::property_tree::ptree & aConfig) {
@@ -88,11 +90,13 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   leafNames += "alphaEnergy:carbonEnergy:alphaRange:carbonRange:";
   leafNames += "cosPhiSegments:";
   leafNames += "charge:cosTheta:phi:chi2:";
+  leafNames += "cosThetaDET:phiDET:";
   leafNames += "xVtx:yVtx:zVtx:";
   leafNames += "xAlphaEnd:yAlphaEnd:zAlphaEnd:";
   leafNames += "xCarbonEnd:yCarbonEnd:zCarbonEnd:";
   leafNames += "total_mom_x:total_mom_y:total_mom_z:";
-  leafNames += "lineFitLoss:dEdxFitLoss:dEdxFitSigma";
+  leafNames += "lineFitLoss:dEdxFitLoss:dEdxFitSigma:";
+  leafNames += "maxProjWidth";
   tree->Branch("track",&track_data,leafNames.c_str());
 
   std::string geometryFileName = aConfig.get("input.geometryFile","");
@@ -284,8 +288,12 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     track_data.horizontalLostLength = horizontalTrackLostPart;
     track_data.verticalLostLength = verticalTrackLostPart;
     track_data.charge = charge;
-    track_data.cosTheta = cosTheta;
-    track_data.phi = phi;
+    track_data.cosTheta = tangent.Z();
+    track_data.phi = tangent.Phi();
+
+    track_data.cosThetaDET = cosTheta;
+    track_data.phiDET = phi;
+
     track_data.chi2 = chi2;
     
     track_data.xVtx = vertex.X();
@@ -313,6 +321,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     track_data.lineFitLoss = aTrack3D.getLoss();
     track_data.dEdxFitLoss = aTrack3D.getHypothesisFitLoss();
     track_data.dEdxFitSigma = aTrack3D.getSegments().front().getDiffusion();    
+    track_data.maxProjWidth = aTrack3D.getSegments().front().getMaxProjWidth();
     tree->Fill();
   /*
   } // end of event loop

@@ -204,6 +204,19 @@ double TrackSegment3D::getMaxCharge() const {
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+double TrackSegment3D::getMaxProjWidth() const {
+
+  double maxProjWidth = 0.0;
+  for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
+    TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, getLength());
+    const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
+    double projWidth = aTrack2DProjection.getLoss(aRecHits, definitions::fit_type::TANGENT);
+    if(projWidth>maxProjWidth) maxProjWidth = projWidth;
+  }
+  return maxProjWidth;
+}    
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 double TrackSegment3D::getLoss(int iProjection) const{
 
   double loss = 0.0;
@@ -263,7 +276,7 @@ void TrackSegment3D::addProjection(TH1F &histo, TGraphErrors &graph) const{
 TH1F TrackSegment3D::getChargeProfile() const{
 
   // Maximum hit distance from 2D projection
-  double radiusCut = 2; //parameter to be put into configuration
+  double radiusCut = 4; //parameter to be put into configuration
   
   // Minimal length of projection to be considered. Short projections introduce noisy floor to the charge profile,
   // which affects dE/dx fit.
@@ -296,13 +309,7 @@ TH1F TrackSegment3D::getChargeProfile() const{
     if(projLength<minProjLength ||   //short projection 
     (getLength()>200 && std::abs(cos(getTangent().Theta()))<0.95 && std::abs(segmentAlongStrip)<0.2)) { //initial track with "infinite" length. Horizontal track do not have well defined phi
       continue;
-    }
-    
-    /*
-    if(graphLength*projLength<minProjLength && std::abs(segmentAlongStrip)<0.2 && getLength()<200) {
-      continue;
-    }*/
-    
+    }    
     addProjection(hChargeProfile, aGraph);
   }
 
@@ -331,8 +338,9 @@ std::ostream & operator << (std::ostream &out, const TrackSegment3D &aSegment){
      <<" -> "
      <<"("<<end.X()<<", "<<end.Y()<<", "<<end.Z()<<") "
      <<std::endl
-     <<"\t\t loss: "<<aSegment.getLoss()<<""
-     <<" charge [arb. u.]: "<<aSegment.getIntegratedCharge(aSegment.getLength())
+     <<"\t\t loss: "<<aSegment.getLoss()
+     <<" max 2D projection width "<<aSegment.getMaxProjWidth()<<std::endl
+     <<"\t\t charge [arb. u.]: "<<aSegment.getIntegratedCharge(aSegment.getLength())
      <<" length [mm]: "<<aSegment.getLength()
      <<std::endl
      <<"\t\t bias (X,Y,Z): "

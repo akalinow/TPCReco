@@ -98,6 +98,10 @@ class TrackSegment3D{
   ///Return charge profile along the track.
   TH1F getChargeProfile() const;
 
+  ///Return maximum projection width.
+  ///The width is a sqrt of variance of hit distances from the segment. 
+  double getMaxProjWidth() const;
+
   double getIntegratedCharge(double lambda) const;
 
   double getMaxCharge() const;
