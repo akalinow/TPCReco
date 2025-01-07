@@ -288,11 +288,11 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     track_data.horizontalLostLength = horizontalTrackLostPart;
     track_data.verticalLostLength = verticalTrackLostPart;
     track_data.charge = charge;
-    track_data.cosTheta = tangent.Z();
-    track_data.phi = tangent.Phi();
+    track_data.cosTheta = cosTheta;
+    track_data.phi = phi;
 
-    track_data.cosThetaDET = cosTheta;
-    track_data.phiDET = phi;
+    track_data.cosThetaDET = tangent.Z();
+    track_data.phiDET = tangent.Phi();
 
     track_data.chi2 = chi2;
     
