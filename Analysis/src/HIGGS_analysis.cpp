@@ -654,6 +654,11 @@ void HIGGS_analysis::bookHistos(){
 	auto pid2=categoryPIDhname[c].at(t2);
 	auto pidLatex2=categoryPIDlatex[c].at(t2).c_str();
 
+ 	histos1D[(prefix+pid+pid2+"_ratio_CMS").c_str()]=
+	  new TH1F((prefix+pid+pid2+"_ratio_CMS").c_str(),
+		   Form("%s;%s/%s energy ratio CMS;%s", info, pidLatex, pidLatex2, perTrackTitle),
+		   100, 0, 5);
+
 	// TRACK-TRACK DELTA(i,j) IN LAB FRAME : per category / per track pair
 	histos1D[(prefix+pid+pid2+"_delta_LAB").c_str()]=
 	  new TH1F((prefix+pid+pid2+"_delta_LAB").c_str(),
@@ -994,6 +999,7 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack, eventraw::EventInfo *aEventInfo
     histos1D["h_2prong_carbon_E_LAB"]->Fill(carbon_T_LAB);
     histos1D["h_2prong_alpha_E_CMS"]->Fill(alpha_T_CMS);
     histos1D["h_2prong_carbon_E_CMS"]->Fill(carbon_T_CMS);
+    histos1D["h_2prong_alpha_carbon_ratio_CMS"]->Fill(alpha_T_CMS/carbon_T_CMS);
     histos1D["h_2prong_total_PxBEAM_CMS"]->Fill((alphaP4_BEAM_CMS+carbonP4_BEAM_CMS).Px());
     histos1D["h_2prong_total_PyBEAM_CMS"]->Fill((alphaP4_BEAM_CMS+carbonP4_BEAM_CMS).Py());
     histos1D["h_2prong_total_PzBEAM_CMS"]->Fill((alphaP4_BEAM_CMS+carbonP4_BEAM_CMS).Pz());
