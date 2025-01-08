@@ -44,7 +44,7 @@ dEdxFitter::dEdxFitter(std::string resources, double aPressure){
   carbon_alpha_model->SetParName(5, "carbonScale");
   carbon_alpha_model->SetParName(6, "commonScale");
 
-  carbon_alpha_model->SetParLimits(0, 0.1, 5.0);
+  carbon_alpha_model->SetParLimits(0, 0.5, 1.5);
   carbon_alpha_model->SetParLimits(6, 1E-4, 2E-2);
   
   carbon_alpha_model->FixParameter(4, 1);
@@ -87,15 +87,25 @@ void dEdxFitter::setPressure(double aPressure) {
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
+void dEdxFitter::setDiffusionRange(double minD, double maxD){
+
+  carbon_alpha_model->SetParLimits(0, minD, maxD);
+  alpha_model->SetParLimits(0, minD, maxD);
+}
+////////////////////////////////////////////////
+////////////////////////////////////////////////
 void dEdxFitter::reset(){
 
   carbon_alpha_model->SetRange(-20, maxAlphaOffset+maxCarbonOffset);
   carbon_alpha_model->SetParLimits(1, 0.0, maxVtxOffset);
 
   double minCarbonRange = 5.0; //mm
+  double minD = 0.5, maxD = 1.5;
+  carbon_alpha_model->GetParLimits(0, minD, maxD);
+
   carbon_alpha_model->SetParLimits(2, minAlphaOffset, maxAlphaOffset-minCarbonRange);
   carbon_alpha_model->SetParLimits(3, minCarbonOffset, maxCarbonOffset-minCarbonRange);
-  carbon_alpha_model->SetParameters(1.0,
+  carbon_alpha_model->SetParameters((maxD + minD)/2.0,
 				    (minVtxOffset+maxVtxOffset)/2.0,
             (minAlphaOffset+maxAlphaOffset)/2.0,
             (minCarbonOffset+maxCarbonOffset)/2.0,
@@ -106,7 +116,7 @@ void dEdxFitter::reset(){
   alpha_model->SetRange(-20, maxAlphaOffset);
   alpha_model->SetParLimits(1, minVtxOffset, maxVtxOffset);
   alpha_model->SetParLimits(2, minAlphaOffset, maxAlphaOffset);
-  alpha_model->SetParameters(1.0,
+  alpha_model->SetParameters((maxD + minD)/2.0,
 			     (minVtxOffset+maxVtxOffset)/2.0,
 			     (minAlphaOffset+maxAlphaOffset)/2.0,
 			     0.0,

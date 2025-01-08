@@ -21,6 +21,9 @@ public:
 
   void setPressure(double aPressure); 
 
+  /// Set range of fitted effective charge diffusion
+  void setDiffusionRange(double minD=0.5, double maxD=1.5);
+
   TFitResult fitHisto(const TH1F & aHisto);
 
   const TH1F & getFittedHisto() const { return theFittedHisto;};
