@@ -103,8 +103,6 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   double pressure = aConfig.get<double>("conditions.pressure"); 
   double temperature = aConfig.get<double>("conditions.temperature");
   double samplingRate = aConfig.get<double>("conditions.samplingRate");
-  boost::property_tree::ptree hitConfig;
-  hitConfig.put_child("hitFilter", aConfig.get_child("hitFilter"));
     
   TrackBuilder myTkBuilder;
   myTkBuilder.setGeometry(myEventSource->getGeometry());
@@ -135,7 +133,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     outputCanvas->Divide(nx,ny);
     myHistoManager.clearCanvas(outputCanvas, false);
     myHistoManager.setGeometry(myEventSource->getGeometry());
-    myHistoManager.setConfig(hitConfig); // this will pass configuration to current event pointer
+    myHistoManager.setConfig(aConfig); // this will pass configuration to current event pointer
     myHistoManager.toggleAutozoom(); // start auto zoom feature
   }
   //
@@ -143,6 +141,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
 
   RecoOutput myRecoOutput;
   std::string recoFileName = InputFileHelper::makeOutputFileName(dataFileName,"Reco");
+
   std::shared_ptr<eventraw::EventInfo> myEventInfo = std::make_shared<eventraw::EventInfo>();
   myRecoOutput.open(recoFileName);
 
@@ -159,8 +158,8 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     if(maxNevents>=0 && maxNevents==counter) break; // event limit
     // initialize hit filters
     if(previousEventIdx==-1 || develMode) { // initialize only once per session in non-debug mode and every time in debug mode
-      myEventSource->getCurrentEvent()->setHitFilterConfig(filter_type::threshold, hitConfig);
-      myEventSource->getCurrentEvent()->setHitFilterConfig(filter_type::fraction, hitConfig);
+      myEventSource->getCurrentEvent()->setHitFilterConfig(filter_type::threshold, aConfig);
+      myEventSource->getCurrentEvent()->setHitFilterConfig(filter_type::fraction,  aConfig);
     }
     // load very first event
     if(previousEventIdx==-1) {

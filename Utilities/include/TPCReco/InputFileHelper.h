@@ -115,7 +115,7 @@ std::string makeOutputFileName(const std::string &dataFileNames, const std::stri
   aFileName = tokenize(aFileName, "/").back();
   auto outputFileName = aFileName;
 
-  std::vector<std::string> prefixes = {"CoBo_ALL_AsAd_ALL", "CoBo0_AsAdALL", "CoBo0_AsAdAll", "CoBo0_AsAd", "EventTPC"};
+  std::vector<std::string> prefixes = {"CoBo_ALL_AsAd_ALL", "CoBo0_AsAdALL", "CoBo0_AsAdAll", "CoBo0_AsAd", "PEventTPC"};
   int margin = 0;
   for(const auto & prefix: prefixes){
     if(aFileName.find(prefix)!=std::string::npos){
@@ -139,7 +139,8 @@ std::string makeOutputFileName(const std::string &dataFileNames, const std::stri
 
   ///remove miliseconds from timestamp
   auto index = outputFileName.find(".");
-  if(index!=std::string::npos){
+  auto hasROOTsuffix = outputFileName.find(".root");
+  if(index!=std::string::npos && !hasROOTsuffix){
     outputFileName = outputFileName.replace(index,4,"");
   }
 
