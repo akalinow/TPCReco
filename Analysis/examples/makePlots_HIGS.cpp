@@ -731,6 +731,11 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
 
   //// 2-prong, Alpha kinetic energy in CMS (X) vs Carbon kinetic energy in CMS (Y), zoomed X=[0, 2.5MeV] x Y=[0, 2MeV] @ 8.66 MeV
   if(plot_2prong) {
+    // valid for 8.66 MeV
+    double maxX = 2.5;
+    double maxY = 2.0;
+    ////
+
     c->Clear();
     h2=(TH2D*)f->Get("h_2prong_alpha_E_carbon_E_CMS")->Clone(); // copy for modifications of the same histogram
     c->SetName(Form("c_%s",h2->GetName()));
@@ -745,13 +750,29 @@ void makePlots_HIGS(std::string fileNameHistos, float energyMeV, std::string cut
     h2->SetTitleOffset(1.6, "X");
     h2->SetTitleOffset(1.4, "Y");
     h2->SetTitleOffset(1.2, "Z");
-    h2->GetXaxis()->SetRangeUser(0, 2.5); // valid for 8.66 MeV
-    h2->GetYaxis()->SetRangeUser(0, 2.0); // valid for 8.66 MeV
+    h2->GetXaxis()->SetRangeUser(0, maxX); 
+    h2->GetYaxis()->SetRangeUser(0, maxY);
     gPad->Update();
     st = (TPaveStats *)c->GetPrimitive("stats");
     if(st) {
       st->SetX1NDC(statX3); st->SetX2NDC(statX3+lineW); st->SetY1NDC(statY3); st->SetY2NDC(statY3+lineH);
     }
+    /// Carbon E = 0.25 Alpha_E line
+    TLine *line_2prong = new TLine(h2->GetXaxis()->GetXmin(), 0.25*h2->GetXaxis()->GetXmin(), maxX, 0.25*maxX);
+    line_2prong->SetLineColor(kBlack);
+    line_2prong->SetLineWidth(2);
+    line_2prong->Draw("same");
+
+    TLine *line_cut = new TLine(h2->GetXaxis()->GetXmin(), 0.25*h2->GetXaxis()->GetXmin()+0.15, maxX, 0.25*maxX+0.15);
+    line_cut->SetLineColor(kRed);
+    line_cut->SetLineWidth(2);
+    line_cut->Draw("same");
+
+    TLegend *leg = new TLegend(0.1, 0.8, 0.4, 0.9);
+    leg->AddEntry(line_2prong, "E_{Carbon} = 0.25 #times E_{Alpha}", "l");
+    leg->AddEntry(line_cut, "E_{Carbon} = 0.25 #times E_{Alpha} + 0.15", "l");
+    leg->Draw();
+    ///
     c->Update();
     c->Modified();
     c->Print(((string)(prefix)+".pdf").c_str());

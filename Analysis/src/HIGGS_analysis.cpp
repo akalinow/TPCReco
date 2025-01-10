@@ -657,7 +657,7 @@ void HIGGS_analysis::bookHistos(){
  	histos1D[(prefix+pid+pid2+"_ratio_CMS").c_str()]=
 	  new TH1F((prefix+pid+pid2+"_ratio_CMS").c_str(),
 		   Form("%s;%s/%s energy ratio CMS;%s", info, pidLatex, pidLatex2, perTrackTitle),
-		   100, 0, 5);
+		   100, 1, 6);
 
 	// TRACK-TRACK DELTA(i,j) IN LAB FRAME : per category / per track pair
 	histos1D[(prefix+pid+pid2+"_delta_LAB").c_str()]=
@@ -884,6 +884,16 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack, eventraw::EventInfo *aEventInfo
 
   // 2-prong (alpha+carbon)
   if(ntracks==2) {
+
+    // reconstruct kinetic energy from particle range [mm]
+    const double alpha_len = list.front().getLength(); // longest = alpha
+    const double carbon_len = list.back().getLength(); // shortest = carbon
+
+    const double alphaMass=myRangeCalculator.getIonMassMeV(/*IonRangeCalculator::*/ALPHA);
+    const double carbonMass=myRangeCalculator.getIonMassMeV(/*IonRangeCalculator::*/CARBON_12);
+    const double alpha_T_LAB=myRangeCalculator.getIonEnergyMeV(/*IonRangeCalculator::*/ALPHA, 1.045*alpha_len);
+    const double carbon_T_LAB=myRangeCalculator.getIonEnergyMeV(/*IonRangeCalculator::*/CARBON_12, 1.0*carbon_len);
+   
     histos2D["h_2prong_max_vs_total_charge"]->Fill(aTrack->getIntegratedCharge(aTrack->getLength()), aTrack->getMaxCharge());
 
     histos1D["h_2prong_vertexX"]->Fill(vertexPos.X());
@@ -899,8 +909,6 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack, eventraw::EventInfo *aEventInfo
     histos2D["h_2prong_vertexXYBEAM"]->Fill(vertexPos_BEAM_LAB.X(), vertexPos_BEAM_LAB.Y());
     profiles1D["h_2prong_vertexZXBEAM_prof"]->Fill(vertexPos_BEAM_LAB.Z(), vertexPos_BEAM_LAB.X());
 
-    const double alpha_len = list.front().getLength(); // longest = alpha
-    const double carbon_len = list.back().getLength(); // shortest = carbon
     histos1D["h_2prong_alpha_len"]->Fill(alpha_len);
     histos2D["h_2prong_alpha_len_carbon_len"]->Fill(alpha_len, carbon_len);
     histos1D["h_2prong_lenSum"]->Fill(alpha_len+carbon_len);
@@ -954,11 +962,6 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack, eventraw::EventInfo *aEventInfo
     histos2D["h_2prong_carbon_cosThetaBEAM_len_LAB"]->Fill(carbon_cosTheta_BEAM_LAB, carbon_len);
     profiles1D["h_2prong_carbon_cosThetaBEAM_len_LAB_prof"]->Fill(carbon_cosTheta_BEAM_LAB, carbon_len);
 
-    // reconstruct kinetic energy from particle range [mm]
-    const double alphaMass=myRangeCalculator.getIonMassMeV(/*IonRangeCalculator::*/ALPHA);
-    const double carbonMass=myRangeCalculator.getIonMassMeV(/*IonRangeCalculator::*/CARBON_12);
-    const double alpha_T_LAB=myRangeCalculator.getIonEnergyMeV(/*IonRangeCalculator::*/ALPHA, alpha_len);
-    const double carbon_T_LAB=myRangeCalculator.getIonEnergyMeV(/*IonRangeCalculator::*/CARBON_12, carbon_len);
     double alpha_p_LAB=sqrt(alpha_T_LAB*(alpha_T_LAB+2*alphaMass));
     double carbon_p_LAB=sqrt(carbon_T_LAB*(carbon_T_LAB+2*carbonMass));
     // construct TLorentzVector in DET/LAB frame
@@ -995,6 +998,8 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack, eventraw::EventInfo *aEventInfo
     double oxygenExcitationEnergy=oxygenMassExcited-oxygenMassGroundState;
     double Qvalue_CMS=oxygenMassExcited-alphaMass-carbonMass;
 
+    if (carbon_T_CMS > (0.25*alpha_T_CMS + 0.15)) return; // reject 3-prong events, where mis-reconstructed carbon energy is too high for two prong
+
     histos1D["h_2prong_alpha_E_LAB"]->Fill(alpha_T_LAB);
     histos1D["h_2prong_carbon_E_LAB"]->Fill(carbon_T_LAB);
     histos1D["h_2prong_alpha_E_CMS"]->Fill(alpha_T_CMS);
@@ -1016,20 +1021,20 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack, eventraw::EventInfo *aEventInfo
     ///////////// DEBUG
     //
     // for automatic RECO - 8.66 MeV (ID cut Oxygen-16 -- ver 2)
-    const double cut_center_alpha_T_CMS = 1.150; // MeV // TODO - TO BE PARAMETERIZED
-    const double cut_center_carbon_T_CMS = 0.400; // MeV // TODO - TO BE PARAMETERIZED
-    const double cut_ellipse_alpha_T_CMS = 0.150; // MeV // TODO - TO BE PARAMETERIZED
-    const double cut_ellipse_carbon_T_CMS = 0.150; // MeV // TODO - TO BE PARAMETERIZED
+    //const double cut_center_alpha_T_CMS = 1.150; // MeV // TODO - TO BE PARAMETERIZED
+    //const double cut_center_carbon_T_CMS = 0.400; // MeV // TODO - TO BE PARAMETERIZED
+    //const double cut_ellipse_alpha_T_CMS = 0.150; // MeV // TODO - TO BE PARAMETERIZED
+    //const double cut_ellipse_carbon_T_CMS = 0.150; // MeV // TODO - TO BE PARAMETERIZED
     // for automatic RECO - 8.66 MeV (ID cut Oxygen-16 -- ver 1)
     //    const double cut_center_alpha_T_CMS = 0.85; // MeV // TODO - TO BE PARAMETERIZED
     //    const double cut_center_carbon_T_CMS = 0.48; // MeV // TODO - TO BE PARAMETERIZED
     //    const double cut_ellipse_alpha_T_CMS = 0.25; // MeV // TODO - TO BE PARAMETERIZED
     //    const double cut_ellipse_carbon_T_CMS = 0.15; // MeV // TODO - TO BE PARAMETERIZED
     // for automatic RECO - 9.85 MeV
-    //    const double cut_center_alpha_T_CMS = 1.85; // MeV // TODO - TO BE PARAMETERIZED
-    //    const double cut_center_carbon_T_CMS = 0.53; // MeV // TODO - TO BE PARAMETERIZED
-    //    const double cut_ellipse_alpha_T_CMS = 0.15; // MeV // TODO - TO BE PARAMETERIZED
-    //    const double cut_ellipse_carbon_T_CMS = 0.15; // MeV // TODO - TO BE PARAMETERIZED
+        const double cut_center_alpha_T_CMS = 1.85; // MeV // TODO - TO BE PARAMETERIZED
+        const double cut_center_carbon_T_CMS = 0.53; // MeV // TODO - TO BE PARAMETERIZED
+        const double cut_ellipse_alpha_T_CMS = 0.15; // MeV // TODO - TO BE PARAMETERIZED
+        const double cut_ellipse_carbon_T_CMS = 0.15; // MeV // TODO - TO BE PARAMETERIZED
     // for clicked RECO:
     // const double cut_center_alpha_T_CMS = 1.82; // MeV // TODO - TO BE PARAMETERIZED
     // const double cut_center_carbon_T_CMS = 0.50; // MeV // TODO - TO BE PARAMETERIZED
