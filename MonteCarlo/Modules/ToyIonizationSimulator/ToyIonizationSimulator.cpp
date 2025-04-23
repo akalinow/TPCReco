@@ -23,9 +23,19 @@ fwk::VModule::EResultFlag ToyIonizationSimulator::Process(ModuleExchangeSpace &e
             auto hitDeposit = curve.Eval(depth) * (length / nPoints); // ADC units
             t.InsertHit({hitPosition,hitDeposit});
         }
+	/*
         t.SortHits();
         t.SetStop(origin+length*direction);
         t.SetTruncatedStop(origin+length*direction);
+	*/
+        //first we sort hits, so that they start at the vertex and continue outward in the vector
+        t.SortHits();
+        //Now we set the track stop position (hit furthest from the start):
+        t.RecalculateStopPosition();
+
+        //set truncated positions to be tha same as the real ones - no truncation has been performed yet
+        t.SetTruncatedStart(t.GetStart());
+        t.SetTruncatedStop(t.GetStop());
     }
     return eSuccess;
 }

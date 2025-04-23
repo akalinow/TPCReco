@@ -17,22 +17,22 @@ implement `VModule`'s pure virtual methods:
 
 ## Available modules
 
+* [Generator](Generator) - Wrapper for [EventGenerator](../EventGenerator/README.md) for generating `SimEvent`s.
 * [EventFileExporter](EventFileExporter) - Writes simulation results into ROOT files
 * [GeantSim](GeantSim) - Handles GEANT simulation of detector response - it takes `SimEvent` and tracks primary
   particles through the detector
-* [Generator](Generator) - Wrapper for [EventGenerator](../EventGenerator/README.md) for generating `SimEvent`s
 * [ToyIonizationSimulator](ToyIonizationSimulator) - Simple ionization simulator based on `IonRangeCalculator`
+* [TriggerSimulator](TriggerSimulator) - Simulates self-triggering of the TPC by finding `z` position of first energy
+  deposit that reaches the readout plane and shifts the whole event appropriately
+* [TrackTruncator](TrackTruncator) - Truncates `SimTrack`s in a `SimEvent` to active volume of the detector and possibly
+  to GET electronics range
+* [Track3DBuilder](Track3DBuilder) - Builds `Track3D` objects from `SimEvent` objects - they are required by the
+  existing legacy code used for comparison between pure and reconstructed MonteCarlo
 * [TPCDigitizerRandom](TPCDigitizerRandom) - TPC digitizer based on Artur's approach for UVW projection. Each deposit is
   smeared with a 3D gaussian function by sampling with configurable number of points
 * [TPCDigitizerSRC](TPCDigitizerSRC) - TPC digitizer based on Mikolaj's `StripResponseCalculator`. It can either read a
   generated strip response histograms from a ROOT file or generate new ones with default parameters, if the response
   does not exist.
-* [Track3DBuilder](Track3DBuilder) - Builds `Track3D` objects from `SimEvent` objects - they are required by the
-  existing legacy code used for comparison between pure and reconstructed MonteCarlo
-* [TrackTruncator](TrackTruncator) - Truncates `SimTrack`s in a `SimEvent` to active volume of the detector and possibly
-  to GET electronics range
-* [TriggerSimulator](TriggerSimulator) - Simulates self-triggering of the TPC by finding `z` position of first energy
-  deposit that reaches the readout plane and shifts the whole event appropriately
 
 `RunController` creates all the modules, initializes them (`Init` method), runs `Process` method in the right order, and
 then cleans up with `Finish` method.
@@ -80,7 +80,56 @@ where:
 * `"ModuleConfiguration"` - configuration of modules, each module receives a `JSON` object parsed
   into `boost::property_tree::ptree` object as an argument to `ModuleName::Init` method
 
-# Configuration of modules
+## Correct sequence of modules
+
+The correct order of modules in the `"ModuleSequence"` vector is important, because
+some of the modules are mandatory, while others are optional or mutually exclusive:
+- MANDATORY: [Generator](Generator) - Should be the very first module.
+- Optional: [GeantSim](GeantSim) - Required for `Track3D`s and raw signals.
+Place after `Generator`. Mutually exclusive with `ToyIonizationSilmulator`.
+- Optional: [ToyIonizationSimulator](ToyIonizationSimulator) - Required for `Track3D`s and raw signals. Place after `Generator`. Mutually exclusive with `GeantSim`.
+- Optional: [TriggerSimulator](TriggerSimulator) - Required for truncated `Track3D`s/`SimEvent`s and delayed raw signals. Place after `GeantSim`/`ToyIonizationSimulator`.
+- Optional: [TrackTruncator](TrackTruncator) - Required for truncated `Track3D`s/`SimEvent`s. Place after `TriggerSimulator` (if present) or after `TPCDigitizerRandom`/`TPCDigitizerSRC` (otherwise).
+- Optional: [Track3DBuilder](Track3DBuilder) - Required for `Track3D`s. Place after `TrackTruncator`/`TriggerSimulator` (if present) or after `GeantSim`/`ToyIonizationSimulator` (otherwise).
+- Optional: [TPCDigitizerRandom](TPCDigitizerRandom) - Required for raw signals. Place after `TriggerSimulator` (if present) or after `GeantSim`/`ToyIonizationSimulator` (otherwise). Mutually exclusive with `TPCDigitizerSRC`.
+- Optional: [TPCDigitizerSRC](TPCDigitizerSRC) - Required for raw signals. Place after `TriggerSimulator` (if present) or after `GeantSim`/`ToyIonizationSimulator` (otherwise). Mutually exclusive with `TPCDigitizerRandom`.
+- MANDATORY: [EventFileExporter](EventFileExporter) - Order does not matter, can be listed as the very last module.
+
+Typical module sequences are shown below:
+
+**Example 1** - Generate only `SimEvent`s and store them to ROOT file.
+```json
+  "ModuleSequence": [
+    "Generator",
+    "EventFileExporter"
+  ]
+```
+
+**Example 2** - Get ionization losses from SRIM, do not truncate tracks due to fiducial volume and electronics, store `SimEvent`s and `Track3D`s to ROOT file:
+```json
+  "ModuleSequence": [
+    "Generator",
+    "ToyIonizationSimulator",
+    "Track3DBuilder",
+    "EventFileExporter"
+  ]
+```
+
+**Example 3** - Get ionization losses from GEANT, truncate tracks due to fiducial volume and electronics, store `SimEvent`s and `Track3D`s to ROOT file, store raw signals in another ROOT file:
+```json
+  "ModuleSequence": [
+    "Generator",
+    "GeantSim",
+    "TriggerSimulator",
+    "TrackTruncator",
+    "Track3DBuilder",
+    "TPCDigitizerSRC",
+    "EventFileExporter"
+  ]
+```
+
+
+# Configuration of individual modules
 
 ## EventFileExporter
 
