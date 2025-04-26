@@ -516,6 +516,7 @@ void MainFrame::AddLogos() {
 /////////////////////////////////////////////////////////
 void MainFrame::CloseWindow() {
 	myHistoManager.~HistoManager();
+	if(myEventSource) myEventSource.get()->~EventSourceBase(); // to properly close output ROOT file created by EventFileExporter MC module of EventSourceMC
 	gApplication->Terminate(0);
 }
 /////////////////////////////////////////////////////////

@@ -18,7 +18,9 @@ EventSourceMC::EventSourceMC(const std::string & geometryFileName, std::shared_p
 }
 
 
-EventSourceMC::~EventSourceMC(){ }
+EventSourceMC::~EventSourceMC(){
+  if(myRunController) myRunController -> Finish(); // properly closes output ROOT file created by EventFileExporter MC module
+}
 
 
 void EventSourceMC::loadDataFile(const std::string & fileName){ }
