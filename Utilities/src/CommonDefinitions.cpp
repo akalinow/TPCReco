@@ -47,47 +47,124 @@ std::vector<definitions::projection_type> getProjectionsList(){
 }
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
-std::ostream& operator<<(std::ostream& os, const event_type& et) {
-    switch (et) {
-    case event_type::EventSourceROOT:
-        os << "EventSourceROOT";
-        break;
-    case event_type::EventSourceMC:
-        os << "EventSourceMC";
-        break;
-    case event_type::EventSourceGRAW:
-        os << "EventSourceGRAW";
-        break;
-    case event_type::EventSourceMultiGRAW:
-        os << "EventSourceMultiGRAW";
-        break;
-    default:
-        os.setstate(std::ios_base::failbit);
-    }
-    return os;
+std::ostream& operator<<(std::ostream& os, const scale_type& type) {
+  try{
+    os << enumDict::GetProjectionScaleName(type);
+  } catch(std::logic_error &e) {
+    os.setstate(std::ios_base::failbit);
+  };
+  return os;
 }
 
-std::istream& operator>>(std::istream& is, event_type& et) {
+std::istream& operator>>(std::istream& is, scale_type& type) {
+  try{
     std::string input;
     is >> input;
+    type = enumDict::GetProjectionScaleType(input);
+  } catch(std::logic_error &e) {
+    is.setstate(std::ios_base::failbit);
+  }
+  return is;
+}
 
-    if (input == "EventSourceROOT") {
-        et = event_type::EventSourceROOT;
-    }
-    else if (input == "EventSourceMC") {
-        et = event_type::EventSourceMC;
-    }
-    else if (input == "EventSourceGRAW") {
-        et = event_type::EventSourceGRAW;
-    }
-    else if (input == "EventSourceMultiGRAW") {
-        et = event_type::EventSourceMultiGRAW;
-    }
-    else {
-        is.setstate(std::ios_base::failbit);
-    }
+std::ostream& operator<<(std::ostream& os, const filter_type& type) {
+  try{
+    os << enumDict::GetHitFilterName(type);
+  } catch(std::logic_error &e) {
+    os.setstate(std::ios_base::failbit);
+  };
+  return os;
+}
 
-    return is;
+std::istream& operator>>(std::istream& is, filter_type& type) {
+  try{
+    std::string input;
+    is >> input;
+    type = enumDict::GetHitFilterType(input);
+  } catch(std::logic_error &e) {
+    is.setstate(std::ios_base::failbit);
+  }
+  return is;
+}
+
+std::ostream& operator<<(std::ostream& os, const event_type& type) {
+  try{
+    os << enumDict::GetEventSourceName(type);
+  } catch(std::logic_error &e) {
+    os.setstate(std::ios_base::failbit);
+  };
+  return os;
+}
+
+std::istream& operator>>(std::istream& is, event_type& type) {
+  try{
+    std::string input;
+    is >> input;
+    type = enumDict::GetEventSourceType(input);
+  } catch(std::logic_error &e) {
+    is.setstate(std::ios_base::failbit);
+  }
+  return is;
+}
+
+std::ostream& operator<<(std::ostream& os, const pid_type& type) {
+  try{
+    os << enumDict::GetPidName(type);
+  } catch(std::logic_error &e) {
+    os.setstate(std::ios_base::failbit);
+  };
+  return os;
+}
+
+std::istream& operator>>(std::istream& is, pid_type& type) {
+  try{
+    std::string input;
+    is >> input;
+    type = enumDict::GetPidType(input);
+  } catch(std::logic_error &e) {
+    is.setstate(std::ios_base::failbit);
+  }
+  return is;
+}
+
+std::ostream& operator<<(std::ostream& os, const gas_mixture_type& type) {
+  try{
+    os << enumDict::GetGasMixtureName(type);
+  } catch(std::logic_error &e) {
+    os.setstate(std::ios_base::failbit);
+  };
+  return os;
+}
+
+std::istream& operator>>(std::istream& is, gas_mixture_type& type) {
+  try{
+    std::string input;
+    is >> input;
+    type = enumDict::GetGasMixtureType(input);
+  } catch(std::logic_error &e) {
+    is.setstate(std::ios_base::failbit);
+  }
+  return is;
+}
+
+std::ostream& operator<<(std::ostream& os, const reaction_type& type) {
+  try{
+    os << enumDict::GetReactionName(type);
+  } catch(std::logic_error &e) {
+    os.setstate(std::ios_base::failbit);
+  };
+  return os;
+}
+
+std::istream& operator>>(std::istream& is, reaction_type& type) {
+  try{
+    std::string input;
+    is >> input;
+    type = enumDict::GetReactionType(input);
+  } catch(std::logic_error &e) {
+    is.setstate(std::ios_base::failbit);
+  }
+  return is;
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -96,7 +173,16 @@ std::istream& operator>>(std::istream& is, event_type& et) {
 namespace enumDict {
 //Keep type definition and dictionary in unnamed namespace not to expose them
     namespace{
+
+        typedef boost::bimap<::scale_type, std::string> ProjectionScaleDictionary;
+
+        typedef boost::bimap<::filter_type, std::string> HitFilterDictionary;
+
+        typedef boost::bimap<::event_type, std::string> EventSourceDictionary;
+
         typedef boost::bimap<::pid_type, std::string> PidDictionary;
+
+        typedef boost::bimap<::gas_mixture_type, std::string> GasMixtureDictionary;
 
         typedef boost::bimap<::reaction_type, std::string> ReactionDictionary;
 
@@ -127,12 +213,35 @@ namespace enumDict {
                 (reaction_type::THREE_ALPHA_BE,         "THREE_ALPHA_BE")
                 (reaction_type::PARTICLE_GUN,           "PARTICLE_GUN")
                 ;
+        const HitFilterDictionary gHitFilters =
+                boost::assign::list_of<HitFilterDictionary::relation>
+	        (filter_type::none,                      "none")
+	        (filter_type::threshold,                 "threshold")
+	        (filter_type::island,                    "island")
+	        (filter_type::fraction,                  "fraction")
+                ;
+        const ProjectionScaleDictionary gProjectionScales =
+                boost::assign::list_of<ProjectionScaleDictionary::relation>
+	        (scale_type::raw,                        "raw")
+	        (scale_type::mm,                         "mm")
+                ;
+        const EventSourceDictionary gEventSources =
+                boost::assign::list_of<EventSourceDictionary::relation>
+	        (event_type::EventSourceROOT,            "EventSourceROOT")
+	        (event_type::EventSourceMC,              "EventSourceMC")
+	        (event_type::EventSourceGRAW,            "EventSourceGRAW")
+	        (event_type::EventSourceMultiGRAW,       "EventSourceMultiGRAW")
+                ;
+        const GasMixtureDictionary gGasMixtures =
+                boost::assign::list_of<GasMixtureDictionary::relation>
+	        (gas_mixture_type::CO2,                  "CO2")
+                ;
     }
 
 
 
-    pid_type GetPidType(const std::string &pidName) {
-        auto it = gPids.right.find(pidName);
+    pid_type GetPidType(const std::string &name) {
+        auto it = gPids.right.find(name);
         return it == gPids.right.end() ? pid_type::UNKNOWN : it->second;
     }
 
@@ -141,8 +250,8 @@ namespace enumDict {
         return it == gPids.left.end() ? "UNKNOWN" : it->second;
     }
 
-    reaction_type GetReactionType(const std::string &reactionName) {
-        auto it = gReactions.right.find(reactionName);
+    reaction_type GetReactionType(const std::string &name) {
+        auto it = gReactions.right.find(name);
         return it == gReactions.right.end() ? reaction_type::UNKNOWN : it->second;
     }
 
@@ -150,6 +259,52 @@ namespace enumDict {
         auto it = gReactions.left.find(type);
         return it == gReactions.left.end() ? "UNKNOWN" : it->second;
     }
-}
-/////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////
+
+    filter_type GetHitFilterType(const std::string &name) {
+        auto it = gHitFilters.right.find(name);
+        if(it == gHitFilters.right.end()) throw std::logic_error("Missing dictionary entry for filter_type name");
+	return it->second;
+    }
+
+    std::string GetHitFilterName(filter_type type) {
+        auto it = gHitFilters.left.find(type);
+        if(it == gHitFilters.left.end()) throw std::logic_error("Missing dictionary entry for filter_type enumerator");
+	return it->second;
+    }
+
+    scale_type GetProjectionScaleType(const std::string &name) {
+        auto it = gProjectionScales.right.find(name);
+        if(it == gProjectionScales.right.end()) throw std::logic_error("Missing dictionary entry for scale_type name");
+	return it->second;
+    }
+
+    std::string GetProjectionScaleName(scale_type type) {
+        auto it = gProjectionScales.left.find(type);
+        if(it == gProjectionScales.left.end()) throw std::logic_error("Missing dictionary entry for scale_type enumerator");
+	return it->second;
+    }
+
+    event_type GetEventSourceType(const std::string &name) {
+        auto it = gEventSources.right.find(name);
+        if(it == gEventSources.right.end()) throw std::logic_error("Missing dictionary entry for event_type name");
+	return it->second;
+    }
+
+    std::string GetEventSourceName(event_type type) {
+        auto it = gEventSources.left.find(type);
+        if(it == gEventSources.left.end()) throw std::logic_error("Missing dictionary entry for event_type enumerator");
+	return it->second;
+    }
+
+    gas_mixture_type GetGasMixtureType(const std::string &name) {
+        auto it = gGasMixtures.right.find(name);
+        if(it == gGasMixtures.right.end()) throw std::logic_error("Missing dictionary entry for gas_mixture_type name");
+	return it->second;
+    }
+
+    std::string GetGasMixtureName(gas_mixture_type type) {
+        auto it = gGasMixtures.left.find(type);
+        if(it == gGasMixtures.left.end()) throw std::logic_error("Missing dictionary entry for gas_mixture_type enumerator");
+	return it->second;
+    }
+} // namespace enumDict

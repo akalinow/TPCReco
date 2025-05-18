@@ -10,4 +10,8 @@
 #pragma link C++ class DirectoryWatch+;
 #pragma link C++ enum pid_type;
 #pragma link C++ enum gas_mixture_type;
+#pragma link C++ enum reaction_type;
+#pragma link C++ enum event_type;
+#pragma link C++ enum scale_type;
+#pragma link C++ enum filter_type;
 #endif
