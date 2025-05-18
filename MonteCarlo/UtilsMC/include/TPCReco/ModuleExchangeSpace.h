@@ -11,6 +11,7 @@ struct ModuleExchangeSpace {
     PEventTPC tpcPEvt;
     Track3D track3D;
     eventraw::EventInfo eventInfo;
+    std::vector<PEventTPC> trackPEvt; // used by Track3DBuilder/TPCDigitizer[*] to create true RecHits per individual generator level TrackSegment3D
 };
 
 

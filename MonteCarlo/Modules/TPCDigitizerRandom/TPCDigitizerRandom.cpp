@@ -11,6 +11,7 @@ fwk::VModule::EResultFlag TPCDigitizerRandom::Init(boost::property_tree::ptree c
     diffSigmaZmin = config.get<double>("sigmaZmin");
     diffSigmaZmax = config.get<double>("sigmaZmax");
     nSamplesPerHit = config.get<unsigned int>("NSamplesPerHit");
+    enableSimHitsPerTrack = config.get<bool>("transient.enableSimHitsPerTrack"); // enabled when Track3DBuilder MC module is present
     return fwk::VModule::eSuccess;
 }
 
@@ -19,12 +20,23 @@ fwk::VModule::EResultFlag TPCDigitizerRandom::Process(ModuleExchangeSpace &event
     auto &currentSimEvent = event.simEvt;
     auto &currentPEventTPC = event.tpcPEvt;
     currentPEventTPC.Clear();
+
+    // used by Track3DBuilder to store true RecHits per individual generator level TrackSegment3D
+    auto iTrack=0U; // track iterator for event.trackPEvt[] vector 
+    if(enableSimHitsPerTrack) {
+      event.trackPEvt.resize(currentSimEvent.GetTracks().size());
+      for(auto &pEvt : event.trackPEvt) {
+	pEvt.Clear();
+      }
+    }
+
     bool err_flag = false;
     //loop over tracks
     // diffsigmaXY = rand->Gaus(0, diffSigmaXY);
-    diffSigmaXY = gRandom->Uniform(diffSigmaXYmin, diffSigmaXYmax);
-    diffSigmaZ = gRandom->Uniform(diffSigmaZmin, diffSigmaZmax);
+    diffSigmaXY = gRandom->Uniform(diffSigmaXYmin, diffSigmaXYmax); // TODO: replace by diffsigmaXY(Z_DET)
+    diffSigmaZ = gRandom->Uniform(diffSigmaZmin, diffSigmaZmax); // TODO: replace by diffsigmaZ(Z_DET)
     for (auto &t: currentSimEvent.GetTracks()) {
+        iTrack++;
         //loop over hits
         for (auto &h: t.GetHits()) {
             auto pos = h.GetPosition();
@@ -43,6 +55,8 @@ fwk::VModule::EResultFlag TPCDigitizerRandom::Process(ModuleExchangeSpace &event
                     auto strip = geometry->GetTH2PolyStrip(iPolyBin);
                     if (strip && !err_flag) {
                         currentPEventTPC.AddValByStrip(strip, iCell, edep / nSamplesPerHit * MeVToChargeScale);
+			// used by Track3DBuilder to store true RecHits per individual generator level TrackSegment3D
+			if(enableSimHitsPerTrack) event.trackPEvt.at(iTrack-1).AddValByStrip(strip, iCell, edep / nSamplesPerHit * MeVToChargeScale);
                     }
                 }
             }

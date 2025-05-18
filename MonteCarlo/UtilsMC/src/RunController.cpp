@@ -175,7 +175,18 @@ namespace fwk {
                 throw std::runtime_error(emsg.str());
             }
             fModules[m]->SetGeometry(geometry);
-            fModules[m]->Init(*modCfg);
+	    //
+	    // when Track3DBuilder module is registered then enable filling SimHits per individual tracks
+	    // in TPCDigitizer[*] modules that will be needed to create true RecHits per generator level TrakSegment3D
+	    //
+	    if(m=="TPCDigitizerSRC" || m=="TPCDigitizerRandom") {
+	      bool enableSimHitsPerTrack = std::find(fModuleSequence.begin(), fModuleSequence.end(), "Track3DBuilder") != fModuleSequence.end();
+	      pt::ptree modifiedCfg = *modCfg;
+	      modifiedCfg.put("transient.enableSimHitsPerTrack", enableSimHitsPerTrack);
+	      fModules[m]->Init(modifiedCfg);
+	    } else {
+	      fModules[m]->Init(*modCfg);
+	    }
             if (fTiming)
                 fModules[m]->InitTiming();
         }

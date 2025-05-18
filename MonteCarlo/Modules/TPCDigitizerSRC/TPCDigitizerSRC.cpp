@@ -35,7 +35,7 @@ fwk::VModule::EResultFlag TPCDigitizerSRC::Init(boost::property_tree::ptree conf
                   << std::endl;
         throw std::runtime_error(msg.str());
     }
-
+    enableSimHitsPerTrack = config.get<bool>("transient.enableSimHitsPerTrack"); // enabled when Track3DBuilder MC module is present
     return fwk::VModule::eSuccess;
 }
 
@@ -45,16 +45,33 @@ fwk::VModule::EResultFlag TPCDigitizerSRC::Process(ModuleExchangeSpace &event) {
     auto null_deleter = [](PEventTPC*) {};
     currentPEventTPC = std::shared_ptr<PEventTPC>(&event.tpcPEvt, null_deleter);
     currentPEventTPC->Clear();
+
+    // used by Track3DBuilder to store true RecHits per individual generator level TrackSegment3D
+    auto iTrack=0U; // track iterator for event.trackPEvt[] vector
+    if(enableSimHitsPerTrack) {
+      event.trackPEvt.resize(currentSimEvent.GetTracks().size());
+    }
+
     // Loop over tracks
     for (auto &t: currentSimEvent.GetTracks()) {
+        iTrack++;
+        // used by Track3DBuilder to store true RecHits per individual generator level TrackSegment3D
+        auto trackPEventTPC = std::shared_ptr<PEventTPC>((enableSimHitsPerTrack ? &event.trackPEvt.at(iTrack-1) : nullptr), null_deleter);
+        if(enableSimHitsPerTrack) {
+	  trackPEventTPC->Clear();
+	}
+
         // Loop over hits
         for (auto &h: t.GetHits()) {
             auto pos = h.GetPosition();
             auto edep = h.GetEnergy();
             auto isIn = geometry->IsInsideActiveVolume(pos);
             h.SetInside(isIn);
-            if (isIn)
-                calculator->addCharge(pos, edep * MeVToChargeScale, currentPEventTPC);
+            if (isIn) {
+	      calculator->addCharge(pos, edep * MeVToChargeScale, currentPEventTPC);
+	      // used by Track3DBuilder to store true RecHits per individual generator level TrackSegment3D
+	      if(enableSimHitsPerTrack) calculator->addCharge(pos, edep * MeVToChargeScale, trackPEventTPC);
+	    }
         }
     }
     currentPEventTPC->SetEventInfo(*aEventInfo);
