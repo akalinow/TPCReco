@@ -20,8 +20,11 @@ int main(int argc, char **argv) {
     int nEventsToDraw = 0;
     std::string fname;
     if (argc < 2) {
-        std::cout << "Usage: " << argv[0] << " <filename> <number of events to draw> (optional)" << std::endl;
-        std::cout << "If <number of events to draw> is not provided all events in file will be drawn" << std::endl;
+        std::cout << "Usage: " << argv[0] << " <input_ROOT_filename> [<number_of_events_to_draw>]" << std::endl;
+        std::cout << "Opens existing <input_ROOT_file> with SimEvent/SimTrack/SimHits info and creates" << std::endl
+		  << "dE/dx curves per event as well as several summary plots for the entire ROOT file." << std::endl
+		  << "If optional <number_of_events_to_draw> argument is provided then only specified number" << std::endl
+		  << "of individual dE/dx curves will be drawn (default=0)." << std::endl;
         return 1;
     } else if (argc >= 2) {
         fname = argv[1];
@@ -41,8 +44,8 @@ int main(int argc, char **argv) {
     int nEntries = t->GetEntries();
     auto c = new TCanvas("c", "", 1024, 768);
     c->Print("bragg.pdf[");
-    double braggUpperRange = 60;
-    double depXYrange = 10;
+    double braggUpperRange = 60; // mm
+    double depXYrange = 10; // mm
     TH1D *hall = new TH1D("hall", "A", 200, 0, braggUpperRange);
     auto hXZ = new TH2D("hXZ", "energy deposit, XZ-plane;x[mm];z[mm]", 200, 0, 100, 200, -depXYrange, depXYrange);
     auto hYZ = new TH2D("hYZ", "energy deposit, YZ-plane;y[mm];z[mm]", 200, -depXYrange, depXYrange, 200, -depXYrange,
@@ -118,8 +121,8 @@ int main(int argc, char **argv) {
 
     }
 
-    auto rCal = std::make_unique<IonRangeCalculator>();
-    auto g = rCal->getIonBraggCurveMeVPerMM(pid_type::ALPHA, 3, 1000);
+    auto rCal = std::make_unique<IonRangeCalculator>("./", gas_mixture_type::CO2, 250.0, 293.15);
+    auto g = rCal->getIonBraggCurveMeVPerMM(pid_type::ALPHA, 3.0, 1000);
 
     c->SetGridx();
     c->SetGridy();
@@ -143,8 +146,6 @@ int main(int argc, char **argv) {
     l->Draw();
 
 
-    c->Print("bragg.pdf");
-    g.Draw("AL");
     c->Print("bragg.pdf");
     hXY->Draw("colz");
     c->Print("bragg.pdf");
