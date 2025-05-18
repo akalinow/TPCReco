@@ -151,7 +151,7 @@ namespace utl {
             std::vector<IdentType> v;
             std::transform(fgRegistry->begin(), fgRegistry->end(),
                            std::back_inserter(v),
-                           [](auto &p) { return p.first; });
+                           [](decltype(*Begin()) &p) { return p.first; }); // workaround: (auto &p) is not allowed in lambda expression while compiling ROOT dictionary (C++11)
 
             return v;
         }

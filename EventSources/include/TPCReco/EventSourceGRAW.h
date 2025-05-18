@@ -10,6 +10,7 @@
 
 #include "TPCReco/Graw2DataFrame.h"
 
+#include "TPCReco/CommonDefinitions.h"
 #include "TPCReco/EventSourceBase.h"
 #include "TPCReco/EventRaw.h"
 #include "TPCReco/PedestalCalculatorGRAW.h"
@@ -48,6 +49,8 @@ public:
   inline void setFrameLoadRange(int range) {frameLoadRange=range;}
 
   inline void setFillEventType(EventType type) {fillEventType=type;}
+
+  static inline event_type getSourceType() { return event_type::EventSourceGRAW; }
   
 private:
   

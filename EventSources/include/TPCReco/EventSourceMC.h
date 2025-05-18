@@ -7,6 +7,7 @@
 #include <TH1F.h>
 #include <TRandom3.h>
 
+#include "TPCReco/CommonDefinitions.h"
 #include "TPCReco/EventSourceBase.h"
 #include "TPCReco/UVWprojector.h"
 #include "TPCReco/Track3D.h"
@@ -44,6 +45,8 @@ public:
   unsigned long int numberOfEvents() const;
 
   void loadGeometry(const std::string & fileName);
+
+  static inline event_type getSourceType() { return event_type::EventSourceMC; }
   
  private:
 

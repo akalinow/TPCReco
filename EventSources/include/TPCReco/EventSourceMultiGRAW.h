@@ -10,6 +10,7 @@
 
 #include "TPCReco/Graw2DataFrame.h"
 
+#include "TPCReco/CommonDefinitions.h"
 #include "TPCReco/EventSourceBase.h"
 #include "TPCReco/EventSourceGRAW.h"
 #include "TPCReco/EventRaw.h"
@@ -41,6 +42,8 @@ public:
   void loadEventId(unsigned long int eventIdx); // OVERLOADED
   
   unsigned int getMaxNumberOfStreams() { return GRAW_EVENT_FRAGMENTS; }
+
+  static inline event_type getSourceType() { return event_type::EventSourceMultiGRAW; }
   
 private:
 
