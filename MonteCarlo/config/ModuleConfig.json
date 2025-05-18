@@ -12,13 +12,13 @@
   "GeometryConfig": "@CMAKE_INSTALL_PREFIX@/resources/geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat",
   "ModuleConfiguration": {
     "Generator": {
-      "NumberOfEvents": 10000,
+      "NumberOfEvents": 100,
       "EventGenerator": {
         "Beam": {
           "BeamGeometry": {
             "EulerAnglesNominal": {
-              "phi": -1.5708,
-              "theta": 1.5708,
+              "phi": -1.57079632679489661923,
+              "theta": 1.57079632679489661923,
               "psi": 0.0
             },
             "EulerAnglesActual": {
@@ -68,7 +68,7 @@
               "parameters": {
                 "sigmaE1": 1,
                 "sigmaE2": 1,
-                "phaseE1E2": 1.5708,
+                "phaseE1E2": 1.57079632679489661923,
                 "phaseCosSign": 1
               }
             },
@@ -96,11 +96,16 @@
         "Track3D"
       ],
       "DisabledBranches": [
-        "TPCData.myChargeMap",
-        "TPCData.tracks.hits"
+        "TPCData.myChargeArray*",
+        "### INACTIVE ### TPCData.myChargeMap",
+        "### INACTIVE ### TPCData.tracks.hits",
+	"### INACTIVE ### TPCRecoData.mySegments.myRecHits"
+        "### INACTIVE ### TPCData.tracks.hits",
       ]
     },
     "GeantSim": {
+      "EnableAlphaStraggling": true,	  
+      "Temperature": 293.15,
       "gas_mixture": {
         "co2": 0.25,
         "he": 0.0
@@ -211,12 +216,19 @@
       "MeVToChargeScale": 100000,
       "th2PolyPartitionX": 60,
       "th2PolyPartitionY": 40,
-      "peakingTime": 0,
-      "nStrips": 6,
-      "nCells": 30,
-      "nPads": 12
+      "peakingTime": 232,
+      "nStrips": 7,
+      "nCells": 50,
+      "nPads": 14
     },
     "Track3DBuilder": {
+      "simRecoHitFilter": {
+      "recoClusterType": "fraction",
+      "recoClusterThreshold": 35.0,
+      "recoClusterConstantFractionThreshold": 0.1,
+      "recoClusterDeltaStrips": 2,
+      "recoClusterDeltaTimeCells": 5
+     }
     },
     "TrackTruncator": {
       "IncludeElectronicsRange": true
@@ -225,8 +237,8 @@
       "TriggerArrival": 0.1
     },
     "ToyIonizationSimulator": {
-      "Temperature": "293.15",
-      "Pressure": "0.19",
+      "Temperature": 293.15,
+      "Pressure": 0.19,
       "PointsPerMm": 10.0
     }
   }

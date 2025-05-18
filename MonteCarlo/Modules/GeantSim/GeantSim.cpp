@@ -18,7 +18,7 @@ fwk::VModule::EResultFlag GeantSim::Init(boost::property_tree::ptree config) {
     fRunManager = new G4RunManager;
     // set mandatory initialization classes
     fRunManager->SetUserInitialization(new GELIDetectorConstruction);
-    fRunManager->SetUserInitialization(new GELIPhysicsList);
+    fRunManager->SetUserInitialization(new GELIPhysicsList(cc->Get<bool>("EnableAlphaStraggling")));
 
     fRunManager->SetUserAction(new GELIPrimaryGeneratorAction(buffer));
     fRunManager->SetUserAction(new GELISteppingAction(buffer));

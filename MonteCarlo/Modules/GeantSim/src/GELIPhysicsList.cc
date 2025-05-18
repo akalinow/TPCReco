@@ -28,8 +28,9 @@
 #include "G4eMultipleScattering.hh"
 
 
-
-GELIPhysicsList::GELIPhysicsList() : G4VUserPhysicsList() {
+GELIPhysicsList::GELIPhysicsList(bool enableAlphaStraggling) :
+  G4VUserPhysicsList(),
+  enableAlphaStraggling(enableAlphaStraggling) {
     defaultCutValue = 0* millimeter;
     cutForGamma = defaultCutValue;
     cutForElectron = defaultCutValue;
@@ -123,18 +124,20 @@ void GELIPhysicsList::ConstructEM() {
             ph->RegisterProcess(eBrem, particle);
             ph->RegisterProcess(new G4eMultipleScattering(), particle);
             ph->RegisterProcess(new G4eplusAnnihilation(), particle);
+
         } else if (particleName == "proton") {
             //proton
             pmanager->AddProcess(new G4hMultipleScattering, -1, 1, 1);
-
 
         } else if (particleName == "alpha" ||
                    particleName == "He3") {
 
             auto ionIoni = new G4ionIonisation();
             ionIoni->SetStepFunction(0.000001, 50 * um);
+	    if(enableAlphaStraggling) {
+	      pmanager->AddProcess(new G4hMultipleScattering,-1, 1,1);
+	    }
             ph->RegisterProcess(ionIoni, particle);
-            //pmanager->AddProcess(new G4hMultipleScattering,-1, 1,1);
 
         } else if (particleName == "GenericIon") {
 
@@ -152,6 +155,10 @@ void GELIPhysicsList::ConstructEM() {
 
 
 void GELIPhysicsList::SetCuts() {
+    ////////////////////////////////// HACK by MC - 5 May 2025
+    // forcing low-energy limit for production
+    //G4ProductionCutsTable::GetProductionCutsTable()->SetEnergyRange(100*eV, 100.*MeV);
+    ////////////////////////////////// HACK by MC - 5 May 2025
     if (verboseLevel > 0) {
         G4cout << "GELIPhysicsList::SetCuts:";
         G4cout << "CutLength : " << G4BestUnit(defaultCutValue, "Length") << G4endl;

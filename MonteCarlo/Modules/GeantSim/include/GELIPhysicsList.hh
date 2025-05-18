@@ -24,7 +24,7 @@ class G4eBremsstrahlung;
 
 class GELIPhysicsList : public G4VUserPhysicsList {
 public:
-    GELIPhysicsList();
+    GELIPhysicsList(bool enableAlphaStraggling);
 
     ~GELIPhysicsList() override;
 
@@ -42,6 +42,7 @@ private:
     G4double cutForElectron;
     G4double cutForPositron;
     G4double cutForProton;
+    bool enableAlphaStraggling{false};
 
 protected:
     // these methods Construct particles
