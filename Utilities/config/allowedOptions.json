@@ -356,7 +356,7 @@
     "alphaOffsetCorr":{
         "group":"recoAnalysis",
         "type" : "float",
-        "defaultValue" : 5.5,
+        "defaultValue" : 0.0,
         "description" : "Additive alpha track length correction [mm].\nType: float"
     },
     "carbonScaleCorr":{

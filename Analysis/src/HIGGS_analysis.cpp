@@ -875,7 +875,7 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack, eventraw::EventInfo *aEventInfo
     profiles1D["h_1prong_alpha_cosThetaBEAM_len_LAB_prof"]->Fill(cosTheta_BEAM_LAB, len);
 
     // reconstruct kinetic energy from particle range [mm]
-    double T_LAB=myRangeCalculator.getIonEnergyMeV(/*IonRangeCalculator::*/ALPHA, len);
+    double T_LAB=myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA, len);
     //    double p_LAB=sqrt(T_LAB*(T_LAB+2*alphaMass));
     histos1D["h_1prong_alpha_E_LAB"]->Fill(T_LAB);
     histos2D["h_1prong_alpha_cosThetaBEAM_E_LAB"]->Fill(cosTheta_BEAM_LAB, T_LAB);
@@ -889,10 +889,10 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack, eventraw::EventInfo *aEventInfo
     const double alpha_len = list.front().getLength(); // longest = alpha
     const double carbon_len = list.back().getLength(); // shortest = carbon
 
-    const double alphaMass=myRangeCalculator.getIonMassMeV(/*IonRangeCalculator::*/ALPHA);
-    const double carbonMass=myRangeCalculator.getIonMassMeV(/*IonRangeCalculator::*/CARBON_12);
-    const double alpha_T_LAB=myRangeCalculator.getIonEnergyMeV(/*IonRangeCalculator::*/ALPHA, 1.045*alpha_len);
-    const double carbon_T_LAB=myRangeCalculator.getIonEnergyMeV(/*IonRangeCalculator::*/CARBON_12, 1.0*carbon_len);
+    const double alphaMass=myRangeCalculator.getIonMassMeV(pid_type::ALPHA);
+    const double carbonMass=myRangeCalculator.getIonMassMeV(pid_type::CARBON_12);
+    const double alpha_T_LAB=myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA, alpha_len);
+    const double carbon_T_LAB=myRangeCalculator.getIonEnergyMeV(pid_type::CARBON_12, carbon_len);
    
     histos2D["h_2prong_max_vs_total_charge"]->Fill(aTrack->getIntegratedCharge(aTrack->getLength()), aTrack->getMaxCharge());
 
@@ -969,7 +969,7 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack, eventraw::EventInfo *aEventInfo
     TLorentzVector carbonP4_DET_LAB(carbon_p_LAB*list.back().getTangent(), carbonMass+carbon_T_LAB);
     TLorentzVector sumP4_DET_LAB = alphaP4_DET_LAB + carbonP4_DET_LAB;
     // boost P4 from DET/LAB frame to CMS frame (see TLorentzVector::Boost() convention!)
-    const double oxygenMassGroundState=myRangeCalculator.getIonMassMeV(/*IonRangeCalculator::*/OXYGEN_16);
+    const double oxygenMassGroundState=myRangeCalculator.getIonMassMeV(pid_type::OXYGEN_16);
 
     double photon_E_LAB=sumP4_DET_LAB.E()-oxygenMassGroundState; // reconstructed gamma beam energy in LAB
     auto beta_DET_LAB=TVector3(0,0,0);
@@ -1203,8 +1203,8 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack, eventraw::EventInfo *aEventInfo
     histos2D["h_3prong_vertexXYBEAM"]->Fill(vertexPos_BEAM_LAB.X(), vertexPos_BEAM_LAB.Y());
     profiles1D["h_3prong_vertexZXBEAM_prof"]->Fill(vertexPos_BEAM_LAB.Z(), vertexPos_BEAM_LAB.X());
 
-    const double carbonMassGroundState=myRangeCalculator.getIonMassMeV(/*IonRangeCalculator::*/CARBON_12);
-    const double alphaMass=myRangeCalculator.getIonMassMeV(/*IonRangeCalculator::*/ALPHA);
+    const double carbonMassGroundState=myRangeCalculator.getIonMassMeV(pid_type::CARBON_12);
+    const double alphaMass=myRangeCalculator.getIonMassMeV(pid_type::ALPHA);
 
     // initialize array of track properties
     double alpha_len[3]; // [mm]
@@ -1236,7 +1236,7 @@ void HIGGS_analysis::fillHistos(Track3D *aTrack, eventraw::EventInfo *aEventInfo
       alpha_cosTheta_BEAM_LAB[i] = alpha_tangent_BEAM_LAB.CosTheta();
       
       // reconstruct kinetic energy from particle range [mm]
-      alpha_T_LAB[i]=myRangeCalculator.getIonEnergyMeV(/*IonRangeCalculator::*/ALPHA, alpha_len[i]);
+      alpha_T_LAB[i]=myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA, alpha_len[i]);
       alpha_p_LAB[i]=sqrt(alpha_T_LAB[i]*(alpha_T_LAB[i]+2*alphaMass));
       // construct TLorentzVector in DET/LAB frame
       alphaP4_DET_LAB[i]=TLorentzVector(alpha_p_LAB[i]*track.getTangent(), alphaMass+alpha_T_LAB[i]);
