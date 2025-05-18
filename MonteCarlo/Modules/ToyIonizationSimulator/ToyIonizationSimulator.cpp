@@ -17,8 +17,8 @@ fwk::VModule::EResultFlag ToyIonizationSimulator::Process(ModuleExchangeSpace &e
         auto length = rangeCalc->getIonRangeMM(prim.GetID(),prim.GetKineticEnergy());
         auto nPoints=std::max((int)(pointsPerMm*length), 10); //minimum 10 points per track
         auto curve = rangeCalc->getIonBraggCurveMeVPerMM(prim.GetID(),prim.GetKineticEnergy(),nPoints);
-        for(auto ipoint=0; ipoint<nPoints; ipoint++) { // generate NPOINTS hits along the track
-            auto depth = (ipoint + 0.5) * length / nPoints; // mm
+        for(auto ipoint=0; ipoint<=nPoints; ipoint++) { // generate NPOINTS+1 hits along the track
+            auto depth = ipoint * length / nPoints; // mm
             auto hitPosition = origin + direction * depth; // mm
             auto hitDeposit = curve.Eval(depth) * (length / nPoints); // ADC units
             t.InsertHit({hitPosition,hitDeposit});
