@@ -82,7 +82,7 @@ TEST(ROOTFileNameTest, createROOTFileName)
                              "../testData/CoBo0_AsAd2_2022-04-12T08-03-44.536_0000.graw,"
                              "../testData/CoBo0_AsAd3_2022-04-12T08-03-44.540_0000.graw";
   std::string testFileName = InputFileHelper::makeOutputFileName(grawFileName, "PEventTPC");
-  EXPECT_EQ(testFileName, "PEventTPC_2022-04-12T08-03-44_0000.root");
+  EXPECT_EQ(testFileName, "PEventTPC_2022-04-12T08-03-44.540_0000.root");
 }
 
 
