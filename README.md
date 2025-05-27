@@ -89,12 +89,12 @@ cd resources
 ../bin/tpcGUI --meta.configJson ~/.tpcreco/config/test.json
 ../bin/tpcGUI ~/.tpcreco/config/test.json
 ```
-* using generated $\alpha$ + $C$ events:
+* using generated $\alpha$ + $C$ events dirstributed according to E1+E2 transitions mixture
 ```Shell 
 cd resources
 ../bin/tpcGUI ../config/config_GUI_MC.json
 ```
-* using generated single $\alpha$ events:
+* using generated $\alpha$ + $C$ events with tracks directions controlled by the user
 ```Shell 
 cd resources
 ../bin/tpcGUI ../config/config_GUI_MC.json --input.controllerConfigPath=../config/montecarlo_ModuleConfigGun.json
