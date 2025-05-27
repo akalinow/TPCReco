@@ -3,12 +3,17 @@
   "ModuleSequence": [
     "Generator",
     "GeantSim",
+    "TriggerSimulator",
+    "TrackTruncator",
+    "Track3DBuilder",
+    "TPCDigitizerSRC",
     "EventFileExporter"
   ],
-  "GeometryConfig": "@CMAKE_INSTALL_PREFIX@/resources/geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat",
+  "GeometryConfig": "@CMAKE_INSTALL_PREFIX@/resources/geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat",
   "ModuleConfiguration": {
     "Generator": {
       "NumberOfEvents": 10000,
+      "Verbosity": 1,
       "EventGenerator": {
         "Beam": {
           "BeamGeometry": {
@@ -46,32 +51,29 @@
           "VertexLongitudinal": {
             "distribution": "ZProviderSingle",
             "parameters": {
-              "singleZ": 0
+              "singleZ": 11
             }
           }
         },
         "Reactions": [
           {
-            "type": "ParticleGun",
+            "type": "TwoProng",
             "branchingRatio": 1,
-            "tag": "PARTICLE_GUN",
-            "Particle": "ALPHA",
+            "tag": "C12_ALPHA",
+            "target": "OXYGEN_16",
+            "FirstProduct": "ALPHA",
+            "SecondProduct": "CARBON_12",
             "Theta": {
               "distribution": "AngleProviderSingle",
               "parameters": {
-                "singleAngle": 3.14159265
+                "singleAngle": 0.0
               }
             },
             "Phi": {
-              "distribution": "AngleProviderSingle",
+              "distribution": "AngleProviderIso",
               "parameters": {
-                "singleAngle": 0
-              }
-            },
-            "KineticEnergy": {
-              "distribution": "EProviderSingle",
-              "parameters": {
-                "singleE": 3
+                "minAngle": -3.141592653589793,
+                "maxAngle": 3.141592653589793
               }
             }
           }
@@ -79,11 +81,15 @@
       }
     },
     "EventFileExporter": {
-      "FileName": "out.root",
+      "FileName": "EventTPC_MC_out.root",
       "EnabledBranches": [
         "SimEvent",
         "PEventTPC",
         "Track3D"
+      ],
+      "DisabledBranches": [
+        "TPCData.myChargeMap",
+        "TPCData.tracks.hits"
       ]
     },
     "GeantSim": {
@@ -181,6 +187,39 @@
           ]
         }
       }
+    },
+    "TPCDigitizerRandom": {
+      "sigmaXYmin": 1,
+      "sigmaXYmax": 2,
+      "sigmaZmin": 1,
+      "sigmaZmax": 2,
+      "NSamplesPerHit": 100,
+      "MeVToChargeScale": 100000
+    },
+    "TPCDigitizerSRC": {
+      "StripResponsePath": "@CMAKE_INSTALL_PREFIX@/MonteCarlo/Modules/StripResponseModel/",
+      "sigmaXY": 1.5,
+      "sigmaZ": 1.5,
+      "MeVToChargeScale": 100000,
+      "th2PolyPartitionX": 60,
+      "th2PolyPartitionY": 40,
+      "peakingTime": 0,
+      "nStrips": 7,
+      "nCells": 50,
+      "nPads": 14
+    },
+    "Track3DBuilder": {
+    },
+    "TrackTruncator": {
+      "IncludeElectronicsRange": true
+    },
+    "TriggerSimulator": {
+      "TriggerArrival": 0.1
+    },
+    "ToyIonizationSimulator": {
+      "Temperature": "293.15",
+      "Pressure": "0.19",
+      "PointsPerMm": 10.0
     }
   }
 }

@@ -1,5 +1,5 @@
 #include "TPCReco/SimTrack.h"
-
+#include "TPCReco/colorText.h"
 
 SimTrack::SimTrack()
         : stopPos{} {}
@@ -72,4 +72,14 @@ void SimTrack::Shift(TVector3 &offset) {
     for (auto &h: hits) {
         h.SetPosition(h.GetPosition() + offset);
     }
+}
+
+std::ostream &operator<<(std::ostream &os, const SimTrack &track) {
+
+    os<<"length [mm]: "<<track.GetTruncatedRange()
+        <<"\t(Theta, Phi) = ("
+        <<(track.GetStop() - track.GetStart()).Phi()<<", "
+        <<(track.GetStop() - track.GetStart()).Theta()<<")"
+        <<"\t energy [MeV]: "<<track.GetEnergyDeposit();       
+    return os;
 }

@@ -5,6 +5,7 @@
  */
 
 #include "TPCReco/SimEvent.h"
+#include "TPCReco/colorText.h"
 /// \cond
 #include<iostream>
 #include <utility>
@@ -17,6 +18,10 @@ SimEvent::SimEvent(SimTracks &trackVector, const TVector3 &vertexPos, reaction_t
 }
 
 SimTracks &SimEvent::GetTracks() {
+    return tracks;
+}
+
+SimTracks const & SimEvent::GetTracks() const {
     return tracks;
 }
 
@@ -87,4 +92,19 @@ void SimEvent::Shift(TVector3 &offset) {
     for(auto& t: tracks){
         t.Shift(offset);
     }
+}
+
+std::ostream &operator<<(std::ostream &os, const SimEvent &event) {
+    os <<KBLU<<"Reaction type: " <<RST<< int(event.GetReactionType()) << ", "
+       <<KBLU<<"Vertex: (" <<RST
+       << event.GetTrueVertexPosition().X() << ", "
+       << event.GetTrueVertexPosition().Y() << ", "
+       << event.GetTrueVertexPosition().Z() << ""
+       <<KBLU<<")" <<RST
+       <<KBLU<<" Tracks: [\n"<<RST;
+    for (const auto &track : event.GetTracks()) {
+        os << "\t"<<track << std::endl;
+    }
+    os <<KBLU<<"]"<<RST;
+    return os;
 }

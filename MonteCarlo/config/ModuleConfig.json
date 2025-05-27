@@ -13,6 +13,7 @@
   "ModuleConfiguration": {
     "Generator": {
       "NumberOfEvents": 10000,
+      "Verbosity": 0,
       "EventGenerator": {
         "Beam": {
           "BeamGeometry": {
