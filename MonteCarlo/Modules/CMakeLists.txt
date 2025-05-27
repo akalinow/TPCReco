@@ -11,6 +11,18 @@ add_subdirectory(TrackTruncator)
 add_subdirectory(TriggerSimulator)
 add_subdirectory(ToyIonizationSimulator)
 
+#Download strip response files
+include(ExternalProject)
+ExternalProject_Add(
+  strip_response_model
+  URL https://mycloud.fuw.edu.pl/index.php/s/x2DBMLei33aKTY3/download
+  DOWNLOAD_NAME StripResponseModel.tar
+  SOURCE_DIR StripResponseModel
+  DOWNLOAD_DIR StripResponseModel
+  BUILD_COMMAND ""
+  INSTALL_COMMAND ""
+  CONFIGURE_COMMAND "")
+
 if(BUILD_GEANT_MODULE)
   find_package(Geant4 REQUIRED ui_all vis_all)
   find_package(cadmesh REQUIRED)
@@ -20,17 +32,16 @@ if(BUILD_GEANT_MODULE)
   include_directories(GeantSim/include)
 
   include(ExternalProject)
+  # Download the Geant STL model
   ExternalProject_Add(
     geant_model
-    DOWNLOAD_COMMAND ${CMAKE_SOURCE_DIR}/tools/drive_download.sh
+    URL https://mycloud.fuw.edu.pl/index.php/s/ZfeoMXdX3Z5bikQ/download 
+    DOWNLOAD_NAME elitpc_STL_model_20180302.tar.gz
     SOURCE_DIR Geant_STL_model
     DOWNLOAD_DIR Geant_STL_model
-    URL_HASH MD5=0c2999ee658f0dec54f729ed889eff01
     BUILD_COMMAND ""
     INSTALL_COMMAND ""
     CONFIGURE_COMMAND "")
-  install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Geant_STL_model
-          DESTINATION ${CMAKE_INSTALL_PREFIX}/resources)
 endif()
 
 set(module_sources
@@ -49,6 +60,7 @@ reco_add_library(${MODULE_NAME} EXTRA_SOURCES ${module_sources})
 
 if(BUILD_GEANT_MODULE)
   add_dependencies(${MODULE_NAME} geant_model)
+  add_dependencies(${MODULE_NAME} strip_response_model)
 endif()
 
 target_link_libraries(

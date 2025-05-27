@@ -89,7 +89,7 @@
       }
     },
     "EventFileExporter": {
-      "FileName": "out.root",
+      "FileName": "EventTPC_MC_out.root",
       "EnabledBranches": [
         "SimEvent",
         "PEventTPC",
@@ -111,7 +111,7 @@
         "magnetic_field_offset": 200
       },
       "GeometryConfig": {
-        "ModelPath": "@CMAKE_INSTALL_PREFIX@/resources/Geant_STL_model/",
+        "ModelPath": "@CMAKE_INSTALL_PREFIX@/MonteCarlo/Modules/Geant_STL_model_DISABLED/",
         "MaterialColors": {
           "aluminium": {
             "r": 132,
@@ -205,16 +205,16 @@
       "MeVToChargeScale": 100000
     },
     "TPCDigitizerSRC": {
-      "StripResponsePath": "@CMAKE_INSTALL_PREFIX@/resources",
+      "StripResponsePath": "@CMAKE_INSTALL_PREFIX@/MonteCarlo/Modules/StripResponseModel/",
       "sigmaXY": 1.5,
       "sigmaZ": 1.5,
       "MeVToChargeScale": 100000,
       "th2PolyPartitionX": 60,
       "th2PolyPartitionY": 40,
       "peakingTime": 0,
-      "nStrips": 6,
-      "nCells": 30,
-      "nPads": 12
+      "nStrips": 7,
+      "nCells": 50,
+      "nPads": 14
     },
     "Track3DBuilder": {
     },
