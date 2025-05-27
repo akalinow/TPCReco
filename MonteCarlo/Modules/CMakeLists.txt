@@ -35,7 +35,7 @@ if(BUILD_GEANT_MODULE)
   # Download the Geant STL model
   ExternalProject_Add(
     geant_model
-    URL https://mycloud.fuw.edu.pl/index.php/s/ZfeoMXdX3Z5bikQ/download 
+    URL https://mycloud.fuw.edu.pl/index.php/s/znyZHrbPxrmR9Je/download
     DOWNLOAD_NAME elitpc_STL_model_20180302.tar.gz
     SOURCE_DIR Geant_STL_model
     DOWNLOAD_DIR Geant_STL_model
