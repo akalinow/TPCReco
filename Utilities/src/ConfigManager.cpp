@@ -5,6 +5,18 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 //
+// Only these specialized empty constructors are valid for ConfigManager::myValue<T>
+//
+template <> ConfigManager::myValue<std::string>::myValue()  : value("")    { }
+template <> ConfigManager::myValue<int>::myValue()          : value(0)     { }
+template <> ConfigManager::myValue<unsigned int>::myValue() : value(0U)    { }
+template <> ConfigManager::myValue<float>::myValue()        : value(0.0)   { }
+template <> ConfigManager::myValue<double>::myValue()       : value(0.0)   { }
+template <> ConfigManager::myValue<bool>::myValue()         : value(false) { }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+//
 // Custom std::validator method to read value of type T from cmd line argument needed by BOOST program options,
 // where T denotes: int, usigned int, float or double.
 // Simple math expressions, such as "M_PI*2", will be converted to their numerical representation at run time.

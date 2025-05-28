@@ -7,6 +7,7 @@
 #include <vector>
 #include <string>
 #include "gtest/gtest.h"
+#include "TMath.h"
 
 //////////////////////////
 //////////////////////////
@@ -76,7 +77,7 @@ public:
         "group":"group3",
         "type" : "vector<bool>",
         "defaultValue" : [ true, false, "true||false" ],
-        "description" : "Test vector<float>"
+        "description" : "Test vector<bool>"
     },
     "vectorS":{
         "group":"group4",
@@ -509,19 +510,22 @@ TEST_F(ConfigManagerTest, invalidDefaultGenericAllowedParam) {
 TEST_F(ConfigManagerTest, expressionMyValue) {
 
   std::stringstream ss;
-  auto mval = ConfigManager::myValue<double>();
+  auto mvalD = ConfigManager::myValue<double>();
+  auto mvalI = ConfigManager::myValue<int>();
+  auto mvalB = ConfigManager::myValue<bool>();
+  auto mvalS = ConfigManager::myValue<std::string>();
 
   // good case - math expression, type DOUBLE
   ss.str("1./sin(M_PI/6.)");
-  ss >> mval;
-  EXPECT_DOUBLE_EQ( boost::lexical_cast<double>(mval), 2.0 );
+  ss >> mvalD;
+  EXPECT_DOUBLE_EQ( boost::lexical_cast<double>(mvalD), 2.0 );
 
   // wrong case - math expression, type DOUBLE
   EXPECT_THROW({
       try {
 	ss.clear();
 	ss.str("WRONG_EXPRESSION");
-	ss >> mval;
+	ss >> mvalD;
       }
       catch( const std::exception& e )
         {
@@ -529,6 +533,38 @@ TEST_F(ConfigManagerTest, expressionMyValue) {
 	  throw;
         }
     }, std::exception );
+
+  // good case - math expression, type INT
+  ss.clear();
+  ss.str("4+5");
+  ss >> mvalI;
+  EXPECT_EQ( boost::lexical_cast<int>(mvalI), 4+5 );
+
+  // good case - math expression, type BOOL
+  ss.clear();
+  ss.str("!(true||false)");
+  ss >> mvalB;
+  EXPECT_EQ( boost::lexical_cast<bool>(mvalB), !(true||false) );
+
+  // wrong case - math expression, type BOOL
+  EXPECT_THROW({
+      try {
+	ss.clear();
+	ss.str("WRONG_EXPRESSION");
+	ss >> mvalB;
+      }
+      catch( const std::exception& e )
+        {
+	  EXPECT_STREQ( "wrong math expression", e.what() );
+	  throw;
+        }
+    }, std::exception );
+
+  // good case - for STRING type any input will do
+  ss.clear();
+  ss.str("SOME STRING WITH \"QUOTES\"");
+  ss >> mvalS;
+  EXPECT_STREQ( ss.str().c_str(), boost::lexical_cast<std::string>(mvalS).c_str() );
 }
 //////////////////////////
 //////////////////////////
@@ -537,6 +573,7 @@ TEST_F(ConfigManagerTest, expressionMyVector) {
   std::stringstream ss;
   auto mvecI = ConfigManager::myVector<int>();
   auto mvecF = ConfigManager::myVector<float>();
+  auto mvecB = ConfigManager::myVector<bool>();
 
   // good case - vector of math expressions, type INTEGER
   ss.str(R"####(
@@ -556,6 +593,16 @@ M_PI/atan(1.0)
 )####");
   ss >> mvecF;
   EXPECT_EQ( boost::lexical_cast<std::string>(mvecF), "[ \"1\", \"3\", \"4\" ]" );
+
+  // good case - vector of math expressions, type BOOL
+  ss.clear();
+  ss.str(R"####(
+!false
+true&&false
+(0|1)
+)####");
+  ss >> mvecB;
+  EXPECT_EQ( boost::lexical_cast<std::string>(mvecB), "[ \"1\", \"0\", \"1\" ]" );
 }
 //////////////////////////
 //////////////////////////
@@ -569,6 +616,35 @@ TEST_F(ConfigManagerTest, boostPtreeGetters) {
 
   EXPECT_DOUBLE_EQ( cm.getScalar<double>("someAnalysis.paramTwoPi"), ConfigManager::getScalar<double>(myConfig, "someAnalysis.paramTwoPi") );
   EXPECT_EQ( cm.getVector<std::vector<int>>("group1.vectorI"), ConfigManager::getVector<std::vector<int>>(myConfig, "group1.vectorI") );
+}
+//////////////////////////
+//////////////////////////
+TEST_F(ConfigManagerTest, boostPtreeGettersWithMathExpression) {
+
+  std::stringstream ss(R"####(
+{   "someAnalysis" : {
+        "paramPtree" : {
+            "plainF" : 1.234,
+            "plainI" : 2,
+            "mathD" : "TMath::Pi()",
+            "mathI" : "1+2+3",
+            "mathB" : "(6>2)",
+            "vectorB" : [ true, "!true", "(5>6)", true ],
+            "vectorS" : [ "any", "value", "will do", "to" "_be" "_merged" ]
+        }
+    }
+}
+)####"); // MARK=#### allows to use () for params/expressions
+
+  boost::property_tree::ptree tree;
+  boost::property_tree::read_json(ss, tree);
+  EXPECT_FLOAT_EQ( (float)1.234, ConfigManager::getScalar<float>(tree, "someAnalysis.paramPtree.plainF") );
+  EXPECT_EQ( (int)2, ConfigManager::getScalar<int>(tree, "someAnalysis.paramPtree.plainI") );
+  EXPECT_DOUBLE_EQ( TMath::Pi(), ConfigManager::getScalar<double>(tree, "someAnalysis.paramPtree.mathD") );
+  EXPECT_EQ( 1+2+3, ConfigManager::getScalar<int>(tree, "someAnalysis.paramPtree.mathI") );
+  EXPECT_EQ( (bool)(6>2), ConfigManager::getScalar<bool>(tree, "someAnalysis.paramPtree.mathB") );
+  EXPECT_EQ( std::vector<bool>({true, !true, (5>6), true}), ConfigManager::getVector<std::vector<bool>>(tree, "someAnalysis.paramPtree.vectorB") );
+  EXPECT_EQ( std::vector<std::string>({"any", "value", "will do", "to_be_merged"}), ConfigManager::getVector<std::vector<std::string>>(tree, "someAnalysis.paramPtree.vectorS") );
 }
 //////////////////////////
 //////////////////////////
@@ -595,11 +671,12 @@ TEST_F(ConfigManagerTest, paramPtreeFromCmdLine) {
   ConfigManager cm( {}, optionsJSON );
   char *argv[] = {(char*)"ConfigManager_tst",
 		  (char*)"--someAnalysis.paramPtree",
-		  (char*)"{ \"vector56\": [ 5, 6 ], \"paramAA\": \"AA\" }"};
+		  (char*)"{ \"vector56\": [ 5, 6 ], \"paramAA\": \"AA\", \"vectorABC\": [ \"A\", \"B C\" ] }"};
   boost::property_tree::ptree myConfig = cm.getConfig(argc, argv);
 
   EXPECT_EQ( ConfigManager::getVector<std::vector<int>>(myConfig, "someAnalysis.paramPtree.vector56"), std::vector<int>({5, 6}) );
   EXPECT_EQ( myConfig.get<std::string>("someAnalysis.paramPtree.paramAA"), "AA" );
+  EXPECT_EQ( ConfigManager::getVector<std::vector<std::string>>(myConfig, "someAnalysis.paramPtree.vectorABC"), std::vector<std::string>({"A", "B C"}) );
 }
 //////////////////////////
 //////////////////////////
