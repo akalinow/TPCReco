@@ -99,8 +99,8 @@
         "TPCData.myChargeArray*",
         "### INACTIVE ### TPCData.myChargeMap",
         "### INACTIVE ### TPCData.tracks.hits",
-	"### INACTIVE ### TPCRecoData.mySegments.myRecHits"
-        "### INACTIVE ### TPCData.tracks.hits",
+	"### INACTIVE ### TPCRecoData.mySegments.myRecHits",
+        "### INACTIVE ### TPCData.tracks.hits"
       ]
     },
     "GeantSim": {
