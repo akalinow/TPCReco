@@ -82,7 +82,8 @@ where:
 
 **Note**: When module is enabled in `"ModuleSequnce"` list but does not have any configuration parameters an empty JSON object for that module has to be provided anyway in `"ModuleSequenceConfiguration"` list.
 
-**Note**: JSON files for Monte Carlo do not use [ConfigManager][../Utilities/README.md) mechanism. Nonetheless it is perimiited to use simple math expressions as well for any `int`, `unsigned int`, `float`, `double`, `bool` scalar or vector parameters, provided that the math expression is enclosed in quotes (e.g. `"TMath::Pi()"`, `"M_PI"`, `"!true"`).
+**Note**: JSON configuration files for Monte Carlo modules allow to use simple math expressions for scalar and vector parameters of type: `int`, `unsigned int`, `float`, `double` and `bool`, provided that math expressions are enclosed in quotes (e.g. `"TMath::Pi()"`, `"M_PI"`, `"!true"`).
+
 
 ## Correct sequence of modules
 
