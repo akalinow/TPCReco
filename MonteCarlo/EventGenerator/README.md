@@ -35,8 +35,6 @@ prov->GetAngle(); //Get angle (with default parameter values)
 
 Parameters of various types of providers are listed and described [here](#configuring-providers). For a way to set them see `GeneratorSetup::BuildProvider` template method in [GeneratorSetup.cpp](src/GeneratorSetup.cpp).
 
-**Note**: JSON files for Monte Carlo do not use [ConfigManager][../Utilities/README.md) mechanism. Nonetheless it is perimiited to use simple math expressions as well for any `int`, `unsigned int`, `float`, `double`, `bool` scalar or vector parameters, provided that the math expression is enclosed in quotes (e.g. `"TMath::Pi()"`, `"M_PI"`, `"!true"`).
-
 ### Reactions
 [Reactions](include/TPCReco/Reaction.h) are used to produce four-momenta of primary particles generated in an event. So far following reactions are available:
 * [ReactionTwoProng](include/TPCReco/ReactionTwoProng.h) - a generic two prong event in which gamma particle hits a target nucleus, which then decays into two products
