@@ -2,8 +2,8 @@
   "Beam": {
     "BeamGeometry": {
       "EulerAnglesNominal": {
-        "phi": -1.5708,
-        "theta": 1.5708,
+        "phi": "-M_PI/2",
+        "theta": "M_PI/2",
         "psi": 0.0
       },
       "EulerAnglesActual": {
@@ -56,7 +56,7 @@
         "parameters": {
           "sigmaE1": 1,
           "sigmaE2": 1,
-          "phaseE1E2": 1.5708,
+          "phaseE1E2": "M_PI/2",
           "phaseCosSign": 1
         }
       },
@@ -80,7 +80,7 @@
         "parameters": {
           "sigmaE1": 1,
           "sigmaE2": 0,
-          "phaseE1E2": 1.5708,
+          "phaseE1E2": "M_PI/2",
           "phaseCosSign": 1
         }
       },

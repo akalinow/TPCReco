@@ -13,8 +13,8 @@
         "Beam": {
           "BeamGeometry": {
             "EulerAnglesNominal": {
-              "phi": -1.57079632679489661923,
-              "theta": 1.57079632679489661923,
+              "phi": "-M_PI/2",
+              "theta": "M_PI/2",
               "psi": 0.0
             },
             "EulerAnglesActual": {
@@ -59,7 +59,7 @@
             "Theta": {
               "distribution": "AngleProviderSingle",
               "parameters": {
-                "singleAngle": 3.14159265358979323846
+                "singleAngle": "M_PI"
               }
             },
             "Phi": {

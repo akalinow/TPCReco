@@ -17,8 +17,8 @@
         "Beam": {
           "BeamGeometry": {
             "EulerAnglesNominal": {
-              "phi": -1.57079632679489661923,
-              "theta": 1.57079632679489661923,
+              "phi": "-M_PI/2",
+              "theta": "M_PI/2",
               "psi": 0.0
             },
             "EulerAnglesActual": {
@@ -68,7 +68,7 @@
               "parameters": {
                 "sigmaE1": 1,
                 "sigmaE2": 1,
-                "phaseE1E2": 1.57079632679489661923,
+                "phaseE1E2": "M_PI/2",
                 "phaseCosSign": 1
               }
             },
@@ -97,10 +97,10 @@
       ],
       "DisabledBranches": [
         "TPCData.myChargeArray*",
-        "### INACTIVE ### TPCData.myChargeMap",
-        "### INACTIVE ### TPCData.tracks.hits",
-	"### INACTIVE ### TPCRecoData.mySegments.myRecHits",
-        "### INACTIVE ### TPCData.tracks.hits"
+        "### UNCOMMENT TO DISABLE BRANCH ### TPCData.myChargeMap",
+        "### UNCOMMENT TO DISABLE BRANCH ### TPCData.tracks.hits",
+        "### UNCOMMENT TO DISABLE BRANCH ### TPCRecoData.mySegments.myRecHits",
+        "### UNCOMMENT TO DISABLE BRANCH ### TPCData.tracks.hits"
       ]
     },
     "GeantSim": {
@@ -202,10 +202,10 @@
       }
     },
     "TPCDigitizerRandom": {
-      "sigmaXYmin": 1,
-      "sigmaXYmax": 2,
-      "sigmaZmin": 1,
-      "sigmaZmax": 2,
+      "sigmaXYmin": 1.5,
+      "sigmaXYmax": 1.5,
+      "sigmaZmin": 1.5,
+      "sigmaZmax": 1.5,
       "NSamplesPerHit": 100,
       "MeVToChargeScale": 100000
     },
