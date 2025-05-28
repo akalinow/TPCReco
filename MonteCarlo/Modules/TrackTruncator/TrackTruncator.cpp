@@ -1,9 +1,14 @@
 #include "TrackTruncator.h"
 #include "TPCReco/UtilsMath.h"
-
+#include "TPCReco/ConfigManager.h"
 
 fwk::VModule::EResultFlag TrackTruncator::Init(boost::property_tree::ptree config) {
-    includeElectronicsRange = config.get<bool>("IncludeElectronicsRange");
+    // NOTE: Arithmetic BOOST ptree members are accessed via static method: ConfigManager::getScalar<double>(tree, "some.branch")
+    //       instead of: tree.get<double>("some.branch")
+    //       in order to enable MATH expressions in MC JSON config files (e.g. "M_PI/2")
+
+    // includeElectronicsRange = config.get<bool>("IncludeElectronicsRange"); // without MATH expressions
+    includeElectronicsRange = ConfigManager::getScalar<bool>(config, "IncludeElectronicsRange");
     BuildPlanes();
     return eSuccess;
 }

@@ -1,7 +1,13 @@
 #include "TriggerSimulator.h"
+#include "TPCReco/ConfigManager.h"
 
 fwk::VModule::EResultFlag TriggerSimulator::Init(boost::property_tree::ptree config) {
-    triggerArrival = config.get<double>("TriggerArrival");
+    // NOTE: Arithmetic BOOST ptree members are accessed via static method: ConfigManager::getScalar<double>(tree, "some.branch")
+    //       instead of: tree.get<double>("some.branch")
+    //       in order to enable MATH expressions in MC JSON config files (e.g. "M_PI/2")
+
+    // triggerArrival = ConfigManager::getScalar<double>(config, "TriggerArrival"); // without MATH expressionss
+    triggerArrival = ConfigManager::getScalar<double>(config, "TriggerArrival"); // range [0,1]
     auto err=false;
     getZmin = geometry->Timecell2pos(0,err);
     getZmax = geometry->Timecell2pos(geometry->GetAgetNtimecells()-1,err);

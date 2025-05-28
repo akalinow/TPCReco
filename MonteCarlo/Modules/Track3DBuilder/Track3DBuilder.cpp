@@ -1,19 +1,29 @@
 #include "Track3DBuilder.h"
 #include "TRandom.h"
-#include "TPCReco/colorText.h"
+#include "TPCReco/ConfigManager.h"
+//#include "TPCReco/colorText.h" // for DEBUG mode
 
 fwk::VModule::EResultFlag Track3DBuilder::Init(boost::property_tree::ptree config) {
+    // NOTE: Arithmetic BOOST ptree members are accessed via static method: ConfigManager::getScalar<double>(tree, "some.branch")
+    //       instead of: tree.get<double>("some.branch")
+    //       in order to enable MATH expressions in MC JSON config files (e.g. "M_PI/2")
+
     // set hit filter params for creating pseudo RecHits for generator level TrackSegment3D
-    auto hitFilterTypeName = config.get<std::string>("simRecoHitFilter.recoClusterType");
-    auto hitFilterThreshold = config.get<double>("simRecoHitFilter.recoClusterThreshold");
-    auto hitFilterFraction = config.get<double>("simRecoHitFilter.recoClusterConstantFractionThreshold");
-    auto hitFilterDeltaStrips = config.get<int>("simRecoHitFilter.recoClusterDeltaStrips");
-    auto hitFilterDeltaTimeCells = config.get<int>("simRecoHitFilter.recoClusterDeltaTimeCells");
+    // auto hitFilterTypeName = config.get<std::string>("simRecoHitFilter.recoClusterType"); // without MATH expressions
+    // auto hitFilterThreshold = config.get<double>("simRecoHitFilter.recoClusterThreshold"); // without MATH expressions
+    // auto hitFilterFraction = config.get<double>("simRecoHitFilter.recoClusterConstantFractionThreshold"); // without MATH expressions
+    // auto hitFilterDeltaStrips = config.get<int>("simRecoHitFilter.recoClusterDeltaStrips"); // without MATH expressions
+    // auto hitFilterDeltaTimeCells = config.get<int>("simRecoHitFilter.recoClusterDeltaTimeCells"); // without MATH expressions
+    auto hitFilterTypeName = ConfigManager::getScalar<std::string>(config, "simRecoHitFilter.recoClusterType"); // see CommonDefinitions.h
+    auto hitFilterThreshold = ConfigManager::getScalar<double>(config, "simRecoHitFilter.recoClusterThreshold"); // [ADC units]
+    auto hitFilterFraction = ConfigManager::getScalar<double>(config, "simRecoHitFilter.recoClusterConstantFractionThreshold"); // range [0,1]
+    auto hitFilterDeltaStrips = ConfigManager::getScalar<int>(config, "simRecoHitFilter.recoClusterDeltaStrips");
+    auto hitFilterDeltaTimeCells = ConfigManager::getScalar<int>(config, "simRecoHitFilter.recoClusterDeltaTimeCells");
     boost::property_tree::ptree aHitFilterConfig; // needed for pseudo RecHits per track
-    aHitFilterConfig.put("hitFilter.recoClusterThreshold", hitFilterThreshold);
-    aHitFilterConfig.put("hitFilter.recoClusterConstantFractionThreshold", hitFilterFraction);
-    aHitFilterConfig.put("hitFilter.recoClusterDeltaStrips", hitFilterDeltaStrips); 
-    aHitFilterConfig.put("hitFilter.recoClusterDeltaTimeCells", hitFilterDeltaTimeCells);
+    aHitFilterConfig.put("hitFilter.recoClusterThreshold", hitFilterThreshold); // transient
+    aHitFilterConfig.put("hitFilter.recoClusterConstantFractionThreshold", hitFilterFraction); // transient
+    aHitFilterConfig.put("hitFilter.recoClusterDeltaStrips", hitFilterDeltaStrips); // transient
+    aHitFilterConfig.put("hitFilter.recoClusterDeltaTimeCells", hitFilterDeltaTimeCells); // transient
     pseudoRecoHitFilterType = enumDict::GetHitFilterType(hitFilterTypeName);
     pseudoRecoEventTPC.SetGeoPtr(geometry);
     pseudoRecoEventTPC.setHitFilterConfig(pseudoRecoHitFilterType, aHitFilterConfig);

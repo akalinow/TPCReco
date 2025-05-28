@@ -3,7 +3,7 @@
 #include <iostream>
 #include <boost/lexical_cast.hpp>
 #include "TPCReco/VModule.h"
-
+#include "TPCReco/ConfigManager.h"
 
 using namespace std;
 using namespace utl;
@@ -33,8 +33,14 @@ namespace fwk {
     }
 
     void RunController::Init(const boost::property_tree::ptree &config) {
-        fTiming = config.get<bool>("EnableTiming");
-        geometry = std::make_shared<GeometryTPC>(config.get<std::string>("GeometryConfig").c_str());
+        // NOTE: Arithmetic BOOST ptree members are accessed via static method: ConfigManager::getScalar<double>(tree, "some.branch")
+        //       instead of: tree.get<double>("some.branch")
+        //       in order to enable MATH expressions in MC JSON config files (e.g. "M_PI/2")
+
+        // fTiming = config.get<bool>("EnableTiming");
+        // geometry = std::make_shared<GeometryTPC>(config.get<std::string>("GeometryConfig").c_str());
+        fTiming = ConfigManager::getScalar<bool>(config, "EnableTiming");
+        geometry = std::make_shared<GeometryTPC>(ConfigManager::getScalar<std::string>(config, "GeometryConfig").c_str());
         BuildModules(config.get_child("ModuleSequence"));
         InitModules(config.get_child("ModuleConfiguration"));
     }
@@ -182,7 +188,7 @@ namespace fwk {
 	    if(m=="TPCDigitizerSRC" || m=="TPCDigitizerRandom") {
 	      bool enableSimHitsPerTrack = std::find(fModuleSequence.begin(), fModuleSequence.end(), "Track3DBuilder") != fModuleSequence.end();
 	      pt::ptree modifiedCfg = *modCfg;
-	      modifiedCfg.put("transient.enableSimHitsPerTrack", enableSimHitsPerTrack);
+	      modifiedCfg.put("transient.enableSimHitsPerTrack", enableSimHitsPerTrack);  // transient
 	      fModules[m]->Init(modifiedCfg);
 	    } else {
 	      fModules[m]->Init(*modCfg);
