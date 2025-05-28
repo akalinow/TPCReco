@@ -24,13 +24,15 @@
 #include "G4ParticleTypes.hh"
 #include "G4UnitsTable.hh"
 #include "G4ios.hh"
-
 #include "G4eMultipleScattering.hh"
 
+#include "CentralConfig.hh"
 
-GELIPhysicsList::GELIPhysicsList(bool enableAlphaStraggling) :
-  G4VUserPhysicsList(),
-  enableAlphaStraggling(enableAlphaStraggling) {
+
+GELIPhysicsList::GELIPhysicsList() :
+  G4VUserPhysicsList() {
+    auto cc = CentralConfig::GetInstance();
+    enableAlphaStraggling = cc->Get<bool>("EnableAlphaStraggling");
     defaultCutValue = 0* millimeter;
     cutForGamma = defaultCutValue;
     cutForElectron = defaultCutValue;

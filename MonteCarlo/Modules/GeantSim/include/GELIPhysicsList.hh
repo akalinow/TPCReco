@@ -24,7 +24,7 @@ class G4eBremsstrahlung;
 
 class GELIPhysicsList : public G4VUserPhysicsList {
 public:
-    GELIPhysicsList(bool enableAlphaStraggling);
+    GELIPhysicsList();
 
     ~GELIPhysicsList() override;
 
