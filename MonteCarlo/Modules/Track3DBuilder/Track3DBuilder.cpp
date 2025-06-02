@@ -46,27 +46,30 @@ fwk::VModule::EResultFlag Track3DBuilder::Process(ModuleExchangeSpace &event) {
         //do not add segments when track is fully out of active volume
         if(t.IsOutOfActiveVolume()) continue;
 
+	// set basic TrackSegment3D info
         aSegment.setGeometry(geometry);
         aSegment.setStartEnd(t.GetTruncatedStart(), t.GetTruncatedStop());
         aSegment.setPID(t.GetPrimaryParticle().GetID());
 
-	// store true RecHits per individual generator level TrackSegment3D
-	if(event.trackPEvt.size()<iTrack) continue; // RecHits info is missing or disabled
-	pseudoRecoEventTPC.SetChargeMap(event.trackPEvt.at(iTrack-1).GetChargeMap());
-	aRecHitsColl.resize(0);
-	for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
-	  auto projType = get2DProjectionType(strip_dir);
-	  aRecHitsColl.push_back( *(pseudoRecoEventTPC.get2DProjection(projType, pseudoRecoHitFilterType, scale_type::mm)) );
-	  //	  std::cout << KBLU << __FUNCTION__ << ": eventId=" << event.eventInfo.GetEventId()
-	  //		    << ", track=" << iTrack
-	  //		    << ": " << geometry->GetDirName(strip_dir) << "-dir charge = " << aRecHitsColl.back().Integral()
-	  //		    << ", entries = " << aRecHitsColl.back().GetEntries()
-	  //		    << RST << std::endl;
-	}
-	aSegment.setRecHits(aRecHitsColl);
+	// optionally store true RecHits per individual generator level TrackSegment3D
+	if(event.trackPEvt.size()>=iTrack) {
+	  pseudoRecoEventTPC.SetChargeMap(event.trackPEvt.at(iTrack-1).GetChargeMap());
+	  aRecHitsColl.resize(0);
+	  for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
+	    auto projType = get2DProjectionType(strip_dir);
+	    aRecHitsColl.push_back( *(pseudoRecoEventTPC.get2DProjection(projType, pseudoRecoHitFilterType, scale_type::mm)) );
+	    // 	  std::cout << KBLU << __FUNCTION__ << ": eventId=" << event.eventInfo.GetEventId()
+	    //		    << ", track=" << iTrack
+	    //		    << ": " << geometry->GetDirName(strip_dir) << "-dir charge = " << aRecHitsColl.back().Integral()
+	    //		    << ", entries = " << aRecHitsColl.back().GetEntries()
+	    //		    << RST << std::endl;
+	  } // end of strip direction loop
+	  aSegment.setRecHits(aRecHitsColl);
+	} // end of optional RecHits per individual generator level TrackSegment3D
 
+	// add TrackSegment3D info to Track3D collection
         aTrack.addSegment(aSegment);
-    }
+    } // end of SimTrack loop
     event.track3D = aTrack;
     return fwk::VModule::eSuccess;
 }

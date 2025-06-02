@@ -15,7 +15,7 @@ private:
     std::unique_ptr<EventGenerator> evGen;
     unsigned int nEventsToGenerate{0};
     unsigned int nEventsGenerated{0};
-    unsigned int verbosity{0}; 
+    unsigned int verbosity{0};
 
     REGISTER_MODULE(Generator)
 };
