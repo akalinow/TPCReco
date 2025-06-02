@@ -30,9 +30,11 @@ implement `VModule`'s pure virtual methods:
   existing legacy code used for comparison between pure and reconstructed MonteCarlo
 * [TPCDigitizerRandom](TPCDigitizerRandom) - TPC digitizer based on Artur's approach for UVW projection. Each deposit is
   smeared with a 3D gaussian function by sampling with configurable number of points
-* [TPCDigitizerSRC](TPCDigitizerSRC) - TPC digitizer based on Mikolaj's `StripResponseCalculator`. It can either read a
-  generated strip response histograms from a ROOT file or generate new ones with default parameters, if the response
-  does not exist.
+* [TPCDigitizerSRC](TPCDigitizerSRC) - TPC digitizer based on Mikolaj's `StripResponseCalculator`. It reads generated
+  strip response histograms from a ROOT file that corresponds to the chosen TPC working conditions (including:
+  drift velocity, electronics sampling rate and peaking time, "effective" gaussian diffusion). More strip response
+  ROOT files can be generated using ROOT macro [testStripResponseCalculator](../../Reconstruction/examples/testStripResponseCalculator.cxx).
+
 
 `RunController` creates all the modules, initializes them (`Init` method), runs `Process` method in the right order, and
 then cleans up with `Finish` method.
@@ -95,10 +97,10 @@ Place after `Generator`. Mutually exclusive with `ToyIonizationSilmulator`.
 - Optional: [ToyIonizationSimulator](ToyIonizationSimulator) - Required for `Track3D`s and raw signals. Place after `Generator`. Mutually exclusive with `GeantSim`.
 - Optional: [TriggerSimulator](TriggerSimulator) - Required for truncated `Track3D`s/`SimEvent`s and delayed raw signals. Place after `GeantSim`/`ToyIonizationSimulator`.
 - Optional: [TrackTruncator](TrackTruncator) - Required for truncated `Track3D`s/`SimEvent`s. Place after `TriggerSimulator` (if present) or after `TPCDigitizerRandom`/`TPCDigitizerSRC` (otherwise).
-- Optional: [Track3DBuilder](Track3DBuilder) - Required for `Track3D`s. Place after `TrackTruncator`/`TriggerSimulator` (if present) or after `GeantSim`/`ToyIonizationSimulator` (otherwise).
 - Optional: [TPCDigitizerRandom](TPCDigitizerRandom) - Required for raw signals. Place after `TriggerSimulator` (if present) or after `GeantSim`/`ToyIonizationSimulator` (otherwise). Mutually exclusive with `TPCDigitizerSRC`.
 - Optional: [TPCDigitizerSRC](TPCDigitizerSRC) - Required for raw signals. Place after `TriggerSimulator` (if present) or after `GeantSim`/`ToyIonizationSimulator` (otherwise). Mutually exclusive with `TPCDigitizerRandom`.
-- MANDATORY: [EventFileExporter](EventFileExporter) - Order does not matter, can be listed as the very last module.
+- Optional: [Track3DBuilder](Track3DBuilder) - Required for `Track3D`s. Place after `TPCDigitizer[*]` (if present), else after `TrackTruncator`/`TriggerSimulator` (if present), else after `GeantSim`/`ToyIonizationSimulator`. One of `TPCDigitizer[*]` modules must be present in order to populate `RecHit2D` deposits per track in `Track3D` collections.
+- MANDATORY: [EventFileExporter](EventFileExporter) - Should be the very last module.
 
 Typical module sequences are shown below:
 
