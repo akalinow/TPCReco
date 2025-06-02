@@ -45,6 +45,8 @@ public:
 
     void SetReactionType(reaction_type type);
 
+    SimTracks const & GetTracks() const;
+
     SimTracks & GetTracks();
 
     SimTracksIterator TracksBegin();
@@ -73,5 +75,7 @@ private:
 
 ClassDef(SimEvent, 1); ///< ROOT macro to register SimEvent class
 };
+
+std::ostream & operator << (std::ostream &out, const SimEvent &aEvent);
 
 #endif

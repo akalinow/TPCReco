@@ -42,6 +42,16 @@ fwk::VModule::EResultFlag GeantSim::Process(ModuleExchangeSpace &event) {
     CLHEP::HepRandom::setTheSeed(gRandom->GetSeed());
     buffer.simEv = &event.simEvt;
     fRunManager->BeamOn(1);
+
+    //To be moved to external module
+    std::cout<<" SimTracks: [\n";
+    for (const auto &track : event.simEvt.GetTracks()) {
+        std::cout << "\t"<<track << std::endl;
+    }
+    std::cout<<"]"<<std::endl;
+    ///////
+ 
+
     //return the seed to gRandom
     gRandom->SetSeed(CLHEP::HepRandom::getTheSeed());
     return fwk::VModule::eSuccess;

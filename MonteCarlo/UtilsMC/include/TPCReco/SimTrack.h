@@ -107,4 +107,6 @@ ClassDef(SimTrack, 1); ///< ROOT macro to register SimTrack class
 typedef std::vector<SimTrack> SimTracks;
 typedef SimTracks::iterator SimTracksIterator;
 
+std::ostream & operator << (std::ostream &out, const SimTrack &aTrack);
+
 #endif

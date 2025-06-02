@@ -2,6 +2,8 @@
 #include "Math/Boost.h"
 #include "Math/LorentzRotation.h"
 
+#include "TPCReco/colorText.h"
+
 using namespace std::string_literals;
 
 ReactionTwoProng::ReactionTwoProng(std::unique_ptr<AngleProvider> theta, std::unique_ptr<AngleProvider> phi,
@@ -18,6 +20,7 @@ PrimaryParticles
 ReactionTwoProng::GeneratePrimaries(double gammaMom, const ROOT::Math::Rotation3D &beamToDetRotation) {
     GetKinematics(gammaMom, targetMass);
     auto Qvalue = totalEnergy - prod1Mass - prod2Mass;
+    std::cout<<KBLU<<"Generator Q-value: " <<RST<< Qvalue << std::endl;
     //return empty vector if we do not have enough energy
     if (Qvalue < 0) {
         auto msg = "Beam energy is too low to create "s;

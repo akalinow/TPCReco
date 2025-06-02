@@ -8,7 +8,9 @@ fwk::VModule::EResultFlag Generator::Init(boost::property_tree::ptree config) {
 
     evGen=std::make_unique<EventGenerator>(config.get_child("EventGenerator"));
     // nEventsToGenerate = config.get<unsigned int>("NumberOfEvents"); // without MATH expressions
+    // verbosity = config.get<unsigned int>("Verbosity"); // without MATH expressions
     nEventsToGenerate = ConfigManager::getScalar<unsigned int>(config, "NumberOfEvents");
+    verbosity = ConfigManager::getScalar<unsigned int>(config, "Verbosity");
     return fwk::VModule::eSuccess;
 }
 
@@ -18,13 +20,14 @@ fwk::VModule::EResultFlag Generator::Process(ModuleExchangeSpace &event) {
         return fwk::VModule::eBreakLoop;
     //Generate new event:
     event.simEvt=evGen->GenerateEvent();
+
     //skip empty events, the rest of the ModuleSequence will be skipped:
-    if(event.simEvt.GetTracks().empty())
-        return fwk::VModule::eContinueLoop;
+    if(event.simEvt.GetTracks().empty()) return fwk::VModule::eContinueLoop;
     nEventsGenerated++;
     if(nEventsGenerated%1000 == 0){
         std::cout<<"EventGenerator generated: "<<nEventsGenerated<<" events."<<std::endl;
     }
+    event.trackPEvt.resize(0); // reset transient vector of PEventTPC with true hits per track
     return fwk::VModule::eSuccess;
 }
 

@@ -5,14 +5,15 @@
     "GeantSim",
     "TriggerSimulator",
     "TrackTruncator",
-    "Track3DBuilder",
     "TPCDigitizerSRC",
+    "Track3DBuilder",
     "EventFileExporter"
   ],
   "GeometryConfig": "@CMAKE_INSTALL_PREFIX@/resources/geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat",
   "ModuleConfiguration": {
     "Generator": {
-      "NumberOfEvents": 100,
+      "NumberOfEvents": 1000,
+      "Verbosity": 0,
       "EventGenerator": {
         "Beam": {
           "BeamGeometry": {
@@ -89,25 +90,24 @@
       }
     },
     "EventFileExporter": {
-      "FileName": "out.root",
+      "FileName": "SimEvent_Track3D_PEventTPC_TwoProngE1E2_MC_out.root",
       "EnabledBranches": [
         "SimEvent",
         "PEventTPC",
         "Track3D"
       ],
       "DisabledBranches": [
+        "TPCData.tracks.hits",
         "TPCData.myChargeArray*",
-        "### UNCOMMENT TO DISABLE BRANCH ### TPCData.myChargeMap",
-        "### UNCOMMENT TO DISABLE BRANCH ### TPCData.tracks.hits",
-        "### UNCOMMENT TO DISABLE BRANCH ### TPCRecoData.mySegments.myRecHits",
-        "### UNCOMMENT TO DISABLE BRANCH ### TPCData.tracks.hits"
+        "TPCData.myChargeMap",
+        "### UNCOMMENT TO DISABLE BRANCH ### TPCRecoData.mySegments.myRecHits"
       ]
     },
     "GeantSim": {
       "EnableAlphaStraggling": true,	  
       "Temperature": 293.15,
       "gas_mixture": {
-        "co2": 0.25,
+        "co2": 0.19,
         "he": 0.0
       },
       "magnetic_field": {
@@ -116,7 +116,7 @@
         "magnetic_field_offset": 200
       },
       "GeometryConfig": {
-        "ModelPath": "@CMAKE_INSTALL_PREFIX@/resources/Geant_STL_model/",
+        "ModelPath": "@CMAKE_INSTALL_PREFIX@/MonteCarlo/Modules/Geant_STL_model/",
         "MaterialColors": {
           "aluminium": {
             "r": 132,
@@ -210,7 +210,7 @@
       "MeVToChargeScale": 100000
     },
     "TPCDigitizerSRC": {
-      "StripResponsePath": "@CMAKE_INSTALL_PREFIX@/resources",
+      "StripResponsePath": "@CMAKE_INSTALL_PREFIX@/MonteCarlo/Modules/StripResponseModel/",
       "sigmaXY": 1.5,
       "sigmaZ": 1.5,
       "MeVToChargeScale": 100000,
@@ -223,12 +223,12 @@
     },
     "Track3DBuilder": {
       "simRecoHitFilter": {
-      "recoClusterType": "fraction",
-      "recoClusterThreshold": 35.0,
-      "recoClusterConstantFractionThreshold": 0.1,
-      "recoClusterDeltaStrips": 2,
-      "recoClusterDeltaTimeCells": 5
-     }
+        "recoClusterType": "fraction",
+        "recoClusterThreshold": 35.0,
+        "recoClusterConstantFractionThreshold": 0.1,
+        "recoClusterDeltaStrips": 2,
+        "recoClusterDeltaTimeCells": 5
+      }
     },
     "TrackTruncator": {
       "IncludeElectronicsRange": true

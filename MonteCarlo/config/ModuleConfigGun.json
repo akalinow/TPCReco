@@ -3,12 +3,15 @@
   "ModuleSequence": [
     "Generator",
     "GeantSim",
+    "TrackTruncator",
+    "Track3DBuilder",
     "EventFileExporter"
   ],
-  "GeometryConfig": "@CMAKE_INSTALL_PREFIX@/resources/geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat",
+  "GeometryConfig": "@CMAKE_INSTALL_PREFIX@/resources/geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat",
   "ModuleConfiguration": {
     "Generator": {
-      "NumberOfEvents": 1000,
+      "NumberOfEvents": 10000,
+      "Verbosity": 1,
       "EventGenerator": {
         "Beam": {
           "BeamGeometry": {
@@ -31,7 +34,7 @@
           "GammaEnergy": {
             "distribution": "EProviderSingle",
             "parameters": {
-              "singleE": 11
+              "singleE": 0
             }
           }
         },
@@ -59,7 +62,7 @@
             "Theta": {
               "distribution": "AngleProviderSingle",
               "parameters": {
-                "singleAngle": "M_PI"
+                "singleAngle": "-M_PI"
               }
             },
             "Phi": {
@@ -79,16 +82,24 @@
       }
     },
     "EventFileExporter": {
-      "FileName": "out.root",
+      "FileName": "SimEvent_Track3D_SingleAlpha_MC_out.root",
       "EnabledBranches": [
-        "SimEvent"
+        "SimEvent",
+        "### UNCOMMENT TO ENABLE BRANCH ### PEventTPC",
+        "Track3D"
+      ],
+      "DisabledBranches": [
+        "TPCData.myChargeArray*",
+        "### UNCOMMENT TO DISABLE BRANCH ### TPCData.myChargeMap",
+        "### UNCOMMENT TO DISABLE BRANCH ### TPCData.tracks.hits",
+        "### UNCOMMENT TO DISABLE BRANCH ### TPCRecoData.mySegments.myRecHits"
       ]
     },
     "GeantSim": {
       "EnableAlphaStraggling": true,	  
       "Temperature": 293.15,
       "gas_mixture": {
-        "co2": 0.25,
+        "co2": 0.19,
         "he": 0.0
       },
       "magnetic_field": {
@@ -97,7 +108,7 @@
         "magnetic_field_offset": 200
       },
       "GeometryConfig": {
-        "ModelPath": "@CMAKE_INSTALL_PREFIX@/resources/Geant_STL_model/",
+        "ModelPath": "@CMAKE_INSTALL_PREFIX@/MonteCarlo/Modules/Geant_STL_model/",
         "MaterialColors": {
           "aluminium": {
             "r": 132,
@@ -181,6 +192,46 @@
           ]
         }
       }
+    },
+    "TPCDigitizerRandom": {
+      "sigmaXYmin": 1.5,
+      "sigmaXYmax": 1.5,
+      "sigmaZmin": 1.5,
+      "sigmaZmax": 1.5,
+      "NSamplesPerHit": 100,
+      "MeVToChargeScale": 100000
+    },
+    "TPCDigitizerSRC": {
+      "StripResponsePath": "@CMAKE_INSTALL_PREFIX@/MonteCarlo/Modules/StripResponseModel/",
+      "sigmaXY": 1.5,
+      "sigmaZ": 1.5,
+      "MeVToChargeScale": 100000,
+      "th2PolyPartitionX": 60,
+      "th2PolyPartitionY": 40,
+      "peakingTime": 232,
+      "nStrips": 7,
+      "nCells": 50,
+      "nPads": 14
+    },
+    "Track3DBuilder": {
+      "simRecoHitFilter": {
+        "recoClusterType": "fraction",
+        "recoClusterThreshold": 35.0,
+        "recoClusterConstantFractionThreshold": 0.1,
+        "recoClusterDeltaStrips": 2,
+        "recoClusterDeltaTimeCells": 5
+      }
+    },
+    "TrackTruncator": {
+      "IncludeElectronicsRange": true
+    },
+    "TriggerSimulator": {
+      "TriggerArrival": 0.1
+    },
+    "ToyIonizationSimulator": {
+      "Temperature": 293.15,
+      "Pressure": 0.19,
+      "PointsPerMm": 10.0
     }
   }
 }

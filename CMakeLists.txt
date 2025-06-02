@@ -39,10 +39,9 @@ add_library(Resources INTERFACE)
 set(TPCRECO_RESOURCE_DIR
     "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>$<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}>/resources/"
 )
-target_compile_definitions(
-  Resources INTERFACE TPCRECO_RESOURCE_DIR=\"${TPCRECO_RESOURCE_DIR}\")
+target_compile_definitions(Resources INTERFACE TPCRECO_RESOURCE_DIR=\"${TPCRECO_RESOURCE_DIR}\")
 
-option(BUILD_GEANT_MODULE "Build Geant4 simulation" OFF)
+option(BUILD_GEANT_MODULE "Build Geant4 simulation" ON)
 
 set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 add_subdirectory(Utilities)

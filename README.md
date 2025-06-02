@@ -27,6 +27,12 @@ export LC_ALL=$LANG
 ctest
 ```
 
+Run a specific test, here `grawToEventTPC_tst` with routput enabled for failed tests:
+```Shell
+ctest -R grawToEventTPC_tst --output-on-failure
+```
+
+
 ## Update instructions
 
 To synchronize the version of software in your working directory with some never tag please do following:
@@ -75,13 +81,25 @@ When running from a container, enter the following command inside the container:
 export LC_ALL=$LANG
 ```
 
-After successful compilation try to run the GUI from the **resources** directory:
+After successful compilation run the GUI from the **resources** directory.
+* using test data as input:
 
 ```Shell 
 cd resources
 ../bin/tpcGUI --meta.configJson ~/.tpcreco/config/test.json
 ../bin/tpcGUI ~/.tpcreco/config/test.json
 ```
+* using generated $\alpha$ + $C$ events dirstributed according to E1+E2 transitions mixture
+```Shell 
+cd resources
+../bin/tpcGUI ../config/config_GUI_MC.json
+```
+* using generated $\alpha$ + $C$ events with tracks directions controlled by the user
+```Shell 
+cd resources
+../bin/tpcGUI ../config/config_GUI_MC.json --input.controllerConfigPath=../config/montecarlo_ModuleConfigGun.json
+```
+
 
 Multiple JSON files can be specified at the same time.
 For example, to add event filter for event browsing use this syntax at **daqula2** node:
