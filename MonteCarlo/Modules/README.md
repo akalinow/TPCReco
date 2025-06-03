@@ -121,19 +121,25 @@ Typical module sequences are shown below:
     "EventFileExporter"
   ]
 ```
+Since TPC signal digitizer module is absent, the charge deposits (after diffusion & electronics effects) in both `Track3D`s and `PEventTPC` branches will not be populated. Only `SimHits` deposits will be available (without diffusion & electronics effects).
 
-**Example 3** - Get ionization losses from GEANT, truncate tracks due to fiducial volume and electronics, store `SimEvent`s and `Track3D`s to ROOT file, store raw signals in another ROOT file:
+**Example 3** - Get ionization losses from GEANT, truncate tracks due to fiducial volume and electronics, store `SimEvent`s, `Track3D`s as well as simulated raw data for `PEventTPC` in a single ROOT file:
 ```json
   "ModuleSequence": [
     "Generator",
     "GeantSim",
     "TriggerSimulator",
     "TrackTruncator",
-    "Track3DBuilder",
     "TPCDigitizerSRC",
+    "Track3DBuilder",
     "EventFileExporter"
   ]
 ```
+For this full configuration, provided that no branches are suppressed in `EventFileExporter` module, the typical performance of generating 2-prong (alpha+<sup>12</sup>C) event samples is:
+* generation speed: 0.95 s / evt / CPU core
+* disk storage: 213 kB / evt.
+
+In order to avoid creating a very large ROOT output file it is advised to split generation of Monte Carlo data samples into several chunks of no more than 10k events each.
 
 
 # Configuration of individual modules
@@ -440,11 +446,17 @@ where:
 Example of the light configuration that stores only generator level information plus `SimHits` from GEANT4 can be found in [ModuleConfigGun.json](../config/ModuleConfigGun.json).
 
 Example of the full configuration can be found in [ModuleConfig.json](../config/ModuleConfig.json).
+Note that writing `PEventTPC` charge maps to disk is disabled, because this configuration file is also referred by
+another JSON configuration file [config_GUI_MC.json](../../GUI/config/config_GUI_MC.json)
+illustrating how to run `tpcGUI`/`makeTrackTree` raw data processor with Monte Carlo events generated on-the-fly in memory,
+rather than creating ROOT files with `PEventTPC` beforehand.
+If needed, the `PEventTPC` information can be enabled by editing the relevant part corresponding `EventFileExporter` module.
 
-After compilation they can be run with:
+After compilation all three examples can be run with:
 
 ```Shell
 cd resources
-../bin/mcRunController ../config/montecarlo_ModuleConfig.json
 ../bin/mcRunController ../config/montecarlo_ModuleConfigGun.json
+../bin/mcRunController ../config/montecarlo_ModuleConfig.json
+../bin/tpcGUI ../config/config_GUI_MC.json
 ```

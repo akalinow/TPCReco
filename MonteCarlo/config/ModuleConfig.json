@@ -90,14 +90,14 @@
       }
     },
     "EventFileExporter": {
-      "FileName": "SimEvent_Track3D_PEventTPC_TwoProngE1E2_MC_out.root",
+      "FileName": "SimEvent_Track3D_TwoProngE1E2_MC_out.root",
       "EnabledBranches": [
         "SimEvent",
-        "PEventTPC",
+        "### UNCOMMENT TO ENABLE BRANCH ### PEventTPC",
         "Track3D"
       ],
       "DisabledBranches": [
-        "TPCData.tracks.hits",
+        "### UNCOMMENT TO DISABLE BRANCH ### TPCData.tracks.hits",
         "TPCData.myChargeArray*",
         "TPCData.myChargeMap",
         "### UNCOMMENT TO DISABLE BRANCH ### TPCRecoData.mySegments.myRecHits"
