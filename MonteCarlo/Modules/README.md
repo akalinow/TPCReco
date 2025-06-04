@@ -195,7 +195,7 @@ Configuration template:
     "magnetic_field_offset": 200
   },
   "GeometryConfig": {
-    "ModelPath": "/scratch/MonteCarloSimulations/Geant4/GEANT_elitpc_model_20180302/STwwL/",
+    "ModelPath": "/scratch/MonteCarloSimulations/Geant4/GEANT_elitpc_model_20180302/STL/",
     "MaterialColors": {
       "aluminium": {
         "r": 132,
@@ -289,7 +289,7 @@ where:
 * `"gas_mixture"` - describes partial pressures of mixture components:
   * `"p_co2"` - `float`, CO2 pressure in bar
   * `"p_he"` - `float`, He pressure in bar
-* `"magnetic_field"` - configuration of the magnetic field of the purging magnet:
+* `"magnetic_field"` - configuration of the magnetic field of the purging magnet (optional):
   * `"magnetic_field_ON"` - `bool`, magnetic field ON(`true`) or OFF(`false`)
   * `"magnetic_field_map"` - `"string"`, path to magnetic field table
   * `"magnetic_field_offset"` - `float`, offset along beam axis in mm
@@ -297,6 +297,10 @@ where:
   * `"ModelPath"` - `string`, path to the directory with STL files
   * `"MaterialColors"` - definition of material colors, as in the config above
   * `"Solids"` - definition of different solids for each material, wildcards can be used
+NOTE: When `"ModelPath"` is empty (or points to a non-existing directory) then Geant4 will simply create
+a cube of **1m x 1m x 1m** volume filled with the specified gas mixture.
+The code will run a little bit faster (about 10%), but the tracks originated outside of the active TPC volume will
+not be obscured by the realistic drift cage and vacuum vessel geoemtry!
 
 ## Generator
 
