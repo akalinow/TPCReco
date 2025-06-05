@@ -8,18 +8,17 @@ be written to a file by the exporter module).
 
 All modules inherit from an abstract class [fwk::VModule](../UtilsMC/include/TPCReco/VModule.h). Each module has to
 implement `VModule`'s pure virtual methods:
-
 * `EResultFlag Init(boost::property_tree::ptree config)` - initialize module, called at the beginning of the simulation,
-  takes `boost` configuration as an argument
-* `EResultFlag Process(ModuleExchangeSpace &event)` - main *player*, do what module's work, module is able to read from
-  and write to `ModuleExchangeSpace`, which is used for inter-module communication
-* `EResultFlag Finish()` - finish the run, called for each module at the end of the simulation, used for cleanup
+  takes BOOST propterty tree configuration as an argument
+* `EResultFlag Process(ModuleExchangeSpace &event)` - main *player*, called for every event, does the module's work, can read from-
+  and write to the `ModuleExchangeSpace`, which is used for inter-module communication
+* `EResultFlag Finish()` - finish the run, called for each module at the end of the simulation, used for cleanup.
 
 ## Available modules
 
 * [Generator](Generator) - Wrapper for [EventGenerator](../EventGenerator/README.md) for generating `SimEvent`s.
 * [EventFileExporter](EventFileExporter) - Writes simulation results into ROOT files
-* [GeantSim](GeantSim) - Handles GEANT simulation of detector response - it takes `SimEvent` and tracks primary
+* [GeantSim](GeantSim) - Handles Geant4 simulation of detector response - it takes `SimEvent` and tracks primary
   particles through the detector
 * [ToyIonizationSimulator](ToyIonizationSimulator) - Simple ionization simulator based on `IonRangeCalculator`
 * [TriggerSimulator](TriggerSimulator) - Simulates self-triggering of the TPC by finding `z` position of first energy
@@ -27,14 +26,13 @@ implement `VModule`'s pure virtual methods:
 * [TrackTruncator](TrackTruncator) - Truncates `SimTrack`s in a `SimEvent` to active volume of the detector and possibly
   to GET electronics range
 * [Track3DBuilder](Track3DBuilder) - Builds `Track3D` objects from `SimEvent` objects - they are required by the
-  existing legacy code used for comparison between pure and reconstructed MonteCarlo
+  existing legacy code used for comparison between pure and reconstructed Monte Carlo
 * [TPCDigitizerRandom](TPCDigitizerRandom) - TPC digitizer based on Artur's approach for UVW projection. Each deposit is
-  smeared with a 3D gaussian function by sampling with configurable number of points
+  smeared with a 3D Gaussian function by sampling with configurable number of points
 * [TPCDigitizerSRC](TPCDigitizerSRC) - TPC digitizer based on Mikolaj's `StripResponseCalculator`. It reads generated
   strip response histograms from a ROOT file that corresponds to the chosen TPC working conditions (including:
-  drift velocity, electronics sampling rate and peaking time, "effective" gaussian diffusion). More strip response
+  drift velocity, electronics sampling rate and peaking time, "effective" Gaussian diffusion). More strip response
   ROOT files can be generated using ROOT macro [testStripResponseCalculator](../../Reconstruction/examples/testStripResponseCalculator.cxx).
-
 
 `RunController` creates all the modules, initializes them (`Init` method), runs `Process` method in the right order, and
 then cleans up with `Finish` method.
@@ -43,11 +41,10 @@ then cleans up with `Finish` method.
 
 The modules communicate with each-other through [ModuleExchangeSpace](../UtilsMC/include/TPCReco/ModuleExchangeSpace.h).
 It contains:
-
 * `SimEvent`
 * `PEventTPC`
 * `Track3D`
-* `eventraw::EventInfo`
+* `eventraw::EventInfo`.
 
 `RunController` keeps one instance of `ModuleExchangeSpace` and passes it by reference to the modules' `Process`
 methods, that way the modules have read/write access.
@@ -123,7 +120,7 @@ Typical module sequences are shown below:
 ```
 Since TPC signal digitizer module is absent, the charge deposits (after diffusion & electronics effects) in both `Track3D`s and `PEventTPC` branches will not be populated. Only `SimHits` deposits will be available (without diffusion & electronics effects).
 
-**Example 3** - Get ionization losses from GEANT, truncate tracks due to fiducial volume and electronics, store `SimEvent`s, `Track3D`s as well as simulated raw data for `PEventTPC` in a single ROOT file:
+**Example 3** - Get ionization losses from Geant4, truncate tracks due to fiducial volume and electronics, store `SimEvent`s, `Track3D`s as well as simulated raw data for `PEventTPC` in a single ROOT file:
 ```json
   "ModuleSequence": [
     "Generator",
@@ -135,11 +132,11 @@ Since TPC signal digitizer module is absent, the charge deposits (after diffusio
     "EventFileExporter"
   ]
 ```
-For this full configuration, provided that no branches are suppressed in `EventFileExporter` module, the typical performance of generating 2-prong (alpha+<sup>12</sup>C) event samples is:
+For this full-chain configuration, provided that no branches are suppressed in `EventFileExporter` module, the typical performance of generating 2-prong (alpha+<sup>12</sup>C) event samples is:
 * generation speed: 0.95 s / evt / CPU core
 * disk storage: 213 kB / evt.
 
-In order to avoid creating a very large ROOT output file it is advised to split generation of Monte Carlo data samples into several chunks of no more than 10k events each.
+**Note**: In order to avoid creating a very large ROOT output file it is advised to **split** generation of Monte Carlo data samples into several chunks of no more than **10k events** each.
 
 
 # Configuration of individual modules
@@ -172,7 +169,7 @@ where:
 * `"DisabledBranches"` - vector of `string` describing branches to be excluded from saving into file.
   Branches can belong to two ROOT `TTree`'s stored into the output file (`"TPCData"` and `"TPCRecoData"`).
   List of all possibilities can be found by running `TTree::Print()` on the given tree. Branches occupying most space:
-  * `"TPCData.tracks.hits"` - `std::vector` with all energy deposits (`SimHits`) generated by Geant/ToyMC
+  * `"TPCData.tracks.hits"` - `std::vector` with all energy deposits (`SimHits`) generated by Geant4/ToyMC
   * `"TPCData.myChargeMap"` - `std::map` with all digitized charges needed for creating `PEventTPC`
   * `"TPCData.myChargeArray[3][3][256][512]"` - C-style array for ML purposes that holds the *same* information as `std::map` from the previous point (`"TPCData.myChargeArray*"` also works).
   * `"TPCRecoData.mySegments.myRecHits"` - `std::vector` with digitized deposits (`RecHit2D`) associated with individual generator level tracks (`TrackSegment3D`)
@@ -284,10 +281,10 @@ Configuration template:
 
 where:
 
-* `"EnableAlphaStraggling"` - `bool`, switch to enable multiple scattering for 4He/3He particles
+* `"EnableAlphaStraggling"` - `bool`, switch to enable multiple scattering for <sup>4</sup>He/<sup>3</sup>He particles
 * `"Temperature"` - `float`, gas temperature in K
 * `"gas_mixture"` - describes partial pressures of mixture components:
-  * `"p_co2"` - `float`, CO2 pressure in bar
+  * `"p_co2"` - `float`, CO<sub>2</sub> pressure in bar
   * `"p_he"` - `float`, He pressure in bar
 * `"magnetic_field"` - configuration of the magnetic field of the purging magnet (optional):
   * `"magnetic_field_ON"` - `bool`, magnetic field ON(`true`) or OFF(`false`)
@@ -296,11 +293,12 @@ where:
 * `"GeometryConfig"` - configuration of the geometry:
   * `"ModelPath"` - `string`, path to the directory with STL files
   * `"MaterialColors"` - definition of material colors, as in the config above
-  * `"Solids"` - definition of different solids for each material, wildcards can be used
-NOTE: When `"ModelPath"` is empty (or points to a non-existing directory) then Geant4 will simply create
+  * `"Solids"` - definition of different solids for each material, wildcards can be used.
+
+**Note**: If `"ModelPath"` is empty (or points to a non-existing directory) then Geant4 will simply create
 a cube of **1m x 1m x 1m** volume filled with the specified gas mixture.
 The code will run a little bit faster (about 10%), but the tracks originated outside of the active TPC volume will
-not be obscured by the realistic drift cage and vacuum vessel geoemtry!
+not be obscured by the realistic drift cage and vacuum vessel geometry!
 
 ## Generator
 
@@ -353,8 +351,8 @@ Configuration template:
 where:
 
 * `"GeometryConfig"` - `string`, path to `geometry_ELITPC.dat` configuration
-* `"sigmaXY"` - `float`, sigma for diffusion in plane perpendicular to drift direction in millimiters
-* `"sigmaZ"` - `float`, sigma for diffusion along drift direction in millimiters
+* `"sigmaXY"` - `float`, sigma for diffusion in XY_DET plane perpendicular to drift direction in millimiters
+* `"sigmaZ"` - `float`, sigma for diffusion along drift direction Z_DET in millimiters
 * `"NSamplesPerHit"` - `int`, number of random samples around each `SimHit` location
 * `"MeVToChargeScale"` - `float`, number of ADC counts per MeV
 
@@ -382,11 +380,11 @@ where:
 
 * `"GeometryConfig"` - `string`, path to `geometry_ELITPC.dat` configuration
 * `"StripResponsePath"` - `string`, path to directory where strip responses are stored
-* `"sigmaXY"` - `float`, sigma for diffusion in plane perpendicular to drift direction in millimiters
-* `"sigmaZ"` - `float`, sigma for diffusion along drift direction in millimiters
+* `"sigmaXY"` - `float`, sigma for diffusion in XY_DET plane perpendicular to drift direction in millimiters
+* `"sigmaZ"` - `float`, sigma for diffusion along drift direction Z_DET in millimiters
 * `"MeVToChargeScale"` - `float`, number of ADC counts per MeV
-* `"th2PolyPartitionX"` - `int`, repartition parameter for `TH2Poly` in `GeometryTPC`, `x` direction
-* `"th2PolyPartitionY"` - `int`, repartition parameter for `TH2Poly` in `GeometryTPC`, `y` direction
+* `"th2PolyPartitionX"` - `int`, repartition parameter for `TH2Poly` in `GeometryTPC`, X_DET direction
+* `"th2PolyPartitionY"` - `int`, repartition parameter for `TH2Poly` in `GeometryTPC`, Y_DET direction
 * `"peakingTime"` - `float`, peaking time of AGET electronics in nanoseconds (0 or 232 ns)
 * `"nStrips"` - `int`, number of neighbouring strips considered during UVW projection
 * `"nCells"` - `int`, number of neighbouring cells considered during UVW projection
@@ -445,22 +443,53 @@ where:
 * `"TriggerArrival"` - `double`, fraction of the electronics time range at which the self trigger arrives
 
 
-# Example configurations
+# Example configurations:
 
-Example of the light configuration that stores only generator level information plus `SimHits` from GEANT4 can be found in [ModuleConfigGun.json](../config/ModuleConfigGun.json).
+## Single alphas
+[ModuleConfigGun.json](../config/ModuleConfigGun.json) - example lightweight JSON configuration for Monte Carlo run controller that stores:
+- generator level information,
+- `SimHit` energy deposits from Geant4 associated with their parent `SimTrack`.
 
-Example of the full configuration can be found in [ModuleConfig.json](../config/ModuleConfig.json).
-Note that writing `PEventTPC` charge maps to disk is disabled, because this configuration file is also referred by
-another JSON configuration file [config_GUI_MC.json](../../GUI/config/config_GUI_MC.json)
-illustrating how to run `tpcGUI`/`makeTrackTree` raw data processor with Monte Carlo events generated on-the-fly in memory,
-rather than creating ROOT files with `PEventTPC` beforehand.
-If needed, the `PEventTPC` information can be enabled by editing the relevant part corresponding `EventFileExporter` module.
-
-After compilation all three examples can be run with:
-
+The mono-energetic alpha-particles of 3 MeV are emitted along X_DET axis from a fixed point in the center of TPC's active volume and
+stopped in CO<sub>2</sub> gas kept at 190 mbar pressure.
+The ROOT output file can be analyzed with [DrawBragg_example](../examples/DrawBragg_example.cpp) program, which creates a PDF file (`"bragg.pdf"`)
+with dE/dx plots per event (first 10 events in this case) as well as several summary plots from entire sample (10k events in this case):
 ```Shell
 cd resources
 ../bin/mcRunController ../config/montecarlo_ModuleConfigGun.json
+../bin/examples/DrawBragg_example SimEvent_Track3D_SingleAlpha_MC_out.root 10
+```
+
+## <sup>16</sup>O photodisintegration reaction
+[ModuleConfig.json](../config/ModuleConfig.json) - example full-chain JSON configuration for Monte Carlo run controller that stores:
+- generator level information,
+- `SimHit` energy deposits from Geant4,
+- `Track3D` pseudo-reconstruction at generator level including digitized `RecHit2D` deposits per individual tracks.
+
+**Note**: Saving digitized `PEventTPC` charge maps to the output ROOT file is disabled to optimize disk space.
+If needed, it can be re-enabled by editing `"EventFileExporter"` part of JSON file.
+
+The photodisintegration reactions of <sup>16</sup>O are induced by mono-energetic gamma photons of 11 MeV in the LAB reference frame.
+In the centre-of-mass reference frame the reaction products follow a mixed E1+E2 polar angle distribution and uniform azimuthal angle distribution.
+The vertices are generated uniformly along X_DET coordinate in the range [-100, 100] mm along nominal beam axis.
+The resulting pseudo-reconstructed `Track3D` collections can be visualized in 3D by [PlotEvents_example](../examples/PlotEvents_example.cpp) program,
+which creates, both, a PDF file and a ROOT C-macro (`"Generated_wirePlotTrack3D.[*]"`).
+The visualisation accounts for apparent track shift along Z_DET coordinate due to simulated self-triggering mode of the DAQ electronics.
+```Shell
+cd resources
 ../bin/mcRunController ../config/montecarlo_ModuleConfig.json
+../bin/examples/PlotEvents_example \
+       --geometryFile geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat \
+       --dataFile SimEvent_Track3D_TwoProngE1E2_MC_out.root
+root -l -x Generated_wirePlotTrack3D.C
+```
+
+## <sup>16</sup>O photodisintegration reaction (transient mode)
+[config_GUI_MC.json](../../GUI/config/config_GUI_MC.json) - example [ConfigManager](../../Utilities/README.md)
+JSON file for `tpcGUI`/`makeTrackTree` raw data processors that internally refers to [ModuleConfig.json](../config/ModuleConfig.json)
+from the previous example and allows one to generate random events on-the-fly
+in memory without the need of creating a large ROOT file with `PEventTPC` digitized raw data beforehand.
+```Shell
+cd resources
 ../bin/tpcGUI ../config/config_GUI_MC.json
 ```
