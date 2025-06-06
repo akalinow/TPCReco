@@ -1,5 +1,6 @@
 #include <CLHEP/Random/Random.h>
 #include "GeantSim.h"
+#include "CentralConfig.hh"
 #include "G4RunManager.hh"
 #include "GELIDetectorConstruction.hh"
 #include "GELIPhysicsList.hh"

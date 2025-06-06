@@ -68,7 +68,8 @@ void RunConditionsDialog::addButtons(){
 
   std::vector<std::string> entry_names = {"vdrift", "sampling", "delay"};
   std::vector<std::string> entry_labels = {"Drift v\n[cm/us]", "Smplg. rate\n[MHz]", "Trg. delay\n[us]"};
-  std::vector<unsigned int> button_id = {M_SET_V_DRIFT, M_SET_SAMLING_RATE, M_SET_TRG_DELAY};
+  std::vector<unsigned int> entry_id = {M_SET_V_DRIFT, M_SET_SAMLING_RATE, M_SET_TRG_DELAY};
+  std::vector<TGNumberFormat::EStyle> entry_digits = {TGNumberFormat::EStyle::kNESRealThree, TGNumberFormat::EStyle::kNESRealOne, TGNumberFormat::EStyle::kNESRealTwo};
 
   for (unsigned int iEntry = 0; iEntry <entry_names.size(); ++iEntry){
 
@@ -81,8 +82,8 @@ void RunConditionsDialog::addButtons(){
     attach_top++;
     attach_bottom=attach_top+1;
     tloh = new TGTableLayoutHints(attach_left, attach_right, attach_top, attach_bottom);
-    TGNumberEntry *aNumberEntry = new TGNumberEntry(fHeaderFrame,0.0,5, button_id[iEntry],
-						    TGNumberFormat::EStyle::kNESRealTwo);
+    TGNumberEntry *aNumberEntry = new TGNumberEntry(fHeaderFrame,0.0,5, entry_id[iEntry],
+						    entry_digits[iEntry]);
     //aNumberEntry->Connect("ValueSet(Long_t)","RunConditionsDialog",this,"setConditions()");
     //aNumberEntry->Connect("ValueSet(Long_t)", "RunConditionsDialog", this, "setConditions()");
     //(aNumberEntry->GetNumberEntry())->Connect("ReturnPressed()", "RunConditionsDialog", this,"setConditions()");

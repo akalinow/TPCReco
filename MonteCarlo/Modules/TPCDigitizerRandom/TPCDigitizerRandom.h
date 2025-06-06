@@ -25,6 +25,7 @@ private:
     double diffSigmaZmin{};
     double diffSigmaZmax{};
     unsigned int nSamplesPerHit{};
+    bool enableSimHitsPerTrack{}; // used by Track3DBuilder to create true RecHits per individual generator level TrackSegment3D
 
     REGISTER_MODULE(TPCDigitizerRandom)
 };

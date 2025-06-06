@@ -1,7 +1,25 @@
 set(MODULE_NAME "EventSources")
 message(STATUS "Adding CMake fragment for module:\t${MODULE_NAME}")
 
-reco_add_library(${MODULE_NAME})
+# ROOT 6.08 dictionary MODULE workaround
+include_directories(${PROJECT_SOURCE_DIR}/EventSources/include)
+include_directories(${PROJECT_SOURCE_DIR}/Utilities/include)
+include_directories(${PROJECT_SOURCE_DIR}/DataFormats/include)
+include_directories(${PROJECT_SOURCE_DIR}/MonteCarlo/UtilsMC/include)
+root_generate_dictionary(
+  G__${TPCRECO_PREFIX}${MODULE_NAME}
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/EventSourceROOT.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/EventSourceMC.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/EventSourceGRAW.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/EventSourceMultiGRAW.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/EventSourceFactory.h
+  LINKDEF
+  LinkDef.h)
+#
+
+#reco_add_library(${MODULE_NAME})
+reco_add_library(${MODULE_NAME} EXTRA_SOURCES
+                 G__${TPCRECO_PREFIX}${MODULE_NAME}.cxx)
 reco_add_executable(grawToEventTPC bin/grawToEventTPC.cpp)
 
 # Disable/enable searching next file with N+1 index (default=DISABLED)
@@ -24,6 +42,7 @@ target_link_libraries(grawToEventTPC PRIVATE Boost::program_options ${MODULE_NAM
 
 reco_install_targets(${MODULE_NAME} grawToEventTPC)
 
+reco_install_root_dict(${MODULE_NAME})
 install(PROGRAMS $<1:${CMAKE_CURRENT_SOURCE_DIR}/python/> DESTINATION python)
 
 reco_add_test_subdirectory(test)

@@ -105,21 +105,48 @@ public:
     template<typename T> class myValue;
     template<typename T> class myVector;
 
+    // helper classes to check if a given type T is a standard vector or not, for example:
+    //   typedef std::vector<float> some_type;
+    //   if(ConfigManager::is_std_vector(some_type)::value == true) ...
+    template<typename> struct is_std_vector_type : std::false_type {};
+    template<typename T, typename A> struct is_std_vector_type<std::vector<T,A>> : std::true_type {};
+    template <typename T, typename... Ts> struct is_std_vector_type<std::vector<T, Ts...>> : std::true_type {};
+
     // helper static methods needed by BOOST program options
     static std::vector<std::string> filterSquareBrackets(const std::vector<std::string> & val);
     template<typename T=double> static std::vector<std::string> filterMathExpressions(const std::vector<std::string> & val, TInterpreter *inter=NULL);
 
     // convenience static getter method to get single value from BOOST ptree node
+    template<typename T> friend std::ostream& operator<<(std::ostream & os, const ConfigManager::myValue<T> & v);
+    template<typename T> friend std::istream& operator>>(std::istream & is, ConfigManager::myValue<T> & v);
+
     template <typename T> static T getScalar(const boost::property_tree::ptree &pt, const std::string & nodePath) {
-      BOOST_STATIC_ASSERT(std::is_arithmetic<T>::value);
-      return pt.get<T>(nodePath);
+      BOOST_STATIC_ASSERT(std::is_arithmetic<T>::value || std::is_same<T, std::string>::value);
+      // return pt.get<T>(nodePath); // no MATH expressions allowed
+      // make conversion to myValue<T> to enable MATH expressions while parsing PTREE scalar varriable
+      std::istringstream ss;
+      ss.str(pt.get<std::string>(nodePath));
+      if(std::is_same<T, bool>::value) { // BOOL type needs a special treatment
+	ConfigManager::myValue<int> mvalI;
+	ss >> mvalI;
+	return boost::lexical_cast<T>(boost::lexical_cast<int>(mvalI) ? true : false);
+      }
+      ConfigManager::myValue<T> mval;
+      ss >> mval;
+      return boost::lexical_cast<T>(mval);
     }
 
     // convenience static getter method to get vector of values from BOOST ptree node
     template <typename T> static std::vector<typename T::value_type> getVector(const boost::property_tree::ptree &pt, const std::string & nodePath) {
       T result;
       for (auto item : pt.get_child(nodePath)) {
-	result.push_back(item.second.get_value<typename T::value_type>());
+	// result.push_back(item.second.get_value<typename T::value_type>()); // no MATH expressions allowed
+	// make conversion to myValue<T> to enable MATH expressions while parsing PTREE vector
+	std::stringstream ss;
+	auto mval = ConfigManager::myValue<typename T::value_type>();
+	ss.str(item.second.get_value<std::string>());
+	ss >> mval;
+	result.push_back(boost::lexical_cast<typename T::value_type>(mval));
       }
       return result;
     }
@@ -188,9 +215,9 @@ public:
     ///////// DEBUG
     //    std::cout << KRED << __FUNCTION__ << "(ConfigManager::myValue): ################################ input VAL: " << v.value << RST << std::endl;
     ///////// DEBUG
-    if(std::is_same<T, bool>::value) { // special case
-      if(v.value==true) os << "true";
-      else              os << "false";
+    if(std::is_same<T, bool>::value) { // BOOL type needs a special treatment
+      if(v.value==true) os << "1";
+      else              os << "0";
     } else if(std::is_same<T, std::string>::value) { // special case, may contain blank spaces
       os << boost::lexical_cast<T>(v.value);
     } else {
@@ -245,14 +272,6 @@ public:
     return is;
     }
 };
-// only these specialized empty constructors are valid
-template <> ConfigManager::myValue<std::string>::myValue()  : value("")    { }
-template <> ConfigManager::myValue<int>::myValue()          : value(0)     { }
-template <> ConfigManager::myValue<unsigned int>::myValue() : value(0U)    { }
-template <> ConfigManager::myValue<float>::myValue()        : value(0.0)   { }
-template <> ConfigManager::myValue<double>::myValue()       : value(0.0)   { }
-template <> ConfigManager::myValue<bool>::myValue()         : value(false) { }
-
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -352,8 +371,8 @@ public:
     BOOST_FOREACH(auto& t, filteredValues2) {
 
       if(std::is_same<T, bool>::value) { // special case
-      	t = std::regex_replace(t, std::regex("(?:true"), "1");
-      	t = std::regex_replace(t, std::regex("(?:false"), "0");
+	t = std::regex_replace(t, std::regex("(?:true)"), "1");
+	t = std::regex_replace(t, std::regex("(?:false)"), "0");
       }
 
       ///////// DEBUG

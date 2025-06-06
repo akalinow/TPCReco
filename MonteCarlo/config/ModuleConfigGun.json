@@ -3,10 +3,8 @@
   "ModuleSequence": [
     "Generator",
     "GeantSim",
-    "TriggerSimulator",
     "TrackTruncator",
     "Track3DBuilder",
-    "TPCDigitizerSRC",
     "EventFileExporter"
   ],
   "GeometryConfig": "@CMAKE_INSTALL_PREFIX@/resources/geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat",
@@ -18,8 +16,8 @@
         "Beam": {
           "BeamGeometry": {
             "EulerAnglesNominal": {
-              "phi": -1.5708,
-              "theta": 1.5708,
+              "phi": "-M_PI/2",
+              "theta": "M_PI/2",
               "psi": 0.0
             },
             "EulerAnglesActual": {
@@ -36,7 +34,7 @@
           "GammaEnergy": {
             "distribution": "EProviderSingle",
             "parameters": {
-              "singleE": 11
+              "singleE": 0
             }
           }
         },
@@ -51,29 +49,32 @@
           "VertexLongitudinal": {
             "distribution": "ZProviderSingle",
             "parameters": {
-              "singleZ": 11
+              "singleZ": 0
             }
           }
         },
         "Reactions": [
           {
-            "type": "TwoProng",
+            "type": "ParticleGun",
             "branchingRatio": 1,
-            "tag": "C12_ALPHA",
-            "target": "OXYGEN_16",
-            "FirstProduct": "ALPHA",
-            "SecondProduct": "CARBON_12",
+            "tag": "PARTICLE_GUN",
+            "Particle": "ALPHA",
             "Theta": {
               "distribution": "AngleProviderSingle",
               "parameters": {
-                "singleAngle": 0.0
+                "singleAngle": "-M_PI"
               }
             },
             "Phi": {
-              "distribution": "AngleProviderIso",
+              "distribution": "AngleProviderSingle",
               "parameters": {
-                "minAngle": -3.141592653589793,
-                "maxAngle": 3.141592653589793
+                "singleAngle": 0
+              }
+            },
+            "KineticEnergy": {
+              "distribution": "EProviderSingle",
+              "parameters": {
+                "singleE": 3
               }
             }
           }
@@ -81,20 +82,24 @@
       }
     },
     "EventFileExporter": {
-      "FileName": "EventTPC_MC_out.root",
+      "FileName": "SimEvent_Track3D_SingleAlpha_MC_out.root",
       "EnabledBranches": [
         "SimEvent",
-        "PEventTPC",
+        "### UNCOMMENT TO ENABLE BRANCH ### PEventTPC",
         "Track3D"
       ],
       "DisabledBranches": [
-        "TPCData.myChargeMap",
-        "TPCData.tracks.hits"
+        "TPCData.myChargeArray*",
+        "### UNCOMMENT TO DISABLE BRANCH ### TPCData.myChargeMap",
+        "### UNCOMMENT TO DISABLE BRANCH ### TPCData.tracks.hits",
+        "### UNCOMMENT TO DISABLE BRANCH ### TPCRecoData.mySegments.myRecHits"
       ]
     },
     "GeantSim": {
+      "EnableAlphaStraggling": true,	  
+      "Temperature": 293.15,
       "gas_mixture": {
-        "co2": 0.25,
+        "co2": 0.19,
         "he": 0.0
       },
       "magnetic_field": {
@@ -103,7 +108,7 @@
         "magnetic_field_offset": 200
       },
       "GeometryConfig": {
-        "ModelPath": "@CMAKE_INSTALL_PREFIX@/MonteCarlo/Modules/Geant_STL_model_DISABLED/",
+        "ModelPath": "@CMAKE_INSTALL_PREFIX@/MonteCarlo/Modules/Geant_STL_model/",
         "MaterialColors": {
           "aluminium": {
             "r": 132,
@@ -189,10 +194,10 @@
       }
     },
     "TPCDigitizerRandom": {
-      "sigmaXYmin": 1,
-      "sigmaXYmax": 2,
-      "sigmaZmin": 1,
-      "sigmaZmax": 2,
+      "sigmaXYmin": 1.5,
+      "sigmaXYmax": 1.5,
+      "sigmaZmin": 1.5,
+      "sigmaZmax": 1.5,
       "NSamplesPerHit": 100,
       "MeVToChargeScale": 100000
     },
@@ -203,12 +208,19 @@
       "MeVToChargeScale": 100000,
       "th2PolyPartitionX": 60,
       "th2PolyPartitionY": 40,
-      "peakingTime": 0,
+      "peakingTime": 232,
       "nStrips": 7,
       "nCells": 50,
       "nPads": 14
     },
     "Track3DBuilder": {
+      "simRecoHitFilter": {
+        "recoClusterType": "fraction",
+        "recoClusterThreshold": 35.0,
+        "recoClusterConstantFractionThreshold": 0.1,
+        "recoClusterDeltaStrips": 2,
+        "recoClusterDeltaTimeCells": 5
+      }
     },
     "TrackTruncator": {
       "IncludeElectronicsRange": true
@@ -217,8 +229,8 @@
       "TriggerArrival": 0.1
     },
     "ToyIonizationSimulator": {
-      "Temperature": "293.15",
-      "Pressure": "0.19",
+      "Temperature": 293.15,
+      "Pressure": 0.19,
       "PointsPerMm": 10.0
     }
   }

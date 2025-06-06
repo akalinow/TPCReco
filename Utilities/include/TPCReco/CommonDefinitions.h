@@ -19,51 +19,12 @@ enum class filter_type{
   fraction
 };
 
-namespace definitions {
-enum  projection_type{
-  NONE = -1,
-  DIR_U=0,          // U-direction channel index
-  DIR_V=1,          // V-direction channel index
-  DIR_W=2,          // W-direction channel index
-  DIR_XY=3,         // 2D projection on XY plane
-  DIR_XZ=4,         // 2D projection on XZ plane
-  DIR_YZ=5,         // 2D projection on YZ plane
-  DIR_3D=6,          // 3D reconstruction
-  DIR_TIME_U,
-  DIR_TIME_V,
-  DIR_TIME_W,
-  DIR_TIME,
-};
-
-enum class fit_type{
-  TANGENT,      // Fit only track segment tangent
-  BIAS_Z,       // Fit only track segment bias. Move along time direction. 
-  BIAS_XY,      // Fit only track segment bias. Move in the strip plane.
-  TANGENT_BIAS, // Fit both track segment bias and tangent
-  START_STOP    // Fit both track segment start and stop
-};
-
-} //namespace definitions
-
 enum class event_type {
   EventSourceROOT,
   EventSourceMC,
   EventSourceGRAW,
   EventSourceMultiGRAW
 };
-
-
-
-std::ostream& operator<<(std::ostream& os, const event_type& et);
-std::istream& operator>>(std::istream& is, event_type& et);
-
-definitions::projection_type get2DProjectionType(int aStrip_dir);
-definitions::projection_type get2DProjectionType(definitions::projection_type aStrip_dir);
-
-definitions::projection_type get1DProjectionType(int aStrip_dir);
-definitions::projection_type get1DProjectionType(definitions::projection_type aStrip_dir);
-
-std::vector<definitions::projection_type> getProjectionsList(); 
 
 enum pid_type{
   UNKNOWN=0,          //           <-- for backward compatibilty with data analyzed before 20 May 2022
@@ -110,18 +71,89 @@ enum class reaction_type{
   PARTICLE_GUN
 };
 
+namespace definitions {
+enum  projection_type{
+  NONE = -1,
+  DIR_U=0,          // U-direction channel index
+  DIR_V=1,          // V-direction channel index
+  DIR_W=2,          // W-direction channel index
+  DIR_XY=3,         // 2D projection on XY plane
+  DIR_XZ=4,         // 2D projection on XZ plane
+  DIR_YZ=5,         // 2D projection on YZ plane
+  DIR_3D=6,         // 3D reconstruction
+  DIR_TIME_U,
+  DIR_TIME_V,
+  DIR_TIME_W,
+  DIR_TIME,
+};
+
+enum class fit_type{
+  TANGENT,      // Fit only track segment tangent
+  BIAS_Z,       // Fit only track segment bias. Move along time direction. 
+  BIAS_XY,      // Fit only track segment bias. Move in the strip plane.
+  TANGENT_BIAS, // Fit both track segment bias and tangent
+  START_STOP    // Fit both track segment start and stop
+};
+
+} //namespace definitions
+
+definitions::projection_type get2DProjectionType(int aStrip_dir);
+definitions::projection_type get2DProjectionType(definitions::projection_type aStrip_dir);
+
+definitions::projection_type get1DProjectionType(int aStrip_dir);
+definitions::projection_type get1DProjectionType(definitions::projection_type aStrip_dir);
+
+std::vector<definitions::projection_type> getProjectionsList(); 
+
+////////////////////////////////////////////////////////////////////////////////
+
 namespace enumDict {
     //conversion enum <--> string for pid_type
-    pid_type GetPidType(const std::string &pidName);
+    pid_type GetPidType(const std::string &name);
     std::string GetPidName(pid_type type);
 
     //conversion enum <--> string for reaction_type
-    reaction_type GetReactionType(const std::string &reactionName);
+    reaction_type GetReactionType(const std::string &name);
     std::string GetReactionName(reaction_type type);
+
+    //conversion enum <--> string for TH2 hit filter_type
+    filter_type GetHitFilterType(const std::string &name);
+    std::string GetHitFilterName(filter_type type);
+
+    //conversion enum <--> string for TH2 projection scale_type
+    scale_type GetProjectionScaleType(const std::string &name);
+    std::string GetProjectionScaleName(scale_type type);
+
+    //conversion enum <--> string for EventSource[*] event_type
+    event_type GetEventSourceType(const std::string &name);
+    std::string GetEventSourceName(event_type type);
+
+    //conversion enum <--> string for gas_mixture_type
+    gas_mixture_type GetGasMixtureType(const std::string &name);
+    std::string GetGasMixtureName(gas_mixture_type type);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
+std::ostream& operator<<(std::ostream& os, const scale_type& type);
+std::istream& operator>>(std::istream& is, scale_type& type);
+
+std::ostream& operator<<(std::ostream& os, const filter_type& type);
+std::istream& operator>>(std::istream& is, filter_type& type);
+
+std::ostream& operator<<(std::ostream& os, const event_type& type);
+std::istream& operator>>(std::istream& is, event_type& type);
+
+std::ostream& operator<<(std::ostream& os, const pid_type& type);
+std::istream& operator>>(std::istream& is, pid_type& type);
+
+std::ostream& operator<<(std::ostream& os, const gas_mixture_type& type);
+std::istream& operator>>(std::istream& is, gas_mixture_type& type);
+
+std::ostream& operator<<(std::ostream& os, const reaction_type& type);
+std::istream& operator>>(std::istream& is, reaction_type& type);
+
+////////////////////////////////////////////////////////////////////////////////
 
 #define _endl_ " (" << __FILE__ << "; " << __LINE__ << ")\n"
 #define checkpoint std::cout << "checkpoint" << _endl_

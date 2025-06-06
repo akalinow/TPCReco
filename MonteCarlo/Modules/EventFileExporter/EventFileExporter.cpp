@@ -1,13 +1,19 @@
 #include "EventFileExporter.h"
 #include "TPCReco/SaveCurrentTDirectory.h"
+#include "TPCReco/ConfigManager.h"
 
 EventFileExporter::EventFileExporter()
         : file{nullptr}, tpcDataTree{nullptr}, currSimEvent{nullptr}, currPEventTPC{nullptr}, currTrack3D{nullptr},
           currEventInfo{nullptr} {}
 
 fwk::VModule::EResultFlag EventFileExporter::Init(boost::property_tree::ptree config) {
+    // NOTE: Arithmetic BOOST ptree members are accessed via static method: ConfigManager::getScalar<double>(tree, "some.branch")
+    //       instead of: tree.get<double>("some.branch")
+    //       in order to enable MATH expressions in MC JSON config files (e.g. "M_PI/2")
+
     //create file and ttree
-    auto fname = config.get<std::string>("FileName");
+    // auto fname = config.get<std::string>("FileName"); // without MATH expressions
+    auto fname = ConfigManager::getScalar<std::string>(config, "FileName");
     utl::SaveCurrentTDirectory s;
     file = new TFile(fname.c_str(), "RECREATE");
     tpcDataTree = new TTree("TPCData", "");

@@ -76,25 +76,27 @@ void MaterialBuilder::BuildMaterials() {
     CentralConfig *config = CentralConfig::GetInstance();
     auto p_he = config->Get<float>("gas_mixture.he");
     auto p_co2 = config->Get<float>("gas_mixture.co2");
-
+    auto gas_temperature_K = config->Get<float>("Temperature");
 
     //G4double CO2_density = 1.805 * mg / cm3;
-    G4double CO2_density = 1.787 * mg / cm3;
+    //G4double CO2_density = 1.787 * mg / cm3;
+    G4double CO2_density = 1.976 * mg / cm3 * (273.15 / gas_temperature_K); // 1.976 mg/cm3 at 1013.25 mbar = 1 atm = 760 mmHg, 0 deg.C
     auto CO2 = new G4Material("Carbonic gas", CO2_density, 2,
-                              kStateGas, 293. * kelvin, p_co2 * bar);
+                              kStateGas, gas_temperature_K * kelvin, p_co2 * bar);
     CO2->AddElement(C, 1);
     CO2->AddElement(O, 2);
     materials["co2"] = CO2;
 
-    G4double He_density = 0.1645 * mg / cm3;
+    //G4double He_density = 0.1645 * mg / cm3;
+    G4double He_density = 0.1784 * mg / cm3 * (273.15 / gas_temperature_K); // 1.784e-1 mg/cm3 at 1013.25 mbar = 1 atm = 760 mmHg, 0 deg.C
     auto He_gas = new G4Material("Helium gas", He_density, 1,
-                                 kStateGas, 293. * kelvin, p_he * bar);
+                                 kStateGas, gas_temperature_K * kelvin, p_he * bar);
     He_gas->AddElement(He, 1);
     materials["he"] = He_gas;
 
-    auto mixture = new G4Material("mixture", p_co2 * CO2_density+ p_he * He_density,
+    auto mixture = new G4Material("mixture", p_co2 * CO2_density + p_he * He_density,
                                   2,
-                                  kStateGas, temperature, (p_co2 + p_he) * bar);
+                                  kStateGas, gas_temperature_K * kelvin, (p_co2 + p_he) * bar);
     mixture->AddMaterial(He_gas, p_he / (p_he + p_co2));
     mixture->AddMaterial(CO2, p_co2 / (p_he + p_co2));
     materials["mixture"] = mixture;

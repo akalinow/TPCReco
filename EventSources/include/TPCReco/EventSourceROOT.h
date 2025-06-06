@@ -1,6 +1,7 @@
 #ifndef _EventSourceROOT_H_
 #define _EventSourceROOT_H_
 
+#include "TPCReco/CommonDefinitions.h"
 #include "TPCReco/EventSourceBase.h"
 #include "TPCReco/EventRaw.h"
 #include "TPCReco/PedestalCalculator.h"
@@ -38,6 +39,8 @@ public:
   void configurePedestal(const boost::property_tree::ptree &config);
 
   void loadGeometry(const std::string & fileName);
+
+  static inline event_type getSourceType() { return event_type::EventSourceROOT; }
   
  private:
 

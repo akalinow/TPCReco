@@ -70,6 +70,7 @@ MainFrame::~MainFrame() {
 ///////////////////////////////////////////////////////
 void MainFrame::InitializeWindows() {
 
+	bool isOnline = (myWorkMode == M_ONLINE_GRAW_MODE) || (myWorkMode == M_ONLINE_NGRAW_MODE);
 	SetCleanup(kDeepCleanup);
 	SetWMPosition(500, 0);
 	SetWMSize(1300, 800);
@@ -80,22 +81,22 @@ void MainFrame::InitializeWindows() {
 	//Left column
 	AddHistoCanvas();
 
-    // Additional Canvas with 3D scene
-	if(myConfig.get<bool>("display.develMode")) {
+        // Additional Canvas with 3D scene
+	if(myConfig.get<bool>("display.develMode") && !isOnline) { // devel plots are disabled in ONLINE mode
 		fWirePlotCanvas.reset(new TCanvas("fWirePlotCanvas", "3D detector", 400, 400));
 		myHistoManager.createWirePlotDriftCage3D(fWirePlotCanvas);
 	}
 	///Middle column
 	int attach = 0;
 	attach = AddButtons(attach);
-	attach = AddGoToEventDialog(attach);
-	attach = AddGoToFileEntryDialog(attach);
-	attach = AddEventTypeDialog(attach);
+	attach = (isOnline ? attach : AddGoToEventDialog(attach)); // event jumping is disabled in ONLINE mode
+	attach = (isOnline ? attach : AddGoToFileEntryDialog(attach)); // event jumping is disabled in ONLINE mode
+	attach = (isOnline ? attach : AddEventTypeDialog(attach)); // event bits are disabled in ONLINE mode
 	//Right column
 	attach = 0;
 	attach = AddFileInfoFrame(attach);
-	attach = AddMarkersDialog(attach);
-	attach = AddRunConditionsDialog(attach);
+	attach = (isOnline ? attach : AddMarkersDialog(attach)); // manual RECO mode is disabled in ONLINE mode
+	attach = (isOnline ? attach : AddRunConditionsDialog(attach)); // run conditions are not used in ONLINE mode
 	AddLogos();
 	/////////////
 	MapSubwindows();
@@ -266,6 +267,17 @@ int MainFrame::AddButtons(int attach) {
 		aButton->ChangeBackground(aColor);
 		++attach_top;
 		++attach_bottom;
+		if ((button_id[iButton] == M_PREVIOUS_EVENT && // disable PREVIOUS button in MC random event generation mode
+		     myWorkMode == M_OFFLINE_MC_MODE)) {
+		  aButton->SetState(kButtonUp, true);
+		  aButton->SetState(kButtonDisabled);
+		}
+		if ((button_id[iButton] != M_FILE_EXIT && // disable all but EXIT button in ONLINE mode
+		     (myWorkMode == M_ONLINE_GRAW_MODE ||
+		      myWorkMode == M_ONLINE_NGRAW_MODE))) {
+		  aButton->SetState(kButtonUp, true);
+		  aButton->SetState(kButtonDisabled);
+		}
 	}
 
 	std::vector<std::string> checkbox_names = { "Set Z logscale", "Set auto zoom", "Set manual reco", "Display rate" };
@@ -290,8 +302,17 @@ int MainFrame::AddButtons(int attach) {
 		if (displayConfig != myConfig.not_found() && displayConfig->second.get(checkbox_config[iCheckbox], false)) {
 			aCheckbox->SetState(kButtonDown, true);
 		}
-		if (checkbox_names[iCheckbox] == "Set reco mode" &&
-			(myWorkMode == M_ONLINE_GRAW_MODE || myWorkMode == M_ONLINE_NGRAW_MODE)) {
+		if (checkbox_id[iCheckbox] == M_TOGGLE_RECOMODE && // disable RECO mode in ONLINE mode
+		    (myWorkMode == M_ONLINE_GRAW_MODE ||
+		     myWorkMode == M_ONLINE_NGRAW_MODE)) {
+			aCheckbox->SetState(kButtonUp, true);
+			aCheckbox->SetState(kButtonDisabled);
+		}
+		if (checkbox_id[iCheckbox] == M_TOGGLE_RATE && // disable online RATE plot in OFFLINE mode
+		    (myWorkMode == M_OFFLINE_GRAW_MODE ||
+		     myWorkMode == M_OFFLINE_NGRAW_MODE ||
+		     myWorkMode == M_OFFLINE_ROOT_MODE ||
+		     myWorkMode == M_OFFLINE_MC_MODE)) {
 			aCheckbox->SetState(kButtonUp, true);
 			aCheckbox->SetState(kButtonDisabled);
 		}
@@ -391,6 +412,12 @@ int MainFrame::AddEventTypeDialog(int attach) {
 	buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Spare cat. 1")));
 	buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Spare cat. 2")));
 	buttonsContainer.push_back(new TGCheckButton(eventTypeButtonGroup, new TGHotString("Spare cat. 3")));
+	if (myWorkMode == M_ONLINE_GRAW_MODE || // disable setting event type bits in ONLINE mode
+	    myWorkMode == M_ONLINE_NGRAW_MODE) {
+	  for (auto &item : buttonsContainer) {
+	    item->SetState(kButtonDisabled);
+	  }
+	}
 
 	TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
 	int nColumns = aLayout->fNcols;
@@ -448,15 +475,19 @@ int MainFrame::AddRunConditionsDialog(int attach) {
 	UInt_t attach_top = attach;
 	UInt_t attach_bottom = attach_top + nRows * 0.35;
 
+	if (myWorkMode == M_ONLINE_GRAW_MODE || myWorkMode == M_ONLINE_NGRAW_MODE) {
+	        std::cout << "RunConditionsDialog is disabled in ONLINE mode." << _endl_;
+		return attach_bottom;
+	}
 	fRunConditionsDialog = new RunConditionsDialog(fFrame, this);
 	fRunConditionsDialog->Connect("updateRunConditions(std::vector<double>*)", "MainFrame",
 		this, "updateRunConditions(std::vector<double>*)");
 	if (myEventSource && myEventSource->getGeometry()) {
-		fRunConditionsDialog->initialize(myEventSource->getGeometry()->getRunConditions());
+	        fRunConditionsDialog->initialize(myEventSource->getGeometry()->getRunConditions());
 	}
 	else {
 		std::cout << KRED << "ERROR " << RST << "Geometry not available for RunConditionsDialog.";
-		std::cout << " dialog not added." << _endl_;
+		std::cout << " Dialog not added." << _endl_;
 		return attach_bottom;
 	}
 	TGTableLayoutHints* tloh = new TGTableLayoutHints(attach_left, attach_right,
@@ -541,6 +572,11 @@ void MainFrame::Update() {
 	fFileInfoFrame->updateEventNumbers(myEventSource->numberOfEvents(),
 									   myEventSource->currentEventNumber(),
 									   myEventSource->currentEntryNumber());
+	if(isGeometryChanged) {
+	  myHistoManager.setGeometry(myEventSource->getGeometry());
+	  fMarkersManager->setGeometry(myEventSource->getGeometry());
+	  isGeometryChanged = false;
+	}
 	myHistoManager.setEvent(myEventSource->getCurrentEvent());
 	fMarkersManager->reset();
 	fMarkersManager->setEnabled(isRecoModeOn);
@@ -616,12 +652,16 @@ void MainFrame::updateRunConditions(std::vector<double>* runParams) {
 	if (!runParams || !myEventSource ||
 		!myEventSource->getGeometry() ||
 		runParams->size() < 3) return;
+	isGeometryChanged = (myEventSource->getGeometry()->GetDriftVelocity()!=runParams->at(0)) ||
+	                    (myEventSource->getGeometry()->GetSamplingRate()!=runParams->at(1)) ||
+	                    (myEventSource->getGeometry()->GetTriggerDelay()!=runParams->at(2));
 	myEventSource->getGeometry()->setDriftVelocity(runParams->at(0));
 	myEventSource->getGeometry()->setSamplingRate(runParams->at(1));
 	myEventSource->getGeometry()->setTriggerDelay(runParams->at(2));
 	std::cout << myEventSource->getGeometry()->getRunConditions() << _endl_;
-	if (isRecoModeOn) {
-		ClearCanvases();
+	//if (isRecoModeOn) {
+        if(isGeometryChanged) { std::cout << "CHANGED" << _endl_;
+	        ClearCanvases();
 		Update();
 	}
 }

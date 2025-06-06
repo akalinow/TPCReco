@@ -65,7 +65,8 @@ Generation of the event starts with selection of the main vertex position. `XYPr
 
 ## Configuration
 
-Configuration of the EventGenerator is done with `boost::property_tree::ptree` objects, which are used to parse JSON configuration files. The configuration has the following block structure:
+Configuration of the EventGenerator is done with `boost::property_tree::ptree` objects, which are used to parse JSON configuration files.
+Simple math expressions can be used for scalar and vector parameters of type: `int`, `unsigned int`, `float`, `double` and `bool`, provided that math expressions are enclosed in quotes (e.g. `"TMath::Pi()"`, `"M_PI"`, `"!true"`). The configuration has the following block structure:
 
 ```json
 {
@@ -93,15 +94,15 @@ Beam geometry defines relation between BEAM and DET coordinates, using two sets 
 
 *v_DET*=(*Ractual* * *Rnominal*)^(-1)**v*
 
-We inverse the transformation, as euler angles tell us how to get form DET to BEAM, and we want to go in the opposite direction. Convention adapted from [CoordinateConverter](../../Utilities/include/CoordinateConverter.h). Additionally, for position reference the `BeamPosition` is provided.
+We inverse the transformation, as Euler angles tell us how to get form DET to BEAM, and we want to go in the opposite direction. Convention adapted from [CoordinateConverter](../../Utilities/include/CoordinateConverter.h). Additionally, for position reference the `BeamPosition` is provided.
 
 Geometry is stored in JSON configuration in the following form:
 
 ```json
 {
   "EulerAnglesNominal": {
-    "phi": -1.5708,
-    "theta": 1.5708,
+    "phi": "-M_PI/2",
+    "theta": "M_PI/2",
     "psi": 0.0
   },
   "EulerAnglesActual": {
@@ -239,8 +240,8 @@ Note, that dummy numbers were put in place of relevant physical parameters.
   "Beam": {
     "BeamGeometry": {
       "EulerAnglesNominal": {
-        "phi": -1.5708,
-        "theta": 1.5708,
+        "phi": "-M_PI/2",
+        "theta": "M_PI/2",
         "psi": 0.0
       },
       "EulerAnglesActual": {
@@ -292,7 +293,7 @@ Note, that dummy numbers were put in place of relevant physical parameters.
         "parameters": {
           "sigmaE1": 0,
           "sigmaE2": 1,
-          "phaseE1E2": 1.5708,
+          "phaseE1E2": "M_PI/2",
           "phaseCosSign": 1
         }
       },
@@ -454,7 +455,7 @@ Example configuration of `AngleProviderE1E2` would look like:
   "parameters": {
     "sigmaE1": 1,
     "sigmaE2": 0,
-    "phaseE1E2": 1.5708,
+    "phaseE1E2": "M_PI/2",
     "phaseCosSign": 1
   }
 }

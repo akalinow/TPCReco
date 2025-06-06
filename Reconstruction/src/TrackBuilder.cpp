@@ -63,7 +63,8 @@ TrackBuilder::~TrackBuilder() { }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void TrackBuilder::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
-  
+
+  myHistoInitialized = false; // forces to recalculate ranges of underlying histograms after changing geometry / run conditions
   myGeometryPtr = aGeometryPtr;
   myRecHitBuilder.setGeometry(aGeometryPtr);
   

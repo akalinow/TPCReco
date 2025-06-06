@@ -15,13 +15,22 @@
 
 
 int main(int argc, char **argv) {
+    const double reference_gas_pressure = 190.0; // mbar
+    const double reference_gas_temperature = 273.15 + 20.0; // K
+    const gas_mixture_type reference_gas_mixture = gas_mixture_type::CO2; // see CommonDefinitions.h
+    const double reference_particle_Ekin = 3.0; // MeV
+    const pid_type reference_particle_PID = pid_type::ALPHA; // see CommonDefinitions.h
+
     gStyle->SetOptStat(0);
     gStyle->SetNumberContours(999);
     int nEventsToDraw = 0;
     std::string fname;
     if (argc < 2) {
-        std::cout << "Usage: " << argv[0] << " <filename> <number of events to draw> (optional)" << std::endl;
-        std::cout << "If <number of events to draw> is not provided all events in file will be drawn" << std::endl;
+        std::cout << "Usage: " << argv[0] << " <input_ROOT_filename> [<number_of_events_to_draw>]" << std::endl;
+        std::cout << "Opens existing <input_ROOT_file> with SimEvent/SimTrack/SimHits info and creates" << std::endl
+		  << "dE/dx curves per event as well as several summary plots for the entire ROOT file." << std::endl
+		  << "If optional <number_of_events_to_draw> argument is provided then only specified number" << std::endl
+		  << "of individual dE/dx curves will be drawn (default=0)." << std::endl;
         return 1;
     } else if (argc >= 2) {
         fname = argv[1];
@@ -41,17 +50,21 @@ int main(int argc, char **argv) {
     int nEntries = t->GetEntries();
     auto c = new TCanvas("c", "", 1024, 768);
     c->Print("bragg.pdf[");
-    double braggUpperRange = 60;
-    double depXYrange = 10;
+    double braggUpperRange = 80; // mm
+    double depYZrange = 100; // mm
     TH1D *hall = new TH1D("hall", "A", 200, 0, braggUpperRange);
-    auto hXZ = new TH2D("hXZ", "energy deposit, XZ-plane;x[mm];z[mm]", 200, 0, 100, 200, -depXYrange, depXYrange);
-    auto hYZ = new TH2D("hYZ", "energy deposit, YZ-plane;y[mm];z[mm]", 200, -depXYrange, depXYrange, 200, -depXYrange,
-                        depXYrange);
-    auto hXY = new TH2D("hXY", "energy deposit, XY-plane;x[mm];y[mm]", 200, 0, 100, 200, -depXYrange, depXYrange);
+    auto hXZ = new TH2D("hXZ_DET", "energy deposit, XZ_{DET}-plane;x_{DET}[mm];z_{DET}[mm]", 200, 0, 100,
+			200, -depYZrange, depYZrange);
+    auto hYZ = new TH2D("hYZ_DET", "energy deposit, YZ_{DET}-plane;y_{DET}[mm];z_{DET}[mm]", 200, -depYZrange, depYZrange,
+			200, -depYZrange, depYZrange);
+    auto hXY = new TH2D("hXY_DET", "energy deposit, XY_{DET}-plane;x_{DET}[mm];y_{DET}[mm]", 200, 0, 100, 200, -depYZrange, depYZrange);
     auto hRange = new TH1D("hRange", "Range of particles;Range [mm]", 200, 40, braggUpperRange);
     auto hScatDev = new TH1D("hScatDev",
                              "ange between momentum and displacement;arccos(#vec{d} #upoint #vec{p}/(|#vec{d}| #upoint |#vec{p}|)) [deg];",
                              1000, 0, 30);
+    auto hScatDev_vs_Ekin = new TH2D("hScatDev_vs_Ekin",
+				     "ange between momentum and displacement vs E_{kin};arccos(#vec{d} #upoint #vec{p}/(|#vec{d}| #upoint |#vec{p}|)) [deg];E_{kin} [MeV]",
+				     200, 0, 30, 100, 0.0, 5.0);
     for (int i = 0; i < t->GetEntries(); i++) {
         if (i == nEntries)
             break;
@@ -63,10 +76,11 @@ int main(int argc, char **argv) {
 
             auto start = track.GetStart();
             hRange->Fill(track.GetRange());
+	    auto primary_particle_dir = track.GetPrimaryParticle().GetMomentum().Unit(); // true particle direction @ GEN level
             for (const auto &hit: track.GetHits()) {
-                auto pos = hit.GetPosition();
-                auto d = pos - start;
-                auto eDep = hit.GetEnergy();
+	      auto pos = hit.GetPosition(); // DET coordinate system, LAB reference frame
+	      auto d = ((pos - start).Dot(primary_particle_dir))*primary_particle_dir; // component parallel to true particle direction @ GEN level
+                auto eDep = hit.GetEnergy(); // LAB reference frame
                 hXZ->Fill(pos.X(), pos.Z(), eDep);
                 hYZ->Fill(pos.Y(), pos.Z(), eDep);
                 hXY->Fill(pos.X(), pos.Y(), eDep);
@@ -75,6 +89,7 @@ int main(int argc, char **argv) {
             auto cos = (track.GetStop() - track.GetStart()).Dot(track.GetPrimaryParticle().GetMomentum().Unit()) /
                        (track.GetRange());
             hScatDev->Fill(TMath::ACos(cos) * 180 / TMath::Pi());
+            hScatDev_vs_Ekin->Fill(TMath::ACos(cos) * 180 / TMath::Pi(),track.GetPrimaryParticle().GetKineticEnergy());
             if (i < nEventsToDraw) {
                 // it is not optimal to have two loops over tracks, but now we avoid allocating
                 // TH1Ds on every event when it is not being drawn
@@ -118,20 +133,20 @@ int main(int argc, char **argv) {
 
     }
 
-    auto rCal = std::make_unique<IonRangeCalculator>();
-    auto g = rCal->getIonBraggCurveMeVPerMM(pid_type::ALPHA, 3, 1000);
+    auto rCal = std::make_unique<IonRangeCalculator>("./", reference_gas_mixture, reference_gas_pressure, reference_gas_temperature);
+    auto g = rCal->getIonBraggCurveMeVPerMM(reference_particle_PID, reference_particle_Ekin, 1000);
 
     c->SetGridx();
     c->SetGridy();
 
     hall->Scale(1. / t->GetEntries());
     std::cout << "Total deposit: " << hall->Integral() << " "
-              << rCal->getIonBraggCurveIntegralMeV(pid_type::ALPHA, 3.0, 1000) << std::endl;
+              << rCal->getIonBraggCurveIntegralMeV(reference_particle_PID, reference_particle_Ekin, 1000) << std::endl;
     hall->Scale(1 / hall->GetBinWidth(1));
     hall->GetXaxis()->SetTitle("Distance [mm]");
     hall->GetYaxis()->SetTitle("Energy deposit [MeV/mm]");
     hall->SetFillColorAlpha(kBlue - 6, 0.4);
-    hall->SetTitle("E_{k} = 3 MeV, p = 250 mbar");
+    hall->SetTitle(Form("E_{k} = %.2f MeV, p = %.0f mbar", reference_particle_Ekin, reference_gas_pressure) );
     hall->Draw("hist");
     g.SetLineColor(kRed);
     g.SetLineWidth(2);
@@ -144,8 +159,6 @@ int main(int argc, char **argv) {
 
 
     c->Print("bragg.pdf");
-    g.Draw("AL");
-    c->Print("bragg.pdf");
     hXY->Draw("colz");
     c->Print("bragg.pdf");
     hXZ->Draw("colz");
@@ -157,6 +170,9 @@ int main(int argc, char **argv) {
 
     c->SetLogy();
     hScatDev->Draw();
+    c->Print("bragg.pdf");
+    c->SetLogy(0);
+    hScatDev_vs_Ekin->Draw("colz");
     c->Print("bragg.pdf");
 
     c->Print("bragg.pdf]");
