@@ -503,7 +503,7 @@ bool GeometryTPC::LoadAnalog(std::istream &f) {
   f.clear();
   f.seekg(0, std::ios::beg);
   while (getline(f, line)) {
-    char name[12], rest[1];
+    char name[13], rest[2];
     int cobo, asad, aget, chan_num;
     if (sscanf(line.c_str(), "%12s %d %d %d %d %s", name, &cobo, &asad, &aget,
                &chan_num, rest) == 5) {
