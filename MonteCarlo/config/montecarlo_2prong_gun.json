@@ -83,7 +83,7 @@
       }
     },
     "EventFileExporter": {
-      "FileName": "SimEvent_Track3D_TwoProng_gun_MC_out.root",
+      "FileName": "SimEvent_Track3D_TwoProng_gun_MC.root",
       "EnabledBranches": [
         "SimEvent",
         "### UNCOMMENT TO ENABLE BRANCH ### PEventTPC",
