@@ -131,7 +131,7 @@ std::string makeOutputFileName(const std::string &dataFileNames, const std::stri
     std::time_t t = std::time(nullptr);
     std::tm tm = *std::localtime(&t);
     std::stringstream ss;
-    ss<<std::put_time(&tm, "%Y-%M-%dT%H-%M");
+    ss<<std::put_time(&tm, "%Y-%m-%dT%H-%M");
     std::string timestamp = ss.str();
     auto index = outputFileName.rfind(".");
     outputFileName = outputFileName.replace(index,1,"_"+timestamp+".");
