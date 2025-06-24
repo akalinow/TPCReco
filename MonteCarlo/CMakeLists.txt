@@ -19,15 +19,15 @@ target_link_libraries(
 # directory required by the reco_install_targets macro
 install(TARGETS mcRunController RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-configure_file(
-  config/ModuleConfig.json
-  ${CMAKE_CURRENT_BINARY_DIR}/config/montecarlo_ModuleConfig.json @ONLY)
-configure_file(
-  config/EventGenerator.json
-  ${CMAKE_CURRENT_BINARY_DIR}/config/montecarlo_EventGenerator.json @ONLY)
-configure_file(
-  config/ModuleConfigGun.json
-  ${CMAKE_CURRENT_BINARY_DIR}/config/montecarlo_ModuleConfigGun.json @ONLY)
+file(GLOB config_files "${CMAKE_CURRENT_SOURCE_DIR}/config/*.json")
+
+foreach(config_file IN LISTS config_files)
+  get_filename_component(config_filename ${config_file} NAME)
+  configure_file(
+    ${config_file}
+    ${CMAKE_CURRENT_BINARY_DIR}/config/${config_filename} @ONLY)
+endforeach()
 
 install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/config
         DESTINATION ${CMAKE_INSTALL_PREFIX})
+
