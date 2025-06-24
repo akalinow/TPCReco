@@ -97,11 +97,8 @@ cd resources
 * using single generated $\alpha$ events with tracks direction controlled by the user
 ```Shell 
 cd resources
-../bin/tpcGUI ../config/config_GUI_MC.json --input.controllerConfigPath=../config/montecarlo_1prong_gun.json
+../bin/tpcGUI ../config/config_GUI_MC.json --input.controllerConfigPath=../config/montecarlo_2prong_gun.json
 ```
-
-
-
 
 Multiple JSON files can be specified at the same time.
 For example, to add event filter for event browsing use this syntax at **daqula2** node:
