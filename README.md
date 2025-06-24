@@ -94,11 +94,13 @@ cd resources
 cd resources
 ../bin/tpcGUI ../config/config_GUI_MC.json
 ```
-* using generated $\alpha$ + $C$ events with tracks directions controlled by the user
+* using single generated $\alpha$ events with tracks direction controlled by the user
 ```Shell 
 cd resources
-../bin/tpcGUI ../config/config_GUI_MC.json --input.controllerConfigPath=../config/montecarlo_ModuleConfigGun.json
+../bin/tpcGUI ../config/config_GUI_MC.json --input.controllerConfigPath=../config/montecarlo_1prong_gun.json
 ```
+
+
 
 
 Multiple JSON files can be specified at the same time.
@@ -118,5 +120,10 @@ List of all parameters is provided by
 ../bin/tpcGUI --help
 ```
 
-Check config file [structure and examples](Utilities/README.md) for more details.
+Check config file [structure and examples](Utilities/README.md) for more details on how to use the configuration files.
+
+## Analysis instructions
+The analysis is done using the ROOT framework. The analysis can be done in two ways: command line or batch mode. More details are provided in the [Analysis README](Analysis/README.md).
+
+
 

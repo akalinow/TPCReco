@@ -1,3 +1,21 @@
+## Command line analysis
+
+### Create a simple TTree generated and reconstructed track parameters for 1000 events.
+```Bash
+cd resources
+../bin/makeMCTrackTree ../config/config_GUI_MC.json --input.readNEvents=1000
+```
+
+### Make plots from the TTree:
+    Note the actual ROOT file name will be different, depending on the date and time of the run.
+```Bash
+cd resources
+root
+.L ../exemples/makeMCPlots.C
+makeMCPlots("SingleAlpha_MC_TrackTree_2022-09-08T09-00-00.000_0000_2025-02-24T10-02.root")
+```
+
+
 ## Batch analysis
 
 The batch analysis is a simple script that analyses a selected number of files (GRAW or ROOT) on a single PC.
