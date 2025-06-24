@@ -116,6 +116,7 @@
         "magnetic_field_offset": 200
       },
       "GeometryConfig": {
+        "UseMaterials": false,
         "ModelPath": "@CMAKE_INSTALL_PREFIX@/MonteCarlo/Modules/Geant_STL_model/",
         "MaterialColors": {
           "aluminium": {
