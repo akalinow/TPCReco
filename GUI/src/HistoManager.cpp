@@ -230,6 +230,7 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
      
      //TEST auto projType = get2DProjectionType(strip_dir);     
      //TEST auto histo2D = get2DProjection(projType, filterType, scale_type::mm);
+
      auto histo2D = (TH2D*)(&myTkBuilder.getRecHits2D(strip_dir));
      if(doAutozoom) makeAutozoom(histo2D);
 
@@ -248,6 +249,7 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
      }
      
      drawTrack3DProjectionTimeStrip(strip_dir, aPad, false);
+
    }
    int strip_dir=3;
    TVirtualPad *aPad = aCanvas->GetPad(padNumberOffset+strip_dir+1);
@@ -256,7 +258,8 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
    aCanvas->Modified();
    aCanvas->Update();
 
-   if(myTkBuilder.getTrack3D(0).getSegments().front().getPID()==pid_type::DOT) drawTrack3DProjectionXY(aPad);
+   if(myTkBuilder.getTrack3D(0).getSegments().size() &&
+      myTkBuilder.getTrack3D(0).getSegments().front().getPID()==pid_type::DOT) drawTrack3DProjectionXY(aPad);
    else drawChargeAlongTrack3D(aPad);
 
    aCanvas->Modified();
