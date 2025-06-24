@@ -16,7 +16,7 @@ git clone git@github.com:WarsawTPC/TPCReco.git
 cd TPCReco
 git submodule update --init --recursive
 mkdir build; cd build
-cmake -DBUILD_TEST=ON -DBUILD_GEANT_MODULE=ON ../
+cmake -DBUILD_TEST=ON ../
 make install -j 4
 ```
 
@@ -82,14 +82,14 @@ export LC_ALL=$LANG
 ```
 
 After successful compilation run the GUI from the **resources** directory.
-* using test data as input:
+* using test data (included in the TPCReco repository) as input:
 
 ```Shell 
 cd resources
 ../bin/tpcGUI --meta.configJson ~/.tpcreco/config/test.json
 ../bin/tpcGUI ~/.tpcreco/config/test.json
 ```
-* using generated $\alpha$ + $C$ events dirstributed according to E1+E2 transitions mixture
+* using generated $\alpha$ + $C$ events distributed according to E1+E2 transitions mixture
 ```Shell 
 cd resources
 ../bin/tpcGUI ../config/config_GUI_MC.json
@@ -117,10 +117,10 @@ List of all parameters is provided by
 ../bin/tpcGUI --help
 ```
 
-Check config file [structure and examples](Utilities/README.md) for more details on how to use the configuration files.
+More details on how to use the configuration files can be found in the Utilities [Utilities README](Utilities/README.md).
 
 ## Analysis instructions
-The analysis is done using the ROOT framework. The analysis can be done in two ways: command line or batch mode. More details are provided in the [Analysis README](Analysis/README.md).
+The analysis is done using the ROOT framework. The analysis can be done in two ways: command line or batch mode. More details are provided in the Analysis package [README](Analysis/README.md).
 
 
 
