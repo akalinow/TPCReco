@@ -81,6 +81,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
 
   std::string dataFileName = aConfig.get("input.dataFile","");
   std::string rootFileName = InputFileHelper::makeOutputFileName(dataFileName,"MCTrackTree");
+
   TFile outputROOTFile(rootFileName.c_str(),"RECREATE");
   TTree *tree = new TTree("trackTree", "Track tree");
   TrackData track_data;
@@ -145,15 +146,10 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     }
     const Track3D & aTrack3DGenAlpha = tracks[0];
     const Track3D & aTrack3DGenCarbon = tracks[1];
-
-    // const Track3D & aTrack3DGenAlpha = myEventSource->getGeneratedTrack(0);
-    // const Track3D & aTrack3DGenCarbon = myEventSource->getGeneratedTrack(1);
     const Track3D & aTrack3DReco = myTkBuilder.getTrack3D(0);
 
     track_data.frameId = iEntry;
     track_data.eventId = eventId;
-
-    //track_data.eventTypeGen = myEventSource->getGeneratedEventType(); 
     track_data.eventReactionType = reactionTypeToFloat(myEventSource->GetGeneratedReactiontType());
 
     track_data.alphaRangeGen =  aTrack3DGenAlpha.getSegments().front().getLength();    
@@ -167,8 +163,9 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     track_data.cosThetaGen = -tangentGen.X();
     track_data.phiGen = atan2(-tangentGen.Z(), tangentGen.Y());
 
-    track_data.cosThetaGen = tangentGen.Z();//TEST
-    track_data.phiGen = tangentGen.Phi();//TEST
+    ///Use the BEAM coordinates: X - along the beam, Y - horizontal, Z - vertical
+    track_data.cosThetaGen = tangentGen.Z();
+    track_data.phiGen = tangentGen.Phi();
 
     const TVector3 & vtxGen = aTrack3DGenAlpha.getSegments().front().getStart();
     track_data.vtxGenX = vtxGen.X();
@@ -193,8 +190,9 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     track_data.cosThetaReco = -tangentReco.X();
     track_data.phiReco = atan2(-tangentReco.Z(), tangentReco.Y());
 
-    track_data.cosThetaReco = cos(tangentReco.Theta());//TEST
-    track_data.phiReco = tangentReco.Phi();//TEST
+    ///Use the BEAM coordinates: X - along the beam, Y - horizontal, Z - vertical
+    track_data.cosThetaReco = cos(tangentReco.Theta());
+    track_data.phiReco = tangentReco.Phi();
 
 
     track_data.lineFitLoss = aTrack3DReco.getLoss();

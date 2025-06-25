@@ -18,15 +18,14 @@ void makeMCPlots(std::string fileName){
   TCut fiducialCut = "abs(vtxGenX+alphaRangeGen*sqrt(1-cosThetaGen*cosThetaGen)*cos(phiGen))<140";
       fiducialCut += "abs(vtxGenY+alphaRangeGen*sqrt(1-cosThetaGen*cosThetaGen)*sin(phiGen))<90";
       fiducialCut += "abs(vtxGenZ+alphaRangeGen*cosThetaGen)<120/2";
-      //fiducialCut += "abs(phiGen)<3.0";
 
   TCut goodReco = "eventTypeReco==3 && abs(alphaRangeReco-alphaRangeGen)/alphaRangeGen<0.05";
 
-  trackTree->Draw("(0.99*alphaRangeReco-alphaRangeGen)/alphaRangeGen:alphaRangeGen>>hRangeResVsRangeGen(21,40, 120,  81,-0.5,0.5)",fiducialCut,"goff");
-  trackTree->Draw("(0.99*alphaRangeReco-alphaRangeGen)/alphaRangeGen:cosThetaGen>>hRangeResVsCosTheta(21,-1, 1,  81,-0.5,0.5)",fiducialCut,"goff");
+  trackTree->Draw("(alphaRangeReco-alphaRangeGen)/alphaRangeGen:alphaRangeGen>>hRangeResVsRangeGen(21,40, 120,  81,-0.5,0.5)",fiducialCut,"goff");
+  trackTree->Draw("(alphaRangeReco-alphaRangeGen)/alphaRangeGen:cosThetaGen>>hRangeResVsCosTheta(21,-1, 1,  81,-0.5,0.5)",fiducialCut,"goff");
   trackTree->Draw("(cosThetaReco-cosThetaGen):cosThetaGen>>hCosThetaResVsCosTheta(21,-1, 1,  161,-1,1)",fiducialCut,"goff");
   trackTree->Draw("(phiReco-phiGen):cosThetaGen>>hPhiResVsCosTheta(21,-1, 1,  81,-0.5,0.5)",fiducialCut,"goff");
-  trackTree->Draw("(0.8*chargeReco-chargeGen)/chargeGen:cosThetaGen>>hChargeResVsCosTheta(21,-1, 1,  81,-1,1)",fiducialCut,"goff");
+  trackTree->Draw("(chargeReco-chargeGen)/chargeGen:cosThetaGen>>hChargeResVsCosTheta(21,-1, 1,  81,-1,1)",fiducialCut,"goff");
 
   trackTree->Draw("vtxGenY:vtxGenX>>hGenVtxAll(21,-160, 160, 21,-12,12)",fiducialCut,"goff");
   trackTree->Draw("vtxGenY:vtxGenX>>hGenVtxReco(21,-160, 160, 21,-12,12)",fiducialCut&&goodReco,"goff");
@@ -42,8 +41,6 @@ void makeMCPlots(std::string fileName){
   trackTree->Draw("(0.99*alphaRangeReco-alphaRangeGen)/alphaRangeGen:dEdxFitLoss/chargeReco*1E8>>hLengthResVsDedxLoss(21,0, 20, 41,-1.5,1.5)",fiducialCut,"goff");
   trackTree->Draw("(0.99*alphaRangeReco-alphaRangeGen)/alphaRangeGen:dEdxFitSigma>>hLengthResVsDedxSigma(21,0, 5, 41,-1.5,1.5)",fiducialCut,"goff");
 
-  trackTree->Draw("(vtxRecoY + alphaRangeReco*sqrt(1-cosThetaReco*cosThetaReco)*cos(phiReco)):(vtxRecoX + alphaRangeReco*sqrt(1-cosThetaReco*cosThetaReco)*sin(phiReco))>>hRecoAlphaEndpoint(21,-160,160, 21,-160,160)",fiducialCut,"goff");
-  
   trackTree->Draw("eventTypeReco>>hEventTypeReco(5,-0.5,4.5)",fiducialCut,"goff");
   ///////////////////////////////////////////////////
   TLegend *aLeg = new TLegend(0.1, 0.1, 0.5, 0.3);
@@ -223,7 +220,7 @@ void makeMCPlots(std::string fileName){
   hGenDirReco_1D->SetMaximum(1.1);
   hGenDirReco_1D->Draw("");
 
-  aCanvas->Print("MCPlots_set11.png");
+  aCanvas->Print("MCPlots_set1.png");
 
   ////////////////////////////////
   //return;
@@ -285,7 +282,7 @@ void makeMCPlots(std::string fileName){
   hProjectionY->GetXaxis()->SetRangeUser(-0.1, 0.1);
   hProjectionY->Draw();
 
-  aCanvas->Print("MCPlots_set1.png");
+  aCanvas->Print("MCPlots_set2.png");
   ////////////////////////////////
   //return;
   ////////////////////////////////
@@ -370,7 +367,7 @@ void makeMCPlots(std::string fileName){
   aLeg1->AddEntry(hVtxZRes1D, "z^{RECO} - z^{GEN}", "l");
   aLeg1->Draw();
 
-  aCanvas->Print("MCPlots_set2.png");
+  aCanvas->Print("MCPlots_set3.png");
   ///////////////////////////////////////
   //return;
   ///////////////////////////////////////
@@ -438,7 +435,7 @@ void makeMCPlots(std::string fileName){
   hEventTypeReco->Draw("hist text");
 
   ///////////////////////////////////////
-  aCanvas->Print("MCPlots_set3.png");
+  aCanvas->Print("MCPlots_set4.png");
 
   ///////////////////////////////////////
   aCanvas->Clear();
@@ -451,26 +448,8 @@ void makeMCPlots(std::string fileName){
   gPad->SetGrid(1,1);
 
   hChargeResVsCosTheta->Draw("colz");
-  ///////////////////////////////////////
-  aCanvas->cd(2);
-  gPad->SetLeftMargin(0.15);
-  gPad->SetRightMargin(0.15);
-  gPad->SetBottomMargin(0.15);
-  gPad->SetGrid(1,1);
 
-  TH2F *hRecoAlphaEndpoint = (TH2F*)gDirectory->Get("hRecoAlphaEndpoint");
-  hRecoAlphaEndpoint->SetTitle("#alpha track endpoint wrt. vertex");
-  //hRecoAlphaEndpoint->GetXaxis()->SetRangeUser(-120,120);
-  //hRecoAlphaEndpoint->GetYaxis()->SetRangeUser(-120,120);
-  hRecoAlphaEndpoint->SetXTitle("Y_{DETECTOR}");
-  hRecoAlphaEndpoint->SetYTitle("Z_{DETECTOR}");
-  //hRecoAlphaEndpoint->GetXaxis()->SetTitleOffset(1.5);
-  hRecoAlphaEndpoint->GetYaxis()->SetTitleOffset(1.5);
-  hRecoAlphaEndpoint->DrawCopy("colz");
-
-  ///////////////////////////////////////
-  aCanvas->Print("MCPlots_set4.png");
-  
+  aCanvas->Print("MCPlots_set5.png");
 }
 
 

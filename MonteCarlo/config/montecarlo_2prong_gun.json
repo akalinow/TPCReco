@@ -44,15 +44,15 @@
           "VertexTransverse": {
             "distribution": "XYProviderSingle",
             "parameters": {
-              "singleX": -0,
-              "singleY": 0
+              "singleX": 0.0,
+              "singleY": 0.0
             }
           },
           "VertexLongitudinal": {
             "distribution": "ZProviderUniform",
             "parameters": {
-              "minZ": -100,
-              "maxZ": 100
+              "minZ": -1,
+              "maxZ": 1
             }
           }
         },
