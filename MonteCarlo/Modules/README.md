@@ -308,14 +308,12 @@ Configuration template:
 
 ```json
 {
-  "NumberOfEvents": {},
   "EventGenerator": {}
 }
 ```
 
 where:
 
-* `"NumberOfEvents"` - `int`, number of events to be generated
 * `"EventGenerator"` - `JSON`, configuration of `EventGenerator`, as described [here](../EventGenerator/README.md)
 
 ## ToyIonizationSimulator
