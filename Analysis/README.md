@@ -7,7 +7,9 @@ cd resources
 ```
 
 ### Make plots from the TTree:
-    Note the actual ROOT file name will be different, depending on the date and time of the run.
+
+**Note** the actual ROOT file name will be different, depending on the date and time of the run.
+
 ```Bash
 cd resources
 root
