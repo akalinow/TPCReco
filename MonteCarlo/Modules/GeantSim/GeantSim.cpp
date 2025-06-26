@@ -51,7 +51,6 @@ fwk::VModule::EResultFlag GeantSim::Process(ModuleExchangeSpace &event) {
     std::cout<<"]"<<std::endl;
     ///////
  
-
     //return the seed to gRandom
     gRandom->SetSeed(CLHEP::HepRandom::getTheSeed());
     return fwk::VModule::eSuccess;

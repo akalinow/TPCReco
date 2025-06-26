@@ -2,22 +2,13 @@
 #include "TPCReco/ConfigManager.h"
 
 fwk::VModule::EResultFlag Generator::Init(boost::property_tree::ptree config) {
-    // NOTE: Arithmetic BOOST ptree members are accessed via static method: ConfigManager::getScalar<double>(tree, "some.branch")
-    //       instead of: tree.get<double>("some.branch")
-    //       in order to enable MATH expressions in MC JSON config files (e.g. "M_PI/2")
-
     evGen=std::make_unique<EventGenerator>(config.get_child("EventGenerator"));
-    // nEventsToGenerate = config.get<unsigned int>("NumberOfEvents"); // without MATH expressions
-    // verbosity = config.get<unsigned int>("Verbosity"); // without MATH expressions
-    nEventsToGenerate = ConfigManager::getScalar<unsigned int>(config, "NumberOfEvents");
     verbosity = ConfigManager::getScalar<unsigned int>(config, "Verbosity");
     return fwk::VModule::eSuccess;
 }
 
 fwk::VModule::EResultFlag Generator::Process(ModuleExchangeSpace &event) {
-    //break ModuleSequence loop when we reach desired number of events
-    if(nEventsGenerated==nEventsToGenerate)
-        return fwk::VModule::eBreakLoop;
+
     //Generate new event:
     event.simEvt=evGen->GenerateEvent();
 
