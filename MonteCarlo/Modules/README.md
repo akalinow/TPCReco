@@ -34,9 +34,6 @@ implement `VModule`'s pure virtual methods:
   drift velocity, electronics sampling rate and peaking time, "effective" Gaussian diffusion). More strip response
   ROOT files can be generated using ROOT macro [testStripResponseCalculator](../../Reconstruction/examples/testStripResponseCalculator.cxx).
 
-`RunController` creates all the modules, initializes them (`Init` method), runs `Process` method in the right order, and
-then cleans up with `Finish` method.
-
 ## ModuleExchangeSpace
 
 The modules communicate with each-other through [ModuleExchangeSpace](../UtilsMC/include/TPCReco/ModuleExchangeSpace.h).
@@ -164,7 +161,9 @@ where:
 * `"FileName"` - `string`, name of the output file
 * `"EnabledBranches"` - vector of `string` describing branches to be saved into file, available branches:
   * `"SimEvent"` - pure Monte Carlo data (`SimEvent`)
-  * `"PEventTPC"` - *raw* data (`PEventTPC`), requires one of `TPCDigitizer[*]` modules
+  * `"PEventTPC"` - *raw* data (`PEventTPC`), requires one of `TPCDigitizer[*]` modules. 
+    **Note**: Saving digitized `PEventTPC` charge maps to the output ROOT file is disabled to optimize disk space.
+    If needed, it can be re-enabled by editing `"EventFileExporter"` part of JSON file.
   * `"Track3D"` - *'reconstructed'* data (`Track3D`), requires `Track3DBuilder` module
 * `"DisabledBranches"` - vector of `string` describing branches to be excluded from saving into file.
   Branches can belong to two ROOT `TTree`'s stored into the output file (`"TPCData"` and `"TPCRecoData"`).
@@ -445,31 +444,19 @@ where:
 
 # Example configurations:
 
-## Single alphas
-[ModuleConfigGun.json](../config/ModuleConfigGun.json) - example lightweight JSON configuration for Monte Carlo run controller that stores:
-- generator level information,
-- `SimHit` energy deposits from Geant4 associated with their parent `SimTrack`.
-
-The mono-energetic alpha-particles of 3 MeV are emitted along X_DET axis from a fixed point in the center of TPC's active volume and
+## Single $\alpha$ 
+[montecarlo_1prong_gun.json](../config/montecarlo_1prong_gun.json) - mono-energetic alpha-particles of 3 MeV are emitted along X_DET axis from a fixed point in the center of TPC's active volume and
 stopped in CO<sub>2</sub> gas kept at 190 mbar pressure.
 The ROOT output file can be analyzed with [DrawBragg_example](../examples/DrawBragg_example.cpp) program, which creates a PDF file (`"bragg.pdf"`)
 with dE/dx plots per event (first 10 events in this case) as well as several summary plots from entire sample (10k events in this case):
 ```Shell
 cd resources
-../bin/mcRunController ../config/montecarlo_ModuleConfigGun.json
-../bin/examples/DrawBragg_example SimEvent_Track3D_SingleAlpha_MC_out.root 10
+../bin/mcRunController ../config/config_GUI_MC.json --input.controllerConfigPath=../config/montecarlo_1prong_gun.json 
+../bin/examples/DrawBragg_example SimEvent_Track3D_SingleAlpha_MC.root 10
 ```
 
 ## <sup>16</sup>O photodisintegration reaction
-[ModuleConfig.json](../config/ModuleConfig.json) - example full-chain JSON configuration for Monte Carlo run controller that stores:
-- generator level information,
-- `SimHit` energy deposits from Geant4,
-- `Track3D` pseudo-reconstruction at generator level including digitized `RecHit2D` deposits per individual tracks.
-
-**Note**: Saving digitized `PEventTPC` charge maps to the output ROOT file is disabled to optimize disk space.
-If needed, it can be re-enabled by editing `"EventFileExporter"` part of JSON file.
-
-The photodisintegration reactions of <sup>16</sup>O are induced by mono-energetic gamma photons of 11 MeV in the LAB reference frame.
+[montecarlo_O16_E1E2.json](../config/montecarlo_O16_E1E2.json) - the photodisintegration reactions of <sup>16</sup>O are induced by mono-energetic gamma photons of 11 MeV in the LAB reference frame.
 In the centre-of-mass reference frame the reaction products follow a mixed E1+E2 polar angle distribution and uniform azimuthal angle distribution.
 The vertices are generated uniformly along X_DET coordinate in the range [-100, 100] mm along nominal beam axis.
 The resulting pseudo-reconstructed `Track3D` collections can be visualized in 3D by [PlotEvents_example](../examples/PlotEvents_example.cpp) program,
@@ -477,10 +464,10 @@ which creates, both, a PDF file and a ROOT C-macro (`"Generated_wirePlotTrack3D.
 The visualisation accounts for apparent track shift along Z_DET coordinate due to simulated self-triggering mode of the DAQ electronics.
 ```Shell
 cd resources
-../bin/mcRunController ../config/montecarlo_ModuleConfig.json
+../bin/mcRunController ../config/config_GUI_MC.json
 ../bin/examples/PlotEvents_example \
        --geometryFile geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat \
-       --dataFile SimEvent_Track3D_TwoProngE1E2_MC_out.root
+       --dataFile SimEvent_Track3D_TwoProngE1E2_MC.root
 root -l -x Generated_wirePlotTrack3D.C
 ```
 
@@ -493,3 +480,4 @@ in memory without the need of creating a large ROOT file with `PEventTPC` digiti
 cd resources
 ../bin/tpcGUI ../config/config_GUI_MC.json
 ```
+
