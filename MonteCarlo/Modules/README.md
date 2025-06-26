@@ -34,6 +34,8 @@ implement `VModule`'s pure virtual methods:
   drift velocity, electronics sampling rate and peaking time, "effective" Gaussian diffusion). More strip response
   ROOT files can be generated using ROOT macro [testStripResponseCalculator](../../Reconstruction/examples/testStripResponseCalculator.cxx).
 
+`RunController` class creates all the modules, initializes them (Init method), runs Process method in the right order, and then cleans up with Finish method.
+
 ## ModuleExchangeSpace
 
 The modules communicate with each-other through [ModuleExchangeSpace](../UtilsMC/include/TPCReco/ModuleExchangeSpace.h).
@@ -43,7 +45,7 @@ It contains:
 * `Track3D`
 * `eventraw::EventInfo`.
 
-`RunController` keeps one instance of `ModuleExchangeSpace` and passes it by reference to the modules' `Process`
+`RunController` class keeps one instance of `ModuleExchangeSpace` and passes it by reference to the modules' `Process`
 methods, that way the modules have read/write access.
 
 # Configuration
