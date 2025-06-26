@@ -1,6 +1,9 @@
 ## Command line analysis
 
-### Create a simple TTree generated and reconstructed track parameters for 1000 events.
+### Create a simple TTree 
+
+Create a plain TTree for quick analysis with 1000 events generated from the MC simulation. 
+
 ```Bash
 cd resources
 ../bin/makeMCTrackTree ../config/config_GUI_MC.json --input.readNEvents=1000
@@ -15,6 +18,17 @@ cd resources
 root
 .L ../exemples/makeMCPlots.C
 makeMCPlots("SingleAlpha_MC_TrackTree_2022-09-08T09-00-00.000_0000_2025-02-24T10-02.root")
+```
+### Create ROOT file with PEventTPC data
+
+Create ROOT file with PEventTPC data, and a plain TTree for quick analysis 
+with 1000 events generated from the MC simulation. Enable saving the PEventTPC data
+
+```Bash
+cd resources
+../bin/makeMCTrackTree ../config/config_GUI_MC.json \
+--input.controllerConfigPath=../config/montecarlo_2prong_gun_PEventTPC.json \
+--input.readNEvents=1000
 ```
 
 
