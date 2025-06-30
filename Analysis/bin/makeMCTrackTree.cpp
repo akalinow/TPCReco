@@ -142,7 +142,8 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     std::vector<Track3D> tracks = myEventSource->getGeneratedTracks();
     if(tracks.size()!=2){
       std::cout<<KRED<<"Wrong number of tracks!"<<RST<<std::endl;
-      exit(1);
+      //exit(1);
+      continue; // skip this event
     }
     const Track3D & aTrack3DGenAlpha = tracks[0];
     const Track3D & aTrack3DGenCarbon = tracks[1];

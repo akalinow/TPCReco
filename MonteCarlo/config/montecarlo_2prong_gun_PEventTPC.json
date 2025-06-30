@@ -9,7 +9,7 @@
     "Track3DBuilder",
     "EventFileExporter"
   ],
-  "GeometryConfig": "@CMAKE_INSTALL_PREFIX@/resources/geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat",
+  "GeometryConfig": "/home/akalinow/scratch/ELITPC/TPCReco/build/resources/geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat",
   "ModuleConfiguration": {
     "Generator": {
       "Verbosity": 0,
@@ -33,25 +33,28 @@
             }
           },
           "GammaEnergy": {
-            "distribution": "EProviderSingle",
+            "distribution": "EProviderGaus",
             "parameters": {
-              "singleE": 11
+              "meanE": 10,
+              "sigmaE": 5
             }
           }
         },
         "Vertex": {
           "VertexTransverse": {
-            "distribution": "XYProviderSingle",
+            "distribution": "XYProviderGaussTail",
             "parameters": {
-              "singleX": 0.0,
-              "singleY": 0.0
+              "meanX": 0,
+              "meanY": 0,
+              "flatR": 0,
+              "sigma": 2
             }
           },
           "VertexLongitudinal": {
             "distribution": "ZProviderUniform",
             "parameters": {
-              "minZ": -1,
-              "maxZ": 1
+              "minZ": -100,
+              "maxZ": 100
             }
           }
         },
@@ -104,7 +107,7 @@
       },
       "GeometryConfig": {
         "UseMaterials": false,
-        "ModelPath": "@CMAKE_INSTALL_PREFIX@/MonteCarlo/Modules/Geant_STL_model/",
+        "ModelPath": "/home/akalinow/scratch/ELITPC/TPCReco/build/MonteCarlo/Modules/Geant_STL_model/",
         "MaterialColors": {
           "aluminium": {
             "r": 132,
@@ -198,7 +201,7 @@
       "MeVToChargeScale": 100000
     },
     "TPCDigitizerSRC": {
-      "StripResponsePath": "@CMAKE_INSTALL_PREFIX@/MonteCarlo/Modules/StripResponseModel/",
+      "StripResponsePath": "/home/akalinow/scratch/ELITPC/TPCReco/build/MonteCarlo/Modules/StripResponseModel/",
       "sigmaXY": 1.5,
       "sigmaZ": 1.5,
       "MeVToChargeScale": 100000,

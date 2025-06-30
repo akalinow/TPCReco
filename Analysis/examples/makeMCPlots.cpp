@@ -18,6 +18,7 @@ void makeMCPlots(std::string fileName){
   TCut fiducialCut = "abs(vtxGenX+alphaRangeGen*sqrt(1-cosThetaGen*cosThetaGen)*cos(phiGen))<140";
       fiducialCut += "abs(vtxGenY+alphaRangeGen*sqrt(1-cosThetaGen*cosThetaGen)*sin(phiGen))<90";
       fiducialCut += "abs(vtxGenZ+alphaRangeGen*cosThetaGen)<120/2";
+      fiducialCut += "alphaRangeGen>40";
 
   TCut goodReco = "eventTypeReco==3 && abs(alphaRangeReco-alphaRangeGen)/alphaRangeGen<0.05";
 
@@ -37,9 +38,9 @@ void makeMCPlots(std::string fileName){
   trackTree->Draw("(vtxRecoY-vtxGenY):vtxGenY>>hVtxYRes(21,-12,12, 41,-3,3)",fiducialCut,"goff");
   trackTree->Draw("(vtxRecoZ-vtxGenZ):vtxGenZ>>hVtxZRes(21,-12,12, 41,-3,3)",fiducialCut,"goff");
 
-  trackTree->Draw("(0.99*alphaRangeReco-alphaRangeGen)/alphaRangeGen:lineFitLoss>>hLengthResVsLineLoss(21,0, 20, 41,-1.5,1.5)",fiducialCut,"goff");
-  trackTree->Draw("(0.99*alphaRangeReco-alphaRangeGen)/alphaRangeGen:dEdxFitLoss/chargeReco*1E8>>hLengthResVsDedxLoss(21,0, 20, 41,-1.5,1.5)",fiducialCut,"goff");
-  trackTree->Draw("(0.99*alphaRangeReco-alphaRangeGen)/alphaRangeGen:dEdxFitSigma>>hLengthResVsDedxSigma(21,0, 5, 41,-1.5,1.5)",fiducialCut,"goff");
+  trackTree->Draw("(alphaRangeReco-alphaRangeGen)/alphaRangeGen:lineFitLoss>>hLengthResVsLineLoss(21,0, 20, 41,-1.5,1.5)",fiducialCut,"goff");
+  trackTree->Draw("(alphaRangeReco-alphaRangeGen)/alphaRangeGen:dEdxFitLoss/chargeReco*1E8>>hLengthResVsDedxLoss(21,0, 20, 41,-1.5,1.5)",fiducialCut,"goff");
+  trackTree->Draw("(alphaRangeReco-alphaRangeGen)/alphaRangeGen:dEdxFitSigma>>hLengthResVsDedxSigma(21,0, 5, 41,-1.5,1.5)",fiducialCut,"goff");
 
   trackTree->Draw("eventTypeReco>>hEventTypeReco(5,-0.5,4.5)",fiducialCut,"goff");
   ///////////////////////////////////////////////////
