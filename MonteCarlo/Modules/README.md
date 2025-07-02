@@ -457,6 +457,22 @@ cd resources
 ../bin/examples/DrawBragg_example SimEvent_Track3D_SingleAlpha_MC.root 10
 ```
 
+## $\alpha$+<sup>12</sup>C prong gun
+[montecarlo_2prong_gun.json](../config/montecarlo_2prong_gun.json) - 
+two prong events with alpha-particle and <sup>12</sup>C nucleus generated 
+with:
+* energy draw from Gaussian distribution with mean of 10 MeV and sigma of 3 MeV
+* vertex position uniformly distributed along X_DET axis in the range [-100, 100] mm
+* vertex position uniformly distributed in XY_DET plane with a flat radius of 5 mm with additional Gauss tail with sigma of 1 mm
+* polar angle distribution of the <sup>12</sup>C nucleus following a mixed E1+E2 distribution
+* direction isotropic in both angles
+
+
+```Shell
+cd resources
+../bin/mcRunController ../config/config_GUI_MC.json --input.controllerConfigPath=../config/montecarlo_2prong_gun.json 
+```
+
 ## <sup>16</sup>O photodisintegration reaction
 [montecarlo_O16_E1E2.json](../config/montecarlo_O16_E1E2.json) - the photodisintegration reactions of <sup>16</sup>O are induced by mono-energetic gamma photons of 11 MeV in the LAB reference frame.
 In the centre-of-mass reference frame the reaction products follow a mixed E1+E2 polar angle distribution and uniform azimuthal angle distribution.
