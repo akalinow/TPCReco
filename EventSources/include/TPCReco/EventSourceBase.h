@@ -9,6 +9,7 @@
 #include "TPCReco/EventFilter.h"
 #include "TPCReco/EventTPC.h"
 #include "TPCReco/GeometryTPC.h"
+#include "TPCReco/Track3D.h"
 
 #include "TPCReco/EventInfo.h"
 #include "TPCReco/PEventTPC.h"
@@ -30,6 +31,8 @@ public:
 
   virtual void loadDataFile(const std::string & fileName);
 
+  virtual void setRecoEvent(const Track3D & aRecTrack);
+
   virtual void loadFileEntry(unsigned long int iEntry) = 0;
 
   virtual void loadEventId(unsigned long int iEvent) = 0;
@@ -45,6 +48,8 @@ public:
   std::shared_ptr<EventTPC> getPreviousEventLoop();
 
   std::shared_ptr<EventTPC> getLastEvent();
+
+  std::shared_ptr<Track3D> getRecoEvent() const;
 
   virtual unsigned long int numberOfEvents() const = 0;
 
@@ -76,6 +81,8 @@ protected:
   eventraw::EventInfo myCurrentEventInfo;
   std::shared_ptr<PEventTPC> myCurrentPEvent;
   std::shared_ptr<EventTPC> myCurrentEvent;
+
+  std::shared_ptr<Track3D> myRecoEvent;
   
 };
 #endif

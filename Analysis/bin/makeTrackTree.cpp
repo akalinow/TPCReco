@@ -21,7 +21,6 @@
 #include "TPCReco/EventSourceGRAW.h"
 #include "TPCReco/EventSourceMultiGRAW.h"
 #endif
-#include "TPCReco/RecoOutput.h"
 #include "TPCReco/RunIdParser.h"
 #include "TPCReco/InputFileHelper.h"
 #include "TPCReco/MakeUniqueName.h"
@@ -138,12 +137,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   }
   //
   ////////////////////////////////////////////
-
-  RecoOutput myRecoOutput;
-  std::string recoFileName = InputFileHelper::makeOutputFileName(dataFileName,"Reco");
-
   std::shared_ptr<eventraw::EventInfo> myEventInfo = std::make_shared<eventraw::EventInfo>();
-  myRecoOutput.open(recoFileName);
 
   // loop over ALL events
   Long64_t nEntries = myEventSource->numberOfEntries();
@@ -242,10 +236,6 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     ////////////////////////////////////////////
 
     const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
-
-    myRecoOutput.setRecTrack(aTrack3D);
-    myRecoOutput.setEventInfo(myEventInfo);				   
-    myRecoOutput.update(); 
     
     double length = aTrack3D.getLength();
     double charge = aTrack3D.getIntegratedCharge(length);

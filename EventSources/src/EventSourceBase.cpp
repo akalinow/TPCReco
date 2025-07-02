@@ -10,6 +10,8 @@ EventSourceBase::EventSourceBase() {
 
   myCurrentEvent =  std::make_shared<EventTPC>();
   myCurrentPEvent =  std::make_shared<PEventTPC>();
+  myRecoEvent = std::make_shared<Track3D>();
+  
   myCurrentEntry = 0;
   nEntries = 0;
 }
@@ -122,6 +124,20 @@ void EventSourceBase::fillEventTPC(){
   myCurrentEvent->SetGeoPtr(myGeometryPtr);
   myCurrentEvent->SetChargeMap(myCurrentPEvent->GetChargeMap());
   myCurrentEvent->SetEventInfo(myCurrentPEvent->GetEventInfo());
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void EventSourceBase::setRecoEvent(const Track3D & aRecTrack) {
+
+  *myRecoEvent = aRecTrack;
+
+}
+////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::shared_ptr<Track3D> EventSourceBase::getRecoEvent() const {
+
+  return myRecoEvent;
+
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

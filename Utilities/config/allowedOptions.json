@@ -59,23 +59,23 @@
         "defaultValue": true,
         "description": "Switch defining whether there is a single GRAW input file per ASAD board.\nType: bool"
     },
-    "treeName":{
-        "group": "grawToRoot",
+    "fileName":{
+        "group": "output",
         "type": "string",
-        "defaultValue": "TPCData",
-        "description": "Name of output TTree with PEventTPC data to be read by EventSourceROOT.\nType: string"
+        "defaultValue": "TPCData.root",
+        "description": "Name of the ROOT file name with event data. If the name does NOT contain .root suffix, the output file name will be created from fileName taken as prefix, and the input file name.\nType: string"
     },
     "disabledBranches":{
-        "group": "grawToRoot",
+        "group": "output",
         "type": "vector<string>",
-        "defaultValue": [ "TPCData.myChargeArray*" ],
-        "description": "Optional list of disabled branches of PEventTPC to save disk space.\nValid branches are: TPCData.myEventInfo, myTPCData.myChargeMap, TPCData.myChargeArray[3][3][256][512].\nType: vector<string>"
+        "defaultValue": ["TPCData.myChargeArray*" ],
+        "description": "Optional list of disabled branches of PEventTPC to save disk space.\nBiggest branches are TPCData.myChargeMap, TPCData.myChargeArray*.\nType: vector<string>"
     },
-    "filePrefix":{
-        "group": "grawToRoot",
-        "type": "string",
-        "defaultValue": "PEventTPC",
-        "description": "Prefix of the output ROOT file (\"[prefix]_[runId]_[chunkId].root\") with PEventTPC data.\nType: string"
+    "autoSaveFrequency":{
+        "group": "output",
+        "type": "int",
+        "defaultValue": 1000,
+        "description": "Frequency (positive number - events, negative - bytes, 0 - disabled) of TTree auto-save in the output ROOT file.\nType: int"
     },
     "updateInterval":{
         "group": "online",

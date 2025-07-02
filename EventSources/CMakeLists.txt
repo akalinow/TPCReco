@@ -20,7 +20,6 @@ root_generate_dictionary(
 #reco_add_library(${MODULE_NAME})
 reco_add_library(${MODULE_NAME} EXTRA_SOURCES
                  G__${TPCRECO_PREFIX}${MODULE_NAME}.cxx)
-reco_add_executable(grawToEventTPC bin/grawToEventTPC.cpp)
 reco_add_executable(mcRunController bin/mcRunController.cpp)
 
 # Disable/enable searching next file with N+1 index (default=DISABLED)
@@ -39,11 +38,10 @@ target_link_libraries(
             DataFormats Utilities EventGenerator UtilsMC MonteCarloModules
             $<$<BOOL:${GET_FOUND}>:GrawToROOT>)
             
-target_link_libraries(grawToEventTPC PRIVATE Boost::program_options ${MODULE_NAME})
 target_link_libraries(mcRunController PRIVATE ${ROOT_LIBRARIES} Utilities ${MODULE_NAME}
                       DataFormats UtilsMC EventGenerator MonteCarloModules ${Boost_LIBRARIES})
 
-reco_install_targets(${MODULE_NAME} grawToEventTPC mcRunController)
+reco_install_targets(${MODULE_NAME} mcRunController)
 
 reco_install_root_dict(${MODULE_NAME})
 install(PROGRAMS $<1:${CMAKE_CURRENT_SOURCE_DIR}/python/> DESTINATION python)

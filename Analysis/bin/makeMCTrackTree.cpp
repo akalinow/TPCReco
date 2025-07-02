@@ -18,7 +18,6 @@
 #include "TPCReco/EventSourceFactory.h"
 
 #include "TPCReco/ConfigManager.h"
-#include "TPCReco/RecoOutput.h"
 #include "TPCReco/RunIdParser.h"
 #include "TPCReco/InputFileHelper.h"
 #include "TPCReco/MakeUniqueName.h"
@@ -109,21 +108,12 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   myTkBuilder.setPressure(pressure);
   IonRangeCalculator myRangeCalculator(gas_mixture_type::CO2,pressure, temperature);
 
-  RecoOutput myRecoOutput;
-  std::string fileName = InputFileHelper::tokenize(dataFileName)[0];
-  std::size_t last_dot_position = fileName.find_last_of(".");
-  std::size_t last_slash_position = fileName.find_last_of("//");
-  std::string recoFileName = MakeUniqueName("Reco_"+fileName.substr(last_slash_position+1,
-						     last_dot_position-last_slash_position-1)+".root");
   std::shared_ptr<eventraw::EventInfo> myEventInfo = std::make_shared<eventraw::EventInfo>();
-  myRecoOutput.open(recoFileName);
- 
-  myEventSource->loadDataFile(dataFileName);
   std::cout<<KBLU<<"File with "<<RST<<myEventSource->numberOfEntries()<<" frames loaded."<<std::endl;
 
   //Event loop
   int nEntries = aConfig.get<int>("input.readNEvents");
-  if(nEntries<0 ) nEntries = 0;
+  if(nEntries<0) nEntries = 0;
 
   for(int iEntry=0;iEntry<nEntries;++iEntry){
     if(nEntries>10 && iEntry%(nEntries/10)==0){
@@ -139,28 +129,30 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     myTkBuilder.reconstruct();
 
     int eventId = myEventSource->getCurrentEvent()->GetEventInfo().GetEventId();
-    std::vector<Track3D> tracks = myEventSource->getGeneratedTracks();
-    if(tracks.size()!=2){
-      std::cout<<KRED<<"Wrong number of tracks!"<<RST<<std::endl;
-      //exit(1);
-      continue; // skip this event
+    const Track3D & genTrack = myEventSource->getGeneratedTrack();
+    TrackSegment3D aTrack3DGenAlpha, aTrack3DGenCarbon;
+    for(auto iSegment : genTrack.getSegments()) {
+      if(iSegment.getPID() == pid_type::ALPHA) {
+        aTrack3DGenAlpha = iSegment;
+      } else if(iSegment.getPID() == pid_type::CARBON_12) {
+        aTrack3DGenCarbon = iSegment;
+      }
     }
-    const Track3D & aTrack3DGenAlpha = tracks[0];
-    const Track3D & aTrack3DGenCarbon = tracks[1];
+
     const Track3D & aTrack3DReco = myTkBuilder.getTrack3D(0);
 
     track_data.frameId = iEntry;
     track_data.eventId = eventId;
     track_data.eventReactionType = reactionTypeToFloat(myEventSource->GetGeneratedReactiontType());
 
-    track_data.alphaRangeGen =  aTrack3DGenAlpha.getSegments().front().getLength();    
+    track_data.alphaRangeGen =  aTrack3DGenAlpha.getLength();    
     track_data.alphaEnergyGen = track_data.alphaRangeGen>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA, track_data.alphaRangeGen):0.0;
 
-    track_data.carbonRangeGen =  aTrack3DGenCarbon.getSegments().front().getLength();
+    track_data.carbonRangeGen =  aTrack3DGenCarbon.getLength();
     track_data.carbonEnergyGen = track_data.carbonRangeGen>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::CARBON_12, track_data.carbonRangeGen):0.0;
 
     track_data.chargeGen = (track_data.alphaEnergyGen + track_data.carbonEnergyGen)*1E5;
-    const TVector3 & tangentGen = aTrack3DGenAlpha.getSegments().front().getTangent();
+    const TVector3 & tangentGen = aTrack3DGenAlpha.getTangent();
     track_data.cosThetaGen = -tangentGen.X();
     track_data.phiGen = atan2(-tangentGen.Z(), tangentGen.Y());
 
@@ -168,7 +160,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     track_data.cosThetaGen = tangentGen.Z();
     track_data.phiGen = tangentGen.Phi();
 
-    const TVector3 & vtxGen = aTrack3DGenAlpha.getSegments().front().getStart();
+    const TVector3 & vtxGen = aTrack3DGenAlpha.getStart();
     track_data.vtxGenX = vtxGen.X();
     track_data.vtxGenY = vtxGen.Y();
     track_data.vtxGenZ = vtxGen.Z();
@@ -202,7 +194,6 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     
     tree->Fill();    
   }
-  outputROOTFile.Write();
   return nEntries;
 }
 /////////////////////////////

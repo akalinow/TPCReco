@@ -27,9 +27,9 @@ export LC_ALL=$LANG
 ctest
 ```
 
-Run a specific test, here `grawToEventTPC_tst` with routput enabled for failed tests:
+Run a specific test, here `GrawToROOT_tst` with routput enabled for failed tests:
 ```Shell
-ctest -R grawToEventTPC_tst --output-on-failure
+ctest -R GrawToROOT_tst --output-on-failure
 ```
 
 

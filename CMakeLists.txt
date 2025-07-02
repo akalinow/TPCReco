@@ -51,6 +51,7 @@ add_subdirectory(GrawToROOT)
 add_subdirectory(EventSources)
 add_subdirectory(Reconstruction)
 add_subdirectory(Analysis)
+add_subdirectory(FileOutput)
 add_subdirectory(GUI)
 
 if(NOT IS_DIRECTORY ${CMAKE_INSTALL_PREFIX}/resources)

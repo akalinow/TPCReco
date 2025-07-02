@@ -17,7 +17,6 @@
 #include "TPCReco/TrackBuilder.h"
 //#include "TPCReco/DotFinder.h"
 #include "TPCReco/dEdxFitter.h"
-#include "TPCReco/RecoOutput.h"
 #include "TPCReco/IonRangeCalculator.h"
 
 #include "TPCReco/CommonDefinitions.h"
@@ -125,7 +124,6 @@ private:
   TH3D *h3DReco{0};
   TGraph *grEventRate{0};
   TrackBuilder myTkBuilder;
-  RecoOutput myRecoOutput;
 
   std::shared_ptr<EventTPC> myEventPtr;
   eventraw::EventInfo myEventInfo;

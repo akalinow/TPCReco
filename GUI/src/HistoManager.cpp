@@ -31,7 +31,6 @@
 HistoManager::HistoManager() {
 
   myEventPtr = 0;
-  myRecoOutput.setEventInfo(myEventInfo);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -757,7 +756,6 @@ void HistoManager::openOutputStream(const std::string & filePath){
   std::size_t last_slash_position = filePath.find_last_of("//");
   std::string recoFileName = MakeUniqueName("Reco_"+filePath.substr(last_slash_position+1,
 						     last_dot_position-last_slash_position-1)+".root");
-  myRecoOutput.open(recoFileName);
 
   std::string fileName = filePath.substr(last_slash_position+1);
   if(fileName.find("CoBo")==std::string::npos){
@@ -770,9 +768,7 @@ void HistoManager::writeRecoData(unsigned long eventType){
 
   myEventInfo = myEventPtr->GetEventInfo(); 
   myEventInfo.SetEventType(eventType);				   
-  myRecoOutput.setRecTrack(myTkBuilder.getTrack3D(0));
-  myRecoOutput.setEventInfo(myEventInfo);				   
-  myRecoOutput.update();  
+
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

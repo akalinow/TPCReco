@@ -63,23 +63,23 @@ reaction_type EventSourceMC::GetGeneratedReactiontType(){
     return  myCurrentSimEvent -> GetReactionType();
 }
 
+const Track3D & EventSourceMC::getGeneratedTrack(){
 
-std::vector<Track3D> EventSourceMC::getGeneratedTracks(){
-    std::vector<Track3D> tracks;
-    std::shared_ptr<GeometryTPC> geometry = myRunController -> getGeometry();
-    for (const auto &t: myCurrentSimEvent -> GetTracks()) {
-        TrackSegment3D aSegment;
-        Track3D aTrack;
-        //do not add segments when track is fully out of active volume
-        if(t.IsOutOfActiveVolume())
-            continue;
-        aSegment.setGeometry(geometry);
-        aSegment.setStartEnd(t.GetTruncatedStart(), t.GetTruncatedStop());
-        aSegment.setPID(t.GetPrimaryParticle().GetID());
-        aTrack.addSegment(aSegment);
-        tracks.push_back(aTrack);
-    }
-    return tracks;
+  myTrack = Track3D();
+
+  //loop over tracks
+  for (const auto &t: myCurrentSimEvent -> GetTracks()) {
+    
+      //do not add segments when track is fully out of active volume
+      if(t.IsOutOfActiveVolume()) continue;
+
+      // set basic TrackSegment3D info
+      mySegment3D.setGeometry(myGeometryPtr);
+      mySegment3D.setStartEnd(t.GetTruncatedStart(), t.GetTruncatedStop());
+      mySegment3D.setPID(t.GetPrimaryParticle().GetID());
+      myTrack.addSegment(mySegment3D);
+  } 
+  return myTrack;
 }
 
 void EventSourceMC::generateNextEvent(){

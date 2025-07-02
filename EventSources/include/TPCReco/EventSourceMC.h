@@ -36,9 +36,7 @@ public:
 
   reaction_type GetGeneratedReactiontType();
 
-  Track3D getGeneratedTrack();
-
-  std::vector<Track3D> getGeneratedTracks();
+  const Track3D & getGeneratedTrack();
 
   std::shared_ptr<EventTPC> getLastEvent();
 
@@ -49,6 +47,9 @@ public:
   static inline event_type getSourceType() { return event_type::EventSourceMC; }
   
  private:
+
+  Track3D myTrack;
+  TrackSegment3D mySegment3D;
 
   std::shared_ptr<fwk::RunController> myRunController;
   std::shared_ptr<SimEvent> myCurrentSimEvent;
