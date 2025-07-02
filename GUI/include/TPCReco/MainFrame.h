@@ -33,6 +33,7 @@
 #include "TPCReco/MarkersManager.h"
 #include "TPCReco/RunConditionsDialog.h"
 
+#include "TPCReco/FileOutput.h"
 #include "TPCReco/HistoManager.h"
 #include "TPCReco/DirectoryWatch.h"
 
@@ -98,6 +99,7 @@ private:
 
 	std::shared_ptr<EventSourceBase> myEventSource;
 	HistoManager myHistoManager;
+	std::shared_ptr<FileOutput> myFileOutput;
 
 	std::thread fileWatchThread;
 	std::mutex myMutex;

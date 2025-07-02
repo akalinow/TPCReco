@@ -6,6 +6,7 @@ include_directories(${PROJECT_SOURCE_DIR}/DataFormats/include/)
 include_directories(${PROJECT_SOURCE_DIR}/Reconstruction/include)
 include_directories(${PROJECT_SOURCE_DIR}/Analysis/include)
 include_directories(${PROJECT_SOURCE_DIR}/Utilities/include)
+include_directories(${PROJECT_SOURCE_DIR}/FileOutput/include)
 include_directories(${PROJECT_SOURCE_DIR}/GUI/include)
 root_generate_dictionary(
   G__${TPCRECO_PREFIX}${MODULE_NAME}
@@ -26,7 +27,7 @@ target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
 
 target_link_libraries(
   ${MODULE_NAME} PUBLIC ${ROOT_LIBRARIES} DataFormats 
-                         EventSources Reconstruction Analysis
+                         EventSources Reconstruction Analysis FileOutput
                          $<$<BOOL:${GET_FOUND}>:GrawToROOT>)
 target_link_libraries(tpcGUI PRIVATE Boost::program_options ${MODULE_NAME})
 target_link_libraries(dumpProjectionHistos PRIVATE ${MODULE_NAME})

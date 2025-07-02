@@ -91,6 +91,8 @@ public:
 
   std::shared_ptr<TH2D> getChannels(int cobo_id, int asad_id);
 
+  const Track3D & getTrack3D(int iTrack=0) const;
+
   const TH2D & getHoughAccumulator(int strip_dir, int iPeak=0);
 
    /// Move to private

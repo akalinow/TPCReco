@@ -44,7 +44,7 @@ else()
 endif()
 
 target_link_libraries(makeTrackTree PRIVATE ${MODULE_NAME}
-                                            Boost::program_options GUI)
+                                            Boost::program_options GUI FileOutput)
 target_link_libraries(makeMCTrackTree PRIVATE ${MODULE_NAME}
                                               Boost::program_options)
 target_link_libraries(recoEventsAnalysis PRIVATE ${MODULE_NAME}

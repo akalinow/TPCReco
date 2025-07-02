@@ -34,6 +34,7 @@ MainFrame::MainFrame(const TGWindow* p, UInt_t w, UInt_t h, const boost::propert
 	: TGMainFrame(p, w, h) {
 
 	myConfig = aConfig;
+	myFileOutput = std::make_shared<FileOutput>(myConfig);
 
 	fSelectionBox = 0;
 	InitializeEventSource();
@@ -53,6 +54,7 @@ MainFrame::MainFrame(const TGWindow* p, UInt_t w, UInt_t h, const boost::propert
 		modeLabel = "OFFLINE from GRAW";
 	}
 	fFileInfoFrame->updateModeLabel(modeLabel);
+
 	Update();
 }
 /////////////////////////////////////////////////////////
@@ -65,6 +67,9 @@ MainFrame::~MainFrame() {
 	delete fMenuHelp;
 	delete fMenuBar;
 	delete fMarkersManager;
+
+	std::cout << KBLU << "MainFrame::~MainFrame" << RST
+	          << " closing output file." << std::endl;
 }
 /////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////
@@ -591,6 +596,8 @@ void MainFrame::Update() {
 	else if(myConfig.get<bool>("display.technicalMode")) myHistoManager.drawTechnicalHistos(fMainCanvas, myEventSource->getGeometry()->GetAgetNchips());
 	else myHistoManager.drawRawHistos(fMainCanvas, isRateDisplayOn);
 
+	myEventSource->setRecoEvent(myHistoManager.getTrack3D());
+	myFileOutput->update(myEventSource);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -837,6 +844,10 @@ void MainFrame::HandleMenu(Int_t id) {
 	break;
 	case M_FILE_EXIT:
 	{
+		//CloseWindow() does not call MainFrame::~MainFrame() and exicts abruptly
+		//so we need to reset the event source and file output stream
+		myEventSource.reset();
+		myFileOutput.reset();
 		CloseWindow();   // terminate theApp no need to use SendCloseMessage()
 	}
 	break;
