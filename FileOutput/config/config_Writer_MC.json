@@ -1,0 +1,20 @@
+{
+    "input":{
+        "dataFile": "SingleAlpha_MC_CoBo0_AsAdAll_2022-09-08T09:00:00.000_0000.root",
+        "controllerConfigPath": "../config/montecarlo_2prong_gun.json",
+        "geometryFile": "geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat",    
+        "resourcesPath":"./",
+        "readNEvents": 100
+    },
+    "conditions": {
+	"pressure": 190.0,
+	"temperature": 293.15,
+	"driftV": 0.646,
+	"samplingRate": 25.0,
+	"comment": "Udrift=3332V, E=170V/cm, p=190mbar, T=293K, CO2 gas, drift velocity from MAGBOLTZ v=0.646cm/us"
+    },
+    "output":{
+        "disabledBranches": [],
+        "fileName": "SimEvent_Track3D_TwoProng_gun_MC.root"
+    }
+}
