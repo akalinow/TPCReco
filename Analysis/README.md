@@ -22,12 +22,11 @@ makeMCPlots("SingleAlpha_MC_TrackTree_2022-09-08T09-00-00.000_0000_2025-02-24T10
 ### Create ROOT file with PEventTPC data
 
 Create ROOT file with PEventTPC data, and a plain TTree for quick analysis 
-with 1000 events generated from the MC simulation. Enable saving the PEventTPC data
+with 1000 events generated from the MC simulation. 
 
 ```Bash
 cd resources
-../bin/tpcWriter ../config/config_GUI_MC.json \
---input.controllerConfigPath=../config/montecarlo_2prong_gun_PEventTPC.json \
+../bin/tpcWriter ../config/config_Writer_MC.json \
 --input.readNEvents=1000
 ```
 

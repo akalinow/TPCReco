@@ -5,8 +5,7 @@
     "GeantSim",
     "TriggerSimulator",
     "TrackTruncator",
-    "TPCDigitizerSRC",
-    "Track3DBuilder"
+    "TPCDigitizerSRC"
   ],
   "GeometryConfig": "@CMAKE_INSTALL_PREFIX@/resources/geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat",
   "ModuleConfiguration": {
@@ -35,7 +34,7 @@
             "distribution": "EProviderGaus",
             "parameters": {
               "meanE": 10,
-              "sigmaE": 3,
+              "sigmaE": 3
             }
           }
         },
@@ -46,7 +45,7 @@
               "meanX": 0.0,
               "meanY": 0.0,
               "flatR": 5.0,
-              "sigma": 1,
+              "sigma": 1
             }
           },
           "VertexLongitudinal": {
