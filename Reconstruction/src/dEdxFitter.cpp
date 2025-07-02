@@ -274,7 +274,7 @@ TFitResult dEdxFitter::fitHisto(const TH1F & aHisto){
     reflection_for_C12_alpha = true;
   }
   TFitResult carbon_alphaResult = fitHypothesis(carbon_alpha_model, fittedHisto_for_C12_alpha);
- 
+
   /// alpha hypothesis
   bool reflection_for_alpha = false;
   TH1F fittedHisto_for_alpha = aHisto;
@@ -299,8 +299,9 @@ TFitResult dEdxFitter::fitHisto(const TH1F & aHisto){
     theFittedHisto = fittedHisto_for_C12_alpha;
     isReflected = reflection_for_C12_alpha;
     bestFitEventType = pid_type::C12_ALPHA;
-  }
-  theFittedModel->SetParameters(theFitResult.Parameters().data());
+  }  
+  if(theFitResult.IsValid()) theFittedModel->SetParameters(theFitResult.Parameters().data());
+
   return theFitResult;
 }
 ////////////////////////////////////////////////
