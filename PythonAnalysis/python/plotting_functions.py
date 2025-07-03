@@ -28,6 +28,10 @@ plt.rcParams.update(params)
 ###################################################
 def plotEndpoints(data, iProj, axis, label, color):
 
+        # 3 tracks 3 endpoints sometimes given as a single vector
+        # and sometimes as 3x3 matrix                
+        if len(data.shape)==1:
+            data = tf.reshape(data, (3, 3))
 
         uvwt =  utils.XYZtoUVWT(data[:,0])
         axis.plot(uvwt[3], uvwt[iProj], marker='.', markersize=20, alpha=0.8, color=color, label=label)
