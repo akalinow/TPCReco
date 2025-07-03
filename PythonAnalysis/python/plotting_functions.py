@@ -28,14 +28,14 @@ plt.rcParams.update(params)
 ###################################################
 def plotEndpoints(data, iProj, axis, label, color):
 
-        scale = 100
-        uvwt =  utils.XYZtoUVWT(scale*data[0:3])
+
+        uvwt =  utils.XYZtoUVWT(data[:,0])
         axis.plot(uvwt[3], uvwt[iProj], marker='.', markersize=20, alpha=0.8, color=color, label=label)
         
-        uvwt =  utils.XYZtoUVWT(scale*data[3:6])
+        uvwt =  utils.XYZtoUVWT(data[:,1])
         axis.plot(uvwt[3], uvwt[iProj], marker='.', markersize=20, alpha=0.8, color=color)
         
-        uvwt =  utils.XYZtoUVWT(scale*data[6:9])
+        uvwt =  utils.XYZtoUVWT(data[:,2])
         axis.plot(uvwt[3], uvwt[iProj], marker='.', markersize=20, alpha=0.8, color=color)
 ###################################################
 ###################################################
@@ -169,25 +169,25 @@ def plotTrainHistory(history):
     plt.savefig("fig_png/training_history.png", bbox_inches="tight")
 ###################################################
 ###################################################
-def plotLengthPull(df, partIdx):
+def plotLengthPull(df, partName):
     
-    d_GEN = np.sqrt((df["GEN_StopPosX_Part"+str(partIdx)] - df["GEN_StartPosX"])**2 + 
-                    (df["GEN_StopPosY_Part"+str(partIdx)] - df["GEN_StartPosY"])**2 + 
-                    (df["GEN_StopPosZ_Part"+str(partIdx)] - df["GEN_StartPosZ"])**2)
+    d_sim = np.sqrt((df["x"+partName+"_sim"] - df["xVtx_sim"])**2 + 
+                    (df["y"+partName+"_sim"] - df["yVtx_sim"])**2 + 
+                    (df["z"+partName+"_sim"] - df["zVtx_sim"])**2 )
     
-    d_RECO = np.sqrt((df["RECO_StopPosX_Part"+str(partIdx)] - df["RECO_StartPosX"])**2 + 
-                    (df["RECO_StopPosY_Part"+str(partIdx)] - df["RECO_StartPosY"])**2 + 
-                    (df["RECO_StopPosZ_Part"+str(partIdx)] - df["RECO_StartPosZ"])**2)          
+    d_reco = np.sqrt((df["x"+partName+"_reco"] - df["xVtx_reco"])**2 + 
+                     (df["y"+partName+"_reco"] - df["yVtx_reco"])**2 + 
+                     (df["z"+partName+"_reco"] - df["zVtx_reco"])**2 )
     
-    pull = (d_RECO-d_GEN)
-    df["d_GEN_part"+str(partIdx)] = d_GEN
-    df["d_RECO_part"+str(partIdx)] = d_RECO
-    df["pull_part"+str(partIdx)] = pull
+    pull = (d_reco-d_sim)
+    df["d"+partName+"_sim"] = d_sim
+    df["d"+partName+"_reco"] = d_reco
+    df["pull"+partName] = pull
     
     mean = pull.mean()
     std = pull.std()
 
-    fig, axes = plt.subplots(3,2, figsize=(10,10))
+    fig, axes = plt.subplots(3,2, figsize=(10,10), layout='tight')
     label = "$\mu = {:.3f}$\n$\sigma = {:.2f}$".format(mean, std)
     axes[0,0].hist(pull, bins=40, label=label);
     axes[0,0].set_xlabel("RECO-GEN [mm]")
@@ -199,150 +199,166 @@ def plotLengthPull(df, partIdx):
     
     xBins = np.linspace(0,80,40)
     yBins = np.linspace(-5,5,20)
-    axes[1,0].hist2d(d_GEN, pull, bins=(xBins, yBins), cmin=10, label="length")
+    axes[1,0].hist2d(d_sim, pull, bins=(xBins, yBins), cmin=10, label="length")
     axes[1,0].set_xlabel('particle range [mm]')
     axes[1,0].set_ylabel('RECO-GEN')
     
     yBins = np.linspace(-0.5,0.5,20)
-    axes[1,1].hist2d(d_GEN, pull/d_GEN, bins=(xBins, yBins), cmin=10, label="length")
+    axes[1,1].hist2d(d_sim, pull/d_sim, bins=(xBins, yBins), cmin=10, label="length")
     axes[1,1].set_xlabel(' particle range')
     axes[1,1].set_ylabel('(RECO-GEN)/GEN')
     
-    axes[2,0].plot(d_GEN, d_RECO, "bo")
-    axes[2,0].plot((d_GEN.min(), d_GEN.max()), (d_RECO.min(), d_RECO.max()), color="black")
+    axes[2,0].plot(d_sim, d_reco, "bo")
+    axes[2,0].plot((d_sim.min(), d_sim.max()), (d_sim.min(), d_sim.max()), color="black")
     axes[2,0].set_xlabel('range GEN [mm]')
     axes[2,0].set_ylabel('range RECO [mm]')
     
-    axes[2,1].plot(d_GEN, d_RECO, "bo")
-    axes[2,1].plot((d_GEN.min(), d_GEN.max()), (d_RECO.min(), d_RECO.max()), color="black")
+    axes[2,1].plot(d_sim, d_reco, "bo")
+    axes[2,1].plot((d_sim.min(), d_sim.max()), (d_sim.min(), d_sim.max()), color="black")
     axes[2,1].set_xlabel('range GEN [mm]')
     axes[2,1].set_ylabel('range RECO [mm]')
-    axes[2,1].set_xlim((0,20))
-    axes[2,1].set_ylim((0,20))
+    axes[2,1].set_xlim((0,50))
+    axes[2,1].set_ylim((0,50))
        
-    fig.suptitle("particle "+str(partIdx)+" track length resolution")
-
-    plt.subplots_adjust(bottom=0.05, left=0.05, right=0.95, hspace=0.3, wspace=0.3) 
-    plt.savefig("fig_png/length_pull_part_"+str(partIdx)+".png", bbox_inches="tight")
+    fig.suptitle(partName+" track length resolution")
+    plt.savefig("fig_png/"+partName+"length_pull.png", bbox_inches="tight")
 ###################################################
 ################################################### 
 def plotLengthPullEvolution(df):
     
-    fig, axes = plt.subplots(3,1, figsize=(6,9))
+    fig, axes = plt.subplots(3,2, figsize=(12,10), layout='tight')
 
-    partIdx = 1
     binWidth = 1 
-    bins = np.linspace(1,100,100)
-    for partIdx in range(1,3):
+    bins = np.linspace(1,200,200)
+    partNames = ["Alpha", "Carbon"]
+    for partName in partNames:
         
         label = ""
-        if partIdx==1:
+        if partName=="Alpha":
             label = r"$\alpha$"
-        elif partIdx==2:
+        elif partName=="Carbon":
             label = r"$^{12}_{6}$C"
         
-        axes[0].hist(df["d_GEN_part"+str(partIdx)], bins=bins, density=True, label=label+" GEN")
-        axes[0].hist(df["d_RECO_part"+str(partIdx)], bins=bins, density=True, label=label+" RECO", alpha=0.6)
-        axes[0].set_xlabel("length [mm]")
-        axes[0].set_ylabel("#events")
-        axes[0].set_xlim(-5,100)
-        axes[0].legend(bbox_to_anchor=(1.1,1), loc='upper left')
-        
-        df_grouped = df.groupby(by=binWidth*(df["d_GEN_part"+str(partIdx)]/binWidth).astype(int))
-        x = df_grouped["d_GEN_part"+str(partIdx)].mean()
-        y = df_grouped["pull_part"+str(partIdx)].mean()
+        axes[0,0].hist(df["d"+partName+"_sim"], bins=bins, density=True, label=label+" GEN")
+        axes[0,0].hist(df["d"+partName+"_reco"], bins=bins, density=True, label=label+" RECO", alpha=0.6)
+        axes[0,0].set_xlabel("length [mm]")
+        axes[0,0].set_ylabel("#events")
+        axes[0,0].set_xlim(-5,200)
 
-        axes[1].plot(x, y, ".", label=label)
-        axes[1].plot((x.min(), x.max()), (0,0), color='black')
-        axes[1].set_xlabel("GEN length [mm]")
-        axes[1].set_ylabel("RECO-GEN [mm]")
-        axes[1].set_xlim(-5,100)
-        axes[1].set_ylim(-5,5)
+        #hide axes[0,1]
+        axes[0,1].set_visible(False)
+        axes[0,0].legend(bbox_to_anchor=(1.1,1), loc='upper left')
         
-        df_grouped = df.groupby(by=binWidth*(df["GEN_StartPosX"]/binWidth).astype(int))
-        x = df_grouped["GEN_StartPosX"].mean()
-        y = df_grouped["pull_part"+str(partIdx)].mean()
-        axes[2].set_xlabel("GEN vertex X [mm]")
-        axes[2].set_ylabel("RECO-GEN [mm]")
-        axes[2].plot(x, y, ".", label=label)
-        axes[2].plot((x.min(), x.max()), (0,0), color='black')
+        df_grouped = df.groupby(by=binWidth*(df["d"+partName+"_sim"]/binWidth).astype(int))
+        x = df_grouped["d"+partName+"_sim"].mean()
+        y = df_grouped["pull"+partName].mean()
+
+        axes[1,0].plot(x, y, ".", label=label)
+        axes[1,0].plot((x.min(), x.max()), (0,0), color='black')
+        axes[1,0].set_xlabel("GEN length [mm]")
+        axes[1,0].set_ylabel("RECO-GEN [mm]")
+        axes[1,0].set_xlim(-5,200)
+        axes[1,0].set_ylim(-5,5)
+        #axes[1,0].legend(bbox_to_anchor=(1.1,1), loc='upper left')
+
+        df_grouped = df.groupby(by=binWidth*(df["xVtx_sim"]/binWidth).astype(int))
+        x = df_grouped["xVtx_sim"].mean()
+        y = df_grouped["pull"+partName].mean()
+        axes[1,1].set_xlabel("GEN vertex X [mm]")
+        axes[1,1].set_ylabel("RECO-GEN [mm]")
+        axes[1,1].plot(x, y, ".", label=label)
+        axes[1,1].plot((x.min(), x.max()), (0,0), color='black')
+        
+        df_grouped = df.groupby(by=binWidth*(df["yVtx_sim"]/binWidth).astype(int))
+        x = df_grouped["yVtx_sim"].mean()
+        y = df_grouped["pull"+partName].mean()
+        axes[2,0].set_xlabel("GEN vertex Y [mm]")
+        axes[2,0].set_ylabel("RECO-GEN [mm]")
+        axes[2,0].plot(x, y, ".", label=label)
+        axes[2,0].plot((x.min(), x.max()), (0,0), color='black')
+
+        df_grouped = df.groupby(by=binWidth*(df["zVtx_sim"]/binWidth).astype(int))
+        x = df_grouped["zVtx_sim"].mean()
+        y = df_grouped["pull"+partName].mean()
+        axes[2,1].set_xlabel("GEN vertex Z [mm]")
+        axes[2,1].set_ylabel("RECO-GEN [mm]")
+        axes[2,1].plot(x, y, ".", label=label)
+        axes[2,1].plot((x.min(), x.max()), (0,0), color='black')
     
-    plt.subplots_adjust(bottom=0.05, left=0.05, right=0.95, hspace=0.5, wspace=0.3) 
     plt.savefig("fig_png/length_pull_vs_gen.png", bbox_inches="tight")
 ###################################################
 ###################################################
-def plotEndPointRes(df, edge, partIdx):
+def plotEndPointRes(df, edge):
     
     fig, axes = plt.subplots(2,2, figsize=(8,8))
 
-    for index, coordName in enumerate(["X", "Y", "Z"]):
+    bins = np.linspace(-5,5,31)
+
+    for index, coordName in enumerate(["x", "y", "z"]):
             axis = axes.flatten()[index]  
-            varName1 = "GEN_"+edge+"Pos"+coordName
-            varName2 = "RECO_"+edge+"Pos"+coordName
-            if edge=="Stop":
-                varName1+="_Part"+str(partIdx)
-                varName2+="_Part"+str(partIdx)
+            varName1 = coordName+edge+"_reco"
+            varName2 = coordName+edge+"_sim"
+
             mean = (df[varName2] - df[varName1]).mean()
             std = (df[varName2] - df[varName1]).std()
             label = "$\mu_{} = {:.3f}$\n$\sigma_{} = {:.2f}$".format(coordName, mean, coordName, std)
-            (df[varName2] - df[varName1]).hist(ax=axis, bins=40, label=label)
+            (df[varName2] - df[varName1]).hist(ax=axis, bins=bins, label=label)
             axis.set_xlabel(coordName+" [mm]")
             axis.set_ylabel("")  
             axis.grid(False)
             axis.legend()
-            if coordName=="X":
+            if coordName=="x":
                 axis.legend(bbox_to_anchor=(1.5,-0.3), loc='upper left')
-            elif coordName=="Y":
+            elif coordName=="y":
                 axis.legend(bbox_to_anchor=(0.2,-0.6), loc='upper left')
-            elif coordName=="Z":
+            elif coordName=="z":
                 axis.legend(bbox_to_anchor=(1.5, 0.4), loc='upper left')   
                 
-
-    fig.suptitle("track "+str(partIdx)+" "+edge+" resolution")       
+    if edge=="Vtx":
+        fig.suptitle(edge+" resolution")    
+    else:
+        fig.suptitle(edge+" endpoint resolution")  
     axes[1,1].set_visible(False)        
     plt.subplots_adjust(bottom=0.05, left=0.05, right=0.95, hspace=0.3, wspace=0.3) 
-    plt.savefig("fig_png/"+edge+"_endpoint_resolution_part_"+str(partIdx)+".png", bbox_inches="tight")          
+    plt.savefig("fig_png/"+edge+"_resolution.png", bbox_inches="tight")          
 ###################################################
 ###################################################    
 def controlPlots(df):
     
-    fig, axes = plt.subplots(2,2, figsize=(8,8))
+    fig, axes = plt.subplots(2,2, figsize=(8,8), layout='tight')
 
-    for index, coordName in enumerate(["X", "Y", "Z"]):
+    for index, coordName in enumerate(["x", "y", "z"]):
             axis = axes.flatten()[index]  
-            varName = "GEN_StartPos"+coordName
+            varName = coordName+"Vtx_sim"
             df.hist(varName, ax=axis, bins=40)
             axis.set_xlabel(coordName)
             axis.set_ylabel("")  
             axis.grid(False)
 
-    axes[1,1].set_visible(False)    
-
-    plt.subplots_adjust(bottom=0.05, left=0.05, right=0.95, hspace=0.3, wspace=0.3)  
-    plt.savefig("fig_png/gen_startPos.png", bbox_inches="tight")
+    axes[1,1].set_visible(False)  
+    fig.suptitle("GEN Alpha vertex")   
+    plt.savefig("fig_png/sim_startPos.png", bbox_inches="tight")
     
-    fig, axes = plt.subplots(2,2, figsize=(8,8))
-    for index, coordName in enumerate(["X", "Y", "Z"]):
+    fig, axes = plt.subplots(2,2, figsize=(8,8), layout='tight')
+    for index, coordName in enumerate(["x", "y", "z"]):
             axis = axes.flatten()[index]  
-            varName = "GEN_StopPos"+coordName
+            varName = coordName+"Alpha_sim"
             df.hist(varName, ax=axis, bins=40)
             axis.set_xlabel(coordName)
             axis.set_ylabel("")
             axis.grid(False)
 
-    fig.suptitle("GEN track "+edge+" position")       
+    fig.suptitle("GEN Alpha endpoint")       
     axes[1,1].set_visible(False)    
-
-    plt.subplots_adjust(bottom=0.05, left=0.05, right=0.95, hspace=0.3, wspace=0.3)   
-    plt.savefig("fig_png/gen_endPos.png", bbox_inches="tight")
+    plt.savefig("fig_png/sim_endPos.png", bbox_inches="tight")
 ###################################################
 ###################################################
 def plotOpeningAngleCos(df):
     
     fig, axes = plt.subplots(1,2, figsize=(10,5))
 
-    GEN_cosAlpha = utils.getOpeningAngleCos(df, algoType="GEN")
-    RECO_cosAlpha = utils.getOpeningAngleCos(df, algoType="RECO")
+    GEN_cosAlpha = utils.getOpeningAngleCos(df, algoType="sim")
+    RECO_cosAlpha = utils.getOpeningAngleCos(df, algoType="reco")
 
     axes[0].hist(RECO_cosAlpha, bins=np.linspace(-1, -0.95, 40), alpha=0.5, label="NN");
     axes[0].hist(GEN_cosAlpha, bins=np.linspace(-1, -0.95, 40), alpha=0.8, label="true");

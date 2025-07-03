@@ -62,13 +62,13 @@
     "fileName":{
         "group": "output",
         "type": "string",
-        "defaultValue": "TPCData.root",
+        "defaultValue": "TPCReco",
         "description": "Name of the ROOT file name with event data. If the name does NOT contain .root suffix, the output file name will be created from fileName taken as prefix, and the input file name.\nType: string"
     },
     "disabledBranches":{
         "group": "output",
         "type": "vector<string>",
-        "defaultValue": ["TPCData.myChargeArray*" ],
+        "defaultValue": ["TPCData.myChargeMap", "TPCData.myChargeArray*" ],
         "description": "Optional list of disabled branches of PEventTPC to save disk space.\nBiggest branches are TPCData.myChargeMap, TPCData.myChargeArray*.\nType: vector<string>"
     },
     "autoSaveFrequency":{

@@ -19,14 +19,7 @@ df = pd.DataFrame(columns=["GEN_StartPosX", "GEN_StartPosY", "GEN_StartPosZ",
                            "RECO_StopPosX_Part1", "RECO_StopPosY_Part1", "RECO_StopPosZ_Part1",
                            "RECO_StopPosX_Part2", "RECO_StopPosY_Part2", "RECO_StopPosZ_Part2",
                             ])
-
-'''
-df = pd.DataFrame(columns=["GEN_X", "GEN_Y", "GEN_Z",
-                           "GEN_U", "GEN_V", "GEN_W", "GEN_T",
-                           "RECO_U", "RECO_V", "RECO_W", "RECO_T"
-                            ])  
-'''                            
-                            
+                                                       
 ###################################################
 ###################################################
 def fillPandasDataset(aBatch, df, model):   
@@ -47,11 +40,14 @@ def XYZtoUVWT(data):
     referencePoint = np.array([-138.9971, 98.25])
     phi = np.pi/6.0
     stripPitch = 1.5
-    f = 1.0/12.5*4.05
+    samplingFrequency = 25.0 # MHz
+    driftVelocity = 6.46 # mm/us 4.05
+    f = 1.0/samplingFrequency*driftVelocity
+    triggerDelay = 5 #time bins
     u = -(data[1]-99.75)
     v = (data[0]-referencePoint[0])*np.cos(phi) - (data[1]-referencePoint[1])*np.sin(phi)
     w = (data[0]-referencePoint[0])*np.cos(-phi) - (data[1]-referencePoint[1])*np.sin(-phi) + 98.75
-    t = data[2]/f + 256
+    t = data[2]/f + 256 + triggerDelay
     u/=stripPitch
     v/=stripPitch
     w/=stripPitch
@@ -60,9 +56,10 @@ def XYZtoUVWT(data):
 ###################################################
 def getOpeningAngleCos(df, algoType):
     
-    start = df[[algoType+"_StartPosX", algoType+"_StartPosY", algoType+"_StartPosZ"]].to_numpy()
-    stop_part1 = df[[algoType+"_StopPosX_Part1", algoType+"_StopPosY_Part1", algoType+"_StopPosZ_Part1"]].to_numpy()
-    stop_part2 = df[[algoType+"_StopPosX_Part2", algoType+"_StopPosY_Part2", algoType+"_StopPosZ_Part2"]].to_numpy()
+    start = df[["xVtx_"+algoType, "yVtx_"+algoType, "zVtx_"+algoType]].to_numpy()
+
+    stop_part1 = df[["xAlpha_"+algoType, "yAlpha_"+algoType, "zAlpha_"+algoType]].to_numpy()
+    stop_part2 = df[["xCarbon_"+algoType, "yCarbon_"+algoType, "zCarbon_"+algoType]].to_numpy()
 
     track1 = stop_part1-start
     norm = np.sqrt(np.sum(track1*track1, axis=1, keepdims=True))

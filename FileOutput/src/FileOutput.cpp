@@ -111,6 +111,18 @@ void FileOutput::update(std::shared_ptr<EventSourceBase> aEventSource) {
   auto mcEventSource = std::dynamic_pointer_cast<EventSourceMC>(aEventSource);
   if(mcEventSource) *mySimEventPtr = mcEventSource->getGeneratedTrack();
 
+  ///Temporary to be moved to configuration as filter
+  if(mySimEventPtr->getSegments().size() !=2 ||
+     myRecoEventPtr->getSegments().size() !=2) {
+    std::cout << KRED << "FileOutput::update" << RST
+              << " skipping event with "
+              << mySimEventPtr->getSegments().size() << " simulated segments and "
+              << myRecoEventPtr->getSegments().size() << " reconstructed segments."
+              << std::endl;
+    return;
+  }
+  /////////////////////////////////////////////////////////
+
   for(auto aTree: myOutputTrees) {
     if (aTree.second==nullptr) {
       std::cout << KRED << "FileOutput::update" << RST
