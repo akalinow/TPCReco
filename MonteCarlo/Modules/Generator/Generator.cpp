@@ -16,13 +16,13 @@ fwk::VModule::EResultFlag Generator::Process(ModuleExchangeSpace &event) {
     if(event.simEvt.GetTracks().empty()) return fwk::VModule::eContinueLoop;
     nEventsGenerated++;
     if(nEventsGenerated%1000 == 0){
-        std::cout<<"EventGenerator generated: "<<nEventsGenerated<<" events."<<std::endl;
+        std::cout<<"EventGenerator generated: "<<nEventsGenerated<<" non empty events."<<std::endl;
     }
     event.trackPEvt.resize(0); // reset transient vector of PEventTPC with true hits per track
     return fwk::VModule::eSuccess;
 }
 
 fwk::VModule::EResultFlag Generator::Finish() {
-    std::cout<<"Generator module generated "<<nEventsGenerated<<" events."<<std::endl;
+    std::cout<<"Generator module generated "<<nEventsGenerated<<" non empty events."<<std::endl;
     return fwk::VModule::eSuccess;
 }
