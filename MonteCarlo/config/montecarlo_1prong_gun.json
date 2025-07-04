@@ -12,6 +12,7 @@
     "Generator": {
       "Verbosity": 1,
       "EventGenerator": {
+        "RandomSeed": 4357,
         "Beam": {
           "BeamGeometry": {
             "EulerAnglesNominal": {

@@ -70,6 +70,7 @@ Simple math expressions can be used for scalar and vector parameters of type: `i
 
 ```json
 {
+  "RandomSeed": 4359,
   "Beam": {
     "BeamGeometry": {},
     "GammaEnergy": {}
@@ -85,6 +86,9 @@ Simple math expressions can be used for scalar and vector parameters of type: `i
 }
 ```
 Each `{}` in the above JSON represents another JSON object, configuring specific part of the simulation. Those fields are described below:
+
+### RandomSeed
+Random seed used for random number generation. If not provided, the seed parameter is set to `0`, which means that the seed is not set and the random number generator will use a radom seed based on UUID of the process. If a specific seed is provided, it will be used to seed the random number generator, which will then produce the same sequence of random numbers for the same seed.
 
 ### Beam geometry
 Beam geometry defines relation between BEAM and DET coordinates, using two sets of Euler angles:

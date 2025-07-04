@@ -13,7 +13,17 @@ GeneratorSetup::GeneratorSetup(const boost::filesystem::path &configFilePath) {
     pt::read_json(configFilePath.string(), topNode);
 }
 
-GeneratorSetup::GeneratorSetup(const pt::ptree &configNode) : topNode{configNode} {}
+GeneratorSetup::GeneratorSetup(const pt::ptree &configNode) : topNode{configNode} {
+
+    int seed = 0;
+
+    if(topNode.count("RandomSeed")){
+        seed = ConfigManager::getScalar<unsigned int>(topNode, "RandomSeed");
+    }
+
+    std::cout<<KBLU<<"Setting random "<<RST<<seed<<KBLU<<" as seed for random number generator."<<RST<<std::endl;
+    gRandom->SetSeed(seed);
+}
 
 
 void GeneratorSetup::BuildReactionLibrary(ReactionLibrary &lib) {

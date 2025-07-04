@@ -12,6 +12,7 @@
   "GeometryConfig": "@CMAKE_INSTALL_PREFIX@/resources/geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat",
   "ModuleConfiguration": {
     "Generator": {
+      "RandomSeed": 4357,
       "Verbosity": 0,
       "EventGenerator": {
         "Beam": {
