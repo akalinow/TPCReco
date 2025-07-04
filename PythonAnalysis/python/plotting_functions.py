@@ -30,17 +30,19 @@ def plotEndpoints(data, iProj, axis, label, color):
 
         # 3 tracks 3 endpoints sometimes given as a single vector
         # and sometimes as 3x3 matrix                
-        if len(data.shape)==1:
-            data = tf.reshape(data, (3, 3))
+        if len(data.shape)==2:
+            data = tf.reshape(data, (-1, 3, 3))
 
-        uvwt =  utils.XYZtoUVWT(data[:,0])
-        axis.plot(uvwt[3], uvwt[iProj], marker='.', markersize=20, alpha=0.8, color=color, label=label)
+        uvwt =  utils.XYZtoUVWT_event(data)
+
+        vertex = uvwt[0,0:4]
+        axis.plot(vertex[3], vertex[iProj], marker='.', markersize=20, alpha=0.8, color=color, label=label)
         
-        uvwt =  utils.XYZtoUVWT(data[:,1])
-        axis.plot(uvwt[3], uvwt[iProj], marker='.', markersize=20, alpha=0.8, color=color)
+        alpha = uvwt[0,4:8]
+        axis.plot(alpha[3], alpha[iProj], marker='.', markersize=20, alpha=0.8, color=color)
         
-        uvwt =  utils.XYZtoUVWT(data[:,2])
-        axis.plot(uvwt[3], uvwt[iProj], marker='.', markersize=20, alpha=0.8, color=color)
+        carbon = uvwt[0,8:12]
+        axis.plot(carbon[3], carbon[iProj], marker='.', markersize=20, alpha=0.8, color=color)
 ###################################################
 ###################################################
 def plotEvent(data, model):
@@ -58,14 +60,14 @@ def plotEvent(data, model):
         data = projections[iEvent][:,:,iProj]
                 
         im = axis.imshow(data, origin='lower', aspect='auto')            
-        plotEndpoints(labels[iEvent], iProj, axis, color="red", label="true")         
+        plotEndpoints(labels[iEvent:iEvent+1], iProj, axis, color="red", label="true")         
         
         rois = find_ROIs(data, thr=0.1, size_thr=10)
         #plot_ROIs(rois, axis)
         sy, sx = rois[0]['slice']
         
         if model!=None:
-            modelResponse = model(projections)[iEvent]
+            modelResponse = model(projections)[iEvent:iEvent+1]
             plotEndpoints(modelResponse, iProj, axis, color="blue", label="NN")         
         axis.set_xlabel("time bin")
         axis.set_ylabel(projNames[iProj]+" strip")

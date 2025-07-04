@@ -5,30 +5,26 @@ import pandas as pd
 import numpy as np
 ###################################################
 ###################################################
-df = pd.DataFrame(columns=["GEN_StartPosU", "GEN_StartPosV", "GEN_StartPosW", "GEN_StartPosT",
-                           "GEN_StopPosU", "GEN_StopPosV", "GEN_StopPosW", "GEN_StopPosT",
-                           "RECO_StartPosU", "RECO_StartPosV", "RECO_StartPosW", "RECO_StartPosT",
-                           "RECO_StopPosU", "RECO_StopPosV", "RECO_StopPosW", "RECO_StopPosT",
-                            ])
+columnsXYZ = ["xVtx", "xAlpha", "xCarbon", "yVtx", "yAlpha", "yCarbon", "zVtx", "zAlpha", "zCarbon"]
 
-df = pd.DataFrame(columns=["GEN_StartPosX", "GEN_StartPosY", "GEN_StartPosZ",
-                           "GEN_StopPosX_Part1", "GEN_StopPosY_Part1", "GEN_StopPosZ_Part1",
-                           "GEN_StopPosX_Part2", "GEN_StopPosY_Part2", "GEN_StopPosZ_Part2",
-                           #
-                           "RECO_StartPosX", "RECO_StartPosY", "RECO_StartPosZ", 
-                           "RECO_StopPosX_Part1", "RECO_StopPosY_Part1", "RECO_StopPosZ_Part1",
-                           "RECO_StopPosX_Part2", "RECO_StopPosY_Part2", "RECO_StopPosZ_Part2",
-                            ])
-                                                       
+columnsUVWT = ["uVtx", "vVtx", "wVtx", "tVtx",
+                "uAlpha", "vAlpha", "wAlpha", "tAlpha",
+                "uCarbon", "vCarbon", "wCarbon", "tCarbon"]                                                     
+###################################################
+###################################################
+def getEmptyPandasDataset(columns):
+    """
+    Returns an empty pandas DataFrame with the columns for XYZ and UVWT coordinates.
+    """
+    return pd.DataFrame(columns=[col + "_sim" for col in columns] + [col + "_reco" for col in columns])
+
 ###################################################
 ###################################################
 def fillPandasDataset(aBatch, df, model):   
-    
-    scale = 100
-    
+        
     features = aBatch[0]
-    labels = aBatch[1]*scale
-    modelAnswer = model(features)*scale
+    labels = aBatch[1]
+    modelAnswer = model(features)
     
     batch_df = pd.DataFrame(data=np.column_stack((labels,modelAnswer)),
                             columns = df.columns)
@@ -36,7 +32,18 @@ def fillPandasDataset(aBatch, df, model):
     return pd.concat((df, batch_df), ignore_index=True).astype('float32')
 ###################################################
 ###################################################
-def XYZtoUVWT(data):
+def XYZtoUVWT_event(data):
+
+    uvwt_vx =  XYZtoUVWT_single(data[:,:,0])  
+    uvwt_alpha =  XYZtoUVWT_single(data[:,:,1])
+    uvwt_carbon =  XYZtoUVWT_single(data[:,:,2])
+
+    uvwt = tf.concat((uvwt_vx, uvwt_alpha, uvwt_carbon), axis=1)
+    return uvwt
+###################################################
+###################################################
+def XYZtoUVWT_single(data):
+
     referencePoint = np.array([-138.9971, 98.25])
     phi = np.pi/6.0
     stripPitch = 1.5
@@ -44,14 +51,15 @@ def XYZtoUVWT(data):
     driftVelocity = 6.46 # mm/us 4.05
     f = 1.0/samplingFrequency*driftVelocity
     triggerDelay = 5 #time bins
-    u = -(data[1]-99.75)
-    v = (data[0]-referencePoint[0])*np.cos(phi) - (data[1]-referencePoint[1])*np.sin(phi)
-    w = (data[0]-referencePoint[0])*np.cos(-phi) - (data[1]-referencePoint[1])*np.sin(-phi) + 98.75
-    t = data[2]/f + 256 + triggerDelay
+    u = -(data[:,1]-99.75)
+    v = (data[:,0]-referencePoint[0])*np.cos(phi) - (data[:,1]-referencePoint[1])*np.sin(phi)
+    w = (data[:,0]-referencePoint[0])*np.cos(-phi) - (data[:,1]-referencePoint[1])*np.sin(-phi) + 98.75
+    t = data[:,2]/f + 256 + triggerDelay
     u/=stripPitch
     v/=stripPitch
     w/=stripPitch
-    return np.array((u,v,w,t)).T
+
+    return tf.stack((u,v,w,t), axis=1)
 ###################################################
 ###################################################
 def getOpeningAngleCos(df, algoType):
