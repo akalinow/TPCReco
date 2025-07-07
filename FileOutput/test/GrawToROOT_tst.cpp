@@ -59,7 +59,8 @@ public:
     char *argv[] = {(char*)"ConfigManager_tst",
 		    (char*)"--meta.configJson",const_cast<char *>(testJSON.data()),
         (char*)"--output.fileName",const_cast<char *>(tempDirWithFilePrefix.data()),
-        (char*)"--input.readNEvents",const_cast<char *>("3")
+        (char*)"--output.disabledBranches",const_cast<char *>("[]"),
+        (char*)"--input.readNEvents",const_cast<char *>("3"),
       };
 
     ConfigManager cm;

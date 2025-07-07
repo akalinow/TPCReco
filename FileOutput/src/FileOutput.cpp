@@ -97,7 +97,9 @@ void FileOutput::close(){
   }
   myOutputFilePtr->cd();
   for(auto aTree: myOutputTrees) {
-    if(aTree.second) aTree.second->Write("", TObject::kOverwrite);
+    if(aTree.second) {
+      aTree.second->Write("", TObject::kOverwrite);
+    }
   }
   myOutputFilePtr->Close();
 }
@@ -111,6 +113,7 @@ void FileOutput::update(std::shared_ptr<EventSourceBase> aEventSource) {
   auto mcEventSource = std::dynamic_pointer_cast<EventSourceMC>(aEventSource);
   if(mcEventSource) *mySimEventPtr = mcEventSource->getGeneratedTrack();
 
+  /*
   ///Temporary to be moved to configuration as filter
   if(mySimEventPtr->getSegments().size() !=2 ||
      myRecoEventPtr->getSegments().size() !=2) {
@@ -120,7 +123,7 @@ void FileOutput::update(std::shared_ptr<EventSourceBase> aEventSource) {
               << myRecoEventPtr->getSegments().size() << " reconstructed segments."
               << std::endl;
     return;
-  }
+  } */
   /////////////////////////////////////////////////////////
 
   for(auto aTree: myOutputTrees) {
