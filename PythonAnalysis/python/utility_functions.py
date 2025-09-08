@@ -5,11 +5,11 @@ import pandas as pd
 import numpy as np
 ###################################################
 ###################################################
-columnsXYZ = ["xVtx", "xAlpha", "xCarbon", "yVtx", "yAlpha", "yCarbon", "zVtx", "zAlpha", "zCarbon"]
+columnsXYZ = np.array(["xVtx", "xAlpha", "xCarbon", "yVtx", "yAlpha", "yCarbon", "zVtx", "zAlpha", "zCarbon"])
 
-columnsUVWT = ["uVtx", "vVtx", "wVtx", "tVtx",
+columnsUVWT = np.array(["uVtx", "vVtx", "wVtx", "tVtx",
                 "uAlpha", "vAlpha", "wAlpha", "tAlpha",
-                "uCarbon", "vCarbon", "wCarbon", "tCarbon"]                                                     
+                "uCarbon", "vCarbon", "wCarbon", "tCarbon"])                                                     
 ###################################################
 ###################################################
 def getEmptyPandasDataset(columns):

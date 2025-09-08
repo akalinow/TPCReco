@@ -29,11 +29,17 @@ plt.rcParams.update(params)
 def plotEndpoints(data, iProj, axis, label, color):
 
         # 3 tracks 3 endpoints sometimes given as a single vector
-        # and sometimes as 3x3 matrix                
-        if len(data.shape)==2:
-            data = tf.reshape(data, (-1, 3, 3))
+        # and sometimes as 3x3 matrix    
 
-        uvwt =  utils.XYZtoUVWT_event(data)
+        if len(data.shape)==2 and data.shape[1]==12:
+            uvwt = data
+        elif len(data.shape)==2 and data.shape[1]==4:
+            uvwt = tf.concat((data, tf.zeros((data.shape[0], 8))), axis=1)
+        else:  
+            if len(data.shape)==2:
+                data = tf.reshape(data, (-1, 3, 3))
+
+            uvwt =  utils.XYZtoUVWT_event(data)
 
         vertex = uvwt[0,0:4]
         axis.plot(vertex[3], vertex[iProj], marker='.', markersize=20, alpha=0.8, color=color, label=label)
@@ -294,13 +300,13 @@ def plotLengthPullEvolution(df):
     plt.savefig("fig_png/length_pull_vs_gen.png", bbox_inches="tight")
 ###################################################
 ###################################################
-def plotEndPointRes(df, edge):
+def plotEndPointRes(df, edge, coordinates):
     
     fig, axes = plt.subplots(2,2, figsize=(8,8))
 
-    bins = np.linspace(-5,5,31)
+    bins = np.linspace(-10,10,41)
 
-    for index, coordName in enumerate(["x", "y", "z"]):
+    for index, coordName in enumerate(coordinates):
             axis = axes.flatten()[index]  
             varName1 = coordName+edge+"_reco"
             varName2 = coordName+edge+"_sim"
@@ -309,7 +315,10 @@ def plotEndPointRes(df, edge):
             std = (df[varName2] - df[varName1]).std()
             label = "$\mu_{} = {:.3f}$\n$\sigma_{} = {:.2f}$".format(coordName, mean, coordName, std)
             (df[varName2] - df[varName1]).hist(ax=axis, bins=bins, label=label)
-            axis.set_xlabel(coordName+" [mm]")
+            if len(coordinates)==3:
+                axis.set_xlabel(coordName+" [mm]")
+            else:
+                axis.set_xlabel(coordName+" [strip]")
             axis.set_ylabel("")  
             axis.grid(False)
             axis.legend()
@@ -324,7 +333,8 @@ def plotEndPointRes(df, edge):
         fig.suptitle(edge+" resolution")    
     else:
         fig.suptitle(edge+" endpoint resolution")  
-    axes[1,1].set_visible(False)        
+    if len(coordinates)==3:    
+        axes[1,1].set_visible(False)        
     plt.subplots_adjust(bottom=0.05, left=0.05, right=0.95, hspace=0.3, wspace=0.3) 
     plt.savefig("fig_png/"+edge+"_resolution.png", bbox_inches="tight")          
 ###################################################

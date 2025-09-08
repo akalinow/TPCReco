@@ -112,10 +112,11 @@ void FileOutput::update(std::shared_ptr<EventSourceBase> aEventSource) {
   *myRecoEventPtr = *aEventSource->getRecoEvent();
   auto mcEventSource = std::dynamic_pointer_cast<EventSourceMC>(aEventSource);
   if(mcEventSource) *mySimEventPtr = mcEventSource->getGeneratedTrack();
+  else *mySimEventPtr = *aEventSource->getRecoEvent(); //Hack by AK to avoid troubles in ROOT->Python step
 
-  /*
-  ///Temporary to be moved to configuration as filter
-  if(mySimEventPtr->getSegments().size() !=2 ||
+  
+  ///Temporary. To be moved to configuration as filter
+  if( (mcEventSource && mySimEventPtr->getSegments().size() !=2) ||
      myRecoEventPtr->getSegments().size() !=2) {
     std::cout << KRED << "FileOutput::update" << RST
               << " skipping event with "
@@ -123,7 +124,7 @@ void FileOutput::update(std::shared_ptr<EventSourceBase> aEventSource) {
               << myRecoEventPtr->getSegments().size() << " reconstructed segments."
               << std::endl;
     return;
-  } */
+  } 
   /////////////////////////////////////////////////////////
 
   for(auto aTree: myOutputTrees) {
