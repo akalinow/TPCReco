@@ -5,7 +5,9 @@
     "GeantSim",
     "TriggerSimulator",
     "TrackTruncator",
-    "TPCDigitizerSRC"
+    "TPCDigitizerSRC",
+    "Track3DBuilder",
+    "EventFileExporter"
   ],
   "GeometryConfig": "@CMAKE_INSTALL_PREFIX@/resources/geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat",
   "ModuleConfiguration": {
@@ -34,7 +36,7 @@
             "distribution": "EProviderGaus",
             "parameters": {
               "meanE": 10,
-              "sigmaE": 3
+              "sigmaE": 5
             }
           }
         },
@@ -44,7 +46,7 @@
             "parameters": {
               "meanX": 0.0,
               "meanY": 0.0,
-              "flatR": 5.0,
+              "flatR": 0.0,
               "sigma": 1
             }
           },
@@ -89,12 +91,7 @@
         "PEventTPC",
         "Track3D"
       ],
-      "DisabledBranches": [
-        "### UNCOMMENT TO DISABLE BRANCH ### TPCData.tracks.hits",
-        "TPCData.myChargeArray*",
-        "TPCData.myChargeMap",
-        "### UNCOMMENT TO DISABLE BRANCH ### TPCRecoData.mySegments.myRecHits"
-      ]
+      "DisabledBranches": []
     },
     "GeantSim": {
       "EnableAlphaStraggling": true,	  
