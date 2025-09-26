@@ -53,7 +53,7 @@ public:
 
     // load the graw file
     std::string testJSON = std::string(std::getenv("HOME"))+"/.tpcreco/config/test.json";
-    std::string tempDirWithFilePrefix = directory+"PEventTPC";
+    std::string tempDirWithFilePrefix = directory+"PEventTPC.root";
  
     int argc = 7;
     char *argv[] = {(char*)"ConfigManager_tst",
@@ -76,16 +76,15 @@ public:
     myEventSource->loadFileEntry(0);
 
     // load the root file
-    std::string grawFileName = myConfig.get<std::string>("input.dataFile","");
-    rootFileName = directory+InputFileHelper::makeOutputFileName(grawFileName, "PEventTPC");
     rootTreeName = "TPCData";
+    rootFileName = tempDirWithFilePrefix;
     rootfile = new TFile(rootFileName.c_str());
     tree = (TTree*)rootfile->Get(rootTreeName.c_str());
     tree->SetBranchAddress("Event", &rootEventPtr);
     tree->GetEntry(0);
   }
 
-  static void TearDownTestSuite() { fs::remove_all(directory); }
+  static void TearDownTestSuite() {fs::remove_all(directory);}
 };
 
 std::string GrawToROOTTest::directory = "";

@@ -67,8 +67,8 @@ void FileOutput::init(boost::property_tree::ptree aConfig){
           std::cout<<"\t disabling branch: "<<tree_branchName<<std::endl;
           myOutputTrees[treeName]->SetBranchStatus(branchName.c_str(), false);
       }
+    }
   }
-}
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -113,19 +113,6 @@ void FileOutput::update(std::shared_ptr<EventSourceBase> aEventSource) {
   auto mcEventSource = std::dynamic_pointer_cast<EventSourceMC>(aEventSource);
   if(mcEventSource) *mySimEventPtr = mcEventSource->getGeneratedTrack();
   else *mySimEventPtr = *aEventSource->getRecoEvent(); //Hack by AK to avoid troubles in ROOT->Python step
-
-  
-  ///Temporary. To be moved to configuration as filter
-  if( (mcEventSource && mySimEventPtr->getSegments().size() !=2) ||
-     myRecoEventPtr->getSegments().size() !=2) {
-    std::cout << KRED << "FileOutput::update" << RST
-              << " skipping event with "
-              << mySimEventPtr->getSegments().size() << " simulated segments and "
-              << myRecoEventPtr->getSegments().size() << " reconstructed segments."
-              << std::endl;
-    return;
-  } 
-  /////////////////////////////////////////////////////////
 
   for(auto aTree: myOutputTrees) {
     if (aTree.second==nullptr) {

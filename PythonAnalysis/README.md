@@ -2,15 +2,23 @@
 
 ### Create ROOT file with PEventTPC data
 
-Create ROOT file with PEventTPC data, and a plain TTree for quick analysis 
+Create ROOT file with PEventTPC data, reco data. 
 with 1000 events generated from the MC simulation.
 
 ```Bash
 cd resources
-../bin/makeMCTrackTree ../config/config_GUI_MC.json \
+../bin/tpcWriter ../config/config_Writer_MC.json \
 --input.controllerConfigPath=../config/montecarlo_2prong_gun_PEventTPC.json \
 --input.readNEvents=1000
 ```
+
+Create ROOT similar ROOT file for the real data:
+
+```Bash
+cd resources
+../bin/tpcWriter ../config/config_Writer_Data.json 
+```
+
 
 ### Setup for ML analysis
 
@@ -32,7 +40,13 @@ where `/scratch` is a path on your system where you have read/write access.
 
 ### Convert ROOT to TFRecord
 
+This step has to be executed only once per dataset.
+
 Run the [ROOT_to_TFRecord.ipynb](ipynb/ROOT_to_TFRecord.ipynb) to convert the ROOT file to TFRecord format.
+
+### Evaluate reconstruction implemented in TPCReco.
+
+Run the [ELITPC_analysis.ipynb](ipynb/ELITPC_analysis.ipynb) to evaluate the trained model.
 
 ### Train a model regressing from U, V, W projections to 3D vertex and end points.
 
@@ -42,8 +56,3 @@ Run the [WAWTPC_ML.ipynb](ipynb/WAWTPC_ML.ipynb).
 ### Train a model regressing from U, V, W projections to 2D vertex and end points.
 
 Run the [WAWTPC_ML_UVWT.ipynb](ipynb/WAWTPC_ML.ipynb).
-
-
-### Evaluate the model
-
-Run the [ELITPC_analysis.ipynb](ipynb/ELITPC_analysis.ipynb) to evaluate the trained model.

@@ -25,8 +25,8 @@ simEventFields = [
 # with the given name, which is not what we want.
 #################################
 recoEventFields = [
-    "mySegments.myStart",
-    "mySegments.myEnd",
+    "mySegments/mySegments.myStart",
+    "mySegments/mySegments.myEnd",
 ]
 ################################
 ################################
@@ -74,7 +74,7 @@ def convertROOT(rootFiles, outputDir, fields=simEventFields):
         datasetGenerator,
         output_types=(tf.float32, tf.float32))
 
-    # remove batching inducced by uproot
+    # remove batching induced by uproot
     dataset = dataset.unbatch() 
     dataset.save(outputDir, compression="GZIP")
 #################################

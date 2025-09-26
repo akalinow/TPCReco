@@ -6,8 +6,7 @@
     "TriggerSimulator",
     "TrackTruncator",
     "TPCDigitizerSRC",
-    "Track3DBuilder",
-    "EventFileExporter"
+    "Track3DBuilder"
   ],
   "GeometryConfig": "@CMAKE_INSTALL_PREFIX@/resources/geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat",
   "ModuleConfiguration": {
@@ -35,7 +34,7 @@
           "GammaEnergy": {
             "distribution": "EProviderGaus",
             "parameters": {
-              "meanE": 10,
+              "meanE":  5,
               "sigmaE": 5
             }
           }

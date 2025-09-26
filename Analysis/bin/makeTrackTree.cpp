@@ -159,7 +159,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     if(previousEventIdx==-1) {
       myEventSource->loadFileEntry(0);
       if(myEventSource->getEventFilter().isEnabled() &&
-	 !myEventSource->getEventFilter().pass(*myEventSource->getCurrentEvent())) {
+	 !myEventSource->getEventFilter().pass(*myEventSource)) {
 	readNext = true;
       }
     }

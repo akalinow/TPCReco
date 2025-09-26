@@ -98,8 +98,7 @@ std::shared_ptr<EventTPC> EventSourceBase::getNextEventLoop(){
     currentEventIdx=getCurrentEvent()->GetEventInfo().GetEventId();
     getNextEvent();
   }
-  while(eventFilter.isEnabled() &&
-	!eventFilter.pass(*getCurrentEvent()) &&
+  while(eventFilter.isEnabled() && !eventFilter.pass(*this) &&
 	currentEventIdx!=getCurrentEvent()->GetEventInfo().GetEventId());
   return getCurrentEvent();
 }
@@ -111,8 +110,7 @@ std::shared_ptr<EventTPC> EventSourceBase::getPreviousEventLoop(){
     currentEventIdx=getCurrentEvent()->GetEventInfo().GetEventId();
     getPreviousEvent();
   }
-  while(eventFilter.isEnabled() &&
-	!eventFilter.pass(*getCurrentEvent()) &&
+  while(eventFilter.isEnabled() && !eventFilter.pass(*this) &&
 	currentEventIdx!=getCurrentEvent()->GetEventInfo().GetEventId());
   return getCurrentEvent();
 }

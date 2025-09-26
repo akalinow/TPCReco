@@ -122,7 +122,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     myEventSource->loadFileEntry(iEntry);   
 
     if(myEventSource->getEventFilter().isEnabled() &&
-       !myEventSource->getEventFilter().pass(*myEventSource->getCurrentEvent())) continue; // skip this event
+       !myEventSource->getEventFilter().pass(*myEventSource)) continue; // skip this event
 
     *myEventInfo = myEventSource->getCurrentEvent()->GetEventInfo();    
     myTkBuilder.setEvent(myEventSource->getCurrentEvent());
@@ -143,7 +143,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
 
     track_data.frameId = iEntry;
     track_data.eventId = eventId;
-    track_data.eventReactionType = reactionTypeToFloat(myEventSource->GetGeneratedReactiontType());
+    track_data.eventReactionType = reactionTypeToFloat(myEventSource->GetGeneratedReactionType());
 
     track_data.alphaRangeGen =  aTrack3DGenAlpha.getLength();    
     track_data.alphaEnergyGen = track_data.alphaRangeGen>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA, track_data.alphaRangeGen):0.0;

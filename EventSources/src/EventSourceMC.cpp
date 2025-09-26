@@ -59,7 +59,7 @@ unsigned long int EventSourceMC::numberOfEvents() const {
     return nEvents;
 }
 
-reaction_type EventSourceMC::GetGeneratedReactiontType(){
+reaction_type EventSourceMC::GetGeneratedReactionType(){
     return  myCurrentSimEvent -> GetReactionType();
 }
 

@@ -12,9 +12,7 @@ public:
   }
   void setConditions(const boost::property_tree::ptree &conditions);
   void setEnabled(bool enabled) { this->enabled = enabled; }
-  void setDisabled(bool disabled) { enabled = !disabled; }
   bool isEnabled() const { return enabled; }
-  bool isDisabled() const { return !enabled; }
 
 private:
   bool enabled = false;
@@ -31,8 +29,17 @@ void EventFilter<Event>::setConditions(
 
   filters.clear();
   auto node = nodeIt->second;
-
   enabled = node.get("enabled", false);
+
+
+  auto prongs = nodeIt->second.get_child_optional("recoProngs");
+  if (prongs) {
+    tpcreco::filters::ProngInSet set;
+    for (const auto &index : *prongs) {
+      set.insert(index.second.get_value<size_t>());
+    }
+    filters.push_back(std::move(set));
+  }
 
   auto value = node.get_optional<double>("maxChargeUpperBound");
   if (value) {
@@ -56,7 +63,7 @@ void EventFilter<Event>::setConditions(
 
   auto events = nodeIt->second.get_child_optional("events");
   if (events) {
-    tpcreco::filters::IndexInSet set;
+    tpcreco::filters::EventIdInSet set;
     for (const auto &index : *events) {
       set.insert(index.second.get_value<size_t>());
     }
