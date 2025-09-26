@@ -215,6 +215,12 @@
         "defaultValue": [ ],
         "description": "List of event IDs to be accepted from the input file(s). Empty vector has no effect (default).\nType: vector<unsigned int>"
     },
+    "recoProngs":{
+        "group": "eventFilter",
+        "type" : "vector<int>",
+        "defaultValue": [ ],
+        "description": "List of allowed number of reconstructed prongs (tracks) to accept an event. Empty vector has no effect (default).\nType: vector<unsigned int>"
+    },
     "pressure":{
         "group": "conditions",
         "type" : "float",
