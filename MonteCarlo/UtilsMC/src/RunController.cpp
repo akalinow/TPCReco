@@ -4,6 +4,7 @@
 #include <boost/lexical_cast.hpp>
 #include "TPCReco/VModule.h"
 #include "TPCReco/ConfigManager.h"
+#include "TPCReco/colorText.h"
 
 using namespace std;
 using namespace utl;
@@ -118,7 +119,7 @@ namespace fwk {
         }
         const double time = fRealTimeStopwatch.Stop();
         ostringstream info;
-        info << "Total real time of the run: " << time / second << " sec.";
+        info << KBLU<< "Total real time of the run: " << RST << time / second <<KBLU<< " sec."<<RST;
         std::cout << info.str() << std::endl;
 
         if (!failureMessage.str().empty()) {
