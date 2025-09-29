@@ -13,9 +13,6 @@ namespace fwk {
     class RunController {
 
     public:
-        enum EBreakStatus {
-            eNoBreak, eBreak
-        };
 
         RunController();
         virtual ~RunController();
@@ -55,7 +52,7 @@ namespace fwk {
         bool IsTiming() const { return fTiming; }
 
         virtual void Init(const boost::property_tree::ptree &config);
-        virtual EBreakStatus RunSingle();
+        virtual fwk::VModule::EResultFlag RunSingle();
         virtual void RunFull();
         virtual void Finish();
 

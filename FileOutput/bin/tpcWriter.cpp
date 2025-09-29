@@ -33,16 +33,14 @@ int main(int argc, char** argv) {
 		}
 		myEventSource->loadFileEntry(iEntry);
 
-		if(myEventSource->getEventFilter().isEnabled() &&
-		!myEventSource->getEventFilter().pass(*myEventSource)) continue; // skip this event
+		if(!myEventSource->getEventFilter().pass(*myEventSource)) continue; 
 
 		myTkBuilder.setEvent(myEventSource->getCurrentEvent());
 		myTkBuilder.reconstruct();
 		myEventSource->setRecoEvent(myTkBuilder.getTrack3D(0));
 
 		///check filter again, when the reco event is available
-		if(myEventSource->getEventFilter().isEnabled() &&
-		!myEventSource->getEventFilter().pass(*myEventSource)) continue; 
+		if(!myEventSource->getEventFilter().pass(*myEventSource)) continue; 
 
 		myFileOutput.update(myEventSource); 
 	}

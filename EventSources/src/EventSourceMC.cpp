@@ -83,7 +83,7 @@ const Track3D & EventSourceMC::getGeneratedTrack(){
 }
 
 void EventSourceMC::generateNextEvent(){
-    myRunController -> RunSingle();
+    while(myRunController -> RunSingle()!=fwk::VModule::eSuccess) {}
     myCurrentPEvent = std::make_shared<PEventTPC>(myRunController -> getCurrentPEventTPC());
     myCurrentSimEvent = std::make_shared<SimEvent>(myRunController -> getCurrentSimEvent());
     fillEventTPC();

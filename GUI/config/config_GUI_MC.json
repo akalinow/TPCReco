@@ -4,7 +4,8 @@
         "controllerConfigPath": "../config/montecarlo_O16_E1E2.json",
         "geometryFile": "geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat",    
         "resourcesPath":"./",
-        "readNEvents": 100
+        "readNEvents": 100,
+        "fromGenerator": true
     },
     "conditions": {
 	"pressure": 190.0,

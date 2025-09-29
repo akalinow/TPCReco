@@ -34,7 +34,7 @@ public:
 
   std::shared_ptr<EventTPC> getPreviousEvent();
 
-  reaction_type GetGeneratedReactiontType();
+  reaction_type GetGeneratedReactionType();
 
   const Track3D & getGeneratedTrack();
 

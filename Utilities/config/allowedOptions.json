@@ -59,6 +59,12 @@
         "defaultValue": true,
         "description": "Switch defining whether there is a single GRAW input file per ASAD board.\nType: bool"
     },
+    "fromGenerator":{
+        "group": "input",
+        "type": "bool",
+        "defaultValue": false,
+        "description": "Switch defining whether input data are from Monte Carlo event generator (true) or from real detector (false).\nType: bool"
+    },
     "fileName":{
         "group": "output",
         "type": "string",
@@ -219,7 +225,7 @@
         "group": "eventFilter",
         "type" : "vector<int>",
         "defaultValue": [ ],
-        "description": "List of allowed number of reconstructed prongs (tracks) to accept an event. Empty vector has no effect (default).\nType: vector<unsigned int>"
+        "description": "List of allowhttps://pdg.lbl.gov/2025/reviews/rpp2024-rev-passage-particles-matter.pdfed number of reconstructed prongs (tracks) to accept an event. Empty vector has no effect (default).\nType: vector<unsigned int>"
     },
     "pressure":{
         "group": "conditions",

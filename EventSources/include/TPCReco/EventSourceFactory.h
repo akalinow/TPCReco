@@ -63,12 +63,12 @@ namespace EventSourceFactory {
         bool all_graw=false;
 		#endif
 
+		bool fromGenerator = myConfig.get<bool>("input.fromGenerator");
 		for (auto filePath : dataFilePaths) {
-			if (!boost::filesystem::exists(filePath) && 
-				  filePath.string().find("_MC_") == std::string::npos) {
+			if (!boost::filesystem::exists(filePath) && !fromGenerator) {
 				std::cerr << KRED << "Invalid data path. No such file or directory: " << RST << filePath << _endl_;
 				exit(1);
-			}
+				}
 #ifdef WITH_GET
 			all_graw = boost::filesystem::is_regular_file(filePath) && filePath.string().find(".graw") != std::string::npos;
 #endif
@@ -82,14 +82,12 @@ namespace EventSourceFactory {
 			EventSourceROOT* aRootEventSrc = dynamic_cast<EventSourceROOT*>(myEventSource.get());
 			aRootEventSrc->configurePedestal(myConfig.find("pedestal")->second);
 		}
-		else if (dataFileVec.size() == 1 && dataFileName.find("_MC_") != std::string::npos) {
+		else if (dataFileVec.size() == 1 && fromGenerator) {
 			std::string controllerConfigPath;
 			unsigned long int nEvents;
-			std::cout << "MC file detected." << std::endl;
+			std::cout << KBLU << "Data from MC generator." << RST << std::endl;
 
 			controllerConfigPath = myConfig.get<std::string>("input.controllerConfigPath");
-
-			
 			nEvents = myConfig.get<unsigned long int>("input.readNEvents");
 
 			boost::property_tree::ptree controllerConfig;

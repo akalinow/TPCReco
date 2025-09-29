@@ -2,6 +2,7 @@
 #define TPCRECO_UTILITIES_REQUIREMENTS_COLLECTION_H_
 #include <algorithm>
 #include <vector>
+
 template <class T> class RequirementsCollection {
 public:
   RequirementsCollection() = default;

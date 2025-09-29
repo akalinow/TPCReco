@@ -45,8 +45,7 @@ namespace fwk {
         InitModules(config.get_child("ModuleConfiguration"));
     }
 
-
-    RunController::EBreakStatus
+    fwk::VModule::EResultFlag
     RunController::RunSingle() {
         fwk::VModule::EResultFlag res;
         for (const auto &m: fModuleSequence) {
@@ -57,14 +56,12 @@ namespace fwk {
             if (res != fwk::VModule::eSuccess)
                 break;
         }
-        if (res == fwk::VModule::eSuccess || res == fwk::VModule::eContinueLoop)
-            return eNoBreak;
-        return eBreak;
+        return res;
     }
 
     void
     RunController::RunFull() {
-        while (RunSingle() == eNoBreak);
+        while (RunSingle() != fwk::VModule::eFailure);
     }
 
 

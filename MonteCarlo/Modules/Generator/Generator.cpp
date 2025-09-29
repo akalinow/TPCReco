@@ -1,5 +1,6 @@
 #include "Generator.h"
 #include "TPCReco/ConfigManager.h"
+#include "TPCReco/colorText.h"
 
 fwk::VModule::EResultFlag Generator::Init(boost::property_tree::ptree config) {
     evGen=std::make_unique<EventGenerator>(config.get_child("EventGenerator"));
@@ -11,6 +12,7 @@ fwk::VModule::EResultFlag Generator::Process(ModuleExchangeSpace &event) {
 
     //Generate new event:
     event.simEvt=evGen->GenerateEvent();
+    nEventsTried++;
 
     //skip empty events, the rest of the ModuleSequence will be skipped:
     if(event.simEvt.GetTracks().empty()) return fwk::VModule::eContinueLoop;
@@ -23,6 +25,7 @@ fwk::VModule::EResultFlag Generator::Process(ModuleExchangeSpace &event) {
 }
 
 fwk::VModule::EResultFlag Generator::Finish() {
-    std::cout<<"Generator module generated "<<nEventsGenerated<<" non empty events."<<std::endl;
+    std::cout<<KBLU<<"Generator module tried "<<RST<<nEventsTried <<KBLU<<" and generated "<<RST
+             <<nEventsGenerated<<KBLU<<" non empty events. Eff. = "<<RST<< (double)nEventsGenerated/nEventsTried <<std::endl;
     return fwk::VModule::eSuccess;
 }
