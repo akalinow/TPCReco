@@ -25,13 +25,13 @@
 #endif // M_PI
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TrackBuilder::TrackBuilder() {
+TrackBuilder::TrackBuilder(boost::property_tree::ptree& myConfig) {
 
-  //  nAccumulatorRhoBins = 50;//FIX ME move to configuarable
-  //  nAccumulatorPhiBins = 2.0*M_PI/0.025;//FIX ME move to configuarable
-  //  nAccumulatorPhiBins = 2.0*M_PI/0.1;//FIX ME move to configuarable
+  //  nAccumulatorRhoBins = 50;//FIX ME move to configurable
+  //  nAccumulatorPhiBins = 2.0*M_PI/0.025;//FIX ME move to configurable
+  //  nAccumulatorPhiBins = 2.0*M_PI/0.1;//FIX ME move to configurable
   nAccumulatorRhoBins = 200; //FIX ME large enough to keep RHO bin size below 0.5*STRIP_PITCH
-  nAccumulatorPhiBins = 400; //FIX ME move to configuarable
+  nAccumulatorPhiBins = 400; //FIX ME move to configurable
 
   myHistoInitialized = false;
   myAccumulators.resize(3);
@@ -55,7 +55,7 @@ TrackBuilder::TrackBuilder() {
   myHoughOffset.resize(3);
   for(auto &offset: myHoughOffset) offset.SetXYZ(0,0,0);
 
-  setPressure(myPressure);
+  setPressure(myConfig.get<double>("conditions.pressure"));
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -268,7 +268,7 @@ const TH2D & TrackBuilder::getRecHits2D(int iDir) const{return myRecHits[iDir];}
 const TH1D & TrackBuilder::getRecHitsTimeProjection() const{return hTimeProjection;}
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-const TH2D & TrackBuilder::getHoughtTransform(int iDir) const{return myAccumulators[iDir];  }
+const TH2D & TrackBuilder::getHoughTransform(int iDir) const{return myAccumulators[iDir];  }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 const TrackSegment2D & TrackBuilder::getSegment2D(int iDir, unsigned int iTrack) const{

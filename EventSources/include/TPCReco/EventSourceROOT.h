@@ -26,12 +26,6 @@ public:
 
   void loadDataFile(const std::string & fileName);
 
-  std::shared_ptr<EventTPC> getNextEvent();
-
-  std::shared_ptr<EventTPC> getPreviousEvent();
-
-  std::shared_ptr<EventTPC> getLastEvent();
-
   unsigned long int numberOfEvents() const;
 
   void setRemovePedestal(bool aFlag);
@@ -43,6 +37,9 @@ public:
   static inline event_type getSourceType() { return event_type::EventSourceROOT; }
   
  private:
+
+  std::shared_ptr<EventTPC> getNextEvent();
+  std::shared_ptr<EventTPC> getPreviousEvent();
 
   PEventTPC *aPtr; // for TBranch
   eventraw::EventInfo *aPtrEventInfo; // for TBranch

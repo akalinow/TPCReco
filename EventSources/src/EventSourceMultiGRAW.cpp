@@ -43,7 +43,7 @@ std::shared_ptr<EventTPC> EventSourceMultiGRAW::getNextEvent(){
 
     // use only {ASAD=0, COBO=0} for frame counting purpose
     if( ASAD_idx==0 && COBO_idx==0) {
-      if(lastEventFrame<nEntries-1) ++lastEventFrame;
+      if(lastEventFrame<nEvents-1) ++lastEventFrame;
       loadFileEntry(lastEventFrame);
       break;
     }
@@ -130,7 +130,8 @@ void EventSourceMultiGRAW::loadDataFileList(const std::set<std::string> & fileNa
     myFileList.push_back(myFile);
     
     unsigned int nFrames = myFile->GetGrawFramesNumber();
-    if(streamIndex==0 || nFrames<nEntries) nEntries=nFrames; // take the lowest number of frames
+    if(streamIndex==0 || nFrames<nEvents) nEvents=nFrames; // take the lowest number of frames
+    if(nEventsToRead<0) nEventsToRead = nEvents;
 		     
     myFilePathList.push_back(fileName);
 #ifdef EVENTSOURCEGRAW_NEXT_FILE_DISABLE  
@@ -145,7 +146,7 @@ void EventSourceMultiGRAW::loadDataFileList(const std::set<std::string> & fileNa
   std::cout<<__FUNCTION__<<": Number of GRAW streams: "<<myFramesMapList.size()
 	   <<". Expected: "<<GRAW_EVENT_FRAGMENTS
 	   <<std::endl;
-  std::cout<<__FUNCTION__<<": Number of entries: "<<nEntries
+  std::cout<<__FUNCTION__<<": Number of events: "<<nEvents
 	   <<std::endl;
 #endif
 }
@@ -174,9 +175,9 @@ bool EventSourceMultiGRAW::loadGrawFrame(unsigned int iEntry, bool readFullEvent
   std::cout.setstate(std::ios_base::failbit);
 #ifndef EVENTSOURCEGRAW_NEXT_FILE_DISABLE  
 
-  if(iEntry>=nEntries){
+  if(iEntry>=nEvents){
     tmpFilePath = myNextFilePathList[streamIndex];
-    iEntry -= nEntries;
+    iEntry -= nEvents;
   }
 
   
@@ -188,7 +189,7 @@ bool EventSourceMultiGRAW::loadGrawFrame(unsigned int iEntry, bool readFullEvent
 #else
   bool dataFrameRead = false;
 
-  if(iEntry<nEntries) {
+  if(iEntry<nEvents) {
     //  dataFrameRead = myFrameLoader.getGrawFrame(tmpFilePath, iEntry+1, myDataFrameList[streamIndex], readFullEvent);///FIXME getGrawFrame counts frames from 1 (WRRR!)
     dataFrameRead = myFrameLoader.getGrawFrame(tmpFilePath, iEntry+1, myDataFrame, readFullEvent); // HOTFIX!!!!! => fills myDataFrame
     ///FIXME getGrawFrame counts frames from 1 (WRRR!)
@@ -267,7 +268,7 @@ void EventSourceMultiGRAW::loadEventId(unsigned long int eventId){
     if(it2!=myFramesMapList[streamIndex].end()) {
       auto iEntry=it2->second+(eventId-currentEventId); // this works in NGRAW mode
 
-      if(iEntry<0 || iEntry>=nEntries) {
+      if(iEntry<0 || iEntry>=nEvents) {
 	std::cout <<__FUNCTION__<<KRED<<": Event id: "<<RST<<eventId<<KBLU<<" seems to be out of range for the GRAW stream id: "
 		  <<RST<<streamIndex<<std::endl;
       } else {
@@ -353,19 +354,19 @@ void EventSourceMultiGRAW::loadFileEntry(unsigned long int iEntry){
       if(myFramesMapList[streamIndex].find(matchEventId)!=myFramesMapList[streamIndex].end()) continue; // break;
       
       // strategy 2: scan all remaining frames for matched event ID
-      //      for(unsigned long int iEntry2=0; iEntry2<=nEntries-1; ++iEntry2) {
+      //      for(unsigned long int iEntry2=0; iEntry2<=nEvents-1; ++iEntry2) {
       //	checkEntryForFragments(iEntry2, streamIndex);
       //	if(myFramesMapList[streamIndex].find(matchEventId)!=myFramesMapList[streamIndex].end()) continue; // break;
       //      }
       // strategy 2A: scan all remaining frames in the following order: n+1, n-1, n+2, n-2, etc
       long int deltaEntry=1;
-      unsigned long int maxTries=2*nEntries, iTries=0;
+      unsigned long int maxTries=2*nEvents, iTries=0;
       bool minFlag=false, maxFlag=false;
       while((++iTries)<maxTries && (!minFlag || !maxFlag)) {
 	auto iEntry2=(long int)(iEntry+deltaEntry);
 	deltaEntry=(deltaEntry < 0 ? abs(deltaEntry)+1 : -deltaEntry);
 	if(iEntry2<0) { minFlag=true; continue; }
-	if(iEntry2>=(long int)nEntries) { maxFlag=true; continue; }
+	if(iEntry2>=(long int)nEvents) { maxFlag=true; continue; }
 	checkEntryForFragments((unsigned long int)iEntry2, streamIndex);
 	if(myFramesMapList[streamIndex].find(matchEventId)!=myFramesMapList[streamIndex].end()) break; // go to next stream
       }
@@ -452,10 +453,10 @@ void EventSourceMultiGRAW::collectEventFragments(unsigned int eventId){
       return;
     }     
     std::cout<<__FUNCTION__<<KBLU<<": Found a frame for event id: "<<RST<<eventId;
-    if(aFragment<nEntries) {
+    if(aFragment<nEvents) {
       std::cout<<KBLU<<" in file entry: "<<RST<<aFragment<<RST;
     } else {
-      std::cout<<KBLU<<" in next file entry: "<<RST<<aFragment-nEntries<<RST;
+      std::cout<<KBLU<<" in next file entry: "<<RST<<aFragment-nEvents<<RST;
     }
     std::cout<<KBLU<<" for ASAD: "<<RST<<ASAD_idx
 	     <<KBLU<<", COBO: "<<RST<<COBO_idx

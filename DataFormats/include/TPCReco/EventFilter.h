@@ -31,10 +31,9 @@ void EventFilter<Event>::setConditions(
   auto node = nodeIt->second;
   enabled = node.get("enabled", false);
 
-
   auto prongs = nodeIt->second.get_child_optional("recoProngs");
   if (prongs) {
-    tpcreco::filters::ProngInSet set;
+    tpcreco::filters::RecoProngInSet set;
     for (const auto &index : *prongs) {
       set.insert(index.second.get_value<size_t>());
     }

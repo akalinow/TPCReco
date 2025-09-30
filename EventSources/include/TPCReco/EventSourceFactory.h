@@ -33,13 +33,15 @@
 #include "TPCReco/EventSourceROOT.h"
 #include "TPCReco/EventSourceMC.h"
 #include "TPCReco/RunController.h"
+#include "TPCReco/TrackBuilder.h"
 
 namespace EventSourceFactory {
 	inline std::shared_ptr<EventSourceBase> makeEventSourceObject(boost::property_tree::ptree& myConfig) {
 		std::string dataFileName = myConfig.get<std::string>("input.dataFile");
 		std::string geometryFileName = myConfig.get<std::string>("input.geometryFile");
-		
-		std::shared_ptr<EventSourceBase> myEventSource;
+		long int nEvents = myConfig.get<long int>("input.readNEvents");
+
+		std::shared_ptr<EventSourceBase> myEventSource; 
 
 		if (dataFileName.empty() || geometryFileName.empty()) {
 			std::cerr << "No data or geometry file path provided." << _endl_;
@@ -84,11 +86,8 @@ namespace EventSourceFactory {
 		}
 		else if (dataFileVec.size() == 1 && fromGenerator) {
 			std::string controllerConfigPath;
-			unsigned long int nEvents;
 			std::cout << KBLU << "Data from MC generator." << RST << std::endl;
-
 			controllerConfigPath = myConfig.get<std::string>("input.controllerConfigPath");
-			nEvents = myConfig.get<unsigned long int>("input.readNEvents");
 
 			boost::property_tree::ptree controllerConfig;
 			try {
@@ -147,6 +146,10 @@ namespace EventSourceFactory {
 			exit(0);
 		}
 
+		myEventSource->setNEventsToRead(nEvents);
+		myEventSource->getEventFilter().setConditions(myConfig);
+		myEventSource->setTrackBuilder(std::make_shared<TrackBuilder>(myConfig));
+		
 		if (!myConfig.get<bool>("transient.onlineFlag")) {
 			myEventSource->loadDataFile(dataFileName);
 			myEventSource->loadFileEntry(0);

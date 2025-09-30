@@ -290,7 +290,7 @@ int analyzeRawEvents(boost::property_tree::ptree & aConfig){
 
     // load next event (if any)
     currentEventIdx=myEventSource->currentEventNumber();
-    myEventSource->getNextEvent();
+    myEventSource->getNextEventLoop();
   }
   while(currentEventIdx!=(Long64_t)myEventSource->currentEventNumber());
 

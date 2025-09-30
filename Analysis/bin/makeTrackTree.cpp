@@ -103,9 +103,6 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   double temperature = aConfig.get<double>("conditions.temperature");
   double samplingRate = aConfig.get<double>("conditions.samplingRate");
     
-  TrackBuilder myTkBuilder;
-  myTkBuilder.setGeometry(myEventSource->getGeometry());
-  myTkBuilder.setPressure(pressure);
   IonRangeCalculator myRangeCalculator(gas_mixture_type::CO2,pressure,temperature);
   ////////////////////////////////////////////
   //
@@ -140,7 +137,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   std::shared_ptr<eventraw::EventInfo> myEventInfo = std::make_shared<eventraw::EventInfo>();
 
   // loop over ALL events
-  Long64_t nEntries = myEventSource->numberOfEntries();
+  Long64_t nEntries = myEventSource->numberOfEvents();
   std::cout<<KBLU<<"File with "<<RST<<nEntries<<" frames loaded."<<std::endl;
   Long64_t maxNevents = aConfig.get<int>("input.readNEvents");
   Long64_t previousEventIdx=-1;
@@ -177,9 +174,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
 
     // find tracks
     *myEventInfo = myEventSource->getCurrentEvent()->GetEventInfo();
-    myTkBuilder.setEvent(myEventSource->getCurrentEvent());
-    myTkBuilder.setPressure(pressure);
-    myTkBuilder.reconstruct();
+
 
     ////////////////////////////////////////////
     //
@@ -234,8 +229,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     }
     //
     ////////////////////////////////////////////
-
-    const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
+    const Track3D  & aTrack3D = myEventSource->getRecoEvent();
     
     double length = aTrack3D.getLength();
     double charge = aTrack3D.getIntegratedCharge(length);

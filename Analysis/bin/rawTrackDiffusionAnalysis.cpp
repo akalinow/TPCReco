@@ -348,7 +348,7 @@ int analyzeTrackDiffusion(const boost::property_tree::ptree aConfig){
   }
 #endif
   myEventSource->loadDataFile(dataFileName);
-  std::cout << "File with " << myEventSource->numberOfEntries() << " frames loaded."
+  std::cout << "File with " << myEventSource->numberOfEvents() << " frames loaded."
 	    << std::endl;
   myEventSource->loadFileEntry(0); // load 1st frame (NOTE: otherwise LoadEventId does not work)
 

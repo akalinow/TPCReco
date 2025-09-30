@@ -32,13 +32,7 @@ public:
 
   std::shared_ptr<TH1D> getFpnProfilePerAget(int coboId, int asadId, int agetId) { return myPedestalCalculator.GetFpnProfilePerAget(coboId, asadId, agetId); }
 
-  std::shared_ptr<EventTPC> getNextEvent();
-  
-  std::shared_ptr<EventTPC> getPreviousEvent();
-
   std::shared_ptr<eventraw::EventRaw> getCurrentEventRaw() { return myCurrentEventRaw; }
-
-  virtual unsigned long int numberOfEvents() const { return nEntries/GRAW_EVENT_FRAGMENTS;} /// BEWARE: THIS METHOD IS WRONG !!!
 
   void loadDataFile(const std::string & fileName);
 
@@ -57,6 +51,9 @@ private:
   bool loadGrawFrame(unsigned int iEntry, bool readFullEvent);
   void findEventFragments(unsigned long int eventIdx, unsigned int iInitialEntry);
   void collectEventFragments(unsigned int eventIdx);
+
+  std::shared_ptr<EventTPC> getNextEvent();
+  std::shared_ptr<EventTPC> getPreviousEvent();
 
 protected: // needed for EventSourceMultiGRAW
 

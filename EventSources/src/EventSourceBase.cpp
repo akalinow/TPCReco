@@ -4,16 +4,14 @@
 
 #include "TPCReco/colorText.h"
 #include "TPCReco/EventSourceBase.h"
+
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 EventSourceBase::EventSourceBase() {
 
   myCurrentEvent =  std::make_shared<EventTPC>();
   myCurrentPEvent =  std::make_shared<PEventTPC>();
-  myRecoEvent = std::make_shared<Track3D>();
-  
-  myCurrentEntry = 0;
-  nEntries = 0;
+
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -42,23 +40,34 @@ void EventSourceBase::loadGeometry(const std::string & fileName){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<PEventTPC> EventSourceBase::getCurrentPEvent() const{
+void EventSourceBase::setTrackBuilder(std::shared_ptr<TrackBuilder> aTkBuilderPtr){
 
+  myTkBuilderPtr = aTkBuilderPtr;
+  myTkBuilderPtr->setGeometry(myGeometryPtr);
+  myTkBuilderPtr->setEvent(myCurrentEvent);
+} 
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::shared_ptr<TrackBuilder> EventSourceBase::getTrackBuilder() const {
+  return myTkBuilderPtr;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::shared_ptr<PEventTPC> EventSourceBase::getCurrentPEvent() const{
   return myCurrentPEvent;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::shared_ptr<EventTPC> EventSourceBase::getCurrentEvent() const{
-
   return myCurrentEvent;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::shared_ptr<EventTPC> EventSourceBase::getLastEvent(){
 
-  if(nEntries>0){
-    loadFileEntry(nEntries-1);
-    myCurrentEntry = nEntries-1;
+  if(nEvents>0){
+    loadFileEntry(nEvents-1);
+    myCurrentEntry = nEvents-1;
   }
 
   return getCurrentEvent();
@@ -74,7 +83,7 @@ unsigned long int EventSourceBase::currentEntryNumber() const{
 std::shared_ptr<GeometryTPC> EventSourceBase::getGeometry() const{ return myGeometryPtr; }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-unsigned long int EventSourceBase::numberOfEntries() const{ return nEntries; }
+unsigned long int EventSourceBase::numberOfEvents() const{ return nEvents; }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 unsigned long int EventSourceBase::currentEventNumber() const{
@@ -94,12 +103,18 @@ std::string EventSourceBase::getCurrentPath() const{
 /////////////////////////////////////////////////////////
 std::shared_ptr<EventTPC> EventSourceBase::getNextEventLoop(){
   unsigned int currentEventIdx;
+
+  if(nEventsToRead--==0 && nEventsToRead>nEvents) return std::shared_ptr<EventTPC>(0);
+
   do{
     currentEventIdx=getCurrentEvent()->GetEventInfo().GetEventId();
     getNextEvent();
   }
-  while(eventFilter.isEnabled() && !eventFilter.pass(*this) &&
-	currentEventIdx!=getCurrentEvent()->GetEventInfo().GetEventId());
+  while(!eventFilter.pass(*this) && 
+        currentEventIdx!=getCurrentEvent()->GetEventInfo().GetEventId());
+
+  std::cout<<KBLU<<"EventSourceBase: processed: "<<RST<<100 - int(100.0*nEventsToRead/numberOfEvents())<<KBLU<<" % events"<<RST<<std::endl;
+
   return getCurrentEvent();
 }
 /////////////////////////////////////////////////////////
@@ -110,8 +125,7 @@ std::shared_ptr<EventTPC> EventSourceBase::getPreviousEventLoop(){
     currentEventIdx=getCurrentEvent()->GetEventInfo().GetEventId();
     getPreviousEvent();
   }
-  while(eventFilter.isEnabled() && !eventFilter.pass(*this) &&
-	currentEventIdx!=getCurrentEvent()->GetEventInfo().GetEventId());
+  while(!eventFilter.pass(*this) && currentEventIdx!=getCurrentEvent()->GetEventInfo().GetEventId());
   return getCurrentEvent();
 }
 /////////////////////////////////////////////////////////
@@ -122,19 +136,13 @@ void EventSourceBase::fillEventTPC(){
   myCurrentEvent->SetGeoPtr(myGeometryPtr);
   myCurrentEvent->SetChargeMap(myCurrentPEvent->GetChargeMap());
   myCurrentEvent->SetEventInfo(myCurrentPEvent->GetEventInfo());
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void EventSourceBase::setRecoEvent(const Track3D & aRecTrack) {
-
-  *myRecoEvent = aRecTrack;
-
+  myTkBuilderPtr->reconstruct();
 }
 ////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::shared_ptr<Track3D> EventSourceBase::getRecoEvent() const {
+const Track3D & EventSourceBase::getRecoEvent() const {
 
-  return myRecoEvent;
+  return myTkBuilderPtr->getTrack3D(0);
 
 }
 /////////////////////////////////////////////////////////

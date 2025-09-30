@@ -12,7 +12,7 @@
 
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-EventSourceROOT::EventSourceROOT(const std::string & geometryFileName) {
+EventSourceROOT::EventSourceROOT(const std::string & geometryFileName):EventSourceBase() {
 
   loadGeometry(geometryFileName);
   myPedestalCalculator.SetGeometryAndInitialize(myGeometryPtr);
@@ -74,7 +74,8 @@ void EventSourceROOT::loadDataFile(const std::string & fileName){
   myTree->SetBranchAddress("Event", &aPtr);
   myTree->BuildIndex("myEventInfo.runId", "myEventInfo.eventId");
 
-  nEntries = myTree->GetEntries();
+  nEvents = myTree->GetEntries();
+  if(nEventsToRead<0) nEventsToRead = nEvents;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -93,12 +94,9 @@ void EventSourceROOT::loadFileEntry(unsigned long int iEntry){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-unsigned long int EventSourceROOT::numberOfEvents() const{ return nEntries; }
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
 std::shared_ptr<EventTPC> EventSourceROOT::getNextEvent(){
 
-  if(nEntries>0 && myCurrentEntry<nEntries-1){
+  if(nEvents>0 && myCurrentEntry<nEvents-1){
     loadFileEntry(++myCurrentEntry);
   }
   return myCurrentEvent;
@@ -107,7 +105,7 @@ std::shared_ptr<EventTPC> EventSourceROOT::getNextEvent(){
 /////////////////////////////////////////////////////////
 std::shared_ptr<EventTPC> EventSourceROOT::getPreviousEvent(){
 
-  if(myCurrentEntry>0 && nEntries>0){
+  if(myCurrentEntry>0 && nEvents>0){
     loadFileEntry(--myCurrentEntry);
   }
   return myCurrentEvent;
@@ -125,7 +123,7 @@ void EventSourceROOT::loadEventId(unsigned long int iEvent){
 
   // secondary (failover) method: when TTree::BuildIndex() did not work properly
   unsigned long int iEntry = 0;
-  while(currentEventNumber()!=iEvent && iEntry<nEntries){  
+  while(currentEventNumber()!=iEvent && iEntry<nEvents){  
     loadFileEntry(iEntry);
     ++iEntry;
   }
@@ -137,3 +135,5 @@ void EventSourceROOT::loadGeometry(const std::string & fileName){
   EventSourceBase::loadGeometry(fileName);
   myPedestalCalculator.SetGeometryAndInitialize(myGeometryPtr);
 }
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////

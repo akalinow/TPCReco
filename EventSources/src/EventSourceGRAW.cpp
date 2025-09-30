@@ -19,7 +19,7 @@
 #include <get/graw2dataframe.h>
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-EventSourceGRAW::EventSourceGRAW(const std::string & geometryFileName) {
+EventSourceGRAW::EventSourceGRAW(const std::string & geometryFileName):EventSourceBase() {
 
   loadGeometry(geometryFileName);
   GRAW_EVENT_FRAGMENTS = myGeometryPtr->GetAsadNboards();
@@ -38,7 +38,7 @@ std::shared_ptr<EventTPC> EventSourceGRAW::getNextEvent(){
   auto currentEventId = myCurrentEvent->GetEventInfo().GetEventId();
   auto it = myFramesMap.find(currentEventId);
   unsigned int lastEventFrame = *it->second.rbegin();
-  if(lastEventFrame<nEntries-1) ++lastEventFrame;
+  if(lastEventFrame<nEvents-1) ++lastEventFrame;
   loadFileEntry(lastEventFrame);
   return myCurrentEvent;  
 }
@@ -64,10 +64,11 @@ void EventSourceGRAW::loadDataFile(const std::string & fileName){
     std::cerr<<KRED<<"Can not open file: "<<fileName<<"!"<<RST<<std::endl;
     exit(1);
   }
-  nEntries = myFile->GetGrawFramesNumber();
+  nEvents = myFile->GetGrawFramesNumber();
+  if(nEventsToRead<0) nEventsToRead = nEvents;
   
   const int firstEventSize=10;
-  if(fileName!=myFilePath || nEntries<firstEventSize){
+  if(fileName!=myFilePath || nEvents<firstEventSize){
     findStartingIndex(firstEventSize);
   }
 
@@ -84,9 +85,9 @@ bool EventSourceGRAW::loadGrawFrame(unsigned int iEntry, bool readFullEvent){
 
   std::string tmpFilePath = myFilePath;
 #ifndef EVENTSOURCEGRAW_NEXT_FILE_DISABLE  
-  if(iEntry>=nEntries){
+  if(iEntry>=nEvents){
     tmpFilePath = myNextFilePath;
-    iEntry -= nEntries;
+    iEntry -= nEvents;
   }
   std::cout.setstate(std::ios_base::failbit);
   bool dataFrameRead = myFrameLoader.getGrawFrame(tmpFilePath, iEntry+1, myDataFrame, readFullEvent);///FIXME getGrawFrame counts frames from 1 (WRRR!)
@@ -106,7 +107,7 @@ bool EventSourceGRAW::loadGrawFrame(unsigned int iEntry, bool readFullEvent){
   }
 #else
   bool dataFrameRead = false;
-  if(iEntry<nEntries) {
+  if(iEntry<nEvents) {
     std::cout.setstate(std::ios_base::failbit);
     dataFrameRead = myFrameLoader.getGrawFrame(tmpFilePath, iEntry+1, myDataFrame, readFullEvent);///FIXME getGrawFrame counts frames from 1 (WRRR!)
     std::cout.clear();
@@ -198,10 +199,10 @@ void EventSourceGRAW::findEventFragments(unsigned long int eventId, unsigned int
   if(iInitialEntry>frameLoadRange){
     lowEndScanRange = iInitialEntry-frameLoadRange;
   }  
-  unsigned int highEndScanRange = std::min((unsigned int)nEntries, iInitialEntry+frameLoadRange);
+  unsigned int highEndScanRange = std::min((unsigned int)nEvents, iInitialEntry+frameLoadRange);
   
   for(unsigned int iEntry=iInitialEntry;
-      iEntry>=lowEndScanRange && iEntry<nEntries && nFragments<GRAW_EVENT_FRAGMENTS;
+      iEntry>=lowEndScanRange && iEntry<nEvents && nFragments<GRAW_EVENT_FRAGMENTS;
       --iEntry){
     checkEntryForFragments(iEntry);
     nFragments =  myFramesMap[eventId].size();
@@ -214,14 +215,14 @@ void EventSourceGRAW::findEventFragments(unsigned long int eventId, unsigned int
   for(unsigned int iEntry=iInitialEntry;iEntry<highEndScanRange && nFragments<GRAW_EVENT_FRAGMENTS;++iEntry){
     checkEntryForFragments(iEntry);
     nFragments =  myFramesMap[eventId].size();
-    //reachEndOfFile = (iEntry==nEntries);
+    //reachEndOfFile = (iEntry==nEvents);
     std::cout<<"\r going forward and reading file entry: "<<iEntry
 	     <<" fragments found so far: "
 	     <<nFragments
 	     <<" expected: "<<GRAW_EVENT_FRAGMENTS << "     ";
   }
   for(unsigned int iEntry=0;iEntry<frameLoadRange && nFragments<GRAW_EVENT_FRAGMENTS;++iEntry){
-    checkEntryForFragments(iEntry+nEntries);
+    checkEntryForFragments(iEntry+nEvents);
     nFragments =  myFramesMap[eventId].size();
     std::cout<<"\r going to next run file and reading file entry: "<<iEntry
 	     <<" fragments found so far: "
@@ -230,7 +231,7 @@ void EventSourceGRAW::findEventFragments(unsigned long int eventId, unsigned int
   }
   
   std::cout<<std::endl;
-  if(myFramesMap.size()>=nEntries) isFullFileScanned = true;
+  if(myFramesMap.size()>=nEvents) isFullFileScanned = true;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -271,8 +272,8 @@ void EventSourceGRAW::collectEventFragments(unsigned int eventId){
       return;
     }     
     std::cout<<KBLU<<"Found a frame for eventId: "<<RST<<eventId;
-    if(aFragment<nEntries) std::cout<<KBLU<<" in file entry: "<<RST<<aFragment<<RST;
-    else std::cout<<KBLU<<" in next file entry: "<<RST<<aFragment-nEntries<<RST;
+    if(aFragment<nEvents) std::cout<<KBLU<<" in file entry: "<<RST<<aFragment<<RST;
+    else std::cout<<KBLU<<" in next file entry: "<<RST<<aFragment-nEvents<<RST;
     std::cout<<KBLU<<" for  ASAD: "<<RST<<ASAD_idx<<RST<<std::endl;
     if(fillEventType==EventType::tpc) fillEventFromFrame(myDataFrame);
     else if(fillEventType==EventType::raw) fillEventRawFromFrame(myDataFrame);
@@ -428,10 +429,10 @@ void EventSourceGRAW::fillEventRawFromFrame(GET::GDataFrame & aGrawFrame){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void EventSourceGRAW::findStartingIndex(unsigned long int size){
-  if(nEntries==0){
+  if(nEvents==0){
     startingEventIndex=0;
   } else {
-    auto preloadSize=std::min(nEntries,size);
+    auto preloadSize=std::min(nEvents,size);
     startingEventIndex=std::numeric_limits<UInt_t>::max();
     for(unsigned long int i=0; i<preloadSize; ++i){
       myFile->GetGrawFrame(myDataFrame,i);

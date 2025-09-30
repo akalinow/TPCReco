@@ -9,12 +9,14 @@
 // Workaround for runControler | Without this module Factory does not see any of MC modules
 #include "../../MonteCarlo/Modules/DummyModule/DummyModule.h"
 
-EventSourceMC::EventSourceMC(const std::string & geometryFileName, std::shared_ptr<fwk::RunController> runController, unsigned long int nEvents):
-      EventSourceBase(),
-      myRunController(runController),
-      nEvents(nEvents)
+EventSourceMC::EventSourceMC(const std::string & geometryFileName, std::shared_ptr<fwk::RunController> runController, long int nEventsToGenerate):
+      EventSourceBase(), myRunController(runController)
 {
   loadGeometry(geometryFileName);
+
+  if(nEventsToGenerate<0) nEvents=0;
+  else nEvents = nEventsToGenerate;
+
 }
 
 
@@ -53,10 +55,6 @@ void EventSourceMC::loadEventId(unsigned long int iEvent){
 void EventSourceMC::loadGeometry(const std::string & fileName){
   EventSourceBase::loadGeometry(fileName);
   // myProjectorPtr.reset(new UVWprojector(myGeometryPtr));
-}
-
-unsigned long int EventSourceMC::numberOfEvents() const {
-    return nEvents;
 }
 
 reaction_type EventSourceMC::GetGeneratedReactionType(){

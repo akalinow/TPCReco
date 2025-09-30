@@ -163,7 +163,7 @@ void analyzeRawEvents(const boost::property_tree::ptree &aConfig){
   }
 
   myEventSource->loadDataFile(dataFileName);
-  std::cout << "File with " << myEventSource->numberOfEntries() << " frames loaded."
+  std::cout << "File with " << myEventSource->numberOfEvents() << " frames loaded."
 	    << std::endl;
 
   // DEBUG - parsing RunId from file name
@@ -206,7 +206,7 @@ void analyzeRawEvents(const boost::property_tree::ptree &aConfig){
 
     // load next event (if any)
     currentEventIdx=myEventSource->currentEventNumber();
-    myEventSource->getNextEvent();
+    myEventSource->getNextEventLoop();
   }
   while(currentEventIdx!=(Long64_t)myEventSource->currentEventNumber());
 

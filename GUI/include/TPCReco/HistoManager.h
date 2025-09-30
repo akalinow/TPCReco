@@ -69,8 +69,6 @@ public:
 
   void clearObjects();
 
-  void reconstruct();
-
   void reconstructSegmentsFromMarkers(std::vector<double> * segmentsXY);
 
   TGraph* getEventRateGraph();
@@ -125,7 +123,7 @@ private:
   std::vector<TH2D*> projectionsInCartesianCoords;
   TH3D *h3DReco{0};
   TGraph *grEventRate{0};
-  TrackBuilder myTkBuilder;
+  std::shared_ptr<TrackBuilder> myTkBuilderPtr;
 
   std::shared_ptr<EventTPC> myEventPtr;
   eventraw::EventInfo myEventInfo;

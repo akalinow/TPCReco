@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
       myEventSource = std::make_shared<EventSourceROOT>();
       myEventSource->loadGeometry(geometryFileName);
       myEventSource->loadDataFile(dataFileName);
-      std::cout<<"File with "<<myEventSource->numberOfEntries()<<" frames loaded."<<std::endl;
+      std::cout<<"File with "<<myEventSource->numberOfEvents()<<" frames loaded."<<std::endl;
     }
     else{
       std::cout<<"Wrong input file: "<<dataFileName<<std::endl;
@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
 
     TFile aFile(rootFileName.c_str(),"RECREATE");
 
-    for(unsigned int iEntry=0;iEntry<myEventSource->numberOfEntries();++iEntry){
+    for(unsigned int iEntry=0;iEntry<myEventSource->numberOfEvents();++iEntry){
       myEventSource->loadFileEntry(iEntry);
       std::cout<<"EventID: "<<myEventSource->currentEventNumber()<<std::endl;
       myHistoManager.setEvent(myEventSource->getCurrentEvent());

@@ -109,10 +109,10 @@ void FileOutput::update(std::shared_ptr<EventSourceBase> aEventSource) {
 
   *myPEventPtr = *aEventSource->getCurrentPEvent();
   *myEventInfoPtr = aEventSource->getCurrentEvent()->GetEventInfo();
-  *myRecoEventPtr = *aEventSource->getRecoEvent();
+  *myRecoEventPtr = aEventSource->getRecoEvent();
   auto mcEventSource = std::dynamic_pointer_cast<EventSourceMC>(aEventSource);
   if(mcEventSource) *mySimEventPtr = mcEventSource->getGeneratedTrack();
-  else *mySimEventPtr = *aEventSource->getRecoEvent(); //Hack by AK to avoid troubles in ROOT->Python step
+  else *mySimEventPtr = aEventSource->getRecoEvent(); //Hack by AK to avoid troubles in ROOT->Python step
 
   for(auto aTree: myOutputTrees) {
     if (aTree.second==nullptr) {

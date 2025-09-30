@@ -40,7 +40,8 @@ HistoManager::~HistoManager() { }
 void HistoManager::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
   
   myGeometryPtr = aGeometryPtr;
-  myTkBuilder.setGeometry(aGeometryPtr);
+  myEventPtr->SetGeoPtr(myGeometryPtr);
+  myTkBuilderPtr->setGeometry(myGeometryPtr);
   setDetLayout();
 }
 /////////////////////////////////////////////////////////
@@ -49,10 +50,10 @@ void HistoManager::setConfig(const boost::property_tree::ptree &aConfig){
   
   myConfig = aConfig;
 
+  myTkBuilderPtr = std::make_shared<TrackBuilder>(myConfig);
+
   double pressure = aConfig.get<double>("conditions.pressure"); 
   double temperature = aConfig.get<double>("conditions.temperature");
-
-  myTkBuilder.setPressure(pressure);
 
   myRangeCalculator.setGasMixture(gas_mixture_type::CO2);
   myRangeCalculator.setGasPressure(pressure);
@@ -73,25 +74,19 @@ void HistoManager::setEvent(std::shared_ptr<EventTPC> aEvent){
   if(!aEvent) return;
   myEventPtr = aEvent;
   myEventPtr->setHitFilterConfig(filter_type::threshold, myConfig);
-  myTkBuilder.setEvent(myEventPtr);
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void HistoManager::reconstruct(){
-  if(myEventPtr->GetEventInfo().GetPedestalSubtracted()) myTkBuilder.reconstruct();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void HistoManager::reconstructSegmentsFromMarkers(std::vector<double> * segmentsXY){
 
-  myTkBuilder.getSegment2DCollectionFromGUI(*segmentsXY);
+  myTkBuilderPtr->getSegment2DCollectionFromGUI(*segmentsXY);
 
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 const Track3D & HistoManager::getTrack3D(int iTrack) const {
 
-  return myTkBuilder.getTrack3D(iTrack);
+  return myTkBuilderPtr->getTrack3D(iTrack);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -223,7 +218,6 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
   int padNumberOffset = 0;
   if(std::string(aCanvas->GetName())=="Histograms") padNumberOffset = 0;
   
-  reconstruct();
   //TEST filter_type filterType = filter_type::threshold;
   //TEST if(!myConfig.get<bool>("hitFilter.recoClusterEnable")) filterType = filter_type::none;
 
@@ -237,7 +231,7 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
      //TEST auto projType = get2DProjectionType(strip_dir);     
      //TEST auto histo2D = get2DProjection(projType, filterType, scale_type::mm);
 
-     auto histo2D = (TH2D*)(&myTkBuilder.getRecHits2D(strip_dir));
+     auto histo2D = (TH2D*)(&myTkBuilderPtr->getRecHits2D(strip_dir));
      if(doAutozoom) makeAutozoom(histo2D);
 
      aPad->SetFrameFillColor(kAzure-6);
@@ -264,8 +258,8 @@ void HistoManager::drawDevelHistos(TCanvas *aCanvas){
    aCanvas->Modified();
    aCanvas->Update();
 
-   if(myTkBuilder.getTrack3D(0).getSegments().size() &&
-      myTkBuilder.getTrack3D(0).getSegments().front().getPID()==pid_type::DOT) drawTrack3DProjectionXY(aPad);
+   if(myTkBuilderPtr->getTrack3D(0).getSegments().size() &&
+      myTkBuilderPtr->getTrack3D(0).getSegments().front().getPID()==pid_type::DOT) drawTrack3DProjectionXY(aPad);
    else drawChargeAlongTrack3D(aPad);
 
    aCanvas->Modified();
@@ -431,7 +425,7 @@ std::shared_ptr<TH2D> HistoManager::getChannels(int cobo_id, int asad_id){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::shared_ptr<TH2D> HistoManager::getRecHitStripVsTime(int strip_dir){
-  TH2D *h = (TH2D*)myTkBuilder.getRecHits2D(strip_dir).Clone("hRecHitStripVsTime");
+  TH2D *h = (TH2D*)myTkBuilderPtr->getRecHits2D(strip_dir).Clone("hRecHitStripVsTime");
   std::shared_ptr<TH2D> aHisto(h);
   if(aHisto) {
     if(doAutozoom) makeAutozoom(aHisto.get());
@@ -447,7 +441,7 @@ std::shared_ptr<TH2D> HistoManager::getRecHitStripVsTime(int strip_dir){
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::shared_ptr<TH1D> HistoManager::getRecHitTimeProjection(){
-  TH1D *h = (TH1D*)myTkBuilder.getRecHitsTimeProjection().Clone("hRecHitTimeProjection");
+  TH1D *h = (TH1D*)myTkBuilderPtr->getRecHitsTimeProjection().Clone("hRecHitTimeProjection");
   auto aHisto=std::shared_ptr<TH1D>(h);
   if(doAutozoom) makeAutozoom(aHisto.get());
   aHisto->SetLineColor(2);
@@ -457,7 +451,7 @@ std::shared_ptr<TH1D> HistoManager::getRecHitTimeProjection(){
 /////////////////////////////////////////////////////////
 const TH2D & HistoManager::getHoughAccumulator(int strip_dir, int iPeak){
 
-  return myTkBuilder.getHoughtTransform(strip_dir);
+  return myTkBuilderPtr->getHoughTransform(strip_dir);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -507,7 +501,7 @@ void HistoManager::drawTrack3D(TVirtualPad *aPad){
 
   aPad->cd();
   
-  const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
+  const Track3D & aTrack3D = myTkBuilderPtr->getTrack3D(0);
   const TrackSegment3DCollection & trackSegments = aTrack3D.getSegments();
   if(!trackSegments.size()) return;
   
@@ -547,8 +541,8 @@ void HistoManager::drawTrack3DProjectionXY(TVirtualPad *aPad){
   aPad->cd();
   aPad->SetLogz(kFALSE);
   drawDetLayout();
-  
-  const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
+
+  const Track3D & aTrack3D = myTkBuilderPtr->getTrack3D(0);
 
   int iSegment = 0;
   TLine aSegment2DLine;
@@ -577,7 +571,7 @@ void HistoManager::drawTrack3DProjectionXY(TVirtualPad *aPad){
 /////////////////////////////////////////////////////////
 void HistoManager::drawTrack2DSeed(int strip_dir, TVirtualPad *aPad){
 
-  const TrackSegment2D & aSegment2D = myTkBuilder.getSegment2D(strip_dir);
+  const TrackSegment2D & aSegment2D = myTkBuilderPtr->getSegment2D(strip_dir);
   const TVector3 & start = aSegment2D.getStart();
   const TVector3 & end = aSegment2D.getEnd();
 
@@ -592,7 +586,7 @@ void HistoManager::drawTrack2DSeed(int strip_dir, TVirtualPad *aPad){
 void HistoManager::drawTrack3DProjectionTimeStrip(int strip_dir, TVirtualPad *aPad,  bool zoomIn){
 
   aPad->cd();
-  const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
+  const Track3D & aTrack3D = myTkBuilderPtr->getTrack3D(0);
 
   int iSegment = 0;
   TLine aSegment2DLine;
@@ -660,7 +654,7 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
 
   aPad->cd();
 
-  const Track3D & aTrack3D = myTkBuilder.getTrack3D(0);
+  const Track3D & aTrack3D = myTkBuilderPtr->getTrack3D(0);
   if(aTrack3D.getLength()<1) return;
   
   TH1F hFrame("hFrame",";d [mm];charge/mm [arb. units]",2,-20, 20+aTrack3D.getLength());
@@ -692,7 +686,7 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
 
   TLegend *aLegend = new TLegend(0.7, 0.75, 0.95,0.95);
   
-  TF1 dEdx = myTkBuilder.getdEdx();
+  TF1 dEdx = myTkBuilderPtr->getdEdx();
   if(!dEdx.GetNpar()) return;
   const double points_per_mm = 100;
   dEdx.SetNpx((dEdx.GetXmax()-dEdx.GetXmin())*points_per_mm);

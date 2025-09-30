@@ -20,7 +20,7 @@ public:
 
   EventSourceMC(){};
 
-  EventSourceMC(const std::string & geometryFileName, std::shared_ptr<fwk::RunController> runController, unsigned long int nEvents);
+  EventSourceMC(const std::string & geometryFileName, std::shared_ptr<fwk::RunController> runController, long int nEventsToGenerate);
 
   ~EventSourceMC();
 
@@ -30,17 +30,9 @@ public:
 
   void loadDataFile(const std::string & fileName);
 
-  std::shared_ptr<EventTPC> getNextEvent();
-
-  std::shared_ptr<EventTPC> getPreviousEvent();
-
   reaction_type GetGeneratedReactionType();
 
   const Track3D & getGeneratedTrack();
-
-  std::shared_ptr<EventTPC> getLastEvent();
-
-  unsigned long int numberOfEvents() const;
 
   void loadGeometry(const std::string & fileName);
 
@@ -48,12 +40,14 @@ public:
   
  private:
 
+  std::shared_ptr<EventTPC> getNextEvent();
+  std::shared_ptr<EventTPC> getPreviousEvent();
+
   Track3D myTrack;
   TrackSegment3D mySegment3D;
 
   std::shared_ptr<fwk::RunController> myRunController;
   std::shared_ptr<SimEvent> myCurrentSimEvent;
-  unsigned long int nEvents;
   void generateNextEvent();
 };
 #endif

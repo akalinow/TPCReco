@@ -30,15 +30,13 @@ class SigClusterTPC;
 class TrackBuilder {
 public:
   
-  TrackBuilder();
+  TrackBuilder(boost::property_tree::ptree& myConfig);
   
   ~TrackBuilder();
 
   void setEvent(std::shared_ptr<EventTPC> aEvent);
 
   void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);
-
-  void setPressure(double aPressure);
 
   void reconstruct();
 
@@ -48,7 +46,7 @@ public:
 
   const TH1D & getRecHitsTimeProjection() const;
 
-  const TH2D & getHoughtTransform(int iDir) const;
+  const TH2D & getHoughTransform(int iDir) const;
   
   const TrackSegment2D & getSegment2D(int iDir, unsigned int iTrack=0) const;
 
@@ -61,6 +59,8 @@ public:
   TF1 getdEdx() const {return mydEdxFitter.getFittedModel();};
 
 private:
+
+  void setPressure(double aPressure);
 
   void makeRecHits(int iDir);
 

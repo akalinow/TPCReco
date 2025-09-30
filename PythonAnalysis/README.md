@@ -7,9 +7,7 @@ with 1000 events generated from the MC simulation.
 
 ```Bash
 cd resources
-../bin/tpcWriter ../config/config_Writer_MC.json \
---input.controllerConfigPath=../config/montecarlo_2prong_gun_PEventTPC.json \
---input.readNEvents=1000
+../bin/tpcWriter ../config/config_Writer_MC.json --input.readNEvents=1000
 ```
 
 Create ROOT similar ROOT file for the real data:

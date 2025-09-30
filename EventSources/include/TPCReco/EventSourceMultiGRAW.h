@@ -27,11 +27,6 @@ public:
   
   ~EventSourceMultiGRAW();
 
-  std::shared_ptr<EventTPC> getNextEvent(); // OVERLOADED
-  
-  std::shared_ptr<EventTPC> getPreviousEvent(); // OVERLOADED
-
-  unsigned long int numberOfEvents() const { return nEntries; } // the lowest number of frames among all GRAW_EVENT_FRAGMENTS files
 
   void loadDataFile(const std::string & commaSeparatedFileNames); // OVERLOADED to accept list of comma separated files (one file per ASAD)
 
@@ -46,6 +41,9 @@ public:
   static inline event_type getSourceType() { return event_type::EventSourceMultiGRAW; }
   
 private:
+
+  std::shared_ptr<EventTPC> getNextEvent(); 
+  std::shared_ptr<EventTPC> getPreviousEvent(); 
 
   bool loadGrawFrame(unsigned int iEntry, bool readFullEvent, unsigned int streamIndex); // OVERLOADED
   void collectEventFragments(unsigned int eventIdx); // OVERLOADED

@@ -7,15 +7,6 @@
 namespace tpcreco {
 namespace filters {
 
-struct RecoProngs {
-  const std::set<int> requiredSegments;
-  template <class Event> bool operator()(Event &event) {
-    return event.getRecoEvent() &&
-           requiredSegments.count(event.getRecoEvent()->getSegments().size());
-  }
-};
-
-
 struct TotalChargeUpperBound {
   const double upperBound;
   template <class Event> bool operator()(Event &event) {
@@ -57,12 +48,14 @@ private:
   std::set<size_t> indices;
 };
 
-class ProngInSet {
+class RecoProngInSet {
 public:
-  ProngInSet() = default;
-  ProngInSet(std::initializer_list<size_t> indices) : indices(indices) {}
+  RecoProngInSet() = default;
+  RecoProngInSet(std::initializer_list<size_t> indices) : indices(indices) {}
   template <class Event> bool operator()(Event &event) {
-    return indices.size()==0 || (indices.size() && indices.find(event.getRecoEvent()->getSegments().size()) != indices.end());
+    return indices.size()==0 || 
+           (indices.size() && 
+            indices.find(event.getRecoEvent().getSegments().size()) != indices.end());
   }
   void insert(size_t index) { indices.insert(index); }
 

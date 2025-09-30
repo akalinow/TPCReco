@@ -146,7 +146,6 @@ void MainFrame::InitializeEventSource() {
 	myHistoManager.setGeometry(myEventSource->getGeometry());
 
 	if (isRecoModeOn) myHistoManager.openOutputStream(dataFileName);
-	myEventSource->getEventFilter().setConditions(myConfig);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -596,7 +595,7 @@ void MainFrame::Update() {
 	else if(myConfig.get<bool>("display.technicalMode")) myHistoManager.drawTechnicalHistos(fMainCanvas, myEventSource->getGeometry()->GetAgetNchips());
 	else myHistoManager.drawRawHistos(fMainCanvas, isRateDisplayOn);
 
-	myEventSource->setRecoEvent(myHistoManager.getTrack3D());
+	//myEventSource->setRecoEvent(myHistoManager.getTrack3D());
 	myFileOutput->update(myEventSource);
 }
 /////////////////////////////////////////////////////////

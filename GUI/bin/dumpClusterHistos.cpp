@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
     //    myEventSource = std::make_shared<EventSourceGRAW>();
     //    myEventSource->loadGeometry(geometryFileName);
     myEventSource->loadDataFile(dataFileName);
-    std::cout << "File with " << myEventSource->numberOfEntries() << " frames loaded."
+    std::cout << "File with " << myEventSource->numberOfEvents() << " frames loaded."
               << std::endl;
   } else {
     std::cout << "Wrong input arguments. Should be:" << std::endl
@@ -49,13 +49,11 @@ int main(int argc, char *argv[]) {
 
   TFile aFile(rootFileName.c_str(), "RECREATE");
 
-  if (FileEntry < myEventSource->numberOfEntries()) {
+  if (FileEntry < myEventSource->numberOfEvents()) {
     myEventSource->loadFileEntry(FileEntry);
     std::cout << "EventID: " << myEventSource->currentEventNumber() << std::endl
               << std::flush;
     myHistoManager.setEvent(myEventSource->getCurrentEvent());
-    myHistoManager.reconstruct(); // triggers raw data clustering
-
 
     for (int strip_dir = 0; strip_dir < 3; ++strip_dir) {
       auto projType = get2DProjectionType(strip_dir);

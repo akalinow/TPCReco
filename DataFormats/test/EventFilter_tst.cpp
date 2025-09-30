@@ -30,11 +30,22 @@ struct EventTPCMock {
   EventInfoMock eventInfo;
 };
 
+struct TrackBuilderMock
+{
+  TrackBuilderMock() = default;
+  TrackBuilderMock(const TrackBuilderMock&){}
+  const Track3DMock & getTrack3D(int){ return track3D; }
+
+  Track3DMock track3D;
+};
+
+
 struct EventSourceMock {
-  std::shared_ptr<Track3DMock> getRecoEvent() const { return recoEventPtr; }
   std::shared_ptr<EventTPCMock> getCurrentEvent() const { return eventTPCPtr; }
- 
-  std::shared_ptr<Track3DMock> recoEventPtr;
+  std::shared_ptr<TrackBuilderMock> getTrackBuilder() const { return trackBuilderPtr; }
+  const Track3DMock & getRecoEvent() const { return trackBuilderPtr->getTrack3D(0); }
+
+  std::shared_ptr<TrackBuilderMock> trackBuilderPtr;
   std::shared_ptr<EventTPCMock> eventTPCPtr;
 };
 
@@ -175,14 +186,13 @@ TEST_F(EventFilterTest, recoProngs) {
   auto eventTPCMockPtr = std::make_shared<EventTPCMock>();
   event.eventTPCPtr = eventTPCMockPtr;
 
-  auto track3DMockPtr = std::make_shared<Track3DMock>();
-  event.recoEventPtr = track3DMockPtr;
+  auto track3DMockPtr = event.getRecoEvent();
 
-  EXPECT_CALL(*track3DMockPtr, getSegments()).WillOnce(Return(std::vector<int>{1}));
+  EXPECT_CALL(track3DMockPtr, getSegments()).WillOnce(Return(std::vector<int>{1}));
   EXPECT_FALSE(filter.pass(event));
-  EXPECT_CALL(*track3DMockPtr, getSegments()).WillOnce(Return(std::vector<int>{1, 2}));
+  EXPECT_CALL(track3DMockPtr, getSegments()).WillOnce(Return(std::vector<int>{1, 2}));
   EXPECT_TRUE(filter.pass(event));
-  EXPECT_CALL(*track3DMockPtr, getSegments()).WillOnce(Return(std::vector<int>{1, 2, 3}));
+  EXPECT_CALL(track3DMockPtr, getSegments()).WillOnce(Return(std::vector<int>{1, 2, 3}));
   EXPECT_FALSE(filter.pass(event));
 
 }

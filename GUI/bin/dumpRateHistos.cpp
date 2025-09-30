@@ -82,7 +82,7 @@ void analyzeRawEvents(const boost::property_tree::ptree &aConfig){
   }
 
   myEventSource->loadDataFile(dataFileName);
-  std::cout << "File with " << myEventSource->numberOfEntries() << " frames loaded."
+  std::cout << "File with " << myEventSource->numberOfEvents() << " frames loaded."
 	    << std::endl;
 
   DotFinder myDotFinder;
@@ -107,7 +107,7 @@ void analyzeRawEvents(const boost::property_tree::ptree &aConfig){
     
     // load next event (if any)
     currentEventIdx=myEventSource->currentEventNumber();
-    myEventSource->getNextEvent();
+    myEventSource->getNextEventLoop();
 
     ////// DEBUG
     //    if(++counter==10) break;
