@@ -83,7 +83,7 @@ unsigned long int EventSourceBase::currentEntryNumber() const{
 std::shared_ptr<GeometryTPC> EventSourceBase::getGeometry() const{ return myGeometryPtr; }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-unsigned long int EventSourceBase::numberOfEvents() const{ return nEvents; }
+unsigned long int EventSourceBase::numberOfEvents() const{ return nEvents;}
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 unsigned long int EventSourceBase::currentEventNumber() const{
@@ -104,7 +104,7 @@ std::string EventSourceBase::getCurrentPath() const{
 std::shared_ptr<EventTPC> EventSourceBase::getNextEventLoop(){
   unsigned int currentEventIdx;
 
-  if(nEventsToRead--==0 && nEventsToRead>nEvents) return std::shared_ptr<EventTPC>(0);
+  if(nEventsToRead--<=0 || nEventsToRead>(long int)nEvents) return std::shared_ptr<EventTPC>(0);
 
   do{
     currentEventIdx=getCurrentEvent()->GetEventInfo().GetEventId();

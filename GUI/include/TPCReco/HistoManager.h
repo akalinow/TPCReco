@@ -41,6 +41,8 @@ public:
 
   void setEvent(std::shared_ptr<EventTPC> aEvent);
 
+  void setTkBuilder(std::shared_ptr<TrackBuilder> aTkBuilderPtr);
+
   void setConfig(const boost::property_tree::ptree &aConfig);
 
   void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);
@@ -94,7 +96,7 @@ public:
   const TH2D & getHoughAccumulator(int strip_dir, int iPeak=0);
 
    /// Move to private
-   void createWirePlotDriftCage3D(std::unique_ptr<TPad> &aPad);
+   void createWirePlotDriftCage3D(std::unique_ptr<TCanvas> &aCanvas);
 
    void drawTrack3D(TVirtualPad *aPad);
 

@@ -79,7 +79,7 @@ protected:
 
   bool recoEventUpdated{false};
   
-  unsigned long int nEventsToRead{0};
+  long int nEventsToRead{0};
   unsigned long int nEvents{0};
   unsigned long int myCurrentEntry{0};
 

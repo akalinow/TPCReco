@@ -17,6 +17,8 @@ EventSourceMC::EventSourceMC(const std::string & geometryFileName, std::shared_p
   if(nEventsToGenerate<0) nEvents=0;
   else nEvents = nEventsToGenerate;
 
+  nEventsToRead = nEvents;
+
 }
 
 

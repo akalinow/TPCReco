@@ -75,6 +75,7 @@ MainFrame::~MainFrame() {
 ///////////////////////////////////////////////////////
 void MainFrame::InitializeWindows() {
 
+
 	bool isOnline = (myWorkMode == M_ONLINE_GRAW_MODE) || (myWorkMode == M_ONLINE_NGRAW_MODE);
 	SetCleanup(kDeepCleanup);
 	SetWMPosition(500, 0);
@@ -86,11 +87,12 @@ void MainFrame::InitializeWindows() {
 	//Left column
 	AddHistoCanvas();
 
-        // Additional Canvas with 3D scene
+    // Additional Canvas with 3D scene
 	if(myConfig.get<bool>("display.develMode") && !isOnline) { // devel plots are disabled in ONLINE mode
-		fWirePlotCanvas.reset(new TCanvas("fWirePlotCanvas", "3D detector", 400, 400));
+		fWirePlotCanvas = std::make_unique<TCanvas>("fWirePlotCanvas", "3D detector", 400, 400);
 		myHistoManager.createWirePlotDriftCage3D(fWirePlotCanvas);
 	}
+
 	///Middle column
 	int attach = 0;
 	attach = AddButtons(attach);
@@ -108,6 +110,7 @@ void MainFrame::InitializeWindows() {
 	Resize();
 	MapWindow();
 	SetWindowName("TPC GUI");
+
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -144,6 +147,8 @@ void MainFrame::InitializeEventSource() {
 	
 	myHistoManager.setConfig(myConfig);
 	myHistoManager.setGeometry(myEventSource->getGeometry());
+	myHistoManager.setTkBuilder(myEventSource->getTrackBuilder());
+	myHistoManager.setEvent(myEventSource->getCurrentEvent());
 
 	if (isRecoModeOn) myHistoManager.openOutputStream(dataFileName);
 }
@@ -194,26 +199,6 @@ void MainFrame::AddHistoCanvas() {
 	gStyle->SetPadLeftMargin(0.15);
 	gStyle->SetPadRightMargin(0.15);
 
-	/*
-	fRawHistosCanvas = new TCanvas("fRawHistosCanvas","Raw Histograms",850,800);
-	fRawHistosCanvas->MoveOpaque(kFALSE);
-	fRawHistosCanvas->Divide(2,2, 0.02, 0.02);
-	TList *aList = fRawHistosCanvas->GetListOfPrimitives();
-	for(auto obj: *aList){
-	  TPad *aPad = (TPad*)(obj);
-	  aPad->SetNumber(100 + aPad->GetNumber());
-	}
-
-	fTechHistosCanvas = new TCanvas("fTechHistosCanvas","Diagnostic Histograms",850,800);
-	fTechHistosCanvas->MoveOpaque(kFALSE);
-	fTechHistosCanvas->Divide(2,2, 0.02, 0.02);
-	TList *aList1 = fTechHistosCanvas->GetListOfPrimitives();
-	for(auto obj: *aList1){
-	  TPad *aPad = (TPad*)(obj);
-	  aPad->SetNumber(200 + aPad->GetNumber());
-	}
-	*/
-
 	embeddedCanvas = new TRootEmbeddedCanvas("embeddedCanvas", fFrame, 1000, 1000);
 	TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
 	int nRows = aLayout->fNrows;
@@ -231,6 +216,7 @@ void MainFrame::AddHistoCanvas() {
 	fMainCanvas->Divide(2, 2, 0.02, 0.02);
 
 	ClearCanvases();
+
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -581,7 +567,6 @@ void MainFrame::Update() {
 	  fMarkersManager->setGeometry(myEventSource->getGeometry());
 	  isGeometryChanged = false;
 	}
-	myHistoManager.setEvent(myEventSource->getCurrentEvent());
 	fMarkersManager->reset();
 	fMarkersManager->setEnabled(isRecoModeOn);
 	ClearCanvases();

@@ -40,8 +40,6 @@ HistoManager::~HistoManager() { }
 void HistoManager::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
   
   myGeometryPtr = aGeometryPtr;
-  myEventPtr->SetGeoPtr(myGeometryPtr);
-  myTkBuilderPtr->setGeometry(myGeometryPtr);
   setDetLayout();
 }
 /////////////////////////////////////////////////////////
@@ -49,8 +47,6 @@ void HistoManager::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
 void HistoManager::setConfig(const boost::property_tree::ptree &aConfig){
   
   myConfig = aConfig;
-
-  myTkBuilderPtr = std::make_shared<TrackBuilder>(myConfig);
 
   double pressure = aConfig.get<double>("conditions.pressure"); 
   double temperature = aConfig.get<double>("conditions.temperature");
@@ -74,6 +70,12 @@ void HistoManager::setEvent(std::shared_ptr<EventTPC> aEvent){
   if(!aEvent) return;
   myEventPtr = aEvent;
   myEventPtr->setHitFilterConfig(filter_type::threshold, myConfig);
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void HistoManager::setTkBuilder(std::shared_ptr<TrackBuilder> aTkBuilderPtr){
+
+  myTkBuilderPtr = aTkBuilderPtr;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -455,10 +457,10 @@ const TH2D & HistoManager::getHoughAccumulator(int strip_dir, int iPeak){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void HistoManager::createWirePlotDriftCage3D(std::unique_ptr<TPad> &aPad) {
+void HistoManager::createWirePlotDriftCage3D(std::unique_ptr<TCanvas> &aCanvas) {
 
-    if(!aPad) return;
-    aPad->cd();
+    if(!aCanvas) return;
+    aCanvas->cd();
 
     // make wire plot of drift cage in 3D
     TView *view=TView::CreateView(1);
@@ -492,8 +494,8 @@ void HistoManager::createWirePlotDriftCage3D(std::unique_ptr<TPad> &aPad) {
     l_beam.SetLineStyle(3);
     l_beam.DrawClone();
 
-    aPad->Update();
-    aPad->Modified();
+    aCanvas->Update();
+    aCanvas->Modified();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
