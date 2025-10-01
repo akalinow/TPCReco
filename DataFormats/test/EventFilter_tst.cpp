@@ -18,6 +18,7 @@ struct EventInfoMock{
 struct Track3DMock {
   Track3DMock() = default;
   Track3DMock(const Track3DMock&){}
+  Track3DMock & operator =(const Track3DMock &){ return *this; }
   MOCK_METHOD(std::vector<int>, getSegments, (), (const));
 };
 
@@ -52,11 +53,11 @@ struct EventSourceMock {
 class EventFilterTest : public ::testing::Test {
 public:
   EventFilter<std::function<bool(EventSourceMock &)>> filter;
-  EventSourceMock event;
+  EventSourceMock eventSource;
   pt::ptree ptree;
 };
 
-TEST_F(EventFilterTest, DefaultBehaviour) { EXPECT_TRUE(filter.pass(event)); }
+TEST_F(EventFilterTest, DefaultBehaviour) { EXPECT_TRUE(filter.pass(eventSource)); }
 
 TEST_F(EventFilterTest, Enabled_disabled) {
   std::stringstream config{R"(
@@ -71,16 +72,16 @@ TEST_F(EventFilterTest, Enabled_disabled) {
   pt::read_json(config, ptree);
   filter.setConditions(ptree);
 
-  EventSourceMock event;
+  EventSourceMock eventSource;
   auto eventTPCMockPtr = std::make_shared<EventTPCMock>();
-  event.eventTPCPtr = eventTPCMockPtr;
+  eventSource.eventTPCPtr = eventTPCMockPtr;
 
   EXPECT_CALL(*eventTPCMockPtr, GetTotalCharge()).WillRepeatedly(Return(0));
-  EXPECT_TRUE(filter.pass(event));
+  EXPECT_TRUE(filter.pass(eventSource));
   filter.setEnabled(true);
-  EXPECT_FALSE(filter.pass(event));
+  EXPECT_FALSE(filter.pass(eventSource));
   filter.setEnabled(false);
-  EXPECT_TRUE(filter.pass(event));
+  EXPECT_TRUE(filter.pass(eventSource));
 }
 
 TEST_F(EventFilterTest, totalCharge) {
@@ -97,16 +98,16 @@ TEST_F(EventFilterTest, totalCharge) {
   filter.setConditions(ptree);
   filter.setEnabled(true);
 
-  EventSourceMock event;
+  EventSourceMock eventSource;
   auto eventTPCMockPtr = std::make_shared<EventTPCMock>();
-  event.eventTPCPtr = eventTPCMockPtr;
+  eventSource.eventTPCPtr = eventTPCMockPtr;
 
   EXPECT_CALL(*eventTPCMockPtr, GetTotalCharge()).WillRepeatedly(Return(100));
-  EXPECT_FALSE(filter.pass(event));
+  EXPECT_FALSE(filter.pass(eventSource));
   EXPECT_CALL(*eventTPCMockPtr, GetTotalCharge()).WillRepeatedly(Return(1500));
-  EXPECT_TRUE(filter.pass(event));
+  EXPECT_TRUE(filter.pass(eventSource));
   EXPECT_CALL(*eventTPCMockPtr, GetTotalCharge()).WillRepeatedly(Return(5000));
-  EXPECT_FALSE(filter.pass(event));
+  EXPECT_FALSE(filter.pass(eventSource));
 }
 
 TEST_F(EventFilterTest, maxCharge) {
@@ -123,16 +124,16 @@ TEST_F(EventFilterTest, maxCharge) {
   filter.setConditions(ptree);
   filter.setEnabled(true);
 
-  EventSourceMock event;
+  EventSourceMock eventSource;
   auto eventTPCMockPtr = std::make_shared<EventTPCMock>();
-  event.eventTPCPtr = eventTPCMockPtr;
+  eventSource.eventTPCPtr = eventTPCMockPtr;
 
   EXPECT_CALL(*eventTPCMockPtr, GetMaxCharge()).WillRepeatedly(Return(100));
-  EXPECT_FALSE(filter.pass(event));
+  EXPECT_FALSE(filter.pass(eventSource));
   EXPECT_CALL(*eventTPCMockPtr, GetMaxCharge()).WillRepeatedly(Return(1500));
-  EXPECT_TRUE(filter.pass(event));
+  EXPECT_TRUE(filter.pass(eventSource));
   EXPECT_CALL(*eventTPCMockPtr, GetMaxCharge()).WillRepeatedly(Return(5000));
-  EXPECT_FALSE(filter.pass(event));
+  EXPECT_FALSE(filter.pass(eventSource));
 }
 
 TEST_F(EventFilterTest, eventId) {
@@ -151,21 +152,21 @@ TEST_F(EventFilterTest, eventId) {
   filter.setConditions(ptree);
   filter.setEnabled(true);
 
-  EventSourceMock event;
+  EventSourceMock eventSource;
   auto eventTPCMockPtr = std::make_shared<EventTPCMock>();
-  event.eventTPCPtr = eventTPCMockPtr;
+  eventSource.eventTPCPtr = eventTPCMockPtr;
 
   EventInfoMock eventInfoMock;
   eventTPCMockPtr->eventInfo = eventInfoMock;
 
   EXPECT_CALL(eventTPCMockPtr->eventInfo, GetEventId()).WillOnce(Return(0));
-  EXPECT_FALSE(filter.pass(event));
+  EXPECT_FALSE(filter.pass(eventSource));
   EXPECT_CALL(eventTPCMockPtr->eventInfo, GetEventId()).WillOnce(Return(1));
-  EXPECT_TRUE(filter.pass(event));
+  EXPECT_TRUE(filter.pass(eventSource));
   EXPECT_CALL(eventTPCMockPtr->eventInfo, GetEventId()).WillOnce(Return(2));
-  EXPECT_TRUE(filter.pass(event));
+  EXPECT_TRUE(filter.pass(eventSource));
   EXPECT_CALL(eventTPCMockPtr->eventInfo, GetEventId()).WillOnce(Return(3));
-  EXPECT_FALSE(filter.pass(event));
+  EXPECT_FALSE(filter.pass(eventSource));
 }
 
 TEST_F(EventFilterTest, recoProngs) {
@@ -182,17 +183,18 @@ TEST_F(EventFilterTest, recoProngs) {
   filter.setConditions(ptree);
   filter.setEnabled(true);
 
-  EventSourceMock event;
-  auto eventTPCMockPtr = std::make_shared<EventTPCMock>();
-  event.eventTPCPtr = eventTPCMockPtr;
+  EventSourceMock eventSource;
+  auto trackBuilderMockPtr = std::make_shared<TrackBuilderMock>();
+  Track3DMock track3DMock;
 
-  auto track3DMockPtr = event.getRecoEvent();
+  eventSource.trackBuilderPtr = trackBuilderMockPtr;
+  trackBuilderMockPtr->track3D = track3DMock;
 
-  EXPECT_CALL(track3DMockPtr, getSegments()).WillOnce(Return(std::vector<int>{1}));
-  EXPECT_FALSE(filter.pass(event));
-  EXPECT_CALL(track3DMockPtr, getSegments()).WillOnce(Return(std::vector<int>{1, 2}));
-  EXPECT_TRUE(filter.pass(event));
-  EXPECT_CALL(track3DMockPtr, getSegments()).WillOnce(Return(std::vector<int>{1, 2, 3}));
-  EXPECT_FALSE(filter.pass(event));
+  EXPECT_CALL(trackBuilderMockPtr->track3D, getSegments()).WillOnce(Return(std::vector<int>{1}));
+  EXPECT_FALSE(filter.pass(eventSource));
+  EXPECT_CALL(trackBuilderMockPtr->track3D, getSegments()).WillOnce(Return(std::vector<int>{1, 2}));
+  EXPECT_TRUE(filter.pass(eventSource));
+  EXPECT_CALL(trackBuilderMockPtr->track3D, getSegments()).WillOnce(Return(std::vector<int>{1, 2, 3}));
+  EXPECT_FALSE(filter.pass(eventSource));
 
 }
