@@ -52,6 +52,11 @@ private:
 
   void repackSegmentsData();
   void sendSegmentsData(std::vector<double> *segmentsXY);
+
+  Bool_t HandleButton(Event_t *event){ 
+    Long_t id = event->fCode;
+    return HandleButton(id);
+  }
   
   Bool_t HandleButton(Long_t id);
 

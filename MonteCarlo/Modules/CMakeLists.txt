@@ -1,6 +1,9 @@
 set(MODULE_NAME "MonteCarloModules")
 message(STATUS "Adding CMake fragment for module:\t${MODULE_NAME}")
 
+# Ensure ExternalProject uses the NEW behavior for timestamps (policy CMP0135)
+cmake_policy(SET CMP0135 NEW)
+
 add_subdirectory(Generator)
 add_subdirectory(DummyModule)
 add_subdirectory(EventFileExporter)
@@ -19,13 +22,14 @@ ExternalProject_Add(
   DOWNLOAD_NAME StripResponseModel.tar
   SOURCE_DIR StripResponseModel
   DOWNLOAD_DIR StripResponseModel
+  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
   BUILD_COMMAND ""
   INSTALL_COMMAND ""
   CONFIGURE_COMMAND "")
 
 if(BUILD_GEANT_MODULE)
   find_package(Geant4 REQUIRED ui_all vis_all)
-  find_package(cadmesh REQUIRED)
+  find_package(cadmesh REQUIRED) 
   add_subdirectory(GeantSim)
   include_directories(${Geant4_INCLUDE_DIRS})
   include_directories(${CADMESH_INCLUDE_DIRS})
@@ -39,6 +43,7 @@ if(BUILD_GEANT_MODULE)
     DOWNLOAD_NAME elitpc_STL_model_20180302.tar.gz
     SOURCE_DIR Geant_STL_model
     DOWNLOAD_DIR Geant_STL_model
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
     BUILD_COMMAND ""
     INSTALL_COMMAND ""
     CONFIGURE_COMMAND "")

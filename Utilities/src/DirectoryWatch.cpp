@@ -5,6 +5,8 @@
 #include <sys/inotify.h>
 #include <sys/types.h>
 #include <set>
+#include <set>
+#include <unistd.h>
 
 #include "TPCReco/colorText.h"
 #include "TPCReco/DirectoryWatch.h"

@@ -34,8 +34,11 @@ public:
   // constructor with optional exclusive list of allowed nodes and/or optional alternative file with definition of nodes
   ConfigManager(const std::vector<std::string> allowedNodeList={}, const std::string alternativeAllowedOptPath="");
     
+    /// read config from sources given in the command line arguments
     const boost::property_tree::ptree & getConfig(int argc, char** argv);
-    static const boost::property_tree::ptree & getConfig();
+
+    /// read config JSON file provided as input argument
+    const boost::property_tree::ptree & getConfig(const std::string & jsonName);
     
     void dumpConfig(const std::string & jsonName);
 
@@ -61,6 +64,7 @@ public:
     const boost::program_options::variables_map & parseCmdLineArgs(int argc, char ** argv);
     void setAllowedArgs(const std::vector<std::string> nodeList);
     bool checkNodeNameSyntax(const std::string & nodePath); 
+    void updateWithPTree(const boost::property_tree::ptree & configTreeUpdate);
     void updateWithJsonFile(const std::string & jsonName);
     void updateWithCmdLineArgs(const boost::program_options::variables_map & varMap);
     void insertVector(const std::string & nodePath, const std::string & vectorInJsonFormat);
@@ -106,7 +110,7 @@ public:
     template<typename T> class myVector;
 
     // helper classes to check if a given type T is a standard vector or not, for example:
-    //   typedef std::vector<float> some_type;
+    //   typedef std::vector<float> some_type;boostPtreeGettersWi
     //   if(ConfigManager::is_std_vector(some_type)::value == true) ...
     template<typename> struct is_std_vector_type : std::false_type {};
     template<typename T, typename A> struct is_std_vector_type<std::vector<T,A>> : std::true_type {};
@@ -126,11 +130,6 @@ public:
       // make conversion to myValue<T> to enable MATH expressions while parsing PTREE scalar varriable
       std::istringstream ss;
       ss.str(pt.get<std::string>(nodePath));
-      if(std::is_same<T, bool>::value) { // BOOL type needs a special treatment
-	ConfigManager::myValue<int> mvalI;
-	ss >> mvalI;
-	return boost::lexical_cast<T>(boost::lexical_cast<int>(mvalI) ? true : false);
-      }
       ConfigManager::myValue<T> mval;
       ss >> mval;
       return boost::lexical_cast<T>(mval);
@@ -200,7 +199,7 @@ public:
 // It provides two overloaded operators:
 // - operator<<() - creates nice-looking text stream in JSON format that provides 15-16 significant digits for T=double
 //   and "true/false" text labels for T=bool
-// - operator>>() - allows to interpret simple math expressions at run-time for type T being: int, unisgned int, float,
+// - operator>>() - allows to interpret simple math expressions at run-time for type T being: int, unsigned int, float,
 //   double and bool.
 // 
 template<typename T>
@@ -277,10 +276,10 @@ public:
 //
 // Helper storage class needed for custom validator of cmd line arguments used to initialize std::vector<T>
 // by BOOST program options, where T denotes: int, unsigned int, float, double, bool or std::string.
-// It behavies like a normal std::vector<T> and provides two overloaded operators:
+// It behaves like a normal std::vector<T> and provides two overloaded operators:
 // - operator<<() - creates nice-looking text stream in JSON vector format that provides 15-16 significant digits for T=double
 //   and "true/false" text labels for T=bool
-// - operator>>() - allows to interpret simple math expressions at run-time for type T being: int, unisgned int, float,
+// - operator>>() - allows to interpret simple math expressions at run-time for type T being: int, unsigned int, float,
 //   double and bool.
 //
 template<typename T>
@@ -431,3 +430,4 @@ namespace boost {
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #endif
+

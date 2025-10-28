@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION 3.4) # setting this is required
+cmake_minimum_required(VERSION 3.10...3.31)
+
 project(
   TPCReco
   LANGUAGES CXX

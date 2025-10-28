@@ -29,8 +29,10 @@ G4VPhysicalVolume *GELIDetectorConstruction::Construct() {
     world_logical = new G4LogicalVolume(world_solid, mixture, "world_logical", nullptr, nullptr, nullptr);
     world_physical = new G4PVPlacement(nullptr, G4ThreeVector(), world_logical,
                                        "world_physical", nullptr, false, 0);
-    world_logical->SetVisAttributes(G4VisAttributes::Invisible);
-
+    auto world_vis = new G4VisAttributes();
+    world_vis->SetVisibility(false);
+    world_logical->SetVisAttributes(world_vis);
+    
     GELITPCDetector::BuildTPCDetector(world_logical);
 
     return world_physical;

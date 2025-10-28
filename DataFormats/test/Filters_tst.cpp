@@ -7,7 +7,7 @@ using ::testing::Return;
 
 struct EventInfoMock
 {
-  EventInfoMock & operator =(const EventInfoMock &){};
+  EventInfoMock & operator =(const EventInfoMock &){ return *this; };
   MOCK_METHOD(uint32_t, GetEventId, (), (const));
 };
 

@@ -14,11 +14,21 @@ template <> ConfigManager::myValue<float>::myValue()        : value(0.0)   { }
 template <> ConfigManager::myValue<double>::myValue()       : value(0.0)   { }
 template <> ConfigManager::myValue<bool>::myValue()         : value(false) { }
 
+
+template <> bool ConfigManager::getScalar<bool>(const boost::property_tree::ptree &pt, const std::string & nodePath) {
+      std::istringstream ss;
+      ss.str(pt.get<std::string>(nodePath));
+      ConfigManager::myValue<int> mvalI;
+      ss >> mvalI;
+      return boost::lexical_cast<bool>(boost::lexical_cast<int>(mvalI) ? true : false);
+}
+
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 // Custom std::validator method to read value of type T from cmd line argument needed by BOOST program options,
-// where T denotes: int, usigned int, float or double.
+// where T denotes: int, unsigned int, float or double.
 // Simple math expressions, such as "M_PI*2", will be converted to their numerical representation at run time.
 // An instance of TApplication must be already initialized beforehand in order to pass the valid pointer to gInterpreter.
 // NOTE: if pointer to gInterpreter if zero, then math expressions are passed as-is.
@@ -466,6 +476,14 @@ void ConfigManager::updateWithJsonFile(const std::string & jsonName){
     std::cout<<KBLU<<"ConfigManager: updating parameters with configuration file: "<<RST<<jsonName<<std::endl;
     boost::property_tree::ptree configTreeUpdate;
     boost::property_tree::read_json(jsonName, configTreeUpdate);
+    updateWithPTree(configTreeUpdate);
+
+} 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void ConfigManager::updateWithPTree(const boost::property_tree::ptree & configTreeUpdate){
+
+    std::cout<<KBLU<<"ConfigManager: updating parameters with configuration tree: "<<RST<<std::endl;
 
     // parse text math expressions (if any)
     boost::property_tree::ptree configTreeUpdateFiltered;
@@ -511,8 +529,8 @@ void ConfigManager::updateWithJsonFile(const std::string & jsonName){
       }
       if(!found) {
 	std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
-		 <<"): ERROR: Input JSON file '"<<jsonName<<"' contains node '"<<key<<"' of unknown type!"<<RST<<std::endl;
-	throw std::logic_error("wrong JSON file");
+		 <<"): ERROR: Input ptree contains node '"<<key<<"' of unknown type!"<<RST<<std::endl;
+	throw std::logic_error("wrong ptree");
       }
     }
 
@@ -555,8 +573,8 @@ void ConfigManager::updateWithJsonFile(const std::string & jsonName){
 	     configTreeUpdate.get_child(nodePath).front().first=="" &&
 	     configTreeUpdate.get_child(nodePath).back().first=="") {
 	    std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
-		     <<"): ERROR: Input JSON file '"<<jsonName<<"' assigns vector<ptree> value to node '"<<nodePath<<"' declared as non-vector ptree!"<<RST<<std::endl;
-	    throw std::logic_error("wrong JSON file");
+		     <<"): ERROR: Input ptree assigns vector<ptree> value to node '"<<nodePath<<"' declared as non-vector ptree!"<<RST<<std::endl;
+	    throw std::logic_error("wrong ptree");
 	  }
 	  pruneTree(configTreeUpdateFiltered, nodePath);
 	  configTreeUpdateFiltered.put_child(nodePath, configTreeUpdate.get_child(nodePath));
@@ -617,8 +635,8 @@ void ConfigManager::updateWithJsonFile(const std::string & jsonName){
 	     !(configTreeUpdate.get_child(nodePath).front().first=="" &&
 	       configTreeUpdate.get_child(nodePath).back().first=="")) {
 	    std::cout<<KRED<<__FUNCTION__<<"("<<__LINE__
-		     <<"): ERROR: Input JSON file '"<<jsonName<<"' assigns non-vector ptree value to node '"<<nodePath<<"' declared as vector<ptree>!"<<RST<<std::endl;
-	    throw std::logic_error("wrong JSON file");
+		     <<"): ERROR: Input ptree assigns non-vector ptree value to node '"<<nodePath<<"' declared as vector<ptree>!"<<RST<<std::endl;
+	    throw std::logic_error("wrong ptree");
 	  }
 	  pruneTree(configTreeUpdateFiltered, nodePath);
 	  auto& array = configTreeUpdateFiltered.add_child(nodePath, boost::property_tree::ptree());
@@ -779,6 +797,15 @@ const boost::property_tree::ptree & ConfigManager::getConfig(int argc, char **ar
 
     return configTree;
 }
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+const boost::property_tree::ptree & ConfigManager::getConfig(const std::string & jsonFileName){
+
+    std::cout<<KBLU<<"ConfigManager: updating parameters with JSON configuration file:"<<RST<<jsonFileName<<std::endl;
+    updateWithJsonFile(jsonFileName);
+    return configTree;
+}
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // //
@@ -1173,3 +1200,5 @@ std::vector<std::string> ConfigManager::filterSquareBrackets(const std::vector<s
   }
   return filteredValues;
 }
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////

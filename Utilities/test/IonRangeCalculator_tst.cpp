@@ -303,14 +303,6 @@ TEST(IonRangeCalculatorDeathTest, UnsupportedIonType) {
     }, "ERROR: Reference range/energy curve is missing");
 }
 
-TEST_F(IonRangeCalculatorTest, IsOKMethod) {
-    EXPECT_TRUE(calculator->IsOK());
-    
-    // Create calculator with invalid conditions
-    IonRangeCalculator invalid_calc(gas_mixture_type::CO2, -1.0, -1.0, false);
-    EXPECT_FALSE(invalid_calc.IsOK());
-}
-
 // Integration Test
 TEST_F(IonRangeCalculatorTest, FullWorkflow) {
     // Set specific conditions

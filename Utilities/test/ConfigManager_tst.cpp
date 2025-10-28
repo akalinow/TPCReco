@@ -18,9 +18,11 @@ public:
   static std::string dummyAllowedOptionsJson;
   static std::string dummyInvalidAllowedOptionsJson1;
   static std::string dummyInvalidAllowedOptionsJson2;
+  static std::string dummyValidAllowedOptionsJson4;
   static std::string dummyValidJson1;
   static std::string dummyValidJson2;
   static std::string dummyValidJson3;
+  static std::string dummyValidJson4;
   static std::string dummyInvalidJson1;
   static std::string dummyInvalidJson2;
   static std::string dummyInvalidJson3;
@@ -35,6 +37,7 @@ public:
     const std::string nameOpt1=directory + dummyAllowedOptionsJson;
     const std::string nameOpt2=directory + dummyInvalidAllowedOptionsJson1;
     const std::string nameOpt3=directory + dummyInvalidAllowedOptionsJson2;
+    const std::string nameOpt4=directory + dummyValidAllowedOptionsJson4;
     const std::string configOpt1{R"####(
 {
     "configJson":{
@@ -149,15 +152,71 @@ public:
     }
 }
     )####"}; // MARK=#### allows to use () for params/expressions
+
+const std::string configOpt4{R"####(
+{    
+    "configJson":{
+        "group":"meta",
+        "type" : "vector<string>",
+        "defaultValue" : "",
+        "description" : "dummy JSON file(s) test"
+    },
+"plainF": {
+        "group":"someAnalysis.paramPtree",
+        "type" : "float",
+        "defaultValue" : 0.0,
+        "description" : "Test float parameter"
+    },
+    "plainI": {
+        "group":"someAnalysis.paramPtree",
+        "type" : "int",
+        "defaultValue" : 0,
+        "description" : "Test int parameter"
+    },
+    "mathD": {
+        "group":"someAnalysis.paramPtree",
+        "type" : "double",
+        "defaultValue" : "0",
+        "description" : "Test double parameter with math expression"
+    },
+    "mathI": {
+        "group":"someAnalysis.paramPtree",
+        "type" : "int",
+        "defaultValue" : "0",
+        "description" : "Test int parameter with math expression"
+    },
+    "mathB": {
+        "group":"someAnalysis.paramPtree",
+        "type" : "bool",
+        "defaultValue" : "False",
+        "description" : "Test bool parameter with math expression"
+    },
+    "vectorB": {
+        "group":"someAnalysis.paramPtree",
+        "type" : "vector<bool>",
+        "defaultValue" : [],
+        "description" : "Test vector<bool> parameter with math expressions"
+    },
+    "vectorS": {
+        "group":"someAnalysis.paramPtree",
+        "type" : "vector<string>",
+        "defaultValue" : [],
+        "description" : "Test vector<string> parameter"
+    }
+}
+    )####"}; // MARK=#### allows to use () for params/expressions
+
     createDummyJson(nameOpt1, configOpt1);
     createDummyJson(nameOpt2, configOpt2);
     createDummyJson(nameOpt3, configOpt3);
+    createDummyJson(nameOpt4, configOpt4);
   }
 
   static void createDummyJsonFiles() {
     const std::string nameJ1=directory + dummyValidJson1;
     const std::string nameJ2=directory + dummyValidJson2;
     const std::string nameJ3=directory + dummyValidJson3;
+    const std::string nameJ4=directory + dummyValidJson4;
     const std::string nameIJ1=directory + dummyInvalidJson1;
     const std::string nameIJ2=directory + dummyInvalidJson2;
     const std::string nameIJ3=directory + dummyInvalidJson3;
@@ -203,6 +262,24 @@ public:
     }
 }
     )####"}; // MARK=#### allows to use () for params/expressions
+
+
+ const std::string configJ4{R"####(
+{   
+  "someAnalysis" : {
+        "paramPtree" : {
+            "plainF" : 1.234,
+            "plainI" : 2,
+            "mathD" : "TMath::Pi()",
+            "mathI" : "1+2+3",
+            "mathB" : "(6>2)",
+            "vectorB" : [ true, "!true", "(5>6)", true ],
+            "vectorS" : [ "any", "value", "will do", "to", "_be", "_merged" ]
+        }
+    }
+}
+)####"}; // MARK=#### allows to use () for params/expressions
+ 
     const std::string configIJ1{R"####(
 {
     "group2":{
@@ -233,6 +310,7 @@ public:
     createDummyJson(nameJ1, configJ1);
     createDummyJson(nameJ2, configJ2);
     createDummyJson(nameJ3, configJ3);
+    createDummyJson(nameJ4, configJ4);
     createDummyJson(nameIJ1, configIJ1);
     createDummyJson(nameIJ2, configIJ2);
     createDummyJson(nameIJ3, configIJ3);
@@ -246,12 +324,14 @@ public:
     dummyAllowedOptionsJson = "dummyAllowedOptions.json";
     dummyInvalidAllowedOptionsJson1 = "dummyInvalidAllowedOptions1.json";
     dummyInvalidAllowedOptionsJson2 = "dummyInvalidAllowedOptions2.json";
+    dummyValidAllowedOptionsJson4 = "dummyValidAllowedOptions4.json";
     dummyValidJson1 = "test1.json";
     dummyValidJson2 = "test2.json";
     dummyValidJson3 = "test3.json";
-    dummyInvalidJson1 = "test4.json";
-    dummyInvalidJson2 = "test5.json";
-    dummyInvalidJson3 = "test6.json";
+    dummyValidJson4 = "test4.json";
+    dummyInvalidJson1 = "test5.json";
+    dummyInvalidJson2 = "test6.json";
+    dummyInvalidJson3 = "test7.json";
     fs::create_directories(directory);
     createDummyJsonFiles();
     createDummyAllowedOptionsJsonFiles();
@@ -261,9 +341,11 @@ std::string ConfigManagerTest::directory = "";
 std::string ConfigManagerTest::dummyAllowedOptionsJson = "";
 std::string ConfigManagerTest::dummyInvalidAllowedOptionsJson1 = "";
 std::string ConfigManagerTest::dummyInvalidAllowedOptionsJson2 = "";
+std::string ConfigManagerTest::dummyValidAllowedOptionsJson4 = "";
 std::string ConfigManagerTest::dummyValidJson1 = "";
 std::string ConfigManagerTest::dummyValidJson2 = "";
 std::string ConfigManagerTest::dummyValidJson3 = "";
+std::string ConfigManagerTest::dummyValidJson4 = "";
 std::string ConfigManagerTest::dummyInvalidJson1 = "";
 std::string ConfigManagerTest::dummyInvalidJson2 = "";
 std::string ConfigManagerTest::dummyInvalidJson3 = "";
@@ -466,7 +548,7 @@ TEST_F(ConfigManagerTest, invalidParamFromGenericJSON) {
         }
       catch( const std::exception& e )
         {
-	  EXPECT_STREQ( "wrong JSON file", e.what() );
+	  EXPECT_STREQ( "wrong ptree", e.what() );
 	  throw;
         }
     }, std::exception );
@@ -520,20 +602,6 @@ TEST_F(ConfigManagerTest, expressionMyValue) {
   ss >> mvalD;
   EXPECT_DOUBLE_EQ( boost::lexical_cast<double>(mvalD), 2.0 );
 
-  // wrong case - math expression, type DOUBLE
-  EXPECT_THROW({
-      try {
-	ss.clear();
-	ss.str("WRONG_EXPRESSION");
-	ss >> mvalD;
-      }
-      catch( const std::exception& e )
-        {
-	  EXPECT_STREQ( "wrong math expression", e.what() );
-	  throw;
-        }
-    }, std::exception );
-
   // good case - math expression, type INT
   ss.clear();
   ss.str("4+5");
@@ -545,20 +613,6 @@ TEST_F(ConfigManagerTest, expressionMyValue) {
   ss.str("!(true||false)");
   ss >> mvalB;
   EXPECT_EQ( boost::lexical_cast<bool>(mvalB), !(true||false) );
-
-  // wrong case - math expression, type BOOL
-  EXPECT_THROW({
-      try {
-	ss.clear();
-	ss.str("WRONG_EXPRESSION");
-	ss >> mvalB;
-      }
-      catch( const std::exception& e )
-        {
-	  EXPECT_STREQ( "wrong math expression", e.what() );
-	  throw;
-        }
-    }, std::exception );
 
   // good case - for STRING type any input will do
   ss.clear();
@@ -606,6 +660,19 @@ true&&false
 }
 //////////////////////////
 //////////////////////////
+TEST(ConfigManagerDeathTest, WrongExpressionMyValue) {
+
+  std::stringstream ss;
+  auto mvalD = ConfigManager::myValue<double>();
+ // wrong case - math expression, type DOUBLE
+  EXPECT_DEATH({
+    ss.clear();
+    ss.str("WRONG_EXPRESSION");
+    ss >> mvalD;
+  }, ".*");
+}
+//////////////////////////
+//////////////////////////
 TEST_F(ConfigManagerTest, boostPtreeGetters) {
 
   int argc = 1;
@@ -621,30 +688,23 @@ TEST_F(ConfigManagerTest, boostPtreeGetters) {
 //////////////////////////
 TEST_F(ConfigManagerTest, boostPtreeGettersWithMathExpression) {
 
-  std::stringstream ss(R"####(
-{   "someAnalysis" : {
-        "paramPtree" : {
-            "plainF" : 1.234,
-            "plainI" : 2,
-            "mathD" : "TMath::Pi()",
-            "mathI" : "1+2+3",
-            "mathB" : "(6>2)",
-            "vectorB" : [ true, "!true", "(5>6)", true ],
-            "vectorS" : [ "any", "value", "will do", "to" "_be" "_merged" ]
-        }
-    }
-}
-)####"); // MARK=#### allows to use () for params/expressions
+  int argc = 3;
+  std::string optionsJSON = ConfigManagerTest::directory + ConfigManagerTest::dummyValidAllowedOptionsJson4;
+  std::string testJSON = ConfigManagerTest::directory + ConfigManagerTest::dummyValidJson4;
+  ConfigManager cm( {}, optionsJSON );
 
-  boost::property_tree::ptree tree;
-  boost::property_tree::read_json(ss, tree);
-  EXPECT_FLOAT_EQ( (float)1.234, ConfigManager::getScalar<float>(tree, "someAnalysis.paramPtree.plainF") );
-  EXPECT_EQ( (int)2, ConfigManager::getScalar<int>(tree, "someAnalysis.paramPtree.plainI") );
-  EXPECT_DOUBLE_EQ( TMath::Pi(), ConfigManager::getScalar<double>(tree, "someAnalysis.paramPtree.mathD") );
-  EXPECT_EQ( 1+2+3, ConfigManager::getScalar<int>(tree, "someAnalysis.paramPtree.mathI") );
-  EXPECT_EQ( (bool)(6>2), ConfigManager::getScalar<bool>(tree, "someAnalysis.paramPtree.mathB") );
-  EXPECT_EQ( std::vector<bool>({true, !true, (5>6), true}), ConfigManager::getVector<std::vector<bool>>(tree, "someAnalysis.paramPtree.vectorB") );
-  EXPECT_EQ( std::vector<std::string>({"any", "value", "will do", "to_be_merged"}), ConfigManager::getVector<std::vector<std::string>>(tree, "someAnalysis.paramPtree.vectorS") );
+  char *argv[] = {(char*)"ConfigManager_tst",
+		  (char*)"--meta.configJson", const_cast<char *>(testJSON.data())};
+  boost::property_tree::ptree myConfig = cm.getConfig(argc, argv);
+
+  EXPECT_FLOAT_EQ( (float)1.234, cm.getScalar<float>("someAnalysis.paramPtree.plainF") );
+  EXPECT_EQ( (int)2, cm.getScalar<int>("someAnalysis.paramPtree.plainI") );
+  EXPECT_DOUBLE_EQ( TMath::Pi(), cm.getScalar<double>("someAnalysis.paramPtree.mathD") );
+  EXPECT_EQ( 1+2+3, cm.getScalar<int>("someAnalysis.paramPtree.mathI") );
+  EXPECT_EQ( (bool)(6>2), cm.getScalar<bool>("someAnalysis.paramPtree.mathB") );
+  EXPECT_EQ( std::vector<bool>({true, !true, (5>6), true}), cm.getVector<std::vector<bool>>("someAnalysis.paramPtree.vectorB") );
+  EXPECT_EQ( std::vector<std::string>({"any", "value", "will do", "to", "_be", "_merged"}), cm.getVector<std::vector<std::string>>("someAnalysis.paramPtree.vectorS") );
+
 }
 //////////////////////////
 //////////////////////////
@@ -732,7 +792,7 @@ TEST_F(ConfigManagerTest, invalidPtreeFromGenericJSON) {
         }
       catch( const std::exception& e )
         {
-	  EXPECT_STREQ( "wrong JSON file", e.what() );
+	  EXPECT_STREQ( "wrong ptree", e.what() );
 	  throw;
         }
     }, std::exception );
@@ -754,7 +814,7 @@ TEST_F(ConfigManagerTest, invalidVectorPtreeFromGenericJSON) {
         }
       catch( const std::exception& e )
         {
-	  EXPECT_STREQ( "wrong JSON file", e.what() );
+	  EXPECT_STREQ( "wrong ptree", e.what() );
 	  throw;
         }
     }, std::exception );
