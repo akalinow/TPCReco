@@ -21,8 +21,12 @@ This image uses `elitpc/get` as its base. Make sure that image is already presen
 ```
 git clone ssh://git@dracula.hep.fuw.edu.pl:8822/akalinowski/TPCReco.git
 cd TPCReco
-docker build --no-cache --rm --target user -t elitpc/tpcreco:latest -f docker/Dockerfile . 
+docker build --rm --target default -t elitpc/tpcreco:latest -f docker/Dockerfile . 
+docker build --rm --target with_tf -t elitpc/tpcreco-with_tf:latest -f docker/Dockerfile . 
 ```
+
+There are two version of the image: default one with no tensorflow support and `with_tf` one with tensorflow and jupyterlab installed. In the `with_tf` version you can start jupyterlab server by running `/opt/scripts/start-jupyter.sh` script inside the container.
+
 ## Getting started with Singularity
 
 It's possible to convert `TPCReco` docker image to singularity image.
