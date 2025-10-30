@@ -26,6 +26,8 @@ fwk::VModule::EResultFlag GeantSim::Init(boost::property_tree::ptree config) {
     fRunManager->SetUserAction(new GELITrackingAction());
     fRunManager->SetUserAction(new GELIEventAction(buffer));
 
+    G4PrimaryTransformer::SetKETolerance(5.0 * CLHEP::MeV);
+
     fRunManager->Initialize();
 
     auto physListFactory = new G4PhysListFactory();
