@@ -3,7 +3,7 @@ ARG TPCReco_VERSION=25_02_2020
 
 FROM elitpc/get:${GET_VERSION} AS common_base
 
-COPY  docker/packages.txt /tmp/packages.txt
+COPY docker/packages.txt /tmp/packages.txt
 RUN apt-get update -qq \
     && apt-get -y install $(cat /tmp/packages.txt) \
     && rm -rf /var/lib/apt/lists/* \
@@ -60,6 +60,19 @@ COPY  docker/requirements.txt /tmp/requirements.txt
 RUN yes | pip3 install --no-cache-dir -r /tmp/requirements.txt \
     && rm /tmp/requirements.txt
 RUN echo "source /opt/venv/bin/activate" >> /etc/bash.bashrc
+
+ENV CPU_OR_GPU=gpu
+#TensorFlow 2.18 was the last release of Linux x86 libtensorflow packages.
+ENV TF_VERSION=2.18.0
+RUN echo "Download Tensorflow-$CPU_OR_GPU-$TF_VERSION" && \
+    tensorflow_url="https://storage.googleapis.com/tensorflow/versions/$TF_VERSION/libtensorflow-$CPU_OR_GPU-linux-x86_64.tar.gz" && \
+    wget -O /tmp/tensorflow.tar.gz $tensorflow_url && \
+    echo "Extracting..." && \
+    mkdir -p /opt/soft/tensorflow-$TF_VERSION && \
+    tar -C /opt/soft/tensorflow-$TF_VERSION -xzf /tmp/tensorflow.tar.gz && \
+    ldconfig && \
+    rm /tmp/tensorflow.tar.gz
+    
 
 # install user scripts
 RUN mkdir -p /opt/scripts
