@@ -20,16 +20,18 @@ RUN cmake -S geant4-${GEANT4_VERSION} -Bbuild \
     && ldconfig
 
 # source geant4.sh is configured on build
-ENV G4LEVELGAMMADATA=/usr/local/share/Geant4-${GEANT4_VERSION}/data/PhotonEvaporation5.2
-ENV G4NEUTRONXSDATA=/usr/local/share/Geant4-${GEANT4_VERSION}/data/G4NEUTRONXS1.4
-ENV G4LEDATA=/usr/local/share/Geant4-${GEANT4_VERSION}/data/G4EMLOW7.3
-ENV G4NEUTRONHPDATA=/usr/local/share/Geant4-${GEANT4_VERSION}/data/G4NDL4.5
-ENV G4RADIOACTIVEDATA=/usr/local/share/Geant4-${GEANT4_VERSION}/data/RadioactiveDecay5.2
-ENV G4ENSDFSTATEDATA=/usr/local/share/Geant4-${GEANT4_VERSION}/data/G4ENSDFSTATE2.2
-ENV G4ABLADATA=/usr/local/share/Geant4-${GEANT4_VERSION}/data/G4ABLA3.1
-ENV G4PIIDATA=/usr/local/share/Geant4-${GEANT4_VERSION}/data/G4PII1.3
-ENV G4SAIDXSDATA=/usr/local/share/Geant4-${GEANT4_VERSION}/data/G4SAIDDATA1.1
-ENV G4REALSURFACEDATA=/usr/local/share/Geant4-${GEANT4_VERSION}/data/RealSurface2.1.1
+ENV G4LEVELGAMMADATA=/usr/local/share/Geant4/data/PhotonEvaporation6.1
+#ENV G4NEUTRONXSDATA=/usr/local/share/Geant4/data/G4NEUTRONXS1.4
+ENV G4LEDATA=/usr/local/share/Geant4/data/G4EMLOW8.6.1
+ENV G4NEUTRONHPDATA=/usr/local/share/Geant4/data/G4NDL4.7.1
+ENV G4RADIOACTIVEDATA=/usr/local/share/Geant4/data/RadioactiveDecay6.1.2
+ENV G4ENSDFSTATEDATA=/usr/local/share/Geant4/data/G4ENSDFSTATE3.0
+ENV G4ABLADATA=/usr/local/share/Geant4/data/G4ABLA3.3
+ENV G4PIIDATA=/usr/local/share/Geant4/data/G4PII1.3
+ENV G4SAIDXSDATA=/usr/local/share/Geant4/data/G4SAIDDATA1.1
+ENV G4REALSURFACEDATA=/usr/local/share/Geant4/data/RealSurface2.2
+
+
 
 ARG CADMESH_VERSION=1.1
 RUN wget https://github.com/christopherpoole/CADMesh/archive/refs/tags/v${CADMESH_VERSION}.tar.gz -O cadmesh.tar.gz \
@@ -72,8 +74,9 @@ RUN echo "Download Tensorflow-$CPU_OR_GPU-$TF_VERSION" && \
     tar -C /opt/soft/tensorflow-$TF_VERSION -xzf /tmp/tensorflow.tar.gz && \
     ldconfig && \
     rm /tmp/tensorflow.tar.gz
-    
 
+ENV LD_LIBRARY_PATH="/opt/soft/tensorflow-$TF_VERSION/lib:$LD_LIBRARY_PATH"    
+    
 # install user scripts
 RUN mkdir -p /opt/scripts
 COPY docker/start-jupyter.sh /opt/scripts/start-jupyter.sh
