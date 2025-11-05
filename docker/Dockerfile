@@ -88,9 +88,6 @@ RUN chmod -R a+rw /opt/root/etc/notebook/migrated
 RUN mkdir -p /opt/root/etc/notebook/lab/workspaces
 RUN chmod -R a+rw /opt/root/etc/notebook/lab/workspaces
 
-RUN groupadd -g 29916 user1 && \
-     useradd -m -r -u 29916 -g user1 user1
-
 FROM common_base AS user
 ADD . /opt/soft/TPCReco-src
 WORKDIR /opt/soft/
