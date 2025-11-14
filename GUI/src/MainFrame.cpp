@@ -151,7 +151,7 @@ void MainFrame::InitializeEventSource() {
 	myHistoManager.setTkBuilder(myEventSource->getTrackBuilder());
 	myHistoManager.setEvent(myEventSource->getCurrentEvent());
 
-	if (isRecoModeOn) myHistoManager.openOutputStream(dataFileName);
+	if (isRecoModeOn) myHistoManager.openOutputStream();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -759,7 +759,7 @@ void MainFrame::HandleMenu(Int_t id) {
 	case M_NEXT_EVENT:
 	{
 		unsigned int eventType = UpdateEventLog();
-		if (isRecoModeOn) myHistoManager.writeRecoData(eventType);
+		myHistoManager.writeRecoData(eventType);
 		myEventSource->getNextEventLoop();
 		Update();
 	}
@@ -797,8 +797,7 @@ void MainFrame::HandleMenu(Int_t id) {
 	case M_TOGGLE_RECOMODE:
 	{
 		isRecoModeOn = !isRecoModeOn;
-		std::string dataFileName = myConfig.get("input.dataFile", "");
-		if (isRecoModeOn) myHistoManager.openOutputStream(dataFileName);
+		if (isRecoModeOn) myHistoManager.openOutputStream();
 		Update();
 	}
 	break;

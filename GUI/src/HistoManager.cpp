@@ -750,28 +750,21 @@ void HistoManager::makeAutozoom(TH1 * aHisto){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void HistoManager::openOutputStream(const std::string & filePath){
+void HistoManager::openOutputStream(){
 
-  if(openOutputStreamInitialized) return;
+  if (!myFileOutput) myFileOutput = std::make_shared<FileOutput>(myConfig);
 
-  openOutputStreamInitialized = true;
-  std::size_t last_dot_position = filePath.find_last_of(".");
-  std::size_t last_slash_position = filePath.find_last_of("//");
-  std::string recoFileName = MakeUniqueName("Reco_"+filePath.substr(last_slash_position+1,
-						     last_dot_position-last_slash_position-1)+".root");
-
-  std::string fileName = filePath.substr(last_slash_position+1);
-  if(fileName.find("CoBo")==std::string::npos){
-    fileName = fileName.replace(0,8,"CoBo_ALL_AsAd_ALL");
-  }
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void HistoManager::writeRecoData(unsigned long eventType){
 
   myEventInfo = myEventPtr->GetEventInfo(); 
-  myEventInfo.SetEventType(eventType);				   
-
+  myEventInfo.SetEventType(eventType);		
+  
+  if (myFileOutput){
+    myFileOutput->update(myEventInfo, myTkBuilderPtr->getTrack3D(0));
+  }
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

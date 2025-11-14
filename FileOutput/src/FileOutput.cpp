@@ -126,4 +126,21 @@ void FileOutput::update(std::shared_ptr<EventSourceBase> aEventSource) {
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+void FileOutput::update(const eventraw::EventInfo & aEventInfoPtr,
+                        const Track3D & aRecoEventPtr){
 
+   *myEventInfoPtr = aEventInfoPtr;
+   *myRecoEventPtr = aRecoEventPtr;
+
+    for(auto aTree: myOutputTrees) {
+    if (aTree.second==nullptr) {
+      std::cout << KRED << "FileOutput::update" << RST
+                << " pointer to output tree not set for tree: "
+                << aTree.first << std::endl;
+      continue;
+    }
+    aTree.second->Fill();
+  } 
+}
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////

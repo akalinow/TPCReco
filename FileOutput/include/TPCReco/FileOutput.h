@@ -31,6 +31,9 @@ public:
   void setRecoEvent(const Track3D & aRecTrack);
 
   void update(std::shared_ptr<EventSourceBase> aEventSource);
+
+  void update(const eventraw::EventInfo & aEventInfoPtr,
+              const Track3D & aRecoEventPtr);
     
 private:
   

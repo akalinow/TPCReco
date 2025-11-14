@@ -20,6 +20,7 @@
 #include "TPCReco/IonRangeCalculator.h"
 
 #include "TPCReco/CommonDefinitions.h"
+#include "TPCReco/FileOutput.h"
 
 class TH2D;
 class TH3D;
@@ -47,7 +48,7 @@ public:
 
   void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);
 
-  void openOutputStream(const std::string & filePath);
+  void openOutputStream();
 
   void writeRecoData(unsigned long  eventType);
 
@@ -130,6 +131,7 @@ private:
   std::shared_ptr<EventTPC> myEventPtr;
   eventraw::EventInfo myEventInfo;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
+  std::shared_ptr<FileOutput> myFileOutput;
 
   TH2F *hDetLayout{0};        // dummy histogram with optimal XY ranges
   TH2F *hPlotBackground{0};
@@ -141,7 +143,6 @@ private:
   std::vector<TObject*> fTrackLines;
 
   bool doAutozoom{false};
-  bool openOutputStreamInitialized{false};
 
   Long64_t previousEventTime{-1};
   Long64_t previousEventNumber{-1};
