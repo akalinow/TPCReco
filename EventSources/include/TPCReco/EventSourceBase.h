@@ -60,7 +60,7 @@ public:
 
   unsigned long int numberOfEvents() const;
 
-  unsigned long int currentEventNumber() const;
+  unsigned long int currentEventId() const;
 
   unsigned long int currentEntryNumber() const;
 
@@ -81,7 +81,7 @@ protected:
   
   long int nEventsToRead{0};
   unsigned long int nEvents{0};
-  unsigned long int myCurrentEntry{0};
+  unsigned long int myCurrentEntry{std::numeric_limits<unsigned long int>::max()};
 
   EventFilterType eventFilter;
   std::shared_ptr<GeometryTPC> myGeometryPtr;

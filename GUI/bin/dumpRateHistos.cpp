@@ -102,18 +102,18 @@ void analyzeRawEvents(const boost::property_tree::ptree &aConfig){
     }
 
     // fill statistical histograms per run (before & after user-defined cuts)
-    std::cout << "EventID: " << myEventSource->currentEventNumber() << std::endl;
+    std::cout << "EventID: " << myEventSource->currentEventId() << std::endl;
     myDotFinder.runDotFinder(myEventSource->getCurrentEvent());
     
     // load next event (if any)
-    currentEventIdx=myEventSource->currentEventNumber();
+    currentEventIdx=myEventSource->currentEventId();
     myEventSource->getNextEventLoop();
 
     ////// DEBUG
     //    if(++counter==10) break;
     ////// DEBUG
   }
-  while(currentEventIdx!=(Long64_t)myEventSource->currentEventNumber());
+  while(currentEventIdx!=(Long64_t)myEventSource->currentEventId());
 
   // write histograms to ROOTFILE
   myDotFinder.finalizeDotFinder();

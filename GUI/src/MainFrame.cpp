@@ -145,6 +145,7 @@ void MainFrame::InitializeEventSource() {
 		exit(1);
 	}
 	
+	myEventSource->loadFileEntry(0);
 	myHistoManager.setConfig(myConfig);
 	myHistoManager.setGeometry(myEventSource->getGeometry());
 	myHistoManager.setTkBuilder(myEventSource->getTrackBuilder());
@@ -560,7 +561,7 @@ void MainFrame::Update() {
 	}
 	fFileInfoFrame->updateFileName(myEventSource->getCurrentPath());
 	fFileInfoFrame->updateEventNumbers(myEventSource->numberOfEvents(),
-									   myEventSource->currentEventNumber(),
+									   myEventSource->currentEventId(),
 									   myEventSource->currentEntryNumber());
 	if(isGeometryChanged) {
 	  myHistoManager.setGeometry(myEventSource->getGeometry());
@@ -624,7 +625,7 @@ unsigned long MainFrame::UpdateEventLog() {
 		return 0;
 	}
 
-	out << myEventSource->currentEventNumber() << " \t\t "
+	out << myEventSource->currentEventId() << " \t\t "
 		<< myEventSource->currentEntryNumber() << " \t\t ";
 
 	std::bitset<64> eventType;

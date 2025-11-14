@@ -161,11 +161,11 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
       }
     }
     int iEntry = myEventSource->currentEntryNumber();
-    previousEventIdx = myEventSource->currentEventNumber();
+    previousEventIdx = myEventSource->currentEventId();
     // load next good event
     if(readNext){
       myEventSource->getNextEventLoop();
-      if(previousEventIdx==myEventSource->currentEventNumber()) break; // no more good events
+      if(previousEventIdx==myEventSource->currentEventId()) break; // no more good events
     }
     readNext = true;
     if(nEntries>10 && iEntry%(nEntries/10)==0){

@@ -4,8 +4,6 @@
 #include "TPCReco/ConfigManager.h"
 #include "TPCReco/EventSourceFactory.h"
 #include "TPCReco/FileOutput.h"
-#include "TPCReco/TrackBuilder.h"
-#include "TPCReco/colorText.h"
 
 /////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////

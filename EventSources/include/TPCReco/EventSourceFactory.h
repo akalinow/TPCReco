@@ -152,7 +152,6 @@ namespace EventSourceFactory {
 		
 		if (!myConfig.get<bool>("transient.onlineFlag")) {
 			myEventSource->loadDataFile(dataFileName);
-			myEventSource->loadFileEntry(0);
 		}
 		return myEventSource;
 	}

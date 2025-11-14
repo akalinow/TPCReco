@@ -263,10 +263,9 @@ void EventSourceMultiGRAW::loadEventId(unsigned long int eventId){
     // strategy 1: check frame index of the current event and calculate the offset
 
     // check map [eventId, frameIndex] for a given GRAW file
-    unsigned long int currentEventId=currentEventNumber();
-    auto it2=myFramesMapList[streamIndex].find(currentEventId);
+    auto it2=myFramesMapList[streamIndex].find(currentEventId());
     if(it2!=myFramesMapList[streamIndex].end()) {
-      auto iEntry=it2->second+(eventId-currentEventId); // this works in NGRAW mode
+      auto iEntry=it2->second+(eventId-currentEventId()); // this works in NGRAW mode
 
       if(iEntry<0 || iEntry>=nEvents) {
 	std::cout <<__FUNCTION__<<KRED<<": Event id: "<<RST<<eventId<<KBLU<<" seems to be out of range for the GRAW stream id: "

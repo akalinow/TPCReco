@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
 
   if (FileEntry < myEventSource->numberOfEvents()) {
     myEventSource->loadFileEntry(FileEntry);
-    std::cout << "EventID: " << myEventSource->currentEventNumber() << std::endl
+    std::cout << "EventID: " << myEventSource->currentEventId() << std::endl
               << std::flush;
     myHistoManager.setEvent(myEventSource->getCurrentEvent());
 

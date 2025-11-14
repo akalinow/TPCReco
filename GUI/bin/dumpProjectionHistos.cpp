@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
 
     for(unsigned int iEntry=0;iEntry<myEventSource->numberOfEvents();++iEntry){
       myEventSource->loadFileEntry(iEntry);
-      std::cout<<"EventID: "<<myEventSource->currentEventNumber()<<std::endl;
+      std::cout<<"EventID: "<<myEventSource->currentEventId()<<std::endl;
       myHistoManager.setEvent(myEventSource->getCurrentEvent());
       for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
 	auto projType = get2DProjectionType(strip_dir);

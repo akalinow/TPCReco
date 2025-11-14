@@ -86,7 +86,7 @@ std::shared_ptr<GeometryTPC> EventSourceBase::getGeometry() const{ return myGeom
 unsigned long int EventSourceBase::numberOfEvents() const{ return nEvents;}
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-unsigned long int EventSourceBase::currentEventNumber() const{
+unsigned long int EventSourceBase::currentEventId() const{
 
   if(getCurrentEvent()){
     return getCurrentEvent()->GetEventInfo().GetEventId();

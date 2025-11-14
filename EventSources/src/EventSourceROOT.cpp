@@ -96,7 +96,8 @@ void EventSourceROOT::loadFileEntry(unsigned long int iEntry){
 /////////////////////////////////////////////////////////
 std::shared_ptr<EventTPC> EventSourceROOT::getNextEvent(){
 
-  if(nEvents>0 && myCurrentEntry<nEvents-1){
+  if(nEvents>0 &&  
+     (myCurrentEntry<nEvents-1 || myCurrentEntry==std::numeric_limits<unsigned long int>::max())){
     loadFileEntry(++myCurrentEntry);
   }
   return myCurrentEvent;
@@ -123,7 +124,7 @@ void EventSourceROOT::loadEventId(unsigned long int iEvent){
 
   // secondary (failover) method: when TTree::BuildIndex() did not work properly
   unsigned long int iEntry = 0;
-  while(currentEventNumber()!=iEvent && iEntry<nEvents){  
+  while(currentEventId()!=iEvent && iEntry<nEvents){  
     loadFileEntry(iEntry);
     ++iEntry;
   }

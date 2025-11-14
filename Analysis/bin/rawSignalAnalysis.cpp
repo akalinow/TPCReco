@@ -289,10 +289,10 @@ int analyzeRawEvents(boost::property_tree::ptree & aConfig){
     if(maxNevents && maxNevents==++counter ) break;
 
     // load next event (if any)
-    currentEventIdx=myEventSource->currentEventNumber();
+    currentEventIdx=myEventSource->currentEventId();
     myEventSource->getNextEventLoop();
   }
-  while(currentEventIdx!=(Long64_t)myEventSource->currentEventNumber());
+  while(currentEventIdx!=(Long64_t)myEventSource->currentEventId());
 
   // write histograms to ROOTFILE
   //  myAnalysis.finalize();
