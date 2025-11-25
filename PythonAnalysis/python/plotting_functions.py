@@ -38,7 +38,6 @@ def plotEndpoints(data, iProj, axis, label, color):
         else:  
             if len(data.shape)==2:
                 data = tf.reshape(data, (-1, 3, 3))
-
             uvwt =  utils.XYZtoUVWT_event(data)
 
         vertex = uvwt[0,0:4]
@@ -51,7 +50,7 @@ def plotEndpoints(data, iProj, axis, label, color):
         axis.plot(carbon[3], carbon[iProj], marker='.', markersize=20, alpha=0.8, color=color)
 ###################################################
 ###################################################
-def plotEvent(data, model):
+def plotEvent(data, model=None, zoomIn=False):
 
     #data indexing: data[features/label][element in batch][index in features/label]
     projNames = ("U", "V", "W")
@@ -65,20 +64,25 @@ def plotEvent(data, model):
         axis = axes[iProj] 
         data = projections[iEvent][:,:,iProj]
                 
-        im = axis.imshow(data, origin='lower', aspect='auto')            
-        plotEndpoints(labels[iEvent:iEvent+1], iProj, axis, color="red", label="true")         
-        
+        im = axis.imshow(data, origin='lower', aspect='auto')         
+        plotEndpoints(labels[iEvent:iEvent+1], iProj, axis, color="red", label="true")
+                
         rois = find_ROIs(data, thr=0.1, size_thr=10)
         #plot_ROIs(rois, axis)
         sy, sx = rois[0]['slice']
         
         if model!=None:
             modelResponse = model(projections)[iEvent:iEvent+1]
-            plotEndpoints(modelResponse, iProj, axis, color="blue", label="NN")         
+            plotEndpoints(modelResponse, iProj, axis, color="blue", label="NN")
+            #modelResponse = model(projections)['logits']
+            #print(modelResponse.shape)
+            #axis.imshow(modelResponse[iEvent], origin='lower', aspect='auto')
+
         axis.set_xlabel("time bin")
         axis.set_ylabel(projNames[iProj]+" strip")
-        axis.set_xlim(sx.start-5, sx.stop+5)
-        axis.set_ylim(sy.start-5, sy.stop+5)
+        if zoomIn:
+            axis.set_xlim(sx.start-5, sx.stop+5)
+            axis.set_ylim(sy.start-5, sy.stop+5)
         axis.legend()
         
         divider = make_axes_locatable(axis)
