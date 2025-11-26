@@ -28,6 +28,8 @@ separate_arguments(ROOT_EXE_LINKER_FLAGS)
 
 find_package(GET COMPONENTS MultiFrame cobo-frame-graw2frame)
 
+find_package(TF 2.18.0)
+
 # default install in current directory
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   set(CMAKE_INSTALL_PREFIX
@@ -49,6 +51,7 @@ add_subdirectory(Utilities)
 add_subdirectory(DataFormats)
 add_subdirectory(MonteCarlo)
 add_subdirectory(GrawToROOT)
+add_subdirectory(MLReconstruction)
 add_subdirectory(Reconstruction)
 add_subdirectory(EventSources)
 add_subdirectory(FileOutput)

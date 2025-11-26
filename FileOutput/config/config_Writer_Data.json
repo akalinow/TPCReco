@@ -15,5 +15,9 @@
     "output":{
         "disabledBranches": [],
         "fileName": "RecoEvent_TwoProng_2022-04-12T08-03-44.root"
+    },
+    "eventFilter": {
+	    "enabled": true,
+        "recoProngs": [2]
     }
 }

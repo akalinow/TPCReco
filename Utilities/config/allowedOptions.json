@@ -393,5 +393,23 @@
 	    "ellipseRadiusEkinCMS": [ 0.25, 0.15 ]
 	},
         "description" : "NOT IMPLEMENTED YET! Ptree to enable special plots, Track3D dumping for events passing 2-prong Oxygen-16 elliptic cut in Ekin_CMS(Alpha) x Ekin_CMS(Carbon) phase space.\nType: ptree"
+    },
+    "tfModelPath":{
+        "group":"reconstruction",
+        "type" : "string",
+        "defaultValue" : "",
+        "description" : "Path to the TensorFlow model Keras file.\nType: string"
+    },
+    "inputDim":{
+        "group":"reconstruction",
+        "type" : "vector<int>",
+        "defaultValue" : [1, 256, 512, 3],
+        "description" : "Input tensor dimensions for the TensorFlow model.\nType: vector<int>"
+    },
+    "outputDim":{
+        "group":"reconstruction",
+        "type" : "vector<int>",
+        "defaultValue" : [1, 9],
+        "description" : "Output tensor dimensions for the TensorFlow model.\nType: vector<int>"
     }
 }

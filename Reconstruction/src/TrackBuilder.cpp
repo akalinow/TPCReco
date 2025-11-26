@@ -892,7 +892,7 @@ Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
   double trackWidth = aSegment.getMaxProjWidth();
   double centralD = trackWidth/0.76; //parameter to be moved to configuration
   double minD = centralD*0.5; //parameter to be moved to configuration
-  double maxD = centralD*1.5; //parameter to be moved to configuration
+  double maxD = centralD*1.5; //parameter to be moved to configuration       
   mydEdxFitter.setDiffusionRange(minD, maxD);
   mydEdxFitter.fitHisto(hChargeProfile);
 

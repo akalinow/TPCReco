@@ -8,10 +8,10 @@
 
 ### Import pre-built image
 
-Download `eliptc_tpcreco_latest.tar`, then import it:
+Download `eliptc_tpcreco.tar`, then import it:
 
 ```
-docker load elitpc/tpcreco:latest -i elitpc_tpcreco_latest.tar
+docker load elitpc/tpcreco:latest -i elitpc_tpcreco.tar
 ```
 
 ### Build locally
@@ -37,10 +37,11 @@ There are no extra preparation steps. You are ready.
 
 ### From pre-built docker image
 
-This way doesn't require docker installation, just pre-built `elitpc_tpcreco_latest.tar` file.
+This way doesn't require docker installation, just pre-built `elitpc_tpcreco.tar` file.
 
 ```
-singularity build elitpc_tpcreco_latest.sif docker-archive://elitpc_tpcreco_latest.tar
+singularity build elitpc_tpcreco.sif docker-archive://elitpc_tpcreco.tar
+singularity build elitpc_tpcreco-with_tf.sif docker-archive://elitpc_tpcreco-with_tf.tar
 ```
 
 ### From local docker image
@@ -48,7 +49,8 @@ singularity build elitpc_tpcreco_latest.sif docker-archive://elitpc_tpcreco_late
 This way requires docker installation of docker. Complete [getting started](#getting-started) steps so that `elitpc/tpcreco` image is present on your system. Then:
 
 ```
-singularity build elitpc_tpcreco_latest.sif docker-daemon://elitpc/tpcreco:latest
+singularity build elitpc_tpcreco.sif docker-daemon://elitpc/tpcreco:latest
+singularity build elitpc_tpcreco-with_tf.sif docker-daemon://elitpc/tpcreco-with_tf:latest
 ```
 
 ## Run
@@ -66,7 +68,7 @@ Options `-v $HOME:/scratch --workdir /scratch` will bind your home directory fro
 ### Start singularity container
 
 ```
-singularity shell --bind /data elitpc_tpcreco_latest.sif
+singularity shell --bind /data elitpc_tpcreco.sif
 ```
 
 Singularity will automatically include your `$HOME` from host inside the container. If you wish to include other directories from host, you can do so using `--bind` option. `--bind /data` will bind `/data` directory on host to `/data` directory inside the container.
