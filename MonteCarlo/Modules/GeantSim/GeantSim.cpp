@@ -26,7 +26,8 @@ fwk::VModule::EResultFlag GeantSim::Init(boost::property_tree::ptree config) {
     fRunManager->SetUserAction(new GELITrackingAction());
     fRunManager->SetUserAction(new GELIEventAction(buffer));
 
-    G4PrimaryTransformer::SetKETolerance(5.0 * CLHEP::MeV);
+    ///Silence messages on 12C mass discrepancy with PDG.
+    G4PrimaryTransformer::SetKETolerance(4 * CLHEP::MeV);
 
     fRunManager->Initialize();
 

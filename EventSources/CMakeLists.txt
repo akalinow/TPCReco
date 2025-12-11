@@ -7,6 +7,9 @@ include_directories(${PROJECT_SOURCE_DIR}/Utilities/include)
 include_directories(${PROJECT_SOURCE_DIR}/DataFormats/include)
 include_directories(${PROJECT_SOURCE_DIR}/MonteCarlo/UtilsMC/include)
 include_directories(${PROJECT_SOURCE_DIR}/Reconstruction/include)
+include_directories(${PROJECT_SOURCE_DIR}/MLReconstruction/include)
+include_directories(${TF_INCLUDE_DIR})
+
 root_generate_dictionary(
   G__${TPCRECO_PREFIX}${MODULE_NAME}
   ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/EventSourceROOT.h
@@ -35,11 +38,11 @@ endif()
 
 target_link_libraries(
   ${MODULE_NAME} PUBLIC ${ROOT_LIBRARIES} ${ROOT_EXE_LINKER_FLAGS} 
-            DataFormats Reconstruction Utilities EventGenerator UtilsMC MonteCarloModules
+            DataFormats Reconstruction MLReconstruction Utilities EventGenerator UtilsMC MonteCarloModules
             $<$<BOOL:${GET_FOUND}>:GrawToROOT>)
             
 target_link_libraries(mcRunController PRIVATE ${ROOT_LIBRARIES} Utilities ${MODULE_NAME}
-                      DataFormats Reconstruction UtilsMC EventGenerator MonteCarloModules ${Boost_LIBRARIES})
+                      DataFormats Reconstruction MLReconstruction UtilsMC EventGenerator MonteCarloModules ${Boost_LIBRARIES})
 
 reco_install_targets(${MODULE_NAME} mcRunController)
 

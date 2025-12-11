@@ -575,7 +575,7 @@ void MainFrame::Update() {
 	if (isRecoModeOn) myHistoManager.drawRecoHistos(fMainCanvas);
 	else if(myConfig.get<bool>("display.develMode")) {
 		myHistoManager.drawDevelHistos(fMainCanvas);
-		myHistoManager.drawTrack3D(fWirePlotCanvas.get());
+		//myHistoManager.drawTrack3D(fWirePlotCanvas.get());
 
 	}
 	else if(myConfig.get<bool>("display.technicalMode")) myHistoManager.drawTechnicalHistos(fMainCanvas, myEventSource->getGeometry()->GetAgetNchips());

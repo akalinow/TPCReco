@@ -4,6 +4,8 @@ message(STATUS "Adding CMake fragment for module:\t${MODULE_NAME}")
 # ROOT 6.08 dictionary MODULE workaround
 include_directories(${PROJECT_SOURCE_DIR}/DataFormats/include/)
 include_directories(${PROJECT_SOURCE_DIR}/Reconstruction/include)
+include_directories(${PROJECT_SOURCE_DIR}/MLReconstruction/include)
+include_directories(${TF_INCLUDE_DIR})
 include_directories(${PROJECT_SOURCE_DIR}/Analysis/include)
 include_directories(${PROJECT_SOURCE_DIR}/Utilities/include)
 include_directories(${PROJECT_SOURCE_DIR}/FileOutput/include)

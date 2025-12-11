@@ -7,9 +7,16 @@ import numpy as np
 ###################################################
 columnsXYZ = np.array(["xVtx", "xAlpha", "xCarbon", "yVtx", "yAlpha", "yCarbon", "zVtx", "zAlpha", "zCarbon"])
 
-columnsUVWT = np.array(["uVtx", "vVtx", "wVtx", "tVtx",
-                "uAlpha", "vAlpha", "wAlpha", "tAlpha",
-                "uCarbon", "vCarbon", "wCarbon", "tCarbon"])                                                     
+columnsUVWT = np.array(["uVtx",   "vVtx",   "wVtx",   "tVtx",
+                        "uAlpha", "vAlpha", "wAlpha", "tAlpha",
+                        "uCarbon","vCarbon","wCarbon","tCarbon"])                                                     
+###################################################
+###################################################
+def getSimRecoColumns(columns):
+    """
+    Returns a list of column names for simulated and reconstructed coordinates.
+    """
+    return np.array([col + "_sim" for col in columns] + [col + "_reco" for col in columns])
 ###################################################
 ###################################################
 def getEmptyPandasDataset(columns):

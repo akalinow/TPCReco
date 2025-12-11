@@ -56,6 +56,8 @@ TrackBuilder::TrackBuilder(boost::property_tree::ptree& myConfig) {
   for(auto &offset: myHoughOffset) offset.SetXYZ(0,0,0);
 
   setPressure(myConfig.get<double>("conditions.pressure"));
+
+  myMLTrackBuilder = std::make_shared<TensorflowModel>(myConfig);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -209,12 +211,35 @@ void TrackBuilder::reconstruct(){
     //my2DSeeds[iDir] = findSegment2DCollection(iDir);    
   }
   myZRange = getProjectionEdges(hTimeProjection);
+
+  std::cout<<KBLU<<"Before building 3D segment from 2D seeds"<<RST<<std::endl;
   myTrack3DSeed = buildSegment3D();
   
   Track3D aTrackCandidate;
   aTrackCandidate.addSegment(myTrack3DSeed);
   aTrackCandidate = fitTrack3D(aTrackCandidate);
+
+  std::cout<<KBLU<<"Track length before hypothesis fit: "<<RST<<aTrackCandidate.getLength()<<std::endl;
+
   if(aTrackCandidate.getLength()>minTkLenghtWithHypothesis) aTrackCandidate = fitEventHypothesis(aTrackCandidate);
+
+  ///TEST
+  if(aTrackCandidate.getSegments().size()<0) {
+    aTrackCandidate = Track3D();
+    TrackSegment3D aSegment;
+    aSegment.setGeometry(myGeometryPtr); 
+    myMLTrackBuilder->run(myEventPtr);
+    aSegment.setStartEnd(myMLTrackBuilder->getVertex(),
+                          myMLTrackBuilder->getAlphaEnd());
+    aSegment.setRecHits(myRecHits);                     
+    aTrackCandidate.addSegment(aSegment);
+
+    aSegment.setStartEnd(myMLTrackBuilder->getVertex(),
+                          myMLTrackBuilder->getCarbonEnd());                     
+    aTrackCandidate.addSegment(aSegment);    
+  }
+  ////
+
   myFittedTrack = aTrackCandidate;
 
   std::cout<<KBLU<<"Reconstructed track: "<<RST<<std::endl;
@@ -742,6 +767,16 @@ TVector3 TrackBuilder::getTangent(int iTrack2DSeed, bool guiMode){
 /////////////////////////////////////////////////////////
 TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed, bool guiMode){
 
+  //// ML based track segment reconstruction
+  TrackSegment3D a3DSeedTest;
+  a3DSeedTest.setGeometry(myGeometryPtr); 
+  myMLTrackBuilder->run(myEventPtr);
+  a3DSeedTest.setBiasTangent(myMLTrackBuilder->getBias(),
+                        myMLTrackBuilder->getTangent());   
+  a3DSeedTest.setRecHits(myRecHits);                  
+  return a3DSeedTest;
+  ////
+
   getSignedLengthsAndMaxPos(iTrack2DSeed);
 
   TVector3 aBias = getBias(iTrack2DSeed);
@@ -754,7 +789,7 @@ TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed, bool guiMode){
 
   if(guiMode) return a3DSeed;
 
-  ///FIX ME Stupid work around for track direction ambiguity
+  ///FIX ME Stupid workaround for track direction ambiguity
   double totalCharge = a3DSeed.getIntegratedCharge(a3DSeed.getLength());
 
   TVector3 aTangent_flipped = aTangent;
@@ -924,6 +959,15 @@ Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
   alphaSegment.setDiffusion(mydEdxFitter.getDiffusion());
   alphaSegment.setPID(pid_type::ALPHA);
   aSplitTrackCandidate.addSegment(alphaSegment);
+
+  std::cout<<KGRN<<"Fitted event hypothesis: "
+           <<eventType
+           <<" with dE/dx diffusion: "<<mydEdxFitter.getDiffusion()
+           <<" mm/sqrt(cm), vertex offset: "<<vertexOffset
+           <<" mm, alpha range: "<<alphaRange
+           <<" mm, carbon range: "<<carbonRange
+           <<", fit loss: "<<mydEdxFitter.getLoss()
+           <<RST<<std::endl;
   
   if(eventType==C12_ALPHA){   
     TrackSegment3D carbonSegment;

@@ -1,0 +1,15 @@
+time
+less
+vim
+nano
+gdb
+valgrind 
+git 
+ccache 
+binutils 
+linux-tools-generic
+cmake
+python3-pip 
+python3-venv 
+graphviz 
+screen 

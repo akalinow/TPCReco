@@ -15,7 +15,8 @@
 #include "TPCReco/Track3D.h"
 #include "TPCReco/RecHitBuilder.h"
 #include "TPCReco/dEdxFitter.h"
-
+#include "TPCReco/MLTrackBuilder.h"
+                
 #include "TPCReco/EventTPC.h"
 #include "TPCReco/EventInfo.h"
 
@@ -155,6 +156,7 @@ private:
 
   bool myHistoInitialized;
   int nAccumulatorRhoBins, nAccumulatorPhiBins;
+  std::shared_ptr<TensorflowModel> myMLTrackBuilder;
 
   //  TVector3 aHoughOffest;
   std::vector<TVector3> myHoughOffset;

@@ -10,17 +10,11 @@ message(STATUS "Adding CMake fragment for module:\t${MODULE_NAME}")
 
 reco_add_library(${MODULE_NAME})
 
-include_directories(${MODULE_NAME} PRIVATE ${TF_INCLUDE_DIR})
+target_include_directories(${MODULE_NAME} PUBLIC ${TF_INCLUDE_DIR})
 
-target_link_libraries(
-      ${MODULE_NAME}
-      PUBLIC  Utilities DataFormats EventSources FileOutput  ${ROOT_LIBRARIES} ${TF_LIBRARIES})
+target_link_libraries( ${MODULE_NAME} PUBLIC  Utilities DataFormats ${ROOT_LIBRARIES} ${TF_LIBRARIES})
 
-
-reco_add_executable(runTensorflow bin/runTensorflow.cpp)
-target_link_libraries(runTensorflow PRIVATE Boost::program_options ${MODULE_NAME})
-reco_install_targets(${MODULE_NAME} runTensorflow)
-
+reco_install_targets(${MODULE_NAME})    
 install(DIRECTORY config DESTINATION ${CMAKE_INSTALL_PREFIX})
 
 

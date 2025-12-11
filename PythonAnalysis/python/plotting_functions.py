@@ -314,7 +314,6 @@ def plotEndPointRes(df, edge, coordinates):
             axis = axes.flatten()[index]  
             varName1 = coordName+edge+"_reco"
             varName2 = coordName+edge+"_sim"
-
             mean = (df[varName2] - df[varName1]).mean()
             std = (df[varName2] - df[varName1]).std()
             label = "$\mu_{} = {:.3f}$\n$\sigma_{} = {:.2f}$".format(coordName, mean, coordName, std)
@@ -323,6 +322,8 @@ def plotEndPointRes(df, edge, coordinates):
                 axis.set_xlabel(coordName+" [mm]")
             else:
                 axis.set_xlabel(coordName+" [strip]")
+                if coordName=="t":
+                    axis.set_xlabel("[time bin]")
             axis.set_ylabel("")  
             axis.grid(False)
             axis.legend()

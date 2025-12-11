@@ -110,6 +110,15 @@ void GELIPhysicsList::ConstructEM() {
         auto eBrem = new G4eBremsstrahlung();
         eIoni->SetStepFunction(0.000001, 500 * um);
 
+        G4EmParameters* param = G4EmParameters::Instance();
+        param->SetMinEnergy(10*CLHEP::eV);
+        param->SetLowestElectronEnergy(0*CLHEP::eV);
+        param->ActivateAngularGeneratorForIonisation(true);
+        param->SetStepFunction(1E-6, 50*um);
+        param->SetStepFunctionMuHad(1E-6, 50*um);
+        param->SetStepFunctionLightIons(1E-6, 50*um);
+        param->SetStepFunctionIons(1E-6, 50*um);
+
         if (particleName == "gamma") {
             //gamma
             ph->RegisterProcess(new G4PhotoElectricEffect(), particle);
@@ -146,7 +155,7 @@ void GELIPhysicsList::ConstructEM() {
             auto ionIoni = new G4ionIonisation();
             ionIoni->SetStepFunction(0.000001, 50 * um);
             pmanager->AddProcess(ionIoni,     -1, 2,2);
-
+            ph->RegisterProcess(ionIoni, particle);
 
         } else if (particleName == "anti_proton") {
             //antiproton

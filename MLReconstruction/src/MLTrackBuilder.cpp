@@ -4,6 +4,8 @@
 #include "TPCReco/MLTrackBuilder.h"
 #include "TPCReco/tf_functions.h"
 #include "TPCReco/EventTPC.h"
+#include "TPCReco/TrackSegment3D.h"
+#include "TPCReco/colorText.h"
 
 
 
@@ -22,7 +24,7 @@ TensorflowModel::TensorflowModel(const boost::property_tree::ptree& aConfig)
         inputDim.push_back(item.second.get_value<std::int64_t>());
         totalSize *= inputDim.back();
     }
-    input_tensor.resize(totalSize);
+    inputVec.resize(totalSize);
 
 
     // Parse the output dimensions
@@ -30,9 +32,14 @@ TensorflowModel::TensorflowModel(const boost::property_tree::ptree& aConfig)
         outputDim.push_back(item.second.get_value<std::int64_t>());
         output_lenght *= item.second.get_value<std::int64_t>();
     }
+      outputVec.resize(output_lenght);
 
     // Load the TensorFlow model session.
-    tf_functions::load_session(model_path_cstr, &graph, &session);
+    int status = tf_functions::load_session(model_path_cstr, &graph, &session);
+    if (status != 0) {
+        std::cout <<KRED<< "Error loading TensorFlow model from " <<RST<< model_path << std::endl;
+        return;
+    }
 
     // Initialize the input operation.
     TF_Operation* input_op = TF_GraphOperationByName(graph, "serving_default_input_image");
@@ -75,21 +82,18 @@ void TensorflowModel::fillMLInput(std::shared_ptr<EventTPC> eventTPC){
                     val = hRawHits->GetBinContent(iBinX, iBinY) / max;
                 }
                 else val = 0.0;
-                //input_tensor.push_back(val);
-                input_tensor[index++] = val;
+                inputVec[index++] = val;
             }
             }
         }
 }
 //////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////
-std::vector<float> TensorflowModel::runML(const std::vector<float> & input_data)
-{    
+void TensorflowModel::runML(const std::vector<float> & input_data){    
 
     // Create the input tensor using the stored dimensions.
     TF_Tensor* input_tensor = nullptr;
     tf_functions::create_tensor(TF_FLOAT, inputDim, inputDim.size(), input_data, &input_tensor);
-
 
     // Run the session.
     TF_Tensor* output_tensor = nullptr;
@@ -101,27 +105,38 @@ std::vector<float> TensorflowModel::runML(const std::vector<float> & input_data)
     // Retrieve the results from the output tensor.
     float* tensor_data = static_cast<float*>(TF_TensorData(output_tensor));
 
-    std::vector<float> results;
-
-    results.reserve(output_lenght);
-
     for (std::int64_t i = 0; i < output_lenght; i++) {
-        results.push_back(tensor_data[i]);
+        outputVec[i] = tensor_data[i];
     }
 
     // Clean up the temporary tensors.
     tf_functions::delete_tensor(input_tensor);
     tf_functions::delete_tensor(output_tensor);
-
-    return results;
 }
 //////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////
-std::vector<float> TensorflowModel::reconstruct(std::shared_ptr<EventTPC> aEventTPC){
+void TensorflowModel::convertOutput(){
+
+    double offset = 0;
+    aVertex.SetXYZ(outputVec[0], outputVec[3], outputVec[6]+offset);
+    aAlphaEnd.SetXYZ(outputVec[1], outputVec[4], outputVec[7]+offset);
+    aCarbonEnd.SetXYZ(outputVec[2], outputVec[5], outputVec[8]+offset);
+
+    aTangent = (aAlphaEnd - aVertex).Unit();
+    aBias = aVertex;
+}
+//////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
+void TensorflowModel::run(std::shared_ptr<EventTPC> aEventTPC) {
+
+  if(!isValid()) {
+        std::cout <<KRED<< "TensorFlow model is not valid." << RST << std::endl;
+        return;
+    }
 
     fillMLInput(aEventTPC);
-    return runML(this->input_tensor);
-
+    runML(inputVec);
+    convertOutput();
 }
 //////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////

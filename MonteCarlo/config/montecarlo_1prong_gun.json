@@ -4,6 +4,7 @@
     "Generator",
     "GeantSim",
     "TrackTruncator",
+    "TPCDigitizerSRC",
     "Track3DBuilder",
     "EventFileExporter"
   ],
