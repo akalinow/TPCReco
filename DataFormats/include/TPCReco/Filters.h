@@ -3,6 +3,7 @@
 #include <set>
 #include <cstddef>
 #include <iostream>
+#include <memory>
 
 namespace tpcreco {
 namespace filters {
@@ -52,17 +53,17 @@ class RecoProngInSet {
 public:
   RecoProngInSet() = default;
   RecoProngInSet(std::initializer_list<size_t> indices) : indices(indices) {}
-  template <class Event> bool operator()(Event &event) {
+  template <class EventSource> bool operator()(EventSource &eventSrc) {
     return indices.size()==0 || 
            (indices.size() && 
-            indices.find(event.getRecoEvent().getSegments().size()) != indices.end());
+            indices.find(eventSrc.getRecoEvent().getSegments().size()) != indices.end());
   }
   void insert(size_t index) { indices.insert(index); }
+
 
 private:
   std::set<size_t> indices;
 };
-
 
 } // namespace filters
 } // namespace tpcreco

@@ -224,7 +224,7 @@ void TrackBuilder::reconstruct(){
   if(aTrackCandidate.getLength()>minTkLenghtWithHypothesis) aTrackCandidate = fitEventHypothesis(aTrackCandidate);
 
   ///TEST
-  if(aTrackCandidate.getSegments().size()<0) {
+  if(myMLTrackBuilder->isValid() && aTrackCandidate.getSegments().size()<0) {
     aTrackCandidate = Track3D();
     TrackSegment3D aSegment;
     aSegment.setGeometry(myGeometryPtr); 
@@ -237,6 +237,12 @@ void TrackBuilder::reconstruct(){
     aSegment.setStartEnd(myMLTrackBuilder->getVertex(),
                           myMLTrackBuilder->getCarbonEnd());                     
     aTrackCandidate.addSegment(aSegment);    
+  }
+  if(aTrackCandidate.getSegments().size()<2) {
+    aTrackCandidate = Track3D();
+    TrackSegment3D aSegment;
+    aTrackCandidate.addSegment(aSegment);
+    aTrackCandidate.addSegment(aSegment);
   }
   ////
 
@@ -767,23 +773,20 @@ TVector3 TrackBuilder::getTangent(int iTrack2DSeed, bool guiMode){
 /////////////////////////////////////////////////////////
 TrackSegment3D TrackBuilder::buildSegment3D(int iTrack2DSeed, bool guiMode){
 
-  //// ML based track segment reconstruction
-  TrackSegment3D a3DSeedTest;
-  a3DSeedTest.setGeometry(myGeometryPtr); 
-  myMLTrackBuilder->run(myEventPtr);
-  a3DSeedTest.setBiasTangent(myMLTrackBuilder->getBias(),
-                        myMLTrackBuilder->getTangent());   
-  a3DSeedTest.setRecHits(myRecHits);                  
-  return a3DSeedTest;
-  ////
+  TrackSegment3D a3DSeed;
+  a3DSeed.setGeometry(myGeometryPtr); 
+  if(myMLTrackBuilder->isValid()) {
+    myMLTrackBuilder->run(myEventPtr);
+    a3DSeed.setBiasTangent(myMLTrackBuilder->getBias(),
+                           myMLTrackBuilder->getTangent());   
+    a3DSeed.setRecHits(myRecHits);                  
+    return a3DSeed;
+  }
 
   getSignedLengthsAndMaxPos(iTrack2DSeed);
 
   TVector3 aBias = getBias(iTrack2DSeed);
-  TVector3 aTangent = getTangent(iTrack2DSeed, guiMode);
-
-  TrackSegment3D a3DSeed;
-  a3DSeed.setGeometry(myGeometryPtr); 
+  TVector3 aTangent = getTangent(iTrack2DSeed, guiMode); 
   a3DSeed.setBiasTangent(aBias, aTangent);
   a3DSeed.setRecHits(myRecHits);
 
@@ -924,11 +927,20 @@ Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
   const TrackSegment3D & aSegment = aTrackCandidate.getSegments().front(); 
   TH1F hChargeProfile = aSegment.getChargeProfile(); 
 
+  double vtxOffset = aSegment.getLength()/2;
+  
+  ///TEST
+  if(myMLTrackBuilder->isValid()) {
+    myMLTrackBuilder->run(myEventPtr);
+    vtxOffset = (myMLTrackBuilder->getCarbonEnd() - myMLTrackBuilder->getVertex()).Mag();                
+  }
+
   double trackWidth = aSegment.getMaxProjWidth();
   double centralD = trackWidth/0.76; //parameter to be moved to configuration
   double minD = centralD*0.5; //parameter to be moved to configuration
   double maxD = centralD*1.5; //parameter to be moved to configuration       
   mydEdxFitter.setDiffusionRange(minD, maxD);
+  mydEdxFitter.setVertexConstraint(vtxOffset);
   mydEdxFitter.fitHisto(hChargeProfile);
 
   pid_type eventType = mydEdxFitter.getBestFitEventType();

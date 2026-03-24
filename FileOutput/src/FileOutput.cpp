@@ -114,6 +114,8 @@ void FileOutput::update(std::shared_ptr<EventSourceBase> aEventSource) {
   if(mcEventSource) *mySimEventPtr = mcEventSource->getGeneratedTrack();
   else *mySimEventPtr = aEventSource->getRecoEvent(); //Hack by AK to avoid troubles in ROOT->Python step
 
+  if(mySimEventPtr->getSegments().size()!=2) return; //TEST
+
   for(auto aTree: myOutputTrees) {
     if (aTree.second==nullptr) {
       std::cout << KRED << "FileOutput::update" << RST

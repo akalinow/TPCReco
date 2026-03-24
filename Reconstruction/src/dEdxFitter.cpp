@@ -129,6 +129,14 @@ void dEdxFitter::reset(){
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
+void dEdxFitter::setVertexConstraint(double vxtOffset){
+
+carbon_alpha_model->SetParLimits(1, vxtOffset-2, vxtOffset+2);
+carbon_alpha_model->SetParameter(1, vxtOffset);
+
+}
+////////////////////////////////////////////////
+////////////////////////////////////////////////
 double dEdxFitter::bragg_alpha(double *x, double *params) {
   
   double sigma = params[0];
@@ -178,7 +186,21 @@ double dEdxFitter::bragg_12C(double *x, double *params) {
   double t = (vertex_pos - x[0])*pressure_scale_factor + a;
 
   double p0 = 0.0, p1=0.0, p2 = 0.0;
-  if(t<15){
+  
+  double stitchingPoint = 12; //mm
+  if(t>stitchingPoint){
+    p0 = 514.276;
+    p1 = -21.1942;
+    p2 = -0.0434957;
+  }
+  else if(t<stitchingPoint){
+    p0 = 296.079;
+    p1 = 6.32868;
+    p2 = -0.807024;
+  }
+    
+/* old values:
+    if(t<15){
     p0 = 254.284;
     p1 = 16.6512;
     p2 = -1.40697;
@@ -188,6 +210,7 @@ double dEdxFitter::bragg_12C(double *x, double *params) {
     p1 = -23.1911;
     p2 = 0.00861351;
   }
+    */
 
   double smeared_edge = 0;
   smeared_edge += 0.5*TMath::Erf((t-a)/sqrt(2)/sigma)*(p2*(t*t + sigma*sigma) + p1*t + p0);

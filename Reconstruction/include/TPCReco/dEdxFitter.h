@@ -24,6 +24,9 @@ public:
   /// Set range of fitted effective charge diffusion
   void setDiffusionRange(double minD=0.5, double maxD=1.5);
 
+  /// Set the vertex position guess
+  void setVertexConstraint(double vxtOffset);
+
   TFitResult fitHisto(const TH1F & aHisto);
 
   const TH1F & getFittedHisto() const { return theFittedHisto;};

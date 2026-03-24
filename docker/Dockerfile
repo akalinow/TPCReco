@@ -31,8 +31,6 @@ ENV G4PIIDATA=/usr/local/share/Geant4/data/G4PII1.3
 ENV G4SAIDXSDATA=/usr/local/share/Geant4/data/G4SAIDDATA1.1
 ENV G4REALSURFACEDATA=/usr/local/share/Geant4/data/RealSurface2.2
 
-
-
 ARG CADMESH_VERSION=1.1
 RUN wget https://github.com/christopherpoole/CADMesh/archive/refs/tags/v${CADMESH_VERSION}.tar.gz -O cadmesh.tar.gz \
     && tar xf cadmesh.tar.gz && rm cadmesh.tar.gz
@@ -75,18 +73,35 @@ RUN echo "Download Tensorflow-$CPU_OR_GPU-$TF_VERSION" && \
     ldconfig && \
     rm /tmp/tensorflow.tar.gz
 
-ENV LD_LIBRARY_PATH="/opt/soft/tensorflow-$TF_VERSION/lib:$LD_LIBRARY_PATH"    
+ENV TENSORFLOW_ROOT="/opt/soft/tensorflow-$TF_VERSION"
+
+RUN pip3 install --upgrade 'jupyterhub==4.*' 'notebook==7.*'
+
+RUN usermod -l jovyan -d /home/jovyan -m ubuntu
+RUN groupmod -n jovyan ubuntu
+RUN deluser jovyan sudo 
+RUN deluser jovyan adm
+RUN deluser jovyan dialout 
+RUN deluser jovyan cdrom
+RUN deluser jovyan dip
+RUN deluser jovyan plugdev
+
     
 # install user scripts
 RUN mkdir -p /opt/scripts
 COPY docker/start-jupyter.sh /opt/scripts/start-jupyter.sh
+COPY docker/with-libtensorflow.sh /opt/scripts/with-libtensorflow.sh
 RUN chmod +x /opt/scripts/start-jupyter.sh
+RUN chmod +x /opt/scripts/with-libtensorflow.sh
 
 RUN mkdir /opt/root/etc/notebook/migrated
 RUN chmod -R a+rw /opt/root/etc/notebook/migrated
 
 RUN mkdir -p /opt/root/etc/notebook/lab/workspaces
 RUN chmod -R a+rw /opt/root/etc/notebook/lab/workspaces
+
+USER jovyan
+WORKDIR /home/jovyan
 
 FROM common_base AS user
 ADD . /opt/soft/TPCReco-src

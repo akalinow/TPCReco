@@ -27,6 +27,14 @@ docker build --rm --target with_tf -t elitpc/tpcreco-with_tf:latest -f docker/Do
 
 There are two version of the image: default one with no tensorflow support and `with_tf` one with tensorflow and jupyterlab installed. In the `with_tf` version you can start jupyterlab server by running `/opt/scripts/start-jupyter.sh` script inside the container.
 
+Save to tar file if needed:
+
+```
+docker save -o docker/elitpc_tpcreco-with_tf_latest.tar elitpc/tpcreco-with_tf:latest
+docker save -o docker/elitpc_tpcreco_latest.tar elitpc/tpcreco:latest
+```
+
+
 ## Getting started with Singularity
 
 It's possible to convert `TPCReco` docker image to singularity image.
