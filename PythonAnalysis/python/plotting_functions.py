@@ -397,6 +397,9 @@ def plotOpeningAngleCos(df):
 ###################################################
 def plotEffMaps(df, numeratorSel, denominatorSel):
 
+    df['phi_sim'] = np.arctan2(df["yAlpha_sim"]-df["yVtx_sim"], df["xAlpha_sim"]-df["xVtx_sim"])
+    df['cosTheta_sim'] = (df["zAlpha_sim"]-df["zVtx_sim"])/df["dAlpha_sim"]
+
     df_good_gen = df[denominatorSel]
     df_good_reco = df[numeratorSel*denominatorSel]
     

@@ -115,14 +115,18 @@ void FileOutput::update(std::shared_ptr<EventSourceBase> aEventSource) {
   else *mySimEventPtr = aEventSource->getRecoEvent(); //Hack by AK to avoid troubles in ROOT->Python step
 
   //HACKS. Move to configuration
+  double margin = 5; //[mm] margin from the drift cage limits to define fiducial volume
+  double maxAbsZ = aEventSource->getGeometry()->GetDriftCageZmax() - margin;
+
   if(mySimEventPtr->getSegments().size()!=2) return; 
-  //Fidutial volume cut
+  //Fiducial volume cut
   if(mcEventSource){
       bool isFiducial = std::abs(mySimEventPtr->getSegments().front().getEnd().X())< 140 && 
                         std::abs(mySimEventPtr->getSegments().front().getEnd().Y())< 90 &&
-                        std::abs(mySimEventPtr->getSegments().front().getEnd().Z())< 60;
+                        std::abs(mySimEventPtr->getSegments().front().getEnd().Z())< maxAbsZ;
       if(!isFiducial) return;
   }
+  /////////////////////////
     
 
   for(auto aTree: myOutputTrees) {
