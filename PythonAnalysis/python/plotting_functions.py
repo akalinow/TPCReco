@@ -394,4 +394,51 @@ def plotOpeningAngleCos(df):
     axes[1].set_xlabel(r'$\frac{cos(\alpha^{RECO}) - cos(\alpha^{GEN})}{-1-cos(\alpha^{GEN})}$')
     axes[1].legend()
 ###################################################
-###################################################   
+###################################################
+def plotEffMaps(df, numeratorSel, denominatorSel):
+
+    df_good_gen = df[denominatorSel]
+    df_good_reco = df[numeratorSel*denominatorSel]
+    
+    fig, axes = plt.subplots(2,2, figsize=(10,8), layout='tight')
+    
+    #2d efficiency
+    denominator, _,_,_ = axes[0,0].hist2d(df_good_gen["phi_sim"], df_good_gen["cosTheta_sim"], bins=(np.arange(0, np.pi, 0.2), np.arange(-1,1.1,0.2)))
+    numerator, _,_,_   = axes[0,0].hist2d(df_good_reco["phi_sim"], df_good_reco["cosTheta_sim"], bins=(np.arange(0, np.pi, 0.2), np.arange(-1,1.1,0.2)))
+    eff = numerator / denominator
+    axes[0,0].imshow(eff.T, origin='lower', aspect='auto', extent=[0, np.pi, -1, 1])
+    axes[0,0].set_xlabel(r"$\varphi$")
+    axes[0,0].set_ylabel(r"$\cos(\theta)$")
+    fig.colorbar(plt.cm.ScalarMappable(cmap='viridis'), ax=axes[0,1], label='Efficiency')
+    
+    # 1d versus phi
+    denominator, _,_ = axes[0,1].hist(df_good_gen["phi_sim"], bins=np.arange(0, np.pi, 0.1))
+    numerator, _,_   = axes[0,1].hist(df_good_reco["phi_sim"], bins=np.arange(0, np.pi, 0.1))
+    eff = numerator / denominator
+    axes[0,1].clear()
+    axes[0,1].plot((np.arange(0, np.pi, 0.1)[:-1] + np.arange(0, np.pi, 0.1)[1:])/2, eff, marker='o')
+    axes[0,1].set_xlabel(r"$\varphi$")
+    axes[0,1].set_ylabel("Efficiency")
+    axes[0,1].set_ylim(0.8, 1.05)
+    
+    # 1d versus cosTheta
+    binWidth = 0.05
+    denominator, _,_ = axes[1,0].hist(df_good_gen["cosTheta_sim"], bins=np.arange(-1,1.1,binWidth))
+    numerator, _,_   = axes[1,0].hist(df_good_reco["cosTheta_sim"], bins=np.arange(-1,1.1,binWidth))
+    eff = numerator / denominator
+    axes[1,0].clear()
+    axes[1,0].plot((np.arange(-1,1.1,binWidth)[:-1] + np.arange(-1,1.1,binWidth)[1:])/2, eff, marker='o')
+    axes[1,0].set_xlabel(r"$\cos(\theta)$")
+    axes[1,0].set_ylabel("Efficiency")
+    axes[1,0].set_ylim(0.8, 1.05)
+    
+    # 1d versus track length
+    denominator, _,_ = axes[1,1].hist(df_good_gen["dAlpha_sim"], bins=np.arange(0, 200, 5))
+    numerator, _,_   = axes[1,1].hist(df_good_reco["dAlpha_sim"], bins=np.arange(0, 200, 5))
+    eff = numerator / denominator
+    axes[1,1].clear()
+    axes[1,1].plot((np.arange(0, 200, 5)[:-1] + np.arange(0, 200, 5)[1:])/2, eff, marker='o')
+    axes[1,1].set_xlabel(r"$\alpha$ track length [mm]")
+    axes[1,1].set_ylabel("Efficiency")
+    axes[1,1].set_ylim(0.8, 1.05)
+#########################################

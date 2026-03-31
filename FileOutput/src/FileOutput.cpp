@@ -114,7 +114,16 @@ void FileOutput::update(std::shared_ptr<EventSourceBase> aEventSource) {
   if(mcEventSource) *mySimEventPtr = mcEventSource->getGeneratedTrack();
   else *mySimEventPtr = aEventSource->getRecoEvent(); //Hack by AK to avoid troubles in ROOT->Python step
 
-  if(mySimEventPtr->getSegments().size()!=2) return; //TEST
+  //HACKS. Move to configuration
+  if(mySimEventPtr->getSegments().size()!=2) return; 
+  //Fidutial volume cut
+  if(mcEventSource){
+      bool isFiducial = std::abs(mySimEventPtr->getSegments().front().getEnd().X())< 140 && 
+                        std::abs(mySimEventPtr->getSegments().front().getEnd().Y())< 90 &&
+                        std::abs(mySimEventPtr->getSegments().front().getEnd().Z())< 60;
+      if(!isFiducial) return;
+  }
+    
 
   for(auto aTree: myOutputTrees) {
     if (aTree.second==nullptr) {
