@@ -44,7 +44,9 @@ set(TPCRECO_RESOURCE_DIR
 )
 target_compile_definitions(Resources INTERFACE TPCRECO_RESOURCE_DIR=\"${TPCRECO_RESOURCE_DIR}\")
 
-option(BUILD_GEANT_MODULE "Build Geant4 simulation" ON)
+option(SKIP_STRIP_RESPONSE "Download Monte Carlo Strip Response files" OFF)
+option(SKIP_GEANT_STL_MODEL "Download TPC STL model files or Geant4 simulation" OFF)
+option(BUILD_GEANT_MODULE "Build Geant4 simulation" OFF)
 
 set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 add_subdirectory(Utilities)

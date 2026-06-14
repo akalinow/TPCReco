@@ -15,17 +15,18 @@ add_subdirectory(TriggerSimulator)
 add_subdirectory(ToyIonizationSimulator)
 
 #Download strip response files
-include(ExternalProject)
-ExternalProject_Add(
-  strip_response_model
-  URL https://mycloud.fuw.edu.pl/index.php/s/x2DBMLei33aKTY3/download
-  DOWNLOAD_NAME StripResponseModel.tar
-  SOURCE_DIR StripResponseModel
-  DOWNLOAD_DIR StripResponseModel
-  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-  BUILD_COMMAND ""
-  INSTALL_COMMAND ""
-  CONFIGURE_COMMAND "")
+if(!SKIP_STRIP_RESPONSE)
+  include(ExternalProject)
+  ExternalProject_Add(
+    strip_response_model
+    URL https://mycloud.fuw.edu.pl/index.php/s/x2DBMLei33aKTY3/download
+    DOWNLOAD_NAME StripResponseModel.tar
+    SOURCE_DIR StripResponseModel
+    DOWNLOAD_DIR StripResponseModel
+    BUILD_COMMAND ""
+    INSTALL_COMMAND ""
+    CONFIGURE_COMMAND "")
+endif()
 
 if(BUILD_GEANT_MODULE)
   find_package(Geant4 REQUIRED ui_all vis_all)
@@ -35,18 +36,19 @@ if(BUILD_GEANT_MODULE)
   include_directories(${CADMESH_INCLUDE_DIRS})
   include_directories(GeantSim/include)
 
-  include(ExternalProject)
   # Download the Geant STL model
-  ExternalProject_Add(
-    geant_model
-    URL https://mycloud.fuw.edu.pl/index.php/s/znyZHrbPxrmR9Je/download
-    DOWNLOAD_NAME elitpc_STL_model_20180302.tar.gz
-    SOURCE_DIR Geant_STL_model
-    DOWNLOAD_DIR Geant_STL_model
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-    BUILD_COMMAND ""
-    INSTALL_COMMAND ""
-    CONFIGURE_COMMAND "")
+  if(!SKIP_GEANT_STL_MODEL)
+    include(ExternalProject)
+    ExternalProject_Add(
+      geant_model
+      URL https://mycloud.fuw.edu.pl/index.php/s/znyZHrbPxrmR9Je/download
+      DOWNLOAD_NAME elitpc_STL_model_20180302.tar.gz
+      SOURCE_DIR Geant_STL_model
+      DOWNLOAD_DIR Geant_STL_model
+      BUILD_COMMAND ""
+      INSTALL_COMMAND ""
+      CONFIGURE_COMMAND "")
+  endif()
 endif()
 
 set(module_sources
