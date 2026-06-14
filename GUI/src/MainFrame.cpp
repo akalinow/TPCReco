@@ -279,6 +279,7 @@ int MainFrame::AddButtons(int attach) {
 	std::vector<unsigned int> checkbox_id = { M_TOGGLE_LOGSCALE, M_TOGGLE_AUTOZOOM, M_TOGGLE_RECOMODE, M_TOGGLE_RATE };
 
 	auto displayConfig = myConfig.find("display");
+	auto pedestalSubtractedFlag = myConfig.get<bool>("pedestal.remove");
 	for (unsigned int iCheckbox = 0; iCheckbox < checkbox_names.size(); ++iCheckbox) {
 		TGCheckButton* aCheckbox = new TGCheckButton(fFrame,
 			checkbox_names[iCheckbox].c_str(),
@@ -294,8 +295,11 @@ int MainFrame::AddButtons(int attach) {
 			aCheckbox->SetState(kButtonDown, true);
 		}
 		if (checkbox_id[iCheckbox] == M_TOGGLE_RECOMODE && // disable RECO mode in ONLINE mode
-		    (myWorkMode == M_ONLINE_GRAW_MODE ||
-		     myWorkMode == M_ONLINE_NGRAW_MODE)) {
+		    (myWorkMode == M_ONLINE_GRAW_MODE ||           // and in OFFLINE mode when pedestals are not subtracted
+		     myWorkMode == M_ONLINE_NGRAW_MODE ||
+		     (!pedestalSubtractedFlag &&
+		      (myWorkMode == M_OFFLINE_GRAW_MODE ||
+		       myWorkMode == M_OFFLINE_NGRAW_MODE  )))) {
 			aCheckbox->SetState(kButtonUp, true);
 			aCheckbox->SetState(kButtonDisabled);
 		}

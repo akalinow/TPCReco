@@ -69,6 +69,7 @@ void HistoManager::setEvent(std::shared_ptr<EventTPC> aEvent){
   
   if(!aEvent) return;
   myEventPtr = aEvent;
+  if(!myEventPtr->GetEventInfo().GetPedestalSubtracted()) return; // pedestals not subtracted => skip clustering & track reco !
   myEventPtr->setHitFilterConfig(filter_type::threshold, myConfig);
 }
 /////////////////////////////////////////////////////////
@@ -123,6 +124,7 @@ void HistoManager::drawRawHistos(TCanvas *aCanvas, bool isRateDisplayOn){
   }
   aCanvas->Modified();
   aCanvas->Update();
+
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
