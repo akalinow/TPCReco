@@ -50,17 +50,9 @@ if(HAVE_INTERNET)
       BUILD_COMMAND ""
       INSTALL_COMMAND ""
       CONFIGURE_COMMAND "")
-  else()
+else()
     message(WARNING "No internet access detected. Skipping download of StripResponseModel.")
 endif()
-
-if(BUILD_GEANT_MODULE)
-  find_package(Geant4 REQUIRED ui_all vis_all)
-  find_package(cadmesh REQUIRED) 
-  add_subdirectory(GeantSim)
-  include_directories(${Geant4_INCLUDE_DIRS})
-  include_directories(${CADMESH_INCLUDE_DIRS})
-  include_directories(GeantSim/include)
 
 # Download the Geant STL model    
 set(GEANT_MODEL_URL "https://mycloud.fuw.edu.pl/index.php/s/znyZHrbPxrmR9Je/download")
@@ -76,10 +68,18 @@ if(HAVE_INTERNET)
         BUILD_COMMAND ""
         INSTALL_COMMAND ""
         CONFIGURE_COMMAND "")
-    else()
+else()
       message(WARNING "No internet access detected. Skipping download of Geant STL model. Setting BUILD_GEANT_MODULE to OFF")
       set(BUILD_GEANT_MODULE OFF)
-  endif()
+endif()
+
+if(BUILD_GEANT_MODULE)
+  find_package(Geant4 REQUIRED ui_all vis_all)
+  find_package(cadmesh REQUIRED) 
+  add_subdirectory(GeantSim)
+  include_directories(${Geant4_INCLUDE_DIRS})
+  include_directories(${CADMESH_INCLUDE_DIRS})
+  include_directories(GeantSim/include)
 endif()
 
 set(module_sources
