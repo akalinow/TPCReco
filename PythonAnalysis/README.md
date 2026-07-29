@@ -1,5 +1,11 @@
 ## Python based analysis
 
+It might be required to add this command to the .bashrc file in your home catalogue:
+```Bash
+echo 'export LD_LIBRARY_PATH=/opt/soft/tensorflow-2.18.0/lib:$LD_LIBRARY_PATH' >> ~/.bashrc
+source ~/.bashrc
+```
+
 ### Create ROOT file with PEventTPC data
 
 Create ROOT file with PEventTPC data, reco data. 
