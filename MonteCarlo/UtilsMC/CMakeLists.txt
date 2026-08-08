@@ -9,7 +9,7 @@ root_generate_dictionary(G__${TPCRECO_PREFIX}${MODULE_NAME}
 reco_add_library(${MODULE_NAME} EXTRA_SOURCES
                  G__${TPCRECO_PREFIX}${MODULE_NAME}.cxx)
 
-target_link_libraries(${MODULE_NAME} PUBLIC ${ROOT_LIBRARIES} MathMore
+target_link_libraries(${MODULE_NAME} PUBLIC ${ROOT_LIBRARIES} ${ROOT_MATHMORE_LIBRARY}
                                             GenVector Utilities DataFormats)
 
 reco_install_targets(${MODULE_NAME})

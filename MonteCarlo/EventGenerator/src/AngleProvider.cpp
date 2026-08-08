@@ -1,8 +1,27 @@
 #include "TPCReco/AngleProvider.h"
 #include "TMath.h"
+#ifdef HAS_ROOT_MATHMORE
 #include "Math/SpecFuncMathMore.h"
+#endif
 #include "TF1.h"
 #include "Math/Math.h"
+
+#ifndef HAS_ROOT_MATHMORE
+// ROOT builds without MathMore (no GSL) lack ROOT::Math::legendre;
+// equivalent Legendre polynomial P_n(x) via the Bonnet recurrence
+namespace {
+double legendre_poly(unsigned int n, double x) {
+    double p0 = 1.0, p1 = x;
+    if (n == 0) return p0;
+    for (unsigned int k = 1; k < n; k++) {
+        double p2 = ((2.0 * k + 1.0) * x * p1 - k * p0) / (k + 1.0);
+        p0 = p1;
+        p1 = p2;
+    }
+    return p1;
+}
+}
+#endif
 
 
 AngleProviderCosIso::AngleProviderCosIso() {
@@ -49,7 +68,11 @@ double AngleProviderE1E2::Theta(double *x, double *par) {
     auto sgn = paramVals["phaseCosSign"];
     double c = cos(x[0]);
     double L[5];
+#ifdef HAS_ROOT_MATHMORE
     for (auto i = 0; i <= 4; i++) L[i] = ROOT::Math::legendre(i, c);
+#else
+    for (auto i = 0; i <= 4; i++) L[i] = legendre_poly(i, c);
+#endif
     auto WE1 = L[0] - L[2];
     auto WE2 = L[0] + (5. / 7.) * L[2] - (12. / 7.) * L[4];
     auto W12 = 6. / sqrt(5.0) * (L[1] - L[3]);

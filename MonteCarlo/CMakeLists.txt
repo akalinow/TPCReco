@@ -1,3 +1,12 @@
+# ROOT may be built without MathMore (requires GSL); when absent, EventGenerator
+# falls back to a built-in Legendre polynomial implementation
+if(TARGET ROOT::MathMore)
+  set(ROOT_MATHMORE_LIBRARY MathMore)
+else()
+  set(ROOT_MATHMORE_LIBRARY)
+  message(STATUS "ROOT was built without MathMore - using built-in Legendre polynomials")
+endif()
+
 add_subdirectory(UtilsMC)
 add_subdirectory(EventGenerator)
 add_subdirectory(examples)
