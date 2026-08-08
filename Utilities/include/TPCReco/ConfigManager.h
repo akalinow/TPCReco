@@ -206,6 +206,15 @@ template<typename T>
 class ConfigManager::myValue {
 private:
   T value;
+
+  // formatting helpers used by operator<<; overloads replicate the original
+  // per-type format strings ("%d", "%u", "%.6g", "%.16lg", "1"/"0", as-is)
+  static std::string formatValue(int v)                { return Form("%d", v); }
+  static std::string formatValue(unsigned int v)       { return Form("%u", v); }
+  static std::string formatValue(float v)              { return Form("%.6g", v); }
+  static std::string formatValue(double v)             { return Form("%.16lg", v); }
+  static std::string formatValue(bool v)               { return v ? "1" : "0"; }
+  static std::string formatValue(const std::string &v) { return v; }
 public:
   myValue(); // NOTE: specialized empty constructors are defined outside class definition
   myValue(T v) : value(v) { }
@@ -214,27 +223,9 @@ public:
     ///////// DEBUG
     //    std::cout << KRED << __FUNCTION__ << "(ConfigManager::myValue): ################################ input VAL: " << v.value << RST << std::endl;
     ///////// DEBUG
-    if(std::is_same<T, bool>::value) { // BOOL type needs a special treatment
-      if(v.value==true) os << "1";
-      else              os << "0";
-    } else if(std::is_same<T, std::string>::value) { // special case, may contain blank spaces
-      os << boost::lexical_cast<T>(v.value);
-    } else {
-      static std::string strFormat;
-      if(std::is_same<T, int>::value) {
-	strFormat="%d";
-      } else if(std::is_same<T, unsigned int>::value) {
-	strFormat="%u";
-      } else if(std::is_same<T, float>::value) {
-	strFormat="%.6g";
-      } else if(std::is_same<T, double>::value) {
-	strFormat="%.16lg";
-      } else {
-	std::cout<<KRED<<__FUNCTION__<<"(ConfigManager::myValue)("<<__LINE__<<"): ERROR: unknown value type!"<<RST<<std::endl;
-	throw std::logic_error("wrong type");
-      }
-      os << Form(strFormat.c_str(), v.value);
-    }
+    // NOTE: per-type formatValue() overloads instead of Form(fmt, v.value): passing
+    // a std::string through Form()'s varargs is undefined behaviour (aborts at runtime)
+    os << formatValue(v.value);
     ///////// DEBUG
     //    std::cout << KRED << __FUNCTION__ << "(ConfigManager::myValue): ################################ CLEAN EXIT" << RST << std::endl;
     ///////// DEBUG
