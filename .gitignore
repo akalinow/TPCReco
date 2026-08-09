@@ -33,6 +33,10 @@ build/
 \#*#
 .vscode
 
+# clangd index cache
+###################
+.cache/
+
 # CMake cache
 ###################
 *.cmake
