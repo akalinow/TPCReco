@@ -64,6 +64,8 @@ public:
 
 	void DoButton();
 
+	void FixInitialWindowSize();
+
 private:
 
 	void InitializeEventSource();

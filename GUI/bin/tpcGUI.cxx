@@ -26,7 +26,8 @@ int main(int argc, char** argv) {
 	TApplication theApp("App", &argc, argv);
 
 	MainFrame mainWindow(gClient->GetRoot(), 0, 0, tree);
-	
+	mainWindow.FixInitialWindowSize();
+
 	theApp.Run();
 
 	return 0;

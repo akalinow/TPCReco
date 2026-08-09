@@ -11,7 +11,12 @@
 #include "TPCReco/colorText.h"
 
 #include <TSystem.h>
-#include <TObjArray.h> 
+#include <TObjArray.h>
+
+#ifdef __APPLE__
+#include <objc/runtime.h>
+#include <objc/message.h>
+#endif
 #include <TObjString.h>
 #include <TStyle.h>
 #include <TString.h>
@@ -111,6 +116,37 @@ void MainFrame::InitializeWindows() {
 	MapWindow();
 	SetWindowName("TPC GUI");
 
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void MainFrame::FixInitialWindowSize() {
+#ifdef __APPLE__
+	// ROOT's Cocoa backend on macOS 26 maps this window 1 px wide and silently
+	// drops TGFrame geometry calls on it, while an AppKit-level resize (e.g. the
+	// Window->Zoom menu) repairs it. Set the NSWindow frame directly; ROOT then
+	// receives the resize event and lays out the widgets normally.
+	// plain void* instead of objc id/Class/SEL: those names clash with ROOT types
+	struct CGRectL { double x, y, w, h; };
+	using ObjPtr = void*;
+	auto call = (ObjPtr(*)(ObjPtr, ObjPtr))objc_msgSend;
+	ObjPtr app = call((ObjPtr)objc_getClass("NSApplication"),
+	                  (ObjPtr)sel_registerName("sharedApplication"));
+	ObjPtr windows = call(app, (ObjPtr)sel_registerName("windows"));
+	auto count = ((unsigned long(*)(ObjPtr, ObjPtr))objc_msgSend)(
+	                windows, (ObjPtr)sel_registerName("count"));
+	for (unsigned long i = 0; i < count; ++i) {
+		ObjPtr win = ((ObjPtr(*)(ObjPtr, ObjPtr, unsigned long))objc_msgSend)(
+		                windows, (ObjPtr)sel_registerName("objectAtIndex:"), i);
+		CGRectL frame = ((CGRectL(*)(ObjPtr, ObjPtr))objc_msgSend)(
+		                win, (ObjPtr)sel_registerName("frame"));
+		bool degenerate = frame.w < 100 && frame.h < 100;
+		if (!degenerate) continue;
+		CGRectL target = {300.0, 200.0, 1300.0, 800.0};
+		((void(*)(ObjPtr, ObjPtr, CGRectL, bool))objc_msgSend)(
+		                win, (ObjPtr)sel_registerName("setFrame:display:"), target, true);
+	}
+	RaiseWindow();
+#endif
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
