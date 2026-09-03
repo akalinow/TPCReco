@@ -28,9 +28,13 @@ reco_add_executable(dumpRateHistos bin/dumpRateHistos.cpp)
 target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
 
 target_link_libraries(
-  ${MODULE_NAME} PUBLIC ${ROOT_LIBRARIES} DataFormats 
+  ${MODULE_NAME} PUBLIC ${ROOT_LIBRARIES} DataFormats
                          EventSources Reconstruction Analysis FileOutput
                          $<$<BOOL:${GET_FOUND}>:GrawToROOT>)
+if(APPLE)
+  # objc runtime used by the macOS window-size workaround in MainFrame.cpp
+  target_link_libraries(${MODULE_NAME} PRIVATE objc)
+endif()
 target_link_libraries(tpcGUI PRIVATE Boost::program_options ${MODULE_NAME})
 target_link_libraries(dumpProjectionHistos PRIVATE ${MODULE_NAME})
 target_link_libraries(dumpClusterHistos PRIVATE ${MODULE_NAME})
