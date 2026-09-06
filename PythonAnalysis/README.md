@@ -50,9 +50,9 @@ Run the [ROOT_to_TFRecord.ipynb](ipynb/ROOT_to_TFRecord.ipynb) to convert the RO
 
 ### Evaluate classical reconstruction implemented in TPCReco.
 
-Run the [ELITPC_analysis.ipynb](ipynb/ELITPC_analysis.ipynb) to evaluate the trained model.
+Run the [ELITPC_analysis.ipynb](ipynb/ELITPC_analysis.ipynb) to evaluate the classical reconstruction.
 
 ### Train a model regressing from U, V, W projections to relative 3D vertex and end points.
 
-Run the [WAWTPC_ML.ipynb](ipynb/WAWTPC_ML.ipynb).
+Run the [WAWTPC_ML.ipynb](ipynb/WAWTPC_ML.ipynb) to train a model or evaluate its performance.
 
