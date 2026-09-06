@@ -48,15 +48,11 @@ This step has to be executed only once per dataset.
 
 Run the [ROOT_to_TFRecord.ipynb](ipynb/ROOT_to_TFRecord.ipynb) to convert the ROOT file to TFRecord format.
 
-### Evaluate reconstruction implemented in TPCReco.
+### Evaluate classical reconstruction implemented in TPCReco.
 
 Run the [ELITPC_analysis.ipynb](ipynb/ELITPC_analysis.ipynb) to evaluate the trained model.
 
-### Train a model regressing from U, V, W projections to 3D vertex and end points.
+### Train a model regressing from U, V, W projections to relative 3D vertex and end points.
 
 Run the [WAWTPC_ML.ipynb](ipynb/WAWTPC_ML.ipynb).
 
-
-### Train a model regressing from U, V, W projections to 2D vertex and end points.
-
-Run the [WAWTPC_ML_UVWT.ipynb](ipynb/WAWTPC_ML.ipynb).
