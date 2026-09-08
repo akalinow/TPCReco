@@ -2,8 +2,10 @@ set(TPCRECO_LIBPREFIX "libTPC")
 set(TPCRECO_PREFIX "TPC")
 
 function(reco_set_compile_options NAME)
+# -Werror only off macOS: AppleClang warns on constructs that gcc accepts silently
   target_compile_options(${NAME} PRIVATE $<$<CONFIG:RELEASE>:-O3 -DNDEBUG>
-                                         $<$<CONFIG:DEBUG>:-g3> -Wall -Werror)
+                                         $<$<CONFIG:DEBUG>:-g3> -Wall
+                                         $<$<NOT:$<PLATFORM_ID:Darwin>>:-Werror>)
 endfunction()
 
 function(reco_add_library NAME)

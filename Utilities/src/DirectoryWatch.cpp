@@ -2,7 +2,9 @@
 #include <iostream>
 #include <chrono>
 #include <thread>
+#ifndef __APPLE__
 #include <sys/inotify.h>
+#endif
 #include <sys/types.h>
 #include <set>
 #include <set>
@@ -31,6 +33,11 @@ void DirectoryWatch::setUpdateInterval(int aInterval){
 ////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void DirectoryWatch::watch(const std::string & dirName){
+#ifdef __APPLE__
+  // online mode relies on Linux inotify; not available on macOS
+  std::cerr<<KRED<<"DirectoryWatch::watch: online directory watching (inotify) "
+	   <<"is not supported on macOS. Directory: "<<dirName<<RST<<std::endl;
+#else
 
   std::string fName, fullPath;
   int MAX_EVENTS = (4L/* MAX expected number of GRAW streams */
@@ -125,6 +132,7 @@ void DirectoryWatch::watch(const std::string & dirName){
   // end of single Message() for all files
   //
 #endif
+#endif // __APPLE__
 }
 ////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
