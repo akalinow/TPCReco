@@ -1173,6 +1173,14 @@ std::vector<std::string> ConfigManager::filterMathExpressions(const std::vector<
   }
   return filteredValues;
 }
+// explicit instantiations for all supported option types: other libraries reference these
+// symbols via ConfigManager::myValue<T> operator>> and macOS ld requires them at link time
+template std::vector<std::string> ConfigManager::filterMathExpressions<int>(const std::vector<std::string> &, TInterpreter *);
+template std::vector<std::string> ConfigManager::filterMathExpressions<unsigned int>(const std::vector<std::string> &, TInterpreter *);
+template std::vector<std::string> ConfigManager::filterMathExpressions<float>(const std::vector<std::string> &, TInterpreter *);
+template std::vector<std::string> ConfigManager::filterMathExpressions<double>(const std::vector<std::string> &, TInterpreter *);
+template std::vector<std::string> ConfigManager::filterMathExpressions<bool>(const std::vector<std::string> &, TInterpreter *);
+template std::vector<std::string> ConfigManager::filterMathExpressions<std::string>(const std::vector<std::string> &, TInterpreter *);
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 //
