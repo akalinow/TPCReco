@@ -89,8 +89,10 @@ cd resources
 ../bin/tpcGUI --meta.configJson ~/.tpcreco/config/test.json
 ../bin/tpcGUI ~/.tpcreco/config/test.json
 ```
-* using generated $\alpha$ + $C$ events distributed according to E1+E2 transitions mixture
+* using generated $\alpha$ + $C$ events distributed according to E1+E2 transitions mixture. This requires setup of the Geant4 environment, and compilation with `-DBUILD_GEANT_MODULE=ON` option. 
+
 ```Shell 
+cmake -DBUILD_TEST=ON -DBUILD_GEANT_MODULE=ON  ../
 cd resources
 ../bin/tpcGUI ../config/config_GUI_MC.json
 ```
