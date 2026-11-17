@@ -49,6 +49,9 @@ class Track3D{
 
   void enableProjectionForLoss(int iProjection);
 
+  /// Set the fit mode, i.e. the meaning of the parameters of updateAndGetLoss.
+  /// TANGENT_ROTATION: the current segment tangents are the reference
+  /// directions, the parameters are small rotations about them.
   void setFitMode(definitions::fit_type fitType);
 
   void setHypothesisFitLoss(double Loss){ hypothesisFitLoss = Loss;};
@@ -80,6 +83,7 @@ class Track3D{
   TrackSegment3DCollection mySegments;
   TH1F myChargeProfile;
   double hypothesisFitLoss{0};
+  std::vector<TVector3> myReferenceTangents; //! segment tangents when the TANGENT_ROTATION fit mode was set
 };
 
 typedef std::vector<Track3D> Track3DCollection;

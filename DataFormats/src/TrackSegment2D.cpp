@@ -144,7 +144,8 @@ std::tuple<double,double> TrackSegment2D::getPointLambdaAndDistance(const TVecto
 /////////////////////////////////////////////////////////
 double TrackSegment2D::getLoss(const Hit2DCollection & aRecHits, definitions::fit_type lossType)const{
   
-  if(lossType==definitions::fit_type::TANGENT) return getParallelLineLoss(aRecHits);
+  if(lossType==definitions::fit_type::TANGENT ||
+     lossType==definitions::fit_type::TANGENT_ROTATION) return getParallelLineLoss(aRecHits);
   else return getHitDistanceLoss(aRecHits); 
 }
 /////////////////////////////////////////////////////////

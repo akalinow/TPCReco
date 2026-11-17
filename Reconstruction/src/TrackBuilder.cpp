@@ -869,6 +869,8 @@ Track3D TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
   fitTrack3DInSelectedDir(aFittedTrack, definitions::fit_type::TANGENT);
   fitTrack3DInSelectedDir(aFittedTrack, definitions::fit_type::BIAS_XY);
   fitTrack3DInSelectedDir(aFittedTrack, definitions::fit_type::BIAS_Z);
+  // second direction fit, with the fitted bias: small rotations about the current direction
+  fitTrack3DInSelectedDir(aFittedTrack, definitions::fit_type::TANGENT_ROTATION);
   aFittedTrack.shrinkToHits();
 
   return aFittedTrack;
@@ -881,7 +883,8 @@ ROOT::Fit::FitResult TrackBuilder::fitTrackNodesBiasTangent(const Track3D & aTra
   double zRange = 20; //parameter to be moved to configuration
   double xyRange = 20; //parameter to be moved to configuration
   double thetaRange = 0.4; //parameter to be moved to configuration
-  double phiRange = 0.4; //parameter to be moved to configuration                    
+  double phiRange = 0.4; //parameter to be moved to configuration
+  double rotationRange = 0.4; //[rad] full range of the rotation angles, parameter to be moved to configuration
 
   // the FCN refers to a member, not to a local copy: the returned FitResult
   // keeps a copy of the FCN, which must not point to a destroyed object
@@ -930,7 +933,16 @@ ROOT::Fit::FitResult TrackBuilder::fitTrackNodesBiasTangent(const Track3D & aTra
     fitter.Config().ParSettings(0).Release();
     fitter.Config().ParSettings(1).Release();
   }
-    
+  else if(fitType==definitions::fit_type::TANGENT_ROTATION){
+    // rotation angles about the current tangent, starting from no rotation
+    for(int iPar=0;iPar<2;++iPar){
+      fitter.Config().ParSettings(iPar).SetValue(0.0);
+      fitter.Config().ParSettings(iPar).SetStepSize(rotationRange/8);
+      fitter.Config().ParSettings(iPar).SetLimits(-rotationRange/2, rotationRange/2);
+      fitter.Config().ParSettings(iPar).Release();
+    }
+  }
+
   bool fitStatus = fitter.FitFCN();
   if (!fitStatus) {
     Error(__FUNCTION__, "Track3D Fit failed");

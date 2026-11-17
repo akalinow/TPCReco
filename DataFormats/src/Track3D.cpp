@@ -15,7 +15,11 @@ Track3D::Track3D(){ };
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void Track3D::setFitMode(definitions::fit_type fitType){
-  myFitType = fitType; 
+  myFitType = fitType;
+  if(myFitType==definitions::fit_type::TANGENT_ROTATION){
+    myReferenceTangents.clear();
+    for(const auto &aSegment: mySegments) myReferenceTangents.push_back(aSegment.getTangent());
+  }
   for(auto &aSegment: mySegments) aSegment.setLossType(myFitType);
   updateLoss();
 };
@@ -259,6 +263,18 @@ double Track3D::updateAndGetLoss(const double *par){
       const TVector3 & aBias = mySegments.at(iSegment).getBias();
       TVector3 aTangent;
       aTangent.SetMagThetaPhi(1.0, segmentParameters[0], segmentParameters[1]);
+      mySegments.at(iSegment).setBiasTangent(aBias, aTangent);
+    }
+    else if(myFitType==definitions::fit_type::TANGENT_ROTATION &&
+            iSegment<myReferenceTangents.size()){
+      // tangent = t0 + alpha*e1 + beta*e2 (normalised), e1, e2 perpendicular to t0:
+      // for small angles a rotation by alpha, beta about two axes perpendicular to t0
+      const double *segmentParameters = par+3*iSegment;
+      const TVector3 t0 = myReferenceTangents[iSegment].Unit();
+      const TVector3 e1 = t0.Orthogonal().Unit();
+      const TVector3 e2 = t0.Cross(e1);
+      const TVector3 aTangent = t0 + segmentParameters[0]*e1 + segmentParameters[1]*e2;
+      const TVector3 & aBias = mySegments.at(iSegment).getBias();
       mySegments.at(iSegment).setBiasTangent(aBias, aTangent);
     }
     else if(myFitType==definitions::fit_type::BIAS_Z){

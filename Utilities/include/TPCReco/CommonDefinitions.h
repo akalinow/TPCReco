@@ -92,7 +92,9 @@ enum class fit_type{
   BIAS_Z,       // Fit only track segment bias. Move along time direction. 
   BIAS_XY,      // Fit only track segment bias. Move in the strip plane.
   TANGENT_BIAS, // Fit both track segment bias and tangent
-  START_STOP    // Fit both track segment start and stop
+  START_STOP,   // Fit both track segment start and stop
+  TANGENT_ROTATION // Fit only track segment tangent: two small rotation angles about the
+                   // tangent at the start of the fit (no singularity along the z axis)
 };
 
 } //namespace definitions
