@@ -225,6 +225,13 @@ double EventTPC::GetValByStrip(int strip_dir, int strip_section, int strip_numbe
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
+const std::set<PEventTPC::chargeMapType::key_type> & EventTPC::GetFilteredKeys(filter_type filterType){
+
+  filterHits(filterType);
+  return keyLists.at(filterType);
+}
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
 double EventTPC::GetValByStrip(std::shared_ptr<StripTPC> strip, int time_cell) const {
   
   if(strip) return GetValByStrip(strip->Dir(), strip->Section(), strip->Num(), time_cell);

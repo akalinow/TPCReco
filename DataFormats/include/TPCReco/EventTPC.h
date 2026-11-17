@@ -40,7 +40,12 @@ class EventTPC {
   double GetValByStrip(std::shared_ptr<StripTPC> strip, int time_cell) const;
 
   // valid range [0-2][1-1024][0-511] (all sections)
-  double GetValByStripMerged(int strip_dir, int strip_number, int time_cell);  
+  double GetValByStripMerged(int strip_dir, int strip_number, int time_cell);
+
+  // keys (STRIP_DIR, SECTION, STRIP_NUM, TIME_CELL) of the hits passing a given filter.
+  // The threshold and fraction filters add an envelope of neighbouring cells, which
+  // can contain keys without a charge entry (GetValByStrip returns 0 for them).
+  const std::set<PEventTPC::chargeMapType::key_type> & GetFilteredKeys(filter_type filterType);
 
   const eventraw::EventInfo & GetEventInfo() const { return myEventInfo; };
   inline GeometryTPC * GetGeoPtr() const { return myGeometryPtr.get(); }

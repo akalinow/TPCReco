@@ -83,6 +83,18 @@
         "defaultValue": 1000,
         "description": "Frequency (positive number - events, negative - bytes, 0 - disabled) of TTree auto-save in the output ROOT file.\nType: int"
     },
+    "mlTree":{
+        "group": "output",
+        "type": "bool",
+        "defaultValue": false,
+        "description": "Switch for writing the flat MLData tree (plain numeric branches for uproot / TFRecord conversion) next to the TPCData tree.\nType: bool"
+    },
+    "mlHitFilter":{
+        "group": "output",
+        "type": "string",
+        "defaultValue": "threshold",
+        "description": "Hit filter for the hits written to the MLData tree: none, threshold or fraction. The threshold and fraction filters use the hitFilter.* parameters.\nType: string"
+    },
     "updateInterval":{
         "group": "online",
         "type": "int",

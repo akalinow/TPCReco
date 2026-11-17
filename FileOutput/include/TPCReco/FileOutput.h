@@ -16,6 +16,7 @@ class EventTPC;
 class PEventTPC;
 class Track3D;
 class EventSourceBase;
+class MLTree;
 
 class FileOutput {
 public:
@@ -46,6 +47,9 @@ private:
   std::shared_ptr<Track3D> myRecoEventPtr;
   std::shared_ptr<PEventTPC> myPEventPtr;
   std::shared_ptr<eventraw::EventInfo> myEventInfoPtr;
+
+  // flat tree for ML (output.mlTree), filled together with TPCData
+  std::shared_ptr<MLTree> myMLTree;
 
   std::vector<std::string> offBranches;
   std::vector<std::string> onBranches;

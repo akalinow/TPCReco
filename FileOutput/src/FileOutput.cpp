@@ -15,6 +15,7 @@
 #include "TPCReco/ConfigManager.h"
 #include "TPCReco/InputFileHelper.h"
 #include "TPCReco/FileOutput.h"
+#include "TPCReco/MLTree.h"
 #include "TPCReco/colorText.h"
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -44,10 +45,18 @@ void FileOutput::init(boost::property_tree::ptree aConfig){
   mySimEventPtr = std::make_shared<Track3D>();
 
   std::vector<std::string> treeNames = {"TPCData"};
+  if(aConfig.get<bool>("output.mlTree", false)){
+    myMLTree = std::make_shared<MLTree>(aConfig);
+    treeNames.push_back("MLData");
+  }
   auto autoSaveFreq = ConfigManager::getScalar<int>(aConfig, "output.autoSaveFrequency");
   for (const auto &treeName : treeNames) {
       myOutputTrees[treeName] = std::make_shared<TTree>(treeName.c_str(), "");
       myOutputTrees[treeName]->SetDirectory(myOutputFilePtr.get());
+      if(treeName=="MLData") {
+        myOutputTrees[treeName]->SetAutoSave(autoSaveFreq);
+        myMLTree->book(myOutputTrees[treeName].get());
+      }
       if(treeName=="TPCData") {
         myOutputTrees[treeName]->SetAutoSave(autoSaveFreq); 
         myOutputTrees[treeName]->Branch("EventInfo", myEventInfoPtr.get());
@@ -127,7 +136,12 @@ void FileOutput::update(std::shared_ptr<EventSourceBase> aEventSource) {
       if(!isFiducial) return;
   }
   /////////////////////////
-    
+
+  if(myMLTree){
+    myMLTree->set(*aEventSource->getCurrentEvent(), *myRecoEventPtr,
+                  mcEventSource ? mySimEventPtr.get() : nullptr);
+  }
+
 
   for(auto aTree: myOutputTrees) {
     if (aTree.second==nullptr) {
@@ -148,6 +162,7 @@ void FileOutput::update(const eventraw::EventInfo & aEventInfoPtr,
    *myRecoEventPtr = aRecoEventPtr;
 
     for(auto aTree: myOutputTrees) {
+    if(aTree.first=="MLData") continue; // needs the charge map: filled only by update(aEventSource)
     if (aTree.second==nullptr) {
       std::cout << KRED << "FileOutput::update" << RST
                 << " pointer to output tree not set for tree: "
