@@ -58,7 +58,7 @@ void PedestalCalculatorGRAW::ResetTables(int coboId, int asadId){
 }
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
-void PedestalCalculatorGRAW::CalculateEventPedestals(const GET::GDataFrame & dataFrame){
+void PedestalCalculatorGRAW::CalculateEventPedestals(const graw::Frame & dataFrame){
 
   /////// DEBUG
   //  std::cout << __FUNCTION__ << " - START"
@@ -102,7 +102,7 @@ void PedestalCalculatorGRAW::CalculateEventPedestals(const GET::GDataFrame & dat
 }
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
-void PedestalCalculatorGRAW::ProcessDataFrame(const GET::GDataFrame &dataFrame, bool calculateMean){
+void PedestalCalculatorGRAW::ProcessDataFrame(const graw::Frame &dataFrame, bool calculateMean){
   
   /////// DEBUG
   //  std::cout << __FUNCTION__ << " - START, calculateMean=" << calculateMean
@@ -110,8 +110,8 @@ void PedestalCalculatorGRAW::ProcessDataFrame(const GET::GDataFrame &dataFrame, 
   /////// DEBUG
   
   double rawVal = 0, corrVal = 0;
-  int  COBO_idx = dataFrame.fHeader.fCoboIdx;
-  int  ASAD_idx = dataFrame.fHeader.fAsadIdx;
+  int  COBO_idx = dataFrame.header.coboIdx;
+  int  ASAD_idx = dataFrame.header.asadIdx;
 
   MultiKey2 mkey(COBO_idx, ASAD_idx);
   auto it=prof_pedestal_map.find(mkey);
@@ -137,24 +137,20 @@ void PedestalCalculatorGRAW::ProcessDataFrame(const GET::GDataFrame &dataFrame, 
       //		<< std::endl << std::flush;
       /////// DEBUG
 
-  GET::GDataChannel* channel = const_cast<GET::GDataFrame &>(dataFrame).SearchChannel(agetId, myGeometryPtr->Aget_fpn2raw(channelId));
-      if (!channel) continue;
-
-      for (int aSample = 0; aSample < channel->fNsamples; ++aSample){
-	      GET::GDataSample* sample = (GET::GDataSample*) channel->fSamples.At(aSample);	
-	      int cellId = sample->fBuckIdx;
-	      if(cellId<2 || cellId>509) continue;
+      dataFrame.forEachSample(agetId, myGeometryPtr->Aget_fpn2raw(channelId),
+			      [&](unsigned cellId, uint16_t value){
+	      if(cellId<2 || cellId>509) return;
 	      //Pedestal time-window
-	      if(cellId>=minPedestalCell && cellId<=maxPedestalCell){	 
-	        FPN_ave_pedestal[COBO_idx][ASAD_idx][agetId][cellId] += sample->fValue;
+	      if((int)cellId>=minPedestalCell && (int)cellId<=maxPedestalCell){
+	        FPN_ave_pedestal[COBO_idx][ASAD_idx][agetId][cellId] += value;
 	        FPN_entries_pedestal[COBO_idx][ASAD_idx][agetId][cellId] ++;
 	      }
 	      //Signal time window
-	      if(cellId>=minSignalCell && cellId<=maxSignalCell){
-	        FPN_ave_signal[COBO_idx][ASAD_idx][agetId][cellId] += sample->fValue;
+	      if((int)cellId>=minSignalCell && (int)cellId<=maxSignalCell){
+	        FPN_ave_signal[COBO_idx][ASAD_idx][agetId][cellId] += value;
 	        FPN_entries_signal[COBO_idx][ASAD_idx][agetId][cellId] ++;
 	      }
-      }
+      });
     }// end of FPN loop
 
     // calculate average FPN profile from 4 channels (pedestal time-window only)
@@ -168,40 +164,17 @@ void PedestalCalculatorGRAW::ProcessDataFrame(const GET::GDataFrame &dataFrame, 
     ///Loop over normal channels
     for (int channelId=0; !calculateMean && channelId<myGeometryPtr->GetAgetNchannels(); ++channelId) {
 
-      GET::GDataChannel* channel = const_cast<GET::GDataFrame &>(dataFrame).SearchChannel(agetId, myGeometryPtr->Aget_normal2raw(channelId));
-      if (!channel) continue;
-
-      for (int aSample = 0; aSample < channel->fNsamples; ++aSample){
-	      GET::GDataSample* sample = (GET::GDataSample*) channel->fSamples.At(aSample);	
-	      int cellId = sample->fBuckIdx;
-	      if(cellId<2 || cellId>509) continue;
+      dataFrame.forEachSample(agetId, myGeometryPtr->Aget_normal2raw(channelId),
+			      [&](unsigned cellId, uint16_t value){
+	      if(cellId<2 || cellId>509) return;
 	      //Pedestal time-window
-	      if(cellId>=minPedestalCell && cellId<=maxPedestalCell){
-	        rawVal  = sample->fValue;
+	      if((int)cellId>=minPedestalCell && (int)cellId<=maxPedestalCell){
+	        rawVal  = value;
 	        corrVal = rawVal - FPN_ave_pedestal[COBO_idx][ASAD_idx][agetId][cellId];
 	        int asadChannelId = myGeometryPtr->Asad_normal2normal(agetId, channelId);// 0-255 (without FPN)
-
-		/////// DEBUG
-		//		std::cout << __FUNCTION__ << " Filling TProfile: "
-		//			  << "Cobo=" << COBO_idx
-		//			  << ", Asad=" << ASAD_idx
-		//			  << ", chan=" << asadChannelId
-		//			  << ", corr_val=" << corrVal
-		//			  << std::endl << std::flush;
-		/////// DEBUG
-		
-	       
 		(it->second)->Fill(asadChannelId, corrVal);
-		/*
-          // Beware HACK!!!
-          //TProfile (prof_pedestal) with pedestals is only 256 (max chans in frame) long, pedestals are calculated for each frame and reset
-          //to fit into TProfile the global number of first chan in COBO/ASAD has to be substracted from global channel
-          int minChannelGlobal = myGeometryPtr->Global_normal2normal(COBO_idx, ASAD_idx, 0, 0);
-	        prof_pedestal->Fill(globalChannelId-minChannelGlobal, corrVal);
-		*/
-		
 	      }
-      }
+      });
     }// end of FPN loop    
   }// end of AGET loop  
   /////// DEBUG

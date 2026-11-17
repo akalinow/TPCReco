@@ -8,6 +8,7 @@ include_directories(${PROJECT_SOURCE_DIR}/DataFormats/include)
 include_directories(${PROJECT_SOURCE_DIR}/MonteCarlo/UtilsMC/include)
 include_directories(${PROJECT_SOURCE_DIR}/Reconstruction/include)
 include_directories(${PROJECT_SOURCE_DIR}/MLReconstruction/include)
+include_directories(${PROJECT_SOURCE_DIR}/GrawToROOT/include)
 include_directories(${TF_INCLUDE_DIR})
 
 root_generate_dictionary(
@@ -39,7 +40,7 @@ endif()
 target_link_libraries(
   ${MODULE_NAME} PUBLIC ${ROOT_LIBRARIES} ${ROOT_EXE_LINKER_FLAGS} 
             DataFormats Reconstruction MLReconstruction Utilities EventGenerator UtilsMC MonteCarloModules
-            $<$<BOOL:${GET_FOUND}>:GrawToROOT>)
+            GrawToROOT)
             
 target_link_libraries(mcRunController PRIVATE ${ROOT_LIBRARIES} Utilities ${MODULE_NAME}
                       DataFormats Reconstruction MLReconstruction UtilsMC EventGenerator MonteCarloModules ${Boost_LIBRARIES})

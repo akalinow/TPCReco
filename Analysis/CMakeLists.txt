@@ -3,6 +3,7 @@ message(STATUS "Adding CMake fragment for module:\t${MODULE_NAME}")
 
 # ROOT 6.08 dictionary MODULE workaround
 include_directories(${PROJECT_SOURCE_DIR}/Analysis/include/)
+include_directories(${PROJECT_SOURCE_DIR}/GrawToROOT/include)
 root_generate_dictionary(
   G__${TPCRECO_PREFIX}${MODULE_NAME}
   ${CMAKE_CURRENT_SOURCE_DIR}/include/TPCReco/HIGS_trees_dataFormat.h
@@ -28,20 +29,9 @@ add_executable(recoEventsDiff bin/recoEventsDiff.cpp)
 add_executable(recoEnergyScaleFitter bin/recoEnergyScaleFitter.cpp)
 add_executable(rawPedestalAnalysis bin/rawPedestalAnalysis.cpp)
 
-if(NOT ${GET_FOUND})
-  message(WARNING "GET not found, disabling rawSignalAnalysis rawTrackDiffusionAnalysis, rawPedestalAnalysis")
-  set_target_properties(rawSignalAnalysis PROPERTIES EXCLUDE_FROM_ALL TRUE)
-  set_target_properties(rawTrackDiffusionAnalysis PROPERTIES EXCLUDE_FROM_ALL TRUE)
-  set_target_properties(rawPedestalAnalysis PROPERTIES EXCLUDE_FROM_ALL TRUE)
-
-  target_link_libraries(
-  ${MODULE_NAME} PUBLIC Utilities DataFormats Reconstruction EventSources ${ROOT_LIBRARIES}
-                        ${ROOT_EXE_LINKER_FLAGS})
-else()
-  target_link_libraries(
+target_link_libraries(
   ${MODULE_NAME} PUBLIC Utilities DataFormats Reconstruction EventSources GrawToROOT ${ROOT_LIBRARIES}
                         ${ROOT_EXE_LINKER_FLAGS})
-endif()
 
 target_link_libraries(makeTrackTree PRIVATE ${MODULE_NAME}
                                             Boost::program_options GUI FileOutput)
@@ -77,9 +67,7 @@ install(PROGRAMS $<1:${CMAKE_CURRENT_SOURCE_DIR}/python/> DESTINATION python)
 install(DIRECTORY examples DESTINATION ${CMAKE_INSTALL_PREFIX})
 install(DIRECTORY config DESTINATION ${CMAKE_INSTALL_PREFIX})
 
-if(${GET_FOUND})
-  reco_install_targets(rawSignalAnalysis rawTrackDiffusionAnalysis rawPedestalAnalysis)
-endif()
+reco_install_targets(rawSignalAnalysis rawTrackDiffusionAnalysis rawPedestalAnalysis)
 
 
 reco_add_test_subdirectory(test)

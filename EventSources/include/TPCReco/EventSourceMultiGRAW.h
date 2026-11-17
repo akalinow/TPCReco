@@ -1,14 +1,11 @@
 #ifndef _EventSourceMultiGRAW_H_
 #define _EventSourceMultiGRAW_H_
 
-#ifdef WITH_GET
-
 #include <map>
+#include <memory>
 #include <set>
 
-#include <get/TGrawFile.h>
-
-#include "TPCReco/Graw2DataFrame.h"
+#include "TPCReco/GrawFile.h"
 
 #include "TPCReco/CommonDefinitions.h"
 #include "TPCReco/EventSourceBase.h"
@@ -50,7 +47,10 @@ private:
   void checkEntryForFragments(unsigned int iEntry, unsigned int streamIndex); // OVERLOADED
   std::string getNextFilePath(unsigned int streamIndex); // OVERLOADED
 
-  std::vector<std::shared_ptr<TGrawFile> > myFileList; // NEW [streamIndex]
+  bool readStreamFrame(const std::string & filePath, unsigned int iEntry, bool readFullEvent, unsigned int streamIndex);
+
+  std::vector<std::shared_ptr<graw::GrawFile> > myFileList; //! [streamIndex]
+  std::vector<std::shared_ptr<graw::GrawFile> > myNextFileList; //! [streamIndex], next chunk opened on demand
   std::vector<std::string> myFilePathList, myNextFilePathList; // NEW [streamIndex]
   std::vector<std::map<unsigned int, unsigned int> > myFramesMapList; // NEW [streamIndex, eventId, iEntry]
   std::vector<std::map<unsigned int, unsigned int> > myAsadMapList; // NEW [streamIndex, eventId, AsadId]
@@ -60,6 +60,5 @@ private:
   unsigned int frameLoadRange{1}; // OVERLOADED
 
 };
-#endif
 #endif
 

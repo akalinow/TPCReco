@@ -1,5 +1,3 @@
-#ifdef WITH_GET
-
 #include <cstdlib>
 #include <iostream>
 #include <ostream>
@@ -11,14 +9,10 @@
 #include <vector>
 #include <sstream>
 
-#include <TCollection.h>
-#include <TClonesArray.h>
 
 #include "TPCReco/RunIdParser.h"
 #include "TPCReco/EventSourceMultiGRAW.h"
 #include "TPCReco/colorText.h"
-
-#include <get/graw2dataframe.h>
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 EventSourceMultiGRAW::EventSourceMultiGRAW(const std::string & geometryFileName) : EventSourceGRAW(geometryFileName) {}
@@ -29,7 +23,7 @@ EventSourceMultiGRAW::~EventSourceMultiGRAW(){}
 /////////////////////////////////////////////////////////
 std::shared_ptr<EventTPC> EventSourceMultiGRAW::getNextEvent(){
 
-  myDataFrame.Clear();
+  myDataFrame.clear();
 
   auto currentEventId = myCurrentEvent->GetEventInfo().GetEventId();
   for( unsigned int streamIndex=0; streamIndex<myFramesMapList.size(); streamIndex++ ) {
@@ -104,6 +98,7 @@ void EventSourceMultiGRAW::loadDataFile(const std::string & commaSeparatedFileNa
 void EventSourceMultiGRAW::loadDataFileList(const std::set<std::string> & fileNameList){
 
   myFileList.clear();
+  myNextFileList.clear();
   myFilePathList.clear();
   myNextFilePathList.clear();
   myAsadMapList.clear();
@@ -121,15 +116,16 @@ void EventSourceMultiGRAW::loadDataFileList(const std::set<std::string> & fileNa
 
     EventSourceBase::loadDataFile(fileName);
 
-    auto myFile = std::make_shared<TGrawFile>(fileName.c_str());
-    if(!myFile){
+    auto myFile = std::make_shared<graw::GrawFile>();
+    if(!myFile->open(fileName)){
       std::cerr<<KRED<<__FUNCTION__
 	       <<": ERROR: Can not open file: "<<RST<<fileName<<std::endl;
       exit(1);
     }
     myFileList.push_back(myFile);
+    myNextFileList.push_back(std::make_shared<graw::GrawFile>());
     
-    unsigned int nFrames = myFile->GetGrawFramesNumber();
+    unsigned int nFrames = myFile->nFrames();
     if(streamIndex==0 || nFrames<nEvents) nEvents=nFrames; // take the lowest number of frames
     if(nEventsToRead<0) nEventsToRead = nEvents;
 		     
@@ -172,7 +168,6 @@ bool EventSourceMultiGRAW::loadGrawFrame(unsigned int iEntry, bool readFullEvent
   //  std::cout<<__FUNCTION__<<": AFTER tmpFilePath ---> stream="<<streamIndex<<", frame_check="<<iEntry<<", readFull="<<readFullEvent<<std::endl<<std::flush;
   //#endif
 
-  std::cout.setstate(std::ios_base::failbit);
 #ifndef EVENTSOURCEGRAW_NEXT_FILE_DISABLE  
 
   if(iEntry>=nEvents){
@@ -181,8 +176,7 @@ bool EventSourceMultiGRAW::loadGrawFrame(unsigned int iEntry, bool readFullEvent
   }
 
   
-  //  bool dataFrameRead = myFrameLoader.getGrawFrame(tmpFilePath, iEntry+1, myDataFrameList[streamIndex], readFullEvent);///FIXME getGrawFrame counts frames from 1 (WRRR!)
-  bool dataFrameRead = myFrameLoader.getGrawFrame(tmpFilePath, iEntry+1, myDataFrame, readFullEvent); // HOTFIX!!!!! => fills myDataFrame 
+  bool dataFrameRead = readStreamFrame(tmpFilePath, iEntry, readFullEvent, streamIndex); // HOTFIX!!!!! => fills myDataFrame 
   ///FIXME getGrawFrame counts frames from 1 (WRRR!)
 
   
@@ -190,8 +184,7 @@ bool EventSourceMultiGRAW::loadGrawFrame(unsigned int iEntry, bool readFullEvent
   bool dataFrameRead = false;
 
   if(iEntry<nEvents) {
-    //  dataFrameRead = myFrameLoader.getGrawFrame(tmpFilePath, iEntry+1, myDataFrameList[streamIndex], readFullEvent);///FIXME getGrawFrame counts frames from 1 (WRRR!)
-    dataFrameRead = myFrameLoader.getGrawFrame(tmpFilePath, iEntry+1, myDataFrame, readFullEvent); // HOTFIX!!!!! => fills myDataFrame
+    dataFrameRead = readStreamFrame(tmpFilePath, iEntry, readFullEvent, streamIndex); // HOTFIX!!!!! => fills myDataFrame
     ///FIXME getGrawFrame counts frames from 1 (WRRR!)
   } else {
     std::cerr <<KRED<<__FUNCTION__
@@ -202,7 +195,6 @@ bool EventSourceMultiGRAW::loadGrawFrame(unsigned int iEntry, bool readFullEvent
     return false;
   }
 #endif
-  std::cout.clear();
 
   if(!dataFrameRead){
     std::cerr <<KRED<<__FUNCTION__
@@ -211,8 +203,7 @@ bool EventSourceMultiGRAW::loadGrawFrame(unsigned int iEntry, bool readFullEvent
 	      <<RST<<tmpFilePath
 	      << std::endl;
     std::cerr <<KRED
-	      <<"Please check if you are running the application from the resources directory."
-	      <<std::endl<<"or if the data file is missing."
+	      <<"Please check if the data file is missing or damaged."
 	      <<RST
 	      <<std::endl;
     exit(1);
@@ -225,6 +216,19 @@ bool EventSourceMultiGRAW::loadGrawFrame(unsigned int iEntry, bool readFullEvent
   #endif
 
   return dataFrameRead;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+bool EventSourceMultiGRAW::readStreamFrame(const std::string & filePath, unsigned int iEntry,
+					   bool readFullEvent, unsigned int streamIndex){
+
+  graw::GrawFile *aFile = myFileList.at(streamIndex).get();
+  if(filePath!=aFile->path()){
+    aFile = myNextFileList.at(streamIndex).get();
+    if(filePath!=aFile->path() && !aFile->open(filePath)) return false;
+  }
+  if(readFullEvent) return aFile->readFrame(iEntry, myDataFrame);
+  return aFile->readHeader(iEntry, myDataFrame.header);
 }
 /////////////////////////////////////////////////////////
 // Checks all GRAW files for frames with eventId.
@@ -406,9 +410,9 @@ void EventSourceMultiGRAW::checkEntryForFragments(unsigned int iEntry, unsigned 
   //	   <<std::endl<<std::flush;
   //#endif    
 
-  unsigned long int currentEventId = myDataFrame.fHeader.fEventIdx; // HOTFIX!!!!!
-  unsigned int ASAD_idx = myDataFrame.fHeader.fAsadIdx; // HOTFIX!!!!!
-  unsigned int COBO_idx = myDataFrame.fHeader.fCoboIdx; // HOTFIX!!!!!
+  unsigned long int currentEventId = myDataFrame.header.eventIdx; // HOTFIX!!!!!
+  unsigned int ASAD_idx = myDataFrame.header.asadIdx; // HOTFIX!!!!!
+  unsigned int COBO_idx = myDataFrame.header.coboIdx; // HOTFIX!!!!!
  
   myAsadMapList[streamIndex][currentEventId] = ASAD_idx;
   myCoboMapList[streamIndex][currentEventId] = COBO_idx;
@@ -434,14 +438,14 @@ void EventSourceMultiGRAW::collectEventFragments(unsigned int eventId){
     auto aFragment = it->second;
     loadGrawFrame(aFragment, true, streamIndex);
 	    
-    int ASAD_idx = myDataFrame.fHeader.fAsadIdx;
-    int COBO_idx = myDataFrame.fHeader.fCoboIdx;
-    unsigned long int eventId_fromFrame = myDataFrame.fHeader.fEventIdx; // HOTFIX !!!
+    int ASAD_idx = myDataFrame.header.asadIdx;
+    int COBO_idx = myDataFrame.header.coboIdx;
+    unsigned long int eventId_fromFrame = myDataFrame.header.eventIdx; // HOTFIX !!!
     myCurrentEntry=aFragment; 
     asadCounter.insert(ASAD_idx);
 
     myCurrentEventInfo.SetEventId(eventId);      
-    myCurrentEventInfo.SetEventTimestamp(myDataFrame.fHeader.fEventTime);
+    myCurrentEventInfo.SetEventTimestamp(myDataFrame.header.eventTime);
     RunIdParser runParser(myFilePathList.front());
     myCurrentEventInfo.SetRunId(runParser.runId());
 
@@ -503,4 +507,3 @@ std::string EventSourceMultiGRAW::getNextFilePath(unsigned int streamIndex){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-#endif

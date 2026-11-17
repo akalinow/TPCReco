@@ -26,6 +26,7 @@ message(STATUS "ROOT version: ${ROOT_VERSION}")
 include(${ROOT_USE_FILE})
 separate_arguments(ROOT_EXE_LINKER_FLAGS)
 
+# GET software: optional, used only to validate the GRAW reader (GrawToROOT tests)
 find_package(GET COMPONENTS MultiFrame cobo-frame-graw2frame)
 
 find_package(TF 2.18.0)

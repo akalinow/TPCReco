@@ -5,6 +5,7 @@ message(STATUS "Adding CMake fragment for module:\t${MODULE_NAME}")
 include_directories(${PROJECT_SOURCE_DIR}/DataFormats/include/)
 include_directories(${PROJECT_SOURCE_DIR}/Reconstruction/include)
 include_directories(${PROJECT_SOURCE_DIR}/MLReconstruction/include)
+include_directories(${PROJECT_SOURCE_DIR}/GrawToROOT/include)
 include_directories(${TF_INCLUDE_DIR})
 include_directories(${PROJECT_SOURCE_DIR}/Analysis/include)
 include_directories(${PROJECT_SOURCE_DIR}/Utilities/include)
@@ -30,7 +31,7 @@ target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
 target_link_libraries(
   ${MODULE_NAME} PUBLIC ${ROOT_LIBRARIES} DataFormats
                          EventSources Reconstruction Analysis FileOutput
-                         $<$<BOOL:${GET_FOUND}>:GrawToROOT>)
+                         GrawToROOT)
 if(APPLE)
   # objc runtime used by the macOS window-size workaround in MainFrame.cpp
   target_link_libraries(${MODULE_NAME} PRIVATE objc)

@@ -1,14 +1,12 @@
 #ifndef _EventSourceGRAW_H_
 #define _EventSourceGRAW_H_
 
-#ifdef WITH_GET
-
 #include <map>
+#include <memory>
 #include <set>
 
-#include <get/TGrawFile.h>
-
-#include "TPCReco/Graw2DataFrame.h"
+#include "TPCReco/GrawFile.h"
+#include "TPCReco/GrawFrame.h"
 
 #include "TPCReco/CommonDefinitions.h"
 #include "TPCReco/EventSourceBase.h"
@@ -57,8 +55,8 @@ private:
 
 protected: // needed for EventSourceMultiGRAW
 
-  void fillEventFromFrame(GET::GDataFrame & aGrawFrame);
-  void fillEventRawFromFrame(GET::GDataFrame & aGrawFrame);
+  void fillEventFromFrame(graw::Frame & aGrawFrame);
+  void fillEventRawFromFrame(graw::Frame & aGrawFrame);
   void checkEntryForFragments(unsigned int iEntry);
 
 private:
@@ -67,16 +65,19 @@ private:
 
 protected: // needed for EventSourceMultiGRAW
 
+  // Read frame iEntry of a file: header only, or header and samples.
+  // The result is stored in myDataFrame.
+  bool readFrame(const std::string & filePath, unsigned int iEntry, bool readFullEvent);
   std::string getNextFilePath();
   unsigned int GRAW_EVENT_FRAGMENTS;
   PedestalCalculatorGRAW myPedestalCalculator;
-  Graw2DataFrame myFrameLoader;
-  GET::GDataFrame myDataFrame;
+  graw::Frame myDataFrame; //!
   std::shared_ptr<eventraw::EventRaw> myCurrentEventRaw{std::make_shared<eventraw::EventRaw>()};
 
 private:
 
-  std::shared_ptr<TGrawFile> myFile;
+  graw::GrawFile myFile; //!
+  graw::GrawFile myNextFile; //! next chunk of the run, opened on demand
   std::string myFilePath, myNextFilePath;
   std::map<unsigned int, std::set<unsigned int> > myFramesMap;
   std::map<unsigned int, std::set<unsigned int> > myASADMap;
@@ -95,6 +96,5 @@ protected: // needed for EventSourceMultiGRAW
   EventType fillEventType{EventType::tpc};
 
 };
-#endif
 #endif
 

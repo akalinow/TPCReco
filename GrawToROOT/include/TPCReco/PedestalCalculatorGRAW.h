@@ -19,20 +19,18 @@
 #include "TPCReco/GeometryTPC.h"
 #include "TPCReco/PedestalCalculator.h"
 
-#include <get/GDataSample.h>
-#include <get/GDataChannel.h>
-#include <get/GDataFrame.h>
+#include "TPCReco/GrawFrame.h"
 
 class PedestalCalculatorGRAW : public PedestalCalculator {
   
  public:
 
-  void CalculateEventPedestals(const GET::GDataFrame & dataFrame);
+  void CalculateEventPedestals(const graw::Frame & dataFrame);
 
  private:
 
   void ResetTables(int coboId, int asadId);
-  void ProcessDataFrame(const GET::GDataFrame & dataFrame, bool calculateMean);
+  void ProcessDataFrame(const graw::Frame & dataFrame, bool calculateMean);
 
 };
 

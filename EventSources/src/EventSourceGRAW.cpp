@@ -1,5 +1,3 @@
-#ifdef WITH_GET
-
 #include <cstdlib>
 #include <iostream>
 #include <ostream>
@@ -8,15 +6,11 @@
 #include <map>
 #include <cstdint>
 
-#include <TCollection.h>
-#include <TClonesArray.h>
 
 
 #include "TPCReco/EventSourceGRAW.h"
 #include "TPCReco/RunIdParser.h"
 #include "TPCReco/colorText.h"
-
-#include <get/graw2dataframe.h>
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 EventSourceGRAW::EventSourceGRAW(const std::string & geometryFileName):EventSourceBase() {
@@ -24,9 +18,6 @@ EventSourceGRAW::EventSourceGRAW(const std::string & geometryFileName):EventSour
   loadGeometry(geometryFileName);
   GRAW_EVENT_FRAGMENTS = myGeometryPtr->GetAsadNboards();
   myPedestalCalculator.SetGeometryAndInitialize(myGeometryPtr);
-
-  std::string formatsFilePath = "./CoboFormats.xcfg";
-  myFrameLoader.initialize(formatsFilePath);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -59,12 +50,11 @@ void EventSourceGRAW::loadDataFile(const std::string & fileName){
 
   EventSourceBase::loadDataFile(fileName);
 
-  myFile =  std::make_shared<TGrawFile>(fileName.c_str());
-  if(!myFile){
+  if(!myFile.open(fileName)){
     std::cerr<<KRED<<"Can not open file: "<<fileName<<"!"<<RST<<std::endl;
     exit(1);
   }
-  nEvents = myFile->GetGrawFramesNumber();
+  nEvents = myFile.nFrames();
   if(nEventsToRead<0) nEventsToRead = nEvents;
   
   const int firstEventSize=10;
@@ -89,9 +79,7 @@ bool EventSourceGRAW::loadGrawFrame(unsigned int iEntry, bool readFullEvent){
     tmpFilePath = myNextFilePath;
     iEntry -= nEvents;
   }
-  std::cout.setstate(std::ios_base::failbit);
-  bool dataFrameRead = myFrameLoader.getGrawFrame(tmpFilePath, iEntry+1, myDataFrame, readFullEvent);///FIXME getGrawFrame counts frames from 1 (WRRR!)
-  std::cout.clear();
+  bool dataFrameRead = readFrame(tmpFilePath, iEntry, readFullEvent);
 
   if(!dataFrameRead){
     std::cerr <<KRED<<std::endl<<"ERROR: cannot read file entry: " <<RST<<iEntry<<std::endl
@@ -99,8 +87,7 @@ bool EventSourceGRAW::loadGrawFrame(unsigned int iEntry, bool readFullEvent){
 	      <<RST<<tmpFilePath
 	      << std::endl;
     std::cerr <<KRED
-	      <<"Please check if you are running the application from the resources directory."
-	      <<std::endl<<"or if the data file is missing."
+	      <<"Please check if the data file is missing or damaged."
 	      <<RST
 	      <<std::endl;
     exit(1);
@@ -108,9 +95,7 @@ bool EventSourceGRAW::loadGrawFrame(unsigned int iEntry, bool readFullEvent){
 #else
   bool dataFrameRead = false;
   if(iEntry<nEvents) {
-    std::cout.setstate(std::ios_base::failbit);
-    dataFrameRead = myFrameLoader.getGrawFrame(tmpFilePath, iEntry+1, myDataFrame, readFullEvent);///FIXME getGrawFrame counts frames from 1 (WRRR!)
-    std::cout.clear();
+    dataFrameRead = readFrame(tmpFilePath, iEntry, readFullEvent);
   }
     
   if(!dataFrameRead){
@@ -154,7 +139,7 @@ void EventSourceGRAW::loadFileEntry(unsigned long int iEntry){
   myCurrentEntry = iEntry;
   loadGrawFrame(iEntry, false);
   
-  unsigned long int eventId = myDataFrame.fHeader.fEventIdx;
+  unsigned long int eventId = myDataFrame.header.eventIdx;
 
   std::cout<<KBLU
 	   <<"Looking for event fragments from file entry id: "<<RST<<iEntry
@@ -175,8 +160,8 @@ void EventSourceGRAW::checkEntryForFragments(unsigned int iEntry){
   if(myReadEntriesSet.count(iEntry)) return;
   loadGrawFrame(iEntry, false);
   myReadEntriesSet.insert(iEntry);
-  unsigned long int currentEventId = myDataFrame.fHeader.fEventIdx;
-  int ASAD_idx = myDataFrame.fHeader.fAsadIdx;  
+  unsigned long int currentEventId = myDataFrame.header.eventIdx;
+  int ASAD_idx = myDataFrame.header.asadIdx;  
   if(!myASADMap[currentEventId].count(ASAD_idx)) {
     myFramesMap[currentEventId].insert(iEntry);
     myASADMap[currentEventId].insert(ASAD_idx);
@@ -255,13 +240,13 @@ void EventSourceGRAW::collectEventFragments(unsigned int eventId){
   
   for(auto aFragment: it->second){
     loadGrawFrame(aFragment, true);
-    int  ASAD_idx = myDataFrame.fHeader.fAsadIdx;
-    unsigned long int eventId_fromFrame = myDataFrame.fHeader.fEventIdx;
+    int  ASAD_idx = myDataFrame.header.asadIdx;
+    unsigned long int eventId_fromFrame = myDataFrame.header.eventIdx;
     asadCounter.insert(ASAD_idx);
 
     myCurrentEventInfo.SetEventId(eventId);
     myCurrentEventInfo.SetRunId(eventId);
-    myCurrentEventInfo.SetEventTimestamp(myDataFrame.fHeader.fEventTime);
+    myCurrentEventInfo.SetEventTimestamp(myDataFrame.header.eventTime);
     std::cout<<myCurrentEventInfo<<std::endl;
     
     if(eventId!=eventId_fromFrame){
@@ -282,13 +267,13 @@ void EventSourceGRAW::collectEventFragments(unsigned int eventId){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void EventSourceGRAW::fillEventFromFrame(GET::GDataFrame & aGrawFrame){
+void EventSourceGRAW::fillEventFromFrame(graw::Frame & aGrawFrame){
 
   if(removePedestal) myPedestalCalculator.CalculateEventPedestals(aGrawFrame);
   myCurrentEventInfo.SetPedestalSubtracted(removePedestal);
 
-  int  COBO_idx = aGrawFrame.fHeader.fCoboIdx;
-  int  ASAD_idx = aGrawFrame.fHeader.fAsadIdx;
+  int  COBO_idx = aGrawFrame.header.coboIdx;
+  int  ASAD_idx = aGrawFrame.header.asadIdx;
 
   if(ASAD_idx >= myGeometryPtr->GetAsadNboards()){
     std::cout<<KRED<<__FUNCTION__
@@ -301,42 +286,38 @@ void EventSourceGRAW::fillEventFromFrame(GET::GDataFrame & aGrawFrame){
   
   for (Int_t agetId = 0; agetId < myGeometryPtr->GetAgetNchips(); ++agetId){
     for (Int_t chanId = 0; chanId < myGeometryPtr->GetAgetNchannels(); ++chanId){
-      GET::GDataChannel* channel = aGrawFrame.SearchChannel(agetId, myGeometryPtr->Aget_normal2raw(chanId));
-      if (!channel) continue;
-	  
-      for (Int_t i = 0; i < channel->fNsamples; ++i){
-	GET::GDataSample* sample = (GET::GDataSample*) channel->fSamples.At(i);
+      unsigned int rawChanId = myGeometryPtr->Aget_normal2raw(chanId);
+      if(!aGrawFrame.hasChannel(agetId, rawChanId)) continue;
+      std::shared_ptr<StripTPC> aStrip(myGeometryPtr->GetStripByAget(COBO_idx, ASAD_idx, agetId, chanId));
+      if(!aStrip) continue;
+      aGrawFrame.forEachSample(agetId, rawChanId, [&](unsigned int icell, uint16_t rawVal){
 	// skip cells outside signal time-window
-	Int_t icell = sample->fBuckIdx;
 	if(icell<2 || icell>509 ||
-	   icell<myPedestalCalculator.GetMinSignalCell() ||
-	   icell>myPedestalCalculator.GetMaxSignalCell()) continue;
-	    
-	Double_t rawVal  = sample->fValue;
+	   (int)icell<myPedestalCalculator.GetMinSignalCell() ||
+	   (int)icell>myPedestalCalculator.GetMaxSignalCell()) return;
 	Double_t corrVal = rawVal;
 	if(removePedestal){
 	  corrVal -= myPedestalCalculator.GetPedestalCorrection(COBO_idx, ASAD_idx, agetId, chanId, icell);
 	}
-	std::shared_ptr<StripTPC> aStrip(myGeometryPtr->GetStripByAget(COBO_idx, ASAD_idx, agetId, chanId));
-	if(aStrip) myCurrentPEvent->AddValByStrip(aStrip, icell, corrVal);
-      }
+	myCurrentPEvent->AddValByStrip(aStrip, icell, corrVal);
+      });
     }
   }
   myCurrentPEvent->SetEventInfo(myCurrentEventInfo);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void EventSourceGRAW::fillEventRawFromFrame(GET::GDataFrame & aGrawFrame){
+void EventSourceGRAW::fillEventRawFromFrame(graw::Frame & aGrawFrame){
 
   // fills raw data container class per: COBO, ASAD, AGET, CHANNEL_RAW, TIME_CELL 
   // optimized for data size
   // no pedestal subtracion (can be done later using raw data stored in the container class
 
-  myCurrentEventRaw->SetEventId((uint64_t)aGrawFrame.fHeader.fEventIdx);
-  myCurrentEventRaw->SetEventTimestamp(aGrawFrame.fHeader.fEventTime);
+  myCurrentEventRaw->SetEventId((uint64_t)aGrawFrame.header.eventIdx);
+  myCurrentEventRaw->SetEventTimestamp(aGrawFrame.header.eventTime);
   
-  uint8_t COBO_idx = (uint8_t)aGrawFrame.fHeader.fCoboIdx;
-  uint8_t ASAD_idx = (uint8_t)aGrawFrame.fHeader.fAsadIdx;
+  uint8_t COBO_idx = (uint8_t)aGrawFrame.header.coboIdx;
+  uint8_t ASAD_idx = (uint8_t)aGrawFrame.header.asadIdx;
   if(ASAD_idx >= myGeometryPtr->GetAsadNboards()){
     std::cout<<KRED<<__FUNCTION__
 	     <<": Data format mismatch! ASAD="<<ASAD_idx
@@ -358,47 +339,22 @@ void EventSourceGRAW::fillEventRawFromFrame(GET::GDataFrame & aGrawFrame){
   std::map< MultiKey2, eventraw::ChannelRaw> map2; // index={agetIdx[0-3], channelIdx[0-67]}, val=ChannelRaw
   std::map< MultiKey2, eventraw::ChannelRaw>::iterator map2_it;
 
-  TClonesArray* channels = aGrawFrame.GetChannels();
-  GET::GDataChannel* channel = 0;
-  TIter iter(channels->begin());
-  while ((channel = (GET::GDataChannel*) iter.Next())) {
-    
-    if (!channel) continue;	  
-    uint8_t AGET_idx = (uint8_t)channel->fAgetIdx;
-    uint8_t CHAN_idx = (uint8_t)channel->fChanIdx;
+  for(uint8_t AGET_idx=0; AGET_idx<graw::kAgetsPerAsad; ++AGET_idx) {
+    for(uint8_t CHAN_idx=0; CHAN_idx<graw::kChannelsPerAget; ++CHAN_idx) {
+      if(!aGrawFrame.hasChannel(AGET_idx, CHAN_idx)) continue;
 
-    // temporary map of samples per channel
-    static std::map< uint16_t, uint16_t> map1; // index=cell[0-511], val=value[0-4096] 
-    static std::map< uint16_t, uint16_t>::iterator map1_it;
-    map1.clear();
+      // filling ChannelRaw with samples ordered by cell index [0-511]
+      eventraw::ChannelRaw c;
+      aGrawFrame.forEachSample(AGET_idx, CHAN_idx, [&c](unsigned int icell, uint16_t rawVal){
+	c.cellMask[ icell/8 ] |= (1 << (icell % 8)); // update bit mask
+	c.cellData.push_back(rawVal);
+      });
 
-    for (int i = 0; i < channel->fNsamples; ++i){
-      GET::GDataSample* sample = (GET::GDataSample*) channel->fSamples.At(i);
-      uint16_t icell = (uint16_t) sample->fBuckIdx;
-      uint16_t rawVal = (uint16_t) sample->fValue;
-      map1[icell] = rawVal;      
+      // adding ChannelRaw to temporary AGET map
+      MultiKey2 mkey(AGET_idx, CHAN_idx);
+      map2.insert( std::pair< MultiKey2, eventraw::ChannelRaw >( mkey, c ) );
     }
-
-    // filling ChannelRaw from temporary CHANNEL map
-    // NOTE: map1 is sorted by KEY=cell[0-511]
-    eventraw::ChannelRaw c;
-    for(map1_it=map1.begin(); map1_it!=map1.end(); map1_it++) {
-      c.cellMask[ map1_it->first/8 ] |= (1 << (map1_it->first % 8)); // update bit mask
-      c.cellData.push_back(map1_it->second); // correct order should be preserved for map1 sorted by KEY
-
-      //#ifdef DEBUG
-      //// DEBUG
-      //      std::cout << __FUNCTION__
-      //      		<< ": Adding sample point: coboIdx=" << (int)COBO_idx << ", asadIdx=" << (int)ASAD_idx << ", agetIdx=" << (int)AGET_idx << ", chanIdx=" << (int)CHAN_idx << ", cellIdx=" << map1_it->first << std::endl;
-      //// DEBUG
-      //#endif
-    }
-
-    // adding ChannelRaw to temporary AGET map
-    MultiKey2 mkey(AGET_idx, CHAN_idx);
-    map2.insert( std::pair< MultiKey2, eventraw::ChannelRaw >( mkey, c ) );
-    //[mkey]=c;
-  };
+  }
   
   // filling AgetRaw from temporary AGET map
   // NOTE: map2 is sorted by KEY={aget[0-3], chan[0-67]}
@@ -428,6 +384,18 @@ void EventSourceGRAW::fillEventRawFromFrame(GET::GDataFrame & aGrawFrame){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+bool EventSourceGRAW::readFrame(const std::string & filePath, unsigned int iEntry, bool readFullEvent){
+
+  graw::GrawFile *aFile = &myFile;
+  if(filePath!=myFile.path()){
+    if(filePath!=myNextFile.path() && !myNextFile.open(filePath)) return false;
+    aFile = &myNextFile;
+  }
+  if(readFullEvent) return aFile->readFrame(iEntry, myDataFrame);
+  return aFile->readHeader(iEntry, myDataFrame.header);
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 void EventSourceGRAW::findStartingIndex(unsigned long int size){
   if(nEvents==0){
     startingEventIndex=0;
@@ -435,8 +403,8 @@ void EventSourceGRAW::findStartingIndex(unsigned long int size){
     auto preloadSize=std::min(nEvents,size);
     startingEventIndex=std::numeric_limits<UInt_t>::max();
     for(unsigned long int i=0; i<preloadSize; ++i){
-      myFile->GetGrawFrame(myDataFrame,i);
-      startingEventIndex=std::min(startingEventIndex, static_cast<unsigned long int>(myDataFrame.fHeader.fEventIdx));
+      myFile.readHeader(i, myDataFrame.header);
+      startingEventIndex=std::min(startingEventIndex, static_cast<unsigned long int>(myDataFrame.header.eventIdx));
     }
   }
 }
@@ -481,4 +449,3 @@ std::string EventSourceGRAW::getNextFilePath(){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-#endif

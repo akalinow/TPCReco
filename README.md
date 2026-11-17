@@ -11,7 +11,6 @@ pip3 install -H -r requirements_pip3.txt
 ## Installation instructions:
 
 ```Shell
-source /opt/soft/GetSoftware_bin/env_settings.sh
 git clone git@github.com:WarsawTPC/TPCReco.git
 cd TPCReco
 git submodule update --init --recursive
@@ -31,6 +30,11 @@ Run a specific test, here `GrawToROOT_tst` with routput enabled for failed tests
 ```Shell
 ctest -R GrawToROOT_tst --output-on-failure
 ```
+
+GRAW files are read by TPCReco's own reader (see [GrawToROOT README](GrawToROOT/README.md)),
+the GET software is not needed. If the GET software is found by CMake
+(e.g. after `source /opt/soft/GetSoftware_bin/env_settings.sh`), an additional test,
+`GrawFileVsGET_tst`, compares the TPCReco reader with the GET reader.
 
 
 ## Update instructions
@@ -69,12 +73,13 @@ Use one of pre-defined configuration files (`config/config_GUI__OFFLINE[*].json`
   * list of comma-separated GRAW files for the same run (offline mode),
   * directory name to be minitored for new GRAW files (online mode).
 
-When reading GRAW files setup GET and ROOT software environments beforehand. At **daqula2** node use the following commands:
+Setup the ROOT environment beforehand. At **daqula2** node use the following command:
 ```Shell
 source /opt/soft/root_v6.08.06/bin/thisroot.sh
-source /opt/soft/GetSoftware_bin/env_settings.sh
 ```
-Also when reading GRAW files run the application from the **resources** directory since GET software requires some additional XCFG files located therein. Alternatively modify `input.resourcePath` accordingly.
+Reading GRAW files does not require the GET software, nor the XCFG frame format files.
+The configuration files in `config/` refer to the geometry files with paths relative to
+the **resources** directory, so it is still convenient to run the applications from there.
 
 When running from a container, enter the following command inside the container:
 ```Shell
