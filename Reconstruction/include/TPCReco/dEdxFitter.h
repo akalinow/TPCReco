@@ -110,6 +110,10 @@ private:
 
   void reset();
 
+  /// Initial step sizes of the free parameters (stored by TF1 as parameter errors):
+  /// scale x 10% of the parameter range, 0 for the ROOT default.
+  static void setStepSizes(TF1 *fModel, double scale);
+
 public:
   /// Models of the charge profile along the track, x in [mm], result in [keV/mm]
   /// (dE/dx table units). Parameters, lengths in [mm] at the current pressure:

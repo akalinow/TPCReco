@@ -128,10 +128,28 @@ void dEdxFitter::reset(){
 			     0.0,
 			     1.0, 0.0, 5E-3);
   
+  // initial step sizes: TF1 keeps the parameter errors of the previous fit and
+  // ROOT uses them as initial step sizes, which made the fit result depend on
+  // the previous fit (and event). Zero means the ROOT default step.
+  setStepSizes(carbon_alpha_model, 0.0);
+  setStepSizes(alpha_model, 0.0);
+
   theFitResult = TFitResult();
   theFittedModel = alpha_model;
   theFittedHisto = emptyHisto;
   bestFitEventType = pid_type::UNKNOWN;
+}
+////////////////////////////////////////////////
+////////////////////////////////////////////////
+void dEdxFitter::setStepSizes(TF1 *fModel, double scale){
+
+  for(int iPar=0;iPar<fModel->GetNpar();++iPar){
+    double low = 0.0, high = 0.0;
+    fModel->GetParLimits(iPar, low, high);
+    // scale x 10% of the allowed range for limited parameters, 0 (ROOT default) otherwise
+    const double step = (scale>0 && high>low) ? scale*0.1*(high-low) : 0.0;
+    fModel->SetParError(iPar, step);
+  }
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
@@ -246,24 +264,34 @@ TFitResult dEdxFitter::fitHypothesis(TF1 *fModel, TH1F & aHisto){
   maxVtxOffset = 2*maxCarbonOffset;
   minAlphaOffset = std::max(0.0, maxAlphaOffset - tkLength);
   minCarbonOffset = std::max(0.0, maxCarbonOffset - tkLength);
-  int fitCounter = 0;
   auto chargeFromHisto = aHisto.Integral("width");
-  double ratio = 1.0;
-  reset();
 
-  TFitResultPtr theResultPtr;
-  do{
+  // Deterministic restarts: the same initial parameter values, with the initial
+  // step sizes below (0: ROOT default, otherwise scale x 10% of the parameter range).
+  // The first valid fit with a small loss is accepted; if there is none, the best
+  // fit: a valid one with the lowest loss, else the one with the lowest loss.
+  const std::vector<double> stepScales = {0.0, 1.0, 0.3, 3.0, 0.1, 0.5, 2.0, 0.05, 0.2, 5.0};
+  const double maxLossRatio = 5E-4;
+  bool haveResult = false;
+  for(double scale: stepScales){
     reset();
-    theResultPtr = aHisto.Fit(fModel,"BRWWSQ");
-    if(!theResultPtr.Get()) break;
-    ratio = theResultPtr->MinFcnValue()/std::pow(chargeFromHisto,2);
-    ++fitCounter;
-  }while((!theResultPtr->IsValid() || ratio>5E-4) && fitCounter<10);
-  
-  if(theResultPtr.Get()) theResult = *theResultPtr.Get();
-  else{
-    std::cout<<KRED<<"No fit result"<<RST<<std::endl;
+    setStepSizes(fModel, scale);
+    TFitResultPtr aResultPtr = aHisto.Fit(fModel,"BRWWSQ");
+    if(!aResultPtr.Get()) continue;
+    const TFitResult & aResult = *aResultPtr.Get();
+    const bool better = !haveResult ||
+      (aResult.IsValid() && !theResult.IsValid()) ||
+      (aResult.IsValid()==theResult.IsValid() && aResult.MinFcnValue()<theResult.MinFcnValue());
+    if(better){
+      theResult = aResult;
+      haveResult = true;
+    }
+    const double ratio = aResult.MinFcnValue()/std::pow(chargeFromHisto,2);
+    if(aResult.IsValid() && ratio<=maxLossRatio) break;
   }
+
+  if(haveResult) fModel->SetParameters(theResult.Parameters().data());
+  else std::cout<<KRED<<"No fit result"<<RST<<std::endl;
   return theResult;
 }
 ////////////////////////////////////////////////

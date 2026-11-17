@@ -146,6 +146,62 @@ TEST_F(dEdxFitterTest, BraggPeakSmeared) {
   EXPECT_GT(alphaModel(end + 2, 3.0, vertex, offset), 0.0);
 }
 
+namespace {
+// charge profile of a C12+alpha event, as made by TrackBuilder: x from the
+// track start, histogram range 1.2 x track length
+TH1F makeProfile(const char *name, double vertex, double alphaRange, double carbonRange, double pressure) {
+  const double scale = 250.0 / pressure;  // nominal/current pressure
+  const double maxAlpha = 297.23 * scale, maxCarbon = 23.43 * scale;
+  const double length = vertex + alphaRange;
+  TH1F h(name, "", int(1.2 * length), 0, 1.2 * length);
+  double params[7] = {1.0, vertex, maxAlpha - alphaRange, maxCarbon - carbonRange, 1.0, 1.0, 5E-3};
+  for (int i = 1; i <= h.GetNbinsX(); ++i) {
+    double x = h.GetBinCenter(i);
+    // deterministic "noise" so that the fit has a non-zero loss
+    h.SetBinContent(i, dEdxFitter::bragg_12C_alpha(&x, params) * (1.0 + 0.05 * std::sin(1.7 * i)));
+  }
+  return h;
+}
+
+struct FitOutput {
+  double loss, vertex, alphaRange, carbonRange, sigma;
+  pid_type type;
+};
+
+FitOutput fit(dEdxFitter &aFitter, const TH1F &h) {
+  aFitter.setDiffusionRange(0.5, 2.0);
+  aFitter.fitHisto(h);
+  return {aFitter.getLoss(), aFitter.getVertexOffset(), aFitter.getAlphaRange(),
+          aFitter.getCarbonRange(), aFitter.getDiffusion(), aFitter.getBestFitEventType()};
+}
+
+void expectSame(const FitOutput &a, const FitOutput &b) {
+  EXPECT_EQ(a.type, b.type);
+  EXPECT_DOUBLE_EQ(a.loss, b.loss);
+  EXPECT_DOUBLE_EQ(a.vertex, b.vertex);
+  EXPECT_DOUBLE_EQ(a.alphaRange, b.alphaRange);
+  EXPECT_DOUBLE_EQ(a.carbonRange, b.carbonRange);
+  EXPECT_DOUBLE_EQ(a.sigma, b.sigma);
+}
+}  // namespace
+
+TEST_F(dEdxFitterTest, FitIsDeterministic) {
+  // the result of a fit must not depend on earlier fits: the parameter errors
+  // left in the TF1 by a previous fit were used as initial step sizes
+  const double pressure = 190.0;
+  const TH1F first = makeProfile("first", 12.0, 45.0, 9.0, pressure);
+  const TH1F second = makeProfile("second", 8.0, 70.0, 12.0, pressure);
+
+  dEdxFitter fresh(RESOURCES_DIR, pressure);
+  const FitOutput reference = fit(fresh, second);
+
+  dEdxFitter used(RESOURCES_DIR, pressure);
+  fit(used, first);
+  expectSame(fit(used, second), reference);   // after another event
+  expectSame(fit(used, second), reference);   // repeated
+  expectSame(fit(fresh, second), reference);  // refit with the same fitter
+}
+
 TEST_F(dEdxFitterTest, CarbonModelUsesTable) {
   // carbon goes from the vertex towards smaller x; for sigma -> 0 the model is the table
   fitter->setPressure(250);
