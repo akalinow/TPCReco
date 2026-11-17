@@ -1,4 +1,5 @@
 #include <cstdlib>
+#include <cmath>
 #include <iostream>
 #include <algorithm>
 
@@ -21,7 +22,7 @@
 #include "TPCReco/colorText.h"
 
 #ifndef M_PI
-#define M_PI std::atan(1.0)*4;
+#define M_PI (4.0*std::atan(1.0))
 #endif // M_PI
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -304,7 +305,7 @@ const TH2D & TrackBuilder::getHoughTransform(int iDir) const{return myAccumulato
 /////////////////////////////////////////////////////////
 const TrackSegment2D & TrackBuilder::getSegment2D(int iDir, unsigned int iTrack) const{
 
-  if(my2DSeeds[iDir].size()<iTrack) return dummySegment2D;  
+  if(my2DSeeds[iDir].size()<=iTrack) return dummySegment2D;
   return my2DSeeds[iDir].at(iTrack);  
 }
 /////////////////////////////////////////////////////////
@@ -469,21 +470,25 @@ double TrackBuilder::getLengthProjectionFromProfile(definitions::projection_type
    int lastBin = -1;
    double value = 0.0;
   
-   for(int iBin=-1;iBin<=hProfile->GetNbinsX()+1;++iBin){
+   for(int iBin=1;iBin<=hProfile->GetNbinsX();++iBin){
      hProfile->SetBinError(iBin, 1.0);
      value = hProfile->GetBinContent(iBin);
-     if(std::abs(value)>0.0 && firstBin==-1) firstBin = iBin;
-     else if(std::abs(value)>0.0) lastBin = iBin;
+     if(std::abs(value)>0.0){
+       if(firstBin==-1) firstBin = iBin;
+       lastBin = iBin;
+     }
    }
+   // at least two filled bins are needed for a linear fit
+   if(firstBin==-1 || lastBin-firstBin<1) return 0.0;
    double minPos = hProfile->GetBinCenter(firstBin);
    double maxPos = hProfile->GetBinCenter(lastBin);
-   if(std::abs(lastBin-firstBin)<1) return 0.0;
 
    auto aPol = std::make_unique<TF1>("aFit", "[0]+[1]*x", minPos, maxPos);
    aPol->SetParameter(0, (minPos+maxPos)/2.0);
    aPol->SetParameter(1, 0.0);
    TFitResultPtr aFitResult = hProfile->Fit(aPol.get(),"BRWWSQ");
-   double slope = aFitResult->GetParams()[1];
+   if(!aFitResult.Get() || aFitResult->NPar()<2) return 0.0;
+   double slope = aFitResult->Parameter(1);
    double length = (maxPos - minPos)*slope;
    return std::abs(length);
 }
@@ -593,32 +598,57 @@ void TrackBuilder::getSignedLengthsAndMaxPos(int iTrack2DSeed) {
 /////////////////////////////////////////////////////////
 TVector3 TrackBuilder::getBias(int iTrack2DSeed, bool acceptDot){
 
+  // Mean of the crossing points of the strips at the charge maxima, for all
+  // pairs of strip directions. Pairs are weighted with the product of their
+  // projection lengths, so that longer projections dominate. For a dot (all
+  // projection lengths equal to zero) the weighted mean is undefined:
+  //  - acceptDot==false: a zero vector is returned (signals a dot, see fitTrack3D),
+  //  - acceptDot==true: the crossing points are averaged with equal weights.
+  // A zero vector is also returned if no pair of strips crosses.
+  // iTrack2DSeed is not used: biases2D and lengths are already set for the seed
+  // by getSignedLengthsAndMaxPos().
+  (void)iTrack2DSeed;
   TVector2 bias2D, bias2D_mean;
   double biasZ = 0.0;
   bool result{false};
   double weight{0.0}, weightSum{0.0};
+  TVector2 bias2D_unweighted;
+  double biasZ_unweighted{0.0};
+  int nCrossPoints{0};
 
   for(auto iDir_1: getProjectionsList()){
     for(auto iDir_2: getProjectionsList()){
       if(iDir_1==iDir_2) continue;
-     
+
         result = myGeometryPtr->GetUVWCrossPointInMM(iDir_1, biases2D[iDir_1].Y(),
                                                       iDir_2, biases2D[iDir_2].Y(),
                                                       bias2D);
+        if(!result) continue;
 
-        weight = std::abs(lengths[iDir_1]*lengths[iDir_2])*result;
-        weightSum += weight;    
+        weight = std::abs(lengths[iDir_1]*lengths[iDir_2]);
+        weightSum += weight;
 
-        bias2D_mean += bias2D*weight;                     
-        biasZ += biases2D[iDir_1].X()*weight;        
+        bias2D_mean += bias2D*weight;
+        biasZ += biases2D[iDir_1].X()*weight;
 
+        bias2D_unweighted += bias2D;
+        biasZ_unweighted += biases2D[iDir_1].X();
+        ++nCrossPoints;
     }
    }
-   bias2D_mean = bias2D_mean/weightSum;
-   biasZ /= weightSum;
-  
+
+  if(weightSum>0.0){
+    bias2D_mean = bias2D_mean/weightSum;
+    biasZ /= weightSum;
+  }
+  else if(acceptDot && nCrossPoints>0){
+    bias2D_mean = bias2D_unweighted/nCrossPoints;
+    biasZ = biasZ_unweighted/nCrossPoints;
+  }
+  else return TVector3(0.0, 0.0, 0.0);
+
   TVector3 aBias(bias2D_mean.X(), bias2D_mean.Y(), biasZ);
-  return aBias;  
+  return aBias;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -656,7 +686,8 @@ double TrackBuilder::getTangentPhiFromUnsignedLengths() const{
   double longProjCos{0};
   double ratio_diff_U{0}, ratio_diff_V{0}, ratio_diff_W{0};
 
-  double ratio_U{0}, ratio_V{0}, ratio_W{0};
+  // No projection on strip directions: the azimuthal angle is undefined.
+  if(!(longProjLength>0.0)) return 0.0;
 
   /// FIXME: use minimization instead of stupid loop
   int nSteps = 180;
@@ -670,41 +701,10 @@ double TrackBuilder::getTangentPhiFromUnsignedLengths() const{
     ratio_diff_V = std::abs(l_V)/longProjLength - std::abs(cos(phi_V-phi))/longProjCos;
     ratio_diff_W = std::abs(l_W)/longProjLength - std::abs(cos(phi_W-phi))/longProjCos;
     loss = std::abs(ratio_diff_U) + std::abs(ratio_diff_V) + std::abs(ratio_diff_W);
-    
-    ///another variant of loss function, that uses information of all three
-    ///projections 
-    ratio_U = std::abs(cos(phi_U-phi)/l_U);
-    ratio_V = std::abs(cos(phi_V-phi)/l_V);
-    ratio_W = std::abs(cos(phi_W-phi)/l_W);
-    double loss1 = std::abs(ratio_U-ratio_V) +
-            std::abs(ratio_U-ratio_W) +
-            std::abs(ratio_V-ratio_W);
 
-    //loss1 /= ratio_long;        
-/*
-    if(std::abs(phi)<0.01){        
-    std::cout<<KGRN<<"loss: "<<RST<<loss<<" phi="<<phi
-             <<" l_U="<<l_U<<" l_V="<<l_V<<" l_W="<<l_W
-             <<" ratio_diff_U="<<ratio_diff_U
-             <<" ratio_diff_V="<<ratio_diff_V
-             <<" ratio_diff_W="<<ratio_diff_W
-             <<std::endl
-             <<" loss1: "<<loss1
-             <<" ratio_U="<<ratio_U
-              <<" ratio_V="<<ratio_V
-              <<" ratio_W="<<ratio_W
-              <<" ratio_U-ratio_long="<<std::abs(ratio_U-ratio_V)
-              <<" ratio_V-ratio_long="<<std::abs(ratio_U-ratio_W)
-              <<" ratio_W-ratio_long="<<std::abs(ratio_W-ratio_V)
-             <<std::endl;  
-    }   
-    */
-    
-  
-
-    loss += 0*loss1;
-       
-      
+    // An alternative loss using cos(phi_dir-phi)/l_dir ratios was removed:
+    // it was multiplied by 0, but for a zero projection length it is infinite,
+    // and 0*inf = NaN made all losses NaN, so phi was always 0.
     if(loss<bestLoss){
       bestLoss = loss;
       bestPhi = phi;
@@ -745,7 +745,7 @@ double TrackBuilder::getTangentPhiFromSignedLengths(definitions::projection_type
 TVector3 TrackBuilder::getTangent(int iTrack2DSeed, bool guiMode){
     
   ///Mean values of XY lengths and tangent angles
-  double weight{0}, weightSum{1};
+  double weight{0}, weightSum{0};
   double l_XY{0}, l_XY_mean{0};
   double phi{0};
   ROOT::Math::DisplacementVector2D<ROOT::Math::Polar2D<double> > aTmpVector;
@@ -764,7 +764,8 @@ TVector3 TrackBuilder::getTangent(int iTrack2DSeed, bool guiMode){
        aTmpVector += ROOT::Math::DisplacementVector2D<ROOT::Math::Polar2D<double> >(weight, phi);  
     }
    }
-    l_XY_mean /= weightSum;
+    if(weightSum>0.0) l_XY_mean /= weightSum;
+    else l_XY_mean = 0.0;
 
     double theta = M_PI/2.0 - atan2(lengths[definitions::projection_type::DIR_TIME], l_XY_mean);
     if(guiMode) phi = aTmpVector.Phi();
