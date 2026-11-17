@@ -56,7 +56,28 @@ public:
   pid_type getBestFitEventType() const { return bestFitEventType;}
   
   
+  /// dE/dx curve given by a table (linear between the points) and its
+  /// convolution with a Gaussian, computed exactly (closed form per segment).
+  struct BraggTemplate {
+    std::vector<double> s; ///< positions along the track [mm at nominal pressure]
+    std::vector<double> a; ///< dE/dx at the positions
+    std::vector<double> k; ///< slope of the segment [s[i], s[i+1]]
+
+    void set(const TGraph &aGraph);
+
+    /// Table values for positions in [cut, end of table] (zero elsewhere:
+    /// before the start of the track and after the stopping point), smeared
+    /// with a Gaussian of width sigma, at position pos. All in table units.
+    double smeared(double pos, double cut, double sigma) const;
+  };
+
+  static const BraggTemplate & alphaTemplate() { return theAlphaTemplate;}
+  static const BraggTemplate & carbonTemplate() { return theCarbonTemplate;}
+
 private:
+
+  static BraggTemplate theAlphaTemplate;
+  static BraggTemplate theCarbonTemplate;
 
   static TGraph *braggGraph_alpha;
   static TGraph *braggGraph_12C;
@@ -89,9 +110,19 @@ private:
 
   void reset();
 
-  static double bragg_alpha(double *x, double *params); //x in [mm], result in [keV/mm]
-  static double bragg_12C(double *x, double *params); //x in [mm], result in [keV/mm]
-  static double bragg_12C_alpha(double *x, double *params); //x in [mm], result in [keV/mm]
+public:
+  /// Models of the charge profile along the track, x in [mm], result in [keV/mm]
+  /// (dE/dx table units). Parameters, lengths in [mm] at the current pressure:
+  ///  [0] sigma: Gaussian smearing (diffusion), [1] vertex position,
+  ///  [2] alphaOffset, [3] carbonOffset: distance from the start of the full
+  ///      energy curve (10 MeV alpha, 5 MeV 12C at nominal pressure) to the
+  ///      start of the track, i.e. range = maximal range - offset,
+  ///  [4] alpha scale, [5] carbon scale, [6] common scale (bragg_12C_alpha only).
+  /// The alpha goes from the vertex towards larger x, the carbon towards smaller x.
+  static double bragg_alpha(double *x, double *params);
+  static double bragg_12C(double *x, double *params);
+  static double bragg_12C_alpha(double *x, double *params);
+private:
 
   TH1F reflectHisto(const TH1F &aHisto) const;
   

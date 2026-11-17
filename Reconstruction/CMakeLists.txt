@@ -10,3 +10,5 @@ target_link_libraries(
 
 reco_install_targets(${MODULE_NAME})
 install(DIRECTORY examples DESTINATION ${CMAKE_INSTALL_PREFIX})
+
+reco_add_test_subdirectory(test)

@@ -1,11 +1,15 @@
 #include "TPCReco/dEdxFitter.h"
 #include "TPCReco/colorText.h"
+#include <algorithm>
+#include <cmath>
 
 #include <TFitResultPtr.h>
 #include <Math/MinimizerOptions.h>
 #include <TMath.h>
 #include <TRandom3.h>
 
+dEdxFitter::BraggTemplate dEdxFitter::theAlphaTemplate;
+dEdxFitter::BraggTemplate dEdxFitter::theCarbonTemplate;
 TGraph* dEdxFitter::braggGraph_alpha = nullptr;
 TGraph* dEdxFitter::braggGraph_12C = nullptr;
 
@@ -29,6 +33,8 @@ dEdxFitter::dEdxFitter(std::string resources, double aPressure){
 
   braggGraph_alpha->SetBit(TGraph::kIsSortedX);
   braggGraph_12C->SetBit(TGraph::kIsSortedX);
+  if(theAlphaTemplate.s.empty()) theAlphaTemplate.set(*braggGraph_alpha);
+  if(theCarbonTemplate.s.empty()) theCarbonTemplate.set(*braggGraph_12C);
 
   TF1::DefaultAddToGlobalList(kFALSE);
   alpha_ionisation = new TF1("alpha_ionisation", bragg_alpha, 0, 600.0);
@@ -137,90 +143,66 @@ carbon_alpha_model->SetParameter(1, vxtOffset);
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
+void dEdxFitter::BraggTemplate::set(const TGraph &aGraph){
+
+  s.assign(aGraph.GetX(), aGraph.GetX()+aGraph.GetN());
+  a.assign(aGraph.GetY(), aGraph.GetY()+aGraph.GetN());
+  k.assign(s.size(), 0.0);
+  for(size_t i=0;i+1<s.size();++i){
+    if(s[i+1]>s[i]) k[i] = (a[i+1]-a[i])/(s[i+1]-s[i]);
+  }
+}
+////////////////////////////////////////////////
+////////////////////////////////////////////////
+double dEdxFitter::BraggTemplate::smeared(double pos, double cut, double sigma) const{
+
+  // Gaussian tails beyond nSigma are neglected (relative contribution < 1E-8)
+  const double nSigma = 6.0;
+  if(s.size()<2) return 0.0;
+  sigma = std::max(sigma, 1E-6);
+  const double lo = std::max({cut, pos-nSigma*sigma, s.front()});
+  const double hi = std::min(pos+nSigma*sigma, s.back());
+  if(lo>=hi) return 0.0;
+
+  const double invSqrt2 = 1.0/std::sqrt(2.0);
+  const double invSqrt2Pi = 1.0/std::sqrt(2.0*M_PI);
+  // segment containing lo
+  size_t i = std::upper_bound(s.begin(), s.end(), lo) - s.begin();
+  i = (i>0 ? i-1 : 0);
+  double sum = 0.0;
+  // integral over [t1, t2] of (a_i + k_i*(t-s_i)) * Gauss(t-pos, sigma) dt, with u = (t-pos)/sigma:
+  // (a_i + k_i*(pos-s_i))*(Phi(u2)-Phi(u1)) + k_i*sigma*(phi(u1)-phi(u2))
+  for(;i+1<s.size() && s[i]<hi;++i){
+    const double t1 = std::max(s[i], lo);
+    const double t2 = std::min(s[i+1], hi);
+    if(t2<=t1) continue;
+    const double u1 = (t1-pos)/sigma, u2 = (t2-pos)/sigma;
+    const double dPhi = 0.5*(std::erf(u2*invSqrt2) - std::erf(u1*invSqrt2));
+    const double dphi = invSqrt2Pi*(std::exp(-0.5*u1*u1) - std::exp(-0.5*u2*u2));
+    sum += (a[i] + k[i]*(pos-s[i]))*dPhi + k[i]*sigma*dphi;
+  }
+  return sum;
+}
+////////////////////////////////////////////////
+////////////////////////////////////////////////
+// The tables are given in [mm] at the nominal pressure. A length L at the
+// current pressure corresponds to L*currentPressure/nominalPressure in the table;
+// the smearing width is converted in the same way.
 double dEdxFitter::bragg_alpha(double *x, double *params) {
-  
-  double sigma = params[0];
-  double vertex_pos = params[1];
-  double shift = params[2];  
-  double n_sigma = 3.0;
-
-  double pressure_scale_factor = currentPressure/nominalPressure;
-  double x_shifted = (x[0] - vertex_pos) + shift;
-  double x_scaled = pressure_scale_factor*x_shifted;
-
-  double total_dEdx_length = 300;
-  double a = pressure_scale_factor*shift;
-  double b = total_dEdx_length;
-  double t = (x[0] - vertex_pos)*pressure_scale_factor + a;
-
-  double bragg_at_n_sigma = braggGraph_alpha->Eval(a+n_sigma*sigma*pressure_scale_factor);
-  double p0 = bragg_at_n_sigma;
-  double p1 = 0.0;
-  double p2 = 0.0;
-
-  double smeared_edge = 0;
-  smeared_edge += 0.5*TMath::Erf((t-a)/sqrt(2)/sigma)*(p2*(t*t + sigma*sigma) + p1*t + p0);
-  smeared_edge += 1.0/sqrt(2*M_PI)*sigma*exp(-(a-t)*(a-t)/(2*sigma*sigma))*(p2*(a+t) + p1);
-  smeared_edge -= 0.5*TMath::Erf((t-b)/sqrt(2)/sigma)*(p2*(t*t + sigma*sigma) + p1*t + p0);
-  smeared_edge -= 1.0/sqrt(2*M_PI)*sigma*exp(-(b-t)*(b-t)/(2*sigma*sigma))*(p2*(b+t) + p1);
-
-  double bragg = braggGraph_alpha->Eval(x_scaled)*(x_scaled<total_dEdx_length)*(x_scaled>0)*(x_shifted-shift>0);
-  return smeared_edge*(x_shifted-shift<n_sigma*sigma) + bragg*(x_shifted-shift>n_sigma*sigma);
+  const double scale = currentPressure/nominalPressure;
+  const double sigma = scale*params[0];
+  const double cut = scale*params[2];               // start of the track in the table
+  const double pos = scale*(x[0]-params[1]) + cut;  // alpha towards larger x
+  return theAlphaTemplate.smeared(pos, cut, sigma);
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 double dEdxFitter::bragg_12C(double *x, double *params) {
-
-  double sigma = params[0];
-  double vertex_pos = params[1];
-  double shift = params[3];  
-  double n_sigma = 20.0;
-
-  double pressure_scale_factor = currentPressure/nominalPressure;
-  double x_shifted = (vertex_pos-x[0]) + shift;
-  double x_scaled = pressure_scale_factor*x_shifted;
-
-  double total_dEdx_length = 23.5;
-  double a = pressure_scale_factor*shift;
-  double b = total_dEdx_length;
-  double t = (vertex_pos - x[0])*pressure_scale_factor + a;
-
-  double p0 = 0.0, p1=0.0, p2 = 0.0;
-  
-  double stitchingPoint = 12; //mm
-  if(t>stitchingPoint){
-    p0 = 514.276;
-    p1 = -21.1942;
-    p2 = -0.0434957;
-  }
-  else if(t<stitchingPoint){
-    p0 = 296.079;
-    p1 = 6.32868;
-    p2 = -0.807024;
-  }
-    
-/* old values:
-    if(t<15){
-    p0 = 254.284;
-    p1 = 16.6512;
-    p2 = -1.40697;
-  }
-  else if(t>15){
-    p0 = 533.018;
-    p1 = -23.1911;
-    p2 = 0.00861351;
-  }
-    */
-
-  double smeared_edge = 0;
-  smeared_edge += 0.5*TMath::Erf((t-a)/sqrt(2)/sigma)*(p2*(t*t + sigma*sigma) + p1*t + p0);
-  smeared_edge += 1.0/sqrt(2*M_PI)*sigma*exp(-(a-t)*(a-t)/(2*sigma*sigma))*(p2*(a+t) + p1);
-  smeared_edge -= 0.5*TMath::Erf((t-b)/sqrt(2)/sigma)*(p2*(t*t + sigma*sigma) + p1*t + p0);
-  smeared_edge -= 1.0/sqrt(2*M_PI)*sigma*exp(-(b-t)*(b-t)/(2*sigma*sigma))*(p2*(b+t) + p1);
-
-  double bragg = braggGraph_12C->Eval(x_scaled)*(x_scaled<total_dEdx_length)*(x_scaled>0)*(x_shifted-shift>0);
-
-  return smeared_edge*(x_shifted-shift<n_sigma*sigma) + bragg*(x_shifted-shift>n_sigma*sigma);
+  const double scale = currentPressure/nominalPressure;
+  const double sigma = scale*params[0];
+  const double cut = scale*params[3];               // start of the track in the table
+  const double pos = scale*(params[1]-x[0]) + cut;  // carbon towards smaller x
+  return theCarbonTemplate.smeared(pos, cut, sigma);
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
