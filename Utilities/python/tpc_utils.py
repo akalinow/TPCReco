@@ -1,4 +1,6 @@
 import os
+import re
+import csv
 import glob
 import datetime
 import time
@@ -88,6 +90,40 @@ def getCSVinputList(dataPath):
         else:
              csvDict[key] = item
     return csvDict   
+################################################################
+################################################################
+GRAW_NAME_PATTERN = re.compile(
+    r"CoBo\d*_AsAd(\d)_(\d{4}-\d{2}-\d{2}T\d{2}[:-]\d{2}[:-]\d{2})\.\d+_(\d{4})\.graw$")
+################################################################
+################################################################
+def getRunChunks(dataPath, runId, windowSeconds=2):
+    """Find GRAW files of a single run and group them into chunks.
+
+    runId is the run start time, e.g. "2022-08-22T22:03:11" (":" or "-"
+    separators). AsAd boards open their files a few ms apart, so a file
+    belongs to the run if its timestamp is within windowSeconds after runId.
+    Returns an ordered dict {chunk number: comma separated list of the
+    chunk's files, ordered by AsAd number}.
+    """
+    runStart = datetime.datetime.strptime(runId.replace(":", "-"), "%Y-%m-%dT%H-%M-%S")
+    chunks = {}
+    for aFile in glob.glob(os.path.join(dataPath, "*.graw")):
+        match = GRAW_NAME_PATTERN.search(os.path.basename(aFile))
+        if not match:
+            continue
+        asadId, timestamp, chunkId = match.groups()
+        fileStart = datetime.datetime.strptime(timestamp.replace(":", "-"), "%Y-%m-%dT%H-%M-%S")
+        delta = (fileStart - runStart).total_seconds()
+        if 0 <= delta <= windowSeconds:
+            chunks.setdefault(chunkId, []).append((asadId, aFile))
+    return {chunkId: ",".join(f for _, f in sorted(files))
+            for chunkId, files in sorted(chunks.items())}
+################################################################
+################################################################
+def readRunList(csvPath):
+    """Read the per-run metadata list (see Analysis/python/makeRunList.py)."""
+    with open(csvPath, newline="") as f:
+        return list(csv.DictReader(f))
 ################################################################
 ################################################################
 def getRunTimeStamp(fileName):
