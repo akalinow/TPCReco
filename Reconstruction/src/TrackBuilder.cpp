@@ -460,9 +460,11 @@ double TrackBuilder::getLengthProjectionFromProfile(definitions::projection_type
    definitions::projection_type iProjTmp = iProj;
    if(iProj==definitions::projection_type::DIR_TIME) iProjTmp = auxProj;                                                 
 
-   TH1D *hProfile = nullptr; 
-   if(iProj==definitions::projection_type::DIR_TIME) hProfile = getRecHits2D(iProjTmp).ProfileY();
-   else hProfile = getRecHits2D(iProjTmp).ProfileX();
+   // the profile is registered in gDirectory under an event dependent name:
+   // owned here, so that it is deleted on every return path
+   std::unique_ptr<TH1D> hProfile;
+   if(iProj==definitions::projection_type::DIR_TIME) hProfile.reset(getRecHits2D(iProjTmp).ProfileY());
+   else hProfile.reset(getRecHits2D(iProjTmp).ProfileX());
    int firstBin = -1;
    int lastBin = -1;
    double value = 0.0;
@@ -477,14 +479,12 @@ double TrackBuilder::getLengthProjectionFromProfile(definitions::projection_type
    double maxPos = hProfile->GetBinCenter(lastBin);
    if(std::abs(lastBin-firstBin)<1) return 0.0;
 
-   auto aPol = new TF1("aFit", "[0]+[1]*x", minPos, maxPos);
+   auto aPol = std::make_unique<TF1>("aFit", "[0]+[1]*x", minPos, maxPos);
    aPol->SetParameter(0, (minPos+maxPos)/2.0);
    aPol->SetParameter(1, 0.0);
-   TFitResultPtr aFitResult = hProfile->Fit(aPol,"BRWWSQ");
+   TFitResultPtr aFitResult = hProfile->Fit(aPol.get(),"BRWWSQ");
    double slope = aFitResult->GetParams()[1];
    double length = (maxPos - minPos)*slope;
-   delete aPol;
-   delete hProfile;
    return std::abs(length);
 }
 /////////////////////////////////////////////////////////
@@ -523,7 +523,8 @@ double TrackBuilder::getSignedLengthProjection(definitions::projection_type iPro
   ///Rebin 2D histogram in time bins to avoid cases when a single bin
   ///on the far end of track is dominating the maximum position
   if(std::abs(maxTimeBin-minTimeBin)<minTimeProjLength && iProj!=definitions::projection_type::DIR_TIME){
-    TH2D *hTmp = (TH2D*)getRecHits2D(iProjTmp).Clone("hTmp");
+    // temporary copy, deleted (and removed from gDirectory) at the end of the scope
+    std::unique_ptr<TH2D> hTmp((TH2D*)getRecHits2D(iProjTmp).Clone("hTmp"));
     hTmp->Rebin2D(8,1)->GetMaximumBin(iMaxBinX, iMaxBinY, iMaxBinZ);
   }
 
@@ -563,7 +564,11 @@ TVector2 TrackBuilder::get2DBias(definitions::projection_type iProj, int iTrack2
   getRecHits2D(iProj).GetMaximumBin(iMaxBinX, iMaxBinY, iMaxBinZ);
   double maxTimePos = getRecHits2D(iProj).GetXaxis()->GetBinCenter(iMaxBinX);
   //If track is horizontal use a projection on strip direction to avoid bias in maximum position
-  if(std::abs(maxTimeBin-minTimeBin)<minTimeProjLength) iMaxBinY = getRecHits2D(iProj).ProjectionY()->GetMaximumBin();
+  if(std::abs(maxTimeBin-minTimeBin)<minTimeProjLength){
+    // the projection is registered in gDirectory under an event dependent name: delete it
+    std::unique_ptr<TH1D> hStripProj(getRecHits2D(iProj).ProjectionY());
+    iMaxBinY = hStripProj->GetMaximumBin();
+  }
   double maxStripPos = getRecHits2D(iProj).GetYaxis()->GetBinCenter(iMaxBinY);
 
   return TVector2(maxTimePos, maxStripPos);
