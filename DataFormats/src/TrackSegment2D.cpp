@@ -2,6 +2,8 @@
 #include "TPCReco/GeometryTPC.h"
 #include "TPCReco/colorText.h"
 
+#include <algorithm>
+#include <cmath>
 #include <iostream>
 
 TrackSegment2D::TrackSegment2D(int strip_dir, std::shared_ptr<GeometryTPC> aGeometryPtr){
@@ -165,7 +167,7 @@ double TrackSegment2D::getParallelLineLoss(const Hit2DCollection & aRecHits) con
   for(const auto aHit:aRecHits){
     x = aHit.getPosTime();
     y = aHit.getPosStrip();
-    charge = abs(aHit.getCharge());
+    charge = std::abs(aHit.getCharge());
     aPoint.SetXYZ(x, y, 0.0);
     std::tie(lambda,distance) = getPointLambdaAndDistance(aPoint);
     if(std::abs(distance)>maxDistance) continue;
@@ -178,7 +180,8 @@ double TrackSegment2D::getParallelLineLoss(const Hit2DCollection & aRecHits) con
   mean /= chargeSum;
   mean2 /= chargeSum;
 
-  double stdDev = std::sqrt(mean2 - mean*mean);
+  // rounding can make the variance slightly negative (e.g. a single hit)
+  double stdDev = std::sqrt(std::max(0.0, mean2 - mean*mean));
   return stdDev;
 }
 /////////////////////////////////////////////////////////
@@ -212,7 +215,7 @@ double TrackSegment2D::getHitDistanceLoss(const Hit2DCollection & aRecHits) cons
   for(const auto aHit:aRecHits){
     x = aHit.getPosTime();
     y = aHit.getPosStrip();
-    charge = abs(aHit.getCharge());
+    charge = std::abs(aHit.getCharge());
     aPoint.SetXYZ(x, y, 0.0);
     std::tie(lambda,distance) = getPointLambdaAndDistance(aPoint);
     distance = std::abs(distance);
