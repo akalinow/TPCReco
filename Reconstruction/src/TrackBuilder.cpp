@@ -211,8 +211,6 @@ void TrackBuilder::reconstruct(){
     //fillHoughAccumulator(iDir);
     //my2DSeeds[iDir] = findSegment2DCollection(iDir);    
   }
-  myZRange = getProjectionEdges(hTimeProjection);
-
   std::cout<<KBLU<<"Before building 3D segment from 2D seeds"<<RST<<std::endl;
   myTrack3DSeed = buildSegment3D();
   
@@ -270,23 +268,36 @@ void TrackBuilder::makeRecHits(int iDir){
 /////////////////////////////////////////////////////////
 std::tuple<double, double> TrackBuilder::getProjectionEdges(const TH1D & hProj, int binMargin) const{
   
-  int iBinStart = 0;
-  int iBinEnd = hProj.GetNbinsX();
-  double histoSum = hProj.Integral();
-  double sum = 0.0;
-  double threshold = 0.01;
+  const TAxis *axis = hProj.GetXaxis();
+  const int nBins = hProj.GetNbinsX();
+  const double threshold = 0.01;
 
-  for(auto iBin=0;iBin<hProj.GetNbinsX();++iBin){
-    sum += hProj.GetBinContent(iBin); 
-    if(sum/histoSum>threshold && iBinStart==0) iBinStart = iBin;
-    else if(sum/histoSum>1.0-threshold && iBinEnd==hProj.GetNbinsX()){ 
+  // only bins 1..nBins: under/overflow bins are not used
+  double histoSum = 0.0;
+  for(int iBin=1;iBin<=nBins;++iBin) histoSum += hProj.GetBinContent(iBin);
+  if(!(histoSum>0.0)){ // empty projection: zero length range
+    const double center = 0.5*(axis->GetXmin() + axis->GetXmax());
+    return std::make_tuple(center, center);
+  }
+
+  int iBinStart = -1, iBinEnd = -1;
+  double sum = 0.0;
+  for(int iBin=1;iBin<=nBins;++iBin){
+    sum += hProj.GetBinContent(iBin);
+    if(iBinStart<0 && sum/histoSum>threshold) iBinStart = iBin;
+    if(iBinEnd<0 && sum/histoSum>1.0-threshold){
       iBinEnd = iBin;
       break;
     }
   }
-  
-  double start = hProj.GetXaxis()->GetBinCenter(iBinStart-binMargin);
-  double end =  hProj.GetXaxis()->GetBinCenter(iBinEnd+binMargin);  
+  if(iBinStart<0) iBinStart = 1;   // possible only with negative bin contents
+  if(iBinEnd<0) iBinEnd = nBins;
+
+  iBinStart = std::max(1, std::min(nBins, iBinStart-binMargin));
+  iBinEnd = std::max(1, std::min(nBins, iBinEnd+binMargin));
+  double start = axis->GetBinCenter(iBinStart);
+  double end = axis->GetBinCenter(iBinEnd);
+  if(start>end) start = end = 0.5*(start+end); // a negative margin can not make the range negative
   return std::make_tuple(start, end);
 }
 /////////////////////////////////////////////////////////
@@ -544,7 +555,7 @@ double TrackBuilder::getSignedLengthProjection(definitions::projection_type iPro
   int direction = std::abs(maxPos - minStrip)<std::abs(maxPos - maxStrip) ? 1 : -1;
 
   double length = std::abs(maxStrip - minStrip);
-  if(iProj==definitions::projection_type::DIR_TIME && length<minStripProjLength){
+  if(iProj==definitions::projection_type::DIR_TIME && length<minTimeProjLength){
     length = getLengthProjectionFromProfile(iProj, auxProj);
   }
 
@@ -871,7 +882,10 @@ ROOT::Fit::FitResult TrackBuilder::fitTrackNodesBiasTangent(const Track3D & aTra
   double thetaRange = 0.4; //parameter to be moved to configuration
   double phiRange = 0.4; //parameter to be moved to configuration                    
 
-  Track3D aTrackCandidate = aTrack;
+  // the FCN refers to a member, not to a local copy: the returned FitResult
+  // keeps a copy of the FCN, which must not point to a destroyed object
+  myFitCandidate = aTrack;
+  Track3D & aTrackCandidate = myFitCandidate;
   aTrackCandidate.setFitMode(fitType);
   std::vector<double> params = aTrackCandidate.getSegmentsBiasTangentCoords();
   int nParams = 2;
@@ -950,6 +964,11 @@ Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
   mydEdxFitter.fitHisto(hChargeProfile);
 
   pid_type eventType = mydEdxFitter.getBestFitEventType();
+  // no hypothesis fitted: keep the fitted track instead of a zero length alpha segment
+  if(eventType==pid_type::UNKNOWN){
+    std::cout<<KRED<<"dE/dx fit failed: "<<RST<<"event hypothesis not fitted."<<std::endl;
+    return aTrackCandidate;
+  }
   bool isReflected = mydEdxFitter.getIsReflected();
   double vertexOffset = mydEdxFitter.getVertexOffset();
   double alphaRange = mydEdxFitter.getAlphaRange();

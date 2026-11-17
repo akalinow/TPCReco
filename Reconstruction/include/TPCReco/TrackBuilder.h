@@ -144,7 +144,10 @@ private:
   
   ROOT::Fit::FitResult fitTrackNodesBiasTangent(const Track3D & aTrack, definitions::fit_type fitType) const;
 
-  std::tuple<double, double> getProjectionEdges(const TH1D &hProj, int binMargin=10) const;
+  /// Positions of the bins where the cumulative charge of the projection crosses
+  /// 1% and 99% of the total, moved outwards by binMargin bins (inwards for a
+  /// negative binMargin). An empty projection gives a zero length range.
+  std::tuple<double, double> getProjectionEdges(const TH1D &hProj, int binMargin) const;
 
   std::shared_ptr<EventTPC> myEventPtr;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
@@ -164,11 +167,13 @@ private:
   std::vector<TH2D> myRecHits, myRawHits;
   TH1D hTimeProjection;
   std::vector<TrackSegment2DCollection> my2DSeeds;
-  std::tuple<double, double> myZRange;
 
   TrackSegment2D dummySegment2D;
   TrackSegment3D myTrack3DSeed, dummySegment3D;  
-  Track3D myTmpTrack, myFittedTrack;
+  Track3D myFittedTrack;
+  /// Track fitted by fitTrackNodesBiasTangent: the fitter FCN, and the FitResult
+  /// it returns, refer to this object, so it has to outlive the call.
+  mutable Track3D myFitCandidate;
   
   mutable ROOT::Fit::Fitter fitter;
 
@@ -180,8 +185,8 @@ private:
   double minStripProjLengthForVertTracks{20}; //parameter to be moved to configuration
   double minTimeProjLength{20};  //parameter to be moved to configuration 
   double epsilon{1E-2};          //parameter to be moved to configuration
-  double stripDiffusionMargin{-1.0}; //parameter to be moved to configuration
-  double timeDiffusionMargin{-1.0}; //parameter to be moved to configuration
+  int stripDiffusionMargin{-1}; //[bins], negative: projection range shrunk; parameter to be moved to configuration
+  int timeDiffusionMargin{-1};  //[bins], negative: projection range shrunk; parameter to be moved to configuration
   double minTkLenghtWithHypothesis{30}; //parameter to be moved to configuration
 
 };
