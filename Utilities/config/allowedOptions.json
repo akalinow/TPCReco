@@ -74,8 +74,8 @@
     "disabledBranches":{
         "group": "output",
         "type": "vector<string>",
-        "defaultValue": ["TPCData.myChargeMap", "TPCData.myChargeArray*" ],
-        "description": "Optional list of disabled branches of PEventTPC to save disk space.\nBiggest branches are TPCData.myChargeMap, TPCData.myChargeArray*.\nType: vector<string>"
+        "defaultValue": ["TPCData.myChargeMap*", "TPCData.myChargeArray*" ],
+        "description": "Optional list of disabled branches of PEventTPC to save disk space.\nBiggest branches are TPCData.myChargeMap*, TPCData.myChargeArray*.\nNames are patterns of the TTree::SetBranchStatus: use * to match sub-branches.\nType: vector<string>"
     },
     "autoSaveFrequency":{
         "group": "output",
