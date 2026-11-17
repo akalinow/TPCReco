@@ -118,6 +118,10 @@ void dEdxFitter::reset(){
 				    //maxAlphaOffset-85,  // [mm] --> HACK valid for 13.1 MeV
 				    //maxCarbonOffset-11,  // [mm] --> HACK valid for 13.1 MeV
 				    1, 1, 5E-3);
+  if(hasVertexConstraint){
+    carbon_alpha_model->SetParLimits(1, vertexConstraint-2, vertexConstraint+2);
+    carbon_alpha_model->SetParameter(1, vertexConstraint);
+  }
 
   alpha_model->SetRange(-20, maxAlphaOffset);
   alpha_model->SetParLimits(1, minVtxOffset, maxVtxOffset);
@@ -154,10 +158,14 @@ void dEdxFitter::setStepSizes(TF1 *fModel, double scale){
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 void dEdxFitter::setVertexConstraint(double vxtOffset){
-
-carbon_alpha_model->SetParLimits(1, vxtOffset-2, vxtOffset+2);
-carbon_alpha_model->SetParameter(1, vxtOffset);
-
+  // applied in reset(), which sets the initial parameters before each fit
+  hasVertexConstraint = true;
+  vertexConstraint = vxtOffset;
+}
+////////////////////////////////////////////////
+////////////////////////////////////////////////
+void dEdxFitter::setMaxFitAttempts(unsigned int nAttempts){
+  maxFitAttempts = std::max(1u, nAttempts);
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
@@ -266,14 +274,17 @@ TFitResult dEdxFitter::fitHypothesis(TF1 *fModel, TH1F & aHisto){
   minCarbonOffset = std::max(0.0, maxCarbonOffset - tkLength);
   auto chargeFromHisto = aHisto.Integral("width");
 
-  // Deterministic restarts: the same initial parameter values, with the initial
-  // step sizes below (0: ROOT default, otherwise scale x 10% of the parameter range).
-  // The first valid fit with a small loss is accepted; if there is none, the best
-  // fit: a valid one with the lowest loss, else the one with the lowest loss.
+  // Deterministic restarts (maxFitAttempts, default 1): the same initial parameter
+  // values, with the initial step sizes below (0: ROOT default, otherwise
+  // scale x 10% of the parameter range). The first valid fit with a small loss is
+  // accepted; if there is none, the best fit: a valid one with the lowest loss,
+  // else the one with the lowest loss.
   const std::vector<double> stepScales = {0.0, 1.0, 0.3, 3.0, 0.1, 0.5, 2.0, 0.05, 0.2, 5.0};
   const double maxLossRatio = 5E-4;
+  const unsigned int nAttempts = std::min<size_t>(maxFitAttempts, stepScales.size());
   bool haveResult = false;
-  for(double scale: stepScales){
+  for(unsigned int iAttempt=0;iAttempt<nAttempts;++iAttempt){
+    const double scale = stepScales[iAttempt];
     reset();
     setStepSizes(fModel, scale);
     TFitResultPtr aResultPtr = aHisto.Fit(fModel,"BRWWSQ");

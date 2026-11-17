@@ -57,6 +57,7 @@ TrackBuilder::TrackBuilder(boost::property_tree::ptree& myConfig) {
   for(auto &offset: myHoughOffset) offset.SetXYZ(0,0,0);
 
   setPressure(myConfig.get<double>("conditions.pressure"));
+  mydEdxFitter.setMaxFitAttempts(myConfig.get<int>("reconstruction.dEdxFitAttempts", 1));
 
   myMLTrackBuilder = std::make_shared<TensorflowModel>(myConfig);
 }
@@ -947,20 +948,20 @@ Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
   const TrackSegment3D & aSegment = aTrackCandidate.getSegments().front(); 
   TH1F hChargeProfile = aSegment.getChargeProfile(); 
 
-  double vtxOffset = aSegment.getLength()/2;
-  
-  ///TEST
+  // vertex position along the track from the ML model, if available,
+  // otherwise no constraint
   if(myMLTrackBuilder->isValid()) {
     myMLTrackBuilder->run(myEventPtr);
-    vtxOffset = (myMLTrackBuilder->getCarbonEnd() - myMLTrackBuilder->getVertex()).Mag();                
+    double vtxOffset = (myMLTrackBuilder->getCarbonEnd() - myMLTrackBuilder->getVertex()).Mag();
+    mydEdxFitter.setVertexConstraint(vtxOffset);
   }
+  else mydEdxFitter.clearVertexConstraint();
 
   double trackWidth = aSegment.getMaxProjWidth();
   double centralD = trackWidth/0.76; //parameter to be moved to configuration
   double minD = centralD*0.5; //parameter to be moved to configuration
   double maxD = centralD*1.5; //parameter to be moved to configuration       
   mydEdxFitter.setDiffusionRange(minD, maxD);
-  mydEdxFitter.setVertexConstraint(vtxOffset);
   mydEdxFitter.fitHisto(hChargeProfile);
 
   pid_type eventType = mydEdxFitter.getBestFitEventType();

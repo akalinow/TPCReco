@@ -412,6 +412,12 @@
         "defaultValue" : "",
         "description" : "Path to the TensorFlow model Keras file.\nType: string"
     },
+    "dEdxFitAttempts":{
+        "group":"reconstruction",
+        "type" : "int",
+        "defaultValue" : 1,
+        "description" : "Number of attempts of the dE/dx (event hypothesis) fit, with different initial step sizes (1-10). The first valid fit with a small loss is kept, otherwise the best one.\nType: int"
+    },
     "inputDim":{
         "group":"reconstruction",
         "type" : "vector<int>",

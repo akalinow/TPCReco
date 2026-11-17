@@ -24,8 +24,16 @@ public:
   /// Set range of fitted effective charge diffusion
   void setDiffusionRange(double minD=0.5, double maxD=1.5);
 
-  /// Set the vertex position guess
+  /// Constrain the vertex position of the C12+alpha hypothesis to
+  /// vxtOffset +- 2 mm (position along the charge profile)
   void setVertexConstraint(double vxtOffset);
+
+  /// Remove the vertex constraint
+  void clearVertexConstraint() { hasVertexConstraint = false;}
+
+  /// Number of fit attempts per hypothesis, with different initial step
+  /// sizes (1 to 10, default 1)
+  void setMaxFitAttempts(unsigned int nAttempts);
 
   TFitResult fitHisto(const TH1F & aHisto);
 
@@ -94,6 +102,10 @@ private:
   double carbonScale{1};
   
   bool isReflected{false};
+
+  bool hasVertexConstraint{false};
+  double vertexConstraint{0};
+  unsigned int maxFitAttempts{1};
 
   double maxCarbonRange, maxAlphaRange;
 

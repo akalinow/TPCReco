@@ -200,6 +200,31 @@ TEST_F(dEdxFitterTest, FitIsDeterministic) {
   expectSame(fit(used, second), reference);   // after another event
   expectSame(fit(used, second), reference);   // repeated
   expectSame(fit(fresh, second), reference);  // refit with the same fitter
+
+  // the same with several fit attempts
+  dEdxFitter freshMulti(RESOURCES_DIR, pressure), usedMulti(RESOURCES_DIR, pressure);
+  freshMulti.setMaxFitAttempts(10);
+  usedMulti.setMaxFitAttempts(10);
+  const FitOutput referenceMulti = fit(freshMulti, second);
+  fit(usedMulti, first);
+  expectSame(fit(usedMulti, second), referenceMulti);
+}
+
+TEST_F(dEdxFitterTest, VertexConstraint) {
+  // the constraint was overwritten by the initial parameters set before each fit
+  const double pressure = 190.0;
+  const TH1F profile = makeProfile("profile", 12.0, 45.0, 9.0, pressure);
+  dEdxFitter aFitter(RESOURCES_DIR, pressure);
+  for (double constraint : {5.0, 20.0}) {
+    aFitter.setVertexConstraint(constraint);
+    const FitOutput result = fit(aFitter, profile);
+    EXPECT_EQ(result.type, pid_type::C12_ALPHA) << "constraint " << constraint;
+    EXPECT_GE(result.vertex, constraint - 2.0 - 1E-6) << "constraint " << constraint;
+    EXPECT_LE(result.vertex, constraint + 2.0 + 1E-6) << "constraint " << constraint;
+  }
+  aFitter.clearVertexConstraint();
+  dEdxFitter fresh(RESOURCES_DIR, pressure);
+  expectSame(fit(aFitter, profile), fit(fresh, profile));
 }
 
 TEST_F(dEdxFitterTest, CarbonModelUsesTable) {
