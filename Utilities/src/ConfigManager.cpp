@@ -1,4 +1,6 @@
 #include "TPCReco/ConfigManager.h"
+#include "TPCReco/ResourcePath.h"
+#include <boost/filesystem.hpp>
 #include "TPCReco/colorText.h"
 #include <cmath> // to use M_PI in JSON and cmd line expressions
 
@@ -785,12 +787,13 @@ const boost::property_tree::ptree & ConfigManager::getConfig(int argc, char **ar
     else if(varMap.count(hiddenFilesOpt.c_str())) { // apply changes from JSON file(s)
       auto jsonNameVec = varMap[hiddenFilesOpt.c_str()].as<ConfigManager::myVector<std::string>>();
       for(auto &jsonName: jsonNameVec) {
-	updateWithJsonFile(jsonName);
+	updateWithJsonFile(ResourcePath::resolve(jsonName));
       }
     }
 
     // finally apply changes from command line options
     updateWithCmdLineArgs(varMap);
+    resolveResourcePaths();
 
     std::cout<<std::endl<<KBLU<<"List of final configuration tree to be used:"<<RST<<std::endl;
     ConfigManager::printTree(configTree);
@@ -802,8 +805,39 @@ const boost::property_tree::ptree & ConfigManager::getConfig(int argc, char **ar
 const boost::property_tree::ptree & ConfigManager::getConfig(const std::string & jsonFileName){
 
     std::cout<<KBLU<<"ConfigManager: updating parameters with JSON configuration file:"<<RST<<jsonFileName<<std::endl;
-    updateWithJsonFile(jsonFileName);
+    updateWithJsonFile(ResourcePath::resolve(jsonFileName));
+    resolveResourcePaths();
     return configTree;
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Paths in the configuration files are relative to the resources directory.
+// Replace them by paths valid from the current directory (see ResourcePath.h),
+// so that the applications can be run from any directory. The resolved
+// paths are also written to the configuration dump.
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void ConfigManager::resolveResourcePaths(){
+
+  auto update = [this](const std::string & key, const std::string & resolved){
+    const std::string original = configTree.get<std::string>(key);
+    if(resolved==original) return;
+    std::cout<<KBLU<<"ConfigManager: "<<key<<": "<<RST<<original
+	     <<KBLU<<" found as: "<<RST<<resolved<<std::endl;
+    configTree.put(key, resolved);
+  };
+  for(const std::string key: {"input.geometryFile", "input.controllerConfigPath", "reconstruction.tfModelPath"}) {
+    auto value = configTree.get_optional<std::string>(key);
+    if(value) update(key, ResourcePath::resolve(*value));
+  }
+  auto dataFile = configTree.get_optional<std::string>("input.dataFile");
+  if(dataFile) update("input.dataFile", ResourcePath::resolveList(*dataFile));
+
+  // directory with the GUI images
+  auto resourcesPath = configTree.get_optional<std::string>("input.resourcesPath");
+  if(resourcesPath) {
+    const std::string logo = *resourcesPath + "/FUW_znak.png";
+    const std::string resolvedLogo = ResourcePath::resolve(logo);
+    if(resolvedLogo!=logo) update("input.resourcesPath", boost::filesystem::path(resolvedLogo).parent_path().string());
+  }
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////

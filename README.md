@@ -78,8 +78,19 @@ Setup the ROOT environment beforehand. At **daqula2** node use the following com
 source /opt/soft/root_v6.08.06/bin/thisroot.sh
 ```
 Reading GRAW files does not require the GET software, nor the XCFG frame format files.
-The configuration files in `config/` refer to the geometry files with paths relative to
-the **resources** directory, so it is still convenient to run the applications from there.
+
+The applications can be run from any directory. Paths in the configuration files
+(geometry file, data files, MC controller configuration, ML model, GUI images) and
+the JSON files given on the command line are written relative to the **resources**
+directory. A relative path that does not exist relative to the current directory is
+looked up relative to `$TPCRECO_RESOURCES` (if set), the installed `resources`
+directory, and the `resources` directory of the source tree. The resolved paths are
+printed at start-up and stored in the configuration dump. For example:
+```Shell
+cd /some/output/directory
+/path/to/build/bin/tpcWriter ../config/config_Writer_Data.json --input.readNEvents 3
+```
+Output files are written to the current directory.
 
 When running from a container, enter the following command inside the container:
 ```Shell

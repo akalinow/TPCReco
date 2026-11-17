@@ -67,6 +67,8 @@ public:
     void updateWithPTree(const boost::property_tree::ptree & configTreeUpdate);
     void updateWithJsonFile(const std::string & jsonName);
     void updateWithCmdLineArgs(const boost::program_options::variables_map & varMap);
+    // replace relative paths to resource files with paths found in the resources directory
+    void resolveResourcePaths();
     void insertVector(const std::string & nodePath, const std::string & vectorInJsonFormat);
     void insertVector(const std::string & nodePath, const boost::property_tree::ptree & ptreeVector);
     template <typename T> void insertVector(const std::string & nodePath, const T & vec);

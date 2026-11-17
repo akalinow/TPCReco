@@ -1,4 +1,5 @@
 #include <cstdio> // for: NULL
+#include "TPCReco/ResourcePath.h"
 #include <cstdlib>
 #include <fstream>
 #include <iostream> // for: cout, cerr, endl
@@ -91,7 +92,9 @@ bool GeometryTPC::Load(const char *fname) {
   fStripMap.clear();
 
   std::string line;
-  std::ifstream f(fname);
+  // relative paths are also looked up in the resources directory
+  const std::string filePath = ResourcePath::resolve(fname);
+  std::ifstream f(filePath);
   std::map<int, double> angle;
 
   if (f.is_open()) {

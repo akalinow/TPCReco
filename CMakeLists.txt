@@ -44,6 +44,9 @@ set(TPCRECO_RESOURCE_DIR
     "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>$<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}>/resources/"
 )
 target_compile_definitions(Resources INTERFACE TPCRECO_RESOURCE_DIR=\"${TPCRECO_RESOURCE_DIR}\")
+# resources directory of the installation, searched for relative resource paths
+# (see Utilities/include/TPCReco/ResourcePath.h)
+target_compile_definitions(Resources INTERFACE TPCRECO_INSTALL_RESOURCE_DIR=\"${CMAKE_INSTALL_PREFIX}/resources/\")
 
 option(BUILD_GEANT_MODULE "Build Geant4 simulation" OFF)
 
