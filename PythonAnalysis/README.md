@@ -51,9 +51,10 @@ Hits are selected with `--output.mlHitFilter`:
 The filters work per strip section: for a strip divided into sections, only the sections passing
 the filter contribute to the merged hit.
 
-Event selection: `tpcWriter` writes only events with two track segments (the reconstruction
-always returns two segments; for MC, two generated segments), and for MC only events with the
-alpha track end inside the fiducial volume (|x| < 140 mm, |y| < 90 mm, |z| < drift cage limit − 5 mm).
+Event selection: `tpcWriter` writes only events with two or three track segments (two and three
+prong events: generated segments for MC, reconstructed segments for data), and for MC only events
+with the ends of all segments inside the fiducial volume (|x| < 140 mm, |y| < 90 mm,
+|z| < drift cage limit − 5 mm). The automatic reconstruction currently returns two segments.
 The `eventFilter` settings of the configuration apply as well (`--eventFilter.enabled false` to switch it off).
 
 Size: for real data the `MLData` tree with the `threshold` filter takes about 0.02 MB/event.
@@ -106,8 +107,10 @@ The conversion can also be called from Python: `mltree_tfrecord.convert_file(roo
 
 `load_dataset` (needs TensorFlow) returns a `tf.data.Dataset`. It builds from the sparse hits
 the dense `(256, 512, 3)` image, indexed `[strip, time cell, direction]` as in `io_functions.py`,
-and the `(3, 3)` target: rows x, y, z; columns start of the first segment, end of the first
-and end of the second segment (missing segments are filled with zeros).
+and the `(3, 1 + n_segments)` target: rows x, y, z; column 0 the start of the first segment
+(vertex), column 1+i the end of segment i. With the default `n_segments=3` the target is `(3, 4)`
+for both two and three prong events; for two prong events the last column is zero.
+Use `n_segments=2` for the `(3, 3)` target of the old `io_functions.py` pipeline.
 
 ```Python
 import sys
@@ -124,8 +127,16 @@ dataset = dataset.shuffle(1000).batch(32).prefetch(tf.data.AUTOTUNE)
 | `files` | | shard path, glob pattern or a list of them |
 | `normalise` | `"max"` | `"max"`: each image divided by its maximal charge (as the old pipeline), `None`: raw charge, a number: divided by this number |
 | `target` | `"sim"` | `"sim"` or `"reco"`: elements are `(image, target)`; `None`: elements are images |
-| `keep_info` | `False` | `True`: elements are dicts with `image`, `target`, `run_id`, `event_id`, `timestamp`, `reco_length`, `reco_loss`, `reco_hypothesis_loss` |
+| `keep_info` | `False` | `True`: elements are dicts with `image`, `target`, `n_sim_segments`, `n_reco_segments`, `sim_pid`, `reco_pid` (padded with 0 to `n_segments`), `run_id`, `event_id`, `timestamp`, `reco_length`, `reco_loss`, `reco_hypothesis_loss` |
 | `parallel_reads` | `False` | read shards in parallel (faster, events of different shards are interleaved); by default shards are read one by one in sorted order |
+| `n_segments` | 3 | number of segments in the target; 2 gives the old `(3, 3)` target |
+
+To select two or three prong events, filter on the number of segments:
+
+```Python
+dataset = mt.load_dataset("tfrecord_dir/*.tfrecord.gz", keep_info=True)
+threeProng = dataset.filter(lambda x: x["n_sim_segments"] == 3)
+```
 
 The charge is stored without normalisation, so the normalisation can be changed without
 converting the data again.

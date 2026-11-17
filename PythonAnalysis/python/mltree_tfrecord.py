@@ -266,29 +266,42 @@ def _dense_image(event):
                          shape=[nStrips, nTimeSlices, nProj])
 
 
-def _target(event, prefix):
-    """(3, 3) target as in io_functions.generator: columns = start of the first
-    segment, end of the first and of the second segment; rows = x, y, z.
-    Missing segments are filled with zeros."""
+def _target(event, prefix, n_segments):
+    """(3, 1 + n_segments) target: column 0 = start of the first segment (vertex),
+    column 1+i = end of segment i; rows = x, y, z. Missing segments are filled
+    with zeros, segments beyond n_segments are dropped.
+    For n_segments=2 this is the (3, 3) target of io_functions.generator."""
     import tensorflow as tf
     start = tf.reshape(tf.sparse.to_dense(event[prefix + "_start"]), [-1, 3])
     end = tf.reshape(tf.sparse.to_dense(event[prefix + "_end"]), [-1, 3])
     start = tf.pad(start, [[0, tf.maximum(1 - tf.shape(start)[0], 0)], [0, 0]])
-    end = tf.pad(end, [[0, tf.maximum(2 - tf.shape(end)[0], 0)], [0, 0]])
-    return tf.stack([start[0], end[0], end[1]], axis=1)
+    end = tf.pad(end, [[0, tf.maximum(n_segments - tf.shape(end)[0], 0)], [0, 0]])
+    points = tf.concat([start[:1], end[:n_segments]], axis=0)   # (1 + n_segments, 3)
+    return tf.transpose(points)
+
+
+def tf_size(sparse):
+    """Number of values of a sparse (VarLenFeature) tensor, as int64."""
+    import tensorflow as tf
+    return tf.cast(tf.size(sparse.values), tf.int64)
 
 
 def load_dataset(files, normalise="max", target="sim", keep_info=False,
-                 parallel_reads=False):
+                 parallel_reads=False, n_segments=3):
     """tf.data.Dataset from TFRecord shards made by convert_file.
 
     files      -- shard path, glob pattern or list of them
     normalise  -- "max": divide each event by its maximal charge (as io_functions.py),
                   None: raw charge, a number: divide by this number
-    target     -- "sim", "reco" or None: (3,3) target from simulated or
-                  reconstructed segments; None gives the image only
-    keep_info  -- if True, elements are dicts with the image, target and all
-                  scalar features (run_id, event_id, ...)
+    target     -- "sim", "reco" or None: (3, 1 + n_segments) target from simulated
+                  or reconstructed segments (rows x,y,z; columns vertex and segment
+                  ends); None gives the image only
+    keep_info  -- if True, elements are dicts with the image, target, the numbers
+                  of segments (n_sim_segments, n_reco_segments), the segment pids
+                  (sim_pid, reco_pid, padded with 0 to n_segments) and all scalar
+                  features (run_id, event_id, ...)
+    n_segments -- maximal number of segments in the target: 3 for two and
+                  three prong events, 2 for the (3, 3) target of io_functions.py
     parallel_reads -- read shards in parallel (faster, but events from different
                   shards are interleaved); by default shards are read one by one,
                   in sorted order
@@ -307,11 +320,15 @@ def load_dataset(files, normalise="max", target="sim", keep_info=False,
             image = image / tf.where(maxValue > 0, maxValue, 1.0)
         elif normalise is not None:
             image = image / float(normalise)
-        result = image if target is None else (image, _target(event, target))
+        result = image if target is None else (image, _target(event, target, n_segments))
         if keep_info:
             info = {name: event[name] for name in ["run_id", "event_id", "timestamp",
                                                    "reco_length", "reco_loss",
                                                    "reco_hypothesis_loss"]}
+            for prefix in ["sim", "reco"]:
+                pid = tf.sparse.to_dense(event[prefix + "_pid"])[:n_segments]
+                info[prefix + "_pid"] = tf.pad(pid, [[0, n_segments - tf.shape(pid)[0]]])
+                info["n_" + prefix + "_segments"] = tf_size(event[prefix + "_pid"])
             info["image"] = image
             if target is not None:
                 info["target"] = result[1]

@@ -127,13 +127,17 @@ void FileOutput::update(std::shared_ptr<EventSourceBase> aEventSource) {
   double margin = 5; //[mm] margin from the drift cage limits to define fiducial volume
   double maxAbsZ = aEventSource->getGeometry()->GetDriftCageZmax() - margin;
 
-  if(mySimEventPtr->getSegments().size()!=2) return; 
-  //Fiducial volume cut
+  // two prong (e.g. alpha + carbon) or three prong (e.g. three alpha) events
+  const auto nSegments = mySimEventPtr->getSegments().size();
+  if(nSegments!=2 && nSegments!=3) return;
+  //Fiducial volume cut: ends of all segments inside the fiducial volume
   if(mcEventSource){
-      bool isFiducial = std::abs(mySimEventPtr->getSegments().front().getEnd().X())< 140 && 
-                        std::abs(mySimEventPtr->getSegments().front().getEnd().Y())< 90 &&
-                        std::abs(mySimEventPtr->getSegments().front().getEnd().Z())< maxAbsZ;
-      if(!isFiducial) return;
+      for(const auto &aSegment: mySimEventPtr->getSegments()){
+        bool isFiducial = std::abs(aSegment.getEnd().X())< 140 &&
+                          std::abs(aSegment.getEnd().Y())< 90 &&
+                          std::abs(aSegment.getEnd().Z())< maxAbsZ;
+        if(!isFiducial) return;
+      }
   }
   /////////////////////////
 
