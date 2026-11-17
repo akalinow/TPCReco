@@ -2,6 +2,8 @@
 #include <cmath>
 #include <iostream>
 #include <algorithm>
+#include <array>
+#include <stdexcept>
 
 #include <TVector3.h>
 #include <TProfile.h>
@@ -891,56 +893,49 @@ ROOT::Fit::FitResult TrackBuilder::fitTrackNodesBiasTangent(const Track3D & aTra
   myFitCandidate = aTrack;
   Track3D & aTrackCandidate = myFitCandidate;
   aTrackCandidate.setFitMode(fitType);
-  std::vector<double> params = aTrackCandidate.getSegmentsBiasTangentCoords();
-  int nParams = 2;
 
+  // Two fit parameters of the (only) fitted segment, read by
+  // Track3D::updateAndGetLoss as par[0], par[1]: start value, initial step
+  // size and allowed range (centred at the start value) for each fit mode.
+  struct Parameter { double value, step, range; bool fixed; };
+  const TVector3 & bias = aTrackCandidate.getSegments().front().getBias();
+  const TVector3 & tangent = aTrackCandidate.getSegments().front().getTangent();
+  std::array<Parameter, 2> pars;
+  switch(fitType){
+  case definitions::fit_type::BIAS_Z:
+    pars = {{ {bias.Z(), zRange/2, zRange, false},
+              {0.0, 0.0, 0.0, true} }};
+    break;
+  case definitions::fit_type::BIAS_XY:
+    pars = {{ {bias.X(), xyRange/2, xyRange, false},
+              {bias.Y(), xyRange/2, xyRange, false} }};
+    break;
+  case definitions::fit_type::TANGENT:
+    pars = {{ {tangent.Theta(), thetaRange/2, thetaRange, false},
+              {tangent.Phi(), phiRange/2, phiRange, false} }};
+    break;
+  case definitions::fit_type::TANGENT_ROTATION: // rotation angles about the current tangent
+    pars = {{ {0.0, rotationRange/8, rotationRange, false},
+              {0.0, rotationRange/8, rotationRange, false} }};
+    break;
+  default:
+    throw std::invalid_argument("TrackBuilder::fitTrackNodesBiasTangent: unsupported fit type");
+  }
+
+  const int nParams = 2;
+  double startValues[nParams] = {pars[0].value, pars[1].value};
   ROOT::Math::Functor fcn(&aTrackCandidate, &Track3D::updateAndGetLoss, nParams);
-  fitter.SetFCN(fcn, params.data());
-
-  if(fitType==definitions::fit_type::BIAS_Z){
-    double biasZ = aTrackCandidate.getSegments().front().getBias().Z();
-    fitter.Config().ParSettings(0).SetValue(biasZ);
-    fitter.Config().ParSettings(0).SetLimits(biasZ-zRange/2, biasZ+zRange/2);
-    fitter.Config().ParSettings(0).SetStepSize(zRange/2);
-    fitter.Config().ParSettings(1).Fix();
-
-  }
-  else if(fitType==definitions::fit_type::BIAS_XY){
-    double biasX = aTrackCandidate.getSegments().front().getBias().X();
-    double biasY = aTrackCandidate.getSegments().front().getBias().Y();
-    fitter.Config().ParSettings(0).SetValue(biasX);
-    fitter.Config().ParSettings(0).SetLimits(biasX-xyRange/2, biasX+xyRange/2);
-    fitter.Config().ParSettings(0).SetStepSize(xyRange/2);
-
-    fitter.Config().ParSettings(1).SetValue(biasY);
-    fitter.Config().ParSettings(1).SetLimits(biasY-xyRange/2, biasY+xyRange/2);
-    fitter.Config().ParSettings(1).SetStepSize(xyRange/2);
-
-    fitter.Config().ParSettings(0).Release();
-    fitter.Config().ParSettings(1).Release();
-  }
-  else if(fitType==definitions::fit_type::TANGENT){
-    double theta = aTrackCandidate.getSegments().front().getTangent().Theta();  
-    double phi = aTrackCandidate.getSegments().front().getTangent().Phi();
-    fitter.Config().ParSettings(0).SetValue(theta);
-    fitter.Config().ParSettings(0).SetStepSize(thetaRange/2);
-    fitter.Config().ParSettings(0).SetLimits(theta-thetaRange/2, theta+thetaRange/2);
-
-    fitter.Config().ParSettings(1).SetValue(phi);
-    fitter.Config().ParSettings(1).SetStepSize(phiRange/2);
-    fitter.Config().ParSettings(1).SetLimits(phi-phiRange/2, phi+phiRange/2);
-
-    fitter.Config().ParSettings(0).Release();
-    fitter.Config().ParSettings(1).Release();
-  }
-  else if(fitType==definitions::fit_type::TANGENT_ROTATION){
-    // rotation angles about the current tangent, starting from no rotation
-    for(int iPar=0;iPar<2;++iPar){
-      fitter.Config().ParSettings(iPar).SetValue(0.0);
-      fitter.Config().ParSettings(iPar).SetStepSize(rotationRange/8);
-      fitter.Config().ParSettings(iPar).SetLimits(-rotationRange/2, rotationRange/2);
-      fitter.Config().ParSettings(iPar).Release();
+  fitter.SetFCN(fcn, startValues);
+  for(int iPar=0;iPar<nParams;++iPar){
+    auto & settings = fitter.Config().ParSettings(iPar);
+    settings.SetValue(pars[iPar].value);
+    if(pars[iPar].fixed){
+      settings.Fix();
+      continue;
     }
+    settings.SetStepSize(pars[iPar].step);
+    settings.SetLimits(pars[iPar].value - pars[iPar].range/2, pars[iPar].value + pars[iPar].range/2);
+    settings.Release();
   }
 
   bool fitStatus = fitter.FitFCN();
