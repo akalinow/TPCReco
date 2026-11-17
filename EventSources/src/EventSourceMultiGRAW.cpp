@@ -25,6 +25,12 @@ std::shared_ptr<EventTPC> EventSourceMultiGRAW::getNextEvent(){
 
   myDataFrame.clear();
 
+  // nothing loaded yet (as in EventSourceROOT::getNextEvent): start from the first entry
+  if(myCurrentEntry==std::numeric_limits<unsigned long int>::max()){
+    if(nEvents>0) loadFileEntry(0);
+    return myCurrentEvent;
+  }
+
   auto currentEventId = myCurrentEvent->GetEventInfo().GetEventId();
   for( unsigned int streamIndex=0; streamIndex<myFramesMapList.size(); streamIndex++ ) {
     auto it = myFramesMapList[streamIndex].find(currentEventId);
@@ -345,7 +351,8 @@ void EventSourceMultiGRAW::loadFileEntry(unsigned long int iEntry){
 	      <<": WARNING: cannot find any GRAW streams with {ASAD=0, COBO=0} for the file entry: "<<RST<<iEntry
 	      <<std::endl;
     return;
-  } 
+  }
+  myCurrentEntry = iEntry;
   // check frames corresponding to matched event ID
   for(unsigned int streamIndex=0; streamIndex<myReadEntriesSetList.size() ; streamIndex++) {
     if(streamIndex!=matchStreamIndex) {

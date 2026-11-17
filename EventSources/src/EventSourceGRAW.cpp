@@ -26,8 +26,15 @@ EventSourceGRAW::~EventSourceGRAW() {}
 /////////////////////////////////////////////////////////
 std::shared_ptr<EventTPC> EventSourceGRAW::getNextEvent(){
 
+  // nothing loaded yet (as in EventSourceROOT::getNextEvent): start from the first entry
+  if(myCurrentEntry==std::numeric_limits<unsigned long int>::max()){
+    if(nEvents>0) loadFileEntry(0);
+    return myCurrentEvent;
+  }
+
   auto currentEventId = myCurrentEvent->GetEventInfo().GetEventId();
   auto it = myFramesMap.find(currentEventId);
+  if(it==myFramesMap.end() || it->second.empty()) return myCurrentEvent;
   unsigned int lastEventFrame = *it->second.rbegin();
   if(lastEventFrame<nEvents-1) ++lastEventFrame;
   loadFileEntry(lastEventFrame);
