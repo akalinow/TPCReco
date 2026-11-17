@@ -34,53 +34,96 @@ def getEmptyPandasDataset(columns):
 
 ###################################################
 ###################################################
-@tf.autograph.experimental.do_not_convert
-def tfDatasetToPandasXYZ(dataset):
-
-    data = dataset.map(lambda x: tf.reshape(x["sim"][1], (1,-1))).unbatch().as_numpy_iterator()
-    df_sim = pd.DataFrame(data, columns=columns_XYZ)
-
-    data = dataset.map(lambda x: tf.reshape(x["reco"][1], (1,-1))).unbatch().as_numpy_iterator()
-    df_reco = pd.DataFrame(data, columns=columns_XYZ)
-
-    df_XYZ = df_sim.merge(df_reco, left_index=True, right_index=True, suffixes=("_sim", "_reco"), how="outer");
-
-    df_XYZ["dxCarbon_sim"] = df_XYZ["xCarbon_sim"] - df_XYZ["xVtx_sim"]
-    df_XYZ["dyCarbon_sim"] = df_XYZ["yCarbon_sim"] - df_XYZ["yVtx_sim"]
-    df_XYZ["dzCarbon_sim"] = df_XYZ["zCarbon_sim"] - df_XYZ["zVtx_sim"]
-    df_XYZ["dxCarbon_reco"] = df_XYZ["xCarbon_reco"] - df_XYZ["xVtx_reco"]
-    df_XYZ["dyCarbon_reco"] = df_XYZ["yCarbon_reco"] - df_XYZ["yVtx_reco"]
-    df_XYZ["dzCarbon_reco"] = df_XYZ["zCarbon_reco"] - df_XYZ["zVtx_reco"]
-
-    df_XYZ["dxAlpha_sim"] = df_XYZ["xAlpha_sim"] - df_XYZ["xVtx_sim"]
-    df_XYZ["dyAlpha_sim"] = df_XYZ["yAlpha_sim"] - df_XYZ["yVtx_sim"]
-    df_XYZ["dzAlpha_sim"] = df_XYZ["zAlpha_sim"] - df_XYZ["zVtx_sim"]
-    df_XYZ["dxAlpha_reco"] = df_XYZ["xAlpha_reco"] - df_XYZ["xVtx_reco"]
-    df_XYZ["dyAlpha_reco"] = df_XYZ["yAlpha_reco"] - df_XYZ["yVtx_reco"]
-    df_XYZ["dzAlpha_reco"] = df_XYZ["zAlpha_reco"] - df_XYZ["zVtx_reco"]
-
-    return df_XYZ
+def defaultPointNames(nPoints):
+    """Names of the target points (columns of a (3, nPoints) target):
+    vertex, then the segment ends. Two prong: Vtx, Alpha, Carbon;
+    otherwise Vtx, End1, End2, ..."""
+    if nPoints == 3:
+        return ["Vtx", "Alpha", "Carbon"]
+    return ["Vtx"] + ["End{}".format(i) for i in range(1, nPoints)]
 ###################################################
 ###################################################
-@tf.autograph.experimental.do_not_convert
-def tfDatasetToPandasUVWT(dataset):
+def tfDatasetToNumpy(dataset, batchSize=1024):
+    """Simulated and reconstructed targets of a merged dataset
+    ({'sim': (image, target), 'reco': (image, target)}, see
+    mltree_tfrecord.load_merged_dataset) as two numpy arrays of shape
+    (nEvents, 3, nPoints).
 
-    data = dataset.map(lambda x: tf.reshape(x["sim"][1], (1,-1)))
-    data = data.map(lambda x: tf.reshape(x, (-1,3,3)))
-    data = data.map(lambda x: XYZtoUVWT_event(x))
-    data = data.map(lambda x: tf.reshape(x, (-1,12))).unbatch().as_numpy_iterator()
+    One batched pass over the dataset; the images are dropped right after
+    parsing (with map fusion the image computation is pruned).
+    """
+    targets = dataset.map(lambda x: (x["sim"][1], x["reco"][1]),
+                          num_parallel_calls=tf.data.AUTOTUNE)
+    options = tf.data.Options()
+    options.experimental_optimization.map_fusion = True
+    targets = targets.with_options(options).batch(batchSize).prefetch(tf.data.AUTOTUNE)
+    sim, reco = [], []
+    for simBatch, recoBatch in targets.as_numpy_iterator():
+        sim.append(simBatch)
+        reco.append(recoBatch)
+    if not sim:
+        nPoints = dataset.element_spec["sim"][1].shape[-1]
+        return np.zeros((0, 3, nPoints), np.float32), np.zeros((0, 3, nPoints), np.float32)
+    return np.concatenate(sim), np.concatenate(reco)
+###################################################
+###################################################
+def _xyzColumns(targets, pointNames, suffix):
+    """XYZ columns {name: values} from targets of shape (nEvents, 3, nPoints):
+    absolute coordinates x<Point>, y<Point>, z<Point> and the coordinates
+    relative to the vertex dx<Point>, dy<Point>, dz<Point>."""
+    columns = {}
+    for iCoord, coord in enumerate("xyz"):
+        for iPoint, point in enumerate(pointNames):
+            columns[coord + point + suffix] = targets[:, iCoord, iPoint]
+    for iPoint, point in enumerate(pointNames[1:], start=1):
+        for iCoord, coord in enumerate("xyz"):
+            columns["d" + coord + point + suffix] = targets[:, iCoord, iPoint] - targets[:, iCoord, 0]
+    return columns
+###################################################
+###################################################
+def _uvwtColumns(targets, pointNames, suffix):
+    """UVWT columns {name: values}: u<Point>, v<Point>, w<Point>, t<Point>
+    (strip numbers and time cell) from targets of shape (nEvents, 3, nPoints)."""
+    columns = {}
+    for iPoint, point in enumerate(pointNames):
+        uvwt = np.asarray(XYZtoUVWT_single(targets[:, :, iPoint]))
+        for iCoord, coord in enumerate("uvwt"):
+            columns[coord + point + suffix] = uvwt[:, iCoord]
+    return columns
+###################################################
+###################################################
+def tfDatasetToPandas(dataset, coordinates="XYZ", pointNames=None, batchSize=1024):
+    """pandas DataFrame with the simulated (_sim) and reconstructed (_reco)
+    target points of a merged dataset, one row per event.
 
-    df_sim = pd.DataFrame(data, columns=columns_UVWT)
-
-    data = dataset.map(lambda x: tf.reshape(x["reco"][1], (1,-1)))
-    data = data.map(lambda x: tf.reshape(x, (-1,3,3)))
-    data = data.map(lambda x: XYZtoUVWT_event(x))
-    data = data.map(lambda x: tf.reshape(x, (-1,12))).unbatch().as_numpy_iterator()
-    df_reco = pd.DataFrame(data, columns=columns_UVWT)
-
-    df_UVWT = df_sim.merge(df_reco, left_index=True, right_index=True, suffixes=("_sim", "_reco"), how="outer");
-
-    return df_UVWT
+    coordinates -- "XYZ": x, y, z [mm] of each point and dx, dy, dz relative
+                   to the vertex; "UVWT": strip numbers u, v, w and time cell t
+    pointNames  -- names of the target points; default: Vtx, Alpha, Carbon
+                   for the (3, 3) two prong target, else Vtx, End1, End2, ...
+    """
+    sim, reco = tfDatasetToNumpy(dataset, batchSize)
+    if pointNames is None:
+        pointNames = defaultPointNames(sim.shape[-1])
+    if len(pointNames) != sim.shape[-1]:
+        raise ValueError("{} point names for targets with {} points".format(len(pointNames), sim.shape[-1]))
+    makeColumns = {"XYZ": _xyzColumns, "UVWT": _uvwtColumns}[coordinates]
+    simColumns = makeColumns(sim, pointNames, "_sim")
+    recoColumns = makeColumns(reco, pointNames, "_reco")
+    # absolute coordinates first (sim, reco), then the relative ones (sim, reco)
+    names = [n for n in simColumns if not n.startswith("d")] + [n for n in recoColumns if not n.startswith("d")]
+    names += [n for n in simColumns if n.startswith("d")] + [n for n in recoColumns if n.startswith("d")]
+    columns = {**simColumns, **recoColumns}
+    return pd.DataFrame({name: columns[name] for name in names})
+###################################################
+###################################################
+def tfDatasetToPandasXYZ(dataset, pointNames=None, batchSize=1024):
+    """tfDatasetToPandas with XYZ coordinates."""
+    return tfDatasetToPandas(dataset, "XYZ", pointNames, batchSize)
+###################################################
+###################################################
+def tfDatasetToPandasUVWT(dataset, pointNames=None, batchSize=1024):
+    """tfDatasetToPandas with UVWT coordinates."""
+    return tfDatasetToPandas(dataset, "UVWT", pointNames, batchSize)
 ###################################################
 ###################################################
 def fillPandasDataset(aBatch, df, model):   
