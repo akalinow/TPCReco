@@ -277,13 +277,37 @@ def _target(event, prefix, n_segments):
     start = tf.pad(start, [[0, tf.maximum(1 - tf.shape(start)[0], 0)], [0, 0]])
     end = tf.pad(end, [[0, tf.maximum(n_segments - tf.shape(end)[0], 0)], [0, 0]])
     points = tf.concat([start[:1], end[:n_segments]], axis=0)   # (1 + n_segments, 3)
-    return tf.transpose(points)
+    return tf.ensure_shape(tf.transpose(points), [3, 1 + n_segments])
 
 
 def tf_size(sparse):
     """Number of values of a sparse (VarLenFeature) tensor, as int64."""
     import tensorflow as tf
     return tf.cast(tf.size(sparse.values), tf.int64)
+
+
+def _records(files, parallel_reads=False):
+    """TFRecordDataset of the shards: a path, a glob pattern or a list of them."""
+    import tensorflow as tf
+    if isinstance(files, str):
+        files = [files]
+    paths = []
+    for f in files:
+        paths += tf.io.gfile.glob(f) if any(c in f for c in "*?[") else [f]
+    if not paths:
+        raise FileNotFoundError("No TFRecord files: {}".format(files))
+    return tf.data.TFRecordDataset(sorted(paths), compression_type="GZIP",
+                                   num_parallel_reads=tf.data.AUTOTUNE if parallel_reads else None)
+
+
+def _normalised(image, normalise):
+    import tensorflow as tf
+    if normalise == "max":
+        maxValue = tf.reduce_max(image)
+        return image / tf.where(maxValue > 0, maxValue, 1.0)
+    if normalise is not None:
+        return image / float(normalise)
+    return image
 
 
 def load_dataset(files, normalise="max", target="sim", keep_info=False,
@@ -307,19 +331,11 @@ def load_dataset(files, normalise="max", target="sim", keep_info=False,
                   in sorted order
     """
     import tensorflow as tf
-    if isinstance(files, str):
-        files = [files]
-    files = tf.io.gfile.glob(files) if any("*" in f for f in files) else files
     spec = _feature_spec()
 
     def parse(record):
         event = tf.io.parse_single_example(record, spec)
-        image = _dense_image(event)
-        if normalise == "max":
-            maxValue = tf.reduce_max(image)
-            image = image / tf.where(maxValue > 0, maxValue, 1.0)
-        elif normalise is not None:
-            image = image / float(normalise)
+        image = _normalised(_dense_image(event), normalise)
         result = image if target is None else (image, _target(event, target, n_segments))
         if keep_info:
             info = {name: event[name] for name in ["run_id", "event_id", "timestamp",
@@ -335,10 +351,41 @@ def load_dataset(files, normalise="max", target="sim", keep_info=False,
             return info
         return result
 
-    dataset = tf.data.TFRecordDataset(sorted(files), compression_type="GZIP",
-                                      num_parallel_reads=tf.data.AUTOTUNE if parallel_reads else None)
-    return dataset.map(parse, num_parallel_calls=tf.data.AUTOTUNE,
-                       deterministic=not parallel_reads)
+    return _records(files, parallel_reads).map(parse, num_parallel_calls=tf.data.AUTOTUNE,
+                                                deterministic=not parallel_reads)
+
+def load_merged_dataset(files, normalise="max", n_segments=2, parallel_reads=False):
+    """tf.data.Dataset in the format of the merged datasets made by the old
+    ROOT_to_TFRecord.ipynb (tf.data.Dataset.save): elements are
+
+        {'sim': (image, simTarget), 'reco': (image, recoTarget)}
+
+    with the (3, 1 + n_segments) targets of load_dataset (n_segments=2: the
+    (3, 3) target used by utility_functions and the WAWTPC_ML models).
+    For real data (no simulated segments) 'sim' holds the reconstructed
+    target, as the old notebook did. Other arguments as for load_dataset.
+    """
+    import tensorflow as tf
+    spec = _feature_spec()
+
+    def parse(record):
+        event = tf.io.parse_single_example(record, spec)
+        image = _normalised(_dense_image(event), normalise)
+        recoTarget = _target(event, "reco", n_segments)
+        simTarget = tf.where(tf_size(event["sim_pid"]) > 0,
+                             _target(event, "sim", n_segments), recoTarget)
+        return {"sim": (image, simTarget), "reco": (image, recoTarget)}
+
+    return _records(files, parallel_reads).map(parse, num_parallel_calls=tf.data.AUTOTUNE,
+                                                deterministic=not parallel_reads)
+
+
+def segment_length(target, iSegment=0):
+    """Length of segment iSegment from a (3, 1 + n_segments) target: distance
+    between the vertex (column 0) and the segment end (column 1 + iSegment).
+    E.g. alpha track length of two prong events: segment_length(x['sim'][1], 0)."""
+    import tensorflow as tf
+    return tf.norm(target[:, 1 + iSegment] - target[:, 0])
 
 ################################################################
 ################################################################

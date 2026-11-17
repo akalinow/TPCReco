@@ -70,13 +70,13 @@ def tfDatasetToPandasUVWT(dataset):
     data = data.map(lambda x: XYZtoUVWT_event(x))
     data = data.map(lambda x: tf.reshape(x, (-1,12))).unbatch().as_numpy_iterator()
 
-    df_sim = pd.DataFrame(data, columns=columnsUVWT)
+    df_sim = pd.DataFrame(data, columns=columns_UVWT)
 
     data = dataset.map(lambda x: tf.reshape(x["reco"][1], (1,-1)))
     data = data.map(lambda x: tf.reshape(x, (-1,3,3)))
     data = data.map(lambda x: XYZtoUVWT_event(x))
     data = data.map(lambda x: tf.reshape(x, (-1,12))).unbatch().as_numpy_iterator()
-    df_reco = pd.DataFrame(data, columns=columnsUVWT)
+    df_reco = pd.DataFrame(data, columns=columns_UVWT)
 
     df_UVWT = df_sim.merge(df_reco, left_index=True, right_index=True, suffixes=("_sim", "_reco"), how="outer");
 

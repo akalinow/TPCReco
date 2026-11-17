@@ -131,6 +131,17 @@ dataset = dataset.shuffle(1000).batch(32).prefetch(tf.data.AUTOTUNE)
 | `parallel_reads` | `False` | read shards in parallel (faster, events of different shards are interleaved); by default shards are read one by one in sorted order |
 | `n_segments` | 3 | number of segments in the target; 2 gives the old `(3, 3)` target |
 
+The notebooks use `load_merged_dataset`, which gives the structure of the datasets made by the
+old notebook method: elements `{'sim': (image, target), 'reco': (image, target)}` with the
+`(3, 3)` target (`n_segments=2`). For real data `'sim'` holds the reconstructed target.
+`segment_length(target, i)` gives the length of segment `i`, e.g. for a selection on the
+alpha track length:
+
+```Python
+dataset = mt.load_merged_dataset("tfrecord_dir/*.tfrecord.gz")
+dataset = dataset.filter(lambda x: mt.segment_length(x['sim'][1], 0) > 30.0)
+```
+
 To select two or three prong events, filter on the number of segments:
 
 ```Python
