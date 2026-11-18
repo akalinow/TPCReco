@@ -257,15 +257,18 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     TVector3 vertical(0,0,-1);
     double verticalTrackLostPart = 6.0/std::abs(vertical.Dot(tangent));
 
-    // sum of the segment PIDs: ALPHA+CARBON_12 = 3 (C12_ALPHA), ALPHA = 1,
+    // sum of the segment PIDs: ALPHA+CARBON_12 = 3, ALPHA+CARBON_14 = 4, ALPHA = 1,
     // UNKNOWN = 0 (track without event hypothesis fit), DOT
     int eventType = firstSegment.getPID() + (hasCarbon ? aTrack3D.getSegments().back().getPID() : 0);
     double alphaRange = firstSegment.getPID()==pid_type::ALPHA ? firstSegment.getLength() : 0.0;
-    double carbonRange = hasCarbon && aTrack3D.getSegments().back().getPID()==pid_type::CARBON_12 ? aTrack3D.getSegments().back().getLength(): 0.0;
+    // recoil: CARBON_12 (O16 -> C12 + alpha) or CARBON_14 (O18 -> C14 + alpha)
+    const pid_type recoilPID = hasCarbon ? aTrack3D.getSegments().back().getPID() : pid_type::UNKNOWN;
+    const bool isCarbon = recoilPID==pid_type::CARBON_12 || recoilPID==pid_type::CARBON_14;
+    double carbonRange = isCarbon ? aTrack3D.getSegments().back().getLength(): 0.0;
     double alphaEnergy = alphaRange>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA,alphaRange):0.0;
-    double carbonEnergy = carbonRange>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::CARBON_12, carbonRange):0.0;
+    double carbonEnergy = carbonRange>0 ? myRangeCalculator.getIonEnergyMeV(recoilPID, carbonRange):0.0;
     double m_Alpha = myRangeCalculator.getIonMassMeV(pid_type::ALPHA);
-    double m_12C = myRangeCalculator.getIonMassMeV(pid_type::CARBON_12);
+    double m_12C = myRangeCalculator.getIonMassMeV(isCarbon ? recoilPID : pid_type::CARBON_12); // recoil mass
     
     double p_alpha = sqrt(2*m_Alpha*alphaEnergy);
     double p_12C = sqrt(2*m_12C*carbonEnergy);

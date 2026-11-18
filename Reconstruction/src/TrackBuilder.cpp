@@ -60,7 +60,7 @@ TrackBuilder::TrackBuilder(boost::property_tree::ptree& myConfig) {
 
   setPressure(myConfig.get<double>("conditions.pressure"));
   mydEdxFitter.setMaxFitAttempts(myConfig.get<int>("reconstruction.dEdxFitAttempts", 1));
-  dEdxFitter::setPhysicsConstraint(myConfig.get<bool>("reconstruction.dEdxPhysicsConstraint", true),
+  dEdxFitter::setPhysicsConstraint(myConfig.get<bool>("reconstruction.dEdxPhysicsConstraint", false),
                                    myConfig.get<double>("reconstruction.dEdxCarbonRangeMargin", 0.1));
 
   myMLTrackBuilder = std::make_shared<TensorflowModel>(myConfig);
@@ -1013,8 +1013,13 @@ Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
            <<" mm/sqrt(cm), vertex offset: "<<vertexOffset
            <<" mm, alpha range: "<<alphaRange
            <<" mm, carbon range: "<<carbonRange
-           <<", fit loss: "<<mydEdxFitter.getLoss()
-           <<RST<<std::endl;
+           <<", fit loss: "<<mydEdxFitter.getLoss();
+  if(eventType==C12_ALPHA){
+    const auto kinematics = mydEdxFitter.getKinematics();
+    std::cout<<", kinematics: "<<(kinematics==dEdxFitter::Kinematics::O16 ? "O16" :
+                                  kinematics==dEdxFitter::Kinematics::O18 ? "O18" : "free");
+  }
+  std::cout<<RST<<std::endl;
   
   if(eventType==C12_ALPHA){   
     TrackSegment3D carbonSegment;
@@ -1022,7 +1027,7 @@ Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
     carbonSegment.setStartEnd(vertexPos, carbonEnd);
     carbonSegment.setRecHits(myRawHits);
     carbonSegment.setDiffusion(mydEdxFitter.getDiffusion());
-    carbonSegment.setPID(pid_type::CARBON_12);
+    carbonSegment.setPID(mydEdxFitter.getRecoilPID()); // CARBON_12 or CARBON_14 (O18 kinematics)
     aSplitTrackCandidate.addSegment(carbonSegment);
   }
   return aSplitTrackCandidate;

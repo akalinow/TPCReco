@@ -421,8 +421,8 @@
     "dEdxPhysicsConstraint":{
         "group":"reconstruction",
         "type" : "bool",
-        "defaultValue" : true,
-        "description" : "Physics constraint of the C12+alpha dE/dx fit: the carbon range follows from the alpha range by momentum conservation in O16 -> C12 + alpha (E_C = E_alpha*m_alpha/m_C12), within +- dEdxCarbonRangeMargin. False: free carbon range.\nType: bool"
+        "defaultValue" : false,
+        "description" : "Physics constraint of the two prong (recoil + alpha) dE/dx fit: the fit is done with a free recoil range and with the recoil range from momentum conservation in O16 -> C12 + alpha and in O18 -> C14 + alpha (E_recoil = E_alpha*m_alpha/m_recoil, within +- dEdxCarbonRangeMargin); the best fit is kept (recoil PID CARBON_14 for O18). False: free recoil range only.\nType: bool"
     },
     "dEdxCarbonRangeMargin":{
         "group":"reconstruction",

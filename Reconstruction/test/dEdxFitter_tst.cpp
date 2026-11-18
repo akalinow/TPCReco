@@ -60,7 +60,7 @@ protected:
     fitter = std::make_unique<dEdxFitter>(RESOURCES_DIR, 250);
     dEdxFitter::setPhysicsConstraint(false);
   }
-  void TearDown() override { dEdxFitter::setPhysicsConstraint(true); }
+  void TearDown() override { dEdxFitter::setPhysicsConstraint(false); } // default
   std::unique_ptr<dEdxFitter> fitter;
 };
 
@@ -278,6 +278,38 @@ TEST_F(dEdxFitterTest, PhysicsConstraint) {
   const FitOutput result = fit(aFitter, profile);
   EXPECT_EQ(result.type, pid_type::C12_ALPHA);
   EXPECT_NEAR(result.alphaRange, alphaRange, 2.0);
-  EXPECT_NEAR(result.carbonRange, dEdxFitter::carbonRangeFromAlpha(result.alphaRange), 0.1 * result.carbonRange + 1E-6);
   EXPECT_NEAR(result.carbonRange, carbonRange, 0.15 * carbonRange);
+  if (aFitter.getKinematics() != dEdxFitter::Kinematics::FREE) {
+    EXPECT_NEAR(result.carbonRange,
+                dEdxFitter::recoilRangeFromAlpha(result.alphaRange, aFitter.getKinematics()),
+                0.1 * result.carbonRange + 1E-6);
+  }
+}
+
+TEST_F(dEdxFitterTest, RecoilRangeKinematics) {
+  // at 8.86 MeV: O16 -> C12 + alpha: alpha 38 mm, C12 12 mm;
+  // O18 -> C14 + alpha: alpha 61 mm, C14 14 mm (130 mbar)
+  dEdxFitter aFitter(RESOURCES_DIR, 130.0);
+  EXPECT_DOUBLE_EQ(dEdxFitter::recoilRangeFromAlpha(40.0, dEdxFitter::Kinematics::FREE), 0.0);
+  EXPECT_NEAR(dEdxFitter::recoilRangeFromAlpha(38.0, dEdxFitter::Kinematics::O16), 12.0, 0.5);
+  EXPECT_NEAR(dEdxFitter::recoilRangeFromAlpha(61.0, dEdxFitter::Kinematics::O18), 14.1, 0.5);
+  // the heavier recoil gets a smaller share of the energy
+  EXPECT_LT(dEdxFitter::recoilRangeFromAlpha(50.0, dEdxFitter::Kinematics::O18),
+            dEdxFitter::recoilRangeFromAlpha(50.0, dEdxFitter::Kinematics::O16));
+}
+
+TEST_F(dEdxFitterTest, O18Kinematics) {
+  // O18 -> C14 + alpha profile: the O18 kinematics is selected (or the free fit),
+  // and the recoil is CARBON_14 for O18
+  const double pressure = 130.0;
+  dEdxFitter aFitter(RESOURCES_DIR, pressure);
+  const double alphaRange = 61.0;
+  const double recoilRange = dEdxFitter::recoilRangeFromAlpha(alphaRange, dEdxFitter::Kinematics::O18);
+  const TH1F profile = makeProfile("profile", 6.0, alphaRange, recoilRange, pressure);
+  dEdxFitter::setPhysicsConstraint(true, 0.1);
+  const FitOutput result = fit(aFitter, profile);
+  EXPECT_EQ(result.type, pid_type::C12_ALPHA);
+  EXPECT_NE(aFitter.getKinematics(), dEdxFitter::Kinematics::O16);
+  EXPECT_EQ(aFitter.getRecoilPID(), aFitter.getKinematics() == dEdxFitter::Kinematics::O18 ? pid_type::CARBON_14 : pid_type::CARBON_12);
+  EXPECT_NEAR(result.carbonRange, recoilRange, 0.15 * recoilRange);
 }

@@ -38,17 +38,28 @@ public:
   /// sizes (1 to 10, default 1)
   void setMaxFitAttempts(unsigned int nAttempts);
 
-  /// Physics constraint of the C12+alpha hypothesis (default: on, margin 10%):
-  /// the carbon range follows from the alpha range by momentum conservation
-  /// in O16 -> C12 + alpha (equal momenta, E_C = E_alpha*m_alpha/m_C12), within
-  /// +- margin (fitted scale of the carbon range in [1-margin, 1+margin]).
-  /// Off: the carbon range is a free parameter.
+  /// Kinematics of the two prong (recoil + alpha) hypothesis: free recoil
+  /// range, or the recoil range from momentum conservation (equal momenta,
+  /// E_recoil = E_alpha*m_alpha/m_recoil) in O16 -> C12 + alpha or
+  /// O18 -> C14 + alpha, within +- margin.
+  enum class Kinematics {FREE, O16, O18};
+
+  /// Physics constraint (default: off, margin 10%): the two prong hypothesis is
+  /// fitted three times, with FREE, O16 and O18 kinematics, and the best fit
+  /// is kept. Off: FREE only.
   static void setPhysicsConstraint(bool enable, double margin=0.1);
   static bool getPhysicsConstraint() { return usePhysicsConstraint;}
 
-  /// Carbon range [mm] for a given alpha range [mm] (current pressure) from
-  /// the momentum conservation in O16 -> C12 + alpha.
-  static double carbonRangeFromAlpha(double alphaRange);
+  /// Recoil range [mm] for a given alpha range [mm] (current pressure) from
+  /// the momentum conservation for given kinematics (0 for FREE). The C14 dE/dx
+  /// shape and range curve are those of C12 (as in IonRangeCalculator).
+  static double recoilRangeFromAlpha(double alphaRange, Kinematics kinematics);
+  static double carbonRangeFromAlpha(double alphaRange) { return recoilRangeFromAlpha(alphaRange, Kinematics::O16);}
+
+  /// Kinematics of the selected two prong fit, and the recoil PID
+  /// (CARBON_14 for O18, CARBON_12 otherwise)
+  Kinematics getKinematics() const { return bestKinematics;}
+  pid_type getRecoilPID() const { return bestKinematics==Kinematics::O18 ? pid_type::CARBON_14 : pid_type::CARBON_12;}
 
   TFitResult fitHisto(const TH1F & aHisto);
 
@@ -109,6 +120,9 @@ private:
 
   static bool usePhysicsConstraint;
   static double carbonRangeMargin;
+  /// kinematics used by the model functions (set for each fit pass)
+  static Kinematics currentKinematics;
+  Kinematics bestKinematics{Kinematics::FREE};
   static std::unique_ptr<IonRangeCalculator> theRangeCalculator;
   /// maximal (table) alpha and carbon ranges at the current pressure [mm]
   static double theMaxAlphaRange, theMaxCarbonRange;
@@ -155,8 +169,8 @@ public:
   ///      energy curve (10 MeV alpha, 5 MeV 12C at nominal pressure) to the
   ///      start of the track, i.e. range = maximal range - offset,
   ///  [4] alpha scale, [5] carbon scale, [6] common scale (bragg_12C_alpha only),
-  ///  [7] carbon range scale: with the physics constraint the carbon range is
-  ///      carbonRangeFromAlpha(alpha range) x [7] and [3] is not used.
+  ///  [7] carbon range scale: with O16 or O18 kinematics the recoil range is
+  ///      recoilRangeFromAlpha(alpha range) x [7] and [3] is not used.
   /// The alpha goes from the vertex towards larger x, the carbon towards smaller x.
   static double bragg_alpha(double *x, double *params);
   static double bragg_12C(double *x, double *params);

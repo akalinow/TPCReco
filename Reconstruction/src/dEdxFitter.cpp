@@ -16,8 +16,9 @@ TGraph* dEdxFitter::braggGraph_12C = nullptr;
 
 double dEdxFitter::nominalPressure = 250.0;
 double dEdxFitter::currentPressure = 190.0;
-bool dEdxFitter::usePhysicsConstraint = true;
+bool dEdxFitter::usePhysicsConstraint = false;
 double dEdxFitter::carbonRangeMargin = 0.1;
+dEdxFitter::Kinematics dEdxFitter::currentKinematics = dEdxFitter::Kinematics::FREE;
 std::unique_ptr<IonRangeCalculator> dEdxFitter::theRangeCalculator;
 double dEdxFitter::theMaxAlphaRange = 0.0;
 double dEdxFitter::theMaxCarbonRange = 0.0;
@@ -110,23 +111,27 @@ void dEdxFitter::setPhysicsConstraint(bool enable, double margin){
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
-double dEdxFitter::carbonRangeFromAlpha(double alphaRange){
+double dEdxFitter::recoilRangeFromAlpha(double alphaRange, Kinematics kinematics){
 
+  if(kinematics==Kinematics::FREE) return 0.0;
+  const pid_type recoil = (kinematics==Kinematics::O18) ? pid_type::CARBON_14 : pid_type::CARBON_12;
   // cache: evaluated for every point of the profile with the same parameters
-  static double lastAlphaRange = -1, lastCarbonRange = 0, lastPressure = -1;
-  if(alphaRange==lastAlphaRange && currentPressure==lastPressure) return lastCarbonRange;
-  double carbonRange = 0.0;
+  static double lastAlphaRange = -1, lastRecoilRange = 0, lastPressure = -1;
+  static Kinematics lastKinematics = Kinematics::FREE;
+  if(alphaRange==lastAlphaRange && kinematics==lastKinematics && currentPressure==lastPressure) return lastRecoilRange;
+  double recoilRange = 0.0;
   if(alphaRange>0 && theRangeCalculator){
     const double alphaEnergy = theRangeCalculator->getIonEnergyMeV(pid_type::ALPHA, alphaRange);
-    // O16 -> C12 + alpha at rest: equal momenta, E = p^2/2m
-    const double carbonEnergy = alphaEnergy*theRangeCalculator->getIonMassMeV(pid_type::ALPHA)/
-                                theRangeCalculator->getIonMassMeV(pid_type::CARBON_12);
-    if(carbonEnergy>0) carbonRange = theRangeCalculator->getIonRangeMM(pid_type::CARBON_12, carbonEnergy);
+    // decay at rest: equal momenta, E = p^2/2m
+    const double recoilEnergy = alphaEnergy*theRangeCalculator->getIonMassMeV(pid_type::ALPHA)/
+                                theRangeCalculator->getIonMassMeV(recoil);
+    if(recoilEnergy>0) recoilRange = theRangeCalculator->getIonRangeMM(recoil, recoilEnergy);
   }
   lastAlphaRange = alphaRange;
+  lastKinematics = kinematics;
   lastPressure = currentPressure;
-  lastCarbonRange = carbonRange;
-  return carbonRange;
+  lastRecoilRange = recoilRange;
+  return recoilRange;
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
@@ -155,8 +160,8 @@ void dEdxFitter::reset(){
 				    //maxAlphaOffset-85,  // [mm] --> HACK valid for 13.1 MeV
 				    //maxCarbonOffset-11,  // [mm] --> HACK valid for 13.1 MeV
 				    1, 1, 5E-3, 1.0);
-  if(usePhysicsConstraint){
-    // carbon range from the alpha range, scaled within +- margin
+  if(currentKinematics!=Kinematics::FREE){
+    // recoil range from the alpha range, scaled within +- margin
     carbon_alpha_model->FixParameter(3, carbon_alpha_model->GetParameter(3));
     carbon_alpha_model->SetParLimits(7, 1.0-carbonRangeMargin, 1.0+carbonRangeMargin);
   }
@@ -270,9 +275,9 @@ double dEdxFitter::bragg_12C(double *x, double *params) {
   const double scale = currentPressure/nominalPressure;
   const double sigma = scale*params[0];
   double carbonOffset = params[3];
-  if(usePhysicsConstraint){
-    // carbon range from the alpha range (momentum conservation) x scale
-    const double carbonRange = carbonRangeFromAlpha(theMaxAlphaRange - params[2])*params[7];
+  if(currentKinematics!=Kinematics::FREE){
+    // recoil range from the alpha range (momentum conservation) x scale
+    const double carbonRange = recoilRangeFromAlpha(theMaxAlphaRange - params[2], currentKinematics)*params[7];
     carbonOffset = std::min(std::max(theMaxCarbonRange - carbonRange, 0.0), theMaxCarbonRange);
   }
   const double cut = scale*carbonOffset;            // start of the track in the table
@@ -390,7 +395,25 @@ TFitResult dEdxFitter::fitHisto(const TH1F & aHisto){
     return best;
   };
 
-  HypothesisFit carbonAlpha = fitBothOrientations(carbon_alpha_model);
+  // two prong hypothesis: free recoil range and, with the physics constraint,
+  // the O16 -> C12 + alpha and O18 -> C14 + alpha kinematics; best fit kept
+  std::vector<Kinematics> passes = {Kinematics::FREE};
+  if(usePhysicsConstraint){
+    passes.push_back(Kinematics::O16);
+    passes.push_back(Kinematics::O18);
+  }
+  HypothesisFit carbonAlpha;
+  Kinematics carbonAlphaKinematics = Kinematics::FREE;
+  for(auto kinematics: passes){
+    currentKinematics = kinematics;
+    HypothesisFit aFit = fitBothOrientations(carbon_alpha_model);
+    if(!carbonAlpha.done || better(aFit.result, carbonAlpha.result)){
+      carbonAlpha = aFit;
+      carbonAlphaKinematics = kinematics;
+    }
+  }
+  currentKinematics = carbonAlphaKinematics; // the model functions use it
+  bestKinematics = carbonAlphaKinematics;
   HypothesisFit alpha = fitBothOrientations(alpha_model);
 
   /// select best hypothesis
@@ -436,9 +459,9 @@ double dEdxFitter::getCarbonRange() const{
 
   if(bestFitEventType!=pid_type::C12_ALPHA) return 0.0;
 
-  if(usePhysicsConstraint){
+  if(bestKinematics!=Kinematics::FREE){
     double alphaRange = maxAlphaOffset - theFittedModel->GetParameter("alphaOffset");
-    return carbonRangeFromAlpha(alphaRange)*theFittedModel->GetParameter("carbonRangeScale");
+    return recoilRangeFromAlpha(alphaRange, bestKinematics)*theFittedModel->GetParameter("carbonRangeScale");
   }
   double carbonOffset = theFittedModel->GetParameter("carbonOffset");
   double carbonRange = maxCarbonOffset - carbonOffset;
