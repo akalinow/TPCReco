@@ -269,7 +269,9 @@ void TrackSegment3D::addProjection(TH1F &histo, TGraphErrors &graph) const{
     binHigh = histo.FindBin((x+ex)*getLength());
     y *= binWidth/getLength();
     for(int iBin=binLow;iBin<=binHigh;++iBin){
-      if(iBin==binLow) binCoverage = histo.GetXaxis()->GetBinUpEdge(iBin) - (x-ex)*getLength();
+      // fraction of bin iBin covered by the hit interval [(x-ex)*L, (x+ex)*L]
+      if(binLow==binHigh) binCoverage = 2*ex*getLength();
+      else if(iBin==binLow) binCoverage = histo.GetXaxis()->GetBinUpEdge(iBin) - (x-ex)*getLength();
       else if(iBin==binHigh) binCoverage = (x+ex)*getLength() - histo.GetXaxis()->GetBinLowEdge(iBin);
       else binCoverage = histo.GetBinWidth(iBin);
       binCoverage /=histo.GetBinWidth(iBin);

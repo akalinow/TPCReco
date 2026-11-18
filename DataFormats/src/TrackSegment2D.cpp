@@ -74,11 +74,13 @@ TGraphErrors TrackSegment2D::getChargeProfile(const Hit2DCollection & aRecHits, 
   double lambda = 0.0;
   TVector3 aPoint;
 
-  TVector3 cellDiagonal(myGeometryPtr->GetTimeBinWidth(), myGeometryPtr->GetStripPitch(), 0);
-  TVector3 cellDiagonal1(myGeometryPtr->GetTimeBinWidth(), -myGeometryPtr->GetStripPitch(), 0);
-  double cellProjectionOnSegment2D = std::max(cellDiagonal.Dot(getTangent().Unit()),
-					      cellDiagonal1.Dot(getTangent().Unit()));  
-  double binWidth = std::abs(cellProjectionOnSegment2D)/getLength();
+  // extent of a (time bin x strip pitch) cell along the segment direction:
+  // |t_time|*width + |t_strip|*pitch (the projection of a rectangle). The
+  // former max(diagonal.t, diagonal1.t) was too short for t_time < 0.
+  const TVector3 tangent = getTangent().Unit();
+  double cellProjectionOnSegment2D = std::abs(tangent.X())*myGeometryPtr->GetTimeBinWidth() +
+                                     std::abs(tangent.Y())*myGeometryPtr->GetStripPitch();
+  double binWidth = cellProjectionOnSegment2D/getLength();
   TGraphErrors grChargeProfile2D(0);
 
   for(const auto aHit:aRecHits){
