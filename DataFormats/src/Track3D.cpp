@@ -125,10 +125,19 @@ double Track3D::getSegmentsLoss() const{
 /////////////////////////////////////////////////////////
 void Track3D::updateLoss(){
 
+  // the segments keep their losses up to date: use them if they are of the
+  // track loss type (always the case during fits), otherwise calculate the
+  // loss of the track type on a copy
   segmentLoss.clear();
-  for(auto aItem: mySegments){
-    aItem.setLossType(myFitType);
-    segmentLoss.push_back(aItem.getLoss(iProjectionForLoss));
+  for(const auto &aItem: mySegments){
+    if(aItem.getLossType()==myFitType){
+      segmentLoss.push_back(aItem.getLoss(iProjectionForLoss));
+    }
+    else{
+      TrackSegment3D aCopy(aItem);
+      aCopy.setLossType(myFitType);
+      segmentLoss.push_back(aCopy.getLoss(iProjectionForLoss));
+    }
   }
 }
 /////////////////////////////////////////////////////////

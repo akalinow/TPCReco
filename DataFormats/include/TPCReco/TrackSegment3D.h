@@ -38,13 +38,22 @@ class TrackSegment3D{
 
   void setRecHits(const std::vector<TH2D> & aRecHits);
 
-  void setRecHits(const std::vector<Hit2DCollection> & aRecHits) {myRecHits = aRecHits;}
+  void setRecHits(const std::vector<Hit2DCollection> & aRecHits) {myRecHits = aRecHits; calculateLoss();}
 
   void setPID(pid_type aPID){ pid = aPID;}
 
   void setDiffusion(double aDiffusion){ myDiffusion = aDiffusion;}
 
-  void setLossType(definitions::fit_type lossType){ myLossType = lossType; calculateLoss();}
+  /// The stored projection losses are kept up to date by all setters
+  /// (geometry, rec hits, line parameters), so the loss is recalculated
+  /// only if the loss type changes.
+  void setLossType(definitions::fit_type lossType){
+    if(lossType==myLossType) return;
+    myLossType = lossType;
+    calculateLoss();
+  }
+
+  definitions::fit_type getLossType() const { return myLossType;}
 
   ///Unit tangential vector along segment.
   const TVector3 & getTangent() const { return myTangent;}

@@ -19,6 +19,7 @@ TrackSegment3D::TrackSegment3D(){
 void TrackSegment3D::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
   
   myGeometryPtr = aGeometryPtr;
+  calculateLoss(); // the projections depend on the geometry
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
