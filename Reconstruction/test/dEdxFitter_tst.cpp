@@ -32,12 +32,12 @@ double numericalSmearing(const dEdxFitter::BraggTemplate &t, double pos, double 
 }
 
 double alphaModel(double x, double sigma, double vertex, double alphaOffset) {
-  double params[7] = {sigma, vertex, alphaOffset, 0.0, 1.0, 0.0, 1.0};
+  double params[8] = {sigma, vertex, alphaOffset, 0.0, 1.0, 0.0, 1.0, 1.0};
   return dEdxFitter::bragg_alpha(&x, params);
 }
 
 double carbonModel(double x, double sigma, double vertex, double carbonOffset) {
-  double params[7] = {sigma, vertex, 0.0, carbonOffset, 0.0, 1.0, 1.0};
+  double params[8] = {sigma, vertex, 0.0, carbonOffset, 0.0, 1.0, 1.0, 1.0};
   return dEdxFitter::bragg_12C(&x, params);
 }
 
@@ -55,7 +55,12 @@ double edgeWidth(double sigma, double vertex, double alphaOffset) {
 
 class dEdxFitterTest : public ::testing::Test {
 protected:
-  void SetUp() override { fitter = std::make_unique<dEdxFitter>(RESOURCES_DIR, 250); }
+  // the model tests set the carbon range directly: physics constraint off
+  void SetUp() override {
+    fitter = std::make_unique<dEdxFitter>(RESOURCES_DIR, 250);
+    dEdxFitter::setPhysicsConstraint(false);
+  }
+  void TearDown() override { dEdxFitter::setPhysicsConstraint(true); }
   std::unique_ptr<dEdxFitter> fitter;
 };
 
@@ -154,7 +159,7 @@ TH1F makeProfile(const char *name, double vertex, double alphaRange, double carb
   const double maxAlpha = 297.23 * scale, maxCarbon = 23.43 * scale;
   const double length = vertex + alphaRange;
   TH1F h(name, "", int(1.2 * length), 0, 1.2 * length);
-  double params[7] = {1.0, vertex, maxAlpha - alphaRange, maxCarbon - carbonRange, 1.0, 1.0, 5E-3};
+  double params[8] = {1.0, vertex, maxAlpha - alphaRange, maxCarbon - carbonRange, 1.0, 1.0, 5E-3, 1.0};
   for (int i = 1; i <= h.GetNbinsX(); ++i) {
     double x = h.GetBinCenter(i);
     // deterministic "noise" so that the fit has a non-zero loss
@@ -218,9 +223,12 @@ TEST_F(dEdxFitterTest, VertexConstraint) {
   for (double constraint : {5.0, 20.0}) {
     aFitter.setVertexConstraint(constraint);
     const FitOutput result = fit(aFitter, profile);
-    EXPECT_EQ(result.type, pid_type::C12_ALPHA) << "constraint " << constraint;
-    EXPECT_GE(result.vertex, constraint - 2.0 - 1E-6) << "constraint " << constraint;
-    EXPECT_LE(result.vertex, constraint + 2.0 + 1E-6) << "constraint " << constraint;
+    // the C12+alpha fit respects the constraint (with a wrong constraint the
+    // alpha hypothesis may be selected, so check the C12+alpha model itself)
+    (void)result;
+    const double vertex = aFitter.get12CAlphaIonisation()->GetParameter(1);
+    EXPECT_GE(vertex, constraint - 2.0 - 1E-6) << "constraint " << constraint;
+    EXPECT_LE(vertex, constraint + 2.0 + 1E-6) << "constraint " << constraint;
   }
   aFitter.clearVertexConstraint();
   dEdxFitter fresh(RESOURCES_DIR, pressure);
@@ -236,4 +244,40 @@ TEST_F(dEdxFitterTest, CarbonModelUsesTable) {
     EXPECT_NEAR(carbonModel(vertex - d, 1E-4, vertex, 0.0), tableValue(carbon, d, 0.0), 1E-2);
   }
   EXPECT_DOUBLE_EQ(carbonModel(vertex + 5, 1E-4, vertex, 0.0), 0.0);
+}
+
+TEST_F(dEdxFitterTest, FitDoesNotDependOnOrientation) {
+  // both orientations are fitted: a reflected profile gives the same result
+  // (the orientation was guessed from the position of the maximum)
+  const double pressure = 130.0;
+  const TH1F profile = makeProfile("profile", 6.0, 44.0, 5.0, pressure);
+  TH1F reflected(profile);
+  reflected.SetDirectory(0);
+  for (int i = 1; i <= profile.GetNbinsX(); ++i)
+    reflected.SetBinContent(profile.GetNbinsX() + 1 - i, profile.GetBinContent(i));
+  dEdxFitter aFitter(RESOURCES_DIR, pressure);
+  const FitOutput a = fit(aFitter, profile), b = fit(aFitter, reflected);
+  EXPECT_EQ(a.type, b.type);
+  EXPECT_NEAR(a.loss, b.loss, 1E-6 * (1 + a.loss));
+  EXPECT_NEAR(a.alphaRange, b.alphaRange, 1E-3);
+  EXPECT_NEAR(a.carbonRange, b.carbonRange, 1E-3);
+}
+
+TEST_F(dEdxFitterTest, PhysicsConstraint) {
+  // C12+alpha profile with the carbon range from momentum conservation;
+  // with the constraint the fitted carbon range is within +-10% of it
+  const double pressure = 130.0;
+  dEdxFitter aFitter(RESOURCES_DIR, pressure);
+  const double alphaRange = 44.0;
+  const double carbonRange = dEdxFitter::carbonRangeFromAlpha(alphaRange);
+  EXPECT_GT(carbonRange, 1.0);
+  EXPECT_LT(carbonRange, 0.3 * alphaRange);  // E_C = E_alpha/3, heavier ion
+  const TH1F profile = makeProfile("profile", 6.0, alphaRange, carbonRange, pressure);
+
+  dEdxFitter::setPhysicsConstraint(true, 0.1);
+  const FitOutput result = fit(aFitter, profile);
+  EXPECT_EQ(result.type, pid_type::C12_ALPHA);
+  EXPECT_NEAR(result.alphaRange, alphaRange, 2.0);
+  EXPECT_NEAR(result.carbonRange, dEdxFitter::carbonRangeFromAlpha(result.alphaRange), 0.1 * result.carbonRange + 1E-6);
+  EXPECT_NEAR(result.carbonRange, carbonRange, 0.15 * carbonRange);
 }

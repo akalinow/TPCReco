@@ -1,6 +1,7 @@
 #ifndef _dEdxFitter_H_
 #define _dEdxFitter_H_
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -11,6 +12,8 @@
 #include <TFitResult.h>
 
 #include "TPCReco/CommonDefinitions.h"
+
+class IonRangeCalculator;
 
 class dEdxFitter{
 
@@ -34,6 +37,18 @@ public:
   /// Number of fit attempts per hypothesis, with different initial step
   /// sizes (1 to 10, default 1)
   void setMaxFitAttempts(unsigned int nAttempts);
+
+  /// Physics constraint of the C12+alpha hypothesis (default: on, margin 10%):
+  /// the carbon range follows from the alpha range by momentum conservation
+  /// in O16 -> C12 + alpha (equal momenta, E_C = E_alpha*m_alpha/m_C12), within
+  /// +- margin (fitted scale of the carbon range in [1-margin, 1+margin]).
+  /// Off: the carbon range is a free parameter.
+  static void setPhysicsConstraint(bool enable, double margin=0.1);
+  static bool getPhysicsConstraint() { return usePhysicsConstraint;}
+
+  /// Carbon range [mm] for a given alpha range [mm] (current pressure) from
+  /// the momentum conservation in O16 -> C12 + alpha.
+  static double carbonRangeFromAlpha(double alphaRange);
 
   TFitResult fitHisto(const TH1F & aHisto);
 
@@ -92,6 +107,12 @@ private:
   static double currentPressure;
   static double nominalPressure;
 
+  static bool usePhysicsConstraint;
+  static double carbonRangeMargin;
+  static std::unique_ptr<IonRangeCalculator> theRangeCalculator;
+  /// maximal (table) alpha and carbon ranges at the current pressure [mm]
+  static double theMaxAlphaRange, theMaxCarbonRange;
+
   double minVtxOffset{0};
   double maxVtxOffset{0};
   double minAlphaOffset{0};
@@ -133,7 +154,9 @@ public:
   ///  [2] alphaOffset, [3] carbonOffset: distance from the start of the full
   ///      energy curve (10 MeV alpha, 5 MeV 12C at nominal pressure) to the
   ///      start of the track, i.e. range = maximal range - offset,
-  ///  [4] alpha scale, [5] carbon scale, [6] common scale (bragg_12C_alpha only).
+  ///  [4] alpha scale, [5] carbon scale, [6] common scale (bragg_12C_alpha only),
+  ///  [7] carbon range scale: with the physics constraint the carbon range is
+  ///      carbonRangeFromAlpha(alpha range) x [7] and [3] is not used.
   /// The alpha goes from the vertex towards larger x, the carbon towards smaller x.
   static double bragg_alpha(double *x, double *params);
   static double bragg_12C(double *x, double *params);

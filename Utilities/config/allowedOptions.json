@@ -418,6 +418,18 @@
         "defaultValue" : 1,
         "description" : "Number of attempts of the dE/dx (event hypothesis) fit, with different initial step sizes (1-10). The first valid fit with a small loss is kept, otherwise the best one.\nType: int"
     },
+    "dEdxPhysicsConstraint":{
+        "group":"reconstruction",
+        "type" : "bool",
+        "defaultValue" : true,
+        "description" : "Physics constraint of the C12+alpha dE/dx fit: the carbon range follows from the alpha range by momentum conservation in O16 -> C12 + alpha (E_C = E_alpha*m_alpha/m_C12), within +- dEdxCarbonRangeMargin. False: free carbon range.\nType: bool"
+    },
+    "dEdxCarbonRangeMargin":{
+        "group":"reconstruction",
+        "type" : "float",
+        "defaultValue" : 0.1,
+        "description" : "Relative margin of the carbon range around the value from the physics constraint (dEdxPhysicsConstraint).\nType: float"
+    },
     "inputDim":{
         "group":"reconstruction",
         "type" : "vector<int>",

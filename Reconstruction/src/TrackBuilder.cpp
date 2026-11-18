@@ -60,6 +60,8 @@ TrackBuilder::TrackBuilder(boost::property_tree::ptree& myConfig) {
 
   setPressure(myConfig.get<double>("conditions.pressure"));
   mydEdxFitter.setMaxFitAttempts(myConfig.get<int>("reconstruction.dEdxFitAttempts", 1));
+  dEdxFitter::setPhysicsConstraint(myConfig.get<bool>("reconstruction.dEdxPhysicsConstraint", true),
+                                   myConfig.get<double>("reconstruction.dEdxCarbonRangeMargin", 0.1));
 
   myMLTrackBuilder = std::make_shared<TensorflowModel>(myConfig);
 }

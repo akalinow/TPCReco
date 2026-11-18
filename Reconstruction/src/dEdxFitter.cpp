@@ -1,5 +1,6 @@
 #include "TPCReco/dEdxFitter.h"
 #include "TPCReco/colorText.h"
+#include "TPCReco/IonRangeCalculator.h"
 #include <algorithm>
 #include <cmath>
 
@@ -15,6 +16,11 @@ TGraph* dEdxFitter::braggGraph_12C = nullptr;
 
 double dEdxFitter::nominalPressure = 250.0;
 double dEdxFitter::currentPressure = 190.0;
+bool dEdxFitter::usePhysicsConstraint = true;
+double dEdxFitter::carbonRangeMargin = 0.1;
+std::unique_ptr<IonRangeCalculator> dEdxFitter::theRangeCalculator;
+double dEdxFitter::theMaxAlphaRange = 0.0;
+double dEdxFitter::theMaxCarbonRange = 0.0;
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 dEdxFitter::dEdxFitter(double aPressure): dEdxFitter(TPCRECO_RESOURCE_DIR, aPressure){}
@@ -40,7 +46,7 @@ dEdxFitter::dEdxFitter(std::string resources, double aPressure){
   alpha_ionisation = new TF1("alpha_ionisation", bragg_alpha, 0, 600.0);
   carbon_ionisation = new TF1("carbon_ionisation",bragg_12C, 0,  200.0);
 
-  carbon_alpha_model = new TF1("carbon_alpha_model",bragg_12C_alpha, -20, 350.0, 7);
+  carbon_alpha_model = new TF1("carbon_alpha_model",bragg_12C_alpha, -20, 350.0, 8);
 
   carbon_alpha_model->SetParName(0, "sigma");
   carbon_alpha_model->SetParName(1, "vertexOffset");
@@ -49,6 +55,7 @@ dEdxFitter::dEdxFitter(std::string resources, double aPressure){
   carbon_alpha_model->SetParName(4, "alphaScale");
   carbon_alpha_model->SetParName(5, "carbonScale");
   carbon_alpha_model->SetParName(6, "commonScale");
+  carbon_alpha_model->SetParName(7, "carbonRangeScale");
 
   carbon_alpha_model->SetParLimits(0, 0.5, 1.5);
   carbon_alpha_model->SetParLimits(6, 1E-4, 2E-2);
@@ -62,6 +69,7 @@ dEdxFitter::dEdxFitter(std::string resources, double aPressure){
   alpha_model->FixParameter(3, 0.0);
   alpha_model->FixParameter(4, 0.0);
   alpha_model->FixParameter(5, 0.0);
+  alpha_model->FixParameter(7, 1.0);
  
   reset();
 }
@@ -90,6 +98,35 @@ void dEdxFitter::setPressure(double aPressure) {
 	     <<" does not correspond to any dEdx data files."<<std::endl;
     exit(0);
   }
+  theMaxAlphaRange = maxAlphaOffset;
+  theMaxCarbonRange = maxCarbonOffset;
+  theRangeCalculator = std::make_unique<IonRangeCalculator>(gas_mixture_type::CO2, currentPressure);
+}
+////////////////////////////////////////////////
+////////////////////////////////////////////////
+void dEdxFitter::setPhysicsConstraint(bool enable, double margin){
+  usePhysicsConstraint = enable;
+  carbonRangeMargin = std::max(0.0, margin);
+}
+////////////////////////////////////////////////
+////////////////////////////////////////////////
+double dEdxFitter::carbonRangeFromAlpha(double alphaRange){
+
+  // cache: evaluated for every point of the profile with the same parameters
+  static double lastAlphaRange = -1, lastCarbonRange = 0, lastPressure = -1;
+  if(alphaRange==lastAlphaRange && currentPressure==lastPressure) return lastCarbonRange;
+  double carbonRange = 0.0;
+  if(alphaRange>0 && theRangeCalculator){
+    const double alphaEnergy = theRangeCalculator->getIonEnergyMeV(pid_type::ALPHA, alphaRange);
+    // O16 -> C12 + alpha at rest: equal momenta, E = p^2/2m
+    const double carbonEnergy = alphaEnergy*theRangeCalculator->getIonMassMeV(pid_type::ALPHA)/
+                                theRangeCalculator->getIonMassMeV(pid_type::CARBON_12);
+    if(carbonEnergy>0) carbonRange = theRangeCalculator->getIonRangeMM(pid_type::CARBON_12, carbonEnergy);
+  }
+  lastAlphaRange = alphaRange;
+  lastPressure = currentPressure;
+  lastCarbonRange = carbonRange;
+  return carbonRange;
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
@@ -105,7 +142,7 @@ void dEdxFitter::reset(){
   carbon_alpha_model->SetRange(-20, maxAlphaOffset+maxCarbonOffset);
   carbon_alpha_model->SetParLimits(1, 0.0, maxVtxOffset);
 
-  double minCarbonRange = 5.0; //mm
+  double minCarbonRange = 1.0; //mm (a 0.4 MeV carbon at 130 mbar is ~5 mm long)
   double minD = 0.5, maxD = 1.5;
   carbon_alpha_model->GetParLimits(0, minD, maxD);
 
@@ -117,7 +154,13 @@ void dEdxFitter::reset(){
             (minCarbonOffset+maxCarbonOffset)/2.0,
 				    //maxAlphaOffset-85,  // [mm] --> HACK valid for 13.1 MeV
 				    //maxCarbonOffset-11,  // [mm] --> HACK valid for 13.1 MeV
-				    1, 1, 5E-3);
+				    1, 1, 5E-3, 1.0);
+  if(usePhysicsConstraint){
+    // carbon range from the alpha range, scaled within +- margin
+    carbon_alpha_model->FixParameter(3, carbon_alpha_model->GetParameter(3));
+    carbon_alpha_model->SetParLimits(7, 1.0-carbonRangeMargin, 1.0+carbonRangeMargin);
+  }
+  else carbon_alpha_model->FixParameter(7, 1.0);
   if(hasVertexConstraint){
     carbon_alpha_model->SetParLimits(1, vertexConstraint-2, vertexConstraint+2);
     carbon_alpha_model->SetParameter(1, vertexConstraint);
@@ -130,7 +173,7 @@ void dEdxFitter::reset(){
 			     (minVtxOffset+maxVtxOffset)/2.0,
 			     (minAlphaOffset+maxAlphaOffset)/2.0,
 			     0.0,
-			     1.0, 0.0, 5E-3);
+			     1.0, 0.0, 5E-3, 1.0);
   
   // initial step sizes: TF1 keeps the parameter errors of the previous fit and
   // ROOT uses them as initial step sizes, which made the fit result depend on
@@ -226,7 +269,13 @@ double dEdxFitter::bragg_alpha(double *x, double *params) {
 double dEdxFitter::bragg_12C(double *x, double *params) {
   const double scale = currentPressure/nominalPressure;
   const double sigma = scale*params[0];
-  const double cut = scale*params[3];               // start of the track in the table
+  double carbonOffset = params[3];
+  if(usePhysicsConstraint){
+    // carbon range from the alpha range (momentum conservation) x scale
+    const double carbonRange = carbonRangeFromAlpha(theMaxAlphaRange - params[2])*params[7];
+    carbonOffset = std::min(std::max(theMaxCarbonRange - carbonRange, 0.0), theMaxCarbonRange);
+  }
+  const double cut = scale*carbonOffset;            // start of the track in the table
   const double pos = scale*(params[1]-x[0]) + cut;  // carbon towards smaller x
   return theCarbonTemplate.smeared(pos, cut, sigma);
 }
@@ -309,42 +358,59 @@ TFitResult dEdxFitter::fitHypothesis(TF1 *fModel, TH1F & aHisto){
 ////////////////////////////////////////////////
 TFitResult dEdxFitter::fitHisto(const TH1F & aHisto){
 
-  /// C12+alpha hypothesis
-  TH1F fittedHisto_for_C12_alpha = aHisto;
-  bool reflection_for_C12_alpha = false;
-  int maxBin = aHisto.GetMaximumBin();
-  if(maxBin>aHisto.GetNbinsX()/2.0){
-    fittedHisto_for_C12_alpha = reflectHisto(aHisto);
-    reflection_for_C12_alpha = true;
-  }
-  TFitResult carbon_alphaResult = fitHypothesis(carbon_alpha_model, fittedHisto_for_C12_alpha);
+  // Each hypothesis is fitted in both orientations of the profile (the track
+  // direction is not known) and the better fit is kept. The orientation used
+  // to be guessed from the position of the maximum, which for low energy
+  // C12+alpha events is the alpha Bragg peak, not the carbon.
+  struct HypothesisFit {
+    TFitResult result;
+    TH1F histo;
+    bool reflected{false};
+    bool done{false};
+  };
+  // a better than b: valid first, then lower loss
+  auto better = [](const TFitResult &a, const TFitResult &b){
+    if(a.IsValid()!=b.IsValid()) return a.IsValid();
+    return a.MinFcnValue()<b.MinFcnValue();
+  };
+  auto fitBothOrientations = [&](TF1 *model){
+    HypothesisFit best;
+    for(int iOrientation=0;iOrientation<2;++iOrientation){
+      TH1F histo = iOrientation ? reflectHisto(aHisto) : TH1F(aHisto);
+      histo.SetDirectory(0);
+      TFitResult result = fitHypothesis(model, histo);
+      if(!best.done || better(result, best.result)){
+        best.result = result;
+        best.histo = histo;
+        best.histo.SetDirectory(0);
+        best.reflected = (iOrientation==1);
+        best.done = true;
+      }
+    }
+    return best;
+  };
 
-  /// alpha hypothesis
-  bool reflection_for_alpha = false;
-  TH1F fittedHisto_for_alpha = aHisto;
-  maxBin = aHisto.GetMaximumBin();
-  if(maxBin<aHisto.GetNbinsX()/2.0){
-    fittedHisto_for_alpha = reflectHisto(aHisto);
-    reflection_for_alpha = true;
-  }
-  TFitResult alphaResult = fitHypothesis(alpha_model, fittedHisto_for_alpha);
+  HypothesisFit carbonAlpha = fitBothOrientations(carbon_alpha_model);
+  HypothesisFit alpha = fitBothOrientations(alpha_model);
 
   /// select best hypothesis
-  if(alphaResult.MinFcnValue()<carbon_alphaResult.MinFcnValue()){
-    theFitResult = alphaResult;
+  if(better(alpha.result, carbonAlpha.result)){
+    theFitResult = alpha.result;
     theFittedModel = alpha_model;
-    theFittedHisto = fittedHisto_for_alpha;
-    isReflected = reflection_for_alpha;
+    theFittedHisto = alpha.histo;
+    isReflected = alpha.reflected;
     bestFitEventType = pid_type::ALPHA;
   }
   else{
-    theFitResult = carbon_alphaResult;
+    theFitResult = carbonAlpha.result;
     theFittedModel = carbon_alpha_model;
-    theFittedHisto = fittedHisto_for_C12_alpha;
-    isReflected = reflection_for_C12_alpha;
+    theFittedHisto = carbonAlpha.histo;
+    isReflected = carbonAlpha.reflected;
     bestFitEventType = pid_type::C12_ALPHA;
-  }  
-  if(theFitResult.IsValid()) theFittedModel->SetParameters(theFitResult.Parameters().data());
+  }
+  theFittedHisto.SetDirectory(0);
+  // parameters of the selected fit (the model was fitted again afterwards)
+  if(theFitResult.NPar()>0) theFittedModel->SetParameters(theFitResult.Parameters().data());
 
   return theFitResult;
 }
@@ -370,6 +436,10 @@ double dEdxFitter::getCarbonRange() const{
 
   if(bestFitEventType!=pid_type::C12_ALPHA) return 0.0;
 
+  if(usePhysicsConstraint){
+    double alphaRange = maxAlphaOffset - theFittedModel->GetParameter("alphaOffset");
+    return carbonRangeFromAlpha(alphaRange)*theFittedModel->GetParameter("carbonRangeScale");
+  }
   double carbonOffset = theFittedModel->GetParameter("carbonOffset");
   double carbonRange = maxCarbonOffset - carbonOffset;
   return carbonRange;
