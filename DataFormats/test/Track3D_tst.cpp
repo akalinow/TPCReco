@@ -57,6 +57,33 @@ TEST(Track3DTest, RotationAngleAndAxes) {
   }
 }
 
+TEST(Track3DTest, CrossingPointsAreFinite) {
+  // lines parallel to a coordinate plane and dots (null tangent) gave +-inf or NaN
+  const TVector3 bias(10, -5, 3);
+  for (const TVector3 &tangent : {TVector3(1, 0, 0), TVector3(0, 1, 0), TVector3(0, 0, 1), TVector3(1, 2, 3)}) {
+    TrackSegment3D aSegment;
+    aSegment.setBiasTangent(bias, tangent);
+    for (const TVector3 &p : {aSegment.getBiasAtX0(), aSegment.getBiasAtY0(), aSegment.getBiasAtZ0()}) {
+      EXPECT_TRUE(std::isfinite(p.X()) && std::isfinite(p.Y()) && std::isfinite(p.Z()));
+    }
+  }
+  TrackSegment3D aDot;
+  aDot.setStartEnd(bias, bias);
+  EXPECT_DOUBLE_EQ(aDot.getLength(), 0.0);
+  EXPECT_TRUE(std::isfinite(aDot.getBiasAtX0().Mag()) && std::isfinite(aDot.getBiasAtZ0().Mag()));
+  // crossing point of a generic line
+  TrackSegment3D aSegment;
+  aSegment.setBiasTangent(bias, TVector3(1, 2, 3));
+  EXPECT_NEAR(aSegment.getBiasAtX0().X(), 0.0, 1E-12);
+  EXPECT_NEAR(aSegment.getBiasAtZ0().Z(), 0.0, 1E-12);
+}
+
+TEST(Track3DTest, Segment2DDefaultLength) {
+  // the length of a default segment was not initialised
+  TrackSegment2D aSegment;
+  EXPECT_DOUBLE_EQ(aSegment.getLength(), 0.0);
+}
+
 TEST(Track3DTest, RotationIsRelativeToStartOfFit) {
   // the reference direction is fixed when the fit mode is set, so the same
   // parameters always give the same tangent

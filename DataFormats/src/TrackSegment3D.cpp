@@ -2,6 +2,7 @@
 #include "TPCReco/GeometryTPC.h"
 #include "TPCReco/colorText.h"
 
+#include <cmath>
 #include <iostream>
 
 /////////////////////////////////////////////////////////
@@ -97,14 +98,17 @@ void TrackSegment3D::setRecHits(const std::vector<TH2D> & aRecHits){
 /////////////////////////////////////////////////////////
 void TrackSegment3D::initialize(){
 
-  double lambda = -myBias.X()/myTangent.X();
-  myBiasAtX0 = myBias + lambda*myTangent;
-
-  lambda = -myBias.Y()/myTangent.Y();
-  myBiasAtY0 = myBias + lambda*myTangent;
-
-  lambda = -myBias.Z()/myTangent.Z();
-  myBiasAtZ0 = myBias + lambda*myTangent;
+  // points where the line crosses the planes X=0, Y=0, Z=0; if the line is
+  // (nearly) parallel to a plane (or the tangent is null, e.g. a dot), there is no
+  // crossing point and the bias is used (was +-inf or NaN)
+  constexpr double minComponent = 1E-3; // crossings within ~1000 x the bias distance
+  auto crossing = [this](double biasComponent, double tangentComponent){
+    if(std::abs(tangentComponent)<minComponent) return myBias;
+    return TVector3(myBias - (biasComponent/tangentComponent)*myTangent);
+  };
+  myBiasAtX0 = crossing(myBias.X(), myTangent.X());
+  myBiasAtY0 = crossing(myBias.Y(), myTangent.Y());
+  myBiasAtZ0 = crossing(myBias.Z(), myTangent.Z());
 
   myLenght = (myEnd - myStart).Mag();
 

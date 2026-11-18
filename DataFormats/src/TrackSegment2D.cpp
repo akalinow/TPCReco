@@ -93,8 +93,10 @@ TGraphErrors TrackSegment2D::getChargeProfile(const Hit2DCollection & aRecHits, 
       grChargeProfile2D.SetPointError(grChargeProfile2D.GetN()-1,binWidth/2.0,0.0);
     }
   }
+  // no hits close to the segment: empty profile (no end points to add)
+  if(grChargeProfile2D.GetN()==0) return grChargeProfile2D;
   grChargeProfile2D.Sort();
-  
+
   grChargeProfile2D.GetPoint(grChargeProfile2D.GetN()-1,x,y);
   ex = grChargeProfile2D.GetErrorX(grChargeProfile2D.GetN()-1);
   grChargeProfile2D.SetPoint(grChargeProfile2D.GetN(),x+ex,0.0);

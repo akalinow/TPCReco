@@ -52,13 +52,13 @@ class TrackSegment3D{
   ///Bias vector perpendicular to tangent.
   const TVector3 & getBias() const { return myBias;}
 
-  ///Bias vector with X=0.
+  ///Point of the line with X=0 (the bias if the line is (nearly) parallel to the X=0 plane).
   const TVector3 & getBiasAtX0() const { return myBiasAtX0;}
 
-  ///Bias vector with Y=0.
+  ///Point of the line with Y=0 (the bias if the line is (nearly) parallel to the Y=0 plane).
   const TVector3 & getBiasAtY0() const { return myBiasAtY0;}
 
-  ///Bias vector with Z=0.
+  ///Point of the line with Z=0 (the bias if the line is (nearly) parallel to the Z=0 plane).
   const TVector3 & getBiasAtZ0() const { return myBiasAtZ0;}
 
   ///Lambda value for given X with current start and stop points

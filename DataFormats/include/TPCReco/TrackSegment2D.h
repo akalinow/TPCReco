@@ -86,7 +86,7 @@ private:
   std::shared_ptr<GeometryTPC> myGeometryPtr; //! transient data member
 
   int myStripDir;
-  double myLenght;
+  double myLenght{0};
 
   TVector3 myTangent, myBias;
   TVector3 myStart, myEnd;    
