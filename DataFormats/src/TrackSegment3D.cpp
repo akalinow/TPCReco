@@ -215,6 +215,8 @@ double TrackSegment3D::getMaxProjWidth() const {
     TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, getLength());
     const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
     double projWidth = aTrack2DProjection.getLoss(aRecHits, definitions::fit_type::TANGENT);
+    // no hit close to the projection: the width is not defined (penalty value)
+    if(projWidth>=TrackSegment2D::dummyLoss) continue;
     if(projWidth>maxProjWidth) maxProjWidth = projWidth;
   }
   return maxProjWidth;

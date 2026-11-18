@@ -157,7 +157,6 @@ double TrackSegment2D::getParallelLineLoss(const Hit2DCollection & aRecHits) con
   double maxDistance = 20.0; //parameter to be put into configuration
 
   if(!aRecHits.size()) return 0.0;
-  double dummyLoss = 999.0;
 
   TVector3 aPoint;
   double chargeSum = 0.0;
@@ -194,7 +193,6 @@ double TrackSegment2D::getHitDistanceLoss(const Hit2DCollection & aRecHits) cons
   double maxDistance = 20.0; //parameter to be put into configuration
 
   if(!aRecHits.size()) return 0.0;
-  double dummyLoss = 999.0;
 
   if(getTangent().Mag()<1E-3){
     std::cout<<__FUNCTION__<<KRED<< " TrackSegment2D has null tangent "<<RST

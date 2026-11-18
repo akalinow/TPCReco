@@ -968,6 +968,12 @@ Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
   double centralD = trackWidth/0.76; //parameter to be moved to configuration
   double minD = centralD*0.5; //parameter to be moved to configuration
   double maxD = centralD*1.5; //parameter to be moved to configuration       
+  // no projection with hits close to the track: default diffusion range
+  // (a zero range would mean no limits on the diffusion in the fit)
+  if(!(trackWidth>0.0)){
+    minD = 0.5;
+    maxD = 1.5;
+  }
   mydEdxFitter.setDiffusionRange(minD, maxD);
   mydEdxFitter.fitHisto(hChargeProfile);
 

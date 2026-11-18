@@ -62,6 +62,10 @@ public:
   ///Rec hits assigned to this projection.
   const Hit2DCollection & getRecHits() const {return myRecHits;}
 
+  ///Loss value returned when no hit is close to the segment (within 20 mm),
+  ///or the segment has a null tangent: a penalty for the fits, not a width.
+  static constexpr double dummyLoss = 999.0;
+
   ///Return loss function for the segment.
   /// lossType== TANGENT returns variance of hit distances from the segment.
   /// lossType== BIAS returns sum of hit distances from the segment.

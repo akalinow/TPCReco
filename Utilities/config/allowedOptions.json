@@ -261,7 +261,7 @@
         "group": "conditions",
         "type" : "float",
         "defaultValue": 0.646,
-        "description": "Drift velocity [cm/us].\nType: float"
+        "description": "Drift velocity [cm/us]. NOT USED: the drift velocity is read from the geometry file (DRIFT VELOCITY line); this value is kept for documentation of the configuration only.\nType: float"
     },
     "comment":{
         "group": "conditions",

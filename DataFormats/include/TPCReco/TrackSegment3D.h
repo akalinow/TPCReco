@@ -100,6 +100,7 @@ class TrackSegment3D{
 
   ///Return maximum projection width.
   ///The width is a sqrt of variance of hit distances from the segment. 
+  ///Projections without hits close to the segment are ignored; 0 if there is none.
   double getMaxProjWidth() const;
 
   double getIntegratedCharge(double lambda) const;
