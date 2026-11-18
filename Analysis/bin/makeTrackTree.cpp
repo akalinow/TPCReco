@@ -129,6 +129,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     outputCanvas->Divide(nx,ny);
     myHistoManager.clearCanvas(outputCanvas, false);
     myHistoManager.setGeometry(myEventSource->getGeometry());
+    myHistoManager.setTkBuilder(myEventSource->getTrackBuilder()); // the reconstruction of the event source
     myHistoManager.setConfig(aConfig); // this will pass configuration to current event pointer
     myHistoManager.toggleAutozoom(); // start auto zoom feature
   }
