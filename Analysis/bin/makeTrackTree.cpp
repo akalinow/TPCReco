@@ -231,16 +231,21 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     //
     ////////////////////////////////////////////
     const Track3D  & aTrack3D = myEventSource->getRecoEvent();
+    if(aTrack3D.getSegments().empty()) continue; // no reconstruction
+    // one segment (alpha only, track without event hypothesis, dot) or
+    // two segments (alpha + carbon): with one segment there is no carbon
+    const bool hasCarbon = aTrack3D.getSegments().size()>1;
+    const TrackSegment3D & firstSegment = aTrack3D.getSegments().front();
     
     double length = aTrack3D.getLength();
     double charge = aTrack3D.getIntegratedCharge(length);
     double chi2 = aTrack3D.getLoss();
     double hypothesisLoss = aTrack3D.getHypothesisFitLoss();
-    const TVector3 & vertex = aTrack3D.getSegments().front().getStart();
-    const TVector3 & alphaEnd = aTrack3D.getSegments().front().getEnd();
-    const TVector3 & carbonEnd = aTrack3D.getSegments().back().getEnd();
+    const TVector3 & vertex = firstSegment.getStart();
+    const TVector3 & alphaEnd = firstSegment.getEnd();
+    const TVector3 & carbonEnd = hasCarbon ? aTrack3D.getSegments().back().getEnd() : vertex;
 
-    double cosPhiSegments = (alphaEnd-vertex).Unit().Dot((carbonEnd-vertex).Unit());
+    double cosPhiSegments = hasCarbon ? (alphaEnd-vertex).Unit().Dot((carbonEnd-vertex).Unit()) : 0.0;
     
     const TVector3 & tangent = aTrack3D.getSegments().front().getTangent();
     double phi = atan2(-tangent.Z(), tangent.Y());
@@ -252,9 +257,11 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     TVector3 vertical(0,0,-1);
     double verticalTrackLostPart = 6.0/std::abs(vertical.Dot(tangent));
 
-    int eventType = aTrack3D.getSegments().front().getPID()+aTrack3D.getSegments().back().getPID();
-    double alphaRange =  aTrack3D.getSegments().front().getLength();
-    double carbonRange =  aTrack3D.getSegments().back().getPID()== pid_type::CARBON_12 ? aTrack3D.getSegments().back().getLength(): 0.0;
+    // sum of the segment PIDs: ALPHA+CARBON_12 = 3 (C12_ALPHA), ALPHA = 1,
+    // UNKNOWN = 0 (track without event hypothesis fit), DOT
+    int eventType = firstSegment.getPID() + (hasCarbon ? aTrack3D.getSegments().back().getPID() : 0);
+    double alphaRange = firstSegment.getPID()==pid_type::ALPHA ? firstSegment.getLength() : 0.0;
+    double carbonRange = hasCarbon && aTrack3D.getSegments().back().getPID()==pid_type::CARBON_12 ? aTrack3D.getSegments().back().getLength(): 0.0;
     double alphaEnergy = alphaRange>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA,alphaRange):0.0;
     double carbonEnergy = carbonRange>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::CARBON_12, carbonRange):0.0;
     double m_Alpha = myRangeCalculator.getIonMassMeV(pid_type::ALPHA);

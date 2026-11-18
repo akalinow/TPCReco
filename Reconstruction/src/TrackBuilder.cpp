@@ -240,12 +240,6 @@ void TrackBuilder::reconstruct(){
                           myMLTrackBuilder->getCarbonEnd());                     
     aTrackCandidate.addSegment(aSegment);    
   }
-  if(aTrackCandidate.getSegments().size()<2) {
-    aTrackCandidate = Track3D();
-    TrackSegment3D aSegment;
-    aTrackCandidate.addSegment(aSegment);
-    aTrackCandidate.addSegment(aSegment);
-  }
   ////
 
   myFittedTrack = aTrackCandidate;
