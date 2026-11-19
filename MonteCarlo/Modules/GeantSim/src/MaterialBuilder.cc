@@ -78,27 +78,36 @@ void MaterialBuilder::BuildMaterials() {
     auto p_co2 = config->Get<float>("gas_mixture.co2");
     auto gas_temperature_K = config->Get<float>("Temperature");
 
+    // Partial pressures p_co2, p_he are given in [bar]. Ideal gas densities:
+    // rho(p, T) = rho(1 atm, 0 deg.C) * (p / 1 atm) * (273.15 K / T), with 1 atm = 1.01325 bar.
+    const double atm_in_bar = 1.01325;
     //G4double CO2_density = 1.805 * mg / cm3;
     //G4double CO2_density = 1.787 * mg / cm3;
-    G4double CO2_density = 1.976 * mg / cm3 * (273.15 / gas_temperature_K); // 1.976 mg/cm3 at 1013.25 mbar = 1 atm = 760 mmHg, 0 deg.C
+    // density at 1 bar and the gas temperature (1.976 mg/cm3 at 1 atm = 1013.25 mbar = 760 mmHg, 0 deg.C)
+    G4double CO2_density = 1.976 * mg / cm3 * (273.15 / gas_temperature_K) / atm_in_bar;
     auto CO2 = new G4Material("Carbonic gas", CO2_density, 2,
-                              kStateGas, gas_temperature_K * kelvin, p_co2 * bar);
+                              kStateGas, gas_temperature_K * kelvin, 1.0 * bar);
     CO2->AddElement(C, 1);
     CO2->AddElement(O, 2);
     materials["co2"] = CO2;
 
     //G4double He_density = 0.1645 * mg / cm3;
-    G4double He_density = 0.1784 * mg / cm3 * (273.15 / gas_temperature_K); // 1.784e-1 mg/cm3 at 1013.25 mbar = 1 atm = 760 mmHg, 0 deg.C
+    // density at 1 bar and the gas temperature (0.1784 mg/cm3 at 1 atm = 1013.25 mbar = 760 mmHg, 0 deg.C)
+    G4double He_density = 0.1784 * mg / cm3 * (273.15 / gas_temperature_K) / atm_in_bar;
     auto He_gas = new G4Material("Helium gas", He_density, 1,
-                                 kStateGas, gas_temperature_K * kelvin, p_he * bar);
+                                 kStateGas, gas_temperature_K * kelvin, 1.0 * bar);
     He_gas->AddElement(He, 1);
     materials["he"] = He_gas;
 
-    auto mixture = new G4Material("mixture", p_co2 * CO2_density + p_he * He_density,
+    // mixture: density = sum of the partial densities, components given by mass fractions
+    const G4double CO2_partial_density = p_co2 * CO2_density;
+    const G4double He_partial_density = p_he * He_density;
+    const G4double mixture_density = CO2_partial_density + He_partial_density;
+    auto mixture = new G4Material("mixture", mixture_density,
                                   2,
                                   kStateGas, gas_temperature_K * kelvin, (p_co2 + p_he) * bar);
-    mixture->AddMaterial(He_gas, p_he / (p_he + p_co2));
-    mixture->AddMaterial(CO2, p_co2 / (p_he + p_co2));
+    mixture->AddMaterial(He_gas, He_partial_density / mixture_density);
+    mixture->AddMaterial(CO2, CO2_partial_density / mixture_density);
     materials["mixture"] = mixture;
 
     // Vacuum
