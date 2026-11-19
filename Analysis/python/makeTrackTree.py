@@ -164,7 +164,8 @@ runListFile = os.path.join(os.path.dirname(os.path.abspath(__file__)), "HIgS_202
 selectedEnergies = []                     # [MeV], e.g. [8.66, 8.86]
 selectedCampaigns = []                    # "HIgS_April_2022", "HIgS_August_2022"
 selectedPressures = []                    # [mbar], e.g. [190.0]
-selectedRunIds = []                       # run_id prefixes, e.g. ["2022-08-22T22:03:11"]
+selectedRunIds = ["2022-08-22T22:03:11"]  # 9.85 MeV, Aug (calibration run, all 10 chunks)
+                                          # run_id prefixes; [] = no selection
 
 def isSelected(value, selection, tolerance=1E-3):
     return not selection or any(abs(float(value) - float(s)) < tolerance for s in selection)
@@ -180,7 +181,7 @@ runList = [run for run in readRunList(runListFile) if selectRun(run)]
 
 # Keep only the first run (with data on disk) of each setup:
 # beam energy, campaign, pressure and drift voltage.
-firstRunPerSetup = True
+firstRunPerSetup = False
 if firstRunPerSetup:
     setups = {}
     for run in runList:
@@ -192,9 +193,9 @@ if firstRunPerSetup:
 ################################################
 # Number of chunks (sets of 4 AsAd GRAW files) to process; -1 = all.
 # Chunks are taken in run order, then chunk order (_0000, _0001, ...).
-maxChunksPerRun = 1   # e.g. 1 for a quick test on every selected run
+maxChunksPerRun = -1  # e.g. 1 for a quick test on every selected run
 maxChunks = -1        # limit on the total over all selected runs (a chunk takes ~40 min)
-procCount = 4         # number of parallel jobs
+procCount = 14        # number of parallel jobs
 ###
 ###
 procName = "makeTrackTree"
