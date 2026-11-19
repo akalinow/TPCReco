@@ -161,8 +161,8 @@ runListFile = os.path.join(os.path.dirname(os.path.abspath(__file__)), "HIgS_202
 # Energies 8.86, 9.85 and 13.1 MeV were measured in more than one setup:
 # use selectedCampaigns and/or selectedPressures to pick one.
 ################################################
-selectedEnergies = [8.86]                 # [MeV], e.g. [8.66, 8.86]
-selectedCampaigns = ["HIgS_August_2022"]  # "HIgS_April_2022", "HIgS_August_2022"
+selectedEnergies = []                     # [MeV], e.g. [8.66, 8.86]
+selectedCampaigns = []                    # "HIgS_April_2022", "HIgS_August_2022"
 selectedPressures = []                    # [mbar], e.g. [190.0]
 selectedRunIds = []                       # run_id prefixes, e.g. ["2022-08-22T22:03:11"]
 
@@ -178,17 +178,29 @@ def selectRun(run):
 
 runList = [run for run in readRunList(runListFile) if selectRun(run)]
 
+# Keep only the first run (with data on disk) of each setup:
+# beam energy, campaign, pressure and drift voltage.
+firstRunPerSetup = True
+if firstRunPerSetup:
+    setups = {}
+    for run in runList:
+        if run["data_dir"]:
+            setups.setdefault((run["beam_energy_MeV"], run["campaign"],
+                               run["pressure_mbar"], run["drift_V"]), run)
+    runList = [run for run in runList if run in setups.values()]
+
 ################################################
 # Number of chunks (sets of 4 AsAd GRAW files) to process; -1 = all.
 # Chunks are taken in run order, then chunk order (_0000, _0001, ...).
 maxChunksPerRun = 1   # e.g. 1 for a quick test on every selected run
-maxChunks = 1         # limit on the total over all selected runs
+maxChunks = -1        # limit on the total over all selected runs (a chunk takes ~40 min)
+procCount = 4         # number of parallel jobs
 ###
 ###
 procName = "makeTrackTree"
 ################################################
 ################################################
 runListLoop(runList, procName, finalizeHIgS(runList),
-            maxChunksPerRun=maxChunksPerRun, maxChunks=maxChunks)
+            procCount=procCount, maxChunksPerRun=maxChunksPerRun, maxChunks=maxChunks)
 ################################################
 ################################################
