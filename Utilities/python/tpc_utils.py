@@ -10,10 +10,13 @@ import psutil
 ################################################################
 ################################################################
 def countRunningProcesses(procName):
-    counter = 0    
+    counter = 0
     for proc in psutil.process_iter():
-        counter += proc.name().find(procName)>-1    
-    return counter                
+        try:
+            counter += proc.name().find(procName)>-1
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            pass  # process ended while scanning the process list
+    return counter
 ################################################################
 ################################################################
 def waintUnitilProcCount(procName, procCount):
