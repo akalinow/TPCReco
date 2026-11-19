@@ -58,12 +58,27 @@ TrackBuilder::TrackBuilder(boost::property_tree::ptree& myConfig) {
   myHoughOffset.resize(3);
   for(auto &offset: myHoughOffset) offset.SetXYZ(0,0,0);
 
+  myTemperature = myConfig.get<double>("conditions.temperature", 293.15);
   setPressure(myConfig.get<double>("conditions.pressure"));
   mydEdxFitter.setMaxFitAttempts(myConfig.get<int>("reconstruction.dEdxFitAttempts", 1));
+  mydEdxFitter.setMaxLossRatio(myConfig.get<double>("reconstruction.dEdxFitMaxLossRatio", dEdxFitter::defaultMaxLossRatio));
   dEdxFitter::setPhysicsConstraint(myConfig.get<bool>("reconstruction.dEdxPhysicsConstraint", false),
                                    myConfig.get<double>("reconstruction.dEdxCarbonRangeMargin", 0.1));
 
   myMLTrackBuilder = std::make_shared<TensorflowModel>(myConfig);
+
+  // charge gain per setup: track charge -> MeV, and R = Q/(G_raw E_dep) in the dE/dx fit
+  dEdxOrientationByR = myConfig.get<bool>("reconstruction.dEdxOrientationByR", false);
+  dEdxOrientationVertexWindow = myConfig.get<double>("reconstruction.dEdxOrientationVertexWindow", 6.0);
+  const std::string gainTableFile = myConfig.get<std::string>("reconstruction.gainTableFile", "");
+  if(!gainTableFile.empty()){
+    try {
+      myGainTable = std::make_shared<const GainTable>(gainTableFile);
+      std::cout<<KBLU<<"Gain table: "<<RST<<gainTableFile<<std::endl;
+    } catch (const std::exception & e) {
+      std::cout<<KRED<<e.what()<<": no charge to energy conversion"<<RST<<std::endl;
+    }
+  }
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -87,6 +102,22 @@ void TrackBuilder::setPressure(double aPressure) {
 
   myPressure = aPressure;
   mydEdxFitter.setPressure(myPressure);
+  myRangeCalculator.setGasConditions(gas_mixture_type::CO2, myPressure, myTemperature);
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+bool TrackBuilder::getRunGains(GainTable::Entry & gains) const {
+  if(!myGainTable || !myEventPtr) return false;
+  return myGainTable->find(myEventPtr->GetEventInfo().GetRunId(), myPressure, gains);
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+double TrackBuilder::getChargeRatio(double charge, double gainRaw, const HypothesisFit & aFit){
+  double energy = 0.0;
+  if(aFit.alphaRange>0) energy += myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA, aFit.alphaRange);
+  if(aFit.carbonRange>0) energy += myRangeCalculator.getIonEnergyMeV(aFit.recoilPID, aFit.carbonRange);
+  if(!(energy>0) || !(gainRaw>0)) return 0.0;
+  return charge/(gainRaw*energy);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -243,6 +274,9 @@ void TrackBuilder::reconstruct(){
     aTrackCandidate.addSegment(aSegment);    
   }
   ////
+
+  GainTable::Entry gains;
+  if(getRunGains(gains)) aTrackCandidate.setChargeGain(gains.gainCal);
 
   myFittedTrack = aTrackCandidate;
 
@@ -953,12 +987,18 @@ Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
 
   // vertex position along the track from the ML model, if available,
   // otherwise no constraint
+  bool hasMLVertex = false;
+  double mlVertexOffset = 0.0;
   if(myMLTrackBuilder->isValid()) {
     myMLTrackBuilder->run(myEventPtr);
-    double vtxOffset = (myMLTrackBuilder->getCarbonEnd() - myMLTrackBuilder->getVertex()).Mag();
-    mydEdxFitter.setVertexConstraint(vtxOffset);
+    mlVertexOffset = (myMLTrackBuilder->getCarbonEnd() - myMLTrackBuilder->getVertex()).Mag();
+    hasMLVertex = true;
   }
-  else mydEdxFitter.clearVertexConstraint();
+  auto setDefaultVertexConstraint = [&](){
+    if(hasMLVertex) mydEdxFitter.setVertexConstraint(mlVertexOffset);
+    else mydEdxFitter.clearVertexConstraint();
+  };
+  setDefaultVertexConstraint();
 
   double trackWidth = aSegment.getMaxProjWidth();
   double centralD = trackWidth/0.76; //parameter to be moved to configuration
@@ -971,23 +1011,57 @@ Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
     maxD = 1.5;
   }
   mydEdxFitter.setDiffusionRange(minD, maxD);
+  mydEdxFitter.setOrientation(-1);
   mydEdxFitter.fitHisto(hChargeProfile);
+  HypothesisFit best = getHypothesisFit();
 
-  pid_type eventType = mydEdxFitter.getBestFitEventType();
   // no hypothesis fitted: keep the fitted track instead of a zero length alpha segment
-  if(eventType==pid_type::UNKNOWN){
+  if(best.eventType==pid_type::UNKNOWN){
     std::cout<<KRED<<"dE/dx fit failed: "<<RST<<"event hypothesis not fitted."<<std::endl;
     return aTrackCandidate;
   }
-  bool isReflected = mydEdxFitter.getIsReflected();
-  double vertexOffset = mydEdxFitter.getVertexOffset();
-  double alphaRange = mydEdxFitter.getAlphaRange();
-  double carbonRange = mydEdxFitter.getCarbonRange();
+
+  // R = Q/(G_raw E_dep) with E_dep from the fitted ranges. The dE/dx fit can end in the wrong
+  // alpha-C orientation (vertex next to the alpha end, the alpha Bragg peak taken as the carbon),
+  // whose E_dep is too low. Refit the other orientation, with the vertex seeded at the mirrored
+  // position (one carbon range from the current alpha end), and keep the fit with |R-1| smaller.
+  double chargeRatio = 0.0;
+  GainTable::Entry gains;
+  if(best.eventType==C12_ALPHA && getRunGains(gains)){
+    const double charge = aSegment.getIntegratedCharge(aSegment.getLength());
+    chargeRatio = getChargeRatio(charge, gains.gainRaw, best);
+    if(dEdxOrientationByR && chargeRatio>0){
+      // profile coordinates: x in the reflected profile = length - x in the profile as given
+      const double length = aSegment.getLength();
+      const double altVertexOffset = length - (best.vertexOffset + best.alphaRange) + best.carbonRange;
+      mydEdxFitter.setOrientation(best.isReflected ? 0 : 1);
+      mydEdxFitter.setVertexConstraint(altVertexOffset, dEdxOrientationVertexWindow);
+      mydEdxFitter.fitHisto(hChargeProfile);
+      HypothesisFit alt = getHypothesisFit();
+      mydEdxFitter.setOrientation(-1);
+      setDefaultVertexConstraint();
+      const double altRatio = alt.eventType==C12_ALPHA ? getChargeRatio(charge, gains.gainRaw, alt) : 0.0;
+      const bool useAlt = altRatio>0 && std::abs(altRatio-1)<std::abs(chargeRatio-1);
+      std::cout<<KBLU<<"dE/dx orientation by R: "<<RST
+               <<"R = "<<chargeRatio<<" (loss "<<best.loss<<", alpha "<<best.alphaRange<<" mm, carbon "<<best.carbonRange<<" mm), "
+               <<"other orientation R = "<<altRatio<<" (loss "<<alt.loss<<", alpha "<<alt.alphaRange<<" mm, carbon "<<alt.carbonRange<<" mm)"
+               <<(useAlt ? " -> other orientation" : " -> kept")<<std::endl;
+      if(useAlt){
+        best = alt;
+        chargeRatio = altRatio;
+      }
+    }
+  }
+
+  const pid_type eventType = best.eventType;
+  const double vertexOffset = best.vertexOffset;
+  const double alphaRange = best.alphaRange;
+  const double carbonRange = best.carbonRange;
 
   TVector3 tangent =  aSegment.getTangent();
   TVector3 start =  aSegment.getStart();
   
-  if(isReflected){
+  if(best.isReflected){
     tangent *=-1;
     start = aSegment.getEnd();
   }
@@ -997,27 +1071,27 @@ Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
   TVector3 carbonEnd =  vertexPos - carbonRange*tangent;
 
   Track3D aSplitTrackCandidate;
-  aSplitTrackCandidate.setChargeProfile(mydEdxFitter.getFittedHisto());
-  aSplitTrackCandidate.setHypothesisFitLoss(mydEdxFitter.getLoss());
+  aSplitTrackCandidate.setChargeProfile(best.fittedHisto);
+  aSplitTrackCandidate.setHypothesisFitLoss(best.loss);
+  aSplitTrackCandidate.setChargeRatio(chargeRatio);
   TrackSegment3D alphaSegment;
   alphaSegment.setGeometry(myGeometryPtr);  
   alphaSegment.setStartEnd(vertexPos, alphaEnd);
   alphaSegment.setRecHits(myRawHits);
-  alphaSegment.setDiffusion(mydEdxFitter.getDiffusion());
+  alphaSegment.setDiffusion(best.diffusion);
   alphaSegment.setPID(pid_type::ALPHA);
   aSplitTrackCandidate.addSegment(alphaSegment);
 
   std::cout<<KGRN<<"Fitted event hypothesis: "
            <<eventType
-           <<" with dE/dx diffusion: "<<mydEdxFitter.getDiffusion()
+           <<" with dE/dx diffusion: "<<best.diffusion
            <<" mm/sqrt(cm), vertex offset: "<<vertexOffset
            <<" mm, alpha range: "<<alphaRange
            <<" mm, carbon range: "<<carbonRange
-           <<", fit loss: "<<mydEdxFitter.getLoss();
+           <<", fit loss: "<<best.loss;
   if(eventType==C12_ALPHA){
-    const auto kinematics = mydEdxFitter.getKinematics();
-    std::cout<<", kinematics: "<<(kinematics==dEdxFitter::Kinematics::O16 ? "O16" :
-                                  kinematics==dEdxFitter::Kinematics::O18 ? "O18" : "free");
+    std::cout<<", kinematics: "<<(best.kinematics==dEdxFitter::Kinematics::O16 ? "O16" :
+                                  best.kinematics==dEdxFitter::Kinematics::O18 ? "O18" : "free");
   }
   std::cout<<RST<<std::endl;
   
@@ -1026,11 +1100,29 @@ Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
     carbonSegment.setGeometry(myGeometryPtr);  
     carbonSegment.setStartEnd(vertexPos, carbonEnd);
     carbonSegment.setRecHits(myRawHits);
-    carbonSegment.setDiffusion(mydEdxFitter.getDiffusion());
-    carbonSegment.setPID(mydEdxFitter.getRecoilPID()); // CARBON_12 or CARBON_14 (O18 kinematics)
+    carbonSegment.setDiffusion(best.diffusion);
+    carbonSegment.setPID(best.recoilPID); // CARBON_12 or CARBON_14 (O18 kinematics)
     aSplitTrackCandidate.addSegment(carbonSegment);
   }
   return aSplitTrackCandidate;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+TrackBuilder::HypothesisFit TrackBuilder::getHypothesisFit() const {
+  HypothesisFit aFit;
+  aFit.eventType = mydEdxFitter.getBestFitEventType();
+  if(aFit.eventType==pid_type::UNKNOWN) return aFit;
+  aFit.isReflected = mydEdxFitter.getIsReflected();
+  aFit.vertexOffset = mydEdxFitter.getVertexOffset();
+  aFit.alphaRange = mydEdxFitter.getAlphaRange();
+  aFit.carbonRange = mydEdxFitter.getCarbonRange();
+  aFit.loss = mydEdxFitter.getLoss();
+  aFit.diffusion = mydEdxFitter.getDiffusion();
+  aFit.kinematics = mydEdxFitter.getKinematics();
+  aFit.recoilPID = mydEdxFitter.getRecoilPID();
+  aFit.fittedHisto = mydEdxFitter.getFittedHisto();
+  aFit.fittedHisto.SetDirectory(0);
+  return aFit;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

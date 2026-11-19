@@ -34,6 +34,7 @@
 #include "TPCReco/EventSourceMC.h"
 #include "TPCReco/RunController.h"
 #include "TPCReco/TrackBuilder.h"
+#include "TPCReco/GainMap.h"
 
 namespace EventSourceFactory {
 	inline std::shared_ptr<EventSourceBase> makeEventSourceObject(boost::property_tree::ptree& myConfig) {
@@ -144,6 +145,24 @@ namespace EventSourceFactory {
 			std::cerr << KRED << "and GRAW libraries not set." << RST << _endl_;
 #endif
 			exit(0);
+		}
+
+		// relative gain map of the readout plane, applied per hit after the 3D fit (data only:
+		// the MC digitizer has a uniform gain)
+		std::string gainMapFileName = myConfig.get<std::string>("input.gainMapFile", "");
+		if (!gainMapFileName.empty()) {
+			if (myConfig.get<event_type>("transient.eventType") == event_type::EventSourceMC) {
+				std::cout << KBLU << "input.gainMapFile ignored for Monte Carlo input: " << RST << gainMapFileName << std::endl;
+			}
+			else {
+				try {
+					myEventSource->getGeometry()->SetGainMap(std::make_shared<const GainMap>(gainMapFileName));
+					std::cout << KBLU << "Gain map: " << RST << gainMapFileName << std::endl;
+				} catch (const std::exception& e) {
+					std::cerr << KRED << e.what() << RST << std::endl;
+					exit(1);
+				}
+			}
 		}
 
 		myEventSource->setNEventsToRead(nEvents);

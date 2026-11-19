@@ -167,7 +167,7 @@ void dEdxFitter::reset(){
   }
   else carbon_alpha_model->FixParameter(7, 1.0);
   if(hasVertexConstraint){
-    carbon_alpha_model->SetParLimits(1, vertexConstraint-2, vertexConstraint+2);
+    carbon_alpha_model->SetParLimits(1, std::max(0.0, vertexConstraint-vertexConstraintHalfWidth), vertexConstraint+vertexConstraintHalfWidth);
     carbon_alpha_model->SetParameter(1, vertexConstraint);
   }
 
@@ -205,10 +205,11 @@ void dEdxFitter::setStepSizes(TF1 *fModel, double scale){
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
-void dEdxFitter::setVertexConstraint(double vxtOffset){
+void dEdxFitter::setVertexConstraint(double vxtOffset, double halfWidth){
   // applied in reset(), which sets the initial parameters before each fit
   hasVertexConstraint = true;
   vertexConstraint = vxtOffset;
+  vertexConstraintHalfWidth = halfWidth;
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
@@ -330,11 +331,10 @@ TFitResult dEdxFitter::fitHypothesis(TF1 *fModel, TH1F & aHisto){
 
   // Deterministic restarts (maxFitAttempts, default 1): the same initial parameter
   // values, with the initial step sizes below (0: ROOT default, otherwise
-  // scale x 10% of the parameter range). The first valid fit with a small loss is
+  // scale x 10% of the parameter range). The first valid fit with loss/Q^2 <= maxLossRatio is
   // accepted; if there is none, the best fit: a valid one with the lowest loss,
   // else the one with the lowest loss.
   const std::vector<double> stepScales = {0.0, 1.0, 0.3, 3.0, 0.1, 0.5, 2.0, 0.05, 0.2, 5.0};
-  const double maxLossRatio = 5E-4;
   const unsigned int nAttempts = std::min<size_t>(maxFitAttempts, stepScales.size());
   bool haveResult = false;
   for(unsigned int iAttempt=0;iAttempt<nAttempts;++iAttempt){
@@ -381,6 +381,7 @@ TFitResult dEdxFitter::fitHisto(const TH1F & aHisto){
   auto fitBothOrientations = [&](TF1 *model){
     HypothesisFit best;
     for(int iOrientation=0;iOrientation<2;++iOrientation){
+      if(forcedOrientation>=0 && iOrientation!=forcedOrientation) continue;
       TH1F histo = iOrientation ? reflectHisto(aHisto) : TH1F(aHisto);
       histo.SetDirectory(0);
       TFitResult result = fitHypothesis(model, histo);

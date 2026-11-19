@@ -1,0 +1,23 @@
+# Relative gain of the readout plane vs X_DET, HIgS 2022 (all setups: Apr 130/190/250 mbar, Aug 130 mbar).
+# Measured from 2-prong 16O(g,a)12C tracks (TPCReco ntuples, first chunk of each run, ~38k events):
+#   Q_i = G_setup * sum_k E_ik g_k,  E_ik = SRIM energy deposit of track i in x bin k (Bragg curve).
+# Normalised to <g> = 1 weighted by deposited energy. Same shape in all four setups within errors.
+# Producer: WarsawTPC_Claude/code/gain_x_map.py (results/gain_x_correction.csv), 2026-11-19.
+# Use: --input.gainMapFile gainMap_HIgS2022_xDET.dat (data only). Hit charge is divided by g(x).
+# Columns: x_lo [mm]  x_hi [mm]  g  (g_err as comment)
+  -160.0   -140.0   0.9454   # +- 0.0019
+  -140.0   -120.0   0.9784   # +- 0.0017
+  -120.0   -100.0   0.9862   # +- 0.0016
+  -100.0    -80.0   1.0006   # +- 0.0015
+   -80.0    -60.0   1.0017   # +- 0.0015
+   -60.0    -40.0   1.0069   # +- 0.0016
+   -40.0    -20.0   1.0211   # +- 0.0015
+   -20.0      0.0   1.0085   # +- 0.0015
+     0.0     20.0   1.0243   # +- 0.0015
+    20.0     40.0   1.0348   # +- 0.0015
+    40.0     60.0   1.0109   # +- 0.0016
+    60.0     80.0   1.0149   # +- 0.0016
+    80.0    100.0   1.0002   # +- 0.0016
+   100.0    120.0   0.9774   # +- 0.0016
+   120.0    140.0   0.9475   # +- 0.0017
+   140.0    160.0   0.9519   # +- 0.0019

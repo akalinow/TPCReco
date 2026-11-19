@@ -824,7 +824,7 @@ void ConfigManager::resolveResourcePaths(){
 	     <<KBLU<<" found as: "<<RST<<resolved<<std::endl;
     configTree.put(key, resolved);
   };
-  for(const std::string key: {"input.geometryFile", "input.controllerConfigPath", "reconstruction.tfModelPath"}) {
+  for(const std::string key: {"input.geometryFile", "input.gainMapFile", "reconstruction.gainTableFile", "input.controllerConfigPath", "reconstruction.tfModelPath"}) {
     auto value = configTree.get_optional<std::string>(key);
     if(value) update(key, ResourcePath::resolve(*value));
   }

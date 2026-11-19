@@ -58,6 +58,19 @@ class Track3D{
 
   double getHypothesisFitLoss() const {return hypothesisFitLoss;}
 
+  /// Charge gain G_cal [ADC/MeV] of the run (GainTable); 0 if not known.
+  void setChargeGain(double aGain){ chargeGain = aGain;}
+
+  double getChargeGain() const { return chargeGain;}
+
+  /// Track charge converted to calibrated kinetic energy [MeV]; 0 if the gain is not known.
+  double getChargeEnergy() const;
+
+  /// R = Q/(G_raw E_dep) of the dE/dx fit (E_dep from the alpha and carbon ranges); 0 if not computed.
+  void setChargeRatio(double aRatio){ chargeRatio = aRatio;}
+
+  double getChargeRatio() const { return chargeRatio;}
+
   double hitDistanceFromBias(const double *par);
 
   double updateAndGetLoss(const double *par);
@@ -83,6 +96,8 @@ class Track3D{
   TrackSegment3DCollection mySegments;
   TH1F myChargeProfile;
   double hypothesisFitLoss{0};
+  double chargeGain{0};  //! G_cal [ADC/MeV], set by the TrackBuilder
+  double chargeRatio{0}; //! R of the dE/dx fit, set by the TrackBuilder
   std::vector<TVector3> myReferenceTangents; //! segment tangents when the TANGENT_ROTATION fit mode was set
 };
 

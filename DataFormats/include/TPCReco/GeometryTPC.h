@@ -28,6 +28,7 @@
 #define ERROR    -1    // error result indicator
 
 class StripTPC;
+class GainMap;
 
 // UVW strip geometry defined as a class
 
@@ -71,6 +72,7 @@ class GeometryTPC {
   bool isOK_TH2Poly;               // is TH2Poly already initialized?
   bool _debug;                     // debug/verbose info flag
   TH2PolyBin* tp_convex;           // for internal storage of the convex hull for UVW active area
+  std::shared_ptr<const GainMap> gainMap; //! relative gain vs X_DET (not part of the geometry file); null = uniform
 
   // Setter methods 
   
@@ -239,6 +241,10 @@ class GeometryTPC {
   TH2D *GetXY_TestVW(TH2D *h=NULL); // auxillary functions for x-check 
   TH2D *GetXY_TestWU(TH2D *h=NULL); // auxillary functions for x-check
   
+  // Relative gain map of the readout plane, applied per hit after the 3D fit (see GainMap.h)
+  void SetGainMap(std::shared_ptr<const GainMap> aGainMap) { gainMap = aGainMap; }
+  std::shared_ptr<const GainMap> GetGainMap() const { return gainMap; }
+
   bool operator==(const GeometryTPC&) const;
   inline bool operator!=(const GeometryTPC& B) const { return !(*this==B); }
   static const int outside_section{GeometryStats::outside_section}; // index for dummy sections outside of UVW active area used to truncate toy MC generated signals

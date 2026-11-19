@@ -69,7 +69,8 @@ typedef struct {Float_t eventId, frameId,
     xCarbonEnd, yCarbonEnd, zCarbonEnd,
     total_mom_x,  total_mom_y,  total_mom_z,
     lineFitLoss, dEdxFitLoss, dEdxFitSigma,
-    maxProjWidth;
+    maxProjWidth,
+    chargeEnergy, chargeRatio;
     } TrackData;
 /////////////////////////
 int makeTrackTree(boost::property_tree::ptree & aConfig) {
@@ -95,7 +96,8 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   leafNames += "xCarbonEnd:yCarbonEnd:zCarbonEnd:";
   leafNames += "total_mom_x:total_mom_y:total_mom_z:";
   leafNames += "lineFitLoss:dEdxFitLoss:dEdxFitSigma:";
-  leafNames += "maxProjWidth";
+  leafNames += "maxProjWidth:";
+  leafNames += "chargeEnergy:chargeRatio";
   tree->Branch("track",&track_data,leafNames.c_str());
 
   std::string geometryFileName = aConfig.get("input.geometryFile","");
@@ -316,6 +318,8 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     track_data.dEdxFitLoss = aTrack3D.getHypothesisFitLoss();
     track_data.dEdxFitSigma = aTrack3D.getSegments().front().getDiffusion();    
     track_data.maxProjWidth = aTrack3D.getSegments().front().getMaxProjWidth();
+    track_data.chargeEnergy = aTrack3D.getChargeEnergy();   // [MeV], 0 without a gain table entry
+    track_data.chargeRatio = aTrack3D.getChargeRatio();     // Q/(G_raw E_dep) of the dE/dx fit, 0 if not computed
     tree->Fill();
   /*
   } // end of event loop

@@ -28,8 +28,12 @@ public:
   void setDiffusionRange(double minD=0.5, double maxD=1.5);
 
   /// Constrain the vertex position of the C12+alpha hypothesis to
-  /// vxtOffset +- 2 mm (position along the charge profile)
-  void setVertexConstraint(double vxtOffset);
+  /// vxtOffset +- halfWidth (position along the charge profile, mm)
+  void setVertexConstraint(double vxtOffset, double halfWidth=2.0);
+
+  /// Orientations of the profile fitted by fitHisto: -1 both (default), 0 only the profile as
+  /// given, 1 only the reflected profile.
+  void setOrientation(int anOrientation) { forcedOrientation = anOrientation; }
 
   /// Remove the vertex constraint
   void clearVertexConstraint() { hasVertexConstraint = false;}
@@ -37,6 +41,12 @@ public:
   /// Number of fit attempts per hypothesis, with different initial step
   /// sizes (1 to 10, default 1)
   void setMaxFitAttempts(unsigned int nAttempts);
+
+  /// Restarts stop at the first valid fit with loss/Q^2 <= maxLossRatio (Q: integral of the
+  /// charge profile normalised to its maximum).
+  void setMaxLossRatio(double aRatio) { maxLossRatio = aRatio; }
+
+  double getMaxLossRatio() const { return maxLossRatio; }
 
   /// Kinematics of the two prong (recoil + alpha) hypothesis: free recoil
   /// range, or the recoil range from momentum conservation (equal momenta,
@@ -140,7 +150,10 @@ private:
 
   bool hasVertexConstraint{false};
   double vertexConstraint{0};
+  double vertexConstraintHalfWidth{2};
+  int forcedOrientation{-1};
   unsigned int maxFitAttempts{1};
+  double maxLossRatio{defaultMaxLossRatio};
 
   double maxCarbonRange, maxAlphaRange;
 
@@ -162,6 +175,9 @@ private:
   static void setStepSizes(TF1 *fModel, double scale);
 
 public:
+  /// Default stop threshold of the restarts (see setMaxLossRatio).
+  static constexpr double defaultMaxLossRatio{1E-5}; // was 5E-4: accepted wrong minima (loss ~0.7 for an 80 mm track)
+
   /// Models of the charge profile along the track, x in [mm], result in [keV/mm]
   /// (dE/dx table units). Parameters, lengths in [mm] at the current pressure:
   ///  [0] sigma: Gaussian smearing (diffusion), [1] vertex position,

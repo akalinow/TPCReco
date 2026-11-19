@@ -1,0 +1,10 @@
+# Charge gain per setup, HIgS 2022 (TPCReco: reconstruction.gainTableFile).
+# Produced by WarsawTPC_Claude/code/4_length_charge.ipynb (section 'Gain table for TPCReco') from the
+# 16O sample with dEdxFitLoss < 0.1, charge corrected with gainMap_HIgS2022_xDET.dat (use the table with the map).
+# G_cal: ADC per MeV of calibrated total kinetic energy (track charge -> MeV).
+# G_raw: ADC per MeV of SRIM energy from the reconstructed alpha and carbon lengths (R = Q/(G_raw E_dep)).
+# Columns: run_first run_last pressure_mbar G_cal G_raw   (run ID = YYYYMMDDhhmmss; pressure match within 5 mbar)
+20220401000000 20220430235959  130.0   283756.4   294500.5   # Apr 130 mbar, N = 208, sigma_R = 0.043
+20220401000000 20220430235959  190.0   206015.3   223810.4   # Apr 190 mbar, N = 29555, sigma_R = 0.040
+20220401000000 20220430235959  250.0    60368.7    64802.1   # Apr 250 mbar, N = 854, sigma_R = 0.043
+20220801000000 20220930235959  130.0   452076.0   474669.2   # Aug 130 mbar, N = 2258, sigma_R = 0.058

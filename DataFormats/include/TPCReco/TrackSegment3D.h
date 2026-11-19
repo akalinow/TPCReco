@@ -112,6 +112,7 @@ class TrackSegment3D{
   ///Projections without hits close to the segment are ignored; 0 if there is none.
   double getMaxProjWidth() const;
 
+  ///Charge of hits along [0, lambda], corrected by the gain map of the geometry (if set).
   double getIntegratedCharge(double lambda) const;
 
   double getMaxCharge() const;
@@ -133,6 +134,9 @@ class TrackSegment3D{
 
   ///Calculate and store loss for all projections.
   void calculateLoss();
+
+  ///Per-hit gain correction 1/g(X_DET) for 2D projections of [0, lambdaEnd]; empty if no gain map.
+  TrackSegment2D::ChargeWeight getGainCorrection(double lambdaEnd) const;
 
   void addProjection(TH1F &histo, TGraphErrors &graph) const;
 

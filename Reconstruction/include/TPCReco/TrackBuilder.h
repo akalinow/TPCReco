@@ -15,6 +15,8 @@
 #include "TPCReco/Track3D.h"
 #include "TPCReco/RecHitBuilder.h"
 #include "TPCReco/dEdxFitter.h"
+#include "TPCReco/GainTable.h"
+#include "TPCReco/IonRangeCalculator.h"
 #include "TPCReco/MLTrackBuilder.h"
                 
 #include "TPCReco/EventTPC.h"
@@ -141,6 +143,23 @@ private:
   Track3D fitTrack3D(const Track3D & aTrackCandidate);
 
   Track3D fitEventHypothesis(const Track3D & aTrackCandidate);
+
+  /// Result of one dE/dx fit, copied from the fitter (a second fit overwrites its state).
+  struct HypothesisFit {
+    pid_type eventType{pid_type::UNKNOWN};
+    bool isReflected{false};
+    double vertexOffset{0}, alphaRange{0}, carbonRange{0}, loss{0}, diffusion{0};
+    dEdxFitter::Kinematics kinematics{dEdxFitter::Kinematics::FREE};
+    pid_type recoilPID{pid_type::CARBON_12};
+    TH1F fittedHisto;
+  };
+  HypothesisFit getHypothesisFit() const;
+
+  /// Gains of the current run from the gain table; false if not known.
+  bool getRunGains(GainTable::Entry & gains) const;
+
+  /// R = Q/(G_raw E_dep), E_dep = T_alpha(L_alpha) + T_recoil(L_recoil) (SRIM, run pressure).
+  double getChargeRatio(double charge, double gainRaw, const HypothesisFit & aFit);
   
   ROOT::Fit::FitResult fitTrackNodesBiasTangent(const Track3D & aTrack, definitions::fit_type fitType) const;
 
@@ -154,6 +173,11 @@ private:
   RecHitBuilder myRecHitBuilder;
   dEdxFitter mydEdxFitter;
   double myPressure{190};
+  double myTemperature{293.15};
+  std::shared_ptr<const GainTable> myGainTable;   ///< null: no charge -> energy conversion, no R selection
+  IonRangeCalculator myRangeCalculator;
+  bool dEdxOrientationByR{false};                 ///< refit the other alpha-C orientation, keep the better R (off: on 150 events it raised the bad fits from 13% to 31%)
+  double dEdxOrientationVertexWindow{6.0};        ///< [mm] vertex window of that refit
   
   std::vector<double> phiPitchDirection;
 

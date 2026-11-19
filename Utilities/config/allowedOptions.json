@@ -41,6 +41,12 @@
         "defaultValue": "",
         "description": "Geometry file location.\nType: string"
     },
+    "gainMapFile":{
+        "group": "input",
+        "type": "string",
+        "defaultValue": "",
+        "description": "Relative gain map g(X_DET) of the readout plane (lines: x_lo x_hi gain, mm). Hit charges are divided by g(X_DET) at the hit position after the 3D fit (charge profile for the dE/dx fit, integrated charge). Empty: no correction. Ignored for MC input.\nType: string"
+    },
     "resourcesPath":{
         "group": "input",
         "type": "string",
@@ -412,10 +418,34 @@
         "defaultValue" : "",
         "description" : "Path to the TensorFlow model Keras file.\nType: string"
     },
+    "gainTableFile":{
+        "group":"reconstruction",
+        "type" : "string",
+        "defaultValue" : "gainTable_HIgS2022.dat",
+        "description" : "Charge gain per setup (lines: run_first run_last pressure_mbar G_cal G_raw; run ID YYYYMMDDhhmmss). G_cal converts the track charge to MeV (chargeEnergy); G_raw gives R = Q/(G_raw E_dep) used to choose the alpha-C orientation of the dE/dx fit. Measured with the gain map on. Empty or no matching row: no conversion, no R selection.\nType: string"
+    },
+    "dEdxOrientationByR":{
+        "group":"reconstruction",
+        "type" : "bool",
+        "defaultValue" : false,
+        "description" : "After the dE/dx fit, refit the other alpha-C orientation (vertex seeded one carbon range from the current alpha end) and keep the fit with |R-1| smaller, R = Q/(G_raw E_dep). Needs a gain table entry for the run.\nType: bool"
+    },
+    "dEdxOrientationVertexWindow":{
+        "group":"reconstruction",
+        "type" : "double",
+        "defaultValue" : 6.0,
+        "description" : "Half width [mm] of the vertex window of the refit with the other alpha-C orientation.\nType: double"
+    },
+    "dEdxFitMaxLossRatio":{
+        "group":"reconstruction",
+        "type" : "double",
+        "defaultValue" : 1E-5,
+        "description" : "Stop threshold of the dE/dx fit restarts: the first valid fit with loss/Q^2 below this value is kept (Q: integral of the charge profile normalised to its maximum). Only used with dEdxFitAttempts > 1.\nType: double"
+    },
     "dEdxFitAttempts":{
         "group":"reconstruction",
         "type" : "int",
-        "defaultValue" : 1,
+        "defaultValue" : 3,
         "description" : "Number of attempts of the dE/dx (event hypothesis) fit, with different initial step sizes (1-10). The first valid fit with a small loss is kept, otherwise the best one.\nType: int"
     },
     "dEdxPhysicsConstraint":{

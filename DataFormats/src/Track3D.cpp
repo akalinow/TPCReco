@@ -74,6 +74,12 @@ std::vector<double> Track3D::getSegmentsBiasTangentCoords() const{
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+double Track3D::getChargeEnergy() const{
+  if(!(chargeGain>0)) return 0.0;
+  return getIntegratedCharge(getLength())/chargeGain;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 double Track3D::getIntegratedCharge(double lambda) const{
   double charge = 0.0;
   double pastSegmentsLambda = 0.0;
@@ -322,10 +328,14 @@ std::ostream & operator << (std::ostream &out, const Track3D &aTrack){
   }
 
   auto length = aTrack.getLength();
-  auto charge = -0.6684 + aTrack.getIntegratedCharge(length)*2.911/1E6;
   auto chargeFromProfile = aTrack.getChargeProfile().Integral("width");
   out<<"\t Total track length [mm]: "<<length<<std::endl;
-  out<<"\t Total track charge [MeV]: "<<charge<<std::endl;
+  out<<"\t Total track charge [ADC]: "<<aTrack.getIntegratedCharge(length)<<std::endl;
+  if(aTrack.getChargeGain()>0){
+    out<<"\t Total track charge [MeV]: "<<aTrack.getChargeEnergy()
+       <<" (G_cal = "<<aTrack.getChargeGain()<<" ADC/MeV)"<<std::endl;
+  }
+  if(aTrack.getChargeRatio()>0) out<<"\t Q/(G_raw E_dep) of the dE/dx fit: "<<aTrack.getChargeRatio()<<std::endl;
   out<<"\t Total track charge from 3D profile [arb. units]: "<<aTrack.getChargeProfile().Integral("width")<<std::endl;
   out<<"\t Hit fit loss func.: "<<aTrack.getLoss()<<std::endl;
   out<<"\t dE/dx fit loss func./charge: "<<aTrack.getHypothesisFitLoss()/chargeFromProfile+0.01<<std::endl;

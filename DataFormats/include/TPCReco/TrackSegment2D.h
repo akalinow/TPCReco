@@ -5,6 +5,7 @@
 #include <vector>
 #include <memory>
 #include <tuple>
+#include <functional>
 
 #include <TVector3.h>
 #include <TGraphErrors.h>
@@ -55,9 +56,15 @@ public:
 
   double getLength() const { return myLenght;}
 
-  TGraphErrors getChargeProfile(const Hit2DCollection & aRecHits, double radiusCut=4.0);
+  /// Per-hit charge weight as a function of the hit position along the segment, given as the
+  /// fraction of the segment length (0 = start, 1 = end); empty = weight 1.
+  using ChargeWeight = std::function<double(double)>;
 
-  double getIntegratedCharge(double lambda, const Hit2DCollection & aRecHits) const;
+  TGraphErrors getChargeProfile(const Hit2DCollection & aRecHits, double radiusCut=4.0,
+				const ChargeWeight & chargeWeight = ChargeWeight()) const;
+
+  double getIntegratedCharge(double lambda, const Hit2DCollection & aRecHits,
+			     const ChargeWeight & chargeWeight = ChargeWeight()) const;
 
   ///Rec hits assigned to this projection.
   const Hit2DCollection & getRecHits() const {return myRecHits;}

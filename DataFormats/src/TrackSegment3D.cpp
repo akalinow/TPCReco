@@ -1,5 +1,6 @@
 #include "TPCReco/TrackSegment3D.h"
 #include "TPCReco/GeometryTPC.h"
+#include "TPCReco/GainMap.h"
 #include "TPCReco/colorText.h"
 
 #include <cmath>
@@ -184,13 +185,26 @@ TrackSegment2D TrackSegment3D::get2DProjection(int strip_dir, double lambdaStart
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+TrackSegment2D::ChargeWeight TrackSegment3D::getGainCorrection(double lambdaEnd) const{
+
+  // 2D projections of [0, lambdaEnd] are linear images of the 3D segment: the fraction f
+  // along the projection is the fraction along the 3D segment
+  std::shared_ptr<const GainMap> aGainMap = myGeometryPtr ? myGeometryPtr->GetGainMap() : nullptr;
+  if(!aGainMap || aGainMap->empty()) return TrackSegment2D::ChargeWeight();
+  const double x0 = getStart().X();
+  const double dx = lambdaEnd*getTangent().X();
+  return [aGainMap, x0, dx](double f){ return 1.0/aGainMap->getGain(x0 + f*dx); };
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 double TrackSegment3D::getIntegratedCharge(double lambda) const{
   if(lambda<0) return 0;
   double charge = 0.0;
+  const TrackSegment2D::ChargeWeight gainCorrection = getGainCorrection(lambda);
   for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
     TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, lambda);
     const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
-    charge += aTrack2DProjection.getIntegratedCharge(lambda, aRecHits);
+    charge += aTrack2DProjection.getIntegratedCharge(lambda, aRecHits, gainCorrection);
   }
   return charge;
 }
@@ -301,10 +315,11 @@ TH1F TrackSegment3D::getChargeProfile() const{
   TH1::AddDirectory(addDirectoryStatus);
   if(getLength()<1) return hChargeProfile;
 
+  const TrackSegment2D::ChargeWeight gainCorrection = getGainCorrection(getLength());
   for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
-    TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, getLength()); 
+    TrackSegment2D aTrack2DProjection = get2DProjection(strip_dir, 0, getLength());
     const Hit2DCollection & aRecHits = myRecHits.at(strip_dir);
-    TGraphErrors aGraph = aTrack2DProjection.getChargeProfile(aRecHits, radiusCut);
+    TGraphErrors aGraph = aTrack2DProjection.getChargeProfile(aRecHits, radiusCut, gainCorrection);
     double projLength = aTrack2DProjection.getLength();
     //double graphLength = aGraph.GetXaxis()->GetXmax() - aGraph.GetXaxis()->GetXmin();
 
