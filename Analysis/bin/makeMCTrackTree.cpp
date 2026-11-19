@@ -85,7 +85,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   TTree *tree = new TTree("trackTree", "Track tree");
   TrackData track_data;
   std::string leafNames = "";
-  leafNames += "eventId:";
+  leafNames += "eventId:frameId:";
   leafNames += "eventReactionType:";
   leafNames += "alphaRangeGen:alphaEnergyGen:";
   leafNames += "carbonRangeGen:carbonEnergyGen:";
@@ -108,6 +108,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   std::cout<<KBLU<<"File with "<<RST<<myEventSource->numberOfEvents()<<" frames loaded."<<std::endl;
 
   //Event loop
+  int nEntriesProcessed = 0;
   while(myEventSource->getNextEventLoop()){
 
     *myEventInfo = myEventSource->getCurrentEvent()->GetEventInfo();    
@@ -126,6 +127,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     const Track3D & aTrack3D = myEventSource->getRecoEvent();
 
     track_data.eventId = eventId;
+    track_data.frameId = nEntriesProcessed;
     track_data.eventReactionType = reactionTypeToFloat(myEventSource->GetGeneratedReactionType());
 
     track_data.alphaRangeGen =  aTrack3DGenAlpha.getLength();    
@@ -148,8 +150,25 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     track_data.vtxGenY = vtxGen.Y();
     track_data.vtxGenZ = vtxGen.Z();
 
-    track_data.eventTypeReco = aTrack3D.getSegments().front().getPID() + aTrack3D.getSegments().back().getPID();    
-    track_data.alphaRangeReco =  aTrack3D.getSegments().front().getLength();    
+    track_data.lineFitLoss = aTrack3D.getLoss();
+    track_data.dEdxFitLoss = aTrack3D.getHypothesisFitLoss();
+    ++nEntriesProcessed;
+    if(aTrack3D.getSegments().empty()){
+      // no reconstructed track: keep the event (efficiency), reco values 0
+      track_data.eventTypeReco = 0;
+      track_data.alphaRangeReco = track_data.alphaEnergyReco = 0;
+      track_data.carbonRangeReco = track_data.carbonEnergyReco = 0;
+      track_data.chargeReco = 0;
+      track_data.vtxRecoX = track_data.vtxRecoY = track_data.vtxRecoZ = 0;
+      track_data.cosThetaReco = track_data.phiReco = 0;
+      track_data.dEdxFitSigma = 0;
+      tree->Fill();
+      continue;
+    }
+
+    track_data.eventTypeReco = 0;
+    for(const auto & aSegment : aTrack3D.getSegments()) track_data.eventTypeReco += aSegment.getPID();
+    track_data.alphaRangeReco =  aTrack3D.getSegments().front().getLength();
     track_data.alphaEnergyReco = track_data.alphaRangeReco>0 ? myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA, track_data.alphaRangeReco):0.0;
 
     track_data.carbonRangeReco =  aTrack3D.getSegments().size()==2 ? aTrack3D.getSegments().back().getLength(): 0.0;    
@@ -170,14 +189,14 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     track_data.cosThetaReco = cos(tangentReco.Theta());
     track_data.phiReco = tangentReco.Phi();
 
-
-    track_data.lineFitLoss = aTrack3D.getLoss();
-    track_data.dEdxFitLoss = aTrack3D.getHypothesisFitLoss();
     track_data.dEdxFitSigma = aTrack3D.getSegments().front().getDiffusion();
-    
-    tree->Fill();    
+
+    tree->Fill();
   }
-  return 0;
+  outputROOTFile.cd();
+  tree->Write();
+  outputROOTFile.Close();
+  return nEntriesProcessed;
 }
 /////////////////////////////
 ////////////////////////////
