@@ -294,8 +294,11 @@ TH1F TrackSegment3D::getChargeProfile() const{
   int nBins = 1024;
   double minX = -0.2*getLength();
   double maxX = 1.2*getLength();
+  // do not attach the histogram to the current directory (e.g. an open output file)
+  const bool addDirectoryStatus = TH1::AddDirectoryStatus();
+  TH1::AddDirectory(false);
   TH1F hChargeProfile("hChargeProfile",";d [mm];charge/mm",nBins, minX, maxX);
-  hChargeProfile.SetDirectory(0);
+  TH1::AddDirectory(addDirectoryStatus);
   if(getLength()<1) return hChargeProfile;
 
   for(int strip_dir=definitions::projection_type::DIR_U;strip_dir<=definitions::projection_type::DIR_W;++strip_dir){
