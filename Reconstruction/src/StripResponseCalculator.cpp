@@ -1,4 +1,7 @@
 #include <iostream>
+#include <cmath>
+#include <map>
+#include <vector>
 
 #include "TPCReco/StripResponseCalculator.h"
 #include "TPCReco/GeometryTPC.h"
@@ -903,33 +906,50 @@ void StripResponseCalculator::initializeTimeResponse(unsigned long NpointsPeakin
             it.second->Reset(); // reset all content
         }
 
-        // perform convolution using random sampling technique
-        for (unsigned long ipoint = 0L; ipoint < NpointsPeakingTime; ipoint++) {
-            if (debug_flag && ((ipoint < 1000 && ipoint % 100 == 0) ||
-                               ipoint % 1000 == 0)) {
-                std::cout << __FUNCTION__ << ": Generating point=" << ipoint << std::endl;
+        // Perform the convolution using random sampling of the AGET response.
+        // A charge fraction that the Gaussian diffusion puts in relative time cell k (histogram k, bin with
+        // sub-cell position c) is moved to time cell k + floor((c + delta_z)/cell_width).
+        // NOTE: the cell index k was missing before (target cell = floor((c + delta_z)/cell_width) for every k),
+        // which summed all the cells and removed the longitudinal diffusion from every file made with
+        // peaking_time>0: the time response did not depend on sigma_z.
+        // The shift distribution P(shift | c) is sampled once and then applied to every cell k
+        // (same result as sampling per cell, ~Ntimecells times faster).
+        const auto cellWidth = myGeometryPtr->GetTimeBinWidth(); // [mm]
+        const auto refHist = responseMapPerTimecell.begin()->second;
+        const int nBins = refHist->GetNbinsX();
+        std::vector<std::map<int, double> > shiftProb(nBins + 1); // [ibin][shift] = probability
+        {
+            std::vector<std::vector<double> > counts(nBins + 1);
+            for (unsigned long ipoint = 0L; ipoint < NpointsPeakingTime; ipoint++) {
+                if (debug_flag && ipoint % 1000000 == 0) {
+                    std::cout << __FUNCTION__ << ": Generating point=" << ipoint << std::endl;
+                }
+                auto delta_z_mm = factor_ns2mm * responseShape1d.GetRandom(); // [mm], >= 0
+                for (auto ibin = 1; ibin <= nBins; ibin++) {
+                    const auto c = refHist->GetBinCenter(ibin);
+                    const auto shift = (int) std::floor((c + delta_z_mm) / cellWidth); // >= 0
+                    auto &binCounts = counts[ibin];
+                    if (shift >= (int) binCounts.size()) binCounts.resize(shift + 1, 0.0);
+                    binCounts[shift] += 1.0;
+                }
             }
-            // get relative smeared position
-            auto delta_z_mm = factor_ns2mm * responseShape1d.GetRandom(); // [mm]
-            for (auto &it: responseMapPerTimecell) {
-                auto hist = it.second; // original histogram (without GET electronics effects)
-                for (auto ibin = 1; ibin <= hist->GetNbinsX(); ibin++) {
-                    auto c = hist->GetBinCenter(ibin);
-                    auto charge_frac = hist->GetBinContent(ibin); // amount of charge to be smeared
-                    const auto weight =
-                            charge_frac / (double) NpointsPeakingTime; // contribution of a single sampling point
-                    // determine relative time cell index and corresponding histogram (with GET electronics effects)
-                    auto index_fill = (int) ((c + delta_z_mm) / myGeometryPtr->GetTimeBinWidth()); // relative time cell
-                    if (responseMapPerTimecellWithPeakingTime.find(index_fill) !=
-                        responseMapPerTimecellWithPeakingTime.end()) {
-                        responseMapPerTimecellWithPeakingTime[index_fill]->Fill(c, weight);
-                        //// DEBUG
-                        // if(debug_flag && ( (ipoint<1000 && ipoint%100==0) ||
-                        // 		       ipoint%1000==0 )) {
-                        //   auto index=it.first; // relative time cell
-                        //   std::cout << __FUNCTION__ << ": Generating point: " << ipoint << ": Original [cell, pos]=[" << index << ", " << c << "], Smeared cell=" << index_fill << std::endl;
-                        // }
-                        //// DEBUG
+            for (auto ibin = 1; ibin <= nBins; ibin++) {
+                for (auto shift = 0; shift < (int) counts[ibin].size(); shift++) {
+                    if (counts[ibin][shift] > 0) shiftProb[ibin][shift] = counts[ibin][shift] / (double) NpointsPeakingTime;
+                }
+            }
+        }
+        for (auto &it: responseMapPerTimecell) {
+            auto hist = it.second; // original histogram (without GET electronics effects)
+            for (auto ibin = 1; ibin <= nBins; ibin++) {
+                const auto c = hist->GetBinCenter(ibin);
+                const auto charge_frac = hist->GetBinContent(ibin); // amount of charge to be smeared
+                if (charge_frac == 0) continue;
+                for (const auto &shift: shiftProb[ibin]) {
+                    const auto index_fill = it.first + shift.first; // relative time cell after smearing
+                    auto target = responseMapPerTimecellWithPeakingTime.find(index_fill);
+                    if (target != responseMapPerTimecellWithPeakingTime.end()) {
+                        target->second->Fill(c, charge_frac * shift.second);
                     }
                 }
             }
