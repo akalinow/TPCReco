@@ -96,6 +96,7 @@ private:
 	bool isLogScaleOn{ false }, isRecoModeOn{ false };
 	bool isRateDisplayOn{ false };
 	bool isGeometryChanged{ false };
+	bool isNewEvent{ true }; // event loaded but not yet written by the automatic FileOutput fill
 
 	DirectoryWatch myDirWatch; //dunno if it's supposed to be here
 

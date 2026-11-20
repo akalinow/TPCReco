@@ -752,24 +752,6 @@ void HistoManager::makeAutozoom(TH1 * aHisto){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void HistoManager::openOutputStream(){
-
-  if (!myFileOutput) myFileOutput = std::make_shared<FileOutput>(myConfig);
-
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void HistoManager::writeRecoData(unsigned long eventType){
-
-  myEventInfo = myEventPtr->GetEventInfo(); 
-  myEventInfo.SetEventType(eventType);		
-  
-  if (myFileOutput){
-    myFileOutput->update(myEventInfo, myTkBuilderPtr->getTrack3D(0));
-  }
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
 void HistoManager::updateEventRateGraph(){
 
   if(!grEventRate){

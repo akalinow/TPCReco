@@ -48,10 +48,6 @@ public:
 
   void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);
 
-  void openOutputStream();
-
-  void writeRecoData(unsigned long  eventType);
-
   void toggleAutozoom() { doAutozoom = !doAutozoom;};
  
   void resetEventRateGraph();
@@ -129,9 +125,7 @@ private:
   std::shared_ptr<TrackBuilder> myTkBuilderPtr;
 
   std::shared_ptr<EventTPC> myEventPtr;
-  eventraw::EventInfo myEventInfo;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
-  std::shared_ptr<FileOutput> myFileOutput;
 
   TH2F *hDetLayout{0};        // dummy histogram with optimal XY ranges
   TH2F *hPlotBackground{0};

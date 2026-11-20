@@ -442,7 +442,7 @@ Bool_t MarkersManager::HandleButton(Long_t id){
      {
        repackSegmentsData();
        sendSegmentsData(&fSegmentsXY);
-       Emit("HandleButton(Int_t)", id);
+       Emit("HandleButton(Long_t)", id);
        reset();
      }     
      break;

@@ -35,7 +35,14 @@ public:
 
   void update(const eventraw::EventInfo & aEventInfoPtr,
               const Track3D & aRecoEventPtr);
-    
+
+  // Fill TPCData with the current event of aEventSource, but with the given
+  // EventInfo (e.g. carrying GUI event type bits) and reconstructed track
+  // (e.g. from manual GUI reconstruction). No event selection is applied.
+  void update(std::shared_ptr<EventSourceBase> aEventSource,
+              const eventraw::EventInfo & aEventInfo,
+              const Track3D & aRecoEvent);
+
 private:
   
   void close();

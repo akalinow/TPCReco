@@ -176,7 +176,30 @@ void FileOutput::update(const eventraw::EventInfo & aEventInfoPtr,
       continue;
     }
     aTree.second->Fill();
-  } 
+  }
+}
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+void FileOutput::update(std::shared_ptr<EventSourceBase> aEventSource,
+                        const eventraw::EventInfo & aEventInfo,
+                        const Track3D & aRecoEvent){
+
+  *myPEventPtr = *aEventSource->getCurrentPEvent();
+  *myEventInfoPtr = aEventInfo;
+  *myRecoEventPtr = aRecoEvent;
+  auto mcEventSource = std::dynamic_pointer_cast<EventSourceMC>(aEventSource);
+  *mySimEventPtr = mcEventSource ? mcEventSource->getGeneratedTrack() : Track3D();
+
+  for(auto aTree: myOutputTrees) {
+    if(aTree.first=="MLData") continue; // ML tree is filled only by update(aEventSource)
+    if (aTree.second==nullptr) {
+      std::cout << KRED << "FileOutput::update" << RST
+                << " pointer to output tree not set for tree: "
+                << aTree.first << std::endl;
+      continue;
+    }
+    aTree.second->Fill();
+  }
 }
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////

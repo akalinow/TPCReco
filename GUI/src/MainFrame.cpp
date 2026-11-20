@@ -186,8 +186,6 @@ void MainFrame::InitializeEventSource() {
 	myHistoManager.setGeometry(myEventSource->getGeometry());
 	myHistoManager.setTkBuilder(myEventSource->getTrackBuilder());
 	myHistoManager.setEvent(myEventSource->getCurrentEvent());
-
-	if (isRecoModeOn) myHistoManager.openOutputStream();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -470,11 +468,11 @@ int MainFrame::AddMarkersDialog(int attach) {
 
 	TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
 	int nColumns = aLayout->fNcols;
-	int nRows = aLayout->fNcols;
+	int nRows = aLayout->fNrows;
 	UInt_t attach_left = nColumns * 0.7 + 1;
 	UInt_t attach_right = nColumns;
 	UInt_t attach_top = attach;
-	UInt_t attach_bottom = attach_top + nRows * 0.2;
+	UInt_t attach_bottom = attach_top + nRows * 0.1;
 
 	fMarkersManager = new MarkersManager(fFrame, this);
 	fMarkersManager->setGeometry(myEventSource->getGeometry());
@@ -500,11 +498,11 @@ int MainFrame::AddRunConditionsDialog(int attach) {
 
 	TGTableLayout* aLayout = (TGTableLayout*)fFrame->GetLayoutManager();
 	int nColumns = aLayout->fNcols;
-	int nRows = aLayout->fNcols;
+	int nRows = aLayout->fNrows;
 	UInt_t attach_left = nColumns * 0.7 + 1;
 	UInt_t attach_right = nColumns;
 	UInt_t attach_top = attach;
-	UInt_t attach_bottom = attach_top + nRows * 0.35;
+	UInt_t attach_bottom = attach_top + nRows * 0.2;
 
 	if (myWorkMode == M_ONLINE_GRAW_MODE || myWorkMode == M_ONLINE_NGRAW_MODE) {
 	        std::cout << "RunConditionsDialog is disabled in ONLINE mode." << _endl_;
@@ -535,9 +533,9 @@ void MainFrame::AddLogos() {
 
 	std::string filePath = myConfig.get<std::string>("input.resourcesPath") + "/FUW_znak.png";
 	TImage* img = TImage::Open(filePath.c_str());
-	if (!img->IsValid()) return;
+	if (!img || !img->IsValid()) { delete img; return; }
 
-	double ratio = img->GetWidth() / img->GetHeight();
+	double ratio = double(img->GetWidth()) / img->GetHeight();
 	double height = 80;
 	double width = ratio * height;
 	img->Scale(width, height);
@@ -559,13 +557,13 @@ void MainFrame::AddLogos() {
 
 	filePath = myConfig.get<std::string>("input.resourcesPath") + "/ELITEPC_znak.png";
 	img = TImage::Open(filePath.c_str());
-	if (!img->IsValid()) return;
-	ratio = img->GetWidth() / img->GetHeight();
+	if (!img || !img->IsValid()) { delete img; return; }
+	ratio = double(img->GetWidth()) / img->GetHeight();
 	height = 100;
 	width = ratio * height;
 	img->Scale(width, height);
 	///FIXME clean up the ipic at the application closure.
-	ipic = (TGPicture*)gClient->GetPicturePool()->GetPicture("FUW_znak", img->GetPixmap(), img->GetMask());
+	ipic = (TGPicture*)gClient->GetPicturePool()->GetPicture("ELITEPC_znak", img->GetPixmap(), img->GetMask());
 	delete img;
 	icon = new TGIcon(fFrame, ipic, width, height);
 
@@ -577,6 +575,7 @@ void MainFrame::AddLogos() {
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MainFrame::CloseWindow() {
+	myFileOutput.reset(); // close the output file also when the window is closed by the window manager
 	myHistoManager.~HistoManager();
 	if(myEventSource) myEventSource.get()->~EventSourceBase(); // to properly close output ROOT file created by EventFileExporter MC module of EventSourceMC
 	gApplication->Terminate(0);
@@ -595,8 +594,8 @@ void MainFrame::ClearCanvases() {
 /////////////////////////////////////////////////////////
 void MainFrame::Update() {
 
-	if (!myEventSource || !myEventSource->numberOfEvents() ||
-		!fFileInfoFrame || !fMarkersManager) {
+	// fMarkersManager is not created in ONLINE mode, so it must not gate the update
+	if (!myEventSource || !myEventSource->numberOfEvents() || !fFileInfoFrame) {
 		return;
 	}
 	fFileInfoFrame->updateFileName(myEventSource->getCurrentPath());
@@ -605,11 +604,13 @@ void MainFrame::Update() {
 									   myEventSource->currentEntryNumber());
 	if(isGeometryChanged) {
 	  myHistoManager.setGeometry(myEventSource->getGeometry());
-	  fMarkersManager->setGeometry(myEventSource->getGeometry());
+	  if (fMarkersManager) fMarkersManager->setGeometry(myEventSource->getGeometry());
 	  isGeometryChanged = false;
 	}
-	fMarkersManager->reset();
-	fMarkersManager->setEnabled(isRecoModeOn);
+	if (fMarkersManager) {
+	  fMarkersManager->reset();
+	  fMarkersManager->setEnabled(isRecoModeOn);
+	}
 	ClearCanvases();
 	
 	if (isRecoModeOn) myHistoManager.drawRecoHistos(fMainCanvas);
@@ -621,8 +622,10 @@ void MainFrame::Update() {
 	else if(myConfig.get<bool>("display.technicalMode")) myHistoManager.drawTechnicalHistos(fMainCanvas, myEventSource->getGeometry()->GetAgetNchips());
 	else myHistoManager.drawRawHistos(fMainCanvas, isRateDisplayOn);
 
-	//myEventSource->setRecoEvent(myHistoManager.getTrack3D());
-	myFileOutput->update(myEventSource);
+	// Automatic output: once per loaded event, not on every redraw.
+	// In manual RECO mode the event is written on "Next event" with the clicked track instead.
+	if (myFileOutput && isNewEvent && !isRecoModeOn) myFileOutput->update(myEventSource);
+	isNewEvent = false;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -722,7 +725,8 @@ Bool_t MainFrame::ProcessMessage(Long_t msg) {
 	break;
 	case M_FIT_SEGMENT:
 	{
-		myHistoManager.clearTracks();
+		// the fitted track has just been drawn by processSegmentData(); keep it visible
+		fMainCanvas->Update();
 	}
 	break;
 
@@ -743,6 +747,7 @@ Bool_t MainFrame::ProcessMessage(const char* msg) {
 	myMutex.lock();
 	myEventSource->loadDataFile(std::string(msg));
 	myEventSource->getLastEvent();
+	isNewEvent = true;
 	Update();
 	myMutex.unlock();
 	return kTRUE;
@@ -754,7 +759,7 @@ void MainFrame::HandleMenu(Int_t id) {
 	const char* filetypes[] = { "ROOT files",    "*.root",
 				   0,               0 };
 
-	if (myWorkMode == M_ONLINE_GRAW_MODE || myWorkMode == M_OFFLINE_NGRAW_MODE) {
+	if (myWorkMode == M_OFFLINE_GRAW_MODE || myWorkMode == M_OFFLINE_NGRAW_MODE) {
 		filetypes[0] = "GRAW files";
 		filetypes[1] = "*.graw";
 	}
@@ -774,12 +779,13 @@ void MainFrame::HandleMenu(Int_t id) {
 		//
 		std::string oldDirectory = gSystem->GetWorkingDirectory();
 		new TGFileDialog(gClient->GetRoot(), this, kFDOpen, &fi);
+		gSystem->cd(oldDirectory.c_str()); // TGFileDialog changes the working directory, also on Cancel
 		std::string fileName;
 		if (fi.fFilename) fileName.append(fi.fFilename);
 		else return;
-		gSystem->cd(oldDirectory.c_str());
 		myEventSource->loadDataFile(fileName);
 		myEventSource->loadFileEntry(0);
+		isNewEvent = true;
 		Update();
 	}
 	break;
@@ -798,9 +804,14 @@ void MainFrame::HandleMenu(Int_t id) {
 
 	case M_NEXT_EVENT:
 	{
-		unsigned int eventType = UpdateEventLog();
-		myHistoManager.writeRecoData(eventType);
+		unsigned long eventType = UpdateEventLog();
+		if (isRecoModeOn && myFileOutput) {
+			eventraw::EventInfo aEventInfo = myEventSource->getCurrentEvent()->GetEventInfo();
+			aEventInfo.SetEventType(eventType);
+			myFileOutput->update(myEventSource, aEventInfo, myHistoManager.getTrack3D());
+		}
 		myEventSource->getNextEventLoop();
+		isNewEvent = true;
 		Update();
 	}
 	break;
@@ -808,6 +819,7 @@ void MainFrame::HandleMenu(Int_t id) {
 	{
 		UpdateEventLog();
 		myEventSource->getPreviousEventLoop();
+		isNewEvent = true;
 		Update();
 	}
 	break;
@@ -837,7 +849,6 @@ void MainFrame::HandleMenu(Int_t id) {
 	case M_TOGGLE_RECOMODE:
 	{
 		isRecoModeOn = !isRecoModeOn;
-		if (isRecoModeOn) myHistoManager.openOutputStream();
 		Update();
 	}
 	break;
@@ -851,6 +862,7 @@ void MainFrame::HandleMenu(Int_t id) {
 	{
 		int eventId = fEventIdEntry->GetIntNumber();
 		myEventSource->loadEventId(eventId);
+		isNewEvent = true;
 		Update();
 	}
 	break;
@@ -858,6 +870,7 @@ void MainFrame::HandleMenu(Int_t id) {
 	{
 		int fileEntry = fFileEntryEntry->GetIntNumber();
 		myEventSource->loadFileEntry(fileEntry);
+		isNewEvent = true;
 		Update();
 	}
 	break;
