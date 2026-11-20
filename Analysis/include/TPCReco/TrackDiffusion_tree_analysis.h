@@ -12,6 +12,7 @@ class GeometryTPC;
 class EventTPC;
 class Track3D;
 class TGraph;
+class TH2D;
 
 typedef std::vector<TGraph> TrackDiffusionCropList; // ROI around each track from Track3D collection for a given strip direction
 
@@ -27,6 +28,7 @@ class TrackDiffusion_tree_analysis{
     float trackFractionStart{0.2}; // [0-1] fraction of track length to be skipped near track vertex
     float trackFractionEnd{0.1}; // [0-1] fraction of track length to be skipped near track end
     float trackDistanceMM{10.0}; // [mm] defines band around track axis for hit projection
+    float hitThreshold{0.0}; // [ADC] only hits with charge above this value enter MEAN and RMS (excludes negative noise)
   };
 
   // helper class with 1D transversal hit position wrt track line
@@ -54,11 +56,17 @@ class TrackDiffusion_tree_analysis{
   std::shared_ptr<TTree> myOutputTreePtr;
   std::shared_ptr<GeometryTPC> myGeometryPtr; //! transient data member
   std::map<int, std::vector<Hit1D> > myHitMap;// key = strip dir [0-3]
+  // Transverse hit profiles (owned by the output file): charge-weighted distribution of the signed hit
+  // distance from the track axis vs |cos(theta_DET)| of the leading track, each event normalised to unit
+  // charge; per strip direction (U, V, W) and all directions, for all events and for 2-prong events.
+  // Key: "<all|2prong>_<U|V|W|All>".
+  std::map<std::string, TH2D*> myProfiles;
   
   void initialize();
   void finalize();
   void clear();
   void updateMeanRms();
+  void fillProfiles(); // fills myProfiles from myHitMap (after updateMeanRms)
 
   void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);  // definition of LAB detector coordinates
   TrackDiffusionCropList getCropList(TrackSegment3DCollection &aColl, int dir); // returns list of TGraphs with crop areas around each track segment (for a given strip dir)

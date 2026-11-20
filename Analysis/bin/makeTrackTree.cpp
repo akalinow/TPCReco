@@ -100,6 +100,17 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   leafNames += "chargeEnergy:chargeRatio";
   tree->Branch("track",&track_data,leafNames.c_str());
 
+  // optional tree with the full reconstruction (Track3D) for the analysis programs that read
+  // "TPCRecoData" (recoEventsAnalysis, rawTrackDiffusionAnalysis, ...): same file, one entry per stored track
+  TTree *recoTree = nullptr;
+  Track3D *recoTrackPtr = new Track3D();
+  eventraw::EventInfo *recoInfoPtr = new eventraw::EventInfo();
+  if(aConfig.get<bool>("output.recoTree", false)){
+    recoTree = new TTree("TPCRecoData", "Reconstructed events");
+    recoTree->Branch("RecoEvent", &recoTrackPtr);
+    recoTree->Branch("EventInfo", &recoInfoPtr);
+  }
+
   std::string geometryFileName = aConfig.get("input.geometryFile","");
   double pressure = aConfig.get<double>("conditions.pressure"); 
   double temperature = aConfig.get<double>("conditions.temperature");
@@ -321,6 +332,11 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
     track_data.chargeEnergy = aTrack3D.getChargeEnergy();   // [MeV], 0 without a gain table entry
     track_data.chargeRatio = aTrack3D.getChargeRatio();     // Q/(G_raw E_dep) of the dE/dx fit, 0 if not computed
     tree->Fill();
+    if(recoTree){
+      *recoTrackPtr = aTrack3D;
+      *recoInfoPtr = *myEventInfo;
+      recoTree->Fill();
+    }
   /*
   } // end of event loop
   */
@@ -328,6 +344,8 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   }
   while(1);
   outputROOTFile.Write();
+  delete recoTrackPtr;
+  delete recoInfoPtr;
 
   ////////////////////////////////////////////
   //

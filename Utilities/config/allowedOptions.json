@@ -83,6 +83,12 @@
         "defaultValue": ["TPCData.myChargeMap*", "TPCData.myChargeArray*" ],
         "description": "Optional list of disabled branches of PEventTPC to save disk space.\nBiggest branches are TPCData.myChargeMap*, TPCData.myChargeArray*.\nNames are patterns of the TTree::SetBranchStatus: use * to match sub-branches.\nType: vector<string>"
     },
+    "recoTree":{
+        "group": "output",
+        "type": "bool",
+        "defaultValue": false,
+        "description": "makeTrackTree: also write the reconstructed Track3D and EventInfo of each stored event to the tree TPCRecoData (branches RecoEvent, EventInfo) in the output file, for recoEventsAnalysis, rawTrackDiffusionAnalysis and other programs that read it.\nType: bool"
+    },
     "autoSaveFrequency":{
         "group": "output",
         "type": "int",

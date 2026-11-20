@@ -3,6 +3,7 @@
 #include <string>
 #include <iostream>
 #include <algorithm>
+#include <cmath>
 
 #include <boost/property_tree/ptree.hpp>
 
@@ -10,6 +11,7 @@
 #include <TTree.h>
 #include <TBranch.h>
 #include <TGraph.h>
+#include <TH2D.h>
 
 #include "TPCReco/CommonDefinitions.h"
 #include "TPCReco/GeometryTPC.h"
@@ -51,6 +53,21 @@ void TrackDiffusion_tree_analysis::initialize(){
   myOutputTreePtr = std::make_shared<TTree>(treeName.c_str(),"");
   myOutputTreePtr->Branch("data", &event_rawdiffusion);
   myOutputTreePtr->SetDirectory(myOutputFilePtr.get());
+
+  // transverse hit profiles, see the header
+  const std::vector<std::string> dirNames = {"U", "V", "W", "All"};
+  const int nBinsX = 100, nBinsY = 10;
+  for(const std::string sample: {"all", "2prong"}) {
+    for(const auto & dirName: dirNames) {
+      const std::string key = sample + "_" + dirName;
+      auto *h = new TH2D(("hProfile_" + key).c_str(),
+			 (std::string("Hit profile, ") + sample + " events, " + dirName +
+			  ";signed distance from track axis [mm];|cos#theta_{DET}|;charge fraction per event").c_str(),
+			 nBinsX, -myConfig.trackDistanceMM, myConfig.trackDistanceMM, nBinsY, 0.0, 1.0);
+      h->SetDirectory(myOutputFilePtr.get()); // written by finalize()
+      myProfiles[key] = h;
+    }
+  }
   ////// DEBUG
   // std::cout << __FUNCTION__ << ": TTree current TFile ptr=" << myOutputTreePtr->GetCurrentFile() << std::endl;
   ////// DEBUG
@@ -95,9 +112,10 @@ void TrackDiffusion_tree_analysis::fillTree(const std::shared_ptr<EventTPC> aEve
   if(myConfig.clusterEnable) { // CLUSTER
     filterType = filter_type::threshold;
     boost::property_tree::ptree config;
-    config.put("recoClusterThreshold", myConfig.clusterThreshold);
-    config.put("recoClusterDeltaStrips",myConfig.clusterDeltaStrips);
-    config.put("recoClusterDeltaTimeCells",myConfig.clusterDeltaTimeCells);  
+    // EventTPC::filterHits reads the keys with the "hitFilter." prefix (without it: ptree_bad_path)
+    config.put("hitFilter.recoClusterThreshold", myConfig.clusterThreshold);
+    config.put("hitFilter.recoClusterDeltaStrips",myConfig.clusterDeltaStrips);
+    config.put("hitFilter.recoClusterDeltaTimeCells",myConfig.clusterDeltaTimeCells);
     aEventTPC->setHitFilterConfig(filterType, config);
   }
   
@@ -148,6 +166,7 @@ void TrackDiffusion_tree_analysis::fillTree(const std::shared_ptr<EventTPC> aEve
 
   // UPDATE MEAN AND RMS
   updateMeanRms();
+  fillProfiles();
 
   // UPDATE TREE
   myOutputTreePtr->Fill();
@@ -257,8 +276,9 @@ bool TrackDiffusion_tree_analysis::processCropList(TrackDiffusionCropList &aList
 
   for(auto iBinX=1; iBinX <= aHist->GetNbinsX(); iBinX++) {
     for(auto iBinY=1; iBinY <= aHist->GetNbinsY(); iBinY++) {
-      double charge=0.0, err=0.0;
-      if((err=aHist->GetBinError(iBinX, iBinY)) || (charge=aHist->GetBinContent(iBinX, iBinY))) {
+      // the charge was read as "(err=GetBinError(...)) || (charge=GetBinContent(...))", i.e. only for bins with zero error
+      const double charge=aHist->GetBinContent(iBinX, iBinY);
+      if(charge>myConfig.hitThreshold) {
 	auto gr=aList.front(); // ROI corresponding to the leading track
 	double x, y;
 	if(gr.IsInside((x=aHist->GetXaxis()->GetBinCenter(iBinX)), (y=aHist->GetYaxis()->GetBinCenter(iBinY)))) {
@@ -318,6 +338,34 @@ bool TrackDiffusion_tree_analysis::edgesIntersect(TGraph &g1, TGraph &g2) {
 }
 ///////////////////////////////
 ///////////////////////////////
+void TrackDiffusion_tree_analysis::fillProfiles() {
+
+  const double absCosTheta = std::abs(event_rawdiffusion.cosThetaDET);
+  const bool twoProng = event_rawdiffusion.ntracks==2;
+  const std::vector<std::string> dirNames = {"U", "V", "W"};
+  double totalCharge = 0.0;
+  for(auto dir=0; dir<3; dir++) {
+    double dirCharge = 0.0;
+    for(const auto &hit: myHitMap[dir]) if(hit.q>0) dirCharge += hit.q;
+    totalCharge += dirCharge;
+    if(dirCharge<=0) continue;
+    for(const auto &hit: myHitMap[dir]) {
+      if(hit.q<=0) continue;
+      myProfiles["all_" + dirNames[dir]]->Fill(hit.x, absCosTheta, hit.q/dirCharge);
+      if(twoProng) myProfiles["2prong_" + dirNames[dir]]->Fill(hit.x, absCosTheta, hit.q/dirCharge);
+    }
+  }
+  if(totalCharge<=0) return;
+  for(auto dir=0; dir<3; dir++) {
+    for(const auto &hit: myHitMap[dir]) {
+      if(hit.q<=0) continue;
+      myProfiles["all_All"]->Fill(hit.x, absCosTheta, hit.q/totalCharge);
+      if(twoProng) myProfiles["2prong_All"]->Fill(hit.x, absCosTheta, hit.q/totalCharge);
+    }
+  }
+}
+///////////////////////////////
+///////////////////////////////
 void TrackDiffusion_tree_analysis::updateMeanRms() {
 
   // calculate MEAN and RMS per strip direction
@@ -325,8 +373,9 @@ void TrackDiffusion_tree_analysis::updateMeanRms() {
   for(auto dir=0; dir<3; dir++) {
     double sum_x=0.0, sum_x2=0.0, sum_w=0.0;
     for(auto &hit : myHitMap[dir]) {
-      auto w = fabs(hit.q);
-      if(w==0) continue;
+      // weight = signed charge; hits at or below the threshold (negative pedestal-subtracted noise) are not stored
+      auto w = hit.q;
+      if(w<=0) continue;
       auto x = hit.x;
       sum_x2 += x * x * w;
       sum_x += x * w;
