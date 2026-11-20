@@ -1,10 +1,20 @@
+#include <algorithm>
+#include <cmath>
 #include <iostream>
+#include <memory>
+#include <utility>
+#include <vector>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/program_options.hpp>
 
 #include <TFile.h>
+#include <TGraph.h>
+#include <TH2D.h>
+#include <set>
+#include <sstream>
 #include <TBranch.h>
+#include <TLeaf.h>
 #include <TTreeIndex.h>
 
 #include "TPCReco/colorText.h"
@@ -38,6 +48,13 @@ boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
      "for a given strip projection, and the corresponding quality flag will be set to FALSE.\n\n"
      "Hits are weighted by their charge; only hits with charge above hitThreshold (default 0) are used,\n"
      "so that negative (pedestal-subtracted) noise does not widen the distribution.\n\n"
+     "recoFile: a makeTrackTree output with the TPCRecoData tree (--output.recoTree true), or a plain\n"
+     "makeTrackTree ntuple (trackTree): then the tracks are rebuilt from the vertex and the alpha/carbon\n"
+     "end points (alpha: vertex->alpha end; alpha+C events also vertex->carbon end).\n\n"
+     "Optional event display dump (JSON block \"eventDump\"): {\"file\": out.root, \"eventIds\": \"id1,id2\",\n"
+     "\"only\": true}. For the listed events the hit-filtered U/V/W-time projections [mm] (hU_<id>, hV_<id>,\n"
+     "hW_<id>) and the 2D projections of the track segments (gU_<id>_<iSeg>: start, end) are written to file;\n"
+     "with only=true the other events are skipped.\n\n"
      "Allowed command line options");
 
   cmdLineOptDesc.add_options()
@@ -280,45 +297,78 @@ int analyzeTrackDiffusion(const boost::property_tree::ptree aConfig){
     exit(1);
   }
 
-  auto myTreePtr = (TTree*)myRecoFilePtr->Get("TPCRecoData");
-  // std::shared_ptr<TTree> myTreePtr;
-  // myTreePtr.reset((TTree*)myRecoFilePtr->Get("TPCRecoData"));
-  if(!myTreePtr) {
-    std::cerr<<"ERROR: Cannot find 'TPCRecoData' tree!"<<std::endl;
-    exit(1);
-  }
+  // Reco input: the TPCRecoData tree (Track3D + EventInfo) or, if absent, the trackTree ntuple of makeTrackTree.
+  // The ntuple stores the vertex and the alpha / carbon end points, which is all that the diffusion analysis
+  // uses from the track (segment start, end and PID); it has no run number (one run per raw-data chunk).
+  struct RecoEntry { long runId; unsigned long eventId; Long64_t entry; };
+  std::vector<RecoEntry> recoEntries;
   auto aTrack = new Track3D();
-  auto aBranch = myTreePtr->GetBranch("RecoEvent");
-  // auto aTrack = std::make_shared<Track3D>();
-  // std::shared_ptr<TBranch> aBranch;
-  // aBranch.reset(myTreePtr->GetBranch("RecoEvent"));
-  if(!aBranch) {
-    std::cerr<<"ERROR: Cannot find 'RecoEvent' branch!"<<std::endl;
-    exit(1);
-  }
-  aBranch->SetAddress(&aTrack);
-
   auto aEventInfo = new eventraw::EventInfo();
-  auto aBranchInfo = myTreePtr->GetBranch("EventInfo");
-  // auto aEventInfo = std::make_shared<eventraw::EventInfo>();
-  // std::shared_ptr<TBranch> aBranchInfo;
-  // aBranchInfo.reset(myTreePtr->GetBranch("EventInfo"));
-  if(!aBranchInfo) {
-    std::cerr<<"ERROR: Cannot find 'EventInfo' branch!"<<std::endl;
+  TBranch *aBranch = nullptr, *aBranchInfo = nullptr;
+  auto myTreePtr = (TTree*)myRecoFilePtr->Get("TPCRecoData");
+  auto myNtuplePtr = myTreePtr ? nullptr : (TTree*)myRecoFilePtr->Get("trackTree");
+  std::vector<Track3D> ntupleTracks; // tracks rebuilt from the ntuple
+  if(myTreePtr) {
+    aBranch = myTreePtr->GetBranch("RecoEvent");
+    if(!aBranch) {
+      std::cerr<<"ERROR: Cannot find 'RecoEvent' branch!"<<std::endl;
+      exit(1);
+    }
+    aBranch->SetAddress(&aTrack);
+    aBranchInfo = myTreePtr->GetBranch("EventInfo");
+    if(!aBranchInfo) {
+      std::cerr<<"ERROR: Cannot find 'EventInfo' branch!"<<std::endl;
+      exit(1);
+    }
+    aBranchInfo->SetAddress(&aEventInfo);
+    for(Long64_t iEntry=0; iEntry<myTreePtr->GetEntries(); ++iEntry) {
+      aBranchInfo->GetEntry(iEntry);
+      recoEntries.push_back({(long)aEventInfo->GetRunId(), (unsigned long)aEventInfo->GetEventId(), iEntry});
+    }
+  } else if(myNtuplePtr) {
+    std::cout << "Reco file without TPCRecoData: tracks rebuilt from the trackTree ntuple" << std::endl;
+    auto leaf = [&](const char *name) {
+      auto aLeaf = myNtuplePtr->GetLeaf("track", name);
+      if(!aLeaf) {
+        std::cerr<<"ERROR: Cannot find leaf 'track."<<name<<"' in trackTree!"<<std::endl;
+        exit(1);
+      }
+      return aLeaf;
+    };
+    auto lEventId = leaf("eventId"), lEventType = leaf("eventType");
+    auto lxV = leaf("xVtx"), lyV = leaf("yVtx"), lzV = leaf("zVtx");
+    auto lxA = leaf("xAlphaEnd"), lyA = leaf("yAlphaEnd"), lzA = leaf("zAlphaEnd");
+    auto lxC = leaf("xCarbonEnd"), lyC = leaf("yCarbonEnd"), lzC = leaf("zCarbonEnd");
+    for(Long64_t iEntry=0; iEntry<myNtuplePtr->GetEntries(); ++iEntry) {
+      myNtuplePtr->GetEntry(iEntry);
+      // eventType = sum of the segment PIDs (makeTrackTree): ALPHA=1, ALPHA+CARBON_12=3, ALPHA+CARBON_14=4, 0=no fit
+      const int eventType = (int)std::lround(lEventType->GetValue());
+      const TVector3 vertex(lxV->GetValue(), lyV->GetValue(), lzV->GetValue());
+      const TVector3 alphaEnd(lxA->GetValue(), lyA->GetValue(), lzA->GetValue());
+      const TVector3 carbonEnd(lxC->GetValue(), lyC->GetValue(), lzC->GetValue());
+      Track3D track;
+      TrackSegment3D first;
+      first.setStartEnd(vertex, alphaEnd);
+      first.setPID(eventType>=1 ? pid_type::ALPHA : pid_type::UNKNOWN);
+      track.addSegment(first);
+      if(eventType==3 || eventType==4) {
+        TrackSegment3D recoil;
+        recoil.setStartEnd(vertex, carbonEnd);
+        recoil.setPID(eventType==3 ? pid_type::CARBON_12 : pid_type::CARBON_14);
+        track.addSegment(recoil);
+      }
+      ntupleTracks.push_back(track);
+      recoEntries.push_back({-1, (unsigned long)std::lround(lEventId->GetValue()), (Long64_t)ntupleTracks.size()-1});
+    }
+  } else {
+    std::cerr<<"ERROR: Cannot find 'TPCRecoData' or 'trackTree' tree!"<<std::endl;
     exit(1);
   }
-  aBranchInfo->SetAddress(&aEventInfo);
+  const unsigned int nEntries = recoEntries.size();
 
-  const unsigned int nEntries = myTreePtr->GetEntries();
-
-  // sort input tree in ascending order of {runID, eventID}
-  TTreeIndex *I=NULL;
-  Long64_t* index=NULL;
-  if(aBranchInfo) {
-    myTreePtr->BuildIndex("runId", "eventId");
-    I=(TTreeIndex*)myTreePtr->GetTreeIndex(); // get the tree index
-    index=I->GetIndex();
-  }
+  // ascending order of {runId, eventId}, as in the raw data
+  std::sort(recoEntries.begin(), recoEntries.end(), [](const RecoEntry &a, const RecoEntry &b) {
+    return a.runId!=b.runId ? a.runId<b.runId : a.eventId<b.eventId; });
 
   // initialize input EventSource  
   const char del = ','; // delimiter character
@@ -391,25 +441,35 @@ int analyzeTrackDiffusion(const boost::property_tree::ptree aConfig){
   myConfig.hitThreshold = hitThreshold;
   TrackDiffusion_tree_analysis myAnalysis(myEventSource->getGeometry(), myConfig, outputFileName);
 
+  // optional event display dump
+  std::set<unsigned long> dumpEventIds;
+  std::unique_ptr<TFile> dumpFile;
+  const bool dumpOnly = aConfig.get<bool>("eventDump.only", false);
+  if(aConfig.get_optional<std::string>("eventDump.file")) {
+    std::stringstream ids(aConfig.get<std::string>("eventDump.eventIds", ""));
+    std::string anId;
+    while(std::getline(ids, anId, ',')) if(!anId.empty()) dumpEventIds.insert(std::stoul(anId));
+    dumpFile = std::make_unique<TFile>(aConfig.get<std::string>("eventDump.file").c_str(), "RECREATE");
+    std::cout << "Event dump: " << dumpEventIds.size() << " events to " << dumpFile->GetName()
+              << (dumpOnly ? " (only these events)" : "") << std::endl;
+  }
+
   // loop over ALL events
   Long64_t currentEventIdx=-1;
   Long64_t counter=0;
   Long64_t maxevents=(maxNevents<=0 ? nEntries : std::min((unsigned int)maxNevents, nEntries));
   for(auto ievent=0; ievent<maxevents; ievent++) {
-    if(index) {
-      ////// DEBUG
-      //      std::cout << "GETENTRY: index=" << index << ", index[" << ievent << "]=" << index[ievent] << std::endl;
-      ////// DEBUG
-      aBranch->GetEntry(index[ievent]);
-      aBranchInfo->GetEntry(index[ievent]);
+    const auto &recoEntry = recoEntries[ievent];
+    if(myTreePtr) {
+      aBranch->GetEntry(recoEntry.entry);
     } else {
-      aBranch->GetEntry(ievent);
-      aBranchInfo->GetEntry(ievent);
+      *aTrack = ntupleTracks[recoEntry.entry];
     }
-
-    const unsigned long runId = (unsigned long)aEventInfo->GetRunId();
-    const unsigned long eventId = (unsigned long)aEventInfo->GetEventId();
+    const long runId = recoEntry.runId; // -1: not known (ntuple input)
+    const unsigned long eventId = recoEntry.eventId;
     const int nTracks = aTrack->getSegments().size();
+    const bool dumpThis = dumpFile && dumpEventIds.count(eventId);
+    if(dumpOnly && !dumpThis) continue;
 
     ////// DEBUG
     std::cout << __FUNCTION__ << ": RECO: run=" << runId << ", evt=" << eventId << ", ntracks=" << nTracks << std::endl;
@@ -429,7 +489,7 @@ int analyzeTrackDiffusion(const boost::property_tree::ptree aConfig){
     auto currentRunId = aEventTPC->GetEventInfo().GetRunId();
 
     // sanity check
-    if(currentRunId!=runId || currentEventId!=eventId) {
+    if((runId>=0 && (long)currentRunId!=runId) || currentEventId!=eventId) {
       std::cout << __FUNCTION__ << KRED << ": Skipping event with missing RAW data: run=" << runId << ", event=" << eventId
 		<< RST << std::endl << std::flush;
       continue;
@@ -453,9 +513,34 @@ int analyzeTrackDiffusion(const boost::property_tree::ptree aConfig){
     // fill diagnostic tree with raw signal properties
     myAnalysis.fillTree(myEventSource->getCurrentEvent(), aTrack);
 
+    if(dumpThis) {
+      // fillTree has set the hit filter of the event: the same hits as used by the analysis
+      const filter_type filterType = clusterEnable ? filter_type::threshold : filter_type::none;
+      const char *dirName[3] = {"U", "V", "W"};
+      dumpFile->cd();
+      for(int strip_dir=0; strip_dir<3; ++strip_dir) {
+        auto h = aEventTPC->get2DProjection(get2DProjectionType(strip_dir), filterType, scale_type::mm);
+        if(h) {
+          TH2D *hCopy = (TH2D*)h->Clone(Form("h%s_%lu", dirName[strip_dir], eventId));
+          hCopy->SetDirectory(dumpFile.get());
+          hCopy->Write();
+        }
+        int iSeg = 0;
+        for(const auto &aSeg: aTrack->getSegments()) {
+          TrackSegment2D aProj = aSeg.get2DProjection(strip_dir, 0, aSeg.getLength());
+          TGraph g(2);
+          g.SetPoint(0, aProj.getStart().X(), aProj.getStart().Y());
+          g.SetPoint(1, aProj.getEnd().X(), aProj.getEnd().Y());
+          g.SetTitle(Form("pid=%d", (int)aSeg.getPID()));
+          g.Write(Form("g%s_%lu_%d", dirName[strip_dir], eventId, iSeg++));
+        }
+      }
+    }
+
     counter++;
   } // end of main event loop...
   
+  if(dumpFile) dumpFile->Close();
   if(myRecoFilePtr) myRecoFilePtr->Close(); // this explicit Close() prevents code crashes
   return counter;
 }
