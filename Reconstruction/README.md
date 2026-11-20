@@ -112,15 +112,23 @@ jobs use `maxChargeLowerBound = 1000`: the event is skipped if its largest sampl
 `events` and `recoProngs` select by event ID or by the number of prongs of a previous
 reconstruction.
 
+The charge bounds use the whole-event maximum, total charge and number of hits (`EventInfo`
+properties). `EventTPC::SetEventInfo` computes them in one pass over the samples, summing the strip
+sections, without building the 3D histograms; the histograms are built only when the reconstruction
+or the GUI needs them. Events rejected by the filter are not reconstructed. `getRecoEvent()`
+reconstructs on demand when it is called for such an event (e.g. by the `recoProngs` filter).
+
 ### 5. Hit filter
 
 `TrackBuilder` uses the `threshold` filter. A sample is kept if it is above the threshold, and so
 are its neighbours within ±`DeltaStrips` strips and ±`DeltaTimeCells` time cells ("envelope").
 
-**The `hitFilter.*` options are not used by `makeTrackTree`.** The batch reconstruction uses the
-defaults hard-coded in `EventTPC`: 35 ADC, ±2 strips, ±5 time cells. The `hitFilter` values of the
-JSON files are passed to the event only by the GUI (`HistoManager`) and by `MLTree`, and
-`hitFilter.recoClusterEnable` only switches the GUI display.
+The settings are the `hitFilter.recoClusterThreshold`, `hitFilter.recoClusterDeltaStrips` and
+`hitFilter.recoClusterDeltaTimeCells` options. `makeTrackTree` passes the configuration to the event at
+the start of its event loop (`EventTPC::setHitFilterConfig`), as do the GUI (`HistoManager`) and
+`MLTree`. A program without that call uses the defaults of `EventTPC`: 35 ADC, ±2 strips, ±5 time
+cells (the same values as the HIgS JSON files). `hitFilter.recoClusterEnable` only switches the GUI
+display; the reconstruction always uses the threshold filter.
 
 ### 6. Clean cluster
 
@@ -259,7 +267,7 @@ These are candidates for configuration options:
 
 | Parameter | Value | Where |
 |---|---|---|
-| hit-filter threshold, envelope | 35 ADC, ±2 strips, ±5 time cells | `EventTPC` constructor |
+| hit-filter defaults (when the `hitFilter.*` options are not passed to the event) | 35 ADC, ±2 strips, ±5 time cells | `EventTPC` constructor |
 | clean-cluster kernel, threshold | 3 × 3 bins, 20 % of the maximum bin | `RecHitBuilder::makeCleanCluster` |
 | max. hit distance in the line fit | 20 mm | `TrackSegment2D` losses |
 | fit sphere radius | 300 mm | `TrackBuilder::fitTrack3DInSelectedDir` |

@@ -136,12 +136,30 @@ void EventSourceBase::fillEventTPC(){
   myCurrentEvent->SetGeoPtr(myGeometryPtr);
   myCurrentEvent->SetChargeMap(myCurrentPEvent->GetChargeMap());
   myCurrentEvent->SetEventInfo(myCurrentPEvent->GetEventInfo());
+  recoEventUpdated = false;
+  // Events rejected by the event filter are not reconstructed here (about 13% of the CPU of
+  // makeTrackTree on HIgS data with maxChargeLowerBound=1000). Accepted events are
+  // reconstructed at once, so code that reads the TrackBuilder directly (GUI) sees their result;
+  // getRecoEvent() reconstructs on demand otherwise (e.g. for the reco-prong filter).
+  if(eventFilter.isEnabled() && !eventFilter.pass(*this)) return;
+  reconstructIfNeeded();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void EventSourceBase::reconstructIfNeeded() const {
+
+  // event sources made without the EventSourceFactory (raw-data analysis programs) have no track builder
+  if(!myTkBuilderPtr || recoEventUpdated) return;
   myTkBuilderPtr->reconstruct();
+  recoEventUpdated = true;
 }
 ////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 const Track3D & EventSourceBase::getRecoEvent() const {
 
+  static const Track3D emptyTrack;
+  if(!myTkBuilderPtr) return emptyTrack;
+  reconstructIfNeeded();
   return myTkBuilderPtr->getTrack3D(0);
 
 }

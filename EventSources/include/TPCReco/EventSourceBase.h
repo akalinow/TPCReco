@@ -56,6 +56,8 @@ public:
 
   std::shared_ptr<EventTPC> getLastEvent();
 
+  /// Reconstruction of the current event; reconstructs it first if it was not done when the event
+  /// was loaded (events rejected by the event filter are not reconstructed when loaded).
   const Track3D & getRecoEvent() const;
 
   unsigned long int numberOfEvents() const;
@@ -75,9 +77,12 @@ protected:
 
   void fillEventTPC();
 
+  /// Runs the track builder on the current event unless already done (no-op without a track builder).
+  void reconstructIfNeeded() const;
+
   std::string currentFilePath;
 
-  bool recoEventUpdated{false};
+  mutable bool recoEventUpdated{false}; ///< reconstruction of the current event is up to date
   
   long int nEventsToRead{0};
   unsigned long int nEvents{0};

@@ -4,6 +4,7 @@
 #include <map>
 #include <algorithm>
 #include <numeric>
+#include <unordered_map>
 
 #include <TH1D.h>
 #include <TH2D.h>
@@ -37,6 +38,7 @@ void EventTPC::Clear(){
 
   chargeMapWithSections.clear();
   keyLists.clear();
+  wholeEventPropsValid = false;
   for(auto & item: histoCacheUpdated) item.second = false;
 }
 ///////////////////////////////////////////////////////////////////////
@@ -45,10 +47,11 @@ void EventTPC::Clear(){
 
   myEventInfo = aEvInfo;  
 
-  filter_type filterType = filter_type::none;
-  int nHits = GetMultiplicity(true, -1, -1, -1, filterType);
-  int totalCharge = GetTotalCharge(-1, -1, -1, -1, filterType);
-  int maxCharge = GetMaxCharge(-1, -1, -1, filterType); 
+  // same values as GetMultiplicity(true,-1,-1,-1,none), GetTotalCharge(), GetMaxCharge(), without histograms
+  computeWholeEventProperties();
+  int nHits = wholeEventHits;
+  int totalCharge = wholeEventTotalCharge;
+  int maxCharge = wholeEventMaxCharge;
 
   myEventInfo.SetProperties({maxCharge, totalCharge, nHits});
 
@@ -77,6 +80,27 @@ void EventTPC::SetChargeMap(const PEventTPC::chargeMapType & aChargeMap){
 
   Clear();
   chargeMapWithSections = aChargeMap;
+}
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+void EventTPC::computeWholeEventProperties(){
+
+  // charge summed over the strip sections at each (dir, strip, time cell), as in the 3D histograms
+  std::unordered_map<long, double> mergedCharge;
+  mergedCharge.reserve(chargeMapWithSections.size());
+  double total = 0.0;
+  for(const auto & item: chargeMapWithSections){
+    const long pos = (static_cast<long>(std::get<0>(item.first))*100000L + std::get<2>(item.first))*1000L
+                     + std::get<3>(item.first);
+    mergedCharge[pos] += item.second;
+    total += item.second;
+  }
+  double maxCharge = 0.0; // the histogram maximum includes the empty bins
+  for(const auto & item: mergedCharge) maxCharge = std::max(maxCharge, item.second);
+  wholeEventMaxCharge = maxCharge;
+  wholeEventTotalCharge = total;
+  wholeEventHits = mergedCharge.size();
+  wholeEventPropsValid = true;
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
@@ -255,6 +279,7 @@ double EventTPC::GetValByStripMerged(int strip_dir, int strip_number, int time_c
 double EventTPC::GetMaxCharge(int aStrip_dir, int aStrip_section, int aStrip_number,
 			      filter_type filterType){
 
+  if(aStrip_dir<0 && filterType==filter_type::none && wholeEventPropsValid) return wholeEventMaxCharge;
   filterHits(filterType);
 
   double result = 0.0;
@@ -315,6 +340,8 @@ std::tuple<int,int> EventTPC::GetMaxChargePos(int aStrip_dir, filter_type filter
 double EventTPC::GetTotalCharge(int aStrip_dir, int aStrip_section,
 				int aStrip_number, int aTime_cell,
 				filter_type filterType){
+  if(aStrip_dir<0 && aStrip_section<0 && aStrip_number<0 && aTime_cell<0 &&
+     filterType==filter_type::none && wholeEventPropsValid) return wholeEventTotalCharge;
   filterHits(filterType);
 
   double sum = 0;

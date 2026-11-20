@@ -98,6 +98,15 @@ class EventTPC {
 		   int delta_timecells);
 
   void create3DHistoTemplate();
+
+  // Whole-event properties without filter (max charge, total charge, number of hits), computed in one
+  // pass over the charge map by SetEventInfo. Building the 3D histogram cache for them cost ~40% of the
+  // CPU of reading raw data (every event, also those rejected by the event filter).
+  void computeWholeEventProperties();
+  bool wholeEventPropsValid{false}; //!
+  double wholeEventMaxCharge{0};    //! max over (dir, strip, time cell) of the charge summed over sections (>= 0)
+  double wholeEventTotalCharge{0};  //!
+  long wholeEventHits{0};           //! number of distinct (dir, strip, time cell), sections merged
   
   void updateHistosCache(filter_type filterType);
   

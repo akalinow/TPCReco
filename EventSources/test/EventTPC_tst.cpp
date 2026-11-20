@@ -173,4 +173,21 @@ TEST_F(EventTPCTest, GetMultiplicity) {
         }
 }
 ///////////////////////////////////////  
-///////////////////////////////////////  
+///////////////////////////////////////  ///////////////////////////////////////
+///////////////////////////////////////
+TEST_F(EventTPCTest, WholeEventPropertiesWithoutHistograms) {
+  // the whole-event values computed in one pass over the charge map (SetEventInfo) agree with the
+  // histogram and key-list based calculations
+  double maxFromProjections = 0.0, totalPerDir = 0.0;
+  for (auto projType : {projection_type::DIR_TIME_U, projection_type::DIR_TIME_V, projection_type::DIR_TIME_W}) {
+    maxFromProjections = std::max(maxFromProjections,
+                                  myEventPtr->get2DProjection(projType, filter_type::none, scale_type::raw)->GetMaximum());
+  }
+  for (int dir = 0; dir < 3; ++dir) totalPerDir += myEventPtr->GetTotalCharge(dir, -1, -1, -1, filter_type::none);
+  EXPECT_NEAR(myEventPtr->GetMaxCharge(), maxFromProjections, 1E-6 * maxFromProjections);
+  EXPECT_NEAR(myEventPtr->GetTotalCharge(), totalPerDir, 1E-6 * std::abs(totalPerDir));
+  const auto props = myEventPtr->GetEventInfo().GetProperties();
+  EXPECT_EQ(props.max_charge, static_cast<int>(myEventPtr->GetMaxCharge()));
+  EXPECT_EQ(props.integrated_charge, static_cast<int>(myEventPtr->GetTotalCharge()));
+  EXPECT_EQ(props.n_hits, myEventPtr->GetMultiplicity(true, -1, -1, -1, filter_type::none));
+}
