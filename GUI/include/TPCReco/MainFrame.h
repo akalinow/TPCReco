@@ -88,6 +88,7 @@ private:
 	void SetCursorTheme();
 
 	void ClearCanvases();
+	void Update3DView(bool drawTrack);
 	void Update();
 	unsigned long UpdateEventLog();
 

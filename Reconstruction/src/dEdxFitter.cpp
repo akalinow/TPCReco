@@ -377,7 +377,7 @@ TFitResult dEdxFitter::fitHypothesis(TF1 *fModel, TH1F & aHisto){
     const double scale = stepScales[iAttempt];
     reset();
     setStepSizes(fModel, scale);
-    TFitResultPtr aResultPtr = aHisto.Fit(fModel,"BRWWSQ");
+    TFitResultPtr aResultPtr = aHisto.Fit(fModel,"BRWWSQN"); // N: no graphics, would draw into gPad
     if(!aResultPtr.Get()) continue;
     const TFitResult & aResult = *aResultPtr.Get();
     const bool better = !haveResult ||

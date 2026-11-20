@@ -530,7 +530,7 @@ double TrackBuilder::getLengthProjectionFromProfile(definitions::projection_type
    auto aPol = std::make_unique<TF1>("aFit", "[0]+[1]*x", minPos, maxPos);
    aPol->SetParameter(0, (minPos+maxPos)/2.0);
    aPol->SetParameter(1, 0.0);
-   TFitResultPtr aFitResult = hProfile->Fit(aPol.get(),"BRWWSQ");
+   TFitResultPtr aFitResult = hProfile->Fit(aPol.get(),"BRWWSQN"); // N: no graphics, would draw into gPad
    if(!aFitResult.Get() || aFitResult->NPar()<2) return 0.0;
    double slope = aFitResult->Parameter(1);
    double length = (maxPos - minPos)*slope;

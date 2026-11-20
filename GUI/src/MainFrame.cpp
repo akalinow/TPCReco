@@ -614,13 +614,13 @@ void MainFrame::Update() {
 	ClearCanvases();
 	
 	if (isRecoModeOn) myHistoManager.drawRecoHistos(fMainCanvas);
-	else if(myConfig.get<bool>("display.develMode")) {
-		myHistoManager.drawDevelHistos(fMainCanvas);
-		//myHistoManager.drawTrack3D(fWirePlotCanvas.get());
-
-	}
+	else if(myConfig.get<bool>("display.develMode")) myHistoManager.drawDevelHistos(fMainCanvas);
 	else if(myConfig.get<bool>("display.technicalMode")) myHistoManager.drawTechnicalHistos(fMainCanvas, myEventSource->getGeometry()->GetAgetNchips());
 	else myHistoManager.drawRawHistos(fMainCanvas, isRateDisplayOn);
+
+	// 3D view: automatic reco track in devel mode; in manual RECO mode the track
+	// is drawn after "Fit segments" (processSegmentData())
+	Update3DView(!isRecoModeOn);
 
 	// Automatic output: once per loaded event, not on every redraw.
 	// In manual RECO mode the event is written on "Next event" with the clicked track instead.
@@ -632,7 +632,25 @@ void MainFrame::Update() {
 void MainFrame::processSegmentData(std::vector<double>* segmentsXY) {
 
 	myHistoManager.drawRecoFromMarkers(fMainCanvas, segmentsXY);
+	Update3DView(true);
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void MainFrame::Update3DView(bool drawTrack) {
 
+	// The "3D detector" canvas exists in devel mode only. When its window is closed
+	// ROOT keeps the TCanvas but removes its implementation (and the drift cage view).
+	if (!fWirePlotCanvas || !fWirePlotCanvas->GetCanvasImp()) return;
+	// Restore the previous gPad afterwards. Do NOT leave the whole main canvas as gPad:
+	// anything drawn later without an explicit pad (e.g. TH1::Draw without "same")
+	// would Clear() it and delete its four sub-pads.
+	TVirtualPad* padSave = gPad;
+	if (drawTrack) myHistoManager.drawTrack3D(fWirePlotCanvas.get());
+	else { // repaint to remove the track deleted in ClearCanvases()
+		fWirePlotCanvas->Modified();
+		fWirePlotCanvas->Update();
+	}
+	if (padSave) padSave->cd();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

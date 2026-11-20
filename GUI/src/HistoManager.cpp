@@ -503,40 +503,30 @@ void HistoManager::createWirePlotDriftCage3D(std::unique_ptr<TCanvas> &aCanvas) 
 /////////////////////////////////////////////////////////
 void HistoManager::drawTrack3D(TVirtualPad *aPad){
 
+  if(!aPad || !myTkBuilderPtr) return;
   aPad->cd();
-  
+
   const Track3D & aTrack3D = myTkBuilderPtr->getTrack3D(0);
   const TrackSegment3DCollection & trackSegments = aTrack3D.getSegments();
-  if(!trackSegments.size()) return;
-  
-  int iColor = 2;
 
-   for(auto aSegment: trackSegments){
-     TPolyLine3D aPolyLine;
-     aPolyLine.SetLineWidth(3);
-     aPolyLine.SetLineColor(iColor++);
-
-     aPolyLine.SetPoint(0,
-			aSegment.getStart().X(),
-			aSegment.getStart().Y(),
-			aSegment.getStart().Z());			
-     aPolyLine.SetPoint(1,
-			aSegment.getEnd().X(),
-			aSegment.getEnd().Y(),
-			aSegment.getEnd().Z());    
-
-     fObjClones.push_back(aPolyLine.DrawClone());
-
-     TMarker3DBox aTrackBox(aSegment.getStart().X(),
-                            aSegment.getStart().Y(),
-                            aSegment.getStart().Z(),
-                            4, 4, aSegment.getLength(),
-                            aSegment.getTangent().Theta()*180.0/M_PI,
-                            aSegment.getTangent().Phi()*180.0/M_PI);
-    aTrackBox.SetLineColor(iColor++);               
-   }
-    aPad->Update();
-    aPad->Modified();
+  // same colour per segment as in the 2D projections (drawTrack3DProjectionTimeStrip)
+  int iSegment = 0;
+  for(const auto & aSegment: trackSegments){
+    // Not DrawClone(): it draws into gROOT->GetSelectedPad(), i.e. the last
+    // clicked pad of the main canvas, not into aPad.
+    // Lines are owned by fObjClones and deleted in clearObjects().
+    auto *aPolyLine = new TPolyLine3D(2);
+    aPolyLine->SetLineWidth(3);
+    aPolyLine->SetLineColor(2 + iSegment);
+    aPolyLine->SetPoint(0, aSegment.getStart().X(), aSegment.getStart().Y(), aSegment.getStart().Z());
+    aPolyLine->SetPoint(1, aSegment.getEnd().X(), aSegment.getEnd().Y(), aSegment.getEnd().Z());
+    aPolyLine->Draw();
+    fObjClones.push_back(aPolyLine);
+    ++iSegment;
+  }
+  // Modified() must come before Update(), otherwise the pad is not repainted
+  aPad->Modified();
+  aPad->Update();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
