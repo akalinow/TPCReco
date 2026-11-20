@@ -8,6 +8,7 @@
 #include <gtest/gtest.h>
 
 #include "TPCReco/dEdxFitter.h"
+#include "TPCReco/IonRangeCalculator.h"
 
 namespace {
 
@@ -155,8 +156,8 @@ namespace {
 // charge profile of a C12+alpha event, as made by TrackBuilder: x from the
 // track start, histogram range 1.2 x track length
 TH1F makeProfile(const char *name, double vertex, double alphaRange, double carbonRange, double pressure) {
-  const double scale = 250.0 / pressure;  // nominal/current pressure
-  const double maxAlpha = 297.23 * scale, maxCarbon = 23.43 * scale;
+  dEdxFitter conditions(RESOURCES_DIR, pressure);  // sets the (static) gas conditions of the models
+  const double maxAlpha = dEdxFitter::getMaxAlphaRange(), maxCarbon = dEdxFitter::getMaxCarbonRange();
   const double length = vertex + alphaRange;
   TH1F h(name, "", int(1.2 * length), 0, 1.2 * length);
   double params[8] = {1.0, vertex, maxAlpha - alphaRange, maxCarbon - carbonRange, 1.0, 1.0, 5E-3, 1.0};
@@ -312,4 +313,40 @@ TEST_F(dEdxFitterTest, O18Kinematics) {
   EXPECT_NE(aFitter.getKinematics(), dEdxFitter::Kinematics::O16);
   EXPECT_EQ(aFitter.getRecoilPID(), aFitter.getKinematics() == dEdxFitter::Kinematics::O18 ? pid_type::CARBON_14 : pid_type::CARBON_12);
   EXPECT_NEAR(result.carbonRange, recoilRange, 0.15 * recoilRange);
+}
+
+TEST_F(dEdxFitterTest, RangeMatchesDepositedEnergy) {
+  // the fitted alpha (carbon) range is the range-table range of the energy deposited by the
+  // model: the alpha range was 1.0 mm (250 mbar) too short with the hard-coded 297.23 mm
+  for (double pressure : {250.0, 190.0, 130.0}) {
+    for (double temperature : {293.15, 303.15}) {
+      dEdxFitter aFitter(RESOURCES_DIR, pressure, temperature);
+      IonRangeCalculator calc(RESOURCES_DIR, gas_mixture_type::CO2, pressure, temperature);
+      const double scale = (pressure / temperature) / (250.0 / 293.15);
+      struct Case { pid_type ion; const dEdxFitter::BraggTemplate *tmpl; double maxRange; std::vector<double> ranges; };
+      const std::vector<Case> cases = {
+          {pid_type::ALPHA, &dEdxFitter::alphaTemplate(), dEdxFitter::getMaxAlphaRange(), {20, 50, 100, 200}},
+          {pid_type::CARBON_12, &dEdxFitter::carbonTemplate(), dEdxFitter::getMaxCarbonRange(), {5, 10, 15}}};
+      for (const auto &c : cases) {
+        for (double range : c.ranges) {
+          // energy [keV] deposited by the table from cut (table units) to its end
+          const double cut = (c.maxRange - range) * scale;
+          double energy = 0.0;
+          for (double x = cut; x < c.tmpl->s.back(); x += 1E-3) energy += tableValue(*c.tmpl, x + 0.5E-3, cut) * 1E-3;
+          EXPECT_NEAR(calc.getIonRangeMM(c.ion, energy * 1E-3), range, 0.2 / scale)
+              << "pid " << int(c.ion) << " p " << pressure << " T " << temperature << " range " << range;
+        }
+      }
+    }
+  }
+}
+
+TEST_F(dEdxFitterTest, DensityScaling) {
+  // the table ranges scale with the gas density p/T
+  dEdxFitter a(RESOURCES_DIR, 190.0, 293.15);
+  const double r0 = dEdxFitter::getMaxAlphaRange();
+  a.setTemperature(303.15);
+  EXPECT_NEAR(dEdxFitter::getMaxAlphaRange(), r0 * 303.15 / 293.15, 1E-9);
+  a.setGasConditions(250.0, 293.15);
+  EXPECT_NEAR(dEdxFitter::getMaxAlphaRange(), r0 * 190.0 / 250.0, 1E-9);
 }

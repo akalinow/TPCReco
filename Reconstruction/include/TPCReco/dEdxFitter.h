@@ -18,11 +18,19 @@ class IonRangeCalculator;
 class dEdxFitter{
 
 public:
-  dEdxFitter(std::string resources, double aPressure=190);
+  dEdxFitter(std::string resources, double aPressure=190, double aTemperature=nominalTemperature);
   // defaults resource directory to installed directory
-  dEdxFitter(double aPressure=190);
+  dEdxFitter(double aPressure=190, double aTemperature=nominalTemperature);
 
-  void setPressure(double aPressure); 
+  /// Gas conditions: the dE/dx tables are scaled with the gas density, p/T.
+  void setGasConditions(double aPressure, double aTemperature);
+  void setPressure(double aPressure) { setGasConditions(aPressure, currentTemperature);}
+  void setTemperature(double aTemperature) { setGasConditions(currentPressure, aTemperature);}
+
+  /// Ranges [mm] at the current gas conditions of the energies deposited by the full
+  /// alpha and carbon dE/dx tables (range-table range of the integral of the table).
+  static double getMaxAlphaRange() { return theMaxAlphaRange;}
+  static double getMaxCarbonRange() { return theMaxCarbonRange;}
 
   /// Set range of fitted effective charge diffusion
   void setDiffusionRange(double minD=0.5, double maxD=1.5);
@@ -75,7 +83,12 @@ public:
 
   const TH1F & getFittedHisto() const { return theFittedHisto;};
 
-  double getLoss() const { return theFitResult.MinFcnValue();};
+  /// Loss normalised to the number of fitted bins: mean squared residual of the charge
+  /// profile normalised to its maximum. Independent of the profile binning.
+  double getLoss() const;
+
+  /// Sum of squared residuals over the fitted bins (the minimised function).
+  double getRawLoss() const { return theFitResult.MinFcnValue();};
 
   const TF1 & getFittedModel() const { return *theFittedModel;};
 
@@ -126,7 +139,12 @@ private:
   static TGraph *braggGraph_alpha;
   static TGraph *braggGraph_12C;
   static double currentPressure;
-  static double nominalPressure;
+  static double currentTemperature;
+  /// gas density at the current conditions / density of the tables
+  static double densityScale();
+  /// ranges [mm] of the full tables at the nominal conditions (computed from the tables)
+  static double theNominalAlphaRange, theNominalCarbonRange;
+  static double tableRange(const BraggTemplate &aTemplate, IonRangeCalculator &aCalculator, pid_type ion);
 
   static bool usePhysicsConstraint;
   static double carbonRangeMargin;
@@ -147,6 +165,9 @@ private:
   double carbonScale{1};
   
   bool isReflected{false};
+
+  /// lower edge of the fit range: the lower edge of the fitted profile
+  double fitRangeMin{-20};
 
   bool hasVertexConstraint{false};
   double vertexConstraint{0};
@@ -175,6 +196,10 @@ private:
   static void setStepSizes(TF1 *fModel, double scale);
 
 public:
+  /// Conditions of the dE/dx and range tables
+  static constexpr double nominalPressure{250.0};     // [mbar]
+  static constexpr double nominalTemperature{293.15}; // [K]
+
   /// Default stop threshold of the restarts (see setMaxLossRatio).
   static constexpr double defaultMaxLossRatio{1E-5}; // was 5E-4: accepted wrong minima (loss ~0.7 for an 80 mm track)
 
@@ -182,8 +207,8 @@ public:
   /// (dE/dx table units). Parameters, lengths in [mm] at the current pressure:
   ///  [0] sigma: Gaussian smearing (diffusion), [1] vertex position,
   ///  [2] alphaOffset, [3] carbonOffset: distance from the start of the full
-  ///      energy curve (10 MeV alpha, 5 MeV 12C at nominal pressure) to the
-  ///      start of the track, i.e. range = maximal range - offset,
+  ///      energy curve (10 MeV alpha, 5 MeV 12C at nominal conditions) to the
+  ///      start of the track, i.e. range = getMaxAlphaRange() - offset,
   ///  [4] alpha scale, [5] carbon scale, [6] common scale (bragg_12C_alpha only),
   ///  [7] carbon range scale: with O16 or O18 kinematics the recoil range is
   ///      recoilRangeFromAlpha(alpha range) x [7] and [3] is not used.

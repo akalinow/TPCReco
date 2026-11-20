@@ -101,7 +101,7 @@ void TrackBuilder::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
 void TrackBuilder::setPressure(double aPressure) {
 
   myPressure = aPressure;
-  mydEdxFitter.setPressure(myPressure);
+  mydEdxFitter.setGasConditions(myPressure, myTemperature);
   myRangeCalculator.setGasConditions(gas_mixture_type::CO2, myPressure, myTemperature);
 }
 /////////////////////////////////////////////////////////

@@ -14,8 +14,12 @@ dEdxFitter::BraggTemplate dEdxFitter::theCarbonTemplate;
 TGraph* dEdxFitter::braggGraph_alpha = nullptr;
 TGraph* dEdxFitter::braggGraph_12C = nullptr;
 
-double dEdxFitter::nominalPressure = 250.0;
+constexpr double dEdxFitter::nominalPressure;
+constexpr double dEdxFitter::nominalTemperature;
 double dEdxFitter::currentPressure = 190.0;
+double dEdxFitter::currentTemperature = dEdxFitter::nominalTemperature;
+double dEdxFitter::theNominalAlphaRange = 0.0;
+double dEdxFitter::theNominalCarbonRange = 0.0;
 bool dEdxFitter::usePhysicsConstraint = false;
 double dEdxFitter::carbonRangeMargin = 0.1;
 dEdxFitter::Kinematics dEdxFitter::currentKinematics = dEdxFitter::Kinematics::FREE;
@@ -24,11 +28,11 @@ double dEdxFitter::theMaxAlphaRange = 0.0;
 double dEdxFitter::theMaxCarbonRange = 0.0;
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
-dEdxFitter::dEdxFitter(double aPressure): dEdxFitter(TPCRECO_RESOURCE_DIR, aPressure){}
+dEdxFitter::dEdxFitter(double aPressure, double aTemperature): dEdxFitter(TPCRECO_RESOURCE_DIR, aPressure, aTemperature){}
 
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
-dEdxFitter::dEdxFitter(std::string resources, double aPressure){
+dEdxFitter::dEdxFitter(std::string resources, double aPressure, double aTemperature){
   //initialize bragg graphs if they are null:
   if(!braggGraph_alpha){
     braggGraph_alpha = new TGraph((resources+"dEdx_corr_alpha_10MeV_CO2_250mbar.dat").c_str(), "%lg %lg");
@@ -36,12 +40,16 @@ dEdxFitter::dEdxFitter(std::string resources, double aPressure){
   if(!braggGraph_12C){
     braggGraph_12C = new TGraph((resources+"dEdx_corr_12C_5MeV_CO2_250mbar.dat").c_str(), "%lg %lg");
   }
-  setPressure(aPressure);
-
   braggGraph_alpha->SetBit(TGraph::kIsSortedX);
   braggGraph_12C->SetBit(TGraph::kIsSortedX);
   if(theAlphaTemplate.s.empty()) theAlphaTemplate.set(*braggGraph_alpha);
   if(theCarbonTemplate.s.empty()) theCarbonTemplate.set(*braggGraph_12C);
+  if(theNominalAlphaRange<=0 || theNominalCarbonRange<=0){
+    IonRangeCalculator aCalculator(resources, gas_mixture_type::CO2, nominalPressure, nominalTemperature);
+    theNominalAlphaRange = tableRange(theAlphaTemplate, aCalculator, pid_type::ALPHA);
+    theNominalCarbonRange = tableRange(theCarbonTemplate, aCalculator, pid_type::CARBON_12);
+  }
+  setGasConditions(aPressure, aTemperature);
 
   TF1::DefaultAddToGlobalList(kFALSE);
   alpha_ionisation = new TF1("alpha_ionisation", bragg_alpha, 0, 600.0);
@@ -76,32 +84,55 @@ dEdxFitter::dEdxFitter(std::string resources, double aPressure){
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
-void dEdxFitter::setPressure(double aPressure) {
-  
+double dEdxFitter::tableRange(const BraggTemplate &aTemplate, IonRangeCalculator &aCalculator, pid_type ion){
+
+  // The range of the energy deposited by the table from position s to its end, taken from
+  // the range table, is R(E(s)) = R0 - s with a constant R0, the range of the energy of the
+  // full table. The hard-coded R0 (297.23 mm for the alpha: the range of 10.000 MeV) did not
+  // match the alpha table, which deposits 10.022 MeV (R0 = 298.24 mm): the alpha ranges were
+  // 1.0 mm (at 250 mbar) too short. R0 is the mean of R(E(s)) + s for the positions with
+  // 10-90% of the table energy remaining (within the range table).
+  const auto &s = aTemplate.s;
+  const auto &a = aTemplate.a;
+  if(s.size()<2) return 0.0;
+  std::vector<double> remaining(s.size(), 0.0); // [keV]
+  for(size_t i=s.size()-1;i>0;--i) remaining[i-1] = remaining[i] + 0.5*(a[i]+a[i-1])*(s[i]-s[i-1]);
+  const double total = remaining.front();
+  double sum = 0.0;
+  int n = 0;
+  for(size_t i=0;i<s.size();++i){
+    if(remaining[i]<0.1*total || remaining[i]>0.9*total) continue;
+    sum += aCalculator.getIonRangeMM(ion, remaining[i]*1E-3) + s[i];
+    ++n;
+  }
+  if(!n){
+    std::cout<<KRED<<"dEdxFitter: no range for the dE/dx table of "<<RST<<int(ion)<<std::endl;
+    exit(1);
+  }
+  return sum/n;
+}
+////////////////////////////////////////////////
+////////////////////////////////////////////////
+double dEdxFitter::densityScale(){
+  return (currentPressure/currentTemperature)/(nominalPressure/nominalTemperature);
+}
+////////////////////////////////////////////////
+////////////////////////////////////////////////
+void dEdxFitter::setGasConditions(double aPressure, double aTemperature) {
+
   currentPressure = aPressure;
+  currentTemperature = aTemperature;
 
   minVtxOffset = -5;
-  minAlphaOffset = 0; 
+  minAlphaOffset = 0;
   minCarbonOffset = 5;
 
-  //190 mbar, 10 MeV alpha, 2.5 MeV C
-  if(std::abs(nominalPressure-190)<1E-3){
-    maxAlphaOffset = (385.99)*(nominalPressure/currentPressure); 
-    maxCarbonOffset = (28.64)*(nominalPressure/currentPressure);
-  }
-  //250 mbar, 10 MeV alpha, 5 MeV C
-  else if(std::abs(nominalPressure-250)<1E-3){
-    maxAlphaOffset = (297.23)*(nominalPressure/currentPressure);
-    maxCarbonOffset = (23.43)*(nominalPressure/currentPressure);
-  }
-  else{
-    std::cout<<KRED<<"dEdxFitter: nominal pressure: "<<RST<<nominalPressure
-	     <<" does not correspond to any dEdx data files."<<std::endl;
-    exit(0);
-  }
+  // table ranges at the current gas density
+  maxAlphaOffset = theNominalAlphaRange/densityScale();
+  maxCarbonOffset = theNominalCarbonRange/densityScale();
   theMaxAlphaRange = maxAlphaOffset;
   theMaxCarbonRange = maxCarbonOffset;
-  theRangeCalculator = std::make_unique<IonRangeCalculator>(gas_mixture_type::CO2, currentPressure);
+  theRangeCalculator = std::make_unique<IonRangeCalculator>(gas_mixture_type::CO2, currentPressure, currentTemperature);
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
@@ -118,7 +149,9 @@ double dEdxFitter::recoilRangeFromAlpha(double alphaRange, Kinematics kinematics
   // cache: evaluated for every point of the profile with the same parameters
   static double lastAlphaRange = -1, lastRecoilRange = 0, lastPressure = -1;
   static Kinematics lastKinematics = Kinematics::FREE;
-  if(alphaRange==lastAlphaRange && kinematics==lastKinematics && currentPressure==lastPressure) return lastRecoilRange;
+  static double lastTemperature = -1;
+  if(alphaRange==lastAlphaRange && kinematics==lastKinematics && currentPressure==lastPressure &&
+     currentTemperature==lastTemperature) return lastRecoilRange;
   double recoilRange = 0.0;
   if(alphaRange>0 && theRangeCalculator){
     const double alphaEnergy = theRangeCalculator->getIonEnergyMeV(pid_type::ALPHA, alphaRange);
@@ -130,6 +163,7 @@ double dEdxFitter::recoilRangeFromAlpha(double alphaRange, Kinematics kinematics
   lastAlphaRange = alphaRange;
   lastKinematics = kinematics;
   lastPressure = currentPressure;
+  lastTemperature = currentTemperature;
   lastRecoilRange = recoilRange;
   return recoilRange;
 }
@@ -144,7 +178,7 @@ void dEdxFitter::setDiffusionRange(double minD, double maxD){
 ////////////////////////////////////////////////
 void dEdxFitter::reset(){
 
-  carbon_alpha_model->SetRange(-20, maxAlphaOffset+maxCarbonOffset);
+  carbon_alpha_model->SetRange(fitRangeMin, maxAlphaOffset+maxCarbonOffset);
   carbon_alpha_model->SetParLimits(1, 0.0, maxVtxOffset);
 
   double minCarbonRange = 1.0; //mm (a 0.4 MeV carbon at 130 mbar is ~5 mm long)
@@ -171,7 +205,7 @@ void dEdxFitter::reset(){
     carbon_alpha_model->SetParameter(1, vertexConstraint);
   }
 
-  alpha_model->SetRange(-20, maxAlphaOffset);
+  alpha_model->SetRange(fitRangeMin, maxAlphaOffset);
   alpha_model->SetParLimits(1, minVtxOffset, maxVtxOffset);
   alpha_model->SetParLimits(2, minAlphaOffset, maxAlphaOffset);
   alpha_model->SetParameters((maxD + minD)/2.0,
@@ -260,11 +294,11 @@ double dEdxFitter::BraggTemplate::smeared(double pos, double cut, double sigma) 
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
-// The tables are given in [mm] at the nominal pressure. A length L at the
-// current pressure corresponds to L*currentPressure/nominalPressure in the table;
+// The tables are given in [mm] at the nominal conditions. A length L at the
+// current conditions corresponds to L*densityScale() in the table (density ~ p/T);
 // the smearing width is converted in the same way.
 double dEdxFitter::bragg_alpha(double *x, double *params) {
-  const double scale = currentPressure/nominalPressure;
+  const double scale = densityScale();
   const double sigma = scale*params[0];
   const double cut = scale*params[2];               // start of the track in the table
   const double pos = scale*(x[0]-params[1]) + cut;  // alpha towards larger x
@@ -273,7 +307,7 @@ double dEdxFitter::bragg_alpha(double *x, double *params) {
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 double dEdxFitter::bragg_12C(double *x, double *params) {
-  const double scale = currentPressure/nominalPressure;
+  const double scale = densityScale();
   const double sigma = scale*params[0];
   double carbonOffset = params[3];
   if(currentKinematics!=Kinematics::FREE){
@@ -324,6 +358,8 @@ TFitResult dEdxFitter::fitHypothesis(TF1 *fModel, TH1F & aHisto){
   if(!aHisto.GetEntries()) return theResult;
 
   double tkLength = aHisto.GetXaxis()->GetXmax()/1.2;
+  // fit the whole profile (the fit range started at -20 mm, inside the profile of tracks longer than 100 mm)
+  fitRangeMin = std::min(-20.0, aHisto.GetXaxis()->GetXmin());
   maxVtxOffset = 2*maxCarbonOffset;
   minAlphaOffset = std::max(0.0, maxAlphaOffset - tkLength);
   minCarbonOffset = std::max(0.0, maxCarbonOffset - tkLength);
@@ -462,11 +498,23 @@ double dEdxFitter::getCarbonRange() const{
 
   if(bestKinematics!=Kinematics::FREE){
     double alphaRange = maxAlphaOffset - theFittedModel->GetParameter("alphaOffset");
-    return recoilRangeFromAlpha(alphaRange, bestKinematics)*theFittedModel->GetParameter("carbonRangeScale");
+    double carbonRange = recoilRangeFromAlpha(alphaRange, bestKinematics)*theFittedModel->GetParameter("carbonRangeScale");
+    // limited to the table, as in the model (bragg_12C)
+    return std::min(std::max(carbonRange, 0.0), theMaxCarbonRange);
   }
   double carbonOffset = theFittedModel->GetParameter("carbonOffset");
   double carbonRange = maxCarbonOffset - carbonOffset;
   return carbonRange;
+}
+////////////////////////////////////////////////
+////////////////////////////////////////////////
+double dEdxFitter::getLoss() const{
+
+  // the minimised sum of squared residuals grows with the number of bins in the fit range
+  // (1.4 x track length / bin width, the bin width jumps by 2 with the track length)
+  const unsigned int nBins = theFitResult.Ndf() + theFitResult.NFreeParameters();
+  if(!nBins) return theFitResult.MinFcnValue();
+  return theFitResult.MinFcnValue()/nBins;
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
