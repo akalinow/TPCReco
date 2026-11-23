@@ -87,6 +87,10 @@ private:
 
 	void SetCursorTheme();
 
+	enum class ClickedTrackAction { leave, next, reset };
+	/// asks before an action that loses the manual reconstruction of the current event
+	bool ConfirmClickedTrack(ClickedTrackAction action);
+
 	void ClearCanvases();
 	void Update3DView(bool drawTrack);
 	void Update();
@@ -98,6 +102,8 @@ private:
 	bool isRateDisplayOn{ false };
 	bool isGeometryChanged{ false };
 	bool isNewEvent{ true }; // event loaded but not yet written by the automatic FileOutput fill
+	bool isManualTrackUnsaved{ false }; // fitted clicked track not yet written ("Next event")
+	bool isExitConfirmed{ false };
 
 	DirectoryWatch myDirWatch; //dunno if it's supposed to be here
 
@@ -130,6 +136,7 @@ private:
 	FileInfoFrame* fFileInfoFrame{ 0 };
 	SelectionBox* fSelectionBox{ 0 };
 	RunConditionsDialog* fRunConditionsDialog{ 0 };
+	TGCheckButton* fRecoModeCheckbox{ 0 };
 
 	ClassDef(MainFrame, 0);
 };

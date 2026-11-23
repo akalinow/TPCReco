@@ -32,6 +32,8 @@ public:
   void DoButton();  
   void HandleMarkerPosition(Int_t,Int_t,Int_t,TObject*);
   void setGeometry(std::shared_ptr<GeometryTPC> geo); 
+  /// true when points or segments have been clicked but not yet sent to the fit
+  bool hasClickedPoints() const;
   
 private:
 

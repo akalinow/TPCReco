@@ -33,6 +33,7 @@
 
 #include <TGButtonGroup.h>
 #include <TGButton.h>
+#include <TGMsgBox.h>
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 MainFrame::MainFrame(const TGWindow* p, UInt_t w, UInt_t h, const boost::property_tree::ptree& aConfig)
@@ -323,6 +324,7 @@ int MainFrame::AddButtons(int attach) {
 		fFrame->AddFrame(aCheckbox, tloh);
 		aCheckbox->Connect("Clicked()", "MainFrame", this, "DoButton()");
 		aCheckbox->SetToolTipText(checkbox_tooltips[iCheckbox].c_str());
+		if (checkbox_id[iCheckbox] == M_TOGGLE_RECOMODE) fRecoModeCheckbox = aCheckbox;
 		++attach_top;
 		++attach_bottom;
 		if (displayConfig != myConfig.not_found() && displayConfig->second.get(checkbox_config[iCheckbox], false)) {
@@ -575,6 +577,8 @@ void MainFrame::AddLogos() {
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 void MainFrame::CloseWindow() {
+	// window manager close button: same warning as the Exit button
+	if (!isExitConfirmed && !ConfirmClickedTrack(ClickedTrackAction::leave)) return;
 	myFileOutput.reset(); // close the output file also when the window is closed by the window manager
 	myHistoManager.~HistoManager();
 	if(myEventSource) myEventSource.get()->~EventSourceBase(); // to properly close output ROOT file created by EventFileExporter MC module of EventSourceMC
@@ -594,6 +598,7 @@ void MainFrame::ClearCanvases() {
 /////////////////////////////////////////////////////////
 void MainFrame::Update() {
 
+	if (isNewEvent) isManualTrackUnsaved = false;
 	// fMarkersManager is not created in ONLINE mode, so it must not gate the update
 	if (!myEventSource || !myEventSource->numberOfEvents() || !fFileInfoFrame) {
 		return;
@@ -632,7 +637,37 @@ void MainFrame::Update() {
 void MainFrame::processSegmentData(std::vector<double>* segmentsXY) {
 
 	myHistoManager.drawRecoFromMarkers(fMainCanvas, segmentsXY);
+	isManualTrackUnsaved = true;
 	Update3DView(true);
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+bool MainFrame::ConfirmClickedTrack(ClickedTrackAction action) {
+
+	if (!isRecoModeOn) return true;
+	bool pendingPoints = fMarkersManager && fMarkersManager->hasClickedPoints();
+	const std::string unsavedTrack = "The clicked track of this event has not been saved yet:\n"
+		"it is written to the output file only with \"Next event\".";
+	const std::string notFitted = "Clicked points/segments have not been fitted yet (\"Fit segments\").";
+	std::string message;
+	if (action == ClickedTrackAction::leave) {
+		if (isManualTrackUnsaved) message += unsavedTrack + "\n\n";
+		if (pendingPoints) message += notFitted + "\nThey will be lost.\n\n";
+		if (message.size()) message += "Leave this event anyway?";
+	}
+	else if (action == ClickedTrackAction::next && pendingPoints) {
+		message = notFitted + "\nThey are not saved: the " +
+			std::string(isManualTrackUnsaved ? "previously fitted track" : "automatic reconstruction") +
+			" is written instead.\n\nGo to the next event anyway?";
+	}
+	else if (action == ClickedTrackAction::reset && pendingPoints) {
+		message = notFitted + "\nReset clears them.\n\nReset anyway?";
+	}
+	if (message.empty()) return true;
+	Int_t answer = kMBNo;
+	new TGMsgBox(gClient->GetRoot(), this, "Unsaved clicked track", message.c_str(),
+	             kMBIconExclamation, kMBYes | kMBNo, &answer); // modal
+	return answer == kMBYes;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -785,6 +820,7 @@ void MainFrame::HandleMenu(Int_t id) {
 	switch (id) {
 	case M_FILE_OPEN:
 	{
+		if (!ConfirmClickedTrack(ClickedTrackAction::leave)) return;
 		// initialising with directory of previously opened file
 		// this is very naive and risky implementation of extracting dir from path
 		// but we don't have std::filesystem c++17 and ROOT 6.08 doesn't have TSystem::GetDirName
@@ -822,6 +858,7 @@ void MainFrame::HandleMenu(Int_t id) {
 
 	case M_NEXT_EVENT:
 	{
+		if (!ConfirmClickedTrack(ClickedTrackAction::next)) return;
 		unsigned long eventType = UpdateEventLog();
 		if (isRecoModeOn && myFileOutput) {
 			eventraw::EventInfo aEventInfo = myEventSource->getCurrentEvent()->GetEventInfo();
@@ -835,6 +872,7 @@ void MainFrame::HandleMenu(Int_t id) {
 	break;
 	case M_PREVIOUS_EVENT:
 	{
+		if (!ConfirmClickedTrack(ClickedTrackAction::leave)) return;
 		UpdateEventLog();
 		myEventSource->getPreviousEventLoop();
 		isNewEvent = true;
@@ -843,6 +881,7 @@ void MainFrame::HandleMenu(Int_t id) {
 	break;
 	case M_RESET_EVENT:
 	{
+		if (!ConfirmClickedTrack(ClickedTrackAction::reset)) return;
 		Update();
 	}
 	break;
@@ -866,6 +905,11 @@ void MainFrame::HandleMenu(Int_t id) {
 	break;
 	case M_TOGGLE_RECOMODE:
 	{
+		// switching the manual reconstruction off: the clicked track would not be written on "Next"
+		if (isRecoModeOn && !ConfirmClickedTrack(ClickedTrackAction::leave)) {
+			if (fRecoModeCheckbox) fRecoModeCheckbox->SetState(kButtonDown, kFALSE); // undo the click
+			return;
+		}
 		isRecoModeOn = !isRecoModeOn;
 		Update();
 	}
@@ -878,6 +922,7 @@ void MainFrame::HandleMenu(Int_t id) {
 	break;
 	case M_GOTO_EVENT:
 	{
+		if (!ConfirmClickedTrack(ClickedTrackAction::leave)) return;
 		int eventId = fEventIdEntry->GetIntNumber();
 		myEventSource->loadEventId(eventId);
 		isNewEvent = true;
@@ -886,6 +931,7 @@ void MainFrame::HandleMenu(Int_t id) {
 	break;
 	case M_GOTO_ENTRY:
 	{
+		if (!ConfirmClickedTrack(ClickedTrackAction::leave)) return;
 		int fileEntry = fFileEntryEntry->GetIntNumber();
 		myEventSource->loadFileEntry(fileEntry);
 		isNewEvent = true;
@@ -899,6 +945,8 @@ void MainFrame::HandleMenu(Int_t id) {
 	break;
 	case M_FILE_EXIT:
 	{
+		if (!ConfirmClickedTrack(ClickedTrackAction::leave)) return;
+		isExitConfirmed = true;
 		//CloseWindow() does not call MainFrame::~MainFrame() and exicts abruptly
 		//so we need to reset the event source and file output stream
 		myEventSource.reset();
