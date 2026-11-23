@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TPC Web GUI</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/plotly.min.js"></script>
+</head>
+<body>
+  <header>
+    <h1>TPC Web GUI</h1>
+    <span id="modeBadge" class="badge">…</span>
+    <span id="connection" class="connection" title="Connection to the tpcWebGUI server">●</span>
+    <span id="message" class="message" role="status"></span>
+  </header>
+
+  <main>
+    <section id="plotArea">
+      <div id="plots" class="plots"></div>
+      <div id="view3dBox" class="view3d-box" hidden>
+        <h2>3D detector</h2>
+        <div id="view3d" class="view3d"></div>
+      </div>
+    </section>
+
+    <aside id="sidebar">
+      <section class="group">
+        <div class="buttons">
+          <button id="btnNext" class="nav" title="Load the next event.">Next event</button>
+          <button id="btnPrevious" class="nav" title="Load the previous event.">Previous event</button>
+          <button id="btnReset" class="nav" title="Reload the current event, and reset all settings.">Reset event</button>
+          <button id="btnResetRate" class="nav" title="Clear rate graph" hidden>Reset rate</button>
+          <button id="btnExit" class="nav exit" title="Close the application">Exit</button>
+        </div>
+        <label title="Enables the logscale on Z axis"><input type="checkbox" id="chkLogScale"> Set Z logscale</label>
+        <label title="Enables automatic zoom in on region with deposits"><input type="checkbox" id="chkAutoZoom"> Set auto zoom</label>
+        <label title="Enables manual track reconstruction mode"><input type="checkbox" id="chkRecoMode"> Set manual reco</label>
+        <label title="Display event rate plot"><input type="checkbox" id="chkRate"> Display rate</label>
+      </section>
+
+      <section class="group" id="gotoBox">
+        <form id="formGotoEvent" class="inline">
+          <label for="inpEventId">Go to event id.</label>
+          <input id="inpEventId" type="number" min="0" step="1" value="0" title="Jump to given event id.">
+          <button type="submit">Go</button>
+        </form>
+        <form id="formGotoEntry" class="inline">
+          <label for="inpEntry">Go to frame.</label>
+          <input id="inpEntry" type="number" min="0" step="1" value="0" title="Jump to given frame (file entry).">
+          <button type="submit">Go</button>
+        </form>
+      </section>
+
+      <section class="group" id="eventTypeBox">
+        <h2>Event type</h2>
+        <div id="eventTypes" class="event-types"></div>
+      </section>
+
+      <section class="group">
+        <h2>Mode</h2>
+        <div id="modeLabel" class="mode-label">NONE</div>
+        <h2>Processing file</h2>
+        <div id="fileName" class="file-name">No input.</div>
+        <div class="counters">
+          <div><span class="caption">Events in the file</span><span id="nEvents">–</span></div>
+          <div><span class="caption">Event id.</span><span id="eventId">–</span></div>
+          <div><span class="caption">Frame</span><span id="entry">–</span></div>
+        </div>
+        <button id="btnOpen" title="Open a ROOT or GRAW file on the server">Open file…</button>
+      </section>
+
+      <section class="group" id="markersBox">
+        <h2>Segment creation</h2>
+        <div class="buttons three">
+          <button id="btnClearTrack" class="reco" title="Remove tracks from images. If &quot;Fit segments&quot; will NOT be clicked, the track will still be saved to the reco file">Clear track</button>
+          <button id="btnAddSegment" class="reco" title="Click to add segments end point. All segments share a common vertex - the starting point of the first segment. Each point is set by coordinates on two projections">Add segment</button>
+          <button id="btnFitSegments" class="reco" title="Calculate 3D orientation from the 2D projections">Fit segments</button>
+        </div>
+        <p id="recoHint" class="hint" hidden>Click a point on one U/V/W projection, then the same point on another projection.</p>
+      </section>
+
+      <section class="group" id="runConditionsBox">
+        <h2>Run conditions manager</h2>
+        <form id="formRunConditions">
+          <div class="run-conditions">
+            <label>Drift v<br>[cm/us]<input id="inpDriftVelocity" type="number" step="0.001"></label>
+            <label>Smplg. rate<br>[MHz]<input id="inpSamplingRate" type="number" step="0.1"></label>
+            <label>Trg. delay<br>[us]<input id="inpTriggerDelay" type="number" step="0.01"></label>
+          </div>
+          <button type="submit" class="conditions">Update conditions</button>
+        </form>
+      </section>
+
+      <section class="logos">
+        <img src="/logo/FUW_znak.png" alt="Faculty of Physics, University of Warsaw" onerror="this.remove()">
+        <img src="/logo/ELITEPC_znak.png" alt="ELITPC" onerror="this.remove()">
+      </section>
+    </aside>
+  </main>
+
+  <dialog id="openDialog">
+    <form method="dialog" id="formOpen">
+      <h2>Open file</h2>
+      <div class="dir-line">
+        <button type="button" id="btnUp" title="Parent directory">↑</button>
+        <input id="inpDir" type="text" spellcheck="false" aria-label="Directory">
+      </div>
+      <ul id="dirList" class="dir-list"></ul>
+      <label for="inpPath">File(s) – comma separated for several GRAW files</label>
+      <input id="inpPath" type="text" spellcheck="false">
+      <div class="dialog-buttons">
+        <button value="cancel" formnovalidate>Cancel</button>
+        <button id="btnOpenConfirm" value="open">Open</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="stopped" class="stopped" hidden>
+    <p>The tpcWebGUI server has stopped. You can close this tab.</p>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

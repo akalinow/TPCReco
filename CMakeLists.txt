@@ -61,6 +61,7 @@ add_subdirectory(EventSources)
 add_subdirectory(FileOutput)
 add_subdirectory(Analysis)
 add_subdirectory(GUI)
+add_subdirectory(WebServerClient)
 
 if(NOT IS_DIRECTORY ${CMAKE_INSTALL_PREFIX}/resources)
   install(DIRECTORY resources DESTINATION ${CMAKE_INSTALL_PREFIX})

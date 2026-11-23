@@ -80,7 +80,7 @@ void DirectoryWatch::watch(const std::string & dirName){
 #ifdef DEBUG
 	    std::cout << __FUNCTION__ << ": Message=" << fullPath.c_str() << std::endl; 
 #endif
-	    Message(fullPath.c_str());
+	    notify(fullPath);
 	  }
       }
       eventIndex += EVENT_SIZE + event->len;
@@ -121,7 +121,7 @@ void DirectoryWatch::watch(const std::string & dirName){
 #ifdef DEBUG
       std::cout << __FUNCTION__ << ": Message=" << fullPath.c_str() << std::endl; 
 #endif
-      Message(fullPath.c_str());
+      notify(fullPath);
     }
 #ifdef DEBUG
     std::cout << __FUNCTION__ << ": Entering sleep for " << updateInterval << " msec." << std::endl;
@@ -136,6 +136,10 @@ void DirectoryWatch::watch(const std::string & dirName){
 }
 ////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+void DirectoryWatch::notify(const std::string & fileList){
 
-
-
+  if(myCallback) myCallback(fileList);
+  Message(fileList.c_str());
+}
+////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////

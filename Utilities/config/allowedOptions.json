@@ -477,5 +477,29 @@
         "type" : "vector<int>",
         "defaultValue" : [1, 9],
         "description" : "Output tensor dimensions for the TensorFlow model.\nType: vector<int>"
+    },
+    "port":{
+        "group": "web",
+        "type": "int",
+        "defaultValue": 8080,
+        "description": "TCP port of the tpcWebGUI web server.\nType: int"
+    },
+    "bindAddress":{
+        "group": "web",
+        "type": "string",
+        "defaultValue": "0.0.0.0",
+        "description": "Network address the tpcWebGUI web server listens on. 0.0.0.0: all interfaces (remote access, protected by web.accessToken); 127.0.0.1: this machine only.\nType: string"
+    },
+    "accessToken":{
+        "group": "web",
+        "type": "string",
+        "defaultValue": "",
+        "description": "Access token required by tpcWebGUI from the browsers. Empty: a random token is generated at start-up when the server accepts remote connections (the URL with the token is printed); no token for 127.0.0.1.\nType: string"
+    },
+    "documentRoot":{
+        "group": "web",
+        "type": "string",
+        "defaultValue": "",
+        "description": "Directory with the tpcWebGUI web client files (index.html, app.js, ...). Empty: the web directory installed next to the tpcWebGUI executable.\nType: string"
     }
 }
