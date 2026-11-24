@@ -1,8 +1,5 @@
 import uproot
-import struct
-import functools
 from functools import partial
-import sys
 import numpy as np
 import tensorflow as tf
 
