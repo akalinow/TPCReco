@@ -54,7 +54,7 @@ GRAW samples ──► 1 geometry, run conditions
 | 3 | Pedestal and FPN | `PedestalCalculator`, `EventSourceGRAW::fillEventFromFrame` | `pedestal.remove`, `pedestal.minPedestalCell`, `pedestal.maxPedestalCell`, `pedestal.minSignalCell`, `pedestal.maxSignalCell` | – |
 | 4 | Event pre-filter | `EventFilter`, `Filters` | `eventFilter.enabled`, `eventFilter.maxChargeLowerBound`, `eventFilter.maxChargeUpperBound`, `eventFilter.totalChargeLowerBound`, `eventFilter.totalChargeUpperBound`, `eventFilter.events`, `eventFilter.recoProngs` | – |
 | 5 | Hit filter | `EventTPC::filterHits` (`filter_type::threshold`) | see the step notes | – |
-| 6 | Clean cluster | `RecHitBuilder::makeCleanCluster` | hard-coded | – |
+| 6 | Clean cluster | `RecHitBuilder::makeCleanCluster` | `reconstruction.cleanClusterWindowTimeMM`, `reconstruction.cleanClusterWindowStripMM`, `reconstruction.cleanClusterThreshold`, `reconstruction.cleanClusterEmptyBinThreshold` | – |
 | 7 | 3D seed | `TrackBuilder::buildSegment3D`, `MLTrackBuilder` | `reconstruction.tfModelPath`, `reconstruction.inputDim`, `reconstruction.outputDim` | TensorFlow model (optional) |
 | 8 | 3D line fit | `TrackBuilder::fitTrack3D`, `Track3D`, `TrackSegment3D`, `TrackSegment2D` | hard-coded | – |
 | 9 | Gain map | `GainMap`, `TrackSegment3D::getGainCorrection` | `input.gainMapFile` (default empty = off) | `resources/gainMap_HIgS2022_xDET.dat` |
@@ -132,10 +132,18 @@ display; the reconstruction always uses the threshold filter.
 
 ### 6. Clean cluster
 
-For each projection (U, V, W; time × strip, in mm), a cluster grows from the maximum bin. A
-neighbouring bin is added while the sum of its 3 × 3 kernel is at least 20 % of the maximum bin.
-This removes isolated noise and other, separate deposits. The cluster is used as the hits of the
-track fits.
+For each projection (U, V, W; time × strip, in mm), a cluster grows from the maximum bin. From
+every bin of the cluster whose kernel window sum is at least `cleanClusterThreshold` (default 0.2)
+times the maximum bin, all window bins with charge above `cleanClusterEmptyBinThreshold` (default
+1 ADC) are added. This removes isolated noise and other, separate deposits. The cluster is used as
+the hits of the track fits.
+
+The window has half-widths `cleanClusterWindowTimeMM` (time axis) and `cleanClusterWindowStripMM`
+(strip axis) in mm, converted to bins with the bin widths of the projection (n = round(half-width /
+bin width)). The default, negative, is one bin on each axis: a 3 × 3 bin window, the historical
+setting. Time and strip bins differ in size (e.g. 0.26 mm and 1.5 mm at 190 mbar and 25 MHz), so
+the 3 × 3 bin window spans about 0.8 mm along the time axis and 4.5 mm along the strips; equal
+half-widths in mm make the cut independent of the track orientation.
 
 ### 7. 3D seed
 
@@ -268,7 +276,6 @@ These are candidates for configuration options:
 | Parameter | Value | Where |
 |---|---|---|
 | hit-filter defaults (when the `hitFilter.*` options are not passed to the event) | 35 ADC, ±2 strips, ±5 time cells | `EventTPC` constructor |
-| clean-cluster kernel, threshold | 3 × 3 bins, 20 % of the maximum bin | `RecHitBuilder::makeCleanCluster` |
 | max. hit distance in the line fit | 20 mm | `TrackSegment2D` losses |
 | fit sphere radius | 300 mm | `TrackBuilder::fitTrack3DInSelectedDir` |
 | shrink-to-hits threshold | 5 % of the profile maximum | `Track3D::shrinkToHits` |

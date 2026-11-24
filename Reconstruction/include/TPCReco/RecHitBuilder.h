@@ -25,6 +25,15 @@ public:
 
   void setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr);
 
+  // clean-cluster parameters (makeCleanCluster):
+  //  windowTimeMM, windowStripMM - half-widths [mm] of the kernel window along the time (X) and strip (Y) axes of the
+  //                                projection; converted to bins with the bin widths of each histogram,
+  //                                n = round(halfWidth / binWidth) >= 0; < 0: one bin (3 x 3 window, default)
+  //  thresholdFraction           - a bin grows the cluster if the kernel sum is >= thresholdFraction x maximum bin
+  //  emptyBinThreshold           - bins with charge <= this value [ADC] are never added
+  void setCleanClusterParameters(double windowTimeMM, double windowStripMM,
+                                 double thresholdFraction, double emptyBinThreshold);
+
   const TH2D & makeRecHits(const TH2D & hProjection);
 
   TH2D makeCleanCluster(const TH2D & aHisto);
@@ -39,7 +48,11 @@ private:
   int projection1DHalfSize{10};
   
   double emptyBinThreshold{1.0};
-  double kernelSumThreshold{150};//parameter to moved to configuration
+  double kernelSumThreshold{150}; // set per histogram: kernelThresholdFraction x maximum bin
+  double kernelThresholdFraction{0.2};
+  double kernelWindowTimeMM{-1.0};   // < 0: one bin
+  double kernelWindowStripMM{-1.0};  // < 0: one bin
+  int kernelHalfBinsX{1}, kernelHalfBinsY{1}; // set per histogram
 
   const TH2D & makeTimeProjectionRecHits(const TH2D & hProjection);
 

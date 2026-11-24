@@ -1,6 +1,8 @@
 #include <TH2D.h>
 #include <TF1.h>
 #include <TFile.h>
+#include <algorithm>
+#include <cmath>
 
 #include "TPCReco/GeometryTPC.h"
 #include "TPCReco/RecHitBuilder.h"
@@ -26,6 +28,15 @@ RecHitBuilder::~RecHitBuilder(){}
 void RecHitBuilder::setGeometry(std::shared_ptr<GeometryTPC> aGeometryPtr){
 
   myGeometryPtr = aGeometryPtr;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void RecHitBuilder::setCleanClusterParameters(double windowTimeMM, double windowStripMM,
+					      double thresholdFraction, double emptyBinThr){
+  kernelWindowTimeMM = windowTimeMM;
+  kernelWindowStripMM = windowStripMM;
+  kernelThresholdFraction = thresholdFraction;
+  emptyBinThreshold = emptyBinThr;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -228,15 +239,12 @@ std::vector<int> RecHitBuilder::fillClusterAndGetBonduary(const std::vector<int>
 std::vector<int> RecHitBuilder::getKernelIndices(int iBin, const TH2D & aHisto){
 
   std::vector<int> kernelIndices;
-  int windowSizeX = 3;
-  int windowSizeY = 3;
-
   int iGlobalBin;
   int iBinX, iBinY, iBinZ;
   aHisto.GetBinXYZ(iBin, iBinX, iBinY, iBinZ);
-  
-  for(int iStepX=-windowSizeX/2;iStepX<=windowSizeX/2;++iStepX){
-    for(int iStepY=-windowSizeY/2;iStepY<=windowSizeY/2;++iStepY){
+  // window of (2 kernelHalfBinsX + 1) x (2 kernelHalfBinsY + 1) bins, including under/overflow bins at the edges
+  for(int iStepX=-kernelHalfBinsX;iStepX<=kernelHalfBinsX;++iStepX){
+    for(int iStepY=-kernelHalfBinsY;iStepY<=kernelHalfBinsY;++iStepY){
       iGlobalBin = aHisto.GetBin(iBinX+iStepX,
 				 iBinY+iStepY,
 				 iBinZ);
@@ -259,8 +267,14 @@ double RecHitBuilder::getKernelSum(const std::vector<int> & kernelBins, const TH
 /////////////////////////////////////////////////////////
 TH2D RecHitBuilder::makeCleanCluster(const TH2D & aHisto){
 
-  //kernelSumThreshold = 1000;//parameter to moved to configuration
-  kernelSumThreshold = aHisto.GetMaximum()*0.2; //TEST
+  kernelSumThreshold = aHisto.GetMaximum()*kernelThresholdFraction;
+  // kernel half-sizes in bins from the half-widths in mm (time: X axis, strips: Y axis)
+  auto halfBins = [](double halfWidthMM, double binWidth){
+    if(halfWidthMM<0 || binWidth<=0) return 1;
+    return std::max(0, static_cast<int>(std::lround(halfWidthMM/binWidth)));
+  };
+  kernelHalfBinsX = halfBins(kernelWindowTimeMM, aHisto.GetXaxis()->GetBinWidth(1));
+  kernelHalfBinsY = halfBins(kernelWindowStripMM, aHisto.GetYaxis()->GetBinWidth(1));
 
   TH2D aClusterHisto(aHisto);
   aClusterHisto.Reset();

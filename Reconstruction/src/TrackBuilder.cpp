@@ -70,6 +70,10 @@ TrackBuilder::TrackBuilder(boost::property_tree::ptree& myConfig) {
   // charge gain per setup: track charge -> MeV, and R = Q/(G_raw E_dep) in the dE/dx fit
   dEdxOrientationByR = myConfig.get<bool>("reconstruction.dEdxOrientationByR", false);
   dEdxOrientationVertexWindow = myConfig.get<double>("reconstruction.dEdxOrientationVertexWindow", 6.0);
+  myRecHitBuilder.setCleanClusterParameters(myConfig.get<double>("reconstruction.cleanClusterWindowTimeMM", -1.0),
+                                            myConfig.get<double>("reconstruction.cleanClusterWindowStripMM", -1.0),
+                                            myConfig.get<double>("reconstruction.cleanClusterThreshold", 0.2),
+                                            myConfig.get<double>("reconstruction.cleanClusterEmptyBinThreshold", 1.0));
   const std::string gainTableFile = myConfig.get<std::string>("reconstruction.gainTableFile", "");
   if(!gainTableFile.empty()){
     try {

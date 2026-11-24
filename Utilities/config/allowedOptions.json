@@ -448,6 +448,30 @@
         "defaultValue" : false,
         "description" : "After the dE/dx fit, refit the other alpha-C orientation (vertex seeded one carbon range from the current alpha end) and keep the fit with |R-1| smaller, R = Q/(G_raw E_dep). Needs a gain table entry for the run.\nType: bool"
     },
+    "cleanClusterWindowTimeMM":{
+        "group":"reconstruction",
+        "type" : "double",
+        "defaultValue" : -1.0,
+        "description" : "Half-width [mm] along the time (drift) axis of the kernel window of the clean cluster (RecHitBuilder::makeCleanCluster), converted to bins with the time bin width of the projection. Negative: one bin (3 x 3 bin window, the historical setting).\nType: double"
+    },
+    "cleanClusterWindowStripMM":{
+        "group":"reconstruction",
+        "type" : "double",
+        "defaultValue" : -1.0,
+        "description" : "Half-width [mm] along the strip axis of the kernel window of the clean cluster, converted to bins with the strip bin width of the projection. Negative: one bin.\nType: double"
+    },
+    "cleanClusterThreshold":{
+        "group":"reconstruction",
+        "type" : "double",
+        "defaultValue" : 0.2,
+        "description" : "The clean cluster grows from a bin if the charge sum of its kernel window is at least this fraction of the maximum bin of the projection.\nType: double"
+    },
+    "cleanClusterEmptyBinThreshold":{
+        "group":"reconstruction",
+        "type" : "double",
+        "defaultValue" : 1.0,
+        "description" : "Bins with charge at or below this value [ADC] are never added to the clean cluster.\nType: double"
+    },
     "dEdxOrientationVertexWindow":{
         "group":"reconstruction",
         "type" : "double",
