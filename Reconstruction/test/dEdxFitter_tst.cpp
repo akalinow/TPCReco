@@ -157,6 +157,7 @@ namespace {
 // track start, histogram range 1.2 x track length
 TH1F makeProfile(const char *name, double vertex, double alphaRange, double carbonRange, double pressure) {
   dEdxFitter conditions(RESOURCES_DIR, pressure);  // sets the (static) gas conditions of the models
+  dEdxFitter::setModelKinematics(dEdxFitter::Kinematics::FREE);  // recoil range from params[3]
   const double maxAlpha = dEdxFitter::getMaxAlphaRange(), maxCarbon = dEdxFitter::getMaxCarbonRange();
   const double length = vertex + alphaRange;
   TH1F h(name, "", int(1.2 * length), 0, 1.2 * length);
@@ -307,7 +308,9 @@ TEST_F(dEdxFitterTest, O18Kinematics) {
   const double alphaRange = 61.0;
   const double recoilRange = dEdxFitter::recoilRangeFromAlpha(alphaRange, dEdxFitter::Kinematics::O18);
   const TH1F profile = makeProfile("profile", 6.0, alphaRange, recoilRange, pressure);
-  dEdxFitter::setPhysicsConstraint(true, 0.1);
+  // margin below the O18/O16 recoil range difference (14.1 vs 15.2 mm, -7%): with 10% the O16
+  // kinematics reproduces the same recoil range (the profile uses the C12 table) and ties with O18
+  dEdxFitter::setPhysicsConstraint(true, 0.05);
   const FitOutput result = fit(aFitter, profile);
   EXPECT_EQ(result.type, pid_type::C12_ALPHA);
   EXPECT_NE(aFitter.getKinematics(), dEdxFitter::Kinematics::O16);
@@ -349,4 +352,26 @@ TEST_F(dEdxFitterTest, DensityScaling) {
   EXPECT_NEAR(dEdxFitter::getMaxAlphaRange(), r0 * 303.15 / 293.15, 1E-9);
   a.setGasConditions(250.0, 293.15);
   EXPECT_NEAR(dEdxFitter::getMaxAlphaRange(), r0 * 190.0 / 250.0, 1E-9);
+}
+
+TEST_F(dEdxFitterTest, DataEventLocalMinimum) {
+  // charge profile of event 57 of run 2022-04-12T08:03:44 (190 mbar, 11.5 MeV), C12+alpha with a
+  // ~11 mm carbon. From the default starting point the C12+alpha fit ended in the alpha-only
+  // minimum (vertex at the carbon end, carbon range at its lower limit, loss 36x larger) and the
+  // event was reconstructed as a single 80 mm alpha.
+  const double length = 81.1686;
+  const std::vector<double> values = {0.000, 0.000, 0.000, 0.003, 0.059, 0.460, 0.784, 1.000, 0.443, 0.351, 0.348,
+                                      0.377, 0.420, 0.469, 0.437, 0.454, 0.466, 0.503, 0.537, 0.557, 0.605, 0.624,
+                                      0.632, 0.612, 0.575, 0.448, 0.274, 0.072, 0.017, 0.012, 0.004, 0.000};
+  for (bool reflected : {false, true}) {
+    TH1F h("event57", "", values.size(), -0.2 * length, 1.2 * length);
+    for (size_t i = 0; i < values.size(); ++i) h.SetBinContent(reflected ? values.size() - i : i + 1, values[i]);
+    dEdxFitter aFitter(RESOURCES_DIR, 190.0);
+    aFitter.setDiffusionRange(0.95, 2.85);
+    aFitter.fitHisto(h);
+    EXPECT_EQ(aFitter.getBestFitEventType(), pid_type::C12_ALPHA) << "reflected " << reflected;
+    EXPECT_LT(aFitter.getLoss(), 1E-3) << "reflected " << reflected;
+    EXPECT_NEAR(aFitter.getCarbonRange(), 11.2, 1.5) << "reflected " << reflected;
+    EXPECT_NEAR(aFitter.getAlphaRange(), 69.9, 1.5) << "reflected " << reflected;
+  }
 }

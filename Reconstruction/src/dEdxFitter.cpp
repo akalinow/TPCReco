@@ -3,6 +3,7 @@
 #include "TPCReco/IonRangeCalculator.h"
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 #include <TFitResultPtr.h>
 #include <Math/MinimizerOptions.h>
@@ -16,6 +17,7 @@ TGraph* dEdxFitter::braggGraph_12C = nullptr;
 
 constexpr double dEdxFitter::nominalPressure;
 constexpr double dEdxFitter::nominalTemperature;
+constexpr double dEdxFitter::defaultErrorDef;
 double dEdxFitter::currentPressure = 190.0;
 double dEdxFitter::currentTemperature = dEdxFitter::nominalTemperature;
 double dEdxFitter::theNominalAlphaRange = 0.0;
@@ -352,6 +354,47 @@ TH1F dEdxFitter::reflectHisto(const TH1F &aHisto) const{
 }
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
+std::vector<dEdxFitter::FitStart> dEdxFitter::fitStarts(const TF1 *fModel, double tkLength) const{
+
+  // The default start of reset() (C12+alpha: vertex at maxCarbonOffset, half of the track for the
+  // alpha) can end in the alpha-only local minimum: the carbon range shrinks to its lower limit and
+  // the vertex goes to the carbon end of the track. Starts consistent with the track length are
+  // added: the carbon from the track start to the vertex, the alpha from the vertex to the track end.
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  std::vector<FitStart> starts = {{nan, nan, nan}};
+  if(fModel==carbon_alpha_model){
+    if(hasVertexConstraint){
+      const double v = std::max(0.0, vertexConstraint);
+      starts.push_back({v, tkLength-v, v});
+    }
+    else{
+      for(double fraction: {0.10, 0.17, 0.25}){
+        const double v = fraction*tkLength;
+        starts.push_back({v, tkLength-v, v});
+      }
+    }
+  }
+  else starts.push_back({0.0, tkLength, nan}); // alpha only: vertex at the track start
+  return starts;
+}
+////////////////////////////////////////////////
+////////////////////////////////////////////////
+void dEdxFitter::applyStart(TF1 *fModel, const FitStart &aStart) const{
+
+  // value within the limits of a free parameter (TF1::FixParameter(i, 0) sets the limits to (1, 0))
+  auto set = [fModel](int iPar, double value){
+    if(std::isnan(value)) return;
+    double low = 0.0, high = 0.0;
+    fModel->GetParLimits(iPar, low, high);
+    if(low>=high) return;
+    fModel->SetParameter(iPar, std::min(std::max(value, low), high));
+  };
+  set(1, aStart.vertex);
+  set(2, maxAlphaOffset - aStart.alphaRange);
+  if(currentKinematics==Kinematics::FREE) set(3, maxCarbonOffset - aStart.carbonRange);
+}
+////////////////////////////////////////////////
+////////////////////////////////////////////////
 TFitResult dEdxFitter::fitHypothesis(TF1 *fModel, TH1F & aHisto){
   
   TFitResult theResult;
@@ -365,31 +408,39 @@ TFitResult dEdxFitter::fitHypothesis(TF1 *fModel, TH1F & aHisto){
   minCarbonOffset = std::max(0.0, maxCarbonOffset - tkLength);
   auto chargeFromHisto = aHisto.Integral("width");
 
-  // Deterministic restarts (maxFitAttempts, default 1): the same initial parameter
-  // values, with the initial step sizes below (0: ROOT default, otherwise
-  // scale x 10% of the parameter range). The first valid fit with loss/Q^2 <= maxLossRatio is
-  // accepted; if there is none, the best fit: a valid one with the lowest loss,
-  // else the one with the lowest loss.
+  // Minuit ErrorDef matching the scale of the loss (see setErrorDef); the global default is restored
+  const double defaultErrorDefROOT = ROOT::Math::MinimizerOptions::DefaultErrorDef();
+  ROOT::Math::MinimizerOptions::SetDefaultErrorDef(errorDef);
+
+  // Several starting points (fitStarts), each with deterministic restarts (maxFitAttempts,
+  // default 1): the same starting point with the initial step sizes below (0: ROOT default,
+  // otherwise scale x 10% of the parameter range). The restarts of a starting point stop at the
+  // first valid fit with loss/Q^2 <= maxLossRatio. The best fit is kept: a valid one with the
+  // lowest loss, else the one with the lowest loss.
   const std::vector<double> stepScales = {0.0, 1.0, 0.3, 3.0, 0.1, 0.5, 2.0, 0.05, 0.2, 5.0};
   const unsigned int nAttempts = std::min<size_t>(maxFitAttempts, stepScales.size());
   bool haveResult = false;
-  for(unsigned int iAttempt=0;iAttempt<nAttempts;++iAttempt){
-    const double scale = stepScales[iAttempt];
-    reset();
-    setStepSizes(fModel, scale);
-    TFitResultPtr aResultPtr = aHisto.Fit(fModel,"BRWWSQN"); // N: no graphics, would draw into gPad
-    if(!aResultPtr.Get()) continue;
-    const TFitResult & aResult = *aResultPtr.Get();
-    const bool better = !haveResult ||
-      (aResult.IsValid() && !theResult.IsValid()) ||
-      (aResult.IsValid()==theResult.IsValid() && aResult.MinFcnValue()<theResult.MinFcnValue());
-    if(better){
-      theResult = aResult;
-      haveResult = true;
+  for(const auto &aStart: fitStarts(fModel, tkLength)){
+    for(unsigned int iAttempt=0;iAttempt<nAttempts;++iAttempt){
+      const double scale = stepScales[iAttempt];
+      reset();
+      applyStart(fModel, aStart);
+      setStepSizes(fModel, scale);
+      TFitResultPtr aResultPtr = aHisto.Fit(fModel,"BRWWSQN"); // N: no graphics, would draw into gPad
+      if(!aResultPtr.Get()) continue;
+      const TFitResult & aResult = *aResultPtr.Get();
+      const bool better = !haveResult ||
+        (aResult.IsValid() && !theResult.IsValid()) ||
+        (aResult.IsValid()==theResult.IsValid() && aResult.MinFcnValue()<theResult.MinFcnValue());
+      if(better){
+        theResult = aResult;
+        haveResult = true;
+      }
+      const double ratio = aResult.MinFcnValue()/std::pow(chargeFromHisto,2);
+      if(aResult.IsValid() && ratio<=maxLossRatio) break;
     }
-    const double ratio = aResult.MinFcnValue()/std::pow(chargeFromHisto,2);
-    if(aResult.IsValid() && ratio<=maxLossRatio) break;
   }
+  ROOT::Math::MinimizerOptions::SetDefaultErrorDef(defaultErrorDefROOT);
 
   if(haveResult) fModel->SetParameters(theResult.Parameters().data());
   else std::cout<<KRED<<"No fit result"<<RST<<std::endl;

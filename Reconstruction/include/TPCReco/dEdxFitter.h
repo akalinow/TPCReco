@@ -46,8 +46,8 @@ public:
   /// Remove the vertex constraint
   void clearVertexConstraint() { hasVertexConstraint = false;}
 
-  /// Number of fit attempts per hypothesis, with different initial step
-  /// sizes (1 to 10, default 1)
+  /// Number of fit attempts per starting point of a hypothesis, with different
+  /// initial step sizes (1 to 10, default 1)
   void setMaxFitAttempts(unsigned int nAttempts);
 
   /// Restarts stop at the first valid fit with loss/Q^2 <= maxLossRatio (Q: integral of the
@@ -55,6 +55,12 @@ public:
   void setMaxLossRatio(double aRatio) { maxLossRatio = aRatio; }
 
   double getMaxLossRatio() const { return maxLossRatio; }
+
+  /// Minuit ErrorDef of the fits (default defaultErrorDef). The loss is the sum of squared
+  /// residuals of the profile normalised to its maximum, ~5E-4 per bin for a good fit: with the
+  /// ROOT default ErrorDef=1 Migrad stopped before the minimum (EDM < 2E-3 x tolerance x ErrorDef).
+  void setErrorDef(double anErrorDef) { errorDef = anErrorDef; }
+  double getErrorDef() const { return errorDef; }
 
   /// Kinematics of the two prong (recoil + alpha) hypothesis: free recoil
   /// range, or the recoil range from momentum conservation (equal momenta,
@@ -66,6 +72,10 @@ public:
   /// fitted three times, with FREE, O16 and O18 kinematics, and the best fit
   /// is kept. Off: FREE only.
   static void setPhysicsConstraint(bool enable, double margin=0.1);
+
+  /// Kinematics used by the model functions (bragg_12C, bragg_12C_alpha) when they are evaluated
+  /// outside of fitHisto, which leaves it at the kinematics of the best fit.
+  static void setModelKinematics(Kinematics aKinematics) { currentKinematics = aKinematics; }
   static bool getPhysicsConstraint() { return usePhysicsConstraint;}
 
   /// Recoil range [mm] for a given alpha range [mm] (current pressure) from
@@ -175,6 +185,13 @@ private:
   int forcedOrientation{-1};
   unsigned int maxFitAttempts{1};
   double maxLossRatio{defaultMaxLossRatio};
+  double errorDef{defaultErrorDef};
+
+  /// Starting point of a fit: vertex position along the profile, alpha and carbon ranges [mm].
+  /// NaN: the default of reset().
+  struct FitStart { double vertex, alphaRange, carbonRange; };
+  std::vector<FitStart> fitStarts(const TF1 *fModel, double tkLength) const;
+  void applyStart(TF1 *fModel, const FitStart &aStart) const;
 
   double maxCarbonRange, maxAlphaRange;
 
@@ -200,6 +217,8 @@ public:
   static constexpr double nominalPressure{250.0};     // [mbar]
   static constexpr double nominalTemperature{293.15}; // [K]
 
+  /// Default Minuit ErrorDef of the fits (see setErrorDef).
+  static constexpr double defaultErrorDef{1E-3};
   /// Default stop threshold of the restarts (see setMaxLossRatio).
   static constexpr double defaultMaxLossRatio{1E-5}; // was 5E-4: accepted wrong minima (loss ~0.7 for an 80 mm track)
 
