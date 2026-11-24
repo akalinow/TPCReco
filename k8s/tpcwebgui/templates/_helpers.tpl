@@ -46,3 +46,8 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- define "tpcwebgui.hostStorageClass" -}}
 {{- printf "%s-host" (include "tpcwebgui.fullname" .) }}
 {{- end }}
+
+{{/* TPCReco installation in the pod: <mountPath>/install when built by the init container */}}
+{{- define "tpcwebgui.installPath" -}}
+{{- if .Values.tpcreco.build.enabled }}{{ printf "%s/install" .Values.tpcreco.mountPath }}{{ else }}{{ .Values.tpcreco.mountPath }}{{ end }}
+{{- end }}

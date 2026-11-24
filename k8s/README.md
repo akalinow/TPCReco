@@ -7,7 +7,8 @@ with an ingress-nginx controller, e.g. the minikube cluster that serves the Word
 `https://hep.fuw.edu.pl/tpcgui/`, so no new DNS name or certificate is needed.
 
 The pod runs the ELITPC image `elitpc/tpcreco-with_tf:latest` unchanged (no image is built).
-TPCReco itself is an installation compiled with that image and mounted into the pod.
+TPCReco itself is compiled by the pod: an init container clones it from GitHub and builds it
+before the server starts (or a ready installation is mounted, see below).
 
 ```
 k8s/
@@ -28,6 +29,34 @@ On the machine running the cluster (the WordPress server):
   on the first run (18 GB, once).
 
 ## TPCReco installation
+
+### Compiled by the pod (default in `values-hep.yaml`)
+
+```yaml
+tpcreco:
+  hostPath: /tpcwebgui/TPCReco        # build cache: clone, build directory, installation
+  build:
+    enabled: true
+    repo: https://github.com/akalinow/TPCReco.git
+    ref: devel_AK                     # branch, tag or commit
+    jobs: 8
+```
+
+Before the server starts, the init container `build-tpcreco` (same image, user 10001) fetches
+`repo`, checks out `ref` and compiles and installs TPCReco into the volume
+(`/scratch/tpcwebgui/TPCReco` on the host: `src/`, `build/`, `install/`, `home/`):
+
+* first start: full build, 10-20 min (follow it with `kubectl logs -f deploy/tpcwebgui -c build-tpcreco`),
+* restart with the same commit: no build, the server starts at once,
+* new commit on the branch: incremental build (`kubectl rollout restart deploy/tpcwebgui`
+  or `deploy.sh` picks it up),
+* GitHub not reachable: the installed commit is used.
+
+The pod needs access to github.com (the repository, and Crow downloaded by CMake on the first
+configure). The commits must be pushed to GitHub. A commit that does not compile stops the pod
+in the init container; use a tag or a commit as `ref` to control exactly what runs.
+
+### Ready installation (`tpcreco.build.enabled: false`)
 
 Compile and install TPCReco on the host inside the same image as the pod (`docker run`), so the
 binaries match the runtime libraries (ROOT, GET, TensorFlow):
@@ -55,7 +84,7 @@ directory of the minikube node, so the host directories have to be mounted into 
 
 ```
 /scratch/tpcwebgui/          -> minikube node /tpcwebgui
-├── TPCReco/                 installation (build-tpcreco.sh)    tpcreco.hostPath: /tpcwebgui/TPCReco
+├── TPCReco/                 TPCReco compiled by the pod        tpcreco.hostPath: /tpcwebgui/TPCReco
 └── output/                  output files, written by the pod   persistence.hostPath: /tpcwebgui/output
 ```
 
@@ -108,14 +137,17 @@ Other files and the following chunks of a run are opened from the GUI.
 
 ```bash
 cd TPCReco
-ALLOWED_OPTIONS=/scratch/tpcwebgui/TPCReco/allowedOptions.json ./k8s/deploy.sh
+./k8s/deploy.sh
+# with a ready installation (tpcreco.build.enabled: false):
+#   ALLOWED_OPTIONS=/scratch/tpcwebgui/TPCReco/allowedOptions.json ./k8s/deploy.sh
 ```
 
 The script
 
 1. loads `elitpc/tpcreco-with_tf:latest` into minikube if it is not there yet,
 2. installs or upgrades the Helm release `tpcwebgui` with `values-hep.yaml` and restarts the pod
-   (so a rebuilt installation is used),
+   (so a new commit is compiled, or a rebuilt installation is used); the first start with the
+   build waits for the compilation,
 3. checks the URLs through the minikube ingress and prints the URL with the access token:
 
 ```
@@ -134,7 +166,8 @@ Options (environment variables, see the header of `deploy.sh`):
 | `LOAD_IMAGE=no IMAGE=registry.example.org/elitpc/tpcreco-with_tf:latest ./k8s/deploy.sh` | image from a registry |
 | `./k8s/deploy.sh -- --set urlPrefix=/gui` | extra helm arguments |
 
-Code update: run `build-tpcreco.sh` again, then `deploy.sh` (it restarts the pod).
+Code update: push to GitHub, then `deploy.sh` (it restarts the pod, which compiles the new
+commit). With a ready installation: `build-tpcreco.sh` again, then `deploy.sh`.
 Configuration update (values file): run `deploy.sh`.
 
 ## Access

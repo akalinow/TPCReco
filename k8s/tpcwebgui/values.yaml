@@ -8,18 +8,34 @@ image:
   tag: latest
   pullPolicy: IfNotPresent
 
-# TPCReco installation (CMAKE_INSTALL_PREFIX with bin/, lib/, web/, resources/), compiled with
-# the image above, mounted read-only into the pod. One source:
+# TPCReco, used by the server. Two ways:
+#  build.enabled: false  a ready installation (CMAKE_INSTALL_PREFIX with bin/, lib/, web/,
+#                        resources/) compiled with the image above, mounted read-only
+#  build.enabled: true   an init container clones build.repo at build.ref, compiles and installs
+#                        TPCReco into the volume before the server starts; the clone and the build
+#                        directory are kept there: an unchanged commit is not rebuilt, a new one is
+#                        rebuilt incrementally (the first build takes 10-20 min)
+# Volume (installation, or build cache): one source
 #   hostPath:      directory of the node (minikube: mounted from the host, see README.md)
-#   existingClaim: PersistentVolumeClaim with the installation
+#   existingClaim: PersistentVolumeClaim
+#   neither (build only): emptyDir, i.e. a full build at every pod start
 tpcreco:
   hostPath: ""
   existingClaim: ""
-  subPath: ""                 # installation in a subdirectory of the volume
+  subPath: ""                 # installation in a subdirectory of the volume (no build)
   mountPath: /opt/TPCReco     # path in the pod
+  build:
+    enabled: false
+    repo: https://github.com/akalinow/TPCReco.git
+    ref: devel_AK             # branch, tag or commit
+    jobs: 4                   # parallel compilation jobs
+    resources:
+      requests: { cpu: "2", memory: 4Gi }
+      limits: { memory: 8Gi }
 
 # Content of Utilities/config/allowedOptions.json of the same TPCReco version (list of the
-# configuration options). deploy.sh sets it with --set-file allowedOptions=...
+# configuration options), needed without tpcreco.build (with it, the one of the build is used).
+# deploy.sh sets it with --set-file allowedOptions=...
 allowedOptions: ""
 
 nameOverride: ""

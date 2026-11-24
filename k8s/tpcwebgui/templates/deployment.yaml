@@ -1,10 +1,12 @@
 {{- if not .Values.config.input.dataFile }}
 {{- fail "config.input.dataFile must be set: tpcWebGUI needs a GRAW or ROOT file to start with" }}
 {{- end }}
-{{- if not (or .Values.tpcreco.hostPath .Values.tpcreco.existingClaim) }}
-{{- fail "tpcreco.hostPath or tpcreco.existingClaim must point to the TPCReco installation" }}
+{{- $build := .Values.tpcreco.build.enabled }}
+{{- $install := include "tpcwebgui.installPath" . }}
+{{- if and (not $build) (not (or .Values.tpcreco.hostPath .Values.tpcreco.existingClaim)) }}
+{{- fail "tpcreco.hostPath or tpcreco.existingClaim must point to the TPCReco installation (or set tpcreco.build.enabled)" }}
 {{- end }}
-{{- if not .Values.allowedOptions }}
+{{- if and (not $build) (not .Values.allowedOptions) }}
 {{- fail "allowedOptions must be set: --set-file allowedOptions=Utilities/config/allowedOptions.json" }}
 {{- end }}
 apiVersion: apps/v1
@@ -33,6 +35,27 @@ spec:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       # SIGTERM stops the server, which then closes (writes) the output ROOT file
       terminationGracePeriodSeconds: 60
+      {{- if $build }}
+      # compile TPCReco (tpcreco.build) before the server starts
+      initContainers:
+        - name: build-tpcreco
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/bin/bash", "/config/build-tpcreco.sh"]
+          env:
+            - { name: CACHE, value: {{ .Values.tpcreco.mountPath | quote }} }
+            - { name: REPO, value: {{ .Values.tpcreco.build.repo | quote }} }
+            - { name: REF, value: {{ .Values.tpcreco.build.ref | quote }} }
+            - { name: JOBS, value: {{ .Values.tpcreco.build.jobs | quote }} }
+          resources:
+            {{- toYaml .Values.tpcreco.build.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          volumeMounts:
+            - { name: config, mountPath: /config, readOnly: true }
+            - { name: tpcreco, mountPath: {{ .Values.tpcreco.mountPath }} }
+            - { name: tmp, mountPath: /tmp }
+      {{- end }}
       containers:
         - name: tpcwebgui
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -65,10 +88,10 @@ spec:
             {{- end }}
           env:
             - name: TPCRECO_INSTALL
-              value: {{ .Values.tpcreco.mountPath | quote }}
+              value: {{ $install | quote }}
             # geometry files etc. (the compiled-in resource directory is the build machine path)
             - name: TPCRECO_RESOURCES
-              value: "{{ .Values.tpcreco.mountPath }}/resources"
+              value: "{{ $install }}/resources"
             # allowedOptions.json is read from $HOME/.tpcreco/config
             - name: HOME
               value: /home/tpcwebgui
@@ -103,17 +126,28 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           volumeMounts:
             - { name: config, mountPath: /config, readOnly: true }
+            - { name: home, mountPath: /home/tpcwebgui }
+            {{- if $build }}
+            # allowedOptions.json installed by the build (same version as the binaries)
+            - name: tpcreco
+              mountPath: /home/tpcwebgui/.tpcreco/config/allowedOptions.json
+              subPath: home/.tpcreco/config/allowedOptions.json
+              readOnly: true
+            - name: tpcreco
+              mountPath: {{ .Values.tpcreco.mountPath }}
+              readOnly: true
+            {{- else }}
             - name: config
               mountPath: /home/tpcwebgui/.tpcreco/config/allowedOptions.json
               subPath: allowedOptions.json
               readOnly: true
-            - { name: home, mountPath: /home/tpcwebgui }
             - name: tpcreco
               mountPath: {{ .Values.tpcreco.mountPath }}
               {{- with .Values.tpcreco.subPath }}
               subPath: {{ . }}
               {{- end }}
               readOnly: true
+            {{- end }}
             - { name: work, mountPath: /work }
             - { name: tmp, mountPath: /tmp }
             {{- range .Values.dataVolumes }}
@@ -140,11 +174,12 @@ spec:
           {{- if .Values.tpcreco.existingClaim }}
           persistentVolumeClaim:
             claimName: {{ .Values.tpcreco.existingClaim }}
-            readOnly: true
-          {{- else }}
+          {{- else if .Values.tpcreco.hostPath }}
           hostPath:
             path: {{ .Values.tpcreco.hostPath }}
-            type: Directory
+            type: {{ ternary "DirectoryOrCreate" "Directory" $build }}
+          {{- else }}
+          emptyDir: {}   # build at every pod start
           {{- end }}
         {{- range .Values.dataVolumes }}
         - name: {{ .name }}

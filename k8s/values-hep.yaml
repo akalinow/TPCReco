@@ -5,9 +5,15 @@
 urlPrefix: /tpcgui
 
 # Host directory /scratch/tpcwebgui, mounted into the minikube node at /tpcwebgui
-# (README.md, "Mounts"): TPCReco/ = installation made by k8s/build-tpcreco.sh, output/ = output files
+# (README.md, "Mounts"): TPCReco/ = TPCReco compiled by the pod (clone, build directory,
+# installation), output/ = output files
 tpcreco:
   hostPath: /tpcwebgui/TPCReco
+  build:
+    enabled: true
+    repo: https://github.com/akalinow/TPCReco.git
+    ref: devel_AK
+    jobs: 8
 
 ingress:
   className: nginx
