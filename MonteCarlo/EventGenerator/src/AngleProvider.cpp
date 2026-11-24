@@ -76,7 +76,9 @@ double AngleProviderE1E2::Theta(double *x, double *par) {
     auto WE1 = L[0] - L[2];
     auto WE2 = L[0] + (5. / 7.) * L[2] - (12. / 7.) * L[4];
     auto W12 = 6. / sqrt(5.0) * (L[1] - L[3]);
-    return norm * (s1 * WE1 + s2 * WE2 + sgn * sqrt(s1 * s2) * cos(ph12) * W12);
+    // W is per solid angle: the density in theta needs the Jacobian sin(theta) (was missing: pure E1 gave
+    // <cos^2> = 1/4 instead of 1/5)
+    return norm * (s1 * WE1 + s2 * WE2 + sgn * sqrt(s1 * s2) * cos(ph12) * W12) * sin(x[0]);
 
 }
 
