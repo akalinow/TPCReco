@@ -58,11 +58,6 @@
         <label title="Display event rate plot"><input type="checkbox" id="chkRate"> Display rate</label>
       </section>
 
-      <details class="group collapsible" id="eventTypeBox">
-        <summary title="Click to expand / collapse">Event type</summary>
-        <div id="eventTypes" class="event-types"></div>
-      </details>
-
       <details class="group collapsible" id="markersBox">
         <summary title="Click to expand / collapse">Segment creation</summary>
         <div class="buttons three">
@@ -71,6 +66,11 @@
           <button id="btnFitSegments" class="reco" title="Calculate 3D orientation from the 2D projections">Fit segments</button>
         </div>
         <p id="recoHint" class="hint" hidden>Click a point on one U/V/W projection, then the same point on another projection.</p>
+      </details>
+
+      <details class="group collapsible" id="eventTypeBox">
+        <summary title="Click to expand / collapse">Event type</summary>
+        <div id="eventTypes" class="event-types"></div>
       </details>
 
       <details class="group collapsible" id="runConditionsBox">

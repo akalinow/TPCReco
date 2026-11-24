@@ -192,10 +192,16 @@ function renderPanel(div, panel, index, status) {
     type: 'line', xref: 'x', yref: 'paper', x0: v.x, x1: v.x, y0: 0, y1: 1,
     line: { color: v.color, width: v.width || 1 },
   }));
-  const annotations = (panel.texts || []).map((t) => ({
-    xref: 'paper', yref: 'paper', x: t.x, y: t.y, text: latex(t.text),
-    showarrow: false, xanchor: 'left', font: { size: 13 },
-  }));
+  // extra information (e.g. track length, energy) in the top left corner of the frame
+  const info = (panel.texts || []).map((t) => latex(t.text)).join('<br>');
+  const annotations = info ? [{
+    xref: 'paper', yref: 'paper', x: 0.02, y: 0.98, xanchor: 'left', yanchor: 'top', align: 'left',
+    text: info, showarrow: false, font: { size: 15 },
+    bgcolor: 'rgba(255,255,255,0.8)', borderpad: 3,
+  }] : [];
+  // the U/V/W strip projections have no title (the axis titles say it all)
+  const isStripProjection = panel.kind === 'heatmap' && /^[UVW] \[/.test(panel.yTitle || '');
+  const title = isStripProjection ? '' : latex(panel.title);
   const hasLegend = (panel.series || []).some((s) => s.name);
   const axis = (title, range) => ({
     title: { text: latex(title) }, showgrid: false, zeroline: false, mirror: true,
@@ -203,8 +209,9 @@ function renderPanel(div, panel, index, status) {
     ...(range ? { range, autorange: false } : { autorange: true }),
   });
   const layout = {
-    title: { text: latex(panel.title), font: { size: 13 } },
-    margin: { l: 62, r: 16, t: annotations.length ? 70 : 36, b: 46 },
+    // title just above the frame, below the Plotly toolbar
+    title: { text: title, font: { size: 12 }, yref: 'paper', y: 1, yanchor: 'bottom', pad: { b: 6 } },
+    margin: { l: 62, r: 16, t: title ? 50 : 32, b: 46 },
     xaxis: axis(panel.xTitle, panel.xRange),
     yaxis: { ...axis(panel.yTitle, panel.yRange), ...(panel.equalAspect ? { scaleanchor: 'x', scaleratio: 1 } : {}) },
     plot_bgcolor: panel.frameColor || '#ffffff',
@@ -288,6 +295,22 @@ function moveCursorLine(div, event) {
 
 // ---------------------------------------------------------------- 3D view
 
+// zoom of the default top view: scale of the scene box (1: the longest detector side spans the
+// unit length used by plotly's 'data' aspect mode)
+const VIEW3D_ZOOM = 2.2;
+
+/** aspect ratio of the drift cage, scaled by zoom (orthographic: this sets the zoom) */
+function view3dAspect(cage, zoom) {
+  const extent = (values) => {
+    const v = values.filter((x) => x !== null && Number.isFinite(x));
+    return v.length ? Math.max(...v) - Math.min(...v) : 1;
+  };
+  const d = { x: extent(cage.x), y: extent(cage.y), z: extent(cage.z) };
+  const longest = Math.max(d.x, d.y, d.z) || 1;
+  return { x: zoom * d.x / longest, y: zoom * d.y / longest, z: zoom * d.z / longest };
+}
+
+
 function render3D(view3d) {
   const box = $('view3dBox');
   if (!view3d) {
@@ -296,6 +319,9 @@ function render3D(view3d) {
     return;
   }
   box.hidden = false;
+  // fill the rest of the last row of the 3-column grid, ending at the right edge
+  const free = (3 - (state.panels.length % 3)) % 3;
+  box.style.gridColumn = `span ${free || 3} / -1`;
   const traces = [
     {
       type: 'scatter3d', mode: 'lines', name: 'drift cage', hoverinfo: 'skip', connectgaps: false,
@@ -317,7 +343,14 @@ function render3D(view3d) {
     showlegend: false,
     uirevision: '3d', // keep the camera between events
     scene: {
-      aspectmode: 'data',
+      // default: top view (looking down the z axis, y up), orthographic, zoomed so that the detector
+      // fills the box; camera and zoom are kept between events (uirevision)
+      aspectmode: 'manual',
+      aspectratio: view3dAspect(view3d.cage, VIEW3D_ZOOM),
+      camera: {
+        eye: { x: 0, y: 0, z: 2 }, up: { x: 0, y: 1, z: 0 }, center: { x: 0, y: 0, z: 0 },
+        projection: { type: 'orthographic' },
+      },
       xaxis: { title: { text: 'x [mm]' } },
       yaxis: { title: { text: 'y [mm]' } },
       zaxis: { title: { text: 'z [mm]' } },

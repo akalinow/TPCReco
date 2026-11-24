@@ -65,11 +65,14 @@ main {
   align-items: start;
 }
 
-.plots {
+/* three narrow columns; the plot panels and the 3D view are items of one grid, the 3D view
+   fills the last row up to the bottom right corner */
+#plotArea {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
 }
+.plots { display: contents; }
 .panel {
   background: var(--panel);
   border: 1px solid var(--border);
@@ -79,12 +82,15 @@ main {
 .panel.accepting .nsewdrag { cursor: crosshair !important; }
 
 .view3d-box {
-  margin-top: 8px;
   background: var(--panel);
   border: 1px solid var(--border);
   padding: 4px 8px;
+  height: calc((100vh - 70px) / 2);
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
 }
-.view3d { height: 520px; }
+.view3d { flex: 1; min-height: 0; }
 
 aside {
   display: flex;
@@ -191,6 +197,7 @@ body.busy, body.busy * { cursor: progress !important; }
   header { flex-wrap: wrap; }
   .status-bar { flex-wrap: wrap; }
   .status-bar .item.file { max-width: 100%; }
-  .plots { grid-template-columns: 1fr; }
+  #plotArea { grid-template-columns: minmax(0, 1fr); }
+  .view3d-box { grid-column: auto !important; }
   .panel { height: 380px; }
 }
