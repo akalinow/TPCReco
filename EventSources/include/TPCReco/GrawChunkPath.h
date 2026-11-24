@@ -2,6 +2,7 @@
 #define TPCRECO_EVENTSOURCES_GRAW_CHUNK_PATH_H_
 
 #include <string>
+#include <vector>
 
 /// Path of another chunk of the same GRAW stream (same CoBo/AsAd, same run).
 ///
@@ -15,5 +16,13 @@
 ///
 /// Returns an empty string when no such file exists or the name does not follow the convention.
 std::string findGrawChunkPath(const std::string & filePath, int chunkOffset);
+
+/// GRAW files of one chunk of a run, one per stream (CoBo/AsAd), sorted by name.
+/// runId: run start time YYYYMMDDhhmmss (as eventraw::EventInfo::GetRunId()); files whose name
+/// timestamp is at most 2 s from it are taken (the AsAd files of a run can differ by ~1 s).
+/// Searched in dataDir and its subdirectories (one level, e.g. one directory per DAQ day),
+/// the subdirectories whose name starts with the run date first.
+/// Returns an empty list when nothing is found.
+std::vector<std::string> findGrawRunFiles(const std::string & dataDir, long runId, int chunk);
 
 #endif // TPCRECO_EVENTSOURCES_GRAW_CHUNK_PATH_H_

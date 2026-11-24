@@ -35,6 +35,18 @@
         "defaultValue": -1,
         "description": "Number of events to read from input file; -1 means all events.\nType: int"
     },
+    "eventList":{
+        "group": "input",
+        "type": "string",
+        "defaultValue": "",
+        "description": "Text file with events for tpcWebGUI, one per line: 'runId , entry , eventId' (comma or space separated, '#' starts a comment line). The arrows step through the listed events, opening the GRAW chunk of each run from input.eventListDataPath. Empty: no list.\nType: string"
+    },
+    "eventListDataPath":{
+        "group": "input",
+        "type": "string",
+        "defaultValue": "",
+        "description": "Directory with the GRAW files of the runs of input.eventList, searched with its subdirectories (one per DAQ day). Empty: the directory above the one of input.dataFile.\nType: string"
+    },
     "geometryFile":{
         "group": "input",
         "type": "string",

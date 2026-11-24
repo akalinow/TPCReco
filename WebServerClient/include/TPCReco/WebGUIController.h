@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <map>
 #include <utility>
 
 #include <boost/property_tree/ptree.hpp>
@@ -82,6 +83,17 @@ private:
   /// empty when not reading GRAW files or the chunk does not exist for every stream
   std::string neighbourChunkFiles(int chunkOffset) const;
 
+  /// event list (input.eventList): one event per line "runId , entry , eventId"
+  struct ListedEvent { long runId; unsigned long entry; unsigned long eventId; };
+  void readEventList(const std::string & fileName);
+  /// loads event myEventList[position], opening the GRAW chunk of its run when needed;
+  /// returns an error message (empty on success)
+  std::string loadListedEvent(long position);
+  /// number of frames of the chunks of a run (from its first chunk, cached)
+  std::size_t framesPerChunk(long runId);
+  /// chunk number of the files read now (-1 if unknown)
+  int currentChunk() const;
+
   // panels
   std::vector<crow::json::wvalue> makeRawPanels() const;
   std::vector<crow::json::wvalue> makeRecoPanels() const;
@@ -122,6 +134,11 @@ private:
   // reconstruction of the current event read back from the output file (event already
   // written, e.g. when going back): shown instead of a new reconstruction, not written again
   std::shared_ptr<Track3D> mySavedTrack;
+
+  std::vector<ListedEvent> myEventList;
+  long myListPosition{-1};          // index in myEventList of the event shown, -1: none
+  std::string myEventListDataDir;   // directory with the run directories (GRAW files)
+  std::map<long, std::size_t> myFramesPerChunk;
   unsigned long mySavedEventType{0};
 
   std::vector<std::pair<double,double>> myEventRate; // (time [s], rate [Hz])

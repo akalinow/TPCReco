@@ -19,6 +19,7 @@
 #include "TPCReco/EventSourceGRAW.h"
 #include "TPCReco/EventSourceMultiGRAW.h"
 #include "TPCReco/GrawChunkPath.h"
+#include "TPCReco/GrawFile.h"
 #include "TPCReco/FileOutput.h"
 #include "TPCReco/GeometryTPC.h"
 #include "TPCReco/GUI_commons.h"
@@ -157,7 +158,108 @@ WebGUIController::WebGUIController(const boost::property_tree::ptree & aConfig){
   isRecoModeOn = myConfig.get<bool>("display.recoMode", false) && canRecoMode();
   isRateDisplayOn = myConfig.get<bool>("display.rate", false) && canRate();
 
+  const std::string eventListFile = myConfig.get<std::string>("input.eventList", "");
+  if(eventListFile.size()){
+    if(myWorkMode!=M_OFFLINE_GRAW_MODE && myWorkMode!=M_OFFLINE_NGRAW_MODE){
+      throw std::runtime_error("input.eventList: only for GRAW input (OFFLINE)");
+    }
+    readEventList(eventListFile);
+    // default data directory: the one above the run directory of the input files
+    myEventListDataDir = myConfig.get<std::string>("input.eventListDataPath", "");
+    if(myEventListDataDir.empty()){
+      std::string firstFile = myConfig.get<std::string>("input.dataFile");
+      firstFile = firstFile.substr(0, firstFile.find(','));
+      myEventListDataDir = fs::path(firstFile).parent_path().parent_path().string();
+    }
+    if(myEventList.size()){
+      std::string error = loadListedEvent(0);
+      if(error.size()) std::cerr<<KRED<<"WebGUIController: "<<RST<<error<<std::endl;
+    }
+  }
+
   eventLoaded();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void WebGUIController::readEventList(const std::string & fileName){
+
+  // same format as makeTrackTree --input.eventList: "runId , entry , eventId" per line
+  // (comma/space separated, '#' comment lines); the order of the file is kept
+  std::ifstream in(fileName);
+  if(!in) throw std::runtime_error("input.eventList: cannot open "+fileName);
+  std::string line;
+  while(std::getline(in, line)){
+    for(auto & c : line) if(c==',' || c=='\t' || c==';') c=' ';
+    std::istringstream fields(line);
+    std::vector<std::string> items;
+    std::string item;
+    while(fields>>item) items.push_back(item);
+    if(items.empty() || items.front()[0]=='#') continue;
+    if(items.size()!=3) throw std::runtime_error("input.eventList: expected 'runId , entry , eventId' in: "+line);
+    myEventList.push_back({std::stol(items[0]), std::stoul(items[1]), std::stoul(items[2])});
+  }
+  std::cout<<KBLU<<"WebGUIController: event list "<<RST<<fileName<<KBLU<<": "<<RST
+           <<myEventList.size()<<KBLU<<" events"<<RST<<std::endl;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::size_t WebGUIController::framesPerChunk(long runId){
+
+  auto it = myFramesPerChunk.find(runId);
+  if(it!=myFramesPerChunk.end()) return it->second;
+  std::vector<std::string> files = findGrawRunFiles(myEventListDataDir, runId, 0);
+  std::size_t nFrames = 0;
+  if(files.size()){
+    graw::GrawFile aFile;
+    if(aFile.open(files.front())) nFrames = aFile.nFrames();
+  }
+  if(nFrames) myFramesPerChunk[runId] = nFrames;
+  return nFrames;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+int WebGUIController::currentChunk() const {
+
+  // ..._<chunk>.graw
+  const std::string path = myEventSource->getCurrentPath();
+  const std::size_t end = path.rfind(".graw");
+  if(end==std::string::npos || end<4) return -1;
+  try { return std::stoi(path.substr(end-4, 4)); }
+  catch(const std::exception &){ return -1; }
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::string WebGUIController::loadListedEvent(long position){
+
+  if(position<0 || position>=(long)myEventList.size()) return "No such event in the event list.";
+  const ListedEvent & aEvent = myEventList[position];
+  if(aEvent.eventId<aEvent.entry) return "Event list: event id smaller than the entry, line "+std::to_string(position+1);
+  // chunk of the event: all chunks of a run have the same number of frames (but the last)
+  const std::size_t nFrames = framesPerChunk(aEvent.runId);
+  if(!nFrames){
+    return "Event list: no GRAW files of run "+std::to_string(aEvent.runId)+" in "+myEventListDataDir;
+  }
+  const int chunk = (aEvent.eventId - aEvent.entry)/nFrames;
+  const bool isLoaded = myEventSource->getCurrentEvent() &&
+                        myEventSource->getCurrentEvent()->GetEventInfo().GetRunId()==aEvent.runId &&
+                        currentChunk()==chunk;
+  if(!isLoaded){
+    std::vector<std::string> files = findGrawRunFiles(myEventListDataDir, aEvent.runId, chunk);
+    if(files.empty()){
+      return "Event list: no chunk "+std::to_string(chunk)+" of run "+std::to_string(aEvent.runId)+" in "+myEventListDataDir;
+    }
+    std::string fileList;
+    for(const auto & aFile: files) fileList += (fileList.empty() ? "" : ",") + aFile;
+    myEventSource->loadDataFile(fileList);
+  }
+  myEventSource->loadFileEntry(aEvent.entry);
+  if(myEventSource->currentEventId()!=aEvent.eventId) myEventSource->loadEventId(aEvent.eventId);
+  myListPosition = position;
+  if(myEventSource->currentEventId()!=aEvent.eventId){
+    return "Event list: event "+std::to_string(aEvent.eventId)+" not found in chunk "+std::to_string(chunk)
+           +" of run "+std::to_string(aEvent.runId);
+  }
+  return "";
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -397,6 +499,12 @@ std::string WebGUIController::execute(const crow::json::rvalue & command){
     if(!canNavigate()) return "Event navigation is disabled in ONLINE mode.";
     unsigned long aEventType = updateEventLog(eventType());
     if(isRecoModeOn) writeManualReco(aEventType);
+    if(myEventList.size()){ // event list: the next listed event
+      if(myListPosition+1>=(long)myEventList.size()) return "Last event of the event list.";
+      std::string error = loadListedEvent(myListPosition+1);
+      eventLoaded();
+      return error;
+    }
     // last event of a GRAW chunk: continue with the next chunk of the run
     std::string nextChunk;
     if(isLastEntry()) nextChunk = neighbourChunkFiles(+1);
@@ -410,6 +518,12 @@ std::string WebGUIController::execute(const crow::json::rvalue & command){
   else if(cmd=="previous"){
     if(!canGoBack()) return "Previous event is not available in this mode.";
     updateEventLog(eventType());
+    if(myEventList.size()){ // event list: the previous listed event
+      if(myListPosition<=0) return "First event of the event list.";
+      std::string error = loadListedEvent(myListPosition-1);
+      eventLoaded();
+      return error;
+    }
     // first event of a GRAW chunk: continue with the last event of the previous chunk
     std::string previousChunk;
     if(myEventSource->currentEntryNumber()==0) previousChunk = neighbourChunkFiles(-1);
@@ -497,6 +611,13 @@ crow::json::wvalue WebGUIController::getStatus() const {
   status["file"] = myEventSource ? myEventSource->getCurrentPath() : std::string("");
   status["nEvents"] = myEventSource ? myEventSource->numberOfEvents() : 0ul;
   status["eventId"] = myEventSource ? myEventSource->currentEventId() : 0ul;
+  if(myEventList.size()){
+    // position (1..N) of the event shown in the event list; 0 when another event is shown
+    bool isListed = myListPosition>=0 && myEventSource &&
+                    myEventSource->currentEventId()==myEventList[myListPosition].eventId;
+    status["eventList"]["position"] = isListed ? myListPosition+1 : 0;
+    status["eventList"]["size"] = static_cast<long>(myEventList.size());
+  }
   status["entry"] = myEventSource ? myEventSource->currentEntryNumber() : 0ul;
 
   status["flags"]["logScale"] = isLogScaleOn;

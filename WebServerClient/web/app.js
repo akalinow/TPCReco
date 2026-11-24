@@ -249,7 +249,8 @@ function renderPanel(div, panel, index, status) {
     shapes, annotations,
     showlegend: hasLegend,
     legend: { x: 1, xanchor: 'right', y: 1, bgcolor: 'rgba(255,255,255,0.85)', bordercolor: '#888', borderwidth: 1 },
-    hovermode: 'closest',
+    // no hover tooltips on the U/V/W projections (they cover the track while clicking points)
+    hovermode: isStripProjection ? false : 'closest',
     uirevision: panelRevision(status, index),
   };
   const accepting = panel.clickDir !== undefined && status.reco.acceptPoints;
@@ -358,6 +359,10 @@ function updateControls(status) {
   $('fileName').title = status.file || '';
   $('nEvents').textContent = status.nEvents;
   setValueUnlessEditing('inpEventId', status.eventId);
+  $('listBox').hidden = !status.eventList;
+  if (status.eventList) {
+    $('listPosition').textContent = `${status.eventList.position || '–'} / ${status.eventList.size}`;
+  }
   setValueUnlessEditing('inpEntry', status.entry);
 
   const enabled = status.enabled;
