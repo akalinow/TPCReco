@@ -39,9 +39,15 @@ beamEnergySpread = 0.02      # relative sigma of the gamma energy
 maxProcs = 15                # limit on makeMCTrackTree + makeTrackTree processes
 procName = "makeMCTrackTree"
 otherProcNames = ["makeTrackTree"]   # data jobs sharing the machine
-topDirName = "HIgS_2022_MC"
+topDirName = "/scratch_hdd/akalinow/ELITPC/WarsawTPC_Claude/data/HIgS_2022_MC"
 controllerTemplate = "../config/montecarlo_2prong_gun_PEventTPC.json"
 appConfig = "../config/config_Writer_MC.json"
+# Strip-response model (TPCDigitizerSRC, 232 ns shaping, TPCReco >= de1e73b). sigmaXY and sigmaZ from the diffusion
+# fit of WarsawTPC_Claude/code/7_diffusion.ipynb at 130 mbar (1.0 / 1.2 mm); sigmaZ scaled with sqrt(130/p).
+# The files StripResponseModel_..._T<sigmaXY>mm_L<sigmaZ>mm_P232ns.root must exist in stripResponsePath.
+stripResponsePath = "/scratch_hdd/akalinow/ELITPC/TPCReco/build_noGET/MonteCarlo/Modules/StripResponseModel/"
+sigmaXY = 1.0                                   # [mm]
+sigmaZByPressure = {130: 1.2, 190: 1.0, 250: 0.85}   # [mm], key: pressure [mbar]
 ################################################
 
 def getSetups(runList):
@@ -78,6 +84,10 @@ def makeControllerConfig(setup, fileName):
     # [bar]
     config["ModuleConfiguration"]["GeantSim"]["gas_mixture"]["co2"] = setup["pressure"]/1000.0
     config["ModuleConfiguration"]["ToyIonizationSimulator"]["Pressure"] = setup["pressure"]/1000.0
+    digitizer = config["ModuleConfiguration"]["TPCDigitizerSRC"]
+    digitizer["StripResponsePath"] = stripResponsePath
+    digitizer["sigmaXY"] = sigmaXY
+    digitizer["sigmaZ"] = sigmaZByPressure[int(round(setup["pressure"]))]
     with open(fileName, "w") as f:
         json.dump(config, f, indent=2)
 
