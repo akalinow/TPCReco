@@ -12,6 +12,7 @@
 
 #include "TPCReco/RunIdParser.h"
 #include "TPCReco/EventSourceMultiGRAW.h"
+#include "TPCReco/GrawChunkPath.h"
 #include "TPCReco/colorText.h"
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -133,7 +134,6 @@ void EventSourceMultiGRAW::loadDataFileList(const std::set<std::string> & fileNa
     
     unsigned int nFrames = myFile->nFrames();
     if(streamIndex==0 || nFrames<nEvents) nEvents=nFrames; // take the lowest number of frames
-    if(nEventsToRead<0) nEventsToRead = nEvents;
 		     
     myFilePathList.push_back(fileName);
 #ifdef EVENTSOURCEGRAW_NEXT_FILE_DISABLE  
@@ -144,6 +144,7 @@ void EventSourceMultiGRAW::loadDataFileList(const std::set<std::string> & fileNa
 
     streamIndex++;
   }
+  resetNEventsToRead();
 #ifdef DEBUG
   std::cout<<__FUNCTION__<<": Number of GRAW streams: "<<myFramesMapList.size()
 	   <<". Expected: "<<GRAW_EVENT_FRAGMENTS
@@ -494,23 +495,13 @@ std::string EventSourceMultiGRAW::getNextFilePath(unsigned int streamIndex){
   if(streamIndex>=myFilePathList.size()) {
     std::cerr <<KRED<<__FUNCTION__
 	      <<": ERROR: wrong GRAW stream id: " <<RST<<streamIndex<<std::endl;
-    exit(1);    
+    exit(1);
   }
-  auto myFilePath = myFilePathList[streamIndex];
-  std::string token = "_";
-  int index = myFilePath.rfind(token);
-  int fieldLength = 4;
-  std::string fileIndex = myFilePath.substr(index+token.size(), fieldLength);
-  int nextFileIndex = std::stoi(fileIndex) + 1;  
-  ///
-  token = "_";
-  index = myFilePath.rfind(token);
-  std::string fileNamePrefix = myFilePath.substr(0,index+token.size());
-  ///
-  std::ostringstream ostr;
-  ostr<<fileNamePrefix<<std::setfill('0') <<std::setw(4)<<nextFileIndex<<".graw";
-  std::string nextFilePath = ostr.str();
-  return nextFilePath;
+  // the next chunk has a different timestamp in its name: look it up on disk.
+  // Without a next chunk the current file is returned (as with the read-ahead disabled).
+  const std::string & filePath = myFilePathList[streamIndex];
+  std::string nextFilePath = findGrawChunkPath(filePath, +1);
+  return nextFilePath.empty() ? filePath : nextFilePath;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

@@ -16,6 +16,9 @@
 
 #include "TPCReco/CommonDefinitions.h"
 #include "TPCReco/EventSourceFactory.h"
+#include "TPCReco/EventSourceGRAW.h"
+#include "TPCReco/EventSourceMultiGRAW.h"
+#include "TPCReco/GrawChunkPath.h"
 #include "TPCReco/FileOutput.h"
 #include "TPCReco/GeometryTPC.h"
 #include "TPCReco/GUI_commons.h"
@@ -295,6 +298,32 @@ void WebGUIController::writeManualReco(unsigned long eventType){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+bool WebGUIController::isLastEntry() const {
+
+  const auto nEntries = myEventSource->numberOfEvents();
+  return nEntries>0 && myEventSource->currentEntryNumber()+1>=nEntries;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::string WebGUIController::neighbourChunkFiles(int chunkOffset) const {
+
+  std::vector<std::string> currentFiles;
+  if(auto aSource = std::dynamic_pointer_cast<EventSourceMultiGRAW>(myEventSource)){
+    currentFiles = aSource->getFilePathList();
+  }
+  else if(auto aSource = std::dynamic_pointer_cast<EventSourceGRAW>(myEventSource)){
+    currentFiles.push_back(aSource->getFilePath());
+  }
+  std::string fileList;
+  for(const auto & aFile: currentFiles){
+    std::string aChunk = findGrawChunkPath(aFile, chunkOffset);
+    if(aChunk.empty()) return ""; // all streams must have the chunk
+    fileList += (fileList.empty() ? "" : ",") + aChunk;
+  }
+  return fileList;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 std::string WebGUIController::openFile(const std::string & fileName){
 
   if(!canNavigate()) return "Opening files is disabled in ONLINE mode.";
@@ -349,13 +378,27 @@ std::string WebGUIController::execute(const crow::json::rvalue & command){
     if(!canNavigate()) return "Event navigation is disabled in ONLINE mode.";
     unsigned long aEventType = updateEventLog(eventType());
     if(isRecoModeOn) writeManualReco(aEventType);
-    myEventSource->getNextEventLoop();
+    // last event of a GRAW chunk: continue with the next chunk of the run
+    std::string nextChunk;
+    if(isLastEntry()) nextChunk = neighbourChunkFiles(+1);
+    if(!nextChunk.empty()){
+      myEventSource->loadDataFile(nextChunk);
+      myEventSource->loadFileEntry(0);
+    }
+    else myEventSource->getNextEventLoop();
     eventLoaded();
   }
   else if(cmd=="previous"){
     if(!canGoBack()) return "Previous event is not available in this mode.";
     updateEventLog(eventType());
-    myEventSource->getPreviousEventLoop();
+    // first event of a GRAW chunk: continue with the last event of the previous chunk
+    std::string previousChunk;
+    if(myEventSource->currentEntryNumber()==0) previousChunk = neighbourChunkFiles(-1);
+    if(!previousChunk.empty()){
+      myEventSource->loadDataFile(previousChunk);
+      myEventSource->loadFileEntry(myEventSource->numberOfEvents()-1);
+    }
+    else myEventSource->getPreviousEventLoop();
     eventLoaded();
   }
   else if(cmd=="reset") refresh();

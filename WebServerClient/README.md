@@ -63,7 +63,10 @@ ManualRecoTool    state machine of the clicked track reconstruction (port of Mar
 
 ## Functionality (as in tpcGUI)
 
-* Next (▶) / Previous (◀) / Reset event, go to event id, go to frame, open file (server side file browser,
+* Next (▶) / Previous (◀) / Reset event. For GRAW input, ▶ on the last event of a chunk opens the
+  next chunk of the run (all AsAd files), ◀ on the first event the previous one; the chunk files are
+  found on disk (their timestamps differ, e.g. `..44.531_0000.graw` is followed by `..44.540_0001.graw`).
+  Other controls: go to event id, go to frame, open file (server side file browser,
   several GRAW files can be selected with Ctrl+click).
 * Z log scale, auto zoom, manual reconstruction mode, event rate display (ONLINE).
 * Display modes from the configuration: raw (default), `display.develMode` (rec hits, fitted track,

@@ -74,6 +74,11 @@ private:
   void updateEventRate();
   std::string setRunConditions(double driftVelocity, double samplingRate, double triggerDelay);
   std::string openFile(const std::string & fileName);
+  /// true for the last entry of the current file
+  bool isLastEntry() const;
+  /// comma separated files of the previous (-1) / next (+1) chunk of the current GRAW run,
+  /// empty when not reading GRAW files or the chunk does not exist for every stream
+  std::string neighbourChunkFiles(int chunkOffset) const;
 
   // panels
   std::vector<crow::json::wvalue> makeRawPanels() const;

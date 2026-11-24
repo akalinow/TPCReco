@@ -40,6 +40,9 @@ public:
 
   inline void setFrameLoadRange(int range) {frameLoadRange=range;}
 
+  /// file currently read
+  const std::string & getFilePath() const { return myFilePath; }
+
   inline void setFillEventType(EventType type) {fillEventType=type;}
 
   static inline event_type getSourceType() { return event_type::EventSourceGRAW; }

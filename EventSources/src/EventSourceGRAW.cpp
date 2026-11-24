@@ -9,6 +9,7 @@
 
 
 #include "TPCReco/EventSourceGRAW.h"
+#include "TPCReco/GrawChunkPath.h"
 #include "TPCReco/RunIdParser.h"
 #include "TPCReco/colorText.h"
 /////////////////////////////////////////////////////////
@@ -62,7 +63,7 @@ void EventSourceGRAW::loadDataFile(const std::string & fileName){
     exit(1);
   }
   nEvents = myFile.nFrames();
-  if(nEventsToRead<0) nEventsToRead = nEvents;
+  resetNEventsToRead();
   
   const int firstEventSize=10;
   if(fileName!=myFilePath || nEvents<firstEventSize){
@@ -435,24 +436,13 @@ void EventSourceGRAW::configurePedestal(const boost::property_tree::ptree &confi
 /////////////////////////////////////////////////////////
 std::string EventSourceGRAW::getNextFilePath(){
 
-#ifdef EVENTSOURCEGRAW_NEXT_FILE_DISABLE  
+#ifdef EVENTSOURCEGRAW_NEXT_FILE_DISABLE
   return myFilePath;
 #endif
-
-  std::string token = "_";
-  int index = myFilePath.rfind(token);
-  int fieldLength = 4;
-  std::string fileIndex = myFilePath.substr(index+token.size(), fieldLength);
-  int nextFileIndex = std::stoi(fileIndex) + 1;  
-  ///
-  token = "_";
-  index = myFilePath.rfind(token);
-  std::string fileNamePrefix = myFilePath.substr(0,index+token.size());
-  ///
-  std::ostringstream ostr;
-  ostr<<fileNamePrefix<<std::setfill('0') <<std::setw(4)<<nextFileIndex<<".graw";
-  std::string nextFilePath = ostr.str();
-  return nextFilePath;
+  // the next chunk has a different timestamp in its name: look it up on disk.
+  // Without a next chunk the current file is returned (as with the read-ahead disabled).
+  std::string nextFilePath = findGrawChunkPath(myFilePath, +1);
+  return nextFilePath.empty() ? myFilePath : nextFilePath;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

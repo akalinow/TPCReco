@@ -35,6 +35,9 @@ public:
   
   unsigned int getMaxNumberOfStreams() { return GRAW_EVENT_FRAGMENTS; }
 
+  /// files currently read, one per GRAW stream
+  const std::vector<std::string> & getFilePathList() const { return myFilePathList; }
+
   static inline event_type getSourceType() { return event_type::EventSourceMultiGRAW; }
   
 private:

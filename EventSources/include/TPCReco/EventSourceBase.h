@@ -34,7 +34,8 @@ public:
 
   virtual void loadDataFile(const std::string & fileName);
 
-  void setNEventsToRead(unsigned long int nEvents) { nEventsToRead = nEvents; }
+  /// number of events returned by getNextEventLoop() for each loaded data file; -1: all events
+  void setNEventsToRead(long int nEvents) { nEventsRequested = nEvents; nEventsToRead = nEvents; }
 
   void setTrackBuilder(std::shared_ptr<TrackBuilder> aTkBuilderPtr); 
 
@@ -85,6 +86,12 @@ protected:
   mutable bool recoEventUpdated{false}; ///< reconstruction of the current event is up to date
   
   long int nEventsToRead{0};
+  long int nEventsRequested{-1}; ///< setNEventsToRead() value, applied again to each new data file
+
+  /// restarts the getNextEventLoop() counter after a data file was loaded (nEvents set)
+  void resetNEventsToRead() {
+    nEventsToRead = (nEventsRequested<0 || nEventsRequested>(long int)nEvents) ? (long int)nEvents : nEventsRequested;
+  }
   unsigned long int nEvents{0};
   unsigned long int myCurrentEntry{std::numeric_limits<unsigned long int>::max()};
 

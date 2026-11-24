@@ -75,7 +75,7 @@ void EventSourceROOT::loadDataFile(const std::string & fileName){
   myTree->BuildIndex("myEventInfo.runId", "myEventInfo.eventId");
 
   nEvents = myTree->GetEntries();
-  if(nEventsToRead<0) nEventsToRead = nEvents;
+  resetNEventsToRead();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
