@@ -48,14 +48,25 @@ start-up.
 
 ## Mounts
 
-The pod mounts the TPCReco installation (`tpcreco.hostPath`) and the data (`dataVolumes`).
-With minikube a `hostPath` volume is a directory of the minikube node, so the host directories
-have to be mounted into minikube first. For the installation above and the HIgS 2022 data
-(CIFS share `//10.4.5.16/backup_daqula2/HIgS_2022`, mounted on the host e.g. at `/mnt/HIgS_2022`):
+The pod mounts the TPCReco installation (`tpcreco.hostPath`), the output directory
+(`persistence.hostPath`) and the data (`dataVolumes`). With minikube a `hostPath` volume is a
+directory of the minikube node, so the host directories have to be mounted into minikube first.
+`values-hep.yaml` uses one host directory for the installation and the output:
+
+```
+/scratch/tpcwebgui/          -> minikube node /tpcwebgui
+├── TPCReco/                 installation (build-tpcreco.sh)    tpcreco.hostPath: /tpcwebgui/TPCReco
+└── output/                  output files, written by the pod   persistence.hostPath: /tpcwebgui/output
+```
+
+The pod runs as uid/gid 10001, so mount it with that owner (otherwise the pod cannot write).
+For it and the HIgS 2022 data (CIFS share `//10.4.5.16/backup_daqula2/HIgS_2022`, mounted on
+the host e.g. at `/mnt/HIgS_2022`):
 
 ```bash
-minikube mount /scratch/tpcwebgui/TPCReco:/tpcreco &     # must keep running
-minikube mount /mnt/HIgS_2022:/data/HIgS_2022 &           # must keep running
+sudo mkdir -p /scratch/tpcwebgui/output && sudo chown -R $USER /scratch/tpcwebgui
+minikube mount --uid 10001 --gid 10001 /scratch/tpcwebgui:/tpcwebgui &   # must keep running
+minikube mount /mnt/HIgS_2022:/data/HIgS_2022 &                          # must keep running
 ```
 
 To keep them running across reboots, use systemd units, as for the socat port forwarding of
@@ -144,14 +155,22 @@ All browsers share one GUI state: one event source and one output file on the se
 
 ## Output files
 
-The working directory `/work` is a PersistentVolumeClaim (`tpcwebgui-work`, kept on uninstall)
-with the output file `TPCReco_<input>.root` (recreated when the pod starts) and the event type
-logs `<input>.log`. List and copy them with
+The working directory of the pod, `/work`, is the PersistentVolumeClaim `tpcwebgui-work`.
+With `persistence.hostPath` (as in `values-hep.yaml`) it is bound to a hostPath PersistentVolume
+of the release, so the files are on the host disk: `/scratch/tpcwebgui/output`. The volume and
+the claim are kept on `helm uninstall` (and the files also on `minikube delete`). Without
+`persistence.hostPath` the claim uses the default storage class (inside minikube; copy the files
+out with `kubectl cp`).
 
-```bash
-kubectl exec deploy/tpcwebgui -- ls -l /work
-kubectl cp <pod name>:/work/TPCReco_2022-04-12T08-03-44.540_0000.root .
-```
+* `TPCReco_<pod start time>_<input>.root`, e.g.
+  `TPCReco_20261124T190500Z_2026-08-19T18-01-41.106_0000.root`: the output file (TPCData tree).
+  The pod start time (UTC) makes every pod write a new file: a restart or upgrade does not
+  overwrite the previous one (`output.timestamp: false` for the plain `TPCReco_<input>.root`,
+  `output.prefix` for another prefix).
+* `<input file>.log`: event type bits of the visited events (appended).
+
+Changing an existing release from the default storage class to `persistence.hostPath`: copy the
+files out, delete the old claim (`kubectl delete pvc tpcwebgui-work`), then run `deploy.sh`.
 
 Stopping the pod (upgrade, `kubectl rollout restart`, uninstall) sends SIGTERM: the server
 closes the output file before it exits.
@@ -161,8 +180,9 @@ closes the output file before it exits.
 ```bash
 kubectl get pods,svc,ingress,pvc -l app.kubernetes.io/name=tpcwebgui
 kubectl logs deploy/tpcwebgui
-helm uninstall tpcwebgui                                  # keeps the PVC and the token Secret
-kubectl delete pvc tpcwebgui-work && kubectl delete secret tpcwebgui-token   # remove them too
+helm uninstall tpcwebgui                                  # keeps the volume, claim and token Secret
+kubectl delete pvc tpcwebgui-work && kubectl delete pv tpcwebgui-work \
+  && kubectl delete secret tpcwebgui-token                # remove them too (host files stay)
 ```
 
 ## Notes

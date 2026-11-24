@@ -4,10 +4,10 @@
 
 urlPrefix: /tpcgui
 
-# TPCReco installation made by k8s/build-tpcreco.sh on the host (default
-# /scratch/tpcwebgui/TPCReco), mounted into the minikube node at /tpcreco (README.md, "Mounts")
+# Host directory /scratch/tpcwebgui, mounted into the minikube node at /tpcwebgui
+# (README.md, "Mounts"): TPCReco/ = installation made by k8s/build-tpcreco.sh, output/ = output files
 tpcreco:
-  hostPath: /tpcreco
+  hostPath: /tpcwebgui/TPCReco
 
 ingress:
   className: nginx
@@ -46,7 +46,12 @@ config:
   display:
     develMode: true
 
+# output files on the host: /scratch/tpcwebgui/output
 persistence:
   enabled: true
-  storageClass: ""   # minikube default (standard, hostpath provisioner)
-  size: 5Gi
+  hostPath: /tpcwebgui/output
+  size: 50Gi
+
+output:
+  prefix: TPCReco
+  timestamp: true

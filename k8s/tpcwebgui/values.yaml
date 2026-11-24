@@ -71,12 +71,23 @@ extraArgs: []
 #     hostPath: { path: /data/HIgS_2022, type: Directory }
 dataVolumes: []
 
-# Working directory /work: output ROOT file (TPCReco_<input>.root) and the event type logs
-# (<input>.log) written by the GUI. Without persistence they are lost when the pod restarts.
+# Output ROOT file in /work: <prefix>_<pod start time>_<input>.root, e.g.
+# TPCReco_20261124T190500Z_2026-08-19T18-01-41.106_0000.root. With the timestamp a restarted
+# pod writes a new file instead of overwriting the previous one (the file is opened with RECREATE).
+output:
+  prefix: TPCReco
+  timestamp: true
+
+# Working directory /work: output ROOT files and the event type logs (<input>.log).
+# Without persistence they are lost when the pod restarts.
 persistence:
   enabled: true
   existingClaim: ""
-  storageClass: ""     # "" = default storage class of the cluster
+  # Directory of the node for the output (a static hostPath PersistentVolume is created, as the
+  # WordPress scratch-local volume); with minikube a directory mounted from the host, so the files
+  # are on the host disk. "" = dynamic provisioning with storageClass.
+  hostPath: ""
+  storageClass: ""     # "" = default storage class (dynamic provisioning only)
   accessMode: ReadWriteOnce
   size: 5Gi
 

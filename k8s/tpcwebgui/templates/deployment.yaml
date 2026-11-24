@@ -46,7 +46,9 @@ spec:
             - -c
             - >-
               export LD_LIBRARY_PATH="${TPCRECO_INSTALL}/lib:${TENSORFLOW_ROOT}/lib:${LD_LIBRARY_PATH}";
-              exec "${TPCRECO_INSTALL}/bin/tpcWebGUI" "$@"
+              prefix="${TPCWEBGUI_OUTPUT_PREFIX}";
+              if [ "${TPCWEBGUI_OUTPUT_TIMESTAMP}" = "true" ]; then prefix="${prefix}_$(date -u +%Y%m%dT%H%M%SZ)"; fi;
+              exec "${TPCRECO_INSTALL}/bin/tpcWebGUI" "$@" --output.fileName "${prefix}"
             - tpcWebGUI
           args:
             - /config/tpcwebgui.json
@@ -70,6 +72,11 @@ spec:
             # allowedOptions.json is read from $HOME/.tpcreco/config
             - name: HOME
               value: /home/tpcwebgui
+            # output file name prefix (+ pod start time): <prefix>_<input>.root in /work
+            - name: TPCWEBGUI_OUTPUT_PREFIX
+              value: {{ .Values.output.prefix | quote }}
+            - name: TPCWEBGUI_OUTPUT_TIMESTAMP
+              value: {{ .Values.output.timestamp | quote }}
             - name: TPCWEBGUI_TOKEN
               valueFrom:
                 secretKeyRef:

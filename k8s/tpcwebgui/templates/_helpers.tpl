@@ -41,3 +41,8 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- define "tpcwebgui.pvcName" -}}
 {{- default (printf "%s-work" (include "tpcwebgui.fullname" .)) .Values.persistence.existingClaim }}
 {{- end }}
+
+{{/* storage class name of the static hostPath volume (no StorageClass object needed) */}}
+{{- define "tpcwebgui.hostStorageClass" -}}
+{{- printf "%s-host" (include "tpcwebgui.fullname" .) }}
+{{- end }}

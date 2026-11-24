@@ -10,8 +10,12 @@ metadata:
     helm.sh/resource-policy: keep
 spec:
   accessModes: [{{ .Values.persistence.accessMode }}]
-  {{- with .Values.persistence.storageClass }}
-  storageClassName: {{ . }}
+  {{- if .Values.persistence.hostPath }}
+  # bound to the hostPath PersistentVolume of this release (pv.yaml)
+  storageClassName: {{ include "tpcwebgui.hostStorageClass" . }}
+  volumeName: {{ include "tpcwebgui.pvcName" . }}
+  {{- else if .Values.persistence.storageClass }}
+  storageClassName: {{ .Values.persistence.storageClass }}
   {{- end }}
   resources:
     requests:
