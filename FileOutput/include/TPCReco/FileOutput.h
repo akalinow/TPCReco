@@ -43,6 +43,12 @@ public:
               const eventraw::EventInfo & aEventInfo,
               const Track3D & aRecoEvent);
 
+  // Latest TPCData entry already written for the event (run id, event id) of aKey.
+  // Fills aInfo and aRecoEvent and returns true when found. Reads only the EventInfo and
+  // RecoEvent branches, so it can be used while the file is being written.
+  bool findRecoEvent(const eventraw::EventInfo & aKey,
+                     eventraw::EventInfo & aInfo, Track3D & aRecoEvent);
+
 private:
   
   void close();

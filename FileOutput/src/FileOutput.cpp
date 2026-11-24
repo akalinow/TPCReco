@@ -3,6 +3,7 @@
 
 #include <TFile.h>
 #include <TTree.h>
+#include <TBranch.h>
 
 
 #include "TPCReco/EventSourceBase.h"
@@ -158,6 +159,32 @@ void FileOutput::update(std::shared_ptr<EventSourceBase> aEventSource) {
     }
     aTree.second->Fill();
   }
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+bool FileOutput::findRecoEvent(const eventraw::EventInfo & aKey,
+                               eventraw::EventInfo & aInfo, Track3D & aRecoEvent){
+
+  auto it = myOutputTrees.find("TPCData");
+  if(it==myOutputTrees.end() || !it->second) return false;
+  TTree *aTree = it->second.get();
+  TBranch *infoBranch = aTree->GetBranch("EventInfo");
+  TBranch *recoBranch = aTree->GetBranch("RecoEvent");
+  if(!infoBranch || !recoBranch) return false;
+
+  // the branches read into the objects used for writing: every update() sets
+  // EventInfo and RecoEvent again before the next Fill()
+  bool found = false;
+  for(Long64_t iEntry=aTree->GetEntries()-1;iEntry>=0 && !found;--iEntry){
+    if(infoBranch->GetEntry(iEntry)<=0) continue;
+    if(myEventInfoPtr->GetRunId()!=aKey.GetRunId() ||
+       myEventInfoPtr->GetEventId()!=aKey.GetEventId()) continue;
+    if(recoBranch->GetEntry(iEntry)<=0) continue;
+    aInfo = *myEventInfoPtr;
+    aRecoEvent = *myRecoEventPtr;
+    found = true;
+  }
+  return found;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

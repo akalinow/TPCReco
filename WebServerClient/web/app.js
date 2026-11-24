@@ -346,6 +346,7 @@ function setValueUnlessEditing(id, value) {
   if (document.activeElement !== input && value !== undefined) input.value = value;
 }
 
+let lastEventKey = null;
 let wasRecoModeOn = null; // unknown before the first status: set the segment block from the mode
 
 function updateControls(status) {
@@ -386,6 +387,14 @@ function updateControls(status) {
       label.innerHTML = `<input type="checkbox" data-bit="${bit}"> ${name}`;
       eventTypes.appendChild(label);
     });
+  }
+  // a newly loaded event already in the output file: show its saved event type bits
+  const eventKey = `${status.file}#${status.entry}#${status.eventId}`;
+  if (eventKey !== lastEventKey) {
+    lastEventKey = eventKey;
+    for (const box of eventTypes.querySelectorAll('input')) {
+      box.checked = Boolean(Math.floor((status.savedEventType || 0) / 2 ** Number(box.dataset.bit)) % 2);
+    }
   }
 
   $('btnAddSegment').disabled = !status.reco.addEnabled;

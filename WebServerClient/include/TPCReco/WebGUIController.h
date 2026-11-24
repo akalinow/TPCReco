@@ -94,6 +94,10 @@ private:
   crow::json::wvalue makeRatePanel() const;
   crow::json::wvalue makeXYPanel(const Track3D & aTrack) const;
   crow::json::wvalue makeChargeProfilePanel(const Track3D & aTrack) const;
+  /// track to display: the one read from the output file, or the one of the TrackBuilder
+  const Track3D & displayedTrack() const;
+  /// looks the current event up in the output file (mySavedTrack, mySavedEventType)
+  void readSavedRecoEvent();
   /// track reconstruction printout (terminal text with ANSI colour codes)
   std::string makeRecoText(const Track3D * aTrack) const;
   void addTrackProjection(PanelOverlay & aOverlay, int strip_dir, const Track3D & aTrack) const;
@@ -114,6 +118,11 @@ private:
   bool isNewEvent{true};
   bool isManualTrackShown{false};
   bool isManualTrackUnsaved{false}; // fitted clicked track not yet written ("Next event")
+
+  // reconstruction of the current event read back from the output file (event already
+  // written, e.g. when going back): shown instead of a new reconstruction, not written again
+  std::shared_ptr<Track3D> mySavedTrack;
+  unsigned long mySavedEventType{0};
 
   std::vector<std::pair<double,double>> myEventRate; // (time [s], rate [Hz])
   long long previousEventTime{-1}, previousEventNumber{-1};

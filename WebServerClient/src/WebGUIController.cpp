@@ -233,10 +233,13 @@ void WebGUIController::refresh(){
   if(!myEventSource || !myEventSource->numberOfEvents()) return;
   if(isNewEvent){
     if(isOnline()) updateEventRate();
-    // automatic output once per loaded event; in manual RECO mode the event
-    // is written on "Next event" with the clicked track instead
-    if(myFileOutput && !isRecoModeOn) myFileOutput->update(myEventSource);
+    readSavedRecoEvent();
+    // automatic output once per loaded event, unless already written; in manual RECO mode
+    // the event is written on "Next event" with the clicked track instead
+    if(myFileOutput && !isRecoModeOn && !mySavedTrack) myFileOutput->update(myEventSource);
   }
+  // a track read back from the output file is shown as the (saved) clicked track
+  if(isRecoModeOn && mySavedTrack) isManualTrackShown = true;
   isNewEvent = false;
 }
 /////////////////////////////////////////////////////////
@@ -284,9 +287,33 @@ unsigned long WebGUIController::updateEventLog(unsigned long eventType){
 void WebGUIController::writeManualReco(unsigned long eventType){
 
   if(!myFileOutput) return;
+  // already in the output file, unchanged: not written again
+  if(mySavedTrack && !isManualTrackUnsaved && eventType==mySavedEventType) return;
   eventraw::EventInfo aEventInfo = myEventSource->getCurrentEvent()->GetEventInfo();
   aEventInfo.SetEventType(eventType);
-  myFileOutput->update(myEventSource, aEventInfo, myEventSource->getTrackBuilder()->getTrack3D(0));
+  myFileOutput->update(myEventSource, aEventInfo, displayedTrack());
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void WebGUIController::readSavedRecoEvent(){
+
+  mySavedTrack.reset();
+  mySavedEventType = 0;
+  if(!myFileOutput || isOnline()) return;
+  eventraw::EventInfo aInfo;
+  auto aTrack = std::make_shared<Track3D>();
+  if(!myFileOutput->findRecoEvent(myEventSource->getCurrentEvent()->GetEventInfo(), aInfo, *aTrack)) return;
+  mySavedTrack = aTrack;
+  mySavedEventType = aInfo.GetEventType().to_ulong();
+  std::cout<<KBLU<<"WebGUIController: event "<<RST<<aInfo.GetEventId()
+           <<KBLU<<" read from the output file"<<RST<<std::endl;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+const Track3D & WebGUIController::displayedTrack() const {
+
+  if(mySavedTrack) return *mySavedTrack;
+  return myEventSource->getTrackBuilder()->getTrack3D(0);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -447,10 +474,14 @@ std::string WebGUIController::execute(const crow::json::rvalue & command){
     if(!isRecoModeOn || !myRecoTool.isFitEnabled()) return "No complete segments to fit.";
     std::vector<double> segmentsXY = myRecoTool.takeSegmentsForFit();
     myEventSource->getTrackBuilder()->getSegment2DCollectionFromGUI(segmentsXY);
+    mySavedTrack.reset(); // the new fit replaces the track read from the output file
     isManualTrackShown = true;
     isManualTrackUnsaved = true;
   }
-  else if(cmd=="recoClearTrack") isManualTrackShown = false;
+  else if(cmd=="recoClearTrack"){
+    isManualTrackShown = false;
+    mySavedTrack.reset();
+  }
   else return "Unknown command: "+cmd;
   return "";
 }
@@ -500,6 +531,9 @@ crow::json::wvalue WebGUIController::getStatus() const {
   status["reco"]["clearEnabled"] = isRecoModeOn && myRecoTool.isClearEnabled();
   // for the warnings before leaving an event: a fitted clicked track is written only by "Next event"
   status["reco"]["unsavedTrack"] = isRecoModeOn && isManualTrackUnsaved;
+  // event type bits saved with the event in the output file (0 when not saved)
+  status["savedEventType"] = static_cast<long long>(mySavedEventType);
+  status["isSaved"] = static_cast<bool>(mySavedTrack);
   status["reco"]["pendingPoints"] = isRecoModeOn && myRecoTool.hasClickedPoints();
   return status;
 }
@@ -523,7 +557,7 @@ crow::json::wvalue WebGUIController::getView() const {
   // or the manually fitted track in RECO mode
   if(isDevelView()){
     const Track3D * aTrack = nullptr;
-    if(!isRecoModeOn || isManualTrackShown) aTrack = &myEventSource->getTrackBuilder()->getTrack3D(0);
+    if(!isRecoModeOn || isManualTrackShown) aTrack = &displayedTrack();
     view["recoText"] = makeRecoText(aTrack);
   }
   return view;
@@ -704,7 +738,7 @@ std::vector<crow::json::wvalue> WebGUIController::makeRecoPanels() const {
 
   std::vector<wvalue> panels;
   auto aEvent = myEventSource->getCurrentEvent();
-  const Track3D & aTrack = myEventSource->getTrackBuilder()->getTrack3D(0);
+  const Track3D & aTrack = displayedTrack();
   filter_type filterType = filter_type::threshold;
   if(!myConfig.get<bool>("hitFilter.recoClusterEnable")) filterType = filter_type::none;
 
@@ -749,7 +783,7 @@ std::vector<crow::json::wvalue> WebGUIController::makeDevelPanels() const {
 
   std::vector<wvalue> panels;
   auto aTrackBuilder = myEventSource->getTrackBuilder();
-  const Track3D & aTrack = aTrackBuilder->getTrack3D(0);
+  const Track3D & aTrack = displayedTrack();
   for(int strip_dir=projection_type::DIR_U;strip_dir<=projection_type::DIR_W;++strip_dir){
     wvalue aPanel = makeHeatmapPanel(aTrackBuilder->getRecHits2D(strip_dir), true, true);
     PanelOverlay ov;
@@ -831,7 +865,7 @@ crow::json::wvalue WebGUIController::makeChargeProfilePanel(const Track3D & aTra
   }
 
   TF1 dEdx = myEventSource->getTrackBuilder()->getdEdx();
-  if(dEdx.GetNpar()){
+  if(dEdx.GetNpar() && !mySavedTrack){ // the fitted model belongs to the TrackBuilder track
     double carbonScale = dEdx.GetParameter("carbonScale");
     auto curve = [&dEdx](){
       std::vector<double> cx, cy;
@@ -868,6 +902,7 @@ std::string WebGUIController::makeRecoText(const Track3D * aTrack) const {
     out<<KRED<<"No reconstructed track."<<RST<<std::endl;
     return out.str();
   }
+  if(aTrack==mySavedTrack.get()) out<<KYEL<<"Read from the output file."<<RST<<std::endl;
   out<<KBLU<<"Total length [mm]: "<<RST<<format("%3.0f", aTrack->getLength())<<std::endl;
   if(aTrack->getSegments().front().getPID()==pid_type::UNKNOWN){
     out<<KBLU<<"Particle PID: "<<RST<<"UNKNOWN"<<std::endl;

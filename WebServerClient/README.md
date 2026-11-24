@@ -81,7 +81,11 @@ ManualRecoTool    state machine of the clicked track reconstruction (port of Mar
   (also on Next and Reset), the GUI asks for confirmation. tpcGUI asks the same questions.
 * Event type bits, written to `<input file>.log` and to the output file (manual reco mode) on Next/Previous.
 * Run conditions: drift velocity, sampling rate, trigger delay.
-* Output file: the same `FileOutput` as tpcGUI, filled once per loaded event.
+* Output file: the same `FileOutput` as tpcGUI, filled once per loaded event (manual reco mode:
+  on "Next event"). An event already in the output file (e.g. when going back) is read from it:
+  its saved track is shown (in manual reco mode as the saved clicked track; the printout starts
+  with "Read from the output file.") together with its saved event type bits, and it is not
+  written again unless a new track is fitted or the event type bits are changed.
 
 Differences from tpcGUI:
 
