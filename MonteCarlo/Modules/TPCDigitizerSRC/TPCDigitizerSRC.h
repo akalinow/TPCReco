@@ -33,6 +33,15 @@ private:
     int nPads{};
     boost::filesystem::path pathToResponses;
     bool enableSimHitsPerTrack{}; // used by Track3DBuilder to create true RecHits per individual generator level TrackSegment3D
+    // optional drift-dependent diffusion on top of the strip response (default off): every hit is split into
+    // driftSubCharges sub-charges, each displaced by a Gaussian of variance D^2 * d [D in mm/sqrt(cm), d in cm], where
+    // d is the physical drift distance from the GEM plane: d = z_true - driftGEMZ, z_true = hit z before the
+    // TriggerSimulator shift (the shift is recovered per event from the true and trigger-shifted vertex). The strip
+    // response (sigmaXY, sigmaZ) is then the non-diffusion part: sigma^2(d) = sigma_resp^2 + D^2 * d.
+    double driftDiffusionT{0}; // [mm/sqrt(cm)] transverse (X, Y)
+    double driftDiffusionL{0}; // [mm/sqrt(cm)] longitudinal (Z)
+    double driftGEMZ{0};       // [mm] z_true of the GEM plane, default: geometry drift cage Zmin (closest to the readout)
+    int driftSubCharges{10};
 
     REGISTER_MODULE(TPCDigitizerSRC)
 };

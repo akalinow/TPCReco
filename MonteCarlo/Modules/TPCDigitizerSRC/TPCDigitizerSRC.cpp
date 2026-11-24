@@ -1,6 +1,8 @@
 #include "TPCDigitizerSRC.h"
 #include "boost/core/null_deleter.hpp"
 #include "TPCReco/ConfigManager.h"
+#include "TRandom.h"
+#include <cmath>
 
 namespace fs = boost::filesystem;
 
@@ -50,6 +52,12 @@ fwk::VModule::EResultFlag TPCDigitizerSRC::Init(boost::property_tree::ptree conf
         throw std::runtime_error(msg.str());
     }
     enableSimHitsPerTrack = config.get<bool>("transient.enableSimHitsPerTrack"); // enabled when Track3DBuilder MC module is present
+    driftDiffusionT = config.get_optional<std::string>("driftDiffusionT") ? ConfigManager::getScalar<double>(config, "driftDiffusionT") : 0.0;
+    driftDiffusionL = config.get_optional<std::string>("driftDiffusionL") ? ConfigManager::getScalar<double>(config, "driftDiffusionL") : 0.0;
+    driftGEMZ = config.get_optional<std::string>("driftGEMZ") ? ConfigManager::getScalar<double>(config, "driftGEMZ") : geometry->GetDriftCageZmin();
+    if(config.get_optional<std::string>("driftZRef")) throw std::runtime_error("TPCDigitizerSRC: driftZRef is obsolete, the drift distance is taken from the GEM plane (driftGEMZ)");
+    driftSubCharges = config.get_optional<std::string>("driftSubCharges") ? ConfigManager::getScalar<int>(config, "driftSubCharges") : 10;
+    if(driftDiffusionT<0 || driftDiffusionL<0 || driftSubCharges<1) throw std::runtime_error("TPCDigitizerSRC: invalid drift diffusion settings");
     return fwk::VModule::eSuccess;
 }
 
@@ -65,6 +73,9 @@ fwk::VModule::EResultFlag TPCDigitizerSRC::Process(ModuleExchangeSpace &event) {
     if(enableSimHitsPerTrack) {
       event.trackPEvt.resize(currentSimEvent.GetTracks().size());
     }
+
+    // z shift applied by TriggerSimulator (0 without it): z_true = z - triggerShiftZ
+    const double triggerShiftZ = currentSimEvent.GetTrigShiftedVertexPosition().Z() - currentSimEvent.GetTrueVertexPosition().Z();
 
     // Loop over tracks
     for (auto &t: currentSimEvent.GetTracks()) {
@@ -82,9 +93,20 @@ fwk::VModule::EResultFlag TPCDigitizerSRC::Process(ModuleExchangeSpace &event) {
             auto isIn = geometry->IsInsideActiveVolume(pos);
             h.SetInside(isIn);
             if (isIn) {
-	      calculator->addCharge(pos, edep * MeVToChargeScale, currentPEventTPC);
-	      // used by Track3DBuilder to store true RecHits per individual generator level TrackSegment3D
-	      if(enableSimHitsPerTrack) calculator->addCharge(pos, edep * MeVToChargeScale, trackPEventTPC);
+	      const double drift = std::max(0.0, pos.Z() - triggerShiftZ - driftGEMZ) / 10.0; // [cm] physical drift distance
+	      const double sT = driftDiffusionT * std::sqrt(drift), sL = driftDiffusionL * std::sqrt(drift);
+	      if (sT > 0 || sL > 0) {
+		const double q = edep * MeVToChargeScale / driftSubCharges;
+		for (int i = 0; i < driftSubCharges; i++) {
+		  TVector3 p(gRandom->Gaus(pos.X(), sT), gRandom->Gaus(pos.Y(), sT), gRandom->Gaus(pos.Z(), sL));
+		  calculator->addCharge(p, q, currentPEventTPC);
+		  if(enableSimHitsPerTrack) calculator->addCharge(p, q, trackPEventTPC);
+		}
+	      } else {
+		calculator->addCharge(pos, edep * MeVToChargeScale, currentPEventTPC);
+		// used by Track3DBuilder to store true RecHits per individual generator level TrackSegment3D
+		if(enableSimHitsPerTrack) calculator->addCharge(pos, edep * MeVToChargeScale, trackPEventTPC);
+	      }
 	    }
         }
     }

@@ -342,20 +342,47 @@ Configuration template:
 ```json
 {
   "GeometryConfig": {},
-  "sigmaXY": {},
-  "sigmaZ": {},
+  "sigmaXYmin": {},
+  "sigmaXYmax": {},
+  "sigmaZmin": {},
+  "sigmaZmax": {},
   "NSamplesPerHit": {},
-  "MeVToChargeScale": {}
+  "MeVToChargeScale": {},
+  "driftDiffusionT": {},
+  "driftDiffusionL": {},
+  "driftGEMZ": {},
+  "stripLookupCellMM": {}
 }
 ```
 
 where:
 
 * `"GeometryConfig"` - `string`, path to `geometry_ELITPC.dat` configuration
-* `"sigmaXY"` - `float`, sigma for diffusion in XY_DET plane perpendicular to drift direction in millimiters
-* `"sigmaZ"` - `float`, sigma for diffusion along drift direction Z_DET in millimiters
+* `"sigmaXYmin"`, `"sigmaXYmax"` - `float`, sigma in XY_DET plane perpendicular to drift direction in millimiters, drawn
+  uniformly from [min, max] once per event (min = max for a fixed value)
+* `"sigmaZmin"`, `"sigmaZmax"` - `float`, sigma along drift direction Z_DET in millimiters, drawn as above
 * `"NSamplesPerHit"` - `int`, number of random samples around each `SimHit` location
 * `"MeVToChargeScale"` - `float`, number of ADC counts per MeV
+* `"driftDiffusionT"` - `float`, optional (default 0 = off), transverse diffusion coefficient in mm/sqrt(cm)
+* `"driftDiffusionL"` - `float`, optional (default 0 = off), longitudinal diffusion coefficient in mm/sqrt(cm)
+* `"driftGEMZ"` - `float`, optional, Z_DET of the GEM plane in millimiters before the `TriggerSimulator` shift (default: the
+  lower drift cage acceptance limit of the geometry, `DRIFT CAGE ACCEPTANCE`)
+
+With `driftDiffusionT`/`driftDiffusionL` > 0 the width grows with the physical drift distance
+d = z_true - `driftGEMZ` [cm], where z_true is the hit position before the `TriggerSimulator` shift (recovered per event
+from the true and the trigger-shifted vertex): sigma^2 = sigma0^2 + D^2 d, with sigma0 = `sigmaXY` / `sigmaZ` (the
+non-diffusion part). Diffusion coefficients for the HIgS 2022 working points (pure CO2, Magboltz): 0.199 mm/sqrt(cm)
+(190 mbar, 3332 V), 0.205 (250 mbar, 2744 V), 0.263 (130 mbar, 1764 V); D_L = D_T within 1 %.
+
+* `"stripLookupCellMM"` - `float`, optional (default 0.05), cell size in millimiters of the strip lookup table; 0
+  disables the table (exact `TH2Poly::FindBin` per sample, about 7 times slower)
+
+Each sample is assigned to the strip of the pad containing it and to the nearest time cell (cell i covers
+[i-0.5, i+0.5) in fractional cells, as in the reconstruction). No electronics time response is applied.
+The strip is found in a lookup table made at initialisation: the UVW active area is divided into square cells of
+`stripLookupCellMM` and every strip polygon is rasterized into it (cell centres). Strip boundaries are displaced by at
+most half a cell; with 0.05 mm, 0.45 % of the charge goes to a neighbouring strip compared with the exact lookup
+(190 mbar, sigmaXY = 0.5 mm). The table takes about 55 MB.
 
 ## TPCDigitizerSRC
 
@@ -373,7 +400,11 @@ Configuration template:
   "peakingTime": {},
   "nStrips": {},
   "nCells": {},
-  "nPads": {}
+  "nPads": {},
+  "driftDiffusionT": {},
+  "driftDiffusionL": {},
+  "driftGEMZ": {},
+  "driftSubCharges": {}
 }
 ```
 
@@ -390,6 +421,17 @@ where:
 * `"nStrips"` - `int`, number of neighbouring strips considered during UVW projection
 * `"nCells"` - `int`, number of neighbouring cells considered during UVW projection
 * `"nPads"` - `int`, number of neighbouring pads considered during UVW projection
+* `"driftDiffusionT"` - `float`, optional (default 0 = off), transverse diffusion coefficient in mm/sqrt(cm)
+* `"driftDiffusionL"` - `float`, optional (default 0 = off), longitudinal diffusion coefficient in mm/sqrt(cm)
+* `"driftGEMZ"` - `float`, optional, Z_DET of the GEM plane in millimiters before the `TriggerSimulator` shift (default: the
+  lower drift cage acceptance limit of the geometry, `DRIFT CAGE ACCEPTANCE`)
+
+With `driftDiffusionT`/`driftDiffusionL` > 0 the width grows with the physical drift distance
+d = z_true - `driftGEMZ` [cm], where z_true is the hit position before the `TriggerSimulator` shift (recovered per event
+from the true and the trigger-shifted vertex): sigma^2 = sigma0^2 + D^2 d, with sigma0 = `sigmaXY` / `sigmaZ` (the
+non-diffusion part). Diffusion coefficients for the HIgS 2022 working points (pure CO2, Magboltz): 0.199 mm/sqrt(cm)
+(190 mbar, 3332 V), 0.205 (250 mbar, 2744 V), 0.263 (130 mbar, 1764 V); D_L = D_T within 1 %.
+* `"driftSubCharges"` - `int`, optional (default 10), number of sub-charges per hit for the drift diffusion
 
 ## Track3DBuilder
 
