@@ -25,12 +25,21 @@ header {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 6px 12px;
+  padding: 4px 12px;
   background: var(--panel);
   border-bottom: 1px solid var(--border);
 }
 header h1 { font-size: 16px; margin: 0; }
-.badge { color: var(--alert); font-weight: 600; }
+
+.status-bar { display: flex; align-items: center; gap: 6px; min-width: 0; flex: 0 1 auto; }
+.status-bar .item {
+  display: flex; flex-direction: column; justify-content: center;
+  border: 1px solid var(--border); padding: 1px 6px; line-height: 1.2;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.status-bar .item.file { min-width: 0; max-width: 32vw; }
+.status-bar .caption { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+.status-bar .file-name { overflow: hidden; text-overflow: ellipsis; }
 .connection { color: #2a9d2a; font-size: 12px; }
 .connection.down { color: var(--alert); }
 .message { color: var(--alert); margin-left: auto; }
@@ -72,11 +81,35 @@ aside {
 .group {
   background: var(--panel);
   border: 1px solid var(--border);
-  padding: 8px;
+  padding: 6px 8px;
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
+details.group { display: block; padding: 0; }
+details.group > :not(summary) { margin: 0 8px 6px 8px; }
+details.group > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 5px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  display: flex; align-items: center; justify-content: space-between;
+  user-select: none;
+}
+details.group > summary::-webkit-details-marker { display: none; }
+details.group > summary::after {
+  content: "+";
+  font-size: 14px; line-height: 1;
+  width: 18px; height: 18px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border); border-radius: 3px; background: #e8e8e8;
+}
+details.group[open] > summary::after { content: "\2212"; }
+details.group > summary:hover { background: #f4f4ff; }
 .group h2, .view3d-box h2, dialog h2 {
   font-size: 12px;
   font-weight: 600;
@@ -100,7 +133,7 @@ button.nav { background: var(--nav); }
 button.reco { background: var(--reco); border-color: #c8c800; }
 button.conditions { background: var(--conditions); color: #fff; border-color: #157089; }
 button.exit { margin-top: 4px; }
-.buttons { display: flex; flex-direction: column; gap: 4px; margin-bottom: 4px; }
+.buttons { display: flex; flex-direction: column; gap: 3px; margin-bottom: 2px; }
 .buttons.three { flex-direction: row; }
 .buttons.three button { flex: 1; padding: 5px 2px; }
 
@@ -112,11 +145,7 @@ input[type=number], input[type=text] { font: inherit; padding: 3px 4px; }
 .event-types { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; }
 
 .mode-label { color: var(--alert); font-weight: 600; }
-.file-name { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; overflow-wrap: anywhere; }
-.counters { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin: 4px 0; }
-.counters div { display: flex; flex-direction: column; border: 1px solid var(--border); padding: 3px 5px; }
-.counters .caption { font-size: 11px; color: var(--muted); }
-.counters span:last-child { font-variant-numeric: tabular-nums; }
+.file-name { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
 
 .hint { margin: 2px 0 0 0; font-size: 12px; color: var(--muted); }
 
@@ -154,6 +183,9 @@ body.busy, body.busy * { cursor: progress !important; }
 
 @media (max-width: 900px) {
   main { grid-template-columns: 1fr; }
+  header { flex-wrap: wrap; }
+  .status-bar { flex-wrap: wrap; }
+  .status-bar .item.file { max-width: 100%; }
   .plots { grid-template-columns: 1fr; }
   .panel { height: 380px; }
 }

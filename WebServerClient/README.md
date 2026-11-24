@@ -85,6 +85,9 @@ Differences from tpcGUI:
 * The ONLINE rate graph gets one point per loaded event (tpcGUI added one per redraw);
   "Reset rate" is usable in ONLINE mode.
 * Plots are interactive (zoom, pan, hover values, PNG export from the Plotly toolbar).
+* Layout: mode, file name, event counters and "Open file…" are in the top bar. The side blocks
+  (Go to event, Event type, Segment creation, Run conditions) are collapsed; the +/− button expands
+  them and the browser remembers the choice. Segment creation opens when manual reco is switched on.
 
 ## JSON command API
 

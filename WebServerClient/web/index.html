@@ -11,7 +11,14 @@
 <body>
   <header>
     <h1>TPC Web GUI</h1>
-    <span id="modeBadge" class="badge">…</span>
+    <div class="status-bar" id="modeBox">
+      <span class="item"><span class="caption">Mode</span><span id="modeLabel" class="mode-label">NONE</span></span>
+      <span class="item file"><span class="caption">File</span><span id="fileName" class="file-name">No input.</span></span>
+      <span class="item"><span class="caption">Events</span><span id="nEvents">–</span></span>
+      <span class="item"><span class="caption">Event id.</span><span id="eventId">–</span></span>
+      <span class="item"><span class="caption">Frame</span><span id="entry">–</span></span>
+      <button id="btnOpen" title="Open a ROOT or GRAW file on the server">Open file…</button>
+    </div>
     <span id="connection" class="connection" title="Connection to the tpcWebGUI server">●</span>
     <span id="message" class="message" role="status"></span>
   </header>
@@ -40,7 +47,8 @@
         <label title="Display event rate plot"><input type="checkbox" id="chkRate"> Display rate</label>
       </section>
 
-      <section class="group" id="gotoBox">
+      <details class="group collapsible" id="gotoBox">
+        <summary title="Click to expand / collapse">Go to event</summary>
         <form id="formGotoEvent" class="inline">
           <label for="inpEventId">Go to event id.</label>
           <input id="inpEventId" type="number" min="0" step="1" value="0" title="Jump to given event id.">
@@ -51,38 +59,25 @@
           <input id="inpEntry" type="number" min="0" step="1" value="0" title="Jump to given frame (file entry).">
           <button type="submit">Go</button>
         </form>
-      </section>
+      </details>
 
-      <section class="group" id="eventTypeBox">
-        <h2>Event type</h2>
+      <details class="group collapsible" id="eventTypeBox">
+        <summary title="Click to expand / collapse">Event type</summary>
         <div id="eventTypes" class="event-types"></div>
-      </section>
+      </details>
 
-      <section class="group">
-        <h2>Mode</h2>
-        <div id="modeLabel" class="mode-label">NONE</div>
-        <h2>Processing file</h2>
-        <div id="fileName" class="file-name">No input.</div>
-        <div class="counters">
-          <div><span class="caption">Events in the file</span><span id="nEvents">–</span></div>
-          <div><span class="caption">Event id.</span><span id="eventId">–</span></div>
-          <div><span class="caption">Frame</span><span id="entry">–</span></div>
-        </div>
-        <button id="btnOpen" title="Open a ROOT or GRAW file on the server">Open file…</button>
-      </section>
-
-      <section class="group" id="markersBox">
-        <h2>Segment creation</h2>
+      <details class="group collapsible" id="markersBox">
+        <summary title="Click to expand / collapse">Segment creation</summary>
         <div class="buttons three">
           <button id="btnClearTrack" class="reco" title="Remove tracks from images. If &quot;Fit segments&quot; will NOT be clicked, the track will still be saved to the reco file">Clear track</button>
           <button id="btnAddSegment" class="reco" title="Click to add segments end point. All segments share a common vertex - the starting point of the first segment. Each point is set by coordinates on two projections">Add segment</button>
           <button id="btnFitSegments" class="reco" title="Calculate 3D orientation from the 2D projections">Fit segments</button>
         </div>
         <p id="recoHint" class="hint" hidden>Click a point on one U/V/W projection, then the same point on another projection.</p>
-      </section>
+      </details>
 
-      <section class="group" id="runConditionsBox">
-        <h2>Run conditions manager</h2>
+      <details class="group collapsible" id="runConditionsBox">
+        <summary title="Click to expand / collapse">Run conditions</summary>
         <form id="formRunConditions">
           <div class="run-conditions">
             <label>Drift v<br>[cm/us]<input id="inpDriftVelocity" type="number" step="0.001"></label>
@@ -91,7 +86,7 @@
           </div>
           <button type="submit" class="conditions">Update conditions</button>
         </form>
-      </section>
+      </details>
 
       <section class="logos">
         <img src="/logo/FUW_znak.png" alt="Faculty of Physics, University of Warsaw" onerror="this.remove()">

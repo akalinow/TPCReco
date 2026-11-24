@@ -340,10 +340,14 @@ function setValueUnlessEditing(id, value) {
   if (document.activeElement !== input && value !== undefined) input.value = value;
 }
 
+let wasRecoModeOn = false;
+
 function updateControls(status) {
-  $('modeBadge').textContent = status.mode;
   $('modeLabel').textContent = status.mode;
-  $('fileName').textContent = status.file || 'No input.';
+  // file names only (several GRAW files are comma separated); the full paths are in the tooltip
+  $('fileName').textContent = status.file
+    ? status.file.split(',').map((f) => f.split('/').pop()).join(', ') : 'No input.';
+  $('fileName').title = status.file || '';
   $('nEvents').textContent = status.nEvents;
   $('eventId').textContent = status.eventId;
   $('entry').textContent = status.entry;
@@ -362,6 +366,9 @@ function updateControls(status) {
 
   $('gotoBox').hidden = !enabled.navigate;
   $('eventTypeBox').hidden = !enabled.eventType;
+  // the segment buttons are needed right away when the manual reco mode is switched on
+  if (status.flags.recoMode && !wasRecoModeOn) $('markersBox').open = true;
+  wasRecoModeOn = status.flags.recoMode;
   $('markersBox').hidden = !enabled.markers;
   $('runConditionsBox').hidden = !enabled.runConditions;
 
@@ -540,11 +547,28 @@ function installOpenDialog() {
   };
 }
 
+// ---------------------------------------------------------------- collapsible side blocks
+
+// the open/closed state of each block is remembered by the browser
+function installCollapsibles() {
+  const key = (box) => `tpcwebgui.open.${box.id}`;
+  for (const box of document.querySelectorAll('details.collapsible')) {
+    try {
+      const saved = localStorage.getItem(key(box));
+      if (saved !== null) box.open = saved === '1';
+    } catch (e) { /* storage unavailable: keep the default */ }
+    box.addEventListener('toggle', () => {
+      try { localStorage.setItem(key(box), box.open ? '1' : '0'); } catch (e) { /* ignore */ }
+    });
+  }
+}
+
 // ---------------------------------------------------------------- start
 
 // the access token is kept in a cookie: remove it from the address bar (screenshots, shared links)
 if (new URLSearchParams(location.search).has('token')) history.replaceState(null, '', location.pathname);
 
+installCollapsibles();
 installControls();
 refreshView();
 connectWebSocket();
