@@ -5,8 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>TPC Web GUI</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="/static/style.css">
-  <script src="/static/plotly.min.js"></script>
+  <script>
+    // all URLs are relative, so the GUI also works under a path prefix (e.g. behind a
+    // Kubernetes ingress at https://host/tpcgui/): the page URL must end with '/'
+    if (!location.pathname.endsWith('/')) location.replace(location.pathname + '/' + location.search);
+  </script>
+  <link rel="stylesheet" href="static/style.css">
+  <script src="static/plotly.min.js"></script>
 </head>
 <body>
   <header>
@@ -85,8 +90,8 @@
       </details>
 
       <section class="logos">
-        <img src="/logo/FUW_znak.png" alt="Faculty of Physics, University of Warsaw" onerror="this.remove()">
-        <img src="/logo/ELITEPC_znak.png" alt="ELITPC" onerror="this.remove()">
+        <img src="logo/FUW_znak.png" alt="Faculty of Physics, University of Warsaw" onerror="this.remove()">
+        <img src="logo/ELITEPC_znak.png" alt="ELITPC" onerror="this.remove()">
       </section>
     </aside>
   </main>
@@ -108,6 +113,6 @@
     </form>
   </dialog>
 
-  <script src="/static/app.js"></script>
+  <script src="static/app.js"></script>
 </body>
 </html>

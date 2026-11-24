@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
 
   WebGUIController controller(config);
   WebGUIServer server(controller, documentRoot, config.get<std::string>("input.resourcesPath", ""),
-                      accessToken);
+                      accessToken, config.get<std::string>("web.urlPrefix", ""));
 
   DirectoryWatch directoryWatch;
   if(controller.isOnline()){

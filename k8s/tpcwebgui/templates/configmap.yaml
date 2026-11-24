@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "tpcwebgui.fullname" . }}-config
+  labels:
+    {{- include "tpcwebgui.labels" . | nindent 4 }}
+data:
+  tpcwebgui.json: |
+    {{- toPrettyJson .Values.config | nindent 4 }}
+  allowedOptions.json: |
+    {{- .Values.allowedOptions | nindent 4 }}

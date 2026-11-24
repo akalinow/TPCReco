@@ -40,7 +40,7 @@ async function runCommand(cmd, args) {
   setBusy(+1);
   state.lastCommandAt = Date.now();
   try {
-    const response = await fetch('/api/command', {
+    const response = await fetch('api/command', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ cmd, ...args }),
@@ -61,7 +61,7 @@ async function runCommand(cmd, args) {
 
 async function refreshView() {
   try {
-    render(await getJSON('/api/view'));
+    render(await getJSON('api/view'));
   } catch (error) {
     showMessage(error.message);
   }
@@ -69,7 +69,8 @@ async function refreshView() {
 
 function connectWebSocket() {
   const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const socket = new WebSocket(`${protocol}//${location.host}/ws`);
+  // relative to the page, so it works under a path prefix too
+  const socket = new WebSocket(`${protocol}//${location.host}${location.pathname.replace(/[^/]*$/, '')}ws`);
   socket.onopen = () => $('connection').classList.remove('down');
   socket.onmessage = (event) => {
     // updates caused by this browser's own commands arrive with the command reply
@@ -513,7 +514,7 @@ function installOpenDialog() {
   const showDirectory = async (dir) => {
     let listing;
     try {
-      listing = await getJSON(`/api/ls?dir=${encodeURIComponent(dir)}`);
+      listing = await getJSON(`api/ls?dir=${encodeURIComponent(dir)}`);
     } catch (error) {
       showMessage(error.message);
       return;

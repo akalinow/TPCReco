@@ -501,5 +501,11 @@
         "type": "string",
         "defaultValue": "",
         "description": "Directory with the tpcWebGUI web client files (index.html, app.js, ...). Empty: the web directory installed next to the tpcWebGUI executable.\nType: string"
+    },
+    "urlPrefix":{
+        "group": "web",
+        "type": "string",
+        "defaultValue": "",
+        "description": "URL path prefix under which tpcWebGUI serves the GUI, e.g. /tpcgui when a reverse proxy (Kubernetes ingress) forwards https://host/tpcgui/ unchanged. Empty: the GUI is at /.\nType: string"
     }
 }

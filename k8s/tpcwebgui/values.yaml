@@ -1,0 +1,122 @@
+# Default values of the tpcwebgui chart. Site settings go to a separate values file
+# (e.g. ../values-hep.yaml), passed with -f.
+
+# Runtime environment: the ELITPC image (ROOT, GET, TensorFlow, ...), used unchanged.
+# It is not in a public registry: deploy.sh loads it into minikube once.
+image:
+  repository: elitpc/tpcreco-with_tf
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# TPCReco installation (CMAKE_INSTALL_PREFIX with bin/, lib/, web/, resources/), compiled with
+# the image above, mounted read-only into the pod. One source:
+#   hostPath:      directory of the node (minikube: mounted from the host, see README.md)
+#   existingClaim: PersistentVolumeClaim with the installation
+tpcreco:
+  hostPath: ""
+  existingClaim: ""
+  subPath: ""                 # installation in a subdirectory of the volume
+  mountPath: /opt/TPCReco     # path in the pod
+
+# Content of Utilities/config/allowedOptions.json of the same TPCReco version (list of the
+# configuration options). deploy.sh sets it with --set-file allowedOptions=...
+allowedOptions: ""
+
+nameOverride: ""
+fullnameOverride: ""
+
+# URL path of the GUI: https://<host><urlPrefix>/ . The application serves this prefix itself
+# (option web.urlPrefix), so the ingress forwards it unchanged: no rewrite, and the routing of
+# other applications on the same host (e.g. WordPress on /) is not affected. "" = whole host.
+urlPrefix: /tpcgui
+
+# Access token required by tpcWebGUI (open https://<host><urlPrefix>/?token=<token> once;
+# the browser keeps it in a cookie). By default a random token is generated on the first
+# install and kept in the Secret <release>-tpcwebgui-token across upgrades.
+accessToken:
+  existingSecret: ""   # use this Secret instead (key: secretKey)
+  secretKey: token
+  value: ""            # fixed token (not recommended: it ends up in the values file)
+
+# tpcWebGUI configuration: written to a JSON file (same format as the TPCReco config files,
+# option names from Utilities/config/allowedOptions.json). Paths are inside the container:
+# data volumes are mounted under dataVolumes[].mountPath.
+config:
+  input:
+    # GRAW/ROOT file(s) opened at start-up, comma separated (one GRAW file per AsAd);
+    # other files can be opened from the GUI
+    dataFile: ""
+    geometryFile: geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat
+    readNEvents: -1
+  conditions:
+    samplingRate: 25.0
+    pressure: 190
+  pedestal:
+    remove: true
+    minPedestalCell: 10
+    maxPedestalCell: 50
+    minSignalCell: 2
+    maxSignalCell: 500
+  display:
+    develMode: true
+
+# extra command line options, e.g. ["--conditions.driftV", "0.405"]
+extraArgs: []
+
+# Read-only data (GRAW / ROOT files). Each entry: name, mountPath, readOnly and one volume
+# source (hostPath, persistentVolumeClaim, nfs, ...), e.g.
+#   - name: higs2022
+#     mountPath: /data/HIgS_2022
+#     readOnly: true
+#     hostPath: { path: /data/HIgS_2022, type: Directory }
+dataVolumes: []
+
+# Working directory /work: output ROOT file (TPCReco_<input>.root) and the event type logs
+# (<input>.log) written by the GUI. Without persistence they are lost when the pod restarts.
+persistence:
+  enabled: true
+  existingClaim: ""
+  storageClass: ""     # "" = default storage class of the cluster
+  accessMode: ReadWriteOnce
+  size: 5Gi
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  className: nginx
+  hosts: []            # host names browsers use, e.g. [hep.fuw.edu.pl]
+  tls: []              # e.g. [{ secretName: wordpress-tls, hosts: [hep.fuw.edu.pl] }]
+  annotations: {}      # extra annotations
+  # optional HTTP basic auth in front of the GUI (in addition to the access token):
+  # htpasswd file in the Secret <secretName>, key "auth" (see README.md)
+  basicAuth:
+    enabled: false
+    secretName: tpcwebgui-basic-auth
+    realm: "TPC Web GUI - authentication required"
+
+# one GUI state per server: a single replica, replaced (not rolled) on update
+resources:
+  requests:
+    cpu: 500m
+    memory: 1Gi
+  limits:
+    memory: 4Gi
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+  seccompProfile: { type: RuntimeDefault }
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities: { drop: ["ALL"] }
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

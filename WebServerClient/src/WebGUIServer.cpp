@@ -1,3 +1,5 @@
+#include <cctype>
+#include <stdexcept>
 #include <chrono>
 #include <filesystem>
 #include <iostream>
@@ -16,12 +18,15 @@ namespace fs = std::filesystem;
 struct WebGUIServer::Impl {
 
   Impl(WebGUIController & aController, const std::string & documentRoot,
-       const std::string & resourcesPath, const std::string & accessToken):
-    controller(aController), docRoot(documentRoot), resources(resourcesPath), token(accessToken) {}
+       const std::string & resourcesPath, const std::string & accessToken,
+       const std::string & urlPrefix):
+    controller(aController), docRoot(documentRoot), resources(resourcesPath), token(accessToken),
+    prefix(normalisePrefix(urlPrefix)) {}
 
   WebGUIController & controller;
   fs::path docRoot, resources;
   std::string token;
+  std::string prefix; ///< URL path prefix: "" or e.g. "/tpcgui" (no trailing slash)
   crow::SimpleApp app;
 
   std::mutex controllerMutex;
@@ -30,6 +35,10 @@ struct WebGUIServer::Impl {
 
   void setupRoutes();
   bool hasTokenParameter(const crow::request & req) const;
+  /// cookie path: the URL prefix (web.urlPrefix, or X-Forwarded-Prefix set by a reverse proxy), else /
+  std::string cookiePath(const crow::request & req) const;
+  /// "" or "/a/b": leading slash, no trailing slash; throws for characters not allowed in a path
+  static std::string normalisePrefix(std::string aPrefix);
   bool isAuthorized(const crow::request & req) const;
   void notifyClients();
   crow::response serveFile(const fs::path & dir, const std::string & name) const;
@@ -37,8 +46,9 @@ struct WebGUIServer::Impl {
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 WebGUIServer::WebGUIServer(WebGUIController & aController, const std::string & documentRoot,
-                           const std::string & resourcesPath, const std::string & accessToken):
-  myImpl(std::make_unique<Impl>(aController, documentRoot, resourcesPath, accessToken)) {
+                           const std::string & resourcesPath, const std::string & accessToken,
+                           const std::string & urlPrefix):
+  myImpl(std::make_unique<Impl>(aController, documentRoot, resourcesPath, accessToken, urlPrefix)) {
 
   myImpl->setupRoutes();
 }
@@ -59,7 +69,7 @@ void WebGUIServer::run(const std::string & address, int port){
     char hostName[256] = {0};
     host = gethostname(hostName, sizeof(hostName)-1)==0 && hostName[0] ? hostName : "localhost";
   }
-  std::string url = "http://"+host+":"+std::to_string(port)+"/";
+  std::string url = "http://"+host+":"+std::to_string(port)+myImpl->prefix+"/";
   if(myImpl->token.size()) url += "?token="+myImpl->token;
   std::cout<<"tpcWebGUI: open "<<url<<" in a web browser."<<std::endl;
   if(myImpl->token.size()){
@@ -83,6 +93,32 @@ void WebGUIServer::Impl::notifyClients(){
 
   std::lock_guard<std::mutex> lock(connectionsMutex);
   for(auto aConnection: connections) aConnection->send_text("update");
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::string WebGUIServer::Impl::normalisePrefix(std::string aPrefix){
+
+  while(aPrefix.size() && aPrefix.back()=='/') aPrefix.pop_back();
+  if(aPrefix.empty()) return aPrefix;
+  if(aPrefix.front()!='/') aPrefix = "/"+aPrefix;
+  for(char c: aPrefix){
+    if(!std::isalnum(static_cast<unsigned char>(c)) && std::string("/-_.").find(c)==std::string::npos){
+      throw std::invalid_argument("web.urlPrefix: character not allowed in "+aPrefix);
+    }
+  }
+  return aPrefix;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::string WebGUIServer::Impl::cookiePath(const crow::request & req) const {
+
+  if(prefix.size()) return prefix+"/";
+  // a reverse proxy removing the prefix, e.g. ingress-nginx with rewrite-target, may send it here
+  try {
+    std::string forwarded = normalisePrefix(req.get_header_value("X-Forwarded-Prefix"));
+    return forwarded+"/";
+  }
+  catch(const std::invalid_argument &){ return "/"; }
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -128,48 +164,53 @@ void WebGUIServer::Impl::setupRoutes(){
     return crow::response(401, "Access token required: open the URL printed by tpcWebGUI at start-up.");
   };
 
-  CROW_ROUTE(app, "/")([this, denied](const crow::request & req){
+  // all routes under the URL prefix (web.urlPrefix), e.g. /tpcgui/api/view
+  const auto route = [this](const std::string & path) -> crow::DynamicRule & {
+    return app.route_dynamic(prefix+path);
+  };
+  // (Crow redirects <prefix> to <prefix>/, needed by the relative URLs of the page)
+  route("/")([this, denied](const crow::request & req){
     if(!isAuthorized(req)) return denied();
     crow::response aResponse = serveFile(docRoot, "index.html");
     if(token.size() && hasTokenParameter(req)){
       // the browser sends the token with all further requests, including the WebSocket
-      aResponse.add_header("Set-Cookie", "tpcwebgui_token="+token+"; Path=/; HttpOnly; SameSite=Strict");
+      aResponse.add_header("Set-Cookie", "tpcwebgui_token="+token+"; Path="+cookiePath(req)+"; HttpOnly; SameSite=Strict");
     }
     aResponse.add_header("Cache-Control", "no-store");
     return aResponse;
   });
 
-  CROW_ROUTE(app, "/static/<string>")([this, denied](const crow::request & req, const std::string & name){
+  route("/static/<string>")([this, denied](const crow::request & req, std::string name){
     if(!isAuthorized(req)) return denied();
     return serveFile(docRoot, name);
   });
 
-  CROW_ROUTE(app, "/logo/<string>")([this, denied](const crow::request & req, const std::string & name){
+  route("/logo/<string>")([this, denied](const crow::request & req, std::string name){
     if(!isAuthorized(req)) return denied();
     if(name!="FUW_znak.png" && name!="ELITEPC_znak.png") return crow::response(404);
     return serveFile(resources, name);
   });
 
-  CROW_ROUTE(app, "/api/status")([this, denied](const crow::request & req){
+  route("/api/status")([this, denied](const crow::request & req){
     if(!isAuthorized(req)) return denied();
     std::lock_guard<std::mutex> lock(controllerMutex);
     return crow::response(controller.getStatus());
   });
 
-  CROW_ROUTE(app, "/api/view")([this, denied](const crow::request & req){
+  route("/api/view")([this, denied](const crow::request & req){
     if(!isAuthorized(req)) return denied();
     std::lock_guard<std::mutex> lock(controllerMutex);
     return crow::response(controller.getView());
   });
 
-  CROW_ROUTE(app, "/api/ls")([this, denied](const crow::request & req){
+  route("/api/ls")([this, denied](const crow::request & req){
     if(!isAuthorized(req)) return denied();
     const char *dir = req.url_params.get("dir");
     std::lock_guard<std::mutex> lock(controllerMutex);
     return crow::response(controller.listDirectory(dir ? dir : ""));
   });
 
-  CROW_ROUTE(app, "/api/command").methods(crow::HTTPMethod::Post)([this, denied](const crow::request & req){
+  route("/api/command").methods(crow::HTTPMethod::Post)([this, denied](const crow::request & req){
     if(!isAuthorized(req)) return denied();
     crow::json::wvalue reply;
     auto command = crow::json::load(req.body);
@@ -195,7 +236,7 @@ void WebGUIServer::Impl::setupRoutes(){
     return crow::response(reply);
   });
 
-  CROW_WEBSOCKET_ROUTE(app, "/ws")
+  app.route_dynamic(prefix+"/ws").websocket<crow::SimpleApp>(&app)
     .onaccept([this](const crow::request & req, void **){ return isAuthorized(req); })
     .onopen([this](crow::websocket::connection & conn){
       std::lock_guard<std::mutex> lock(connectionsMutex);

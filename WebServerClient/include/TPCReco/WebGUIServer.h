@@ -29,8 +29,10 @@ class WebGUIServer {
 public:
 
   /// accessToken: empty for no access control
+  /// urlPrefix: URL path under which the GUI is served, e.g. "/tpcgui" (empty: "/")
   WebGUIServer(WebGUIController & aController, const std::string & documentRoot,
-               const std::string & resourcesPath, const std::string & accessToken="");
+               const std::string & resourcesPath, const std::string & accessToken="",
+               const std::string & urlPrefix="");
 
   ~WebGUIServer();
 
