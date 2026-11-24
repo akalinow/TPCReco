@@ -235,6 +235,7 @@ int analyzeTrackDiffusion(const boost::property_tree::ptree aConfig){
   auto trackFractionEnd = aConfig.get<float>("trackDiffusion.trackFractionEnd");
   auto trackDistanceMM = aConfig.get<float>("trackDiffusion.trackDistanceMM");
   auto hitThreshold = aConfig.get<float>("trackDiffusion.hitThreshold", 0.0);
+  auto dumpHits = aConfig.get<bool>("trackDiffusion.dumpHits", false);
 #ifdef WITH_GET
   auto singleAsadGrawFile = aConfig.get<bool>("singleAsadGrawFile"); // true = multi-GRAW mode
   auto frameLoadRange = aConfig.get<unsigned int>("frameLoadRange"); // used in single-GRAW mode only
@@ -439,6 +440,7 @@ int analyzeTrackDiffusion(const boost::property_tree::ptree aConfig){
   myConfig.trackFractionEnd = trackFractionEnd;
   myConfig.trackDistanceMM = trackDistanceMM;
   myConfig.hitThreshold = hitThreshold;
+  myConfig.dumpHits = dumpHits;
   TrackDiffusion_tree_analysis myAnalysis(myEventSource->getGeometry(), myConfig, outputFileName);
 
   // optional event display dump

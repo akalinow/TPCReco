@@ -54,6 +54,27 @@ void TrackDiffusion_tree_analysis::initialize(){
   myOutputTreePtr->Branch("data", &event_rawdiffusion);
   myOutputTreePtr->SetDirectory(myOutputFilePtr.get());
 
+  if(myConfig.dumpHits) {
+    myHitTreePtr = std::make_shared<TTree>("Hits", "hits near the leading segment, see TrackDiffusion_tree_analysis.h");
+    auto &d = myHitDump;
+    myHitTreePtr->Branch("runId", &d.runId);
+    myHitTreePtr->Branch("eventId", &d.eventId);
+    myHitTreePtr->Branch("ntracks", &d.ntracks);
+    myHitTreePtr->Branch("length", &d.length);
+    myHitTreePtr->Branch("cosThetaDET", &d.cosThetaDET);
+    myHitTreePtr->Branch("phiDET", &d.phiDET);
+    myHitTreePtr->Branch("vtx", d.vtx, "vtx[3]/F");
+    myHitTreePtr->Branch("end", d.end, "end[3]/F");
+    myHitTreePtr->Branch("carbonEnd", d.carbonEnd, "carbonEnd[3]/F");
+    myHitTreePtr->Branch("dz2D", d.dz2D, "dz2D[3]/F");
+    myHitTreePtr->Branch("ds2D", d.ds2D, "ds2D[3]/F");
+    myHitTreePtr->Branch("dir", &d.dir);
+    myHitTreePtr->Branch("lambda", &d.lambda);
+    myHitTreePtr->Branch("across", &d.across);
+    myHitTreePtr->Branch("q", &d.q);
+    myHitTreePtr->SetDirectory(myOutputFilePtr.get());
+  }
+
   // transverse hit profiles, see the header
   const std::vector<std::string> dirNames = {"U", "V", "W", "All"};
   const int nBinsX = 100, nBinsY = 10;
@@ -163,6 +184,13 @@ void TrackDiffusion_tree_analysis::fillTree(const std::shared_ptr<EventTPC> aEve
   event_rawdiffusion.length = aSeg.getLength();
   event_rawdiffusion.phiDET = aSeg.getTangent().Phi(); // [rad]
   event_rawdiffusion.cosThetaDET = aSeg.getTangent().CosTheta(); // [-1, 1]
+
+  if(myHitTreePtr) {
+    fillHitDump(histosInMM, aColl);
+    myHitDump.runId = event_rawdiffusion.runId;
+    myHitDump.eventId = event_rawdiffusion.eventId;
+    myHitTreePtr->Fill();
+  }
 
   // UPDATE MEAN AND RMS
   updateMeanRms();
@@ -414,3 +442,44 @@ void TrackDiffusion_tree_analysis::updateMeanRms() {
 }
 ///////////////////////////////
 ///////////////////////////////
+///////////////////////////////
+///////////////////////////////
+void TrackDiffusion_tree_analysis::fillHitDump(const std::vector<std::shared_ptr<TH2D> > &aHistos,
+					       TrackSegment3DCollection &aColl) {
+  auto &d = myHitDump;
+  d = HitDump();
+  if(aColl.empty()) return;
+  const auto aSeg = aColl.front();
+  const auto vtx = aSeg.getStart(), endpoint = aSeg.getEnd();
+  d.ntracks = aColl.size();
+  d.length = aSeg.getLength();
+  d.cosThetaDET = aSeg.getTangent().CosTheta();
+  d.phiDET = aSeg.getTangent().Phi();
+  for(int i=0; i<3; i++) { d.vtx[i] = vtx[i]; d.end[i] = endpoint[i]; }
+  if(aColl.size()>1) { const auto c = aColl[1].getEnd(); for(int i=0; i<3; i++) d.carbonEnd[i] = c[i]; }
+  const auto geo = aSeg.getGeometry();
+  for(int dir=0; dir<3; dir++) {
+    const auto &aHist = aHistos[dir];
+    if(!aHist) continue;
+    bool err = false;
+    const double s0 = geo->Cartesian2posUVW(vtx.X(), vtx.Y(), dir, err);
+    const double s1 = geo->Cartesian2posUVW(endpoint.X(), endpoint.Y(), dir, err);
+    if(err) continue;
+    const TVector2 offset(vtx.Z(), s0), tangent(endpoint.Z()-vtx.Z(), s1-s0);
+    d.dz2D[dir] = tangent.X(); d.ds2D[dir] = tangent.Y();
+    const double len2 = tangent.Mod2();
+    if(len2<=0) continue;
+    for(auto iBinX=1; iBinX <= aHist->GetNbinsX(); iBinX++) {
+      for(auto iBinY=1; iBinY <= aHist->GetNbinsY(); iBinY++) {
+	const double charge = aHist->GetBinContent(iBinX, iBinY);
+	if(charge<=myConfig.hitThreshold) continue;
+	const TVector2 rel = TVector2(aHist->GetXaxis()->GetBinCenter(iBinX), aHist->GetYaxis()->GetBinCenter(iBinY)) - offset;
+	const double lambda = (rel*tangent)/len2;
+	if(lambda<-0.1 || lambda>1.1) continue;
+	const double across = Utils::signedDistancePointLine(offset, tangent, rel + offset);
+	if(std::abs(across)>myConfig.trackDistanceMM) continue;
+	d.dir.push_back(dir); d.lambda.push_back(lambda); d.across.push_back(across); d.q.push_back(charge);
+      }
+    }
+  }
+}

@@ -29,6 +29,7 @@ class TrackDiffusion_tree_analysis{
     float trackFractionEnd{0.1}; // [0-1] fraction of track length to be skipped near track end
     float trackDistanceMM{10.0}; // [mm] defines band around track axis for hit projection
     float hitThreshold{0.0}; // [ADC] only hits with charge above this value enter MEAN and RMS (excludes negative noise)
+    bool dumpHits{false}; // write the "Hits" tree: every hit near the leading segment, with its position along and across it
   };
 
   // helper class with 1D transversal hit position wrt track line
@@ -61,6 +62,20 @@ class TrackDiffusion_tree_analysis{
   // charge; per strip direction (U, V, W) and all directions, for all events and for 2-prong events.
   // Key: "<all|2prong>_<U|V|W|All>".
   std::map<std::string, TH2D*> myProfiles;
+
+  // "Hits" tree (config dumpHits): for each strip direction, the hits of the clustered strip-time projection within
+  // trackDistanceMM of the projected leading segment and with lambda in [-0.1, 1.1], independent of the ROI cuts.
+  // lambda: position along the projected segment, 0 = vertex, 1 = end (3D distance from the vertex = lambda*length);
+  // across: signed distance [mm] from the projected axis. dz2D/ds2D: projected segment (drift, strip) per direction.
+  struct HitDump {
+    int runId{-1}; long eventId{-1}; int ntracks{0};
+    float length{0}, cosThetaDET{0}, phiDET{0};
+    float vtx[3]{0,0,0}, end[3]{0,0,0}, carbonEnd[3]{0,0,0};
+    float dz2D[3]{0,0,0}, ds2D[3]{0,0,0};
+    std::vector<int> dir; std::vector<float> lambda, across, q;
+  } myHitDump;
+  std::shared_ptr<TTree> myHitTreePtr;
+  void fillHitDump(const std::vector<std::shared_ptr<TH2D> > &aHistos, TrackSegment3DCollection &aColl);
   
   void initialize();
   void finalize();
