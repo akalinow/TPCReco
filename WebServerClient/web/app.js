@@ -98,7 +98,39 @@ function render(view) {
   state.view = view;
   updateControls(view.status);
   renderPanels(view.panels || [], view.status);
-  render3D(view.view3d);
+  renderRecoText(view.recoText);
+}
+
+// ---------------------------------------------------------------- reconstruction printout
+
+// terminal (ANSI) colours on a dark background
+const ANSI_COLORS = {
+  30: '#7f7f7f', 31: '#ff6b6b', 32: '#6ee36e', 33: '#ffd75f',
+  34: '#6cb6ff', 35: '#e58cff', 36: '#5fe0e0', 37: '#e6e6e6',
+};
+
+/** text with ANSI colour codes -> HTML (escaped) with coloured spans */
+function ansiToHtml(text) {
+  const escape = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  let html = '';
+  let open = false;
+  for (const part of text.split(/(\x1b\[[0-9;]*m)/)) {
+    const code = part.match(/^\x1b\[([0-9;]*)m$/);
+    if (!code) { html += escape(part); continue; }
+    if (open) { html += '</span>'; open = false; }
+    const color = code[1].split(';').map(Number).map((n) => ANSI_COLORS[n]).find(Boolean);
+    if (color) { html += `<span style="color:${color}">`; open = true; }
+  }
+  return open ? `${html}</span>` : html;
+}
+
+function renderRecoText(text) {
+  const box = $('recoInfoBox');
+  box.hidden = !text;
+  if (!text) return;
+  const pre = $('recoInfo');
+  const html = ansiToHtml(text);
+  if (pre.innerHTML !== html) pre.innerHTML = html;
 }
 
 /** ROOT TLatex subset used in titles -> HTML understood by Plotly */
@@ -188,10 +220,7 @@ function renderPanel(div, panel, index, status) {
   (panel.lines || []).forEach((item) => traces.push(lineTrace(item, false)));
   (panel.markers || []).forEach((item) => traces.push(markerTrace(item)));
 
-  const shapes = (panel.vlines || []).map((v) => ({
-    type: 'line', xref: 'x', yref: 'paper', x0: v.x, x1: v.x, y0: 0, y1: 1,
-    line: { color: v.color, width: v.width || 1 },
-  }));
+  const shapes = vlineShapes(panel);
   // extra information (e.g. track length, energy) in the top left corner of the frame
   const info = (panel.texts || []).map((t) => latex(t.text)).join('<br>');
   const annotations = info ? [{
@@ -211,7 +240,7 @@ function renderPanel(div, panel, index, status) {
   const layout = {
     // title just above the frame, below the Plotly toolbar
     title: { text: title, font: { size: 12 }, yref: 'paper', y: 1, yanchor: 'bottom', pad: { b: 6 } },
-    margin: { l: 62, r: 16, t: title ? 50 : 32, b: 46 },
+    margin: { l: 62, r: 16, t: title ? 50 : (isStripProjection ? 12 : 32), b: 46 },
     xaxis: axis(panel.xTitle, panel.xRange),
     yaxis: { ...axis(panel.yTitle, panel.yRange), ...(panel.equalAspect ? { scaleanchor: 'x', scaleratio: 1 } : {}) },
     plot_bgcolor: panel.frameColor || '#ffffff',
@@ -226,6 +255,8 @@ function renderPanel(div, panel, index, status) {
   div.classList.toggle('accepting', accepting);
   Plotly.react(div, traces, layout, {
     responsive: true, displaylogo: false,
+    // no Plotly toolbar on the U/V/W projections (drag still zooms, double click resets)
+    displayModeBar: !isStripProjection,
     // a double click would set two points
     doubleClick: accepting ? false : 'reset+autosize',
     modeBarButtonsToRemove: ['lasso2d', 'select2d'],
@@ -272,6 +303,14 @@ document.addEventListener('mouseup', (event) => {
   }
 });
 
+/** fixed vertical lines of a panel (e.g. the clicked times on the charge vs time panel) */
+function vlineShapes(panel) {
+  return (panel.vlines || []).map((v) => ({
+    type: 'line', xref: 'x', yref: 'paper', x0: v.x, x1: v.x, y0: 0, y1: 1,
+    line: { color: v.color, width: v.width || 1 },
+  }));
+}
+
 /** vertical line on the charge vs time panel following the mouse (as in tpcGUI) */
 function moveCursorLine(div, event) {
   const panel = panelOf(div);
@@ -283,79 +322,15 @@ function moveCursorLine(div, event) {
   state.cursorFrame = requestAnimationFrame(() => {
     const timeDiv = $('plots').children[timePanelIndex];
     const timePanel = state.panels[timePanelIndex];
-    const fixed = (timePanel.vlines || []).length;
+    // the whole list is replaced: the fixed lines and one cursor line
+    // (setting 'shapes[i]' to an object would add a new shape on every mouse move)
     Plotly.relayout(timeDiv, {
-      [`shapes[${fixed}]`]: {
+      shapes: [...vlineShapes(timePanel), {
         type: 'line', xref: 'x', yref: 'paper', x0: point.x, x1: point.x, y0: 0, y1: 1,
         line: { color: timePanel.cursorLineColor, width: 2 },
-      },
+      }],
     });
   });
-}
-
-// ---------------------------------------------------------------- 3D view
-
-// zoom of the default top view: scale of the scene box (1: the longest detector side spans the
-// unit length used by plotly's 'data' aspect mode)
-const VIEW3D_ZOOM = 2.2;
-
-/** aspect ratio of the drift cage, scaled by zoom (orthographic: this sets the zoom) */
-function view3dAspect(cage, zoom) {
-  const extent = (values) => {
-    const v = values.filter((x) => x !== null && Number.isFinite(x));
-    return v.length ? Math.max(...v) - Math.min(...v) : 1;
-  };
-  const d = { x: extent(cage.x), y: extent(cage.y), z: extent(cage.z) };
-  const longest = Math.max(d.x, d.y, d.z) || 1;
-  return { x: zoom * d.x / longest, y: zoom * d.y / longest, z: zoom * d.z / longest };
-}
-
-
-function render3D(view3d) {
-  const box = $('view3dBox');
-  if (!view3d) {
-    if (!box.hidden) Plotly.purge($('view3d'));
-    box.hidden = true;
-    return;
-  }
-  box.hidden = false;
-  // fill the rest of the last row of the 3-column grid, ending at the right edge
-  const free = (3 - (state.panels.length % 3)) % 3;
-  box.style.gridColumn = `span ${free || 3} / -1`;
-  const traces = [
-    {
-      type: 'scatter3d', mode: 'lines', name: 'drift cage', hoverinfo: 'skip', connectgaps: false,
-      x: view3d.cage.x, y: view3d.cage.y, z: view3d.cage.z, line: { color: '#000000', width: 4 },
-    },
-    {
-      type: 'scatter3d', mode: 'lines', name: 'beam', hoverinfo: 'skip',
-      x: view3d.beam.x, y: view3d.beam.y, z: view3d.beam.z, line: { color: '#008800', width: 3, dash: 'dot' },
-    },
-  ];
-  view3d.segments.forEach((segment, i) => traces.push({
-    type: 'scatter3d', mode: 'lines+markers', name: `segment ${i + 1}`,
-    x: segment.x, y: segment.y, z: segment.z,
-    line: { color: segment.color, width: 8 }, marker: { color: segment.color, size: 3 },
-    hovertemplate: 'x: %{x:.1f}<br>y: %{y:.1f}<br>z: %{z:.1f}<extra></extra>',
-  }));
-  Plotly.react($('view3d'), traces, {
-    margin: { l: 0, r: 0, t: 0, b: 0 },
-    showlegend: false,
-    uirevision: '3d', // keep the camera between events
-    scene: {
-      // default: top view (looking down the z axis, y up), orthographic, zoomed so that the detector
-      // fills the box; camera and zoom are kept between events (uirevision)
-      aspectmode: 'manual',
-      aspectratio: view3dAspect(view3d.cage, VIEW3D_ZOOM),
-      camera: {
-        eye: { x: 0, y: 0, z: 2 }, up: { x: 0, y: 1, z: 0 }, center: { x: 0, y: 0, z: 0 },
-        projection: { type: 'orthographic' },
-      },
-      xaxis: { title: { text: 'x [mm]' } },
-      yaxis: { title: { text: 'y [mm]' } },
-      zaxis: { title: { text: 'z [mm]' } },
-    },
-  }, { responsive: true, displaylogo: false });
 }
 
 // ---------------------------------------------------------------- controls

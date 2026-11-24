@@ -61,6 +61,8 @@ private:
   bool isOfflineGraw() const;
   bool canNavigate() const { return !isOnline(); }
   bool canGoBack() const { return !isOnline() && !isMC(); }
+  /// devel mode display: readout plane projection and reconstruction printout
+  bool isDevelView() const { return myConfig.get<bool>("display.develMode", false) && !isOnline(); }
   bool canRecoMode() const;
   bool canRate() const { return isOnline(); }
   std::string getModeLabel() const;
@@ -92,7 +94,8 @@ private:
   crow::json::wvalue makeRatePanel() const;
   crow::json::wvalue makeXYPanel(const Track3D & aTrack) const;
   crow::json::wvalue makeChargeProfilePanel(const Track3D & aTrack) const;
-  crow::json::wvalue makeView3D(const Track3D * aTrack) const;
+  /// track reconstruction printout (terminal text with ANSI colour codes)
+  std::string makeRecoText(const Track3D * aTrack) const;
   void addTrackProjection(PanelOverlay & aOverlay, int strip_dir, const Track3D & aTrack) const;
   void addManualRecoOverlay(PanelOverlay & aOverlay, int strip_dir) const;
   std::pair<int,int> autozoomBins(const TH1 & aHisto, int iAxis) const;

@@ -65,8 +65,7 @@ main {
   align-items: start;
 }
 
-/* three narrow columns; the plot panels and the 3D view are items of one grid, the 3D view
-   fills the last row up to the bottom right corner */
+/* three narrow columns; the plot panels and the reconstruction printout are items of one grid */
 #plotArea {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -81,16 +80,26 @@ main {
 }
 .panel.accepting .nsewdrag { cursor: crosshair !important; }
 
-.view3d-box {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  padding: 4px 8px;
+
+/* track reconstruction printout, as on a terminal */
+.reco-info-box {
   height: calc((100vh - 70px) / 2);
   min-height: 300px;
-  display: flex;
-  flex-direction: column;
+  background: #1e1e1e;
+  border: 1px solid #000;
+  overflow: auto;
 }
-.view3d { flex: 1; min-height: 0; }
+.terminal {
+  margin: 0;
+  padding: 8px 10px;
+  color: #e6e6e6;
+  font-family: "DejaVu Sans Mono", ui-monospace, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  line-height: 1.35;
+  white-space: pre-wrap;   /* long lines wrap inside the cell */
+  overflow-wrap: anywhere;
+  tab-size: 2;
+}
 
 aside {
   display: flex;
@@ -129,7 +138,7 @@ details.group > summary::after {
 }
 details.group[open] > summary::after { content: "\2212"; }
 details.group > summary:hover { background: #f4f4ff; }
-.group h2, .view3d-box h2, dialog h2 {
+.group h2, dialog h2 {
   font-size: 12px;
   font-weight: 600;
   margin: 4px 0 0 0;
@@ -198,6 +207,5 @@ body.busy, body.busy * { cursor: progress !important; }
   .status-bar { flex-wrap: wrap; }
   .status-bar .item.file { max-width: 100%; }
   #plotArea { grid-template-columns: minmax(0, 1fr); }
-  .view3d-box { grid-column: auto !important; }
   .panel { height: 380px; }
 }

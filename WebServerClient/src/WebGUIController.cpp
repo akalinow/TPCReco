@@ -97,14 +97,6 @@ namespace {
     return aMarkers;
   }
 
-  wvalue text(const std::string & aText, double x, double y){
-    wvalue aItem;
-    aItem["text"] = aText;
-    aItem["x"] = x; // paper coordinates
-    aItem["y"] = y;
-    return aItem;
-  }
-
   std::string format(const char *fmt, double value){
     char buffer[128];
     snprintf(buffer, sizeof(buffer), fmt, value);
@@ -519,7 +511,6 @@ crow::json::wvalue WebGUIController::getView() const {
   view["status"] = getStatus();
   if(!myEventSource || !myEventSource->numberOfEvents()){
     view["panels"] = std::vector<wvalue>{};
-    view["view3d"] = nullptr;
     return view;
   }
   std::string displayMode = getDisplayMode();
@@ -528,14 +519,13 @@ crow::json::wvalue WebGUIController::getView() const {
   else if(displayMode=="technical") view["panels"] = makeTechnicalPanels();
   else view["panels"] = makeRawPanels();
 
-  // 3D detector view: devel mode only (as in tpcGUI); track of the automatic
-  // reconstruction, or the manually fitted track in RECO mode
-  if(myConfig.get<bool>("display.develMode", false) && !isOnline()){
+  // reconstruction printout: devel mode; track of the automatic reconstruction,
+  // or the manually fitted track in RECO mode
+  if(isDevelView()){
     const Track3D * aTrack = nullptr;
     if(!isRecoModeOn || isManualTrackShown) aTrack = &myEventSource->getTrackBuilder()->getTrack3D(0);
-    view["view3d"] = makeView3D(aTrack);
+    view["recoText"] = makeRecoText(aTrack);
   }
-  else view["view3d"] = nullptr;
   return view;
 }
 /////////////////////////////////////////////////////////
@@ -728,7 +718,8 @@ std::vector<crow::json::wvalue> WebGUIController::makeRecoPanels() const {
     ov.moveTo(aPanel);
     panels.push_back(std::move(aPanel));
   }
-  if(isManualTrackShown) panels.push_back(makeXYPanel(aTrack));
+  // charge along the fitted track (as in the devel mode), or the time projection while clicking
+  if(isManualTrackShown) panels.push_back(makeChargeProfilePanel(aTrack));
   else {
     auto aHisto = aEvent->get1DProjection(projection_type::DIR_TIME, filterType, scale_type::mm);
     wvalue aPanel = makeHist1DPanel(*aHisto);
@@ -747,6 +738,9 @@ std::vector<crow::json::wvalue> WebGUIController::makeRecoPanels() const {
     }
     panels.push_back(std::move(aPanel));
   }
+  // track projection on the readout plane: fitted track, or the detector outline in the devel mode
+  if(isManualTrackShown) panels.push_back(makeXYPanel(aTrack));
+  else if(isDevelView()) panels.push_back(makeXYPanel(Track3D()));
   return panels;
 }
 /////////////////////////////////////////////////////////
@@ -763,10 +757,8 @@ std::vector<crow::json::wvalue> WebGUIController::makeDevelPanels() const {
     ov.moveTo(aPanel);
     panels.push_back(std::move(aPanel));
   }
-  if(aTrack.getSegments().size() && aTrack.getSegments().front().getPID()==pid_type::DOT){
-    panels.push_back(makeXYPanel(aTrack));
-  }
-  else panels.push_back(makeChargeProfilePanel(aTrack));
+  panels.push_back(makeChargeProfilePanel(aTrack));
+  panels.push_back(makeXYPanel(aTrack));
   return panels;
 }
 /////////////////////////////////////////////////////////
@@ -834,8 +826,6 @@ crow::json::wvalue WebGUIController::makeChargeProfilePanel(const Track3D & aTra
   aPanel["yRange"] = range(0.0, 1.2*hChargeProfile.GetMaximum());
 
   if(isUnknownPID){
-    ov.texts.push_back(text(format("Total length [mm]: %3.0f", aTrack.getLength()), 0.0, 1.12));
-    ov.texts.push_back(text("Particle PID: UNKNOWN", 0.0, 1.05));
     ov.moveTo(aPanel);
     return aPanel;
   }
@@ -865,58 +855,34 @@ crow::json::wvalue WebGUIController::makeChargeProfilePanel(const Track3D & aTra
     ov.series.push_back(line(carbon.first, carbon.second, "#9999ff", 2, "dash", "¹²C"));
   }
 
-  double alphaRange = aTrack.getSegments().front().getLength();
-  double carbonRange = aTrack.getSegments().size()==2 ? aTrack.getSegments().back().getLength() : 0.0;
-  double totalEnergy = myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA, alphaRange) +
-                       myRangeCalculator.getIonEnergyMeV(pid_type::CARBON_12, carbonRange);
-  ov.texts.push_back(text(format("Total length [mm]: %3.0f", aTrack.getLength()), 0.0, 1.12));
-  ov.texts.push_back(text(format("Total E [MeV]: %2.1f", totalEnergy), 0.0, 1.05));
   ov.moveTo(aPanel);
   return aPanel;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-crow::json::wvalue WebGUIController::makeView3D(const Track3D * aTrack) const {
+std::string WebGUIController::makeRecoText(const Track3D * aTrack) const {
 
-  wvalue aView;
-  auto aGeometry = myEventSource->getGeometry();
-  double xmin, xmax, ymin, ymax, zmin, zmax;
-  std::tie(xmin, xmax, ymin, ymax, zmin, zmax) = aGeometry->rangeXYZ();
-
-  // drift cage: faces of the active volume (null separates polylines)
-  TGraph aHull = aGeometry->GetActiveAreaConvexHull();
-  std::vector<double> x, y, z;
-  for(int iEdge=0;iEdge<aHull.GetN()-1;++iEdge){
-    double x1 = aHull.GetX()[iEdge], y1 = aHull.GetY()[iEdge];
-    double x2 = aHull.GetX()[iEdge+1], y2 = aHull.GetY()[iEdge+1];
-    x.insert(x.end(), {x1, x2, x2, x1, x1, NAN});
-    y.insert(y.end(), {y1, y2, y2, y1, y1, NAN});
-    z.insert(z.end(), {zmin, zmin, zmax, zmax, zmin, NAN});
+  // the same printout as on the terminal (TrackBuilder), with its ANSI colour codes
+  std::ostringstream out;
+  if(!aTrack || aTrack->getSegments().empty() || aTrack->getLength()<1){
+    out<<KRED<<"No reconstructed track."<<RST<<std::endl;
+    return out.str();
   }
-  aView["cage"]["x"] = numList(x);
-  aView["cage"]["y"] = numList(y);
-  aView["cage"]["z"] = numList(z);
-
-  double zBeam = 0.5*(zmin+zmax);
-  aView["beam"]["x"] = numList({xmin-20, xmax+20});
-  aView["beam"]["y"] = numList({0.0, 0.0});
-  aView["beam"]["z"] = numList({zBeam, zBeam});
-
-  std::vector<wvalue> segments;
-  if(aTrack){
-    int iSegment = 0;
-    for(const auto & aSegment: aTrack->getSegments()){
-      wvalue aItem;
-      aItem["x"] = numList({aSegment.getStart().X(), aSegment.getEnd().X()});
-      aItem["y"] = numList({aSegment.getStart().Y(), aSegment.getEnd().Y()});
-      aItem["z"] = numList({aSegment.getStart().Z(), aSegment.getEnd().Z()});
-      aItem["color"] = rootColor(2+iSegment);
-      segments.push_back(std::move(aItem));
-      ++iSegment;
-    }
+  out<<KBLU<<"Total length [mm]: "<<RST<<format("%3.0f", aTrack->getLength())<<std::endl;
+  if(aTrack->getSegments().front().getPID()==pid_type::UNKNOWN){
+    out<<KBLU<<"Particle PID: "<<RST<<"UNKNOWN"<<std::endl;
   }
-  aView["segments"] = std::move(segments);
-  return aView;
+  else{
+    double alphaRange = aTrack->getSegments().front().getLength();
+    double carbonRange = aTrack->getSegments().size()==2 ? aTrack->getSegments().back().getLength() : 0.0;
+    double totalEnergy = myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA, alphaRange) +
+                         myRangeCalculator.getIonEnergyMeV(pid_type::CARBON_12, carbonRange);
+    out<<KBLU<<"Total E [MeV]: "<<RST<<format("%2.1f", totalEnergy)<<std::endl;
+  }
+  out<<std::endl<<KBLU<<"Reconstructed track: "<<RST<<std::endl;
+  out<<myEventSource->getCurrentEvent()->GetEventInfo()<<std::endl;
+  out<<*aTrack<<std::endl;
+  return out.str();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

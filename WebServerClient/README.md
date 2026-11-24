@@ -70,11 +70,12 @@ ManualRecoTool    state machine of the clicked track reconstruction (port of Mar
   several GRAW files can be selected with Ctrl+click).
 * Z log scale, auto zoom, manual reconstruction mode, event rate display (ONLINE).
 * Display modes from the configuration: raw (default), `display.develMode` (rec hits, fitted track,
-  charge profile with the dE/dx model, 3D detector view), `display.technicalMode` (AGET channels).
+  charge profile with the dE/dx model, track projection on the readout plane, reconstruction
+  printout in a terminal style cell), `display.technicalMode` (AGET channels).
 * Manual reconstruction: "Add segment", then click a point on one U/V/W projection and the same point
   on a second projection (the time is taken from the first click, the third coordinate is calculated
-  from the geometry); the first point is the common vertex. "Fit segments" fits and shows the track,
-  "Clear track" hides it. The event is written with the clicked track on "Next event".
+  from the geometry); the first point is the common vertex. "Fit segments" fits and shows the track
+  (projections, charge along the track, projection on the readout plane), "Clear track" hides it. The event is written with the clicked track on "Next event".
   Before leaving an event with a fitted but unsaved clicked track (Previous, go to event/frame,
   open file, switching manual reco off), or with clicked points that were not fitted
   (also on Next and Reset), the GUI asks for confirmation. tpcGUI asks the same questions.
