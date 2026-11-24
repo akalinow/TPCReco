@@ -178,15 +178,6 @@ void WebGUIServer::Impl::setupRoutes(){
       reply["error"] = "Malformed command.";
       return crow::response(400, reply);
     }
-    if(std::string(command["cmd"].s())=="exit"){
-      reply["ok"] = true;
-      // stop after the reply has been sent
-      std::thread([this](){
-        std::this_thread::sleep_for(std::chrono::milliseconds(300));
-        app.stop();
-      }).detach();
-      return crow::response(reply);
-    }
     std::string error;
     {
       std::lock_guard<std::mutex> lock(controllerMutex);

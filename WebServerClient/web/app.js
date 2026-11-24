@@ -17,7 +17,6 @@ const state = {
   lastCommandAt: 0,
   panels: [],          // panel JSON currently shown, per plot div
   cursorFrame: null,
-  stopped: false,
 };
 
 const $ = (id) => document.getElementById(id);
@@ -38,7 +37,6 @@ function sendCommand(cmd, args = {}) {
 }
 
 async function runCommand(cmd, args) {
-  if (state.stopped) return false;
   setBusy(+1);
   state.lastCommandAt = Date.now();
   try {
@@ -81,7 +79,7 @@ function connectWebSocket() {
   };
   socket.onclose = () => {
     $('connection').classList.add('down');
-    if (!state.stopped) setTimeout(connectWebSocket, 2000);
+    setTimeout(connectWebSocket, 2000);
   };
 }
 
@@ -340,7 +338,7 @@ function setValueUnlessEditing(id, value) {
   if (document.activeElement !== input && value !== undefined) input.value = value;
 }
 
-let wasRecoModeOn = false;
+let wasRecoModeOn = null; // unknown before the first status: set the segment block from the mode
 
 function updateControls(status) {
   $('modeLabel').textContent = status.mode;
@@ -349,8 +347,8 @@ function updateControls(status) {
     ? status.file.split(',').map((f) => f.split('/').pop()).join(', ') : 'No input.';
   $('fileName').title = status.file || '';
   $('nEvents').textContent = status.nEvents;
-  $('eventId').textContent = status.eventId;
-  $('entry').textContent = status.entry;
+  setValueUnlessEditing('inpEventId', status.eventId);
+  setValueUnlessEditing('inpEntry', status.entry);
 
   const enabled = status.enabled;
   $('btnNext').disabled = !enabled.navigate;
@@ -364,10 +362,11 @@ function updateControls(status) {
   setChecked('chkRecoMode', status.flags.recoMode, enabled.recoMode || status.flags.recoMode);
   setChecked('chkRate', status.flags.rate, enabled.rate);
 
-  $('gotoBox').hidden = !enabled.navigate;
+  $('inpEventId').disabled = !enabled.navigate;
+  $('inpEntry').disabled = !enabled.navigate;
   $('eventTypeBox').hidden = !enabled.eventType;
-  // the segment buttons are needed right away when the manual reco mode is switched on
-  if (status.flags.recoMode && !wasRecoModeOn) $('markersBox').open = true;
+  // the segment buttons are shown only while the manual reco mode is on
+  if (status.flags.recoMode !== wasRecoModeOn) $('markersBox').open = status.flags.recoMode;
   wasRecoModeOn = status.flags.recoMode;
   $('markersBox').hidden = !enabled.markers;
   $('runConditionsBox').hidden = !enabled.runConditions;
@@ -411,7 +410,7 @@ const PENDING_POINTS = 'Clicked points/segments have not been fitted yet ("Fit s
 
 /**
  * Asks before an action that loses the manual reconstruction of the current event.
- * kind: 'leave' (another event, file, exit, reco mode off), 'next', 'reset'.
+ * kind: 'leave' (another event, file, reco mode off), 'next', 'reset'.
  * Returns true when the action may proceed.
  */
 function confirmClickedTrack(kind) {
@@ -442,7 +441,6 @@ function installControls() {
   };
   $('btnReset').onclick = () => { if (confirmClickedTrack('reset')) sendCommand('reset'); };
   $('btnResetRate').onclick = () => sendCommand('resetRate');
-  $('btnExit').onclick = exitApplication;
 
   const option = (id, name) => { $(id).onchange = (e) => sendCommand('set', { option: name, value: e.target.checked }); };
   option('chkLogScale', 'logScale');
@@ -454,14 +452,25 @@ function installControls() {
   };
   option('chkRate', 'rate');
 
-  $('formGotoEvent').onsubmit = (e) => {
-    e.preventDefault();
-    if (confirmClickedTrack('leave')) sendCommand('gotoEvent', { eventId: Number($('inpEventId').value) });
+  // event id. and frame in the top bar: type a value and press Enter; Escape or leaving the box
+  // without Enter restores the displayed event
+  const gotoBox = (formId, inputId, cmd, key, current) => {
+    const input = $(inputId);
+    const restore = () => { const v = state.view?.status?.[current]; if (v !== undefined) input.value = v; };
+    $(formId).onsubmit = (e) => {
+      e.preventDefault();
+      const value = input.value.trim();
+      input.blur();
+      if (value === '' || Number(value) === state.view?.status?.[current]) { restore(); return; }
+      if (confirmClickedTrack('leave')) sendCommand(cmd, { [key]: Number(value) });
+      else restore();
+    };
+    input.onkeydown = (e) => { if (e.key === 'Escape') { restore(); input.blur(); } };
+    input.onblur = () => setTimeout(() => { if (document.activeElement !== input && state.pending === 0) restore(); }, 0);
+    input.onfocus = () => input.select();
   };
-  $('formGotoEntry').onsubmit = (e) => {
-    e.preventDefault();
-    if (confirmClickedTrack('leave')) sendCommand('gotoEntry', { entry: Number($('inpEntry').value) });
-  };
+  gotoBox('formGotoEvent', 'inpEventId', 'gotoEvent', 'eventId', 'eventId');
+  gotoBox('formGotoEntry', 'inpEntry', 'gotoEntry', 'entry', 'entry');
   $('formRunConditions').onsubmit = (e) => {
     e.preventDefault();
     sendCommand('runConditions', {
@@ -476,16 +485,6 @@ function installControls() {
   $('btnClearTrack').onclick = () => sendCommand('recoClearTrack');
 
   installOpenDialog();
-}
-
-async function exitApplication() {
-  if (!confirmClickedTrack('leave')) return;
-  if (!confirm('Stop the tpcWebGUI server? The output file is closed.')) return;
-  try {
-    await fetch('/api/command', { method: 'POST', body: JSON.stringify({ cmd: 'exit' }) });
-  } catch (error) { /* server already gone */ }
-  state.stopped = true;
-  $('stopped').hidden = false;
 }
 
 // ---------------------------------------------------------------- open file dialog

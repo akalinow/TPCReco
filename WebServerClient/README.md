@@ -7,7 +7,7 @@ It reads the same configuration files and command line options.
 cd build_09_2026/bin
 ./tpcWebGUI --meta.configJson ../config/config_GUI__OFFLINE_190mbar_3332Vdrift_25MHz_NGRAW.json \
             --input.dataFile <comma separated GRAW or ROOT files> --display.develMode true
-# then open http://localhost:8080/ in a browser
+# then open http://localhost:8080/ in a browser; stop the server with Ctrl+C (or kill -TERM)
 ```
 
 The server accepts remote connections. At start-up it prints the URL to open, with an access token:
@@ -63,8 +63,8 @@ ManualRecoTool    state machine of the clicked track reconstruction (port of Mar
 
 ## Functionality (as in tpcGUI)
 
-* Next / Previous / Reset event, go to event id, go to frame, open file (server side file browser,
-  several GRAW files can be selected with Ctrl+click), Exit (closes the output file and stops the server).
+* Next (▶) / Previous (◀) / Reset event, go to event id, go to frame, open file (server side file browser,
+  several GRAW files can be selected with Ctrl+click).
 * Z log scale, auto zoom, manual reconstruction mode, event rate display (ONLINE).
 * Display modes from the configuration: raw (default), `display.develMode` (rec hits, fitted track,
   charge profile with the dE/dx model, 3D detector view), `display.technicalMode` (AGET channels).
@@ -73,7 +73,7 @@ ManualRecoTool    state machine of the clicked track reconstruction (port of Mar
   from the geometry); the first point is the common vertex. "Fit segments" fits and shows the track,
   "Clear track" hides it. The event is written with the clicked track on "Next event".
   Before leaving an event with a fitted but unsaved clicked track (Previous, go to event/frame,
-  open file, Exit, switching manual reco off), or with clicked points that were not fitted
+  open file, switching manual reco off), or with clicked points that were not fitted
   (also on Next and Reset), the GUI asks for confirmation. tpcGUI asks the same questions.
 * Event type bits, written to `<input file>.log` and to the output file (manual reco mode) on Next/Previous.
 * Run conditions: drift velocity, sampling rate, trigger delay.
@@ -82,12 +82,16 @@ ManualRecoTool    state machine of the clicked track reconstruction (port of Mar
 Differences from tpcGUI:
 
 * All connected browsers share one GUI state (one event source on the server).
+* No Exit button: the server is started and stopped from the command line (Ctrl+C or SIGTERM
+  closes the output file).
 * The ONLINE rate graph gets one point per loaded event (tpcGUI added one per redraw);
   "Reset rate" is usable in ONLINE mode.
 * Plots are interactive (zoom, pan, hover values, PNG export from the Plotly toolbar).
-* Layout: mode, file name, event counters and "Open file…" are in the top bar. The side blocks
-  (Go to event, Event type, Segment creation, Run conditions) are collapsed; the +/− button expands
-  them and the browser remembers the choice. Segment creation opens when manual reco is switched on.
+* Layout: mode, file name, number of events, event id. and frame are in the top bar. Click the file
+  name to open another file; type an event id. or a frame there and press Enter to go to it
+  (Escape restores the current one). The side blocks (Event type, Segment creation, Run conditions)
+  are collapsed; the +/− button expands
+  them and the browser remembers the choice. Segment creation is open only while manual reco is on.
 
 ## JSON command API
 
@@ -101,7 +105,7 @@ Differences from tpcGUI:
 {"cmd":"set", "option": "logScale|autoZoom|recoMode|rate", "value": true|false}
 {"cmd":"runConditions", "driftVelocity": v, "samplingRate": r, "triggerDelay": d}
 {"cmd":"recoAddSegment"}   {"cmd":"recoClick", "dir": 0|1|2, "x": t, "y": s}
-{"cmd":"recoFit"}          {"cmd":"recoClearTrack"}          {"cmd":"exit"}
+{"cmd":"recoFit"}          {"cmd":"recoClearTrack"}
 ```
 
 The reply is `{"ok": bool, "error": "...", "view": {...}}`, where `view` is the same document as

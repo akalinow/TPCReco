@@ -34,7 +34,7 @@ public:
 
   ~WebGUIServer();
 
-  /// Runs the server; returns when the client sends the "exit" command or on SIGINT/SIGTERM.
+  /// Runs the server; returns on SIGINT/SIGTERM (Ctrl+C on the command line).
   void run(const std::string & address, int port);
 
   /// Loads new GRAW files in ONLINE mode (called from the DirectoryWatch thread)

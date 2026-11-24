@@ -13,11 +13,18 @@
     <h1>TPC Web GUI</h1>
     <div class="status-bar" id="modeBox">
       <span class="item"><span class="caption">Mode</span><span id="modeLabel" class="mode-label">NONE</span></span>
-      <span class="item file"><span class="caption">File</span><span id="fileName" class="file-name">No input.</span></span>
+      <button type="button" id="btnOpen" class="item file active" title="Click to open a ROOT or GRAW file on the server">
+        <span class="caption">File &#9662;</span><span id="fileName" class="file-name">No input.</span>
+      </button>
       <span class="item"><span class="caption">Events</span><span id="nEvents">–</span></span>
-      <span class="item"><span class="caption">Event id.</span><span id="eventId">–</span></span>
-      <span class="item"><span class="caption">Frame</span><span id="entry">–</span></span>
-      <button id="btnOpen" title="Open a ROOT or GRAW file on the server">Open file…</button>
+      <form id="formGotoEvent" class="item active">
+        <label class="caption" for="inpEventId">Event id.</label>
+        <input id="inpEventId" type="number" min="0" step="1" title="Type an event id. and press Enter to go to that event">
+      </form>
+      <form id="formGotoEntry" class="item active">
+        <label class="caption" for="inpEntry">Frame</label>
+        <input id="inpEntry" type="number" min="0" step="1" title="Type a frame (file entry) and press Enter to go to it">
+      </form>
     </div>
     <span id="connection" class="connection" title="Connection to the tpcWebGUI server">●</span>
     <span id="message" class="message" role="status"></span>
@@ -35,31 +42,21 @@
     <aside id="sidebar">
       <section class="group">
         <div class="buttons">
-          <button id="btnNext" class="nav" title="Load the next event.">Next event</button>
-          <button id="btnPrevious" class="nav" title="Load the previous event.">Previous event</button>
+          <div class="arrows">
+            <button id="btnPrevious" class="nav arrow" title="Previous event" aria-label="Previous event">&#9664;</button>
+            <button id="btnNext" class="nav arrow" title="Next event" aria-label="Next event">&#9654;</button>
+          </div>
           <button id="btnReset" class="nav" title="Reload the current event, and reset all settings.">Reset event</button>
           <button id="btnResetRate" class="nav" title="Clear rate graph" hidden>Reset rate</button>
-          <button id="btnExit" class="nav exit" title="Close the application">Exit</button>
         </div>
-        <label title="Enables the logscale on Z axis"><input type="checkbox" id="chkLogScale"> Set Z logscale</label>
-        <label title="Enables automatic zoom in on region with deposits"><input type="checkbox" id="chkAutoZoom"> Set auto zoom</label>
-        <label title="Enables manual track reconstruction mode"><input type="checkbox" id="chkRecoMode"> Set manual reco</label>
-        <label title="Display event rate plot"><input type="checkbox" id="chkRate"> Display rate</label>
       </section>
 
-      <details class="group collapsible" id="gotoBox">
-        <summary title="Click to expand / collapse">Go to event</summary>
-        <form id="formGotoEvent" class="inline">
-          <label for="inpEventId">Go to event id.</label>
-          <input id="inpEventId" type="number" min="0" step="1" value="0" title="Jump to given event id.">
-          <button type="submit">Go</button>
-        </form>
-        <form id="formGotoEntry" class="inline">
-          <label for="inpEntry">Go to frame.</label>
-          <input id="inpEntry" type="number" min="0" step="1" value="0" title="Jump to given frame (file entry).">
-          <button type="submit">Go</button>
-        </form>
-      </details>
+      <section class="group options">
+        <label title="Enables the logscale on Z axis"><input type="checkbox" id="chkLogScale"> Z logscale</label>
+        <label title="Enables automatic zoom in on region with deposits"><input type="checkbox" id="chkAutoZoom"> Auto zoom</label>
+        <label title="Enables manual track reconstruction mode"><input type="checkbox" id="chkRecoMode"> Manual reco</label>
+        <label title="Display event rate plot"><input type="checkbox" id="chkRate"> Display rate</label>
+      </section>
 
       <details class="group collapsible" id="eventTypeBox">
         <summary title="Click to expand / collapse">Event type</summary>
@@ -111,10 +108,6 @@
       </div>
     </form>
   </dialog>
-
-  <div id="stopped" class="stopped" hidden>
-    <p>The tpcWebGUI server has stopped. You can close this tab.</p>
-  </div>
 
   <script src="/static/app.js"></script>
 </body>

@@ -38,6 +38,19 @@ header h1 { font-size: 16px; margin: 0; }
   font-variant-numeric: tabular-nums; white-space: nowrap;
 }
 .status-bar .item.file { min-width: 0; max-width: 32vw; }
+.status-bar .item.active { cursor: pointer; background: #fff; border-color: #9a9ad0; border-radius: 3px; }
+.status-bar button.item { font: inherit; text-align: left; color: inherit; }
+.status-bar button.item:hover:not(:disabled) { background: #f4f4ff; }
+.status-bar button.item:disabled { cursor: default; border-color: var(--border); }
+.status-bar form.item input {
+  font: inherit; width: 7ch; padding: 0; border: none; background: transparent;
+  font-variant-numeric: tabular-nums; -moz-appearance: textfield;
+}
+.status-bar form.item input::-webkit-inner-spin-button,
+.status-bar form.item input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.status-bar form.item input:focus { outline: none; }
+.status-bar form.item:focus-within { outline: 2px solid #9a9ad0; }
+.status-bar form.item input:disabled { color: var(--muted); }
 .status-bar .caption { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
 .status-bar .file-name { overflow: hidden; text-overflow: ellipsis; }
 .connection { color: #2a9d2a; font-size: 12px; }
@@ -132,16 +145,14 @@ button:disabled { opacity: 0.45; cursor: default; }
 button.nav { background: var(--nav); }
 button.reco { background: var(--reco); border-color: #c8c800; }
 button.conditions { background: var(--conditions); color: #fff; border-color: #157089; }
-button.exit { margin-top: 4px; }
 .buttons { display: flex; flex-direction: column; gap: 3px; margin-bottom: 2px; }
-.buttons.three { flex-direction: row; }
+.buttons.three, .arrows { display: flex; flex-direction: row; gap: 4px; }
+.arrows button { flex: 1; font-size: 18px; line-height: 1; padding: 6px 0; }
 .buttons.three button { flex: 1; padding: 5px 2px; }
 
-form.inline { display: flex; align-items: center; gap: 6px; }
-form.inline label { flex: 1; }
-form.inline input { width: 90px; }
 input[type=number], input[type=text] { font: inherit; padding: 3px 4px; }
 
+.group.options { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; }
 .event-types { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; }
 
 .mode-label { color: var(--alert); font-weight: 600; }
@@ -172,12 +183,6 @@ dialog form { display: flex; flex-direction: column; gap: 6px; }
 .dir-list li.selected { background: #c3c3fa; }
 .dialog-buttons { display: flex; justify-content: flex-end; gap: 6px; }
 
-.stopped {
-  position: fixed; inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex; align-items: center; justify-content: center;
-}
-.stopped p { background: var(--panel); padding: 20px 30px; font-size: 16px; }
 
 body.busy, body.busy * { cursor: progress !important; }
 
