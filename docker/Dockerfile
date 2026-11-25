@@ -76,6 +76,9 @@ RUN echo "Download Tensorflow-$CPU_OR_GPU-$TF_VERSION" && \
 ENV TENSORFLOW_ROOT="/opt/soft/tensorflow-$TF_VERSION"
 
 RUN pip3 install --upgrade 'jupyterhub==4.*' 'notebook==7.*'
+# jupyter-server-proxy: web applications (e.g. tpcWebGUI) started and proxied by the Jupyter server,
+# behind the JupyterHub authentication (launcher entries configured by the deployment)
+RUN pip3 install --no-cache-dir 'jupyter-server-proxy==4.*'
 
 RUN usermod -l jovyan -d /home/jovyan -m ubuntu
 RUN groupmod -n jovyan ubuntu
