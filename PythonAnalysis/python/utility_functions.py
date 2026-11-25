@@ -138,6 +138,17 @@ def fillPandasDataset(aBatch, df, model):
     return pd.concat((df, batch_df), ignore_index=True).astype('float32')
 ###################################################
 ###################################################
+def modelPredictionsToPandas(dataset, model, columns):
+    """Labels and model answers for all batches of dataset in one DataFrame.
+
+    Same result as calling fillPandasDataset in a loop over the batches, but the
+    batches are concatenated once at the end (the loop copies the growing table
+    for every batch, so its cost grows quadratically with the number of events).
+    """
+    rows = [np.column_stack((labels, model(features))) for features, labels in dataset]
+    return pd.DataFrame(data=np.concatenate(rows), columns=columns).astype('float32')
+###################################################
+###################################################
 def XYZtoUVWT_event(data):
 
     uvwt_vx =  XYZtoUVWT_single(data[:,:,0])  

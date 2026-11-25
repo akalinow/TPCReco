@@ -50,7 +50,7 @@ def plotEndpoints(data, iProj, axis, label, color):
         axis.plot(carbon[3], carbon[iProj], marker='.', markersize=20, alpha=0.8, color=color)
 ###################################################
 ###################################################
-def plotEvent(data, model=None, zoomIn=False):
+def plotEvent(data, model=None, zoomIn=False, outputFile="fig_png/event.png"):
 
     #data indexing: data[features/label][element in batch][index in features/label]
     projNames = ("U", "V", "W")
@@ -59,6 +59,9 @@ def plotEvent(data, model=None, zoomIn=False):
     projections = data[0]
     labels = data[1]
     iEvent = 0
+
+    # one model call for the plotted event, shared by the three projections
+    modelResponse = None if model is None else model(projections[iEvent:iEvent+1])
     
     for iProj in range(0,3):
         axis = axes[iProj] 
@@ -71,8 +74,7 @@ def plotEvent(data, model=None, zoomIn=False):
         #plot_ROIs(rois, axis)
         sy, sx = rois[0]['slice']
         
-        if model!=None:
-            modelResponse = model(projections)[iEvent:iEvent+1]
+        if modelResponse is not None:
             plotEndpoints(modelResponse, iProj, axis, color="blue", label="NN")
             #modelResponse = model(projections)['logits']
             #print(modelResponse.shape)
@@ -89,8 +91,9 @@ def plotEvent(data, model=None, zoomIn=False):
         cax = divider.append_axes("right", size="5%", pad=0.4)
         fig.colorbar(im, cax=cax)
         
-        plt.subplots_adjust(bottom=0.15, left=0.05, right=0.95, wspace=0.3)
-        plt.savefig("fig_png/event.png", bbox_inches="tight")
+    plt.subplots_adjust(bottom=0.15, left=0.05, right=0.95, wspace=0.3)
+    if outputFile:
+        plt.savefig(outputFile, bbox_inches="tight")
 ###################################################################### 
 ###################################################################### 
 def find_ROIs(img, thr=10, size_thr=0):
