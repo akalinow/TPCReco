@@ -14,6 +14,9 @@ tpcreco:
     repo: https://github.com/akalinow/TPCReco.git
     ref: devel_AK
     jobs: 8
+    # ~2 GiB per compilation job (ROOT dictionaries): 8 jobs need more than the chart default 8Gi
+    resources:
+      limits: { memory: 16Gi }
 
 ingress:
   className: nginx

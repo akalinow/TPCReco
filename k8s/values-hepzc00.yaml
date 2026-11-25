@@ -1,0 +1,73 @@
+# Site values: hepzc00, the minikube cluster of jupyterhub-k8s (JupyterHub on NodePort 32443).
+# ingress-nginx from the minikube ingress addon (jupyterhub-k8s/deploy.sh), host ports 80/443
+# forwarded to it (jupyterhub-k8s/scripts/setup_network.sh), JupyterHub's certificate reused.
+#   VALUES=k8s/values-hepzc00.yaml ./k8s/deploy.sh
+#
+# Mounts (README.md, "hepzc00"): the node's /scratch is the host's /scratch0 (minikube start
+# --mount of jupyterhub-k8s), so the TPCReco build, the output and the HIgS data
+# (/scratch0/WarsawTPC/HIgS_2022, HIgS_2026) need no extra mount.
+
+urlPrefix: /tpcgui
+
+# host /scratch0/tpcwebgui/TPCReco, owned by uid/gid 10001: clone, build directory, installation
+tpcreco:
+  hostPath: /scratch/tpcwebgui/TPCReco
+  build:
+    enabled: true
+    repo: https://github.com/akalinow/TPCReco.git
+    ref: devel_AK
+    jobs: 8
+    # ~2 GiB per compilation job (ROOT dictionaries): 8 jobs need more than the chart default 8Gi
+    resources:
+      limits: { memory: 16Gi }
+
+ingress:
+  className: nginx
+  hosts:
+    - hepzc00.hep.fuw.edu.pl
+  tls:
+    # JupyterHub's certificate (CN hepzc00.hep.fuw.edu.pl, self-signed): created by
+    # jupyterhub-k8s/deploy.sh in the same namespace, reused here
+    - secretName: tls-secret
+      hosts:
+        - hepzc00.hep.fuw.edu.pl
+  basicAuth:
+    enabled: false
+
+# HIgS raw data: CIFS shares mounted on the host at /scratch0/WarsawTPC/HIgS_2022 and HIgS_2026,
+# seen in the node through the /scratch0 -> /scratch bind mount. The shares must be mounted on the
+# host before minikube starts (mounts made later are not visible in the node: restart minikube).
+dataVolumes:
+  - name: higs2022
+    mountPath: /data/HIgS_2022
+    readOnly: true
+    hostPath:
+      path: /scratch/WarsawTPC/HIgS_2022
+      type: Directory
+  - name: higs2026
+    mountPath: /data/HIgS_2026
+    readOnly: true
+    hostPath:
+      path: /scratch/WarsawTPC/HIgS_2026
+      type: Directory
+
+config:
+  input:
+    dataFile: /data/HIgS_2022/20220412_extTrg_CO2_190mbar_DT1470ET/CoBo0_AsAd0_2022-04-12T08:03:44.531_0000.graw,/data/HIgS_2022/20220412_extTrg_CO2_190mbar_DT1470ET/CoBo0_AsAd1_2022-04-12T08:03:44.533_0000.graw,/data/HIgS_2022/20220412_extTrg_CO2_190mbar_DT1470ET/CoBo0_AsAd2_2022-04-12T08:03:44.536_0000.graw,/data/HIgS_2022/20220412_extTrg_CO2_190mbar_DT1470ET/CoBo0_AsAd3_2022-04-12T08:03:44.540_0000.graw
+    geometryFile: geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat
+    readNEvents: -1
+  conditions:
+    samplingRate: 25.0
+    pressure: 190
+  display:
+    develMode: true
+
+# output files on the host: /scratch0/tpcwebgui/output (owned by uid/gid 10001)
+persistence:
+  enabled: true
+  hostPath: /scratch/tpcwebgui/output
+  size: 50Gi
+
+output:
+  prefix: TPCReco
+  timestamp: true

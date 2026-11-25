@@ -40,6 +40,8 @@ tpcreco:
     repo: https://github.com/akalinow/TPCReco.git
     ref: devel_AK                     # branch, tag or commit
     jobs: 8
+    resources:
+      limits: { memory: 16Gi }        # ~2 GiB per compilation job
 ```
 
 Before the server starts, the init container `build-tpcreco` (same image, user 10001) fetches
@@ -93,14 +95,37 @@ For it and the HIgS 2022 data (CIFS share `//10.4.5.16/backup_daqula2/HIgS_2022`
 the host e.g. at `/mnt/HIgS_2022`):
 
 ```bash
-sudo mkdir -p /scratch/tpcwebgui/output && sudo chown -R $USER /scratch/tpcwebgui
+sudo mkdir -p /scratch/tpcwebgui/TPCReco /scratch/tpcwebgui/output && sudo chown -R $USER /scratch/tpcwebgui
 minikube mount --uid 10001 --gid 10001 /scratch/tpcwebgui:/tpcwebgui &   # must keep running
 minikube mount /mnt/HIgS_2022:/data/HIgS_2022 &                          # must keep running
 ```
 
+Both mounts are required. The TPCReco volume uses `hostPath` type `Directory`: if
+`/tpcwebgui` is not mounted into the node, the pod does not start (`kubectl describe pod`
+shows a `hostPath type check failed` event) instead of compiling TPCReco and writing the output
+files on the minikube node's own disk.
+
 To keep them running across reboots, use systemd units, as for the socat port forwarding of
-`wordpress-k8s/set_socat.sh`. Example unit `/etc/systemd/system/minikube-mount-higs.service`
-(replace `USER` and the minikube path):
+`wordpress-k8s/set_socat.sh`. Example units (replace `USER` and the minikube path):
+
+`/etc/systemd/system/minikube-mount-tpcwebgui.service`
+
+```ini
+[Unit]
+Description=Mount /scratch/tpcwebgui into minikube (TPCReco build and tpcWebGUI output)
+After=docker.service network-online.target
+
+[Service]
+User=USER
+ExecStart=/usr/local/bin/minikube mount --uid 10001 --gid 10001 /scratch/tpcwebgui:/tpcwebgui
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+```
+
+`/etc/systemd/system/minikube-mount-higs.service`
 
 ```ini
 [Unit]
@@ -117,7 +142,7 @@ RestartSec=10
 WantedBy=multi-user.target
 ```
 
-then `sudo systemctl daemon-reload && sudo systemctl enable --now minikube-mount-higs`.
+then `sudo systemctl daemon-reload && sudo systemctl enable --now minikube-mount-tpcwebgui minikube-mount-higs`.
 
 On other clusters use NFS or PersistentVolumeClaims instead of `hostPath`
 (`tpcreco.existingClaim`, `dataVolumes[].nfs` or `persistentVolumeClaim`), e.g.
@@ -132,6 +157,31 @@ dataVolumes:
 
 `config.input.dataFile` (files opened at start-up) must point to files under `mountPath`.
 Other files and the following chunks of a run are opened from the GUI.
+
+### hepzc00 (shared with JupyterHub)
+
+`values-hepzc00.yaml` runs the GUI in the minikube cluster of `jupyterhub-k8s` on
+`https://hepzc00.hep.fuw.edu.pl/tpcgui/`. That cluster differs from the WordPress one:
+
+* ingress-nginx is the minikube ingress addon, enabled by `jupyterhub-k8s/deploy.sh`; host ports
+  80/443 (and JupyterHub's 32443) are forwarded to minikube by `jupyterhub-k8s/scripts/setup_network.sh`,
+* the TLS Secret is JupyterHub's `tls-secret` (self-signed: browsers show a warning),
+* the node's `/scratch` is a bind mount of the host's `/scratch0` (owners are kept), so the TPCReco
+  build and the output need no `minikube mount`, only the right owner:
+
+  ```bash
+  sudo mkdir -p /scratch0/tpcwebgui/TPCReco /scratch0/tpcwebgui/output
+  sudo chown -R 10001:10001 /scratch0/tpcwebgui
+  ```
+
+* the HIgS data are CIFS shares mounted on the host at `/scratch0/WarsawTPC/HIgS_2022` and
+  `/scratch0/WarsawTPC/HIgS_2026`; the pod sees them through the same bind mount
+  (node `/scratch/WarsawTPC/...`) as `/data/HIgS_2022` and `/data/HIgS_2026`. The bind mount only
+  carries mounts that exist when minikube starts: mount the shares on the host first (e.g. from
+  `/etc/fstab` at boot), and restart minikube (`minikube stop && minikube start`) after
+  remounting them, otherwise the node sees empty directories.
+
+Deploy with `VALUES=k8s/values-hepzc00.yaml ./k8s/deploy.sh`.
 
 ## Deploy
 

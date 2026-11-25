@@ -177,7 +177,9 @@ spec:
           {{- else if .Values.tpcreco.hostPath }}
           hostPath:
             path: {{ .Values.tpcreco.hostPath }}
-            type: {{ ternary "DirectoryOrCreate" "Directory" $build }}
+            # must exist: if the host directory is not mounted into the node (minikube mount not
+            # running), the pod does not start instead of building/writing on the node's own disk
+            type: Directory
           {{- else }}
           emptyDir: {}   # build at every pod start
           {{- end }}

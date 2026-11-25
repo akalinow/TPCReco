@@ -69,8 +69,12 @@ kubectl -n "$NAMESPACE" rollout restart "deployment/${FULLNAME}"
 #   kubectl logs -f deploy/<release> -c build-tpcreco
 kubectl -n "$NAMESPACE" rollout status "deployment/${FULLNAME}" --timeout=3600s
 
-TOKEN=$(kubectl -n "$NAMESPACE" get secret "${FULLNAME}-token" -o jsonpath='{.data.token}' 2>/dev/null | base64 -d || true)
-PREFIX=$(helm get values "$RELEASE" -n "$NAMESPACE" -a -o json | python3 -c 'import json,sys; p=(json.load(sys.stdin).get("urlPrefix") or "").rstrip("/"); print(p if not p or p.startswith("/") else "/"+p)')
+VALUES_JSON=$(helm get values "$RELEASE" -n "$NAMESPACE" -a -o json)
+# token Secret and key as in the chart: accessToken.existingSecret, else <fullname>-token
+read -r TOKEN_SECRET TOKEN_KEY < <(python3 -c 'import json,sys; a=json.load(sys.stdin).get("accessToken") or {}; print(a.get("existingSecret") or sys.argv[1], a.get("secretKey") or "token")' "${FULLNAME}-token" <<<"$VALUES_JSON")
+TOKEN=$(kubectl -n "$NAMESPACE" get secret "$TOKEN_SECRET" -o jsonpath="{.data.${TOKEN_KEY}}" 2>/dev/null | base64 -d || true)
+[[ -n "$TOKEN" ]] || echo "WARNING: no access token in Secret ${TOKEN_SECRET} (key ${TOKEN_KEY})" >&2
+PREFIX=$(python3 -c 'import json,sys; p=(json.load(sys.stdin).get("urlPrefix") or "").rstrip("/"); print(p if not p or p.startswith("/") else "/"+p)' <<<"$VALUES_JSON")
 HOSTS=$(kubectl -n "$NAMESPACE" get ingress "$FULLNAME" -o jsonpath='{range .spec.rules[*]}{.host}{"\n"}{end}' 2>/dev/null || true)
 
 if [[ -n "$HOSTS" ]] && command -v minikube >/dev/null; then
