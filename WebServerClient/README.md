@@ -33,7 +33,7 @@ tpcWebGUI: open http://hepzc62:8080/?token=8d799db55a8afff2b638bd2a7ab63d38 in a
 | `web.bindAddress` | 0.0.0.0 | listening address; `0.0.0.0`: all interfaces (remote access); `127.0.0.1`: this machine only, no token |
 | `web.accessToken` | (empty) | token required from browsers; empty: random token generated when remote access is on |
 | `web.documentRoot` | (empty) | directory with the client files; empty: `<install prefix>/web` |
-| `web.urlPrefix` | (empty) | URL path of the GUI, e.g. `/tpcgui` behind a reverse proxy or Kubernetes ingress (see [k8s/README.md](../k8s/README.md)); the URL to open is then `http://host:port/tpcgui/` |
+| `web.urlPrefix` | (empty) | URL path of the GUI, e.g. `/tpcgui` behind a reverse proxy; the URL to open is then `http://host:port/tpcgui/` |
 
 All other options (`input.*`, `display.*`, `online.*`, `output.*`, ...) are the same as for `tpcGUI`.
 
