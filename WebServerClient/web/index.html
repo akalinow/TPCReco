@@ -30,12 +30,14 @@
         <label class="caption" for="inpEntry">Frame</label>
         <input id="inpEntry" type="number" min="0" step="1" title="Type a frame (file entry) and press Enter to go to it">
       </form>
-      <span class="item" id="listBox" hidden title="Position in the event list (input.eventList); the arrows step through the listed events">
-        <span class="caption">List</span><span id="listPosition">–</span>
-      </span>
+      <form id="listBox" class="item active" hidden novalidate title="Position in the event list (input.eventList): type a number and press Enter to go to that listed event; the arrows step through the list">
+        <label class="caption" for="inpListPosition">List</label>
+        <span class="list-position"><input id="inpListPosition" type="number" min="1" step="1"><span id="listSize">/ –</span></span>
+      </form>
     </div>
     <span id="connection" class="connection" title="Connection to the tpcWebGUI server">●</span>
     <span id="message" class="message" role="status"></span>
+    <button type="button" id="btnExit" class="exit" title="Stop the tpcWebGUI server (the output file is closed)">Exit</button>
   </header>
 
   <main>
@@ -115,6 +117,10 @@
       </div>
     </form>
   </dialog>
+
+  <div id="stopped" class="stopped" hidden>
+    <p>The tpcWebGUI server has stopped. You can close this tab.</p>
+  </div>
 
   <script src="static/app.js"></script>
 </body>

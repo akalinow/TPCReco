@@ -68,7 +68,12 @@ ManualRecoTool    state machine of the clicked track reconstruction (port of Mar
   next chunk of the run (all AsAd files), ◀ on the first event the previous one; the chunk files are
   found on disk (their timestamps differ, e.g. `..44.531_0000.graw` is followed by `..44.540_0001.graw`).
   Other controls: go to event id, go to frame, open file (server side file browser,
-  several GRAW files can be selected with Ctrl+click).
+  several GRAW files can be selected with Ctrl+click), Exit (top right: closes the output file
+  and stops the server for all browsers).
+* Event list (`input.eventList`, lines "runId , entry , eventId" as for makeTrackTree; GRAW files
+  of each run are searched in `input.eventListDataPath`, default: the parent directory of the
+  `input.dataFile` directory): ▶ / ◀ step through the listed events, and the List box in the top
+  bar shows the position; type a number there and press Enter to go to that listed event.
 * Z log scale, auto zoom, manual reconstruction mode, event rate display (ONLINE).
 * Display modes from the configuration: raw (default), `display.develMode` (rec hits, fitted track,
   charge profile with the dE/dx model, track projection on the readout plane, reconstruction
@@ -78,7 +83,7 @@ ManualRecoTool    state machine of the clicked track reconstruction (port of Mar
   from the geometry); the first point is the common vertex. "Fit segments" fits and shows the track
   (projections, charge along the track, projection on the readout plane), "Clear track" hides it. The event is written with the clicked track on "Next event".
   Before leaving an event with a fitted but unsaved clicked track (Previous, go to event/frame,
-  open file, switching manual reco off), or with clicked points that were not fitted
+  open file, Exit, switching manual reco off), or with clicked points that were not fitted
   (also on Next and Reset), the GUI asks for confirmation. tpcGUI asks the same questions.
 * Event type bits, written to `<input file>.log` and to the output file (manual reco mode) on Next/Previous.
 * Run conditions: drift velocity, sampling rate, trigger delay.
@@ -91,8 +96,8 @@ ManualRecoTool    state machine of the clicked track reconstruction (port of Mar
 Differences from tpcGUI:
 
 * All connected browsers share one GUI state (one event source on the server).
-* No Exit button: the server is started and stopped from the command line (Ctrl+C or SIGTERM
-  closes the output file).
+* The server is started from the command line; it is stopped with Exit or with Ctrl+C / SIGTERM
+  (each closes the output file).
 * The ONLINE rate graph gets one point per loaded event (tpcGUI added one per redraw);
   "Reset rate" is usable in ONLINE mode.
 * Plots are interactive (zoom, pan, hover values, PNG export from the Plotly toolbar).
@@ -114,7 +119,7 @@ Differences from tpcGUI:
 {"cmd":"set", "option": "logScale|autoZoom|recoMode|rate", "value": true|false}
 {"cmd":"runConditions", "driftVelocity": v, "samplingRate": r, "triggerDelay": d}
 {"cmd":"recoAddSegment"}   {"cmd":"recoClick", "dir": 0|1|2, "x": t, "y": s}
-{"cmd":"recoFit"}          {"cmd":"recoClearTrack"}
+{"cmd":"recoFit"}          {"cmd":"recoClearTrack"}          {"cmd":"exit"}
 ```
 
 The reply is `{"ok": bool, "error": "...", "view": {...}}`, where `view` is the same document as

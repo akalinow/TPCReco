@@ -51,11 +51,22 @@ header h1 { font-size: 16px; margin: 0; }
 .status-bar form.item input:focus { outline: none; }
 .status-bar form.item:focus-within { outline: 2px solid #9a9ad0; }
 .status-bar form.item input:disabled { color: var(--muted); }
+.status-bar form.item[hidden] { display: none; }
+.status-bar .list-position { display: flex; gap: 0.5ch; }
+.status-bar .list-position input { width: 5ch; text-align: right; }
 .status-bar .caption { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
 .status-bar .file-name { overflow: hidden; text-overflow: ellipsis; }
 .connection { color: #2a9d2a; font-size: 12px; }
 .connection.down { color: var(--alert); }
 .message { color: var(--alert); margin-left: auto; }
+button.exit { flex: 0 0 auto; font-weight: 600; padding: 4px 14px; }
+.stopped {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex; align-items: center; justify-content: center;
+}
+.stopped[hidden] { display: none; }
+.stopped p { background: var(--panel); padding: 20px 30px; font-size: 16px; }
 
 main {
   display: grid;
