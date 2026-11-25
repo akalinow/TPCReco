@@ -549,6 +549,16 @@ std::string WebGUIController::execute(const crow::json::rvalue & command){
     myEventSource->loadFileEntry(entry);
     eventLoaded();
   }
+  else if(cmd=="gotoListPosition"){ // 1-based position in the event list
+    if(!canNavigate()) return "Event navigation is disabled in ONLINE mode.";
+    if(myEventList.empty()) return "No event list loaded (input.eventList).";
+    long int position = command["position"].i();
+    if(position<1 || position>(long)myEventList.size())
+      return "List position must be between 1 and "+std::to_string(myEventList.size())+".";
+    std::string error = loadListedEvent(position-1);
+    eventLoaded();
+    return error;
+  }
   else if(cmd=="open") return openFile(command["path"].s());
   else if(cmd=="set"){
     const std::string option = command["option"].s();

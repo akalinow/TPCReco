@@ -17,6 +17,7 @@ const state = {
   lastCommandAt: 0,
   panels: [],          // panel JSON currently shown, per plot div
   cursorFrame: null,
+  stopped: false,      // the server was stopped with the Exit button
 };
 
 const $ = (id) => document.getElementById(id);
@@ -74,13 +75,13 @@ function connectWebSocket() {
   socket.onopen = () => $('connection').classList.remove('down');
   socket.onmessage = (event) => {
     // updates caused by this browser's own commands arrive with the command reply
-    if (event.data === 'update' && state.pending === 0 && Date.now() - state.lastCommandAt > 1000) {
+    if (event.data === 'update' && !state.stopped && state.pending === 0 && Date.now() - state.lastCommandAt > 1000) {
       refreshView();
     }
   };
   socket.onclose = () => {
     $('connection').classList.add('down');
-    setTimeout(connectWebSocket, 2000);
+    if (!state.stopped) setTimeout(connectWebSocket, 2000);
   };
 }
 
@@ -361,7 +362,9 @@ function updateControls(status) {
   setValueUnlessEditing('inpEventId', status.eventId);
   $('listBox').hidden = !status.eventList;
   if (status.eventList) {
-    $('listPosition').textContent = `${status.eventList.position || '–'} / ${status.eventList.size}`;
+    // position 0: the displayed event is not on the list (e.g. after "go to event id.")
+    setValueUnlessEditing('inpListPosition', status.eventList.position || '');
+    $('listSize').textContent = `/ ${status.eventList.size}`;
   }
   setValueUnlessEditing('inpEntry', status.entry);
 
@@ -379,6 +382,7 @@ function updateControls(status) {
 
   $('inpEventId').disabled = !enabled.navigate;
   $('inpEntry').disabled = !enabled.navigate;
+  $('inpListPosition').disabled = !enabled.navigate;
   $('eventTypeBox').hidden = !enabled.eventType;
   // the segment buttons are shown only while the manual reco mode is on
   if (status.flags.recoMode !== wasRecoModeOn) $('markersBox').open = status.flags.recoMode;
@@ -433,7 +437,7 @@ const PENDING_POINTS = 'Clicked points/segments have not been fitted yet ("Fit s
 
 /**
  * Asks before an action that loses the manual reconstruction of the current event.
- * kind: 'leave' (another event, file, reco mode off), 'next', 'reset'.
+ * kind: 'leave' (another event, file, exit, reco mode off), 'next', 'reset'.
  * Returns true when the action may proceed.
  */
 function confirmClickedTrack(kind) {
@@ -464,6 +468,7 @@ function installControls() {
   };
   $('btnReset').onclick = () => { if (confirmClickedTrack('reset')) sendCommand('reset'); };
   $('btnResetRate').onclick = () => sendCommand('resetRate');
+  $('btnExit').onclick = exitApplication;
 
   const option = (id, name) => { $(id).onchange = (e) => sendCommand('set', { option: name, value: e.target.checked }); };
   option('chkLogScale', 'logScale');
@@ -479,13 +484,15 @@ function installControls() {
   // without Enter restores the displayed event
   const gotoBox = (formId, inputId, cmd, key, current) => {
     const input = $(inputId);
-    const restore = () => { const v = state.view?.status?.[current]; if (v !== undefined) input.value = v; };
+    const shown = () => (typeof current === 'function' ? current(state.view?.status) : state.view?.status?.[current]);
+    const restore = () => { const v = shown(); if (v !== undefined) input.value = v; };
     $(formId).onsubmit = (e) => {
       e.preventDefault();
       const value = input.value.trim();
       input.blur();
-      if (value === '' || Number(value) === state.view?.status?.[current]) { restore(); return; }
-      if (confirmClickedTrack('leave')) sendCommand(cmd, { [key]: Number(value) });
+      if (value === '' || Number(value) === shown()) { restore(); return; }
+      // a refused value (e.g. out of range) is replaced by the displayed event again
+      if (confirmClickedTrack('leave')) sendCommand(cmd, { [key]: Number(value) }).then(restore);
       else restore();
     };
     input.onkeydown = (e) => { if (e.key === 'Escape') { restore(); input.blur(); } };
@@ -494,6 +501,8 @@ function installControls() {
   };
   gotoBox('formGotoEvent', 'inpEventId', 'gotoEvent', 'eventId', 'eventId');
   gotoBox('formGotoEntry', 'inpEntry', 'gotoEntry', 'entry', 'entry');
+  gotoBox('listBox', 'inpListPosition', 'gotoListPosition', 'position',
+          (status) => (status?.eventList ? status.eventList.position || '' : undefined));
   $('formRunConditions').onsubmit = (e) => {
     e.preventDefault();
     sendCommand('runConditions', {
@@ -594,3 +603,20 @@ installCollapsibles();
 installControls();
 refreshView();
 connectWebSocket();
+
+// ---------------------------------------------------------------- exit
+
+async function exitApplication() {
+  if (!confirmClickedTrack('leave')) return;
+  if (!confirm('Stop the tpcWebGUI server? The output file is closed, for all connected browsers.')) return;
+  await state.queue; // let queued commands finish first
+  state.stopped = true;
+  try {
+    await fetch('api/command', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cmd: 'exit' }),
+    });
+  } catch (error) { /* server already gone */ }
+  $('stopped').hidden = false;
+}
