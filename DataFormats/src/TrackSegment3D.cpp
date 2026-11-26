@@ -360,15 +360,15 @@ std::ostream & operator << (std::ostream &out, const TrackSegment3D &aSegment){
   const TVector3 & bias = aSegment.getBias();
   const TVector3 & tangent = aSegment.getTangent();
 
-  out<<"Segment:"<<std::endl
+  out<<"Segment: "<<enumDict::GetPidName(aSegment.getPID())
+     <<", length [mm]: "<<aSegment.getLength()<<std::endl
      <<"\t\t START -> END: ("<<start.X()<<", "<<start.Y()<<", "<<start.Z()<<")"
      <<" -> "
      <<"("<<end.X()<<", "<<end.Y()<<", "<<end.Z()<<") "
      <<std::endl
      <<"\t\t loss: "<<aSegment.getLoss()
      <<" max 2D projection width "<<aSegment.getMaxProjWidth()<<std::endl
-     <<"\t\t charge [arb. u.]: "<<aSegment.getIntegratedCharge(aSegment.getLength())
-     <<" length [mm]: "<<aSegment.getLength()
+     <<"\t\t charge [ADC]: "<<aSegment.getIntegratedCharge(aSegment.getLength())
      <<std::endl
      <<"\t\t bias (X,Y,Z): "
      <<"("<<bias.X()<<", "<<bias.Y()<<", "<<bias.Z()<<")"

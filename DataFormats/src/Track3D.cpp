@@ -336,9 +336,14 @@ std::ostream & operator << (std::ostream &out, const Track3D &aTrack){
        <<" (G_cal = "<<aTrack.getChargeGain()<<" ADC/MeV)"<<std::endl;
   }
   if(aTrack.getChargeRatio()>0) out<<"\t Q/(G_raw E_dep) of the dE/dx fit: "<<aTrack.getChargeRatio()<<std::endl;
-  out<<"\t Total track charge from 3D profile [arb. units]: "<<aTrack.getChargeProfile().Integral("width")<<std::endl;
+  // track profile (ChargeProfileBuilder): sum over the U/V/W projections of the gain corrected
+  // charge per mm, i.e. ADC as the total charge above (projections nearly along the strips skipped)
+  out<<"\t Total track charge from the charge profile [ADC]: "<<chargeFromProfile;
+  if(aTrack.getChargeGain()>0) out<<" ("<<chargeFromProfile/aTrack.getChargeGain()<<" MeV)";
+  out<<std::endl;
   out<<"\t Hit fit loss func.: "<<aTrack.getLoss()<<std::endl;
-  out<<"\t dE/dx fit loss func./charge: "<<aTrack.getHypothesisFitLoss()/chargeFromProfile+0.01<<std::endl;
+  // mean squared residual of the profile normalised to its maximum: no division by the charge
+  out<<"\t dE/dx fit loss func.: "<<aTrack.getHypothesisFitLoss()<<std::endl;
   out<<"\t       fitted diffusion [mm]: "<<aTrack.getSegments().front().getDiffusion()<<std::endl;
   out<<KBLU<<"-----------------------------------"<<RST<<std::endl;
   return out;
