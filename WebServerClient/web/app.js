@@ -204,7 +204,7 @@ function lineTrace(item, showLegend) {
 function markerTrace(item) {
   return {
     type: 'scatter', mode: 'markers', x: item.x, y: item.y, showlegend: false,
-    marker: { color: item.color, symbol: item.symbol, size: item.size, line: { color: item.lineColor, width: 1 } },
+    marker: { color: item.color, symbol: item.symbol, size: item.size, line: { color: item.lineColor, width: item.lineWidth || 1 } },
     hovertemplate: 'x: %{x:.4g}<br>y: %{y:.4g}<extra></extra>',
   };
 }
@@ -410,7 +410,16 @@ function updateControls(status) {
   $('btnAddSegment').disabled = !status.reco.addEnabled;
   $('btnFitSegments').disabled = !status.reco.fitEnabled;
   $('btnClearTrack').disabled = !status.reco.clearEnabled;
-  $('recoHint').hidden = !status.reco.acceptPoints;
+  $('recoHint').textContent = status.reco.hint || '';
+  $('recoHint').hidden = !status.reco.hint;
+  $('btnAddSegment').textContent = status.reco.addLabel || 'Add segment';
+  $('btnAddSegment').title = status.reco.mode === '3prong'
+    ? 'Click to add a track: two points on the track, each set by coordinates on two projections. The vertex is calculated from the track lines'
+    : 'Click to add segments end point. All segments share a common vertex - the starting point of the first segment. Each point is set by coordinates on two projections';
+  for (const radio of document.querySelectorAll('input[name="recoMode"]')) {
+    radio.checked = radio.value === status.reco.mode;
+    radio.disabled = !status.flags.recoMode;
+  }
 
   if (status.runConditions) {
     setValueUnlessEditing('inpDriftVelocity', status.runConditions.driftVelocity);
@@ -513,6 +522,17 @@ function installControls() {
   };
 
   $('btnAddSegment').onclick = () => sendCommand('recoAddSegment');
+  for (const radio of document.querySelectorAll('input[name="recoMode"]')) {
+    radio.onchange = () => {
+      const reco = state.view?.status?.reco;
+      if (reco?.pendingPoints && !confirm(`${PENDING_POINTS} Changing the mode clears them. Change anyway?`)) {
+        radio.checked = false;
+        document.querySelector(`input[name="recoMode"][value="${reco.mode}"]`).checked = true;
+        return;
+      }
+      sendCommand('recoMode', { mode: radio.value });
+    };
+  }
   $('btnFitSegments').onclick = () => sendCommand('recoFit');
   $('btnClearTrack').onclick = () => sendCommand('recoClearTrack');
 

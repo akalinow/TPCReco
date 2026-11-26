@@ -69,12 +69,16 @@
 
       <details class="group collapsible" id="markersBox">
         <summary title="Click to expand / collapse">Segment creation</summary>
+        <div class="reco-mode" role="radiogroup" title="Manual reconstruction mode; changing it clears the clicked points">
+          <label title="Click the vertex, then the end of each segment"><input type="radio" name="recoMode" value="2prong" checked> 2-prong</label>
+          <label title="Click two points on each track; the vertex is where the track lines cross"><input type="radio" name="recoMode" value="3prong"> 3-prong</label>
+        </div>
         <div class="buttons three">
-          <button id="btnClearTrack" class="reco" title="Remove tracks from images. If &quot;Fit segments&quot; will NOT be clicked, the track will still be saved to the reco file">Clear track</button>
+          <button id="btnClearTrack" class="reco" title="Remove the clicked points/segments and the fitted track from the images. A track fitted before is still saved to the reco file on Next event">Clear track</button>
           <button id="btnAddSegment" class="reco" title="Click to add segments end point. All segments share a common vertex - the starting point of the first segment. Each point is set by coordinates on two projections">Add segment</button>
           <button id="btnFitSegments" class="reco" title="Calculate 3D orientation from the 2D projections">Fit segments</button>
         </div>
-        <p id="recoHint" class="hint" hidden>Click a point on one U/V/W projection, then the same point on another projection.</p>
+        <p id="recoHint" class="hint" hidden></p>
       </details>
 
       <details class="group collapsible" id="eventTypeBox">

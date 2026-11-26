@@ -81,10 +81,21 @@ ManualRecoTool    state machine of the clicked track reconstruction (port of Mar
 * Manual reconstruction: "Add segment", then click a point on one U/V/W projection and the same point
   on a second projection (the time is taken from the first click, the third coordinate is calculated
   from the geometry); the first point is the common vertex. "Fit segments" fits and shows the track
-  (projections, charge along the track, projection on the readout plane), "Clear track" hides it. The event is written with the clicked track on "Next event".
+  (projections, charge along the track, projection on the readout plane), "Clear track" removes the clicked points/segments and hides the fitted track. The event is written with the clicked track on "Next event".
   Before leaving an event with a fitted but unsaved clicked track (Previous, go to event/frame,
   open file, Exit, switching manual reco off), or with clicked points that were not fitted
   (also on Next and Reset), the GUI asks for confirmation. tpcGUI asks the same questions.
+* Manual reconstruction modes ("Segment creation" block; changing the mode clears the clicked points):
+  * 2-prong (as above): the first point is the common vertex, then one point per segment end.
+  * 3-prong: "Add track", then click two points on the track (each point on two projections, as
+    above); the vertex is not clicked. In every U/V/W projection each track defines a line
+    through its two points, and the vertex is where these lines cross: one 3D vertex (time, X, Y)
+    is fitted to the lines of all tracks in all three projections (least squares), so its
+    projections are consistent. The vertex is drawn as a star and shown with the RMS distance of
+    the lines from it. Each segment goes from the vertex to the clicked point of its track
+    farther from the vertex (click the second point at the track end). "Fit segments" needs at
+    least two tracks. Classes: `ManualRecoTool` (point clicking), `TwoProngRecoTool`,
+    `ThreeProngRecoTool`.
 * Event type bits, written to `<input file>.log` and to the output file (manual reco mode) on Next/Previous.
 * Run conditions: drift velocity, sampling rate, trigger delay.
 * Output file: the same `FileOutput` as tpcGUI, filled once per loaded event (manual reco mode:
@@ -115,9 +126,11 @@ Differences from tpcGUI:
 {"cmd":"next", "eventType": <bits>}       {"cmd":"previous", "eventType": <bits>}
 {"cmd":"reset"}                            {"cmd":"resetRate"}
 {"cmd":"gotoEvent", "eventId": n}          {"cmd":"gotoEntry", "entry": n}
+{"cmd":"gotoListPosition", "position": n}
 {"cmd":"open", "path": "file1,file2,..."}
 {"cmd":"set", "option": "logScale|autoZoom|recoMode|rate", "value": true|false}
 {"cmd":"runConditions", "driftVelocity": v, "samplingRate": r, "triggerDelay": d}
+{"cmd":"recoMode", "mode": "2prong|3prong"}
 {"cmd":"recoAddSegment"}   {"cmd":"recoClick", "dir": 0|1|2, "x": t, "y": s}
 {"cmd":"recoFit"}          {"cmd":"recoClearTrack"}          {"cmd":"exit"}
 ```

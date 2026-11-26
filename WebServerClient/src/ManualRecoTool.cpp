@@ -6,30 +6,50 @@
 #include "TPCReco/GeometryTPC.h"
 #include "TPCReco/CommonDefinitions.h"
 #include "TPCReco/ManualRecoTool.h"
+#include "TPCReco/TwoProngRecoTool.h"
+#include "TPCReco/ThreeProngRecoTool.h"
 
 using definitions::projection_type;
 
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void ManualRecoTool::reset(bool isRecoModeOn){
+std::unique_ptr<ManualRecoTool> ManualRecoTool::create(Mode aMode){
 
-  myTimeLines.clear();
-  resetMarkers(true);
-  for(auto & item: mySegments) item.clear();
-  if(!isRecoModeOn) addEnabled = fitEnabled = clearEnabled = false;
+  if(aMode==Mode::ThreeProng) return std::make_unique<ThreeProngRecoTool>();
+  return std::make_unique<TwoProngRecoTool>();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void ManualRecoTool::resetMarkers(bool force){
+std::string ManualRecoTool::modeName(Mode aMode){
+
+  return aMode==Mode::ThreeProng ? "3prong" : "2prong";
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::optional<ManualRecoTool::Mode> ManualRecoTool::modeFromName(const std::string & name){
+
+  if(name=="2prong") return Mode::TwoProng;
+  if(name=="3prong") return Mode::ThreeProng;
+  return std::nullopt;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void ManualRecoTool::reset(bool isRecoModeOn){
+
+  myTimeLines.clear();
+  for(auto & item: myMarkers) item.reset();
+  myFirstMarker.reset();
+  clearPoints();
+  acceptPoints = false;
+  addEnabled = clearEnabled = isRecoModeOn;
+  fitEnabled = false;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void ManualRecoTool::resetMarkers(){
 
   for(auto & item: myMarkers) item.reset();
   myFirstMarker.reset();
-  if(force || isLastSegmentComplete(projection_type::DIR_U)){
-    acceptPoints = false;
-    addEnabled = true;
-    clearEnabled = true;
-    fitEnabled = !force;
-  }
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -38,6 +58,7 @@ void ManualRecoTool::addSegment(){
   acceptPoints = true;
   addEnabled = false;
   fitEnabled = false;
+  onAdd();
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -50,7 +71,7 @@ std::optional<double> ManualRecoTool::getFixedTime() const {
 /////////////////////////////////////////////////////////
 bool ManualRecoTool::hasClickedPoints() const {
 
-  for(const auto & item: mySegments) if(!item.empty()) return true;
+  if(hasPoints()) return true;
   for(const auto & item: myMarkers) if(item) return true;
   return false;
 }
@@ -75,40 +96,17 @@ bool ManualRecoTool::click(int iDir, double x, double y){
   int missingDir = findMissingMarkerDir();
   if(missingDir<0) return true;
   myMarkers.at(missingDir) = Point{x, getMissingYCoordinate(missingDir)};
-  for(int strip_dir=projection_type::DIR_U;strip_dir<=projection_type::DIR_W;++strip_dir){
-    updateSegments(strip_dir);
+  Point3P aPoint{*myMarkers.at(projection_type::DIR_U),
+                 *myMarkers.at(projection_type::DIR_V),
+                 *myMarkers.at(projection_type::DIR_W)};
+  resetMarkers();
+  if(!addPoint(aPoint)){ // the segment / track is complete
+    acceptPoints = false;
+    addEnabled = true;
+    clearEnabled = true;
+    fitEnabled = canFit();
   }
-  resetMarkers(false);
   return true;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void ManualRecoTool::updateSegments(int iDir){
-
-  std::vector<Segment> & aSegments = mySegments.at(iDir);
-  const Point & aMarker = *myMarkers.at(iDir);
-
-  if(aSegments.size() && !isLastSegmentComplete(iDir)){
-    aSegments.back().x2 = aMarker.x;
-    aSegments.back().y2 = aMarker.y;
-    return;
-  }
-  Segment aSegment{aMarker.x, aMarker.y, std::nan(""), std::nan(""), int(2+aSegments.size())};
-  if(aSegments.size()){ // all segments start at the common vertex
-    aSegment.x1 = aSegments.front().x1;
-    aSegment.y1 = aSegments.front().y1;
-    aSegment.x2 = aMarker.x;
-    aSegment.y2 = aMarker.y;
-  }
-  aSegments.push_back(aSegment);
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-bool ManualRecoTool::isLastSegmentComplete(int iDir) const {
-
-  const std::vector<Segment> & aSegments = mySegments.at(iDir);
-  return aSegments.empty() ||
-    (!std::isnan(aSegments.back().x2) && !std::isnan(aSegments.back().y2));
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -148,15 +146,7 @@ double ManualRecoTool::getMissingYCoordinate(int missingDir) const {
 /////////////////////////////////////////////////////////
 std::vector<double> ManualRecoTool::takeSegmentsForFit(){
 
-  std::vector<double> segmentsXY;
-  size_t nSegments = mySegments.at(projection_type::DIR_U).size();
-  for(const auto & item: mySegments) nSegments = std::min(nSegments, item.size());
-  for(size_t iSegment=0;iSegment<nSegments;++iSegment){
-    for(const auto & item: mySegments){
-      const Segment & aSegment = item.at(iSegment);
-      segmentsXY.insert(segmentsXY.end(), {aSegment.x1, aSegment.y1, aSegment.x2, aSegment.y2});
-    }
-  }
+  std::vector<double> segmentsXY = makeSegmentsForFit();
   reset(true);
   return segmentsXY;
 }

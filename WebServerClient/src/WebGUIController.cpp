@@ -151,7 +151,7 @@ WebGUIController::WebGUIController(const boost::property_tree::ptree & aConfig){
   myRangeCalculator.setGasMixture(gas_mixture_type::CO2);
   myRangeCalculator.setGasPressure(myConfig.get<double>("conditions.pressure"));
   myRangeCalculator.setGasTemperature(myConfig.get<double>("conditions.temperature"));
-  myRecoTool.setGeometry(myEventSource->getGeometry());
+  myRecoTool->setGeometry(myEventSource->getGeometry());
 
   isLogScaleOn = myConfig.get<bool>("display.zLogScale", false);
   isAutozoomOn = myConfig.get<bool>("display.autoZoom", false);
@@ -330,7 +330,7 @@ void WebGUIController::eventLoaded(){
 void WebGUIController::refresh(){
 
   // equivalent of MainFrame::Update() without the drawing, which is done on demand by getView()
-  myRecoTool.reset(isRecoModeOn);
+  myRecoTool->reset(isRecoModeOn);
   isManualTrackShown = false;
   if(!myEventSource || !myEventSource->numberOfEvents()) return;
   if(isNewEvent){
@@ -563,8 +563,9 @@ std::string WebGUIController::execute(const crow::json::rvalue & command){
   else if(cmd=="set"){
     const std::string option = command["option"].s();
     bool value = command["value"].b();
-    if(option=="logScale") isLogScaleOn = value;
-    else if(option=="autoZoom") isAutozoomOn = value;
+    // display options: only the drawing changes; the clicked points and the fitted track stay
+    if(option=="logScale"){ isLogScaleOn = value; return ""; }
+    else if(option=="autoZoom"){ isAutozoomOn = value; return ""; }
     else if(option=="recoMode"){
       if(value && !canRecoMode()) return "Manual reconstruction is not available in this mode.";
       isRecoModeOn = value;
@@ -586,23 +587,34 @@ std::string WebGUIController::execute(const crow::json::rvalue & command){
                             command["samplingRate"].d(),
                             command["triggerDelay"].d());
   }
+  else if(cmd=="recoMode"){ // "2prong" / "3prong": a new tool, the clicked points are cleared
+    auto aMode = ManualRecoTool::modeFromName(command["mode"].s());
+    if(!aMode) return "Unknown manual reconstruction mode: "+std::string(command["mode"].s());
+    if(*aMode!=myRecoTool->getMode()){
+      myRecoTool = ManualRecoTool::create(*aMode);
+      myRecoTool->setGeometry(myEventSource->getGeometry());
+      myRecoTool->reset(isRecoModeOn);
+    }
+  }
   else if(cmd=="recoAddSegment"){
-    if(!isRecoModeOn || !myRecoTool.isAddEnabled()) return "Adding a segment is not possible now.";
-    myRecoTool.addSegment();
+    if(!isRecoModeOn || !myRecoTool->isAddEnabled()) return "Adding a segment is not possible now.";
+    myRecoTool->addSegment();
   }
   else if(cmd=="recoClick"){
     if(!isRecoModeOn) return "Manual reconstruction mode is off.";
-    myRecoTool.click(command["dir"].i(), command["x"].d(), command["y"].d());
+    myRecoTool->click(command["dir"].i(), command["x"].d(), command["y"].d());
   }
   else if(cmd=="recoFit"){
-    if(!isRecoModeOn || !myRecoTool.isFitEnabled()) return "No complete segments to fit.";
-    std::vector<double> segmentsXY = myRecoTool.takeSegmentsForFit();
+    if(!isRecoModeOn || !myRecoTool->isFitEnabled()) return "No complete segments to fit.";
+    std::vector<double> segmentsXY = myRecoTool->takeSegmentsForFit();
     myEventSource->getTrackBuilder()->getSegment2DCollectionFromGUI(segmentsXY);
     mySavedTrack.reset(); // the new fit replaces the track read from the output file
     isManualTrackShown = true;
     isManualTrackUnsaved = true;
   }
   else if(cmd=="recoClearTrack"){
+    // clicked points/segments (not fitted yet) and the shown track; the mode is kept
+    myRecoTool->reset(isRecoModeOn);
     isManualTrackShown = false;
     mySavedTrack.reset();
   }
@@ -656,16 +668,19 @@ crow::json::wvalue WebGUIController::getStatus() const {
     status["runConditions"]["triggerDelay"] = aGeometry->GetTriggerDelay();
   }
 
-  status["reco"]["acceptPoints"] = myRecoTool.isAcceptingPoints();
-  status["reco"]["addEnabled"] = isRecoModeOn && myRecoTool.isAddEnabled();
-  status["reco"]["fitEnabled"] = isRecoModeOn && myRecoTool.isFitEnabled();
-  status["reco"]["clearEnabled"] = isRecoModeOn && myRecoTool.isClearEnabled();
+  status["reco"]["mode"] = ManualRecoTool::modeName(myRecoTool->getMode());
+  status["reco"]["addLabel"] = myRecoTool->getAddLabel();
+  status["reco"]["hint"] = isRecoModeOn ? myRecoTool->getHint() : std::string();
+  status["reco"]["acceptPoints"] = myRecoTool->isAcceptingPoints();
+  status["reco"]["addEnabled"] = isRecoModeOn && myRecoTool->isAddEnabled();
+  status["reco"]["fitEnabled"] = isRecoModeOn && myRecoTool->isFitEnabled();
+  status["reco"]["clearEnabled"] = isRecoModeOn && myRecoTool->isClearEnabled();
   // for the warnings before leaving an event: a fitted clicked track is written only by "Next event"
   status["reco"]["unsavedTrack"] = isRecoModeOn && isManualTrackUnsaved;
   // event type bits saved with the event in the output file (0 when not saved)
   status["savedEventType"] = static_cast<long long>(mySavedEventType);
   status["isSaved"] = static_cast<bool>(mySavedTrack);
-  status["reco"]["pendingPoints"] = isRecoModeOn && myRecoTool.hasClickedPoints();
+  status["reco"]["pendingPoints"] = isRecoModeOn && myRecoTool->hasClickedPoints();
   return status;
 }
 /////////////////////////////////////////////////////////
@@ -815,16 +830,28 @@ void WebGUIController::addTrackProjection(PanelOverlay & ov, int strip_dir,
 /////////////////////////////////////////////////////////
 void WebGUIController::addManualRecoOverlay(PanelOverlay & ov, int strip_dir) const {
 
-  for(const auto & aSegment: myRecoTool.getSegments().at(strip_dir)){
+  // getSegments() returns a temporary: keep it alive for the loop
+  const auto segments = myRecoTool->getSegments();
+  for(const auto & aSegment: segments.at(strip_dir)){
     std::string color = rootColor(aSegment.color);
     ov.markers.push_back(markers({aSegment.x1}, {aSegment.y1}, color, "square", 8));
     if(std::isnan(aSegment.x2) || std::isnan(aSegment.y2)) continue;
     ov.markers.push_back(markers({aSegment.x2}, {aSegment.y2}, color, "square", 8));
     ov.lines.push_back(line({aSegment.x1, aSegment.x2}, {aSegment.y1, aSegment.y2}, color, 3, "dash"));
   }
-  const auto & aMarker = myRecoTool.getMarkers().at(strip_dir);
+  // 3-prong mode: all clicked track points, and the vertex calculated from the track lines
+  for(const auto & aPoint: myRecoTool->getClickedPoints(strip_dir)){
+    ov.markers.push_back(markers({aPoint.x}, {aPoint.y}, rootColor(aPoint.color), "square", 8));
+  }
+  if(auto aVertex = myRecoTool->getVertex(strip_dir)){
+    // open (transparent) star: the charge under the vertex stays visible
+    wvalue aMarker = markers({aVertex->x}, {aVertex->y}, "#ffffff", "star-open", 16);
+    aMarker["lineWidth"] = 2;
+    ov.markers.push_back(std::move(aMarker));
+  }
+  const auto & aMarker = myRecoTool->getMarkers().at(strip_dir);
   if(aMarker) ov.markers.push_back(markers({aMarker->x}, {aMarker->y}, rootColor(2), "circle", 8));
-  if(auto fixedTime = myRecoTool.getFixedTime()){
+  if(auto fixedTime = myRecoTool->getFixedTime()){
     wvalue aLine;
     aLine["x"] = *fixedTime;
     aLine["color"] = rootColor(1);
@@ -889,7 +916,7 @@ std::vector<crow::json::wvalue> WebGUIController::makeRecoPanels() const {
     auto aHisto = aEvent->get1DProjection(projection_type::DIR_TIME, filterType, scale_type::mm);
     wvalue aPanel = makeHist1DPanel(*aHisto);
     PanelOverlay ov;
-    for(const auto & item: myRecoTool.getTimeLines()){
+    for(const auto & item: myRecoTool->getTimeLines()){
       wvalue aLine;
       aLine["x"] = item.x;
       aLine["color"] = rootColor(item.color);
@@ -898,8 +925,8 @@ std::vector<crow::json::wvalue> WebGUIController::makeRecoPanels() const {
     }
     ov.moveTo(aPanel);
     // line following the mouse over the projections while the first point is being chosen
-    if(myRecoTool.isAcceptingPoints() && !myRecoTool.getFixedTime()){
-      aPanel["cursorLineColor"] = rootColor(myRecoTool.getCursorLineColor());
+    if(myRecoTool->isAcceptingPoints() && !myRecoTool->getFixedTime()){
+      aPanel["cursorLineColor"] = rootColor(myRecoTool->getCursorLineColor());
     }
     panels.push_back(std::move(aPanel));
   }

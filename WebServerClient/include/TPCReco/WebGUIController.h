@@ -121,7 +121,7 @@ private:
   std::shared_ptr<EventSourceBase> myEventSource;
   std::shared_ptr<FileOutput> myFileOutput;
   mutable IonRangeCalculator myRangeCalculator;
-  ManualRecoTool myRecoTool;
+  std::unique_ptr<ManualRecoTool> myRecoTool{ManualRecoTool::create(ManualRecoTool::Mode::TwoProng)};
 
   bool isLogScaleOn{false};
   bool isAutozoomOn{false};
