@@ -74,6 +74,24 @@ public:
   /// changed; getdEdx() and getdEdxHisto() give the fit. Returns the fitted hypothesis.
   pid_type fitLongestSegmentdEdx();
 
+  /// A shorter alpha of the same event is the end part of the longest one: its charge profile
+  /// (from its vertex) shifted by delta lies on the dE/dx fit of the longest segment
+  /// (fitLongestSegmentdEdx). delta and a scale are fitted (least squares, delta scanned);
+  /// the length from dE/dx is the fitted alpha end point (vertex offset + alpha range) - delta.
+  struct ProfileMatch { bool valid{false}; double delta{0}, length{0}, scale{0}; };
+  ProfileMatch matchToLongestAlpha(const TrackSegment3D & aSegment) const;
+
+  /// dE/dx fit, as in the automatic reconstruction (12C + alpha and alpha hypotheses), of a
+  /// clicked 2-prong track: the profile along the line from the end of the shorter segment
+  /// (carbon) through the vertex to the end of the longer one (alpha); the orientation is kept
+  /// and the vertex is constrained to its clicked position. The track is not changed;
+  /// getdEdx(), getdEdxHisto() and getClickeddEdx() give the fit.
+  pid_type fitClickedTwoProngdEdx();
+
+  /// result of the last dE/dx fit of a clicked track (fitLongestSegmentdEdx, fitClickedTwoProngdEdx)
+  struct ClickeddEdx { pid_type eventType{pid_type::UNKNOWN}; double vertexOffset{0}, alphaRange{0}, carbonRange{0}; };
+  const ClickeddEdx & getClickeddEdx() const { return myClickeddEdx; }
+
   /// Fit of the current (clicked) multi-segment track to the rec hits: common vertex and segment
   /// directions (each hit counts for its nearest segment, truncated quadratic distance in the
   /// U/V/W projections), then the segment lengths from the charge along the fitted directions.
@@ -195,6 +213,8 @@ private:
   dEdxFitter mydEdxFitter;
   ChargeProfileBuilder myProfileBuilder; // track charge profile for the current track parameters
   TH1F mydEdxHisto;                      // profile of the chosen dE/dx fit (for drawing)
+  double myLongestAlphaEnd{0};           // end of the alpha fitted by fitLongestSegmentdEdx (profile coordinates)
+  ClickeddEdx myClickeddEdx;             // last dE/dx fit of a clicked track
   double myPressure{190};
   double myTemperature{293.15};
   std::shared_ptr<const GainTable> myGainTable;   ///< null: no charge -> energy conversion, no R selection

@@ -1,3 +1,4 @@
+#include <limits>
 #include <cstdlib>
 #include <cmath>
 #include <iostream>
@@ -476,6 +477,7 @@ TrackSegment2D TrackBuilder::findSegment2D(int iDir, int iPeak) const{
 void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & segmentsXY){
 
   mydEdxHisto = TH1F();
+  myClickeddEdx = ClickeddEdx();
   ///FIXME code duplication
   hTimeProjection.Reset();  
   for(int iDir=definitions::projection_type::DIR_U;iDir<=definitions::projection_type::DIR_W;++iDir){
@@ -1308,6 +1310,8 @@ bool TrackBuilder::fitClickedTrackToHits(){
 pid_type TrackBuilder::fitLongestSegmentdEdx(){
 
   mydEdxHisto = TH1F();
+  myLongestAlphaEnd = 0.0;
+  myClickeddEdx = ClickeddEdx();
   const auto & segments = myFittedTrack.getSegments();
   if(segments.empty()) return pid_type::UNKNOWN;
   auto longest = std::max_element(segments.begin(), segments.end(),
@@ -1343,11 +1347,106 @@ pid_type TrackBuilder::fitLongestSegmentdEdx(){
   }
   mydEdxHisto = aFit.fittedHisto;
   mydEdxHisto.SetDirectory(0);
+  myLongestAlphaEnd = aFit.vertexOffset + aFit.alphaRange;
+  myClickeddEdx = {aFit.eventType, aFit.vertexOffset, aFit.alphaRange, aFit.carbonRange};
   std::cout<<KGRN<<"Longest segment ("<<aSegment.getLength()<<" mm) dE/dx fit: "<<aFit.eventType
            <<", vertex offset: "<<aFit.vertexOffset<<" mm, alpha range: "<<aFit.alphaRange
            <<" mm, carbon range: "<<aFit.carbonRange<<" mm, diffusion: "<<aFit.diffusion
            <<" mm/sqrt(cm), fit loss: "<<aFit.loss<<RST<<std::endl;
   return aFit.eventType;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+pid_type TrackBuilder::fitClickedTwoProngdEdx(){
+
+  mydEdxHisto = TH1F();
+  myClickeddEdx = ClickeddEdx();
+  const auto & segments = myFittedTrack.getSegments();
+  if(segments.size()!=2) return pid_type::UNKNOWN;
+  const bool firstIsLonger = segments[0].getLength()>=segments[1].getLength();
+  const TrackSegment3D & alpha = firstIsLonger ? segments[0] : segments[1];
+  const TrackSegment3D & carbon = firstIsLonger ? segments[1] : segments[0];
+  if(alpha.getLength()<1) return pid_type::UNKNOWN;
+
+  // one line through both segments, from the carbon end (x = 0) to the alpha end, as the 3D seed
+  // of the automatic reconstruction; the vertex at x = carbon length
+  TrackSegment3D aLine = alpha;
+  aLine.setStartEnd(carbon.getEnd(), alpha.getEnd());
+  if(aLine.getLength()<1) return pid_type::UNKNOWN;
+  const double vertexPosition = (alpha.getStart() - carbon.getEnd())*aLine.getTangent().Unit();
+  TH1F hChargeProfile = myProfileBuilder.getSegmentProfile(aLine);
+  if(!(hChargeProfile.GetMaximum()>0)){
+    std::cout<<KRED<<"dE/dx fit of the clicked 2-prong track: no charge along it."<<RST<<std::endl;
+    return pid_type::UNKNOWN;
+  }
+  hChargeProfile.Scale(1.0/hChargeProfile.GetMaximum());
+
+  double trackWidth = aLine.getMaxProjWidth();
+  double centralD = trackWidth/0.76;
+  double minD = centralD*0.5, maxD = centralD*1.5;
+  if(!(trackWidth>0.0)){ minD = 0.5; maxD = 1.5; }
+  mydEdxFitter.setDiffusionRange(minD, maxD);
+  mydEdxFitter.setOrientation(0);                    // carbon towards smaller, alpha towards larger x
+  mydEdxFitter.setVertexConstraint(vertexPosition);  // the clicked vertex (+- default window)
+  mydEdxFitter.fitHisto(hChargeProfile);
+  mydEdxFitter.setOrientation(-1);
+  mydEdxFitter.clearVertexConstraint();
+  HypothesisFit aFit = getHypothesisFit();
+  if(aFit.eventType==pid_type::UNKNOWN || !(aFit.loss>0)){
+    std::cout<<KRED<<"dE/dx fit of the clicked 2-prong track failed."<<RST<<std::endl;
+    return pid_type::UNKNOWN;
+  }
+  mydEdxHisto = aFit.fittedHisto;
+  mydEdxHisto.SetDirectory(0);
+  myClickeddEdx = {aFit.eventType, aFit.vertexOffset, aFit.alphaRange, aFit.carbonRange};
+  std::cout<<KGRN<<"Clicked 2-prong dE/dx fit: "<<aFit.eventType<<", vertex at "<<aFit.vertexOffset
+           <<" mm (clicked "<<vertexPosition<<" mm), alpha range: "<<aFit.alphaRange<<" mm (clicked "<<alpha.getLength()
+           <<" mm), carbon range: "<<aFit.carbonRange<<" mm (clicked "<<carbon.getLength()<<" mm), diffusion: "
+           <<aFit.diffusion<<" mm/sqrt(cm), fit loss: "<<aFit.loss<<RST<<std::endl;
+  return aFit.eventType;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+TrackBuilder::ProfileMatch TrackBuilder::matchToLongestAlpha(const TrackSegment3D & aSegment) const {
+
+  ProfileMatch aMatch;
+  if(mydEdxHisto.GetEntries()==0 || !(myLongestAlphaEnd>0) || aSegment.getLength()<1) return aMatch;
+  TH1F hProfile = myProfileBuilder.getSegmentProfile(aSegment);
+  if(!(hProfile.GetMaximum()>0)) return aMatch;
+  hProfile.Scale(1.0/hProfile.GetMaximum());
+  TF1 aModel = mydEdxFitter.getFittedModel();
+
+  // bins from the segment vertex to 1.2 x its length (before the vertex: the other tracks)
+  std::vector<std::pair<double,double>> points;
+  for(int iBin=1;iBin<=hProfile.GetNbinsX();++iBin){
+    double x = hProfile.GetBinCenter(iBin);
+    if(x<0 || x>1.2*aSegment.getLength()) continue;
+    points.push_back({x, hProfile.GetBinContent(iBin)});
+  }
+  if(points.size()<3) return aMatch;
+  // residual for a shift delta, with the best scale (analytic)
+  auto residual = [&](double delta, double & scale){
+    double sumHM = 0, sumMM = 0, sumHH = 0;
+    for(const auto & [x, h]: points){
+      double m = aModel.Eval(x + delta);
+      sumHM += h*m; sumMM += m*m; sumHH += h*h;
+    }
+    scale = sumMM>0 ? sumHM/sumMM : 0.0;
+    return sumHH - scale*sumHM;
+  };
+  double bestDelta = 0, bestScale = 0, best = std::numeric_limits<double>::max();
+  const double step = 0.1; // [mm]
+  for(double delta=0;delta<=myLongestAlphaEnd;delta+=step){
+    double scale = 0;
+    double value = residual(delta, scale);
+    if(scale>0 && value<best){ best = value; bestDelta = delta; bestScale = scale; }
+  }
+  if(!(bestScale>0)) return aMatch;
+  aMatch.valid = true;
+  aMatch.delta = bestDelta;
+  aMatch.scale = bestScale;
+  aMatch.length = myLongestAlphaEnd - bestDelta;
+  return aMatch;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
