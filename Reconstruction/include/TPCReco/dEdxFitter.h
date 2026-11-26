@@ -43,6 +43,9 @@ public:
   /// given, 1 only the reflected profile.
   void setOrientation(int anOrientation) { forcedOrientation = anOrientation; }
 
+  /// fitHisto fits the alpha hypothesis only (no 12C + alpha), e.g. one track of a 3-alpha event
+  void setAlphaOnly(bool flag) { alphaOnly = flag; }
+
   /// Remove the vertex constraint
   void clearVertexConstraint() { hasVertexConstraint = false;}
 
@@ -183,6 +186,7 @@ private:
   double vertexConstraint{0};
   double vertexConstraintHalfWidth{2};
   int forcedOrientation{-1};
+  bool alphaOnly{false};
   unsigned int maxFitAttempts{1};
   double maxLossRatio{defaultMaxLossRatio};
   double errorDef{defaultErrorDef};

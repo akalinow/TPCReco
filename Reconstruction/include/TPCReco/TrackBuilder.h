@@ -66,6 +66,19 @@ public:
   /// for drawing with getdEdx(); empty when the event has no dE/dx fit
   const TH1F & getdEdxHisto() const { return mydEdxHisto; }
 
+  /// dE/dx fit, as in the automatic reconstruction, of the charge profile of the longest segment
+  /// of the current track (e.g. a clicked 3-prong track), with the alpha hypothesis only. The
+  /// profile starts at the vertex (the segment start): the orientation is kept and the vertex is
+  /// constrained to it. The track is not
+  /// changed; getdEdx() and getdEdxHisto() give the fit. Returns the fitted hypothesis.
+  pid_type fitLongestSegmentdEdx();
+
+  /// Fit of the current (clicked) multi-segment track to the rec hits: common vertex and segment
+  /// directions (each hit counts for its nearest segment, truncated quadratic distance in the
+  /// U/V/W projections), then the segment lengths from the charge along the fitted directions.
+  /// The track is kept when the fit fails or does not improve it. Returns true when updated.
+  bool fitClickedTrackToHits();
+
 private:
 
   void setPressure(double aPressure);

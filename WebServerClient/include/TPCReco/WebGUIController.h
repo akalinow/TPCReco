@@ -156,6 +156,7 @@ private:
   // clicked track of the current event after "Fit segments", with the particle types of the
   // reconstruction mode (makeClickedTrack); shown and written instead of the TrackBuilder track
   std::shared_ptr<Track3D> myClickedTrack;
+  bool isClickedThreeProng{false}; // myClickedTrack fitted in the 3-prong mode
 
   std::vector<ListedEvent> myEventList;
   long myListPosition{-1};          // index in myEventList of the event shown, -1: none

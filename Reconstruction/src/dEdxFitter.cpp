@@ -490,6 +490,7 @@ TFitResult dEdxFitter::fitHisto(const TH1F & aHisto){
     passes.push_back(Kinematics::O16);
     passes.push_back(Kinematics::O18);
   }
+  if(alphaOnly) passes.clear();
   HypothesisFit carbonAlpha;
   Kinematics carbonAlphaKinematics = Kinematics::FREE;
   for(auto kinematics: passes){
@@ -505,7 +506,7 @@ TFitResult dEdxFitter::fitHisto(const TH1F & aHisto){
   HypothesisFit alpha = fitBothOrientations(alpha_model);
 
   /// select best hypothesis
-  if(better(alpha.result, carbonAlpha.result)){
+  if(alphaOnly || better(alpha.result, carbonAlpha.result)){
     theFitResult = alpha.result;
     theFittedModel = alpha_model;
     theFittedHisto = alpha.histo;

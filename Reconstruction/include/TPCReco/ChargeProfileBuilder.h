@@ -37,6 +37,9 @@ public:
   /// profiles of the segments (charge/mm), aligned by the segment end points, common binning
   std::vector<TH1F> getSegmentProfiles(const Track3D & aTrack) const;
 
+  /// profile of one segment (charge/mm) from its start (the vertex), range [-0.2, 1.2]*length
+  TH1F getSegmentProfile(const TrackSegment3D & aSegment) const;
+
   /// stacked profile of the track: sum of the segment profiles
   TH1F getTrackProfile(const Track3D & aTrack) const;
 

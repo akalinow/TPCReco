@@ -205,7 +205,7 @@ function lineTrace(item, showLegend) {
 
 function markerTrace(item) {
   return {
-    type: 'scatter', mode: 'markers', x: item.x, y: item.y, showlegend: false,
+    type: 'scatter', mode: 'markers', x: item.x, y: item.y, name: item.name || '', showlegend: !!item.name,
     marker: { color: item.color, symbol: item.symbol, size: item.size, line: { color: item.lineColor, width: item.lineWidth || 1 } },
     hovertemplate: 'x: %{x:.4g}<br>y: %{y:.4g}<extra></extra>',
   };
@@ -235,7 +235,7 @@ function renderPanel(div, panel, index, status) {
   // the U/V/W strip projections have no title (the axis titles say it all)
   const isStripProjection = panel.kind === 'heatmap' && /^[UVW] \[/.test(panel.yTitle || '');
   const title = isStripProjection ? '' : latex(panel.title);
-  const hasLegend = (panel.series || []).some((s) => s.name);
+  const hasLegend = (panel.series || []).some((s) => s.name) || (panel.markers || []).some((m) => m.name);
   const axis = (title, range) => ({
     title: { text: latex(title) }, showgrid: false, zeroline: false, mirror: true,
     showline: true, linecolor: '#444', ticks: 'outside',

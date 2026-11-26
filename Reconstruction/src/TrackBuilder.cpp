@@ -5,6 +5,7 @@
 #include <array>
 #include <stdexcept>
 
+#include <TVector2.h>
 #include <TVector3.h>
 #include <TProfile.h>
 #include <TObjArray.h>
@@ -494,13 +495,33 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
       my2DSeeds[iDir].push_back(aSegment2D);
     }
     TrackSegment3D a3DSeed = buildSegment3D(iSegment, true);
-    double startTime = my2DSeeds.at(definitions::projection_type::DIR_U).at(iSegment).getStart().X();    
-    double endTime = my2DSeeds.at(definitions::projection_type::DIR_U).at(iSegment).getEnd().X();
-    double lambdaStartTime = a3DSeed.getLambdaAtZ(startTime);
-    double lambdaEndTime = a3DSeed.getLambdaAtZ(endTime);
-    TVector3 start =  a3DSeed.getStart() + lambdaStartTime*a3DSeed.getTangent();
-    TVector3 end =  a3DSeed.getStart() + lambdaEndTime*a3DSeed.getTangent();
-    a3DSeed.setStartEnd(start, end);
+    // The clicked end points are known in U and V (and W) at a common time: their 3D position is
+    // (X, Y) from the U and V strip coordinates and Z = time. Cutting the 3D line at the clicked
+    // times instead collapses a segment perpendicular to the drift (same time at both ends) to a
+    // point; that is kept only as a fallback.
+    const auto & seedU = my2DSeeds.at(definitions::projection_type::DIR_U).at(iSegment);
+    const auto & seedV = my2DSeeds.at(definitions::projection_type::DIR_V).at(iSegment);
+    auto clickedPoint = [this](const TVector3 & aU, const TVector3 & aV, TVector3 & aPoint){
+      TVector2 aXY;
+      if(!myGeometryPtr->GetUVWCrossPointInMM(definitions::projection_type::DIR_U, aU.Y(),
+                                              definitions::projection_type::DIR_V, aV.Y(), aXY)) return false;
+      aPoint.SetXYZ(aXY.X(), aXY.Y(), aU.X());
+      return true;
+    };
+    TVector3 start, end;
+    if(clickedPoint(seedU.getStart(), seedV.getStart(), start) && clickedPoint(seedU.getEnd(), seedV.getEnd(), end) &&
+       (end-start).Mag()>1E-3){
+      a3DSeed.setStartEnd(start, end);
+    }
+    else {
+      double startTime = seedU.getStart().X();
+      double endTime = seedU.getEnd().X();
+      double lambdaStartTime = a3DSeed.getLambdaAtZ(startTime);
+      double lambdaEndTime = a3DSeed.getLambdaAtZ(endTime);
+      start =  a3DSeed.getStart() + lambdaStartTime*a3DSeed.getTangent();
+      end =  a3DSeed.getStart() + lambdaEndTime*a3DSeed.getTangent();
+      a3DSeed.setStartEnd(start, end);
+    }
     aTrackCandidate.addSegment(a3DSeed);
   }
   std::cout<<KBLU<<"Hand clicked track: "<<RST<<std::endl;
@@ -1141,6 +1162,179 @@ Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
     aSplitTrackCandidate.addSegment(carbonSegment);
   }
   return aSplitTrackCandidate;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+namespace {
+  // loss of a multi-segment track: in each U/V/W projection every hit counts for its nearest
+  // segment (distance to the finite 2D segment), charge weighted, truncated at maxDistance
+  // (farther hits count with maxDistance, so moving away from hits does not pay)
+  double nearestSegmentLoss(const std::vector<TrackSegment3D> & segments,
+                            const std::vector<Hit2DCollection> & recHits, double maxDistance){
+    double loss = 0.0, chargeSum = 0.0;
+    for(int iDir=definitions::projection_type::DIR_U;iDir<=definitions::projection_type::DIR_W;++iDir){
+      if(iDir>=int(recHits.size())) break;
+      std::vector<TrackSegment2D> projections;
+      for(const auto & aSegment: segments) projections.push_back(aSegment.get2DProjection(iDir, 0, aSegment.getLength()));
+      for(const auto & aHit: recHits.at(iDir)){
+        const double charge = std::abs(aHit.getCharge());
+        TVector3 aPoint(aHit.getPosTime(), aHit.getPosStrip(), 0.0);
+        double best = maxDistance;
+        for(const auto & aProjection: projections){
+          const double length = aProjection.getLength();
+          const TVector3 tangent = aProjection.getTangent().Unit();
+          double lambda = (aPoint - aProjection.getStart())*tangent;
+          lambda = std::min(std::max(lambda, 0.0), length);
+          const double distance = (aPoint - (aProjection.getStart() + lambda*tangent)).Mag();
+          best = std::min(best, distance);
+        }
+        loss += charge*best*best;
+        chargeSum += charge;
+      }
+    }
+    return chargeSum>0 ? loss/chargeSum : 0.0;
+  }
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+bool TrackBuilder::fitClickedTrackToHits(){
+
+  const double maxDistance = 10.0;      // [mm] truncation of the hit distance
+  const double vertexRange = 10.0;      // [mm] vertex shift allowed, each coordinate
+  const double angleRange = 0.3;        // [rad] direction change allowed, theta and phi
+  const double endThreshold = 0.1;      // segment end: charge profile below this fraction of its maximum
+  const double maxLengthChange = 0.5;   // relative length change allowed
+
+  Track3D aTrack = myFittedTrack;
+  std::vector<TrackSegment3D> segments = aTrack.getSegments();
+  if(segments.size()<2) return false;
+  const std::vector<Hit2DCollection> recHits = segments.front().getRecHits();
+  const TVector3 vertex0 = segments.front().getStart();
+  std::vector<double> lengths;
+  for(const auto & aSegment: segments) lengths.push_back(aSegment.getLength());
+
+  // parameters: vertex (x, y, z), then theta, phi of each segment; lengths fixed
+  const unsigned int nParams = 3 + 2*segments.size();
+  std::vector<double> start{vertex0.X(), vertex0.Y(), vertex0.Z()};
+  for(const auto & aSegment: segments){
+    start.push_back(aSegment.getTangent().Theta());
+    start.push_back(aSegment.getTangent().Phi());
+  }
+  auto makeSegments = [&](const double *par){
+    std::vector<TrackSegment3D> result = segments;
+    TVector3 aVertex(par[0], par[1], par[2]);
+    for(size_t iSegment=0;iSegment<result.size();++iSegment){
+      TVector3 aTangent;
+      aTangent.SetMagThetaPhi(1.0, par[3+2*iSegment], par[4+2*iSegment]);
+      result[iSegment].setStartEnd(aVertex, aVertex + lengths[iSegment]*aTangent);
+    }
+    return result;
+  };
+  auto lossFunction = [&](const double *par){ return nearestSegmentLoss(makeSegments(par), recHits, maxDistance); };
+  const double initialLoss = lossFunction(start.data());
+
+  ROOT::Fit::Fitter aFitter;
+  aFitter.Config().MinimizerOptions().SetMinimizerType("Minuit2");
+  ROOT::Math::Functor fcn(lossFunction, nParams);
+  aFitter.SetFCN(fcn, start.data());
+  for(unsigned int iPar=0;iPar<nParams;++iPar){
+    auto & settings = aFitter.Config().ParSettings(iPar);
+    const double range = iPar<3 ? vertexRange : angleRange;
+    settings.SetValue(start[iPar]);
+    settings.SetStepSize(range/10);
+    settings.SetLimits(start[iPar]-range, start[iPar]+range);
+  }
+  if(!aFitter.FitFCN() || !(aFitter.Result().MinFcnValue()<initialLoss)){
+    std::cout<<KRED<<"Fit of the clicked track to the hits: no improvement, clicked track kept "<<RST
+             <<"(loss "<<initialLoss<<")"<<std::endl;
+    return false;
+  }
+  std::vector<TrackSegment3D> fitted = makeSegments(aFitter.Result().GetParams());
+
+  // segment lengths: where the charge along the fitted direction (searched up to 1.5 x the
+  // clicked length) falls below endThreshold of its maximum, within +-maxLengthChange
+  for(size_t iSegment=0;iSegment<fitted.size();++iSegment){
+    TrackSegment3D aLonger = fitted[iSegment];
+    const TVector3 aVertex = aLonger.getStart();
+    const TVector3 aTangent = aLonger.getTangent().Unit();
+    aLonger.setStartEnd(aVertex, aVertex + (1+maxLengthChange)*lengths[iSegment]*aTangent);
+    TH1F hProfile = myProfileBuilder.getSegmentProfile(aLonger);
+    double maxCharge = hProfile.GetMaximum();
+    if(!(maxCharge>0)) continue;
+    int lastBin = hProfile.FindFixBin(0.0);
+    for(int iBin=lastBin;iBin<=hProfile.GetNbinsX() && hProfile.GetBinContent(iBin)>=endThreshold*maxCharge;++iBin) lastBin = iBin;
+    const double length = hProfile.GetXaxis()->GetBinUpEdge(lastBin);
+    if(std::abs(length/lengths[iSegment]-1)>maxLengthChange) continue;
+    fitted[iSegment].setStartEnd(aVertex, aVertex + length*aTangent);
+  }
+  const double finalLoss = nearestSegmentLoss(fitted, recHits, maxDistance);
+  if(!(finalLoss<initialLoss)){
+    std::cout<<KRED<<"Fit of the clicked track to the hits: no improvement after the lengths, clicked track kept"<<RST<<std::endl;
+    return false;
+  }
+
+  Track3D aFittedTrack;
+  for(auto & aSegment: fitted){
+    aSegment.setRecHits(recHits);
+    aFittedTrack.addSegment(aSegment);
+  }
+  aFittedTrack.setHypothesisFitLoss(myFittedTrack.getHypothesisFitLoss());
+  const TVector3 vertex = fitted.front().getStart();
+  std::cout<<KGRN<<"Fit of the clicked track to the hits: loss "<<initialLoss<<" -> "<<finalLoss
+           <<", vertex moved by "<<(vertex-vertex0).Mag()<<" mm, lengths [mm]:";
+  for(size_t iSegment=0;iSegment<fitted.size();++iSegment){
+    std::cout<<" "<<lengths[iSegment]<<" -> "<<fitted[iSegment].getLength();
+  }
+  std::cout<<RST<<std::endl;
+  myFittedTrack = aFittedTrack;
+  myProfileBuilder.fill(myFittedTrack);
+  return true;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+pid_type TrackBuilder::fitLongestSegmentdEdx(){
+
+  mydEdxHisto = TH1F();
+  const auto & segments = myFittedTrack.getSegments();
+  if(segments.empty()) return pid_type::UNKNOWN;
+  auto longest = std::max_element(segments.begin(), segments.end(),
+                                  [](const TrackSegment3D & a, const TrackSegment3D & b){ return a.getLength()<b.getLength(); });
+  const TrackSegment3D & aSegment = *longest;
+  if(aSegment.getLength()<1) return pid_type::UNKNOWN;
+  // profile from the vertex, normalised to 1 as TrackSegment3D::getChargeProfile(), but also for
+  // short segments (that one skips 2D projections shorter than 30 mm)
+  TH1F hChargeProfile = myProfileBuilder.getSegmentProfile(aSegment);
+  if(!(hChargeProfile.GetMaximum()>0)){
+    std::cout<<KRED<<"dE/dx fit of the longest segment: no charge along it."<<RST<<std::endl;
+    return pid_type::UNKNOWN;
+  }
+  hChargeProfile.Scale(1.0/hChargeProfile.GetMaximum());
+
+  // diffusion range from the track width, as in fitEventHypothesis()
+  double trackWidth = aSegment.getMaxProjWidth();
+  double centralD = trackWidth/0.76;
+  double minD = centralD*0.5, maxD = centralD*1.5;
+  if(!(trackWidth>0.0)){ minD = 0.5; maxD = 1.5; }
+  mydEdxFitter.setDiffusionRange(minD, maxD);
+  mydEdxFitter.setOrientation(0);             // the profile starts at the vertex
+  mydEdxFitter.setVertexConstraint(0.0);      // vertex at the segment start (+- default window)
+  mydEdxFitter.setAlphaOnly(true);            // one alpha of a 3-alpha event: no 12C + alpha
+  mydEdxFitter.fitHisto(hChargeProfile);
+  mydEdxFitter.setAlphaOnly(false);
+  mydEdxFitter.setOrientation(-1);
+  mydEdxFitter.clearVertexConstraint();
+  HypothesisFit aFit = getHypothesisFit();
+  if(aFit.eventType==pid_type::UNKNOWN || !(aFit.loss>0)){
+    std::cout<<KRED<<"dE/dx fit of the longest segment failed."<<RST<<std::endl;
+    return pid_type::UNKNOWN;
+  }
+  mydEdxHisto = aFit.fittedHisto;
+  mydEdxHisto.SetDirectory(0);
+  std::cout<<KGRN<<"Longest segment ("<<aSegment.getLength()<<" mm) dE/dx fit: "<<aFit.eventType
+           <<", vertex offset: "<<aFit.vertexOffset<<" mm, alpha range: "<<aFit.alphaRange
+           <<" mm, carbon range: "<<aFit.carbonRange<<" mm, diffusion: "<<aFit.diffusion
+           <<" mm/sqrt(cm), fit loss: "<<aFit.loss<<RST<<std::endl;
+  return aFit.eventType;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

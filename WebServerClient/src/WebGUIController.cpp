@@ -17,6 +17,7 @@
 #include <TH2D.h>
 #include <TVector3.h>
 
+#include "TPCReco/ChargeProfileBuilder.h"
 #include "TPCReco/CommonDefinitions.h"
 #include "TPCReco/EventSourceFactory.h"
 #include "TPCReco/EventSourceGRAW.h"
@@ -828,8 +829,13 @@ std::string WebGUIController::execute(const crow::json::rvalue & command){
     if(!isRecoModeOn || !myRecoTool->isFitEnabled()) return "No complete segments to fit.";
     std::vector<double> segmentsXY = myRecoTool->takeSegmentsForFit();
     myEventSource->getTrackBuilder()->getSegment2DCollectionFromGUI(segmentsXY);
+    isClickedThreeProng = myRecoTool->getMode()==ManualRecoTool::Mode::ThreeProng;
+    // 3-prong: the clicked track fitted to the hits (vertex, directions, lengths)
+    if(isClickedThreeProng) myEventSource->getTrackBuilder()->fitClickedTrackToHits();
     myClickedTrack = std::make_shared<Track3D>(makeClickedTrack(myEventSource->getTrackBuilder()->getTrack3D(0),
                                                                 myRecoTool->getMode()));
+    // 3-prong: dE/dx fit of the longest segment, as in the automatic reconstruction (for the plot)
+    if(isClickedThreeProng) myEventSource->getTrackBuilder()->fitLongestSegmentdEdx();
     std::cout<<KBLU<<"Particle types ("<<ManualRecoTool::modeName(myRecoTool->getMode())<<"): "<<RST;
     for(const auto & aSegment: myClickedTrack->getSegments()) std::cout<<aSegment.getPID()<<" ";
     std::cout<<std::endl;
@@ -1242,24 +1248,56 @@ crow::json::wvalue WebGUIController::makeChargeProfilePanel(const Track3D & aTra
   if(aTrack.getLength()<1 || aTrack.getSegments().empty()) return aPanel;
   PanelOverlay ov;
 
-  // the automatically reconstructed track: the profile fitted by the dE/dx fit (with the model
-  // below), otherwise (clicked track, track read from the output file): the first segment profile
+  // the automatically reconstructed track and a fitted clicked 3-prong track (longest segment):
+  // the profile fitted by the dE/dx fit (with the model below); otherwise (other clicked tracks,
+  // track read from the output file): the first segment profile
   const TH1F & hdEdx = myEventSource->getTrackBuilder()->getdEdxHisto();
-  bool isUnknownPID = aTrack.getSegments().front().getPID()==pid_type::UNKNOWN ||
-                      &aTrack!=&myEventSource->getTrackBuilder()->getTrack3D(0) || hdEdx.GetEntries()==0;
+  const bool isClicked3Prong = isClickedThreeProng && myClickedTrack && &aTrack==myClickedTrack.get();
+  const bool isClickedWithFit = isClicked3Prong && hdEdx.GetEntries()>0;
+  bool isUnknownPID = !isClickedWithFit &&
+                      (aTrack.getSegments().front().getPID()==pid_type::UNKNOWN ||
+                       &aTrack!=&myEventSource->getTrackBuilder()->getTrack3D(0) || hdEdx.GetEntries()==0);
   TH1F hChargeProfile = isUnknownPID ? aTrack.getSegments().front().getChargeProfile() : hdEdx;
   // a track read from the output file has no geometry for the segment profile: its stored profile
   if(hChargeProfile.GetMaximum()<=0) hChargeProfile = aTrack.getChargeProfile();
+  // clicked 3-prong track: the alphas from the vertex (ChargeProfileBuilder: short segments too,
+  // normalised to 1), each in the colour of its segment; the longest one first (the fitted one)
+  ChargeProfileBuilder aBuilder;
+  if(isClicked3Prong){
+    hChargeProfile = aBuilder.getSegmentProfile(aTrack.getSegments().front());
+    if(hChargeProfile.GetMaximum()>0) hChargeProfile.Scale(1.0/hChargeProfile.GetMaximum());
+  }
   std::vector<double> x, y;
   for(int iBin=1;iBin<=hChargeProfile.GetNbinsX();++iBin){
     x.push_back(hChargeProfile.GetBinCenter(iBin));
     y.push_back(hChargeProfile.GetBinContent(iBin));
   }
   ov.markers.push_back(markers(x, y, rootColor(2), "circle", 6));
+  // 3-prong: the alphas by length, alpha_1 the longest (fitted) one
+  auto alphaName = [](size_t index){
+    static const char * subscripts[] = {"₁", "₂", "₃", "₄", "₅", "₆", "₇", "₈", "₉"};
+    return std::string("α") + (index<9 ? subscripts[index] : std::to_string(index+1).c_str());
+  };
+  if(isClicked3Prong) ov.markers.back()["name"] = alphaName(0);
+  double maxContent = hChargeProfile.GetMaximum();
+  if(isClicked3Prong){
+    for(size_t iSegment=1;iSegment<aTrack.getSegments().size();++iSegment){
+      TH1F hSegment = aBuilder.getSegmentProfile(aTrack.getSegments().at(iSegment));
+      if(hSegment.GetMaximum()>0) hSegment.Scale(1.0/hSegment.GetMaximum());
+      std::vector<double> sx, sy;
+      for(int iBin=1;iBin<=hSegment.GetNbinsX();++iBin){
+        sx.push_back(hSegment.GetBinCenter(iBin));
+        sy.push_back(hSegment.GetBinContent(iBin));
+      }
+      ov.markers.push_back(markers(sx, sy, rootColor(2+iSegment), "circle", 6));
+      ov.markers.back()["name"] = alphaName(iSegment);
+      maxContent = std::max(maxContent, hSegment.GetMaximum());
+    }
+  }
   aPanel["xRange"] = range(-20, 20+aTrack.getLength());
-  aPanel["yRange"] = range(0.0, 1.2*hChargeProfile.GetMaximum());
+  aPanel["yRange"] = range(0.0, 1.2*maxContent);
 
-  if(isUnknownPID){
+  if(isUnknownPID || (isClicked3Prong && !isClickedWithFit)){ // no model without a valid fit
     ov.moveTo(aPanel);
     return aPanel;
   }
@@ -1279,6 +1317,11 @@ crow::json::wvalue WebGUIController::makeChargeProfilePanel(const Track3D & aTra
       return std::make_pair(cx, cy);
     };
     auto full = curve();
+    if(isClicked3Prong){ // alpha hypothesis of the longest alpha only
+      ov.series.push_back(line(full.first, full.second, rootColor(1), 3, "solid", alphaName(0)+" fit"));
+      ov.moveTo(aPanel);
+      return aPanel;
+    }
     ov.series.push_back(line(full.first, full.second, rootColor(1), 3, "solid", "¹²C + α"));
     dEdx.SetParameter("carbonScale", 0.0);
     auto alpha = curve();

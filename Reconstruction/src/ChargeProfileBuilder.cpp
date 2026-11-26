@@ -86,6 +86,15 @@ std::vector<TH1F> ChargeProfileBuilder::getSegmentProfiles(const Track3D & aTrac
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+TH1F ChargeProfileBuilder::getSegmentProfile(const TrackSegment3D & aSegment) const {
+
+  TH1F histo = makeHisto(std::max(aSegment.getLength(), 1.0));
+  addSegment(histo, aSegment, 0.0);
+  histo.Scale(1.0/histo.GetBinWidth(1)); // charge/mm
+  return histo;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 TH1F ChargeProfileBuilder::getTrackProfile(const Track3D & aTrack) const {
 
   std::vector<TH1F> profiles = getSegmentProfiles(aTrack);
