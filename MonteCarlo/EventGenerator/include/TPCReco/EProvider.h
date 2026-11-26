@@ -29,4 +29,18 @@ protected:
 REGISTER_PROVIDER(EProviderGaus)
 };
 
+/// Beam spectrum (Gaussian: meanE, sigmaE) times the Breit-Wigner cross section of a resonance
+/// (resonanceE, resonanceWidth; photon energies [MeV]): the energy distribution of the reactions
+/// on a narrow resonance. Sampled from the beam Gaussian, accepted with the probability
+/// (Gamma/2)^2 / ((E - E_R)^2 + (Gamma/2)^2) (maximum 1 at E_R).
+class EProviderGausBW : public EProvider {
+public:
+    EProviderGausBW();
+    double GetEnergy() override;
+protected:
+    void ValidateParamValues() override;
+
+REGISTER_PROVIDER(EProviderGausBW)
+};
+
 #endif //TPCSOFT_EPROVIDER_H
