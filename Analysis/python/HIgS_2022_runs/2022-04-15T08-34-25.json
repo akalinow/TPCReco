@@ -1,0 +1,35 @@
+{
+  "name": "2022-04-15T08:34:25 Physics 8.86 MeV",
+  "description": "HIgS_April_2022, Physics (good), 130 mbar, drift 1764 V, 25 MHz",
+  "run": {
+    "run_id": "2022-04-15T08:34:25",
+    "campaign": "HIgS_April_2022",
+    "run_type": "Physics",
+    "quality": "good",
+    "beam_energy_MeV": 8.86,
+    "pressure_mbar": 130.0,
+    "sampling_MHz": 25.0,
+    "drift_V": 1764.0,
+    "drift_preset": "5",
+    "trigger_delay_10ns": "1848",
+    "geometry_file": "geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat",
+    "n_chunks_logbook": "",
+    "n_chunks_found": 2,
+    "data_dir": "/scratch_hdd/akalinow/ELITPC/data/HIgs_2022/20220415_extTrg_CO2_130mbar",
+    "comment": "",
+    "temperature_C": null,
+    "n_streams": 4,
+    "beam_on": true
+  },
+  "input": {
+    "dataFile": "/scratch_hdd/akalinow/ELITPC/data/HIgs_2022/20220415_extTrg_CO2_130mbar/CoBo0_AsAd0_2022-04-15T08:34:25.687_0000.graw,/scratch_hdd/akalinow/ELITPC/data/HIgs_2022/20220415_extTrg_CO2_130mbar/CoBo0_AsAd1_2022-04-15T08:34:25.689_0000.graw,/scratch_hdd/akalinow/ELITPC/data/HIgs_2022/20220415_extTrg_CO2_130mbar/CoBo0_AsAd2_2022-04-15T08:34:25.692_0000.graw,/scratch_hdd/akalinow/ELITPC/data/HIgs_2022/20220415_extTrg_CO2_130mbar/CoBo0_AsAd3_2022-04-15T08:34:25.695_0000.graw",
+    "geometryFile": "geometry_ELITPC_130mbar_1764Vdrift_25MHz.dat"
+  },
+  "conditions": {
+    "pressure": 130.0,
+    "samplingRate": 25.0
+  },
+  "beamParameters": {
+    "energy": 8.86
+  }
+}

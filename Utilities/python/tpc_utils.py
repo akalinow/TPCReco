@@ -1,6 +1,7 @@
 import os
 import re
 import csv
+import json
 import glob
 import datetime
 import time
@@ -95,8 +96,9 @@ def getCSVinputList(dataPath):
     return csvDict   
 ################################################################
 ################################################################
+# CoBo0_AsAd2_<time>.<ms>_<chunk>.graw (one file per AsAd) or CoBo_<time>.<ms>_<chunk>.graw (one file for all)
 GRAW_NAME_PATTERN = re.compile(
-    r"CoBo\d*_AsAd(\d)_(\d{4}-\d{2}-\d{2}T\d{2}[:-]\d{2}[:-]\d{2})\.\d+_(\d{4})\.graw$")
+    r"CoBo\d*(?:_AsAd(\d))?_(\d{4}-\d{2}-\d{2}T\d{2}[:-]\d{2}[:-]\d{2})\.\d+_(\d{4})\.graw$")
 ################################################################
 ################################################################
 def getRunChunks(dataPath, runId, windowSeconds=2):
@@ -118,14 +120,27 @@ def getRunChunks(dataPath, runId, windowSeconds=2):
         fileStart = datetime.datetime.strptime(timestamp.replace(":", "-"), "%Y-%m-%dT%H-%M-%S")
         delta = (fileStart - runStart).total_seconds()
         if 0 <= delta <= windowSeconds:
-            chunks.setdefault(chunkId, []).append((asadId, aFile))
+            chunks.setdefault(chunkId, []).append((asadId or "", aFile))
     return {chunkId: ",".join(f for _, f in sorted(files))
             for chunkId, files in sorted(chunks.items())}
 ################################################################
 ################################################################
-def readRunList(csvPath):
-    """Read the per-run metadata list (see Analysis/python/makeRunList.py)."""
-    with open(csvPath, newline="") as f:
+def readRunList(path):
+    """Read the per-run metadata list (see Analysis/python/makeRunList.py).
+
+    path: directory with one data-set JSON file per run (the "run" section of each file),
+    or a CSV file (older run lists). Returns a list of {column: string value}, ordered by
+    run_id; missing values are empty strings.
+    """
+    if os.path.isdir(path):
+        runs = []
+        for jsonFile in sorted(glob.glob(os.path.join(path, "*.json"))):
+            with open(jsonFile) as f:
+                run = json.load(f).get("run")
+            if run:
+                runs.append({key: "" if value is None else str(value) for key, value in run.items()})
+        return sorted(runs, key=lambda run: run["run_id"])
+    with open(path, newline="") as f:
         return list(csv.DictReader(f))
 ################################################################
 ################################################################

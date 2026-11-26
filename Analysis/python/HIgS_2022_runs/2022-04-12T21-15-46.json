@@ -1,0 +1,35 @@
+{
+  "name": "2022-04-12T21:15:46 Physics 13.1 MeV",
+  "description": "HIgS_April_2022, Physics (good), 190 mbar, drift 3920 V, 25 MHz",
+  "run": {
+    "run_id": "2022-04-12T21:15:46",
+    "campaign": "HIgS_April_2022",
+    "run_type": "Physics",
+    "quality": "good",
+    "beam_energy_MeV": 13.1,
+    "pressure_mbar": 190.0,
+    "sampling_MHz": 25.0,
+    "drift_V": 3920.0,
+    "drift_preset": "3",
+    "trigger_delay_10ns": "1848",
+    "geometry_file": "geometry_ELITPC_190mbar_3920Vdrift_25MHz.dat",
+    "n_chunks_logbook": "",
+    "n_chunks_found": 17,
+    "data_dir": "/scratch_hdd/akalinow/ELITPC/data/HIgs_2022/20220412_extTrg_CO2_190mbar_DT1470ET",
+    "comment": "",
+    "temperature_C": null,
+    "n_streams": 4,
+    "beam_on": true
+  },
+  "input": {
+    "dataFile": "/scratch_hdd/akalinow/ELITPC/data/HIgs_2022/20220412_extTrg_CO2_190mbar_DT1470ET/CoBo0_AsAd0_2022-04-12T21:15:46.497_0000.graw,/scratch_hdd/akalinow/ELITPC/data/HIgs_2022/20220412_extTrg_CO2_190mbar_DT1470ET/CoBo0_AsAd1_2022-04-12T21:15:46.511_0000.graw,/scratch_hdd/akalinow/ELITPC/data/HIgs_2022/20220412_extTrg_CO2_190mbar_DT1470ET/CoBo0_AsAd2_2022-04-12T21:15:46.526_0000.graw,/scratch_hdd/akalinow/ELITPC/data/HIgs_2022/20220412_extTrg_CO2_190mbar_DT1470ET/CoBo0_AsAd3_2022-04-12T21:15:46.528_0000.graw",
+    "geometryFile": "geometry_ELITPC_190mbar_3920Vdrift_25MHz.dat"
+  },
+  "conditions": {
+    "pressure": 190.0,
+    "samplingRate": 25.0
+  },
+  "beamParameters": {
+    "energy": 13.1
+  }
+}

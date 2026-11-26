@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Generate and reconstruct Monte Carlo O16(gamma,alpha)C12 events with
 makeMCTrackTree for the HIgS 2022 setups (beam energy, pressure, drift
-voltage, geometry) found in HIgS_2022_runs.csv.
+voltage, geometry) found in the run data sets HIgS_2022_runs/ (makeRunList.py).
 
 For each setup the MC controller config (montecarlo_2prong_gun_PEventTPC.json)
 is adapted: gamma energy (Gaussian, sigma = beamEnergySpread x E), gas
@@ -30,7 +30,7 @@ from tpc_utils import countRunningProcesses
 ################################################
 # Settings
 ################################################
-runListFile = os.path.join(os.path.dirname(os.path.abspath(__file__)), "HIgS_2022_runs.csv")
+runListFile = os.path.join(os.path.dirname(os.path.abspath(__file__)), "HIgS_2022_runs")
 selectedEnergies = []        # [MeV]; empty = all energies with Physics runs
 selectedSetups = []          # setup names, e.g. ["12.7MeV_190mbar_3626V"]; empty = all
 nEventsPerSetup = 16000      # generated events per setup

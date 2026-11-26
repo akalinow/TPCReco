@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 """Run makeTrackTree on HIgS 2022 GRAW data, one job per chunk (4 AsAd files).
 
-Runs are taken from the per-run list HIgS_2022_runs.csv (made by
-makeRunList.py from the experiment logbooks), which gives for each run the
-beam energy, TPC working point, geometry file and data location.
+Runs are taken from the per-run data sets in HIgS_2022_runs/ (one JSON file
+per run, made by makeRunList.py from the experiment logbooks), which give for
+each run the beam energy, TPC working point, geometry file and data location.
 Select the runs and the number of chunks with the settings at the end of
 this file, then run from the resources directory of the build:
 
@@ -130,12 +130,12 @@ calibration_runs = [ ("/scratch/akalinow/ELITPC/data/IFJ_VdG_20210630/20210616_e
 ################################################
 # Per-run metadata (beam energy, TPC working point, geometry, data location)
 # from the HIgS 2022 logbooks. Regenerate with makeRunList.py.
-runListFile = os.path.join(os.path.dirname(os.path.abspath(__file__)), "HIgS_2022_runs.csv")
+runListFile = os.path.join(os.path.dirname(os.path.abspath(__file__)), "HIgS_2022_runs")
 
 ################################################
 # Run selection. An empty list means "no selection" on that field.
 #
-# Beam energies [MeV] of good Physics runs in HIgS_2022_runs.csv:
+# Beam energies [MeV] of good Physics runs in HIgS_2022_runs/:
 #
 #  energy  campaign          p [mbar]  Udrift [V]  runs  chunks
 #   8.51   HIgS_August_2022    130       1372         8     19

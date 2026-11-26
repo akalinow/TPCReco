@@ -1,0 +1,35 @@
+{
+  "name": "2022-04-10T16:54:47 Background",
+  "description": "HIgS_April_2022, Background (good), 190 mbar, drift 3332 V, 25 MHz",
+  "run": {
+    "run_id": "2022-04-10T16:54:47",
+    "campaign": "HIgS_April_2022",
+    "run_type": "Background",
+    "quality": "good",
+    "beam_energy_MeV": 0.0,
+    "pressure_mbar": 190.0,
+    "sampling_MHz": 25.0,
+    "drift_V": 3332.0,
+    "drift_preset": "1",
+    "trigger_delay_10ns": "1848",
+    "geometry_file": "geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat",
+    "n_chunks_logbook": "",
+    "n_chunks_found": 0,
+    "data_dir": "",
+    "comment": "",
+    "temperature_C": null,
+    "n_streams": "",
+    "beam_on": false
+  },
+  "input": {
+    "dataFile": "",
+    "geometryFile": "geometry_ELITPC_190mbar_3332Vdrift_25MHz.dat"
+  },
+  "conditions": {
+    "pressure": 190.0,
+    "samplingRate": 25.0
+  },
+  "beamParameters": {
+    "energy": 0.0
+  }
+}

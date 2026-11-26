@@ -1,0 +1,35 @@
+{
+  "name": "2022-04-13T10:54:24 Physics 13.1 MeV",
+  "description": "HIgS_April_2022, Physics (good), 250 mbar, drift 2744 V, 12.5 MHz; Run stopped to change trigger delay of DAQ",
+  "run": {
+    "run_id": "2022-04-13T10:54:24",
+    "campaign": "HIgS_April_2022",
+    "run_type": "Physics",
+    "quality": "good",
+    "beam_energy_MeV": 13.1,
+    "pressure_mbar": 250.0,
+    "sampling_MHz": 12.5,
+    "drift_V": 2744.0,
+    "drift_preset": "4",
+    "trigger_delay_10ns": "3696",
+    "geometry_file": "geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat",
+    "n_chunks_logbook": "",
+    "n_chunks_found": 38,
+    "data_dir": "/scratch_hdd/akalinow/ELITPC/data/HIgs_2022/20220413_extTrg_CO2_250mbar_DT1470ET",
+    "comment": "Run stopped to change trigger delay of DAQ",
+    "temperature_C": null,
+    "n_streams": 4,
+    "beam_on": true
+  },
+  "input": {
+    "dataFile": "/scratch_hdd/akalinow/ELITPC/data/HIgs_2022/20220413_extTrg_CO2_250mbar_DT1470ET/CoBo0_AsAd0_2022-04-13T10:54:24.221_0000.graw,/scratch_hdd/akalinow/ELITPC/data/HIgs_2022/20220413_extTrg_CO2_250mbar_DT1470ET/CoBo0_AsAd1_2022-04-13T10:54:24.223_0000.graw,/scratch_hdd/akalinow/ELITPC/data/HIgs_2022/20220413_extTrg_CO2_250mbar_DT1470ET/CoBo0_AsAd2_2022-04-13T10:54:24.244_0000.graw,/scratch_hdd/akalinow/ELITPC/data/HIgs_2022/20220413_extTrg_CO2_250mbar_DT1470ET/CoBo0_AsAd3_2022-04-13T10:54:24.246_0000.graw",
+    "geometryFile": "geometry_ELITPC_250mbar_2744Vdrift_12.5MHz.dat"
+  },
+  "conditions": {
+    "pressure": 250.0,
+    "samplingRate": 12.5
+  },
+  "beamParameters": {
+    "energy": 13.1
+  }
+}
