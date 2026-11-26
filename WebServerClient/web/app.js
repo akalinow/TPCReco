@@ -17,6 +17,7 @@ const state = {
   lastCommandAt: 0,
   panels: [],          // panel JSON currently shown, per plot div
   cursorFrame: null,
+  drag: null,          // clicked point being dragged
   stopped: false,      // the server was stopped with the Exit button
 };
 
@@ -129,6 +130,7 @@ function ansiToHtml(text) {
 function renderRecoText(text) {
   const box = $('recoInfoBox');
   box.hidden = !text;
+  document.querySelector('main').classList.toggle('no-terminal', !text);
   if (!text) return;
   const pre = $('recoInfo');
   const html = ansiToHtml(text);
@@ -285,14 +287,96 @@ function panelOf(div) {
   return state.panels[Number(div.dataset.index)];
 }
 
+/** data coordinates of a mouse event, clamped to the plot area of a Plotly div */
+function clampedDataCoordinates(div, event) {
+  const xa = div._fullLayout.xaxis;
+  const ya = div._fullLayout.yaxis;
+  const box = div.getBoundingClientRect();
+  const px = Math.min(Math.max(event.clientX - box.left - xa._offset, 0), xa._length);
+  const py = Math.min(Math.max(event.clientY - box.top - ya._offset, 0), ya._length);
+  return { x: xa.p2c(px), y: ya.p2c(py) };
+}
+
+const DRAG_RADIUS = 8; // [px] a mouse press this close to a clicked point drags it
+
+/** clicked point (panel.dragPoints) under the mouse, or null */
+function dragPointAt(div, event) {
+  const panel = panelOf(div);
+  if (!panel || !panel.dragPoints || !panel.dragPoints.length || !div._fullLayout) return null;
+  const xa = div._fullLayout.xaxis;
+  const ya = div._fullLayout.yaxis;
+  const box = div.getBoundingClientRect();
+  let best = null;
+  let bestDistance = DRAG_RADIUS;
+  for (const point of panel.dragPoints) {
+    const px = box.left + xa._offset + xa.c2p(point.x);
+    const py = box.top + ya._offset + ya.c2p(point.y);
+    const distance = Math.hypot(px - event.clientX, py - event.clientY);
+    if (distance <= bestDistance) { best = point; bestDistance = distance; }
+  }
+  return best;
+}
+
 function installPanelHandlers(div) {
   // Plotly covers the page while the mouse button is down, so a click is detected
   // as mousedown + mouseup at (almost) the same position.
   div.addEventListener('mousedown', (event) => {
-    if (event.button === 0) div._tpcDown = { x: event.clientX, y: event.clientY };
+    if (event.button !== 0) return;
+    const point = dragPointAt(div, event);
+    if (point) { // drag a clicked point; Plotly does not get the event (no zoom box)
+      event.stopPropagation();
+      event.preventDefault();
+      startPointDrag(div, point, event);
+      return;
+    }
+    div._tpcDown = { x: event.clientX, y: event.clientY };
   }, true);
-  div.addEventListener('mousemove', (event) => moveCursorLine(div, event), true);
+  div.addEventListener('mousemove', (event) => {
+    moveCursorLine(div, event);
+    div.classList.toggle('over-point', !state.drag && dragPointAt(div, event) !== null);
+  }, true);
 }
+
+// ---------------------------------------------------------------- dragging clicked points
+
+function startPointDrag(div, point, event) {
+  const ghost = document.createElement('div');
+  ghost.className = 'drag-ghost';
+  document.body.appendChild(ghost);
+  document.body.classList.add('dragging-point');
+  state.drag = { div, index: point.i, dir: panelOf(div).clickDir, x0: event.clientX, y0: event.clientY, moved: false, ghost };
+  moveGhost(event);
+}
+
+function moveGhost(event) {
+  const drag = state.drag;
+  const xa = drag.div._fullLayout.xaxis;
+  const ya = drag.div._fullLayout.yaxis;
+  const box = drag.div.getBoundingClientRect();
+  const left = box.left + xa._offset;
+  const top = box.top + ya._offset;
+  drag.ghost.style.left = `${Math.min(Math.max(event.clientX, left), left + xa._length)}px`;
+  drag.ghost.style.top = `${Math.min(Math.max(event.clientY, top), top + ya._length)}px`;
+  if (Math.abs(event.clientX - drag.x0) > 3 || Math.abs(event.clientY - drag.y0) > 3) drag.moved = true;
+}
+
+document.addEventListener('mousemove', (event) => { if (state.drag) moveGhost(event); });
+
+document.addEventListener('mouseup', (event) => {
+  const drag = state.drag;
+  if (!drag) return;
+  state.drag = null;
+  drag.ghost.remove();
+  document.body.classList.remove('dragging-point');
+  if (drag.moved) {
+    const point = clampedDataCoordinates(drag.div, event);
+    sendCommand('recoMovePoint', { index: drag.index, dir: drag.dir, x: point.x, y: point.y });
+  } else if (state.view.status.reco.acceptPoints) {
+    // no movement: a click at that position, as anywhere else on the projection
+    const point = dataCoordinates(drag.div, event);
+    if (point) sendCommand('recoClick', { dir: drag.dir, x: point.x, y: point.y });
+  }
+}, true);
 
 document.addEventListener('mouseup', (event) => {
   for (const div of $('plots').children) {
@@ -355,9 +439,9 @@ let wasRecoModeOn = null; // unknown before the first status: set the segment bl
 function updateControls(status) {
   $('modeLabel').textContent = status.mode;
   // file names only (several GRAW files are comma separated); the full paths are in the tooltip
-  $('fileName').textContent = status.file
-    ? status.file.split(',').map((f) => f.split('/').pop()).join(', ') : 'No input.';
-  $('fileName').title = status.file || '';
+  const fileNames = status.file ? status.file.split(',').map((f) => f.split('/').pop()).join(', ') : 'No input.';
+  $('fileName').textContent = status.dataSet ? `${status.dataSet} — ${fileNames}` : fileNames;
+  $('fileName').title = [status.dataSet && `Data set: ${status.dataSet}`, status.file].filter(Boolean).join('\n');
   $('nEvents').textContent = status.nEvents;
   setValueUnlessEditing('inpEventId', status.eventId);
   $('listBox').hidden = !status.eventList;
@@ -543,58 +627,124 @@ function installControls() {
 
 function installOpenDialog() {
   const dialog = $('openDialog');
-  const selected = new Set();
+  let selected = null; // { kind: 'run' | 'list', value, item }
 
-  const showDirectory = async (dir) => {
-    let listing;
+  const select = (item, kind, value) => {
+    dialog.querySelectorAll('.ds-list li.selected').forEach((li) => li.classList.remove('selected'));
+    item.classList.add('selected');
+    selected = { kind, value };
+    $('btnOpenConfirm').disabled = false;
+  };
+  const entry = (kind, value, title, detail, tooltip) => {
+    const item = document.createElement('li');
+    const name = document.createElement('span');
+    name.className = 'ds-name';
+    name.textContent = title;
+    const info = document.createElement('span');
+    info.className = 'ds-info';
+    info.textContent = detail;
+    item.append(name, info);
+    item.title = tooltip || '';
+    if (value) {
+      item.onclick = () => select(item, kind, value);
+      item.ondblclick = () => { select(item, kind, value); dialog.close('open'); };
+    } else item.classList.add('ds-error');
+    return item;
+  };
+
+  const showDataSets = async () => {
+    let sets;
     try {
-      listing = await getJSON(`api/ls?dir=${encodeURIComponent(dir)}`);
+      sets = await getJSON('api/datasets');
     } catch (error) {
       showMessage(error.message);
-      return;
+      return false;
     }
-    if (listing.error) { showMessage(listing.error); return; }
-    $('inpDir').value = listing.dir;
-    $('btnUp').onclick = () => showDirectory(listing.parent);
-    selected.clear();
-    const list = $('dirList');
-    list.replaceChildren();
-    for (const entry of listing.entries) {
-      const item = document.createElement('li');
-      item.textContent = entry.name;
-      const path = `${listing.dir}/${entry.name}`;
-      if (entry.isDir) {
-        item.className = 'dir';
-        item.onclick = () => showDirectory(path);
-      } else {
-        // several GRAW files (one per AsAd board) can be selected together
-        item.onclick = (e) => {
-          if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
-            selected.clear();
-            list.querySelectorAll('.selected').forEach((li) => li.classList.remove('selected'));
-          }
-          if (selected.has(path)) { selected.delete(path); item.classList.remove('selected'); }
-          else { selected.add(path); item.classList.add('selected'); }
-          $('inpPath').value = Array.from(selected).join(',');
-        };
-        item.ondblclick = () => { $('inpPath').value = path; dialog.close('open'); };
+    selected = null;
+    $('btnOpenConfirm').disabled = true;
+    const status = state.view?.status || {};
+
+    // runs grouped (by campaign or directory) in collapsible blocks; the block of the open run is open
+    const grouped = (container, items, makeItem, emptyText) => {
+      container.replaceChildren();
+      const blocks = new Map();
+      for (const set of items) {
+        let block = blocks.get(set.groupKey);
+        if (!block) {
+          block = document.createElement('details');
+          const summary = document.createElement('summary');
+          summary.textContent = set.groupLabel;
+          const list = document.createElement('ul');
+          list.className = 'ds-list';
+          block.append(summary, list);
+          container.appendChild(block);
+          blocks.set(set.groupKey, block);
+        }
+        const item = makeItem(set);
+        if (item.classList.contains('current')) block.open = true;
+        block.querySelector('ul').appendChild(item);
+        block.querySelector('summary').dataset.count = `${block.querySelectorAll('li').length}`;
       }
-      list.appendChild(item);
+      if (!blocks.size) container.textContent = emptyText;
+    };
+    const numbers = (value, unit) => (value !== '' && value !== undefined ? `${Number(value)} ${unit}` : '');
+
+    // event lists (data-set JSON files)
+    $('dataSetDirs').textContent = sets.dataSetDirs || '(web.dataSetDirs not set)';
+    const lists = $('eventListSets');
+    lists.replaceChildren();
+    for (const set of sets.eventLists || []) {
+      const detail = set.error ? `error: ${set.error}`
+        : [`${set.events} events`, numbers(set.pressure, 'mbar'), numbers(set.energy, 'MeV'), set.geometry]
+          .filter(Boolean).join(' · ');
+      const item = entry('list', set.error ? null : set.path, set.name, detail, [set.description, set.path].filter(Boolean).join('\n'));
+      if (set.name === status.dataSet) item.classList.add('current');
+      lists.appendChild(item);
     }
+    if (!lists.children.length) {
+      const item = document.createElement('li');
+      item.className = 'ds-empty';
+      item.textContent = 'No event lists.';
+      lists.appendChild(item);
+    }
+
+    // run data sets (JSON: data files with their settings), grouped by campaign
+    grouped($('runDataSets'), (sets.runSets || []).map((set) => ({ ...set, groupKey: set.group, groupLabel: set.group })),
+      (set) => {
+        const detail = set.error ? set.error
+          : [set.quality !== 'good' && set.quality, set.chunks && `${set.chunks} chunks`, numbers(set.pressure, 'mbar'), set.geometry]
+            .filter(Boolean).join(' · ');
+        const item = entry('list', set.error ? null : set.path, set.name, detail, [set.description, set.path].filter(Boolean).join('\n'));
+        if (set.quality && set.quality !== 'good') item.classList.add('ds-bad');
+        if (set.name === status.dataSet) item.classList.add('current');
+        return item;
+      }, 'No run data sets.');
+
+    // other GRAW runs (no data set): the current settings are kept
+    $('runDirs').textContent = (sets.dataDirs || []).join(', ');
+    const currentFiles = new Set((status.file || '').split(','));
+    grouped($('runSets'), (sets.runs || []).map((run) => ({ ...run, groupKey: `${run.dataDir}/${run.group}`, groupLabel: run.group })),
+      (run) => {
+        const item = entry('run', run.files, run.start,
+          `${run.chunks} chunk${run.chunks === 1 ? '' : 's'} · ${run.streams === 1 ? 'one file (all AsAd)' : `${run.streams} AsAd files`}`,
+          run.files.split(',').join('\n'));
+        if (!status.dataSet && run.files.split(',').some((f) => currentFiles.has(f))) item.classList.add('current');
+        return item;
+      }, 'No other GRAW runs.');
+    return true;
   };
 
-  $('btnOpen').onclick = () => {
+  $('btnOpen').onclick = async () => {
     if (!confirmClickedTrack('leave')) return;
-    $('inpPath').value = '';
-    showDirectory('');
-    dialog.showModal();
-  };
-  $('inpDir').onkeydown = (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); showDirectory($('inpDir').value); }
+    if (await showDataSets()) {
+      dialog.showModal();
+      dialog.querySelector('li.current')?.scrollIntoView({ block: 'center' });
+    }
   };
   dialog.onclose = () => {
-    const path = $('inpPath').value.trim();
-    if (dialog.returnValue === 'open' && path) sendCommand('open', { path });
+    if (dialog.returnValue !== 'open' || !selected) return;
+    if (selected.kind === 'run') sendCommand('openRun', { files: selected.value });
+    else sendCommand('openDataSet', { path: selected.value });
   };
 }
 

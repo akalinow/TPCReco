@@ -543,5 +543,17 @@
         "type": "string",
         "defaultValue": "",
         "description": "URL path prefix under which tpcWebGUI serves the GUI, e.g. /tpcgui when a reverse proxy (Kubernetes ingress) forwards https://host/tpcgui/ unchanged. Empty: the GUI is at /.\nType: string"
+    },
+    "dataSetDirs":{
+        "group": "web",
+        "type": "string",
+        "defaultValue": "",
+        "description": "Directories (comma separated) with the data-set JSON files of the Open dialog of tpcWebGUI. A data set: name, description, an event list (input.eventList, input.eventListDataPath) or a run (input.dataFile, e.g. made by Analysis/python/makeRunList.py), and its settings: input.geometryFile, conditions, pedestal, hitFilter, beamParameters. Relative paths are relative to the JSON file.\nType: string"
+    },
+    "grawDataDirs":{
+        "group": "web",
+        "type": "string",
+        "defaultValue": "",
+        "description": "Data directories (comma separated) scanned for the GRAW runs without a data set in the Open dialog of tpcWebGUI (the directory and its subdirectories, one level). Empty: input.eventListDataPath, or the directory above the one of the input files.\nType: string"
     }
 }

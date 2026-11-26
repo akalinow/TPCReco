@@ -245,6 +245,7 @@ void TrackBuilder::setEvent(std::shared_ptr<EventTPC> aEvent){
 /////////////////////////////////////////////////////////
 void TrackBuilder::reconstruct(){
 
+  mydEdxHisto = TH1F();
   hTimeProjection.Reset();  
   for(int iDir=definitions::projection_type::DIR_U;iDir<=definitions::projection_type::DIR_W;++iDir){
     makeRecHits(iDir);
@@ -257,10 +258,16 @@ void TrackBuilder::reconstruct(){
   Track3D aTrackCandidate;
   aTrackCandidate.addSegment(myTrack3DSeed);
   aTrackCandidate = fitTrack3D(aTrackCandidate);
+  // charge profile of the initial 3D track
+  myProfileBuilder.fill(aTrackCandidate);
 
   std::cout<<KBLU<<"Track length before hypothesis fit: "<<RST<<aTrackCandidate.getLength()<<std::endl;
 
-  if(aTrackCandidate.getLength()>minTkLenghtWithHypothesis) aTrackCandidate = fitEventHypothesis(aTrackCandidate);
+  if(aTrackCandidate.getLength()>minTkLenghtWithHypothesis){
+    aTrackCandidate = fitEventHypothesis(aTrackCandidate);
+    // the track improved by the dE/dx fit (alpha, carbon): profile filled again
+    myProfileBuilder.fill(aTrackCandidate);
+  }
 
   ///TEST
   if(myMLTrackBuilder->isValid() && aTrackCandidate.getSegments().size()<0) {
@@ -454,6 +461,7 @@ TrackSegment2D TrackBuilder::findSegment2D(int iDir, int iPeak) const{
 /////////////////////////////////////////////////////////
 void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & segmentsXY){
 
+  mydEdxHisto = TH1F();
   ///FIXME code duplication
   hTimeProjection.Reset();  
   for(int iDir=definitions::projection_type::DIR_U;iDir<=definitions::projection_type::DIR_W;++iDir){
@@ -500,6 +508,8 @@ void TrackBuilder::getSegment2DCollectionFromGUI(const std::vector<double> & seg
   
   myFittedTrack = aTrackCandidate;
   myFittedTrack.setHypothesisFitLoss(0);
+  // charge profile of the clicked track
+  myProfileBuilder.fill(myFittedTrack);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -1074,8 +1084,9 @@ Track3D TrackBuilder::fitEventHypothesis(const Track3D & aTrackCandidate){
   TVector3 alphaEnd =  vertexPos + alphaRange*tangent;
   TVector3 carbonEnd =  vertexPos - carbonRange*tangent;
 
+  mydEdxHisto = best.fittedHisto; // for drawing; the track profile is filled by ChargeProfileBuilder
+  mydEdxHisto.SetDirectory(0);
   Track3D aSplitTrackCandidate;
-  aSplitTrackCandidate.setChargeProfile(best.fittedHisto);
   aSplitTrackCandidate.setHypothesisFitLoss(best.loss);
   aSplitTrackCandidate.setChargeRatio(chargeRatio);
   TrackSegment3D alphaSegment;

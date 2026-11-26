@@ -15,6 +15,7 @@
 #include "TPCReco/Track3D.h"
 #include "TPCReco/RecHitBuilder.h"
 #include "TPCReco/dEdxFitter.h"
+#include "TPCReco/ChargeProfileBuilder.h"
 #include "TPCReco/GainTable.h"
 #include "TPCReco/IonRangeCalculator.h"
 #include "TPCReco/MLTrackBuilder.h"
@@ -60,6 +61,10 @@ public:
   const Track3D & getTrack3D(unsigned int iSegment) const;
 
   TF1 getdEdx() const {return mydEdxFitter.getFittedModel();};
+
+  /// charge profile fitted by the dE/dx fit of the current event (fit coordinates, normalised),
+  /// for drawing with getdEdx(); empty when the event has no dE/dx fit
+  const TH1F & getdEdxHisto() const { return mydEdxHisto; }
 
 private:
 
@@ -172,6 +177,8 @@ private:
   std::shared_ptr<GeometryTPC> myGeometryPtr;
   RecHitBuilder myRecHitBuilder;
   dEdxFitter mydEdxFitter;
+  ChargeProfileBuilder myProfileBuilder; // track charge profile for the current track parameters
+  TH1F mydEdxHisto;                      // profile of the chosen dE/dx fit (for drawing)
   double myPressure{190};
   double myTemperature{293.15};
   std::shared_ptr<const GainTable> myGainTable;   ///< null: no charge -> energy conversion, no R selection

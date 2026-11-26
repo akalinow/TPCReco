@@ -3,6 +3,7 @@
 #include <limits>
 #include <map>
 #include <regex>
+#include <set>
 
 #include <boost/filesystem.hpp>
 
@@ -14,6 +15,8 @@ struct GrawName {
   std::string prefix;  // e.g. CoBo0_AsAd0
   double time{0};      // seconds, only differences are used
   int chunk{-1};
+  long runId{0};       // YYYYMMDDhhmmss of the name timestamp
+  std::string stamp;   // name timestamp, e.g. 2026-08-19T18:01:41.079
 };
 
 // days since 1970-01-01 of a proleptic Gregorian date (H. Hinnant's days_from_civil)
@@ -38,6 +41,9 @@ bool parseGrawName(const std::string & fileName, GrawName & aName){
     + 3600.0*number(5) + 60.0*number(6) + number(7)
     + std::stod("0."+match[8].str());
   aName.chunk = static_cast<int>(number(9));
+  aName.runId = ((((number(2)*100 + number(3))*100 + number(4))*100 + number(5))*100 + number(6))*100 + number(7);
+  aName.stamp = match[2].str()+"-"+match[3].str()+"-"+match[4].str()+"T"+match[5].str()+":"+match[6].str()+":"
+    +match[7].str()+"."+match[8].str();
   return true;
 }
 
@@ -129,6 +135,59 @@ std::vector<std::string> findGrawRunFiles(const std::string & dataDir, long runI
     return files;
   }
   return {};
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::vector<GrawRun> findGrawRuns(const std::string & dataDir){
+
+  namespace fs = boost::filesystem;
+  const double maxTimeDifference = 2.0; // [s] between the files of one run
+  std::vector<fs::path> directories{fs::path(dataDir)};
+  std::vector<fs::path> subdirectories;
+  boost::system::error_code error;
+  for(fs::directory_iterator it(dataDir, error), end; !error && it!=end; it.increment(error)){
+    if(fs::is_directory(it->path(), error)) subdirectories.push_back(it->path());
+  }
+  std::sort(subdirectories.begin(), subdirectories.end());
+  directories.insert(directories.end(), subdirectories.begin(), subdirectories.end());
+
+  std::vector<GrawRun> runs;
+  for(const auto & directory: directories){
+    std::vector<std::pair<GrawName, std::string>> files;
+    for(fs::directory_iterator it(directory, error), end; !error && it!=end; it.increment(error)){
+      GrawName aName;
+      if(parseGrawName(it->path().filename().string(), aName)) files.push_back({aName, it->path().string()});
+    }
+    std::sort(files.begin(), files.end(), [](const auto & a, const auto & b){ return a.first.time<b.first.time; });
+    // a run: consecutive files within maxTimeDifference of the first one
+    for(size_t first=0;first<files.size();){
+      size_t last = first;
+      while(last+1<files.size() && files[last+1].first.time - files[first].first.time<=maxTimeDifference) ++last;
+      std::map<std::string, std::pair<int, std::string>> firstChunk; // stream -> (chunk, file)
+      std::map<std::string, GrawName> firstName;
+      std::set<int> chunks;
+      for(size_t i=first;i<=last;++i){
+        const GrawName & aName = files[i].first;
+        chunks.insert(aName.chunk);
+        auto found = firstChunk.find(aName.prefix);
+        if(found==firstChunk.end() || aName.chunk<found->second.first){
+          firstChunk[aName.prefix] = {aName.chunk, files[i].second};
+          firstName[aName.prefix] = aName;
+        }
+      }
+      GrawRun aRun;
+      aRun.directory = directory.string();
+      aRun.nStreams = firstChunk.size();
+      aRun.nChunks = chunks.size();
+      for(const auto & item: firstChunk) aRun.firstChunk.push_back(item.second.second);
+      const GrawName & reference = firstName.begin()->second; // first stream, e.g. CoBo0_AsAd0
+      aRun.runId = reference.runId;
+      aRun.startTime = reference.stamp;
+      runs.push_back(aRun);
+      first = last+1;
+    }
+  }
+  return runs;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////

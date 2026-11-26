@@ -42,8 +42,9 @@ public:
   /// an error message otherwise.
   std::string execute(const crow::json::rvalue & command);
 
-  /// Entries of a server side directory, for the "Open file" dialog.
-  crow::json::wvalue listDirectory(const std::string & dirName) const;
+  /// Data sets for the "Open" dialog: data-set JSON files in web.dataSetDirs (event lists, runs:
+  /// data with their settings) and the other GRAW runs in web.grawDataDirs.
+  crow::json::wvalue listDataSets() const;
 
   bool isOnline() const;
   std::string getOnlineDirectory() const;
@@ -85,7 +86,21 @@ private:
 
   /// event list (input.eventList): one event per line "runId , entry , eventId"
   struct ListedEvent { long runId; unsigned long entry; unsigned long eventId; };
-  void readEventList(const std::string & fileName);
+  static std::vector<ListedEvent> readEventList(const std::string & fileName);
+  /// opens the files of a run (comma separated) and leaves the event list
+  std::string openRun(const std::string & files);
+  /// loads a data-set JSON: an event list (input.eventList, input.eventListDataPath) or a run
+  /// (input.dataFile), with its settings (input.geometryFile, conditions, pedestal, hitFilter,
+  /// beamParameters); the event source is created again with them. The current state is kept
+  /// when the data set cannot be loaded.
+  std::string openDataSet(const std::string & jsonPath);
+  /// work mode from the transient settings of the event source factory
+  void setWorkMode();
+  /// error message when the number of GRAW files does not fit the reader (one file per AsAd or
+  /// one file for all), empty otherwise
+  std::string checkGrawFileCount(const std::string & files) const;
+  /// new event source for aConfig (input.dataFile set), replacing the current one on success
+  std::string replaceEventSource(boost::property_tree::ptree & aConfig);
   /// loads event myEventList[position], opening the GRAW chunk of its run when needed;
   /// returns an error message (empty on success)
   std::string loadListedEvent(long position);
@@ -106,8 +121,12 @@ private:
   crow::json::wvalue makeRatePanel() const;
   crow::json::wvalue makeXYPanel(const Track3D & aTrack) const;
   crow::json::wvalue makeChargeProfilePanel(const Track3D & aTrack) const;
-  /// track to display: the one read from the output file, or the one of the TrackBuilder
+  /// track to display: the one read from the output file, the fitted clicked track (manual reco),
+  /// or the one of the TrackBuilder
   const Track3D & displayedTrack() const;
+  /// clicked track with the particle types of the manual reconstruction mode: segments sorted
+  /// by length; 2-prong: alpha (longer) + carbon-12, 3-prong: all alphas
+  static Track3D makeClickedTrack(const Track3D & aTrack, ManualRecoTool::Mode aMode);
   /// looks the current event up in the output file (mySavedTrack, mySavedEventType)
   void readSavedRecoEvent();
   /// track reconstruction printout (terminal text with ANSI colour codes)
@@ -134,11 +153,16 @@ private:
   // reconstruction of the current event read back from the output file (event already
   // written, e.g. when going back): shown instead of a new reconstruction, not written again
   std::shared_ptr<Track3D> mySavedTrack;
+  // clicked track of the current event after "Fit segments", with the particle types of the
+  // reconstruction mode (makeClickedTrack); shown and written instead of the TrackBuilder track
+  std::shared_ptr<Track3D> myClickedTrack;
 
   std::vector<ListedEvent> myEventList;
   long myListPosition{-1};          // index in myEventList of the event shown, -1: none
   std::string myEventListDataDir;   // directory with the run directories (GRAW files)
   std::map<long, std::size_t> myFramesPerChunk;
+  std::string myDataSetName;        // name of the data set opened from the "Open" dialog
+  boost::property_tree::ptree myStartConfig; // configuration at start-up: data sets are applied on it
   unsigned long mySavedEventType{0};
 
   std::vector<std::pair<double,double>> myEventRate; // (time [s], rate [Hz])

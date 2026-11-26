@@ -18,8 +18,8 @@
     <h1>TPC Web GUI</h1>
     <div class="status-bar" id="modeBox">
       <span class="item"><span class="caption">Mode</span><span id="modeLabel" class="mode-label">NONE</span></span>
-      <button type="button" id="btnOpen" class="item file active" title="Click to open a ROOT or GRAW file on the server">
-        <span class="caption">File &#9662;</span><span id="fileName" class="file-name">No input.</span>
+      <button type="button" id="btnOpen" class="item file active" title="Click to choose a data set: a run or an event list">
+        <span class="caption">Data set &#9662;</span><span id="fileName" class="file-name">No input.</span>
       </button>
       <span class="item"><span class="caption">Events</span><span id="nEvents">–</span></span>
       <form id="formGotoEvent" class="item active">
@@ -37,6 +37,10 @@
     </div>
     <span id="connection" class="connection" title="Connection to the tpcWebGUI server">●</span>
     <span id="message" class="message" role="status"></span>
+    <span class="logos">
+      <img src="logo/FUW_znak.png" alt="Faculty of Physics, University of Warsaw" onerror="this.remove()">
+      <img src="logo/ELITEPC_znak.png" alt="ELITPC" onerror="this.remove()">
+    </span>
     <button type="button" id="btnExit" class="exit" title="Stop the tpcWebGUI server (the output file is closed)">Exit</button>
   </header>
 
@@ -98,26 +102,21 @@
         </form>
       </details>
 
-      <section class="logos">
-        <img src="logo/FUW_znak.png" alt="Faculty of Physics, University of Warsaw" onerror="this.remove()">
-        <img src="logo/ELITEPC_znak.png" alt="ELITPC" onerror="this.remove()">
-      </section>
     </aside>
   </main>
 
   <dialog id="openDialog">
     <form method="dialog" id="formOpen">
-      <h2>Open file</h2>
-      <div class="dir-line">
-        <button type="button" id="btnUp" title="Parent directory">↑</button>
-        <input id="inpDir" type="text" spellcheck="false" aria-label="Directory">
-      </div>
-      <ul id="dirList" class="dir-list"></ul>
-      <label for="inpPath">File(s) – comma separated for several GRAW files</label>
-      <input id="inpPath" type="text" spellcheck="false">
+      <h2>Open data set</h2>
+      <h3>Event lists <span id="dataSetDirs" class="ds-where"></span></h3>
+      <ul id="eventListSets" class="ds-list"></ul>
+      <h3>Runs</h3>
+      <div id="runDataSets" class="ds-runs"></div>
+      <h3>Other GRAW runs (no data set) <span id="runDirs" class="ds-where"></span></h3>
+      <div id="runSets" class="ds-runs"></div>
       <div class="dialog-buttons">
         <button value="cancel" formnovalidate>Cancel</button>
-        <button id="btnOpenConfirm" value="open">Open</button>
+        <button id="btnOpenConfirm" value="open" disabled>Open</button>
       </div>
     </form>
   </dialog>

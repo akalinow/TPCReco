@@ -3,9 +3,12 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <set>
 #include <sstream>
 #include <stdexcept>
 #include <tuple>
+
+#include <boost/property_tree/json_parser.hpp>
 
 #include <TF1.h>
 #include <TGraph.h>
@@ -23,6 +26,7 @@
 #include "TPCReco/FileOutput.h"
 #include "TPCReco/GeometryTPC.h"
 #include "TPCReco/GUI_commons.h"
+#include "TPCReco/ResourcePath.h"
 #include "TPCReco/Track3D.h"
 #include "TPCReco/TrackBuilder.h"
 #include "TPCReco/colorText.h"
@@ -127,20 +131,10 @@ const std::vector<std::string> WebGUIController::eventTypeNames = {
 WebGUIController::WebGUIController(const boost::property_tree::ptree & aConfig){
 
   myConfig = aConfig;
+  myStartConfig = aConfig;
   myFileOutput = std::make_shared<FileOutput>(myConfig);
   myEventSource = EventSourceFactory::makeEventSourceObject(myConfig);
-
-  event_type eventSourceType = myConfig.get<event_type>("transient.eventType");
-  bool onlineFlag = myConfig.get<bool>("transient.onlineFlag");
-  if (eventSourceType == event_type::EventSourceROOT) myWorkMode = M_OFFLINE_ROOT_MODE;
-  else if (eventSourceType == event_type::EventSourceMC) myWorkMode = M_OFFLINE_MC_MODE;
-  else if (eventSourceType == event_type::EventSourceGRAW) {
-    myWorkMode = (onlineFlag ? M_ONLINE_GRAW_MODE : M_OFFLINE_GRAW_MODE);
-  }
-  else if (eventSourceType == event_type::EventSourceMultiGRAW) {
-    myWorkMode = (onlineFlag ? M_ONLINE_NGRAW_MODE : M_OFFLINE_NGRAW_MODE);
-  }
-  else throw std::runtime_error("Unknown event source type");
+  setWorkMode();
 
   myEventSource->loadFileEntry(0);
   auto aEvent = myEventSource->getCurrentEvent();
@@ -163,7 +157,7 @@ WebGUIController::WebGUIController(const boost::property_tree::ptree & aConfig){
     if(myWorkMode!=M_OFFLINE_GRAW_MODE && myWorkMode!=M_OFFLINE_NGRAW_MODE){
       throw std::runtime_error("input.eventList: only for GRAW input (OFFLINE)");
     }
-    readEventList(eventListFile);
+    myEventList = readEventList(eventListFile);
     // default data directory: the one above the run directory of the input files
     myEventListDataDir = myConfig.get<std::string>("input.eventListDataPath", "");
     if(myEventListDataDir.empty()){
@@ -181,7 +175,25 @@ WebGUIController::WebGUIController(const boost::property_tree::ptree & aConfig){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void WebGUIController::readEventList(const std::string & fileName){
+void WebGUIController::setWorkMode(){
+
+  event_type eventSourceType = myConfig.get<event_type>("transient.eventType");
+  bool onlineFlag = myConfig.get<bool>("transient.onlineFlag");
+  if (eventSourceType == event_type::EventSourceROOT) myWorkMode = M_OFFLINE_ROOT_MODE;
+  else if (eventSourceType == event_type::EventSourceMC) myWorkMode = M_OFFLINE_MC_MODE;
+  else if (eventSourceType == event_type::EventSourceGRAW) {
+    myWorkMode = (onlineFlag ? M_ONLINE_GRAW_MODE : M_OFFLINE_GRAW_MODE);
+  }
+  else if (eventSourceType == event_type::EventSourceMultiGRAW) {
+    myWorkMode = (onlineFlag ? M_ONLINE_NGRAW_MODE : M_OFFLINE_NGRAW_MODE);
+  }
+  else throw std::runtime_error("Unknown event source type");
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::vector<WebGUIController::ListedEvent> WebGUIController::readEventList(const std::string & fileName){
+
+  std::vector<ListedEvent> events;
 
   // same format as makeTrackTree --input.eventList: "runId , entry , eventId" per line
   // (comma/space separated, '#' comment lines); the order of the file is kept
@@ -196,10 +208,148 @@ void WebGUIController::readEventList(const std::string & fileName){
     while(fields>>item) items.push_back(item);
     if(items.empty() || items.front()[0]=='#') continue;
     if(items.size()!=3) throw std::runtime_error("input.eventList: expected 'runId , entry , eventId' in: "+line);
-    myEventList.push_back({std::stol(items[0]), std::stoul(items[1]), std::stoul(items[2])});
+    events.push_back({std::stol(items[0]), std::stoul(items[1]), std::stoul(items[2])});
   }
   std::cout<<KBLU<<"WebGUIController: event list "<<RST<<fileName<<KBLU<<": "<<RST
-           <<myEventList.size()<<KBLU<<" events"<<RST<<std::endl;
+           <<events.size()<<KBLU<<" events"<<RST<<std::endl;
+  return events;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::string WebGUIController::openRun(const std::string & files){
+
+  if(!canNavigate()) return "Opening files is disabled in ONLINE mode.";
+  // a run recorded with a file per AsAd board or with one file for all needs the matching reader:
+  // a new event source (with the current geometry and conditions) when the run is of the other kind
+  const bool isOneFilePerAsad = files.find(',')!=std::string::npos;
+  const bool isMultiReader = myWorkMode==M_OFFLINE_NGRAW_MODE;
+  if((myWorkMode==M_OFFLINE_GRAW_MODE || myWorkMode==M_OFFLINE_NGRAW_MODE) && isOneFilePerAsad!=isMultiReader){
+    boost::property_tree::ptree aConfig = myConfig;
+    aConfig.put("input.dataFile", files);
+    aConfig.put("input.singleAsadGrawFile", isOneFilePerAsad);
+    std::stringstream aStream(files);
+    std::string item;
+    while(std::getline(aStream, item, ',')) if(!fs::is_regular_file(item)) return "No such file: "+item;
+    std::string error = replaceEventSource(aConfig);
+    if(error.size()) return error;
+    error = checkGrawFileCount(files);
+    if(error.size()) return error;
+    myEventSource->loadDataFile(files);
+    myEventSource->loadFileEntry(0);
+    eventLoaded();
+  }
+  else {
+    std::string error = openFile(files);
+    if(error.size()) return error;
+  }
+  myEventList.clear(); // the arrows step through the run (and its chunks)
+  myListPosition = -1;
+  myDataSetName.clear();
+  return "";
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::string WebGUIController::openDataSet(const std::string & jsonPath){
+
+  if(!canNavigate()) return "Opening data sets is disabled in ONLINE mode.";
+  if(myWorkMode!=M_OFFLINE_GRAW_MODE && myWorkMode!=M_OFFLINE_NGRAW_MODE){
+    return "Data sets can be opened for GRAW input only.";
+  }
+  boost::property_tree::ptree aDataSet;
+  try { boost::property_tree::read_json(jsonPath, aDataSet); }
+  catch(const std::exception & e){ return "Cannot read the data set "+jsonPath+": "+e.what(); }
+
+  // settings of the data set on top of the start-up configuration (not of the data set open
+  // before: its settings must not leak into this one)
+  const fs::path baseDir = fs::path(jsonPath).parent_path();
+  auto relativeTo = [&baseDir](const std::string & path){
+    return path.empty() || fs::path(path).is_absolute() ? path : (baseDir/path).string();
+  };
+  boost::property_tree::ptree aConfig = myStartConfig;
+  aConfig.put("input.eventList", "");
+  for(const std::string key: {"eventList", "eventListDataPath", "geometryFile", "dataFile"}){
+    auto value = aDataSet.get_optional<std::string>("input."+key);
+    if(!value || value->empty()) continue;
+    std::string path = *value;
+    if(key=="dataFile"){ // comma separated files
+      std::stringstream aStream(*value);
+      std::string item;
+      path.clear();
+      while(std::getline(aStream, item, ',')) path += (path.empty() ? "" : ",") + relativeTo(item);
+    }
+    else if(key=="geometryFile"){ // a resources file or a path relative to the data set
+      path = ResourcePath::resolve(*value);
+      if(!fs::exists(path)) path = relativeTo(*value);
+    }
+    else path = relativeTo(path);
+    aConfig.put("input."+key, path);
+  }
+  for(const std::string group: {"conditions", "pedestal", "hitFilter", "beamParameters"}){
+    auto aGroup = aDataSet.get_child_optional(group);
+    if(!aGroup) continue;
+    for(const auto & item: *aGroup) aConfig.put(group+"."+item.first, item.second.data());
+  }
+  const std::string name = aDataSet.get<std::string>("name", fs::path(jsonPath).stem().string());
+  const std::string eventListFile = aDataSet.get<std::string>("input.eventList", "").empty() ? "" :
+                                    aConfig.get<std::string>("input.eventList", "");
+  const std::string dataDir = aConfig.get<std::string>("input.eventListDataPath", "");
+
+  // a run: its files (input.dataFile) with the settings of the data set
+  if(eventListFile.empty()){
+    const std::string files = aDataSet.get<std::string>("input.dataFile", "").empty() ? "" :
+                              aConfig.get<std::string>("input.dataFile", "");
+    if(files.empty()) return "The data set "+name+" has neither an event list nor data files on disk.";
+    if(aDataSet.get<std::string>("input.geometryFile", "").empty()) return "The data set "+name+" has no geometry file.";
+    std::stringstream aStream(files);
+    std::string item;
+    while(std::getline(aStream, item, ',')) if(!fs::is_regular_file(item)) return "No such file: "+item;
+    aConfig.put("input.singleAsadGrawFile", files.find(',')!=std::string::npos);
+    std::string error = replaceEventSource(aConfig);
+    if(error.size()) return error;
+    error = checkGrawFileCount(files);
+    if(error.size()) return error;
+    myEventList.clear();
+    myListPosition = -1;
+    myDataSetName = name;
+    myEventSource->loadDataFile(files);
+    myEventSource->loadFileEntry(0);
+    auto aEvent = myEventSource->getCurrentEvent();
+    if(aEvent && aEvent->GetEventInfo().GetPedestalSubtracted()){
+      aEvent->setHitFilterConfig(filter_type::threshold, myConfig);
+    }
+    std::cout<<KBLU<<"WebGUIController: data set "<<RST<<name<<KBLU<<" ("<<RST<<jsonPath<<KBLU<<")"<<RST<<std::endl;
+    eventLoaded();
+    return "";
+  }
+  if(dataDir.empty()) return "The data set "+name+" needs input.eventListDataPath.";
+  std::vector<ListedEvent> events;
+  try { events = readEventList(eventListFile); }
+  catch(const std::exception & e){ return e.what(); }
+  if(events.empty()) return "No events in the event list "+eventListFile;
+
+  // a new event source (geometry, conditions) reading the run of the first listed event
+  std::vector<std::string> files = findGrawRunFiles(dataDir, events.front().runId, 0);
+  if(files.empty()) return "No GRAW files of run "+std::to_string(events.front().runId)+" in "+dataDir;
+  std::string fileList;
+  for(const auto & aFile: files) fileList += (fileList.empty() ? "" : ",") + aFile;
+  aConfig.put("input.dataFile", fileList);
+  aConfig.put("input.singleAsadGrawFile", files.size()>1);
+  std::string error = replaceEventSource(aConfig);
+  if(error.size()) return error;
+  myEventList = events;
+  myEventListDataDir = dataDir;
+  myListPosition = -1;
+  myDataSetName = name;
+
+  error = loadListedEvent(0);
+  auto aEvent = myEventSource->getCurrentEvent();
+  if(aEvent && aEvent->GetEventInfo().GetPedestalSubtracted()){
+    aEvent->setHitFilterConfig(filter_type::threshold, myConfig);
+  }
+  std::cout<<KBLU<<"WebGUIController: data set "<<RST<<myDataSetName<<KBLU<<" ("<<RST<<jsonPath
+           <<KBLU<<"): "<<RST<<myEventList.size()<<KBLU<<" events"<<RST<<std::endl;
+  eventLoaded();
+  return error;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -334,6 +484,7 @@ void WebGUIController::refresh(){
   isManualTrackShown = false;
   if(!myEventSource || !myEventSource->numberOfEvents()) return;
   if(isNewEvent){
+    myClickedTrack.reset();
     if(isOnline()) updateEventRate();
     readSavedRecoEvent();
     // automatic output once per loaded event, unless already written; in manual RECO mode
@@ -415,7 +566,30 @@ void WebGUIController::readSavedRecoEvent(){
 const Track3D & WebGUIController::displayedTrack() const {
 
   if(mySavedTrack) return *mySavedTrack;
+  if(isRecoModeOn && myClickedTrack) return *myClickedTrack;
   return myEventSource->getTrackBuilder()->getTrack3D(0);
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+Track3D WebGUIController::makeClickedTrack(const Track3D & aTrack, ManualRecoTool::Mode aMode){
+
+  // the same convention as the analysis of the reconstructed events: segments in descending
+  // order of length, 2-prong: alpha + carbon-12, 3-prong: three alphas
+  TrackSegment3DCollection segments = aTrack.getSegments();
+  std::stable_sort(segments.begin(), segments.end(),
+                   [](const TrackSegment3D & a, const TrackSegment3D & b){ return a.getLength()>b.getLength(); });
+  for(size_t iSegment=0;iSegment<segments.size();++iSegment){
+    pid_type aPID = pid_type::UNKNOWN;
+    if(aMode==ManualRecoTool::Mode::ThreeProng) aPID = pid_type::ALPHA;
+    else if(segments.size()==1) aPID = pid_type::ALPHA;
+    else if(segments.size()==2) aPID = iSegment==0 ? pid_type::ALPHA : pid_type::CARBON_12;
+    segments[iSegment].setPID(aPID); // 2-prong mode with more than two segments: UNKNOWN
+  }
+  Track3D aClickedTrack;
+  for(const auto & aSegment: segments) aClickedTrack.addSegment(aSegment);
+  aClickedTrack.setHypothesisFitLoss(aTrack.getHypothesisFitLoss());
+  aClickedTrack.setChargeProfile(aTrack.getChargeProfile()); // the stacked profile does not depend on the order
+  return aClickedTrack;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -454,9 +628,46 @@ std::string WebGUIController::openFile(const std::string & fileName){
   while(std::getline(aStream, item, ',')){
     if(!fs::is_regular_file(item)) return "No such file: "+item;
   }
+  std::string error = checkGrawFileCount(fileName);
+  if(error.size()) return error;
   myEventSource->loadDataFile(fileName);
   myEventSource->loadFileEntry(0);
   eventLoaded();
+  return "";
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::string WebGUIController::checkGrawFileCount(const std::string & files) const {
+
+  if(myWorkMode!=M_OFFLINE_GRAW_MODE && myWorkMode!=M_OFFLINE_NGRAW_MODE) return "";
+  const long nFiles = std::count(files.begin(), files.end(), ',') + 1;
+  if(myWorkMode==M_OFFLINE_GRAW_MODE && nFiles!=1){
+    return "This reader takes one GRAW file (all AsAd boards), not "+std::to_string(nFiles)+".";
+  }
+  const int nAsad = myEventSource->getGeometry() ? myEventSource->getGeometry()->GetAsadNboards() : 0;
+  if(myWorkMode==M_OFFLINE_NGRAW_MODE && nAsad>0 && nFiles!=nAsad){
+    return "This reader takes one GRAW file per AsAd board ("+std::to_string(nAsad)+"), not "
+      +std::to_string(nFiles)+".";
+  }
+  return "";
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::string WebGUIController::replaceEventSource(boost::property_tree::ptree & aConfig){
+
+  std::shared_ptr<EventSourceBase> aEventSource;
+  try { aEventSource = EventSourceFactory::makeEventSourceObject(aConfig); }
+  catch(const std::exception & e){ return std::string("Cannot open the input: ")+e.what(); }
+  if(!aEventSource) return "Cannot open the input.";
+  myConfig = aConfig;
+  myEventSource = aEventSource;
+  setWorkMode();
+  myFramesPerChunk.clear();
+  myRangeCalculator.setGasPressure(myConfig.get<double>("conditions.pressure"));
+  myRangeCalculator.setGasTemperature(myConfig.get<double>("conditions.temperature"));
+  myRecoTool->setGeometry(myEventSource->getGeometry());
+  myClickedTrack.reset();
+  mySavedTrack.reset();
   return "";
 }
 /////////////////////////////////////////////////////////
@@ -560,6 +771,8 @@ std::string WebGUIController::execute(const crow::json::rvalue & command){
     return error;
   }
   else if(cmd=="open") return openFile(command["path"].s());
+  else if(cmd=="openRun") return openRun(command["files"].s());
+  else if(cmd=="openDataSet") return openDataSet(command["path"].s());
   else if(cmd=="set"){
     const std::string option = command["option"].s();
     bool value = command["value"].b();
@@ -604,10 +817,22 @@ std::string WebGUIController::execute(const crow::json::rvalue & command){
     if(!isRecoModeOn) return "Manual reconstruction mode is off.";
     myRecoTool->click(command["dir"].i(), command["x"].d(), command["y"].d());
   }
+  else if(cmd=="recoMovePoint"){
+    if(!isRecoModeOn) return "Manual reconstruction mode is off.";
+    long index = command["index"].i();
+    if(index<0 || !myRecoTool->movePoint(index, command["dir"].i(), command["x"].d(), command["y"].d())){
+      return "This point cannot be moved now.";
+    }
+  }
   else if(cmd=="recoFit"){
     if(!isRecoModeOn || !myRecoTool->isFitEnabled()) return "No complete segments to fit.";
     std::vector<double> segmentsXY = myRecoTool->takeSegmentsForFit();
     myEventSource->getTrackBuilder()->getSegment2DCollectionFromGUI(segmentsXY);
+    myClickedTrack = std::make_shared<Track3D>(makeClickedTrack(myEventSource->getTrackBuilder()->getTrack3D(0),
+                                                                myRecoTool->getMode()));
+    std::cout<<KBLU<<"Particle types ("<<ManualRecoTool::modeName(myRecoTool->getMode())<<"): "<<RST;
+    for(const auto & aSegment: myClickedTrack->getSegments()) std::cout<<aSegment.getPID()<<" ";
+    std::cout<<std::endl;
     mySavedTrack.reset(); // the new fit replaces the track read from the output file
     isManualTrackShown = true;
     isManualTrackUnsaved = true;
@@ -631,6 +856,7 @@ crow::json::wvalue WebGUIController::getStatus() const {
   status["mc"] = isMC();
   status["display"] = getDisplayMode();
   status["file"] = myEventSource ? myEventSource->getCurrentPath() : std::string("");
+  status["dataSet"] = myDataSetName;
   status["nEvents"] = myEventSource ? myEventSource->numberOfEvents() : 0ul;
   status["eventId"] = myEventSource ? myEventSource->currentEventId() : 0ul;
   if(myEventList.size()){
@@ -833,21 +1059,20 @@ void WebGUIController::addManualRecoOverlay(PanelOverlay & ov, int strip_dir) co
   // getSegments() returns a temporary: keep it alive for the loop
   const auto segments = myRecoTool->getSegments();
   for(const auto & aSegment: segments.at(strip_dir)){
-    std::string color = rootColor(aSegment.color);
-    ov.markers.push_back(markers({aSegment.x1}, {aSegment.y1}, color, "square", 8));
     if(std::isnan(aSegment.x2) || std::isnan(aSegment.y2)) continue;
-    ov.markers.push_back(markers({aSegment.x2}, {aSegment.y2}, color, "square", 8));
-    ov.lines.push_back(line({aSegment.x1, aSegment.x2}, {aSegment.y1, aSegment.y2}, color, 3, "dash"));
+    ov.lines.push_back(line({aSegment.x1, aSegment.x2}, {aSegment.y1, aSegment.y2},
+                            rootColor(aSegment.color), 3, "dash"));
   }
-  // 3-prong mode: all clicked track points, and the vertex calculated from the track lines
-  for(const auto & aPoint: myRecoTool->getClickedPoints(strip_dir)){
-    ov.markers.push_back(markers({aPoint.x}, {aPoint.y}, rootColor(aPoint.color), "square", 8));
+  // clicked points (they can be dragged to correct them)
+  const auto & points = myRecoTool->getPoints();
+  for(size_t iPoint=0;iPoint<points.size();++iPoint){
+    const auto & aPoint = points.at(iPoint).p.at(strip_dir);
+    ov.markers.push_back(markers({aPoint.x}, {aPoint.y}, rootColor(myRecoTool->getPointColor(iPoint)), "square", 8));
   }
+  // 3-prong mode: the vertex calculated from the track lines
   if(auto aVertex = myRecoTool->getVertex(strip_dir)){
-    // open (transparent) star: the charge under the vertex stays visible
-    wvalue aMarker = markers({aVertex->x}, {aVertex->y}, "#ffffff", "star-open", 16);
-    aMarker["lineWidth"] = 2;
-    ov.markers.push_back(std::move(aMarker));
+    // white dot, as the start of a fitted track
+    ov.markers.push_back(markers({aVertex->x}, {aVertex->y}, "#ffffff", "circle", 7, "#000000"));
   }
   const auto & aMarker = myRecoTool->getMarkers().at(strip_dir);
   if(aMarker) ov.markers.push_back(markers({aMarker->x}, {aMarker->y}, rootColor(2), "circle", 8));
@@ -906,6 +1131,18 @@ std::vector<crow::json::wvalue> WebGUIController::makeRecoPanels() const {
     aPanel["clickDir"] = strip_dir; // clicks define the segment end points
     PanelOverlay ov;
     addManualRecoOverlay(ov, strip_dir);
+    if(isRecoModeOn && myRecoTool->canMovePoints()){ // points the user can drag: index, x, y
+      std::vector<wvalue> dragPoints;
+      const auto & points = myRecoTool->getPoints();
+      for(size_t iPoint=0;iPoint<points.size();++iPoint){
+        wvalue aPoint;
+        aPoint["i"] = static_cast<long>(iPoint);
+        aPoint["x"] = points.at(iPoint).p.at(strip_dir).x;
+        aPoint["y"] = points.at(iPoint).p.at(strip_dir).y;
+        dragPoints.push_back(std::move(aPoint));
+      }
+      aPanel["dragPoints"] = std::move(dragPoints);
+    }
     if(isManualTrackShown) addTrackProjection(ov, strip_dir, aTrack);
     ov.moveTo(aPanel);
     panels.push_back(std::move(aPanel));
@@ -1005,9 +1242,14 @@ crow::json::wvalue WebGUIController::makeChargeProfilePanel(const Track3D & aTra
   if(aTrack.getLength()<1 || aTrack.getSegments().empty()) return aPanel;
   PanelOverlay ov;
 
-  bool isUnknownPID = aTrack.getSegments().front().getPID()==pid_type::UNKNOWN;
-  TH1F hChargeProfile = isUnknownPID ? aTrack.getSegments().front().getChargeProfile()
-                                     : aTrack.getChargeProfile();
+  // the automatically reconstructed track: the profile fitted by the dE/dx fit (with the model
+  // below), otherwise (clicked track, track read from the output file): the first segment profile
+  const TH1F & hdEdx = myEventSource->getTrackBuilder()->getdEdxHisto();
+  bool isUnknownPID = aTrack.getSegments().front().getPID()==pid_type::UNKNOWN ||
+                      &aTrack!=&myEventSource->getTrackBuilder()->getTrack3D(0) || hdEdx.GetEntries()==0;
+  TH1F hChargeProfile = isUnknownPID ? aTrack.getSegments().front().getChargeProfile() : hdEdx;
+  // a track read from the output file has no geometry for the segment profile: its stored profile
+  if(hChargeProfile.GetMaximum()<=0) hChargeProfile = aTrack.getChargeProfile();
   std::vector<double> x, y;
   for(int iBin=1;iBin<=hChargeProfile.GetNbinsX();++iBin){
     x.push_back(hChargeProfile.GetBinCenter(iBin));
@@ -1066,10 +1308,19 @@ std::string WebGUIController::makeRecoText(const Track3D * aTrack) const {
     out<<KBLU<<"Particle PID: "<<RST<<"UNKNOWN"<<std::endl;
   }
   else{
-    double alphaRange = aTrack->getSegments().front().getLength();
-    double carbonRange = aTrack->getSegments().size()==2 ? aTrack->getSegments().back().getLength() : 0.0;
-    double totalEnergy = myRangeCalculator.getIonEnergyMeV(pid_type::ALPHA, alphaRange) +
-                         myRangeCalculator.getIonEnergyMeV(pid_type::CARBON_12, carbonRange);
+    // energy of every segment from its range; ions without a range curve (e.g. a dot like
+    // track) are counted as alphas, as before
+    double totalEnergy = 0.0;
+    std::string particles;
+    for(const auto & aSegment: aTrack->getSegments()){
+      pid_type aPID = aSegment.getPID();
+      particles += (particles.empty() ? "" : " + ") + enumDict::GetPidName(aPID);
+      bool hasRangeCurve = aPID==pid_type::ALPHA || aPID==pid_type::CARBON_12 ||
+                           aPID==pid_type::CARBON_14 || aPID==pid_type::PROTON;
+      totalEnergy += myRangeCalculator.getIonEnergyMeV(hasRangeCurve ? aPID : pid_type::ALPHA,
+                                                       aSegment.getLength());
+    }
+    out<<KBLU<<"Particles: "<<RST<<particles<<std::endl;
     out<<KBLU<<"Total E [MeV]: "<<RST<<format("%2.1f", totalEnergy)<<std::endl;
   }
   out<<std::endl<<KBLU<<"Reconstructed track: "<<RST<<std::endl;
@@ -1079,46 +1330,101 @@ std::string WebGUIController::makeRecoText(const Track3D * aTrack) const {
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-crow::json::wvalue WebGUIController::listDirectory(const std::string & dirName) const {
+crow::json::wvalue WebGUIController::listDataSets() const {
 
   wvalue aResult;
-  fs::path aDir = dirName;
-  if(dirName.empty()){
-    fs::path current = myEventSource ? myEventSource->getCurrentPath() : std::string("");
-    current = current.string().substr(0, current.string().find(','));
-    aDir = current.has_parent_path() ? current.parent_path() : fs::current_path();
-  }
+  auto split = [](const std::string & text){
+    std::vector<std::string> items;
+    std::stringstream aStream(text);
+    std::string item;
+    while(std::getline(aStream, item, ',')) if(item.size()) items.push_back(item);
+    return items;
+  };
+  // data-set JSON files (event lists, runs) in web.dataSetDirs
+  std::vector<wvalue> lists, runSets;
+  std::set<std::string> runSetFiles; // first files of the run data sets: not listed again below
+  std::vector<std::string> jsonFiles;
   std::error_code ec;
-  aDir = fs::weakly_canonical(fs::absolute(aDir, ec), ec);
-  if(ec || !fs::is_directory(aDir, ec)){
-    aResult["error"] = "Not a directory: "+aDir.string();
-    return aResult;
+  for(const auto & setDir: split(myConfig.get<std::string>("web.dataSetDirs", ""))){
+    if(!fs::is_directory(setDir, ec)) continue;
+    std::vector<std::string> dirFiles;
+    for(const auto & entry: fs::directory_iterator(setDir, ec)){
+      if(entry.path().extension()==".json") dirFiles.push_back(entry.path().string());
+    }
+    std::sort(dirFiles.begin(), dirFiles.end());
+    jsonFiles.insert(jsonFiles.end(), dirFiles.begin(), dirFiles.end());
   }
-  aResult["dir"] = aDir.string();
-  aResult["parent"] = aDir.has_parent_path() ? aDir.parent_path().string() : aDir.string();
+  for(const auto & jsonFile: jsonFiles){
+    wvalue item;
+    item["path"] = jsonFile;
+    item["name"] = fs::path(jsonFile).stem().string();
+    const fs::path baseDir = fs::path(jsonFile).parent_path();
+    auto relativeTo = [&baseDir](const std::string & path){
+      return path.empty() || fs::path(path).is_absolute() ? path : (baseDir/path).string();
+    };
+    bool isRun = false;
+    try {
+      boost::property_tree::ptree aDataSet;
+      boost::property_tree::read_json(jsonFile, aDataSet);
+      item["name"] = aDataSet.get<std::string>("name", fs::path(jsonFile).stem().string());
+      item["description"] = aDataSet.get<std::string>("description", "");
+      item["geometry"] = fs::path(aDataSet.get<std::string>("input.geometryFile", "")).filename().string();
+      item["pressure"] = aDataSet.get<std::string>("conditions.pressure", "");
+      item["energy"] = aDataSet.get<std::string>("beamParameters.energy", "");
+      const std::string listFile = relativeTo(aDataSet.get<std::string>("input.eventList", ""));
+      isRun = listFile.empty();
+      if(!isRun) item["events"] = static_cast<long>(readEventList(listFile).size());
+      else {
+        item["group"] = aDataSet.get<std::string>("run.campaign", baseDir.filename().string());
+        item["runType"] = aDataSet.get<std::string>("run.run_type", "");
+        item["quality"] = aDataSet.get<std::string>("run.quality", "");
+        item["chunks"] = aDataSet.get<std::string>("run.n_chunks_found", "");
+        const std::string files = aDataSet.get<std::string>("input.dataFile", "");
+        const std::string firstFile = relativeTo(files.substr(0, files.find(',')));
+        if(files.empty()) item["error"] = "no data on disk";
+        else if(aDataSet.get<std::string>("input.geometryFile", "").empty()) item["error"] = "no geometry file for this working point";
+        else if(!fs::is_regular_file(firstFile, ec)) item["error"] = "no such file: "+firstFile;
+        else runSetFiles.insert(fs::weakly_canonical(firstFile, ec).string());
+      }
+    }
+    catch(const std::exception & e){ item["error"] = e.what(); }
+    (isRun ? runSets : lists).push_back(std::move(item));
+  }
+  aResult["dataSetDirs"] = myConfig.get<std::string>("web.dataSetDirs", "");
+  aResult["eventLists"] = std::move(lists);
+  aResult["runSets"] = std::move(runSets);
 
-  std::vector<std::pair<std::string,bool>> entries; // name, is directory
-  for(const auto & item: fs::directory_iterator(aDir, fs::directory_options::skip_permission_denied, ec)){
-    std::string name = item.path().filename().string();
-    if(name.empty() || name[0]=='.') continue;
-    std::error_code ec2;
-    bool isDir = item.is_directory(ec2);
-    std::string ext = item.path().extension().string();
-    if(!isDir && ext!=".root" && ext!=".graw") continue;
-    entries.emplace_back(name, isDir);
+  // other GRAW runs in web.grawDataDirs (default: the directory of the event list or the one
+  // above the input files)
+  std::vector<std::string> dataDirs = split(myConfig.get<std::string>("web.grawDataDirs", ""));
+  if(dataDirs.empty() && myEventListDataDir.size()) dataDirs.push_back(myEventListDataDir);
+  if(dataDirs.empty() && myEventSource){
+    fs::path current = myEventSource->getCurrentPath();
+    current = current.string().substr(0, current.string().find(','));
+    if(current.has_parent_path()) dataDirs.push_back(current.parent_path().parent_path().string());
   }
-  std::sort(entries.begin(), entries.end(), [](const auto & a, const auto & b){
-    if(a.second!=b.second) return a.second;
-    return a.first<b.first;
-  });
-  std::vector<wvalue> aList;
-  for(const auto & item: entries){
-    wvalue aEntry;
-    aEntry["name"] = item.first;
-    aEntry["isDir"] = item.second;
-    aList.push_back(std::move(aEntry));
+  std::vector<wvalue> runs;
+  for(const auto & dataDir: dataDirs){
+    for(const auto & aRun: findGrawRuns(dataDir)){
+      if(aRun.firstChunk.size() && runSetFiles.count(fs::weakly_canonical(aRun.firstChunk.front(), ec).string())) continue;
+      wvalue item;
+      item["dataDir"] = dataDir;
+      item["group"] = fs::path(aRun.directory).filename().string();
+      item["runId"] = static_cast<long long>(aRun.runId);
+      item["start"] = aRun.startTime;
+      item["streams"] = aRun.nStreams;
+      item["chunks"] = aRun.nChunks;
+      std::string files;
+      for(const auto & aFile: aRun.firstChunk) files += (files.empty() ? "" : ",") + aFile;
+      item["files"] = files;
+      runs.push_back(std::move(item));
+    }
   }
-  aResult["entries"] = std::move(aList);
+  std::vector<wvalue> dirs;
+  for(const auto & item: dataDirs) dirs.emplace_back(item);
+  aResult["dataDirs"] = std::move(dirs);
+  aResult["runs"] = std::move(runs);
+
   return aResult;
 }
 /////////////////////////////////////////////////////////

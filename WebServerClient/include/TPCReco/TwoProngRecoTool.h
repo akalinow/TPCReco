@@ -13,21 +13,14 @@ public:
   std::string getAddLabel() const override { return "Add segment"; }
   std::string getHint() const override;
 
-  std::array<std::vector<Segment>, 3> getSegments() const override { return mySegments; }
+  std::array<std::vector<Segment>, 3> getSegments() const override;
+  int getPointColor(size_t index) const override { return index==0 ? 2 : int(1+index); }
 
 protected:
 
-  void clearPoints() override;
-  bool addPoint(const Point3P & aPoint) override;
-  bool hasPoints() const override;
-  bool canFit() const override;
+  bool needsMorePoints() const override { return getPoints().size()<2; }
+  bool canFit() const override { return getPoints().size()>=2; }
   std::vector<double> makeSegmentsForFit() const override;
-
-private:
-
-  bool isLastSegmentComplete(int iDir) const;
-
-  std::array<std::vector<Segment>, 3> mySegments;
 };
 
 #endif // TPCRECO_WEBSERVERCLIENT_TWO_PRONG_RECO_TOOL_H_

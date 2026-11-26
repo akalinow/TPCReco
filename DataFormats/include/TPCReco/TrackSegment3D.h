@@ -119,6 +119,10 @@ class TrackSegment3D{
 
   const std::vector<Hit2DCollection> & getRecHits() const { return myRecHits;}
 
+  ///Per-hit gain correction 1/g(X_DET) for 2D projections of [0, lambdaEnd]; empty if no gain map.
+  ///(used by ChargeProfileBuilder)
+  TrackSegment2D::ChargeWeight getGainCorrection(double lambdaEnd) const;
+
   double getLoss(int iProjection=-1) const;
   
   ///Operator needed for fitting.
@@ -134,9 +138,6 @@ class TrackSegment3D{
 
   ///Calculate and store loss for all projections.
   void calculateLoss();
-
-  ///Per-hit gain correction 1/g(X_DET) for 2D projections of [0, lambdaEnd]; empty if no gain map.
-  TrackSegment2D::ChargeWeight getGainCorrection(double lambdaEnd) const;
 
   void addProjection(TH1F &histo, TGraphErrors &graph) const;
 

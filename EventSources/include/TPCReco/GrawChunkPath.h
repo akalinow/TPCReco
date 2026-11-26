@@ -25,4 +25,16 @@ std::string findGrawChunkPath(const std::string & filePath, int chunkOffset);
 /// Returns an empty list when nothing is found.
 std::vector<std::string> findGrawRunFiles(const std::string & dataDir, long runId, int chunk);
 
+/// One run of GRAW files: all streams (CoBo/AsAd) and chunks with name timestamps within 2 s.
+struct GrawRun {
+  std::string directory;                // directory of the files
+  long runId{0};                        // YYYYMMDDhhmmss of the first stream's first chunk
+  std::string startTime;                // its name timestamp, e.g. 2026-08-19T18:01:41.079
+  int nStreams{0}, nChunks{0};
+  std::vector<std::string> firstChunk;  // files of the first chunk, one per stream, sorted
+};
+
+/// Runs in dataDir and its subdirectories (one level), ordered by directory and start time.
+std::vector<GrawRun> findGrawRuns(const std::string & dataDir);
+
 #endif // TPCRECO_EVENTSOURCES_GRAW_CHUNK_PATH_H_

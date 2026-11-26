@@ -1,4 +1,3 @@
-#include <algorithm>
 #include <cmath>
 
 #include "TPCReco/CommonDefinitions.h"
@@ -8,83 +7,50 @@ using definitions::projection_type;
 
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void TwoProngRecoTool::clearPoints(){
-
-  for(auto & item: mySegments) item.clear();
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-bool TwoProngRecoTool::hasPoints() const {
-
-  for(const auto & item: mySegments) if(!item.empty()) return true;
-  return false;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-bool TwoProngRecoTool::canFit() const {
-
-  return !mySegments.at(projection_type::DIR_U).empty() &&
-    isLastSegmentComplete(projection_type::DIR_U);
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
 std::string TwoProngRecoTool::getHint() const {
 
+  const size_t nPoints = getPoints().size();
   if(isAcceptingPoints()){
-    std::string what = mySegments.at(projection_type::DIR_U).empty() ?
-      "the vertex (start of all segments)" :
-      "the end of segment "+std::to_string(mySegments.at(projection_type::DIR_U).size()
-                                          +(isLastSegmentComplete(projection_type::DIR_U) ? 1 : 0));
+    std::string what = nPoints==0 ? "the vertex (start of all segments)"
+                                  : "the end of segment "+std::to_string(nPoints);
     return "Click "+what+" on one U/V/W projection, then the same point on another projection.";
   }
-  if(canFit()) return "Add another segment, or fit the segments.";
+  if(isFitEnabled()) return "Add another segment, or fit the segments. Drag a point to correct it.";
+  if(nPoints>=2) return "Drag a point to correct it, then fit the segments again.";
   return "";
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-bool TwoProngRecoTool::addPoint(const Point3P & aPoint){
+std::array<std::vector<ManualRecoTool::Segment>, 3> TwoProngRecoTool::getSegments() const {
 
+  // segment i: from the vertex (point 0) to point i
+  std::array<std::vector<Segment>, 3> segments;
+  const auto & points = getPoints();
+  if(points.empty()) return segments;
   for(int iDir=projection_type::DIR_U;iDir<=projection_type::DIR_W;++iDir){
-    std::vector<Segment> & aSegments = mySegments.at(iDir);
-    const Point & aMarker = aPoint.at(iDir);
-
-    if(aSegments.size() && !isLastSegmentComplete(iDir)){
-      aSegments.back().x2 = aMarker.x;
-      aSegments.back().y2 = aMarker.y;
+    const Point & V = points.front().p.at(iDir);
+    if(points.size()==1){
+      segments.at(iDir).push_back({V.x, V.y, std::nan(""), std::nan(""), 2});
       continue;
     }
-    Segment aSegment{aMarker.x, aMarker.y, std::nan(""), std::nan(""), int(2+aSegments.size())};
-    if(aSegments.size()){ // all segments start at the common vertex
-      aSegment.x1 = aSegments.front().x1;
-      aSegment.y1 = aSegments.front().y1;
-      aSegment.x2 = aMarker.x;
-      aSegment.y2 = aMarker.y;
+    for(size_t iPoint=1;iPoint<points.size();++iPoint){
+      const Point & E = points.at(iPoint).p.at(iDir);
+      segments.at(iDir).push_back({V.x, V.y, E.x, E.y, int(1+iPoint)});
     }
-    aSegments.push_back(aSegment);
   }
-  // the first point (vertex) needs the end of the first segment
-  return !isLastSegmentComplete(projection_type::DIR_U);
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-bool TwoProngRecoTool::isLastSegmentComplete(int iDir) const {
-
-  const std::vector<Segment> & aSegments = mySegments.at(iDir);
-  return aSegments.empty() ||
-    (!std::isnan(aSegments.back().x2) && !std::isnan(aSegments.back().y2));
+  return segments;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 std::vector<double> TwoProngRecoTool::makeSegmentsForFit() const {
 
   std::vector<double> segmentsXY;
-  size_t nSegments = mySegments.at(projection_type::DIR_U).size();
-  for(const auto & item: mySegments) nSegments = std::min(nSegments, item.size());
-  for(size_t iSegment=0;iSegment<nSegments;++iSegment){
-    for(const auto & item: mySegments){
-      const Segment & aSegment = item.at(iSegment);
-      if(std::isnan(aSegment.x2) || std::isnan(aSegment.y2)) return segmentsXY;
-      segmentsXY.insert(segmentsXY.end(), {aSegment.x1, aSegment.y1, aSegment.x2, aSegment.y2});
+  const auto & points = getPoints();
+  for(size_t iPoint=1;iPoint<points.size();++iPoint){
+    for(int iDir=projection_type::DIR_U;iDir<=projection_type::DIR_W;++iDir){
+      const Point & V = points.front().p.at(iDir);
+      const Point & E = points.at(iPoint).p.at(iDir);
+      segmentsXY.insert(segmentsXY.end(), {V.x, V.y, E.x, E.y});
     }
   }
   return segmentsXY;

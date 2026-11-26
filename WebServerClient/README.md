@@ -33,6 +33,8 @@ tpcWebGUI: open http://hepzc62:8080/?token=8d799db55a8afff2b638bd2a7ab63d38 in a
 | `web.bindAddress` | 0.0.0.0 | listening address; `0.0.0.0`: all interfaces (remote access); `127.0.0.1`: this machine only, no token |
 | `web.accessToken` | (empty) | token required from browsers; empty: random token generated when remote access is on |
 | `web.documentRoot` | (empty) | directory with the client files; empty: `<install prefix>/web` |
+| `web.dataSetDirs` | (empty) | directories (comma separated) with the data-set JSON files (event lists, runs) of the Open dialog |
+| `web.grawDataDirs` | (empty) | data directories (comma separated) scanned for the other GRAW runs of the Open dialog; empty: `input.eventListDataPath`, or the directory above the input files |
 | `web.urlPrefix` | (empty) | URL path of the GUI, e.g. `/tpcgui` behind a reverse proxy; the URL to open is then `http://host:port/tpcgui/` |
 
 All other options (`input.*`, `display.*`, `online.*`, `output.*`, ...) are the same as for `tpcGUI`.
@@ -41,7 +43,7 @@ All other options (`input.*`, `display.*`, `online.*`, `output.*`, ...) are the 
 
 ```
 browser (web/index.html, app.js, Plotly.js)
-   │  HTTP + JSON:  GET /api/view, POST /api/command, GET /api/ls
+   │  HTTP + JSON:  GET /api/view, POST /api/command, GET /api/datasets
    │  WebSocket /ws: "update" pushed when the displayed event changes
    ▼
 WebGUIServer      Crow web framework (header-only, Boost.Asio), routes and static files
@@ -67,9 +69,26 @@ ManualRecoTool    state machine of the clicked track reconstruction (port of Mar
 * Next (▶) / Previous (◀) / Reset event. For GRAW input, ▶ on the last event of a chunk opens the
   next chunk of the run (all AsAd files), ◀ on the first event the previous one; the chunk files are
   found on disk (their timestamps differ, e.g. `..44.531_0000.graw` is followed by `..44.540_0001.graw`).
-  Other controls: go to event id, go to frame, open file (server side file browser,
-  several GRAW files can be selected with Ctrl+click), Exit (top right: closes the output file
-  and stops the server for all browsers).
+  Other controls: go to event id, go to frame, open a data set (below), Exit (top right: closes
+  the output file and stops the server for all browsers).
+* Data sets (click the "Data set" box in the top bar): no single files, but
+  * data-set JSON files in `web.dataSetDirs`, each with a name, a description and the settings
+    of its data (`input.geometryFile`, `conditions`, `pedestal`, `hitFilter`, `beamParameters`);
+    relative paths are relative to the JSON file. Opening one applies its settings on top of the
+    start-up configuration (the event source is created again). Two kinds:
+    * event lists: `input.eventList`, `input.eventListDataPath`; the first listed event is shown,
+      e.g. `{"name": "...", "input": {"eventList": "...", "eventListDataPath": "...",
+      "geometryFile": "..."}, "conditions": {"pressure": "110", ...}, "beamParameters": {"energy": "8.26"}}`;
+    * runs: `input.dataFile` (files of the first chunk); ▶ / ◀ continue through the chunks. The
+      HIgS 2022 and 2026 runs are made from the logbooks by `Analysis/python/makeRunList.py
+      --campaign 2022|2026` (`Analysis/python/HIgS_2022_runs/`, `HIgS_2026_runs/`, grouped by
+      campaign; logbook metadata in `run`). Runs without a geometry file for their working point
+      cannot be opened;
+  * other GRAW runs found in `web.grawDataDirs` (and their subdirectories, one level) without a
+    data set, grouped by directory; a run is all files (AsAd streams, chunks) with timestamps
+    within 2 s. They are opened with the current settings.
+  Runs recorded as one file for all AsAd boards and runs with one file per AsAd board are both
+  read (the reader is switched when needed).
 * Event list (`input.eventList`, lines "runId , entry , eventId" as for makeTrackTree; GRAW files
   of each run are searched in `input.eventListDataPath`, default: the parent directory of the
   `input.dataFile` directory): ▶ / ◀ step through the listed events, and the List box in the top
@@ -96,6 +115,15 @@ ManualRecoTool    state machine of the clicked track reconstruction (port of Mar
     farther from the vertex (click the second point at the track end). "Fit segments" needs at
     least two tracks. Classes: `ManualRecoTool` (point clicking), `TwoProngRecoTool`,
     `ThreeProngRecoTool`.
+  * Correcting clicked points: drag a clicked point (square) on a U/V/W projection. Its time
+    changes in all projections and its strip coordinate in the dragged one; the strip coordinate of
+    the other projection set by the user is kept and the third one is calculated, as for a click
+    (the 3-prong vertex follows). The points stay after "Fit segments": move them and fit again.
+    A drag that does not start on a point zooms, as before.
+  * Particle types of the fitted clicked track (written to the output file): segments sorted by
+    length, 2-prong: alpha (longer) + carbon-12 (one segment: alpha; more than two: unknown),
+    3-prong: all alphas. "Total E" in the printout is the sum of the segment energies from
+    their ranges.
 * Event type bits, written to `<input file>.log` and to the output file (manual reco mode) on Next/Previous.
 * Run conditions: drift velocity, sampling rate, trigger delay.
 * Output file: the same `FileOutput` as tpcGUI, filled once per loaded event (manual reco mode:
@@ -112,8 +140,8 @@ Differences from tpcGUI:
 * The ONLINE rate graph gets one point per loaded event (tpcGUI added one per redraw);
   "Reset rate" is usable in ONLINE mode.
 * Plots are interactive (zoom, pan, hover values, PNG export from the Plotly toolbar).
-* Layout: mode, file name, number of events, event id. and frame are in the top bar. Click the file
-  name to open another file; type an event id. or a frame there and press Enter to go to it
+* Layout: mode, file name, number of events, event id. and frame are in the top bar. Click the data
+  set / file name to open another data set; type an event id. or a frame there and press Enter to go to it
   (Escape restores the current one). The side blocks (Event type, Segment creation, Run conditions)
   are collapsed; the +/− button expands
   them and the browser remembers the choice. Segment creation is open only while manual reco is on.
@@ -127,13 +155,16 @@ Differences from tpcGUI:
 {"cmd":"reset"}                            {"cmd":"resetRate"}
 {"cmd":"gotoEvent", "eventId": n}          {"cmd":"gotoEntry", "entry": n}
 {"cmd":"gotoListPosition", "position": n}
-{"cmd":"open", "path": "file1,file2,..."}
+{"cmd":"open", "path": "file1,file2,..."}  {"cmd":"openRun", "files": "file1,file2,..."}
+{"cmd":"openDataSet", "path": "dataset.json"}
 {"cmd":"set", "option": "logScale|autoZoom|recoMode|rate", "value": true|false}
 {"cmd":"runConditions", "driftVelocity": v, "samplingRate": r, "triggerDelay": d}
 {"cmd":"recoMode", "mode": "2prong|3prong"}
 {"cmd":"recoAddSegment"}   {"cmd":"recoClick", "dir": 0|1|2, "x": t, "y": s}
+{"cmd":"recoMovePoint", "index": i, "dir": 0|1|2, "x": t, "y": s}
 {"cmd":"recoFit"}          {"cmd":"recoClearTrack"}          {"cmd":"exit"}
 ```
 
 The reply is `{"ok": bool, "error": "...", "view": {...}}`, where `view` is the same document as
 `GET /api/view`: `status` (file, event, flags, enabled controls) and `panels` (heatmaps/plots with overlays).
+`GET /api/datasets`: data sets for the Open dialog (`eventLists`, `runSets`, `runs`).

@@ -656,8 +656,11 @@ void HistoManager::drawChargeAlongTrack3D(TVirtualPad *aPad){
   hFrame.GetYaxis()->SetTitleOffset(2.0);
   hFrame.SetMinimum(0.0);
 
-  TH1F hChargeProfile = aTrack3D.getChargeProfile();
-  if(aTrack3D.getSegments().front().getPID()==pid_type::UNKNOWN)   hChargeProfile = aTrack3D.getSegments().front().getChargeProfile();
+  // the profile fitted by the dE/dx fit (with the model below), or the first segment profile
+  TH1F hChargeProfile = myTkBuilderPtr->getdEdxHisto();
+  if(aTrack3D.getSegments().front().getPID()==pid_type::UNKNOWN || hChargeProfile.GetEntries()==0){
+    hChargeProfile = aTrack3D.getSegments().front().getChargeProfile();
+  }
   hChargeProfile.SetLineWidth(2);
   hChargeProfile.SetLineColor(2);
   hChargeProfile.SetMarkerColor(2);

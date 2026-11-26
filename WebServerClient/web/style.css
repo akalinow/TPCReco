@@ -68,21 +68,25 @@ button.exit { flex: 0 0 auto; font-weight: 600; padding: 4px 14px; }
 .stopped[hidden] { display: none; }
 .stopped p { background: var(--panel); padding: 20px 30px; font-size: 16px; }
 
+/* one grid: three plot columns and the control column. The controls are in the top row; the
+   reconstruction printout (terminal) is the bottom right cell, over the plot column and the
+   control column. The plot panels fill the other cells. */
 main {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 330px;
-  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) 330px;
+  gap: 6px;
   padding: 8px;
   align-items: start;
 }
-
-/* three narrow columns; the plot panels and the reconstruction printout are items of one grid */
-#plotArea {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
+#plotArea, .plots { display: contents; }
+#sidebar {
+  grid-column: 4; grid-row: 1;
+  max-height: max(300px, calc((100vh - 70px) / 2));
+  overflow-y: auto;
 }
-.plots { display: contents; }
+.reco-info-box { grid-column: 3 / span 2; grid-row: 2; }
+/* no printout: the controls use the whole column */
+main.no-terminal #sidebar { grid-row: 1 / span 2; max-height: max(606px, calc(100vh - 70px)); }
 .panel {
   background: var(--panel);
   border: 1px solid var(--border);
@@ -192,23 +196,30 @@ input[type=number], input[type=text] { font: inherit; padding: 3px 4px; }
 .run-conditions label { flex-direction: column; align-items: stretch; font-size: 12px; gap: 2px; }
 .run-conditions input { width: 100%; }
 
-.logos { display: flex; justify-content: space-around; align-items: center; padding: 6px; }
-.logos img { max-height: 80px; max-width: 48%; }
+/* logos in the top bar */
+.logos { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+.logos img { height: 34px; width: auto; }
 
 dialog { width: min(640px, 92vw); border: 1px solid var(--border); padding: 12px; }
 dialog form { display: flex; flex-direction: column; gap: 6px; }
 .dir-line { display: flex; gap: 6px; }
 .dir-line input { flex: 1; }
-.dir-list {
-  list-style: none; margin: 0; padding: 0;
-  height: 320px; overflow-y: auto;
-  border: 1px solid var(--border);
-  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px;
-}
-.dir-list li { padding: 2px 6px; cursor: pointer; }
-.dir-list li:hover { background: #e6e6ff; }
-.dir-list li.dir::before { content: "📁 "; }
-.dir-list li.selected { background: #c3c3fa; }
+dialog h3 { font-size: 13px; margin: 6px 0 0 0; }
+.ds-where { font-weight: normal; font-size: 11px; color: var(--muted); margin-left: 6px; }
+.ds-runs { max-height: 30vh; overflow-y: auto; border: 1px solid var(--border); padding: 2px 4px; }
+.ds-runs summary { cursor: pointer; padding: 2px 0; font-weight: 600; }
+.ds-runs summary::after { content: " (" attr(data-count) ")"; font-weight: normal; color: var(--muted); }
+.ds-list { list-style: none; margin: 0; padding: 0; max-height: 22vh; overflow-y: auto; }
+.ds-runs .ds-list { max-height: none; padding-left: 14px; }
+.ds-list li { padding: 2px 6px; cursor: pointer; display: flex; gap: 12px; align-items: baseline; }
+.ds-list li:hover { background: #e6e6ff; }
+.ds-list li.selected { background: #c3c3fa; }
+.ds-list li.current .ds-name { font-weight: 700; }
+.ds-list li.current .ds-name::after { content: " (open)"; font-weight: normal; color: var(--muted); }
+.ds-list li.ds-error, .ds-list li.ds-empty { cursor: default; color: var(--muted); }
+.ds-list li.ds-bad .ds-name { color: var(--muted); }
+.ds-name { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ds-info { color: var(--muted); font-size: 12px; }
 .dialog-buttons { display: flex; justify-content: flex-end; gap: 6px; }
 
 
@@ -216,9 +227,17 @@ body.busy, body.busy * { cursor: progress !important; }
 
 @media (max-width: 900px) {
   main { grid-template-columns: 1fr; }
+  #sidebar, .reco-info-box, main.no-terminal #sidebar { grid-column: auto; grid-row: auto; max-height: none; }
+  .logos { display: none; }
   header { flex-wrap: wrap; }
   .status-bar { flex-wrap: wrap; }
   .status-bar .item.file { max-width: 100%; }
-  #plotArea { grid-template-columns: minmax(0, 1fr); }
   .panel { height: 380px; }
+}
+
+/* dragging clicked points (manual reconstruction) */
+.js-plotly-plot.over-point .nsewdrag, body.dragging-point, body.dragging-point * { cursor: move !important; }
+.drag-ghost {
+  position: fixed; width: 10px; height: 10px; transform: translate(-50%, -50%);
+  border: 2px solid #ffffff; outline: 1px solid #000000; pointer-events: none; z-index: 50;
 }

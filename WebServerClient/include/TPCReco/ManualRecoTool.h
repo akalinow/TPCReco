@@ -19,6 +19,8 @@ class GeometryTPC;
 ///  - a click on a second projection uses the time of the first click and the new
 ///    strip coordinate; the coordinate in the third projection is calculated from
 ///    the detector geometry: the point is then known in all three projections.
+/// The clicked points are kept in click order (getPoints()) and can be moved (movePoint()),
+/// also after "Fit segments": the segments are then fitted again.
 ///
 /// What the clicked points mean depends on the mode (derived classes):
 ///  - TwoProngRecoTool:   the first point is the common vertex, the following points are segment ends,
@@ -34,14 +36,15 @@ public:
 
   struct Point { double x, y; };
 
-  /// one clicked 3D point: (time, strip coordinate) in the U, V and W projections
+  /// one 3D point: (time, strip coordinate) in the U, V and W projections
   using Point3P = std::array<Point, 3>;
+
+  /// clicked point: coordinates in all projections and the two projections set by the user
+  /// (the third one is calculated)
+  struct ClickedPoint { Point3P p; std::array<int, 2> clickedDirs; };
 
   /// 2D segment in one strip direction. x2,y2 are NaN while the segment is incomplete.
   struct Segment { double x1, y1, x2, y2; int color; };
-
-  /// clicked point drawn in a projection (ROOT colour index)
-  struct ColoredPoint { double x, y; int color; };
 
   /// vertical helper line (x position, ROOT colour index)
   struct VerticalLine { double x; int color; };
@@ -64,7 +67,7 @@ public:
 
   void setGeometry(std::shared_ptr<GeometryTPC> aGeometry) { myGeometry = aGeometry; }
 
-  /// Clear markers and segments; buttons as after loading an event.
+  /// Clear the points; buttons as after loading an event.
   void reset(bool isRecoModeOn);
 
   /// "Add segment" / "Add track" button
@@ -73,17 +76,25 @@ public:
   /// Click at (x,y) on the projection of strip direction iDir (0-2). Returns false when ignored.
   bool click(int iDir, double x, double y);
 
+  /// Move the clicked point index to (x,y) in the projection iDir: the time of the point is x
+  /// in all projections, its strip coordinate in iDir is y; the strip coordinate of the other
+  /// projection set by the user is kept, the third one is calculated. Returns false when ignored
+  /// (no such point, or a point is being clicked).
+  bool movePoint(size_t index, int iDir, double x, double y);
+
   /// "Fit segments" button: returns the segments end points (for each segment, for each
-  /// direction: x1, y1, x2, y2) and resets the tool.
+  /// direction: x1, y1, x2, y2). The points are kept (they can be moved and fitted again).
   std::vector<double> takeSegmentsForFit();
 
   /// segments to draw, per strip direction
   virtual std::array<std::vector<Segment>, 3> getSegments() const = 0;
-  /// clicked points to draw in the projection iDir (besides the segment ends)
-  virtual std::vector<ColoredPoint> getClickedPoints(int /*iDir*/) const { return {}; }
+  /// ROOT colour index of the clicked point index
+  virtual int getPointColor(size_t index) const = 0;
   /// calculated vertex in the projection iDir, if any
   virtual std::optional<Point> getVertex(int /*iDir*/) const { return std::nullopt; }
 
+  /// clicked points, in click order
+  const std::vector<ClickedPoint> & getPoints() const { return myPoints; }
   /// markers of the point being clicked
   const std::array<std::optional<Point>, 3> & getMarkers() const { return myMarkers; }
   /// time of the first click of the current point, if any
@@ -93,25 +104,22 @@ public:
   /// colour of the line following the mouse on the charge vs time panel
   int getCursorLineColor() const { return 1 + myTimeLines.size(); }
 
-  /// true when points or segments have been clicked but not yet sent to the fit
+  /// true when points have been clicked or moved but not yet sent to the fit
   bool hasClickedPoints() const;
+  /// clicked points can be moved now
+  bool canMovePoints() const { return isEnabled && !myFirstMarker && !myPoints.empty(); }
 
   bool isAcceptingPoints() const { return acceptPoints; }
-  bool isAddEnabled() const { return addEnabled; }
-  bool isFitEnabled() const { return fitEnabled; }
-  bool isClearEnabled() const { return clearEnabled; }
+  bool isAddEnabled() const { return isEnabled && !acceptPoints; }
+  bool isFitEnabled() const { return isEnabled && !acceptPoints && isChanged && canFit(); }
+  bool isClearEnabled() const { return isEnabled; }
 
 protected:
 
-  /// mode specific state: clear it
-  virtual void clearPoints() = 0;
-  /// "Add" button pressed
-  virtual void onAdd() {}
-  /// a point is complete (known in all three projections). Returns true when the tool should
-  /// keep accepting points (the current segment / track needs more points).
-  virtual bool addPoint(const Point3P & aPoint) = 0;
-  /// clicked points kept by the mode
-  virtual bool hasPoints() const = 0;
+  /// mode specific cached results (e.g. the vertex): recalculate after the points changed
+  virtual void pointsChanged() {}
+  /// after a point was added: true when the current segment / track needs more points
+  virtual bool needsMorePoints() const = 0;
   /// "Fit segments" possible with the points clicked so far
   virtual bool canFit() const = 0;
   /// segment end points for TrackBuilder::getSegment2DCollectionFromGUI()
@@ -121,16 +129,18 @@ protected:
 
 private:
 
-  void resetMarkers();
-  int findMissingMarkerDir() const;
-  double getMissingYCoordinate(int missingDir) const;
+  /// strip coordinate in missingDir of the point with strip coordinates posA, posB in dirA, dirB
+  double getMissingYCoordinate(int dirA, double posA, int dirB, double posB, int missingDir) const;
 
+  std::vector<ClickedPoint> myPoints;
   std::array<std::optional<Point>, 3> myMarkers;
   std::optional<Point> myFirstMarker;
-  std::vector<VerticalLine> myTimeLines;
+  int myFirstDir{-1};
+  std::vector<VerticalLine> myTimeLines; // one per point (and one for the point being clicked)
 
-  bool acceptPoints{false};
-  bool addEnabled{false}, fitEnabled{false}, clearEnabled{false};
+  bool isEnabled{false};    // manual reconstruction mode on
+  bool acceptPoints{false}; // armed by "Add segment"
+  bool isChanged{false};    // points added or moved since the last fit
 };
 
 #endif // TPCRECO_WEBSERVERCLIENT_MANUAL_RECO_TOOL_H_

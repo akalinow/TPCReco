@@ -203,11 +203,10 @@ void WebGUIServer::Impl::setupRoutes(){
     return crow::response(controller.getView());
   });
 
-  route("/api/ls")([this, denied](const crow::request & req){
+  route("/api/datasets")([this, denied](const crow::request & req){
     if(!isAuthorized(req)) return denied();
-    const char *dir = req.url_params.get("dir");
     std::lock_guard<std::mutex> lock(controllerMutex);
-    return crow::response(controller.listDirectory(dir ? dir : ""));
+    return crow::response(controller.listDataSets());
   });
 
   route("/api/command").methods(crow::HTTPMethod::Post)([this, denied](const crow::request & req){

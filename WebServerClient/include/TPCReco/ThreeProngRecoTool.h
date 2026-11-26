@@ -34,15 +34,14 @@ public:
   std::string getHint() const override;
 
   std::array<std::vector<Segment>, 3> getSegments() const override;
-  std::vector<ColoredPoint> getClickedPoints(int iDir) const override;
+  /// track k: points 2k and 2k+1
+  int getPointColor(size_t index) const override { return int(2+index/2); }
   std::optional<Point> getVertex(int iDir) const override;
 
 protected:
 
-  void clearPoints() override;
-  void onAdd() override;
-  bool addPoint(const Point3P & aPoint) override;
-  bool hasPoints() const override;
+  void pointsChanged() override;
+  bool needsMorePoints() const override { return getPoints().size()%2; }
   bool canFit() const override;
   std::vector<double> makeSegmentsForFit() const override;
 
@@ -53,9 +52,7 @@ private:
   Point vertexProjection(int iDir) const;
   /// index (0, 1) of the clicked point of a track farther from the vertex
   int farPointIndex(const TrackPoints & aTrack) const;
-  void updateVertex();
 
-  std::vector<std::vector<Point3P>> myTracks; // clicked points of each track (up to 2)
   PitchVectors myPitch{};
   std::optional<Vertex> myVertex;
 };

@@ -74,37 +74,6 @@ ThreeProngRecoTool::fitVertex(const std::vector<TrackPoints> & tracks, const Pit
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void ThreeProngRecoTool::clearPoints(){
-
-  myTracks.clear();
-  myVertex.reset();
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void ThreeProngRecoTool::onAdd(){
-
-  // a new track, unless the last one has not got any point yet
-  if(myTracks.empty() || !myTracks.back().empty()) myTracks.emplace_back();
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-bool ThreeProngRecoTool::addPoint(const Point3P & aPoint){
-
-  if(myTracks.empty()) myTracks.emplace_back();
-  myTracks.back().push_back(aPoint);
-  if(myTracks.back().size()<2) return true; // the second point of the track is needed
-  updateVertex();
-  return false;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-bool ThreeProngRecoTool::hasPoints() const {
-
-  for(const auto & item: myTracks) if(!item.empty()) return true;
-  return false;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
 bool ThreeProngRecoTool::canFit() const {
 
   return myVertex && completeTracks().size()>=2;
@@ -114,14 +83,15 @@ bool ThreeProngRecoTool::canFit() const {
 std::vector<ThreeProngRecoTool::TrackPoints> ThreeProngRecoTool::completeTracks() const {
 
   std::vector<TrackPoints> tracks;
-  for(const auto & item: myTracks){
-    if(item.size()==2) tracks.push_back({item[0], item[1]});
+  const auto & points = getPoints();
+  for(size_t iPoint=0;iPoint+1<points.size();iPoint+=2){
+    tracks.push_back({points.at(iPoint).p, points.at(iPoint+1).p});
   }
   return tracks;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void ThreeProngRecoTool::updateVertex(){
+void ThreeProngRecoTool::pointsChanged(){
 
   myVertex.reset();
   if(!myGeometry) return;
@@ -166,21 +136,17 @@ int ThreeProngRecoTool::farPointIndex(const TrackPoints & aTrack) const {
 std::array<std::vector<ManualRecoTool::Segment>, 3> ThreeProngRecoTool::getSegments() const {
 
   std::array<std::vector<Segment>, 3> segments;
-  const double nan = std::nan("");
-  for(size_t iTrack=0;iTrack<myTracks.size();++iTrack){
-    const auto & aTrack = myTracks[iTrack];
+  const auto tracks = completeTracks();
+  for(size_t iTrack=0;iTrack<tracks.size();++iTrack){
+    const TrackPoints & aTrack = tracks[iTrack];
     int color = 2 + iTrack;
     for(int iDir=projection_type::DIR_U;iDir<=projection_type::DIR_W;++iDir){
-      if(aTrack.size()==1){
-        const Point & A = aTrack[0].at(iDir);
-        segments.at(iDir).push_back({A.x, A.y, nan, nan, color});
-      }
-      else if(aTrack.size()==2 && myVertex){ // from the vertex to the track end
+      if(myVertex){ // from the vertex to the track end
         Point V = vertexProjection(iDir);
-        const Point & E = aTrack[farPointIndex({aTrack[0], aTrack[1]})].at(iDir);
+        const Point & E = aTrack[farPointIndex(aTrack)].at(iDir);
         segments.at(iDir).push_back({V.x, V.y, E.x, E.y, color});
       }
-      else if(aTrack.size()==2){ // no vertex yet: the line through the clicked points
+      else { // no vertex yet: the line through the clicked points
         const Point & A = aTrack[0].at(iDir);
         const Point & B = aTrack[1].at(iDir);
         segments.at(iDir).push_back({A.x, A.y, B.x, B.y, color});
@@ -191,27 +157,14 @@ std::array<std::vector<ManualRecoTool::Segment>, 3> ThreeProngRecoTool::getSegme
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-std::vector<ManualRecoTool::ColoredPoint> ThreeProngRecoTool::getClickedPoints(int iDir) const {
-
-  std::vector<ColoredPoint> points;
-  if(iDir<projection_type::DIR_U || iDir>projection_type::DIR_W) return points;
-  for(size_t iTrack=0;iTrack<myTracks.size();++iTrack){
-    for(const auto & aPoint: myTracks[iTrack]){
-      points.push_back({aPoint.at(iDir).x, aPoint.at(iDir).y, int(2+iTrack)});
-    }
-  }
-  return points;
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
 std::string ThreeProngRecoTool::getHint() const {
 
   char text[256];
   if(isAcceptingPoints()){
-    size_t nPoints = myTracks.empty() ? 0 : myTracks.back().size();
+    size_t nPoints = getPoints().size();
     std::snprintf(text, sizeof(text),
                   "Track %zu: click point %zu of 2 on one U/V/W projection, then the same point on another projection.",
-                  std::max<size_t>(myTracks.size(), 1), nPoints+1);
+                  nPoints/2+1, nPoints%2+1);
     return text;
   }
   size_t nTracks = completeTracks().size();
@@ -219,8 +172,10 @@ std::string ThreeProngRecoTool::getHint() const {
   if(nTracks<2) return "Add the next track: the vertex needs at least two tracks.";
   if(!myVertex) return "The track lines do not cross in one point (parallel tracks?): add a track or reset the event.";
   std::snprintf(text, sizeof(text),
-                "Vertex: t = %.1f mm, X = %.1f mm, Y = %.1f mm (track lines %.1f mm RMS from it). Add a track or fit the segments.",
-                print1(myVertex->t), print1(myVertex->X), print1(myVertex->Y), myVertex->rms);
+                "Vertex: t = %.1f mm, X = %.1f mm, Y = %.1f mm (track lines %.1f mm RMS from it). %s",
+                print1(myVertex->t), print1(myVertex->X), print1(myVertex->Y), myVertex->rms,
+                isFitEnabled() ? "Add a track or fit the segments; drag a point to correct it."
+                               : "Drag a point to correct it, then fit the segments again.");
   return text;
 }
 /////////////////////////////////////////////////////////

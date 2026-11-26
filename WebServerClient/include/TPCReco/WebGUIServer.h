@@ -15,7 +15,7 @@ class WebGUIController;
 ///  - GET  /api/status       JSON: file, event and widget state
 ///  - GET  /api/view         JSON: status + plot panels of the current event
 ///  - POST /api/command      JSON command {"cmd": ...}; reply {"ok", "error", "view"}
-///  - GET  /api/ls?dir=...   JSON: directory listing for the "Open file" dialog
+///  - GET  /api/datasets      JSON: data sets (GRAW runs, event lists) for the "Open" dialog
 ///  - WS   /ws               server push: "update" when the event shown has changed
 ///                           (ONLINE mode, or a command sent from another browser)
 ///
