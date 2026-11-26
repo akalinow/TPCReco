@@ -912,11 +912,32 @@ Track3D TrackBuilder::fitTrack3D(const Track3D & aTrackCandidate){
     return aFittedTrack;
   }
 
+  // Track nearly perpendicular to the drift direction (flat): every U/V/W-time projection is a
+  // line of constant time, and the line loss (hit distances to infinite 2D lines) hardly depends
+  // on the XY position and the azimuth, which only move the projections along themselves. The XY
+  // bias fit then drifts along the flat valley (e.g. to its +-10 mm limit from a seed ~1 mm off),
+  // misaligning the U/V/W charge profiles. For flat tracks the XY bias and the azimuth of the seed,
+  // from the extents of the projections along the strips, are kept.
+  const double flatTrackMaxCosTheta = 0.05; //parameter to be moved to configuration
+  const bool isFlat = std::abs(aFittedTrack.getSegments().front().getTangent().CosTheta())<flatTrackMaxCosTheta;
+  const double seedPhi = aFittedTrack.getSegments().front().getTangent().Phi();
+  auto keepSeedPhi = [&](){
+    if(!isFlat) return;
+    TrackSegment3D & aSegment = aFittedTrack.getSegments().front();
+    TVector3 aTangent = aSegment.getTangent();
+    aTangent.SetPhi(seedPhi);
+    aSegment.setBiasTangent(aSegment.getBias(), aTangent);
+    aFittedTrack.extendToChamberRange(300); // as fitTrack3DInSelectedDir
+    aFittedTrack.update();
+  };
+
   fitTrack3DInSelectedDir(aFittedTrack, definitions::fit_type::TANGENT);
-  fitTrack3DInSelectedDir(aFittedTrack, definitions::fit_type::BIAS_XY);
+  keepSeedPhi();
+  if(!isFlat) fitTrack3DInSelectedDir(aFittedTrack, definitions::fit_type::BIAS_XY);
   fitTrack3DInSelectedDir(aFittedTrack, definitions::fit_type::BIAS_Z);
   // second direction fit, with the fitted bias: small rotations about the current direction
   fitTrack3DInSelectedDir(aFittedTrack, definitions::fit_type::TANGENT_ROTATION);
+  keepSeedPhi();
   aFittedTrack.shrinkToHits();
 
   return aFittedTrack;
