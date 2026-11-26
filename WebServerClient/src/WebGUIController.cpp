@@ -830,12 +830,26 @@ std::string WebGUIController::execute(const crow::json::rvalue & command){
     std::vector<double> segmentsXY = myRecoTool->takeSegmentsForFit();
     myEventSource->getTrackBuilder()->getSegment2DCollectionFromGUI(segmentsXY);
     isClickedThreeProng = myRecoTool->getMode()==ManualRecoTool::Mode::ThreeProng;
-    // 3-prong: the clicked track fitted to the hits (vertex, directions, lengths)
-    if(isClickedThreeProng) myEventSource->getTrackBuilder()->fitClickedTrackToHits();
+    // the clicked track fitted to the hits (vertex, directions, lengths), both modes
+    myEventSource->getTrackBuilder()->fitClickedTrackToHits();
     myClickedTrack = std::make_shared<Track3D>(makeClickedTrack(myEventSource->getTrackBuilder()->getTrack3D(0),
                                                                 myRecoTool->getMode()));
     // 3-prong: dE/dx fit of the longest segment, as in the automatic reconstruction (for the plot)
-    if(isClickedThreeProng) myEventSource->getTrackBuilder()->fitLongestSegmentdEdx();
+    myProfileMatches.clear();
+    // 2-prong: dE/dx fit as in the automatic reconstruction (12C + alpha allowed)
+    if(!isClickedThreeProng) myEventSource->getTrackBuilder()->fitClickedTwoProngdEdx();
+    if(isClickedThreeProng && myEventSource->getTrackBuilder()->fitLongestSegmentdEdx()!=pid_type::UNKNOWN){
+      // the shorter alphas: shift along the long alpha's dE/dx fit -> lengths from dE/dx
+      myProfileMatches.resize(myClickedTrack->getSegments().size());
+      for(size_t iSegment=1;iSegment<myProfileMatches.size();++iSegment){
+        myProfileMatches[iSegment] =
+          myEventSource->getTrackBuilder()->matchToLongestAlpha(myClickedTrack->getSegments().at(iSegment));
+        const auto & aMatch = myProfileMatches[iSegment];
+        std::cout<<KBLU<<"Alpha "<<iSegment+1<<": "<<RST<<"length "<<myClickedTrack->getSegments().at(iSegment).getLength()
+                 <<" mm, matched to the longest alpha with delta "<<aMatch.delta<<" mm -> length from dE/dx "
+                 <<aMatch.length<<" mm (scale "<<aMatch.scale<<")"<<std::endl;
+      }
+    }
     std::cout<<KBLU<<"Particle types ("<<ManualRecoTool::modeName(myRecoTool->getMode())<<"): "<<RST;
     for(const auto & aSegment: myClickedTrack->getSegments()) std::cout<<aSegment.getPID()<<" ";
     std::cout<<std::endl;
@@ -1248,12 +1262,13 @@ crow::json::wvalue WebGUIController::makeChargeProfilePanel(const Track3D & aTra
   if(aTrack.getLength()<1 || aTrack.getSegments().empty()) return aPanel;
   PanelOverlay ov;
 
-  // the automatically reconstructed track and a fitted clicked 3-prong track (longest segment):
-  // the profile fitted by the dE/dx fit (with the model below); otherwise (other clicked tracks,
-  // track read from the output file): the first segment profile
+  // the automatically reconstructed track and a fitted clicked track (2-prong: the whole line,
+  // 3-prong: the longest segment): the profile fitted by the dE/dx fit (with the model below);
+  // otherwise (track read from the output file, failed fit): the first segment profile
   const TH1F & hdEdx = myEventSource->getTrackBuilder()->getdEdxHisto();
-  const bool isClicked3Prong = isClickedThreeProng && myClickedTrack && &aTrack==myClickedTrack.get();
-  const bool isClickedWithFit = isClicked3Prong && hdEdx.GetEntries()>0;
+  const bool isClickedTrack = myClickedTrack && &aTrack==myClickedTrack.get();
+  const bool isClicked3Prong = isClickedThreeProng && isClickedTrack;
+  const bool isClickedWithFit = isClickedTrack && hdEdx.GetEntries()>0;
   bool isUnknownPID = !isClickedWithFit &&
                       (aTrack.getSegments().front().getPID()==pid_type::UNKNOWN ||
                        &aTrack!=&myEventSource->getTrackBuilder()->getTrack3D(0) || hdEdx.GetEntries()==0);
@@ -1262,8 +1277,9 @@ crow::json::wvalue WebGUIController::makeChargeProfilePanel(const Track3D & aTra
   if(hChargeProfile.GetMaximum()<=0) hChargeProfile = aTrack.getChargeProfile();
   // clicked 3-prong track: the alphas from the vertex (ChargeProfileBuilder: short segments too,
   // normalised to 1), each in the colour of its segment; the longest one first (the fitted one)
+  // (a clicked 2-prong track without a dE/dx fit: its longest segment, short ones too)
   ChargeProfileBuilder aBuilder;
-  if(isClicked3Prong){
+  if(isClicked3Prong || (isClickedTrack && !isClickedWithFit)){
     hChargeProfile = aBuilder.getSegmentProfile(aTrack.getSegments().front());
     if(hChargeProfile.GetMaximum()>0) hChargeProfile.Scale(1.0/hChargeProfile.GetMaximum());
   }
@@ -1284,13 +1300,18 @@ crow::json::wvalue WebGUIController::makeChargeProfilePanel(const Track3D & aTra
     for(size_t iSegment=1;iSegment<aTrack.getSegments().size();++iSegment){
       TH1F hSegment = aBuilder.getSegmentProfile(aTrack.getSegments().at(iSegment));
       if(hSegment.GetMaximum()>0) hSegment.Scale(1.0/hSegment.GetMaximum());
+      // shifted by its delta onto the fit of the longest alpha (when matched)
+      const bool isMatched = isClickedWithFit && iSegment<myProfileMatches.size() && myProfileMatches[iSegment].valid;
+      const double delta = isMatched ? myProfileMatches[iSegment].delta : 0.0;
       std::vector<double> sx, sy;
       for(int iBin=1;iBin<=hSegment.GetNbinsX();++iBin){
-        sx.push_back(hSegment.GetBinCenter(iBin));
+        if(isMatched && hSegment.GetBinCenter(iBin)<0) continue; // before its vertex: the other tracks
+        sx.push_back(hSegment.GetBinCenter(iBin) + delta);
         sy.push_back(hSegment.GetBinContent(iBin));
       }
       ov.markers.push_back(markers(sx, sy, rootColor(2+iSegment), "circle", 6));
-      ov.markers.back()["name"] = alphaName(iSegment);
+      ov.markers.back()["name"] = alphaName(iSegment) +
+        (isMatched ? " (δ = "+format("%.1f", delta)+" mm)" : std::string());
       maxContent = std::max(maxContent, hSegment.GetMaximum());
     }
   }
@@ -1364,6 +1385,24 @@ std::string WebGUIController::makeRecoText(const Track3D * aTrack) const {
                                                        aSegment.getLength());
     }
     out<<KBLU<<"Particles: "<<RST<<particles<<std::endl;
+    // 2-prong: ranges from the dE/dx fit
+    const auto & aClickeddEdx = myEventSource->getTrackBuilder()->getClickeddEdx();
+    if(!isClickedThreeProng && aTrack==myClickedTrack.get() && aClickeddEdx.eventType!=pid_type::UNKNOWN){
+      out<<KBLU<<"From dE/dx ("<<RST<<aClickeddEdx.eventType<<KBLU<<"): alpha range [mm]: "<<RST
+         <<format("%.1f", aClickeddEdx.alphaRange);
+      if(aClickeddEdx.eventType==pid_type::C12_ALPHA) out<<KBLU<<", carbon range [mm]: "<<RST<<format("%.1f", aClickeddEdx.carbonRange);
+      out<<std::endl;
+    }
+    // 3-prong: lengths of the shorter alphas from dE/dx (matched to the longest one)
+    if(isClickedThreeProng && aTrack==myClickedTrack.get()){
+      for(size_t iSegment=1;iSegment<myProfileMatches.size() && iSegment<aTrack->getSegments().size();++iSegment){
+        const auto & aMatch = myProfileMatches[iSegment];
+        if(!aMatch.valid) continue;
+        out<<KBLU<<"Alpha "<<iSegment+1<<" length [mm]: "<<RST<<format("%.1f", aTrack->getSegments().at(iSegment).getLength())
+           <<KBLU<<", from dE/dx: "<<RST<<format("%.1f", aMatch.length)
+           <<KBLU<<" (delta "<<RST<<format("%.1f", aMatch.delta)<<KBLU<<" mm)"<<RST<<std::endl;
+      }
+    }
     out<<KBLU<<"Total E [MeV]: "<<RST<<format("%2.1f", totalEnergy)<<std::endl;
   }
   out<<std::endl<<KBLU<<"Reconstructed track: "<<RST<<std::endl;

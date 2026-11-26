@@ -12,6 +12,7 @@
 
 #include "TPCReco/IonRangeCalculator.h"
 #include "TPCReco/ManualRecoTool.h"
+#include "TPCReco/TrackBuilder.h"
 
 class EventSourceBase;
 class FileOutput;
@@ -157,6 +158,9 @@ private:
   // reconstruction mode (makeClickedTrack); shown and written instead of the TrackBuilder track
   std::shared_ptr<Track3D> myClickedTrack;
   bool isClickedThreeProng{false}; // myClickedTrack fitted in the 3-prong mode
+  // 3-prong: shorter alphas matched to the dE/dx fit of the longest one (index: segment of
+  // myClickedTrack, 0 = the longest, not matched)
+  std::vector<TrackBuilder::ProfileMatch> myProfileMatches;
 
   std::vector<ListedEvent> myEventList;
   long myListPosition{-1};          // index in myEventList of the event shown, -1: none
