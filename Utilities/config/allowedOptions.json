@@ -472,6 +472,48 @@
         "defaultValue" : 1.0,
         "description" : "Bins with charge at or below this value [ADC] are never added to the clean cluster.\nType: double"
     },
+    "deconvolutionEnable":{
+        "group":"reconstruction",
+        "type" : "bool",
+        "defaultValue" : false,
+        "description" : "Richardson-Lucy deconvolution of the clean cluster (ImageDeconvolver) before the track fit: removes the diffusion and AGET shaping response read from deconvolutionResponseFile. The image becomes narrower and earlier in time by the mean AGET delay (~2 mm at 232 ns, 25 MHz, 0.646 cm/us).\nType: bool"
+    },
+    "deconvolutionResponseFile":{
+        "group":"reconstruction",
+        "type" : "string",
+        "defaultValue" : "",
+        "description" : "StripResponseModel_*.root file (StripResponseCalculator) with the response for the sampling rate, drift velocity and AGET peaking time of the data. The strip and time kernels are its h_respXY_* and h_respZ_* histograms averaged over the charge position. A relative path is also searched in the resources directory. resources/ has StripResponseModel_7x50x14_S25MHz_V0.646cmus_T0.5mm_L0.8mm_P232ns.root for HIgS 2022 at 190 mbar, 3332 V, 25 MHz (the MC digitizer response).\nType: string"
+    },
+    "deconvolutionStopEps":{
+        "group":"reconstruction",
+        "type" : "double",
+        "defaultValue" : 0.02,
+        "description" : "Deconvolution stops when the rms residual |response*image - data| improves by less than this fraction per iteration.\nType: double"
+    },
+    "deconvolutionMaxIterations":{
+        "group":"reconstruction",
+        "type" : "int",
+        "defaultValue" : 300,
+        "description" : "Maximal number of Richardson-Lucy iterations.\nType: int"
+    },
+    "deconvolutionTargetSigmaTime":{
+        "group":"reconstruction",
+        "type" : "double",
+        "defaultValue" : 1.0,
+        "description" : "Sigma [time bins] of the Gaussian smoothing applied after the deconvolution (target resolution).\nType: double"
+    },
+    "deconvolutionTargetSigmaStrip":{
+        "group":"reconstruction",
+        "type" : "double",
+        "defaultValue" : 0.5,
+        "description" : "Sigma [strip bins] of the Gaussian smoothing applied after the deconvolution (target resolution).\nType: double"
+    },
+    "deconvolutionZeroFraction":{
+        "group":"reconstruction",
+        "type" : "double",
+        "defaultValue" : 0.01,
+        "description" : "Bins of the deconvolved image below this fraction of its maximum are set to 0.\nType: double"
+    },
     "dEdxOrientationVertexWindow":{
         "group":"reconstruction",
         "type" : "double",

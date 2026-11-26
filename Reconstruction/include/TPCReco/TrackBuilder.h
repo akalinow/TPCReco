@@ -14,6 +14,7 @@
 #include "TPCReco/TrackSegment3D.h"
 #include "TPCReco/Track3D.h"
 #include "TPCReco/RecHitBuilder.h"
+#include "TPCReco/ImageDeconvolver.h"
 #include "TPCReco/dEdxFitter.h"
 #include "TPCReco/ChargeProfileBuilder.h"
 #include "TPCReco/GainTable.h"
@@ -189,6 +190,8 @@ private:
   std::shared_ptr<EventTPC> myEventPtr;
   std::shared_ptr<GeometryTPC> myGeometryPtr;
   RecHitBuilder myRecHitBuilder;
+  ImageDeconvolver myDeconvolver;        // optional deconvolution of the clean cluster (reconstruction.deconvolution*)
+  bool deconvolutionEnabled{false};
   dEdxFitter mydEdxFitter;
   ChargeProfileBuilder myProfileBuilder; // track charge profile for the current track parameters
   TH1F mydEdxHisto;                      // profile of the chosen dE/dx fit (for drawing)

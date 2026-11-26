@@ -75,6 +75,17 @@ TrackBuilder::TrackBuilder(boost::property_tree::ptree& myConfig) {
                                             myConfig.get<double>("reconstruction.cleanClusterWindowStripMM", -1.0),
                                             myConfig.get<double>("reconstruction.cleanClusterThreshold", 0.2),
                                             myConfig.get<double>("reconstruction.cleanClusterEmptyBinThreshold", 1.0));
+  // optional Richardson-Lucy deconvolution of the clean cluster (detector response from a StripResponseModel file)
+  if(myConfig.get<bool>("reconstruction.deconvolutionEnable", false)){
+    deconvolutionEnabled = myDeconvolver.loadResponseFile(myConfig.get<std::string>("reconstruction.deconvolutionResponseFile", ""));
+    myDeconvolver.setStopEps(myConfig.get<double>("reconstruction.deconvolutionStopEps", 0.02));
+    myDeconvolver.setMaxIterations(myConfig.get<int>("reconstruction.deconvolutionMaxIterations", 300));
+    myDeconvolver.setTargetSigma(myConfig.get<double>("reconstruction.deconvolutionTargetSigmaTime", 1.0),
+                                 myConfig.get<double>("reconstruction.deconvolutionTargetSigmaStrip", 0.5));
+    myDeconvolver.setZeroFraction(myConfig.get<double>("reconstruction.deconvolutionZeroFraction", 0.01));
+    if(!deconvolutionEnabled) std::cout<<KRED<<"TrackBuilder: deconvolution requested, but the response file "
+                                       <<"could not be read. Deconvolution is OFF."<<RST<<std::endl;
+  }
   const std::string gainTableFile = myConfig.get<std::string>("reconstruction.gainTableFile", "");
   if(!gainTableFile.empty()){
     try {
@@ -306,6 +317,8 @@ void TrackBuilder::makeRecHits(int iDir){
 							    scale_type::mm);
   //myRecHits[iDir] = myRecHitBuilder.makeRecHits(*hProj);
   myRawHits[iDir] = myRecHitBuilder.makeCleanCluster(*hProj);
+  // removes the response (diffusion + AGET shaping): the image becomes narrower and earlier in time
+  if(deconvolutionEnabled) myRawHits[iDir] = myDeconvolver.deconvolve(myRawHits[iDir], iDir);
   myRecHits[iDir] = myRawHits[iDir];
   hTimeProjection.Add(myRecHits[iDir].ProjectionX("hTimeProjection"));
 }
