@@ -48,6 +48,17 @@ void ManualRecoTool::reset(bool isRecoModeOn){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+void ManualRecoTool::setPoints(const std::vector<Point3P> & points){
+
+  reset(isEnabled);
+  for(const auto & aPoint: points){
+    myPoints.push_back({aPoint, {projection_type::DIR_U, projection_type::DIR_V}});
+    myTimeLines.push_back({aPoint.at(projection_type::DIR_U).x, int(myTimeLines.size())+1});
+  }
+  pointsChanged();
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 void ManualRecoTool::addSegment(){
 
   if(!isEnabled) return;

@@ -70,6 +70,11 @@ public:
   /// Clear the points; buttons as after loading an event.
   void reset(bool isRecoModeOn);
 
+  /// Points taken from a reconstructed track, shown as if they were clicked (clicked
+  /// projections: U and V). They can be moved and more points can be added; "Fit segments" is
+  /// enabled after such a change.
+  void setPoints(const std::vector<Point3P> & points);
+
   /// "Add segment" / "Add track" button
   void addSegment();
 

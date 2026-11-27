@@ -135,6 +135,9 @@ private:
   /// manual reconstruction switched off: nothing is written, the clicked track is dropped and the
   /// automatic reconstruction replaced by "Fit segments" is made again
   void leaveRecoMode();
+  /// manual RECO mode: the points of the shown track (saved, fitted clicked or automatic) are put
+  /// in the manual reconstruction tool as if they were clicked, and the track is shown
+  void seedRecoTool();
   /// track reconstruction printout (terminal text with ANSI colour codes)
   std::string makeRecoText(const Track3D * aTrack) const;
   void addTrackProjection(PanelOverlay & aOverlay, int strip_dir, const Track3D & aTrack) const;

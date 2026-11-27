@@ -101,7 +101,12 @@ ManualRecoTool    state machine of the clicked track reconstruction (port of Mar
 * Display modes from the configuration: raw (default), `display.develMode` (rec hits, fitted track,
   charge profile with the dE/dx model, track projection on the readout plane, reconstruction
   printout in a terminal style cell), `display.technicalMode` (AGET channels).
-* Manual reconstruction: "Add segment", then click a point on one U/V/W projection and the same point
+* Manual reconstruction starts from the shown track (the automatic reconstruction, or the track
+  saved in the output file): it stays displayed, and its points are put in as if they were clicked
+  (2-prong: the vertex and the segment ends, 3-prong: the start and end of each track). Drag them,
+  add segments, and "Fit segments" to update the track; "Clear track" starts from scratch. The same
+  when an event is loaded in manual mode and when the 2-/3-prong mode is changed.
+  Clicking: "Add segment", then click a point on one U/V/W projection and the same point
   on a second projection (the time is taken from the first click, the third coordinate is calculated
   from the geometry); the first point is the common vertex. "Fit segments" fits and shows the track
   (projections, charge along the track, projection on the readout plane), "Clear track" removes the clicked points/segments and hides the fitted track. The event is written with the clicked track on "Next event".

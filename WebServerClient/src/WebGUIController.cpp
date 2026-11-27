@@ -491,8 +491,9 @@ void WebGUIController::refresh(){
     // automatic output once per loaded event
     if(myFileOutput && isOnline()) myFileOutput->update(myEventSource);
   }
-  // a track read back from the output file is shown as the (saved) clicked track
-  if(isRecoModeOn && mySavedTrack) isManualTrackShown = true;
+  // manual RECO mode: the shown track (read back from the output file, fitted clicked or automatic)
+  // is the starting point: its points as clicked points
+  seedRecoTool();
   isNewEvent = false;
 }
 /////////////////////////////////////////////////////////
@@ -534,6 +535,40 @@ unsigned long WebGUIController::updateEventLog(unsigned long eventType){
       << myEventSource->currentEntryNumber() << " \t\t "
       << eventType << std::endl;
   return eventType;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void WebGUIController::seedRecoTool(){
+
+  if(!isRecoModeOn || !myEventSource || !myEventSource->numberOfEvents()) return;
+  const Track3D & aTrack = displayedTrack();
+  const auto & segments = aTrack.getSegments();
+  if(segments.empty() || aTrack.getLength()<1) return;
+  // segment start or end in the U, V, W projections: (time [mm], strip coordinate [mm])
+  auto project = [](const TrackSegment3D & aSegment, bool atEnd){
+    ManualRecoTool::Point3P aPoint;
+    for(int strip_dir=projection_type::DIR_U;strip_dir<=projection_type::DIR_W;++strip_dir){
+      const TrackSegment2D & aProjection = aSegment.get2DProjection(strip_dir, 0, aSegment.getLength());
+      const TVector3 & aPos = atEnd ? aProjection.getEnd() : aProjection.getStart();
+      aPoint.at(strip_dir) = {aPos.X(), aPos.Y()};
+    }
+    return aPoint;
+  };
+  std::vector<ManualRecoTool::Point3P> points;
+  if(myRecoTool->getMode()==ManualRecoTool::Mode::TwoProng){
+    // the common vertex (start of the segments), then the end of each segment
+    points.push_back(project(segments.front(), false));
+    for(const auto & aSegment: segments) points.push_back(project(aSegment, true));
+  }
+  else {
+    // two points on each track: its start (the vertex) and its end
+    for(const auto & aSegment: segments){
+      points.push_back(project(aSegment, false));
+      points.push_back(project(aSegment, true));
+    }
+  }
+  myRecoTool->setPoints(points);
+  isManualTrackShown = true;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -838,6 +873,7 @@ std::string WebGUIController::execute(const crow::json::rvalue & command){
       myRecoTool = ManualRecoTool::create(*aMode);
       myRecoTool->setGeometry(myEventSource->getGeometry());
       myRecoTool->reset(isRecoModeOn);
+      seedRecoTool(); // the points of the shown track, in the convention of the new mode
     }
   }
   else if(cmd=="recoAddSegment"){
