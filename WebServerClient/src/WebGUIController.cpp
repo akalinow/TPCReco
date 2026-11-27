@@ -196,7 +196,7 @@ std::vector<WebGUIController::ListedEvent> WebGUIController::readEventList(const
 
   std::vector<ListedEvent> events;
 
-  // same format as makeTrackTree --input.eventList: "runId , entry , eventId" per line
+  // same format as tpcReco --input.eventList: "runId , entry , eventId" per line
   // (comma/space separated, '#' comment lines); the order of the file is kept
   std::ifstream in(fileName);
   if(!in) throw std::runtime_error("input.eventList: cannot open "+fileName);

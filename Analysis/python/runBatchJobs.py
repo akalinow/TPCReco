@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Batch processing of HIgS 2022 data and Monte Carlo with makeTrackTree / makeMCTrackTree.
+"""Batch processing of HIgS 2022 data and Monte Carlo with tpcReco / makeMCTrackTree.
 
 Runs are data sets, one JSON file per run (made by makeRunList.py):
   HIgS_2022_runs/     data runs (makeRunList.py): beam energy, TPC working point,
@@ -9,7 +9,7 @@ Runs are data sets, one JSON file per run (made by makeRunList.py):
                       sections, plus n_events, n_jobs and a "controller" section
                       merged onto the MC controller template (input.controllerConfigPath)
 
-Data: one makeTrackTree job per chunk (4 AsAd GRAW files). Outputs are collected
+Data: one tpcReco job per chunk (4 AsAd GRAW files). Outputs are collected
 in resources/HIgS_2022/<E>MeV/ (see finalizeData).
 MC: n_jobs makeMCTrackTree jobs per setup (events generated and reconstructed in one
 pass, input.fromGenerator). Outputs in <mcOutputDir>/<setup>/ (see finalizeMC).
@@ -179,7 +179,7 @@ def finalizeMC(mcDataSets):
         os.system("git log -1 > {}/git_version.dat".format(mcOutputDir))
 ################################################################
 ################################################################
-procNames = ["makeTrackTree", "makeMCTrackTree"]
+procNames = ["tpcReco", "makeMCTrackTree"]
 
 def countJobs():
     return sum(countRunningProcesses(name) for name in procNames)
@@ -289,12 +289,12 @@ maxChunksPerRun = -1  # e.g. 1 for a quick test on every selected run
 maxChunks = -1        # limit on the total over all selected runs (a chunk takes ~40 min)
 # MC: generated events per setup, split into n_jobs jobs; -1 = n_events of the data set
 mcEventsPerSetup = -1 # e.g. 40 for a quick test
-procCount = 14        # number of parallel jobs (makeTrackTree + makeMCTrackTree)
+procCount = 14        # number of parallel jobs (tpcReco + makeMCTrackTree)
 ################################################
 ################################################
 for run, jobId, fileCSV in runChunks(runList, maxChunksPerRun, maxChunks):
     waitForSlot()
-    analyzeSingleBatch(jobId, fileCSV, run["geometry_file"], "../../bin/makeTrackTree",
+    analyzeSingleBatch(jobId, fileCSV, run["geometry_file"], "../../bin/tpcReco",
                        pressure=run["pressure_mbar"],
                        samplingRate=run["sampling_MHz"],
                        beamEnergy=run["beam_energy_MeV"])

@@ -89,7 +89,7 @@ ManualRecoTool    state machine of the clicked track reconstruction (port of Mar
     within 2 s. They are opened with the current settings.
   Runs recorded as one file for all AsAd boards and runs with one file per AsAd board are both
   read (the reader is switched when needed).
-* Event list (`input.eventList`, lines "runId , entry , eventId" as for makeTrackTree; GRAW files
+* Event list (`input.eventList`, lines "runId , entry , eventId" as for tpcReco; GRAW files
   of each run are searched in `input.eventListDataPath`, default: the parent directory of the
   `input.dataFile` directory): ▶ / ◀ step through the listed events, and the List box in the top
   bar shows the position; type a number there and press Enter to go to that listed event.

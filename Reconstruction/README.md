@@ -3,7 +3,7 @@
 Automatic reconstruction of single-vertex events (α + recoil, single α, "dot") from the raw UVW
 strip data: from GRAW samples to a fitted `Track3D` with α and carbon segments, the charge in MeV
 and the dE/dx fit result. The main class is `TrackBuilder`. It is run by every application that
-reconstructs, for example `makeTrackTree` (ntuples), `tpcGUI` (reconstruction mode) and `tpcWriter`.
+reconstructs, for example `tpcReco` (ntuples), `tpcGUI` (reconstruction mode) and `tpcWriter`.
 
 The steps below are in processing order. For each step the table gives the code, the
 configuration options, and the files it reads. Options are written as `group.name`.
@@ -45,7 +45,7 @@ GRAW samples ──► 1 geometry, run conditions
              ──► 10 dE/dx hypothesis fit (α / C+α, both orientations)  ─ tracks > 30 mm
              ──► 11 optional: other α–C orientation by R = Q/(G_raw E_dep)
              ──► 12 charge → MeV (gain table)
-             ──► Track3D (makeTrackTree: trackTree ntuple)
+             ──► Track3D (tpcReco: trackTree ntuple)
 ```
 
 | # | Step | Code | Options | Files |
@@ -125,7 +125,7 @@ reconstructs on demand when it is called for such an event (e.g. by the `recoPro
 are its neighbours within ±`DeltaStrips` strips and ±`DeltaTimeCells` time cells ("envelope").
 
 The settings are the `hitFilter.recoClusterThreshold`, `hitFilter.recoClusterDeltaStrips` and
-`hitFilter.recoClusterDeltaTimeCells` options. `makeTrackTree` passes the configuration to the event at
+`hitFilter.recoClusterDeltaTimeCells` options. `tpcReco` passes the configuration to the event at
 the start of its event loop (`EventTPC::setHitFilterConfig`), as do the GUI (`HistoManager`) and
 `MLTree`. A program without that call uses the defaults of `EventTPC`: 35 ADC, ±2 strips, ±5 time
 cells (the same values as the HIgS JSON files). `hitFilter.recoClusterEnable` only switches the GUI
@@ -250,7 +250,7 @@ drift voltage does not change the gain. It is produced by `WarsawTPC_Claude/code
 (section "Gain table for TPCReco") with the gain map on. At 11.5 MeV the median `chargeEnergy` is
 4.36 MeV, against E_γ + Q = 4.34 MeV.
 
-## Output (`makeTrackTree`)
+## Output (`tpcReco`)
 
 One entry per event with a track; the `trackTree` leaves are listed in
 `WarsawTPC_Claude/analysis/08_ntuples.md`.

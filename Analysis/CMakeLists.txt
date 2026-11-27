@@ -18,7 +18,7 @@ reco_add_library(${MODULE_NAME} EXTRA_SOURCES
 
 target_compile_options(${MODULE_NAME} PUBLIC ${CMAKE_ROOT_CFLAGS})
 
-add_executable(makeTrackTree bin/makeTrackTree.cpp)
+add_executable(tpcReco bin/tpcReco.cpp)
 add_executable(makeMCTrackTree bin/makeMCTrackTree.cpp)
 add_executable(recoEventsAnalysis bin/recoEventsAnalysis.cpp)
 add_executable(recoEventsComparison bin/recoEventsComparison.cpp)
@@ -33,7 +33,7 @@ target_link_libraries(
   ${MODULE_NAME} PUBLIC Utilities DataFormats Reconstruction EventSources GrawToROOT ${ROOT_LIBRARIES}
                         ${ROOT_EXE_LINKER_FLAGS})
 
-target_link_libraries(makeTrackTree PRIVATE ${MODULE_NAME}
+target_link_libraries(tpcReco PRIVATE ${MODULE_NAME}
                                             Boost::program_options GUI FileOutput)
 target_link_libraries(makeMCTrackTree PRIVATE ${MODULE_NAME}
                                               Boost::program_options)
@@ -55,7 +55,7 @@ target_link_libraries(rawPedestalAnalysis PRIVATE ${MODULE_NAME}
 						    Boost::program_options)						  
 reco_install_targets(
   ${MODULE_NAME}
-  makeTrackTree
+  tpcReco
   makeMCTrackTree
   recoEventsAnalysis
   recoEventsComparison

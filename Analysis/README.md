@@ -27,7 +27,7 @@ cd <build>/resources
 
 | Program | Input | Output |
 |---------|-------|--------|
-| `makeTrackTree` | GRAW / ROOT raw data | `TrackTree_<run>_<chunk>.root`: `trackTree` ntuple; with `--output.recoTree true` also the `TPCRecoData` tree (Track3D + EventInfo) |
+| `tpcReco` | GRAW / ROOT raw data | `TrackTree_<run>_<chunk>.root`: `trackTree` ntuple; with `--output.recoTree true` also the `TPCRecoData` tree (Track3D + EventInfo) |
 | `makeMCTrackTree` | MC generator (`EventSourceMC`) | `MCTrackTree_*.root`: generated and reconstructed quantities per event |
 | `recoEventsAnalysis` | `TPCRecoData` tree | `Histos.root`, `Trees.root` (HIgS analysis: cuts, beam-frame kinematics) |
 | `rawTrackDiffusionAnalysis` | raw data + reco file (`TPCRecoData` or plain `trackTree`) | tree with transverse hit MEAN/RMS per U/V/W projection; optional event display dump |
@@ -123,7 +123,7 @@ firstRunPerSetup  = False     # data: only the first run of each (E, campaign, p
 maxChunksPerRun   = -1        # data: -1 = all
 maxChunks         = -1        # data: total limit; a chunk takes ~40 min
 mcEventsPerSetup  = -1        # MC: -1 = n_events of the data set
-procCount         = 14        # parallel jobs (makeTrackTree + makeMCTrackTree)
+procCount         = 14        # parallel jobs (tpcReco + makeMCTrackTree)
 ```
 
 An empty list means no selection on that field. Only runs of `good` quality are taken.
@@ -138,7 +138,7 @@ e.g. `selectedEnergies = [9.85]`.
 All jobs share one queue of `procCount` slots. The script returns when all jobs have finished
 and their outputs are collected.
 
-**Data.** One `makeTrackTree` job is started per chunk (4 AsAd GRAW files),
+**Data.** One `tpcReco` job is started per chunk (4 AsAd GRAW files),
 with geometry, pressure, sampling rate and beam energy taken from the run list.
 The run list gives the day directory of each run (e.g. `20220822_extTrg_CO2_130mbar`);
 the data are read from that directory under `dataPathPrefix/dataDirName`, wherever the run list says they are.
@@ -155,9 +155,9 @@ HIgS_2022/9.85MeV/
 An existing run directory in the destination is overwritten.
 
 The finalisation runs `recoEventsAnalysis` and `makePlots_HIGS.cpp` on the merged file.
-`recoEventsAnalysis` needs the `TPCRecoData` tree, so the batch jobs run `makeTrackTree`
+`recoEventsAnalysis` needs the `TPCRecoData` tree, so the batch jobs run `tpcReco`
 with `--output.recoTree true` (set in `Utilities/python/fileLoop.py`; off by default when
-`makeTrackTree` is run by hand).
+`tpcReco` is run by hand).
 
 **MC.** `n_jobs` `makeMCTrackTree` jobs per setup (independent random seeds, highest pressure first)
 generate and reconstruct O16(γ,α)C12 events in one pass (`input.fromGenerator`, no raw event files).

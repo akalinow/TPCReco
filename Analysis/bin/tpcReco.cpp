@@ -31,7 +31,7 @@
 /////////////////////////////////////
 /////////////////////////////////////
 
-int makeTrackTree(boost::property_tree::ptree & aConfig);
+int tpcReco(boost::property_tree::ptree & aConfig);
 
 /////////////////////////////////////
 /////////////////////////////////////
@@ -43,7 +43,7 @@ int main(int argc, char **argv){
   ConfigManager cm;
   boost::property_tree::ptree myConfig = cm.getConfig(argc, argv);
  
-  int nEntriesProcessed = makeTrackTree(myConfig);
+  int nEntriesProcessed = tpcReco(myConfig);
 
   aStopwatch.Stop();
   std::cout<<KBLU<<"Real time:       "<<RST<<aStopwatch.RealTime()<<" s"<<std::endl;
@@ -73,7 +73,7 @@ typedef struct {Float_t eventId, frameId,
     chargeEnergy, chargeRatio;
     } TrackData;
 /////////////////////////
-int makeTrackTree(boost::property_tree::ptree & aConfig) {
+int tpcReco(boost::property_tree::ptree & aConfig) {
 		  
   std::shared_ptr<EventSourceBase> myEventSource = EventSourceFactory::makeEventSourceObject(aConfig);
   myEventSource->getEventFilter().setConditions(aConfig); // initialize RAW event pre-filtering
@@ -122,7 +122,7 @@ int makeTrackTree(boost::property_tree::ptree & aConfig) {
   // extra initialization for fit DEBUG plots
   const auto develMode = aConfig.get<bool>("display.develMode");
   HistoManager myHistoManager;
-  const std::string rootFileNameCanvas = "makeTrackTree_debug_histos.root";
+  const std::string rootFileNameCanvas = "tpcReco_debug_histos.root";
   TFile *outputCanvasROOTFile = nullptr;
   TCanvas *outputCanvas = nullptr;
   if(develMode) {

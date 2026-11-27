@@ -533,7 +533,7 @@ root -l -x Generated_wirePlotTrack3D.C
 
 ## <sup>16</sup>O photodisintegration reaction (transient mode)
 [config_GUI_MC.json](../../GUI/config/config_GUI_MC.json) - example [ConfigManager](../../Utilities/README.md)
-JSON file for `tpcGUI`/`makeTrackTree` raw data processors that internally refers to [ModuleConfig.json](../config/ModuleConfig.json)
+JSON file for `tpcGUI`/`tpcReco` raw data processors that internally refers to [ModuleConfig.json](../config/ModuleConfig.json)
 from the previous example and allows one to generate random events on-the-fly
 in memory without the need of creating a large ROOT file with `PEventTPC` digitized raw data beforehand.
 ```Shell

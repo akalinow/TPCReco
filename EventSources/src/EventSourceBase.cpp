@@ -138,7 +138,7 @@ void EventSourceBase::fillEventTPC(){
   myCurrentEvent->SetEventInfo(myCurrentPEvent->GetEventInfo());
   recoEventUpdated = false;
   // Events rejected by the event filter are not reconstructed here (about 13% of the CPU of
-  // makeTrackTree on HIgS data with maxChargeLowerBound=1000). Accepted events are
+  // tpcReco on HIgS data with maxChargeLowerBound=1000). Accepted events are
   // reconstructed at once, so code that reads the TrackBuilder directly (GUI) sees their result;
   // getRecoEvent() reconstructs on demand otherwise (e.g. for the reco-prong filter).
   if(eventFilter.isEnabled() && !eventFilter.pass(*this)) return;

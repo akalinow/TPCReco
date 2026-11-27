@@ -99,7 +99,7 @@
         "group": "output",
         "type": "bool",
         "defaultValue": false,
-        "description": "makeTrackTree: also write the reconstructed Track3D and EventInfo of each stored event to the tree TPCRecoData (branches RecoEvent, EventInfo) in the output file, for recoEventsAnalysis, rawTrackDiffusionAnalysis and other programs that read it.\nType: bool"
+        "description": "tpcReco: also write the reconstructed Track3D and EventInfo of each stored event to the tree TPCRecoData (branches RecoEvent, EventInfo) in the output file, for recoEventsAnalysis, rawTrackDiffusionAnalysis and other programs that read it.\nType: bool"
     },
     "autoSaveFrequency":{
         "group": "output",
@@ -153,7 +153,7 @@
         "group": "display",
         "type" : "bool",
         "defaultValue": false,
-        "description": "Switch for enabling developer set of histograms in GUI / makeTrackTree reconstruction mode.\nType: bool"
+        "description": "Switch for enabling developer set of histograms in GUI / tpcReco reconstruction mode.\nType: bool"
     },
     "technicalMode":{
         "group": "display",
@@ -195,7 +195,7 @@
         "group": "hitFilter",
         "type" : "bool",
         "defaultValue": false,
-        "description": "Switch for enabling hit clustering in 2D charge maps in GUI / makeTrackTree reconstruction mode.\nType: bool"
+        "description": "Switch for enabling hit clustering in 2D charge maps in GUI / tpcReco reconstruction mode.\nType: bool"
     },
     "recoClusterThreshold":{
         "group": "hitFilter",

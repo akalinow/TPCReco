@@ -48,8 +48,8 @@ boost::program_options::variables_map parseCmdLineArgs(int argc, char **argv){
      "for a given strip projection, and the corresponding quality flag will be set to FALSE.\n\n"
      "Hits are weighted by their charge; only hits with charge above hitThreshold (default 0) are used,\n"
      "so that negative (pedestal-subtracted) noise does not widen the distribution.\n\n"
-     "recoFile: a makeTrackTree output with the TPCRecoData tree (--output.recoTree true), or a plain\n"
-     "makeTrackTree ntuple (trackTree): then the tracks are rebuilt from the vertex and the alpha/carbon\n"
+     "recoFile: a tpcReco output with the TPCRecoData tree (--output.recoTree true), or a plain\n"
+     "tpcReco ntuple (trackTree): then the tracks are rebuilt from the vertex and the alpha/carbon\n"
      "end points (alpha: vertex->alpha end; alpha+C events also vertex->carbon end).\n\n"
      "Optional event display dump (JSON block \"eventDump\"): {\"file\": out.root, \"eventIds\": \"id1,id2\",\n"
      "\"only\": true}. For the listed events the hit-filtered U/V/W-time projections [mm] (hU_<id>, hV_<id>,\n"
@@ -298,7 +298,7 @@ int analyzeTrackDiffusion(const boost::property_tree::ptree aConfig){
     exit(1);
   }
 
-  // Reco input: the TPCRecoData tree (Track3D + EventInfo) or, if absent, the trackTree ntuple of makeTrackTree.
+  // Reco input: the TPCRecoData tree (Track3D + EventInfo) or, if absent, the trackTree ntuple of tpcReco.
   // The ntuple stores the vertex and the alpha / carbon end points, which is all that the diffusion analysis
   // uses from the track (segment start, end and PID); it has no run number (one run per raw-data chunk).
   struct RecoEntry { long runId; unsigned long eventId; Long64_t entry; };
@@ -342,7 +342,7 @@ int analyzeTrackDiffusion(const boost::property_tree::ptree aConfig){
     auto lxC = leaf("xCarbonEnd"), lyC = leaf("yCarbonEnd"), lzC = leaf("zCarbonEnd");
     for(Long64_t iEntry=0; iEntry<myNtuplePtr->GetEntries(); ++iEntry) {
       myNtuplePtr->GetEntry(iEntry);
-      // eventType = sum of the segment PIDs (makeTrackTree): ALPHA=1, ALPHA+CARBON_12=3, ALPHA+CARBON_14=4, 0=no fit
+      // eventType = sum of the segment PIDs (tpcReco): ALPHA=1, ALPHA+CARBON_12=3, ALPHA+CARBON_14=4, 0=no fit
       const int eventType = (int)std::lround(lEventType->GetValue());
       const TVector3 vertex(lxV->GetValue(), lyV->GetValue(), lzV->GetValue());
       const TVector3 alphaEnd(lxA->GetValue(), lyA->GetValue(), lzA->GetValue());
