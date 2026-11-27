@@ -38,6 +38,10 @@ public:
   void setMaxIterations(int n) { maxIterations = n; }
   void setTargetSigma(double timeBins, double stripBins) { targetSigmaTime = timeBins; targetSigmaStrip = stripBins; }
   void setZeroFraction(double f) { zeroFraction = f; }
+  /// additional Gaussian spread [mm] added to the response kernels, e.g. the drift diffusion D*sqrt(d) at a typical
+  /// drift distance d (not in the StripResponseModel file). Converted to bins with the bin widths of the deconvolved
+  /// histogram (mm scale). 0: none.
+  void setExtraSigmaMM(double timeMM, double stripMM) { extraSigmaTimeMM = timeMM; extraSigmaStripMM = stripMM; }
   void setMargins(int timeBins, int stripBins) { marginTime = timeBins; marginStrip = stripBins; }
 
   bool hasKernels(int dir) const;
@@ -69,8 +73,19 @@ private:
   static void convolve1D(const std::vector<double> & in, std::vector<double> & out, int nStrip, int nTime,
                          const Kernel & k, bool alongTime, bool flip);
 
-  std::array<Kernel, 3> stripKernels;
-  std::array<Kernel, 3> timeKernels;
+  /// effective kernels = base kernels convolved with the extra Gaussian (sigma in bins)
+  void updateKernels(int dir, double sigmaTimeBins, double sigmaStripBins);
+  static std::vector<double> broaden(const std::vector<double> & values, double sigma);
+
+  std::array<std::vector<double>, 3> baseStripKernels;
+  std::array<std::vector<double>, 3> baseTimeKernels;
+  std::array<Kernel, 3> stripKernels;   // effective
+  std::array<Kernel, 3> timeKernels;    // effective
+  std::array<double, 3> kernelSigmaTime{{0, 0, 0}};   // extra sigma [bins] of the effective kernels
+  std::array<double, 3> kernelSigmaStrip{{0, 0, 0}};
+
+  double extraSigmaTimeMM{0};
+  double extraSigmaStripMM{0};
 
   double stopEps{0.02};
   int maxIterations{300};

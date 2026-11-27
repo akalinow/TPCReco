@@ -508,6 +508,18 @@
         "defaultValue" : 0.5,
         "description" : "Sigma [strip bins] of the Gaussian smoothing applied after the deconvolution (target resolution).\nType: double"
     },
+    "deconvolutionExtraSigmaTimeMM":{
+        "group":"reconstruction",
+        "type" : "double",
+        "defaultValue" : 0.0,
+        "description" : "Additional Gaussian spread [mm] along the time (drift) axis added to the deconvolution response, e.g. the longitudinal drift diffusion D_L*sqrt(d) at a typical drift distance d (not in the StripResponseModel file; HIgS 2022, 190 mbar, beam at d~9.7 cm: 0.62 mm). 0: none.\nType: double"
+    },
+    "deconvolutionExtraSigmaStripMM":{
+        "group":"reconstruction",
+        "type" : "double",
+        "defaultValue" : 0.0,
+        "description" : "Additional Gaussian spread [mm] across the strips added to the deconvolution response, e.g. the transverse drift diffusion D_T*sqrt(d). 0: none.\nType: double"
+    },
     "deconvolutionZeroFraction":{
         "group":"reconstruction",
         "type" : "double",

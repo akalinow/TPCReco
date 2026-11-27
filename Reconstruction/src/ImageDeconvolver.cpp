@@ -41,8 +41,28 @@ ImageDeconvolver::Kernel ImageDeconvolver::makeKernel(const std::vector<double> 
 void ImageDeconvolver::setKernels(int dir, const std::vector<double> & stripKernel,
                                   const std::vector<double> & timeKernel){
   if(dir<0 || dir>2) return;
-  stripKernels[dir] = makeKernel(stripKernel);
-  timeKernels[dir] = makeKernel(timeKernel);
+  baseStripKernels[dir] = stripKernel;
+  baseTimeKernels[dir] = timeKernel;
+  updateKernels(dir, 0.0, 0.0);
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+std::vector<double> ImageDeconvolver::broaden(const std::vector<double> & values, double sigma){
+
+  if(!(sigma>0) || values.empty()) return values;
+  const int n = std::max(1, (int)std::ceil(4.0*sigma));
+  std::vector<double> out(values.size()+2*n, 0.0);  // stays odd and centred
+  for(size_t i=0; i<values.size(); ++i)
+    for(int j=-n; j<=n; ++j) out[i+n+j] += values[i]*std::exp(-0.5*j*j/sigma/sigma);
+  return out;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void ImageDeconvolver::updateKernels(int dir, double sigmaTimeBins, double sigmaStripBins){
+  stripKernels[dir] = makeKernel(broaden(baseStripKernels[dir], sigmaStripBins));
+  timeKernels[dir] = makeKernel(broaden(baseTimeKernels[dir], sigmaTimeBins));
+  kernelSigmaTime[dir] = sigmaTimeBins;
+  kernelSigmaStrip[dir] = sigmaStripBins;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -198,6 +218,12 @@ TH2D ImageDeconvolver::deconvolve(const TH2D & hInput, int dir){
   lastIterations = 0;
   TH2D hOutput(hInput);
   if(!hasKernels(dir)) return hOutput;
+
+  // extra Gaussian in bins of this histogram (X: time, Y: strip; mm scale)
+  const double sigmaTime = extraSigmaTimeMM>0 ? extraSigmaTimeMM/hInput.GetXaxis()->GetBinWidth(1) : 0.0;
+  const double sigmaStrip = extraSigmaStripMM>0 ? extraSigmaStripMM/hInput.GetYaxis()->GetBinWidth(1) : 0.0;
+  if(std::abs(sigmaTime-kernelSigmaTime[dir])>1E-9 || std::abs(sigmaStrip-kernelSigmaStrip[dir])>1E-9)
+    updateKernels(dir, sigmaTime, sigmaStrip);
 
   const int nX = hInput.GetNbinsX(), nY = hInput.GetNbinsY();
   int minX = nX+1, maxX = 0, minY = nY+1, maxY = 0;

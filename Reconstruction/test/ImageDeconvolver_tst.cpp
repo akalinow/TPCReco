@@ -96,4 +96,34 @@ TEST(ImageDeconvolver, RecoversTimeShiftChargeAndWidth) {
   EXPECT_LT(rms(rec), 0.8 * rms(data));
 }
 
+TEST(ImageDeconvolver, ExtraSigmaInMM) {
+  // data blurred with the kernels and an extra Gaussian of 2 bins along time; histogram bins are 1 "mm" wide
+  const auto truth = truthImage();
+  auto data = blurred(truth);
+  TH2D smeared(data);
+  smeared.Reset();
+  const double sigma = 2.0;
+  for (int ix = 1; ix <= nCells; ++ix)
+    for (int iy = 1; iy <= nStrips; ++iy) {
+      const double v = data.GetBinContent(ix, iy);
+      if (v == 0) continue;
+      double norm = 0;
+      for (int j = -8; j <= 8; ++j) norm += std::exp(-0.5 * j * j / sigma / sigma);
+      for (int j = -8; j <= 8; ++j)
+        if (ix + j >= 1 && ix + j <= nCells)
+          smeared.SetBinContent(ix + j, iy, smeared.GetBinContent(ix + j, iy) + v * std::exp(-0.5 * j * j / sigma / sigma) / norm);
+    }
+  ImageDeconvolver plain, withExtra;
+  plain.setKernels(0, stripKernel(), timeKernel());
+  withExtra.setKernels(0, stripKernel(), timeKernel());
+  withExtra.setExtraSigmaMM(sigma, 0.0);
+  const auto recPlain = plain.deconvolve(smeared, 0);
+  const auto recExtra = withExtra.deconvolve(smeared, 0);
+  EXPECT_NEAR(recExtra.Integral() / truth.Integral(), 1.0, 0.03);
+  EXPECT_NEAR(meanX(recExtra), meanX(truth), 0.5);
+  // the extra term changes the response: different number of iterations or a different image
+  EXPECT_TRUE(withExtra.getLastIterations() != plain.getLastIterations() ||
+              std::abs(recExtra.GetRMS(1) - recPlain.GetRMS(1)) > 1E-6);
+}
+
 } // namespace

@@ -63,6 +63,14 @@ public:
 
   TF1 getdEdx() const {return mydEdxFitter.getFittedModel();};
 
+  /// Richardson-Lucy deconvolution of the clean cluster on/off (also at run time, e.g. from a GUI);
+  /// switching it on reads reconstruction.deconvolutionResponseFile the first time. Returns false
+  /// when it could not be switched on (no response). Applies from the next reconstruct().
+  bool setDeconvolution(bool enable);
+  bool isDeconvolutionEnabled() const { return deconvolutionEnabled; }
+  /// a response file is configured (reconstruction.deconvolutionResponseFile)
+  bool hasDeconvolutionResponseFile() const { return !myDeconvolutionResponseFile.empty(); }
+
   /// charge profile fitted by the dE/dx fit of the current event (fit coordinates, normalised),
   /// for drawing with getdEdx(); empty when the event has no dE/dx fit
   const TH1F & getdEdxHisto() const { return mydEdxHisto; }
@@ -210,6 +218,8 @@ private:
   RecHitBuilder myRecHitBuilder;
   ImageDeconvolver myDeconvolver;        // optional deconvolution of the clean cluster (reconstruction.deconvolution*)
   bool deconvolutionEnabled{false};
+  bool isDeconvolutionResponseLoaded{false};
+  std::string myDeconvolutionResponseFile; // reconstruction.deconvolutionResponseFile
   dEdxFitter mydEdxFitter;
   ChargeProfileBuilder myProfileBuilder; // track charge profile for the current track parameters
   TH1F mydEdxHisto;                      // profile of the chosen dE/dx fit (for drawing)

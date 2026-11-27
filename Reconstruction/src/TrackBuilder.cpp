@@ -77,15 +77,17 @@ TrackBuilder::TrackBuilder(boost::property_tree::ptree& myConfig) {
                                             myConfig.get<double>("reconstruction.cleanClusterThreshold", 0.2),
                                             myConfig.get<double>("reconstruction.cleanClusterEmptyBinThreshold", 1.0));
   // optional Richardson-Lucy deconvolution of the clean cluster (detector response from a StripResponseModel file)
-  if(myConfig.get<bool>("reconstruction.deconvolutionEnable", false)){
-    deconvolutionEnabled = myDeconvolver.loadResponseFile(myConfig.get<std::string>("reconstruction.deconvolutionResponseFile", ""));
-    myDeconvolver.setStopEps(myConfig.get<double>("reconstruction.deconvolutionStopEps", 0.02));
-    myDeconvolver.setMaxIterations(myConfig.get<int>("reconstruction.deconvolutionMaxIterations", 300));
-    myDeconvolver.setTargetSigma(myConfig.get<double>("reconstruction.deconvolutionTargetSigmaTime", 1.0),
-                                 myConfig.get<double>("reconstruction.deconvolutionTargetSigmaStrip", 0.5));
-    myDeconvolver.setZeroFraction(myConfig.get<double>("reconstruction.deconvolutionZeroFraction", 0.01));
-    if(!deconvolutionEnabled) std::cout<<KRED<<"TrackBuilder: deconvolution requested, but the response file "
-                                       <<"could not be read. Deconvolution is OFF."<<RST<<std::endl;
+  myDeconvolutionResponseFile = myConfig.get<std::string>("reconstruction.deconvolutionResponseFile", "");
+  myDeconvolver.setStopEps(myConfig.get<double>("reconstruction.deconvolutionStopEps", 0.02));
+  myDeconvolver.setMaxIterations(myConfig.get<int>("reconstruction.deconvolutionMaxIterations", 300));
+  myDeconvolver.setTargetSigma(myConfig.get<double>("reconstruction.deconvolutionTargetSigmaTime", 1.0),
+                               myConfig.get<double>("reconstruction.deconvolutionTargetSigmaStrip", 0.5));
+  myDeconvolver.setZeroFraction(myConfig.get<double>("reconstruction.deconvolutionZeroFraction", 0.01));
+  myDeconvolver.setExtraSigmaMM(myConfig.get<double>("reconstruction.deconvolutionExtraSigmaTimeMM", 0.0),
+                                myConfig.get<double>("reconstruction.deconvolutionExtraSigmaStripMM", 0.0));
+  if(myConfig.get<bool>("reconstruction.deconvolutionEnable", false) && !setDeconvolution(true)){
+    std::cout<<KRED<<"TrackBuilder: deconvolution requested, but the response file "
+             <<"could not be read. Deconvolution is OFF."<<RST<<std::endl;
   }
   const std::string gainTableFile = myConfig.get<std::string>("reconstruction.gainTableFile", "");
   if(!gainTableFile.empty()){
@@ -1304,6 +1306,16 @@ bool TrackBuilder::fitClickedTrackToHits(){
   myFittedTrack = aFittedTrack;
   myProfileBuilder.fill(myFittedTrack);
   return true;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+bool TrackBuilder::setDeconvolution(bool enable){
+
+  if(enable && !isDeconvolutionResponseLoaded){
+    isDeconvolutionResponseLoaded = myDeconvolver.loadResponseFile(myDeconvolutionResponseFile);
+  }
+  deconvolutionEnabled = enable && isDeconvolutionResponseLoaded;
+  return deconvolutionEnabled==enable;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
