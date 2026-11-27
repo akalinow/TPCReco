@@ -16,8 +16,9 @@ cd <build>/resources
 | Directory   | Content |
 |-------------|---------|
 | `bin/`      | sources of the command line programs (table below) |
-| `python/`   | batch drivers: `makeRunList.py`, `makeTrackTree.py`, `makeMCTrackTree.py` |
+| `python/`   | batch drivers: `makeRunList.py`, `makeTrackTree.py` (data and MC) |
 | `python/HIgS_2022_runs/`, `python/HIgS_2026_runs/` | per-run data sets (one JSON file per run), made by `makeRunList.py` |
+| `python/HIgS_2022_MC_runs/` | MC setups (one JSON file per setup), made by `makeRunList.py --mc` |
 | `config/`   | configs for `recoEventsAnalysis`, `rawPedestalAnalysis`, cuts |
 | `examples/` | ROOT macros for plotting the program outputs |
 | `src/`, `include/` | analysis library (`HIGGS_analysis`, `TrackDiffusion_tree_analysis`, `Comp_analysis`, cuts, ...) |
@@ -60,12 +61,13 @@ The output file names contain the run timestamp and the processing date.
 
 ### 1. Run list
 
-The batch drivers do not scan directories: they read per-run data sets made from the experiment
+The batch driver does not scan directories: it reads per-run data sets made from the experiment
 logbooks by [makeRunList.py](python/makeRunList.py):
 
 ```Bash
-../python/makeRunList.py --campaign 2022     # -> python/HIgS_2022_runs/
-../python/makeRunList.py --campaign 2026     # -> python/HIgS_2026_runs/
+../python/makeRunList.py --campaign 2022        # -> python/HIgS_2022_runs/
+../python/makeRunList.py --campaign 2026        # -> python/HIgS_2026_runs/
+../python/makeRunList.py --campaign 2022 --mc   # -> python/HIgS_2022_MC_runs/
 ```
 
 Each `<run_id>.json` file holds the logbook metadata (`run` section: campaign, run type, quality,
@@ -78,32 +80,69 @@ files and chunk counts that differ from the logbook.
 
 Regenerate the run list after adding data on disk or editing a logbook.
 
-### 2. Data: `makeTrackTree.py`
+**MC setups.** With `--mc` the script writes one MC data set per setup (beam energy, pressure,
+drift voltage) of the good Physics runs, `MC_<E>MeV_<p>mbar_<U>V.json`, with the same sections
+and `run_type: "MC"`:
 
-Edit the selection at the end of [makeTrackTree.py](python/makeTrackTree.py)
+```json
+"run":        {"run_id": "MC_9.85MeV_130mbar_1764V", "campaign": "HIgS_2022_MC", "run_type": "MC",
+               "beam_energy_MeV": 9.85, "pressure_mbar": 130.0, ..., "n_events": 16000, "n_jobs": 4},
+"input":      {"geometryFile": "...", "controllerConfigPath": "montecarlo_2prong_gun_PEventTPC.json",
+               "fromGenerator": true},
+"controller": {"ModuleConfiguration": {
+                 "Generator": {"EventGenerator": {"Beam": {"GammaEnergy": {"distribution": "EProviderGaus",
+                                                   "parameters": {"meanE": 9.85, "sigmaE": 0.197}}}}},
+                 "GeantSim": {"gas_mixture": {"co2": 0.13}},
+                 "ToyIonizationSimulator": {"Pressure": 0.13},
+                 "TPCDigitizerSRC": {"sigmaXY": 1.0, "sigmaZ": 1.2}}}
+```
+
+The `controller` section is merged onto the controller template from `config/`
+(dicts recursively, lists element by element), so any generator or simulation setting can be
+changed per setup, e.g. the angular distributions in `Reactions`. The defaults (events, jobs,
+beam energy spread, strip response σ per pressure) are in `MC_DEFAULTS` of `makeRunList.py`.
+`--mc` overwrites the files of the generated setups and keeps other files in the directory,
+so hand-made MC data sets can live there too.
+
+### 2. Processing: `makeTrackTree.py`
+
+Edit the settings at the end of [makeTrackTree.py](python/makeTrackTree.py)
 (the comment there lists all good Physics setups with their run and chunk counts):
 
 ```python
+dataPathPrefix    = "/scratch_hdd/akalinow/ELITPC/data"   # GRAW files in <prefix>/<dataDirName>/<day dir>
+dataDirName       = "HIgs_2022"
+mcOutputDir       = "/scratch_hdd/akalinow/ELITPC/WarsawTPC_Claude/data/HIgS_2022_MC"
+stripResponsePath = ".../MonteCarlo/Modules/StripResponseModel/"   # StripResponseModel_*.root for the MC sigmas
+selectedRunTypes  = ["Physics"]   # "Physics" (data), "MC"
 selectedEnergies  = []        # [MeV]
-selectedCampaigns = []        # "HIgS_April_2022", "HIgS_August_2022"
+selectedCampaigns = []        # "HIgS_April_2022", "HIgS_August_2022", "HIgS_2022_MC"
 selectedPressures = []        # [mbar]
-selectedRunIds    = ["2022-08-22T22:03:11"]   # run_id prefixes
-firstRunPerSetup  = False     # only the first run of each (E, campaign, p, Udrift) setup
-maxChunksPerRun   = -1        # -1 = all
-maxChunks         = -1        # total limit; a chunk takes ~40 min
-procCount         = 14        # parallel jobs
+selectedRunIds    = ["2022-08-22T22:03:11"]   # run_id prefixes, e.g. "MC_9.85MeV"
+firstRunPerSetup  = False     # data: only the first run of each (E, campaign, p, Udrift) setup
+maxChunksPerRun   = -1        # data: -1 = all
+maxChunks         = -1        # data: total limit; a chunk takes ~40 min
+mcEventsPerSetup  = -1        # MC: -1 = n_events of the data set
+procCount         = 14        # parallel jobs (makeTrackTree + makeMCTrackTree)
 ```
 
-An empty list means no selection on that field. Only `Physics` runs of `good` quality are taken.
+An empty list means no selection on that field. Only runs of `good` quality are taken.
 Energies 8.86, 9.85 and 13.1 MeV were measured in more than one setup — select the campaign or pressure.
+With `selectedRunTypes = ["Physics", "MC"]` data and the matching MC are processed in one go,
+e.g. `selectedEnergies = [9.85]`.
 
 ```Bash
 ../python/makeTrackTree.py
 ```
 
-One `makeTrackTree` job is started per chunk (4 AsAd GRAW files, or one CoBo file),
+All jobs share one queue of `procCount` slots. The script returns when all jobs have finished
+and their outputs are collected.
+
+**Data.** One `makeTrackTree` job is started per chunk (4 AsAd GRAW files),
 with geometry, pressure, sampling rate and beam energy taken from the run list.
-When all jobs finish, the outputs are collected in `HIgS_2022/<E>MeV/`:
+The run list gives the day directory of each run (e.g. `20220822_extTrg_CO2_130mbar`);
+the data are read from that directory under `dataPathPrefix/dataDirName`, wherever the run list says they are.
+The outputs are collected in `HIgS_2022/<E>MeV/`:
 
 ```
 HIgS_2022/9.85MeV/
@@ -120,25 +159,16 @@ The finalisation runs `recoEventsAnalysis` and `makePlots_HIGS.cpp` on the merge
 with `--output.recoTree true` (set in `Utilities/python/fileLoop.py`; off by default when
 `makeTrackTree` is run by hand).
 
-### 3. Monte Carlo: `makeMCTrackTree.py`
+**MC.** `n_jobs` `makeMCTrackTree` jobs per setup (independent random seeds, highest pressure first)
+generate and reconstruct O16(γ,α)C12 events in one pass (`input.fromGenerator`, no raw event files).
+Each job gets its controller config: the template with the data set's `controller` section, the
+absolute geometry path and `stripResponsePath`. Outputs:
 
-[makeMCTrackTree.py](python/makeMCTrackTree.py) generates and reconstructs O16(γ,α)C12 events
-for every good Physics setup (beam energy, pressure, drift voltage) of the run list, in one pass
-(`input.fromGenerator`, no raw event files). For each setup the MC controller config
-`montecarlo_2prong_gun_PEventTPC.json` is adapted: Gaussian gamma energy
-(σ = `beamEnergySpread` × E), gas pressure, geometry and the strip-response model
-(`TPCDigitizerSRC`, `sigmaXY`, `sigmaZByPressure`; the matching `StripResponseModel_*.root`
-files must exist in `stripResponsePath`).
-
-Settings at the top of the script: `selectedEnergies`, `selectedSetups`
-(e.g. `"12.7MeV_190mbar_3626V"`), `nEventsPerSetup`, `nJobsPerSetup`, `maxProcs`
-(shared with running `makeTrackTree` jobs) and `topDirName` (output location).
-
-```Bash
-../python/makeMCTrackTree.py
 ```
-
-Output: `<topDirName>/<E>MeV_<p>mbar_<U>V/job_<n>/` and the merged `<setup>.root`.
+<mcOutputDir>/9.85MeV_130mbar_1764V/job_<n>/   MC_*.root, job.out, controller.json, configDump.json
+<mcOutputDir>/9.85MeV_130mbar_1764V.root       hadd of the jobs
+<mcOutputDir>/git_version.dat
+```
 
 ## Plotting macros (`examples/`)
 

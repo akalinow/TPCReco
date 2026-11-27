@@ -20,8 +20,18 @@ the run list of the batch scripts (tpc_utils.readRunList):
   conditions         - pressure, samplingRate (and temperature, if logged)
   beamParameters     - energy
 
+With --mc, writes instead one MC data set per setup (beam energy, pressure, drift voltage)
+of the good Physics runs, to HIgS_<campaign>_MC_runs/ (makeTrackTree.py, run_type "MC"):
+  run                - run_id "MC_<E>MeV_<p>mbar_<U>V", run_type "MC", the setup, n_events, n_jobs
+  input              - geometryFile, controllerConfigPath (MC controller template in config/)
+  conditions, beamParameters - as for the data
+  controller         - settings merged onto the controller template (see MC_DEFAULTS): gamma energy,
+                       gas pressure, strip response sigmas. Machine dependent paths (geometry,
+                       strip response files) are set by makeTrackTree.py.
+Existing MC files of the same setups are overwritten, other files in the directory are kept.
+
 Usage:
-  makeRunList.py [--campaign 2022|2026] [--logbook PATH] [--output DIR] [--dataDir GLOB ...]
+  makeRunList.py [--campaign 2022|2026] [--logbook PATH] [--output DIR] [--dataDir GLOB ...] [--mc]
 Defaults per campaign: see CAMPAIGNS.
 """
 
@@ -62,6 +72,18 @@ CAMPAIGNS = {
                  dataDirs=["/scratch_hdd/akalinow/ELITPC/data/HIgS_2026/2026*_extTrg_*"],
                  output="HIgS_2026_runs"),
 }
+
+# MC production settings of the --mc data sets.
+# Strip-response model (TPCDigitizerSRC, 232 ns shaping, TPCReco >= de1e73b). sigmaXY and sigmaZ from the diffusion
+# fit of WarsawTPC_Claude/code/7_diffusion.ipynb at 130 mbar (1.0 / 1.2 mm); sigmaZ scaled with sqrt(130/p).
+MC_DEFAULTS = dict(
+    controllerTemplate="montecarlo_2prong_gun_PEventTPC.json",  # in config/
+    nEvents=16000,              # generated events per setup
+    nJobs=4,                    # parallel jobs per setup (independent random seeds)
+    beamEnergySpread=0.02,      # relative sigma of the gamma energy
+    sigmaXY=1.0,                # [mm]
+    sigmaZByPressure={130: 1.2, 190: 1.0, 250: 0.85},  # [mm], key: pressure [mbar]
+)
 
 COLUMNS = ["run_id", "campaign", "run_type", "quality", "beam_energy_MeV",
            "pressure_mbar", "sampling_MHz", "drift_V", "drift_preset",
@@ -258,16 +280,78 @@ def toDataSet(run):
     return dataSet
 ################################################################
 ################################################################
+def mcSetupName(energy, pressure, driftV):
+    return "{:g}MeV_{:g}mbar_{:g}V".format(energy, pressure, driftV)
+################################################################
+################################################################
+def toMCDataSet(run, campaign):
+    """MC data set for the setup of a (good Physics) run; None if no strip response sigmaZ for the pressure."""
+    d = MC_DEFAULTS
+    energy, pressure, driftV = run["beam_energy_MeV"], run["pressure_mbar"], run["drift_V"]
+    sigmaZ = d["sigmaZByPressure"].get(int(round(pressure)))
+    if sigmaZ is None:
+        return None
+    sigmaE = round(d["beamEnergySpread"]*energy, 4)
+    name = mcSetupName(energy, pressure, driftV)
+    return {
+        "name": "MC " + name,
+        "description": "HIgS {} MC, O16(gamma,alpha)C12, E_gamma Gaus({:g}, {:g}) MeV, {:g} mbar, drift {:g} V, {:g} MHz".format(
+            campaign, energy, sigmaE, pressure, driftV, run["sampling_MHz"]),
+        "run": {"run_id": "MC_" + name, "campaign": "HIgS_{}_MC".format(campaign),
+                "run_type": "MC", "quality": "good",
+                "beam_energy_MeV": energy, "pressure_mbar": pressure,
+                "sampling_MHz": run["sampling_MHz"], "drift_V": driftV,
+                "geometry_file": run["geometry_file"],
+                "n_events": d["nEvents"], "n_jobs": d["nJobs"]},
+        "input": {"geometryFile": run["geometry_file"],
+                  "controllerConfigPath": d["controllerTemplate"],
+                  "fromGenerator": True},
+        "conditions": {"pressure": pressure, "samplingRate": run["sampling_MHz"]},
+        "beamParameters": {"energy": energy},
+        "controller": {"ModuleConfiguration": {
+            "Generator": {"EventGenerator": {"Beam": {"GammaEnergy": {
+                "distribution": "EProviderGaus",
+                "parameters": {"meanE": energy, "sigmaE": sigmaE}}}}},
+            "GeantSim": {"gas_mixture": {"co2": pressure/1000.0}},           # [bar]
+            "ToyIonizationSimulator": {"Pressure": pressure/1000.0},        # [bar]
+            "TPCDigitizerSRC": {"sigmaXY": d["sigmaXY"], "sigmaZ": sigmaZ}}},
+    }
+################################################################
+################################################################
+def writeMCDataSets(runs, campaign, output):
+    """One MC data set per (energy, pressure, drift voltage) of the good Physics runs."""
+    setups = {}
+    for run in runs:
+        if run["run_type"] != "Physics" or run["quality"] != "good" or not run["geometry_file"]:
+            continue
+        setups.setdefault((run["beam_energy_MeV"], run["pressure_mbar"], run["drift_V"]), run)
+    os.makedirs(output, exist_ok=True)
+    nWritten = 0
+    for key in sorted(setups):
+        dataSet = toMCDataSet(setups[key], campaign)
+        if dataSet is None:
+            print("WARNING: no strip response sigmaZ for {:g} mbar, no MC for setup {}".format(
+                key[1], mcSetupName(*key)))
+            continue
+        with open(os.path.join(output, dataSet["run"]["run_id"] + ".json"), "w") as f:
+            json.dump(dataSet, f, indent=2)
+            f.write("\n")
+        nWritten += 1
+    print("Wrote {} MC setups to {}".format(nWritten, output))
+################################################################
+################################################################
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--campaign", choices=sorted(CAMPAIGNS), default="2022")
     parser.add_argument("--logbook", help="logbook (2022: directory with the spreadsheets)")
     parser.add_argument("--output", help="directory for the run JSON files")
     parser.add_argument("--dataDir", action="append", help="glob of data directories (repeatable)")
+    parser.add_argument("--mc", action="store_true", help="write the MC data sets (one per setup) instead of the runs")
     args = parser.parse_args()
     defaults = CAMPAIGNS[args.campaign]
     logbook = args.logbook or defaults["logbook"]
-    args.output = args.output or os.path.join(os.path.dirname(os.path.abspath(__file__)), defaults["output"])
+    outputName = "HIgS_{}_MC_runs".format(args.campaign) if args.mc else defaults["output"]
+    args.output = args.output or os.path.join(os.path.dirname(os.path.abspath(__file__)), outputName)
     dataDirs = args.dataDir or defaults["dataDirs"]
 
     if args.campaign == "2022":
@@ -289,10 +373,16 @@ def main():
         run["geometry_file"] = GEOMETRY_FILES.get(key, "")
         if not run["geometry_file"]:
             problems.append(run["run_id"] + ": no geometry file for (p, Udrift, f) = " + str(key))
+        if args.mc:
+            continue
         run["data_dir"], run["n_chunks_found"] = findData(run, dataDirs)
         if run["n_chunks_logbook"] and run["n_chunks_found"] and run["n_chunks_logbook"] != run["n_chunks_found"]:
             problems.append("{}: logbook lists {} chunks, found {} complete".format(
                 run["run_id"], run["n_chunks_logbook"], run["n_chunks_found"]))
+
+    if args.mc:
+        writeMCDataSets(runs, args.campaign, args.output)
+        return
 
     os.makedirs(args.output, exist_ok=True)
     for oldFile in glob.glob(os.path.join(args.output, "*.json")):  # runs removed from the logbook

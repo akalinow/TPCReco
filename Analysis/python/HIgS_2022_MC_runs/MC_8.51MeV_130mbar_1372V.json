@@ -1,0 +1,58 @@
+{
+  "name": "MC 8.51MeV_130mbar_1372V",
+  "description": "HIgS 2022 MC, O16(gamma,alpha)C12, E_gamma Gaus(8.51, 0.1702) MeV, 130 mbar, drift 1372 V, 25 MHz",
+  "run": {
+    "run_id": "MC_8.51MeV_130mbar_1372V",
+    "campaign": "HIgS_2022_MC",
+    "run_type": "MC",
+    "quality": "good",
+    "beam_energy_MeV": 8.51,
+    "pressure_mbar": 130.0,
+    "sampling_MHz": 25.0,
+    "drift_V": 1372.0,
+    "geometry_file": "geometry_ELITPC_130mbar_1372Vdrift_25MHz.dat",
+    "n_events": 16000,
+    "n_jobs": 4
+  },
+  "input": {
+    "geometryFile": "geometry_ELITPC_130mbar_1372Vdrift_25MHz.dat",
+    "controllerConfigPath": "montecarlo_2prong_gun_PEventTPC.json",
+    "fromGenerator": true
+  },
+  "conditions": {
+    "pressure": 130.0,
+    "samplingRate": 25.0
+  },
+  "beamParameters": {
+    "energy": 8.51
+  },
+  "controller": {
+    "ModuleConfiguration": {
+      "Generator": {
+        "EventGenerator": {
+          "Beam": {
+            "GammaEnergy": {
+              "distribution": "EProviderGaus",
+              "parameters": {
+                "meanE": 8.51,
+                "sigmaE": 0.1702
+              }
+            }
+          }
+        }
+      },
+      "GeantSim": {
+        "gas_mixture": {
+          "co2": 0.13
+        }
+      },
+      "ToyIonizationSimulator": {
+        "Pressure": 0.13
+      },
+      "TPCDigitizerSRC": {
+        "sigmaXY": 1.0,
+        "sigmaZ": 1.2
+      }
+    }
+  }
+}

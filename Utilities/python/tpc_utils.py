@@ -125,6 +125,21 @@ def getRunChunks(dataPath, runId, windowSeconds=2):
             for chunkId, files in sorted(chunks.items())}
 ################################################################
 ################################################################
+def readDataSets(path):
+    """Read the data-set JSON files of a run list directory (see Analysis/python/makeRunList.py).
+
+    Returns the full data sets (name, description, run, input, conditions, beamParameters,
+    and for MC also controller), ordered by run_id. Files without a "run" section are skipped.
+    """
+    dataSets = []
+    for jsonFile in sorted(glob.glob(os.path.join(path, "*.json"))):
+        with open(jsonFile) as f:
+            dataSet = json.load(f)
+        if dataSet.get("run"):
+            dataSets.append(dataSet)
+    return sorted(dataSets, key=lambda dataSet: dataSet["run"]["run_id"])
+################################################################
+################################################################
 def readRunList(path):
     """Read the per-run metadata list (see Analysis/python/makeRunList.py).
 
@@ -133,13 +148,8 @@ def readRunList(path):
     run_id; missing values are empty strings.
     """
     if os.path.isdir(path):
-        runs = []
-        for jsonFile in sorted(glob.glob(os.path.join(path, "*.json"))):
-            with open(jsonFile) as f:
-                run = json.load(f).get("run")
-            if run:
-                runs.append({key: "" if value is None else str(value) for key, value in run.items()})
-        return sorted(runs, key=lambda run: run["run_id"])
+        return [{key: "" if value is None else str(value) for key, value in dataSet["run"].items()}
+                for dataSet in readDataSets(path)]
     with open(path, newline="") as f:
         return list(csv.DictReader(f))
 ################################################################

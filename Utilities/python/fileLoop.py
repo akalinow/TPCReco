@@ -72,24 +72,19 @@ def runLoop(runs, procName, finalizeFunc):
     finalizeFunc()
 ################################################
 ################################################
-def runListLoop(runList, procName, finalizeFunc, procCount=3,
-                maxChunksPerRun=-1, maxChunks=-1):
-    """Process runs from a per-run metadata list (see readRunList).
+def runChunks(runList, maxChunksPerRun=-1, maxChunks=-1):
+    """Chunks (sets of 4 AsAd GRAW files) of the runs of a run list (see readRunList).
 
-    Each run is split into chunks of 4 AsAd files. Geometry, pressure,
-    sampling rate and beam energy are taken from the run list, not
-    from file or directory names. Incomplete chunks are skipped.
+    Yields (run, job id "<run_id>_<chunk>", comma separated GRAW files), in run order,
+    then chunk order. Runs without data on disk and incomplete chunks are skipped.
 
-    maxChunksPerRun: process at most this many chunks of each run
-                     (the first ones, in chunk order); -1 = all.
-    maxChunks:       process at most this many chunks in total; -1 = all.
+    maxChunksPerRun: at most this many chunks of each run (the first ones); -1 = all.
+    maxChunks:       at most this many chunks in total; -1 = all.
     """
-    command = "../../bin/"+procName
     nChunksTotal = 0
-
     for run in runList:
         if 0 <= maxChunks <= nChunksTotal:
-            break
+            return
         if not run["data_dir"]:
             print("No data on disk for run", run["run_id"], "- skipping.")
             continue
@@ -103,12 +98,23 @@ def runListLoop(runList, procName, finalizeFunc, procCount=3,
                 continue
             nChunksRun += 1
             nChunksTotal += 1
-            waintUnitilProcCount(procName, procCount)
-            runId = run["run_id"].replace(":", "-") + "_" + chunkId
-            analyzeSingleBatch(runId, fileCSV, run["geometry_file"], command,
-                               pressure=run["pressure_mbar"],
-                               samplingRate=run["sampling_MHz"],
-                               beamEnergy=run["beam_energy_MeV"])
+            yield run, run["run_id"].replace(":", "-") + "_" + chunkId, fileCSV
+################################################
+################################################
+def runListLoop(runList, procName, finalizeFunc, procCount=3,
+                maxChunksPerRun=-1, maxChunks=-1):
+    """Process runs from a per-run metadata list (see readRunList), one job per chunk.
+
+    Geometry, pressure, sampling rate and beam energy are taken from the run list, not
+    from file or directory names. For maxChunksPerRun and maxChunks see runChunks.
+    """
+    command = "../../bin/"+procName
+    for run, jobId, fileCSV in runChunks(runList, maxChunksPerRun, maxChunks):
+        waintUnitilProcCount(procName, procCount)
+        analyzeSingleBatch(jobId, fileCSV, run["geometry_file"], command,
+                           pressure=run["pressure_mbar"],
+                           samplingRate=run["sampling_MHz"],
+                           beamEnergy=run["beam_energy_MeV"])
 
     waintUnitilProcCount(procName, 1)
     finalizeFunc()
