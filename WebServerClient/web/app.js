@@ -531,7 +531,7 @@ const PENDING_POINTS = 'Clicked points/segments have not been fitted yet ("Fit s
 
 /**
  * Asks before an action that loses the manual reconstruction of the current event.
- * kind: 'leave' (another event, file, exit, reco mode off), 'next', 'reset'.
+ * kind: 'leave' (another event, file, exit), 'recoOff' (reco mode off), 'next', 'reset'.
  * Returns true when the action may proceed.
  */
 function confirmClickedTrack(kind) {
@@ -547,6 +547,11 @@ function confirmClickedTrack(kind) {
       reco.unsavedTrack ? 'They are not saved: the previously fitted track is written instead.'
         : 'They are not saved: the automatic reconstruction is written instead.',
       'Go to the next event anyway?');
+  } else if (kind === 'recoOff' && (reco.unsavedTrack || reco.pendingPoints)) {
+    // switching the reco mode off saves nothing: the automatic reconstruction is shown again
+    if (reco.unsavedTrack) lines.push(`${UNSAVED_TRACK} It will be lost.`);
+    if (reco.pendingPoints) lines.push(`${PENDING_POINTS} They will be lost.`);
+    lines.push('Switch the manual reconstruction off anyway?');
   } else if (kind === 'reset' && reco.pendingPoints) {
     lines.push(`${PENDING_POINTS} Reset clears them.`, 'Reset anyway?');
   }
@@ -568,8 +573,9 @@ function installControls() {
   option('chkLogScale', 'logScale');
   option('chkAutoZoom', 'autoZoom');
   $('chkRecoMode').onchange = (e) => {
-    // switching the manual reconstruction off: the clicked track would not be written on "Next"
-    if (!e.target.checked && !confirmClickedTrack('leave')) { e.target.checked = true; return; }
+    // switching the manual reconstruction off: nothing is saved (only "Next event & save" saves),
+    // the clicked track is dropped and the automatic reconstruction is shown again
+    if (!e.target.checked && !confirmClickedTrack('recoOff')) { e.target.checked = true; return; }
     sendCommand('set', { option: 'recoMode', value: e.target.checked });
   };
   option('chkRate', 'rate');

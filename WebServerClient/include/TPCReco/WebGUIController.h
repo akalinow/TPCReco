@@ -130,6 +130,11 @@ private:
   static Track3D makeClickedTrack(const Track3D & aTrack, ManualRecoTool::Mode aMode);
   /// looks the current event up in the output file (mySavedTrack, mySavedEventType)
   void readSavedRecoEvent();
+  /// manual reconstruction switched off: nothing is written, the clicked track is dropped and the
+  /// automatic reconstruction replaced by "Fit segments" is made again
+  void leaveRecoMode();
+  /// "Next event" outside RECO mode: the automatic reconstruction, if the event is not in the output file yet
+  void writeAutoReco();
   /// track reconstruction printout (terminal text with ANSI colour codes)
   std::string makeRecoText(const Track3D * aTrack) const;
   void addTrackProjection(PanelOverlay & aOverlay, int strip_dir, const Track3D & aTrack) const;
@@ -150,6 +155,7 @@ private:
   bool isNewEvent{true};
   bool isManualTrackShown{false};
   bool isManualTrackUnsaved{false}; // fitted clicked track not yet written ("Next event")
+  bool isTrackBuilderManual{false}; // the TrackBuilder holds the clicked fit, not the automatic reconstruction
 
   // reconstruction of the current event read back from the output file (event already
   // written, e.g. when going back): shown instead of a new reconstruction, not written again

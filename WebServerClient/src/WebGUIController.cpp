@@ -469,6 +469,7 @@ void WebGUIController::eventLoaded(){
 
   isNewEvent = true;
   isManualTrackUnsaved = false;
+  isTrackBuilderManual = false; // a newly loaded event is reconstructed automatically
   refresh();
 }
 /////////////////////////////////////////////////////////
@@ -485,7 +486,10 @@ void WebGUIController::refresh(){
     readSavedRecoEvent();
     // automatic output once per loaded event, unless already written; in manual RECO mode
     // the event is written on "Next event" with the clicked track instead
-    if(myFileOutput && !isRecoModeOn && !mySavedTrack) myFileOutput->update(myEventSource);
+    if(myFileOutput && !isRecoModeOn && !mySavedTrack){
+      myFileOutput->update(myEventSource);
+      readSavedRecoEvent(); // now in the output file: not written again on "Next event" in RECO mode
+    }
   }
   // a track read back from the output file is shown as the (saved) clicked track
   if(isRecoModeOn && mySavedTrack) isManualTrackShown = true;
@@ -561,9 +565,40 @@ void WebGUIController::readSavedRecoEvent(){
 /////////////////////////////////////////////////////////
 const Track3D & WebGUIController::displayedTrack() const {
 
-  if(mySavedTrack) return *mySavedTrack;
+  // manual RECO mode: the track read from the output file or the fitted clicked track;
+  // otherwise the automatic reconstruction
+  if(isRecoModeOn && mySavedTrack) return *mySavedTrack;
   if(isRecoModeOn && myClickedTrack) return *myClickedTrack;
   return myEventSource->getTrackBuilder()->getTrack3D(0);
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void WebGUIController::leaveRecoMode(){
+
+  if(!myEventSource || !myEventSource->numberOfEvents()) return;
+  // nothing is written here: an event is saved only on "Next event"
+  myClickedTrack.reset();
+  isManualTrackUnsaved = false;
+  isManualTrackShown = false;
+  // "Fit segments" replaced the automatic reconstruction in the TrackBuilder: made again
+  if(isTrackBuilderManual){
+    myEventSource->getTrackBuilder()->reconstruct();
+    isTrackBuilderManual = false;
+  }
+  readSavedRecoEvent(); // "Fit segments" / "Clear track" forgot the track read from the output file
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+void WebGUIController::writeAutoReco(){
+
+  // automatic output of an event not written yet (e.g. loaded in manual RECO mode, which was then
+  // switched off): on "Next event"
+  if(!myFileOutput || isOnline() || isRecoModeOn) return;
+  if(!myEventSource || !myEventSource->numberOfEvents()) return;
+  eventraw::EventInfo aInfo;
+  Track3D aTrack;
+  if(myFileOutput->findRecoEvent(myEventSource->getCurrentEvent()->GetEventInfo(), aInfo, aTrack)) return;
+  myFileOutput->update(myEventSource);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -706,6 +741,7 @@ std::string WebGUIController::execute(const crow::json::rvalue & command){
     if(!canNavigate()) return "Event navigation is disabled in ONLINE mode.";
     unsigned long aEventType = updateEventLog(eventType());
     if(isRecoModeOn) writeManualReco(aEventType);
+    else writeAutoReco();
     if(myEventList.size()){ // event list: the next listed event
       if(myListPosition+1>=(long)myEventList.size()) return "Last event of the event list.";
       std::string error = loadListedEvent(myListPosition+1);
@@ -777,6 +813,7 @@ std::string WebGUIController::execute(const crow::json::rvalue & command){
     else if(option=="autoZoom"){ isAutozoomOn = value; return ""; }
     else if(option=="recoMode"){
       if(value && !canRecoMode()) return "Manual reconstruction is not available in this mode.";
+      if(!value && isRecoModeOn) leaveRecoMode();
       isRecoModeOn = value;
     }
     else if(option=="deconvolution"){
@@ -786,6 +823,7 @@ std::string WebGUIController::execute(const crow::json::rvalue & command){
         return "Deconvolution not available: no detector response (reconstruction.deconvolutionResponseFile).";
       }
       if(myEventSource->numberOfEvents()) aTrackBuilder->reconstruct();
+      isTrackBuilderManual = false;
       myClickedTrack.reset();
       mySavedTrack.reset(); // the new reconstruction is shown, not the one read from the output file
     }
@@ -834,6 +872,7 @@ std::string WebGUIController::execute(const crow::json::rvalue & command){
     if(!isRecoModeOn || !myRecoTool->isFitEnabled()) return "No complete segments to fit.";
     std::vector<double> segmentsXY = myRecoTool->takeSegmentsForFit();
     myEventSource->getTrackBuilder()->getSegment2DCollectionFromGUI(segmentsXY);
+    isTrackBuilderManual = true; // the automatic reconstruction is replaced (made again when RECO mode is left)
     isClickedThreeProng = myRecoTool->getMode()==ManualRecoTool::Mode::ThreeProng;
     // the clicked track fitted to the hits (vertex, directions, lengths), both modes
     myEventSource->getTrackBuilder()->fitClickedTrackToHits();

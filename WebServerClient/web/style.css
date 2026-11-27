@@ -178,6 +178,7 @@ button.conditions { background: var(--conditions); color: #fff; border-color: #1
 .buttons { display: flex; flex-direction: column; gap: 3px; margin-bottom: 2px; }
 .buttons.three, .arrows { display: flex; flex-direction: row; gap: 4px; }
 .arrows button { flex: 1; font-size: 18px; line-height: 1; padding: 6px 0; }
+.arrows button .arrowLabel { font-size: 13px; vertical-align: middle; }
 .buttons.three button { flex: 1; padding: 5px 2px; }
 
 input[type=number], input[type=text] { font: inherit; padding: 3px 4px; }

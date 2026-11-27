@@ -70,7 +70,7 @@ ManualRecoTool    state machine of the clicked track reconstruction (port of Mar
 
 ## Functionality (as in tpcGUI)
 
-* Next (▶) / Previous (◀) / Reset event. For GRAW input, ▶ on the last event of a chunk opens the
+* Next ("▶ & Save": writes the event, see Output file) / Previous (◀) / Reset event. For GRAW input, ▶ on the last event of a chunk opens the
   next chunk of the run (all AsAd files), ◀ on the first event the previous one; the chunk files are
   found on disk (their timestamps differ, e.g. `..44.531_0000.graw` is followed by `..44.540_0001.graw`).
   Other controls: go to event id, go to frame, open a data set (below), Exit (top right: closes
@@ -105,6 +105,9 @@ ManualRecoTool    state machine of the clicked track reconstruction (port of Mar
   on a second projection (the time is taken from the first click, the third coordinate is calculated
   from the geometry); the first point is the common vertex. "Fit segments" fits and shows the track
   (projections, charge along the track, projection on the readout plane), "Clear track" removes the clicked points/segments and hides the fitted track. The event is written with the clicked track on "Next event".
+  Switching manual reco off saves nothing: the clicked track is dropped and the automatic
+  reconstruction ("Fit segments" replaces it in the track builder) is made again and shown; "▶ & Save"
+  then writes the automatic reconstruction if the event is not in the output file yet.
   Before leaving an event with a fitted but unsaved clicked track (Previous, go to event/frame,
   open file, Exit, switching manual reco off), or with clicked points that were not fitted
   (also on Next and Reset), the GUI asks for confirmation. tpcGUI asks the same questions.
@@ -130,11 +133,13 @@ ManualRecoTool    state machine of the clicked track reconstruction (port of Mar
     their ranges.
 * Event type bits, written to `<input file>.log` and to the output file (manual reco mode) on Next/Previous.
 * Run conditions: drift velocity, sampling rate, trigger delay.
-* Output file: the same `FileOutput` as tpcGUI, filled once per loaded event (manual reco mode:
-  on "Next event"). An event already in the output file (e.g. when going back) is read from it:
-  its saved track is shown (in manual reco mode as the saved clicked track; the printout starts
+* Output file: the same `FileOutput` as tpcGUI, filled once per event: with the automatic
+  reconstruction when the event is loaded with manual reco off, otherwise on "▶ & Save" (manual
+  reco mode: the clicked track; manual reco switched off in the meantime: the automatic one). An event already in the output file (e.g. when going back) is read from it:
+  in manual reco mode its saved track is shown as the saved clicked track (the printout starts
   with "Read from the output file.") together with its saved event type bits, and it is not
-  written again unless a new track is fitted or the event type bits are changed.
+  written again unless a new track is fitted or the event type bits are changed. Outside manual
+  reco mode the automatic reconstruction is shown.
 
 Differences from tpcGUI:
 
@@ -161,7 +166,7 @@ Differences from tpcGUI:
 {"cmd":"gotoListPosition", "position": n}
 {"cmd":"open", "path": "file1,file2,..."}  {"cmd":"openRun", "files": "file1,file2,..."}
 {"cmd":"openDataSet", "path": "dataset.json"}
-{"cmd":"set", "option": "logScale|autoZoom|recoMode|rate", "value": true|false}
+{"cmd":"set", "option": "logScale|autoZoom|recoMode|rate|deconvolution", "value": true|false}
 {"cmd":"runConditions", "driftVelocity": v, "samplingRate": r, "triggerDelay": d}
 {"cmd":"recoMode", "mode": "2prong|3prong"}
 {"cmd":"recoAddSegment"}   {"cmd":"recoClick", "dir": 0|1|2, "x": t, "y": s}
