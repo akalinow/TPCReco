@@ -1143,7 +1143,7 @@ void WebGUIController::addTrackProjection(PanelOverlay & ov, int strip_dir,
     const TVector3 & end = aProjection.getEnd();
     ov.lines.push_back(line({start.X(), end.X()}, {start.Y(), end.Y()},
                                  rootColor(2+iSegment), 4, "dashdot"));
-    ov.markers.push_back(markers({start.X()}, {start.Y()}, "#ffffff", "circle", 7, "#000000"));
+    ov.markers.push_back(markers({start.X()}, {start.Y()}, "#000000", "circle", 7)); // fitted vertex / start: black dot
     ov.markers.push_back(markers({end.X()}, {end.Y()}, "#000000", "circle", 7));
     ++iSegment;
   }
@@ -1167,8 +1167,8 @@ void WebGUIController::addManualRecoOverlay(PanelOverlay & ov, int strip_dir) co
   }
   // 3-prong mode: the vertex calculated from the track lines
   if(auto aVertex = myRecoTool->getVertex(strip_dir)){
-    // white dot, as the start of a fitted track
-    ov.markers.push_back(markers({aVertex->x}, {aVertex->y}, "#ffffff", "circle", 7, "#000000"));
+    // white square with a black frame (fitted track ends and vertex: black dots, clicked points: coloured squares)
+    ov.markers.push_back(markers({aVertex->x}, {aVertex->y}, "#ffffff", "square", 10, "#000000"));
   }
   const auto & aMarker = myRecoTool->getMarkers().at(strip_dir);
   if(aMarker) ov.markers.push_back(markers({aMarker->x}, {aMarker->y}, rootColor(2), "circle", 8));
@@ -1326,7 +1326,7 @@ crow::json::wvalue WebGUIController::makeXYPanel(const Track3D & aTrack) const {
     const TVector3 & start = aSegment.getStart();
     const TVector3 & end = aSegment.getEnd();
     ov.series.push_back(line({start.X(), end.X()}, {start.Y(), end.Y()}, rootColor(2+iSegment), 3));
-    ov.markers.push_back(markers({start.X()}, {start.Y()}, "#ffffff", "circle", 7, "#000000"));
+    ov.markers.push_back(markers({start.X()}, {start.Y()}, "#000000", "circle", 7)); // fitted vertex / start: black dot
     ov.markers.push_back(markers({end.X()}, {end.Y()}, "#000000", "circle", 7));
     ++iSegment;
   }

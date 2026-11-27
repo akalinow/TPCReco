@@ -118,13 +118,15 @@ ManualRecoTool    state machine of the clicked track reconstruction (port of Mar
   open file, Exit, switching manual reco off), or with clicked points that were not fitted
   (also on Next and Reset), the GUI asks for confirmation. tpcGUI asks the same questions.
 * Manual reconstruction modes ("Segment creation" block; changing the mode clears the clicked points):
+  * Markers: clicked points are coloured squares; the end points and the vertex of a fitted
+    (or automatically reconstructed) track are black dots.
   * 2-prong (as above): the first point is the common vertex, then one point per segment end.
   * 3-prong: "Add track", then click two points on the track (each point on two projections, as
     above); the vertex is not clicked. In every U/V/W projection each track defines a line
     through its two points, and the vertex is where these lines cross: one 3D vertex (time, X, Y)
     is fitted to the lines of all tracks in all three projections (least squares), so its
-    projections are consistent. The vertex is drawn as a star and shown with the RMS distance of
-    the lines from it. Each segment goes from the vertex to the clicked point of its track
+    projections are consistent. The vertex is drawn as a white square with a black frame and shown
+    with the RMS distance of the lines from it. Each segment goes from the vertex to the clicked point of its track
     farther from the vertex (click the second point at the track end). "Fit segments" needs at
     least two tracks. Classes: `ManualRecoTool` (point clicking), `TwoProngRecoTool`,
     `ThreeProngRecoTool`.
