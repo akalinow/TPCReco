@@ -2,6 +2,12 @@
 
 ## Dependences
 
+The recommended way is to build and run TPCReco in the container (Docker or Singularity image
+`elitpc/tpcreco-with_tf`), which provides all dependencies (ROOT, Boost, Geant4, TensorFlow, ...):
+see [docker/USER_README.md](docker/USER_README.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
+
+To install the dependencies on the host system instead:
+
 ```Shell
 sudo apt-get update
 sudo apt-get install $(cat requirements_apt.txt)
@@ -37,34 +43,6 @@ the GET software is not needed. If the GET software is found by CMake
 `GrawFileVsGET_tst`, compares the TPCReco reader with the GET reader.
 
 
-## Update instructions
-
-To synchronize the version of software in your working directory with a newer tag do the following:
-
-```Shell
-cd TPCReco
-git fetch
-git checkout newer_tag
-cd build
-cmake ../
-make install -j 4
-```
-
-You can check the tag version for your working directory with
-
-```Shell
-cd TPCReco
-git branch
-```
-
-the output should look like this:
-
-```Shell
-akalinow@daqula2:~/1/TPCReco$ git branch
-* (HEAD detached at v0.02_28.04.2021)
-  master
-```
-
 ## Run instructions
 
 The applications are installed in `<build>/bin` and the configuration files in `<build>/config`,
@@ -83,82 +61,14 @@ export LC_ALL=$LANG
 
 Reading GRAW files does not require the GET software, nor the XCFG frame format files.
 
-### tpcGUI
+### GUIs
 
-Use one of the pre-defined configuration files (`<build>/config/config_GUI__OFFLINE_*.json`) corresponding
-to the known TPC working conditions, with `--input.dataFile` pointing to the input data. The data file
-argument can be:
-  * a single ROOT file (offline mode),
-  * a single GRAW file (offline mode),
-  * a list of comma-separated GRAW files of the same run (offline mode),
-  * a directory to be monitored for new GRAW files (online mode).
+* `tpcGUI` – ROOT based event display: [GUI README](GUI/README.md)
+* `tpcWebGUI` – the same in a web browser, also from a remote computer: [Web GUI README](WebServerClient/README.md)
 
-```Shell
-<build>/bin/tpcGUI <build>/config/config_GUI__OFFLINE_130mbar_1372Vdrift_25MHz_NGRAW.json \
-   --input.dataFile <comma separated GRAW files of a run chunk, or a ROOT file>
-```
+### Options
 
-Examples:
-
-* test data (included in the TPCReco repository and installed with it):
-
-```Shell
-<build>/bin/tpcGUI ~/.tpcreco/config/test.json
-```
-
-* generated $\alpha$ + $C$ events distributed according to the E1+E2 transitions mixture. This requires
-  the Geant4 environment and compilation with the `-DBUILD_GEANT_MODULE=ON` option
-  (`cmake -DBUILD_TEST=ON -DBUILD_GEANT_MODULE=ON ../`):
-
-```Shell
-<build>/bin/tpcGUI <build>/config/config_GUI_MC.json
-```
-
-* single generated $\alpha$ events with the track direction controlled by the user:
-
-```Shell
-<build>/bin/tpcGUI <build>/config/config_GUI_MC.json \
-   --input.controllerConfigPath=<build>/config/montecarlo_2prong_gun.json
-```
-
-* several JSON files at once, e.g. a working point plus an event filter, with the GRAW files of a run
-  chunk listed by `grawls` (at the **daqula2** node):
-
-```Shell
-<build>/bin/tpcGUI \
-   <build>/config/config_GUI__OFFLINE_130mbar_1372Vdrift_25MHz_NGRAW.json \
-   <build>/config/config_GUI_filter.json \
-   --input.dataFile $( <build>/bin/grawls --input 20220828111932 --chunk 0 --separator "," --directory /data/edaq/2022/HIgS_2022/20220828_extTrg_CO2_130mbar --ms 1000 )
-```
-
-At the **daqula2** node set up the ROOT environment beforehand:
-```Shell
-source /opt/soft/root_v6.08.06/bin/thisroot.sh
-```
-
-Any application parameter can be set in a JSON file or with a command line argument. Command line
-arguments **overwrite** the settings from the JSON file(s); later JSON files overwrite earlier ones.
-The list of all parameters is printed by
-
-```Shell
-<build>/bin/tpcGUI --help
-```
-
-More details on the configuration files are in the [Utilities README](Utilities/README.md).
-
-### Web GUI (tpcWebGUI)
-
-`tpcWebGUI` has the functionality of `tpcGUI`, displayed in a web browser, also from a remote computer.
-It takes the same configuration files and options:
-
-```Shell
-<build>/bin/tpcWebGUI <build>/config/config_GUI__OFFLINE_190mbar_3332Vdrift_25MHz_NGRAW.json \
-   --input.dataFile <comma separated GRAW or ROOT files>
-```
-
-At start-up it prints the URL to open (with an access token). See the
-[Web GUI README](WebServerClient/README.md) for remote access, the Open dialog with run data sets
-and the `web.*` options.
+Application parameters are set with JSON files and command line arguments: [Utilities README](Utilities/README.md).
 
 ### Converting data to ROOT (tpcGRAW2ROOT)
 
@@ -172,5 +82,6 @@ ROOT or MC input to a ROOT file, e.g.:
 ## Analysis instructions
 The analysis is done using the ROOT framework. The analysis can be done in two ways: command line or batch mode. More details are provided in the Analysis package [README](Analysis/README.md).
 
+## Contributing
 
-
+Updating to a newer version, the development environment and building the container images: [CONTRIBUTING.md](CONTRIBUTING.md).

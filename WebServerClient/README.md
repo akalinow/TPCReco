@@ -4,11 +4,15 @@
 It reads the same configuration files and command line options.
 
 ```bash
-cd build_09_2026/bin
-./tpcWebGUI --meta.configJson ../config/config_GUI__OFFLINE_190mbar_3332Vdrift_25MHz_NGRAW.json \
-            --input.dataFile <comma separated GRAW or ROOT files> --display.develMode true
-# then open http://localhost:8080/ in a browser; stop the server with Ctrl+C (or kill -TERM)
+<build>/bin/tpcWebGUI <build>/config/config_GUI__OFFLINE_190mbar_3332Vdrift_25MHz_NGRAW.json \
+   --input.dataFile <comma separated GRAW or ROOT files> --display.develMode true
+# then open the URL printed at start-up in a browser; stop the server with Ctrl+C (or kill -TERM)
 ```
+
+It can be run from any directory, see the general run instructions in the
+[main README](../README.md#run-instructions). The input options and examples
+(test data, MC generator, several JSON files) are the same as for `tpcGUI`,
+see the [GUI README](../GUI/README.md).
 
 The server accepts remote connections. At start-up it prints the URL to open, with an access token:
 
