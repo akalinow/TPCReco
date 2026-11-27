@@ -37,11 +37,6 @@ Run a specific test, here `GrawToROOT_tst` with output enabled for failed tests:
 ctest -R GrawToROOT_tst --output-on-failure
 ```
 
-GRAW files are read by TPCReco's own reader (see [GrawToROOT README](GrawToROOT/README.md)),
-the GET software is not needed. If the GET software is found by CMake
-(e.g. after `source /opt/soft/GetSoftware_bin/env_settings.sh`), an additional test,
-`GrawFileVsGET_tst`, compares the TPCReco reader with the GET reader.
-
 
 ## Run instructions
 
@@ -59,8 +54,6 @@ When running from a container, enter the following command inside the container:
 export LC_ALL=$LANG
 ```
 
-Reading GRAW files does not require the GET software, nor the XCFG frame format files.
-
 ### GUIs
 
 * `tpcGUI` – ROOT based event display: [GUI README](GUI/README.md)
@@ -72,10 +65,15 @@ Application parameters are set with JSON files and command line arguments: [Util
 
 ### Converting data to ROOT (tpcGRAW2ROOT)
 
-`tpcGRAW2ROOT` writes the events (charge maps, reconstructed and, for MC, generated tracks) of GRAW,
-ROOT or MC input to a ROOT file, e.g.:
+GRAW files are read by TPCReco's own reader (see [GrawToROOT README](GrawToROOT/README.md)):
+neither the GET software nor its frame format (`.xcfg`) files are needed. The GET software is used
+only by an optional test, `GrawFileVsGET_tst`, which compares the TPCReco reader with the GET reader.
+It is built when CMake finds the GET software. `tpcGRAW2ROOT` writes the events (charge maps, 
+reconstructed and, for MC, generated tracks) of GRAW, ROOT or MC input to a ROOT file, e.g.:
 
 ```Shell
+source /opt/soft/GetSoftware_bin/env_settings.sh
+cmake -DBUILD_TEST=ON ../
 <build>/bin/tpcGRAW2ROOT <build>/config/config_GRAW2ROOT_Data.json --input.readNEvents 3
 ```
 
