@@ -157,6 +157,7 @@ private:
   bool isRateDisplayOn{false};
   bool isNewEvent{true};
   bool isManualTrackShown{false};
+  bool isTrackLineOutdated{false}; // clicked points moved / added since the shown track was fitted: its line is hidden
   bool isManualTrackUnsaved{false}; // fitted clicked track not yet written ("Next event")
   bool isTrackBuilderManual{false}; // the TrackBuilder holds the clicked fit, not the automatic reconstruction
 

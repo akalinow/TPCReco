@@ -103,8 +103,10 @@ ManualRecoTool    state machine of the clicked track reconstruction (port of Mar
   printout in a terminal style cell), `display.technicalMode` (AGET channels).
 * Manual reconstruction starts from the shown track (the automatic reconstruction, or the track
   saved in the output file): it stays displayed, and its points are put in as if they were clicked
-  (2-prong: the vertex and the segment ends, 3-prong: the start and end of each track). Drag them,
-  add segments, and "Fit segments" to update the track; "Clear track" starts from scratch. The same
+  (2-prong: the vertex and the segment ends, 3-prong: the middle and the end of each track, not the
+  vertex, so that the vertex found from the track lines is not pinned to the old one). Drag them,
+  add segments, and "Fit segments" to update the track; once a point is moved or added, the line of
+  the old track is removed from the projections until the next fit. "Clear track" starts from scratch. The same
   when an event is loaded in manual mode and when the 2-/3-prong mode is changed.
   Clicking: "Add segment", then click a point on one U/V/W projection and the same point
   on a second projection (the time is taken from the first click, the third coordinate is calculated

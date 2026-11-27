@@ -482,6 +482,7 @@ void WebGUIController::refresh(){
   // equivalent of MainFrame::Update() without the drawing, which is done on demand by getView()
   myRecoTool->reset(isRecoModeOn);
   isManualTrackShown = false;
+  isTrackLineOutdated = false;
   if(!myEventSource || !myEventSource->numberOfEvents()) return;
   if(isNewEvent){
     myClickedTrack.reset();
@@ -544,12 +545,13 @@ void WebGUIController::seedRecoTool(){
   const Track3D & aTrack = displayedTrack();
   const auto & segments = aTrack.getSegments();
   if(segments.empty() || aTrack.getLength()<1) return;
-  // segment start or end in the U, V, W projections: (time [mm], strip coordinate [mm])
-  auto project = [](const TrackSegment3D & aSegment, bool atEnd){
+  // point at the fraction f of the segment (0: start, 1: end) in the U, V, W projections:
+  // (time [mm], strip coordinate [mm])
+  auto project = [](const TrackSegment3D & aSegment, double f){
     ManualRecoTool::Point3P aPoint;
     for(int strip_dir=projection_type::DIR_U;strip_dir<=projection_type::DIR_W;++strip_dir){
       const TrackSegment2D & aProjection = aSegment.get2DProjection(strip_dir, 0, aSegment.getLength());
-      const TVector3 & aPos = atEnd ? aProjection.getEnd() : aProjection.getStart();
+      const TVector3 aPos = aProjection.getStart() + f*(aProjection.getEnd() - aProjection.getStart());
       aPoint.at(strip_dir) = {aPos.X(), aPos.Y()};
     }
     return aPoint;
@@ -557,18 +559,20 @@ void WebGUIController::seedRecoTool(){
   std::vector<ManualRecoTool::Point3P> points;
   if(myRecoTool->getMode()==ManualRecoTool::Mode::TwoProng){
     // the common vertex (start of the segments), then the end of each segment
-    points.push_back(project(segments.front(), false));
-    for(const auto & aSegment: segments) points.push_back(project(aSegment, true));
+    points.push_back(project(segments.front(), 0.0));
+    for(const auto & aSegment: segments) points.push_back(project(aSegment, 1.0));
   }
   else {
-    // two points on each track: its start (the vertex) and its end
+    // two points on each track, not the vertex (which would pin the track lines to the old vertex
+    // and bias the new one): the middle and the end of the track
     for(const auto & aSegment: segments){
-      points.push_back(project(aSegment, false));
-      points.push_back(project(aSegment, true));
+      points.push_back(project(aSegment, 0.5));
+      points.push_back(project(aSegment, 1.0));
     }
   }
   myRecoTool->setPoints(points);
   isManualTrackShown = true;
+  isTrackLineOutdated = false;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -882,7 +886,8 @@ std::string WebGUIController::execute(const crow::json::rvalue & command){
   }
   else if(cmd=="recoClick"){
     if(!isRecoModeOn) return "Manual reconstruction mode is off.";
-    myRecoTool->click(command["dir"].i(), command["x"].d(), command["y"].d());
+    // a new point: the shown track is out of date until the next fit
+    if(myRecoTool->click(command["dir"].i(), command["x"].d(), command["y"].d())) isTrackLineOutdated = true;
   }
   else if(cmd=="recoMovePoint"){
     if(!isRecoModeOn) return "Manual reconstruction mode is off.";
@@ -890,6 +895,7 @@ std::string WebGUIController::execute(const crow::json::rvalue & command){
     if(index<0 || !myRecoTool->movePoint(index, command["dir"].i(), command["x"].d(), command["y"].d())){
       return "This point cannot be moved now.";
     }
+    isTrackLineOutdated = true; // the shown track is out of date until the next fit
   }
   else if(cmd=="recoFit"){
     if(!isRecoModeOn || !myRecoTool->isFitEnabled()) return "No complete segments to fit.";
@@ -922,6 +928,7 @@ std::string WebGUIController::execute(const crow::json::rvalue & command){
     std::cout<<std::endl;
     mySavedTrack.reset(); // the new fit replaces the track read from the output file
     isManualTrackShown = true;
+    isTrackLineOutdated = false;
     isManualTrackUnsaved = true;
   }
   else if(cmd=="recoClearTrack"){
@@ -1235,7 +1242,8 @@ std::vector<crow::json::wvalue> WebGUIController::makeRecoPanels() const {
       }
       aPanel["dragPoints"] = std::move(dragPoints);
     }
-    if(isManualTrackShown) addTrackProjection(ov, strip_dir, aTrack);
+    // the track line is dropped once clicked points were moved / added (out of date until the next fit)
+    if(isManualTrackShown && !isTrackLineOutdated) addTrackProjection(ov, strip_dir, aTrack);
     ov.moveTo(aPanel);
     panels.push_back(std::move(aPanel));
   }
