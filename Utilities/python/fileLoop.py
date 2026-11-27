@@ -32,7 +32,8 @@ def analyzeSingleBatch(runId, fileCSV, geometryFile, command,
     arguments += " --beamParameters.energy " + str(beamEnergy)
     arguments += " --eventFilter.enabled true"
     arguments += " --eventFilter.maxChargeLowerBound 1000"
-  
+    arguments += " --output.recoTree true"  # TPCRecoData tree, needed by recoEventsAnalysis
+
     print("Running job id:",runId,"\nfor file(s):\n\t"+ fileCSV.replace(",","\n\t"))
     
     os.chdir(runId)
