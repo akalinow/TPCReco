@@ -4,6 +4,12 @@
 #include <TFile.h>
 #include <TTree.h>
 #include <TBranch.h>
+#include <TKey.h>
+#include <TSystem.h>
+
+#include <algorithm>
+#include <map>
+#include <utility>
 
 
 #include "TPCReco/EventSourceBase.h"
@@ -37,6 +43,7 @@ void FileOutput::init(boost::property_tree::ptree aConfig){
     fileName = InputFileHelper::makeOutputFileName(inputFileName, fileName);
   }
 
+  myFileName = fileName;
   myOutputFilePtr = std::make_shared<TFile>(fileName.c_str(), "RECREATE");
   std::cout<<KBLU<<"Opening output stream to file: "<<RST<<fileName<<std::endl;
 
@@ -230,3 +237,69 @@ void FileOutput::update(std::shared_ptr<EventSourceBase> aEventSource,
 }
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+long FileOutput::keepLastEntryPerEvent(const std::string & fileName){
+
+  TFile aInput(fileName.c_str(), "READ");
+  if(aInput.IsZombie()) return 0;
+  auto aTree = aInput.Get<TTree>("TPCData");
+  if(!aTree || !aTree->GetBranch("EventInfo")) return 0;
+
+  // last entry of each (run id, event id)
+  auto aInfo = new eventraw::EventInfo();
+  aTree->SetBranchAddress("EventInfo", &aInfo);
+  TBranch *infoBranch = aTree->GetBranch("EventInfo");
+  std::map<std::pair<long, unsigned long>, Long64_t> lastEntry;
+  const Long64_t nEntries = aTree->GetEntries();
+  for(Long64_t iEntry=0;iEntry<nEntries;++iEntry){
+    if(infoBranch->GetEntry(iEntry)<=0) continue;
+    lastEntry[{aInfo->GetRunId(), aInfo->GetEventId()}] = iEntry;
+  }
+  aTree->ResetBranchAddresses();
+  delete aInfo;
+  const long nRemoved = nEntries - static_cast<long>(lastEntry.size());
+  if(nRemoved==0) return 0;
+  std::vector<Long64_t> kept;
+  for(const auto & item: lastEntry) kept.push_back(item.second);
+  std::sort(kept.begin(), kept.end());
+
+  // the new file next to the old one, then renamed over it
+  const std::string tmpName = fileName + ".tmp";
+  {
+    TFile aOutput(tmpName.c_str(), "RECREATE");
+    if(aOutput.IsZombie()) return 0;
+    for(auto aObj: *aInput.GetListOfKeys()){
+      auto aKey = static_cast<TKey*>(aObj);
+      if(aOutput.GetListOfKeys()->FindObject(aKey->GetName())) continue; // the highest cycle only
+      aOutput.cd();
+      if(std::string(aKey->GetName())=="TPCData"){
+        TTree *aNewTree = aTree->CloneTree(0);
+        for(auto iEntry: kept){
+          aTree->GetEntry(iEntry);
+          aNewTree->Fill();
+        }
+        aNewTree->Write("", TObject::kOverwrite);
+      }
+      else if(std::string(aKey->GetClassName())=="TTree"){
+        auto aOther = aInput.Get<TTree>(aKey->GetName());
+        aOther->CloneTree(-1, "fast")->Write("", TObject::kOverwrite);
+      }
+      else {
+        TObject *aCopy = aKey->ReadObj();
+        aOutput.cd();
+        aCopy->Write(aKey->GetName(), TObject::kOverwrite);
+      }
+    }
+    aOutput.Close();
+  }
+  aInput.Close();
+  if(gSystem->Rename(tmpName.c_str(), fileName.c_str())!=0){
+    std::cout<<KRED<<"FileOutput::keepLastEntryPerEvent"<<RST<<" cannot replace "<<fileName
+             <<" by "<<tmpName<<std::endl;
+    return 0;
+  }
+  std::cout<<KBLU<<"FileOutput::keepLastEntryPerEvent: "<<RST<<fileName<<": "<<lastEntry.size()
+           <<" events kept, "<<nRemoved<<" earlier saves of the same events removed"<<std::endl;
+  return nRemoved;
+}

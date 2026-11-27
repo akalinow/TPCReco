@@ -49,10 +49,18 @@ public:
   bool findRecoEvent(const eventraw::EventInfo & aKey,
                      eventraw::EventInfo & aInfo, Track3D & aRecoEvent);
 
+  const std::string & getFileName() const { return myFileName; }
+
+  // Rewrites the closed file fileName so that TPCData keeps only the last entry of each event
+  // (run id, event id), in the order of these entries: an event saved again (e.g. from the GUI)
+  // replaces the earlier one. Other objects are copied unchanged. Returns the number of removed entries.
+  static long keepLastEntryPerEvent(const std::string & fileName);
+
 private:
   
   void close();
     
+  std::string myFileName;
   std::shared_ptr<TFile> myOutputFilePtr;
   std::map<std::string, std::shared_ptr<TTree>> myOutputTrees;
 

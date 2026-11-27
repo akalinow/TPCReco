@@ -106,8 +106,7 @@ ManualRecoTool    state machine of the clicked track reconstruction (port of Mar
   from the geometry); the first point is the common vertex. "Fit segments" fits and shows the track
   (projections, charge along the track, projection on the readout plane), "Clear track" removes the clicked points/segments and hides the fitted track. The event is written with the clicked track on "Next event".
   Switching manual reco off saves nothing: the clicked track is dropped and the automatic
-  reconstruction ("Fit segments" replaces it in the track builder) is made again and shown; "▶ & Save"
-  then writes the automatic reconstruction if the event is not in the output file yet.
+  reconstruction ("Fit segments" replaces it in the track builder) is made again and shown.
   Before leaving an event with a fitted but unsaved clicked track (Previous, go to event/frame,
   open file, Exit, switching manual reco off), or with clicked points that were not fitted
   (also on Next and Reset), the GUI asks for confirmation. tpcGUI asks the same questions.
@@ -131,14 +130,18 @@ ManualRecoTool    state machine of the clicked track reconstruction (port of Mar
     length, 2-prong: alpha (longer) + carbon-12 (one segment: alpha; more than two: unknown),
     3-prong: all alphas. "Total E" in the printout is the sum of the segment energies from
     their ranges.
-* Event type bits, written to `<input file>.log` and to the output file (manual reco mode) on Next/Previous.
+* Event type bits, written to `<input file>.log` on Next/Previous and to the output file on Next.
 * Run conditions: drift velocity, sampling rate, trigger delay.
-* Output file: the same `FileOutput` as tpcGUI, filled once per event: with the automatic
-  reconstruction when the event is loaded with manual reco off, otherwise on "▶ & Save" (manual
-  reco mode: the clicked track; manual reco switched off in the meantime: the automatic one). An event already in the output file (e.g. when going back) is read from it:
-  in manual reco mode its saved track is shown as the saved clicked track (the printout starts
-  with "Read from the output file.") together with its saved event type bits, and it is not
-  written again unless a new track is fitted or the event type bits are changed. Outside manual
+* Output file (`TPCReco_<first input file>.root`, the same `FileOutput` as tpcGUI): "▶ & Save"
+  writes the current event as shown, with the checked event type bits: in manual reco mode the
+  fitted clicked track (or the saved / automatic track when nothing was fitted), otherwise the
+  automatic reconstruction. Previous, go to event/frame, open and Exit do not save. Saving an event
+  again replaces the earlier save: the entries are appended while the GUI runs, and when the GUI is
+  closed (Exit or SIGTERM) the file is rewritten with only the last save of each event (run id,
+  event id). ONLINE mode (no navigation): every loaded event is written with the automatic
+  reconstruction. An event already in the output file (e.g. when going back) is read from it:
+  its event type bits are checked again, and in manual reco mode its saved track is shown as the
+  saved clicked track (the printout starts with "Read from the output file."). Outside manual
   reco mode the automatic reconstruction is shown.
 
 Differences from tpcGUI:

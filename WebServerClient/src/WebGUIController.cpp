@@ -414,7 +414,10 @@ WebGUIController::~WebGUIController(){ close(); }
 /////////////////////////////////////////////////////////
 void WebGUIController::close(){
 
+  // events saved more than once: only the last save is kept
+  std::string outputFileName = myFileOutput ? myFileOutput->getFileName() : "";
   myFileOutput.reset();
+  if(!outputFileName.empty()) FileOutput::keepLastEntryPerEvent(outputFileName);
   myEventSource.reset();
 }
 /////////////////////////////////////////////////////////
@@ -484,12 +487,9 @@ void WebGUIController::refresh(){
     myClickedTrack.reset();
     if(isOnline()) updateEventRate();
     readSavedRecoEvent();
-    // automatic output once per loaded event, unless already written; in manual RECO mode
-    // the event is written on "Next event" with the clicked track instead
-    if(myFileOutput && !isRecoModeOn && !mySavedTrack){
-      myFileOutput->update(myEventSource);
-      readSavedRecoEvent(); // now in the output file: not written again on "Next event" in RECO mode
-    }
+    // an event is written on "Next event" (writeCurrentEvent); ONLINE mode, without navigation:
+    // automatic output once per loaded event
+    if(myFileOutput && isOnline()) myFileOutput->update(myEventSource);
   }
   // a track read back from the output file is shown as the (saved) clicked track
   if(isRecoModeOn && mySavedTrack) isManualTrackShown = true;
@@ -537,11 +537,12 @@ unsigned long WebGUIController::updateEventLog(unsigned long eventType){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-void WebGUIController::writeManualReco(unsigned long eventType){
+void WebGUIController::writeCurrentEvent(unsigned long eventType){
 
-  if(!myFileOutput) return;
-  // already in the output file, unchanged: not written again
-  if(mySavedTrack && !isManualTrackUnsaved && eventType==mySavedEventType) return;
+  // the state shown: RECO mode the saved / fitted clicked / automatic track, otherwise the automatic
+  // reconstruction, with the event type bits; an earlier save of the event is replaced when the file
+  // is closed (FileOutput::keepLastEntryPerEvent)
+  if(!myFileOutput || isOnline() || !myEventSource || !myEventSource->numberOfEvents()) return;
   eventraw::EventInfo aEventInfo = myEventSource->getCurrentEvent()->GetEventInfo();
   aEventInfo.SetEventType(eventType);
   myFileOutput->update(myEventSource, aEventInfo, displayedTrack());
@@ -586,19 +587,6 @@ void WebGUIController::leaveRecoMode(){
     isTrackBuilderManual = false;
   }
   readSavedRecoEvent(); // "Fit segments" / "Clear track" forgot the track read from the output file
-}
-/////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-void WebGUIController::writeAutoReco(){
-
-  // automatic output of an event not written yet (e.g. loaded in manual RECO mode, which was then
-  // switched off): on "Next event"
-  if(!myFileOutput || isOnline() || isRecoModeOn) return;
-  if(!myEventSource || !myEventSource->numberOfEvents()) return;
-  eventraw::EventInfo aInfo;
-  Track3D aTrack;
-  if(myFileOutput->findRecoEvent(myEventSource->getCurrentEvent()->GetEventInfo(), aInfo, aTrack)) return;
-  myFileOutput->update(myEventSource);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -740,8 +728,7 @@ std::string WebGUIController::execute(const crow::json::rvalue & command){
   if(cmd=="next"){
     if(!canNavigate()) return "Event navigation is disabled in ONLINE mode.";
     unsigned long aEventType = updateEventLog(eventType());
-    if(isRecoModeOn) writeManualReco(aEventType);
-    else writeAutoReco();
+    writeCurrentEvent(aEventType);
     if(myEventList.size()){ // event list: the next listed event
       if(myListPosition+1>=(long)myEventList.size()) return "Last event of the event list.";
       std::string error = loadListedEvent(myListPosition+1);

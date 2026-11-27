@@ -75,7 +75,9 @@ private:
   void eventLoaded();
   void refresh();
   unsigned long updateEventLog(unsigned long eventType);
-  void writeManualReco(unsigned long eventType);
+  /// "Next event": writes the current event as shown (track and event type bits); a later save of the
+  /// same event replaces it when the output file is closed
+  void writeCurrentEvent(unsigned long eventType);
   void updateEventRate();
   std::string setRunConditions(double driftVelocity, double samplingRate, double triggerDelay);
   std::string openFile(const std::string & fileName);
@@ -133,8 +135,6 @@ private:
   /// manual reconstruction switched off: nothing is written, the clicked track is dropped and the
   /// automatic reconstruction replaced by "Fit segments" is made again
   void leaveRecoMode();
-  /// "Next event" outside RECO mode: the automatic reconstruction, if the event is not in the output file yet
-  void writeAutoReco();
   /// track reconstruction printout (terminal text with ANSI colour codes)
   std::string makeRecoText(const Track3D * aTrack) const;
   void addTrackProjection(PanelOverlay & aOverlay, int strip_dir, const Track3D & aTrack) const;
