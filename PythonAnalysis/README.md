@@ -2,7 +2,7 @@
 
 The ML datasets are made in two steps:
 
-1. `tpcWriter` (C++) reads MC or GRAW data, runs the reconstruction and writes a ROOT file with
+1. `tpcGRAW2ROOT` (C++) reads MC or GRAW data, runs the reconstruction and writes a ROOT file with
    the flat `MLData` tree,
 2. `mltree_tfrecord.py` (Python) converts the `MLData` trees to TFRecord files.
 
@@ -10,19 +10,19 @@ TensorFlow is needed only to read the TFRecord files (training, evaluation).
 
 ### 1. Create ROOT files
 
-Add `--output.mlTree true` to the `tpcWriter` command. The applications can be run from any
+Add `--output.mlTree true` to the `tpcGRAW2ROOT` command. The applications can be run from any
 directory (see the main [README](../README.md)); `<build>` below is the build/installation directory.
 
-MC events (1000 events from the generator configured in `config_Writer_MC.json`):
+MC events (1000 events from the generator configured in `config_GRAW2ROOT_MC.json`):
 
 ```Bash
-<build>/bin/tpcWriter <build>/config/config_Writer_MC.json --input.readNEvents 1000 --output.mlTree true
+<build>/bin/tpcGRAW2ROOT <build>/config/config_GRAW2ROOT_MC.json --input.readNEvents 1000 --output.mlTree true
 ```
 
 Real data, e.g. one chunk of GRAW files (one file per AsAd board):
 
 ```Bash
-<build>/bin/tpcWriter <build>/config/config_Writer_Data.json --output.mlTree true \
+<build>/bin/tpcGRAW2ROOT <build>/config/config_GRAW2ROOT_Data.json --output.mlTree true \
    --input.geometryFile geometry_ELITPC_130mbar_1372Vdrift_25MHz.dat \
    --input.dataFile $( <build>/bin/grawls --input 20220825083549 --chunk 0 --separator "," \
                        --directory /path/to/20220825_extTrg_CO2_130mbar --ms 1000 ) \
@@ -51,7 +51,7 @@ Hits are selected with `--output.mlHitFilter`:
 The filters work per strip section: for a strip divided into sections, only the sections passing
 the filter contribute to the merged hit.
 
-Event selection: `tpcWriter` writes only events with two or three track segments (two and three
+Event selection: `tpcGRAW2ROOT` writes only events with two or three track segments (two and three
 prong events: generated segments for MC, reconstructed segments for data), and for MC only events
 with the ends of all segments inside the fiducial volume (|x| < 140 mm, |y| < 90 mm,
 |z| < drift cage limit − 5 mm). The automatic reconstruction currently returns two segments.
@@ -61,7 +61,7 @@ Size: for real data the `MLData` tree with the `threshold` filter takes about 0.
 The biggest `TPCData` branches are not needed for the ML datasets: the charge map and the dense
 `myChargeArray` of `Event` (about 1 MB/event), and the hit histograms stored with every track segment.
 The default of `output.disabledBranches` switches off the charge map and `myChargeArray`, but the
-`config_Writer_*.json` files set it to an empty list and write all branches. Switch the big
+`config_GRAW2ROOT_*.json` files set it to an empty list and write all branches. Switch the big
 branches off with (wildcards are needed to match the sub-branches):
 
 ```Bash

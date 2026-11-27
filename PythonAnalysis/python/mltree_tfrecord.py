@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Convert the MLData tree written by tpcWriter (--output.mlTree true) to TFRecord.
+"""Convert the MLData tree written by tpcGRAW2ROOT (--output.mlTree true) to TFRecord.
 
 Writing needs only uproot, awkward, numpy and google-crc32c (TensorFlow is not
 needed). Reading (load_dataset) needs TensorFlow.

@@ -52,7 +52,7 @@ root -l '../examples/makeMCPlots.cpp("MCTrackTree_<...>.root")'
 Write the full `PEventTPC` data and a track tree for 1000 MC events:
 
 ```Bash
-../bin/tpcWriter ../config/config_Writer_MC.json --input.readNEvents=1000
+../bin/tpcGRAW2ROOT ../config/config_GRAW2ROOT_MC.json --input.readNEvents=1000
 ```
 
 The output file names contain the run timestamp and the processing date.

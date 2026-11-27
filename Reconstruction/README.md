@@ -3,7 +3,7 @@
 Automatic reconstruction of single-vertex events (α + recoil, single α, "dot") from the raw UVW
 strip data: from GRAW samples to a fitted `Track3D` with α and carbon segments, the charge in MeV
 and the dE/dx fit result. The main class is `TrackBuilder`. It is run by every application that
-reconstructs, for example `tpcReco` (ntuples), `tpcGUI` (reconstruction mode) and `tpcWriter`.
+reconstructs, for example `tpcReco` (ntuples), `tpcGUI` (reconstruction mode) and `tpcGRAW2ROOT`.
 
 The steps below are in processing order. For each step the table gives the code, the
 configuration options, and the files it reads. Options are written as `group.name`.

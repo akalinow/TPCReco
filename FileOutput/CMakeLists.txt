@@ -3,15 +3,15 @@ message(STATUS "Adding CMake fragment for module:\t${MODULE_NAME}")
 
 reco_add_library(${MODULE_NAME})
 
-add_executable(tpcWriter bin/tpcWriter.cpp)
+add_executable(tpcGRAW2ROOT bin/tpcGRAW2ROOT.cpp)
 
 target_link_libraries(${MODULE_NAME} PUBLIC Utilities DataFormats 
                      Reconstruction EventSources ${ROOT_LIBRARIES}
                      ${ROOT_EXE_LINKER_FLAGS})
 
-target_link_libraries(tpcWriter PRIVATE ${MODULE_NAME} Boost::program_options)
+target_link_libraries(tpcGRAW2ROOT PRIVATE ${MODULE_NAME} Boost::program_options)
 					  
-reco_install_targets(${MODULE_NAME} tpcWriter)
+reco_install_targets(${MODULE_NAME} tpcGRAW2ROOT)
 #install(PROGRAMS $<1:${CMAKE_CURRENT_SOURCE_DIR}/python/> DESTINATION python)
 install(DIRECTORY config DESTINATION ${CMAKE_INSTALL_PREFIX})
 

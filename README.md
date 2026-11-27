@@ -88,7 +88,7 @@ directory, and the `resources` directory of the source tree. The resolved paths 
 printed at start-up and stored in the configuration dump. For example:
 ```Shell
 cd /some/output/directory
-/path/to/build/bin/tpcWriter ../config/config_Writer_Data.json --input.readNEvents 3
+/path/to/build/bin/tpcGRAW2ROOT ../config/config_GRAW2ROOT_Data.json --input.readNEvents 3
 ```
 Output files are written to the current directory.
 

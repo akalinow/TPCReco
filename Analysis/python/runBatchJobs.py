@@ -215,7 +215,7 @@ def localDataDir(run):
 # MC: output location, application config, strip response model files
 # (StripResponseModel_..._T<sigmaXY>mm_L<sigmaZ>mm_P232ns.root for the sigmas of the MC data sets).
 mcOutputDir = "/scratch_hdd/akalinow/ELITPC/WarsawTPC_Claude/data/HIgS_2022_MC"
-mcAppConfig = "../config/config_Writer_MC.json"
+mcAppConfig = "../config/config_GRAW2ROOT_MC.json"
 stripResponsePath = "/scratch_hdd/akalinow/ELITPC/TPCReco/build_noGET/MonteCarlo/Modules/StripResponseModel/"
 
 ################################################
