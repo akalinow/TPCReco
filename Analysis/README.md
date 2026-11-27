@@ -40,6 +40,38 @@ overridden on the command line, e.g. `--input.readNEvents 1000`. The raw-data pr
 (`rawTrackDiffusionAnalysis`, `rawSignalAnalysis`, `rawPedestalAnalysis`) and `recoEnergyScaleFitter`
 have their own short options (`--dataFile`, `--geometryFile`, ...). Use `--help` for the options.
 
+### Event lists (`tpcReco --input.eventList`)
+
+`tpcReco` can reconstruct only the events of a list (the same files as in the `tpcWebGUI` data sets).
+One event per line, comma or space separated, `#` starts a comment line:
+
+```
+runId , entry , eventId     # e.g. 20260819180141 , 120 , 120  (entry = frame in the GRAW chunk)
+runId , eventId
+eventId                     # any run
+```
+
+* **With `--input.dataFile`** (filter mode, one job per chunk): only the listed events of the run of the
+  input files that are in these files are reconstructed, in event id order; events of other runs or chunks are
+  skipped. The output name is the usual one (`TrackTree_<run>_<chunk>.root`).
+* **Without `--input.dataFile`** (list-only mode, one job for the whole list): every line needs
+  `runId , entry , eventId`. The chunk of an event is `(eventId - entry) / frames per chunk` (from chunk 0 of the
+  run), its GRAW files are searched in `--input.eventListDataPath` and its subdirectories by the run start time,
+  as in `tpcWebGUI`. The events are processed chunk by chunk; all runs are reconstructed with the settings of
+  the job (geometry, conditions), so a list should contain one working point. Output:
+  `TrackTree_<list file name>.root`.
+
+```Bash
+../bin/tpcReco --input.eventList events.txt --input.eventListDataPath /data/HIgS_2026 \
+  --input.geometryFile geometry_ELITPC_110mbar_1470Vdrift_25MHz.dat --conditions.pressure 110 \
+  --conditions.samplingRate 25 --beamParameters.energy 8.26 --eventFilter.enabled false
+```
+
+Both modes apply the event filter and `--input.readNEvents` (events with a reconstructed track) as the
+sequential loop, and print a summary line (found / not found / filtered / reconstructed).
+`frameId` in `trackTree` is the entry of the event in its chunk (before 2026-11-27 the sequential loop stored the
+entry of the previous event, `frameId = n-1` for the n-th event).
+
 ## Quick start
 
 Reconstruct 1000 MC events and plot the result:

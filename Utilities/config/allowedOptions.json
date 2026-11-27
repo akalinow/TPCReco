@@ -39,13 +39,13 @@
         "group": "input",
         "type": "string",
         "defaultValue": "",
-        "description": "Text file with events for tpcWebGUI, one per line: 'runId , entry , eventId' (comma or space separated, '#' starts a comment line). The arrows step through the listed events, opening the GRAW chunk of each run from input.eventListDataPath. Empty: no list.\nType: string"
+        "description": "Text file with events, one per line: 'runId , entry , eventId', 'runId , eventId' or 'eventId' (comma or space separated, '#' starts a comment line; entry = frame in the GRAW chunk). tpcWebGUI (needs all three fields): the arrows step through the listed events, opening the GRAW chunk of each run from input.eventListDataPath. tpcReco with input.dataFile: only the listed events of the run of the input files that are in them are reconstructed (events of other runs or chunks are skipped). tpcReco without input.dataFile (needs all three fields and input.eventListDataPath): every listed event is reconstructed, chunk by chunk, with the settings of the job for all runs; output TrackTree_<list file name>.root. Empty: no list.\nType: string"
     },
     "eventListDataPath":{
         "group": "input",
         "type": "string",
         "defaultValue": "",
-        "description": "Directory with the GRAW files of the runs of input.eventList, searched with its subdirectories (one per DAQ day). Empty: the directory above the one of input.dataFile.\nType: string"
+        "description": "Directory with the GRAW files of the runs of input.eventList, searched with its subdirectories (one per DAQ day). tpcWebGUI, empty: the directory above the one of input.dataFile. Required by tpcReco with input.eventList and without input.dataFile.\nType: string"
     },
     "geometryFile":{
         "group": "input",

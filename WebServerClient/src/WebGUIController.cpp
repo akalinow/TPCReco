@@ -22,6 +22,7 @@
 #include "TPCReco/EventSourceFactory.h"
 #include "TPCReco/EventSourceGRAW.h"
 #include "TPCReco/EventSourceMultiGRAW.h"
+#include "TPCReco/EventList.h"
 #include "TPCReco/GrawChunkPath.h"
 #include "TPCReco/GrawFile.h"
 #include "TPCReco/FileOutput.h"
@@ -196,20 +197,14 @@ std::vector<WebGUIController::ListedEvent> WebGUIController::readEventList(const
 
   std::vector<ListedEvent> events;
 
-  // same format as tpcReco --input.eventList: "runId , entry , eventId" per line
-  // (comma/space separated, '#' comment lines); the order of the file is kept
-  std::ifstream in(fileName);
-  if(!in) throw std::runtime_error("input.eventList: cannot open "+fileName);
-  std::string line;
-  while(std::getline(in, line)){
-    for(auto & c : line) if(c==',' || c=='\t' || c==';') c=' ';
-    std::istringstream fields(line);
-    std::vector<std::string> items;
-    std::string item;
-    while(fields>>item) items.push_back(item);
-    if(items.empty() || items.front()[0]=='#') continue;
-    if(items.size()!=3) throw std::runtime_error("input.eventList: expected 'runId , entry , eventId' in: "+line);
-    events.push_back({std::stol(items[0]), std::stoul(items[1]), std::stoul(items[2])});
+  // the parser of tpcReco --input.eventList (EventList.h); the GUI steps through the runs and chunks
+  // of the listed events, so every line needs "runId , entry , eventId"; the order of the file is kept
+  for(const auto & aEvent: ::readEventList(fileName)){
+    if(!aEvent.hasRun() || !aEvent.hasEntry()){
+      throw std::runtime_error("input.eventList: expected 'runId , entry , eventId' lines in "+fileName
+                               +" (event "+std::to_string(aEvent.eventId)+")");
+    }
+    events.push_back({aEvent.runId, static_cast<unsigned long>(aEvent.entry), aEvent.eventId});
   }
   std::cout<<KBLU<<"WebGUIController: event list "<<RST<<fileName<<KBLU<<": "<<RST
            <<events.size()<<KBLU<<" events"<<RST<<std::endl;
