@@ -23,7 +23,7 @@ configuration options, and the files it reads. Options are written as `group.nam
   `reconstruction.tfModelPath`, ...) may be relative to the `resources` directory. They are looked up
   in the current directory, `$TPCRECO_RESOURCES`, the installed `resources` and the source-tree
   `resources` (`ConfigManager::resolveResourcePaths`).
-* **HIgS 2022 batch processing**: `Analysis/python/makeTrackTree.py` takes the runs from
+* **HIgS 2022 batch processing**: `Analysis/python/runBatchJobs.py` takes the runs from
   `Analysis/python/HIgS_2022_runs/` (one data-set JSON per run, made from the logbooks by
   `makeRunList.py`; the same files are tpcWebGUI data sets) and starts one job
   per chunk (`Utilities/python/fileLoop.py`). Each job gets `--input.geometryFile`, `--input.dataFile`,

@@ -21,13 +21,13 @@ the run list of the batch scripts (tpc_utils.readRunList):
   beamParameters     - energy
 
 With --mc, writes instead one MC data set per setup (beam energy, pressure, drift voltage)
-of the good Physics runs, to HIgS_<campaign>_MC_runs/ (makeTrackTree.py, run_type "MC"):
+of the good Physics runs, to HIgS_<campaign>_MC_runs/ (runBatchJobs.py, run_type "MC"):
   run                - run_id "MC_<E>MeV_<p>mbar_<U>V", run_type "MC", the setup, n_events, n_jobs
   input              - geometryFile, controllerConfigPath (MC controller template in config/)
   conditions, beamParameters - as for the data
   controller         - settings merged onto the controller template (see MC_DEFAULTS): gamma energy,
                        gas pressure, strip response sigmas. Machine dependent paths (geometry,
-                       strip response files) are set by makeTrackTree.py.
+                       strip response files) are set by runBatchJobs.py.
 Existing MC files of the same setups are overwritten, other files in the directory are kept.
 
 Usage:

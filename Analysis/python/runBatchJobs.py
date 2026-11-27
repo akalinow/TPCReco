@@ -18,7 +18,7 @@ Select the runs with the settings at the end of this file, then run from the
 resources directory of the build:
 
   cd build/resources
-  ../python/makeTrackTree.py
+  ../python/runBatchJobs.py
 """
 
 import subprocess

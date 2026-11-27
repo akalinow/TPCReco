@@ -16,7 +16,7 @@ cd <build>/resources
 | Directory   | Content |
 |-------------|---------|
 | `bin/`      | sources of the command line programs (table below) |
-| `python/`   | batch drivers: `makeRunList.py`, `makeTrackTree.py` (data and MC) |
+| `python/`   | batch drivers: `makeRunList.py`, `runBatchJobs.py` (data and MC) |
 | `python/HIgS_2022_runs/`, `python/HIgS_2026_runs/` | per-run data sets (one JSON file per run), made by `makeRunList.py` |
 | `python/HIgS_2022_MC_runs/` | MC setups (one JSON file per setup), made by `makeRunList.py --mc` |
 | `config/`   | configs for `recoEventsAnalysis`, `rawPedestalAnalysis`, cuts |
@@ -104,9 +104,9 @@ beam energy spread, strip response σ per pressure) are in `MC_DEFAULTS` of `mak
 `--mc` overwrites the files of the generated setups and keeps other files in the directory,
 so hand-made MC data sets can live there too.
 
-### 2. Processing: `makeTrackTree.py`
+### 2. Processing: `runBatchJobs.py`
 
-Edit the settings at the end of [makeTrackTree.py](python/makeTrackTree.py)
+Edit the settings at the end of [runBatchJobs.py](python/runBatchJobs.py)
 (the comment there lists all good Physics setups with their run and chunk counts):
 
 ```python
@@ -132,7 +132,7 @@ With `selectedRunTypes = ["Physics", "MC"]` data and the matching MC are process
 e.g. `selectedEnergies = [9.85]`.
 
 ```Bash
-../python/makeTrackTree.py
+../python/runBatchJobs.py
 ```
 
 All jobs share one queue of `procCount` slots. The script returns when all jobs have finished
