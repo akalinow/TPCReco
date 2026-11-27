@@ -98,9 +98,13 @@ ManualRecoTool    state machine of the clicked track reconstruction (port of Mar
   `input.dataFile` directory): ▶ / ◀ step through the listed events, and the List box in the top
   bar shows the position; type a number there and press Enter to go to that listed event.
 * Z log scale, auto zoom, manual reconstruction mode, event rate display (ONLINE).
+* Deconvolution check box: disabled (shows the state only); the deconvolution is switched at
+  start-up with `--reconstruction.deconvolutionEnable true` (and `reconstruction.deconvolutionResponseFile`).
 * Display modes from the configuration: raw (default), `display.develMode` (rec hits, fitted track,
   charge profile with the dE/dx model, track projection on the readout plane, reconstruction
   printout in a terminal style cell), `display.technicalMode` (AGET channels).
+* Switching manual reco on opens a short help on clicking (with "Do not show again in this
+  session": kept for the browser tab session).
 * Manual reconstruction starts from the shown track (the automatic reconstruction, or the track
   saved in the output file): it stays displayed, and its points are put in as if they were clicked
   (2-prong: the vertex and the segment ends, 3-prong: the middle and the end of each track, not the
@@ -118,8 +122,10 @@ ManualRecoTool    state machine of the clicked track reconstruction (port of Mar
   open file, Exit, switching manual reco off), or with clicked points that were not fitted
   (also on Next and Reset), the GUI asks for confirmation. tpcGUI asks the same questions.
 * Manual reconstruction modes ("Segment creation" block; changing the mode clears the clicked points):
-  * Markers: clicked points are coloured squares; the end points and the vertex of a fitted
-    (or automatically reconstructed) track are black dots.
+  * Markers: clicked points are coloured squares (movable); the end points and the vertex of a
+    fitted (or automatically reconstructed) track are black dots. While the fitted track is shown
+    (after a fit, points not changed since) the clicked lines are white, semi-transparent; they
+    get their colours back when a point is moved or added.
   * 2-prong (as above): the first point is the common vertex, then one point per segment end.
   * 3-prong: "Add track", then click two points on the track (each point on two projections, as
     above); the vertex is not clicked. In every U/V/W projection each track defines a line

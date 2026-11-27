@@ -1154,10 +1154,13 @@ void WebGUIController::addManualRecoOverlay(PanelOverlay & ov, int strip_dir) co
 
   // getSegments() returns a temporary: keep it alive for the loop
   const auto segments = myRecoTool->getSegments();
+  // with the fitted track line shown (after a fit, points not changed since): the clicked
+  // lines in white, semi-transparent, so the fitted track stands out
+  const bool isFittedLineShown = isManualTrackShown && !isTrackLineOutdated;
   for(const auto & aSegment: segments.at(strip_dir)){
     if(std::isnan(aSegment.x2) || std::isnan(aSegment.y2)) continue;
     ov.lines.push_back(line({aSegment.x1, aSegment.x2}, {aSegment.y1, aSegment.y2},
-                            rootColor(aSegment.color), 3, "dash"));
+                            isFittedLineShown ? "rgba(255,255,255,0.6)" : rootColor(aSegment.color), 3, "dash"));
   }
   // clicked points (they can be dragged to correct them)
   const auto & points = myRecoTool->getPoints();

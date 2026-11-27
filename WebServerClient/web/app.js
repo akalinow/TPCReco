@@ -463,7 +463,8 @@ function updateControls(status) {
   setChecked('chkAutoZoom', status.flags.autoZoom, true);
   setChecked('chkRecoMode', status.flags.recoMode, enabled.recoMode || status.flags.recoMode);
   setChecked('chkRate', status.flags.rate, enabled.rate);
-  setChecked('chkDeconvolution', status.flags.deconvolution, enabled.deconvolution);
+  // deconvolution switch disabled in the GUI: shows the state set by reconstruction.deconvolutionEnable
+  setChecked('chkDeconvolution', status.flags.deconvolution, false);
 
   $('inpEventId').disabled = !enabled.navigate;
   $('inpEntry').disabled = !enabled.navigate;
@@ -577,6 +578,7 @@ function installControls() {
     // the clicked track is dropped and the automatic reconstruction is shown again
     if (!e.target.checked && !confirmClickedTrack('recoOff')) { e.target.checked = true; return; }
     sendCommand('set', { option: 'recoMode', value: e.target.checked });
+    if (e.target.checked) showRecoHelp();
   };
   option('chkRate', 'rate');
   $('chkDeconvolution').onchange = (e) => {
@@ -633,6 +635,30 @@ function installControls() {
   $('btnClearTrack').onclick = () => sendCommand('recoClearTrack');
 
   installOpenDialog();
+}
+
+// ---------------------------------------------------------------- manual reco help
+
+// "Do not show again" lives for the browser tab session only (sessionStorage; a plain variable
+// when the storage is not available)
+const RECO_HELP_KEY = 'tpcWebGUI.hideRecoHelp';
+let hideRecoHelp = false;
+function isRecoHelpHidden() {
+  try { return hideRecoHelp || sessionStorage.getItem(RECO_HELP_KEY) === '1'; } catch (e) { return hideRecoHelp; }
+}
+function setRecoHelpHidden(value) {
+  hideRecoHelp = value;
+  try {
+    if (value) sessionStorage.setItem(RECO_HELP_KEY, '1');
+    else sessionStorage.removeItem(RECO_HELP_KEY);
+  } catch (e) { /* storage not available: the variable is enough */ }
+}
+function showRecoHelp() {
+  if (isRecoHelpHidden()) return;
+  const dialog = $('recoHelpDialog');
+  $('chkRecoHelpHide').checked = false;
+  dialog.onclose = () => setRecoHelpHidden($('chkRecoHelpHide').checked);
+  dialog.showModal();
 }
 
 // ---------------------------------------------------------------- open file dialog

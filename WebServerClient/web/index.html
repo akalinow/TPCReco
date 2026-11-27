@@ -69,7 +69,7 @@
         <label title="Enables automatic zoom in on region with deposits"><input type="checkbox" id="chkAutoZoom"> Auto zoom</label>
         <label title="Enables manual track reconstruction mode"><input type="checkbox" id="chkRecoMode"> Manual reco</label>
         <label title="Display event rate plot"><input type="checkbox" id="chkRate"> Display rate</label>
-        <label title="Richardson-Lucy deconvolution of the clean cluster before the track fit (detector response from reconstruction.deconvolutionResponseFile); the event is reconstructed again"><input type="checkbox" id="chkDeconvolution"> Deconvolution</label>
+        <label title="Richardson-Lucy deconvolution of the clean cluster before the track fit. Disabled in the GUI: set it at start-up with --reconstruction.deconvolutionEnable true (detector response from reconstruction.deconvolutionResponseFile)"><input type="checkbox" id="chkDeconvolution" disabled> Deconvolution</label>
       </section>
 
       <details class="group collapsible" id="markersBox">
@@ -118,6 +118,51 @@
       <div class="dialog-buttons">
         <button value="cancel" formnovalidate>Cancel</button>
         <button id="btnOpenConfirm" value="open" disabled>Open</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="recoHelpDialog">
+    <form method="dialog">
+      <h2>Manual reconstruction</h2>
+      <div class="help-text">
+        <p>The shown track (automatic reconstruction, or the track saved before) stays displayed and its
+          points are put in as if they were clicked. Correct them, or click new ones, then fit.</p>
+        <h3>Markers</h3>
+        <ul>
+          <li><b>Coloured squares</b> (dashed lines): the clicked points; they are movable (drag them).</li>
+          <li><b>Black dots</b> (dash-dotted line): the end points and vertex of the fitted track; they
+            are not movable.</li>
+          <li>After <b>Fit segments</b> both versions of the track are visible: the clicked one (its
+            lines turn white, semi-transparent) and the fitted one, which can differ (e.g. the fitted
+            vertex moves). Drag the squares and fit again to update it.</li>
+        </ul>
+        <h3>Clicking a point</h3>
+        <ul>
+          <li>Press <b>Add segment</b> (2-prong) / <b>Add track</b> (3-prong).</li>
+          <li>Click the point on one U/V/W projection: this sets its time (a vertical line marks it).</li>
+          <li>Click the same point on a second projection: the time of the first click is kept, the
+            coordinate in the third projection is calculated from the geometry.</li>
+          <li>Drag a point (coloured square) to correct it; the old fitted line disappears until the next fit.</li>
+        </ul>
+        <h3>Modes (Segment creation)</h3>
+        <ul>
+          <li><b>2-prong</b>: the first point is the common vertex, then one point at the end of each segment.</li>
+          <li><b>3-prong</b>: two points on each track (the second one at its end); the vertex is where the
+            track lines cross (white square). At least two tracks are needed.</li>
+        </ul>
+        <h3>Buttons</h3>
+        <ul>
+          <li><b>Fit segments</b>: fits the track to the charge and shows it (black dots: ends and vertex).</li>
+          <li><b>Clear track</b>: removes the points and the track, to start from scratch.</li>
+          <li><b>&#9654; &amp; Save</b>: saves the event as shown (with the checked event types); saving it
+            again replaces the earlier save. Switching manual reco off saves nothing and shows the
+            automatic reconstruction again.</li>
+        </ul>
+      </div>
+      <div class="dialog-buttons help-buttons">
+        <label><input type="checkbox" id="chkRecoHelpHide"> Do not show again in this session</label>
+        <button value="ok" autofocus>OK</button>
       </div>
     </form>
   </dialog>
