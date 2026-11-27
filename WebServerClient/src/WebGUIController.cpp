@@ -784,6 +784,16 @@ std::string WebGUIController::execute(const crow::json::rvalue & command){
       if(value && !canRecoMode()) return "Manual reconstruction is not available in this mode.";
       isRecoModeOn = value;
     }
+    else if(option=="deconvolution"){
+      // the current event is reconstructed again with / without the deconvolution
+      auto aTrackBuilder = myEventSource->getTrackBuilder();
+      if(!aTrackBuilder->setDeconvolution(value)){
+        return "Deconvolution not available: no detector response (reconstruction.deconvolutionResponseFile).";
+      }
+      if(myEventSource->numberOfEvents()) aTrackBuilder->reconstruct();
+      myClickedTrack.reset();
+      mySavedTrack.reset(); // the new reconstruction is shown, not the one read from the output file
+    }
     else if(option=="rate"){
       if(value && !canRate()) return "The rate display is available in ONLINE mode only.";
       isRateDisplayOn = value;
@@ -892,6 +902,7 @@ crow::json::wvalue WebGUIController::getStatus() const {
   status["flags"]["autoZoom"] = isAutozoomOn;
   status["flags"]["recoMode"] = isRecoModeOn;
   status["flags"]["rate"] = isRateDisplayOn;
+  status["flags"]["deconvolution"] = myEventSource && myEventSource->getTrackBuilder()->isDeconvolutionEnabled();
 
   auto aGeometry = myEventSource ? myEventSource->getGeometry() : nullptr;
   status["enabled"]["navigate"] = canNavigate();
@@ -899,6 +910,7 @@ crow::json::wvalue WebGUIController::getStatus() const {
   status["enabled"]["open"] = canNavigate() && !isMC();
   status["enabled"]["recoMode"] = canRecoMode();
   status["enabled"]["rate"] = canRate();
+  status["enabled"]["deconvolution"] = myEventSource && myEventSource->getTrackBuilder()->hasDeconvolutionResponseFile();
   status["enabled"]["resetRate"] = isOnline();
   status["enabled"]["eventType"] = !isOnline();
   status["enabled"]["markers"] = !isOnline();
@@ -1144,10 +1156,13 @@ std::vector<crow::json::wvalue> WebGUIController::makeRecoPanels() const {
   const Track3D & aTrack = displayedTrack();
   filter_type filterType = filter_type::threshold;
   if(!myConfig.get<bool>("hitFilter.recoClusterEnable")) filterType = filter_type::none;
+  // with the deconvolution: its images (the deconvolved clean cluster the fits use) are shown
+  auto aTrackBuilder = myEventSource->getTrackBuilder();
+  const bool showDeconvolved = aTrackBuilder->isDeconvolutionEnabled();
 
   for(int strip_dir=projection_type::DIR_U;strip_dir<=projection_type::DIR_W;++strip_dir){
     auto aHisto = aEvent->get2DProjection(get2DProjectionType(strip_dir), filterType, scale_type::mm);
-    wvalue aPanel = makeHeatmapPanel(*aHisto, true, true);
+    wvalue aPanel = makeHeatmapPanel(showDeconvolved ? aTrackBuilder->getCluster2D(strip_dir) : *aHisto, true, true);
     aPanel["clickDir"] = strip_dir; // clicks define the segment end points
     PanelOverlay ov;
     addManualRecoOverlay(ov, strip_dir);
@@ -1171,7 +1186,10 @@ std::vector<crow::json::wvalue> WebGUIController::makeRecoPanels() const {
   if(isManualTrackShown) panels.push_back(makeChargeProfilePanel(aTrack));
   else {
     auto aHisto = aEvent->get1DProjection(projection_type::DIR_TIME, filterType, scale_type::mm);
-    wvalue aPanel = makeHist1DPanel(*aHisto);
+    TH1D hDeconvolved(aTrackBuilder->getRecHitsTimeProjection());
+    hDeconvolved.SetDirectory(nullptr);
+    hDeconvolved.SetTitle("Time projection of the deconvolved clean cluster");
+    wvalue aPanel = makeHist1DPanel(showDeconvolved ? static_cast<const TH1 &>(hDeconvolved) : *aHisto);
     PanelOverlay ov;
     for(const auto & item: myRecoTool->getTimeLines()){
       wvalue aLine;

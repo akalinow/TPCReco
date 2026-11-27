@@ -463,6 +463,7 @@ function updateControls(status) {
   setChecked('chkAutoZoom', status.flags.autoZoom, true);
   setChecked('chkRecoMode', status.flags.recoMode, enabled.recoMode || status.flags.recoMode);
   setChecked('chkRate', status.flags.rate, enabled.rate);
+  setChecked('chkDeconvolution', status.flags.deconvolution, enabled.deconvolution);
 
   $('inpEventId').disabled = !enabled.navigate;
   $('inpEntry').disabled = !enabled.navigate;
@@ -572,6 +573,11 @@ function installControls() {
     sendCommand('set', { option: 'recoMode', value: e.target.checked });
   };
   option('chkRate', 'rate');
+  $('chkDeconvolution').onchange = (e) => {
+    // the event is reconstructed again: a clicked track would be lost
+    if (!confirmClickedTrack('leave')) { e.target.checked = !e.target.checked; return; }
+    sendCommand('set', { option: 'deconvolution', value: e.target.checked });
+  };
 
   // event id. and frame in the top bar: type a value and press Enter; Escape or leaving the box
   // without Enter restores the displayed event
